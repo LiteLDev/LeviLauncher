@@ -1,10 +1,10 @@
 {
 	"fixed": {
-		"file_version": "0.0.8"
+		"file_version": "0.0.9"
 	},
 	"info": {
 		"0000": {
-			"ProductVersion": "0.0.8",
+			"ProductVersion": "0.0.9",
 			"CompanyName": "LeviMC",
 			"FileDescription": "A Minecraft Launcher",
 			"LegalCopyright": "(c) 2025, LeviMC",

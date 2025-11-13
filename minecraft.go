@@ -322,26 +322,6 @@ func isProcessRunningAtPath(exePath string) bool {
 	return false
 }
 
-func ensureVTConsole() {
-	h, _ := windows.GetStdHandle(windows.STD_OUTPUT_HANDLE)
-	var m uint32
-	if windows.GetConsoleMode(h, &m) != nil {
-		kernel32 := syscall.NewLazyDLL("kernel32.dll")
-		alloc := kernel32.NewProc("AllocConsole")
-		setcp := kernel32.NewProc("SetConsoleOutputCP")
-		_, _, _ = alloc.Call()
-		_, _, _ = setcp.Call(uintptr(65001))
-		h, _ = windows.GetStdHandle(windows.STD_OUTPUT_HANDLE)
-		_ = windows.GetConsoleMode(h, &m)
-	}
-	_ = windows.SetConsoleMode(h, m|0x0004)
-	eh, _ := windows.GetStdHandle(windows.STD_ERROR_HANDLE)
-	var em uint32
-	if windows.GetConsoleMode(eh, &em) == nil {
-		_ = windows.SetConsoleMode(eh, em|0x0004)
-	}
-}
-
 func (a *Minecraft) SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool) string {
 	vdir, err := utils.GetVersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
@@ -1398,7 +1378,6 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	}
 	cmd := exec.Command(exe, args...)
 	cmd.Dir = dir
-	ensureVTConsole()
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin

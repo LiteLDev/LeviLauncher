@@ -21,7 +21,7 @@ import (
 )
 
 var (
-	appVersion = "0.0.5"
+	appVersion = "0.0.10"
 	isBeta     = true
 )
 
@@ -59,8 +59,18 @@ func parseVersionAndBetaFromBuildConfig(src string) (version string, beta bool) 
 				}
 			}
 			if strings.HasPrefix(line, "beta:") {
-				val := strings.TrimSpace(strings.SplitN(line, ":", 2)[1])
-				beta = strings.EqualFold(val, "true") || strings.EqualFold(val, "yes") || strings.EqualFold(val, "on")
+				var s string
+				if m := regexp.MustCompile(`beta:\s*"([^"]+)"`).FindStringSubmatch(line); len(m) == 2 {
+					s = m[1]
+				} else {
+					parts := strings.SplitN(line, ":", 2)
+					if len(parts) == 2 {
+						s = strings.TrimSpace(parts[1])
+						s = strings.Trim(s, "\"")
+					}
+				}
+				ls := strings.ToLower(strings.TrimSpace(s))
+				beta = ls == "true" || ls == "yes" || ls == "on" || ls == "1"
 			}
 		}
 	}

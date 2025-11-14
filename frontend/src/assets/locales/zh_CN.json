@@ -109,7 +109,7 @@
             "download_versions": "在“下载”页安装 Release/Preview，安装后出现在下拉列表。",
             "content_counts_card": "主页“内容管理”显示世界、资源包、行为包数量。",
             "file_manager_pick": "文件管理器支持多选并回传路径到 Mods 导入。",
-            "settings_base_root": "设置页可修改内容存储路径，默认使用 %LOCALAPPDATA%\\LeviLauncher。",
+            "settings_base_root": "设置页可修改内容存储路径，默认使用 %APPDATA% 下以当前可执行文件名命名的文件夹。",
             "directory_write_check": "仅可保存到可写目录；不可写目录将被禁用。",
             "drag_import_unsupported": "拖拽导入暂不支持，请使用“导入 .zip/.dll”或文件管理器。"
         }

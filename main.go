@@ -6,6 +6,7 @@ import (
 	"os"
 	"strings"
 
+	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
@@ -55,7 +56,7 @@ func init() {
 }
 
 func main() {
-
+	_, _ = config.Load()
 	extractor.Init()
 	update.Init()
 	mc := Minecraft{}

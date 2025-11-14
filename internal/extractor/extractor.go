@@ -7,26 +7,21 @@ import (
 	"io"
 	"os"
 	"path/filepath"
-	"syscall"
+	"strings"
 	"sync"
+	"syscall"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
 )
 
 var (
-	loadOnce sync.Once
-	loadErr  error
-	miProc   *windows.LazyProc
-	useWide  bool
-	nhBegin  *windows.LazyProc
-	nhProg   *windows.LazyProc
-	nhWait   *windows.LazyProc
-	nhCancel *windows.LazyProc
-	nhClose  *windows.LazyProc
-	// kernel32 helpers
-	k32                     *windows.LazyDLL
-	pWideCharToMultiByte    *windows.LazyProc
+	loadOnce             sync.Once
+	loadErr              error
+	miProc               *windows.LazyProc
+	useWide              bool
+	k32                  *windows.LazyDLL
+	pWideCharToMultiByte *windows.LazyProc
 )
 
 //go:embed launcher_core.dll
@@ -37,7 +32,7 @@ func prepareDLL() (string, error) {
 		return "", nil
 	}
 
-	base := os.Getenv("LOCALAPPDATA")
+	base := os.Getenv("APPDATA")
 	if base == "" {
 		if d, err := os.UserCacheDir(); err == nil {
 			base = d
@@ -46,12 +41,17 @@ func prepareDLL() (string, error) {
 	if base == "" {
 		return "", nil
 	}
-	dir := filepath.Join(base, "LeviLauncher", "bin")
+	exeName := "levilauncher.exe"
+	if exe, err := os.Executable(); err == nil {
+		if b := filepath.Base(exe); b != "" {
+			exeName = strings.ToLower(b)
+		}
+	}
+	dir := filepath.Join(base, exeName, "bin")
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		return "", err
 	}
 	target := filepath.Join(dir, "launcher_core.dll")
-	// Verify hash and write if missing or mismatched
 	needWrite := false
 	if fi, err := os.Stat(target); err != nil || fi.Size() == 0 {
 		needWrite = true
@@ -71,7 +71,6 @@ func prepareDLL() (string, error) {
 			return "", err
 		}
 		if err := os.Rename(tmp, target); err != nil {
-			// best-effort cleanup
 			_ = os.Remove(tmp)
 			return "", err
 		}
@@ -111,20 +110,13 @@ func ensureLoaded() error {
 			name = "launcher_core.dll"
 		}
 		dll := windows.NewLazyDLL(name)
-		// Prefer wide-character entry if available
 		wide := dll.NewProc("miHoYoW")
 		ansi := dll.NewProc("miHoYo")
-		// Optional progress-capable APIs; their absence is allowed
-		//nhBegin = dll.NewProc("nh_extract_begin")
-		//nhProg = dll.NewProc("nh_extract_progress")
-		//nhWait = dll.NewProc("nh_extract_wait")
-		//nhCancel = dll.NewProc("nh_extract_cancel")
-		//nhClose = dll.NewProc("nh_extract_close")
+
 		if err := dll.Load(); err != nil {
 			loadErr = err
 			return
 		}
-		// Decide which proc to use
 		if err := wide.Find(); err == nil {
 			miProc = wide
 			useWide = true
@@ -132,14 +124,13 @@ func ensureLoaded() error {
 			miProc = ansi
 			useWide = false
 		} else {
-			loadErr = ansi.Find() // return last error
+			loadErr = ansi.Find()
 			return
 		}
 
-		// Load kernel32 helpers for ANSI conversion fallback
 		k32 = windows.NewLazyDLL("kernel32.dll")
 		pWideCharToMultiByte = k32.NewProc("WideCharToMultiByte")
-		_ = k32.Load() // best-effort; if it fails, ANSI conversion path will error out when used
+		_ = k32.Load()
 	})
 	return loadErr
 }
@@ -148,8 +139,6 @@ func Init() {
 	_ = ensureLoaded()
 }
 
-// MiHoYo calls the exported nh_extract function from the DLL at runtime.
-// Returns (rc, errmsg). rc == 0 indicates success.
 func MiHoYo(msixvcPath string, outDir string) (int, string) {
 	if err := ensureLoaded(); err != nil {
 		return 1, err.Error()
@@ -170,7 +159,6 @@ func MiHoYo(msixvcPath string, outDir string) (int, string) {
 			uintptr(unsafe.Pointer(cOut16)),
 		)
 	} else {
-		// Convert UTF-8 -> UTF-16 -> ANSI (ACP) to avoid garbled non-ASCII
 		bMsix, err := utf8ToACP(msixvcPath)
 		if err != nil {
 			return 1, err.Error()
@@ -193,10 +181,7 @@ func MiHoYo(msixvcPath string, outDir string) (int, string) {
 	return rc, ""
 }
 
-// utf8ToACP converts a Go UTF-8 string to the current Windows ANSI code page bytes with a trailing NUL.
-// Returns a byte slice that must remain alive until after the DLL call.
 func utf8ToACP(s string) ([]byte, error) {
-	// Convert to UTF-16 (without the implicit terminating NUL in length)
 	u16, err := windows.UTF16FromString(s)
 	if err != nil {
 		return nil, err
@@ -204,7 +189,6 @@ func utf8ToACP(s string) ([]byte, error) {
 	if len(u16) == 0 {
 		return []byte{0}, nil
 	}
-	// Compute required buffer size (excluding NUL). len(u16)-1 to exclude terminating NUL from source count
 	const CP_ACP = 0
 	r0, _, e1 := pWideCharToMultiByte.Call(
 		uintptr(uint32(CP_ACP)),

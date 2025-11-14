@@ -108,7 +108,7 @@
       "download_versions": "Install Release/Preview on the Download page; it appears in the dropdown afterward.",
       "content_counts_card": "The Content card shows counts of worlds, resource and behavior packs.",
       "file_manager_pick": "File Manager supports multi-select and returns paths to Mods import.",
-      "settings_base_root": "Settings lets you change content base path; default %LOCALAPPDATA%\\LeviLauncher.",
+      "settings_base_root": "Settings lets you change the content base path; default %APPDATA%\\<current executable name>.",
       "directory_write_check": "Save only to writable directories; non-writable directories are disabled.",
       "drag_import_unsupported": "Drag-and-drop import is unsupported; use Import .zip/.dll or File Manager."
     }

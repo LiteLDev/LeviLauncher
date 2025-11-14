@@ -8,11 +8,9 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/config"
 )
 
-// LauncherDir returns the directory where the executable resides.
 func LauncherDir() string {
 	exe, err := os.Executable()
 	if err != nil {
-		// fallback to current working directory
 		cwd, _ := os.Getwd()
 		return cwd
 	}
@@ -24,24 +22,28 @@ func BaseRoot() string {
 		_ = os.MkdirAll(v, 0o755)
 		return v
 	}
-	if la := strings.TrimSpace(os.Getenv("LOCALAPPDATA")); la != "" {
-		root := filepath.Join(la, "LeviLauncher")
+	exeName := "levilauncher.exe"
+	if exe, err := os.Executable(); err == nil {
+		base := strings.TrimSpace(filepath.Base(exe))
+		if base != "" {
+			exeName = strings.ToLower(base)
+		}
+	}
+	if ap := strings.TrimSpace(GetAppDataPath()); ap != "" {
+		root := filepath.Join(ap, exeName)
 		_ = os.MkdirAll(root, 0o755)
 		return root
 	}
 	if d, _ := os.UserCacheDir(); strings.TrimSpace(d) != "" {
-		root := filepath.Join(d, "LeviLauncher")
+		root := filepath.Join(d, exeName)
 		_ = os.MkdirAll(root, 0o755)
 		return root
 	}
-	// fallback to executable dir
-	root := filepath.Join(LauncherDir(), "LeviLauncher")
+	root := filepath.Join(LauncherDir(), exeName)
 	_ = os.MkdirAll(root, 0o755)
 	return root
 }
 
-// GetInstallerDir returns the installers storage directory under the launcher directory.
-// It ensures the directory exists and returns the absolute path.
 func GetInstallerDir() (string, error) {
 	base := BaseRoot()
 	dir := filepath.Join(base, "installers")

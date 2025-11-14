@@ -106,7 +106,7 @@ export const LauncherPage = (args: any) => {
         defaultValue: "主页“内容管理”显示世界、资源包、行为包数量。",
       }) as unknown as string,
       t("launcherpage.tip.settings_base_root", {
-        defaultValue: "设置页可修改内容存储路径，默认使用 %LOCALAPPDATA%\\LeviLauncher。",
+        defaultValue: "设置页可修改内容存储路径，默认使用 %APPDATA% 下以当前可执行文件名命名的文件夹。",
       }) as unknown as string,
       t("launcherpage.tip.directory_write_check", {
         defaultValue: "仅可保存到可写目录；不可写目录将被禁用。",

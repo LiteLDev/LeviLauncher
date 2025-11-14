@@ -88,12 +88,8 @@ Var LogFileHandle
 Var RoamingPath
 Var LocalPath
 Var ConfigPath
-Var UninstallCleanRoamingCheckbox
-Var UninstallCleanLocalCheckbox
 Var UninstallCleanBaseRootCheckbox
 Var UninstallCleanBackupCheckbox
-Var UninstallCleanRoamingFlag
-Var UninstallCleanLocalFlag
 Var UninstallCleanBaseRootFlag
 Var UninstallCleanBackupFlag
 Var BaseRootLabel
@@ -104,18 +100,20 @@ LangString LBL_Roaming ${LANG_ENGLISH} "Roaming: $RoamingPath"
 LangString LBL_Roaming ${LANG_SIMPCHINESE} "Roaming：$RoamingPath"
 LangString CHK_RemoveRoaming ${LANG_ENGLISH} "Remove Roaming data"
 LangString CHK_RemoveRoaming ${LANG_SIMPCHINESE} "删除漫游数据"
-LangString LBL_Local ${LANG_ENGLISH} "Local: $LocalPath"
-LangString LBL_Local ${LANG_SIMPCHINESE} "Local：$LocalPath"
-LangString CHK_RemoveLocal ${LANG_ENGLISH} "Remove Local data (config.json + bin)"
-LangString CHK_RemoveLocal ${LANG_SIMPCHINESE} "删除Local数据（config.json + bin）"
+LangString LBL_Local ${LANG_ENGLISH} "Roaming: $LocalPath"
+LangString LBL_Local ${LANG_SIMPCHINESE} "漫游：$LocalPath"
+LangString CHK_RemoveLocal ${LANG_ENGLISH} "Remove Roaming data (config.json + bin)"
+LangString CHK_RemoveLocal ${LANG_SIMPCHINESE} "删除漫游数据（config.json + bin）"
 LangString LBL_BaseRoot ${LANG_ENGLISH} "BaseRoot: $BaseRoot"
 LangString LBL_BaseRoot ${LANG_SIMPCHINESE} "BaseRoot：$BaseRoot"
 LangString BTN_ResolveBaseRoot ${LANG_ENGLISH} "Resolve BaseRoot"
 LangString BTN_ResolveBaseRoot ${LANG_SIMPCHINESE} "解析 BaseRoot"
-LangString CHK_RemoveBaseRoot ${LANG_ENGLISH} "Remove BaseRoot"
-LangString CHK_RemoveBaseRoot ${LANG_SIMPCHINESE} "删除 BaseRoot"
-LangString CHK_RemoveBackup ${LANG_ENGLISH} "Remove Backup"
-LangString CHK_RemoveBackup ${LANG_SIMPCHINESE} "删除备份"
+LangString TIP_ResolveFirst ${LANG_ENGLISH} "Tip: Click 'Resolve BaseRoot' first if you want to delete data."
+LangString TIP_ResolveFirst ${LANG_SIMPCHINESE} "提示：如需删除数据，请先点击上方的“解析 BaseRoot”按钮。"
+LangString CHK_RemoveBaseRoot ${LANG_ENGLISH} "Remove installers and versions"
+LangString CHK_RemoveBaseRoot ${LANG_SIMPCHINESE} "删除 installers 和 versions"
+LangString CHK_RemoveBackup ${LANG_ENGLISH} "Remove backups (save backups)"
+LangString CHK_RemoveBackup ${LANG_SIMPCHINESE} "删除备份（存档备份）"
 LangString MSG_ConfirmBaseRoot ${LANG_ENGLISH} "Removing installers and versions under BaseRoot will delete downloaded versions and installers. Continue?"
 LangString MSG_ConfirmBaseRoot ${LANG_SIMPCHINESE} "删除 BaseRoot 下的 installers 和 versions 将删除已下载的版本与安装包。是否继续？"
 LangString MSG_ConfirmBackup ${LANG_ENGLISH} "Removing Backup will delete all backups under BaseRoot. Continue?"
@@ -130,8 +128,8 @@ LangString TXT_UninstallStart ${LANG_ENGLISH} "Uninstall section start"
 LangString TXT_UninstallStart ${LANG_SIMPCHINESE} "开始卸载"
 LangString TXT_RoamingPath ${LANG_ENGLISH} "Roaming path: $RoamingPath"
 LangString TXT_RoamingPath ${LANG_SIMPCHINESE} "漫游路径：$RoamingPath"
-LangString TXT_LocalPath ${LANG_ENGLISH} "Local path: $LocalPath"
-LangString TXT_LocalPath ${LANG_SIMPCHINESE} "本地路径：$LocalPath"
+LangString TXT_LocalPath ${LANG_ENGLISH} "Roaming path: $LocalPath"
+LangString TXT_LocalPath ${LANG_SIMPCHINESE} "漫游路径：$LocalPath"
 LangString TXT_ConfigPath ${LANG_ENGLISH} "Config path: $ConfigPath"
 LangString TXT_ConfigPath ${LANG_SIMPCHINESE} "配置路径：$ConfigPath"
 LangString TXT_BaseRoot ${LANG_ENGLISH} "BaseRoot: $BaseRoot"
@@ -150,12 +148,12 @@ LangString TXT_RemoveBackup ${LANG_ENGLISH} "Remove Backup: $BaseRoot\\backups"
 LangString TXT_RemoveBackup ${LANG_SIMPCHINESE} "删除备份：$BaseRoot\\backups"
 LangString TXT_BackupErr ${LANG_ENGLISH} "Backup removal error"
 LangString TXT_BackupErr ${LANG_SIMPCHINESE} "删除备份出错"
-LangString TXT_RemoveLocalMatch ${LANG_ENGLISH} "Remove Local directory (matches BaseRoot)"
-LangString TXT_RemoveLocalMatch ${LANG_SIMPCHINESE} "删除本地目录（与 BaseRoot 相同）"
-LangString TXT_LocalDirErr ${LANG_ENGLISH} "Local directory removal error"
-LangString TXT_LocalDirErr ${LANG_SIMPCHINESE} "删除本地目录出错"
-LangString TXT_RemoveLocalParts ${LANG_ENGLISH} "Remove Local parts (config.json + bin)"
-LangString TXT_RemoveLocalParts ${LANG_SIMPCHINESE} "删除本地部分（config.json + bin）"
+LangString TXT_RemoveLocalMatch ${LANG_ENGLISH} "Remove Roaming directory (matches BaseRoot)"
+LangString TXT_RemoveLocalMatch ${LANG_SIMPCHINESE} "删除漫游目录（与 BaseRoot 相同）"
+LangString TXT_LocalDirErr ${LANG_ENGLISH} "Roaming directory removal error"
+LangString TXT_LocalDirErr ${LANG_SIMPCHINESE} "删除漫游目录出错"
+LangString TXT_RemoveLocalParts ${LANG_ENGLISH} "Remove Roaming parts (config.json + bin)"
+LangString TXT_RemoveLocalParts ${LANG_SIMPCHINESE} "删除漫游部分（config.json + bin）"
 LangString TXT_ConfigErr ${LANG_ENGLISH} "Delete config.json error"
 LangString TXT_ConfigErr ${LANG_SIMPCHINESE} "删除 config.json 出错"
 LangString TXT_BinErr ${LANG_ENGLISH} "Remove bin error"
@@ -177,31 +175,26 @@ FunctionEnd
 
 Function un.customPage
   SetShellVarContext current
-  StrCpy $RoamingPath "$APPDATA\${INFO_PRODUCTNAME}"
-  StrCpy $LocalPath "$LOCALAPPDATA\${INFO_PRODUCTNAME}"
-  StrCpy $ConfigPath "$LOCALAPPDATA\${INFO_PRODUCTNAME}\config.json"
+  StrCpy $RoamingPath "$APPDATA\${PRODUCT_EXECUTABLE}"
+  StrCpy $LocalPath "$APPDATA\${PRODUCT_EXECUTABLE}"
+  StrCpy $ConfigPath "$APPDATA\${PRODUCT_EXECUTABLE}\config.json"
   StrCpy $BaseRoot ""
 
   nsDialogs::Create 1018
   Pop $0
-  ${NSD_CreateLabel} 0u 0u 100% 10u "$(LBL_Roaming)"
-  ${NSD_CreateCheckbox} 0u 12u 100% 12u "$(CHK_RemoveRoaming)"
-  Pop $UninstallCleanRoamingCheckbox
-  ${NSD_SetState} $UninstallCleanRoamingCheckbox 1
-  ${NSD_CreateLabel} 0u 28u 100% 10u "$(LBL_Local)"
-  ${NSD_CreateCheckbox} 0u 40u 100% 12u "$(CHK_RemoveLocal)"
-  Pop $UninstallCleanLocalCheckbox
+  
   ${NSD_CreateLabel} 0u 56u 100% 10u "$(LBL_BaseRoot)"
   Pop $BaseRootLabel
   ${NSD_CreateButton} 0u 68u 40% 12u "$(BTN_ResolveBaseRoot)"
   Pop $ResolveBaseRootButton
   ${NSD_OnClick} $ResolveBaseRootButton un.resolveBaseRoot
-  ${NSD_CreateCheckbox} 0u 84u 100% 12u "$(CHK_RemoveBaseRoot)"
+  ${NSD_CreateLabel} 0u 84u 100% 10u "$(TIP_ResolveFirst)"
+  ${NSD_CreateCheckbox} 0u 98u 100% 12u "$(CHK_RemoveBaseRoot)"
   Pop $UninstallCleanBaseRootCheckbox
   ${NSD_OnClick} $UninstallCleanBaseRootCheckbox un.onBaseRootCheckboxClick
   StrCmp $BaseRoot "" 0 +2
     EnableWindow $UninstallCleanBaseRootCheckbox 0
-  ${NSD_CreateCheckbox} 0u 100u 100% 12u "$(CHK_RemoveBackup)"
+  ${NSD_CreateCheckbox} 0u 114u 100% 12u "$(CHK_RemoveBackup)"
   Pop $UninstallCleanBackupCheckbox
   ${NSD_OnClick} $UninstallCleanBackupCheckbox un.onBackupCheckboxClick
   StrCmp $BaseRoot "" 0 +2
@@ -211,12 +204,12 @@ FunctionEnd
 
 Function un.resolveBaseRoot
   SetShellVarContext current
-  StrCpy $ConfigPath "$LOCALAPPDATA\${INFO_PRODUCTNAME}\config.json"
+  StrCpy $ConfigPath "$APPDATA\${PRODUCT_EXECUTABLE}\config.json"
   StrCpy $BaseRoot ""
   IfFileExists "$ConfigPath" 0 endResolve
     InitPluginsDir
     FileOpen $1 "$pluginsdir\read-base-root.ps1" w
-    FileWrite $1 "$$path = Join-Path $$env:LOCALAPPDATA '${INFO_PRODUCTNAME}\\config.json'$\r$\n"
+    FileWrite $1 "$$path = Join-Path $$env:APPDATA '${PRODUCT_EXECUTABLE}\\config.json'$\r$\n"
     FileWrite $1 "if (Test-Path -LiteralPath $$path) {$\r$\n"
     FileWrite $1 "  try { $$cfg = Get-Content -Raw -Encoding UTF8 $$path | ConvertFrom-Json; [Console]::Write(([string]$$cfg.base_root).Trim()) } catch { }$\r$\n"
     FileWrite $1 "}$\r$\n"
@@ -299,8 +292,6 @@ Function un.FastRemoveDir
 FunctionEnd
 
 Function un.customPageLeave
-  ${NSD_GetState} $UninstallCleanRoamingCheckbox $UninstallCleanRoamingFlag
-  ${NSD_GetState} $UninstallCleanLocalCheckbox $UninstallCleanLocalFlag
   ${NSD_GetState} $UninstallCleanBaseRootCheckbox $UninstallCleanBaseRootFlag
   ${NSD_GetState} $UninstallCleanBackupCheckbox $UninstallCleanBackupFlag
 FunctionEnd
@@ -359,12 +350,7 @@ Section "uninstall"
     FileWrite $LogFileHandle "Config: $ConfigPath\r\n"
     FileWrite $LogFileHandle "BaseRoot: $BaseRoot\r\n"
 
-    ${If} $UninstallCleanRoamingFlag == 1
-        DetailPrint "$(TXT_RemoveRoaming)"
-        RMDir /r "$RoamingPath"
-        IfErrors 0 +2
-        DetailPrint "$(TXT_RoamingErr)"
-    ${EndIf}
+    
 
     ${If} $UninstallCleanBaseRootFlag == 1
         DetailPrint "$(TXT_RemoveBaseSubs)"
@@ -386,15 +372,19 @@ Section "uninstall"
         DetailPrint "$(TXT_BackupErr)"
     ${EndIf}
     
-    ${If} $UninstallCleanLocalFlag == 1
-        DetailPrint "$(TXT_RemoveLocalParts)"
-        Delete "$LocalPath\config.json"
-        IfErrors 0 +2
-        DetailPrint "$(TXT_ConfigErr)"
-        RMDir /r "$LocalPath\bin"
-        IfErrors 0 +2
-        DetailPrint "$(TXT_BinErr)"
-    ${EndIf}
+    
+    DetailPrint "$(TXT_RemoveLocalParts)"
+    Delete "$LocalPath\config.json"
+    IfErrors 0 +2
+    DetailPrint "$(TXT_ConfigErr)"
+    Push "$LocalPath\EBWebView"
+    Call un.FastRemoveDir
+    Push "$LocalPath\bin"
+    Call un.FastRemoveDir
+    IfFileExists "$LocalPath\bin" 0 +2
+    DetailPrint "$(TXT_BinErr)"
+    
+    RMDir "$LocalPath"
 
     SetShellVarContext all
 

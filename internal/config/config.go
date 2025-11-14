@@ -8,7 +8,9 @@ import (
 )
 
 type AppConfig struct {
-	BaseRoot string `json:"base_root"`
+	BaseRoot     string `json:"base_root"`
+	WindowWidth  int    `json:"window_width"`
+	WindowHeight int    `json:"window_height"`
 }
 
 func localAppData() string {

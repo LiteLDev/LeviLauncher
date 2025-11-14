@@ -16,6 +16,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/wailsapp/wails/v3/pkg/events"
 )
 
 //go:embed all:frontend/dist
@@ -56,7 +57,7 @@ func init() {
 }
 
 func main() {
-	_, _ = config.Load()
+	c, _ := config.Load()
 	extractor.Init()
 	update.Init()
 	mc := Minecraft{}
@@ -80,10 +81,31 @@ func main() {
 		}
 	}
 
-	app.Window.NewWithOptions(application.WebviewWindowOptions{
+	w := 1024
+	h := 640
+	if c.WindowWidth > 0 {
+		if c.WindowWidth < 960 {
+			w = 960
+		} else {
+			w = c.WindowWidth
+		}
+	}
+	if c.WindowHeight > 0 {
+		if c.WindowHeight < 600 {
+			h = 600
+		} else {
+			h = c.WindowHeight
+		}
+	}
+	if c.WindowWidth == 0 || c.WindowHeight == 0 {
+		c.WindowWidth = w
+		c.WindowHeight = h
+		_ = config.Save(c)
+	}
+	windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:     "LeviLauncher",
-		Width:     1024,
-		Height:    640,
+		Width:     w,
+		Height:    h,
 		MinWidth:  960,
 		MinHeight: 600,
 		Mac:       application.MacWindow{},
@@ -100,6 +122,17 @@ func main() {
 		URL: initialURL,
 	})
 
+	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		w := windows.Width()
+		h := windows.Height()
+
+		c, _ := config.Load()
+		if w > 0 && h > 0 {
+			c.WindowWidth = w
+			c.WindowHeight = h
+			_ = config.Save(c)
+		}
+	})
 	err := app.Run()
 
 	if err != nil {

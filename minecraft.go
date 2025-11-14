@@ -1920,15 +1920,20 @@ func (a *Minecraft) SetBaseRoot(root string) string {
 	if err := os.MkdirAll(r, 0o755); err != nil {
 		return "ERR_CREATE_TARGET_DIR"
 	}
-	if err := config.Save(config.AppConfig{BaseRoot: r}); err != nil {
+	c, _ := config.Load()
+	c.BaseRoot = r
+	if err := config.Save(c); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""
 }
 func (a *Minecraft) ResetBaseRoot() string {
-	if err := config.Save(config.AppConfig{BaseRoot: ""}); err != nil {
+	c, _ := config.Load()
+	c.BaseRoot = ""
+	if err := config.Save(c); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""
 }
+
 func (a *Minecraft) CanWriteToDir(path string) bool { return utils.CanWriteDir(path) }

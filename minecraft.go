@@ -1838,6 +1838,30 @@ func (a *Minecraft) CanCreateDir(dir string) bool {
 	return true
 }
 
+func (a *Minecraft) CreateFolder(parent string, name string) string {
+	p := strings.TrimSpace(parent)
+	n := strings.TrimSpace(name)
+	if p == "" || n == "" {
+		return "ERR_NAME_REQUIRED"
+	}
+	fi, err := os.Stat(p)
+	if err != nil || !fi.IsDir() {
+		return "ERR_NOT_FOUND_OLD"
+	}
+	safe := utils.SanitizeFilename(n)
+	if strings.TrimSpace(safe) == "" {
+		safe = "new_folder"
+	}
+	full := filepath.Join(p, safe)
+	if utils.DirExists(full) {
+		return "ERR_NAME_EXISTS"
+	}
+	if err := utils.CreateDir(full); err != nil {
+		return "ERR_CREATE_TARGET_DIR"
+	}
+	return ""
+}
+
 func (a *Minecraft) GetLanguageNames() []types.LanguageJson {
 	return lang.GetLanguageNames()
 }

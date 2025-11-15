@@ -587,7 +587,9 @@
         "pin_current": "固定当前路径",
         "refreshing": "正在刷新…",
         "choose_this_dir": "选择此目录",
-        "dir_not_writable": "该目录不可写入，请选择其他位置"
+        "dir_not_writable": "该目录不可写入，请选择其他位置",
+        "new_folder": "新建文件夹",
+        "new_folder_placeholder": "输入文件夹名称"
     },
     "file": {
         "types": {

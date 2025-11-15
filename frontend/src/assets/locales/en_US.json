@@ -589,7 +589,9 @@
     "pin_current": "Pin Current Path",
     "refreshing": "Refreshing…",
     "choose_this_dir": "Choose this directory",
-    "dir_not_writable": "Directory not writable. Please choose another location"
+    "dir_not_writable": "Directory not writable. Please choose another location",
+    "new_folder": "New Folder",
+    "new_folder_placeholder": "Enter folder name"
   },
   "file": {
     "types": {

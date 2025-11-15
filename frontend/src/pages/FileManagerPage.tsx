@@ -9,6 +9,11 @@ import {
   Input,
   Select,
   SelectItem,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
 } from "@heroui/react";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -37,7 +42,6 @@ const FileManagerPage: React.FC = () => {
   const location = useLocation();
   const fmState = (location.state as FileManagerState) || {};
 
-  // hydrate saved state
   const savedState = (() => {
     try {
       return JSON.parse(localStorage.getItem("fm.state") || "{}");
@@ -91,8 +95,11 @@ const FileManagerPage: React.FC = () => {
   const multi = fmState.multi !== false;
   const allowed = (fmState.allowedExt || []).map((s) => s.toLowerCase());
   const [dirWritable, setDirWritable] = useState<boolean>(true);
+  const [canCreateHere, setCanCreateHere] = useState<boolean>(true);
+  const [mkdirOpen, setMkdirOpen] = useState(false);
+  const [mkdirName, setMkdirName] = useState("");
+  const [creatingFolder, setCreatingFolder] = useState(false);
 
-  // Detect screen size
   useEffect(() => {
     const update = () => {
       const w = window.innerWidth;
@@ -105,7 +112,6 @@ const FileManagerPage: React.FC = () => {
     return () => window.removeEventListener("resize", update);
   }, []);
 
-  // Auto-close drawer when not on mobile
   useEffect(() => {
     if (screenSize !== "mobile" && drawerOpen) setDrawerOpen(false);
   }, [screenSize, drawerOpen]);
@@ -248,16 +254,13 @@ const FileManagerPage: React.FC = () => {
 
   const normalizeWindowsPath = (s: string) => {
     let v = (s || "").trim();
-    // strip wrapping quotes
     if (
       (v.startsWith('"') && v.endsWith('"')) ||
       (v.startsWith("'") && v.endsWith("'"))
     ) {
       v = v.slice(1, -1);
     }
-    // convert forward slashes
     v = v.replace(/\//g, "\\");
-    // add trailing backslash for drive root like C:
     if (/^[A-Za-z]:$/.test(v)) v = v + "\\";
     return v;
   };
@@ -271,7 +274,6 @@ const FileManagerPage: React.FC = () => {
           const k = await minecraft?.ListKnownFolders?.();
           setKnown(Array.isArray(k) ? k : []);
         } catch {}
-        // fetch stats for drives
         const stats: Record<string, { total: number; free: number }> = {};
         await Promise.all(
           ds.map(async (d) => {
@@ -293,7 +295,6 @@ const FileManagerPage: React.FC = () => {
     init();
   }, []);
 
-  // persist state when changed
   useEffect(() => {
     try {
       localStorage.setItem(
@@ -376,7 +377,7 @@ const FileManagerPage: React.FC = () => {
   };
 
   const goUp = async () => {
-    if (!path) return; // already at Computer
+    if (!path) return;
     const parts = path.replace(/\\+$/, "").split(/\\/).filter(Boolean);
     if (parts.length <= 1) {
       setPath("");
@@ -420,12 +421,11 @@ const FileManagerPage: React.FC = () => {
     return ordered;
   }, [entries, query, sortKey, sortAsc]);
 
-  // Virtualization calculations for large lists
-  const rowHeight = screenSize === "mobile" ? 56 : 48; // h-14 vs h-12
+  const rowHeight = screenSize === "mobile" ? 56 : 48;
   const virt = useMemo(() => {
     if (!path) return null;
     const count = filtered.length;
-    const shouldVirtualize = count > 800; // threshold to enable virtualization
+    const shouldVirtualize = count > 800; 
     if (!shouldVirtualize) return null;
     const viewport = contentRef.current?.clientHeight || 0;
     const start = Math.max(0, Math.floor(scrollTop / rowHeight) - 8);
@@ -454,8 +454,15 @@ const FileManagerPage: React.FC = () => {
         } else {
           setDirWritable(true);
         }
+        if (path) {
+          const ok2 = await minecraft?.CanCreateDir?.(path);
+          setCanCreateHere(Boolean(ok2));
+        } else {
+          setCanCreateHere(false);
+        }
       } catch {
         setDirWritable(false);
+        setCanCreateHere(false);
       }
     };
     check();
@@ -1042,6 +1049,19 @@ const FileManagerPage: React.FC = () => {
               >
                 {sortAsc ? "↑" : "↓"}
               </Button>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={() => {
+                  if (!path) return;
+                  setMkdirName("");
+                  setMkdirOpen(true);
+                }}
+                isDisabled={!path || !canCreateHere}
+              >
+                {t("filemanager.new_folder", { defaultValue: "新建文件夹" })}
+              </Button>
             </div>
           </div>
 
@@ -1296,6 +1316,64 @@ const FileManagerPage: React.FC = () => {
           </div>
         </section>
       </div>
+      <Modal size="sm" isOpen={mkdirOpen} onOpenChange={setMkdirOpen} hideCloseButton>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="text-primary-600">
+                {t("filemanager.new_folder", { defaultValue: "新建文件夹" })}
+              </ModalHeader>
+              <ModalBody>
+                <Input
+                  size="sm"
+                  variant="bordered"
+                  value={mkdirName}
+                  onValueChange={setMkdirName}
+                  placeholder={t("filemanager.new_folder_placeholder", { defaultValue: "输入文件夹名称" }) as string}
+                  autoFocus
+                  onKeyDown={async (e) => {
+                    if (e.key === "Enter") {
+                  if (!path) return;
+                  setCreatingFolder(true);
+                  try {
+                    const err = await (minecraft as any)?.CreateFolder?.(path, mkdirName.trim());
+                    if (!err) {
+                      await loadDir(path);
+                      onClose();
+                      setMkdirName("");
+                    }
+                  } finally {
+                    setCreatingFolder(false);
+                  }
+                  }
+                }}
+                />
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={onClose} isDisabled={creatingFolder}>
+                  {t("common.cancel", { defaultValue: "取消" })}
+                </Button>
+                <Button color="primary" isDisabled={!mkdirName.trim() || creatingFolder} onPress={async () => {
+                  if (!path) return;
+                  setCreatingFolder(true);
+                  try {
+                    const err = await (minecraft as any)?.CreateFolder?.(path, mkdirName.trim());
+                    if (!err) {
+                      await loadDir(path);
+                      onClose();
+                      setMkdirName("");
+                    }
+                  } finally {
+                    setCreatingFolder(false);
+                  }
+                }}>
+                  {t("common.confirm", { defaultValue: "确定" })}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
     </div>
   );
 };

@@ -104,13 +104,11 @@
       "choose_version_dropdown": "Use the dropdown on the right to switch versions quickly.",
       "open_version_settings_gear": "Hover the Current Version badge and click the gear in the tooltip to open Version Settings; supports icon customization and isolation.",
       "mods_import_button": "Use the “Import .zip/.dll” button on the Mods card to pick files.",
-      "mods_open_folder_requirement": "Select a version before opening the Mods folder.",
       "download_versions": "Install Release/Preview on the Download page; it appears in the dropdown afterward.",
       "content_counts_card": "The Content card shows counts of worlds, resource and behavior packs.",
       "file_manager_pick": "File Manager supports multi-select and returns paths to Mods import.",
       "settings_base_root": "Settings lets you change the content base path; default %APPDATA%\\<current executable name>.",
-      "directory_write_check": "Save only to writable directories; non-writable directories are disabled.",
-      "drag_import_unsupported": "Drag-and-drop import is unsupported; use Import .zip/.dll or File Manager."
+      "directory_write_check": "Save only to writable directories; non-writable directories are disabled."
     }
   },
   "moddedcard": {
@@ -647,7 +645,13 @@
         "overwrite_modal_title": "Duplicate Detected",
         "overwrite_modal_body": "A module folder with the same name exists. Overwrite (update)?",
         "drag_import_unsupported_title": "Drag Import Unsupported",
-        "drag_import_unsupported_body": "Currently unsupported; waiting for Wails support."
+        "drag_import_unsupported_body": "Currently unsupported; waiting for Wails support.",
+        "toggle_label": "Enable Mod",
+        "toggle_on": "Enabled",
+        "toggle_off": "Disabled",
+        "toggle_tip": "Toggle mod enable/disable state",
+        "toggle_desc_on": "Mod is enabled and will load when the game starts.",
+        "toggle_desc_off": "Mod is disabled and will not load when the game starts."
     },
   "versionselect": {
     "unsaved": {

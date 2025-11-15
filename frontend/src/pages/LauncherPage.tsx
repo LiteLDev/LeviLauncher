@@ -93,9 +93,6 @@ export const LauncherPage = (args: any) => {
       t("launcherpage.tip.mods_import_button", {
         defaultValue: "点击 Mods 卡片的“导入 .zip/.dll”选择文件。",
       }) as unknown as string,
-      t("launcherpage.tip.mods_open_folder_requirement", {
-        defaultValue: "打开 Mods 目录前需先选择版本。",
-      }) as unknown as string,
       t("launcherpage.tip.file_manager_pick", {
         defaultValue: "文件管理器支持多选并回传路径到 Mods 导入。",
       }) as unknown as string,
@@ -110,9 +107,6 @@ export const LauncherPage = (args: any) => {
       }) as unknown as string,
       t("launcherpage.tip.directory_write_check", {
         defaultValue: "仅可保存到可写目录；不可写目录将被禁用。",
-      }) as unknown as string,
-      t("launcherpage.tip.drag_import_unsupported", {
-        defaultValue: "拖拽导入暂不支持，请使用“导入 .zip/.dll”或文件管理器。",
       }) as unknown as string,
       t("launcherpage.tip.general", {
         defaultValue: "首次启动可能较慢，请耐心等待。",
@@ -550,6 +544,7 @@ export const LauncherPage = (args: any) => {
               ? saved
               : Array.from(newLocalVersionMap.keys())[0] || "";
           setCurrentVersion(useName);
+          try { saveCurrentVersionName(useName); } catch {}
           const ver = useName
             ? newLocalVersionMap.get(useName)?.version || ""
             : "";

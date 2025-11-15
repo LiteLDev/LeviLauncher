@@ -101,17 +101,15 @@
         },
         
         "tip": {
-            "general": "提示：首次启动可能较慢，请耐心等待。",
-            "choose_version_dropdown": "右侧下拉按钮可快速切换当前版本。",
-            "open_version_settings_gear": "悬停“当前版本”徽章，点击气泡内齿轮打开版本设置；支持更换图标与启用版本隔离。",
-            "mods_import_button": "点击 Mods 卡片的“导入 .zip/.dll”选择文件。",
-            "mods_open_folder_requirement": "打开 Mods 目录前需先选择版本。",
-            "download_versions": "在“下载”页安装 Release/Preview，安装后出现在下拉列表。",
-            "content_counts_card": "主页“内容管理”显示世界、资源包、行为包数量。",
-            "file_manager_pick": "文件管理器支持多选并回传路径到 Mods 导入。",
-            "settings_base_root": "设置页可修改内容存储路径，默认使用 %APPDATA% 下以当前可执行文件名命名的文件夹。",
-            "directory_write_check": "仅可保存到可写目录；不可写目录将被禁用。",
-            "drag_import_unsupported": "拖拽导入暂不支持，请使用“导入 .zip/.dll”或文件管理器。"
+          "general": "提示：首次启动可能较慢，请耐心等待。",
+          "choose_version_dropdown": "右侧下拉按钮可快速切换当前版本。",
+          "open_version_settings_gear": "悬停“当前版本”徽章，点击气泡内齿轮打开版本设置；支持更换图标与启用版本隔离。",
+          "mods_import_button": "点击 Mods 卡片的“导入 .zip/.dll”选择文件。",
+          "download_versions": "在“下载”页安装 Release/Preview，安装后出现在下拉列表。",
+          "content_counts_card": "主页“内容管理”显示世界、资源包、行为包数量。",
+          "file_manager_pick": "文件管理器支持多选并回传路径到 Mods 导入。",
+          "settings_base_root": "设置页可修改内容存储路径，默认使用 %APPDATA% 下以当前可执行文件名命名的文件夹。",
+          "directory_write_check": "仅可保存到可写目录；不可写目录将被禁用。"
         }
     },
     "updating": {
@@ -645,7 +643,13 @@
         "overwrite_modal_title": "检测到重复",
         "overwrite_modal_body": "同名模块文件夹已存在，是否覆盖（更新）？",
         "drag_import_unsupported_title": "拖拽导入暂不支持",
-        "drag_import_unsupported_body": "暂不支持，等待 Wails 支持。"
+        "drag_import_unsupported_body": "暂不支持，等待 Wails 支持。",
+        "toggle_label": "启用模组",
+        "toggle_on": "已启用",
+        "toggle_off": "已关闭",
+        "toggle_tip": "切换此模组的启用/关闭状态",
+        "toggle_desc_on": "模组已启用，启动游戏时会加载。",
+        "toggle_desc_off": "模组已关闭，启动游戏时不会加载。"
     },
     "versionselect": {
         "unsaved": {

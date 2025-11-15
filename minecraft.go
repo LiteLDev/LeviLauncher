@@ -1158,6 +1158,18 @@ func (a *Minecraft) ImportModDll(name string, fileName string, data []byte, modN
 	return mods.ImportDllToMods(name, fileName, data, modName, modType, version, overwrite)
 }
 
+func (a *Minecraft) DisableMod(name string, modName string) string {
+	return mods.DisableMod(name, modName)
+}
+
+func (a *Minecraft) EnableMod(name string, modName string) string {
+	return mods.EnableMod(name, modName)
+}
+
+func (a *Minecraft) IsModEnabled(name string, modName string) bool {
+	return mods.IsModEnabled(name, modName)
+}
+
 func (a *Minecraft) ImportMcpack(name string, data []byte, overwrite bool) string {
 	roots := a.GetContentRoots(name)
 	return content.ImportMcpackToDirs(data, "", roots.ResourcePacks, roots.BehaviorPacks, overwrite)

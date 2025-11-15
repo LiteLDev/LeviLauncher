@@ -530,7 +530,7 @@
       "success_body": "Version deleted: "
     }
   },
-  "errors": {
+    "errors": {
     "ERR_GAME_ALREADY_RUNNING": "Detected the current version of Minecraft is already running. Please close it before launching or switch to another version.",
     "ERR_TARGET_DIR_NOT_SPECIFIED": "Target directory not specified",
     "ERR_CREATE_TARGET_DIR": "Failed to create target directory",
@@ -566,7 +566,8 @@
     "ERR_INHERIT_TARGET_NOT_FOUND": "Target version not found",
     "ERR_INHERIT_TYPE_MISMATCH": "Type mismatch, cannot inherit",
     "ERR_INHERIT_COPY_FAILED": "Failed to copy inherited data",
-    "ERR_NO_GAME_DATA": "No game data found for the selected source"
+    "ERR_NO_GAME_DATA": "No game data found for the selected source",
+    "ERR_VCRUNTIME_MISSING": "Runtime dependency missing. Please install Microsoft Visual C++ Runtime and retry"
   },
   "filemanager": {
     "title": "File Manager",

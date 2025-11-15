@@ -2,15 +2,15 @@ package launch
 
 import (
 	"context"
-	"github.com/wailsapp/wails/v3/pkg/application"
 	"syscall"
 	"time"
 	"unsafe"
 
+	"github.com/wailsapp/wails/v3/pkg/application"
+
 	"github.com/liteldev/LeviLauncher/internal/registry"
 )
 
-// Events (duplicated string values to avoid cross-package import cycles)
 const (
 	EventMcLaunchStart         = "mc.launch.start"
 	EventMcLaunchDone          = "mc.launch.done"
@@ -40,23 +40,23 @@ func FindWindowByTitleExact(title string) bool {
 }
 
 func EnsureGamingServicesInstalled(ctx context.Context) bool {
-    if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err != nil {
-        application.Get().Event.Emit(EventGamingServicesMissing, struct{}{})
-        return false
-    }
-    return true
+	if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err != nil {
+		application.Get().Event.Emit(EventGamingServicesMissing, struct{}{})
+		return false
+	}
+	return true
 }
 
 func MonitorMinecraftWindow(ctx context.Context) {
-    application.Get().Event.Emit(EventMcLaunchStart, struct{}{})
-    const maxWait = 180
-    for i := 0; i < maxWait; i++ {
-        if FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview") {
-            application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
-            application.Get().Window.Current().Minimise()
-            return
-        }
-        time.Sleep(1 * time.Second)
-    }
-    application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
+	application.Get().Event.Emit(EventMcLaunchStart, struct{}{})
+	const maxWait = 60
+	for i := 0; i < maxWait; i++ {
+		if FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview") {
+			application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
+			application.Get().Window.Current().Minimise()
+			return
+		}
+		time.Sleep(1 * time.Second)
+	}
+	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
 }

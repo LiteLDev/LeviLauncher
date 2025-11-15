@@ -564,7 +564,8 @@
         "ERR_INHERIT_TYPE_MISMATCH": "类型不匹配，无法继承",
         "ERR_INHERIT_COPY_FAILED": "复制继承数据失败",
         "ERR_NO_GAME_DATA": "当前来源没有任何游戏数据",
-        "ERR_DELETE_FAILED": "删除失败，可能被占用或无权限"
+        "ERR_DELETE_FAILED": "删除失败，可能被占用或无权限",
+        "ERR_VCRUNTIME_MISSING": "缺少运行库，安装失败。请确保已安装 Microsoft Visual C++ 运行库或重试"
     },
     "filemanager": {
         "title": "文件管理器",

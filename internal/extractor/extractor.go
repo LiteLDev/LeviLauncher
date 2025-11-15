@@ -1,18 +1,21 @@
 package extractor
 
 import (
-	"bytes"
-	"crypto/sha256"
-	_ "embed"
-	"io"
-	"os"
+    "context"
+    "fmt"
+    "bytes"
+    "crypto/sha256"
+    _ "embed"
+    "io"
+    "os"
 	"path/filepath"
 	"strings"
 	"sync"
 	"syscall"
-	"unsafe"
+    "unsafe"
 
-	"golang.org/x/sys/windows"
+    "golang.org/x/sys/windows"
+    "github.com/liteldev/LeviLauncher/internal/vcruntime"
 )
 
 var (
@@ -47,11 +50,11 @@ func prepareDLL() (string, error) {
 			exeName = strings.ToLower(b)
 		}
 	}
-	dir := filepath.Join(base, exeName, "bin")
-	if err := os.MkdirAll(dir, 0755); err != nil {
-		return "", err
-	}
-	target := filepath.Join(dir, "launcher_core.dll")
+    dir := filepath.Join(base, exeName, "bin")
+    if err := os.MkdirAll(dir, 0755); err != nil {
+        return "", err
+    }
+    target := filepath.Join(dir, "launcher_core.dll")
 	needWrite := false
 	if fi, err := os.Stat(target); err != nil || fi.Size() == 0 {
 		needWrite = true
@@ -65,17 +68,18 @@ func prepareDLL() (string, error) {
 			}
 		}
 	}
-	if needWrite {
-		tmp := target + ".tmp"
-		if err := os.WriteFile(tmp, embeddedLauncherCoreDLL, 0644); err != nil {
-			return "", err
-		}
-		if err := os.Rename(tmp, target); err != nil {
-			_ = os.Remove(tmp)
-			return "", err
-		}
-	}
-	return target, nil
+    if needWrite {
+        tmp := target + ".tmp"
+        if err := os.WriteFile(tmp, embeddedLauncherCoreDLL, 0644); err != nil {
+            return "", err
+        }
+        if err := os.Rename(tmp, target); err != nil {
+            _ = os.Remove(tmp)
+            return "", err
+        }
+    }
+    _ = vcruntime.EnsureForVersion(context.Background(), dir)
+    return target, nil
 }
 
 func fileSHA256(p string) ([]byte, error) {
@@ -98,25 +102,30 @@ func bytesSHA256(b []byte) []byte {
 }
 
 func ensureLoaded() error {
-	loadOnce.Do(func() {
-		name := os.Getenv("LAUNCHER_CORE_DLL")
-		if name == "" {
-			if p, err := prepareDLL(); err == nil && p != "" {
-				_ = os.Setenv("LAUNCHER_CORE_DLL", p)
-				name = p
-			}
-		}
-		if name == "" {
-			name = "launcher_core.dll"
-		}
-		dll := windows.NewLazyDLL(name)
-		wide := dll.NewProc("miHoYoW")
-		ansi := dll.NewProc("miHoYo")
+    loadOnce.Do(func() {
+        name := os.Getenv("LAUNCHER_CORE_DLL")
+        if name == "" {
+            if p, err := prepareDLL(); err == nil && p != "" {
+                _ = os.Setenv("LAUNCHER_CORE_DLL", p)
+                name = p
+            }
+        }
+        if name == "" {
+            name = "launcher_core.dll"
+        }
+        dll := windows.NewLazyDLL(name)
+        wide := dll.NewProc("miHoYoW")
+        ansi := dll.NewProc("miHoYo")
 
-		if err := dll.Load(); err != nil {
-			loadErr = err
-			return
-		}
+        if err := dll.Load(); err != nil {
+            msg := strings.ToLower(err.Error())
+            if strings.Contains(msg, "module could not be found") {
+                loadErr = fmt.Errorf("ERR_VCRUNTIME_MISSING")
+            } else {
+                loadErr = err
+            }
+            return
+        }
 		if err := wide.Find(); err == nil {
 			miProc = wide
 			useWide = true

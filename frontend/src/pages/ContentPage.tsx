@@ -137,15 +137,25 @@ export default function ContentPage() {
     const wp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
     setWorldsCount(await countDirectories(wp));
   };
-
-  const IMPORT_SERVER = "http://127.0.0.1:32773";
+  const [importServer, setImportServer] = React.useState<string>("");
+  React.useEffect(() => {
+    (async () => {
+      try {
+        const url = await (minecraft as any)?.GetImportServerURL?.();
+        const u = String(url || "");
+        setImportServer(u || "http://127.0.0.1:32773");
+      } catch {
+        setImportServer("http://127.0.0.1:32773");
+      }
+    })();
+  }, []);
   const postImportMcpack = async (name: string, file: File, overwrite: boolean): Promise<string> => {
     try {
       const fd = new FormData();
       fd.append("name", name);
       fd.append("overwrite", overwrite ? "1" : "0");
       fd.append("file", file, file.name);
-      const resp = await fetch(`${IMPORT_SERVER}/api/import/mcpack`, { method: "POST", body: fd });
+      const resp = await fetch(`${importServer || "http://127.0.0.1:32773"}/api/import/mcpack`, { method: "POST", body: fd });
       const j = (await resp.json().catch(() => ({}))) as any;
       return String(j?.error || "");
     } catch (e: any) {
@@ -165,7 +175,7 @@ export default function ContentPage() {
       fd.append("name", name);
       fd.append("overwrite", overwrite ? "1" : "0");
       fd.append("file", file, file.name);
-      const resp = await fetch(`${IMPORT_SERVER}/api/import/mcaddon`, { method: "POST", body: fd });
+      const resp = await fetch(`${importServer || "http://127.0.0.1:32773"}/api/import/mcaddon`, { method: "POST", body: fd });
       const j = (await resp.json().catch(() => ({}))) as any;
       return String(j?.error || "");
     } catch (e: any) {
@@ -187,7 +197,7 @@ export default function ContentPage() {
       fd.append("fileName", file.name);
       fd.append("overwrite", overwrite ? "1" : "0");
       fd.append("file", file, file.name);
-      const resp = await fetch(`${IMPORT_SERVER}/api/import/mcworld`, { method: "POST", body: fd });
+      const resp = await fetch(`${importServer || "http://127.0.0.1:32773"}/api/import/mcworld`, { method: "POST", body: fd });
       const j = (await resp.json().catch(() => ({}))) as any;
       return String(j?.error || "");
     } catch (e: any) {

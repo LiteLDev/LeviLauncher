@@ -32,78 +32,6 @@ import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 
-const IMPORT_SERVER = "http://127.0.0.1:32773";
-const postImportModZip = async (
-  name: string,
-  file: File,
-  overwrite: boolean
-): Promise<string> => {
-  try {
-    const fd = new FormData();
-    fd.append("name", name);
-    fd.append("overwrite", overwrite ? "1" : "0");
-    fd.append("file", file, file.name);
-    const resp = await fetch(`${IMPORT_SERVER}/api/import/modzip`, {
-      method: "POST",
-      body: fd,
-    });
-    const j = (await resp.json().catch(() => ({}))) as any;
-    return String(j?.error || "");
-  } catch (e: any) {
-    try {
-      const buf = await file.arrayBuffer();
-      const bytes = Array.from(new Uint8Array(buf));
-      const err = await (minecraft as any)?.ImportModZip?.(name, bytes, overwrite);
-      return String(err || "");
-    } catch (e2: any) {
-      return String(e2?.message || "IMPORT_ERROR");
-    }
-  }
-};
-const postImportModDll = async (
-  name: string,
-  file: File,
-  fileName: string,
-  modName: string,
-  modType: string,
-  version: string,
-  overwrite: boolean
-): Promise<string> => {
-  try {
-    const fd = new FormData();
-    fd.append("name", name);
-    fd.append("fileName", fileName);
-    fd.append("modName", modName);
-    fd.append("modType", modType);
-    fd.append("version", version);
-    fd.append("overwrite", overwrite ? "1" : "0");
-    fd.append("file", file, fileName);
-    const resp = await fetch(`${IMPORT_SERVER}/api/import/moddll`, {
-      method: "POST",
-      body: fd,
-    });
-    const j = (await resp.json().catch(() => ({}))) as any;
-    return String(j?.error || "");
-  } catch (e: any) {
-    try {
-      const buf = await file.arrayBuffer();
-      const bytes = Array.from(new Uint8Array(buf));
-      const err = await (minecraft as any)?.ImportModDll?.(
-        name,
-        fileName,
-        bytes,
-        modName,
-        modType,
-        version,
-        overwrite
-      );
-      return String(err || "");
-    } catch (e2: any) {
-      return String(e2?.message || "IMPORT_ERROR");
-    }
-  }
-};
-
 const readCurrentVersionName = (): string => {
   try {
     return localStorage.getItem("ll.currentVersionName") || "";
@@ -116,6 +44,7 @@ export const ModsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation() as any;
+  const [importServer, setImportServer] = useState<string>("");
   const [currentVersionName, setCurrentVersionName] = useState<string>("");
   const [modsInfo, setModsInfo] = useState<Array<types.ModInfo>>([]);
   const [query, setQuery] = useState("");
@@ -184,6 +113,91 @@ export const ModsPage: React.FC = () => {
   const dupNameRef = useRef<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const fmProcessedRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    (async () => {
+      try {
+        const url = await (minecraft as any)?.GetImportServerURL?.();
+        const u = String(url || "");
+        setImportServer(u || "http://127.0.0.1:32773");
+      } catch {
+        setImportServer("http://127.0.0.1:32773");
+      }
+    })();
+  }, []);
+
+  const postImportModZip = async (
+    name: string,
+    file: File,
+    overwrite: boolean
+  ): Promise<string> => {
+    const base = importServer || "http://127.0.0.1:32773";
+    try {
+      const fd = new FormData();
+      fd.append("name", name);
+      fd.append("overwrite", overwrite ? "1" : "0");
+      fd.append("file", file, file.name);
+      const resp = await fetch(`${base}/api/import/modzip`, {
+        method: "POST",
+        body: fd,
+      });
+      const j = (await resp.json().catch(() => ({}))) as any;
+      return String(j?.error || "");
+    } catch (e: any) {
+      try {
+        const buf = await file.arrayBuffer();
+        const bytes = Array.from(new Uint8Array(buf));
+        const err = await (minecraft as any)?.ImportModZip?.(name, bytes, overwrite);
+        return String(err || "");
+      } catch (e2: any) {
+        return String(e2?.message || "IMPORT_ERROR");
+      }
+    }
+  };
+  const postImportModDll = async (
+    name: string,
+    file: File,
+    fileName: string,
+    modName: string,
+    modType: string,
+    version: string,
+    overwrite: boolean
+  ): Promise<string> => {
+    const base = importServer || "http://127.0.0.1:32773";
+    try {
+      const fd = new FormData();
+      fd.append("name", name);
+      fd.append("fileName", fileName);
+      fd.append("modName", modName);
+      fd.append("modType", modType);
+      fd.append("version", version);
+      fd.append("overwrite", overwrite ? "1" : "0");
+      fd.append("file", file, fileName);
+      const resp = await fetch(`${base}/api/import/moddll`, {
+        method: "POST",
+        body: fd,
+      });
+      const j = (await resp.json().catch(() => ({}))) as any;
+      return String(j?.error || "");
+    } catch (e: any) {
+      try {
+        const buf = await file.arrayBuffer();
+        const bytes = Array.from(new Uint8Array(buf));
+        const err = await (minecraft as any)?.ImportModDll?.(
+          name,
+          fileName,
+          bytes,
+          modName,
+          modType,
+          version,
+          overwrite
+        );
+        return String(err || "");
+      } catch (e2: any) {
+        return String(e2?.message || "IMPORT_ERROR");
+      }
+    }
+  };
 
   const refreshEnabledStates = async (name: string) => {
     try {
@@ -561,12 +575,7 @@ export const ModsPage: React.FC = () => {
     );
   }, [modsInfo, query]);
 
-  const [animReady, setAnimReady] = useState(false);
-  useEffect(() => {
-    setAnimReady(false);
-    const id = window.setTimeout(() => setAnimReady(true), 0);
-    return () => window.clearTimeout(id);
-  }, [filtered.map((m) => `${m.name}-${m.version}`).join("|")]);
+  
 
   const openDetails = (m: types.ModInfo) => {
     setActiveMod(m);
@@ -1225,7 +1234,7 @@ export const ModsPage: React.FC = () => {
                   {t("moddedcard.content.none", { defaultValue: "未找到模组" })}
                 </div>
               ) : (
-                <div className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(240px,1fr))]">
+                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
                   {filtered.map((m, idx) => {
                     const delay = Math.min(idx * 40, 400);
                     return (
@@ -1234,73 +1243,69 @@ export const ModsPage: React.FC = () => {
                         initial={{ opacity: 0, y: 8 }}
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, delay: delay / 1000 }}
+                        className="h-full w-full"
                       >
                         <Card
                           isPressable
                           onPress={() => openDetails(m)}
-                          className="rounded-2xl bg-content2 hover:bg-content3 transition-colors border border-default-200 transform-gpu hover:-translate-y-0.5 transition-transform duration-200"
+                          className="relative h-auto min-h-[80px] w-full rounded-xl bg-content2 hover:bg-content3 transition-colors border border-default-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
                         >
-                          <CardBody className="p-4">
-                            <div className="flex items-start justify-between gap-3">
-                              <div className="min-w-0">
-                                <div className="font-semibold text-base truncate">
-                                  {m.name}
+                          <CardBody className="p-4 h-full">
+                            <div className="flex items-center justify-between gap-4">
+                              <div className="min-w-0 flex-1">
+                                <div className="flex items-center gap-2">
+                                  <div className="font-semibold text-base truncate" title={m.name}>
+                                    {m.name}
+                                  </div>
+                                  <Chip size="sm" variant="flat" className="shrink-0">
+                                    {m.type || "mod"}
+                                  </Chip>
                                 </div>
-                                <div className="text-tiny text-default-500 mt-1 truncate">
-                                  {m.author
-                                    ? `${m.version} · ${m.author}`
-                                    : m.version}
+                                <div className="text-tiny text-default-500 truncate" title={m.author ? `${m.version} · ${m.author}` : m.version}>
+                                  {m.author ? `${m.version} · ${m.author}` : m.version}
                                 </div>
                               </div>
-                                <Chip size="sm" variant="flat" className="shrink-0">
-                                  {m.type || "mod"}
-                                </Chip>
+                              <div className="flex items-center gap-2 shrink-0">
                                 <Chip
                                   size="sm"
                                   variant="flat"
                                   color={enabledByName.get(m.name) ? "success" : "warning"}
-                                  className="shrink-0"
                                 >
                                   {enabledByName.get(m.name)
                                     ? (t("mods.toggle_on", { defaultValue: "已启用" }) as string)
                                     : (t("mods.toggle_off", { defaultValue: "已关闭" }) as string)}
                                 </Chip>
-                                
-                            </div>
-                            <div className="mt-2 flex items-center justify-between">
-                              <div className="text-default-500 text-xs">
-                                {t("mods.toggle_label", { defaultValue: "启用模组" })}
+                                <Tooltip
+                                  showArrow
+                                  placement="top"
+                                  content={t("mods.toggle_tip", { defaultValue: "切换此模组的启用/关闭状态" }) as string}
+                                >
+                                  <Switch
+                                    size="sm"
+                                    isSelected={!!enabledByName.get(m.name)}
+                                    onValueChange={async (val) => {
+                                      const name = currentVersionName || readCurrentVersionName();
+                                      if (!name) return;
+                                      try {
+                                        if (val) {
+                                          const err = await (EnableMod as any)?.(name, m.name);
+                                          if (err) return;
+                                        } else {
+                                          const err = await (DisableMod as any)?.(name, m.name);
+                                          if (err) return;
+                                        }
+                                        const ok = await (IsModEnabled as any)?.(name, m.name);
+                                        setEnabledByName((prev) => {
+                                          const nm = new Map(prev);
+                                          nm.set(m.name, !!ok);
+                                          return nm;
+                                        });
+                                      } catch {}
+                                    }}
+                                    aria-label={t("mods.toggle_label", { defaultValue: "启用模组" }) as string}
+                                  />
+                                </Tooltip>
                               </div>
-                              <Tooltip
-                                showArrow
-                                placement="top"
-                                content={t("mods.toggle_tip", { defaultValue: "切换此模组的启用/关闭状态" }) as string}
-                              >
-                                <Switch
-                                  size="sm"
-                                  isSelected={!!enabledByName.get(m.name)}
-                                  onValueChange={async (val) => {
-                                    const name = currentVersionName || readCurrentVersionName();
-                                    if (!name) return;
-                                    try {
-                                      if (val) {
-                                        const err = await (EnableMod as any)?.(name, m.name);
-                                        if (err) return;
-                                      } else {
-                                        const err = await (DisableMod as any)?.(name, m.name);
-                                        if (err) return;
-                                      }
-                                      const ok = await (IsModEnabled as any)?.(name, m.name);
-                                      setEnabledByName((prev) => {
-                                        const nm = new Map(prev);
-                                        nm.set(m.name, !!ok);
-                                        return nm;
-                                      });
-                                    } catch {}
-                                  }}
-                                  aria-label={t("mods.toggle_label", { defaultValue: "启用模组" }) as string}
-                                />
-                              </Tooltip>
                             </div>
                           </CardBody>
                         </Card>

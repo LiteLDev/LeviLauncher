@@ -149,6 +149,12 @@ func run() {
 		return
 	}
 
+	if cur > 0 && resp.StatusCode == http.StatusOK {
+		_ = os.Remove(local.dest)
+		cur = 0
+		local.downloaded = 0
+	}
+
 	total := resp.ContentLength
 	if total > 0 && cur > 0 {
 		if cr := resp.Header.Get("Content-Range"); cr != "" {
@@ -165,7 +171,11 @@ func run() {
 	}
 	local.total = total
 
-	f, err := os.OpenFile(local.dest, os.O_CREATE|os.O_WRONLY, 0o644)
+	flags := os.O_CREATE | os.O_WRONLY
+	if cur == 0 {
+		flags |= os.O_TRUNC
+	}
+	f, err := os.OpenFile(local.dest, flags, 0o644)
 	if err != nil {
 		application.Get().Event.Emit(EventDownloadError, err.Error())
 		finishRunning(local)

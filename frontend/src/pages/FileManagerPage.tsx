@@ -930,10 +930,20 @@ const FileManagerPage: React.FC = () => {
   );
 
   return (
-    <div className="w-full h-full relative">
+    <motion.div
+      className="w-full h-full relative"
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+    >
       {/* Mobile Drawer */}
       {screenSize === "mobile" && <Drawer />}
-      <div className="w-full h-[calc(94vh-1rem)] sm:h-[calc(94vh-2rem)] p-2 sm:p-4 flex items-stretch gap-3 sm:gap-4 overflow-hidden">
+      <motion.div
+        className="w-full h-[calc(94vh-1rem)] sm:h-[calc(94vh-2rem)] p-2 sm:p-4 flex items-stretch gap-3 sm:gap-4 overflow-hidden"
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.25, delay: 0.05 }}
+      >
         {screenSize !== "mobile" && <Sidebar />}
         {/* Tablet Compact Sidebar */}
         {screenSize === "mobile" && <div className="hidden" />}
@@ -1315,7 +1325,7 @@ const FileManagerPage: React.FC = () => {
             </AnimatePresence>
           </div>
         </section>
-      </div>
+      </motion.div>
       <Modal size="sm" isOpen={mkdirOpen} onOpenChange={setMkdirOpen} hideCloseButton>
         <ModalContent>
           {(onClose) => (
@@ -1374,7 +1384,7 @@ const FileManagerPage: React.FC = () => {
           )}
         </ModalContent>
       </Modal>
-    </div>
+    </motion.div>
   );
 };
 

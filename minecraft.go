@@ -184,6 +184,7 @@ func (a *Minecraft) ListKnownFolders() []KnownFolder {
 	add("Home", home)
 	if home != "" {
 		add("Desktop", filepath.Join(home, "Desktop"))
+		add("Downloads", filepath.Join(home, "Downloads"))
 	}
 	return out
 }

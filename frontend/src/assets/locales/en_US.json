@@ -231,7 +231,11 @@
       "estimated_size": "Written size (estimated)",
       "target": "Install Target",
       "success_title": "Install Complete",
-      "success": "Installation completed successfully."
+      "success": "Installation completed successfully.",
+      "custom_installer": {
+        "label": "Choose local installer (.msixvc)",
+        "hint": "Defaults to using files in the installers directory"
+      }
     },
     "vcr": {
       "error_generic": "Runtime library preparation failed. Please check network and retry"

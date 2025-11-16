@@ -79,6 +79,7 @@ export const DownloadPage: React.FC = () => {
     total: number;
     dest?: string;
   } | null>(null);
+  const [dlSpeed, setDlSpeed] = useState<number>(0);
   const [dlStatus, setDlStatus] = useState<string>("");
   const [dlError, setDlError] = useState<string>("");
   const downloadSuccessDisclosure = useDisclosure();
@@ -298,6 +299,7 @@ export const DownloadPage: React.FC = () => {
 
   const dlOffsRef = useRef<(() => void)[]>([]);
   const extractActiveRef = useRef<boolean>(false);
+  const dlLastRef = useRef<{ ts: number; bytes: number } | null>(null);
   const ensureDlSubscriptions = () => {
     if (!hasBackend) return;
     if (dlOffsRef.current.length > 0) return;
@@ -307,12 +309,26 @@ export const DownloadPage: React.FC = () => {
         total: Number(event.data.Total || 0),
         dest: String(event.data.Dest || ""),
       });
+      try {
+        const now = Date.now();
+        const bytes = Number(event.data.Downloaded || 0);
+        const prev = dlLastRef.current;
+        if (prev) {
+          const dt = (now - prev.ts) / 1000;
+          const db = bytes - prev.bytes;
+          const spd = dt > 0 && db >= 0 ? db / dt : 0;
+          setDlSpeed(spd);
+        }
+        dlLastRef.current = { ts: now, bytes };
+      } catch {}
     });
     const off2 = Events.On("msixvc_download_status", (event) => {
       const s = String(event.data || "");
       setDlStatus(s);
       if (s === "started" || s === "resumed" || s === "cancelled") {
         setDlError("");
+        dlLastRef.current = null;
+        setDlSpeed(0);
       }
     });
     const off3 = Events.On("msixvc_download_error", (event) => {
@@ -332,6 +348,10 @@ export const DownloadPage: React.FC = () => {
         total: p?.total || 0,
         dest: d || String(p?.dest || ""),
       }));
+      try {
+        dlLastRef.current = null;
+        setDlSpeed(0);
+      } catch {}
       try {
         progressDisclosure.onClose();
       } catch {}
@@ -620,6 +640,22 @@ export const DownloadPage: React.FC = () => {
                     }}
                   >
                     {t("common.refresh", { defaultValue: "刷新" })}
+                  </Button>
+                  <Button
+                    radius="full"
+                    variant="bordered"
+                    className="shrink-0"
+                    onPress={() =>
+                      navigate("/install", {
+                        state: {
+                          mirrorVersion: "",
+                          mirrorType: "Release",
+                          returnTo: "/download",
+                        },
+                      })
+                    }
+                  >
+                    {t("downloadpage.customappx.button", { defaultValue: "自定义" })}
                   </Button>
                   <Dropdown>
                     <DropdownTrigger>
@@ -1660,7 +1696,9 @@ export const DownloadPage: React.FC = () => {
                             : 0;
                         const fmt = (n: number) =>
                           `${(n / (1024 * 1024)).toFixed(2)} MB`;
-                        return `${fmt(done)} / ${fmt(total)} (${pct}%)`;
+                        const fmtSpd = (bps: number) =>
+                          `${(bps / (1024 * 1024)).toFixed(2)} MB/s`;
+                        return `${fmt(done)} / ${fmt(total)} (${pct}%) · ${fmtSpd(dlSpeed || 0)}`;
                       })()}
                     </div>
                   </div>

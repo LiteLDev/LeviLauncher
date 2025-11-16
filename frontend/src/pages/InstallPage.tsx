@@ -45,6 +45,9 @@ export default function InstallPage() {
   const [installingVersion, setInstallingVersion] = useState<string>("");
   const [installingTargetName, setInstallingTargetName] = useState<string>("");
   const [resultMsg, setResultMsg] = useState<string>("");
+  const [customInstallerPath, setCustomInstallerPath] = useState<string>("");
+  const [installerDir, setInstallerDir] = useState<string>("");
+  const [downloadResolved, setDownloadResolved] = useState<boolean>(false);
 
   useEffect(() => {
     const guardActive = installing && !resultMsg;
@@ -180,6 +183,53 @@ export default function InstallPage() {
     return inheritOptions.find((o) => o.key === src)?.label || src;
   }, [inheritSource, inheritOptions]);
 
+  useEffect(() => {
+    try {
+      const r = (location?.state as any)?.fileManagerResult;
+      if (Array.isArray(r) && r.length > 0) {
+        setCustomInstallerPath(String(r[0] || ""));
+      }
+    } catch {}
+  }, [location?.state]);
+
+  useEffect(() => {
+    try {
+      const getDir = minecraft?.GetInstallerDir;
+      if (typeof getDir === "function") {
+        (async () => {
+          try {
+            const d = await getDir();
+            setInstallerDir(String(d || ""));
+          } catch {}
+        })();
+      }
+    } catch {}
+  }, []);
+
+  useEffect(() => {
+    const checkResolved = async () => {
+      if (!mirrorVersion) {
+        setDownloadResolved(false);
+        return;
+      }
+      try {
+        const resolver = minecraft?.ResolveDownloadedMsixvc;
+        if (typeof resolver === "function") {
+          const name = await resolver(
+            `${mirrorType || "Release"} ${mirrorVersion}`,
+            String(mirrorType || "Release").toLowerCase()
+          );
+          setDownloadResolved(Boolean(name));
+        } else {
+          setDownloadResolved(false);
+        }
+      } catch {
+        setDownloadResolved(false);
+      }
+    };
+    checkResolved();
+  }, [mirrorVersion, mirrorType]);
+
   const trErr = (msg: string): string => {
     const s = String(msg || "");
     if (!s) return "";
@@ -236,7 +286,9 @@ export default function InstallPage() {
       const resolver = minecraft?.ResolveDownloadedMsixvc;
       const isPrev = (mirrorType || "Release") === "Preview";
       let fname = "";
-      if (typeof resolver === "function") {
+      if (customInstallerPath && customInstallerPath.trim().length > 0) {
+        fname = customInstallerPath.trim();
+      } else if (typeof resolver === "function") {
         try {
           fname = await resolver(
             (mirrorType || "Release") +
@@ -432,6 +484,49 @@ export default function InstallPage() {
                     variant="bordered"
                     size="sm"
                   />
+                  {(!downloadResolved) ? (
+                    <div className="flex items-center justify-between">
+                      <div className="min-w-0">
+                        <div className="text-small font-medium">
+                          {t("downloadpage.install.custom_installer.label", {
+                            defaultValue: "选择本地安装包 (.msixvc)",
+                          })}
+                        </div>
+                        <div className="text-tiny text-default-500">
+                          {customInstallerPath
+                            ? customInstallerPath
+                            : (t("downloadpage.install.custom_installer.hint", {
+                                defaultValue:
+                                  "默认使用安装器目录下已下载的文件",
+                              }) as unknown as string)}
+                        </div>
+                      </div>
+                      <Button
+                        variant="bordered"
+                        size="sm"
+                        onPress={() => {
+                          navigate("/filemanager", {
+                            state: {
+                              allowedExt: [".msixvc"],
+                              multi: false,
+                              title: t("downloadpage.customappx.modal.1.header", {
+                                defaultValue: "版本信息",
+                              }),
+                              initialPath: installerDir || "",
+                              returnTo: "/install",
+                              returnState: {
+                                mirrorVersion,
+                                mirrorType,
+                                returnTo,
+                              },
+                            },
+                          });
+                        }}
+                      >
+                        {t("common.browse", { defaultValue: "选择..." })}
+                      </Button>
+                    </div>
+                  ) : null}
                   <div className="flex items-center justify-between">
                     <div className="min-w-0">
                       <div className="text-small font-medium">

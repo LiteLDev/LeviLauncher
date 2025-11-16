@@ -227,12 +227,16 @@
             "success_body": "已删除安装包："
         },
         "install": {
-            "version_label": "版本",
-            "hint": "请稍候，此过程可能需要较长时间…",
-            "estimated_size": "已写入大小（估算）",
-            "target": "安装目标",
-            "success_title": "安装完成",
-            "success": "版本已成功安装。"
+          "version_label": "版本",
+          "hint": "请稍候，此过程可能需要较长时间…",
+          "estimated_size": "已写入大小（估算）",
+          "target": "安装目标",
+          "success_title": "安装完成",
+          "success": "版本已成功安装。",
+          "custom_installer": {
+            "label": "选择本地安装包 (.msixvc)",
+            "hint": "默认使用安装器目录下已下载的文件"
+          }
         },
         "vcr": {
             "error_generic": "运行库准备失败，请检查网络后重试"

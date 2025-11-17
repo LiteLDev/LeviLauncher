@@ -1869,7 +1869,8 @@ func (a *Minecraft) GetLanguageNames() []types.LanguageJson {
 }
 
 func (a *Minecraft) GetAppVersion() string { return update.GetAppVersion() }
-func (a *Minecraft) GetIsBeta() bool       { return update.IsBeta() }
+
+func (a *Minecraft) GetIsBeta() bool { return update.IsBeta() }
 
 func (a *Minecraft) CheckUpdate() types.CheckUpdate {
 	cu := update.CheckUpdate(update.GetAppVersion())
@@ -1913,6 +1914,7 @@ func (a *Minecraft) TestMirrorLatencies(urls []string, timeoutMs int) []map[stri
 	}
 	return results
 }
+
 func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string {
 	vdir, err := utils.GetVersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
@@ -1923,23 +1925,28 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	if !utils.FileExists(exe) {
 		return "ERR_NOT_FOUND_EXE"
 	}
-	if checkRunning {
-		if isProcessRunningAtPath(exe) {
-			return "ERR_GAME_ALREADY_RUNNING"
-		}
-	}
 	_ = vcruntime.EnsureForVersion(a.ctx, dir)
 	_ = preloader.EnsureForVersion(a.ctx, dir)
 	_ = peeditor.EnsureForVersion(a.ctx, dir)
 	_ = peeditor.RunForVersion(a.ctx, dir)
 	var args []string
+	toRun := exe
 	if m, err := versions.ReadMeta(dir); err == nil {
+		p := peeditor.PrepareExecutableForLaunch(a.ctx, dir, m.EnableConsole)
+		if strings.TrimSpace(p) != "" {
+			toRun = p
+		}
 		if m.EnableEditorMode {
 			args = []string{"minecraft://creator/?Editor=true"}
 		}
 	}
-	cmd := exec.Command(exe, args...)
-	cmd.Dir = dir
+	if checkRunning {
+		if isProcessRunningAtPath(toRun) {
+			return "ERR_GAME_ALREADY_RUNNING"
+		}
+	}
+	cmd := exec.Command(toRun, args...)
+	cmd.Dir = filepath.Dir(toRun)
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
@@ -1949,7 +1956,9 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	go launch.MonitorMinecraftWindow(a.ctx)
 	return ""
 }
+
 func (a *Minecraft) GetBaseRoot() string { return utils.BaseRoot() }
+
 func (a *Minecraft) SetBaseRoot(root string) string {
 	r := strings.TrimSpace(root)
 	if r == "" {
@@ -1965,6 +1974,7 @@ func (a *Minecraft) SetBaseRoot(root string) string {
 	}
 	return ""
 }
+
 func (a *Minecraft) ResetBaseRoot() string {
 	c, _ := config.Load()
 	c.BaseRoot = ""

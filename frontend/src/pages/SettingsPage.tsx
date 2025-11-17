@@ -67,6 +67,7 @@ export const SettingsPage: React.FC = () => {
   const location = useLocation();
   const { isOpen: unsavedOpen, onOpen: unsavedOnOpen, onOpenChange: unsavedOnOpenChange } = useDisclosure();
   const [pendingNavPath, setPendingNavPath] = useState<string>("");
+  const { isOpen: resetOpen, onOpen: resetOnOpen, onOpenChange: resetOnOpenChange } = useDisclosure();
 
   useEffect(() => {
     const handler = (ev: any) => {
@@ -244,20 +245,8 @@ export const SettingsPage: React.FC = () => {
                     <Button
                       variant="light"
                       radius="full"
-                      onPress={async () => {
-                        try {
-                          const err = await ResetBaseRoot();
-                          if (!err) {
-                            const br = await GetBaseRoot();
-                            setBaseRoot(String(br || ""));
-                            setNewBaseRoot(String(br || ""));
-                            const id = await GetInstallerDir();
-                            setInstallerDir(String(id || ""));
-                            const vd = await GetVersionsDir();
-                            setVersionsDir(String(vd || ""));
-                            setBaseRootWritable(true);
-                          }
-                        } catch {}
+                      onPress={() => {
+                        resetOnOpen();
                       }}
                     >
                       {t("settingscard.body.paths.reset", { defaultValue: "恢复默认" })}
@@ -511,6 +500,48 @@ export const SettingsPage: React.FC = () => {
                   }}
                 >
                   {t("settings.unsaved.save", { defaultValue: "保存并离开" })}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+      <Modal size="sm" isOpen={resetOpen} onOpenChange={resetOnOpenChange} hideCloseButton>
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="text-danger-600">
+                {t("settings.reset.confirm.title", { defaultValue: "恢复默认路径？" })}
+              </ModalHeader>
+              <ModalBody>
+                <div className="text-default-700 text-sm">
+                  {t("settings.reset.confirm.body", { defaultValue: "这将把内容路径重置为默认位置。确定要继续吗？" })}
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  {t("common.cancel", { defaultValue: "取消" })}
+                </Button>
+                <Button
+                  color="danger"
+                  onPress={async () => {
+                    try {
+                      const err = await ResetBaseRoot();
+                      if (!err) {
+                        const br = await GetBaseRoot();
+                        setBaseRoot(String(br || ""));
+                        setNewBaseRoot(String(br || ""));
+                        const id = await GetInstallerDir();
+                        setInstallerDir(String(id || ""));
+                        const vd = await GetVersionsDir();
+                        setVersionsDir(String(vd || ""));
+                        setBaseRootWritable(true);
+                      }
+                    } catch {}
+                    onClose();
+                  }}
+                >
+                  {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
               </ModalFooter>
             </>

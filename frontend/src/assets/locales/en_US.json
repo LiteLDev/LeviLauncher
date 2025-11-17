@@ -345,6 +345,12 @@
     },
     "lang": {
       "changed": "Language changed"
+    },
+    "reset": {
+      "confirm": {
+        "title": "Restore default path?",
+        "body": "This will reset the content path to the default location. Are you sure?"
+      }
     }
   },
   

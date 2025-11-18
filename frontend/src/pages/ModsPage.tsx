@@ -15,6 +15,7 @@ import {
   Progress,
   Switch,
   Tooltip,
+  Checkbox,
 } from "@heroui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -97,7 +98,9 @@ export const ModsPage: React.FC = () => {
   const {
   } = useDisclosure();
   const [activeMod, setActiveMod] = useState<types.ModInfo | null>(null);
+  const [deleting, setDeleting] = useState<boolean>(false);
   const [enabledByName, setEnabledByName] = useState<Map<string, boolean>>(new Map());
+  const [onlyEnabled, setOnlyEnabled] = useState<boolean>(false);
   const [dllName, setDllName] = useState("");
   const [dllType, setDllType] = useState("preload-native");
   const [dllVersion, setDllVersion] = useState("0.0.0");
@@ -113,6 +116,9 @@ export const ModsPage: React.FC = () => {
   const dupNameRef = useRef<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
   const fmProcessedRef = useRef<string | null>(null);
+  const scrollRef = useRef<HTMLDivElement | null>(null);
+  const lastScrollTopRef = useRef<number>(0);
+  const restorePendingRef = useRef<boolean>(false);
 
   useEffect(() => {
     (async () => {
@@ -566,14 +572,19 @@ export const ModsPage: React.FC = () => {
   };
 
   const filtered = useMemo(() => {
-    if (!query.trim()) return modsInfo;
+    let list = modsInfo || [];
+    if (onlyEnabled) {
+      const has = enabledByName && enabledByName.size > 0;
+      if (has) list = list.filter((m) => !!enabledByName.get(m.name));
+    }
     const q = query.trim().toLowerCase();
-    return (modsInfo || []).filter(
+    if (!q) return list;
+    return list.filter(
       (m) =>
         `${m.name}`.toLowerCase().includes(q) ||
         `${m.version}`.toLowerCase().includes(q)
     );
-  }, [modsInfo, query]);
+  }, [modsInfo, query, onlyEnabled, enabledByName]);
 
   
 
@@ -594,20 +605,41 @@ export const ModsPage: React.FC = () => {
       errOnOpen();
       return;
     }
+    const pos = scrollRef.current?.scrollTop || 0;
+    setDeleting(true);
+    lastScrollTopRef.current = pos;
+    restorePendingRef.current = true;
     const err = await (DeleteMod as any)?.(name, activeMod.name);
     if (err) {
       setResultSuccess([]);
       setResultFailed([{ name: activeMod.name, err }]);
       delOnOpen();
+      setDeleting(false);
       return;
     }
     const data = await GetMods(name);
     setModsInfo(data || []);
+    requestAnimationFrame(() => {
+      try {
+        if (scrollRef.current) scrollRef.current.scrollTop = pos;
+      } catch {}
+    });
     setResultSuccess([activeMod.name]);
     setResultFailed([]);
     infoOnClose();
     delOnOpen();
+    setDeleting(false);
   };
+
+  useEffect(() => {
+    if (!restorePendingRef.current) return;
+    requestAnimationFrame(() => {
+      try {
+        if (scrollRef.current) scrollRef.current.scrollTop = lastScrollTopRef.current;
+      } catch {}
+    });
+    restorePendingRef.current = false;
+  }, [modsInfo]);
 
   const openFolder = () => {
     const name = currentVersionName;
@@ -752,6 +784,7 @@ export const ModsPage: React.FC = () => {
 
   return (
     <motion.div
+      ref={scrollRef}
       className={`relative w-full h-full max-w-[100vw] flex flex-col overflow-x-hidden overflow-auto no-scrollbar ${
         dragActive ? "cursor-copy" : ""
       }`}
@@ -1222,6 +1255,13 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.refresh", { defaultValue: "刷新" })}
                 </Button>
+                <Checkbox
+                  size="sm"
+                  isSelected={onlyEnabled}
+                  onValueChange={setOnlyEnabled}
+                >
+                  {t("mods.only_enabled", { defaultValue: "仅显示已启用的模组" }) as string}
+                </Checkbox>
               </div>
               {!currentVersionName ? (
                 <div className="text-default-600 text-sm">
@@ -1258,7 +1298,7 @@ export const ModsPage: React.FC = () => {
                                     {m.name}
                                   </div>
                                   <Chip size="sm" variant="flat" className="shrink-0">
-                                    {m.type || "mod"}
+                                    {m.type || (t("mods.type_mod", { defaultValue: "模组" }) as string)}
                                   </Chip>
                                 </div>
                                 <div className="text-tiny text-default-500 truncate" title={m.author ? `${m.version} · ${m.author}` : m.version}>
@@ -1466,6 +1506,7 @@ export const ModsPage: React.FC = () => {
                 </Button>
                 <Button
                   color="danger"
+                  isLoading={deleting}
                   onPress={async () => {
                     await handleDeleteMod();
                     onClose();

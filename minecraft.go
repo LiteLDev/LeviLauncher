@@ -1,11 +1,11 @@
 package main
 
 import (
-    "context"
-    "encoding/json"
-    "fmt"
-    "io"
-    "log"
+	"context"
+	"encoding/json"
+	"fmt"
+	"io"
+	"log"
 	"net"
 	"net/http"
 	"os"
@@ -13,14 +13,13 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
-	"sync"
 	"time"
 	"unsafe"
 
 	"github.com/corpix/uarand"
-    "github.com/liteldev/LeviLauncher/internal/config"
-    "github.com/liteldev/LeviLauncher/internal/discord"
-    "github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/discord"
+	"github.com/wailsapp/wails/v3/pkg/application"
 
 	"github.com/liteldev/LeviLauncher/internal/content"
 	"github.com/liteldev/LeviLauncher/internal/explorer"
@@ -48,11 +47,6 @@ import (
 	_ "image/jpeg"
 	"image/png"
 	_ "image/png"
-)
-
-var (
-	giMu       sync.Mutex
-	giEnsuring bool
 )
 
 const (
@@ -1034,91 +1028,91 @@ func (a *Minecraft) IsModEnabled(name string, modName string) bool {
 }
 
 func (a *Minecraft) ImportMcpack(name string, data []byte, overwrite bool) string {
-    roots := a.GetContentRoots(name)
-    return content.ImportMcpackToDirs2(data, "", roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
+	roots := a.GetContentRoots(name)
+	return content.ImportMcpackToDirs2(data, "", roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
 }
 
 func (a *Minecraft) ImportMcpackPath(name string, path string, overwrite bool) string {
-    if strings.TrimSpace(path) == "" {
-        return "ERR_OPEN_ZIP"
-    }
-    b, err := os.ReadFile(path)
-    if err != nil {
-        return "ERR_OPEN_ZIP"
-    }
-    roots := a.GetContentRoots(name)
-    return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
+	if strings.TrimSpace(path) == "" {
+		return "ERR_OPEN_ZIP"
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "ERR_OPEN_ZIP"
+	}
+	roots := a.GetContentRoots(name)
+	return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
 }
 
 func (a *Minecraft) ImportMcaddon(name string, data []byte, overwrite bool) string {
-    roots := a.GetContentRoots(name)
-    return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
+	roots := a.GetContentRoots(name)
+	return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
 }
 
 func (a *Minecraft) ImportMcaddonPath(name string, path string, overwrite bool) string {
-    if strings.TrimSpace(path) == "" {
-        return "ERR_OPEN_ZIP"
-    }
-    b, err := os.ReadFile(path)
-    if err != nil {
-        return "ERR_OPEN_ZIP"
-    }
-    roots := a.GetContentRoots(name)
-    return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
+	if strings.TrimSpace(path) == "" {
+		return "ERR_OPEN_ZIP"
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "ERR_OPEN_ZIP"
+	}
+	roots := a.GetContentRoots(name)
+	return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
 }
 
 func (a *Minecraft) ImportMcaddonWithPlayer(name string, player string, data []byte, overwrite bool) string {
-    roots := a.GetContentRoots(name)
-    users := strings.TrimSpace(roots.UsersRoot)
-    skinDir := ""
-    if users != "" && strings.TrimSpace(player) != "" {
-        skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-    }
-    return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	roots := a.GetContentRoots(name)
+	users := strings.TrimSpace(roots.UsersRoot)
+	skinDir := ""
+	if users != "" && strings.TrimSpace(player) != "" {
+		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
+	}
+	return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (a *Minecraft) ImportMcaddonPathWithPlayer(name string, player string, path string, overwrite bool) string {
-    if strings.TrimSpace(path) == "" {
-        return "ERR_OPEN_ZIP"
-    }
-    b, err := os.ReadFile(path)
-    if err != nil {
-        return "ERR_OPEN_ZIP"
-    }
-    roots := a.GetContentRoots(name)
-    users := strings.TrimSpace(roots.UsersRoot)
-    skinDir := ""
-    if users != "" && strings.TrimSpace(player) != "" {
-        skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-    }
-    return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	if strings.TrimSpace(path) == "" {
+		return "ERR_OPEN_ZIP"
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "ERR_OPEN_ZIP"
+	}
+	roots := a.GetContentRoots(name)
+	users := strings.TrimSpace(roots.UsersRoot)
+	skinDir := ""
+	if users != "" && strings.TrimSpace(player) != "" {
+		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
+	}
+	return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (a *Minecraft) ImportMcpackWithPlayer(name string, player string, fileName string, data []byte, overwrite bool) string {
-    roots := a.GetContentRoots(name)
-    users := strings.TrimSpace(roots.UsersRoot)
-    skinDir := ""
-    if users != "" && strings.TrimSpace(player) != "" {
-        skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-    }
-    return content.ImportMcpackToDirs2(data, fileName, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	roots := a.GetContentRoots(name)
+	users := strings.TrimSpace(roots.UsersRoot)
+	skinDir := ""
+	if users != "" && strings.TrimSpace(player) != "" {
+		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
+	}
+	return content.ImportMcpackToDirs2(data, fileName, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (a *Minecraft) ImportMcpackPathWithPlayer(name string, player string, path string, overwrite bool) string {
-    if strings.TrimSpace(path) == "" {
-        return "ERR_OPEN_ZIP"
-    }
-    b, err := os.ReadFile(path)
-    if err != nil {
-        return "ERR_OPEN_ZIP"
-    }
-    roots := a.GetContentRoots(name)
-    users := strings.TrimSpace(roots.UsersRoot)
-    skinDir := ""
-    if users != "" && strings.TrimSpace(player) != "" {
-        skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-    }
-    return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	if strings.TrimSpace(path) == "" {
+		return "ERR_OPEN_ZIP"
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return "ERR_OPEN_ZIP"
+	}
+	roots := a.GetContentRoots(name)
+	users := strings.TrimSpace(roots.UsersRoot)
+	skinDir := ""
+	if users != "" && strings.TrimSpace(player) != "" {
+		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
+	}
+	return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (a *Minecraft) ImportMcworld(name string, player string, fileName string, data []byte, overwrite bool) string {
@@ -1153,52 +1147,101 @@ func (a *Minecraft) GetPackInfo(dir string) types.PackInfo {
 }
 
 func (a *Minecraft) DeletePack(name string, path string) string {
-    p := strings.TrimSpace(path)
-    if p == "" {
-        return "ERR_INVALID_PATH"
-    }
-    fi, err := os.Stat(p)
-    if err != nil || !fi.IsDir() {
-        return "ERR_INVALID_PATH"
-    }
-    roots := a.GetContentRoots(name)
-    allowed := []string{strings.TrimSpace(roots.ResourcePacks), strings.TrimSpace(roots.BehaviorPacks)}
-    usersRoot := strings.TrimSpace(roots.UsersRoot)
-    if usersRoot != "" {
-        ents := a.ListDir(usersRoot)
-        for _, e := range ents {
-            if !e.IsDir {
-                continue
-            }
-            nm := strings.TrimSpace(e.Name)
-            if nm == "" || strings.EqualFold(nm, "Shared") {
-                continue
-            }
-            sp := filepath.Join(usersRoot, nm, "games", "com.mojang", "skin_packs")
-            allowed = append(allowed, sp)
-        }
-    }
-    absTarget, _ := filepath.Abs(p)
-    lowT := strings.ToLower(absTarget)
-    ok := false
-    for _, r := range allowed {
-        if strings.TrimSpace(r) == "" {
-            continue
-        }
-        absRoot, _ := filepath.Abs(r)
-        lowR := strings.ToLower(absRoot)
-        if lowT != lowR && strings.HasPrefix(lowT, lowR+string(os.PathSeparator)) {
-            ok = true
-            break
-        }
-    }
-    if !ok {
-        return "ERR_INVALID_PACKAGE"
-    }
-    if err := os.RemoveAll(absTarget); err != nil {
-        return "ERR_WRITE_FILE"
-    }
-    return ""
+	p := strings.TrimSpace(path)
+	if p == "" {
+		return "ERR_INVALID_PATH"
+	}
+	fi, err := os.Stat(p)
+	if err != nil || !fi.IsDir() {
+		return "ERR_INVALID_PATH"
+	}
+	roots := a.GetContentRoots(name)
+	allowed := []string{strings.TrimSpace(roots.ResourcePacks), strings.TrimSpace(roots.BehaviorPacks)}
+	usersRoot := strings.TrimSpace(roots.UsersRoot)
+	if usersRoot != "" {
+		ents := a.ListDir(usersRoot)
+		for _, e := range ents {
+			if !e.IsDir {
+				continue
+			}
+			nm := strings.TrimSpace(e.Name)
+			if nm == "" || strings.EqualFold(nm, "Shared") {
+				continue
+			}
+			sp := filepath.Join(usersRoot, nm, "games", "com.mojang", "skin_packs")
+			allowed = append(allowed, sp)
+		}
+	}
+	absTarget, _ := filepath.Abs(p)
+	lowT := strings.ToLower(absTarget)
+	ok := false
+	for _, r := range allowed {
+		if strings.TrimSpace(r) == "" {
+			continue
+		}
+		absRoot, _ := filepath.Abs(r)
+		lowR := strings.ToLower(absRoot)
+		if lowT != lowR && strings.HasPrefix(lowT, lowR+string(os.PathSeparator)) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return "ERR_INVALID_PACKAGE"
+	}
+	if err := os.RemoveAll(absTarget); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
+}
+
+func (a *Minecraft) DeleteWorld(name string, path string) string {
+	p := strings.TrimSpace(path)
+	if p == "" {
+		return "ERR_INVALID_PATH"
+	}
+	fi, err := os.Stat(p)
+	if err != nil || !fi.IsDir() {
+		return "ERR_INVALID_PATH"
+	}
+	roots := a.GetContentRoots(name)
+	usersRoot := strings.TrimSpace(roots.UsersRoot)
+	allowed := []string{}
+	if usersRoot != "" {
+		ents := a.ListDir(usersRoot)
+		for _, e := range ents {
+			if !e.IsDir {
+				continue
+			}
+			nm := strings.TrimSpace(e.Name)
+			if nm == "" || strings.EqualFold(nm, "Shared") {
+				continue
+			}
+			wp := filepath.Join(usersRoot, nm, "games", "com.mojang", "minecraftWorlds")
+			allowed = append(allowed, wp)
+		}
+	}
+	absTarget, _ := filepath.Abs(p)
+	lowT := strings.ToLower(absTarget)
+	ok := false
+	for _, r := range allowed {
+		if strings.TrimSpace(r) == "" {
+			continue
+		}
+		absRoot, _ := filepath.Abs(r)
+		lowR := strings.ToLower(absRoot)
+		if lowT != lowR && strings.HasPrefix(lowT, lowR+string(os.PathSeparator)) {
+			ok = true
+			break
+		}
+	}
+	if !ok {
+		return "ERR_INVALID_PATH"
+	}
+	if err := os.RemoveAll(absTarget); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
 }
 
 func (a *Minecraft) ListDrives() []string {
@@ -1222,14 +1265,42 @@ func (a *Minecraft) ListDir(path string) []types.FileEntry {
 		return list
 	}
 	for _, e := range ents {
+		p := filepath.Join(path, e.Name())
 		list = append(list, types.FileEntry{
 			Name:  e.Name(),
-			Path:  filepath.Join(path, e.Name()),
+			Path:  p,
 			IsDir: e.IsDir(),
 			Size:  0,
 		})
 	}
 	return list
+}
+
+func (a *Minecraft) GetPathSize(path string) int64 {
+	p := strings.TrimSpace(path)
+	if p == "" {
+		return 0
+	}
+	fi, err := os.Stat(p)
+	if err != nil {
+		return 0
+	}
+	if fi.IsDir() {
+		return utils.DirSize(p)
+	}
+	return fi.Size()
+}
+
+func (a *Minecraft) GetPathModTime(path string) int64 {
+	p := strings.TrimSpace(path)
+	if p == "" {
+		return 0
+	}
+	fi, err := os.Stat(p)
+	if err != nil {
+		return 0
+	}
+	return fi.ModTime().Unix()
 }
 
 func (a *Minecraft) GetWorldLevelName(worldDir string) string {
@@ -1509,7 +1580,7 @@ func (a *Minecraft) startImportServer() {
 		}
 		_, _ = w.Write([]byte(`{"error":""}`))
 	})
-    mux.HandleFunc("/api/import/mcpack", func(w http.ResponseWriter, r *http.Request) {
+	mux.HandleFunc("/api/import/mcpack", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST,OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "*")
@@ -1522,21 +1593,21 @@ func (a *Minecraft) startImportServer() {
 			_, _ = w.Write([]byte(`{"error":"METHOD_NOT_ALLOWED"}`))
 			return
 		}
-        var name string
-        var overwrite bool
-        var data []byte
-        var fileName string
-        var player string
-        ct := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
-        if strings.HasPrefix(ct, "multipart/form-data") {
-            _ = r.ParseMultipartForm(64 << 20)
-            name = strings.TrimSpace(r.FormValue("name"))
-            player = strings.TrimSpace(r.FormValue("player"))
-            ow := strings.TrimSpace(r.FormValue("overwrite"))
-            if ow != "" {
-                l := strings.ToLower(ow)
-                overwrite = l == "1" || l == "true" || l == "yes"
-            }
+		var name string
+		var overwrite bool
+		var data []byte
+		var fileName string
+		var player string
+		ct := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+		if strings.HasPrefix(ct, "multipart/form-data") {
+			_ = r.ParseMultipartForm(64 << 20)
+			name = strings.TrimSpace(r.FormValue("name"))
+			player = strings.TrimSpace(r.FormValue("player"))
+			ow := strings.TrimSpace(r.FormValue("overwrite"))
+			if ow != "" {
+				l := strings.ToLower(ow)
+				overwrite = l == "1" || l == "true" || l == "yes"
+			}
 			f, fh, err := r.FormFile("file")
 			if err == nil && f != nil {
 				defer f.Close()
@@ -1548,52 +1619,52 @@ func (a *Minecraft) startImportServer() {
 					fileName = fh.Filename
 				}
 			}
-        } else {
-            b, _ := io.ReadAll(r.Body)
-            _ = r.Body.Close()
-            var obj map[string]interface{}
-            if err := json.Unmarshal(b, &obj); err == nil {
-                if v, ok := obj["name"].(string); ok {
-                    name = strings.TrimSpace(v)
-                }
-                if v, ok := obj["overwrite"].(bool); ok {
-                    overwrite = v
-                } else if v2, ok2 := obj["overwrite"].(string); ok2 {
-                    l := strings.ToLower(strings.TrimSpace(v2))
-                    overwrite = l == "1" || l == "true" || l == "yes"
-                }
-                if v, ok := obj["fileName"].(string); ok {
-                    fileName = strings.TrimSpace(v)
-                }
-                if v, ok := obj["player"].(string); ok {
-                    player = strings.TrimSpace(v)
-                }
-                if v, ok := obj["data"].(string); ok && v != "" {
-                    bs, _ := base64.StdEncoding.DecodeString(v)
-                    if len(bs) > 0 {
-                        data = bs
-                    }
-                }
-            }
-        }
-        if name == "" || len(data) == 0 {
-            w.WriteHeader(http.StatusBadRequest)
-            _, _ = w.Write([]byte(`{"error":"BAD_REQUEST"}`))
-            return
-        }
-        roots := a.GetContentRoots(name)
-        skinDir := ""
-        if strings.TrimSpace(player) != "" && strings.TrimSpace(roots.UsersRoot) != "" {
-            skinDir = filepath.Join(roots.UsersRoot, player, "games", "com.mojang", "skin_packs")
-        }
-        err := content.ImportMcpackToDirs2(data, fileName, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-        if err != "" {
-            _, _ = w.Write([]byte(`{"error":"` + err + `"}`))
-            return
-        }
-        _, _ = w.Write([]byte(`{"error":""}`))
-    })
-    mux.HandleFunc("/api/import/mcaddon", func(w http.ResponseWriter, r *http.Request) {
+		} else {
+			b, _ := io.ReadAll(r.Body)
+			_ = r.Body.Close()
+			var obj map[string]interface{}
+			if err := json.Unmarshal(b, &obj); err == nil {
+				if v, ok := obj["name"].(string); ok {
+					name = strings.TrimSpace(v)
+				}
+				if v, ok := obj["overwrite"].(bool); ok {
+					overwrite = v
+				} else if v2, ok2 := obj["overwrite"].(string); ok2 {
+					l := strings.ToLower(strings.TrimSpace(v2))
+					overwrite = l == "1" || l == "true" || l == "yes"
+				}
+				if v, ok := obj["fileName"].(string); ok {
+					fileName = strings.TrimSpace(v)
+				}
+				if v, ok := obj["player"].(string); ok {
+					player = strings.TrimSpace(v)
+				}
+				if v, ok := obj["data"].(string); ok && v != "" {
+					bs, _ := base64.StdEncoding.DecodeString(v)
+					if len(bs) > 0 {
+						data = bs
+					}
+				}
+			}
+		}
+		if name == "" || len(data) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error":"BAD_REQUEST"}`))
+			return
+		}
+		roots := a.GetContentRoots(name)
+		skinDir := ""
+		if strings.TrimSpace(player) != "" && strings.TrimSpace(roots.UsersRoot) != "" {
+			skinDir = filepath.Join(roots.UsersRoot, player, "games", "com.mojang", "skin_packs")
+		}
+		err := content.ImportMcpackToDirs2(data, fileName, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+		if err != "" {
+			_, _ = w.Write([]byte(`{"error":"` + err + `"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"error":""}`))
+	})
+	mux.HandleFunc("/api/import/mcaddon", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST,OPTIONS")
 		w.Header().Set("Access-Control-Allow-Headers", "*")
@@ -1606,20 +1677,20 @@ func (a *Minecraft) startImportServer() {
 			_, _ = w.Write([]byte(`{"error":"METHOD_NOT_ALLOWED"}`))
 			return
 		}
-        var name string
-        var overwrite bool
-        var data []byte
-        var player string
-        ct := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
-        if strings.HasPrefix(ct, "multipart/form-data") {
-            _ = r.ParseMultipartForm(64 << 20)
-            name = strings.TrimSpace(r.FormValue("name"))
-            player = strings.TrimSpace(r.FormValue("player"))
-            ow := strings.TrimSpace(r.FormValue("overwrite"))
-            if ow != "" {
-                l := strings.ToLower(ow)
-                overwrite = l == "1" || l == "true" || l == "yes"
-            }
+		var name string
+		var overwrite bool
+		var data []byte
+		var player string
+		ct := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
+		if strings.HasPrefix(ct, "multipart/form-data") {
+			_ = r.ParseMultipartForm(64 << 20)
+			name = strings.TrimSpace(r.FormValue("name"))
+			player = strings.TrimSpace(r.FormValue("player"))
+			ow := strings.TrimSpace(r.FormValue("overwrite"))
+			if ow != "" {
+				l := strings.ToLower(ow)
+				overwrite = l == "1" || l == "true" || l == "yes"
+			}
 			f, _, err := r.FormFile("file")
 			if err == nil && f != nil {
 				defer f.Close()
@@ -1628,48 +1699,48 @@ func (a *Minecraft) startImportServer() {
 					data = b
 				}
 			}
-        } else {
-            b, _ := io.ReadAll(r.Body)
-            _ = r.Body.Close()
-            var obj map[string]interface{}
-            if err := json.Unmarshal(b, &obj); err == nil {
-                if v, ok := obj["name"].(string); ok {
-                    name = strings.TrimSpace(v)
-                }
-                if v, ok := obj["overwrite"].(bool); ok {
-                    overwrite = v
-                } else if v2, ok2 := obj["overwrite"].(string); ok2 {
-                    l := strings.ToLower(strings.TrimSpace(v2))
-                    overwrite = l == "1" || l == "true" || l == "yes"
-                }
-                if v, ok := obj["player"].(string); ok {
-                    player = strings.TrimSpace(v)
-                }
-                if v, ok := obj["data"].(string); ok && v != "" {
-                    bs, _ := base64.StdEncoding.DecodeString(v)
-                    if len(bs) > 0 {
-                        data = bs
-                    }
-                }
-            }
-        }
-        if name == "" || len(data) == 0 {
-            w.WriteHeader(http.StatusBadRequest)
-            _, _ = w.Write([]byte(`{"error":"BAD_REQUEST"}`))
-            return
-        }
-        roots := a.GetContentRoots(name)
-        skinDir := ""
-        if strings.TrimSpace(player) != "" && strings.TrimSpace(roots.UsersRoot) != "" {
-            skinDir = filepath.Join(roots.UsersRoot, player, "games", "com.mojang", "skin_packs")
-        }
-        err := content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-        if err != "" {
-            _, _ = w.Write([]byte(`{"error":"` + err + `"}`))
-            return
-        }
-        _, _ = w.Write([]byte(`{"error":""}`))
-    })
+		} else {
+			b, _ := io.ReadAll(r.Body)
+			_ = r.Body.Close()
+			var obj map[string]interface{}
+			if err := json.Unmarshal(b, &obj); err == nil {
+				if v, ok := obj["name"].(string); ok {
+					name = strings.TrimSpace(v)
+				}
+				if v, ok := obj["overwrite"].(bool); ok {
+					overwrite = v
+				} else if v2, ok2 := obj["overwrite"].(string); ok2 {
+					l := strings.ToLower(strings.TrimSpace(v2))
+					overwrite = l == "1" || l == "true" || l == "yes"
+				}
+				if v, ok := obj["player"].(string); ok {
+					player = strings.TrimSpace(v)
+				}
+				if v, ok := obj["data"].(string); ok && v != "" {
+					bs, _ := base64.StdEncoding.DecodeString(v)
+					if len(bs) > 0 {
+						data = bs
+					}
+				}
+			}
+		}
+		if name == "" || len(data) == 0 {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error":"BAD_REQUEST"}`))
+			return
+		}
+		roots := a.GetContentRoots(name)
+		skinDir := ""
+		if strings.TrimSpace(player) != "" && strings.TrimSpace(roots.UsersRoot) != "" {
+			skinDir = filepath.Join(roots.UsersRoot, player, "games", "com.mojang", "skin_packs")
+		}
+		err := content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+		if err != "" {
+			_, _ = w.Write([]byte(`{"error":"` + err + `"}`))
+			return
+		}
+		_, _ = w.Write([]byte(`{"error":""}`))
+	})
 	mux.HandleFunc("/api/import/mcworld", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Access-Control-Allow-Origin", "*")
 		w.Header().Set("Access-Control-Allow-Methods", "POST,OPTIONS")
@@ -1880,17 +1951,17 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	_ = peeditor.RunForVersion(a.ctx, dir)
 	var args []string
 	toRun := exe
-    var gameVer string
-    if m, err := versions.ReadMeta(dir); err == nil {
-        p := peeditor.PrepareExecutableForLaunch(a.ctx, dir, m.EnableConsole)
-        if strings.TrimSpace(p) != "" {
-            toRun = p
-        }
-        if m.EnableEditorMode {
-            args = []string{"minecraft://creator/?Editor=true"}
-        }
-        gameVer = strings.TrimSpace(m.GameVersion)
-    }
+	var gameVer string
+	if m, err := versions.ReadMeta(dir); err == nil {
+		p := peeditor.PrepareExecutableForLaunch(a.ctx, dir, m.EnableConsole)
+		if strings.TrimSpace(p) != "" {
+			toRun = p
+		}
+		if m.EnableEditorMode {
+			args = []string{"minecraft://creator/?Editor=true"}
+		}
+		gameVer = strings.TrimSpace(m.GameVersion)
+	}
 	if checkRunning {
 		if isProcessRunningAtPath(toRun) {
 			return "ERR_GAME_ALREADY_RUNNING"
@@ -1901,12 +1972,12 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	cmd.Stdout = os.Stdout
 	cmd.Stderr = os.Stderr
 	cmd.Stdin = os.Stdin
-    if err := cmd.Start(); err != nil {
-        return "ERR_LAUNCH_GAME"
-    }
-    discord.SetPlayingVersion(gameVer)
-    go launch.MonitorMinecraftWindow(a.ctx)
-    return ""
+	if err := cmd.Start(); err != nil {
+		return "ERR_LAUNCH_GAME"
+	}
+	discord.SetPlayingVersion(gameVer)
+	go launch.MonitorMinecraftWindow(a.ctx)
+	return ""
 }
 
 func (a *Minecraft) GetBaseRoot() string { return utils.BaseRoot() }
@@ -1928,17 +1999,17 @@ func (a *Minecraft) SetBaseRoot(root string) string {
 }
 
 func (a *Minecraft) ResetBaseRoot() string {
-    c, _ := config.Load()
-    c.BaseRoot = ""
-    if err := config.Save(c); err != nil {
-        return "ERR_WRITE_FILE"
-    }
-    br := utils.BaseRoot()
-    c.BaseRoot = strings.TrimSpace(br)
-    if err := config.Save(c); err != nil {
-        return "ERR_WRITE_FILE"
-    }
-    return ""
+	c, _ := config.Load()
+	c.BaseRoot = ""
+	if err := config.Save(c); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	br := utils.BaseRoot()
+	c.BaseRoot = strings.TrimSpace(br)
+	if err := config.Save(c); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
 }
 
 func (a *Minecraft) CanWriteToDir(path string) bool { return utils.CanWriteDir(path) }

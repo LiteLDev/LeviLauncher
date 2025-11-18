@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Chip, Image, Spinner, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure } from "@heroui/react";
+import { Button, Chip, Image, Spinner, Tooltip, Modal, ModalContent, ModalHeader, ModalBody, ModalFooter, useDisclosure, Input, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem, Checkbox } from "@heroui/react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { GetContentRoots, ListDir, OpenPathDir } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -35,9 +35,20 @@ export default function ResourcePacksPage() {
   const [activePack, setActivePack] = React.useState<any | null>(null);
   const { isOpen: delOpen, onOpen: delOnOpen, onOpenChange: delOnOpenChange } = useDisclosure();
   const { isOpen: delCfmOpen, onOpen: delCfmOnOpen, onOpenChange: delCfmOnOpenChange } = useDisclosure();
+  const [query, setQuery] = React.useState<string>("");
+  const [sortKey, setSortKey] = React.useState<"name" | "time">("name");
+  const [sortAsc, setSortAsc] = React.useState<boolean>(true);
+  const [selected, setSelected] = React.useState<Record<string, boolean>>({});
+  const { isOpen: delManyCfmOpen, onOpen: delManyCfmOnOpen, onOpenChange: delManyCfmOnOpenChange } = useDisclosure();
+  const [selectMode, setSelectMode] = React.useState<boolean>(false);
+  const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
+  const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
+  const scrollRef = React.useRef<HTMLDivElement | null>(null);
+  const lastScrollTopRef = React.useRef<number>(0);
+  const restorePendingRef = React.useRef<boolean>(false);
 
-  const refreshAll = React.useCallback(async () => {
-    setLoading(true);
+  const refreshAll = React.useCallback(async (silent?: boolean) => {
+    if (!silent) setLoading(true);
     setError("");
     const name = readCurrentVersionName();
     setCurrentVersionName(name);
@@ -65,7 +76,7 @@ export default function ResourcePacksPage() {
         setRoots(safe);
         const dirs = await listDirectories(safe.resourcePacks);
         setEntries(dirs);
-        const infos = await Promise.all(
+        const basic = await Promise.all(
           dirs.map(async (d) => {
             try {
               const info = await (minecraft as any)?.GetPackInfo?.(d.path);
@@ -75,7 +86,27 @@ export default function ResourcePacksPage() {
             }
           })
         );
-        setPacks(infos);
+        setPacks(basic);
+        Promise.resolve()
+          .then(async () => {
+            const filled = await Promise.all(
+              basic.map(async (p: any) => {
+                let size = 0;
+                let modTime = 0;
+                try {
+                  if (typeof (minecraft as any).GetPathSize === "function") {
+                    size = await (minecraft as any).GetPathSize(p.path);
+                  }
+                  if (typeof (minecraft as any).GetPathModTime === "function") {
+                    modTime = await (minecraft as any).GetPathModTime(p.path);
+                  }
+                } catch {}
+                return { ...p, size, modTime };
+              })
+            );
+            setPacks(filled);
+          })
+          .catch(() => {});
       }
     } catch (e) {
       setError(
@@ -84,17 +115,47 @@ export default function ResourcePacksPage() {
         }) as string
       );
     } finally {
-      setLoading(false);
+      if (!silent) setLoading(false);
     }
   }, [hasBackend, t]);
 
   React.useEffect(() => {
     refreshAll();
   }, []);
+  React.useLayoutEffect(() => {
+    if (!restorePendingRef.current) return;
+    requestAnimationFrame(() => {
+      try {
+        if (scrollRef.current) scrollRef.current.scrollTop = lastScrollTopRef.current; else window.scrollTo({ top: lastScrollTopRef.current });
+      } catch {}
+    });
+    restorePendingRef.current = false;
+  }, [packs]);
   
+  const formatBytes = (n?: number) => {
+    const v = typeof n === "number" ? n : 0;
+    if (v < 1024) return `${v} B`;
+    const k = 1024;
+    const sizes = ["KB", "MB", "GB", "TB"];
+    let i = -1;
+    let val = v;
+    do {
+      val /= k;
+      i++;
+    } while (val >= k && i < sizes.length - 1);
+    return `${val.toFixed(val >= 100 ? 0 : val >= 10 ? 1 : 2)} ${sizes[i]}`;
+  };
+
+  const formatDate = (ts?: number) => {
+    const v = typeof ts === "number" ? ts : 0;
+    if (!v) return "";
+    const d = new Date(v * 1000);
+    return d.toLocaleString();
+  };
+
 
   return (
-    <div className="w-full h-full p-3 sm:p-4 lg:p-6">
+    <div ref={scrollRef} className="w-full h-full p-3 sm:p-4 lg:p-6 overflow-auto">
       
       <motion.div
         initial={{ opacity: 0, y: 8 }}
@@ -147,14 +208,54 @@ export default function ResourcePacksPage() {
           </span>
         </div>
 
-        <div className="rounded-xl border border-default-200 bg-white/50 dark:bg-neutral-800/40 shadow-sm backdrop-blur-sm px-3 py-2 mt-4 flex items-center justify-between">
-          <div className="text-default-500 text-sm">
-            {roots.resourcePacks || t("contentpage.path_unknown", { defaultValue: "路径未知" })}
-          </div>
+        <div className="rounded-xl border border-default-200 bg-white/50 dark:bg-neutral-800/40 shadow-sm backdrop-blur-sm px-3 py-2 mt-4 flex items-center justify-end">
           <div className="flex items-center gap-2">
+            <Input
+              size="sm"
+              variant="bordered"
+              placeholder={t("common.search", { defaultValue: "搜索" }) as string}
+              value={query}
+              onValueChange={setQuery}
+              className="w-40 sm:w-56"
+            />
+            <Dropdown>
+              <DropdownTrigger>
+                <Button size="sm" variant="flat" className="rounded-full">
+                  {sortKey === "name"
+                    ? (t("filemanager.sort.name", { defaultValue: "名称" }) as string)
+                    : (t("contentpage.sort_time", { defaultValue: "时间" }) as string)}
+                  {" / "}
+                  {sortAsc
+                    ? (t("contentpage.sort_asc", { defaultValue: "从上到下" }) as string)
+                    : (t("contentpage.sort_desc", { defaultValue: "从下到上" }) as string)}
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu
+                aria-label={t("contentpage.sort_aria", { defaultValue: "排序" }) as string}
+                selectionMode="single"
+                onSelectionChange={(keys) => {
+                  const k = Array.from(keys as unknown as Set<string>)[0] || "";
+                  if (k === "name" || k === "time") setSortKey(k as any);
+                }}
+              >
+                <DropdownItem key="name">{t("filemanager.sort.name", { defaultValue: "名称" }) as string}</DropdownItem>
+                <DropdownItem key="time">{t("contentpage.sort_time", { defaultValue: "时间" }) as string}</DropdownItem>
+              </DropdownMenu>
+            </Dropdown>
+            <Button size="sm" variant="bordered" onPress={() => setSortAsc((v) => !v)}>
+              {sortAsc
+                ? (t("contentpage.sort_asc", { defaultValue: "从上到下" }) as string)
+                : (t("contentpage.sort_desc", { defaultValue: "从下到上" }) as string)}
+            </Button>
             <Button size="sm" variant="bordered" onPress={() => OpenPathDir(roots.resourcePacks)}>
               {t("common.open", { defaultValue: "打开" })}
             </Button>
+            <Button size="sm" variant="bordered" onPress={() => setSelectMode((v) => !v)}>
+              {selectMode ? (t("common.cancel", { defaultValue: "取消选择" }) as string) : (t("common.select", { defaultValue: "选择" }) as string)}
+            </Button>
+            {selectMode ? (
+              <Button size="sm" color="danger" variant="bordered" onPress={() => { const has = packs.some((p: any) => selected[p.path]); if (has) delManyCfmOnOpen(); }} isDisabled={!packs.some((p: any) => selected[p.path])}>{t("common.delete", { defaultValue: "删除" })}</Button>
+            ) : null}
           </div>
         </div>
         <div className="mt-3">
@@ -169,12 +270,32 @@ export default function ResourcePacksPage() {
               <div className="flex flex-col gap-2">
                 {packs.length ? (
                   <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                    {packs.map((p, idx) => (
+                    {(() => {
+                      const q = query.trim().toLowerCase();
+                      const filtered = packs.filter((p) => {
+                        const nm = String(p.name || p.path?.split("\\").pop() || "").toLowerCase();
+                        return q ? nm.includes(q) : true;
+                      });
+                      const sorted = filtered.sort((a: any, b: any) => {
+                        if (sortKey === "name") {
+                          const an = String(a.name || a.path?.split("\\").pop() || "").toLowerCase();
+                          const bn = String(b.name || b.path?.split("\\").pop() || "").toLowerCase();
+                          const res = an.localeCompare(bn);
+                          return sortAsc ? res : -res;
+                        } else {
+                          const at = Number(a.modTime || 0);
+                          const bt = Number(b.modTime || 0);
+                          const res = at - bt;
+                          return sortAsc ? res : -res;
+                        }
+                      });
+                      return sorted.map((p: any, idx: number) => (
                       <div
                         key={`${p.path}-${idx}`}
                         className="relative rounded-xl border border-default-200 bg-white/70 dark:bg-neutral-800/50 p-3 hover:bg-white/80 dark:hover:bg-neutral-800/60 transition-colors h-44"
                       >
                         <div className="flex items-start gap-3 h-full">
+                          {selectMode ? (<Checkbox size="sm" isSelected={!!selected[p.path]} onValueChange={() => setSelected((prev) => ({ ...prev, [p.path]: !prev[p.path] }))} className="shrink-0" />) : null}
                           {p.iconDataUrl ? (
                             <Image src={p.iconDataUrl} alt={p.name || p.path} width={56} height={56} radius="md" className="shrink-0" />
                           ) : (
@@ -190,6 +311,9 @@ export default function ResourcePacksPage() {
                               <div className="text-tiny text-default-500 mt-1 overflow-hidden text-ellipsis whitespace-nowrap">
                                 {p.minEngineVersion ? `${t("contentpage.min_engine_version", { defaultValue: "最小游戏版本" })}: ${p.minEngineVersion}` : "\u00A0"}
                               </div>
+                              <div className="text-tiny text-default-500 mt-1 overflow-hidden text-ellipsis whitespace-nowrap">
+                                {`${t("filemanager.sort.size", { defaultValue: "大小" })}: ${formatBytes(p.size)} · ${t("contentpage.sort_time", { defaultValue: "时间" })}: ${formatDate(p.modTime)}`}
+                              </div>
                             </div>
                           </div>
                         </div>
@@ -198,7 +322,8 @@ export default function ResourcePacksPage() {
                           <Button size="sm" color="danger" variant="flat" onPress={() => { setActivePack(p); delCfmOnOpen(); }}>{t("common.delete", { defaultValue: "删除" })}</Button>
                         </div>
                       </div>
-                    ))}
+                      ));
+                    })()}
                   </div>
                 ) : (
                   <div className="text-default-500">
@@ -221,19 +346,29 @@ export default function ResourcePacksPage() {
                 </ModalBody>
                 <ModalFooter>
                   <Button variant="light" onPress={() => { onClose(); }}>{t("common.cancel", { defaultValue: "取消" })}</Button>
-                  <Button color="danger" onPress={async () => {
+                  <Button color="danger" isLoading={deletingOne} onPress={async () => {
                     if (!activePack) { onClose(); return; }
+                    const pos = scrollRef.current?.scrollTop ?? (document.scrollingElement as any)?.scrollTop ?? 0;
+                    setDeletingOne(true);
+                    lastScrollTopRef.current = pos;
+                    restorePendingRef.current = true;
                     const err = await (minecraft as any)?.DeletePack?.(currentVersionName, activePack.path);
                     if (err) {
                       setResultSuccess([]);
                       setResultFailed([{ name: activePack.name || activePack.path, err }]);
                       delOnOpen();
                     } else {
-                      await refreshAll();
+                      await refreshAll(true);
+                      requestAnimationFrame(() => {
+                        try {
+                          if (scrollRef.current) scrollRef.current.scrollTop = pos; else window.scrollTo({ top: pos });
+                        } catch {}
+                      });
                       setResultSuccess([activePack.name || activePack.path]);
                       setResultFailed([]);
                       delOnOpen();
                     }
+                    setDeletingOne(false);
                     onClose();
                   }}>{t("common.confirm", { defaultValue: "确定" })}</Button>
                 </ModalFooter>
@@ -264,6 +399,48 @@ export default function ResourcePacksPage() {
                 </ModalBody>
                 <ModalFooter>
                   <Button color="primary" onPress={() => { setResultSuccess([]); setResultFailed([]); onClose(); }}>{t("common.confirm", { defaultValue: "确定" })}</Button>
+                </ModalFooter>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
+        <Modal size="sm" isOpen={delManyCfmOpen} onOpenChange={delManyCfmOnOpenChange} hideCloseButton>
+          <ModalContent>
+            {(onClose) => (
+              <>
+                <ModalHeader className="text-danger">{t("mods.confirm_delete_title", { defaultValue: "确认删除" })}</ModalHeader>
+                <ModalBody>
+                  <div className="text-sm text-default-700 break-words whitespace-pre-wrap">{t("mods.confirm_delete_body", { defaultValue: "确定要删除此包吗？此操作不可撤销。" })}</div>
+                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm break-words whitespace-pre-wrap">{packs.filter((p: any) => selected[p.path]).map((p: any) => p.name || p.path).join("\n")}</div>
+                </ModalBody>
+                <ModalFooter>
+                  <Button variant="light" onPress={() => { onClose(); }}>{t("common.cancel", { defaultValue: "取消" })}</Button>
+                  <Button color="danger" isLoading={deletingMany} onPress={async () => {
+                    setDeletingMany(true);
+                    const paths = packs.filter((p: any) => selected[p.path]).map((p: any) => p.path);
+                    const pos = scrollRef.current?.scrollTop ?? (document.scrollingElement as any)?.scrollTop ?? 0;
+                    lastScrollTopRef.current = pos;
+                    restorePendingRef.current = true;
+                    const ok: string[] = [];
+                    const failed: Array<{ name: string; err: string }> = [];
+                    for (const p of paths) {
+                      const err = await (minecraft as any)?.DeletePack?.(currentVersionName, p);
+                      const it = packs.find((x: any) => x.path === p);
+                      const nm = it?.name || p;
+                      if (err) failed.push({ name: nm, err }); else ok.push(nm);
+                    }
+                    setResultSuccess(ok);
+                    setResultFailed(failed);
+                    delOnOpen();
+                    await refreshAll(true);
+                    requestAnimationFrame(() => {
+                      try {
+                        if (scrollRef.current) scrollRef.current.scrollTop = pos; else window.scrollTo({ top: pos });
+                      } catch {}
+                    });
+                    setDeletingMany(false);
+                    onClose();
+                  }}>{t("common.confirm", { defaultValue: "确定" })}</Button>
                 </ModalFooter>
               </>
             )}

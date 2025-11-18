@@ -457,6 +457,7 @@
     "delete": "Delete",
     "search": "Search",
     "open": "Open",
+    "select": "Select",
     "preview": "Preview",
     "release": "Release",
     "back": "Back",
@@ -508,8 +509,11 @@
     "no_skin_packs": "No skin packs",
     "count": "Count",
     "error_resolve_paths": "Failed to resolve content paths.",
-    "players_aria": "Players"
-    ,
+    "players_aria": "Players",
+    "sort_aria": "Sort",
+    "sort_time": "Time",
+    "sort_asc": "Ascending",
+    "sort_desc": "Descending",
     "min_engine_version": "Min Engine Version",
     "drop_hint": "Drag .mcworld/.mcpack/.mcaddon to import",
     "import_button": "Import .mcworld/.mcpack/.mcaddon"
@@ -678,7 +682,9 @@
         "toggle_off": "Disabled",
         "toggle_tip": "Toggle mod enable/disable state",
         "toggle_desc_on": "Mod is enabled and will load when the game starts.",
-        "toggle_desc_off": "Mod is disabled and will not load when the game starts."
+        "toggle_desc_off": "Mod is disabled and will not load when the game starts.",
+        "only_enabled": "Only show enabled mods",
+        "type_mod": "Mod"
     },
   "versionselect": {
     "unsaved": {

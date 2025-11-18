@@ -450,6 +450,7 @@
         "retry": "重试",
         "refresh": "刷新",
         "open": "打开",
+        "select": "选择",
         "preview": "预览版",
         "release": "正式版",
         "back": "返回",
@@ -506,8 +507,11 @@
         "no_skin_packs": "暂无皮肤包",
         "count": "数量",
         "error_resolve_paths": "无法解析内容路径。",
-        "players_aria": "玩家列表"
-        ,
+        "players_aria": "玩家列表",
+        "sort_aria": "排序",
+        "sort_time": "时间",
+        "sort_asc": "从上到下",
+        "sort_desc": "从下到上",
         "min_engine_version": "最小游戏版本",
         "drop_hint": "拖入 .mcworld/.mcpack/.mcaddon 以导入",
         "import_button": "导入 .mcworld/.mcpack/.mcaddon"
@@ -634,7 +638,7 @@
     "splash": {
         "preparing": "正在准备启动..."
     },
-  "mods": {
+    "mods": {
         "import_button": "导入 .zip/.dll",
         "importing_title": "正在导入...",
         "importing_body": "请稍候，正在处理所选文件。",
@@ -676,7 +680,9 @@
         "toggle_off": "已关闭",
         "toggle_tip": "切换此模组的启用/关闭状态",
         "toggle_desc_on": "模组已启用，启动游戏时会加载。",
-        "toggle_desc_off": "模组已关闭，启动游戏时不会加载。"
+        "toggle_desc_off": "模组已关闭，启动游戏时不会加载。",
+        "only_enabled": "仅显示已启用的模组",
+        "type_mod": "模组"
     },
     "versionselect": {
         "unsaved": {

@@ -85,10 +85,21 @@ type ContentRoots struct {
 }
 
 type PackInfo struct {
-	Name             string `json:"name"`
-	Description      string `json:"description"`
-	Version          string `json:"version"`
-	MinEngineVersion string `json:"minEngineVersion"`
-	IconDataUrl      string `json:"iconDataUrl"`
-	Path             string `json:"path"`
+    Name             string `json:"name"`
+    Description      string `json:"description"`
+    Version          string `json:"version"`
+    MinEngineVersion string `json:"minEngineVersion"`
+    IconDataUrl      string `json:"iconDataUrl"`
+    Path             string `json:"path"`
+}
+
+
+type LevelDatField struct {
+    Name        string `json:"name"`
+    Tag         string `json:"tag"`
+    ValueString string `json:"valueString"`
+    ValueJSON   string `json:"valueJSON"`
+    IsBoolLike  bool   `json:"isBoolLike"`
+    InData      bool   `json:"inData"`
+    Path        []string `json:"path,omitempty"`
 }

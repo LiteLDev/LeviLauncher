@@ -471,8 +471,14 @@
     "processing": "Processing...",
     "done": "Done",
     "wait": "Please wait...",
-    "updating": "Updating"
-  },
+        "updating": "Updating",
+        "expand": "Expand",
+        "collapse": "Collapse",
+        "save": "Save",
+        "add": "Add",
+        "save_failed": "Save failed",
+        "load_failed": "Load failed"
+      },
   "content": {
     "count": {
       "worlds": "Worlds",
@@ -496,6 +502,7 @@
     "no_worlds": "No worlds",
     "backup": "Backup",
     "backup_success": "Backup succeeded",
+    "edit": "Edit",
     "resource_packs": "Resource Packs",
     "shared_desc": "Shared by all players: Users/Shared/games/com.mojang/resource_packs",
     "no_resource_packs": "No resource packs",
@@ -516,7 +523,21 @@
     "sort_desc": "Descending",
     "min_engine_version": "Min Engine Version",
     "drop_hint": "Drag .mcworld/.mcpack/.mcaddon to import",
-    "import_button": "Import .mcworld/.mcpack/.mcaddon"
+    "import_button": "Import .mcworld/.mcpack/.mcaddon",
+    "world_leveldat_editor": "World level.dat editor",
+    "basic": "Basic",
+    "version": "Version",
+    "world_level_name": "World Name",
+    "add_field": "Add Field",
+    "add_field_panel": "Add Field Panel",
+    "field_name": "Name",
+    "initial_value": "Initial Value",
+    "gamerules": "Game Rules",
+    "others": "Other Fields",
+    "add_child_field": "Add Child Field",
+    "new_child_item": "New Child Item",
+    "field_type": "Type"
+    
   },
   
   "versions": {

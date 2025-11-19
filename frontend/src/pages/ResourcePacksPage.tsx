@@ -36,8 +36,22 @@ export default function ResourcePacksPage() {
   const { isOpen: delOpen, onOpen: delOnOpen, onOpenChange: delOnOpenChange } = useDisclosure();
   const { isOpen: delCfmOpen, onOpen: delCfmOnOpen, onOpenChange: delCfmOnOpenChange } = useDisclosure();
   const [query, setQuery] = React.useState<string>("");
-  const [sortKey, setSortKey] = React.useState<"name" | "time">("name");
-  const [sortAsc, setSortAsc] = React.useState<boolean>(true);
+  const [sortKey, setSortKey] = React.useState<"name" | "time">(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("content.resource.sort") || "{}");
+      const k = saved?.sortKey;
+      if (k === "name" || k === "time") return k;
+    } catch {}
+    return "name";
+  });
+  const [sortAsc, setSortAsc] = React.useState<boolean>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("content.resource.sort") || "{}");
+      const a = saved?.sortAsc;
+      if (typeof a === "boolean") return a;
+    } catch {}
+    return true;
+  });
   const [selected, setSelected] = React.useState<Record<string, boolean>>({});
   const { isOpen: delManyCfmOpen, onOpen: delManyCfmOnOpen, onOpenChange: delManyCfmOnOpenChange } = useDisclosure();
   const [selectMode, setSelectMode] = React.useState<boolean>(false);
@@ -86,25 +100,57 @@ export default function ResourcePacksPage() {
             }
           })
         );
-        setPacks(basic);
+        const withTime = await Promise.all(
+          basic.map(async (p: any) => {
+            let modTime = 0;
+            try {
+              if (typeof (minecraft as any).GetPathModTime === "function") {
+                modTime = await (minecraft as any).GetPathModTime(p.path);
+              }
+            } catch {}
+            return { ...p, modTime };
+          })
+        );
+        setPacks(withTime);
         Promise.resolve()
           .then(async () => {
-            const filled = await Promise.all(
-              basic.map(async (p: any) => {
-                let size = 0;
-                let modTime = 0;
-                try {
-                  if (typeof (minecraft as any).GetPathSize === "function") {
-                    size = await (minecraft as any).GetPathSize(p.path);
+            const readCache = () => {
+              try {
+                return JSON.parse(localStorage.getItem("content.size.cache") || "{}");
+              } catch {
+                return {};
+              }
+            };
+            const writeCache = (c: any) => {
+              try {
+                localStorage.setItem("content.size.cache", JSON.stringify(c));
+              } catch {}
+            };
+            const cache = readCache();
+            const limit = 4;
+            const items = withTime.slice();
+            for (let i = 0; i < items.length; i += limit) {
+              const chunk = items.slice(i, i + limit);
+              await Promise.all(
+                chunk.map(async (p: any) => {
+                  const key = p.path;
+                  const c = cache[key];
+                  if (c && typeof c.size === "number" && Number(c.modTime || 0) === Number(p.modTime || 0)) {
+                    setPacks((prev) => prev.map((it: any) => (it.path === key ? { ...it, size: c.size } : it)));
+                  } else {
+                    let size = 0;
+                    try {
+                      if (typeof (minecraft as any).GetPathSize === "function") {
+                        size = await (minecraft as any).GetPathSize(key);
+                      }
+                    } catch {}
+                    cache[key] = { modTime: p.modTime || 0, size };
+                    setPacks((prev) => prev.map((it: any) => (it.path === key ? { ...it, size } : it)));
                   }
-                  if (typeof (minecraft as any).GetPathModTime === "function") {
-                    modTime = await (minecraft as any).GetPathModTime(p.path);
-                  }
-                } catch {}
-                return { ...p, size, modTime };
-              })
-            );
-            setPacks(filled);
+                })
+              );
+              writeCache(cache);
+            }
           })
           .catch(() => {});
       }
@@ -122,6 +168,11 @@ export default function ResourcePacksPage() {
   React.useEffect(() => {
     refreshAll();
   }, []);
+  React.useEffect(() => {
+    try {
+      localStorage.setItem("content.resource.sort", JSON.stringify({ sortKey, sortAsc }));
+    } catch {}
+  }, [sortKey, sortAsc]);
   React.useLayoutEffect(() => {
     if (!restorePendingRef.current) return;
     requestAnimationFrame(() => {

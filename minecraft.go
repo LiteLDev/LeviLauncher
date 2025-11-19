@@ -1322,6 +1322,18 @@ func (a *Minecraft) GetWorldLevelName(worldDir string) string {
 	return s
 }
 
+func (a *Minecraft) SetWorldLevelName(worldDir string, name string) string {
+    if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
+        return "ERR_INVALID_WORLD_DIR"
+    }
+    p := filepath.Join(worldDir, "levelname.txt")
+    if err := os.WriteFile(p, []byte(strings.TrimSpace(name)), 0644); err != nil {
+        return "ERR_WRITE_FILE"
+    }
+    return ""
+}
+
+
 func (a *Minecraft) GetWorldIconDataUrl(worldDir string) string {
 	if strings.TrimSpace(worldDir) == "" {
 		return ""
@@ -1386,6 +1398,100 @@ func (a *Minecraft) BackupWorldWithVersion(worldDir string, versionName string) 
 		return ""
 	}
 	return dest
+}
+
+
+func (a *Minecraft) ReadWorldLevelDatFields(worldDir string) map[string]any {
+    res := map[string]any{}
+    if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
+        return res
+    }
+    fields, ver, err := content.ReadLevelDatFields(worldDir)
+    if err != nil {
+        return res
+    }
+    res["version"] = ver
+    res["fields"] = fields
+    if order, over, e2 := content.ReadLevelDatOrder(worldDir); e2 == nil && over == ver {
+        res["order"] = order
+    }
+    return res
+}
+
+func (a *Minecraft) WriteWorldLevelDatFields(worldDir string, args map[string]any) string {
+    if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
+        return "ERR_INVALID_WORLD_DIR"
+    }
+    var ver int32
+    var fields []types.LevelDatField
+    if v, ok := args["version"].(float64); ok {
+        ver = int32(v)
+    } else if v2, ok2 := args["version"].(int32); ok2 {
+        ver = v2
+    }
+    if arr, ok := args["fields"].([]any); ok {
+        for _, it := range arr {
+            b, _ := json.Marshal(it)
+            var f types.LevelDatField
+            _ = json.Unmarshal(b, &f)
+            fields = append(fields, f)
+        }
+    }
+    if err := content.WriteLevelDatFields(worldDir, fields, ver); err != nil {
+        return "ERR_WRITE_FILE"
+    }
+    if nm, ok := args["levelName"].(string); ok && strings.TrimSpace(nm) != "" {
+        _ = os.WriteFile(filepath.Join(worldDir, "levelname.txt"), []byte(strings.TrimSpace(nm)), 0644)
+    }
+    return ""
+}
+
+func (a *Minecraft) ReadWorldLevelDatFieldsAt(worldDir string, path []string) map[string]any {
+    res := map[string]any{}
+    if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
+        return res
+    }
+    fields, ver, err := content.ReadLevelDatFieldsAt(worldDir, path)
+    if err != nil {
+        return res
+    }
+    res["version"] = ver
+    res["fields"] = fields
+    if order, over, e2 := content.ReadLevelDatOrderAt(worldDir, path); e2 == nil && over == ver {
+        res["order"] = order
+    }
+    return res
+}
+
+func (a *Minecraft) WriteWorldLevelDatFieldsAt(worldDir string, args map[string]any) string {
+    if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
+        return "ERR_INVALID_WORLD_DIR"
+    }
+    var ver int32
+    var fields []types.LevelDatField
+    var path []string
+    if v, ok := args["version"].(float64); ok {
+        ver = int32(v)
+    } else if v2, ok2 := args["version"].(int32); ok2 {
+        ver = v2
+    }
+    if arr, ok := args["fields"].([]any); ok {
+        for _, it := range arr {
+            b, _ := json.Marshal(it)
+            var f types.LevelDatField
+            _ = json.Unmarshal(b, &f)
+            fields = append(fields, f)
+        }
+    }
+    if p, okp := args["path"].([]any); okp {
+        for _, s := range p {
+            path = append(path, fmt.Sprintf("%v", s))
+        }
+    }
+    if err := content.WriteLevelDatFieldsAt(worldDir, path, fields, ver); err != nil {
+        return "ERR_WRITE_FILE"
+    }
+    return ""
 }
 
 func (a *Minecraft) ImportModZipPath(name string, path string, overwrite bool) string {

@@ -469,7 +469,13 @@
         "processing": "正在处理...",
         "done": "完成",
         "wait": "请稍候...",
-        "updating": "更新中"
+        "updating": "更新中",
+        "expand": "展开",
+        "collapse": "收起",
+        "save": "保存",
+        "add": "添加",
+        "save_failed": "保存失败",
+        "load_failed": "加载失败"
     },
     "content": {
         "count": {
@@ -494,6 +500,7 @@
         "no_worlds": "暂无世界",
         "backup": "备份",
         "backup_success": "备份成功",
+        "edit": "编辑",
         "resource_packs": "资源包",
         "shared_desc": "所有玩家共享：Users/Shared/games/com.mojang/resource_packs",
         "no_resource_packs": "暂无资源包",
@@ -514,7 +521,21 @@
         "sort_desc": "从下到上",
         "min_engine_version": "最小游戏版本",
         "drop_hint": "拖入 .mcworld/.mcpack/.mcaddon 以导入",
-        "import_button": "导入 .mcworld/.mcpack/.mcaddon"
+        "import_button": "导入 .mcworld/.mcpack/.mcaddon",
+        "world_leveldat_editor": "世界 level.dat 编辑",
+        "basic": "基础",
+        "version": "版本号",
+        "world_level_name": "世界名称",
+        "add_field": "新增字段",
+        "add_field_panel": "新增字段面板",
+        "field_name": "名称",
+        "initial_value": "初始值",
+        "gamerules": "游戏规则",
+        "others": "其他字段",
+        "add_child_field": "新增子字段",
+        "new_child_item": "新建子项",
+        "field_type": "类型"
+        
     },
     
     "versions": {

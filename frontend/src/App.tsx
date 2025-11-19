@@ -32,6 +32,7 @@ import UpdatingPage from "./pages/UpdatingPage";
 import FileManagerPage from "./pages/FileManagerPage";
 import ContentPage from "./pages/ContentPage";
 import WorldsListPage from "./pages/WorldsListPage";
+import WorldLevelDatEditorPage from "./pages/WorldLevelDatEditorPage";
 import ResourcePacksPage from "./pages/ResourcePacksPage";
 import BehaviorPacksPage from "./pages/BehaviorPacksPage";
 import SkinPacksPage from "./pages/SkinPacksPage";
@@ -507,6 +508,7 @@ function App() {
                 <Route path="/filemanager" element={<FileManagerPage />} />
                 <Route path="/content" element={<ContentPage />} />
                 <Route path="/content/worlds" element={<WorldsListPage />} />
+                <Route path="/content/world-edit" element={<WorldLevelDatEditorPage />} />
                 <Route
                   path="/content/resource-packs"
                   element={<ResourcePacksPage />}

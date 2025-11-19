@@ -62,8 +62,22 @@ export default function WorldsListPage() {
   const [backingUp, setBackingUp] = React.useState<string>("");
   const [backupDest, setBackupDest] = React.useState<string>("");
   const [query, setQuery] = React.useState<string>("");
-  const [sortKey, setSortKey] = React.useState<"name" | "time">("name");
-  const [sortAsc, setSortAsc] = React.useState<boolean>(true);
+  const [sortKey, setSortKey] = React.useState<"name" | "time">(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("content.worlds.sort") || "{}");
+      const k = saved?.sortKey;
+      if (k === "name" || k === "time") return k;
+    } catch {}
+    return "name";
+  });
+  const [sortAsc, setSortAsc] = React.useState<boolean>(() => {
+    try {
+      const saved = JSON.parse(localStorage.getItem("content.worlds.sort") || "{}");
+      const a = saved?.sortAsc;
+      if (typeof a === "boolean") return a;
+    } catch {}
+    return true;
+  });
   const [selected, setSelected] = React.useState<Record<string, boolean>>({});
   const [selectMode, setSelectMode] = React.useState<boolean>(false);
   const [activeWorld, setActiveWorld] = React.useState<WorldItem | null>(null);
@@ -107,25 +121,57 @@ export default function WorldsListPage() {
           return { ...d, levelName, iconDataUrl } as WorldItem;
         })
       );
-      setWorldEntries(basic);
+      const withTime = await Promise.all(
+        basic.map(async (w) => {
+          let modTime = 0;
+          try {
+            if (typeof (minecraft as any).GetPathModTime === "function") {
+              modTime = await (minecraft as any).GetPathModTime(w.path);
+            }
+          } catch {}
+          return { ...w, modTime } as WorldItem;
+        })
+      );
+      setWorldEntries(withTime);
       Promise.resolve()
         .then(async () => {
-          const filled = await Promise.all(
-            basic.map(async (w) => {
-              let size = 0;
-              let modTime = 0;
-              try {
-                if (typeof (minecraft as any).GetPathSize === "function") {
-                  size = await (minecraft as any).GetPathSize(w.path);
+          const readCache = () => {
+            try {
+              return JSON.parse(localStorage.getItem("content.size.cache") || "{}");
+            } catch {
+              return {};
+            }
+          };
+          const writeCache = (c: any) => {
+            try {
+              localStorage.setItem("content.size.cache", JSON.stringify(c));
+            } catch {}
+          };
+          const cache = readCache();
+          const limit = 4;
+          const items = withTime.slice();
+          for (let i = 0; i < items.length; i += limit) {
+            const chunk = items.slice(i, i + limit);
+            await Promise.all(
+              chunk.map(async (w) => {
+                const key = w.path;
+                const c = cache[key];
+                if (c && typeof c.size === "number" && Number(c.modTime || 0) === Number(w.modTime || 0)) {
+                  setWorldEntries((prev) => prev.map((it) => (it.path === key ? { ...it, size: c.size } : it)));
+                } else {
+                  let size = 0;
+                  try {
+                    if (typeof (minecraft as any).GetPathSize === "function") {
+                      size = await (minecraft as any).GetPathSize(key);
+                    }
+                  } catch {}
+                  cache[key] = { modTime: w.modTime || 0, size };
+                  setWorldEntries((prev) => prev.map((it) => (it.path === key ? { ...it, size } : it)));
                 }
-                if (typeof (minecraft as any).GetPathModTime === "function") {
-                  modTime = await (minecraft as any).GetPathModTime(w.path);
-                }
-              } catch {}
-              return { ...w, size, modTime } as WorldItem;
-            })
-          );
-          setWorldEntries(filled);
+              })
+            );
+            writeCache(cache);
+          }
         })
         .catch(() => {});
     } catch {
@@ -182,6 +228,12 @@ export default function WorldsListPage() {
   React.useEffect(() => {
     refreshAll();
   }, []);
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem("content.worlds.sort", JSON.stringify({ sortKey, sortAsc }));
+    } catch {}
+  }, [sortKey, sortAsc]);
 
   React.useLayoutEffect(() => {
     if (!restorePendingRef.current) return;
@@ -514,6 +566,17 @@ export default function WorldsListPage() {
                             }}
                           >
                             {t("contentpage.backup", { defaultValue: "备份" })}
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            onPress={() => {
+                              const q = encodeURIComponent(w.path);
+                              navigate(`/content/world-edit?path=${q}`);
+                            }}
+                            isDisabled={!hasBackend}
+                          >
+                            {t("contentpage.edit", { defaultValue: "编辑" })}
                           </Button>
                         </div>
                       </div>

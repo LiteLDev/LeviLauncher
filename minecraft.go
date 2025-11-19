@@ -45,8 +45,10 @@ import (
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
-	"image/png"
-	_ "image/png"
+    "image/png"
+    _ "image/png"
+	"syscall"
+	"github.com/liteldev/LeviLauncher/internal/icons"
 )
 
 const (
@@ -273,11 +275,74 @@ func (a *Minecraft) GetContentCounts(name string) ContentCounts {
 }
 
 func (a *Minecraft) LaunchVersionByName(name string) string {
-	return a.launchVersionInternal(name, true)
+    return a.launchVersionInternal(name, true)
 }
 
 func (a *Minecraft) LaunchVersionByNameForce(name string) string {
-	return a.launchVersionInternal(name, false)
+    return a.launchVersionInternal(name, false)
+}
+
+func (a *Minecraft) CreateDesktopShortcut(name string) string {
+    n := strings.TrimSpace(name)
+    if n == "" {
+        return "ERR_NAME_REQUIRED"
+    }
+    exePath, _ := os.Executable()
+    exePath = strings.TrimSpace(exePath)
+    if exePath == "" {
+        return "ERR_SHORTCUT_CREATE_FAILED"
+    }
+    home, _ := os.UserHomeDir()
+    if strings.TrimSpace(home) == "" {
+        home = os.Getenv("USERPROFILE")
+    }
+    if strings.TrimSpace(home) == "" {
+        return "ERR_SHORTCUT_CREATE_FAILED"
+    }
+    desktop := filepath.Join(home, "Desktop")
+    if fi, err := os.Stat(desktop); err != nil || !fi.IsDir() {
+        return "ERR_SHORTCUT_CREATE_FAILED"
+    }
+    safeName := n
+    lnk := filepath.Join(desktop, "Minecraft - "+safeName+".lnk")
+    args := "--launch=" + n
+    workdir := filepath.Dir(exePath)
+    iconPath := exePath
+    if vdir, err := utils.GetVersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
+        dir := filepath.Join(vdir, n)
+        e := filepath.Join(dir, "Minecraft.Windows.exe")
+        isPreview := false
+        if m, er := versions.ReadMeta(dir); er == nil {
+            isPreview = strings.EqualFold(strings.TrimSpace(m.Type), "preview")
+        }
+        if p := icons.EnsureVersionIcon(dir, isPreview); strings.TrimSpace(p) != "" {
+            lp := strings.ToLower(p)
+            if strings.HasSuffix(lp, ".ico") || strings.HasSuffix(lp, ".exe") {
+                iconPath = p
+            } else {
+                // PNG not supported by Windows shortcut icon; fallback to exe
+                if utils.FileExists(e) {
+                    iconPath = e
+                }
+            }
+        } else if utils.FileExists(e) {
+            iconPath = e
+        }
+    }
+    esc := func(s string) string { return strings.ReplaceAll(s, "'", "''") }
+    script := "$WshShell = New-Object -ComObject WScript.Shell; " +
+        "$Shortcut = $WshShell.CreateShortcut('" + esc(lnk) + "'); " +
+        "$Shortcut.TargetPath = '" + esc(exePath) + "'; " +
+        "$Shortcut.Arguments = '" + esc(args) + "'; " +
+        "$Shortcut.WorkingDirectory = '" + esc(workdir) + "'; " +
+        "$Shortcut.IconLocation = '" + esc(iconPath) + "'; " +
+        "$Shortcut.Save()"
+    cmd := exec.Command("powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script)
+    cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+    if err := cmd.Run(); err != nil {
+        return "ERR_SHORTCUT_CREATE_FAILED"
+    }
+    return ""
 }
 
 func isProcessRunningAtPath(exePath string) bool {
@@ -509,12 +574,8 @@ func (a *Minecraft) SaveVersionLogoDataUrl(name string, dataUrl string) string {
 	if er != nil {
 		return "ERR_ICON_DECODE"
 	}
-	llDir := filepath.Join(dir, "LeviLauncher")
-	if err := os.MkdirAll(llDir, 0755); err != nil {
-		return "ERR_WRITE_TARGET"
-	}
-	outPath := filepath.Join(llDir, "Logo.png")
-	f, ferr := os.Create(outPath)
+    outPath := filepath.Join(dir, "LargeLogo.png")
+    f, ferr := os.Create(outPath)
 	if ferr != nil {
 		return "ERR_WRITE_TARGET"
 	}
@@ -553,12 +614,8 @@ func (a *Minecraft) SaveVersionLogoFromPath(name string, filePath string) string
 	if er != nil {
 		return "ERR_ICON_DECODE"
 	}
-	llDir := filepath.Join(dir, "LeviLauncher")
-	if err := os.MkdirAll(llDir, 0755); err != nil {
-		return "ERR_WRITE_TARGET"
-	}
-	outPath := filepath.Join(llDir, "Logo.png")
-	f, ferr := os.Create(outPath)
+    outPath := filepath.Join(dir, "LargeLogo.png")
+    f, ferr := os.Create(outPath)
 	if ferr != nil {
 		return "ERR_WRITE_TARGET"
 	}
@@ -574,7 +631,7 @@ func (a *Minecraft) GetVersionLogoDataUrl(name string) string {
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return ""
 	}
-	p := filepath.Join(vdir, strings.TrimSpace(name), "LeviLauncher", "Logo.png")
+    p := filepath.Join(vdir, strings.TrimSpace(name), "LargeLogo.png")
 	if !utils.FileExists(p) {
 		return ""
 	}
@@ -591,7 +648,7 @@ func (a *Minecraft) RemoveVersionLogo(name string) string {
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
-	p := filepath.Join(vdir, strings.TrimSpace(name), "LeviLauncher", "Logo.png")
+    p := filepath.Join(vdir, strings.TrimSpace(name), "LargeLogo.png")
 	if utils.FileExists(p) {
 		if er := os.Remove(p); er != nil {
 			return "ERR_WRITE_TARGET"

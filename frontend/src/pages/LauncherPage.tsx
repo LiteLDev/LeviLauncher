@@ -18,7 +18,6 @@ import {
   Input,
   Tooltip,
 } from "@heroui/react";
-import { MinecraftIcon } from "../icons/MinecraftIcon";
 import { useTranslation } from "react-i18next";
 import {
   EnsureGameInputInteractive,
@@ -34,6 +33,7 @@ import {
   FaImage,
   FaCogs,
   FaList,
+  FaWindows,
 } from "react-icons/fa";
 import { ModCard } from "../components/ModdedCard";
 import {
@@ -41,7 +41,7 @@ import {
   ReleaseChip,
   PreviewChip,
 } from "../components/LauncherChip";
-import { Events, Window, Browser } from "@wailsio/runtime";
+import { Events, Window, Browser, Call as RuntimeCall } from "@wailsio/runtime";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { compareVersions } from "../utils/version";
@@ -255,6 +255,32 @@ export const LauncherPage = (args: any) => {
             onOpen();
           });
       }
+    }
+  }, [currentVersion]);
+
+  const doCreateShortcut = React.useCallback(() => {
+    const name = currentVersion;
+    if (name) {
+      RuntimeCall.ByName("main.Minecraft.CreateDesktopShortcut", name)
+        .then((err: string) => {
+          const s = String(err || "");
+          if (s) {
+            setLaunchErrorCode(s);
+            setModalState(1);
+            setOverlayActive(true);
+            onOpen();
+          } else {
+            setModalState(12);
+            setOverlayActive(true);
+            onOpen();
+          }
+        })
+        .catch(() => {
+          setLaunchErrorCode("ERR_SHORTCUT_CREATE_FAILED");
+          setModalState(1);
+          setOverlayActive(true);
+          onOpen();
+        });
     }
   }, [currentVersion]);
 
@@ -967,6 +993,36 @@ export const LauncherPage = (args: any) => {
         </ModalFooter>
       </>
     ),
+    12: (onClose) => (
+      <>
+        <ModalHeader className="flex flex-col gap-1 text-success-600">
+          <h2 className="text-xl font-bold">
+            {t("launcherpage.shortcut.success.title", {
+              defaultValue: "快捷方式已创建",
+            }) as unknown as string}
+          </h2>
+        </ModalHeader>
+        <ModalBody className="text-center">
+          <p className="text-gray-700">
+            {t("launcherpage.shortcut.success.body", {
+              defaultValue: "已在桌面创建该版本的快捷方式。",
+            }) as unknown as string}
+          </p>
+        </ModalBody>
+        <ModalFooter>
+          <Button
+            color="primary"
+            onPress={(e) => {
+              onClose?.(e);
+              setOverlayActive(false);
+              setModalState(0);
+            }}
+          >
+            {t("common.close", { defaultValue: "关闭" }) as unknown as string}
+          </Button>
+        </ModalFooter>
+      </>
+    ),
   };
 
   const ModalUi = (onClose: ((e: PressEvent) => void) | undefined) => {
@@ -1023,16 +1079,12 @@ export const LauncherPage = (args: any) => {
                   </span>
                   <Tooltip
                     content={
-                      <div className="flex items-center gap-2">
-                        <span>
-                          {t("launcherpage.go_version_settings", {
-                            defaultValue: "版本设置",
-                          }) as unknown as string}
-                        </span>
+                      <div className="flex flex-col gap-2">
                         <Button
-                          isIconOnly
                           size="sm"
-                          variant="light"
+                          variant="flat"
+                          className="rounded-full justify-start shadow-none"
+                          startContent={<FaCog />}
                           onPress={() => {
                             if (currentVersion) {
                               navigate("/version-settings", {
@@ -1048,7 +1100,20 @@ export const LauncherPage = (args: any) => {
                             }) as unknown as string
                           }
                         >
-                          <FaCog size={14} />
+                          {t("launcherpage.go_version_settings", {
+                            defaultValue: "版本设置",
+                          }) as unknown as string}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          className="rounded-full justify-start shadow-none"
+                          startContent={<FaWindows />}
+                          onPress={doCreateShortcut}
+                        >
+                          {t("launcherpage.shortcut.create_button", {
+                            defaultValue: "创建桌面快捷方式",
+                          }) as unknown as string}
                         </Button>
                       </div>
                     }
@@ -1056,7 +1121,7 @@ export const LauncherPage = (args: any) => {
                     offset={8}
                   >
                     <div
-                      className="inline-flex items-center px-3 py-1 rounded-full bg-default-100/70 dark:bg-default-50/10 border border-white/30 shadow-sm backdrop-blur-sm"
+                      className="inline-flex items-center px-3 py-1 rounded-full bg-default-100/70 dark:bg-default-50/10 border border-white/30 backdrop-blur-sm"
                     >
                       {logoDataUrl ? (
                         <img
@@ -1064,9 +1129,7 @@ export const LauncherPage = (args: any) => {
                           alt="logo"
                           className="mr-2 h-6 w-6 rounded"
                         />
-                      ) : (
-                        <MinecraftIcon className="mr-2 h-6 w-6 opacity-80" />
-                      )}
+                      ) : null}
                       <div className="flex flex-col leading-tight">
                         <span className="text-[0.95rem] sm:text-base font-semibold text-default-900 tracking-tight">
                           {displayName ||
@@ -1114,6 +1177,7 @@ export const LauncherPage = (args: any) => {
                         {t("launcherpage.launch_button")}
                       </Button>
                     </motion.div>
+                    
                     <Dropdown>
                       <DropdownTrigger>
                         <Button
@@ -1200,7 +1264,7 @@ export const LauncherPage = (args: any) => {
                                 return u ? (
                                   <img src={u} alt="logo" className="h-5 w-5 rounded" />
                                 ) : (
-                                  <MinecraftIcon className="h-5 w-5 opacity-80" />
+                                  <div className="h-5 w-5 rounded bg-default-200" />
                                 );
                               })()
                             }

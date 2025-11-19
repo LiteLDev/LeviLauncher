@@ -14,8 +14,9 @@ import {
   ModalFooter,
 } from "@heroui/react";
 import { useTranslation } from "react-i18next";
-import { MinecraftIcon } from "../icons/MinecraftIcon";
 import { motion } from "framer-motion";
+import { Call as RuntimeCall } from "@wailsio/runtime";
+import { FaWindows } from "react-icons/fa";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 
 export default function VersionSettingsPage() {
@@ -39,6 +40,7 @@ export default function VersionSettingsPage() {
   const [deleteOpen, setDeleteOpen] = React.useState<boolean>(false);
   const [deleteSuccessOpen, setDeleteSuccessOpen] =
     React.useState<boolean>(false);
+  const [shortcutSuccessOpen, setShortcutSuccessOpen] = React.useState<boolean>(false);
   const [deleting, setDeleting] = React.useState<boolean>(false);
   const [deleteSuccessMsg, setDeleteSuccessMsg] = React.useState<string>("");
 
@@ -372,9 +374,7 @@ export default function VersionSettingsPage() {
                           alt="logo"
                           className="h-full w-full object-cover"
                         />
-                      ) : (
-                        <MinecraftIcon className="h-8 w-8 opacity-70" />
-                      )}
+                      ) : null}
                       <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-tiny">
                         {t("versions.logo.change", {
                           defaultValue: "点击更换",
@@ -385,6 +385,7 @@ export default function VersionSettingsPage() {
                       size="sm"
                       variant="flat"
                       color="danger"
+                      className="rounded-full shadow-none"
                       onPress={async () => {
                         try {
                           const rm = minecraft?.RemoveVersionLogo;
@@ -396,6 +397,26 @@ export default function VersionSettingsPage() {
                       }}
                     >
                       {t("versions.logo.clear", { defaultValue: "清除" })}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      className="rounded-full justify-start shadow-none"
+                      onPress={async () => {
+                        try {
+                          const err: string = await RuntimeCall.ByName("main.Minecraft.CreateDesktopShortcut", targetName);
+                          if (err) {
+                            setError(String(err));
+                          } else {
+                            setShortcutSuccessOpen(true);
+                          }
+                        } catch {
+                          setError("ERR_SHORTCUT_CREATE_FAILED");
+                        }
+                      }}
+                      startContent={<FaWindows />}
+                    >
+                      {t("launcherpage.shortcut.create_button", { defaultValue: "创建桌面快捷方式" }) as unknown as string}
                     </Button>
                   </div>
                   <p className="text-tiny text-default-400">
@@ -522,6 +543,42 @@ export default function VersionSettingsPage() {
                   }}
                 >
                   {t("common.ok", { defaultValue: "确定" })}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
+
+      <Modal
+        isOpen={shortcutSuccessOpen}
+        onOpenChange={(open) => {
+          if (!open) setShortcutSuccessOpen(false);
+        }}
+        size="md"
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="flex items-center gap-2 text-success-600">
+                <h2 className="text-lg font-semibold">
+                  {t("launcherpage.shortcut.success.title", { defaultValue: "快捷方式已创建" }) as unknown as string}
+                </h2>
+              </ModalHeader>
+              <ModalBody>
+                <div className="text-small text-default-600">
+                  {t("launcherpage.shortcut.success.body", { defaultValue: "已在桌面创建该版本的快捷方式。" }) as unknown as string}
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  color="primary"
+                  onPress={() => {
+                    onClose?.();
+                    setShortcutSuccessOpen(false);
+                  }}
+                >
+                  {t("launcherpage.delete.complete.close_button", { defaultValue: "关闭" }) as unknown as string}
                 </Button>
               </ModalFooter>
             </>

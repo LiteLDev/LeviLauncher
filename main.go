@@ -80,11 +80,20 @@ func main() {
 	mc.startup()
 
 	initialURL := "/"
+	var autoLaunchVersion string
 	for _, arg := range os.Args[1:] {
 		if strings.HasPrefix(arg, "--self-update=") {
 			initialURL = "/#/updating"
 			break
 		}
+		if strings.HasPrefix(arg, "--launch=") {
+			autoLaunchVersion = strings.TrimSpace(strings.TrimPrefix(arg, "--launch="))
+		}
+	}
+
+	if strings.TrimSpace(autoLaunchVersion) != "" && initialURL == "/" {
+		_ = mc.LaunchVersionByName(autoLaunchVersion)
+		return
 	}
 
 	w := 1024
@@ -108,7 +117,7 @@ func main() {
 		c.WindowHeight = h
 		_ = config.Save(c)
 	}
-	windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
+    windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:     "LeviLauncher",
 		Width:     w,
 		Height:    h,
@@ -125,8 +134,14 @@ func main() {
 		Windows: application.WindowsWindow{
 			BackdropType: application.Acrylic,
 		},
-		URL: initialURL,
-	})
+        URL: initialURL,
+    })
+
+    if strings.TrimSpace(autoLaunchVersion) != "" {
+        go func() {
+            _ = mc.LaunchVersionByName(autoLaunchVersion)
+        }()
+    }
 
 	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		w := windows.Width()

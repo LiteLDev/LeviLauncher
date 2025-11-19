@@ -66,6 +66,13 @@
                 "body": "正在等待游戏窗口出现，请稍候…"
             }
         },
+        "shortcut": {
+            "create_button": "创建桌面快捷方式",
+            "success": {
+                "title": "快捷方式已创建",
+                "body": "已在桌面创建该版本的快捷方式。"
+            }
+        },
         "gameinput": {
             "installing": {
                 "title": "正在安装 GameInput",
@@ -567,7 +574,7 @@
             "title": "自定义图标（要求正方形）",
             "change": "点击更换",
             "clear": "清除",
-            "hint": "将保存到版本文件夹的 LeviLauncher/Logo.png。点击图标更换。"
+            "hint": "将保存到版本文件夹的 LargeLogo.png。点击图标更换。"
         },
         "delete": {
             "title": "确认删除版本",
@@ -615,7 +622,8 @@
         "ERR_INHERIT_COPY_FAILED": "复制继承数据失败",
         "ERR_NO_GAME_DATA": "当前来源没有任何游戏数据",
         "ERR_DELETE_FAILED": "删除失败，可能被占用或无权限",
-        "ERR_VCRUNTIME_MISSING": "缺少运行库，安装失败。请确保已安装 Microsoft Visual C++ 运行库或重试"
+        "ERR_VCRUNTIME_MISSING": "缺少运行库，安装失败。请确保已安装 Microsoft Visual C++ 运行库或重试",
+        "ERR_SHORTCUT_CREATE_FAILED": "创建桌面快捷方式失败"
     },
     "filemanager": {
         "title": "文件管理器",

@@ -48,15 +48,18 @@ func EnsureGamingServicesInstalled(ctx context.Context) bool {
 }
 
 func MonitorMinecraftWindow(ctx context.Context) {
-	application.Get().Event.Emit(EventMcLaunchStart, struct{}{})
-	const maxWait = 60
-	for i := 0; i < maxWait; i++ {
-		if FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview") {
-			application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
-			application.Get().Window.Current().Minimise()
-			return
-		}
-		time.Sleep(1 * time.Second)
-	}
-	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
+    application.Get().Event.Emit(EventMcLaunchStart, struct{}{})
+    const maxWait = 60
+    for i := 0; i < maxWait; i++ {
+        if FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview") {
+            application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
+            w := application.Get().Window.Current()
+            if w != nil {
+                w.Minimise()
+            }
+            return
+        }
+        time.Sleep(1 * time.Second)
+    }
+    application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
 }

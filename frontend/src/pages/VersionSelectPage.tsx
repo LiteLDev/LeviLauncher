@@ -19,7 +19,6 @@ import {
 } from "@heroui/react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { MinecraftIcon } from "../icons/MinecraftIcon";
 import { useTranslation } from "react-i18next";
 import { compareVersions } from "../utils/version";
 import {
@@ -539,7 +538,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                               className="h-4 w-4 rounded"
                             />
                           ) : (
-                            <MinecraftIcon className="h-4 w-4 opacity-70" />
+                            <div className="h-4 w-4 rounded bg-default-200" />
                           );
                         })()}
                         <span>

@@ -66,6 +66,13 @@
         "body": "Waiting for the game window to appear, please wait…"
       }
     },
+    "shortcut": {
+      "create_button": "Create Desktop Shortcut",
+      "success": {
+        "title": "Shortcut Created",
+        "body": "A desktop shortcut for this version has been created."
+      }
+    },
     "gameinput": {
       "installing": {
         "title": "Installing GameInput",
@@ -569,7 +576,7 @@
       "title": "Custom Icon (square required)",
       "change": "Click to change",
       "clear": "Clear",
-      "hint": "Will be saved to LeviLauncher/Logo.png under the version folder. Click the icon to change."
+      "hint": "Will be saved as LargeLogo.png under the version folder. Click the icon to change."
     },
     "delete": {
       "title": "Confirm Version Deletion",
@@ -580,7 +587,7 @@
       "success_body": "Version deleted: "
     }
   },
-    "errors": {
+  "errors": {
     "ERR_GAME_ALREADY_RUNNING": "Detected the current version of Minecraft is already running. Please close it before launching or switch to another version.",
     "ERR_TARGET_DIR_NOT_SPECIFIED": "Target directory not specified",
     "ERR_CREATE_TARGET_DIR": "Failed to create target directory",
@@ -617,7 +624,8 @@
     "ERR_INHERIT_TYPE_MISMATCH": "Type mismatch, cannot inherit",
     "ERR_INHERIT_COPY_FAILED": "Failed to copy inherited data",
     "ERR_NO_GAME_DATA": "No game data found for the selected source",
-    "ERR_VCRUNTIME_MISSING": "Runtime dependency missing. Please install Microsoft Visual C++ Runtime and retry"
+    "ERR_VCRUNTIME_MISSING": "Runtime dependency missing. Please install Microsoft Visual C++ Runtime and retry",
+    "ERR_SHORTCUT_CREATE_FAILED": "Failed to create desktop shortcut"
   },
   "filemanager": {
     "title": "File Manager",

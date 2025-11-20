@@ -276,7 +276,7 @@
     "body": {
       "version": {
         "name": "Current Version",
-        "hasnew": "New version available!",
+        "hasnew": "New version available! ",
         "button": "Check Update",
         "ignore": "Ignore this version"
       },

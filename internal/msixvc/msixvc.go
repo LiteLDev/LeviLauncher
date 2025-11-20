@@ -7,17 +7,14 @@ import (
 	"net/http"
 	"net/url"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/corpix/uarand"
 	"github.com/wailsapp/wails/v3/pkg/application"
 
-	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
@@ -257,34 +254,6 @@ func finishRunning(s *state) {
 	mu.Unlock()
 }
 
-func Install(ctx context.Context, msixvcPath string, isPreview bool) string {
-	application.Get().Event.Emit(EventAppxInstallLoading, true)
-	defer application.Get().Event.Emit(EventAppxInstallLoading, false)
-	dir, _ := utils.GetInstallerDir()
-	p := strings.TrimSpace(msixvcPath)
-	if p == "" {
-		return "ERR_MSIXVC_NOT_SPECIFIED"
-	}
-	if !filepath.IsAbs(p) {
-		p = filepath.Join(dir, p)
-	}
-	if !utils.FileExists(p) {
-		return "ERR_MSIXVC_NOT_FOUND"
-	}
-	info, err := registry.GetMinecraftPackage(isPreview)
-	if err == nil && info != nil {
-		if pkg, ok := info["PackageID"].(string); ok && pkg != "" {
-			if e := runPowerShell("Remove-AppxPackage -Package \"" + pkg + "\" -PreserveRoamableApplicationData"); e != nil {
-				return "ERR_APPX_UNINSTALL_FAILED"
-			}
-		}
-	}
-	if e := runPowerShell("Add-AppxPackage \"" + p + "\""); e != nil {
-		return "ERR_APPX_INSTALL_FAILED: " + p + " " + e.Error()
-	}
-	return ""
-}
-
 func deriveFilename(raw string) string {
 	fname := "download.msixvc"
 	if u, e := url.Parse(raw); e == nil {
@@ -339,15 +308,4 @@ func parseInt64(s string) (int64, error) {
 		v = v*10 + int64(c-'0')
 	}
 	return v, nil
-}
-
-func runPowerShell(script string) error {
-	cmd := exec.Command("powershell", "-NoProfile", "-ExecutionPolicy", "Bypass", "-Command", script)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, err := cmd.CombinedOutput()
-	if err != nil {
-		if len(out) > 0 {
-		}
-	}
-	return err
 }

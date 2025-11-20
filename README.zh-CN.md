@@ -93,3 +93,8 @@
 ## 参与贡献
 - 欢迎通过 Issue 与 Pull Request 参与贡献。
 - 在提交前请尽量复现问题并附带必要信息。
+
+## 许可证
+Copyright © 2025 LeviMC, All rights reserved.
+
+本项目的非闭源部分以 LGPL-3.0 许可发布；详情请参见仓库中的 [COPYING](COPYING) 和 [COPYING.LESSER](COPYING.LESSER) 文件。

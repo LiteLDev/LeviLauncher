@@ -2,33 +2,24 @@ package main
 
 import (
 	"context"
-	"encoding/json"
-	"fmt"
-	"io"
 	"log"
-	"net"
 	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"time"
-	"unsafe"
 
-	"github.com/corpix/uarand"
-	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/wailsapp/wails/v3/pkg/application"
 
+	"unsafe"
+
 	"github.com/liteldev/LeviLauncher/internal/content"
-	"github.com/liteldev/LeviLauncher/internal/explorer"
-	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/gameinput"
 	"github.com/liteldev/LeviLauncher/internal/lang"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/mods"
-	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/preloader"
 	"github.com/liteldev/LeviLauncher/internal/registry"
@@ -37,18 +28,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/liteldev/LeviLauncher/internal/versions"
-
 	"golang.org/x/sys/windows"
-
-	"bytes"
-	"encoding/base64"
-	"image"
-	_ "image/gif"
-	_ "image/jpeg"
-    "image/png"
-    _ "image/png"
-	"syscall"
-	"github.com/liteldev/LeviLauncher/internal/icons"
 )
 
 const (
@@ -65,97 +45,12 @@ type GameInputDownloadProgress struct {
 	Total      int64
 }
 
-type ExtractProgress struct {
-	Dir   string
-	Files int64
-	Bytes int64
-	Ts    int64
-}
-
 func (a *Minecraft) GetDriveStats(root string) map[string]uint64 {
-	res := map[string]uint64{"total": 0, "free": 0}
-	r := strings.TrimSpace(root)
-	if r == "" {
-		return res
-	}
-	if !strings.HasSuffix(r, "\\") {
-		r += "\\"
-	}
-	p, err := windows.UTF16PtrFromString(r)
-	if err != nil {
-		return res
-	}
-	var freeBytesAvailable, totalNumberOfBytes, totalNumberOfFreeBytes uint64
-	if err := windows.GetDiskFreeSpaceEx(p, &freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes); err == nil {
-		res["total"] = totalNumberOfBytes
-		res["free"] = totalNumberOfFreeBytes
-	}
-	return res
+	return mcservice.GetDriveStats(root)
 }
 
 func (a *Minecraft) FetchHistoricalVersions(preferCN bool) map[string]interface{} {
-	const githubURL = "https://raw.githubusercontent.com/LiteLDev/minecraft-windows-gdk-version-db/refs/heads/main/historical_versions.json"
-	const gitcodeURL = "https://github.bibk.top/LiteLDev/minecraft-windows-gdk-version-db/raw/refs/heads/main/historical_versions.json"
-
-	urls := []string{githubURL, gitcodeURL}
-	if preferCN {
-		urls = []string{gitcodeURL, githubURL}
-	}
-
-	client := &http.Client{Timeout: 8 * time.Second}
-	var lastErr error
-	for _, u := range urls {
-		req, err := http.NewRequestWithContext(a.ctx, http.MethodGet, u, nil)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("Cache-Control", "no-cache")
-		resp, err := client.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		func() {
-			defer resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				lastErr = fmt.Errorf("status %d", resp.StatusCode)
-				return
-			}
-			dec := json.NewDecoder(resp.Body)
-			var obj map[string]interface{}
-			if derr := dec.Decode(&obj); derr != nil {
-				lastErr = derr
-				return
-			}
-
-			obj["_source"] = u
-			urls = nil
-			lastErr = nil
-
-		}()
-		if lastErr == nil && urls == nil {
-			resp2, err2 := client.Get(u)
-			if err2 != nil {
-				lastErr = err2
-				continue
-			}
-			defer resp2.Body.Close()
-			var obj2 map[string]interface{}
-			if derr2 := json.NewDecoder(resp2.Body).Decode(&obj2); derr2 != nil {
-				lastErr = derr2
-				continue
-			}
-			obj2["_source"] = u
-			return obj2
-		}
-	}
-	if lastErr != nil {
-		log.Println("FetchHistoricalVersions error:", lastErr)
-	}
-	return map[string]interface{}{}
+	return mcservice.FetchHistoricalVersions(preferCN)
 }
 
 type KnownFolder struct {
@@ -164,23 +59,9 @@ type KnownFolder struct {
 }
 
 func (a *Minecraft) ListKnownFolders() []KnownFolder {
-	out := []KnownFolder{}
-	home, _ := os.UserHomeDir()
-	if strings.TrimSpace(home) == "" {
-		home = os.Getenv("USERPROFILE")
-	}
-	add := func(name, p string) {
-		if strings.TrimSpace(p) == "" {
-			return
-		}
-		if fi, err := os.Stat(p); err == nil && fi.IsDir() {
-			out = append(out, KnownFolder{Name: name, Path: p})
-		}
-	}
-	add("Home", home)
-	if home != "" {
-		add("Desktop", filepath.Join(home, "Desktop"))
-		add("Downloads", filepath.Join(home, "Downloads"))
+	var out []KnownFolder
+	for _, k := range mcservice.ListKnownFolders() {
+		out = append(out, KnownFolder{Name: k.Name, Path: k.Path})
 	}
 	return out
 }
@@ -192,562 +73,68 @@ type ContentCounts struct {
 }
 
 func (a *Minecraft) GetContentRoots(name string) types.ContentRoots {
-	roots := types.ContentRoots{Base: "", UsersRoot: "", ResourcePacks: "", BehaviorPacks: "", IsIsolation: false, IsPreview: false}
-	verName := strings.TrimSpace(name)
-
-	isPreview := false
-	isIsolation := false
-	if verName != "" {
-		if vdir, err := utils.GetVersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
-			dir := filepath.Join(vdir, verName)
-			if m, merr := versions.ReadMeta(dir); merr == nil {
-				isIsolation = m.EnableIsolation
-				isPreview = strings.EqualFold(strings.TrimSpace(m.Type), "preview")
-			}
-		}
-	}
-	roots.IsIsolation = isIsolation
-	roots.IsPreview = isPreview
-	gameDirName := "Minecraft Bedrock"
-	if isPreview {
-		gameDirName = "Minecraft Bedrock Preview"
-	}
-	base := ""
-	if isIsolation && verName != "" {
-		if vdir, err := utils.GetVersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
-			base = filepath.Join(vdir, verName, gameDirName)
-		}
-	} else {
-		base = utils.GetMinecraftGDKDataPath(isPreview)
-		base = strings.TrimSpace(base)
-	}
-	roots.Base = base
-	if strings.TrimSpace(base) == "" {
-		return roots
-	}
-	users := filepath.Join(base, "Users")
-	shared := filepath.Join(users, "Shared", "games", "com.mojang")
-	roots.UsersRoot = users
-	roots.ResourcePacks = filepath.Join(shared, "resource_packs")
-	roots.BehaviorPacks = filepath.Join(shared, "behavior_packs")
-	return roots
+	return mcservice.GetContentRoots(name)
 }
 
 func (a *Minecraft) GetContentCounts(name string) ContentCounts {
-	roots := a.GetContentRoots(name)
-	countDirs := func(path string) int {
-		p := strings.TrimSpace(path)
-		if p == "" {
-			return 0
-		}
-		entries := a.ListDir(p)
-		n := 0
-		for _, e := range entries {
-			if e.IsDir {
-				n++
-			}
-		}
-		return n
-	}
-	res := countDirs(roots.ResourcePacks)
-	bp := countDirs(roots.BehaviorPacks)
-
-	worlds := 0
-	usersRoot := strings.TrimSpace(roots.UsersRoot)
-	if usersRoot != "" {
-		entries := a.ListDir(usersRoot)
-		var firstPlayer string
-		for _, e := range entries {
-			if e.IsDir {
-				nm := strings.TrimSpace(e.Name)
-				if nm != "" && !strings.EqualFold(nm, "Shared") {
-					firstPlayer = nm
-					break
-				}
-			}
-		}
-		if firstPlayer != "" {
-			wp := filepath.Join(usersRoot, firstPlayer, "games", "com.mojang", "minecraftWorlds")
-			worlds = countDirs(wp)
-		}
-	}
-	return ContentCounts{Worlds: worlds, ResourcePacks: res, BehaviorPacks: bp}
+	c := mcservice.GetContentCounts(name)
+	return ContentCounts{Worlds: c.Worlds, ResourcePacks: c.ResourcePacks, BehaviorPacks: c.BehaviorPacks}
 }
 
 func (a *Minecraft) LaunchVersionByName(name string) string {
-    return a.launchVersionInternal(name, true)
+	return a.launchVersionInternal(name, true)
 }
 
 func (a *Minecraft) LaunchVersionByNameForce(name string) string {
-    return a.launchVersionInternal(name, false)
+	return a.launchVersionInternal(name, false)
 }
 
 func (a *Minecraft) CreateDesktopShortcut(name string) string {
-    n := strings.TrimSpace(name)
-    if n == "" {
-        return "ERR_NAME_REQUIRED"
-    }
-    exePath, _ := os.Executable()
-    exePath = strings.TrimSpace(exePath)
-    if exePath == "" {
-        return "ERR_SHORTCUT_CREATE_FAILED"
-    }
-    home, _ := os.UserHomeDir()
-    if strings.TrimSpace(home) == "" {
-        home = os.Getenv("USERPROFILE")
-    }
-    if strings.TrimSpace(home) == "" {
-        return "ERR_SHORTCUT_CREATE_FAILED"
-    }
-    desktop := filepath.Join(home, "Desktop")
-    if fi, err := os.Stat(desktop); err != nil || !fi.IsDir() {
-        return "ERR_SHORTCUT_CREATE_FAILED"
-    }
-    safeName := n
-    lnk := filepath.Join(desktop, "Minecraft - "+safeName+".lnk")
-    args := "--launch=" + n
-    workdir := filepath.Dir(exePath)
-    iconPath := exePath
-    if vdir, err := utils.GetVersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
-        dir := filepath.Join(vdir, n)
-        e := filepath.Join(dir, "Minecraft.Windows.exe")
-        isPreview := false
-        if m, er := versions.ReadMeta(dir); er == nil {
-            isPreview = strings.EqualFold(strings.TrimSpace(m.Type), "preview")
-        }
-        if p := icons.EnsureVersionIcon(dir, isPreview); strings.TrimSpace(p) != "" {
-            lp := strings.ToLower(p)
-            if strings.HasSuffix(lp, ".ico") || strings.HasSuffix(lp, ".exe") {
-                iconPath = p
-            } else {
-                // PNG not supported by Windows shortcut icon; fallback to exe
-                if utils.FileExists(e) {
-                    iconPath = e
-                }
-            }
-        } else if utils.FileExists(e) {
-            iconPath = e
-        }
-    }
-    esc := func(s string) string { return strings.ReplaceAll(s, "'", "''") }
-    script := "$WshShell = New-Object -ComObject WScript.Shell; " +
-        "$Shortcut = $WshShell.CreateShortcut('" + esc(lnk) + "'); " +
-        "$Shortcut.TargetPath = '" + esc(exePath) + "'; " +
-        "$Shortcut.Arguments = '" + esc(args) + "'; " +
-        "$Shortcut.WorkingDirectory = '" + esc(workdir) + "'; " +
-        "$Shortcut.IconLocation = '" + esc(iconPath) + "'; " +
-        "$Shortcut.Save()"
-    cmd := exec.Command("powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script)
-    cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-    if err := cmd.Run(); err != nil {
-        return "ERR_SHORTCUT_CREATE_FAILED"
-    }
-    return ""
-}
-
-func isProcessRunningAtPath(exePath string) bool {
-	p := strings.ToLower(filepath.Clean(strings.TrimSpace(exePath)))
-	if p == "" {
-		return false
-	}
-	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
-	if err != nil {
-		return false
-	}
-	defer windows.CloseHandle(snap)
-	var pe windows.ProcessEntry32
-	pe.Size = uint32(unsafe.Sizeof(pe))
-	if err := windows.Process32First(snap, &pe); err != nil {
-		return false
-	}
-	for {
-		pid := pe.ProcessID
-		h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
-		if err == nil {
-			buf := make([]uint16, 1024)
-			size := uint32(len(buf))
-			if e := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); e == nil && size > 0 {
-				path := windows.UTF16ToString(buf[:size])
-				_ = windows.CloseHandle(h)
-				norm := strings.ToLower(filepath.Clean(strings.TrimSpace(path)))
-				norm = strings.TrimPrefix(norm, `\\?\`)
-				norm = strings.TrimPrefix(norm, `\??\`)
-				if norm == p {
-					return true
-				}
-			} else {
-				_ = windows.CloseHandle(h)
-			}
-		}
-		if err := windows.Process32Next(snap, &pe); err != nil {
-			break
-		}
-	}
-	return false
+	return mcservice.CreateDesktopShortcut(name)
 }
 
 func (a *Minecraft) SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool) string {
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	dir := filepath.Join(vdir, strings.TrimSpace(name))
-	meta := versions.VersionMeta{
-		Name:             strings.TrimSpace(name),
-		GameVersion:      strings.TrimSpace(gameVersion),
-		Type:             strings.TrimSpace(typeStr),
-		EnableIsolation:  enableIsolation,
-		EnableConsole:    enableConsole,
-		EnableEditorMode: enableEditorMode,
-		CreatedAt:        time.Now(),
-	}
-	if err := versions.WriteMeta(dir, meta); err != nil {
-		return "ERR_WRITE_TARGET"
-	}
-	return ""
+	return mcservice.SaveVersionMeta(name, gameVersion, typeStr, enableIsolation, enableConsole, enableEditorMode)
 }
 
-func (a *Minecraft) ListVersionMetas() []versions.VersionMeta {
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return []versions.VersionMeta{}
-	}
-	metas, err := versions.ScanVersions(vdir)
-	if err != nil {
-		return []versions.VersionMeta{}
-	}
-	return metas
-}
+func (a *Minecraft) ListVersionMetas() []versions.VersionMeta { return mcservice.ListVersionMetas() }
 
 func (a *Minecraft) ListInheritableVersionNames(versionType string) []string {
-	vt := strings.ToLower(strings.TrimSpace(versionType))
-	if vt != "release" && vt != "preview" {
-		vt = "release"
-	}
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return []string{}
-	}
-	metas, err := versions.ScanVersions(vdir)
-	if err != nil || len(metas) == 0 {
-		return []string{}
-	}
-	names := make([]string, 0, len(metas))
-	for _, m := range metas {
-		if !m.EnableIsolation {
-			continue
-		}
-		mt := strings.ToLower(strings.TrimSpace(m.Type))
-		if mt != vt {
-			continue
-		}
-		gameDirName := "Minecraft Bedrock"
-		if mt == "preview" {
-			gameDirName = "Minecraft Bedrock Preview"
-		}
-		base := filepath.Join(vdir, m.Name, gameDirName)
-		if !utils.DirExists(base) {
-			continue
-		}
-		if utils.DirSize(base) <= 10*1024 {
-			continue
-		}
-		names = append(names, m.Name)
-	}
-	return names
-}
-
-func (a *Minecraft) CopyGameToVersion(targetDir string, isPreview bool) string {
-	return ""
+	return mcservice.ListInheritableVersionNames(versionType)
 }
 
 func (a *Minecraft) CopyVersionDataFromVersion(sourceName string, targetName string) string {
-	s := strings.TrimSpace(sourceName)
-	t := strings.TrimSpace(targetName)
-	if s == "" || t == "" {
-		return "ERR_TARGET_DIR_NOT_SPECIFIED"
-	}
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	sdir := filepath.Join(vdir, s)
-	tdir := filepath.Join(vdir, t)
-	sm, serr := versions.ReadMeta(sdir)
-	if serr != nil {
-		return "ERR_INHERIT_SOURCE_NOT_FOUND"
-	}
-	tm, terr := versions.ReadMeta(tdir)
-	if terr != nil {
-		return "ERR_INHERIT_TARGET_NOT_FOUND"
-	}
-	st := strings.ToLower(strings.TrimSpace(sm.Type))
-	tt := strings.ToLower(strings.TrimSpace(tm.Type))
-	if st == "" || tt == "" || st != tt {
-		return "ERR_INHERIT_TYPE_MISMATCH"
-	}
-	gameDirName := "Minecraft Bedrock"
-	if st == "preview" {
-		gameDirName = "Minecraft Bedrock Preview"
-	}
-	srcBase := filepath.Join(sdir, gameDirName)
-	dstBase := filepath.Join(tdir, gameDirName)
-	if !utils.DirExists(srcBase) {
-		return "ERR_INHERIT_SOURCE_NOT_FOUND"
-	}
-	if err := os.MkdirAll(dstBase, 0755); err != nil {
-		return "ERR_CREATE_TARGET_DIR"
-	}
-	if err := utils.CopyDir(srcBase, dstBase); err != nil {
-		return "ERR_INHERIT_COPY_FAILED"
-	}
-	return ""
+	return mcservice.CopyVersionDataFromVersion(sourceName, targetName)
 }
 
 func (a *Minecraft) CopyVersionDataFromGDK(isPreview bool, targetName string) string {
-	t := strings.TrimSpace(targetName)
-	if t == "" {
-		return "ERR_TARGET_DIR_NOT_SPECIFIED"
-	}
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	tdir := filepath.Join(vdir, t)
-	tm, terr := versions.ReadMeta(tdir)
-	if terr != nil {
-		return "ERR_INHERIT_TARGET_NOT_FOUND"
-	}
-	tt := strings.ToLower(strings.TrimSpace(tm.Type))
-	if (isPreview && tt != "preview") || (!isPreview && tt != "release") {
-		return "ERR_INHERIT_TYPE_MISMATCH"
-	}
-	gameDirName := "Minecraft Bedrock"
-	if isPreview {
-		gameDirName = "Minecraft Bedrock Preview"
-	}
-	srcBase := utils.GetMinecraftGDKDataPath(isPreview)
-	if strings.TrimSpace(srcBase) == "" || !utils.DirExists(srcBase) {
-		return "ERR_NO_GAME_DATA"
-	}
-	dstBase := filepath.Join(tdir, gameDirName)
-	if err := os.MkdirAll(dstBase, 0755); err != nil {
-		return "ERR_CREATE_TARGET_DIR"
-	}
-	if err := utils.CopyDir(srcBase, dstBase); err != nil {
-		return "ERR_INHERIT_COPY_FAILED"
-	}
-	return ""
+	return mcservice.CopyVersionDataFromGDK(isPreview, targetName)
 }
 
 func (a *Minecraft) SaveVersionLogoDataUrl(name string, dataUrl string) string {
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	dir := filepath.Join(vdir, strings.TrimSpace(name))
-	if !utils.DirExists(dir) {
-		return "ERR_VERSION_NOT_FOUND"
-	}
-	du := strings.TrimSpace(dataUrl)
-	lower := strings.ToLower(du)
-	if !strings.HasPrefix(lower, "data:image/") || !strings.Contains(lower, ";base64,") {
-		return "ERR_ICON_FORMAT"
-	}
-	parts := strings.SplitN(du, ",", 2)
-	if len(parts) != 2 {
-		return "ERR_ICON_FORMAT"
-	}
-	b64 := parts[1]
-	raw, er := base64.StdEncoding.DecodeString(b64)
-	if er != nil {
-		return "ERR_ICON_DECODE"
-	}
-	cfg, _, er := image.DecodeConfig(bytes.NewReader(raw))
-	if er != nil {
-		return "ERR_ICON_DECODE"
-	}
-	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width != cfg.Height {
-		return "ERR_ICON_NOT_SQUARE"
-	}
-	img, _, er := image.Decode(bytes.NewReader(raw))
-	if er != nil {
-		return "ERR_ICON_DECODE"
-	}
-    outPath := filepath.Join(dir, "LargeLogo.png")
-    f, ferr := os.Create(outPath)
-	if ferr != nil {
-		return "ERR_WRITE_TARGET"
-	}
-	defer f.Close()
-	if err := png.Encode(f, img); err != nil {
-		return "ERR_WRITE_TARGET"
-	}
-	return ""
+	return mcservice.SaveVersionLogoDataUrl(name, dataUrl)
 }
 
 func (a *Minecraft) SaveVersionLogoFromPath(name string, filePath string) string {
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	dir := filepath.Join(vdir, strings.TrimSpace(name))
-	if !utils.DirExists(dir) {
-		return "ERR_VERSION_NOT_FOUND"
-	}
-	p := strings.TrimSpace(filePath)
-	if p == "" || !utils.FileExists(p) {
-		return "ERR_ICON_DECODE"
-	}
-	raw, er := os.ReadFile(p)
-	if er != nil {
-		return "ERR_ICON_DECODE"
-	}
-	cfg, _, er := image.DecodeConfig(bytes.NewReader(raw))
-	if er != nil {
-		return "ERR_ICON_DECODE"
-	}
-	if cfg.Width <= 0 || cfg.Height <= 0 || cfg.Width != cfg.Height {
-		return "ERR_ICON_NOT_SQUARE"
-	}
-	img, _, er := image.Decode(bytes.NewReader(raw))
-	if er != nil {
-		return "ERR_ICON_DECODE"
-	}
-    outPath := filepath.Join(dir, "LargeLogo.png")
-    f, ferr := os.Create(outPath)
-	if ferr != nil {
-		return "ERR_WRITE_TARGET"
-	}
-	defer f.Close()
-	if err := png.Encode(f, img); err != nil {
-		return "ERR_WRITE_TARGET"
-	}
-	return ""
+	return mcservice.SaveVersionLogoFromPath(name, filePath)
 }
 
 func (a *Minecraft) GetVersionLogoDataUrl(name string) string {
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return ""
-	}
-    p := filepath.Join(vdir, strings.TrimSpace(name), "LargeLogo.png")
-	if !utils.FileExists(p) {
-		return ""
-	}
-	b, er := os.ReadFile(p)
-	if er != nil {
-		return ""
-	}
-	enc := base64.StdEncoding.EncodeToString(b)
-	return "data:image/png;base64," + enc
+	return mcservice.GetVersionLogoDataUrl(name)
 }
 
-func (a *Minecraft) RemoveVersionLogo(name string) string {
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-    p := filepath.Join(vdir, strings.TrimSpace(name), "LargeLogo.png")
-	if utils.FileExists(p) {
-		if er := os.Remove(p); er != nil {
-			return "ERR_WRITE_TARGET"
-		}
-	}
-	return ""
-}
+func (a *Minecraft) RemoveVersionLogo(name string) string { return mcservice.RemoveVersionLogo(name) }
 
 func (a *Minecraft) ValidateVersionFolderName(name string) string {
-	n := strings.TrimSpace(name)
-	if msg := versions.ValidateFolderName(n); msg != "" {
-		return msg
-	}
-	lower := strings.ToLower(n)
-	reserved := map[string]struct{}{
-		"con": {}, "prn": {}, "aux": {}, "nul": {},
-		"com1": {}, "com2": {}, "com3": {}, "com4": {}, "com5": {}, "com6": {}, "com7": {}, "com8": {}, "com9": {},
-		"lpt1": {}, "lpt2": {}, "lpt3": {}, "lpt4": {}, "lpt5": {}, "lpt6": {}, "lpt7": {}, "lpt8": {}, "lpt9": {},
-	}
-	if _, ok := reserved[lower]; ok {
-		return "ERR_NAME_RESERVED"
-	}
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || vdir == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	entries, err := os.ReadDir(vdir)
-	if err != nil {
-		return "ERR_READ_VERSIONS_DIR"
-	}
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		if strings.EqualFold(e.Name(), n) {
-			return "ERR_NAME_EXISTS"
-		}
-	}
-	return ""
+	return mcservice.ValidateVersionFolderName(name)
 }
 
 func (a *Minecraft) RenameVersionFolder(oldName string, newName string) string {
-	on := strings.TrimSpace(oldName)
-	nn := strings.TrimSpace(newName)
-	if on == "" || nn == "" {
-		return "ERR_INVALID_NAME"
-	}
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	oldPath := filepath.Join(vdir, on)
-	newPath := filepath.Join(vdir, nn)
-	if !utils.DirExists(oldPath) {
-		return "ERR_NOT_FOUND_OLD"
-	}
-	if strings.EqualFold(on, nn) {
-		m, _ := versions.ReadMeta(oldPath)
-		m.Name = nn
-		if er := versions.WriteMeta(oldPath, m); er != nil {
-			return "ERR_WRITE_TARGET"
-		}
-		return ""
-	}
-	if utils.DirExists(newPath) {
-		return "ERR_NAME_EXISTS"
-	}
-	if err := os.Rename(oldPath, newPath); err != nil {
-		return "ERR_RENAME_FAILED"
-	}
-	m, _ := versions.ReadMeta(newPath)
-	m.Name = nn
-	if er := versions.WriteMeta(newPath, m); er != nil {
-		return "ERR_WRITE_TARGET"
-	}
-	return ""
+	return mcservice.RenameVersionFolder(oldName, newName)
 }
 
 func (a *Minecraft) DeleteVersionFolder(name string) string {
-	n := strings.TrimSpace(name)
-	if n == "" {
-		return "ERR_INVALID_NAME"
-	}
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	dir := filepath.Join(vdir, n)
-	if !utils.DirExists(dir) {
-		return "ERR_NOT_FOUND_OLD"
-	}
-	exe := filepath.Join(dir, "Minecraft.Windows.exe")
-	if utils.FileExists(exe) && isProcessRunningAtPath(exe) {
-		return "ERR_GAME_ALREADY_RUNNING"
-	}
-	if err := os.RemoveAll(dir); err != nil {
-		return "ERR_DELETE_FAILED"
-	}
-	return ""
+	return mcservice.DeleteVersionFolder(name)
 }
 
 type Minecraft struct {
@@ -767,12 +154,15 @@ func (a *Minecraft) startup() {
 	exeDir := filepath.Dir(exePath)
 	os.Chdir(exeDir)
 	launch.EnsureGamingServicesInstalled(a.ctx)
-	a.startImportServer()
+	srv, ln, addr := mcservice.StartImportServer()
+	if srv != nil && ln != nil {
+		a.importSrv = srv
+		a.importAddr = addr
+		go func() { _ = srv.Serve(ln) }()
+	}
 }
 
-func (a *Minecraft) IsFirstLaunch() bool {
-	return false
-}
+// IsFirstLaunch removed
 
 func (a *Minecraft) EnsureGameInputInteractive() { go gameinput.EnsureInteractive(a.ctx) }
 
@@ -786,154 +176,21 @@ func (a *Minecraft) IsGamingServicesInstalled() bool {
 }
 
 func (a *Minecraft) StartMsixvcDownload(url string) string {
-	return msixvc.StartDownload(a.ctx, url)
+	return mcservice.StartMsixvcDownload(a.ctx, url)
 }
-
-func (a *Minecraft) ResumeMsixvcDownload() { msixvc.Resume() }
-
-func (a *Minecraft) CancelMsixvcDownload() { msixvc.Cancel() }
-
-func (a *Minecraft) InstallMsixvc(name string, isPreview bool) string {
-	n := strings.TrimSpace(name)
-	if n == "" {
-		return "ERR_MSIXVC_NOT_SPECIFIED"
-	}
-	return msixvc.Install(a.ctx, n, isPreview)
-}
+func (a *Minecraft) ResumeMsixvcDownload() { mcservice.ResumeMsixvcDownload() }
+func (a *Minecraft) CancelMsixvcDownload() { mcservice.CancelMsixvcDownload() }
 
 func (a *Minecraft) InstallExtractMsixvc(name string, folderName string, isPreview bool) string {
-	n := strings.TrimSpace(name)
-	if n == "" {
-		return "ERR_MSIXVC_NOT_SPECIFIED"
-	}
-	inPath := n
-	if !filepath.IsAbs(inPath) {
-		if dir, err := utils.GetInstallerDir(); err == nil && dir != "" {
-			inPath += ".msixvc"
-			inPath = filepath.Join(dir, inPath)
-		}
-	}
-	if !utils.FileExists(inPath) {
-		return "ERR_MSIXVC_NOT_FOUND"
-	}
-	vdir, err := utils.GetVersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	outDir := filepath.Join(vdir, strings.TrimSpace(folderName))
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		return "ERR_CREATE_TARGET_DIR"
-	}
-	stopCh := make(chan struct{})
-	go func(dir string) {
-		ticker := time.NewTicker(300 * time.Millisecond)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				var totalBytes int64
-				var files int64
-				_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-					if err != nil {
-						return nil
-					}
-					if d.IsDir() {
-						return nil
-					}
-					if fi, e := os.Stat(path); e == nil {
-						totalBytes += fi.Size()
-						files++
-					}
-					return nil
-				})
-
-				application.Get().Event.Emit("extract.progress", ExtractProgress{Dir: dir, Files: files, Bytes: totalBytes, Ts: time.Now().UnixMilli()})
-			case <-stopCh:
-				return
-			}
-		}
-	}(outDir)
-
-	rc, msg := extractor.MiHoYo(inPath, outDir)
-	close(stopCh)
-	if rc != 0 {
-		application.Get().Event.Emit("extract.error", msg)
-		if strings.TrimSpace(msg) == "" {
-			msg = "ERR_APPX_INSTALL_FAILED"
-		}
-		return msg
-	}
-	_ = vcruntime.EnsureForVersion(a.ctx, outDir)
-	_ = preloader.EnsureForVersion(a.ctx, outDir)
-	_ = peeditor.EnsureForVersion(a.ctx, outDir)
-	_ = peeditor.RunForVersion(a.ctx, outDir)
-	application.Get().Event.Emit("extract.done", outDir)
-	return ""
+	return mcservice.InstallExtractMsixvc(a.ctx, name, folderName, isPreview)
 }
 
 func (a *Minecraft) ResolveDownloadedMsixvc(version string, versionType string) string {
-	dir, err := utils.GetInstallerDir()
-	if err != nil || strings.TrimSpace(dir) == "" {
-		return ""
-	}
-	entries, err := os.ReadDir(dir)
-	if err != nil {
-		return ""
-	}
-
-	for _, e := range entries {
-		if e.IsDir() {
-			continue
-		}
-		name := e.Name()
-		lower := strings.ToLower(name)
-		if !strings.HasSuffix(lower, ".msixvc") {
-			continue
-		}
-
-		ext := filepath.Ext(name)
-		if strings.ToLower(ext) == ".msixvc" {
-			nameNoExt := name[:len(name)-len(ext)]
-			name = nameNoExt
-		} else {
-			name = strings.TrimSuffix(name, ".msixvc")
-		}
-		b := strings.TrimSpace(name)
-		v := strings.TrimSpace(version)
-		bl := strings.ToLower(b)
-		vl := strings.ToLower(v)
-
-		if vl == bl {
-			return name
-		}
-
-	}
-	return ""
+	return mcservice.ResolveDownloadedMsixvc(version, versionType)
 }
 
 func (a *Minecraft) DeleteDownloadedMsixvc(version string, versionType string) string {
-	name := strings.TrimSpace(a.ResolveDownloadedMsixvc(version, versionType))
-	if name == "" {
-		return "ERR_MSIXVC_NOT_FOUND"
-	}
-	dir, err := utils.GetInstallerDir()
-	if err != nil || strings.TrimSpace(dir) == "" {
-		return "ERR_ACCESS_INSTALLERS_DIR"
-	}
-	path := filepath.Join(dir, name+".msixvc")
-	if !utils.FileExists(path) {
-		alt := filepath.Join(dir, name)
-		if utils.FileExists(alt) {
-			path = alt
-		}
-	}
-	if !utils.FileExists(path) {
-		return "ERR_MSIXVC_NOT_FOUND"
-	}
-	if err := os.Remove(path); err != nil {
-		return "ERR_WRITE_TARGET"
-	}
-	return ""
+	return mcservice.DeleteDownloadedMsixvc(version, versionType)
 }
 
 type VersionStatus struct {
@@ -943,118 +200,34 @@ type VersionStatus struct {
 	Type         string `json:"type"`
 }
 
-func (a *Minecraft) GetInstallerDir() string {
-	dir, err := utils.GetInstallerDir()
-	if err != nil {
-		return ""
-	}
-	return dir
-}
+func (a *Minecraft) GetInstallerDir() string { return mcservice.GetInstallerDir() }
 
-func (a *Minecraft) GetVersionsDir() string {
-	dir, err := utils.GetVersionsDir()
-	if err != nil {
-		return ""
-	}
-	return dir
-}
+func (a *Minecraft) GetVersionsDir() string { return mcservice.GetVersionsDir() }
 
 func (a *Minecraft) GetVersionStatus(version string, versionType string) VersionStatus {
-	status := VersionStatus{
-		Version:      version,
-		Type:         versionType,
-		IsInstalled:  false,
-		IsDownloaded: false,
-	}
-
-	if name := a.ResolveDownloadedMsixvc(version, versionType); strings.TrimSpace(name) != "" {
-		status.IsDownloaded = true
-	}
-
-	return status
+	s := mcservice.GetVersionStatus(version, versionType)
+	return VersionStatus{Version: s.Version, Type: s.Type, IsInstalled: s.IsInstalled, IsDownloaded: s.IsDownloaded}
 }
 
 func (a *Minecraft) GetAllVersionsStatus(versions []map[string]interface{}) []VersionStatus {
 	var results []VersionStatus
-
-	for _, versionData := range versions {
-		version, ok := versionData["version"].(string)
-		if !ok {
-			version, ok = versionData["short"].(string)
-			if !ok {
-				continue
-			}
-		}
-
-		versionType, ok := versionData["type"].(string)
-		if !ok {
-			versionType = "release"
-		}
-
-		status := a.GetVersionStatus(version, versionType)
-		results = append(results, status)
+	for _, s := range mcservice.GetAllVersionsStatus(versions) {
+		results = append(results, VersionStatus{Version: s.Version, Type: s.Type, IsInstalled: s.IsInstalled, IsDownloaded: s.IsDownloaded})
 	}
-
 	return results
 }
 
-func (a *Minecraft) OpenModsExplorer(name string) { _ = explorer.OpenMods(name) }
+func (a *Minecraft) OpenModsExplorer(name string) { mcservice.OpenModsExplorer(name) }
 
 func (a *Minecraft) OpenWorldsExplorer(name string, isPreview bool) {
-	roots := a.GetContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	if users != "" {
-		entries := a.ListDir(users)
-		var firstPlayer string
-		for _, e := range entries {
-			if e.IsDir {
-				nm := strings.TrimSpace(e.Name)
-				if nm != "" && !strings.EqualFold(nm, "Shared") {
-					firstPlayer = nm
-					break
-				}
-			}
-		}
-		if firstPlayer != "" {
-			wp := filepath.Join(users, firstPlayer, "games", "com.mojang", "minecraftWorlds")
-			if utils.DirExists(wp) {
-				_ = explorer.OpenPath(wp)
-				return
-			}
-		}
-		if utils.DirExists(users) {
-			_ = explorer.OpenPath(users)
-			return
-		}
-	}
-	legacy := filepath.Join(utils.GetMinecraftGDKDataPath(isPreview), "worlds")
-	_ = explorer.OpenPath(legacy)
+	mcservice.OpenWorldsExplorer(name, isPreview)
 }
 
-func (a *Minecraft) OpenPathDir(dir string) {
-	d := strings.TrimSpace(dir)
-	if d == "" {
-		return
-	}
-	_ = explorer.OpenPath(d)
-}
+func (a *Minecraft) OpenPathDir(dir string) { mcservice.OpenPathDir(dir) }
 
-func (a *Minecraft) OpenGameDataExplorer(isPreview bool) {
-	base := utils.GetMinecraftGDKDataPath(isPreview)
-	_ = explorer.OpenPath(base)
-}
+func (a *Minecraft) OpenGameDataExplorer(isPreview bool) { mcservice.OpenGameDataExplorer(isPreview) }
 
-func (a *Minecraft) GetCurrentVersion(isPreview bool) string {
-	info, err := registry.GetMinecraftPackage(isPreview)
-	if err != nil || info == nil {
-		log.Println("GetCurrentVersion:", err)
-		return ""
-	}
-	if v, ok := info["Version"].(string); ok {
-		return v
-	}
-	return ""
-}
+// GetCurrentVersion removed
 
 func (a *Minecraft) GetMods(name string) []types.ModInfo {
 	return mods.GetMods(name)
@@ -1301,254 +474,46 @@ func (a *Minecraft) DeleteWorld(name string, path string) string {
 	return ""
 }
 
-func (a *Minecraft) ListDrives() []string {
-	drives := []string{}
-	for l := 'A'; l <= 'Z'; l++ {
-		root := string(l) + ":\\"
-		if fi, err := os.Stat(root); err == nil && fi.IsDir() {
-			drives = append(drives, root)
-		}
-	}
-	return drives
-}
+func (a *Minecraft) ListDrives() []string { return mcservice.ListDrives() }
 
-func (a *Minecraft) ListDir(path string) []types.FileEntry {
-	list := []types.FileEntry{}
-	if path == "" {
-		return list
-	}
-	ents, err := os.ReadDir(path)
-	if err != nil {
-		return list
-	}
-	for _, e := range ents {
-		p := filepath.Join(path, e.Name())
-		list = append(list, types.FileEntry{
-			Name:  e.Name(),
-			Path:  p,
-			IsDir: e.IsDir(),
-			Size:  0,
-		})
-	}
-	return list
-}
+func (a *Minecraft) ListDir(path string) []types.FileEntry { return mcservice.ListDir(path) }
 
-func (a *Minecraft) GetPathSize(path string) int64 {
-	p := strings.TrimSpace(path)
-	if p == "" {
-		return 0
-	}
-	fi, err := os.Stat(p)
-	if err != nil {
-		return 0
-	}
-	if fi.IsDir() {
-		return utils.DirSize(p)
-	}
-	return fi.Size()
-}
+func (a *Minecraft) GetPathSize(path string) int64 { return mcservice.GetPathSize(path) }
 
-func (a *Minecraft) GetPathModTime(path string) int64 {
-	p := strings.TrimSpace(path)
-	if p == "" {
-		return 0
-	}
-	fi, err := os.Stat(p)
-	if err != nil {
-		return 0
-	}
-	return fi.ModTime().Unix()
-}
+func (a *Minecraft) GetPathModTime(path string) int64 { return mcservice.GetPathModTime(path) }
 
 func (a *Minecraft) GetWorldLevelName(worldDir string) string {
-	if strings.TrimSpace(worldDir) == "" {
-		return ""
-	}
-	p := filepath.Join(worldDir, "levelname.txt")
-	if !utils.FileExists(p) {
-		return ""
-	}
-	b, err := os.ReadFile(p)
-	if err != nil {
-		return ""
-	}
-	s := strings.TrimSpace(string(b))
-	if idx := strings.IndexByte(s, '\n'); idx >= 0 {
-		s = strings.TrimSpace(s[:idx])
-	}
-	return s
+	return mcservice.GetWorldLevelName(worldDir)
 }
 
 func (a *Minecraft) SetWorldLevelName(worldDir string, name string) string {
-    if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
-        return "ERR_INVALID_WORLD_DIR"
-    }
-    p := filepath.Join(worldDir, "levelname.txt")
-    if err := os.WriteFile(p, []byte(strings.TrimSpace(name)), 0644); err != nil {
-        return "ERR_WRITE_FILE"
-    }
-    return ""
+	return mcservice.SetWorldLevelName(worldDir, name)
 }
-
 
 func (a *Minecraft) GetWorldIconDataUrl(worldDir string) string {
-	if strings.TrimSpace(worldDir) == "" {
-		return ""
-	}
-	p := filepath.Join(worldDir, "world_icon.jpeg")
-	if !utils.FileExists(p) {
-		return ""
-	}
-	b, err := os.ReadFile(p)
-	if err != nil {
-		return ""
-	}
-	enc := base64.StdEncoding.EncodeToString(b)
-	return "data:image/jpeg;base64," + enc
+	return mcservice.GetWorldIconDataUrl(worldDir)
 }
 
-func (a *Minecraft) BackupWorld(worldDir string) string {
-	if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
-		return ""
-	}
-	level := a.GetWorldLevelName(worldDir)
-	if level == "" {
-		level = utils.GetLastDirName(worldDir)
-	}
-	safe := utils.SanitizeFilename(level)
-	ts := time.Now().Format("20060102-150405")
-	base := utils.BaseRoot()
-	backupDir := filepath.Join(base, "backups", "worlds", safe)
-	if err := utils.CreateDir(backupDir); err != nil {
-		return ""
-	}
-	dest := filepath.Join(backupDir, fmt.Sprintf("%s_%s.mcworld", safe, ts))
-	if err := utils.ZipDir(worldDir, dest); err != nil {
-		return ""
-	}
-	return dest
-}
+func (a *Minecraft) BackupWorld(worldDir string) string { return mcservice.BackupWorld(worldDir) }
 
 func (a *Minecraft) BackupWorldWithVersion(worldDir string, versionName string) string {
-	if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
-		return ""
-	}
-	level := a.GetWorldLevelName(worldDir)
-	if level == "" {
-		level = utils.GetLastDirName(worldDir)
-	}
-	safeWorld := utils.SanitizeFilename(level)
-	folderName := utils.GetLastDirName(worldDir)
-	safeFolder := utils.SanitizeFilename(folderName)
-	safeVersion := utils.SanitizeFilename(strings.TrimSpace(versionName))
-	if safeVersion == "" {
-		safeVersion = "default"
-	}
-	ts := time.Now().Format("20060102-150405")
-	base := utils.BaseRoot()
-	backupDir := filepath.Join(base, "backups", "worlds", safeVersion, safeFolder+"_"+safeWorld)
-	if err := utils.CreateDir(backupDir); err != nil {
-		return ""
-	}
-	dest := filepath.Join(backupDir, fmt.Sprintf("%s_%s.mcworld", safeWorld, ts))
-	if err := utils.ZipDir(worldDir, dest); err != nil {
-		return ""
-	}
-	return dest
+	return mcservice.BackupWorldWithVersion(worldDir, versionName)
 }
 
-
 func (a *Minecraft) ReadWorldLevelDatFields(worldDir string) map[string]any {
-    res := map[string]any{}
-    if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
-        return res
-    }
-    fields, ver, err := content.ReadLevelDatFields(worldDir)
-    if err != nil {
-        return res
-    }
-    res["version"] = ver
-    res["fields"] = fields
-    if order, over, e2 := content.ReadLevelDatOrder(worldDir); e2 == nil && over == ver {
-        res["order"] = order
-    }
-    return res
+	return mcservice.ReadWorldLevelDatFields(worldDir)
 }
 
 func (a *Minecraft) WriteWorldLevelDatFields(worldDir string, args map[string]any) string {
-    if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
-        return "ERR_INVALID_WORLD_DIR"
-    }
-    var ver int32
-    var fields []types.LevelDatField
-    if v, ok := args["version"].(float64); ok {
-        ver = int32(v)
-    } else if v2, ok2 := args["version"].(int32); ok2 {
-        ver = v2
-    }
-    if arr, ok := args["fields"].([]any); ok {
-        for _, it := range arr {
-            b, _ := json.Marshal(it)
-            var f types.LevelDatField
-            _ = json.Unmarshal(b, &f)
-            fields = append(fields, f)
-        }
-    }
-    if err := content.WriteLevelDatFields(worldDir, fields, ver); err != nil {
-        return "ERR_WRITE_FILE"
-    }
-    if nm, ok := args["levelName"].(string); ok && strings.TrimSpace(nm) != "" {
-        _ = os.WriteFile(filepath.Join(worldDir, "levelname.txt"), []byte(strings.TrimSpace(nm)), 0644)
-    }
-    return ""
+	return mcservice.WriteWorldLevelDatFields(worldDir, args)
 }
 
 func (a *Minecraft) ReadWorldLevelDatFieldsAt(worldDir string, path []string) map[string]any {
-    res := map[string]any{}
-    if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
-        return res
-    }
-    fields, ver, err := content.ReadLevelDatFieldsAt(worldDir, path)
-    if err != nil {
-        return res
-    }
-    res["version"] = ver
-    res["fields"] = fields
-    if order, over, e2 := content.ReadLevelDatOrderAt(worldDir, path); e2 == nil && over == ver {
-        res["order"] = order
-    }
-    return res
+	return mcservice.ReadWorldLevelDatFieldsAt(worldDir, path)
 }
 
 func (a *Minecraft) WriteWorldLevelDatFieldsAt(worldDir string, args map[string]any) string {
-    if strings.TrimSpace(worldDir) == "" || !utils.DirExists(worldDir) {
-        return "ERR_INVALID_WORLD_DIR"
-    }
-    var ver int32
-    var fields []types.LevelDatField
-    var path []string
-    if v, ok := args["version"].(float64); ok {
-        ver = int32(v)
-    } else if v2, ok2 := args["version"].(int32); ok2 {
-        ver = v2
-    }
-    if arr, ok := args["fields"].([]any); ok {
-        for _, it := range arr {
-            b, _ := json.Marshal(it)
-            var f types.LevelDatField
-            _ = json.Unmarshal(b, &f)
-            fields = append(fields, f)
-        }
-    }
-    if p, okp := args["path"].([]any); okp {
-        for _, s := range p {
-            path = append(path, fmt.Sprintf("%v", s))
-        }
-    }
-    if err := content.WriteLevelDatFieldsAt(worldDir, path, fields, ver); err != nil {
-        return "ERR_WRITE_FILE"
-    }
-    return ""
+	return mcservice.WriteWorldLevelDatFieldsAt(worldDir, args)
 }
 
 func (a *Minecraft) ImportModZipPath(name string, path string, overwrite bool) string {
@@ -1573,478 +538,10 @@ func (a *Minecraft) ImportModDllPath(name string, path string, modName string, m
 	return mods.ImportDllToMods(name, filepath.Base(path), b, modName, modType, version, overwrite)
 }
 
-func (a *Minecraft) startImportServer() {
-	mux := http.NewServeMux()
-	mux.HandleFunc("/_ping", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "GET,POST,OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		w.WriteHeader(http.StatusOK)
-		_, _ = w.Write([]byte("ok"))
-	})
-	mux.HandleFunc("/api/import/modzip", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST,OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_, _ = w.Write([]byte(`{"error":"METHOD_NOT_ALLOWED"}`))
-			return
-		}
-		var name string
-		var overwrite bool
-		var data []byte
-
-		ct := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
-		if strings.HasPrefix(ct, "multipart/form-data") {
-			_ = r.ParseMultipartForm(64 << 20)
-			name = strings.TrimSpace(r.FormValue("name"))
-			ow := strings.TrimSpace(r.FormValue("overwrite"))
-			if ow != "" {
-				l := strings.ToLower(ow)
-				overwrite = l == "1" || l == "true" || l == "yes"
-			}
-			f, fh, err := r.FormFile("file")
-			if err == nil && f != nil {
-				defer f.Close()
-				b, er := io.ReadAll(f)
-				if er == nil {
-					data = b
-				}
-			}
-			if len(data) == 0 && fh != nil {
-				_ = f.Close()
-			}
-		} else {
-			b, _ := io.ReadAll(r.Body)
-			_ = r.Body.Close()
-			var obj map[string]interface{}
-			if err := json.Unmarshal(b, &obj); err == nil {
-				if v, ok := obj["name"].(string); ok {
-					name = strings.TrimSpace(v)
-				}
-				if v, ok := obj["overwrite"].(bool); ok {
-					overwrite = v
-				} else if v2, ok2 := obj["overwrite"].(string); ok2 {
-					l := strings.ToLower(strings.TrimSpace(v2))
-					overwrite = l == "1" || l == "true" || l == "yes"
-				}
-				if v, ok := obj["data"].(string); ok && v != "" {
-					bs, _ := base64.StdEncoding.DecodeString(v)
-					if len(bs) > 0 {
-						data = bs
-					}
-				}
-			}
-		}
-		if name == "" || len(data) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			_, _ = w.Write([]byte(`{"error":"BAD_REQUEST"}`))
-			return
-		}
-		err := mods.ImportZipToMods(name, data, overwrite)
-		if err != "" {
-			_, _ = w.Write([]byte(`{"error":"` + err + `"}`))
-			return
-		}
-		_, _ = w.Write([]byte(`{"error":""}`))
-	})
-	mux.HandleFunc("/api/import/moddll", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST,OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_, _ = w.Write([]byte(`{"error":"METHOD_NOT_ALLOWED"}`))
-			return
-		}
-		var name, fileName, modName, modType, version string
-		var overwrite bool
-		var data []byte
-		ct := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
-		if strings.HasPrefix(ct, "multipart/form-data") {
-			_ = r.ParseMultipartForm(64 << 20)
-			name = strings.TrimSpace(r.FormValue("name"))
-			fileName = strings.TrimSpace(r.FormValue("fileName"))
-			modName = strings.TrimSpace(r.FormValue("modName"))
-			modType = strings.TrimSpace(r.FormValue("modType"))
-			version = strings.TrimSpace(r.FormValue("version"))
-			ow := strings.TrimSpace(r.FormValue("overwrite"))
-			if ow != "" {
-				l := strings.ToLower(ow)
-				overwrite = l == "1" || l == "true" || l == "yes"
-			}
-			f, fh, err := r.FormFile("file")
-			if err == nil && f != nil {
-				defer f.Close()
-				b, er := io.ReadAll(f)
-				if er == nil {
-					data = b
-				}
-				if fileName == "" && fh != nil {
-					fileName = fh.Filename
-				}
-			}
-		} else {
-			b, _ := io.ReadAll(r.Body)
-			_ = r.Body.Close()
-			var obj map[string]interface{}
-			if err := json.Unmarshal(b, &obj); err == nil {
-				if v, ok := obj["name"].(string); ok {
-					name = strings.TrimSpace(v)
-				}
-				if v, ok := obj["fileName"].(string); ok {
-					fileName = strings.TrimSpace(v)
-				}
-				if v, ok := obj["modName"].(string); ok {
-					modName = strings.TrimSpace(v)
-				}
-				if v, ok := obj["modType"].(string); ok {
-					modType = strings.TrimSpace(v)
-				}
-				if v, ok := obj["version"].(string); ok {
-					version = strings.TrimSpace(v)
-				}
-				if v, ok := obj["overwrite"].(bool); ok {
-					overwrite = v
-				} else if v2, ok2 := obj["overwrite"].(string); ok2 {
-					l := strings.ToLower(strings.TrimSpace(v2))
-					overwrite = l == "1" || l == "true" || l == "yes"
-				}
-				if v, ok := obj["data"].(string); ok && v != "" {
-					bs, _ := base64.StdEncoding.DecodeString(v)
-					if len(bs) > 0 {
-						data = bs
-					}
-				}
-			}
-		}
-		if name == "" || modName == "" || modType == "" || version == "" || len(data) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			_, _ = w.Write([]byte(`{"error":"BAD_REQUEST"}`))
-			return
-		}
-		err := mods.ImportDllToMods(name, fileName, data, modName, modType, version, overwrite)
-		if err != "" {
-			_, _ = w.Write([]byte(`{"error":"` + err + `"}`))
-			return
-		}
-		_, _ = w.Write([]byte(`{"error":""}`))
-	})
-	mux.HandleFunc("/api/import/mcpack", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST,OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_, _ = w.Write([]byte(`{"error":"METHOD_NOT_ALLOWED"}`))
-			return
-		}
-		var name string
-		var overwrite bool
-		var data []byte
-		var fileName string
-		var player string
-		ct := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
-		if strings.HasPrefix(ct, "multipart/form-data") {
-			_ = r.ParseMultipartForm(64 << 20)
-			name = strings.TrimSpace(r.FormValue("name"))
-			player = strings.TrimSpace(r.FormValue("player"))
-			ow := strings.TrimSpace(r.FormValue("overwrite"))
-			if ow != "" {
-				l := strings.ToLower(ow)
-				overwrite = l == "1" || l == "true" || l == "yes"
-			}
-			f, fh, err := r.FormFile("file")
-			if err == nil && f != nil {
-				defer f.Close()
-				b, er := io.ReadAll(f)
-				if er == nil {
-					data = b
-				}
-				if fh != nil {
-					fileName = fh.Filename
-				}
-			}
-		} else {
-			b, _ := io.ReadAll(r.Body)
-			_ = r.Body.Close()
-			var obj map[string]interface{}
-			if err := json.Unmarshal(b, &obj); err == nil {
-				if v, ok := obj["name"].(string); ok {
-					name = strings.TrimSpace(v)
-				}
-				if v, ok := obj["overwrite"].(bool); ok {
-					overwrite = v
-				} else if v2, ok2 := obj["overwrite"].(string); ok2 {
-					l := strings.ToLower(strings.TrimSpace(v2))
-					overwrite = l == "1" || l == "true" || l == "yes"
-				}
-				if v, ok := obj["fileName"].(string); ok {
-					fileName = strings.TrimSpace(v)
-				}
-				if v, ok := obj["player"].(string); ok {
-					player = strings.TrimSpace(v)
-				}
-				if v, ok := obj["data"].(string); ok && v != "" {
-					bs, _ := base64.StdEncoding.DecodeString(v)
-					if len(bs) > 0 {
-						data = bs
-					}
-				}
-			}
-		}
-		if name == "" || len(data) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			_, _ = w.Write([]byte(`{"error":"BAD_REQUEST"}`))
-			return
-		}
-		roots := a.GetContentRoots(name)
-		skinDir := ""
-		if strings.TrimSpace(player) != "" && strings.TrimSpace(roots.UsersRoot) != "" {
-			skinDir = filepath.Join(roots.UsersRoot, player, "games", "com.mojang", "skin_packs")
-		}
-		err := content.ImportMcpackToDirs2(data, fileName, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-		if err != "" {
-			_, _ = w.Write([]byte(`{"error":"` + err + `"}`))
-			return
-		}
-		_, _ = w.Write([]byte(`{"error":""}`))
-	})
-	mux.HandleFunc("/api/import/mcaddon", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST,OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_, _ = w.Write([]byte(`{"error":"METHOD_NOT_ALLOWED"}`))
-			return
-		}
-		var name string
-		var overwrite bool
-		var data []byte
-		var player string
-		ct := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
-		if strings.HasPrefix(ct, "multipart/form-data") {
-			_ = r.ParseMultipartForm(64 << 20)
-			name = strings.TrimSpace(r.FormValue("name"))
-			player = strings.TrimSpace(r.FormValue("player"))
-			ow := strings.TrimSpace(r.FormValue("overwrite"))
-			if ow != "" {
-				l := strings.ToLower(ow)
-				overwrite = l == "1" || l == "true" || l == "yes"
-			}
-			f, _, err := r.FormFile("file")
-			if err == nil && f != nil {
-				defer f.Close()
-				b, er := io.ReadAll(f)
-				if er == nil {
-					data = b
-				}
-			}
-		} else {
-			b, _ := io.ReadAll(r.Body)
-			_ = r.Body.Close()
-			var obj map[string]interface{}
-			if err := json.Unmarshal(b, &obj); err == nil {
-				if v, ok := obj["name"].(string); ok {
-					name = strings.TrimSpace(v)
-				}
-				if v, ok := obj["overwrite"].(bool); ok {
-					overwrite = v
-				} else if v2, ok2 := obj["overwrite"].(string); ok2 {
-					l := strings.ToLower(strings.TrimSpace(v2))
-					overwrite = l == "1" || l == "true" || l == "yes"
-				}
-				if v, ok := obj["player"].(string); ok {
-					player = strings.TrimSpace(v)
-				}
-				if v, ok := obj["data"].(string); ok && v != "" {
-					bs, _ := base64.StdEncoding.DecodeString(v)
-					if len(bs) > 0 {
-						data = bs
-					}
-				}
-			}
-		}
-		if name == "" || len(data) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			_, _ = w.Write([]byte(`{"error":"BAD_REQUEST"}`))
-			return
-		}
-		roots := a.GetContentRoots(name)
-		skinDir := ""
-		if strings.TrimSpace(player) != "" && strings.TrimSpace(roots.UsersRoot) != "" {
-			skinDir = filepath.Join(roots.UsersRoot, player, "games", "com.mojang", "skin_packs")
-		}
-		err := content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-		if err != "" {
-			_, _ = w.Write([]byte(`{"error":"` + err + `"}`))
-			return
-		}
-		_, _ = w.Write([]byte(`{"error":""}`))
-	})
-	mux.HandleFunc("/api/import/mcworld", func(w http.ResponseWriter, r *http.Request) {
-		w.Header().Set("Access-Control-Allow-Origin", "*")
-		w.Header().Set("Access-Control-Allow-Methods", "POST,OPTIONS")
-		w.Header().Set("Access-Control-Allow-Headers", "*")
-		if r.Method == http.MethodOptions {
-			w.WriteHeader(http.StatusNoContent)
-			return
-		}
-		if r.Method != http.MethodPost {
-			w.WriteHeader(http.StatusMethodNotAllowed)
-			_, _ = w.Write([]byte(`{"error":"METHOD_NOT_ALLOWED"}`))
-			return
-		}
-		var name, player, fileName string
-		var overwrite bool
-		var data []byte
-		ct := strings.ToLower(strings.TrimSpace(r.Header.Get("Content-Type")))
-		if strings.HasPrefix(ct, "multipart/form-data") {
-			_ = r.ParseMultipartForm(64 << 20)
-			name = strings.TrimSpace(r.FormValue("name"))
-			player = strings.TrimSpace(r.FormValue("player"))
-			fileName = strings.TrimSpace(r.FormValue("fileName"))
-			ow := strings.TrimSpace(r.FormValue("overwrite"))
-			if ow != "" {
-				l := strings.ToLower(ow)
-				overwrite = l == "1" || l == "true" || l == "yes"
-			}
-			f, fh, err := r.FormFile("file")
-			if err == nil && f != nil {
-				defer f.Close()
-				b, er := io.ReadAll(f)
-				if er == nil {
-					data = b
-				}
-				if fileName == "" && fh != nil {
-					fileName = fh.Filename
-				}
-			}
-		} else {
-			b, _ := io.ReadAll(r.Body)
-			_ = r.Body.Close()
-			var obj map[string]interface{}
-			if err := json.Unmarshal(b, &obj); err == nil {
-				if v, ok := obj["name"].(string); ok {
-					name = strings.TrimSpace(v)
-				}
-				if v, ok := obj["player"].(string); ok {
-					player = strings.TrimSpace(v)
-				}
-				if v, ok := obj["fileName"].(string); ok {
-					fileName = strings.TrimSpace(v)
-				}
-				if v, ok := obj["overwrite"].(bool); ok {
-					overwrite = v
-				} else if v2, ok2 := obj["overwrite"].(string); ok2 {
-					l := strings.ToLower(strings.TrimSpace(v2))
-					overwrite = l == "1" || l == "true" || l == "yes"
-				}
-				if v, ok := obj["data"].(string); ok && v != "" {
-					bs, _ := base64.StdEncoding.DecodeString(v)
-					if len(bs) > 0 {
-						data = bs
-					}
-				}
-			}
-		}
-		if name == "" || player == "" || len(data) == 0 {
-			w.WriteHeader(http.StatusBadRequest)
-			_, _ = w.Write([]byte(`{"error":"BAD_REQUEST"}`))
-			return
-		}
-		err := a.ImportMcworld(name, player, fileName, data, overwrite)
-		if err != "" {
-			_, _ = w.Write([]byte(`{"error":"` + err + `"}`))
-			return
-		}
-		_, _ = w.Write([]byte(`{"error":""}`))
-	})
-	srv := &http.Server{Handler: mux}
-	addrs := []int{32773, 32774, 32775, 32776, 32777}
-	var ln net.Listener
-	for _, p := range addrs {
-		l, err := net.Listen("tcp", "127.0.0.1:"+strconv.Itoa(p))
-		if err == nil {
-			ln = l
-			a.importAddr = "http://127.0.0.1:" + strconv.Itoa(p)
-			break
-		}
-	}
-	if ln == nil {
-		l, err := net.Listen("tcp", "127.0.0.1:0")
-		if err != nil {
-			return
-		}
-		ln = l
-		addr := ln.Addr().String()
-		if strings.HasPrefix(addr, "[::]") {
-			addr = strings.Replace(addr, "[::]", "127.0.0.1", 1)
-		}
-		a.importAddr = "http://" + addr
-	}
-	a.importSrv = srv
-	go func() { _ = srv.Serve(ln) }()
-}
-
 func (a *Minecraft) GetImportServerURL() string { return a.importAddr }
 
-func (a *Minecraft) CanCreateDir(dir string) bool {
-	err := os.Mkdir(filepath.Join(dir, "levitest"), 0755)
-	if err != nil {
-		if os.IsPermission(err) {
-			return false
-		}
-		return false
-	}
-	os.Remove(filepath.Join(dir, "levitest"))
-	return true
-}
-
 func (a *Minecraft) CreateFolder(parent string, name string) string {
-	p := strings.TrimSpace(parent)
-	n := strings.TrimSpace(name)
-	if p == "" || n == "" {
-		return "ERR_NAME_REQUIRED"
-	}
-	fi, err := os.Stat(p)
-	if err != nil || !fi.IsDir() {
-		return "ERR_NOT_FOUND_OLD"
-	}
-	safe := utils.SanitizeFilename(n)
-	if strings.TrimSpace(safe) == "" {
-		safe = "new_folder"
-	}
-	full := filepath.Join(p, safe)
-	if utils.DirExists(full) {
-		return "ERR_NAME_EXISTS"
-	}
-	if err := utils.CreateDir(full); err != nil {
-		return "ERR_CREATE_TARGET_DIR"
-	}
-	return ""
+	return mcservice.CreateFolder(parent, name)
 }
 
 func (a *Minecraft) GetLanguageNames() []types.LanguageJson {
@@ -2070,32 +567,7 @@ func (a *Minecraft) Update() bool {
 }
 
 func (a *Minecraft) TestMirrorLatencies(urls []string, timeoutMs int) []map[string]interface{} {
-	if timeoutMs <= 0 {
-		timeoutMs = 7000
-	}
-	client := &http.Client{Timeout: time.Duration(timeoutMs) * time.Millisecond}
-	results := make([]map[string]interface{}, 0, len(urls))
-	for _, u := range urls {
-		start := time.Now()
-		ok := false
-		req, err := http.NewRequest("HEAD", strings.TrimSpace(u), nil)
-		if err == nil {
-			req.Header.Set("User-Agent", uarand.GetRandom())
-			if resp, er := client.Do(req); er == nil {
-				_ = resp.Body.Close()
-				if resp.StatusCode >= 200 && resp.StatusCode < 400 {
-					ok = true
-				}
-			}
-		}
-		elapsed := time.Since(start).Milliseconds()
-		results = append(results, map[string]interface{}{
-			"url":       u,
-			"latencyMs": elapsed,
-			"ok":        ok,
-		})
-	}
-	return results
+    return mcservice.TestMirrorLatencies(urls, timeoutMs)
 }
 
 func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string {
@@ -2143,36 +615,51 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	return ""
 }
 
-func (a *Minecraft) GetBaseRoot() string { return utils.BaseRoot() }
+func (a *Minecraft) GetBaseRoot() string { return mcservice.GetBaseRoot() }
 
-func (a *Minecraft) SetBaseRoot(root string) string {
-	r := strings.TrimSpace(root)
-	if r == "" {
-		return "ERR_INVALID_PATH"
+func (a *Minecraft) SetBaseRoot(root string) string { return mcservice.SetBaseRoot(root) }
+
+func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }
+
+func (a *Minecraft) CanWriteToDir(path string) bool { return mcservice.CanWriteToDir(path) }
+
+func isProcessRunningAtPath(exePath string) bool {
+	p := strings.ToLower(filepath.Clean(strings.TrimSpace(exePath)))
+	if p == "" {
+		return false
 	}
-	if err := os.MkdirAll(r, 0o755); err != nil {
-		return "ERR_CREATE_TARGET_DIR"
+	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
+	if err != nil {
+		return false
 	}
-	c, _ := config.Load()
-	c.BaseRoot = r
-	if err := config.Save(c); err != nil {
-		return "ERR_WRITE_FILE"
+	defer windows.CloseHandle(snap)
+	var pe windows.ProcessEntry32
+	pe.Size = uint32(unsafe.Sizeof(pe))
+	if err := windows.Process32First(snap, &pe); err != nil {
+		return false
 	}
-	return ""
+	for {
+		pid := pe.ProcessID
+		h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+		if err == nil {
+			buf := make([]uint16, 1024)
+			size := uint32(len(buf))
+			if e := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); e == nil && size > 0 {
+				path := windows.UTF16ToString(buf[:size])
+				_ = windows.CloseHandle(h)
+				norm := strings.ToLower(filepath.Clean(strings.TrimSpace(path)))
+				norm = strings.TrimPrefix(norm, `\\?\`)
+				norm = strings.TrimPrefix(norm, `\??\`)
+				if norm == p {
+					return true
+				}
+			} else {
+				_ = windows.CloseHandle(h)
+			}
+		}
+		if err := windows.Process32Next(snap, &pe); err != nil {
+			break
+		}
+	}
+	return false
 }
-
-func (a *Minecraft) ResetBaseRoot() string {
-	c, _ := config.Load()
-	c.BaseRoot = ""
-	if err := config.Save(c); err != nil {
-		return "ERR_WRITE_FILE"
-	}
-	br := utils.BaseRoot()
-	c.BaseRoot = strings.TrimSpace(br)
-	if err := config.Save(c); err != nil {
-		return "ERR_WRITE_FILE"
-	}
-	return ""
-}
-
-func (a *Minecraft) CanWriteToDir(path string) bool { return utils.CanWriteDir(path) }

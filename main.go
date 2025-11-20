@@ -14,7 +14,9 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/preloader"
 	"github.com/liteldev/LeviLauncher/internal/update"
-	"github.com/liteldev/LeviLauncher/internal/vcruntime"
+    "github.com/liteldev/LeviLauncher/internal/vcruntime"
+    "github.com/liteldev/LeviLauncher/internal/types"
+    "github.com/liteldev/LeviLauncher/internal/mcservice"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -31,9 +33,9 @@ func init() {
 	application.RegisterEvent[GameInputDownloadProgress](EventGameInputDownloadProgress)
 	application.RegisterEvent[struct{}](EventGameInputDownloadDone)
 	application.RegisterEvent[string](EventGameInputDownloadError)
-	application.RegisterEvent[string]("extract.error")
-	application.RegisterEvent[string]("extract.done")
-	application.RegisterEvent[ExtractProgress]("extract.progress")
+    application.RegisterEvent[string](mcservice.EventExtractError)
+    application.RegisterEvent[string](mcservice.EventExtractDone)
+    application.RegisterEvent[types.ExtractProgress](mcservice.EventExtractProgress)
 	// launch
 	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
 	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)

@@ -103,3 +103,10 @@ type LevelDatField struct {
     InData      bool   `json:"inData"`
     Path        []string `json:"path,omitempty"`
 }
+
+type ExtractProgress struct {
+    Dir   string `json:"dir"`
+    Files int64  `json:"files"`
+    Bytes int64  `json:"bytes"`
+    Ts    int64  `json:"ts"`
+}

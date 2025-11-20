@@ -93,3 +93,9 @@ Supports installing, managing, and launching Release/Preview builds. Provides ve
 
 **Contributing**
 - PRs and issues are welcome.
+
+**License**
+Copyright © 2025 LeviMC, All rights reserved.
+
+This project is licensed under the LGPL-3.0 License for its non-closed source parts - see the [COPYING](COPYING) and [COPYING.LESSER](COPYING.LESSER) files for details.
+

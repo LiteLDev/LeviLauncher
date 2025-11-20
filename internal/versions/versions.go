@@ -27,20 +27,3 @@ func ValidateFolderName(name string) string {
 	}
 	return ""
 }
-
-
-func NormalizeName(name string) string {
-	t := strings.TrimSpace(name)
-	l := strings.ToLower(t)
-	if strings.HasPrefix(l, "preview ") {
-		return strings.TrimSpace(t[8:])
-	}
-	if strings.HasPrefix(l, "release ") {
-		return strings.TrimSpace(t[8:])
-	}
-	return t
-}
-
-func EqualsIgnoreType(downloadedBase, shortVersion string) bool {
-	return strings.EqualFold(NormalizeName(downloadedBase), strings.TrimSpace(shortVersion))
-}

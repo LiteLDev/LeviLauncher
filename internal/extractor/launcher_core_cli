@@ -1,29 +1,28 @@
-#include <windows.h>
 #include <string>
+#include <windows.h>
 
-int wmain(int argc, wchar_t* argv[]) {
-    if (argc < 4) return 2;
-    std::wstring msix = argv[1];
-    std::wstring out = argv[2];
-    std::wstring dllArg = argv[3];
-    if (msix.empty() || out.empty() || dllArg.empty()) return 2;
+int main(int argc, char **argv) {
+  if (argc < 4) {
 
-    HMODULE h = LoadLibraryW(dllArg.c_str());
-    if (!h) return 3;
-    typedef int (__stdcall *MIW)(const wchar_t*, const wchar_t*);
-    typedef int (__stdcall *MIA)(const char*, const char*);
-    MIW miw = (MIW)GetProcAddress(h, "miHoYoW");
-    if (miw) {
-        int rc = miw(msix.c_str(), out.c_str());
-        FreeLibrary(h);
-        return rc;
-    }
-    MIA mia = (MIA)GetProcAddress(h, "miHoYo");
-    if (mia) {
-        int rc = mia(std::string(msix.begin(), msix.end()).c_str(), std::string(out.begin(), out.end()).c_str());
-        FreeLibrary(h);
-        return rc;
-    }
-    FreeLibrary(h);
+    return 2;
+  }
+  const char *msix = argv[1];
+  const char *out = argv[2];
+  const char *dllArg = argv[3];
+
+  HMODULE h = LoadLibraryA(dllArg);
+  if (!h)
     return 3;
+
+  typedef int(__stdcall * MIA)(const char *, const char *);
+
+  MIA mia = (MIA)GetProcAddress(h, "miHoYo");
+  if (mia) {
+    int rc = mia(msix, out);
+    printf("%d", rc);
+    FreeLibrary(h);
+    return rc;
+  }
+  FreeLibrary(h);
+  return 3;
 }

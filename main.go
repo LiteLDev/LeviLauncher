@@ -10,13 +10,13 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/preloader"
+	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
-    "github.com/liteldev/LeviLauncher/internal/vcruntime"
-    "github.com/liteldev/LeviLauncher/internal/types"
-    "github.com/liteldev/LeviLauncher/internal/mcservice"
+	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -24,6 +24,9 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+//go:embed build/appicon.png
+var launcherIcon []byte
 
 func init() {
 	//minecraft
@@ -33,9 +36,9 @@ func init() {
 	application.RegisterEvent[GameInputDownloadProgress](EventGameInputDownloadProgress)
 	application.RegisterEvent[struct{}](EventGameInputDownloadDone)
 	application.RegisterEvent[string](EventGameInputDownloadError)
-    application.RegisterEvent[string](mcservice.EventExtractError)
-    application.RegisterEvent[string](mcservice.EventExtractDone)
-    application.RegisterEvent[types.ExtractProgress](mcservice.EventExtractProgress)
+	application.RegisterEvent[string](mcservice.EventExtractError)
+	application.RegisterEvent[string](mcservice.EventExtractDone)
+	application.RegisterEvent[types.ExtractProgress](mcservice.EventExtractProgress)
 	// launch
 	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
 	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)
@@ -119,7 +122,7 @@ func main() {
 		c.WindowHeight = h
 		_ = config.Save(c)
 	}
-    windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
+	windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
 		Title:     "LeviLauncher",
 		Width:     w,
 		Height:    h,
@@ -136,14 +139,17 @@ func main() {
 		Windows: application.WindowsWindow{
 			BackdropType: application.Acrylic,
 		},
-        URL: initialURL,
-    })
+		Linux: application.LinuxWindow{
+			Icon: []byte(launcherIcon),
+		},
+		URL: initialURL,
+	})
 
-    if strings.TrimSpace(autoLaunchVersion) != "" {
-        go func() {
-            _ = mc.LaunchVersionByName(autoLaunchVersion)
-        }()
-    }
+	if strings.TrimSpace(autoLaunchVersion) != "" {
+		go func() {
+			_ = mc.LaunchVersionByName(autoLaunchVersion)
+		}()
+	}
 
 	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		w := windows.Width()

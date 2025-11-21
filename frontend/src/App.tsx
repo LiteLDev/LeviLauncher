@@ -237,7 +237,32 @@ function App() {
 
   useEffect(() => {
     try {
-      minecraft?.GetRuntimeGOOS?.().then((s: string) => setGoos(String(s || ""))).catch(()=>{});
+      minecraft?.GetRuntimeGOOS?.()
+        .then(async (s: string) => {
+          const g = String(s || "");
+          setGoos(g);
+          if (g === "linux") {
+            try {
+              const ok = await minecraft?.IsWineReady?.();
+              setWineReady(!!ok);
+              if (!ok) {
+                setNavLocked(true);
+                setShowWinePrompt(true);
+                setSplashVisible(false);
+                setRevealStarted(true);
+                navigate("/winegdk", { replace: true });
+              }
+            } catch {
+              setWineReady(false);
+              setNavLocked(true);
+              setShowWinePrompt(true);
+              setSplashVisible(false);
+              setRevealStarted(true);
+              navigate("/winegdk", { replace: true });
+            }
+          }
+        })
+        .catch(()=>{});
     } catch {}
   }, []);
 

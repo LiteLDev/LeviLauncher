@@ -3,6 +3,9 @@
 package extractor
 
 import (
+    "bytes"
+    "crypto/sha256"
+    "io"
     "os"
     "os/exec"
     "path/filepath"
@@ -21,16 +24,25 @@ func ensureEmbeddedDLL() string {
     dir := filepath.Join(base, "bin")
     _ = os.MkdirAll(dir, 0755)
     target := filepath.Join(dir, "launcher_core.dll")
-    if fi, err := os.Stat(target); err == nil && fi.Size() > 0 {
-        return target
-    }
-    tmp := target + ".tmp"
-    if err := os.WriteFile(tmp, embeddedLauncherCoreDLL, 0644); err == nil {
-        if err := os.Rename(tmp, target); err == nil {
-            return target
+    needWrite := false
+    if fi, err := os.Stat(target); err != nil || fi.Size() == 0 {
+        needWrite = true
+    } else {
+        if fh, err := fileSHA256(target); err != nil {
+            needWrite = true
+        } else {
+            eh := bytesSHA256(embeddedLauncherCoreDLL)
+            if !bytes.Equal(fh, eh) { needWrite = true }
         }
-        _ = os.Remove(tmp)
     }
+    if needWrite {
+        tmp := target + ".tmp"
+        if err := os.WriteFile(tmp, embeddedLauncherCoreDLL, 0644); err == nil {
+            if err := os.Rename(tmp, target); err == nil { return target }
+            _ = os.Remove(tmp)
+        }
+    }
+    if fi, err := os.Stat(target); err == nil && fi.Size() > 0 { return target }
     return ""
 }
 
@@ -42,16 +54,25 @@ func ensureEmbeddedWrapper() string {
     dir := filepath.Join(base, "bin")
     _ = os.MkdirAll(dir, 0755)
     target := filepath.Join(dir, "launcher_core_cli.exe")
-    if fi, err := os.Stat(target); err == nil && fi.Size() > 0 {
-        return target
-    }
-    tmp := target + ".tmp"
-    if err := os.WriteFile(tmp, embeddedLauncherCoreCLI, 0644); err == nil {
-        if err := os.Rename(tmp, target); err == nil {
-            return target
+    needWrite := false
+    if fi, err := os.Stat(target); err != nil || fi.Size() == 0 {
+        needWrite = true
+    } else {
+        if fh, err := fileSHA256(target); err != nil {
+            needWrite = true
+        } else {
+            eh := bytesSHA256(embeddedLauncherCoreCLI)
+            if !bytes.Equal(fh, eh) { needWrite = true }
         }
-        _ = os.Remove(tmp)
     }
+    if needWrite {
+        tmp := target + ".tmp"
+        if err := os.WriteFile(tmp, embeddedLauncherCoreCLI, 0644); err == nil {
+            if err := os.Rename(tmp, target); err == nil { return target }
+            _ = os.Remove(tmp)
+        }
+    }
+    if fi, err := os.Stat(target); err == nil && fi.Size() > 0 { return target }
     return ""
 }
 
@@ -116,4 +137,18 @@ func MiHoYo(msixvcPath string, outDir string) (int, string) {
         return 1, "ERR_APPX_INSTALL_FAILED"
     }
     return 0, ""
+}
+
+func fileSHA256(p string) ([]byte, error) {
+    f, err := os.Open(p)
+    if err != nil { return nil, err }
+    defer f.Close()
+    h := sha256.New()
+    if _, err := io.Copy(h, f); err != nil { return nil, err }
+    return h.Sum(nil), nil
+}
+
+func bytesSHA256(b []byte) []byte {
+    h := sha256.Sum256(b)
+    return h[:]
 }

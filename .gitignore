@@ -6,8 +6,10 @@
 *.exe~
 *.so
 *.dylib
+*.obj
 
 !/internal/peeditor/PeEditor.exe
+!/internal/extractor/launcher_core_cli.exe
 
 # Test binary, built with `go test -c`
 *.test

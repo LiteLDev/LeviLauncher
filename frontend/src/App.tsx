@@ -751,6 +751,28 @@ function App() {
             )}
           </ModalContent>
         </Modal>
+
+        <Modal size="md" isOpen={goos === "linux" && showWinePrompt} hideCloseButton isDismissable={false}>
+          <ModalContent>
+            {() => (
+              <>
+                <ModalHeader className="text-primary-700 text-[18px] sm:text-[20px] font-bold antialiased">
+                  {t("winegdk.prompt.title", { defaultValue: "需要安装 WineGDK" })}
+                </ModalHeader>
+                <ModalBody>
+                  <div className="text-[15px] sm:text-[16px] leading-7 text-default-900 font-medium antialiased whitespace-pre-wrap break-words">
+                    {t("winegdk.prompt.desc", { defaultValue: "检测到未安装或不可用的 Wine；请先完成 WineGDK 安装再使用启动器。" })}
+                  </div>
+                </ModalBody>
+                <ModalFooter>
+                  <Button color="primary" onPress={() => navigate("/winegdk", { replace: true })}>
+                    {t("winegdk.prompt.action", { defaultValue: "前往安装" })}
+                  </Button>
+                </ModalFooter>
+              </>
+            )}
+          </ModalContent>
+        </Modal>
       </div>
     </VersionStatusProvider>
   );

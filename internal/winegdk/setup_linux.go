@@ -32,7 +32,7 @@ func Setup(ctx context.Context) string {
         return "ERR_BASE_ROOT"
     }
     application.Get().Event.Emit(EventSetupStatus, "start")
-    wineDir := filepath.Join(base, "wine")
+    wineDir := filepath.Join(utils.GetAppDataPath(), "wine")
     _ = os.MkdirAll(wineDir, 0755)
     url := "https://github.com/Weather-OS/GDK-Proton/releases/download/release/GE-Proton10-25.tar.gz"
     tmp := filepath.Join(wineDir, "GE-Proton10-25.tar.gz")

@@ -21,7 +21,7 @@ func ensureEmbeddedDLL() string {
     if len(embeddedLauncherCoreDLL) == 0 {
         return ""
     }
-    base := utils.BaseRoot()
+    base := utils.GetAppDataPath()
     dir := filepath.Join(base, "bin")
     _ = os.MkdirAll(dir, 0755)
     target := filepath.Join(dir, "launcher_core.dll")
@@ -51,7 +51,7 @@ func ensureEmbeddedWrapper() string {
     if len(embeddedLauncherCoreCLI) == 0 {
         return ""
     }
-    base := utils.BaseRoot()
+    base := utils.GetAppDataPath()
     dir := filepath.Join(base, "bin")
     _ = os.MkdirAll(dir, 0755)
     target := filepath.Join(dir, "launcher_core_cli.exe")
@@ -92,7 +92,7 @@ func MiHoYo(msixvcPath string, outDir string) (int, string) {
     if p := ensureEmbeddedDLL(); p != "" {
         dll = p
     } else {
-        base := utils.BaseRoot()
+        base := utils.GetAppDataPath()
         cand := filepath.Join(base, "bin", "launcher_core.dll")
         if _, err := os.Stat(cand); err == nil {
             dll = cand

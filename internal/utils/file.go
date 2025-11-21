@@ -1,12 +1,11 @@
 package utils
 
 import (
-    "archive/zip"
-    "io"
-    "os"
-    "path/filepath"
-    "runtime"
-    "strings"
+	"archive/zip"
+	"io"
+	"os"
+	"path/filepath"
+	"strings"
 )
 
 func CreateDir(path string) error {
@@ -18,51 +17,34 @@ func RemoveDir(path string) error {
 }
 
 func DirExists(path string) bool {
-    _, err := os.Stat(path)
-    if err != nil {
-        if os.IsNotExist(err) {
-            return false
-        }
-    }
-    return true
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
 }
 
 func GetDirNames(path string) []string {
-    dir, err := os.Open(path)
-    if err != nil {
-        return nil
-    }
-    defer dir.Close()
-    names, _ := dir.Readdirnames(-1)
-    return names
+	dir, err := os.Open(path)
+	if err != nil {
+		return nil
+	}
+	defer dir.Close()
+	names, _ := dir.Readdirnames(-1)
+	return names
 }
 
 func GetLastDirName(path string) string {
-    return filepath.Base(path)
+	return filepath.Base(path)
 }
 
 func GetAppDataPath() string {
-    v := strings.TrimSpace(os.Getenv("APPDATA"))
-    if v != "" { return v }
-    if runtime.GOOS == "linux" {
-        wp := strings.TrimSpace(os.Getenv("WINEPREFIX"))
-        if wp == "" {
-            home, _ := os.UserHomeDir()
-            if strings.TrimSpace(home) != "" {
-                wp = filepath.Join(home, ".wine")
-            }
-        }
-        user := strings.TrimSpace(os.Getenv("USER"))
-        if user == "" {
-            if home, _ := os.UserHomeDir(); strings.TrimSpace(home) != "" {
-                user = filepath.Base(home)
-            }
-        }
-        if wp != "" && user != "" {
-            return filepath.Join(wp, "drive_c", "users", user, "AppData", "Roaming")
-        }
-    }
-    return ""
+	if v, _ := os.UserConfigDir(); strings.TrimSpace(v) != "" {
+		return v
+	}
+	return ""
 }
 
 func GetMinecraftGDKDataPath(ispreview bool) string {
@@ -73,13 +55,13 @@ func GetMinecraftGDKDataPath(ispreview bool) string {
 }
 
 func FileExists(path string) bool {
-    _, err := os.Stat(path)
-    if err != nil {
-        if os.IsNotExist(err) {
-            return false
-        }
-    }
-    return true
+	_, err := os.Stat(path)
+	if err != nil {
+		if os.IsNotExist(err) {
+			return false
+		}
+	}
+	return true
 }
 
 func ZipDir(srcDir, destZip string) error {
@@ -131,23 +113,22 @@ func ZipDir(srcDir, destZip string) error {
 }
 
 func DirSize(path string) int64 {
-    var total int64
-    root := filepath.Clean(strings.TrimSpace(path))
-    if root == "" {
-        return 0
-    }
-    _ = filepath.Walk(root, func(p string, info os.FileInfo, err error) error {
-        if err != nil || info == nil {
-            return nil
-        }
-        if info.Mode().IsRegular() {
-            total += info.Size()
-        }
-        return nil
-    })
-    return total
+	var total int64
+	root := filepath.Clean(strings.TrimSpace(path))
+	if root == "" {
+		return 0
+	}
+	_ = filepath.Walk(root, func(p string, info os.FileInfo, err error) error {
+		if err != nil || info == nil {
+			return nil
+		}
+		if info.Mode().IsRegular() {
+			total += info.Size()
+		}
+		return nil
+	})
+	return total
 }
-
 
 func SanitizeFilename(name string) string {
 	s := strings.TrimSpace(name)
@@ -170,57 +151,56 @@ func SanitizeFilename(name string) string {
 	return cleaned
 }
 
-
 func CopyDir(src, dst string) error {
-    src = filepath.Clean(strings.TrimSpace(src))
-    dst = filepath.Clean(strings.TrimSpace(dst))
-    if src == "" || dst == "" {
-        return os.ErrInvalid
-    }
-    info, err := os.Stat(src)
-    if err != nil {
-        return err
-    }
-    if !info.IsDir() {
-        return os.ErrInvalid
-    }
-    if err := os.MkdirAll(dst, 0755); err != nil {
-        return err
-    }
-    return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
-        if err != nil {
-            return err
-        }
-        rel, err := filepath.Rel(src, path)
-        if err != nil {
-            return err
-        }
-        if rel == "." {
-            return nil
-        }
-        target := filepath.Join(dst, rel)
-        if info.IsDir() {
-            return os.MkdirAll(target, 0755)
-        }
-        if !info.Mode().IsRegular() {
-            return nil
-        }
-        if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
-            return err
-        }
-        in, err := os.Open(path)
-        if err != nil {
-            return err
-        }
-        defer in.Close()
-        out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
-        if err != nil {
-            return err
-        }
-        defer out.Close()
-        if _, err := io.Copy(out, in); err != nil {
-            return err
-        }
-        return nil
-    })
+	src = filepath.Clean(strings.TrimSpace(src))
+	dst = filepath.Clean(strings.TrimSpace(dst))
+	if src == "" || dst == "" {
+		return os.ErrInvalid
+	}
+	info, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return os.ErrInvalid
+	}
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return err
+	}
+	return filepath.Walk(src, func(path string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		target := filepath.Join(dst, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return err
+		}
+		in, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		defer in.Close()
+		out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
+		if err != nil {
+			return err
+		}
+		defer out.Close()
+		if _, err := io.Copy(out, in); err != nil {
+			return err
+		}
+		return nil
+	})
 }

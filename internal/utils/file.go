@@ -5,6 +5,7 @@ import (
     "io"
     "os"
     "path/filepath"
+    "runtime"
     "strings"
 )
 
@@ -41,8 +42,27 @@ func GetLastDirName(path string) string {
 }
 
 func GetAppDataPath() string {
-    path := os.Getenv("APPDATA")
-    return path
+    v := strings.TrimSpace(os.Getenv("APPDATA"))
+    if v != "" { return v }
+    if runtime.GOOS == "linux" {
+        wp := strings.TrimSpace(os.Getenv("WINEPREFIX"))
+        if wp == "" {
+            home, _ := os.UserHomeDir()
+            if strings.TrimSpace(home) != "" {
+                wp = filepath.Join(home, ".wine")
+            }
+        }
+        user := strings.TrimSpace(os.Getenv("USER"))
+        if user == "" {
+            if home, _ := os.UserHomeDir(); strings.TrimSpace(home) != "" {
+                user = filepath.Base(home)
+            }
+        }
+        if wp != "" && user != "" {
+            return filepath.Join(wp, "drive_c", "users", user, "AppData", "Roaming")
+        }
+    }
+    return ""
 }
 
 func GetMinecraftGDKDataPath(ispreview bool) string {

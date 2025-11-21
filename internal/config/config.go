@@ -14,13 +14,10 @@ type AppConfig struct {
 }
 
 func localAppData() string {
-	if v := os.Getenv("APPDATA"); strings.TrimSpace(v) != "" {
-		return v
-	}
-	if v, _ := os.UserCacheDir(); strings.TrimSpace(v) != "" {
-		return v
-	}
-	return "."
+    if v, _ := os.UserConfigDir(); strings.TrimSpace(v) != "" {
+        return v
+    }
+    return "."
 }
 
 func configPath() string {

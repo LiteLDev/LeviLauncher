@@ -1,14 +1,15 @@
+//go:build windows
+
 package explorer
 
 import (
-	"log"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"syscall"
-
-	"github.com/liteldev/LeviLauncher/internal/utils"
+    "log"
+    "os"
+    "os/exec"
+    "path/filepath"
+    "strings"
+    "syscall"
+    "github.com/liteldev/LeviLauncher/internal/utils"
 )
 
 func OpenPath(dir string) bool {
@@ -21,9 +22,9 @@ func OpenPath(dir string) bool {
 			return false
 		}
 	}
-	cmd := exec.Command("powershell", "explorer \""+d+"\"")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	if err := cmd.Run(); err != nil {
+    cmd := exec.Command("powershell", "explorer \""+d+"\"")
+    cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+    if err := cmd.Run(); err != nil {
 		log.Println("explorer.OpenPath error:", err)
 		return false
 	}
@@ -35,9 +36,9 @@ func SelectFile(path string) bool {
 	if p == "" || !utils.FileExists(p) {
 		return false
 	}
-	cmd := exec.Command("explorer", "/select,\""+p+"\"")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	if err := cmd.Run(); err != nil {
+    cmd := exec.Command("explorer", "/select,\""+p+"\"")
+    cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+    if err := cmd.Run(); err != nil {
 		log.Println("explorer.SelectFile error:", err)
 		return false
 	}

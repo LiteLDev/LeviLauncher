@@ -1,18 +1,16 @@
 package peeditor
 
 import (
-	"bytes"
-	"context"
-	"crypto/sha256"
-	_ "embed"
-	"io"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
-	"syscall"
+    "bytes"
+    "context"
+    "crypto/sha256"
+    _ "embed"
+    "io"
+    "os"
+    "path/filepath"
+    "strings"
 
-	"github.com/wailsapp/wails/v3/pkg/application"
+    "github.com/wailsapp/wails/v3/pkg/application"
 )
 
 const (
@@ -76,30 +74,7 @@ func EnsureForVersion(ctx context.Context, versionDir string) bool {
 	return true
 }
 
-func RunForVersion(ctx context.Context, versionDir string) bool {
-	dir := strings.TrimSpace(versionDir)
-	if dir == "" {
-		application.Get().Event.Emit(EventEnsureDone, false)
-		return false
-	}
-	exe := filepath.Join(dir, "Minecraft.Windows.exe")
-	tool := filepath.Join(dir, "PeEditor.exe")
-	bak := filepath.Join(dir, "Minecraft.Windows.exe.bak")
-	if fileExists(bak) {
-		return true
-	}
-	if !fileExists(tool) || !fileExists(exe) {
-		application.Get().Event.Emit(EventEnsureDone, false)
-		return false
-	}
-	application.Get().Event.Emit(EventEnsureStart, struct{}{})
-	cmd := exec.Command(tool, "-m", "-b", "--inplace", "--exe", "./Minecraft.Windows.exe")
-	cmd.Dir = dir
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	_ = cmd.Run()
-	application.Get().Event.Emit(EventEnsureDone, true)
-	return true
-}
+// RunForVersion implemented per-OS
 
 func copyFile(src, dst string) bool {
 	s, err := os.Open(src)

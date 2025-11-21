@@ -1,25 +1,15 @@
 package mcservice
 
 import (
-	"os"
-	"path/filepath"
-	"strings"
+    "os"
+    "path/filepath"
+    "strings"
 
-	"github.com/liteldev/LeviLauncher/internal/types"
-	"github.com/liteldev/LeviLauncher/internal/utils"
-	"golang.org/x/sys/windows"
+    "github.com/liteldev/LeviLauncher/internal/types"
+    "github.com/liteldev/LeviLauncher/internal/utils"
 )
 
-func ListDrives() []string {
-	drives := []string{}
-	for l := 'A'; l <= 'Z'; l++ {
-		root := string(l) + ":\\"
-		if fi, err := os.Stat(root); err == nil && fi.IsDir() {
-			drives = append(drives, root)
-		}
-	}
-	return drives
-}
+// ListDrives is implemented per-OS
 
 func ListDir(path string) []types.FileEntry {
 	list := []types.FileEntry{}
@@ -93,23 +83,4 @@ func CreateFolder(parent string, name string) string {
 	return ""
 }
 
-func GetDriveStats(root string) map[string]uint64 {
-	res := map[string]uint64{"total": 0, "free": 0}
-	r := strings.TrimSpace(root)
-	if r == "" {
-		return res
-	}
-	if !strings.HasSuffix(r, "\\") {
-		r += "\\"
-	}
-	p, err := windows.UTF16PtrFromString(r)
-	if err != nil {
-		return res
-	}
-	var freeBytesAvailable, totalNumberOfBytes, totalNumberOfFreeBytes uint64
-	if err := windows.GetDiskFreeSpaceEx(p, &freeBytesAvailable, &totalNumberOfBytes, &totalNumberOfFreeBytes); err == nil {
-		res["total"] = totalNumberOfBytes
-		res["free"] = totalNumberOfFreeBytes
-	}
-	return res
-}
+// GetDriveStats is implemented per-OS

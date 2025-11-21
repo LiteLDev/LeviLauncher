@@ -1,3 +1,5 @@
+//go:build windows
+
 package extractor
 
 import (
@@ -5,13 +7,12 @@ import (
     "fmt"
     "bytes"
     "crypto/sha256"
-    _ "embed"
     "io"
     "os"
-	"path/filepath"
-	"strings"
-	"sync"
-	"syscall"
+    "path/filepath"
+    "strings"
+    "sync"
+    "syscall"
     "unsafe"
 
     "golang.org/x/sys/windows"
@@ -19,16 +20,15 @@ import (
 )
 
 var (
-	loadOnce             sync.Once
-	loadErr              error
-	miProc               *windows.LazyProc
-	useWide              bool
-	k32                  *windows.LazyDLL
-	pWideCharToMultiByte *windows.LazyProc
+    loadOnce             sync.Once
+    loadErr              error
+    miProc               *windows.LazyProc
+    useWide              bool
+    k32                  *windows.LazyDLL
+    pWideCharToMultiByte *windows.LazyProc
 )
 
-//go:embed launcher_core.dll
-var embeddedLauncherCoreDLL []byte
+// embeddedLauncherCoreDLL is provided by embed.go (cross-platform)
 
 func prepareDLL() (string, error) {
 	if len(embeddedLauncherCoreDLL) == 0 {

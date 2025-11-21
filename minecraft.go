@@ -1,34 +1,32 @@
 package main
 
 import (
-	"context"
-	"log"
-	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"strings"
+    "context"
+    "log"
+    "net/http"
+    "os"
+    "os/exec"
+    "path/filepath"
+    "runtime"
+    "strings"
 
-	"github.com/liteldev/LeviLauncher/internal/discord"
-	"github.com/wailsapp/wails/v3/pkg/application"
+    "github.com/liteldev/LeviLauncher/internal/discord"
+    "github.com/wailsapp/wails/v3/pkg/application"
 
-	"unsafe"
-
-	"github.com/liteldev/LeviLauncher/internal/content"
-	"github.com/liteldev/LeviLauncher/internal/gameinput"
-	"github.com/liteldev/LeviLauncher/internal/lang"
-	"github.com/liteldev/LeviLauncher/internal/launch"
-	"github.com/liteldev/LeviLauncher/internal/mcservice"
-	"github.com/liteldev/LeviLauncher/internal/mods"
-	"github.com/liteldev/LeviLauncher/internal/peeditor"
-	"github.com/liteldev/LeviLauncher/internal/preloader"
-	"github.com/liteldev/LeviLauncher/internal/registry"
-	"github.com/liteldev/LeviLauncher/internal/types"
-	"github.com/liteldev/LeviLauncher/internal/update"
-	"github.com/liteldev/LeviLauncher/internal/utils"
-	"github.com/liteldev/LeviLauncher/internal/vcruntime"
-	"github.com/liteldev/LeviLauncher/internal/versions"
-	"golang.org/x/sys/windows"
+    "github.com/liteldev/LeviLauncher/internal/content"
+    "github.com/liteldev/LeviLauncher/internal/gameinput"
+    "github.com/liteldev/LeviLauncher/internal/lang"
+    "github.com/liteldev/LeviLauncher/internal/launch"
+    "github.com/liteldev/LeviLauncher/internal/mcservice"
+    "github.com/liteldev/LeviLauncher/internal/mods"
+    "github.com/liteldev/LeviLauncher/internal/peeditor"
+    "github.com/liteldev/LeviLauncher/internal/preloader"
+    "github.com/liteldev/LeviLauncher/internal/registry"
+    "github.com/liteldev/LeviLauncher/internal/types"
+    "github.com/liteldev/LeviLauncher/internal/update"
+    "github.com/liteldev/LeviLauncher/internal/utils"
+    "github.com/liteldev/LeviLauncher/internal/vcruntime"
+    "github.com/liteldev/LeviLauncher/internal/versions"
 )
 
 const (
@@ -169,10 +167,13 @@ func (a *Minecraft) EnsureGameInputInteractive() { go gameinput.EnsureInteractiv
 func (a *Minecraft) IsGameInputInstalled() bool { return gameinput.IsInstalled() }
 
 func (a *Minecraft) IsGamingServicesInstalled() bool {
-	if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err == nil {
-		return true
-	}
-	return false
+    if runtime.GOOS == "linux" {
+        return true
+    }
+    if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err == nil {
+        return true
+    }
+    return false
 }
 
 func (a *Minecraft) StartMsixvcDownload(url string) string {
@@ -597,22 +598,30 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 		}
 		gameVer = strings.TrimSpace(m.GameVersion)
 	}
-	if checkRunning {
-		if isProcessRunningAtPath(toRun) {
-			return "ERR_GAME_ALREADY_RUNNING"
-		}
-	}
-	cmd := exec.Command(toRun, args...)
-	cmd.Dir = filepath.Dir(toRun)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
-	if err := cmd.Start(); err != nil {
-		return "ERR_LAUNCH_GAME"
-	}
-	discord.SetPlayingVersion(gameVer)
-	go launch.MonitorMinecraftWindow(a.ctx)
-	return ""
+    if checkRunning {
+        if isProcessRunningAtPath(toRun) {
+            return "ERR_GAME_ALREADY_RUNNING"
+        }
+    }
+    var cmd *exec.Cmd
+    if runtime.GOOS == "linux" {
+        var argv []string
+        argv = append(argv, toRun)
+        argv = append(argv, args...)
+        cmd = exec.Command("wine", argv...)
+    } else {
+        cmd = exec.Command(toRun, args...)
+    }
+    cmd.Dir = filepath.Dir(toRun)
+    cmd.Stdout = os.Stdout
+    cmd.Stderr = os.Stderr
+    cmd.Stdin = os.Stdin
+    if err := cmd.Start(); err != nil {
+        return "ERR_LAUNCH_GAME"
+    }
+    discord.SetPlayingVersion(gameVer)
+    go launch.MonitorMinecraftWindow(a.ctx)
+    return ""
 }
 
 func (a *Minecraft) GetBaseRoot() string { return mcservice.GetBaseRoot() }
@@ -623,43 +632,4 @@ func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }
 
 func (a *Minecraft) CanWriteToDir(path string) bool { return mcservice.CanWriteToDir(path) }
 
-func isProcessRunningAtPath(exePath string) bool {
-	p := strings.ToLower(filepath.Clean(strings.TrimSpace(exePath)))
-	if p == "" {
-		return false
-	}
-	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
-	if err != nil {
-		return false
-	}
-	defer windows.CloseHandle(snap)
-	var pe windows.ProcessEntry32
-	pe.Size = uint32(unsafe.Sizeof(pe))
-	if err := windows.Process32First(snap, &pe); err != nil {
-		return false
-	}
-	for {
-		pid := pe.ProcessID
-		h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
-		if err == nil {
-			buf := make([]uint16, 1024)
-			size := uint32(len(buf))
-			if e := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); e == nil && size > 0 {
-				path := windows.UTF16ToString(buf[:size])
-				_ = windows.CloseHandle(h)
-				norm := strings.ToLower(filepath.Clean(strings.TrimSpace(path)))
-				norm = strings.TrimPrefix(norm, `\\?\`)
-				norm = strings.TrimPrefix(norm, `\??\`)
-				if norm == p {
-					return true
-				}
-			} else {
-				_ = windows.CloseHandle(h)
-			}
-		}
-		if err := windows.Process32Next(snap, &pe); err != nil {
-			break
-		}
-	}
-	return false
-}
+// isProcessRunningAtPath implemented per-OS

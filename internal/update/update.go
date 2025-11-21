@@ -1,28 +1,28 @@
 package update
 
 import (
-	"encoding/json"
-	"fmt"
-	"io"
-	"log"
-	"net/http"
-	"os"
-	"os/exec"
-	"path/filepath"
-	"regexp"
-	"runtime"
-	"strings"
-	"syscall"
-	"time"
+    "encoding/json"
+    "fmt"
+    "io"
+    "log"
+    "net/http"
+    "os"
+    "os/exec"
+    "path/filepath"
+    "regexp"
+    "runtime"
+    "strings"
+    "time"
 
-	"github.com/Masterminds/semver/v3"
-	"github.com/corpix/uarand"
-	buildcfg "github.com/liteldev/LeviLauncher/build"
-	"github.com/liteldev/LeviLauncher/internal/types"
-	"github.com/liteldev/LeviLauncher/internal/utils"
-	"github.com/mouuff/go-rocket-update/pkg/provider"
-	"github.com/mouuff/go-rocket-update/pkg/updater"
-	"github.com/wailsapp/wails/v3/pkg/application"
+    "github.com/Masterminds/semver/v3"
+    "github.com/corpix/uarand"
+    buildcfg "github.com/liteldev/LeviLauncher/build"
+    "github.com/liteldev/LeviLauncher/internal/types"
+    "github.com/liteldev/LeviLauncher/internal/utils"
+    "github.com/liteldev/LeviLauncher/internal/procutil"
+    "github.com/mouuff/go-rocket-update/pkg/provider"
+    "github.com/mouuff/go-rocket-update/pkg/updater"
+    "github.com/wailsapp/wails/v3/pkg/application"
 )
 
 var (
@@ -330,16 +330,16 @@ func isChinaUser() bool {
 	isTz := false
 	isLang := false
 	if runtime.GOOS == "windows" {
-		tzCmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "[System.TimeZoneInfo]::Local.Id")
-		tzCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+        tzCmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "[System.TimeZoneInfo]::Local.Id")
+        procutil.NoWindow(tzCmd)
 		if out, err := tzCmd.CombinedOutput(); err == nil {
 			s := strings.ToLower(strings.TrimSpace(string(out)))
 			if s == "china standard time" {
 				isTz = true
 			}
 		}
-		langCmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "(Get-WinUserLanguageList | Select-Object -ExpandProperty LanguageTag) -join ','")
-		langCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+        langCmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "(Get-WinUserLanguageList | Select-Object -ExpandProperty LanguageTag) -join ','")
+        procutil.NoWindow(langCmd)
 		if out, err := langCmd.CombinedOutput(); err == nil {
 			s := strings.ToLower(strings.TrimSpace(string(out)))
 			parts := strings.Split(s, ",")
@@ -350,8 +350,8 @@ func isChinaUser() bool {
 				}
 			}
 		} else {
-			locCmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "(Get-Culture).Name")
-			locCmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+            locCmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "(Get-Culture).Name")
+            procutil.NoWindow(locCmd)
 			if out2, err2 := locCmd.CombinedOutput(); err2 == nil {
 				l := strings.ToLower(strings.TrimSpace(string(out2)))
 				if strings.HasPrefix(l, "zh-cn") || l == "zh" {

@@ -450,6 +450,16 @@
         "star_fork": "Star / Fork",
         "rhymc_name": "旋律云"
     },
+    "winegdk": {
+      "install": {
+        "title": "WineGDK 安装",
+        "nav": "WineGDK",
+        "desc": "在 BaseRoot 目录下克隆并编译 WineGDK，随后安装前缀依赖（vkd3d、dxvk、dxvk_nvapi）。",
+        "start": "开始安装",
+        "status": "当前状态：",
+        "error": "错误："
+      }
+    },
     
     "common": {
         "ok": "确定",

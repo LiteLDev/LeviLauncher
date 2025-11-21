@@ -452,6 +452,16 @@
     "star_fork": "Star / Fork",
     "rhymc_name": "RhyMC"
   },
+  "winegdk": {
+    "install": {
+      "title": "WineGDK Setup",
+      "nav": "WineGDK",
+      "desc": "Clone & build WineGDK under BaseRoot, then install prefix dependencies (vkd3d, dxvk, dxvk_nvapi).",
+      "start": "Start Setup",
+      "status": "Status: ",
+      "error": "Error: "
+    }
+  },
   
   "common": {
     "ok": "OK",

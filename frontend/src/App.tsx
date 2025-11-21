@@ -414,7 +414,7 @@ function App() {
                 </Button>
               </Tooltip>
               {goos === "linux" && (
-                <Tooltip content={"WineGDK 安装"} delay={0} closeDelay={0}>
+                <Tooltip content={t("winegdk.install.title", { defaultValue: "WineGDK 安装" })} delay={0} closeDelay={0}>
                   <Button
                     variant="light"
                     aria-label="WineGDK Setup"
@@ -423,7 +423,7 @@ function App() {
                     className={`px-3 rounded-2xl ${location.pathname === "/winegdk" ? "bg-default-200" : ""}`}
                     startContent={<FaWineBottle size={18} />}
                   >
-                    WineGDK
+                    {t("winegdk.install.nav", { defaultValue: "WineGDK" })}
                   </Button>
                 </Tooltip>
               )}

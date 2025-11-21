@@ -1,33 +1,33 @@
 package main
 
 import (
-    "context"
-    "log"
-    "net/http"
-    "os"
-    "os/exec"
-    "path/filepath"
-    "runtime"
-    "strings"
+	"context"
+	"log"
+	"net/http"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"runtime"
+	"strings"
 
-    "github.com/liteldev/LeviLauncher/internal/discord"
-    "github.com/wailsapp/wails/v3/pkg/application"
+	"github.com/liteldev/LeviLauncher/internal/discord"
+	"github.com/wailsapp/wails/v3/pkg/application"
 
-    "github.com/liteldev/LeviLauncher/internal/content"
-    "github.com/liteldev/LeviLauncher/internal/gameinput"
-    "github.com/liteldev/LeviLauncher/internal/lang"
-    "github.com/liteldev/LeviLauncher/internal/launch"
-    "github.com/liteldev/LeviLauncher/internal/mcservice"
-    "github.com/liteldev/LeviLauncher/internal/mods"
-    "github.com/liteldev/LeviLauncher/internal/peeditor"
-    "github.com/liteldev/LeviLauncher/internal/preloader"
-    "github.com/liteldev/LeviLauncher/internal/registry"
-    "github.com/liteldev/LeviLauncher/internal/types"
-    "github.com/liteldev/LeviLauncher/internal/update"
-    "github.com/liteldev/LeviLauncher/internal/utils"
-    "github.com/liteldev/LeviLauncher/internal/vcruntime"
-    "github.com/liteldev/LeviLauncher/internal/versions"
-    "github.com/liteldev/LeviLauncher/internal/winegdk"
+	"github.com/liteldev/LeviLauncher/internal/content"
+	"github.com/liteldev/LeviLauncher/internal/gameinput"
+	"github.com/liteldev/LeviLauncher/internal/lang"
+	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/mcservice"
+	"github.com/liteldev/LeviLauncher/internal/mods"
+	"github.com/liteldev/LeviLauncher/internal/peeditor"
+	"github.com/liteldev/LeviLauncher/internal/preloader"
+	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/types"
+	"github.com/liteldev/LeviLauncher/internal/update"
+	"github.com/liteldev/LeviLauncher/internal/utils"
+	"github.com/liteldev/LeviLauncher/internal/vcruntime"
+	"github.com/liteldev/LeviLauncher/internal/versions"
+	"github.com/liteldev/LeviLauncher/internal/winegdk"
 )
 
 const (
@@ -168,13 +168,13 @@ func (a *Minecraft) EnsureGameInputInteractive() { go gameinput.EnsureInteractiv
 func (a *Minecraft) IsGameInputInstalled() bool { return gameinput.IsInstalled() }
 
 func (a *Minecraft) IsGamingServicesInstalled() bool {
-    if runtime.GOOS == "linux" {
-        return true
-    }
-    if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err == nil {
-        return true
-    }
-    return false
+	if runtime.GOOS == "linux" {
+		return true
+	}
+	if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err == nil {
+		return true
+	}
+	return false
 }
 
 func (a *Minecraft) StartMsixvcDownload(url string) string {
@@ -572,8 +572,13 @@ func (a *Minecraft) SetupWineGDK() string { return winegdk.Setup(a.ctx) }
 
 func (a *Minecraft) GetRuntimeGOOS() string { return runtime.GOOS }
 
+func (a *Minecraft) IsWineReady() bool {
+    if runtime.GOOS != "linux" { return true }
+    return strings.TrimSpace(winegdk.FindWineBin()) != ""
+}
+
 func (a *Minecraft) TestMirrorLatencies(urls []string, timeoutMs int) []map[string]interface{} {
-    return mcservice.TestMirrorLatencies(urls, timeoutMs)
+	return mcservice.TestMirrorLatencies(urls, timeoutMs)
 }
 
 func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string {
@@ -603,44 +608,34 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 		}
 		gameVer = strings.TrimSpace(m.GameVersion)
 	}
-    if checkRunning {
-        if isProcessRunningAtPath(toRun) {
-            return "ERR_GAME_ALREADY_RUNNING"
-        }
-    }
-    var cmd *exec.Cmd
-    if runtime.GOOS == "linux" {
-        base := utils.BaseRoot()
-        wine := filepath.Join(base, "wine", "files", "bin", "wine")
-        if _, err := os.Stat(wine); err != nil {
-            wow := filepath.Join(base, "wine", "files", "bin-wow64", "wine")
-            if _, er2 := os.Stat(wow); er2 == nil {
-                wine = wow
-            } else {
-                alt := filepath.Join(base, "wine", "files", "bin", "wine64")
-                if _, er3 := os.Stat(alt); er3 == nil { wine = alt } else { return "ERR_WINE_NOT_AVAILABLE" }
-            }
-        }
-        pf := filepath.Join(base, "prefix")
-        _ = os.MkdirAll(pf, 0755)
-        var argv []string
-        argv = append(argv, toRun)
-        argv = append(argv, args...)
-        cmd = exec.Command(wine, argv...)
-        cmd.Env = append(os.Environ(), "WINEPREFIX="+pf)
-    } else {
-        cmd = exec.Command(toRun, args...)
-    }
-    cmd.Dir = filepath.Dir(toRun)
-    cmd.Stdout = os.Stdout
-    cmd.Stderr = os.Stderr
-    cmd.Stdin = os.Stdin
-    if err := cmd.Start(); err != nil {
-        return "ERR_LAUNCH_GAME"
-    }
-    discord.SetPlayingVersion(gameVer)
-    go launch.MonitorMinecraftWindow(a.ctx)
-    return ""
+	if checkRunning {
+		if isProcessRunningAtPath(toRun) {
+			return "ERR_GAME_ALREADY_RUNNING"
+		}
+	}
+	var cmd *exec.Cmd
+	if runtime.GOOS == "linux" {
+		wine := winegdk.FindWineBin()
+		if strings.TrimSpace(wine) == "" {
+			return "ERR_WINE_NOT_AVAILABLE"
+		}
+		var argv []string
+		argv = append(argv, toRun)
+		argv = append(argv, args...)
+		cmd = exec.Command(wine, argv...)
+	} else {
+		cmd = exec.Command(toRun, args...)
+	}
+	cmd.Dir = filepath.Dir(toRun)
+	cmd.Stdout = os.Stdout
+	cmd.Stderr = os.Stderr
+	cmd.Stdin = os.Stdin
+	if err := cmd.Start(); err != nil {
+		return "ERR_LAUNCH_GAME"
+	}
+	discord.SetPlayingVersion(gameVer)
+	go launch.MonitorMinecraftWindow(a.ctx)
+	return ""
 }
 
 func (a *Minecraft) GetBaseRoot() string { return mcservice.GetBaseRoot() }
@@ -650,5 +645,3 @@ func (a *Minecraft) SetBaseRoot(root string) string { return mcservice.SetBaseRo
 func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }
 
 func (a *Minecraft) CanWriteToDir(path string) bool { return mcservice.CanWriteToDir(path) }
-
-// isProcessRunningAtPath implemented per-OS

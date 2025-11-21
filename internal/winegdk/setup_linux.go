@@ -90,10 +90,8 @@ func Setup(ctx context.Context) string {
             if _, er3 := os.Stat(alt); er3 == nil { wineBin = alt } else { application.Get().Event.Emit(EventSetupError, "ERR_WINE_NOT_AVAILABLE"); return "ERR_WINE_NOT_AVAILABLE" }
         }
     }
-    pf := filepath.Join(base, "prefix")
-    _ = os.MkdirAll(pf, 0755)
     application.Get().Event.Emit(EventSetupStatus, "winetricks")
-    wt := exec.Command("bash", "-c", "WINE='"+wineBin+"' WINEPREFIX='"+pf+"' winetricks vkd3d dxvk dxvk_nvapi0061")
+    wt := exec.Command("bash", "-c", "WINE='"+wineBin+"' winetricks vkd3d dxvk dxvk_nvapi0061")
     if err := streamCmd(wt, "winetricks"); err != nil {
         application.Get().Event.Emit(EventSetupError, "ERR_WINETRICKS")
         return "ERR_WINETRICKS"

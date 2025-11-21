@@ -458,6 +458,11 @@
         "start": "开始安装",
         "status": "当前状态：",
         "error": "错误："
+      },
+      "prompt": {
+        "title": "需要安装 WineGDK",
+        "desc": "检测到未安装或不可用的 Wine；请先完成 WineGDK 安装再使用启动器。",
+        "action": "前往安装"
       }
     },
     

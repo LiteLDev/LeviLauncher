@@ -12,6 +12,7 @@ import (
     "strings"
 
     "github.com/liteldev/LeviLauncher/internal/utils"
+    "github.com/liteldev/LeviLauncher/internal/winegdk"
 )
 
 func Init() {}
@@ -122,20 +123,9 @@ func MiHoYo(msixvcPath string, outDir string) (int, string) {
         return 1, "ERR_WRAPPER_NOT_FOUND"
     }
     // Prefer Wine built from WineGDK
-    wine := filepath.Join(utils.BaseRoot(), "wine", "files", "bin", "wine")
-    if _, err := os.Stat(wine); err != nil {
-        wow := filepath.Join(utils.BaseRoot(), "wine", "files", "bin-wow64", "wine")
-        if _, er2 := os.Stat(wow); er2 == nil {
-            wine = wow
-        } else {
-            alt := filepath.Join(utils.BaseRoot(), "wine", "files", "bin", "wine64")
-            if _, er3 := os.Stat(alt); er3 == nil { wine = alt } else { return 1, "ERR_WINE_NOT_AVAILABLE" }
-        }
-    }
-    pf := filepath.Join(utils.BaseRoot(), "prefix")
-    _ = os.MkdirAll(pf, 0755)
+    wine := strings.TrimSpace(winegdk.FindWineBin())
+    if wine == "" { return 1, "ERR_WINE_NOT_AVAILABLE" }
     cmd := exec.Command(wine, wrapper, msixvcPath, outDir, dll)
-    cmd.Env = append(os.Environ(), "WINEPREFIX="+pf)
     if err := cmd.Run(); err != nil {
         return 1, "ERR_APPX_INSTALL_FAILED"
     }

@@ -460,6 +460,11 @@
       "start": "Start Setup",
       "status": "Status: ",
       "error": "Error: "
+    },
+    "prompt": {
+      "title": "WineGDK Required",
+      "desc": "Wine not installed or unavailable. Please complete WineGDK setup before using the launcher.",
+      "action": "Go to Setup"
     }
   },
   

@@ -610,10 +610,21 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
     }
     var cmd *exec.Cmd
     if runtime.GOOS == "linux" {
+        base := utils.BaseRoot()
+        wg := filepath.Join(base, "WineGDK")
+        bd := filepath.Join(wg, "build")
+        wine := filepath.Join(bd, "wine")
+        if _, err := os.Stat(wine); err != nil {
+            alt := filepath.Join(bd, "wine64")
+            if _, er2 := os.Stat(alt); er2 == nil { wine = alt } else { return "ERR_WINE_NOT_AVAILABLE" }
+        }
+        pf := filepath.Join(base, "prefix")
+        _ = os.MkdirAll(pf, 0755)
         var argv []string
         argv = append(argv, toRun)
         argv = append(argv, args...)
-        cmd = exec.Command("wine", argv...)
+        cmd = exec.Command(wine, argv...)
+        cmd.Env = append(os.Environ(), "WINEPREFIX="+pf)
     } else {
         cmd = exec.Command(toRun, args...)
     }

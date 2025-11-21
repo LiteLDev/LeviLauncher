@@ -23,12 +23,20 @@ const (
 
 func Setup(ctx context.Context) string {
     base := utils.BaseRoot()
-	if strings.TrimSpace(base) == "" {
-		application.Get().Event.Emit(EventSetupError, "ERR_BASE_ROOT")
-		return "ERR_BASE_ROOT"
-	}
+    if strings.TrimSpace(base) == "" {
+        application.Get().Event.Emit(EventSetupError, "ERR_BASE_ROOT")
+        return "ERR_BASE_ROOT"
+    }
     application.Get().Event.Emit(EventSetupStatus, "start")
-    if _, err := exec.LookPath("wine"); err != nil {
+    // Prefer Wine built from WineGDK (local path)
+    wg := filepath.Join(base, "WineGDK")
+    bd := filepath.Join(wg, "build")
+    wineBin := func() string {
+        cands := []string{filepath.Join(bd, "wine"), filepath.Join(bd, "wine64")}
+        for _, p := range cands { if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() { return p } }
+        return ""
+    }()
+    if strings.TrimSpace(wineBin) == "" {
         application.Get().Event.Emit(EventSetupStatus, "deps_warning_wine_missing")
     }
 	id := func() string {
@@ -55,7 +63,6 @@ func Setup(ctx context.Context) string {
 	} else {
 		application.Get().Event.Emit(EventSetupStatus, "deps_warning_other")
 	}
-    wg := filepath.Join(base, "WineGDK")
     if _, err := os.Stat(wg); err != nil {
         application.Get().Event.Emit(EventSetupStatus, "cloning")
         cmd := exec.Command("git", "clone", "https://github.com/Weather-OS/WineGDK.git", wg)
@@ -80,10 +87,13 @@ func Setup(ctx context.Context) string {
             }
             needBuild = true
         }
+        // Build if local wine binary is missing
+        if strings.TrimSpace(wineBin) == "" {
+            needBuild = true
+        }
     } else {
         needBuild = true
     }
-    bd := filepath.Join(wg, "build")
     _ = os.MkdirAll(bd, 0755)
     if needBuild {
         application.Get().Event.Emit(EventSetupStatus, "configuring")
@@ -98,19 +108,25 @@ func Setup(ctx context.Context) string {
             application.Get().Event.Emit(EventSetupError, "ERR_MAKE")
             return "ERR_MAKE"
         }
+        // refresh wineBin after build
+        wineBin = func() string {
+            cands := []string{filepath.Join(bd, "wine"), filepath.Join(bd, "wine64")}
+            for _, p := range cands { if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() { return p } }
+            return ""
+        }()
     } else {
         application.Get().Event.Emit(EventSetupStatus, "skip_build")
     }
-	pf := filepath.Join(base, "prefix")
-	_ = os.MkdirAll(pf, 0755)
-	application.Get().Event.Emit(EventSetupStatus, "winetricks")
-    wt := exec.Command("bash", "-c", "WINEPREFIX='"+pf+"' winetricks vkd3d dxvk dxvk_nvapi0061")
+    pf := filepath.Join(base, "prefix")
+    _ = os.MkdirAll(pf, 0755)
+    application.Get().Event.Emit(EventSetupStatus, "winetricks")
+    wt := exec.Command("bash", "-c", "WINE='"+wineBin+"' WINEPREFIX='"+pf+"' winetricks vkd3d dxvk dxvk_nvapi0061")
     if err := streamCmd(wt, "winetricks"); err != nil {
         application.Get().Event.Emit(EventSetupError, "ERR_WINETRICKS")
         return "ERR_WINETRICKS"
     }
-	application.Get().Event.Emit(EventSetupDone, struct{}{})
-	return ""
+    application.Get().Event.Emit(EventSetupDone, struct{}{})
+    return ""
 }
 
 func streamCmd(cmd *exec.Cmd, phase string) error {

@@ -100,7 +100,18 @@ func MiHoYo(msixvcPath string, outDir string) (int, string) {
     if _, err := os.Stat(wrapper); err != nil {
         return 1, "ERR_WRAPPER_NOT_FOUND"
     }
-    cmd := exec.Command("wine", wrapper, msixvcPath, outDir, dll)
+    // Prefer Wine built from WineGDK
+    wg := filepath.Join(utils.BaseRoot(), "WineGDK")
+    bd := filepath.Join(wg, "build")
+    wine := filepath.Join(bd, "wine")
+    if _, err := os.Stat(wine); err != nil {
+        alt := filepath.Join(bd, "wine64")
+        if _, er2 := os.Stat(alt); er2 == nil { wine = alt } else { return 1, "ERR_WINE_NOT_AVAILABLE" }
+    }
+    pf := filepath.Join(utils.BaseRoot(), "prefix")
+    _ = os.MkdirAll(pf, 0755)
+    cmd := exec.Command(wine, wrapper, msixvcPath, outDir, dll)
+    cmd.Env = append(os.Environ(), "WINEPREFIX="+pf)
     if err := cmd.Run(); err != nil {
         return 1, "ERR_APPX_INSTALL_FAILED"
     }

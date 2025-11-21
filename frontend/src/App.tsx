@@ -79,12 +79,6 @@ function App() {
     });
   };
 
-  const setIsFirstLoadFalse = () => {
-    setIsFirstLoad((isFirstLoad) => {
-      return (isFirstLoad = false);
-    });
-  };
-
   const location = useLocation();
   const navigate = useNavigate();
   const isUpdatingMode = (() => {
@@ -265,31 +259,6 @@ function App() {
         .catch(()=>{});
     } catch {}
   }, []);
-
-  useEffect(() => {
-    if (goos === "linux") {
-      try {
-        minecraft?.IsWineReady?.().then((ok: boolean) => {
-          setWineReady(!!ok);
-          if (!ok) {
-            setNavLocked(true);
-            setShowWinePrompt(true);
-            navigate("/winegdk", { replace: true });
-          }
-        }).catch(()=>{
-          setWineReady(false);
-          setNavLocked(true);
-          setShowWinePrompt(true);
-          navigate("/winegdk", { replace: true });
-        });
-      } catch {
-        setWineReady(false);
-        setNavLocked(true);
-        setShowWinePrompt(true);
-        navigate("/winegdk", { replace: true });
-      }
-    }
-  }, [goos]);
 
   useEffect(() => {
     const off = Events.On("winegdk.setup.done", () => {
@@ -606,19 +575,6 @@ function App() {
                 {goos === "linux" && <Route path="/winegdk" element={<WineGDKSetupPage />} />}
               </Routes>
 
-              {goos === "linux" && showWinePrompt && (
-                <div className="fixed inset-0 bg-black/30 backdrop-blur-sm z-50 flex items-center justify-center">
-                  <div className="bg-content1 rounded-xl p-6 max-w-md w-full shadow-lg">
-                    <div className="text-lg font-semibold mb-2">{t("winegdk.prompt.title", { defaultValue: "需要安装 WineGDK" })}</div>
-                    <div className="text-small text-default-700 mb-4">
-                      {t("winegdk.prompt.desc", { defaultValue: "检测到未安装或不可用的 Wine；请先完成 WineGDK 安装再使用启动器。" })}
-                    </div>
-                    <div className="flex gap-3">
-                      <Button color="primary" onPress={() => tryNavigate("/winegdk")}>{t("winegdk.prompt.action", { defaultValue: "前往安装" })}</Button>
-                    </div>
-                  </div>
-                </div>
-              )}
               </>
             ))}
         </motion.div>
@@ -777,7 +733,7 @@ function App() {
           </ModalContent>
         </Modal>
 
-        <Modal size="md" isOpen={goos === "linux" && showWinePrompt} hideCloseButton isDismissable={false}>
+        <Modal size="md" isOpen={goos === "linux" && showWinePrompt && location.pathname !== "/winegdk"} hideCloseButton isDismissable={false}>
           <ModalContent>
             {() => (
               <>
@@ -790,7 +746,7 @@ function App() {
                   </div>
                 </ModalBody>
                 <ModalFooter>
-                  <Button color="primary" onPress={() => navigate("/winegdk", { replace: true })}>
+                  <Button color="primary" onPress={() => { setShowWinePrompt(false); navigate("/winegdk", { replace: true }); }}>
                     {t("winegdk.prompt.action", { defaultValue: "前往安装" })}
                   </Button>
                 </ModalFooter>

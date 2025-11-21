@@ -3,8 +3,12 @@
 package winegdk
 
 import (
+    "archive/tar"
     "bufio"
+    "compress/gzip"
     "context"
+    "io"
+    "net/http"
     "os"
     "os/exec"
     "path/filepath"
@@ -28,94 +32,63 @@ func Setup(ctx context.Context) string {
         return "ERR_BASE_ROOT"
     }
     application.Get().Event.Emit(EventSetupStatus, "start")
-    // Prefer Wine built from WineGDK (local path)
-    wg := filepath.Join(base, "WineGDK")
-    bd := filepath.Join(wg, "build")
-    wineBin := func() string {
-        cands := []string{filepath.Join(bd, "wine"), filepath.Join(bd, "wine64")}
-        for _, p := range cands { if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() { return p } }
-        return ""
-    }()
-    if strings.TrimSpace(wineBin) == "" {
-        application.Get().Event.Emit(EventSetupStatus, "deps_warning_wine_missing")
+    wineDir := filepath.Join(base, "wine")
+    _ = os.MkdirAll(wineDir, 0755)
+    url := "https://github.com/Weather-OS/GDK-Proton/releases/download/release/GE-Proton10-25.tar.gz"
+    tmp := filepath.Join(wineDir, "GE-Proton10-25.tar.gz")
+    application.Get().Event.Emit(EventSetupStatus, "download_start")
+    if err := downloadWithProgress(url, tmp, "download"); err != nil {
+        application.Get().Event.Emit(EventSetupError, "ERR_DOWNLOAD")
+        return "ERR_DOWNLOAD"
     }
-	id := func() string {
-		b, err := os.ReadFile("/etc/os-release")
-		if err != nil {
-			return ""
-		}
-		for _, l := range strings.Split(string(b), "\n") {
-			s := strings.TrimSpace(l)
-			if strings.HasPrefix(s, "ID=") {
-				v := strings.TrimPrefix(s, "ID=")
-				v = strings.Trim(v, "\"'")
-				return strings.ToLower(strings.TrimSpace(v))
-			}
-		}
-		return ""
-	}()
-	if id == "arch" {
-		application.Get().Event.Emit(EventSetupStatus, "deps_warning_arch")
-		pkgs := "mingw-w64-gcc base-devel git gcc multilib-devel winetricks wine vulkan-icd-loader lib32-vulkan-icd-loader libx11 lib32-libx11 freetype2 lib32-freetype2 mesa lib32-mesa glu lib32-glu alsa-lib lib32-alsa-lib libxrandr lib32-libxrandr libxi lib32-libxi libxext lib32-libxext libxrender lib32-libxrender libxcursor lib32-libxcursor libxinerama lib32-libxinerama libxcomposite lib32-libxcomposite libxfixes lib32-libxfixes libpng lib32-libpng libjpeg-turbo lib32-libjpeg-turbo libtiff lib32-libtiff openal lib32-openal mpg123 lib32-mpg123 sdl2 lib32-sdl2 libxml2 lib32-libxml2 libldap lib32-libldap vulkan-headers cups"
-		application.Get().Event.Emit(EventSetupStatus, "deps_install_arch")
-        cmd := exec.Command("bash", "-c", "sudo pacman -S --needed --noconfirm "+pkgs)
-        _ = streamCmd(cmd, "deps")
-	} else {
-		application.Get().Event.Emit(EventSetupStatus, "deps_warning_other")
-	}
-    if _, err := os.Stat(wg); err != nil {
-        application.Get().Event.Emit(EventSetupStatus, "cloning")
-        cmd := exec.Command("git", "clone", "https://github.com/Weather-OS/WineGDK.git", wg)
-        if err := streamCmd(cmd, "clone"); err != nil {
-            application.Get().Event.Emit(EventSetupError, "ERR_GIT_CLONE")
-            return "ERR_GIT_CLONE"
-        }
-    } else {
-        application.Get().Event.Emit(EventSetupStatus, "updating")
-        _ = streamCmd(exec.Command("bash", "-c", "cd '"+wg+"' && git remote update"), "update")
+    application.Get().Event.Emit(EventSetupStatus, "extract_start")
+    f, err := os.Open(tmp)
+    if err != nil {
+        application.Get().Event.Emit(EventSetupError, "ERR_OPEN_TAR")
+        return "ERR_OPEN_TAR"
     }
-    needBuild := false
-    if _, err := os.Stat(wg); err == nil {
-        chk := exec.Command("bash", "-c", "cd '"+wg+"' && if [ \"$(git rev-parse HEAD)\" = \"$(git rev-parse @{u})\" ]; then echo up_to_date; else echo needs_update; fi")
-        out, _ := chk.CombinedOutput()
-        s := strings.ToLower(strings.TrimSpace(string(out)))
-        if s == "needs_update" {
-            application.Get().Event.Emit(EventSetupStatus, "pulling")
-            if er := streamCmd(exec.Command("bash", "-c", "cd '"+wg+"' && git pull --rebase"), "pull"); er != nil {
-                application.Get().Event.Emit(EventSetupError, "ERR_GIT_PULL")
-                return "ERR_GIT_PULL"
-            }
-            needBuild = true
-        }
-        // Build if local wine binary is missing
-        if strings.TrimSpace(wineBin) == "" {
-            needBuild = true
-        }
-    } else {
-        needBuild = true
+    defer f.Close()
+    gz, err := gzip.NewReader(f)
+    if err != nil {
+        application.Get().Event.Emit(EventSetupError, "ERR_OPEN_GZ")
+        return "ERR_OPEN_GZ"
     }
-    _ = os.MkdirAll(bd, 0755)
-    if needBuild {
-        application.Get().Event.Emit(EventSetupStatus, "configuring")
-        cfg := exec.Command("bash", "-c", "cd '"+bd+"' && ../configure --enable-win64")
-        if err := streamCmd(cfg, "configure"); err != nil {
-            application.Get().Event.Emit(EventSetupError, "ERR_CONFIGURE")
-            return "ERR_CONFIGURE"
+    defer gz.Close()
+    tr := tar.NewReader(gz)
+    for {
+        hdr, er := tr.Next()
+        if er == io.EOF { break }
+        if er != nil { application.Get().Event.Emit(EventSetupError, "ERR_EXTRACT"); return "ERR_EXTRACT" }
+        name := strings.TrimSpace(hdr.Name)
+        if name == "" { continue }
+        parts := strings.SplitN(name, "/", 2)
+        if len(parts) < 2 { continue }
+        rel := parts[1]
+        if strings.TrimSpace(rel) == "" { continue }
+        outPath := filepath.Join(wineDir, rel)
+        switch hdr.Typeflag {
+        case tar.TypeDir:
+            _ = os.MkdirAll(outPath, os.FileMode(hdr.Mode))
+        case tar.TypeReg:
+            if err := os.MkdirAll(filepath.Dir(outPath), 0755); err != nil { application.Get().Event.Emit(EventSetupError, "ERR_WRITE_FILE"); return "ERR_WRITE_FILE" }
+            of, e2 := os.OpenFile(outPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, os.FileMode(hdr.Mode))
+            if e2 != nil { application.Get().Event.Emit(EventSetupError, "ERR_WRITE_FILE"); return "ERR_WRITE_FILE" }
+            if _, e3 := io.Copy(of, tr); e3 != nil { _ = of.Close(); application.Get().Event.Emit(EventSetupError, "ERR_WRITE_FILE"); return "ERR_WRITE_FILE" }
+            _ = of.Close()
+        default:
         }
-        application.Get().Event.Emit(EventSetupStatus, "compiling")
-        mk := exec.Command("bash", "-c", "cd '"+bd+"' && make -j$(nproc)")
-        if err := streamCmd(mk, "make"); err != nil {
-            application.Get().Event.Emit(EventSetupError, "ERR_MAKE")
-            return "ERR_MAKE"
+        application.Get().Event.Emit(EventSetupProgress, map[string]interface{}{"phase": "extract", "line": rel})
+    }
+    _ = os.Remove(tmp)
+    wineBin := filepath.Join(wineDir, "files", "bin", "wine")
+    if _, err := os.Stat(wineBin); err != nil {
+        wow := filepath.Join(wineDir, "files", "bin-wow64", "wine")
+        if _, er2 := os.Stat(wow); er2 == nil {
+            wineBin = wow
+        } else {
+            alt := filepath.Join(wineDir, "files", "bin", "wine64")
+            if _, er3 := os.Stat(alt); er3 == nil { wineBin = alt } else { application.Get().Event.Emit(EventSetupError, "ERR_WINE_NOT_AVAILABLE"); return "ERR_WINE_NOT_AVAILABLE" }
         }
-        // refresh wineBin after build
-        wineBin = func() string {
-            cands := []string{filepath.Join(bd, "wine"), filepath.Join(bd, "wine64")}
-            for _, p := range cands { if fi, err := os.Stat(p); err == nil && fi.Mode().IsRegular() { return p } }
-            return ""
-        }()
-    } else {
-        application.Get().Event.Emit(EventSetupStatus, "skip_build")
     }
     pf := filepath.Join(base, "prefix")
     _ = os.MkdirAll(pf, 0755)
@@ -127,6 +100,29 @@ func Setup(ctx context.Context) string {
     }
     application.Get().Event.Emit(EventSetupDone, struct{}{})
     return ""
+}
+
+func downloadWithProgress(url string, dest string, phase string) error {
+    resp, err := http.Get(url)
+    if err != nil { return err }
+    defer resp.Body.Close()
+    if resp.StatusCode != 200 { return io.ErrUnexpectedEOF }
+    if err := os.MkdirAll(filepath.Dir(dest), 0755); err != nil { return err }
+    f, err := os.OpenFile(dest, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+    if err != nil { return err }
+    defer f.Close()
+    buf := make([]byte, 256*1024)
+    var total int64
+    for {
+        n, e := resp.Body.Read(buf)
+        if n > 0 {
+            if _, werr := f.Write(buf[:n]); werr != nil { return werr }
+            total += int64(n)
+            application.Get().Event.Emit(EventSetupProgress, map[string]interface{}{"phase": phase, "line": total})
+        }
+        if e != nil { if e == io.EOF { break } else { return e } }
+    }
+    return nil
 }
 
 func streamCmd(cmd *exec.Cmd, phase string) error {

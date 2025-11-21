@@ -611,12 +611,15 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
     var cmd *exec.Cmd
     if runtime.GOOS == "linux" {
         base := utils.BaseRoot()
-        wg := filepath.Join(base, "WineGDK")
-        bd := filepath.Join(wg, "build")
-        wine := filepath.Join(bd, "wine")
+        wine := filepath.Join(base, "wine", "files", "bin", "wine")
         if _, err := os.Stat(wine); err != nil {
-            alt := filepath.Join(bd, "wine64")
-            if _, er2 := os.Stat(alt); er2 == nil { wine = alt } else { return "ERR_WINE_NOT_AVAILABLE" }
+            wow := filepath.Join(base, "wine", "files", "bin-wow64", "wine")
+            if _, er2 := os.Stat(wow); er2 == nil {
+                wine = wow
+            } else {
+                alt := filepath.Join(base, "wine", "files", "bin", "wine64")
+                if _, er3 := os.Stat(alt); er3 == nil { wine = alt } else { return "ERR_WINE_NOT_AVAILABLE" }
+            }
         }
         pf := filepath.Join(base, "prefix")
         _ = os.MkdirAll(pf, 0755)

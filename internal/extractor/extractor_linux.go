@@ -66,16 +66,14 @@ func MiHoYo(msixvcPath string, outDir string) (int, string) {
 		return 1, "ERR_CREATE_TARGET_DIR"
 	}
 
-    dll := strings.TrimSpace(os.Getenv("LAUNCHER_CORE_DLL"))
-    if dll == "" {
-        if p := ensureEmbeddedDLL(); p != "" {
-            dll = p
-        } else {
-            base := utils.BaseRoot()
-            cand := filepath.Join(base, "bin", "launcher_core.dll")
-            if _, err := os.Stat(cand); err == nil {
-                dll = cand
-            }
+    dll := ""
+    if p := ensureEmbeddedDLL(); p != "" {
+        dll = p
+    } else {
+        base := utils.BaseRoot()
+        cand := filepath.Join(base, "bin", "launcher_core.dll")
+        if _, err := os.Stat(cand); err == nil {
+            dll = cand
         }
     }
     if strings.TrimSpace(dll) == "" {
@@ -102,7 +100,7 @@ func MiHoYo(msixvcPath string, outDir string) (int, string) {
     if _, err := os.Stat(wrapper); err != nil {
         return 1, "ERR_WRAPPER_NOT_FOUND"
     }
-    cmd := exec.Command("wine", wrapper, msixvcPath, outDir)
+    cmd := exec.Command("wine", wrapper, msixvcPath, outDir, dll)
     if err := cmd.Run(); err != nil {
         return 1, "ERR_APPX_INSTALL_FAILED"
     }

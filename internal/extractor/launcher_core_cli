@@ -3,23 +3,22 @@
 
 int main(int argc, char **argv) {
   if (argc < 4) {
-
     return 2;
   }
   const char *msix = argv[1];
   const char *out = argv[2];
   const char *dllArg = argv[3];
-
+  printf("1 %s %s %s", msix, out, dllArg);
   HMODULE h = LoadLibraryA(dllArg);
   if (!h)
     return 3;
 
   typedef int(__stdcall * MIA)(const char *, const char *);
-
+  printf("2 %s %s %s", msix, out, dllArg);
   MIA mia = (MIA)GetProcAddress(h, "miHoYo");
   if (mia) {
+    printf("3 %s %s %s", msix, out, dllArg);
     int rc = mia(msix, out);
-    printf("%d", rc);
     FreeLibrary(h);
     return rc;
   }

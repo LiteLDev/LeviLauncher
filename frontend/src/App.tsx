@@ -18,7 +18,7 @@ import { ThemeSwitcher } from "./components/ThemeSwitcher";
 import { IoCloseOutline } from "react-icons/io5";
 import { FiMinimize2 } from "react-icons/fi";
 import { LeviIcon } from "./icons/LeviIcon";
-import { FaDownload, FaRocket, FaCog, FaList, FaEllipsisH, FaInfoCircle } from "react-icons/fa";
+import { FaDownload, FaRocket, FaCog, FaList, FaEllipsisH, FaInfoCircle, FaWineBottle } from "react-icons/fa";
 import { LauncherPage } from "./pages/LauncherPage";
 import { DownloadPage } from "./pages/DownloadPage";
 import { SplashScreen } from "./pages/SplashScreen";
@@ -43,6 +43,7 @@ import * as minecraft from "../bindings/github.com/liteldev/LeviLauncher/minecra
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import AboutPage from "./pages/AboutPage";
+import WineGDKSetupPage from "./pages/WineGDKSetupPage";
 import OnboardingPage from "./pages/OnboardingPage";
 
 function App() {
@@ -68,6 +69,7 @@ function App() {
   const [updateVersion, setUpdateVersion] = useState<string>("");
   const [updateBody, setUpdateBody] = useState<string>("");
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
+  const [goos, setGoos] = useState<string>("");
 
   const refresh = () => {
     setCount((prevCount) => {
@@ -230,6 +232,12 @@ function App() {
         .catch(() => {});
     } catch {}
   }, [hasBackend]);
+
+  useEffect(() => {
+    try {
+      minecraft?.GetRuntimeGOOS?.().then((s: string) => setGoos(String(s || ""))).catch(()=>{});
+    } catch {}
+  }, []);
 
   
 
@@ -405,6 +413,20 @@ function App() {
                   {t("app.settings")}
                 </Button>
               </Tooltip>
+              {goos === "linux" && (
+                <Tooltip content={"WineGDK 安装"} delay={0} closeDelay={0}>
+                  <Button
+                    variant="light"
+                    aria-label="WineGDK Setup"
+                    isDisabled={navLocked}
+                    onPress={() => { tryNavigate("/winegdk"); }}
+                    className={`px-3 rounded-2xl ${location.pathname === "/winegdk" ? "bg-default-200" : ""}`}
+                    startContent={<FaWineBottle size={18} />}
+                  >
+                    WineGDK
+                  </Button>
+                </Tooltip>
+              )}
               <Dropdown>
                 <DropdownTrigger>
                   <Button
@@ -519,6 +541,7 @@ function App() {
                 />
                 <Route path="/content/skin-packs" element={<SkinPacksPage />} />
                 <Route path="/about" element={<AboutPage />} />
+                {goos === "linux" && <Route path="/winegdk" element={<WineGDKSetupPage />} />}
               </Routes>
             ))}
         </motion.div>

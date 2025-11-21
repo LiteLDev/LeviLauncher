@@ -27,6 +27,7 @@ import (
     "github.com/liteldev/LeviLauncher/internal/utils"
     "github.com/liteldev/LeviLauncher/internal/vcruntime"
     "github.com/liteldev/LeviLauncher/internal/versions"
+    "github.com/liteldev/LeviLauncher/internal/winegdk"
 )
 
 const (
@@ -566,6 +567,10 @@ func (a *Minecraft) Update() bool {
 	}
 	return true
 }
+
+func (a *Minecraft) SetupWineGDK() string { return winegdk.Setup(a.ctx) }
+
+func (a *Minecraft) GetRuntimeGOOS() string { return runtime.GOOS }
 
 func (a *Minecraft) TestMirrorLatencies(urls []string, timeoutMs int) []map[string]interface{} {
     return mcservice.TestMirrorLatencies(urls, timeoutMs)

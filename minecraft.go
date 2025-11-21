@@ -26,6 +26,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
+	"github.com/liteldev/LeviLauncher/internal/xcurl"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/liteldev/LeviLauncher/internal/winegdk"
 )
@@ -594,6 +595,9 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	_ = vcruntime.EnsureForVersion(a.ctx, dir)
 	_ = preloader.EnsureForVersion(a.ctx, dir)
 	_ = peeditor.EnsureForVersion(a.ctx, dir)
+	if runtime.GOOS == "linux" {
+		_ = xcurl.EnsureForVersion(a.ctx, dir)
+	}
 	_ = peeditor.RunForVersion(a.ctx, dir)
 	var args []string
 	toRun := exe

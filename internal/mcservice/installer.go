@@ -1,20 +1,22 @@
 package mcservice
 
 import (
-	"context"
-	"os"
-	"path/filepath"
-	"strings"
-	"time"
+    "context"
+    "os"
+    "path/filepath"
+    "runtime"
+    "strings"
+    "time"
 
-	"github.com/liteldev/LeviLauncher/internal/extractor"
-	"github.com/liteldev/LeviLauncher/internal/msixvc"
-	"github.com/liteldev/LeviLauncher/internal/peeditor"
-	"github.com/liteldev/LeviLauncher/internal/preloader"
-	"github.com/liteldev/LeviLauncher/internal/types"
-	"github.com/liteldev/LeviLauncher/internal/utils"
-	"github.com/liteldev/LeviLauncher/internal/vcruntime"
-	"github.com/wailsapp/wails/v3/pkg/application"
+    "github.com/liteldev/LeviLauncher/internal/extractor"
+    "github.com/liteldev/LeviLauncher/internal/msixvc"
+    "github.com/liteldev/LeviLauncher/internal/peeditor"
+    "github.com/liteldev/LeviLauncher/internal/preloader"
+    "github.com/liteldev/LeviLauncher/internal/types"
+    "github.com/liteldev/LeviLauncher/internal/utils"
+    "github.com/liteldev/LeviLauncher/internal/vcruntime"
+    "github.com/liteldev/LeviLauncher/internal/xcurl"
+    "github.com/wailsapp/wails/v3/pkg/application"
 )
 
 type VersionStatus struct {
@@ -94,6 +96,9 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 	_ = vcruntime.EnsureForVersion(ctx, outDir)
 	_ = preloader.EnsureForVersion(ctx, outDir)
 	_ = peeditor.EnsureForVersion(ctx, outDir)
+	if runtime.GOOS == "linux" {
+		_ = xcurl.EnsureForVersion(ctx, outDir)
+	}
 	_ = peeditor.RunForVersion(ctx, outDir)
 	application.Get().Event.Emit(EventExtractDone, outDir)
 	return ""

@@ -26,15 +26,15 @@ const (
 )
 
 func Setup(ctx context.Context) string {
-	base := utils.BaseRoot()
-	if strings.TrimSpace(base) == "" {
-		application.Get().Event.Emit(EventSetupError, "ERR_BASE_ROOT")
-		return "ERR_BASE_ROOT"
-	}
-	application.Get().Event.Emit(EventSetupStatus, "start")
-	wineDir := filepath.Join(utils.GetAppDataPath(), "wine")
-	_ = os.MkdirAll(wineDir, 0755)
-	url := "https://github.com/Weather-OS/GDK-Proton/releases/download/release/GE-Proton10-25.tar.gz"
+    base := utils.BaseRoot()
+    if strings.TrimSpace(base) == "" {
+        application.Get().Event.Emit(EventSetupError, "ERR_BASE_ROOT")
+        return "ERR_BASE_ROOT"
+    }
+    application.Get().Event.Emit(EventSetupStatus, "start")
+    wineDir := filepath.Join(utils.AppConfigRoot(), "wine")
+    _ = os.MkdirAll(wineDir, 0755)
+    url := "https://github.com/Weather-OS/GDK-Proton/releases/download/release/GE-Proton10-25.tar.gz"
 	tmp := filepath.Join(wineDir, "GE-Proton10-25.tar.gz")
 	application.Get().Event.Emit(EventSetupStatus, "download_start")
 	if err := downloadWithProgress(url, tmp, "download"); err != nil {

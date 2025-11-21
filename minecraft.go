@@ -26,9 +26,9 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
-	"github.com/liteldev/LeviLauncher/internal/xcurl"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/liteldev/LeviLauncher/internal/winegdk"
+	"github.com/liteldev/LeviLauncher/internal/xcurl"
 )
 
 const (
@@ -161,8 +161,6 @@ func (a *Minecraft) startup() {
 		go func() { _ = srv.Serve(ln) }()
 	}
 }
-
-// IsFirstLaunch removed
 
 func (a *Minecraft) EnsureGameInputInteractive() { go gameinput.EnsureInteractive(a.ctx) }
 
@@ -574,8 +572,10 @@ func (a *Minecraft) SetupWineGDK() string { return winegdk.Setup(a.ctx) }
 func (a *Minecraft) GetRuntimeGOOS() string { return runtime.GOOS }
 
 func (a *Minecraft) IsWineReady() bool {
-    if runtime.GOOS != "linux" { return true }
-    return strings.TrimSpace(winegdk.FindWineBin()) != ""
+	if runtime.GOOS != "linux" {
+		return true
+	}
+	return strings.TrimSpace(winegdk.FindWineBin()) != ""
 }
 
 func (a *Minecraft) TestMirrorLatencies(urls []string, timeoutMs int) []map[string]interface{} {

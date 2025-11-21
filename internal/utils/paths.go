@@ -44,6 +44,27 @@ func BaseRoot() string {
 	return root
 }
 
+func AppConfigRoot() string {
+    exeName := "levilauncher.exe"
+    if exe, err := os.Executable(); err == nil {
+        base := strings.TrimSpace(filepath.Base(exe))
+        if base != "" { exeName = strings.ToLower(base) }
+    }
+    if ap := strings.TrimSpace(GetAppDataPath()); ap != "" {
+        root := filepath.Join(ap, exeName)
+        _ = os.MkdirAll(root, 0o755)
+        return root
+    }
+    if d, _ := os.UserCacheDir(); strings.TrimSpace(d) != "" {
+        root := filepath.Join(d, exeName)
+        _ = os.MkdirAll(root, 0o755)
+        return root
+    }
+    root := filepath.Join(LauncherDir(), exeName)
+    _ = os.MkdirAll(root, 0o755)
+    return root
+}
+
 func GetInstallerDir() (string, error) {
 	base := BaseRoot()
 	dir := filepath.Join(base, "installers")

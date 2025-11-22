@@ -101,21 +101,16 @@ func Setup(ctx context.Context) string {
 		application.Get().Event.Emit(EventSetupProgress, map[string]interface{}{"phase": "extract", "line": rel})
 	}
 	_ = os.Remove(tmp)
-	wineBin := filepath.Join(wineDir, "files", "bin", "wine")
-	if _, err := os.Stat(wineBin); err != nil {
-		wow := filepath.Join(wineDir, "files", "bin-wow64", "wine")
-		if _, er2 := os.Stat(wow); er2 == nil {
-			wineBin = wow
-		} else {
-			alt := filepath.Join(wineDir, "files", "bin", "wine64")
-			if _, er3 := os.Stat(alt); er3 == nil {
-				wineBin = alt
-			} else {
-				application.Get().Event.Emit(EventSetupError, "ERR_WINE_NOT_AVAILABLE")
-				return "ERR_WINE_NOT_AVAILABLE"
-			}
-		}
-	}
+    wineBin := filepath.Join(wineDir, "files", "bin", "wine64")
+    if _, err := os.Stat(wineBin); err != nil {
+        alt := filepath.Join(wineDir, "files", "bin", "wine")
+        if _, er2 := os.Stat(alt); er2 == nil {
+            wineBin = alt
+        } else {
+            application.Get().Event.Emit(EventSetupError, "ERR_WINE_NOT_AVAILABLE")
+            return "ERR_WINE_NOT_AVAILABLE"
+        }
+    }
 	application.Get().Event.Emit(EventSetupStatus, "winetricks")
 	wt := exec.Command("bash", "-c", "WINE='"+wineBin+"' winetricks vkd3d dxvk dxvk_nvapi0061")
 	if err := streamCmd(wt, "winetricks"); err != nil {

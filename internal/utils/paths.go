@@ -68,7 +68,7 @@ func appConfigRoot() string {
 }
 
 func GetLauncherConfigRoot() string {
-	return AppConfigRoot()
+	return appConfigRoot()
 }
 
 func GetInstallerDir() (string, error) {

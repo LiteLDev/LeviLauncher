@@ -5,6 +5,9 @@ import (
 	"log"
 	"os"
 	"strings"
+	"unsafe"
+
+	win "golang.org/x/sys/windows"
 
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
@@ -24,6 +27,43 @@ import (
 
 //go:embed all:frontend/dist
 var assets embed.FS
+
+var singleInstanceGuard win.Handle
+const (
+    SW_RESTORE = 9
+)
+var (
+    user32                = win.NewLazySystemDLL("user32.dll")
+    procFindWindowW       = user32.NewProc("FindWindowW")
+    procShowWindow        = user32.NewProc("ShowWindow")
+    procSetForegroundWindow = user32.NewProc("SetForegroundWindow")
+)
+
+func focusExistingWindow() {
+    title, _ := win.UTF16PtrFromString("LeviLauncher")
+    r1, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(title)))
+    if r1 != 0 {
+        _, _, _ = procShowWindow.Call(r1, uintptr(SW_RESTORE))
+        _, _, _ = procSetForegroundWindow.Call(r1)
+    }
+}
+
+func ensureSingleInstance() bool {
+    name, err := win.UTF16PtrFromString("Global\\LeviLauncher_SingleInstance")
+    if err != nil {
+        return true
+    }
+    h, err := win.CreateMutex(nil, true, name)
+    if err == win.ERROR_ALREADY_EXISTS {
+        focusExistingWindow()
+        return false
+    }
+    if err != nil {
+        return true
+    }
+    singleInstanceGuard = h
+    return true
+}
 
 func init() {
 	//minecraft
@@ -64,6 +104,9 @@ func init() {
 }
 
 func main() {
+    if !ensureSingleInstance() {
+        return
+    }
 	c, _ := config.Load()
 	extractor.Init()
 	update.Init()
@@ -161,5 +204,10 @@ func main() {
 	if err != nil {
 		log.Fatal(err.Error())
 	}
+
+    if singleInstanceGuard != 0 {
+        _ = win.ReleaseMutex(singleInstanceGuard)
+        _ = win.CloseHandle(singleInstanceGuard)
+    }
 
 }

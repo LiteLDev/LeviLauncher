@@ -124,21 +124,16 @@ func PrepareExecutableForLaunch(ctx context.Context, versionDir string, console 
 	if dir == "" {
 		return ""
 	}
+	c := filepath.Join(dir, "Minecraft.Windows.Console.exe")
+	if fileExists(c) {
+		_ = os.Remove(c)
+	}
 	src := filepath.Join(dir, "Minecraft.Windows.exe")
 	if !fileExists(src) {
 		return ""
 	}
-	if !console {
-		return src
-	}
-	dst := filepath.Join(dir, "Minecraft.Windows.Console.exe")
-	if !fileExists(dst) {
-		if !copyFile(src, dst) {
-			return ""
-		}
-	}
-	_ = SetSubsystem(ctx, dst, true)
-	return dst
+	_ = SetSubsystem(ctx, src, console)
+	return src
 }
 
 func fileExists(p string) bool {

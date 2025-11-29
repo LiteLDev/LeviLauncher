@@ -15,8 +15,7 @@ export const ModCard = (args: {
   const [modsInfo, setModsInfo] = React.useState<Array<types.ModInfo>>([]);
   const [isModded, setIsModded] = React.useState<boolean>(false);
   useEffect(() => {
-    const name =
-      args.localVersionMap.get(args.currentVersion)?.name.valueOf() || "";
+    const name = String(args.currentVersion || "");
     if (name) {
       GetMods(name)
         .then((data) => setModsInfo(data || []))
@@ -26,10 +25,11 @@ export const ModCard = (args: {
     }
 
     setIsModded(
-      args.localVersionMap.get(args.currentVersion)?.isPreLoader.valueOf() ||
-        false
+      Boolean(
+        args.localVersionMap.get(args.currentVersion)?.isPreLoader?.valueOf()
+      ) || false
     );
-  }, [args.currentVersion]);
+  }, [args.currentVersion, args.localVersionMap]);
 
   const getNameContent = (version: string) => {
     if (!modsInfo) return "no found";

@@ -228,6 +228,8 @@ func (a *Minecraft) IsGDKInstalled() bool { return gdk.IsInstalled() }
 
 func (a *Minecraft) StartGDKDownload(url string) string { return gdk.StartDownload(a.ctx, url) }
 
+func (a *Minecraft) CancelGDKDownload() { gdk.CancelDownload() }
+
 func (a *Minecraft) InstallGDKFromZip(zipPath string) string {
 	return gdk.InstallFromZip(a.ctx, zipPath)
 }

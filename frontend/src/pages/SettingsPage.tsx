@@ -43,6 +43,7 @@ import {
   CanWriteToDir,
   IsGDKInstalled,
   StartGDKDownload,
+  CancelGDKDownload,
   InstallGDKFromZip,
 } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { Browser, Events } from "@wailsio/runtime";
@@ -648,7 +649,7 @@ export const SettingsPage: React.FC = () => {
                 )}
               </ModalBody>
               <ModalFooter>
-                <Button color="danger" variant="light" isDisabled={gdkDlStatus === "done"} onPress={() => onClose?.()}>{t("common.cancel")}</Button>
+                <Button color="danger" variant="light" isDisabled={gdkDlStatus === "done"} onPress={() => { try { CancelGDKDownload(); } catch {} onClose?.(); }}>{t("common.cancel")}</Button>
                 <Button color="primary" isDisabled={gdkDlStatus !== "done"} onPress={() => onClose?.()}>{t("common.ok")}</Button>
               </ModalFooter>
             </>

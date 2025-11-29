@@ -5,7 +5,6 @@ import (
 	"context"
 	"fmt"
 	"io"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -13,9 +12,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/corpix/uarand"
 	"github.com/wailsapp/wails/v3/pkg/application"
 
+	"github.com/liteldev/LeviLauncher/internal/downloader"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
@@ -35,6 +34,19 @@ type DownloadProgress struct {
 	Dest       string
 }
 
+var gdkMgr = downloader.NewManager(
+	downloader.Events{
+		Status:   EventDownloadStatus,
+		Progress: EventDownloadProgress,
+		Done:     EventDownloadDone,
+		Error:    EventDownloadError,
+		ProgressFactory: func(p downloader.DownloadProgress) any {
+			return DownloadProgress{Downloaded: p.Downloaded, Total: p.Total, Dest: p.Dest}
+		},
+	},
+	downloader.Options{Throttle: 250 * time.Millisecond, Resume: false, RemoveOnCancel: true},
+)
+
 func IsInstalled() bool {
 	p := `C:\\Program Files (x86)\\Microsoft GDK\\bin\\wdapp.exe`
 	return utils.FileExists(p)
@@ -48,69 +60,14 @@ func StartDownload(ctx context.Context, url string) string {
 	}
 	name := deriveFilename(url)
 	dest := filepath.Join(dir, name)
-	go func() {
-		if err := downloadFile(ctx, stripFilenameParam(url), dest); err != nil {
-			if ctx.Err() == context.Canceled {
-				application.Get().Event.Emit(EventDownloadStatus, "cancelled")
-				return
-			}
-			application.Get().Event.Emit(EventDownloadError, err.Error())
-			return
-		}
-		application.Get().Event.Emit(EventDownloadDone, dest)
-	}()
-	application.Get().Event.Emit(EventDownloadStatus, "started")
-	return dest
+	return gdkMgr.Start(ctx, stripFilenameParam(url), dest)
 }
 
 func downloadFile(ctx context.Context, src string, dest string) error {
-	req, err := http.NewRequestWithContext(ctx, "GET", src, nil)
-	if err != nil {
-		return err
-	}
-	req.Header.Set("User-Agent", uarand.GetRandom())
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("HTTP %s", resp.Status)
-	}
-	if err := os.MkdirAll(filepath.Dir(dest), 0o755); err != nil {
-		return err
-	}
-	f, err := os.OpenFile(dest, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o644)
-	if err != nil {
-		return err
-	}
-	defer f.Close()
-	var downloaded int64
-	total := resp.ContentLength
-	application.Get().Event.Emit(EventDownloadProgress, DownloadProgress{Downloaded: downloaded, Total: total, Dest: dest})
-	buf := make([]byte, 128*1024)
-	lastEmit := time.Now()
-	for {
-		n, er := resp.Body.Read(buf)
-		if n > 0 {
-			if _, werr := f.Write(buf[:n]); werr != nil {
-				return werr
-			}
-			downloaded += int64(n)
-			if time.Since(lastEmit) >= 250*time.Millisecond {
-				application.Get().Event.Emit(EventDownloadProgress, DownloadProgress{Downloaded: downloaded, Total: total, Dest: dest})
-				lastEmit = time.Now()
-			}
-		}
-		if er != nil {
-			if er == io.EOF {
-				application.Get().Event.Emit(EventDownloadProgress, DownloadProgress{Downloaded: downloaded, Total: total, Dest: dest})
-				return nil
-			}
-			return er
-		}
-	}
+	return fmt.Errorf("deprecated")
 }
+
+func CancelDownload() { gdkMgr.Cancel() }
 
 func InstallFromZip(ctx context.Context, zipPath string) string {
 	if strings.TrimSpace(zipPath) == "" || !utils.FileExists(zipPath) {

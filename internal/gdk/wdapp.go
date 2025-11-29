@@ -4,6 +4,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/utils"
@@ -23,6 +24,7 @@ func RegisterVersionFolder(folder string) string {
 		return "ERR_MSIXVC_NOT_FOUND"
 	}
 	cmd := exec.Command(wdappPath(), "register", filepath.Clean(folder))
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if err := cmd.Run(); err != nil {
 		return "ERR_REGISTER_FAILED"
 	}
@@ -41,6 +43,7 @@ func UnregisterIfExists(isPreview bool) string {
 				return "ERR_MSIXVC_NOT_FOUND"
 			}
 			cmd := exec.Command(wdappPath(), "unregister", pf)
+			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 			if er := cmd.Run(); er != nil {
 				return "ERR_UNREGISTER_FAILED"
 			}
@@ -76,6 +79,7 @@ func UnregisterVersionFolder(folder string) string {
 		return "ERR_NOT_REGISTERED_THIS_VERSION"
 	}
 	cmd := exec.Command(wdappPath(), "unregister", pf)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if er := cmd.Run(); er != nil {
 		return "ERR_UNREGISTER_FAILED"
 	}

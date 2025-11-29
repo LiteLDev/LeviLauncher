@@ -11,6 +11,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"time"
 	"unsafe"
 
@@ -622,6 +623,7 @@ func CreateDesktopShortcut(name string) string {
 		"$Shortcut.IconLocation = '" + esc(iconPath) + "'; " +
 		"$Shortcut.Save()"
 	cmd := exec.Command("powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if err := cmd.Run(); err != nil {
 		return "ERR_SHORTCUT_CREATE_FAILED"
 	}

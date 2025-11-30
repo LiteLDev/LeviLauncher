@@ -39,10 +39,7 @@ func UnregisterIfExists(isPreview bool) string {
 	if info, err := registry.GetAppxInfo(pkg); err == nil && info != nil {
 		pf := strings.TrimSpace(info.PackageFullName)
 		if pf != "" {
-			if !WdappExists() {
-				return "ERR_MSIXVC_NOT_FOUND"
-			}
-			cmd := exec.Command(wdappPath(), "unregister", pf)
+			cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "Remove-AppxPackage -Package '"+pf+"' -PreserveRoamableApplicationData")
 			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 			if er := cmd.Run(); er != nil {
 				return "ERR_UNREGISTER_FAILED"
@@ -55,9 +52,6 @@ func UnregisterIfExists(isPreview bool) string {
 func UnregisterVersionFolder(folder string) string {
 	if strings.TrimSpace(folder) == "" {
 		return "ERR_TARGET_DIR_NOT_SPECIFIED"
-	}
-	if !WdappExists() {
-		return "ERR_MSIXVC_NOT_FOUND"
 	}
 	check := func(pkg string) string {
 		info, err := registry.GetAppxInfo(pkg)
@@ -78,7 +72,7 @@ func UnregisterVersionFolder(folder string) string {
 	if pf == "" {
 		return "ERR_NOT_REGISTERED_THIS_VERSION"
 	}
-	cmd := exec.Command(wdappPath(), "unregister", pf)
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "Remove-AppxPackage -Package '"+pf+"' -PreserveRoamableApplicationData")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if er := cmd.Run(); er != nil {
 		return "ERR_UNREGISTER_FAILED"

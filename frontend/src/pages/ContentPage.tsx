@@ -300,6 +300,10 @@ export default function ContentPage() {
   const resolveImportError = (err: string): string => {
     const code = String(err || "").trim();
     switch (code) {
+      case "ERR_NO_PLAYER":
+        return t("contentpage.no_player_selected", {
+          defaultValue: "未选择玩家",
+        }) as string;
       case "ERR_INVALID_NAME":
         return t("mods.err_invalid_name", {
           defaultValue: "无效的版本名或模块名",
@@ -493,8 +497,23 @@ export default function ContentPage() {
           succFiles.push(base);
         } else if (lower.endsWith(".mcworld")) {
           const base = p.replace(/\\/g, "/").split("/").pop() || p;
-          if (!selectedPlayer) {
-            errPairs.push({ name: base, err: "ERR_INVALID_NAME" });
+          let usePlayer = selectedPlayer;
+          if (!usePlayer) {
+            try {
+              const ver = currentVersionName || readCurrentVersionName();
+              if (ver) {
+                const r = await GetContentRoots(ver);
+                const ur = r?.usersRoot || "";
+                if (ur) {
+                  const names = await listPlayers(ur);
+                  usePlayer = names[0] || "";
+                  if (usePlayer) setSelectedPlayer(usePlayer);
+                }
+              }
+            } catch {}
+          }
+          if (!usePlayer) {
+            errPairs.push({ name: base, err: "ERR_NO_PLAYER" });
             continue;
           }
           if (!started) {
@@ -504,7 +523,7 @@ export default function ContentPage() {
           setCurrentFile(base);
           let err = await (minecraft as any)?.ImportMcworldPath?.(
             name,
-            selectedPlayer,
+            usePlayer,
             p,
             false
           );
@@ -519,7 +538,7 @@ export default function ContentPage() {
               if (ok) {
                 err = await (minecraft as any)?.ImportMcworldPath?.(
                   name,
-                  selectedPlayer,
+                  usePlayer,
                   p,
                   true
                 );
@@ -574,6 +593,17 @@ export default function ContentPage() {
             f.name.toLowerCase().endsWith(".mcpack") ||
             f.name.toLowerCase().endsWith(".mcaddon"))
       );
+      const hasWorld = files.some((f) =>
+        f?.name?.toLowerCase().endsWith(".mcworld")
+      );
+      if (hasWorld && !selectedPlayer) {
+        setErrorMsg(
+          t("contentpage.require_player_for_world_import", {
+            defaultValue: "导入世界 (.mcworld) 前请先选择玩家",
+          }) as string
+        );
+        return;
+      }
       for (const f of files) {
         const lower = f.name.toLowerCase();
         if (lower.endsWith(".mcpack")) {
@@ -632,7 +662,7 @@ export default function ContentPage() {
           succFiles.push(f.name);
         } else if (lower.endsWith(".mcworld")) {
           if (!selectedPlayer) {
-            errPairs.push({ name: f.name, err: "ERR_INVALID_NAME" });
+            errPairs.push({ name: f.name, err: "ERR_NO_PLAYER" });
             continue;
           }
           if (!started) {
@@ -730,6 +760,17 @@ export default function ContentPage() {
               f.name.toLowerCase().endsWith(".mcpack") ||
               f.name.toLowerCase().endsWith(".mcaddon"))
         );
+        const hasWorld = files.some((f) =>
+          f?.name?.toLowerCase().endsWith(".mcworld")
+        );
+        if (hasWorld && !selectedPlayer) {
+          setErrorMsg(
+            t("contentpage.require_player_for_world_import", {
+              defaultValue: "导入世界 (.mcworld) 前请先选择玩家",
+            }) as string
+          );
+          return;
+        }
         if (!files.length) return;
         let started = false;
         const succFiles: string[] = [];
@@ -792,15 +833,15 @@ export default function ContentPage() {
               }
               succFiles.push(f.name);
             } else if (lower.endsWith(".mcworld")) {
-              if (!selectedPlayer) {
-                errPairs.push({ name: f.name, err: "ERR_INVALID_NAME" });
-                continue;
-              }
-              if (!started) {
-                setImporting(true);
-                started = true;
-              }
-              setCurrentFile(f.name);
+            if (!selectedPlayer) {
+              errPairs.push({ name: f.name, err: "ERR_NO_PLAYER" });
+              continue;
+            }
+            if (!started) {
+              setImporting(true);
+              started = true;
+            }
+            setCurrentFile(f.name);
               let err = await postImportMcworld(
                 currentVersionName,
                 selectedPlayer,
@@ -1085,6 +1126,13 @@ export default function ContentPage() {
               {selectedPlayer ||
                 t("contentpage.no_players", { defaultValue: "暂无玩家" })}
             </span>
+            {!selectedPlayer ? (
+              <span className="ml-2 text-small text-danger-500">
+                {t("contentpage.require_player_for_world_import", {
+                  defaultValue: "导入世界需选择玩家",
+                })}
+              </span>
+            ) : null}
           </div>
           <Dropdown>
             <DropdownTrigger>

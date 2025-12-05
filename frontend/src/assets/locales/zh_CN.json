@@ -570,6 +570,8 @@
     "min_engine_version": "最小游戏版本",
     "drop_hint": "拖入 .mcworld/.mcpack/.mcaddon 以导入",
     "import_button": "导入 .mcworld/.mcpack/.mcaddon",
+    "require_player_for_world_import": "导入世界 (.mcworld) 前请先选择玩家",
+    "no_player_selected": "未选择玩家",
     "world_leveldat_editor": "世界 level.dat 编辑",
     "basic": "基础",
     "version": "版本号",

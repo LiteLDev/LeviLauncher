@@ -569,6 +569,8 @@
     "min_engine_version": "Min Engine Version",
     "drop_hint": "Drag .mcworld/.mcpack/.mcaddon to import",
     "import_button": "Import .mcworld/.mcpack/.mcaddon",
+    "require_player_for_world_import": "Select a player before importing a world (.mcworld)",
+    "no_player_selected": "No player selected",
     "world_leveldat_editor": "World level.dat editor",
     "basic": "Basic",
     "version": "Version",

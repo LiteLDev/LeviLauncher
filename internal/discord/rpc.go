@@ -4,12 +4,17 @@ import (
 	"strings"
 	"time"
 
+	"github.com/liteldev/LeviLauncher/internal/config"
+
 	"github.com/axrona/go-discordrpc/client"
 )
 
 var rpc *client.Client
 
 func ensure() *client.Client {
+	if config.GetDiscordRPCDisabled() {
+		return nil
+	}
 	if rpc != nil {
 		return rpc
 	}
@@ -19,6 +24,13 @@ func ensure() *client.Client {
 	}
 	rpc = c
 	return rpc
+}
+
+func Close() {
+	if rpc != nil {
+		_ = rpc.Logout()
+		rpc = nil
+	}
 }
 
 func Init() {

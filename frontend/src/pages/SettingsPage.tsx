@@ -22,6 +22,7 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
+  Switch,
 } from "@heroui/react";
 import { IoSettingsOutline } from "react-icons/io5";
 import { RxUpdate } from "react-icons/rx";
@@ -45,6 +46,8 @@ import {
   StartGDKDownload,
   CancelGDKDownload,
   InstallGDKFromZip,
+  GetDisableDiscordRPC,
+  SetDisableDiscordRPC,
 } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { Browser, Events } from "@wailsio/runtime";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
@@ -68,6 +71,7 @@ export const SettingsPage: React.FC = () => {
   const [newBaseRoot, setNewBaseRoot] = useState<string>("");
   const [savingBaseRoot, setSavingBaseRoot] = useState<boolean>(false);
   const [baseRootWritable, setBaseRootWritable] = useState<boolean>(true);
+  const [discordRpcEnabled, setDiscordRpcEnabled] = useState<boolean>(true);
   const [gdkInstalled, setGdkInstalled] = useState<boolean>(false);
   const [gdkDlProgress, setGdkDlProgress] = useState<{
     downloaded: number;
@@ -160,6 +164,10 @@ export const SettingsPage: React.FC = () => {
             setInstallerDir(String(id || ""));
             const vd = await GetVersionsDir();
             setVersionsDir(String(vd || ""));
+            try {
+              const disabled = await GetDisableDiscordRPC();
+              setDiscordRpcEnabled(!disabled);
+            } catch {}
             try {
               const ok = await IsGDKInstalled();
               setGdkInstalled(Boolean(ok));
@@ -530,6 +538,35 @@ export const SettingsPage: React.FC = () => {
                     {t("settings.lang.changed", { defaultValue: "语言已更改" })}
                   </div>
                 ) : null}
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25, delay: 0.07 }}
+                className="rounded-2xl p-4 bg-default-100/40 dark:bg-default-50/20 border border-default-200/50"
+              >
+                <div className="flex items-center justify-between">
+                  <p className="font-medium">
+                    {t("settings.discord_rpc.title", {
+                      defaultValue: "Discord 游戏状态",
+                    })}
+                  </p>
+                  <Switch
+                    size="sm"
+                    isSelected={discordRpcEnabled}
+                    onValueChange={(isSelected) => {
+                      setDiscordRpcEnabled(isSelected);
+                      SetDisableDiscordRPC(!isSelected);
+                    }}
+                  />
+                </div>
+                <Divider className="my-3 bg-default-200/60 h-px" />
+                <div className="text-small text-default-500">
+                  {t("settings.discord_rpc.desc", {
+                    defaultValue: "在 Discord 上显示您的游戏状态",
+                  })}
+                </div>
               </motion.div>
 
               <motion.div

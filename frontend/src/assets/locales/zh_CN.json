@@ -377,6 +377,10 @@
     "lang": {
       "changed": "语言已更改"
     },
+    "discord_rpc": {
+      "title": "Discord 游戏状态",
+      "desc": "在 Discord 上显示您的游戏状态"
+    },
     "reset": {
       "confirm": {
         "title": "恢复默认路径？",

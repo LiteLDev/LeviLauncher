@@ -120,8 +120,10 @@ func main() {
 	}
 	c, _ := config.Load()
 	extractor.Init()
-	update.Init()
-	discord.Init()
+    update.Init()
+    if !config.GetDiscordRPCDisabled() {
+        discord.Init()
+    }
 	mc := Minecraft{}
 	app := application.New(application.Options{
 		Name:        "LeviLauncher",

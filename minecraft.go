@@ -735,6 +735,12 @@ func (a *Minecraft) GetBaseRoot() string { return mcservice.GetBaseRoot() }
 
 func (a *Minecraft) SetBaseRoot(root string) string { return mcservice.SetBaseRoot(root) }
 
+func (a *Minecraft) GetDisableDiscordRPC() bool { return mcservice.GetDisableDiscordRPC() }
+
+func (a *Minecraft) SetDisableDiscordRPC(disable bool) string {
+	return mcservice.SetDisableDiscordRPC(disable)
+}
+
 func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }
 
 func (a *Minecraft) CanWriteToDir(path string) bool { return mcservice.CanWriteToDir(path) }

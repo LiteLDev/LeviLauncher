@@ -6,7 +6,7 @@
 name: "LeviLauncher"
 arch: ${GOARCH}
 platform: "linux"
-version: "0.0.23"
+version: "0.0.24"
 section: "default"
 priority: "extra"
 maintainer: ${GIT_COMMITTER_NAME} <${GIT_COMMITTER_EMAIL}>

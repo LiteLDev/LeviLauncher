@@ -4,6 +4,7 @@ import (
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
@@ -40,3 +41,21 @@ func ResetBaseRoot() string {
 }
 
 func CanWriteToDir(path string) bool { return utils.CanWriteDir(path) }
+
+func GetDisableDiscordRPC() bool {
+	return config.GetDiscordRPCDisabled()
+}
+
+func SetDisableDiscordRPC(disable bool) string {
+	c, _ := config.Load()
+	c.DisableDiscordRPC = disable
+	if err := config.Save(c); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	if disable {
+		discord.Close()
+	} else {
+		discord.SetLauncherIdle()
+	}
+	return ""
+}

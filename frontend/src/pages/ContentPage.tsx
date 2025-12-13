@@ -20,7 +20,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GetContentRoots } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import { FaGlobe, FaImage, FaCogs } from "react-icons/fa";
+import { FaGlobe, FaImage, FaCogs, FaFolderOpen } from "react-icons/fa";
 import { readCurrentVersionName } from "../utils/currentVersion";
 import { countDirectories } from "../utils/fs";
 import { listPlayers } from "../utils/content";
@@ -1059,21 +1059,47 @@ export default function ContentPage() {
           <h1 className="text-2xl font-bold">
             {t("launcherpage.content_manage", { defaultValue: "内容管理" })}
           </h1>
-          <Tooltip
-            content={
-              t("common.refresh", { defaultValue: "刷新" }) as unknown as string
-            }
-          >
-            <Button
-              size="sm"
-              variant="bordered"
-              onPress={refreshAll}
-              isDisabled={loading}
-              className="rounded-full px-4"
+          <div className="flex items-center gap-2">
+            <Tooltip
+              content={
+                t("contentpage.open_users_dir", {
+                  defaultValue: "打开存储目录",
+                }) as unknown as string
+              }
             >
-              {t("common.refresh", { defaultValue: "刷新" })}
-            </Button>
-          </Tooltip>
+              <Button
+                size="sm"
+                variant="bordered"
+                isIconOnly
+                isDisabled={!hasBackend || !roots.usersRoot}
+                onPress={() => {
+                  if (roots.usersRoot) {
+                    (minecraft as any)?.OpenPathDir(roots.usersRoot);
+                  }
+                }}
+                className="rounded-full"
+              >
+                <FaFolderOpen />
+              </Button>
+            </Tooltip>
+            <Tooltip
+              content={
+                t("common.refresh", {
+                  defaultValue: "刷新",
+                }) as unknown as string
+              }
+            >
+              <Button
+                size="sm"
+                variant="bordered"
+                onPress={refreshAll}
+                isDisabled={loading}
+                className="rounded-full px-4"
+              >
+                {t("common.refresh", { defaultValue: "刷新" })}
+              </Button>
+            </Tooltip>
+          </div>
         </div>
 
         <div className="mt-2 text-default-500 text-sm">

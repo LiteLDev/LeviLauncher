@@ -4,7 +4,11 @@
     "lang": "语言",
     "quit_launcher": "退出启动器"
   },
-  "nav": { "versions": "版本", "more": "更多", "about": "关于" },
+  "nav": {
+    "versions": "版本",
+    "more": "更多",
+    "about": "关于"
+  },
   "launcherpage": {
     "launch_button": "启动",
     "content_manage": "内容管理",
@@ -129,7 +133,6 @@
       "subtitle": "当前可选版本（本地检测）：",
       "unknown": "未知"
     },
-
     "tip": {
       "general": "提示：首次启动可能较慢，请耐心等待。",
       "choose_version_dropdown": "右侧下拉按钮可快速切换当前版本。",
@@ -329,14 +332,6 @@
       "save_button": "保存"
     },
     "modal": {
-      "-2": {
-        "header": {
-          "title": "您当前已经是最新版本！"
-        },
-        "footer": {
-          "close_button": "关闭"
-        }
-      },
       "1": {
         "header": {
           "title": "正在检查更新中..."
@@ -363,6 +358,14 @@
       "3": {
         "header": {
           "title": "更新中..."
+        }
+      },
+      "-2": {
+        "header": {
+          "title": "您当前已经是最新版本！"
+        },
+        "footer": {
+          "close_button": "关闭"
         }
       }
     }
@@ -406,7 +409,6 @@
       }
     }
   },
-
   "downloadmodal": {
     "download_button": "下载",
     "information": {
@@ -472,7 +474,6 @@
     "description": " 2024-2025 {{name}} 保留所有权利",
     "font": "本软件使用 {{name}} 字体"
   },
-
   "about": {
     "authors": "作者与维护者",
     "author": "作者",
@@ -494,7 +495,6 @@
     "star_fork": "Star / Fork",
     "rhymc_name": "旋律云"
   },
-
   "common": {
     "ok": "确定",
     "cancel": "取消",
@@ -566,6 +566,7 @@
     "no_skin_packs": "暂无皮肤包",
     "count": "数量",
     "error_resolve_paths": "无法解析内容路径。",
+    "open_users_dir": "打开存储目录",
     "players_aria": "玩家列表",
     "sort_aria": "排序",
     "sort_time": "时间",
@@ -590,7 +591,6 @@
     "new_child_item": "新建子项",
     "field_type": "类型"
   },
-
   "versions": {
     "rename": {
       "title": "重命名版本",

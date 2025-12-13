@@ -720,6 +720,7 @@ export default function WorldsListPage() {
                 <ModalBody>
                   <div className="text-sm text-default-700 break-words whitespace-pre-wrap">
                     {t("mods.confirm_delete_body", {
+                      type: t("contentpage.worlds"),
                       defaultValue: "确定要删除此包吗？此操作不可撤销。",
                     })}
                   </div>
@@ -805,6 +806,7 @@ export default function WorldsListPage() {
                 <ModalBody>
                   <div className="text-sm text-default-700 break-words whitespace-pre-wrap">
                     {t("mods.confirm_delete_body", {
+                      type: t("contentpage.worlds"),
                       defaultValue: "确定要删除此包吗？此操作不可撤销。",
                     })}
                   </div>

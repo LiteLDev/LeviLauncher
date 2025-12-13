@@ -740,7 +740,7 @@
       "delete_summary_title_failed": "Ошибка удаления",
       "summary_deleted": "Удалено",
       "confirm_delete_title": "Подтвердите удаление",
-      "confirm_delete_body": "Вы действительно хотите удалить этот мод? Действие нельзя отменить.",
+      "confirm_delete_body": "Вы действительно хотите удалить этот {{type}}? Действие нельзя отменить.",
       "dll_modal_title": "Импорт DLL-плагина",
       "dll_name": "Имя плагина",
       "dll_type": "Тип",

@@ -1520,6 +1520,7 @@ export const ModsPage: React.FC = () => {
               <ModalBody>
                 <div className="text-sm text-default-700 break-words whitespace-pre-wrap">
                   {t("mods.confirm_delete_body", {
+                    type: t("moddedcard.title"),
                     defaultValue: "确定要删除此模组吗？此操作不可撤销。",
                   })}
                 </div>

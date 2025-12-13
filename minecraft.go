@@ -7,6 +7,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -670,7 +671,9 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	var args []string
 	toRun := exe
 	var gameVer string
+	var enableConsole bool
 	if m, err := versions.ReadMeta(dir); err == nil {
+		enableConsole = m.EnableConsole
 		p := peeditor.PrepareExecutableForLaunch(a.ctx, dir, m.EnableConsole)
 		if strings.TrimSpace(p) != "" {
 			toRun = p
@@ -707,9 +710,12 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	}
 	cmd := exec.Command(toRun, args...)
 	cmd.Dir = filepath.Dir(toRun)
-	cmd.Stdout = os.Stdout
-	cmd.Stderr = os.Stderr
-	cmd.Stdin = os.Stdin
+	if enableConsole {
+		cmd.SysProcAttr = &syscall.SysProcAttr{
+			HideWindow:       false,
+			NoInheritHandles: true,
+		}
+	}
 	if err := cmd.Start(); err != nil {
 		return "ERR_LAUNCH_GAME"
 	}

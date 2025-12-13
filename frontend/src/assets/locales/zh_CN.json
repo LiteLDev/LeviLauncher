@@ -740,7 +740,7 @@
     "delete_summary_title_failed": "删除失败",
     "summary_deleted": "已删除",
     "confirm_delete_title": "确认删除",
-    "confirm_delete_body": "确定要删除此模组吗？此操作不可撤销。",
+    "confirm_delete_body": "确定要删除此{{type}}吗？此操作不可撤销。",
     "dll_modal_title": "导入 DLL 插件",
     "dll_name": "插件名称",
     "dll_type": "类型",

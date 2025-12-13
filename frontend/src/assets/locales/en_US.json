@@ -740,7 +740,7 @@
     "delete_summary_title_failed": "Deletion Failed",
     "summary_deleted": "Deleted",
     "confirm_delete_title": "Confirm Deletion",
-    "confirm_delete_body": "Are you sure you want to delete this mod? This action cannot be undone.",
+    "confirm_delete_body": "Are you sure you want to delete this {{type}}? This action cannot be undone.",
     "dll_modal_title": "Import DLL Plugin",
     "dll_name": "Plugin Name",
     "dll_type": "Type",

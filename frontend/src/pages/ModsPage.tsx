@@ -45,7 +45,6 @@ export const ModsPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation() as any;
-  const [importServer, setImportServer] = useState<string>("");
   const [currentVersionName, setCurrentVersionName] = useState<string>("");
   const [modsInfo, setModsInfo] = useState<Array<types.ModInfo>>([]);
   const [query, setQuery] = useState("");
@@ -121,48 +120,22 @@ export const ModsPage: React.FC = () => {
   const lastScrollTopRef = useRef<number>(0);
   const restorePendingRef = useRef<boolean>(false);
 
-  useEffect(() => {
-    (async () => {
-      try {
-        const url = await (minecraft as any)?.GetImportServerURL?.();
-        const u = String(url || "");
-        setImportServer(u || "http://127.0.0.1:32773");
-      } catch {
-        setImportServer("http://127.0.0.1:32773");
-      }
-    })();
-  }, []);
-
   const postImportModZip = async (
     name: string,
     file: File,
     overwrite: boolean
   ): Promise<string> => {
-    const base = importServer || "http://127.0.0.1:32773";
     try {
-      const fd = new FormData();
-      fd.append("name", name);
-      fd.append("overwrite", overwrite ? "1" : "0");
-      fd.append("file", file, file.name);
-      const resp = await fetch(`${base}/api/import/modzip`, {
-        method: "POST",
-        body: fd,
-      });
-      const j = (await resp.json().catch(() => ({}))) as any;
-      return String(j?.error || "");
+      const buf = await file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(buf));
+      const err = await (minecraft as any)?.ImportModZip?.(
+        name,
+        bytes,
+        overwrite
+      );
+      return String(err || "");
     } catch (e: any) {
-      try {
-        const buf = await file.arrayBuffer();
-        const bytes = Array.from(new Uint8Array(buf));
-        const err = await (minecraft as any)?.ImportModZip?.(
-          name,
-          bytes,
-          overwrite
-        );
-        return String(err || "");
-      } catch (e2: any) {
-        return String(e2?.message || "IMPORT_ERROR");
-      }
+      return String(e?.message || "IMPORT_ERROR");
     }
   };
   const postImportModDll = async (
@@ -174,39 +147,21 @@ export const ModsPage: React.FC = () => {
     version: string,
     overwrite: boolean
   ): Promise<string> => {
-    const base = importServer || "http://127.0.0.1:32773";
     try {
-      const fd = new FormData();
-      fd.append("name", name);
-      fd.append("fileName", fileName);
-      fd.append("modName", modName);
-      fd.append("modType", modType);
-      fd.append("version", version);
-      fd.append("overwrite", overwrite ? "1" : "0");
-      fd.append("file", file, fileName);
-      const resp = await fetch(`${base}/api/import/moddll`, {
-        method: "POST",
-        body: fd,
-      });
-      const j = (await resp.json().catch(() => ({}))) as any;
-      return String(j?.error || "");
+      const buf = await file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(buf));
+      const err = await (minecraft as any)?.ImportModDll?.(
+        name,
+        fileName,
+        bytes,
+        modName,
+        modType,
+        version,
+        overwrite
+      );
+      return String(err || "");
     } catch (e: any) {
-      try {
-        const buf = await file.arrayBuffer();
-        const bytes = Array.from(new Uint8Array(buf));
-        const err = await (minecraft as any)?.ImportModDll?.(
-          name,
-          fileName,
-          bytes,
-          modName,
-          modType,
-          version,
-          overwrite
-        );
-        return String(err || "");
-      } catch (e2: any) {
-        return String(e2?.message || "IMPORT_ERROR");
-      }
+      return String(e?.message || "IMPORT_ERROR");
     }
   };
 

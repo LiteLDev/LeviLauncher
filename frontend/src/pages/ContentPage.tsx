@@ -157,62 +157,36 @@ export default function ContentPage() {
     const sp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
     setSkinCount(await countDirectories(sp));
   };
-  const [importServer, setImportServer] = React.useState<string>("");
-  React.useEffect(() => {
-    (async () => {
-      try {
-        const url = await (minecraft as any)?.GetImportServerURL?.();
-        const u = String(url || "");
-        setImportServer(u || "http://127.0.0.1:32773");
-      } catch {
-        setImportServer("http://127.0.0.1:32773");
-      }
-    })();
-  }, []);
   const postImportMcpack = async (
     name: string,
     file: File,
     overwrite: boolean
   ): Promise<string> => {
     try {
-      const fd = new FormData();
-      fd.append("name", name);
-      fd.append("overwrite", overwrite ? "1" : "0");
-      if (selectedPlayer) fd.append("player", selectedPlayer);
-      fd.append("file", file, file.name);
-      const resp = await fetch(
-        `${importServer || "http://127.0.0.1:32773"}/api/import/mcpack`,
-        { method: "POST", body: fd }
-      );
-      const j = (await resp.json().catch(() => ({}))) as any;
-      return String(j?.error || "");
-    } catch (e: any) {
-      try {
-        const buf = await file.arrayBuffer();
-        const bytes = Array.from(new Uint8Array(buf));
-        let err = "";
-        if (
-          selectedPlayer &&
-          typeof (minecraft as any)?.ImportMcpackWithPlayer === "function"
-        ) {
-          err = await (minecraft as any)?.ImportMcpackWithPlayer?.(
-            name,
-            selectedPlayer,
-            file.name,
-            bytes,
-            overwrite
-          );
-        } else {
-          err = await (minecraft as any)?.ImportMcpack?.(
-            name,
-            bytes,
-            overwrite
-          );
-        }
-        return String(err || "");
-      } catch (e2: any) {
-        return String(e2?.message || "IMPORT_ERROR");
+      const buf = await file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(buf));
+      let err = "";
+      if (
+        selectedPlayer &&
+        typeof (minecraft as any)?.ImportMcpackWithPlayer === "function"
+      ) {
+        err = await (minecraft as any)?.ImportMcpackWithPlayer?.(
+          name,
+          selectedPlayer,
+          file.name,
+          bytes,
+          overwrite
+        );
+      } else {
+        err = await (minecraft as any)?.ImportMcpack?.(
+          name,
+          bytes,
+          overwrite
+        );
       }
+      return String(err || "");
+    } catch (e: any) {
+      return String(e?.message || "IMPORT_ERROR");
     }
   };
   const postImportMcaddon = async (
@@ -221,43 +195,29 @@ export default function ContentPage() {
     overwrite: boolean
   ): Promise<string> => {
     try {
-      const fd = new FormData();
-      fd.append("name", name);
-      fd.append("overwrite", overwrite ? "1" : "0");
-      if (selectedPlayer) fd.append("player", selectedPlayer);
-      fd.append("file", file, file.name);
-      const resp = await fetch(
-        `${importServer || "http://127.0.0.1:32773"}/api/import/mcaddon`,
-        { method: "POST", body: fd }
-      );
-      const j = (await resp.json().catch(() => ({}))) as any;
-      return String(j?.error || "");
-    } catch (e: any) {
-      try {
-        const buf = await file.arrayBuffer();
-        const bytes = Array.from(new Uint8Array(buf));
-        let err = "";
-        if (
-          selectedPlayer &&
-          typeof (minecraft as any)?.ImportMcaddonWithPlayer === "function"
-        ) {
-          err = await (minecraft as any)?.ImportMcaddonWithPlayer?.(
-            name,
-            selectedPlayer,
-            bytes,
-            overwrite
-          );
-        } else {
-          err = await (minecraft as any)?.ImportMcaddon?.(
-            name,
-            bytes,
-            overwrite
-          );
-        }
-        return String(err || "");
-      } catch (e2: any) {
-        return String(e2?.message || "IMPORT_ERROR");
+      const buf = await file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(buf));
+      let err = "";
+      if (
+        selectedPlayer &&
+        typeof (minecraft as any)?.ImportMcaddonWithPlayer === "function"
+      ) {
+        err = await (minecraft as any)?.ImportMcaddonWithPlayer?.(
+          name,
+          selectedPlayer,
+          bytes,
+          overwrite
+        );
+      } else {
+        err = await (minecraft as any)?.ImportMcaddon?.(
+          name,
+          bytes,
+          overwrite
+        );
       }
+      return String(err || "");
+    } catch (e: any) {
+      return String(e?.message || "IMPORT_ERROR");
     }
   };
   const postImportMcworld = async (
@@ -267,33 +227,18 @@ export default function ContentPage() {
     overwrite: boolean
   ): Promise<string> => {
     try {
-      const fd = new FormData();
-      fd.append("name", name);
-      fd.append("player", player);
-      fd.append("fileName", file.name);
-      fd.append("overwrite", overwrite ? "1" : "0");
-      fd.append("file", file, file.name);
-      const resp = await fetch(
-        `${importServer || "http://127.0.0.1:32773"}/api/import/mcworld`,
-        { method: "POST", body: fd }
+      const buf = await file.arrayBuffer();
+      const bytes = Array.from(new Uint8Array(buf));
+      const err = await (minecraft as any)?.ImportMcworld?.(
+        name,
+        player,
+        file.name,
+        bytes,
+        overwrite
       );
-      const j = (await resp.json().catch(() => ({}))) as any;
-      return String(j?.error || "");
+      return String(err || "");
     } catch (e: any) {
-      try {
-        const buf = await file.arrayBuffer();
-        const bytes = Array.from(new Uint8Array(buf));
-        const err = await (minecraft as any)?.ImportMcworld?.(
-          name,
-          player,
-          file.name,
-          bytes,
-          overwrite
-        );
-        return String(err || "");
-      } catch (e2: any) {
-        return String(e2?.message || "IMPORT_ERROR");
-      }
+      return String(e?.message || "IMPORT_ERROR");
     }
   };
 

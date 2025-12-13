@@ -3,7 +3,6 @@ package main
 import (
 	"context"
 	"log"
-	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -169,9 +168,7 @@ func (a *Minecraft) DeleteVersionFolder(name string) string {
 }
 
 type Minecraft struct {
-	ctx        context.Context
-	importSrv  *http.Server
-	importAddr string
+	ctx context.Context
 }
 
 func NewMinecraft() *Minecraft {
@@ -186,12 +183,6 @@ func (a *Minecraft) startup() {
 	os.Chdir(exeDir)
 	launch.EnsureGamingServicesInstalled(a.ctx)
 	mcservice.ReconcileRegisteredFlags()
-	srv, ln, addr := mcservice.StartImportServer()
-	if srv != nil && ln != nil {
-		a.importSrv = srv
-		a.importAddr = addr
-		go func() { _ = srv.Serve(ln) }()
-	}
 }
 
 func (a *Minecraft) EnsureGameInputInteractive() { go gameinput.EnsureInteractive(a.ctx) }
@@ -320,8 +311,6 @@ func (a *Minecraft) OpenWorldsExplorer(name string, isPreview bool) {
 func (a *Minecraft) OpenPathDir(dir string) { mcservice.OpenPathDir(dir) }
 
 func (a *Minecraft) OpenGameDataExplorer(isPreview bool) { mcservice.OpenGameDataExplorer(isPreview) }
-
-// GetCurrentVersion removed
 
 func (a *Minecraft) GetMods(name string) []types.ModInfo {
 	return mods.GetMods(name)
@@ -631,8 +620,6 @@ func (a *Minecraft) ImportModDllPath(name string, path string, modName string, m
 	}
 	return mods.ImportDllToMods(name, filepath.Base(path), b, modName, modType, version, overwrite)
 }
-
-func (a *Minecraft) GetImportServerURL() string { return a.importAddr }
 
 func (a *Minecraft) CreateFolder(parent string, name string) string {
 	return mcservice.CreateFolder(parent, name)

@@ -46,11 +46,6 @@ type VersionItem = {
   timestamp?: number;
 };
 
-const GITHUB_DB_URL =
-  "https://raw.githubusercontent.com/LiteLDev/minecraft-windows-gdk-version-db/refs/heads/main/historical_versions.json";
-const GITCODE_DB_URL =
-  "https://github.bibk.top/LiteLDev/minecraft-windows-gdk-version-db/raw/refs/heads/main/historical_versions.json";
-
 export const DownloadPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -182,27 +177,7 @@ export const DownloadPage: React.FC = () => {
     }
   }, [i18n?.language]);
 
-  const pickDbUrl = useMemo(
-    () => (isChinaUser ? GITCODE_DB_URL : GITHUB_DB_URL),
-    [isChinaUser]
-  );
 
-  const fetchDbJson = async (): Promise<any> => {
-    const first = pickDbUrl;
-    const second = first === GITCODE_DB_URL ? GITHUB_DB_URL : GITCODE_DB_URL;
-    const tried: string[] = [];
-    for (const url of [first, second]) {
-      if (!url) continue;
-      tried.push(url);
-      try {
-        const res = await fetch(url, { cache: "no-store" });
-        if (res.ok) {
-          return await res.json();
-        }
-      } catch {}
-    }
-    throw new Error(`All mirrors failed: ${tried.join(", ")}`);
-  };
 
   const startMirrorTests = async (urls: string[]) => {
     if (!urls || urls.length === 0) return;
@@ -424,7 +399,8 @@ export const DownloadPage: React.FC = () => {
         ) {
           data = await minecraft.FetchHistoricalVersions(Boolean(isChinaUser));
         } else {
-          data = await fetchDbJson();
+          // data = await fetchDbJson();
+          data = { previewVersions: [], releaseVersions: [] };
         }
         const preview: VersionItem[] = (data.previewVersions || []).map(
           (v: any) => ({
@@ -452,7 +428,6 @@ export const DownloadPage: React.FC = () => {
         } catch {}
       } catch (e) {
         console.error("Failed to fetch versions", e);
-        setItems([]);
       }
     };
     try {
@@ -474,7 +449,7 @@ export const DownloadPage: React.FC = () => {
       ) {
         data = await minecraft.FetchHistoricalVersions(Boolean(isChinaUser));
       } else {
-        data = await fetchDbJson();
+        data = { previewVersions: [], releaseVersions: [] };
       }
       const preview: VersionItem[] = (data.previewVersions || []).map(
         (v: any) => ({

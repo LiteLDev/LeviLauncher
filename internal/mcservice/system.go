@@ -20,12 +20,15 @@ type KnownFolder struct {
 
 func FetchHistoricalVersions(preferCN bool) map[string]interface{} {
 	const githubURL = "https://raw.githubusercontent.com/LiteLDev/minecraft-windows-gdk-version-db/refs/heads/main/historical_versions.json"
-	const gitcodeURL = "https://github.bibk.top/LiteLDev/minecraft-windows-gdk-version-db/raw/refs/heads/main/historical_versions.json"
-	urls := []string{githubURL, gitcodeURL}
+	const proxyURL = "https://github.bibk.top/LiteLDev/minecraft-windows-gdk-version-db/raw/refs/heads/main/historical_versions.json"
+	const gitcodeURL = "https://raw.gitcode.com/dreamguxiang/minecraft-windows-gdk-version-db/raw/main/historical_versions.json"
+
+	urls := []string{githubURL, proxyURL, gitcodeURL}
 	if preferCN {
-		urls = []string{gitcodeURL, githubURL}
+		urls = []string{gitcodeURL, proxyURL, githubURL}
 	}
-	client := &http.Client{Timeout: 8 * time.Second}
+
+	client := &http.Client{Timeout: 5 * time.Second}
 	var lastErr error
 	for _, u := range urls {
 		req, err := http.NewRequest(http.MethodGet, u, nil)
@@ -35,38 +38,30 @@ func FetchHistoricalVersions(preferCN bool) map[string]interface{} {
 		}
 		req.Header.Set("Accept", "application/json")
 		req.Header.Set("Cache-Control", "no-cache")
+		req.Header.Set("User-Agent", uarand.GetRandom())
+
 		resp, err := client.Do(req)
 		if err != nil {
 			lastErr = err
 			continue
 		}
+
+		var obj map[string]interface{}
 		func() {
 			defer resp.Body.Close()
 			if resp.StatusCode != http.StatusOK {
 				lastErr = fmt.Errorf("status %d", resp.StatusCode)
 				return
 			}
-			dec := json.NewDecoder(resp.Body)
-			var obj map[string]interface{}
-			if derr := dec.Decode(&obj); derr != nil {
+			if derr := json.NewDecoder(resp.Body).Decode(&obj); derr != nil {
 				lastErr = derr
 				return
 			}
 		}()
-		if lastErr == nil {
-			resp2, err2 := client.Get(u)
-			if err2 != nil {
-				lastErr = err2
-				continue
-			}
-			defer resp2.Body.Close()
-			var obj2 map[string]interface{}
-			if derr2 := json.NewDecoder(resp2.Body).Decode(&obj2); derr2 != nil {
-				lastErr = derr2
-				continue
-			}
-			obj2["_source"] = u
-			return obj2
+
+		if lastErr == nil && obj != nil {
+			obj["_source"] = u
+			return obj
 		}
 	}
 	if lastErr != nil {

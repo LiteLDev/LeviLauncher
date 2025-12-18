@@ -10,6 +10,7 @@ import (
 	"io"
 	"math"
 	"os"
+	"path"
 	"path/filepath"
 	"reflect"
 	"strconv"
@@ -333,12 +334,12 @@ func ImportMcpackToDirs(data []byte, archiveName string, resDir string, bpDir st
 	manifestDir := ""
 	var manifest bedrockManifest
 	for _, f := range zr.File {
-		nameInZip := strings.TrimPrefix(f.Name, "./")
+		nameInZip := normalizeZipEntryName(f.Name)
 		if strings.HasSuffix(nameInZip, "/") {
 			continue
 		}
-		if strings.EqualFold(filepath.Base(nameInZip), "manifest.json") {
-			dir := filepath.Dir(nameInZip)
+		if strings.EqualFold(path.Base(nameInZip), "manifest.json") {
+			dir := path.Dir(nameInZip)
 			rc, er := f.Open()
 			if er == nil {
 				b, _ := io.ReadAll(rc)
@@ -374,7 +375,7 @@ func ImportMcpackToDirs(data []byte, archiveName string, resDir string, bpDir st
 		if tp == "resources" && strings.TrimSpace(resDir) != "" {
 			targets = append(targets, filepath.Join(resDir, baseName))
 			hasRes = true
-		} else if tp == "data" && strings.TrimSpace(bpDir) != "" {
+		} else if (tp == "data" || tp == "script") && strings.TrimSpace(bpDir) != "" {
 			targets = append(targets, filepath.Join(bpDir, baseName))
 			hasData = true
 		}
@@ -393,7 +394,7 @@ func ImportMcpackToDirs(data []byte, archiveName string, resDir string, bpDir st
 			}
 		}
 		for _, f := range zr.File {
-			nameInZip := strings.TrimPrefix(f.Name, "./")
+			nameInZip := normalizeZipEntryName(f.Name)
 			var relInDir string
 			if manifestDir != "" {
 				if nameInZip != manifestDir && !strings.HasPrefix(nameInZip, manifestDir+"/") {
@@ -458,6 +459,17 @@ func stripKnownArchiveExt(name string) string {
 	return base
 }
 
+func normalizeZipEntryName(name string) string {
+	n := strings.TrimSpace(name)
+	n = strings.TrimPrefix(n, "./")
+	n = strings.ReplaceAll(n, "\\", "/")
+	n = strings.TrimPrefix(n, "/")
+	for strings.Contains(n, "//") {
+		n = strings.ReplaceAll(n, "//", "/")
+	}
+	return n
+}
+
 func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir string, skinDir string, overwrite bool) string {
 	if len(data) == 0 || (strings.TrimSpace(resDir) == "" && strings.TrimSpace(bpDir) == "" && strings.TrimSpace(skinDir) == "") {
 		return "ERR_OPEN_ZIP"
@@ -469,12 +481,12 @@ func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir s
 	manifestDir := ""
 	var manifest bedrockManifest
 	for _, f := range zr.File {
-		nameInZip := strings.TrimPrefix(f.Name, "./")
+		nameInZip := normalizeZipEntryName(f.Name)
 		if strings.HasSuffix(nameInZip, "/") {
 			continue
 		}
-		if strings.EqualFold(filepath.Base(nameInZip), "manifest.json") {
-			dir := filepath.Dir(nameInZip)
+		if strings.EqualFold(path.Base(nameInZip), "manifest.json") {
+			dir := path.Dir(nameInZip)
 			rc, er := f.Open()
 			if er == nil {
 				b, _ := io.ReadAll(rc)
@@ -510,7 +522,7 @@ func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir s
 		if tp == "resources" && strings.TrimSpace(resDir) != "" {
 			targets = append(targets, filepath.Join(resDir, baseName))
 			hasAny = true
-		} else if tp == "data" && strings.TrimSpace(bpDir) != "" {
+		} else if (tp == "data" || tp == "script") && strings.TrimSpace(bpDir) != "" {
 			targets = append(targets, filepath.Join(bpDir, baseName))
 			hasAny = true
 		} else if tp == "skin_pack" {
@@ -538,7 +550,7 @@ func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir s
 			}
 		}
 		for _, f := range zr.File {
-			nameInZip := strings.TrimPrefix(f.Name, "./")
+			nameInZip := normalizeZipEntryName(f.Name)
 			var relInDir string
 			if manifestDir != "" {
 				if nameInZip != manifestDir && !strings.HasPrefix(nameInZip, manifestDir+"/") {
@@ -622,12 +634,12 @@ func ImportMcaddonToDirs2(data []byte, resDir string, bpDir string, skinDir stri
 	}
 	packs := []packInfo{}
 	for _, f := range zr.File {
-		nameInZip := strings.TrimPrefix(f.Name, "./")
+		nameInZip := normalizeZipEntryName(f.Name)
 		if strings.HasSuffix(nameInZip, "/") {
 			continue
 		}
-		if strings.EqualFold(filepath.Base(nameInZip), "manifest.json") {
-			dir := filepath.Dir(nameInZip)
+		if strings.EqualFold(path.Base(nameInZip), "manifest.json") {
+			dir := path.Dir(nameInZip)
 			if dir == "." || strings.TrimSpace(dir) == "" {
 				continue
 			}
@@ -643,7 +655,7 @@ func ImportMcaddonToDirs2(data []byte, resDir string, bpDir string, skinDir stri
 		}
 	}
 	for _, p := range packs {
-		baseName := utils.SanitizeFilename(filepath.Base(p.dir))
+		baseName := utils.SanitizeFilename(path.Base(p.dir))
 		if strings.TrimSpace(baseName) == "" || baseName == "." || baseName == string(os.PathSeparator) {
 			baseName = "pack"
 		}
@@ -655,7 +667,7 @@ func ImportMcaddonToDirs2(data []byte, resDir string, bpDir string, skinDir stri
 			if tp == "resources" && strings.TrimSpace(resDir) != "" {
 				targets = append(targets, filepath.Join(resDir, baseName))
 				hasAny = true
-			} else if tp == "data" && strings.TrimSpace(bpDir) != "" {
+			} else if (tp == "data" || tp == "script") && strings.TrimSpace(bpDir) != "" {
 				targets = append(targets, filepath.Join(bpDir, baseName))
 				hasAny = true
 			} else if tp == "skin_pack" {
@@ -683,7 +695,7 @@ func ImportMcaddonToDirs2(data []byte, resDir string, bpDir string, skinDir stri
 				}
 			}
 			for _, f := range zr.File {
-				nameInZip := strings.TrimPrefix(f.Name, "./")
+				nameInZip := normalizeZipEntryName(f.Name)
 				var relInDir string
 				if nameInZip != p.dir && !strings.HasPrefix(nameInZip, p.dir+"/") {
 					continue
@@ -770,12 +782,12 @@ func ImportMcaddonToDirs(data []byte, resDir string, bpDir string, overwrite boo
 	}
 	packs := []packInfo{}
 	for _, f := range zr.File {
-		nameInZip := strings.TrimPrefix(f.Name, "./")
+		nameInZip := normalizeZipEntryName(f.Name)
 		if strings.HasSuffix(nameInZip, "/") {
 			continue
 		}
-		if strings.EqualFold(filepath.Base(nameInZip), "manifest.json") {
-			dir := filepath.Dir(nameInZip)
+		if strings.EqualFold(path.Base(nameInZip), "manifest.json") {
+			dir := path.Dir(nameInZip)
 			if dir == "." || strings.TrimSpace(dir) == "" {
 				continue
 			}
@@ -791,7 +803,7 @@ func ImportMcaddonToDirs(data []byte, resDir string, bpDir string, overwrite boo
 		}
 	}
 	for _, p := range packs {
-		baseName := utils.SanitizeFilename(filepath.Base(p.dir))
+		baseName := utils.SanitizeFilename(path.Base(p.dir))
 		if strings.TrimSpace(baseName) == "" || baseName == "." || baseName == string(os.PathSeparator) {
 			baseName = "pack"
 		}
@@ -803,7 +815,7 @@ func ImportMcaddonToDirs(data []byte, resDir string, bpDir string, overwrite boo
 			if tp == "resources" && strings.TrimSpace(resDir) != "" {
 				targets = append(targets, filepath.Join(resDir, baseName))
 				hasRes = true
-			} else if tp == "data" && strings.TrimSpace(bpDir) != "" {
+			} else if (tp == "data" || tp == "script") && strings.TrimSpace(bpDir) != "" {
 				targets = append(targets, filepath.Join(bpDir, baseName))
 				hasData = true
 			}
@@ -822,7 +834,7 @@ func ImportMcaddonToDirs(data []byte, resDir string, bpDir string, overwrite boo
 				}
 			}
 			for _, f := range zr.File {
-				nameInZip := strings.TrimPrefix(f.Name, "./")
+				nameInZip := normalizeZipEntryName(f.Name)
 				var relInDir string
 				if nameInZip != p.dir && !strings.HasPrefix(nameInZip, p.dir+"/") {
 					continue
@@ -882,12 +894,12 @@ func ImportMcworldToDir(data []byte, archiveName string, worldsDir string, overw
 	}
 	levelDir := ""
 	for _, f := range zr.File {
-		nameInZip := strings.TrimPrefix(f.Name, "./")
+		nameInZip := normalizeZipEntryName(f.Name)
 		if strings.HasSuffix(nameInZip, "/") {
 			continue
 		}
-		if strings.EqualFold(filepath.Base(nameInZip), "level.dat") {
-			d := filepath.Dir(nameInZip)
+		if strings.EqualFold(path.Base(nameInZip), "level.dat") {
+			d := path.Dir(nameInZip)
 			if d != "." && strings.TrimSpace(d) != "" {
 				levelDir = d
 			}
@@ -914,7 +926,7 @@ func ImportMcworldToDir(data []byte, archiveName string, worldsDir string, overw
 		}
 	}
 	for _, f := range zr.File {
-		nameInZip := strings.TrimPrefix(f.Name, "./")
+		nameInZip := normalizeZipEntryName(f.Name)
 		var relInDir string
 		if levelDir != "" {
 			if nameInZip != levelDir && !strings.HasPrefix(nameInZip, levelDir+"/") {

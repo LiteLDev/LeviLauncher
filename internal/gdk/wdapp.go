@@ -23,6 +23,11 @@ func RegisterVersionFolder(folder string) string {
 	if !WdappExists() {
 		return "ERR_MSIXVC_NOT_FOUND"
 	}
+	if !registry.IsDevModeEnabled() {
+		if !registry.TryEnableDevMode() {
+			return "ERR_DEV_MODE_REQUIRED"
+		}
+	}
 	cmd := exec.Command(wdappPath(), "register", filepath.Clean(folder))
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if err := cmd.Run(); err != nil {

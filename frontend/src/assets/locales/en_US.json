@@ -677,7 +677,8 @@
     "ERR_VCRUNTIME_MISSING": "Runtime dependency missing. Please install Microsoft Visual C++ Runtime and retry",
     "ERR_SHORTCUT_CREATE_FAILED": "Failed to create desktop shortcut",
     "ERR_UNREGISTER_FAILED": "Unregister failed",
-    "ERR_NOT_REGISTERED_THIS_VERSION": "This version is not registered"
+    "ERR_NOT_REGISTERED_THIS_VERSION": "This version is not registered",
+    "ERR_DEV_MODE_REQUIRED": "Developer Mode is not enabled, and auto-enable failed. Please enable Developer Mode manually and retry."
   },
   "filemanager": {
     "title": "File Manager",

@@ -677,7 +677,8 @@
     "ERR_VCRUNTIME_MISSING": "缺少运行库，安装失败。请确保已安装 Microsoft Visual C++ 运行库或重试",
     "ERR_SHORTCUT_CREATE_FAILED": "创建桌面快捷方式失败",
     "ERR_UNREGISTER_FAILED": "取消注册失败",
-    "ERR_NOT_REGISTERED_THIS_VERSION": "该版本未注册到系统"
+    "ERR_NOT_REGISTERED_THIS_VERSION": "该版本未注册到系统",
+    "ERR_DEV_MODE_REQUIRED": "系统未开启开发者模式，且自动开启失败。请手动开启开发者模式后重试。"
   },
   "filemanager": {
     "title": "文件管理器",

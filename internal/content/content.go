@@ -356,8 +356,9 @@ func ImportMcpackToDirs(data []byte, archiveName string, resDir string, bpDir st
 	}
 	baseName := strings.TrimSpace(archiveName)
 	if baseName != "" {
-		baseName = strings.TrimSuffix(filepath.Base(baseName), filepath.Ext(baseName))
+		baseName = stripKnownArchiveExt(baseName)
 	}
+	baseName = strings.ReplaceAll(baseName, ".", "_")
 	baseName = utils.SanitizeFilename(baseName)
 	if strings.TrimSpace(baseName) == "" {
 		baseName = "pack"
@@ -441,6 +442,22 @@ func ImportMcpackToDirs(data []byte, archiveName string, resDir string, bpDir st
 	return ""
 }
 
+func stripKnownArchiveExt(name string) string {
+	s := strings.TrimSpace(name)
+	if s == "" {
+		return ""
+	}
+	base := filepath.Base(s)
+	lower := strings.ToLower(base)
+	known := []string{".mcpack", ".mcworld", ".mcaddon", ".zip"}
+	for _, ext := range known {
+		if strings.HasSuffix(lower, ext) && len(base) > len(ext) {
+			return base[:len(base)-len(ext)]
+		}
+	}
+	return base
+}
+
 func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir string, skinDir string, overwrite bool) string {
 	if len(data) == 0 || (strings.TrimSpace(resDir) == "" && strings.TrimSpace(bpDir) == "" && strings.TrimSpace(skinDir) == "") {
 		return "ERR_OPEN_ZIP"
@@ -475,8 +492,9 @@ func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir s
 	}
 	baseName := strings.TrimSpace(archiveName)
 	if baseName != "" {
-		baseName = strings.TrimSuffix(filepath.Base(baseName), filepath.Ext(baseName))
+		baseName = stripKnownArchiveExt(baseName)
 	}
+	baseName = strings.ReplaceAll(baseName, ".", "_")
 	baseName = utils.SanitizeFilename(baseName)
 	if strings.TrimSpace(baseName) == "" {
 		baseName = "pack"
@@ -878,8 +896,9 @@ func ImportMcworldToDir(data []byte, archiveName string, worldsDir string, overw
 	}
 	baseName := strings.TrimSpace(archiveName)
 	if baseName != "" {
-		baseName = strings.TrimSuffix(filepath.Base(baseName), filepath.Ext(baseName))
+		baseName = stripKnownArchiveExt(baseName)
 	}
+	baseName = strings.ReplaceAll(baseName, ".", "_")
 	baseName = utils.SanitizeFilename(baseName)
 	if strings.TrimSpace(baseName) == "" || baseName == "." || baseName == string(os.PathSeparator) {
 		baseName = "world"

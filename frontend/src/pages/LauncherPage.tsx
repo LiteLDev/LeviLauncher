@@ -1731,7 +1731,8 @@ export const LauncherPage = (args: any) => {
                   </span>
                 </div>
                 <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                  <div className="rounded-xl border border-white/30 bg-default-100/70 dark:bg-default-50/10 shadow-sm backdrop-blur-sm px-3 py-2">
+                  <div className="rounded-xl border border-white/30 bg-default-100/70 dark:bg-default-50/10 shadow-sm backdrop-blur-sm px-3 py-2 cursor-pointer hover:shadow-md transition-all duration-200 hover:bg-default-100 dark:hover:bg-default-50/15"
+                    onClick={() => navigate("/content/worlds")}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <FaGlobe className="text-default-500" />
@@ -1748,7 +1749,8 @@ export const LauncherPage = (args: any) => {
                       </span>
                     </div>
                   </div>
-                  <div className="rounded-xl border border-white/30 bg-default-100/70 dark:bg-default-50/10 shadow-sm backdrop-blur-sm px-3 py-2">
+                  <div className="rounded-xl border border-white/30 bg-default-100/70 dark:bg-default-50/10 shadow-sm backdrop-blur-sm px-3 py-2 cursor-pointer hover:shadow-md transition-all duration-200 hover:bg-default-100 dark:hover:bg-default-50/15"
+                    onClick={() => navigate("/content/resource-packs")}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <FaImage className="text-default-500" />
@@ -1765,7 +1767,8 @@ export const LauncherPage = (args: any) => {
                       </span>
                     </div>
                   </div>
-                  <div className="rounded-xl border border-white/30 bg-default-100/70 dark:bg-default-50/10 shadow-sm backdrop-blur-sm px-3 py-2">
+                  <div className="rounded-xl border border-white/30 bg-default-100/70 dark:bg-default-50/10 shadow-sm backdrop-blur-sm px-3 py-2 cursor-pointer hover:shadow-md transition-all duration-200 hover:bg-default-100 dark:hover:bg-default-50/15"
+                    onClick={() => navigate("/content/behavior-packs")}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2 min-w-0">
                         <FaCogs className="text-default-500" />

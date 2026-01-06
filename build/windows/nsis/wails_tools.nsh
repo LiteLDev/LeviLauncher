@@ -14,7 +14,7 @@
     !define INFO_PRODUCTNAME "LeviLauncher"
 !endif
 !ifndef INFO_PRODUCTVERSION
-    !define INFO_PRODUCTVERSION "0.0.28"
+    !define INFO_PRODUCTVERSION "0.0.29"
 !endif
 !ifndef INFO_COPYRIGHT
     !define INFO_COPYRIGHT "(c) 2025, LeviMC"

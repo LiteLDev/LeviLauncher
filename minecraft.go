@@ -22,7 +22,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
-	"github.com/liteldev/LeviLauncher/internal/preloader"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
@@ -679,9 +678,9 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	}
 	application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
 	_ = vcruntime.EnsureForVersion(a.ctx, dir)
-	_ = preloader.EnsureForVersion(a.ctx, dir)
-	_ = peeditor.EnsureForVersion(a.ctx, dir)
-	_ = peeditor.RunForVersion(a.ctx, dir)
+	//_ = preloader.EnsureForVersion(a.ctx, dir)
+	//_ = peeditor.EnsureForVersion(a.ctx, dir)
+	//_ = peeditor.RunForVersion(a.ctx, dir)
 
 	var args []string
 	toRun := exe

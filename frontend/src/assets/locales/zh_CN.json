@@ -589,7 +589,9 @@
     "others": "其他字段",
     "add_child_field": "新增子字段",
     "new_child_item": "新建子项",
-    "field_type": "类型"
+    "field_type": "类型",
+    "select_player_title": "选择玩家",
+    "select_player_for_import": "请选择要导入到的玩家"
   },
   "versions": {
     "rename": {

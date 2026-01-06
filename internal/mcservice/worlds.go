@@ -2,12 +2,13 @@ package mcservice
 
 import (
 	"encoding/base64"
-	"encoding/json"
 	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
+
+	json "github.com/goccy/go-json"
 
 	"github.com/liteldev/LeviLauncher/internal/content"
 	"github.com/liteldev/LeviLauncher/internal/types"

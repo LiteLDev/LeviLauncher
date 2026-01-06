@@ -1,11 +1,12 @@
 package registry
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"os/exec"
 	"syscall"
+
+	json "github.com/goccy/go-json"
 )
 
 type AppxInfo struct {

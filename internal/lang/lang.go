@@ -2,8 +2,8 @@ package lang
 
 import (
 	_ "embed"
-	"encoding/json"
 
+	json "github.com/goccy/go-json"
 	"github.com/liteldev/LeviLauncher/internal/types"
 )
 

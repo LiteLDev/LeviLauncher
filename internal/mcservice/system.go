@@ -1,7 +1,6 @@
 package mcservice
 
 import (
-	"encoding/json"
 	"fmt"
 	"log"
 	"net/http"
@@ -9,6 +8,8 @@ import (
 	"path/filepath"
 	"strings"
 	"time"
+
+	json "github.com/goccy/go-json"
 
 	"github.com/corpix/uarand"
 )

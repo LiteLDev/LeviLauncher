@@ -20,7 +20,7 @@ import {
   Checkbox,
 } from "@heroui/react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   GetContentRoots,
   ListDir,
@@ -36,6 +36,7 @@ import { renderMcText } from "../utils/mcformat";
 export default function SkinPacksPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation() as any;
   const hasBackend = minecraft !== undefined;
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string>("");
@@ -230,7 +231,8 @@ export default function SkinPacksPage() {
           setRoots(safe);
           const names = await listPlayers(safe.usersRoot);
           setPlayers(names);
-          const nextPlayer = names[0] || "";
+          const passedPlayer = location?.state?.player || "";
+          const nextPlayer = names.includes(passedPlayer) ? passedPlayer : (names.includes(selectedPlayer) ? selectedPlayer : (names[0] || ""));
           setSelectedPlayer(nextPlayer);
           await loadSkinPacks(nextPlayer, safe);
         }
@@ -244,7 +246,7 @@ export default function SkinPacksPage() {
         if (!silent) setLoading(false);
       }
     },
-    [hasBackend, t]
+    [hasBackend, t, selectedPlayer, location?.state?.player]
   );
 
   React.useEffect(() => {
@@ -315,7 +317,7 @@ export default function SkinPacksPage() {
             <Button
               size="sm"
               variant="bordered"
-              onPress={() => navigate("/content")}
+              onPress={() => navigate("/content", { state: { player: selectedPlayer } })}
             >
               {t("common.back", { defaultValue: "返回" })}
             </Button>

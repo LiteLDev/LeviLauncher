@@ -21,7 +21,7 @@ import {
   useDisclosure,
 } from "@heroui/react";
 import { motion } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   GetContentRoots,
   OpenPathDir,
@@ -35,6 +35,7 @@ import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/mine
 export default function WorldsListPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation() as any;
   const hasBackend = minecraft !== undefined;
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string>("");
@@ -241,7 +242,8 @@ export default function WorldsListPage() {
           setRoots(safe);
           const names = await listPlayers(safe.usersRoot);
           setPlayers(names);
-          const nextPlayer = names[0] || "";
+          const passedPlayer = location?.state?.player || "";
+          const nextPlayer = names.includes(passedPlayer) ? passedPlayer : (names.includes(selectedPlayer) ? selectedPlayer : (names[0] || ""));
           setSelectedPlayer(nextPlayer);
           await loadWorlds(nextPlayer, safe);
         }
@@ -255,7 +257,7 @@ export default function WorldsListPage() {
         if (!silent) setLoading(false);
       }
     },
-    [hasBackend, t]
+    [hasBackend, t, selectedPlayer, location?.state?.player]
   );
 
   React.useEffect(() => {
@@ -328,7 +330,7 @@ export default function WorldsListPage() {
             <Button
               size="sm"
               variant="bordered"
-              onPress={() => navigate("/content")}
+              onPress={() => navigate("/content", { state: { player: selectedPlayer } })}
             >
               {t("common.back", { defaultValue: "返回" })}
             </Button>

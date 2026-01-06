@@ -3,11 +3,12 @@ package mods
 import (
 	"archive/zip"
 	"bytes"
-	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	json "github.com/goccy/go-json"
 
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"

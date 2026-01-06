@@ -589,8 +589,10 @@
       "others": "Прочие поля",
       "add_child_field": "Добавить дочернее поле",
       "new_child_item": "Новый дочерний элемент",
-      "field_type": "Тип"
-    },
+      "field_type": "Тип",
+    "select_player_title": "Выберите игрока",
+    "select_player_for_import": "Пожалуйста, выберите игрока для импорта"
+  },
     "versions": {
       "rename": {
         "title": "Переименовать версию",

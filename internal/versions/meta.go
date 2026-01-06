@@ -3,12 +3,13 @@ package versions
 import (
 	"crypto/sha256"
 	"encoding/hex"
-	"encoding/json"
 	"io"
 	"os"
 	"path/filepath"
 	"reflect"
 	"time"
+
+	json "github.com/goccy/go-json"
 
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )

@@ -1,12 +1,13 @@
 module github.com/liteldev/LeviLauncher
 
-go 1.24.0
+go 1.25.3
 
 require (
 	github.com/axrona/go-discordrpc v1.1.0-1
 	github.com/corpix/uarand v0.2.0
+	github.com/goccy/go-json v0.10.5
 	github.com/mouuff/go-rocket-update v1.5.6
-	github.com/wailsapp/wails/v3 v3.0.0-alpha.45
+	github.com/wailsapp/wails/v3 v3.0.0-alpha.57
 )
 
 require (
@@ -30,7 +31,6 @@ require (
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	gopkg.in/ini.v1 v1.67.0 // indirect
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )
@@ -52,7 +52,6 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/samber/lo v1.49.1 // indirect
 	github.com/wailsapp/go-webview2 v1.0.22 // indirect
-	github.com/wailsapp/mimetype v1.4.1 // indirect
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
 	golang.org/x/sys v0.33.0

@@ -1,17 +1,18 @@
 package config
 
 import (
-	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
+
+	json "github.com/goccy/go-json"
 )
 
 type AppConfig struct {
-    BaseRoot     string `json:"base_root"`
-    WindowWidth  int    `json:"window_width"`
-    WindowHeight int    `json:"window_height"`
-    DisableDiscordRPC bool `json:"disable_discord_rpc"`
+	BaseRoot          string `json:"base_root"`
+	WindowWidth       int    `json:"window_width"`
+	WindowHeight      int    `json:"window_height"`
+	DisableDiscordRPC bool   `json:"disable_discord_rpc"`
 }
 
 func localAppData() string {
@@ -87,11 +88,11 @@ func Save(c AppConfig) error {
 }
 
 func GetBaseRootOverride() string {
-    c, _ := Load()
-    return strings.TrimSpace(c.BaseRoot)
+	c, _ := Load()
+	return strings.TrimSpace(c.BaseRoot)
 }
 
 func GetDiscordRPCDisabled() bool {
-    c, _ := Load()
-    return c.DisableDiscordRPC
+	c, _ := Load()
+	return c.DisableDiscordRPC
 }

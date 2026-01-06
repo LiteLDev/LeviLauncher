@@ -429,6 +429,21 @@ func (a *Minecraft) ImportMcpackPathWithPlayer(name string, player string, path 
 	return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
+func (a *Minecraft) IsMcpackSkinPackPath(path string) bool {
+	if strings.TrimSpace(path) == "" {
+		return false
+	}
+	b, err := os.ReadFile(path)
+	if err != nil {
+		return false
+	}
+	return content.IsMcpackSkinPack(b)
+}
+
+func (a *Minecraft) IsMcpackSkinPack(data []byte) bool {
+	return content.IsMcpackSkinPack(data)
+}
+
 func (a *Minecraft) ImportMcworld(name string, player string, fileName string, data []byte, overwrite bool) string {
 	roots := a.GetContentRoots(name)
 	users := strings.TrimSpace(roots.UsersRoot)

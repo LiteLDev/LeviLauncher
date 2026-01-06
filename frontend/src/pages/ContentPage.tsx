@@ -75,8 +75,18 @@ export default function ContentPage() {
     onOpen: dupOnOpen,
     onOpenChange: dupOnOpenChange,
   } = useDisclosure();
+  const {
+    isOpen: playerSelectOpen,
+    onOpen: playerSelectOnOpen,
+    onOpenChange: playerSelectOnOpenChange,
+  } = useDisclosure();
+  const playerSelectResolveRef = React.useRef<((player: string) => void) | null>(
+    null
+  );
+  const pendingImportFilesRef = React.useRef<File[]>([]);
+  const pendingImportPathsRef = React.useRef<string[]>([]);
 
-  const refreshAll = React.useCallback(async () => {
+  const refreshAll = async (playerToRefresh?: string) => {
     setLoading(true);
     setError("");
     const name = readCurrentVersionName();
@@ -111,15 +121,31 @@ export default function ContentPage() {
           const names = await listPlayers(safe.usersRoot);
           setPlayers(names);
           const nextPlayer = names[0] || "";
-          setSelectedPlayer(nextPlayer);
-          if (nextPlayer) {
-            const wp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\minecraftWorlds`;
-            setWorldsCount(await countDirectories(wp));
-            const sp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\skin_packs`;
-            setSkinCount(await countDirectories(sp));
+          const currentPlayer = playerToRefresh !== undefined ? playerToRefresh : selectedPlayer;
+          if (playerToRefresh !== undefined) {
+            setSelectedPlayer(playerToRefresh);
+          }
+          if (names.includes(currentPlayer)) {
+            if (currentPlayer) {
+              const wp = `${safe.usersRoot}\\${currentPlayer}\\games\\com.mojang\\minecraftWorlds`;
+              setWorldsCount(await countDirectories(wp));
+              const sp = `${safe.usersRoot}\\${currentPlayer}\\games\\com.mojang\\skin_packs`;
+              setSkinCount(await countDirectories(sp));
+            } else {
+              setWorldsCount(0);
+              setSkinCount(0);
+            }
           } else {
-            setWorldsCount(0);
-            setSkinCount(0);
+            setSelectedPlayer(nextPlayer);
+            if (nextPlayer) {
+              const wp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\minecraftWorlds`;
+              setWorldsCount(await countDirectories(wp));
+              const sp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\skin_packs`;
+              setSkinCount(await countDirectories(sp));
+            } else {
+              setWorldsCount(0);
+              setSkinCount(0);
+            }
           }
         } else {
           setPlayers([]);
@@ -139,10 +165,19 @@ export default function ContentPage() {
     } finally {
       setLoading(false);
     }
-  }, [hasBackend, t]);
+  };
 
   React.useEffect(() => {
-    refreshAll();
+    const passedPlayer = location?.state?.player || "";
+    if (passedPlayer) {
+      refreshAll(passedPlayer);
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...(location.state || {}), player: undefined },
+      });
+    } else {
+      refreshAll();
+    }
   }, []);
 
   const onChangePlayer = async (player: string) => {
@@ -318,10 +353,40 @@ export default function ContentPage() {
         );
         return;
       }
+      const hasWorld = paths.some((p) =>
+        p?.toLowerCase().endsWith(".mcworld")
+      );
+      let hasSkin = false;
+      for (const p of paths) {
+        if (p?.toLowerCase().endsWith(".mcpack")) {
+          const isSkin = await (minecraft as any)?.IsMcpackSkinPackPath?.(p);
+          if (isSkin) {
+            hasSkin = true;
+            break;
+          }
+        }
+      }
+      let chosenPlayer = "";
+      if (hasWorld || hasSkin) {
+        pendingImportPathsRef.current = paths;
+        playerSelectOnOpen();
+        chosenPlayer = await new Promise<string>((resolve) => {
+          playerSelectResolveRef.current = resolve;
+        });
+        if (!chosenPlayer) {
+          pendingImportPathsRef.current = [];
+          return;
+        }
+        setSelectedPlayer(chosenPlayer);
+        await onChangePlayer(chosenPlayer);
+      }
       let started = false;
       const succFiles: string[] = [];
       const errPairs: Array<{ name: string; err: string }> = [];
-      for (const p of paths) {
+      const pathsToImport = pendingImportPathsRef.current.length > 0 ? pendingImportPathsRef.current : paths;
+      pendingImportPathsRef.current = [];
+      const playerToUse = chosenPlayer || selectedPlayer || "";
+      for (const p of pathsToImport) {
         const lower = p.toLowerCase();
         if (lower.endsWith(".mcpack")) {
           if (!started) {
@@ -331,28 +396,13 @@ export default function ContentPage() {
           const base = p.replace(/\\/g, "/").split("/").pop() || p;
           setCurrentFile(base);
           let err = "";
-          let usePlayer = selectedPlayer;
-          if (!usePlayer) {
-            try {
-              const ver = currentVersionName || readCurrentVersionName();
-              if (ver) {
-                const r = await GetContentRoots(ver);
-                const ur = r?.usersRoot || "";
-                if (ur) {
-                  const names = await listPlayers(ur);
-                  usePlayer = names[0] || "";
-                  if (usePlayer) setSelectedPlayer(usePlayer);
-                }
-              }
-            } catch {}
-          }
           if (
-            usePlayer &&
+            playerToUse &&
             typeof (minecraft as any)?.ImportMcpackPathWithPlayer === "function"
           ) {
             err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
               name,
-              usePlayer,
+              playerToUse,
               p,
               false
             );
@@ -369,13 +419,13 @@ export default function ContentPage() {
               });
               if (ok) {
                 if (
-                  usePlayer &&
+                  playerToUse &&
                   typeof (minecraft as any)?.ImportMcpackPathWithPlayer ===
                     "function"
                 ) {
                   err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
                     name,
-                    usePlayer,
+                    playerToUse,
                     p,
                     true
                   );
@@ -404,29 +454,14 @@ export default function ContentPage() {
           const base = p.replace(/\\/g, "/").split("/").pop() || p;
           setCurrentFile(base);
           let err = "";
-          let usePlayer2 = selectedPlayer;
-          if (!usePlayer2) {
-            try {
-              const ver = currentVersionName || readCurrentVersionName();
-              if (ver) {
-                const r = await GetContentRoots(ver);
-                const ur = r?.usersRoot || "";
-                if (ur) {
-                  const names = await listPlayers(ur);
-                  usePlayer2 = names[0] || "";
-                  if (usePlayer2) setSelectedPlayer(usePlayer2);
-                }
-              }
-            } catch {}
-          }
           if (
-            usePlayer2 &&
+            playerToUse &&
             typeof (minecraft as any)?.ImportMcaddonPathWithPlayer ===
               "function"
           ) {
             err = await (minecraft as any)?.ImportMcaddonPathWithPlayer?.(
               name,
-              usePlayer2,
+              playerToUse,
               p,
               false
             );
@@ -443,13 +478,13 @@ export default function ContentPage() {
               });
               if (ok) {
                 if (
-                  usePlayer2 &&
+                  playerToUse &&
                   typeof (minecraft as any)?.ImportMcaddonPathWithPlayer ===
                     "function"
                 ) {
                   err = await (minecraft as any)?.ImportMcaddonPathWithPlayer?.(
                     name,
-                    usePlayer2,
+                    playerToUse,
                     p,
                     true
                   );
@@ -472,22 +507,7 @@ export default function ContentPage() {
           succFiles.push(base);
         } else if (lower.endsWith(".mcworld")) {
           const base = p.replace(/\\/g, "/").split("/").pop() || p;
-          let usePlayer = selectedPlayer;
-          if (!usePlayer) {
-            try {
-              const ver = currentVersionName || readCurrentVersionName();
-              if (ver) {
-                const r = await GetContentRoots(ver);
-                const ur = r?.usersRoot || "";
-                if (ur) {
-                  const names = await listPlayers(ur);
-                  usePlayer = names[0] || "";
-                  if (usePlayer) setSelectedPlayer(usePlayer);
-                }
-              }
-            } catch {}
-          }
-          if (!usePlayer) {
+          if (!playerToUse) {
             errPairs.push({ name: base, err: "ERR_NO_PLAYER" });
             continue;
           }
@@ -498,7 +518,7 @@ export default function ContentPage() {
           setCurrentFile(base);
           let err = await (minecraft as any)?.ImportMcworldPath?.(
             name,
-            usePlayer,
+            playerToUse,
             p,
             false
           );
@@ -513,7 +533,7 @@ export default function ContentPage() {
               if (ok) {
                 err = await (minecraft as any)?.ImportMcworldPath?.(
                   name,
-                  usePlayer,
+                  playerToUse,
                   p,
                   true
                 );
@@ -529,7 +549,7 @@ export default function ContentPage() {
           succFiles.push(base);
         }
       }
-      await refreshAll();
+      await refreshAll(playerToUse);
       setResultSuccess(succFiles);
       setResultFailed(errPairs);
       if (succFiles.length > 0 || errPairs.length > 0) {
@@ -558,9 +578,6 @@ export default function ContentPage() {
         );
         return;
       }
-      let started = false;
-      const succFiles: string[] = [];
-      const errPairs: Array<{ name: string; err: string }> = [];
       const files: File[] = Array.from(list).filter(
         (f) =>
           f &&
@@ -571,15 +588,39 @@ export default function ContentPage() {
       const hasWorld = files.some((f) =>
         f?.name?.toLowerCase().endsWith(".mcworld")
       );
-      if (hasWorld && !selectedPlayer) {
-        setErrorMsg(
-          t("contentpage.require_player_for_world_import", {
-            defaultValue: "导入世界 (.mcworld) 前请先选择玩家",
-          }) as string
-        );
-        return;
-      }
+      let hasSkin = false;
       for (const f of files) {
+        if (f?.name?.toLowerCase().endsWith(".mcpack")) {
+          const buf = await f.arrayBuffer();
+          const bytes = Array.from(new Uint8Array(buf));
+          const isSkin = await (minecraft as any)?.IsMcpackSkinPack?.(bytes);
+          if (isSkin) {
+            hasSkin = true;
+            break;
+          }
+        }
+      }
+      let chosenPlayer = "";
+      if (hasWorld || hasSkin) {
+        pendingImportFilesRef.current = files;
+        playerSelectOnOpen();
+        chosenPlayer = await new Promise<string>((resolve) => {
+          playerSelectResolveRef.current = resolve;
+        });
+        if (!chosenPlayer) {
+          pendingImportFilesRef.current = [];
+          return;
+        }
+        setSelectedPlayer(chosenPlayer);
+        await onChangePlayer(chosenPlayer);
+      }
+      let started = false;
+      const succFiles: string[] = [];
+      const errPairs: Array<{ name: string; err: string }> = [];
+      const filesToImport = pendingImportFilesRef.current.length > 0 ? pendingImportFilesRef.current : files;
+      pendingImportFilesRef.current = [];
+      const playerToUse = chosenPlayer || selectedPlayer || "";
+      for (const f of filesToImport) {
         const lower = f.name.toLowerCase();
         if (lower.endsWith(".mcpack")) {
           if (!started) {
@@ -587,7 +628,27 @@ export default function ContentPage() {
             started = true;
           }
           setCurrentFile(f.name);
-          let err = await postImportMcpack(currentVersionName, f, false);
+          const buf = await f.arrayBuffer();
+          const bytes = Array.from(new Uint8Array(buf));
+          let err = "";
+          if (
+            playerToUse &&
+            typeof (minecraft as any)?.ImportMcpackWithPlayer === "function"
+          ) {
+            err = await (minecraft as any)?.ImportMcpackWithPlayer?.(
+              currentVersionName,
+              playerToUse,
+              f.name,
+              bytes,
+              false
+            );
+          } else {
+            err = await (minecraft as any)?.ImportMcpack?.(
+              currentVersionName,
+              bytes,
+              false
+            );
+          }
           if (err) {
             if (String(err) === "ERR_DUPLICATE_FOLDER") {
               dupNameRef.current = f.name;
@@ -597,7 +658,24 @@ export default function ContentPage() {
                 dupResolveRef.current = resolve;
               });
               if (ok) {
-                err = await postImportMcpack(currentVersionName, f, true);
+                if (
+                  playerToUse &&
+                  typeof (minecraft as any)?.ImportMcpackWithPlayer === "function"
+                ) {
+                  err = await (minecraft as any)?.ImportMcpackWithPlayer?.(
+                    currentVersionName,
+                    playerToUse,
+                    f.name,
+                    bytes,
+                    true
+                  );
+                } else {
+                  err = await (minecraft as any)?.ImportMcpack?.(
+                    currentVersionName,
+                    bytes,
+                    true
+                  );
+                }
                 if (!err) {
                   succFiles.push(f.name);
                   continue;
@@ -614,7 +692,26 @@ export default function ContentPage() {
             started = true;
           }
           setCurrentFile(f.name);
-          let err = await postImportMcaddon(currentVersionName, f, false);
+          const buf = await f.arrayBuffer();
+          const bytes = Array.from(new Uint8Array(buf));
+          let err = "";
+          if (
+            playerToUse &&
+            typeof (minecraft as any)?.ImportMcaddonWithPlayer === "function"
+          ) {
+            err = await (minecraft as any)?.ImportMcaddonWithPlayer?.(
+              currentVersionName,
+              playerToUse,
+              bytes,
+              false
+            );
+          } else {
+            err = await (minecraft as any)?.ImportMcaddon?.(
+              currentVersionName,
+              bytes,
+              false
+            );
+          }
           if (err) {
             if (String(err) === "ERR_DUPLICATE_FOLDER") {
               dupNameRef.current = f.name;
@@ -624,7 +721,23 @@ export default function ContentPage() {
                 dupResolveRef.current = resolve;
               });
               if (ok) {
-                err = await postImportMcaddon(currentVersionName, f, true);
+                if (
+                  playerToUse &&
+                  typeof (minecraft as any)?.ImportMcaddonWithPlayer === "function"
+                ) {
+                  err = await (minecraft as any)?.ImportMcaddonWithPlayer?.(
+                    currentVersionName,
+                    playerToUse,
+                    bytes,
+                    true
+                  );
+                } else {
+                  err = await (minecraft as any)?.ImportMcaddon?.(
+                    currentVersionName,
+                    bytes,
+                    true
+                  );
+                }
                 if (!err) {
                   succFiles.push(f.name);
                   continue;
@@ -636,7 +749,7 @@ export default function ContentPage() {
           }
           succFiles.push(f.name);
         } else if (lower.endsWith(".mcworld")) {
-          if (!selectedPlayer) {
+          if (!playerToUse) {
             errPairs.push({ name: f.name, err: "ERR_NO_PLAYER" });
             continue;
           }
@@ -647,7 +760,7 @@ export default function ContentPage() {
           setCurrentFile(f.name);
           let err = await postImportMcworld(
             currentVersionName,
-            selectedPlayer,
+            playerToUse,
             f,
             false
           );
@@ -662,7 +775,7 @@ export default function ContentPage() {
               if (ok) {
                 err = await postImportMcworld(
                   currentVersionName,
-                  selectedPlayer,
+                  playerToUse,
                   f,
                   true
                 );
@@ -678,7 +791,7 @@ export default function ContentPage() {
           succFiles.push(f.name);
         }
       }
-      await refreshAll();
+      await refreshAll(playerToUse);
       setResultSuccess(succFiles);
       setResultFailed(errPairs);
       if (succFiles.length > 0 || errPairs.length > 0) {
@@ -738,20 +851,41 @@ export default function ContentPage() {
         const hasWorld = files.some((f) =>
           f?.name?.toLowerCase().endsWith(".mcworld")
         );
-        if (hasWorld && !selectedPlayer) {
-          setErrorMsg(
-            t("contentpage.require_player_for_world_import", {
-              defaultValue: "导入世界 (.mcworld) 前请先选择玩家",
-            }) as string
-          );
-          return;
+        let hasSkin = false;
+        for (const f of files) {
+          if (f?.name?.toLowerCase().endsWith(".mcpack")) {
+            const buf = await f.arrayBuffer();
+            const bytes = Array.from(new Uint8Array(buf));
+            const isSkin = await (minecraft as any)?.IsMcpackSkinPack?.(bytes);
+            if (isSkin) {
+              hasSkin = true;
+              break;
+            }
+          }
+        }
+        let chosenPlayer = "";
+        if (hasWorld || hasSkin) {
+          pendingImportFilesRef.current = files;
+          playerSelectOnOpen();
+          chosenPlayer = await new Promise<string>((resolve) => {
+            playerSelectResolveRef.current = resolve;
+          });
+          if (!chosenPlayer) {
+            pendingImportFilesRef.current = [];
+            return;
+          }
+          setSelectedPlayer(chosenPlayer);
+          await onChangePlayer(chosenPlayer);
         }
         if (!files.length) return;
         let started = false;
         const succFiles: string[] = [];
         const errPairs: Array<{ name: string; err: string }> = [];
+        const filesToImport = pendingImportFilesRef.current.length > 0 ? pendingImportFilesRef.current : files;
+        pendingImportFilesRef.current = [];
+        const playerToUse = chosenPlayer || selectedPlayer || "";
         try {
-          for (const f of files) {
+          for (const f of filesToImport) {
             const lower = f.name.toLowerCase();
             if (lower.endsWith(".mcpack")) {
               if (!started) {
@@ -759,7 +893,27 @@ export default function ContentPage() {
                 started = true;
               }
               setCurrentFile(f.name);
-              let err = await postImportMcpack(currentVersionName, f, false);
+              const buf = await f.arrayBuffer();
+              const bytes = Array.from(new Uint8Array(buf));
+              let err = "";
+              if (
+                playerToUse &&
+                typeof (minecraft as any)?.ImportMcpackWithPlayer === "function"
+              ) {
+                err = await (minecraft as any)?.ImportMcpackWithPlayer?.(
+                  currentVersionName,
+                  playerToUse,
+                  f.name,
+                  bytes,
+                  false
+                );
+              } else {
+                err = await (minecraft as any)?.ImportMcpack?.(
+                  currentVersionName,
+                  bytes,
+                  false
+                );
+              }
               if (err) {
                 if (String(err) === "ERR_DUPLICATE_FOLDER") {
                   dupNameRef.current = f.name;
@@ -769,7 +923,25 @@ export default function ContentPage() {
                     dupResolveRef.current = resolve;
                   });
                   if (ok) {
-                    err = await postImportMcpack(currentVersionName, f, true);
+                    if (
+                      playerToUse &&
+                      typeof (minecraft as any)?.ImportMcpackWithPlayer ===
+                        "function"
+                    ) {
+                      err = await (minecraft as any)?.ImportMcpackWithPlayer?.(
+                        currentVersionName,
+                        playerToUse,
+                        f.name,
+                        bytes,
+                        true
+                      );
+                    } else {
+                      err = await (minecraft as any)?.ImportMcpack?.(
+                        currentVersionName,
+                        bytes,
+                        true
+                      );
+                    }
                     if (!err) {
                       succFiles.push(f.name);
                       continue;
@@ -786,7 +958,26 @@ export default function ContentPage() {
                 started = true;
               }
               setCurrentFile(f.name);
-              let err = await postImportMcaddon(currentVersionName, f, false);
+              const buf = await f.arrayBuffer();
+              const bytes = Array.from(new Uint8Array(buf));
+              let err = "";
+              if (
+                playerToUse &&
+                typeof (minecraft as any)?.ImportMcaddonWithPlayer === "function"
+              ) {
+                err = await (minecraft as any)?.ImportMcaddonWithPlayer?.(
+                  currentVersionName,
+                  playerToUse,
+                  bytes,
+                  false
+                );
+              } else {
+                err = await (minecraft as any)?.ImportMcaddon?.(
+                  currentVersionName,
+                  bytes,
+                  false
+                );
+              }
               if (err) {
                 if (String(err) === "ERR_DUPLICATE_FOLDER") {
                   dupNameRef.current = f.name;
@@ -796,7 +987,24 @@ export default function ContentPage() {
                     dupResolveRef.current = resolve;
                   });
                   if (ok) {
-                    err = await postImportMcaddon(currentVersionName, f, true);
+                    if (
+                      playerToUse &&
+                      typeof (minecraft as any)?.ImportMcaddonWithPlayer ===
+                        "function"
+                    ) {
+                      err = await (minecraft as any)?.ImportMcaddonWithPlayer?.(
+                        currentVersionName,
+                        playerToUse,
+                        bytes,
+                        true
+                      );
+                    } else {
+                      err = await (minecraft as any)?.ImportMcaddon?.(
+                        currentVersionName,
+                        bytes,
+                        true
+                      );
+                    }
                     if (!err) {
                       succFiles.push(f.name);
                       continue;
@@ -808,18 +1016,18 @@ export default function ContentPage() {
               }
               succFiles.push(f.name);
             } else if (lower.endsWith(".mcworld")) {
-            if (!selectedPlayer) {
-              errPairs.push({ name: f.name, err: "ERR_NO_PLAYER" });
-              continue;
-            }
-            if (!started) {
-              setImporting(true);
-              started = true;
-            }
-            setCurrentFile(f.name);
+              if (!playerToUse) {
+                errPairs.push({ name: f.name, err: "ERR_NO_PLAYER" });
+                continue;
+              }
+              if (!started) {
+                setImporting(true);
+                started = true;
+              }
+              setCurrentFile(f.name);
               let err = await postImportMcworld(
                 currentVersionName,
-                selectedPlayer,
+                playerToUse,
                 f,
                 false
               );
@@ -834,7 +1042,7 @@ export default function ContentPage() {
                   if (ok) {
                     err = await postImportMcworld(
                       currentVersionName,
-                      selectedPlayer,
+                      playerToUse,
                       f,
                       true
                     );
@@ -850,7 +1058,7 @@ export default function ContentPage() {
               succFiles.push(f.name);
             }
           }
-          await refreshAll();
+          await refreshAll(playerToUse);
           setResultSuccess(succFiles);
           setResultFailed(errPairs);
           if (succFiles.length > 0 || errPairs.length > 0) {
@@ -1030,6 +1238,73 @@ export default function ContentPage() {
           )}
         </ModalContent>
       </Modal>
+      <Modal
+        size="md"
+        isOpen={playerSelectOpen}
+        onOpenChange={playerSelectOnOpenChange}
+        hideCloseButton
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <ModalHeader className="text-primary-600">
+                {t("contentpage.select_player_title", {
+                  defaultValue: "选择玩家",
+                })}
+              </ModalHeader>
+              <ModalBody>
+                <div className="text-sm text-default-700">
+                  {t("contentpage.select_player_for_import", {
+                    defaultValue: "请选择要导入到的玩家",
+                  })}
+                </div>
+                <div className="mt-3 space-y-2">
+                  {players.length ? (
+                    players.map((p) => (
+                      <Button
+                        key={p}
+                        variant="bordered"
+                        className="w-full justify-start"
+                        onPress={() => {
+                          try {
+                            playerSelectResolveRef.current &&
+                              playerSelectResolveRef.current(p);
+                          } finally {
+                            onClose();
+                          }
+                        }}
+                      >
+                        {p}
+                      </Button>
+                    ))
+                  ) : (
+                    <div className="text-sm text-default-500">
+                      {t("contentpage.no_players", {
+                        defaultValue: "暂无玩家",
+                      })}
+                    </div>
+                  )}
+                </div>
+              </ModalBody>
+              <ModalFooter>
+                <Button
+                  variant="light"
+                  onPress={() => {
+                    try {
+                      playerSelectResolveRef.current &&
+                        playerSelectResolveRef.current("");
+                    } finally {
+                      onClose();
+                    }
+                  }}
+                >
+                  {t("common.cancel", { defaultValue: "取消" })}
+                </Button>
+              </ModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </Modal>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
@@ -1060,6 +1335,13 @@ export default function ContentPage() {
             {t("launcherpage.content_manage", { defaultValue: "内容管理" })}
           </h1>
           <div className="flex items-center gap-2">
+            <Button
+              size="sm"
+              variant="bordered"
+              onPress={() => navigate("/")}
+            >
+              {t("common.back", { defaultValue: "返回" })}
+            </Button>
             <Tooltip
               content={
                 t("contentpage.open_users_dir", {
@@ -1170,7 +1452,7 @@ export default function ContentPage() {
         <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-4">
           <div
             className="rounded-xl border border-default-200 bg-white/50 dark:bg-neutral-800/40 shadow-sm backdrop-blur-sm px-3 py-3 cursor-pointer transition hover:bg-white/70 dark:hover:bg-neutral-800/60"
-            onClick={() => navigate("/content/worlds")}
+            onClick={() => navigate("/content/worlds", { state: { player: selectedPlayer } })}
             role="button"
             aria-label="worlds"
           >
@@ -1197,7 +1479,7 @@ export default function ContentPage() {
           </div>
           <div
             className="rounded-xl border border-default-200 bg-white/50 dark:bg-neutral-800/40 shadow-sm backdrop-blur-sm px-3 py-3 cursor-pointer transition hover:bg-white/70 dark:hover:bg-neutral-800/60"
-            onClick={() => navigate("/content/skin-packs")}
+            onClick={() => navigate("/content/skin-packs", { state: { player: selectedPlayer } })}
             role="button"
             aria-label="skin-packs"
           >

@@ -1,7 +1,6 @@
 package update
 
 import (
-	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -14,6 +13,8 @@ import (
 	"strings"
 	"syscall"
 	"time"
+
+	json "github.com/goccy/go-json"
 
 	"github.com/Masterminds/semver/v3"
 	"github.com/corpix/uarand"

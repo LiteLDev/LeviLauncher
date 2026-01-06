@@ -69,6 +69,7 @@ func ensureSingleInstance() bool {
 }
 
 func init() {
+
 	//minecraft
 	application.RegisterEvent[struct{}](EventGameInputEnsureStart)
 	application.RegisterEvent[struct{}](EventGameInputEnsureDone)
@@ -120,10 +121,10 @@ func main() {
 	}
 	c, _ := config.Load()
 	extractor.Init()
-    update.Init()
-    if !config.GetDiscordRPCDisabled() {
-        discord.Init()
-    }
+	update.Init()
+	if !config.GetDiscordRPCDisabled() {
+		discord.Init()
+	}
 	mc := Minecraft{}
 	app := application.New(application.Options{
 		Name:        "LeviLauncher",

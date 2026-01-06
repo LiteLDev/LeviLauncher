@@ -589,7 +589,9 @@
     "others": "Other Fields",
     "add_child_field": "Add Child Field",
     "new_child_item": "New Child Item",
-    "field_type": "Type"
+    "field_type": "Type",
+    "select_player_title": "Select Player",
+    "select_player_for_import": "Please select the player to import to"
   },
   "versions": {
     "rename": {

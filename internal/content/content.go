@@ -5,7 +5,6 @@ import (
 	"bytes"
 	"encoding/base64"
 	"encoding/binary"
-	"encoding/json"
 	"fmt"
 	"io"
 	"math"
@@ -15,6 +14,8 @@ import (
 	"reflect"
 	"strconv"
 	"strings"
+
+	json "github.com/goccy/go-json"
 
 	"github.com/liteldev/LeviLauncher/internal/nbt"
 	"github.com/liteldev/LeviLauncher/internal/types"
@@ -1554,6 +1555,36 @@ func WriteLevelDatFields(worldDir string, fields []types.LevelDatField, version 
 		root = data
 	}
 	return EncodeLevelDat(worldDir, version, root)
+}
+
+func IsMcpackSkinPack(data []byte) bool {
+	if len(data) == 0 {
+		return false
+	}
+	zr, err := zip.NewReader(bytes.NewReader(data), int64(len(data)))
+	if err != nil {
+		return false
+	}
+	for _, f := range zr.File {
+		nameInZip := normalizeZipEntryName(f.Name)
+		if strings.EqualFold(path.Base(nameInZip), "manifest.json") {
+			rc, er := f.Open()
+			if er != nil {
+				continue
+			}
+			b, _ := io.ReadAll(rc)
+			_ = rc.Close()
+			var mf bedrockManifest
+			_ = json.Unmarshal(utils.JsonCompatBytes(b), &mf)
+			for _, m := range mf.Modules {
+				tp := strings.ToLower(strings.TrimSpace(m.Type))
+				if tp == "skin_pack" {
+					return true
+				}
+			}
+		}
+	}
+	return false
 }
 
 func ReadLevelDatFieldsAt(worldDir string, path []string) ([]types.LevelDatField, int32, error) {

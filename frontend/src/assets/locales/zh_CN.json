@@ -800,5 +800,29 @@
       "cancel": "取消",
       "save": "保存并完成"
     }
+  },
+  "curseforgecard": {
+    "title": "CurseForge",
+    "content": "浏览和下载模组",
+    "browse": "浏览CurseForge"
+  },
+  "curseforge": {
+    "title": "CurseForge",
+    "search_placeholder": "搜索模组...",
+    "search": "搜索",
+    "minecraft_version": "Minecraft版本",
+    "select_version": "选择版本",
+    "all_versions": "全部版本",
+    "mod_loader": "模组加载器",
+    "select_loader": "选择加载器",
+    "class": "类型",
+    "select_class": "选择类型",
+    "all_classes": "全部类型",
+    "category": "分类",
+    "select_category": "选择分类",
+    "sort_by": "排序",
+    "select_sort": "选择排序",
+    "no_results": "未找到结果",
+    "view_details": "查看详情"
   }
 }

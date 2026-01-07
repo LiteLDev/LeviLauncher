@@ -1693,7 +1693,6 @@ export const DownloadPage: React.FC = () => {
                     if (!hasBackend) return;
                     if (minecraft.CancelMsixvcDownload) {
                       minecraft.CancelMsixvcDownload();
-                      console.debug("cancel requested");
                     }
                     onClose?.();
                   }}

@@ -323,6 +323,8 @@ export const ModsPage: React.FC = () => {
                   succFiles.push(base);
                   continue;
                 }
+              } else {
+                continue;
               }
             }
             errPairs.push({ name: base, err });
@@ -383,6 +385,8 @@ export const ModsPage: React.FC = () => {
                   succFiles.push(base || p);
                   continue;
                 }
+              } else {
+                continue;
               }
             }
             errPairs.push({ name: base || p, err });
@@ -458,6 +462,8 @@ export const ModsPage: React.FC = () => {
                   succFiles.push(f.name);
                   continue;
                 }
+              } else {
+                continue;
               }
             }
             errPairs.push({ name: f.name, err });
@@ -522,6 +528,8 @@ export const ModsPage: React.FC = () => {
                   succFiles.push(f.name);
                   continue;
                 }
+              } else {
+                continue;
               }
             }
             errPairs.push({ name: f.name, err });

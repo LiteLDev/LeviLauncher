@@ -42,7 +42,11 @@ const lightModeColorMap: Record<string, string> = {
 
 type StyleState = { color?: string; bold?: boolean; italic?: boolean };
 
-export function renderMcText(text: string): React.ReactNode {
+type McTextProps = {
+  text: string;
+};
+
+export function McText({ text }: McTextProps): React.ReactElement {
   const { theme } = useTheme();
   const isLight = theme === "light";
   const activeColorMap = isLight ? lightModeColorMap : colorMap;
@@ -102,4 +106,8 @@ export function renderMcText(text: string): React.ReactNode {
     i = j;
   }
   return <>{parts.length ? parts : text}</>;
+}
+
+export function renderMcText(text: string): React.ReactNode {
+  return <McText text={text} />;
 }

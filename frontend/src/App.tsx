@@ -52,6 +52,8 @@ import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import AboutPage from "./pages/AboutPage";
 import OnboardingPage from "./pages/OnboardingPage";
+import CurseForgePage from "./pages/CurseForgePage";
+import CurseForgeModPage from "./pages/CurseForgeModPage";
 
 function App() {
   const [splashVisible, setSplashVisible] = useState(true);
@@ -543,6 +545,8 @@ function App() {
                   element={<VersionSettingsPage />}
                 />
                 <Route path="/mods" element={<ModsPage />} />
+                <Route path="/curseforge" element={<CurseForgePage />} />
+                <Route path="/curseforge/mod/:id" element={<CurseForgeModPage />} />
                 <Route path="/updating" element={<UpdatingPage />} />
                 <Route path="/onboarding" element={<OnboardingPage />} />
                 <Route path="/filemanager" element={<FileManagerPage />} />

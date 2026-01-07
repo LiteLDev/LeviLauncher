@@ -6,21 +6,25 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"strconv"
 	"strings"
 	"syscall"
-
-	"github.com/liteldev/LeviLauncher/internal/discord"
-	"github.com/wailsapp/wails/v3/pkg/application"
+	"time"
 
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/content"
+	"github.com/liteldev/LeviLauncher/internal/curseforge/client"
+	cursetypes "github.com/liteldev/LeviLauncher/internal/curseforge/client/types"
+	"github.com/liteldev/LeviLauncher/internal/discord"
+	"github.com/liteldev/LeviLauncher/internal/downloader"
 	"github.com/liteldev/LeviLauncher/internal/gameinput"
 	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/lang"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/mods"
+	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
@@ -28,8 +32,11 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/liteldev/LeviLauncher/internal/versions"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/sys/windows"
 )
+
+const curseForgeAPIKey = "$2a$10$QNbi2vCXdtq6WXROpLih9OSMR2KKpL47XoOHPPzK33OoKBp7Yzhbi"
 
 const (
 	EventGameInputEnsureStart      = "gameinput.ensure.start"
@@ -38,11 +45,46 @@ const (
 	EventGameInputDownloadProgress = "gameinput.download.progress"
 	EventGameInputDownloadDone     = "gameinput.download.done"
 	EventGameInputDownloadError    = "gameinput.download.error"
+
+	EventFileDownloadStatus   = "file_download_status"
+	EventFileDownloadProgress = "file_download_progress"
+	EventFileDownloadDone     = "file_download_done"
+	EventFileDownloadError    = "file_download_error"
+)
+
+type FileDownloadProgress struct {
+	Downloaded int64
+	Total      int64
+	Dest       string
+}
+
+var fileDownloader = downloader.NewManager(
+	downloader.Events{
+		Status:   EventFileDownloadStatus,
+		Progress: EventFileDownloadProgress,
+		Done:     EventFileDownloadDone,
+		Error:    EventFileDownloadError,
+		ProgressFactory: func(p downloader.DownloadProgress) any {
+			return FileDownloadProgress{Downloaded: p.Downloaded, Total: p.Total, Dest: p.Dest}
+		},
+	},
+	downloader.Options{Throttle: 250 * time.Millisecond, Resume: false, RemoveOnCancel: true},
 )
 
 type GameInputDownloadProgress struct {
 	Downloaded int64
 	Total      int64
+}
+
+func (a *Minecraft) StartFileDownload(url string, filename string) string {
+	tempDir := filepath.Join(os.TempDir(), "LeviLauncher", "Downloads")
+	_ = os.MkdirAll(tempDir, 0755)
+	dest := filepath.Join(tempDir, filename)
+	return fileDownloader.Start(a.ctx, url, dest)
+}
+
+func (a *Minecraft) CancelFileDownload() {
+	fileDownloader.Cancel()
 }
 
 func (a *Minecraft) GetDriveStats(root string) map[string]uint64 {
@@ -79,6 +121,38 @@ func (a *Minecraft) GetContentRoots(name string) types.ContentRoots {
 func (a *Minecraft) GetContentCounts(name string) ContentCounts {
 	c := mcservice.GetContentCounts(name)
 	return ContentCounts{Worlds: c.Worlds, ResourcePacks: c.ResourcePacks, BehaviorPacks: c.BehaviorPacks}
+}
+
+func (a *Minecraft) ListPacksForVersion(versionName string, player string) []packages.Pack {
+	roots := a.GetContentRoots(versionName)
+	if roots.ResourcePacks == "" && roots.BehaviorPacks == "" {
+		return []packages.Pack{}
+	}
+	var skinPacksDirs []string
+
+	if roots.ResourcePacks != "" {
+		sharedSkins := filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
+		if utils.DirExists(sharedSkins) {
+			skinPacksDirs = append(skinPacksDirs, sharedSkins)
+		}
+	}
+
+	if player != "" && roots.UsersRoot != "" {
+		userSkins := filepath.Join(roots.UsersRoot, player, "games", "com.mojang", "skin_packs")
+		if utils.DirExists(userSkins) {
+			skinPacksDirs = append(skinPacksDirs, userSkins)
+		}
+		userSkinsSimple := filepath.Join(roots.UsersRoot, player, "skin_packs")
+		if utils.DirExists(userSkinsSimple) {
+			skinPacksDirs = append(skinPacksDirs, userSkinsSimple)
+		}
+	}
+
+	packs, err := a.packManager.LoadPacksForVersion(versionName, roots.ResourcePacks, roots.BehaviorPacks, skinPacksDirs...)
+	if err != nil {
+		return []packages.Pack{}
+	}
+	return packs
 }
 
 func (a *Minecraft) LaunchVersionByName(name string) string {
@@ -168,11 +242,16 @@ func (a *Minecraft) DeleteVersionFolder(name string) string {
 }
 
 type Minecraft struct {
-	ctx context.Context
+	ctx         context.Context
+	curseClient client.CurseClient
+	packManager *packages.PackManager
 }
 
 func NewMinecraft() *Minecraft {
-	return &Minecraft{}
+	return &Minecraft{
+		curseClient: client.NewCurseClient(curseForgeAPIKey),
+		packManager: packages.NewPackManager(),
+	}
 }
 
 func (a *Minecraft) startup() {
@@ -614,6 +693,24 @@ func (a *Minecraft) WriteWorldLevelDatFieldsAt(worldDir string, args map[string]
 	return mcservice.WriteWorldLevelDatFieldsAt(worldDir, args)
 }
 
+func (a *Minecraft) WriteTempFile(name string, data []byte) string {
+	tempDir := filepath.Join(os.TempDir(), "LeviLauncher", "TempImports")
+	_ = os.MkdirAll(tempDir, 0755)
+	outPath := filepath.Join(tempDir, name)
+	if err := os.WriteFile(outPath, data, 0644); err != nil {
+		return ""
+	}
+	return outPath
+}
+
+func (a *Minecraft) RemoveTempFile(path string) string {
+	if path == "" {
+		return ""
+	}
+	_ = os.Remove(path)
+	return ""
+}
+
 func (a *Minecraft) ImportModZipPath(name string, path string, overwrite bool) string {
 	if strings.TrimSpace(path) == "" {
 		return "ERR_OPEN_ZIP"
@@ -753,6 +850,91 @@ func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }
 func (a *Minecraft) CanWriteToDir(path string) bool { return mcservice.CanWriteToDir(path) }
 
 func (a *Minecraft) ReconcileRegisteredFlags() { mcservice.ReconcileRegisteredFlags() }
+
+func (a *Minecraft) GetCurseForgeGameVersions(gameID string) ([]cursetypes.GameVersion, error) {
+	resp, err := a.curseClient.GetGameVersions(a.ctx, gameID)
+	if err != nil {
+		return nil, err
+	}
+	var result []cursetypes.GameVersion
+	seen := make(map[string]bool)
+	for _, dt := range resp.Data {
+		for _, v := range dt.Versions {
+			if !seen[v.Name] {
+				seen[v.Name] = true
+				result = append(result, v)
+			}
+		}
+	}
+	return cursetypes.GameVersions(result).Sort(), nil
+}
+
+func (a *Minecraft) GetCurseForgeCategories(gameID string) ([]cursetypes.Categories, error) {
+	resp, err := a.curseClient.GetCategories(a.ctx, gameID)
+	if err != nil {
+		return nil, err
+	}
+	return resp.Data, nil
+}
+
+func (a *Minecraft) SearchCurseForgeMods(gameID string, gameVersion string, classID int, categoryIDs []int, searchFilter string, sortField int, sortOrder int, pageSize int, index int) (*cursetypes.ModsResponse, error) {
+	var opts []client.ModsQueryOption
+	if gameID != "" {
+		opts = append(opts, client.WithModsGameID(gameID))
+	}
+	if gameVersion != "" {
+		opts = append(opts, client.WithModsGameVersion(gameVersion))
+	}
+
+	if classID > 0 {
+		opts = append(opts, client.WithModsClassID(strconv.Itoa(classID)))
+	}
+
+	if len(categoryIDs) > 0 {
+		var strIDs []string
+		for _, id := range categoryIDs {
+			strIDs = append(strIDs, strconv.Itoa(id))
+		}
+		jsonStr := "[" + strings.Join(strIDs, ",") + "]"
+		opts = append(opts, client.WithModsCategoryIDs(jsonStr))
+	}
+
+	if searchFilter != "" {
+		opts = append(opts, client.WithModsSeatchFilter(searchFilter))
+	}
+	if sortField > 0 {
+		opts = append(opts, client.WithModsSortField(sortField))
+	}
+	if sortOrder == 1 {
+		opts = append(opts, client.WithModsSortOrder("asc"))
+	} else {
+		opts = append(opts, client.WithModsSortOrder("desc"))
+	}
+	if pageSize > 0 {
+		opts = append(opts, client.WithModsPageSize(int64(pageSize)))
+	}
+	if index > 0 {
+		opts = append(opts, client.WithModsIndex(int64(index)))
+	}
+
+	return a.curseClient.GetMods(a.ctx, opts...)
+}
+
+func (a *Minecraft) GetCurseForgeModsByIDs(modIDs []int64) (*cursetypes.ModsResponse, error) {
+	req := &client.GetModsByIdsListRequest{
+		ModIds: modIDs,
+	}
+
+	return a.curseClient.GetModsByIDs(a.ctx, req)
+}
+
+func (a *Minecraft) GetCurseForgeModDescription(modID int64) (*cursetypes.StringResponse, error) {
+	return a.curseClient.GetModDescription(a.ctx, modID)
+}
+
+func (a *Minecraft) GetCurseForgeModFiles(modID int64) (*cursetypes.GetModFilesResponse, error) {
+	return a.curseClient.GetModFiles(a.ctx, modID)
+}
 
 func isProcessRunningAtPath(exePath string) bool {
 	p := strings.ToLower(filepath.Clean(strings.TrimSpace(exePath)))

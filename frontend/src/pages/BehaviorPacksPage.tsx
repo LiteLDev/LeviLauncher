@@ -23,12 +23,11 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
   GetContentRoots,
-  ListDir,
+  ListPacksForVersion,
   OpenPathDir,
 } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "../utils/currentVersion";
-import { listDirectories } from "../utils/fs";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { renderMcText } from "../utils/mcformat";
 
@@ -119,7 +118,10 @@ export default function BehaviorPacksPage() {
           });
           setEntries([]);
         } else {
-          const r = await GetContentRoots(name);
+          const [r, allPacks] = await Promise.all([
+            GetContentRoots(name),
+            ListPacksForVersion(name, ""),
+          ]);
           const safe = r || {
             base: "",
             usersRoot: "",
@@ -129,21 +131,27 @@ export default function BehaviorPacksPage() {
             isPreview: false,
           };
           setRoots(safe);
-          const dirs = await listDirectories(safe.behaviorPacks);
-          setEntries(dirs);
+
+          const filtered = (allPacks || []).filter(
+            (p) => p.manifest.pack_type === 4
+          );
+
+          setEntries([]); 
           const basic = await Promise.all(
-            dirs.map(async (d) => {
+            filtered.map(async (p) => {
               try {
-                const info = await (minecraft as any)?.GetPackInfo?.(d.path);
-                return { ...info, path: d.path };
+                const info = await (minecraft as any)?.GetPackInfo?.(p.path);
+                return { ...info, path: p.path };
               } catch {
                 return {
-                  name: d.name,
-                  description: "",
-                  version: "",
+                  name: p.manifest.name,
+                  description: p.manifest.description,
+                  version: p.manifest.identity.version
+                    ? `${p.manifest.identity.version.major}.${p.manifest.identity.version.minor}.${p.manifest.identity.version.patch}`
+                    : "",
                   minEngineVersion: "",
                   iconDataUrl: "",
-                  path: d.path,
+                  path: p.path,
                 };
               }
             })

@@ -3,6 +3,7 @@ package content
 import (
 	"archive/zip"
 	"bytes"
+	crand "crypto/rand"
 	"encoding/base64"
 	"encoding/binary"
 	"fmt"
@@ -324,6 +325,50 @@ func findManifestDir(dir string) string {
 	return ""
 }
 
+func findPackPathsByUuid(uuid string, dirs ...string) []string {
+	if uuid == "" {
+		return nil
+	}
+	var paths []string
+	for _, root := range dirs {
+		if strings.TrimSpace(root) == "" || !utils.DirExists(root) {
+			continue
+		}
+		entries, err := os.ReadDir(root)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if !e.IsDir() {
+				continue
+			}
+			p := filepath.Join(root, e.Name())
+			mfPath := filepath.Join(p, "manifest.json")
+			if !utils.FileExists(mfPath) {
+				continue
+			}
+			b, err := os.ReadFile(mfPath)
+			if err != nil {
+				continue
+			}
+			var mf bedrockManifest
+			if err := json.Unmarshal(utils.JsonCompatBytes(b), &mf); err != nil {
+				continue
+			}
+			if mf.Header.Uuid == uuid {
+				paths = append(paths, p)
+			}
+		}
+	}
+	return paths
+}
+
+func generateRandomPackName() string {
+	b := make([]byte, 8)
+	_, _ = crand.Read(b)
+	return base64.URLEncoding.EncodeToString(b)
+}
+
 func ImportMcpackToDirs(data []byte, archiveName string, resDir string, bpDir string, overwrite bool) string {
 	if len(data) == 0 || (strings.TrimSpace(resDir) == "" && strings.TrimSpace(bpDir) == "") {
 		return "ERR_OPEN_ZIP"
@@ -356,17 +401,23 @@ func ImportMcpackToDirs(data []byte, archiveName string, resDir string, bpDir st
 	if manifestDir == "" && len(manifest.Modules) == 0 {
 		return "ERR_MANIFEST_NOT_FOUND"
 	}
-	baseName := strings.TrimSpace(archiveName)
-	if baseName != "" {
-		baseName = stripKnownArchiveExt(baseName)
+
+	existing := findPackPathsByUuid(manifest.Header.Uuid, resDir, bpDir)
+	if len(existing) > 0 {
+		if !overwrite {
+			return "ERR_DUPLICATE_UUID"
+		}
+		for _, p := range existing {
+			if err := utils.RemoveDir(p); err != nil {
+				return "ERR_WRITE_FILE"
+			}
+		}
 	}
-	baseName = strings.ReplaceAll(baseName, ".", "_")
+
+	baseName := generateRandomPackName()
 	baseName = utils.SanitizeFilename(baseName)
 	if strings.TrimSpace(baseName) == "" {
 		baseName = "pack"
-	}
-	if strings.TrimSpace(baseName) == "" || baseName == "." || baseName == string(os.PathSeparator) {
-		return "ERR_INVALID_PACKAGE"
 	}
 	targets := make([]string, 0, 2)
 	hasRes := false
@@ -503,17 +554,22 @@ func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir s
 	if manifestDir == "" && len(manifest.Modules) == 0 {
 		return "ERR_MANIFEST_NOT_FOUND"
 	}
-	baseName := strings.TrimSpace(archiveName)
-	if baseName != "" {
-		baseName = stripKnownArchiveExt(baseName)
+	existing := findPackPathsByUuid(manifest.Header.Uuid, resDir, bpDir, skinDir)
+	if len(existing) > 0 {
+		if !overwrite {
+			return "ERR_DUPLICATE_UUID"
+		}
+		for _, p := range existing {
+			if err := utils.RemoveDir(p); err != nil {
+				return "ERR_WRITE_FILE"
+			}
+		}
 	}
-	baseName = strings.ReplaceAll(baseName, ".", "_")
+
+	baseName := generateRandomPackName()
 	baseName = utils.SanitizeFilename(baseName)
 	if strings.TrimSpace(baseName) == "" {
 		baseName = "pack"
-	}
-	if strings.TrimSpace(baseName) == "" || baseName == "." || baseName == string(os.PathSeparator) {
-		return "ERR_INVALID_PACKAGE"
 	}
 	targets := make([]string, 0, 3)
 	hasAny := false
@@ -656,8 +712,19 @@ func ImportMcaddonToDirs2(data []byte, resDir string, bpDir string, skinDir stri
 		}
 	}
 	for _, p := range packs {
-		baseName := utils.SanitizeFilename(path.Base(p.dir))
-		if strings.TrimSpace(baseName) == "" || baseName == "." || baseName == string(os.PathSeparator) {
+		existing := findPackPathsByUuid(p.manifest.Header.Uuid, resDir, bpDir, skinDir)
+		if len(existing) > 0 {
+			if !overwrite {
+				return "ERR_DUPLICATE_UUID"
+			}
+			for _, ex := range existing {
+				_ = utils.RemoveDir(ex)
+			}
+		}
+
+		baseName := generateRandomPackName()
+		baseName = utils.SanitizeFilename(baseName)
+		if strings.TrimSpace(baseName) == "" {
 			baseName = "pack"
 		}
 		targets := make([]string, 0, 3)
@@ -916,16 +983,11 @@ func ImportMcworldToDir(data []byte, archiveName string, worldsDir string, overw
 	if strings.TrimSpace(baseName) == "" || baseName == "." || baseName == string(os.PathSeparator) {
 		baseName = "world"
 	}
-	targetRoot := filepath.Join(worldsDir, utils.SanitizeFilename(baseName))
-	if utils.DirExists(targetRoot) {
-		if overwrite {
-			if err := utils.RemoveDir(targetRoot); err != nil {
-				return "ERR_WRITE_FILE"
-			}
-		} else {
-			return "ERR_DUPLICATE_FOLDER"
-		}
+	randomDir := generateRandomPackName()
+	if strings.TrimSpace(randomDir) == "" {
+		randomDir = "world"
 	}
+	targetRoot := filepath.Join(worldsDir, randomDir)
 	for _, f := range zr.File {
 		nameInZip := normalizeZipEntryName(f.Name)
 		var relInDir string

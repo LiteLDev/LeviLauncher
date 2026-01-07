@@ -800,5 +800,29 @@
       "cancel": "Cancel",
       "save": "Save and Finish"
     }
+  },
+  "curseforgecard": {
+    "title": "CurseForge",
+    "content": "Browse and download mods",
+    "browse": "Browse CurseForge"
+  },
+  "curseforge": {
+    "title": "CurseForge",
+    "search_placeholder": "Search mods...",
+    "search": "Search",
+    "minecraft_version": "Minecraft Version",
+    "select_version": "Select version",
+    "all_versions": "All Versions",
+    "mod_loader": "Mod Loader",
+    "select_loader": "Select loader",
+    "class": "Type",
+    "select_class": "Select type",
+    "all_classes": "All Types",
+    "category": "Category",
+    "select_category": "Select category",
+    "sort_by": "Sort By",
+    "select_sort": "Select sort",
+    "no_results": "No results found",
+    "view_details": "View Details"
   }
 }

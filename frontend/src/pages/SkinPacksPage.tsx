@@ -23,12 +23,11 @@ import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   GetContentRoots,
-  ListDir,
+  ListPacksForVersion,
   OpenPathDir,
 } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "../utils/currentVersion";
-import { listDirectories } from "../utils/fs";
 import { listPlayers } from "../utils/content";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { renderMcText } from "../utils/mcformat";
@@ -36,7 +35,7 @@ import { renderMcText } from "../utils/mcformat";
 export default function SkinPacksPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const location = useLocation() as any;
+  const location = useLocation();
   const hasBackend = minecraft !== undefined;
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string>("");
@@ -102,105 +101,8 @@ export default function SkinPacksPage() {
   const lastScrollTopRef = React.useRef<number>(0);
   const restorePendingRef = React.useRef<boolean>(false);
 
-  const loadSkinPacks = async (player: string, r: types.ContentRoots) => {
-    if (!hasBackend || !r?.usersRoot || !player) {
-      setPacks([]);
-      return;
-    }
-    const sp = `${r.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
-    try {
-      const dirs = await listDirectories(sp);
-      const basic = await Promise.all(
-        dirs.map(async (d) => {
-          try {
-            const info = await (minecraft as any)?.GetPackInfo?.(d.path);
-            return { ...info, path: d.path };
-          } catch {
-            return {
-              name: d.name,
-              description: "",
-              version: "",
-              minEngineVersion: "",
-              iconDataUrl: "",
-              path: d.path,
-            };
-          }
-        })
-      );
-      const withTime = await Promise.all(
-        basic.map(async (p: any) => {
-          let modTime = 0;
-          try {
-            if (typeof (minecraft as any).GetPathModTime === "function") {
-              modTime = await (minecraft as any).GetPathModTime(p.path);
-            }
-          } catch {}
-          return { ...p, modTime };
-        })
-      );
-      setPacks(withTime);
-      Promise.resolve()
-        .then(async () => {
-          const readCache = () => {
-            try {
-              return JSON.parse(
-                localStorage.getItem("content.size.cache") || "{}"
-              );
-            } catch {
-              return {};
-            }
-          };
-          const writeCache = (c: any) => {
-            try {
-              localStorage.setItem("content.size.cache", JSON.stringify(c));
-            } catch {}
-          };
-          const cache = readCache();
-          const limit = 4;
-          const items = withTime.slice();
-          for (let i = 0; i < items.length; i += limit) {
-            const chunk = items.slice(i, i + limit);
-            await Promise.all(
-              chunk.map(async (p: any) => {
-                const key = p.path;
-                const c = cache[key];
-                if (
-                  c &&
-                  typeof c.size === "number" &&
-                  Number(c.modTime || 0) === Number(p.modTime || 0)
-                ) {
-                  setPacks((prev) =>
-                    prev.map((it: any) =>
-                      it.path === key ? { ...it, size: c.size } : it
-                    )
-                  );
-                } else {
-                  let size = 0;
-                  try {
-                    if (typeof (minecraft as any).GetPathSize === "function") {
-                      size = await (minecraft as any).GetPathSize(key);
-                    }
-                  } catch {}
-                  cache[key] = { modTime: p.modTime || 0, size };
-                  setPacks((prev) =>
-                    prev.map((it: any) =>
-                      it.path === key ? { ...it, size } : it
-                    )
-                  );
-                }
-              })
-            );
-            writeCache(cache);
-          }
-        })
-        .catch(() => {});
-    } catch {
-      setPacks([]);
-    }
-  };
-
   const refreshAll = React.useCallback(
-    async (silent?: boolean) => {
+    async (silent?: boolean, forcePlayer?: string) => {
       if (!silent) setLoading(true);
       setError("");
       const name = readCurrentVersionName();
@@ -229,29 +131,127 @@ export default function SkinPacksPage() {
             isPreview: false,
           };
           setRoots(safe);
-          const names = await listPlayers(safe.usersRoot);
-          setPlayers(names);
-          const passedPlayer = location?.state?.player || "";
-          const nextPlayer = names.includes(passedPlayer) ? passedPlayer : (names.includes(selectedPlayer) ? selectedPlayer : (names[0] || ""));
-          setSelectedPlayer(nextPlayer);
-          await loadSkinPacks(nextPlayer, safe);
+
+          // Player handling
+          let nextPlayer = forcePlayer;
+          if (nextPlayer === undefined) {
+             const names = await listPlayers(safe.usersRoot);
+             setPlayers(names);
+             const passedPlayer = location?.state?.player || "";
+             nextPlayer = (selectedPlayer && names.includes(selectedPlayer))
+                ? selectedPlayer
+                : (names.includes(passedPlayer) ? passedPlayer : (names[0] || ""));
+             setSelectedPlayer(nextPlayer);
+          }
+
+          const allPacks = await ListPacksForVersion(name, nextPlayer || "");
+          
+          const filtered = (allPacks || []).filter(
+            (p) => p.manifest.pack_type === 7
+          );
+
+          const basic = await Promise.all(
+            filtered.map(async (p) => {
+              try {
+                const info = await (minecraft as any)?.GetPackInfo?.(p.path);
+                return { ...info, path: p.path };
+              } catch {
+                return {
+                  name: p.manifest.name,
+                  description: p.manifest.description,
+                  version: p.manifest.identity.version
+                    ? `${p.manifest.identity.version.major}.${p.manifest.identity.version.minor}.${p.manifest.identity.version.patch}`
+                    : "",
+                  minEngineVersion: "",
+                  iconDataUrl: "",
+                  path: p.path,
+                };
+              }
+            })
+          );
+          const withTime = await Promise.all(
+            basic.map(async (p: any) => {
+              let modTime = 0;
+              try {
+                if (typeof (minecraft as any).GetPathModTime === "function") {
+                  modTime = await (minecraft as any).GetPathModTime(p.path);
+                }
+              } catch {}
+              return { ...p, modTime };
+            })
+          );
+          setPacks(withTime);
+          Promise.resolve()
+            .then(async () => {
+              const readCache = () => {
+                try {
+                  return JSON.parse(
+                    localStorage.getItem("content.size.cache") || "{}"
+                  );
+                } catch {
+                  return {};
+                }
+              };
+              const writeCache = (c: any) => {
+                try {
+                  localStorage.setItem("content.size.cache", JSON.stringify(c));
+                } catch {}
+              };
+              const cache = readCache();
+              const limit = 4;
+              const items = withTime.slice();
+              for (let i = 0; i < items.length; i += limit) {
+                const chunk = items.slice(i, i + limit);
+                await Promise.all(
+                  chunk.map(async (p: any) => {
+                    const key = p.path;
+                    const c = cache[key];
+                    if (
+                      c &&
+                      typeof c.size === "number" &&
+                      Number(c.modTime || 0) === Number(p.modTime || 0)
+                    ) {
+                      setPacks((prev) =>
+                        prev.map((it: any) =>
+                          it.path === key ? { ...it, size: c.size } : it
+                        )
+                      );
+                    } else {
+                      let size = 0;
+                      try {
+                        if (typeof (minecraft as any).GetPathSize === "function") {
+                          size = await (minecraft as any).GetPathSize(key);
+                        }
+                      } catch {}
+                      cache[key] = { modTime: p.modTime || 0, size };
+                      setPacks((prev) =>
+                        prev.map((it: any) =>
+                          it.path === key ? { ...it, size } : it
+                        )
+                      );
+                    }
+                  })
+                );
+                writeCache(cache);
+              }
+            })
+            .catch(() => {});
         }
-      } catch (e) {
-        setError(
-          t("contentpage.error_resolve_paths", {
-            defaultValue: "无法解析内容路径。",
-          }) as string
-        );
+      } catch (e: any) {
+        setError(e.toString());
       } finally {
         if (!silent) setLoading(false);
       }
     },
-    [hasBackend, t, selectedPlayer, location?.state?.player]
+    [hasBackend, location?.state?.player, selectedPlayer]
   );
 
   React.useEffect(() => {
     refreshAll();
-  }, []);
+  }, [refreshAll]);
+
+  // Old loadSkinPacks removed
+
   React.useEffect(() => {
     try {
       localStorage.setItem(
@@ -260,6 +260,12 @@ export default function SkinPacksPage() {
       );
     } catch {}
   }, [sortKey, sortAsc]);
+
+  const onChangePlayer = async (player: string) => {
+    setSelectedPlayer(player);
+    await refreshAll(false, player);
+  };
+
   React.useLayoutEffect(() => {
     if (!restorePendingRef.current) return;
     requestAnimationFrame(() => {
@@ -291,11 +297,6 @@ export default function SkinPacksPage() {
     if (!v) return "";
     const d = new Date(v * 1000);
     return d.toLocaleString();
-  };
-
-  const onChangePlayer = async (player: string) => {
-    setSelectedPlayer(player);
-    await loadSkinPacks(player, roots);
   };
 
   return (
@@ -472,11 +473,14 @@ export default function SkinPacksPage() {
               size="sm"
               variant="bordered"
               onPress={async () => {
-                if (!hasBackend || !roots.usersRoot || !selectedPlayer) return;
-                const sp = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\skin_packs`;
+                if (!hasBackend || !roots.resourcePacks) return;
+                let sp = roots.resourcePacks.replace(/resource_packs$/, "skin_packs");
+                if (selectedPlayer && roots.usersRoot) {
+                   sp = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\skin_packs`;
+                }
                 await OpenPathDir(sp);
               }}
-              isDisabled={!roots.usersRoot || !selectedPlayer || !hasBackend}
+              isDisabled={!roots.resourcePacks || !hasBackend}
             >
               {t("common.open", { defaultValue: "打开" })}
             </Button>

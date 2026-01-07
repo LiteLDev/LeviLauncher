@@ -255,27 +255,6 @@ export default function ContentPage() {
       return String(e?.message || "IMPORT_ERROR");
     }
   };
-  const postImportMcworld = async (
-    name: string,
-    player: string,
-    file: File,
-    overwrite: boolean
-  ): Promise<string> => {
-    try {
-      const buf = await file.arrayBuffer();
-      const bytes = Array.from(new Uint8Array(buf));
-      const err = await (minecraft as any)?.ImportMcworld?.(
-        name,
-        player,
-        file.name,
-        bytes,
-        overwrite
-      );
-      return String(err || "");
-    } catch (e: any) {
-      return String(e?.message || "IMPORT_ERROR");
-    }
-  };
 
   const resolveImportError = (err: string): string => {
     const code = String(err || "").trim();
@@ -357,6 +336,12 @@ export default function ContentPage() {
         p?.toLowerCase().endsWith(".mcworld")
       );
       let hasSkin = false;
+      if (paths.length > 0) {
+        setImporting(true);
+        const firstBase =
+          paths[0].replace(/\\/g, "/").split("/").pop() || paths[0];
+        setCurrentFile(firstBase);
+      }
       for (const p of paths) {
         if (p?.toLowerCase().endsWith(".mcpack")) {
           const isSkin = await (minecraft as any)?.IsMcpackSkinPackPath?.(p);
@@ -410,7 +395,10 @@ export default function ContentPage() {
             err = await (minecraft as any)?.ImportMcpackPath?.(name, p, false);
           }
           if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
+            if (
+              String(err) === "ERR_DUPLICATE_FOLDER" ||
+              String(err) === "ERR_DUPLICATE_UUID"
+            ) {
               dupNameRef.current = base;
               await new Promise<void>((r) => setTimeout(r, 0));
               dupOnOpen();
@@ -420,8 +408,7 @@ export default function ContentPage() {
               if (ok) {
                 if (
                   playerToUse &&
-                  typeof (minecraft as any)?.ImportMcpackPathWithPlayer ===
-                    "function"
+                  typeof (minecraft as any)?.ImportMcpackPathWithPlayer === "function"
                 ) {
                   err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
                     name,
@@ -440,6 +427,8 @@ export default function ContentPage() {
                   succFiles.push(base);
                   continue;
                 }
+              } else {
+                continue;
               }
             }
             errPairs.push({ name: base, err });
@@ -469,7 +458,10 @@ export default function ContentPage() {
             err = await (minecraft as any)?.ImportMcaddonPath?.(name, p, false);
           }
           if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
+            if (
+              String(err) === "ERR_DUPLICATE_FOLDER" ||
+              String(err) === "ERR_DUPLICATE_UUID"
+            ) {
               dupNameRef.current = base;
               await new Promise<void>((r) => setTimeout(r, 0));
               dupOnOpen();
@@ -499,6 +491,8 @@ export default function ContentPage() {
                   succFiles.push(base);
                   continue;
                 }
+              } else {
+                continue;
               }
             }
             errPairs.push({ name: base, err });
@@ -523,7 +517,10 @@ export default function ContentPage() {
             false
           );
           if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
+            if (
+              String(err) === "ERR_DUPLICATE_FOLDER" ||
+              String(err) === "ERR_DUPLICATE_UUID"
+            ) {
               dupNameRef.current = base;
               await new Promise<void>((r) => setTimeout(r, 0));
               dupOnOpen();
@@ -541,6 +538,8 @@ export default function ContentPage() {
                   succFiles.push(base);
                   continue;
                 }
+              } else {
+                continue;
               }
             }
             errPairs.push({ name: base, err });
@@ -585,6 +584,9 @@ export default function ContentPage() {
             f.name.toLowerCase().endsWith(".mcpack") ||
             f.name.toLowerCase().endsWith(".mcaddon"))
       );
+      if (!files.length) return;
+      setImporting(true);
+      setCurrentFile(files[0].name);
       const hasWorld = files.some((f) =>
         f?.name?.toLowerCase().endsWith(".mcworld")
       );
@@ -887,35 +889,91 @@ export default function ContentPage() {
         try {
           for (const f of filesToImport) {
             const lower = f.name.toLowerCase();
-            if (lower.endsWith(".mcpack")) {
-              if (!started) {
-                setImporting(true);
-                started = true;
-              }
-              setCurrentFile(f.name);
-              const buf = await f.arrayBuffer();
-              const bytes = Array.from(new Uint8Array(buf));
+            if (
+              !lower.endsWith(".mcpack") &&
+              !lower.endsWith(".mcaddon") &&
+              !lower.endsWith(".mcworld")
+            ) {
+              continue;
+            }
+
+            if (!started) {
+              setImporting(true);
+              started = true;
+            }
+            setCurrentFile(f.name);
+
+            // Upload to temp file first to avoid re-transmitting bytes
+            const buf = await f.arrayBuffer();
+            const bytes = Array.from(new Uint8Array(buf));
+            const tempPath = await (minecraft as any)?.WriteTempFile?.(
+              f.name,
+              bytes
+            );
+
+            if (!tempPath) {
+              errPairs.push({ name: f.name, err: "ERR_WRITE_FILE" });
+              continue;
+            }
+
+            try {
               let err = "";
-              if (
-                playerToUse &&
-                typeof (minecraft as any)?.ImportMcpackWithPlayer === "function"
-              ) {
-                err = await (minecraft as any)?.ImportMcpackWithPlayer?.(
+              if (lower.endsWith(".mcpack")) {
+                if (
+                  playerToUse &&
+                  typeof (minecraft as any)?.ImportMcpackPathWithPlayer ===
+                    "function"
+                ) {
+                  err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
+                    currentVersionName,
+                    playerToUse,
+                    tempPath,
+                    false
+                  );
+                } else {
+                  err = await (minecraft as any)?.ImportMcpackPath?.(
+                    currentVersionName,
+                    tempPath,
+                    false
+                  );
+                }
+              } else if (lower.endsWith(".mcaddon")) {
+                if (
+                  playerToUse &&
+                  typeof (minecraft as any)?.ImportMcaddonPathWithPlayer ===
+                    "function"
+                ) {
+                  err = await (minecraft as any)?.ImportMcaddonPathWithPlayer?.(
+                    currentVersionName,
+                    playerToUse,
+                    tempPath,
+                    false
+                  );
+                } else {
+                  err = await (minecraft as any)?.ImportMcaddonPath?.(
+                    currentVersionName,
+                    tempPath,
+                    false
+                  );
+                }
+              } else if (lower.endsWith(".mcworld")) {
+                if (!playerToUse) {
+                  errPairs.push({ name: f.name, err: "ERR_NO_PLAYER" });
+                  continue;
+                }
+                err = await (minecraft as any)?.ImportMcworldPath?.(
                   currentVersionName,
                   playerToUse,
-                  f.name,
-                  bytes,
-                  false
-                );
-              } else {
-                err = await (minecraft as any)?.ImportMcpack?.(
-                  currentVersionName,
-                  bytes,
+                  tempPath,
                   false
                 );
               }
+
               if (err) {
-                if (String(err) === "ERR_DUPLICATE_FOLDER") {
+                if (
+                  String(err) === "ERR_DUPLICATE_FOLDER" ||
+                  String(err) === "ERR_DUPLICATE_UUID"
+                ) {
                   dupNameRef.current = f.name;
                   await new Promise<void>((r) => setTimeout(r, 0));
                   dupOnOpen();
@@ -923,139 +981,67 @@ export default function ContentPage() {
                     dupResolveRef.current = resolve;
                   });
                   if (ok) {
-                    if (
-                      playerToUse &&
-                      typeof (minecraft as any)?.ImportMcpackWithPlayer ===
-                        "function"
-                    ) {
-                      err = await (minecraft as any)?.ImportMcpackWithPlayer?.(
+                    if (lower.endsWith(".mcpack")) {
+                      if (
+                        playerToUse &&
+                        typeof (minecraft as any)
+                          ?.ImportMcpackPathWithPlayer === "function"
+                      ) {
+                        err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
+                          currentVersionName,
+                          playerToUse,
+                          tempPath,
+                          true
+                        );
+                      } else {
+                        err = await (minecraft as any)?.ImportMcpackPath?.(
+                          currentVersionName,
+                          tempPath,
+                          true
+                        );
+                      }
+                    } else if (lower.endsWith(".mcaddon")) {
+                      if (
+                        playerToUse &&
+                        typeof (minecraft as any)
+                          ?.ImportMcaddonPathWithPlayer === "function"
+                      ) {
+                        err = await (minecraft as any)?.ImportMcaddonPathWithPlayer?.(
+                          currentVersionName,
+                          playerToUse,
+                          tempPath,
+                          true
+                        );
+                      } else {
+                        err = await (minecraft as any)?.ImportMcaddonPath?.(
+                          currentVersionName,
+                          tempPath,
+                          true
+                        );
+                      }
+                    } else if (lower.endsWith(".mcworld")) {
+                      err = await (minecraft as any)?.ImportMcworldPath?.(
                         currentVersionName,
                         playerToUse,
-                        f.name,
-                        bytes,
-                        true
-                      );
-                    } else {
-                      err = await (minecraft as any)?.ImportMcpack?.(
-                        currentVersionName,
-                        bytes,
+                        tempPath,
                         true
                       );
                     }
+
                     if (!err) {
                       succFiles.push(f.name);
                       continue;
                     }
+                  } else {
+                    continue;
                   }
                 }
                 errPairs.push({ name: f.name, err });
                 continue;
               }
               succFiles.push(f.name);
-            } else if (lower.endsWith(".mcaddon")) {
-              if (!started) {
-                setImporting(true);
-                started = true;
-              }
-              setCurrentFile(f.name);
-              const buf = await f.arrayBuffer();
-              const bytes = Array.from(new Uint8Array(buf));
-              let err = "";
-              if (
-                playerToUse &&
-                typeof (minecraft as any)?.ImportMcaddonWithPlayer === "function"
-              ) {
-                err = await (minecraft as any)?.ImportMcaddonWithPlayer?.(
-                  currentVersionName,
-                  playerToUse,
-                  bytes,
-                  false
-                );
-              } else {
-                err = await (minecraft as any)?.ImportMcaddon?.(
-                  currentVersionName,
-                  bytes,
-                  false
-                );
-              }
-              if (err) {
-                if (String(err) === "ERR_DUPLICATE_FOLDER") {
-                  dupNameRef.current = f.name;
-                  await new Promise<void>((r) => setTimeout(r, 0));
-                  dupOnOpen();
-                  const ok = await new Promise<boolean>((resolve) => {
-                    dupResolveRef.current = resolve;
-                  });
-                  if (ok) {
-                    if (
-                      playerToUse &&
-                      typeof (minecraft as any)?.ImportMcaddonWithPlayer ===
-                        "function"
-                    ) {
-                      err = await (minecraft as any)?.ImportMcaddonWithPlayer?.(
-                        currentVersionName,
-                        playerToUse,
-                        bytes,
-                        true
-                      );
-                    } else {
-                      err = await (minecraft as any)?.ImportMcaddon?.(
-                        currentVersionName,
-                        bytes,
-                        true
-                      );
-                    }
-                    if (!err) {
-                      succFiles.push(f.name);
-                      continue;
-                    }
-                  }
-                }
-                errPairs.push({ name: f.name, err });
-                continue;
-              }
-              succFiles.push(f.name);
-            } else if (lower.endsWith(".mcworld")) {
-              if (!playerToUse) {
-                errPairs.push({ name: f.name, err: "ERR_NO_PLAYER" });
-                continue;
-              }
-              if (!started) {
-                setImporting(true);
-                started = true;
-              }
-              setCurrentFile(f.name);
-              let err = await postImportMcworld(
-                currentVersionName,
-                playerToUse,
-                f,
-                false
-              );
-              if (err) {
-                if (String(err) === "ERR_DUPLICATE_FOLDER") {
-                  dupNameRef.current = f.name;
-                  await new Promise<void>((r) => setTimeout(r, 0));
-                  dupOnOpen();
-                  const ok = await new Promise<boolean>((resolve) => {
-                    dupResolveRef.current = resolve;
-                  });
-                  if (ok) {
-                    err = await postImportMcworld(
-                      currentVersionName,
-                      playerToUse,
-                      f,
-                      true
-                    );
-                    if (!err) {
-                      succFiles.push(f.name);
-                      continue;
-                    }
-                  }
-                }
-                errPairs.push({ name: f.name, err });
-                continue;
-              }
-              succFiles.push(f.name);
+            } finally {
+              await (minecraft as any)?.RemoveTempFile?.(tempPath);
             }
           }
           await refreshAll(playerToUse);

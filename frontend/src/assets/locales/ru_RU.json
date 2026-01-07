@@ -799,5 +799,29 @@
         "cancel": "Отмена",
         "save": "Сохранить и завершить"
       }
+    },
+    "curseforgecard": {
+      "title": "CurseForge",
+      "content": "Просмотр и загрузка модов",
+      "browse": "Просмотреть CurseForge"
+    },
+    "curseforge": {
+      "title": "CurseForge",
+      "search_placeholder": "Поиск модов...",
+      "search": "Поиск",
+      "minecraft_version": "Версия Minecraft",
+      "select_version": "Выберите версию",
+      "all_versions": "Все версии",
+      "mod_loader": "Загрузчик модов",
+      "select_loader": "Выберите загрузчик",
+      "class": "Тип",
+      "select_class": "Выберите тип",
+      "all_classes": "Все типы",
+      "category": "Категория",
+      "select_category": "Выберите категорию",
+      "sort_by": "Сортировка",
+      "select_sort": "Выберите сортировку",
+      "no_results": "Результаты не найдены",
+      "view_details": "Подробнее"
     }
 }

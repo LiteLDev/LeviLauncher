@@ -125,12 +125,12 @@ func main() {
 	if !config.GetDiscordRPCDisabled() {
 		discord.Init()
 	}
-	mc := Minecraft{}
+	mc := NewMinecraft()
 	app := application.New(application.Options{
 		Name:        "LeviLauncher",
 		Description: "A Minecraft Launcher",
 		Services: []application.Service{
-			application.NewService(&mc),
+			application.NewService(mc),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),

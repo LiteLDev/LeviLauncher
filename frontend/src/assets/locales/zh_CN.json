@@ -806,6 +806,9 @@
     "content": "浏览和下载模组",
     "browse": "浏览CurseForge"
   },
+  "contentdownload": {
+    "title": "内容下载"
+  },
   "curseforge": {
     "title": "CurseForge",
     "search_placeholder": "搜索模组...",
@@ -813,8 +816,8 @@
     "minecraft_version": "Minecraft版本",
     "select_version": "选择版本",
     "all_versions": "全部版本",
-    "mod_loader": "模组加载器",
-    "select_loader": "选择加载器",
+    "load_error": "加载数据失败，请重试",
+    "search_error": "搜索失败，请重试",
     "class": "类型",
     "select_class": "选择类型",
     "all_classes": "全部类型",
@@ -823,6 +826,53 @@
     "sort_by": "排序",
     "select_sort": "选择排序",
     "no_results": "未找到结果",
-    "view_details": "查看详情"
+    "by_author": "作者：{{author}}",
+    "no_description": "暂无简介。",
+    "downloads": "下载量",
+    "updated": "更新时间",
+    "created": "创建时间",
+    "size": "大小",
+    "game_version": "游戏版本",
+    "mod_not_found": "未找到模组",
+    "go_back": "返回",
+    "by": "作者",
+    "updated_date": "更新于 {{date}}",
+    "download_count": "{{count}} 次下载",
+    "install_action": "安装",
+    "website": "官网",
+    "source": "源码",
+    "issues": "反馈",
+    "share": "分享",
+    "no_download_url": "无下载链接",
+    "no_files_found": "未找到文件",
+    "sort": {
+      "featured": "精选",
+      "popularity": "热度",
+      "last_updated": "最近更新",
+      "creation_date": "创建日期",
+      "total_downloads": "总下载量"
+    },
+    "install": {
+      "downloading_title": "下载内容",
+      "select_version_title": "选择游戏版本",
+      "select_player_title": "选择玩家",
+      "importing_title": "正在导入",
+      "success_title": "成功",
+      "error_title": "错误",
+      "downloading_body": "正在下载文件...",
+      "select_version_body": "请选择要导入到的游戏版本：",
+      "local_installation": "本地安装",
+      "select_version_placeholder": "选择版本",
+      "registered": "已注册",
+      "select_player_body": "此内容需要选择玩家：",
+      "player_label": "玩家",
+      "select_player_placeholder": "选择玩家",
+      "importing_body": "正在导入内容...",
+      "success_msg": "导入成功",
+      "success_desc": "内容已成功导入到选定的版本。",
+      "failed_msg": "导入失败",
+      "next": "下一步",
+      "close": "关闭"
+    }
   }
 }

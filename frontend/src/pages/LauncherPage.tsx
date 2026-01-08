@@ -39,7 +39,7 @@ import {
   FaCheckCircle,
 } from "react-icons/fa";
 import { ModCard } from "../components/ModdedCard";
-import { CurseForgeCard } from "../components/CurseForgeCard";
+import { ContentDownloadCard } from "../components/ContentDownloadCard";
 import {
   ModdedChip,
   ReleaseChip,
@@ -1705,7 +1705,7 @@ export const LauncherPage = (args: any) => {
           </Card>
         </motion.div>
 
-        <div className="grid items-stretch gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="grid items-stretch gap-3 grid-cols-1 sm:grid-cols-2">
           <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
@@ -1721,14 +1721,6 @@ export const LauncherPage = (args: any) => {
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.15 }}
-          >
-            <CurseForgeCard />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.2 }}
           >
             <Card className="rounded-2xl shadow-md h-full min-h-[160px] bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/30">
               <CardBody className="relative p-4 sm:p-5 flex flex-col gap-3 text-left">
@@ -1816,6 +1808,14 @@ export const LauncherPage = (args: any) => {
                 </div>
               </CardBody>
             </Card>
+          </motion.div>
+
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.2 }}
+          >
+            <ContentDownloadCard />
           </motion.div>
         </div>
 

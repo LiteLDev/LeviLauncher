@@ -22,6 +22,8 @@ import {
  import { VersionMeta } from "../../bindings/github.com/liteldev/LeviLauncher/internal/versions/models";
  import { ModData, File as ModFile } from "../../bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
 import { listPlayers } from "../utils/content";
+import { readCurrentVersionName } from "../utils/currentVersion";
+import { compareVersions } from "../utils/version";
 import { 
   Button, 
   Spinner, 
@@ -48,7 +50,8 @@ import {
   ModalHeader,
   ModalBody,
   ModalFooter,
-  Progress
+  Progress,
+  Skeleton
 } from "@heroui/react";
 import { 
   LuArrowLeft, 
@@ -92,16 +95,25 @@ const formatFileSize = (bytes: number | undefined) => {
 
 const sortGameVersions = (versions: string[] | undefined) => {
   if (!versions) return [];
-  return [...versions].sort((a, b) => {
+  const sorted = [...versions].sort((a, b) => {
     const aIsVer = /^\d/.test(a);
     const bIsVer = /^\d/.test(b);
+    
     if (aIsVer && !bIsVer) return -1;
     if (!aIsVer && bIsVer) return 1;
-    if (aIsVer && bIsVer) {
-      return b.localeCompare(a, undefined, { numeric: true, sensitivity: 'base' });
+    if (!aIsVer && !bIsVer) return a.localeCompare(b);
+
+    const partsA = a.split('.').map(p => parseInt(p) || 0);
+    const partsB = b.split('.').map(p => parseInt(p) || 0);
+    
+    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
+      const valA = partsA[i] || 0;
+      const valB = partsB[i] || 0;
+      if (valA !== valB) return valB - valA; 
     }
-    return a.localeCompare(b);
+    return 0;
   });
+  return sorted;
 };
 
 const CurseForgeModPage: React.FC = () => {
@@ -117,7 +129,6 @@ const CurseForgeModPage: React.FC = () => {
   const [selectedTab, setSelectedTab] = useState<string>("description");
   const tabsRef = useRef<HTMLDivElement>(null);
 
-  // Install Modal State
   const [installModalOpen, setInstallModalOpen] = useState(false);
   const [installStep, setInstallStep] = useState<'downloading' | 'version_select' | 'player_select' | 'importing' | 'success' | 'error'>('downloading');
   const [installFile, setInstallFile] = useState<{ name: string, path: string, type: string } | null>(null);
@@ -134,7 +145,7 @@ const CurseForgeModPage: React.FC = () => {
 
   const handleInstall = async (file: ModFile) => {
     if (!file.downloadUrl) {
-      alert(t("No download URL available"));
+      alert(t("curseforge.no_download_url", { defaultValue: "No download URL available" }));
       return;
     }
 
@@ -172,10 +183,21 @@ const CurseForgeModPage: React.FC = () => {
 
             const metas = await ListVersionMetasWithRegistered();
             if (metas) {
+              metas.sort((a, b) => {
+                 const cmp = compareVersions(a.gameVersion || "0", b.gameVersion || "0");
+                 return -cmp; 
+              });
               setAvailableVersions(metas);
-              if (metas.length > 0) setSelectedVersion(metas[0].name);
+              
+              const currentName = readCurrentVersionName();
+              let defaultSelect = "";
+              if (currentName && metas.some(m => m.name === currentName)) {
+                  defaultSelect = currentName;
+              } else if (metas.length > 0) {
+                  defaultSelect = metas[0].name;
+              }
+              setSelectedVersion(defaultSelect);
 
-              // Fetch logos
               const logoMap: Record<string, string> = {};
               await Promise.all(metas.map(async (m) => {
                   try {
@@ -362,8 +384,63 @@ const CurseForgeModPage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="w-full h-full flex items-center justify-center">
-        <Spinner size="lg" />
+      <div className="w-full h-full flex flex-col overflow-hidden relative bg-background">
+        <div className="sticky top-0 z-40 w-full px-6 py-4 bg-background/80 backdrop-blur-md border-b border-default-100 flex items-center gap-4">
+           <Skeleton className="rounded-full w-10 h-10" />
+           <Skeleton className="h-8 w-48 rounded-lg" />
+        </div>
+
+        <ScrollShadow className="w-full h-full">
+          <div className="max-w-7xl mx-auto px-6 py-8">
+            <div className="flex flex-col md:flex-row gap-8 mb-10">
+              <Skeleton className="w-32 h-32 rounded-2xl flex-shrink-0" />
+              
+              <div className="flex flex-col flex-grow gap-4">
+                <Skeleton className="h-10 w-3/4 rounded-lg" />
+                <div className="flex gap-3">
+                   <Skeleton className="h-5 w-24 rounded-md" />
+                   <Skeleton className="h-5 w-32 rounded-md" />
+                   <Skeleton className="h-5 w-20 rounded-md" />
+                </div>
+                <div className="flex gap-2">
+                   <Skeleton className="h-6 w-20 rounded-full" />
+                   <Skeleton className="h-6 w-20 rounded-full" />
+                   <Skeleton className="h-6 w-20 rounded-full" />
+                </div>
+                <div className="space-y-2 mt-2">
+                   <Skeleton className="h-4 w-full rounded-md" />
+                   <Skeleton className="h-4 w-full rounded-md" />
+                   <Skeleton className="h-4 w-2/3 rounded-md" />
+                </div>
+              </div>
+
+              <div className="flex flex-col gap-3 min-w-[240px] md:pl-8 justify-center">
+                 <Skeleton className="h-14 w-full rounded-xl" />
+                 <div className="flex gap-2">
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                    <Skeleton className="h-10 w-10 rounded-lg" />
+                 </div>
+              </div>
+            </div>
+
+            <div className="w-full">
+               <div className="flex gap-8 mb-6 border-b border-default-200 pb-2">
+                  <Skeleton className="h-8 w-24 rounded-lg" />
+                  <Skeleton className="h-8 w-24 rounded-lg" />
+                  <Skeleton className="h-8 w-24 rounded-lg" />
+               </div>
+               <div className="space-y-4">
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-full rounded-md" />
+                  <Skeleton className="h-4 w-3/4 rounded-md" />
+               </div>
+            </div>
+          </div>
+        </ScrollShadow>
       </div>
     );
   }
@@ -371,8 +448,8 @@ const CurseForgeModPage: React.FC = () => {
   if (!mod) {
     return (
       <div className="w-full h-full flex flex-col items-center justify-center gap-4">
-        <p className="text-xl">Mod not found</p>
-        <Button onPress={() => navigate(-1)}>Go Back</Button>
+        <p className="text-xl">{t("curseforge.mod_not_found", { defaultValue: "Mod not found" })}</p>
+        <Button onPress={() => navigate(-1)}>{t("curseforge.go_back", { defaultValue: "Go Back" })}</Button>
       </div>
     );
   }
@@ -380,8 +457,7 @@ const CurseForgeModPage: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden relative bg-background">
       <ScrollShadow className="w-full h-full">
-        {/* Top Navigation Bar */}
-        <div className="sticky top-0 z-50 w-full px-6 py-4 bg-background/80 backdrop-blur-md border-b border-default-100 flex items-center gap-4">
+        <div className="sticky top-0 z-40 w-full px-6 py-4 bg-background/80 backdrop-blur-md border-b border-default-100 flex items-center gap-4">
            <Button 
             variant="light" 
             isIconOnly 
@@ -394,25 +470,21 @@ const CurseForgeModPage: React.FC = () => {
         </div>
 
         <div className="max-w-7xl mx-auto px-6 py-8">
-          {/* Header Section */}
           <div className="flex flex-col md:flex-row gap-8 mb-10">
-            {/* Logo */}
             <div className="flex-shrink-0">
               <Image
                 src={mod.logo?.url}
                 alt={mod.name}
                 className="w-32 h-32 object-cover rounded-2xl shadow-lg bg-content2"
-                fallbackSrc="https://via.placeholder.com/128"
               />
             </div>
 
-            {/* Info */}
             <div className="flex flex-col flex-grow gap-3">
               <h1 className="text-4xl font-bold tracking-tight">{mod.name}</h1>
               
               <div className="flex items-center gap-3 text-default-500 text-sm flex-wrap">
                 <span className="flex items-center gap-1">
-                    By
+                    {t("curseforge.by", { defaultValue: "By" })}
                     {mod.authors?.map((author: any, idx: number) => (
                         <React.Fragment key={author.id}>
                             <Link 
@@ -430,12 +502,12 @@ const CurseForgeModPage: React.FC = () => {
                 <span className="w-1 h-1 rounded-full bg-default-300"></span>
                 <span className="flex items-center gap-1">
                     <LuCalendar size={14} />
-                    Updated {formatDate(mod.dateModified)}
+                    {t("curseforge.updated_date", { date: formatDate(mod.dateModified), defaultValue: `Updated ${formatDate(mod.dateModified)}` })}
                 </span>
                 <span className="w-1 h-1 rounded-full bg-default-300"></span>
                  <span className="flex items-center gap-1">
                     <LuDownload size={14} />
-                    {formatNumber(mod.downloadCount)} Downloads
+                    {t("curseforge.download_count", { count: formatNumber(mod.downloadCount), defaultValue: `${formatNumber(mod.downloadCount)} Downloads` })}
                 </span>
               </div>
 
@@ -477,32 +549,32 @@ const CurseForgeModPage: React.FC = () => {
                   }, 100);
                 }}
               >
-                Install
+                {t("curseforge.install_action", { defaultValue: "Install" })}
               </Button>
               <div className="flex gap-2">
                  {mod.links?.websiteUrl && (
-                     <Button as={Link} href={mod.links.websiteUrl} isExternal isIconOnly variant="flat" aria-label="Website">
+                     <Button as={Link} href={mod.links.websiteUrl} isExternal isIconOnly variant="flat" aria-label={t("curseforge.website", { defaultValue: "Website" })}>
                         <LuGlobe size={20} />
                      </Button>
                  )}
                  {mod.links?.sourceUrl && (
-                     <Button as={Link} href={mod.links.sourceUrl} isExternal isIconOnly variant="flat" aria-label="Source">
+                     <Button as={Link} href={mod.links.sourceUrl} isExternal isIconOnly variant="flat" aria-label={t("curseforge.source", { defaultValue: "Source" })}>
                         <LuGithub size={20} />
                      </Button>
                  )}
                  {mod.links?.issuesUrl && (
-                     <Button as={Link} href={mod.links.issuesUrl} isExternal isIconOnly variant="flat" aria-label="Issues">
+                     <Button as={Link} href={mod.links.issuesUrl} isExternal isIconOnly variant="flat" aria-label={t("curseforge.issues", { defaultValue: "Issues" })}>
                         <LuBug size={20} />
                      </Button>
                  )}
-                 <Button isIconOnly variant="flat" aria-label="Share">
+                 <Button isIconOnly variant="flat" aria-label={t("curseforge.share", { defaultValue: "Share" })}>
                     <LuShare2 size={20} />
                  </Button>
               </div>
             </div>
           </div>
 
-          {/* Tabs Section */}
+
           <div ref={tabsRef} className="flex w-full flex-col scroll-mt-24">
             <Tabs 
                 aria-label="Mod Details"  
@@ -637,7 +709,7 @@ const CurseForgeModPage: React.FC = () => {
                     ) : (
                       <div className="flex flex-col items-center justify-center py-12 text-default-400 border border-dashed border-default-200 rounded-xl">
                         <LuFileDigit size={48} className="mb-4 opacity-50" />
-                        <p className="text-lg font-medium">No files found</p>
+                        <p className="text-lg font-medium">{t("curseforge.no_files_found", { defaultValue: "No files found" })}</p>
                       </div>
                     )}
                 </div>
@@ -663,17 +735,17 @@ const CurseForgeModPage: React.FC = () => {
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                {installStep === 'downloading' && t("Downloading Content")}
-                {installStep === 'version_select' && t("Select Game Version")}
-                {installStep === 'player_select' && t("Select Player")}
-                {installStep === 'importing' && t("Importing Content")}
-                {installStep === 'success' && t("Success")}
-                {installStep === 'error' && t("Error")}
+                {installStep === 'downloading' && t("curseforge.install.downloading_title", { defaultValue: "Downloading Content" })}
+                {installStep === 'version_select' && t("curseforge.install.select_version_title", { defaultValue: "Select Game Version" })}
+                {installStep === 'player_select' && t("curseforge.install.select_player_title", { defaultValue: "Select Player" })}
+                {installStep === 'importing' && t("curseforge.install.importing_title", { defaultValue: "Importing Content" })}
+                {installStep === 'success' && t("curseforge.install.success_title", { defaultValue: "Success" })}
+                {installStep === 'error' && t("curseforge.install.error_title", { defaultValue: "Error" })}
               </ModalHeader>
               <ModalBody>
                 {installStep === 'downloading' && (
                     <div className="flex flex-col items-center gap-4 py-4 w-full">
-                        <p className="text-default-500">{t("Downloading file...")}</p>
+                        <p className="text-default-500">{t("curseforge.install.downloading_body", { defaultValue: "Downloading file..." })}</p>
                         {downloadProgress ? (
                              <Progress 
                                 aria-label="Downloading..." 
@@ -693,10 +765,10 @@ const CurseForgeModPage: React.FC = () => {
 
                 {installStep === 'version_select' && (
                     <div className="flex flex-col gap-4">
-                        <p className="text-small text-default-500">{t("Please select the game version to import to:")}</p>
+                        <p className="text-small text-default-500">{t("curseforge.install.select_version_body", { defaultValue: "Please select the game version to import to:" })}</p>
                         <Select
-                            label={t("Local Installation")}
-                            placeholder={t("Select a version")}
+                            label={t("curseforge.install.local_installation", { defaultValue: "Local Installation" })}
+                            placeholder={t("curseforge.install.select_version_placeholder", { defaultValue: "Select a version" })}
                             selectedKeys={selectedVersion ? [selectedVersion] : []}
                             onChange={(e) => setSelectedVersion(e.target.value)}
                         >
@@ -717,7 +789,7 @@ const CurseForgeModPage: React.FC = () => {
                                          </div>
                                          {ver.registered && (
                                              <Chip size="sm" color="success" variant="flat" className="ml-auto">
-                                                 {t("Registered")}
+                                                 {t("curseforge.install.registered", { defaultValue: "Registered" })}
                                              </Chip>
                                          )}
                                     </div>
@@ -729,10 +801,10 @@ const CurseForgeModPage: React.FC = () => {
 
                 {installStep === 'player_select' && (
                     <div className="flex flex-col gap-4">
-                         <p className="text-small text-default-500">{t("This content requires selecting a player:")}</p>
+                         <p className="text-small text-default-500">{t("curseforge.install.select_player_body", { defaultValue: "This content requires selecting a player:" })}</p>
                          <Select
-                            label={t("Player")}
-                            placeholder={t("Select a player")}
+                            label={t("curseforge.install.player_label", { defaultValue: "Player" })}
+                            placeholder={t("curseforge.install.select_player_placeholder", { defaultValue: "Select a player" })}
                             selectedKeys={selectedPlayer ? [selectedPlayer] : []}
                             onChange={(e) => setSelectedPlayer(e.target.value)}
                         >
@@ -748,7 +820,7 @@ const CurseForgeModPage: React.FC = () => {
                 {installStep === 'importing' && (
                      <div className="flex flex-col items-center gap-4 py-4">
                         <Spinner size="lg" />
-                        <p className="text-default-500">{t("Importing content...")}</p>
+                        <p className="text-default-500">{t("curseforge.install.importing_body", { defaultValue: "Importing content..." })}</p>
                     </div>
                 )}
 
@@ -757,8 +829,8 @@ const CurseForgeModPage: React.FC = () => {
                         <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center text-success">
                              <LuDownload size={24} />
                         </div>
-                        <p className="text-lg font-semibold">{t("Import Successful")}</p>
-                        <p className="text-default-500 text-center">{t("The content has been successfully imported to the selected version.")}</p>
+                        <p className="text-lg font-semibold">{t("curseforge.install.success_msg", { defaultValue: "Import Successful" })}</p>
+                        <p className="text-default-500 text-center">{t("curseforge.install.success_desc", { defaultValue: "The content has been successfully imported to the selected version." })}</p>
                     </div>
                 )}
 
@@ -767,7 +839,7 @@ const CurseForgeModPage: React.FC = () => {
                         <div className="w-12 h-12 rounded-full bg-danger/20 flex items-center justify-center text-danger">
                              <LuBug size={24} />
                         </div>
-                        <p className="text-lg font-semibold text-danger">{t("Import Failed")}</p>
+                        <p className="text-lg font-semibold text-danger">{t("curseforge.install.failed_msg", { defaultValue: "Import Failed" })}</p>
                         <p className="text-default-500 text-center">{installError}</p>
                     </div>
                 )}
@@ -775,12 +847,12 @@ const CurseForgeModPage: React.FC = () => {
               <ModalFooter>
                 {(installStep === 'version_select' || installStep === 'player_select') && (
                     <Button color="primary" onPress={handleVersionSelectNext}>
-                        {t("Next")}
+                        {t("curseforge.install.next", { defaultValue: "Next" })}
                     </Button>
                 )}
                 {(installStep === 'success' || installStep === 'error') && (
                     <Button color="primary" onPress={onClose}>
-                        {t("Close")}
+                        {t("curseforge.install.close", { defaultValue: "Close" })}
                     </Button>
                 )}
               </ModalFooter>

@@ -15,8 +15,8 @@ import {
   SearchCurseForgeMods,
   GetCurseForgeCategories,
 } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { useCurseForge } from "../utils/CurseForgeContext";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import { GameVersion, Categories } from "../../bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
 import { LuSearch, LuDownload, LuEye, LuClock, LuCalendar, LuFileDigit, LuGamepad2 } from "react-icons/lu";
 import { motion } from "framer-motion";
 
@@ -82,21 +82,28 @@ const getLatestSupportedVersion = (mod: types.CurseForgeMod) => {
 export const CurseForgePage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const [query, setQuery] = useState("");
+  const {
+    query, setQuery,
+    mods, setMods,
+    gameVersions, setGameVersions,
+    selectedMinecraftVersion, setSelectedMinecraftVersion,
+    allCategories, setAllCategories,
+    selectedClass, setSelectedClass,
+    selectedCategories, setSelectedCategories,
+    currentPage, setCurrentPage,
+    searchToken, setSearchToken,
+    totalCount, setTotalCount,
+    selectedSort, setSelectedSort,
+    initialLoaded, setInitialLoaded,
+    scrollPosition, setScrollPosition,
+    hasSearched, setHasSearched,
+  } = useCurseForge();
+
   const [loading, setLoading] = useState(false);
-  const [mods, setMods] = useState<types.CurseForgeMod[]>([]);
-  const [gameVersions, setGameVersions] = useState<GameVersion[]>([]);
-  const [selectedMinecraftVersion, setSelectedMinecraftVersion] = useState<
-    string
-  >("");
-  const [allCategories, setAllCategories] = useState<Categories[]>([]);
-  const [selectedClass, setSelectedClass] = useState<number>(0);
-  const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
-  const [currentPage, setCurrentPage] = useState(1);
-  const [searchToken, setSearchToken] = useState(0);
-  const [initialLoaded, setInitialLoaded] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const pageRootRef = React.useRef<HTMLDivElement>(null);
   const scrollContainerRef = React.useRef<HTMLDivElement>(null);
+  const lastScrollTopRef = React.useRef(0);
   const searchSeqRef = React.useRef(0);
 
   const classes = useMemo(() => {
@@ -110,7 +117,6 @@ export const CurseForgePage: React.FC = () => {
       .sort((a, b) => a.displayIndex - b.displayIndex);
   }, [allCategories, selectedClass]);
   const pageSize = 20;
-  const [totalCount, setTotalCount] = useState(0);
 
   const sortOptions = [
     { value: 1, label: "Featured" },
@@ -119,7 +125,6 @@ export const CurseForgePage: React.FC = () => {
     { value: 10, label: "Creation Date" },
     { value: 6, label: "Total Downloads" },
   ];
-  const [selectedSort, setSelectedSort] = useState<number>(1);
 
   const renderSkeletons = () => {
     return Array(5)
@@ -142,7 +147,15 @@ export const CurseForgePage: React.FC = () => {
   };
 
   useEffect(() => {
-    void loadInitialData();
+    if (!initialLoaded) {
+      void loadInitialData();
+    }
+  }, []);
+
+  useEffect(() => {
+    return () => {
+      setScrollPosition(lastScrollTopRef.current);
+    };
   }, []);
 
   const collectScrollTargets = () => {
@@ -174,8 +187,44 @@ export const CurseForgePage: React.FC = () => {
     return targets;
   };
 
+  const prevDepsRef = React.useRef<{
+    selectedMinecraftVersion: string;
+    selectedClass: number;
+    selectedCategories: number[];
+    selectedSort: number;
+    currentPage: number;
+    searchToken: number;
+  } | null>(null);
+  const restoredRef = React.useRef(false);
+  const saveScrollPosition = () => {
+    const target = scrollContainerRef.current;
+    const y = target ? target.scrollTop : lastScrollTopRef.current;
+    lastScrollTopRef.current = y;
+    setScrollPosition(y);
+  };
+
   useEffect(() => {
     if (!initialLoaded) return;
+
+    const currentDeps = {
+      selectedMinecraftVersion,
+      selectedClass,
+      selectedCategories,
+      selectedSort,
+      currentPage,
+      searchToken,
+    };
+
+    const prevDeps = prevDepsRef.current;
+    const depsChanged = !prevDeps ||
+      prevDeps.selectedMinecraftVersion !== currentDeps.selectedMinecraftVersion ||
+      prevDeps.selectedClass !== currentDeps.selectedClass ||
+      prevDeps.selectedSort !== currentDeps.selectedSort ||
+      prevDeps.currentPage !== currentDeps.currentPage ||
+      prevDeps.searchToken !== currentDeps.searchToken ||
+      JSON.stringify(prevDeps.selectedCategories) !== JSON.stringify(currentDeps.selectedCategories);
+
+    prevDepsRef.current = currentDeps;
 
     const resetScroll = () => {
       for (const target of collectScrollTargets()) {
@@ -200,11 +249,28 @@ export const CurseForgePage: React.FC = () => {
       };
     };
 
+    if (hasSearched && (!depsChanged || prevDeps === null)) {
+      if (!restoredRef.current) {
+        const target = scrollContainerRef.current;
+        if (target) {
+          target.scrollTop = scrollPosition;
+          lastScrollTopRef.current = scrollPosition;
+          restoredRef.current = true;
+        }
+      }
+      return;
+    }
+
     const cleanup = scheduleScrollReset();
-    void searchMods().finally(() => {
-      scheduleScrollReset();
-    });
-    return cleanup;
+    const timer = setTimeout(() => {
+      void searchMods().finally(() => {
+        scheduleScrollReset();
+      });
+    }, 300);
+    return () => {
+      clearTimeout(timer);
+      cleanup();
+    };
   }, [
     initialLoaded,
     selectedMinecraftVersion,
@@ -218,6 +284,7 @@ export const CurseForgePage: React.FC = () => {
   const loadInitialData = async () => {
     try {
       setLoading(true);
+      setError(null);
       const [versions, cats] = await Promise.all([
         GetCurseForgeGameVersions(CURSEFORGE_GAME_ID),
         GetCurseForgeCategories(CURSEFORGE_GAME_ID),
@@ -233,6 +300,7 @@ export const CurseForgePage: React.FC = () => {
       }
     } catch (error) {
       console.error("Failed to load initial data:", error);
+      setError(t("curseforge.load_error", { defaultValue: "Failed to load data, please retry" }));
     } finally {
       setLoading(false);
       setInitialLoaded(true);
@@ -243,6 +311,7 @@ export const CurseForgePage: React.FC = () => {
     const seq = ++searchSeqRef.current;
     try {
       setLoading(true);
+      setError(null);
       const index = (currentPage - 1) * pageSize;
       const response = await SearchCurseForgeMods(
         CURSEFORGE_GAME_ID,
@@ -264,11 +333,13 @@ export const CurseForgePage: React.FC = () => {
         setMods([]);
         setTotalCount(0);
       }
+      setHasSearched(true);
     } catch (error) {
       if (seq !== searchSeqRef.current) return;
       console.error("Failed to search mods:", error);
       setMods([]);
       setTotalCount(0);
+      setError(t("curseforge.search_error", { defaultValue: "Search failed, please retry" }));
     } finally {
       if (seq !== searchSeqRef.current) return;
       setLoading(false);
@@ -416,9 +487,29 @@ export const CurseForgePage: React.FC = () => {
 
       <div 
         ref={scrollContainerRef}
+        onScroll={(e) => {
+          lastScrollTopRef.current = e.currentTarget.scrollTop;
+        }}
         className="flex-1 min-h-0 overflow-y-auto rounded-xl p-2 relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
       >
-        {loading ? (
+        {error ? (
+          <div className="flex flex-col items-center justify-center h-full gap-4 text-danger">
+            <p>{error}</p>
+            <Button 
+              color="danger" 
+              variant="flat" 
+              onPress={() => {
+                if (gameVersions.length === 0 && allCategories.length === 0) {
+                  void loadInitialData();
+                } else {
+                  setSearchToken(v => v + 1);
+                }
+              }}
+            >
+              {t("retry", { defaultValue: "Retry" })}
+            </Button>
+          </div>
+        ) : (loading || !hasSearched) ? (
           <div className="flex flex-col gap-3">
              {renderSkeletons()}
           </div>
@@ -437,7 +528,10 @@ export const CurseForgePage: React.FC = () => {
               >
                 <div
                   className="w-full p-4 bg-content1 hover:bg-content2 transition-all cursor-pointer rounded-xl flex gap-4 group shadow-sm hover:shadow-md border border-default-100"
-                  onClick={() => navigate(`/curseforge/mod/${mod.id}`)}
+                  onClick={() => {
+                    saveScrollPosition();
+                    navigate(`/curseforge/mod/${mod.id}`);
+                  }}
                 >
                   <div className="flex-shrink-0">
                     <img
@@ -454,32 +548,32 @@ export const CurseForgePage: React.FC = () => {
                         {mod.name}
                       </h3>
                       <span className="text-xs sm:text-sm text-default-500 truncate">
-                        | By {mod.authors?.[0]?.name || mod.author || "Unknown"}
+                        | {t("curseforge.by_author", { author: mod.authors?.[0]?.name || mod.author || "Unknown", defaultValue: `By ${mod.authors?.[0]?.name || mod.author || "Unknown"}` })}
                       </span>
                     </div>
 
                     <p className="text-xs sm:text-sm text-default-500 line-clamp-2 w-full">
-                      {mod.summary || "No description available."}
+                      {mod.summary || t("curseforge.no_description", { defaultValue: "No description available." })}
                     </p>
 
                     <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-default-400 mt-1">
-                      <div className="flex items-center gap-1" title="Downloads">
+                      <div className="flex items-center gap-1" title={t("curseforge.downloads", { defaultValue: "Downloads" })}>
                         <LuDownload />
                         <span>{formatNumber(mod.downloadCount)}</span>
                       </div>
-                      <div className="flex items-center gap-1" title="Updated">
+                      <div className="flex items-center gap-1" title={t("curseforge.updated", { defaultValue: "Updated" })}>
                         <LuClock />
                         <span>{formatDate(mod.dateModified)}</span>
                       </div>
-                      <div className="flex items-center gap-1" title="Created">
+                      <div className="flex items-center gap-1" title={t("curseforge.created", { defaultValue: "Created" })}>
                         <LuCalendar />
                         <span>{formatDate(mod.dateCreated)}</span>
                       </div>
-                      <div className="flex items-center gap-1" title="Size">
+                      <div className="flex items-center gap-1" title={t("curseforge.size", { defaultValue: "Size" })}>
                         <LuFileDigit />
                         <span>{formatSize(mod.latestFiles?.[0]?.fileLength)}</span>
                       </div>
-                      <div className="flex items-center gap-1" title="Game Version">
+                      <div className="flex items-center gap-1" title={t("curseforge.game_version", { defaultValue: "Game Version" })}>
                         <LuGamepad2 />
                         <span>{selectedMinecraftVersion || getLatestSupportedVersion(mod)}</span>
                       </div>

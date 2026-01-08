@@ -8,6 +8,8 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"sync"
+	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/curseforge/client/types"
 )
@@ -16,6 +18,7 @@ const (
 	getGameVersionsPath    = "/v2/games/%s/versions"
 	minecraftModSearchPath = "/v1/mods/search"
 	getCategoriesPath      = "/v1/categories"
+	cacheTTL               = 5 * time.Minute
 )
 
 type CurseClient interface {
@@ -27,18 +30,26 @@ type CurseClient interface {
 	GetModFiles(ctx context.Context, modID int64) (*types.GetModFilesResponse, error)
 }
 
+type cachedResponse struct {
+	response  *types.ModsResponse
+	timestamp time.Time
+}
+
 type curseClient struct {
 	CurseClient
-	opt Config
-	c   *http.Client
+	opt     Config
+	c       *http.Client
+	cache   map[string]cachedResponse
+	cacheMu sync.RWMutex
 }
 
 // NewCurseClient creates a new Curseforge client
 func NewCurseClient(apiKey string, opts ...CfgFunc) CurseClient {
 	opt := NewConfig(apiKey, opts...)
 	return &curseClient{
-		opt: *opt,
-		c:   opt.NewHTTPClient(),
+		opt:   *opt,
+		c:     opt.NewHTTPClient(),
+		cache: make(map[string]cachedResponse),
 	}
 }
 
@@ -93,12 +104,20 @@ func (c *curseClient) GetModFiles(ctx context.Context, modID int64) (*types.GetM
 	return &resp, nil
 }
 
-// GetMods lists mods for a game from API
 func (c *curseClient) GetMods(ctx context.Context, opts ...ModsQueryOption) (*types.ModsResponse, error) {
 	q := ApiQueryParams{}
 	for _, o := range opts {
 		o(q)
 	}
+
+	cacheKey := q.QueryString()
+	c.cacheMu.RLock()
+	if entry, ok := c.cache[cacheKey]; ok && time.Since(entry.timestamp) < cacheTTL && entry.response != nil {
+		c.cacheMu.RUnlock()
+		return entry.response, nil
+	}
+	c.cacheMu.RUnlock()
+
 	var result types.ModsResponse
 	req, err := c.opt.NewGetRequest(c.buildRequestPath(minecraftModSearchPath, q))
 	if err != nil {
@@ -111,6 +130,19 @@ func (c *curseClient) GetMods(ctx context.Context, opts ...ModsQueryOption) (*ty
 		err = fmt.Errorf("executing get minecraft mods request: %w", err)
 		return &result, types.Wrap(err, "failed to execute request", -1)
 	}
+
+	c.cacheMu.Lock()
+	c.cache[cacheKey] = cachedResponse{
+		response:  &mv,
+		timestamp: time.Now(),
+	}
+	if len(c.cache) > 200 {
+		for k := range c.cache {
+			delete(c.cache, k)
+			break
+		}
+	}
+	c.cacheMu.Unlock()
 
 	return &mv, nil
 }

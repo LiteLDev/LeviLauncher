@@ -165,8 +165,8 @@ func main() {
 		}
 	}
 	if c.WindowHeight > 0 {
-		if c.WindowHeight < 600 {
-			h = 600
+		if c.WindowHeight < 610 {
+			h = 610
 		} else {
 			h = c.WindowHeight
 		}
@@ -181,7 +181,7 @@ func main() {
 		Width:     w,
 		Height:    h,
 		MinWidth:  960,
-		MinHeight: 600,
+		MinHeight: 610,
 		Mac:       application.MacWindow{},
 		Frameless: true,
 		BackgroundColour: application.RGBA{

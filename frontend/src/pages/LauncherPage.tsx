@@ -18,6 +18,8 @@ import {
   Input,
   Tooltip,
   Chip,
+  Progress,
+  Spinner,
 } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import {
@@ -745,29 +747,32 @@ export const LauncherPage = (args: any) => {
   > = {
     1: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-red-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight text-danger-500">
             {t("launcherpage.launch.failed.title")}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
-            {(() => {
-              const key = `errors.${launchErrorCode}`;
-              const translated = t(key) as unknown as string;
-              if (launchErrorCode && translated && translated !== key)
-                return translated;
-              return t(
-                "launcherpage.launch.failed.content"
-              ) as unknown as string;
-            })()}
-          </p>
+        <ModalBody className="px-8 py-4">
+          <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
+            <p className="font-medium text-center">
+                {(() => {
+                const key = `errors.${launchErrorCode}`;
+                const translated = t(key) as unknown as string;
+                if (launchErrorCode && translated && translated !== key)
+                    return translated;
+                return t(
+                    "launcherpage.launch.failed.content"
+                ) as unknown as string;
+                })()}
+            </p>
+          </div>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="px-8 pb-8 pt-4">
           {launchErrorCode === "ERR_GAME_ALREADY_RUNNING" && (
             <Button
               color="warning"
-              variant="light"
+              variant="flat"
+              radius="full"
               onPress={(e) => {
                 onClose?.(e);
                 setOverlayActive(false);
@@ -783,6 +788,8 @@ export const LauncherPage = (args: any) => {
           <Button
             color="danger"
             variant="solid"
+            radius="full"
+            className="font-bold shadow-lg shadow-danger-500/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -796,38 +803,44 @@ export const LauncherPage = (args: any) => {
     ),
     7: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-primary-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
             {t("launcherpage.gameinput.installing.title", {
               defaultValue: "正在安装 GameInput",
             })}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
+        <ModalBody className="px-8 py-4">
+          <p className="text-default-600 font-medium">
             {t("launcherpage.gameinput.installing.body", {
               defaultValue: "正在下载并启动安装程序，请根据系统提示完成安装。",
             })}
           </p>
-          <div className="mt-2 text-sm text-default-600">
+          <div className="mt-4">
             {giTotal > 0 ? (
-              <>
-                <div>
-                  {t("launcherpage.gameinput.installing.progress_prefix", {
-                    defaultValue: "进度：",
-                  })}
-                  {Math.min(100, Math.floor((giDownloaded / giTotal) * 100))}%
-                </div>
-                <div className="font-mono">
-                  {(giDownloaded / 1024 / 1024).toFixed(1)} MB /{" "}
-                  {(giTotal / 1024 / 1024).toFixed(1)} MB
-                </div>
-              </>
+              <div className="flex flex-col gap-2">
+                 <div className="flex justify-between text-small font-bold text-default-500">
+                    <span>{Math.min(100, Math.floor((giDownloaded / giTotal) * 100))}%</span>
+                    <span className="font-mono">{(giDownloaded / 1024 / 1024).toFixed(1)} / {(giTotal / 1024 / 1024).toFixed(1)} MB</span>
+                 </div>
+                 <Progress 
+                    aria-label="Downloading" 
+                    value={(giDownloaded / giTotal) * 100} 
+                    color="success" 
+                    size="md"
+                    classNames={{
+                        indicator: "bg-gradient-to-r from-emerald-500 to-teal-600"
+                    }}
+                 />
+              </div>
             ) : (
-              <div>
-                {t("launcherpage.gameinput.installing.preparing", {
-                  defaultValue: "正在准备下载...",
-                })}
+              <div className="flex items-center gap-3 text-default-500">
+                <Spinner size="sm" color="success" />
+                <span>
+                    {t("launcherpage.gameinput.installing.preparing", {
+                    defaultValue: "正在准备下载...",
+                    })}
+                </span>
               </div>
             )}
           </div>
@@ -836,25 +849,26 @@ export const LauncherPage = (args: any) => {
     ),
     8: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-warning-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.gameinput.missing.title", {
               defaultValue: "缺少 GameInput 组件",
             })}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
+        <ModalBody className="px-8 py-4">
+          <p className="text-default-600 font-medium">
             {t("launcherpage.gameinput.missing.body", {
               defaultValue:
                 "运行游戏需要 Microsoft GameInput 组件。是否现在下载安装？",
             })}
           </p>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="danger"
             variant="light"
+            radius="full"
             onPress={() => {
               Window.Close();
             }}
@@ -863,6 +877,8 @@ export const LauncherPage = (args: any) => {
           </Button>
           <Button
             color="primary"
+            radius="full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
             onPress={() => {
               setPendingInstallCheck("gi");
               EnsureGameInputInteractive();
@@ -879,25 +895,26 @@ export const LauncherPage = (args: any) => {
     ),
     9: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-warning-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.gs.missing.title", {
               defaultValue: "缺少 Microsoft Gaming Services",
             })}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-gray-700">
+        <ModalBody className="px-8 py-4">
+          <p className="text-default-600 font-medium">
             {t("launcherpage.gs.missing.body", {
               defaultValue:
                 "未检测到 Microsoft Gaming Services。该组件是 Minecraft 运行所必须的依赖项。",
             })}
           </p>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="danger"
             variant="light"
+            radius="full"
             onPress={() => {
               Window.Close();
             }}
@@ -907,6 +924,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="default"
             variant="flat"
+            radius="full"
             onPress={() => {
               localStorage.setItem(IGNORE_GS_KEY, "1");
               setOverlayActive(false);
@@ -920,6 +938,8 @@ export const LauncherPage = (args: any) => {
           </Button>
           <Button
             color="primary"
+            radius="full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
             onPress={() => {
               setPendingInstallCheck("gs");
               Browser.OpenURL("ms-windows-store://pdp/?ProductId=9MWPM2CQNLHN");
@@ -936,25 +956,26 @@ export const LauncherPage = (args: any) => {
     ),
     10: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-primary-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
             {t("launcherpage.install_confirm.title", {
               defaultValue: "是否已完成安装？",
             })}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
+        <ModalBody className="px-8 py-4">
+          <p className="text-default-600 font-medium">
             {t("launcherpage.install_confirm.body", {
               defaultValue:
                 "安装完成后请点击“已完成，重新检测”。如果尚未完成，请继续安装。",
             })}
           </p>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="default"
             variant="light"
+            radius="full"
             onPress={() => {
               if (pendingInstallCheck === "gi") setModalState(8);
               else if (pendingInstallCheck === "gs") setModalState(9);
@@ -966,6 +987,8 @@ export const LauncherPage = (args: any) => {
           </Button>
           <Button
             color="primary"
+            radius="full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
             onPress={() => {
               try {
                 if (pendingInstallCheck === "gi") {
@@ -1005,9 +1028,9 @@ export const LauncherPage = (args: any) => {
     ),
     4: () => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-primary-600">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <motion.h2
-            className="text-xl font-bold"
+            className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
@@ -1015,9 +1038,9 @@ export const LauncherPage = (args: any) => {
             {t("launcherpage.vcruntime.completing.title")}
           </motion.h2>
         </ModalHeader>
-        <ModalBody className="text-center">
+        <ModalBody className="px-8 py-4">
           <motion.p
-            className="text-foreground"
+            className="text-default-600 font-medium"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.25, delay: 0.1 }}
@@ -1029,9 +1052,9 @@ export const LauncherPage = (args: any) => {
     ),
     5: () => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-primary-600">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <motion.h2
-            className="text-xl font-bold"
+            className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
@@ -1039,45 +1062,47 @@ export const LauncherPage = (args: any) => {
             {t("launcherpage.mclaunch.loading.title")}
           </motion.h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <div className="flex flex-col items-center gap-3">
-            <motion.div
-              className="h-10 w-10 rounded-full border-2 border-default-300 border-t-default-600"
-              animate={{ rotate: 360 }}
-              transition={{ duration: 1, ease: "linear", repeat: Infinity }}
+        <ModalBody className="px-8 py-4">
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-4">
+                <Spinner size="lg" color="success" classNames={{ circle1: "border-b-emerald-500", circle2: "border-b-teal-500" }} />
+                <div className="flex flex-col gap-1">
+                    <motion.p
+                    className="text-default-600 font-medium"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.25, delay: 0.1 }}
+                    >
+                    {t("launcherpage.mclaunch.loading.body")}
+                    </motion.p>
+                     <div className="min-h-[24px] text-sm text-default-400">
+                        <AnimatePresence mode="wait">
+                            <motion.span
+                            key={`tip-${tipIndex}`}
+                            initial={{ opacity: 0, y: 4 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -4 }}
+                            transition={{ duration: 0.2 }}
+                            >
+                            {launchTips[tipIndex]}
+                            </motion.span>
+                        </AnimatePresence>
+                    </div>
+                </div>
+            </div>
+            <Progress 
+                size="sm" 
+                isIndeterminate 
+                aria-label="Loading" 
+                classNames={{ indicator: "bg-gradient-to-r from-emerald-500 to-teal-600" }} 
             />
-            <motion.p
-              className="text-foreground"
-              initial={{ opacity: 0 }}
-              animate={{ opacity: 1 }}
-              transition={{ duration: 0.25, delay: 0.1 }}
-            >
-              {t("launcherpage.mclaunch.loading.body")}
-            </motion.p>
-            <div className="w-full max-w-md mt-1">
-              <div className="relative h-2 rounded-full bg-default-100/70 dark:bg-default-50/10 overflow-hidden border border-white/30">
-                <div className="absolute top-0 bottom-0 rounded-full bg-default-400/60 indeterminate-bar1" />
-                <div className="absolute top-0 bottom-0 rounded-full bg-default-400/40 indeterminate-bar2" />
-              </div>
-            </div>
-            <div className="min-h-[24px] text-sm text-default-500">
-              <AnimatePresence mode="wait">
-                <motion.span
-                  key={`tip-${tipIndex}`}
-                  initial={{ opacity: 0, y: 4 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  exit={{ opacity: 0, y: -4 }}
-                  transition={{ duration: 0.2 }}
-                >
-                  {launchTips[tipIndex]}
-                </motion.span>
-              </AnimatePresence>
-            </div>
           </div>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="primary"
+            radius="full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
             onPress={(e) => {
               onClose?.();
               setOverlayActive(false);
@@ -1091,22 +1116,24 @@ export const LauncherPage = (args: any) => {
     ),
     2: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-warning-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.adminconfirm.title")}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
+        <ModalBody className="px-8 py-4">
+          <p className="text-default-600 font-medium">
             {t("launcherpage.adminconfirm.content")}
           </p>
         </ModalBody>
-        <ModalFooter>
-          <Button color="default" variant="light" onPress={onClose}>
+        <ModalFooter className="px-8 pb-8 pt-4">
+          <Button color="default" variant="light" radius="full" onPress={onClose}>
             {t("launcherpage.adminconfirm.cancel_button")}
           </Button>
           <Button
             color="primary"
+            radius="full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
             onPress={(e) => {
               onClose?.(e);
             }}
@@ -1118,22 +1145,24 @@ export const LauncherPage = (args: any) => {
     ),
     3: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-red-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight text-danger-500">
             {t("launcherpage.admindeny.title")}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
+        <ModalBody className="px-8 py-4">
+          <p className="text-default-600 font-medium">
             {t("launcherpage.admindeny.content")}
           </p>
         </ModalBody>
-        <ModalFooter>
-          <Button color="default" variant="light" onPress={onClose}>
+        <ModalFooter className="px-8 pb-8 pt-4">
+          <Button color="default" variant="light" radius="full" onPress={onClose}>
             {t("launcherpage.admindeny.cancel_button")}
           </Button>
           <Button
             color="primary"
+            radius="full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
             onPress={(e) => {
               onClose?.(e);
             }}
@@ -1145,8 +1174,8 @@ export const LauncherPage = (args: any) => {
     ),
     12: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-success-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight text-success-500">
             {
               t("launcherpage.shortcut.success.title", {
                 defaultValue: "快捷方式已创建",
@@ -1154,8 +1183,8 @@ export const LauncherPage = (args: any) => {
             }
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
+        <ModalBody className="px-8 py-4">
+          <p className="text-default-600 font-medium">
             {
               t("launcherpage.shortcut.success.body", {
                 defaultValue: "已在桌面创建该版本的快捷方式。",
@@ -1163,9 +1192,11 @@ export const LauncherPage = (args: any) => {
             }
           </p>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="primary"
+            radius="full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1179,47 +1210,49 @@ export const LauncherPage = (args: any) => {
     ),
     13: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-primary-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
             {t("launcherpage.register.installing.title", {
               defaultValue: "正在注册到系统",
             })}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
+        <ModalBody className="px-8 py-4">
+          <p className="text-default-600 font-medium mb-4">
             {t("launcherpage.register.installing.body", {
               defaultValue: "正在调用 wdapp.exe 执行注册，请稍候…",
             })}
           </p>
-          <div className="w-full max-w-md mt-2 mx-auto">
-            <div className="relative h-2 rounded-full bg-default-100/70 dark:bg-default-50/10 overflow-hidden border border-white/30">
-              <div className="absolute top-0 bottom-0 rounded-full bg-default-400/60 indeterminate-bar1" />
-              <div className="absolute top-0 bottom-0 rounded-full bg-default-400/40 indeterminate-bar2" />
-            </div>
-          </div>
+          <Progress 
+            size="sm" 
+            isIndeterminate 
+            aria-label="Registering" 
+            classNames={{ indicator: "bg-gradient-to-r from-emerald-500 to-teal-600" }} 
+          />
         </ModalBody>
       </>
     ),
     15: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-success-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight text-success-500">
             {t("launcherpage.register.success.title", {
               defaultValue: "注册完成",
             })}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
+        <ModalBody className="px-8 py-4">
+          <p className="text-default-600 font-medium">
             {t("launcherpage.register.success.body", {
               defaultValue: "已成功注册到系统，您可以通过系统应用列表启动。",
             })}
           </p>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="primary"
+            radius="full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1233,29 +1266,33 @@ export const LauncherPage = (args: any) => {
     ),
     16: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-danger-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight text-danger-500">
             {t("launcherpage.register.failed.title", {
               defaultValue: "注册失败",
             })}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
-            {(() => {
-              const key = `errors.${launchErrorCode}`;
-              const translated = t(key) as unknown as string;
-              if (launchErrorCode && translated && translated !== key)
-                return translated;
-              return t("launcherpage.register.failed.body", {
-                defaultValue: "注册过程中发生错误，请重试或检查环境。",
-              }) as unknown as string;
-            })()}
-          </p>
+        <ModalBody className="px-8 py-4">
+          <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
+             <p className="font-medium text-center">
+                {(() => {
+                const key = `errors.${launchErrorCode}`;
+                const translated = t(key) as unknown as string;
+                if (launchErrorCode && translated && translated !== key)
+                    return translated;
+                return t("launcherpage.register.failed.body", {
+                    defaultValue: "注册过程中发生错误，请重试或检查环境。",
+                }) as unknown as string;
+                })()}
+             </p>
+          </div>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="primary"
+            radius="full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1269,24 +1306,25 @@ export const LauncherPage = (args: any) => {
     ),
     17: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 text-warning-600">
-          <h2 className="text-xl font-bold">
+        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.gdk_missing.title", {
               defaultValue: "缺少 Microsoft GDK",
             })}
           </h2>
         </ModalHeader>
-        <ModalBody className="text-center">
-          <p className="text-foreground">
+        <ModalBody className="px-8 py-4">
+          <p className="text-default-600 font-medium">
             {t("launcherpage.gdk_missing.body", {
               defaultValue:
                 "未检测到 GDK 工具包，注册功能需先安装。是否跳转到设置页进行安装？",
             })}
           </p>
         </ModalBody>
-        <ModalFooter>
+        <ModalFooter className="px-8 pb-8 pt-4">
           <Button
             variant="light"
+            radius="full"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1297,6 +1335,8 @@ export const LauncherPage = (args: any) => {
           </Button>
           <Button
             color="primary"
+            radius="full"
+            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1676,10 +1716,11 @@ export const LauncherPage = (args: any) => {
             }
           }}
           classNames={{
-             base: "bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl",
+             base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
+             closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
           }}
         >
-          <ModalContent>
+          <ModalContent className="shadow-none">
             {(onClose) => (
               <AnimatePresence mode="wait">
                 <motion.div
@@ -1688,7 +1729,7 @@ export const LauncherPage = (args: any) => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.98 }}
                   transition={{ duration: 0.22 }}
-                  className="p-2"
+                  className="p-6"
                 >
                   {ModalUi(onClose)}
                 </motion.div>

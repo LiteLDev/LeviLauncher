@@ -1328,6 +1328,24 @@ export default function ContentPage() {
             >
               {t("common.back", { defaultValue: "返回" })}
             </Button>
+
+            <Tooltip
+              content={
+                t("common.refresh", {
+                  defaultValue: "刷新",
+                }) as unknown as string
+              }
+            >
+              <Button
+                size="sm"
+                variant="bordered"
+                onPress={refreshAll}
+                isDisabled={loading}
+              >
+                {t("common.refresh", { defaultValue: "刷新" })}
+              </Button>
+            </Tooltip>
+            
             <Tooltip
               content={
                 t("contentpage.open_users_dir", {
@@ -1348,23 +1366,6 @@ export default function ContentPage() {
                 className="rounded-full"
               >
                 <FaFolderOpen />
-              </Button>
-            </Tooltip>
-            <Tooltip
-              content={
-                t("common.refresh", {
-                  defaultValue: "刷新",
-                }) as unknown as string
-              }
-            >
-              <Button
-                size="sm"
-                variant="bordered"
-                onPress={refreshAll}
-                isDisabled={loading}
-                className="rounded-full px-4"
-              >
-                {t("common.refresh", { defaultValue: "刷新" })}
               </Button>
             </Tooltip>
           </div>

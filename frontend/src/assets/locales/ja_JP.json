@@ -1,0 +1,804 @@
+{
+  "app": {
+    "settings": "設定",
+    "lang": "言語",
+    "quit_launcher": "ランチャーを終了"
+  },
+  "nav": {
+    "versions": "バージョン",
+    "more": "その他",
+    "about": "このアプリについて"
+  },
+  "launcherpage": {
+    "launch_button": "起動",
+    "content_manage": "コンテンツ管理",
+    "quick_actions": "クイックアクション",
+    "go_version_settings": "バージョン設定",
+    "manage_versions": "バージョン一覧",
+    "search_versions": "バージョンまたは名前を検索",
+    "open_exe_dir": "ゲームインストールフォルダを開く",
+    "register_system_button": "システムに登録",
+    "registered_tip": "登録済み",
+    "register": {
+      "installing": {
+        "title": "システムに登録中",
+        "body": "システム登録を実行中です。しばらくお待ちください…"
+      },
+      "success": {
+        "title": "登録完了",
+        "body": "システムへの登録が完了しました。システムのアプリ一覧から起動できます。"
+      },
+      "failed": {
+        "title": "登録失敗",
+        "body": "登録中にエラーが発生しました。再度試すか、環境を確認してください。"
+      }
+    },
+    "gdk_missing": {
+      "title": "Microsoft GDK が不足しています",
+      "body": "GDK ツールキットが検出されませんでした。登録機能を使用するには事前にインストールが必要です。設定ページに移動してインストールしますか？",
+      "go_settings": "設定へ"
+    },
+    "delete": {
+      "failed": {
+        "title": "削除失敗",
+        "content": "後ほどもう一度お試しください。",
+        "close_button": "閉じる"
+      },
+      "complete": {
+        "title": "削除完了",
+        "content": "選択したバージョンを正常に削除しました！",
+        "close_button": "閉じる"
+      },
+      "confirm": {
+        "title": "削除の確認",
+        "content": "このバージョンを削除してもよろしいですか？この操作は取り消せません。",
+        "delete_button": "削除",
+        "cancel_button": "キャンセル"
+      },
+      "deleting": {
+        "title": "削除中..."
+      }
+    },
+    "launch": {
+      "failed": {
+        "title": "起動エラー",
+        "content": "バージョンが選択されていません。ダウンロードページからインストールしてください！",
+        "download_button": "ダウンロードページ",
+        "close_button": "閉じる"
+      },
+      "force_run_button": "強制起動"
+    },
+    "deleting": {
+      "title": "削除中"
+    },
+    "registering": {
+      "title": "登録中"
+    },
+    "startup": {
+      "title": "起動成功",
+      "content": "選択したバージョンを正常に起動しました！",
+      "close_button": "閉じる"
+    },
+    "currentVersion": "現在のバージョン",
+    "vcruntime": {
+      "completing": {
+        "title": "不足している DLL を補完中",
+        "body": "vcruntime140_1.dll をダウンロード・補完中です。しばらくお待ちください…"
+      }
+    },
+    "mclaunch": {
+      "loading": {
+        "title": "Minecraft を起動中",
+        "body": "ゲームウィンドウの表示を待機中です。しばらくお待ちください…"
+      }
+    },
+    "shortcut": {
+      "create_button": "デスクトップショートカットを作成",
+      "success": {
+        "title": "ショートカットを作成しました",
+        "body": "デスクトップにこのバージョンのショートカットを作成しました。"
+      }
+    },
+    "gameinput": {
+      "installing": {
+        "title": "GameInput をインストール中",
+        "body": "インストーラーをダウンロード・起動中です。システムの指示に従ってインストールを完了してください。",
+        "progress_prefix": "進捗：",
+        "preparing": "ダウンロード準備中..."
+      },
+      "missing": {
+        "title": "GameInput コンポーネントが不足しています",
+        "body": "ゲームを実行するには Microsoft GameInput コンポーネントが必要です。今すぐダウンロード・インストールしますか？",
+        "install_now": "今すぐインストール"
+      }
+    },
+    "gs": {
+      "missing": {
+        "title": "Microsoft Gaming Services が不足しています",
+        "body": "Microsoft Gaming Services が検出されませんでした。このコンポーネントは Minecraft の実行に必須の依存関係です。",
+        "open_store": "ストアでインストール",
+        "ignore_forever": "無視して今後表示しない"
+      }
+    },
+    "install_confirm": {
+      "title": "インストールは完了しましたか？",
+      "body": "インストールが完了したら「完了し、再検出」をクリックしてください。まだの場合、引き続きインストールを完了してください。",
+      "continue": "インストールを続ける",
+      "done_and_check": "完了し、再検出"
+    },
+    "currentVersion_choose_version_aria": "バージョンを選択",
+    "currentVersion_none": "なし",
+    "version_select": {
+      "title": "バージョンを選択",
+      "subtitle": "現在選択可能なバージョン（ローカル検出）：",
+      "unknown": "不明"
+    },
+    "tip": {
+      "general": "ヒント：初回起動は時間がかかる場合があります。しばらくお待ちください。",
+      "choose_version_dropdown": "右側のドロップダウンボタンで現在のバージョンを素早く切り替えられます。",
+      "open_version_settings_gear": "「現在のバージョン」バッジにマウスを乗せ、表示される気泡内の歯車アイコンをクリックするとバージョン設定が開きます。アイコン変更やバージョン分離の有効化が可能です。",
+      "mods_import_button": "Mods カードの「.zip/.dll をインポート」をクリックしてファイルを選択してください。",
+      "download_versions": "「ダウンロード」ページで Release/Preview をインストールすると、ドロップダウンリストに表示されます。",
+      "content_counts_card": "ホームの「コンテンツ管理」にワールド、リソースパック、ビヘイビアパックの数が表示されます。",
+      "file_manager_pick": "ファイルマネージャーは複数選択に対応しており、Mods インポートにパスを返せます。",
+      "settings_base_root": "設定ページでコンテンツ保存パスを変更できます。デフォルトでは %APPDATA% 下に実行ファイル名で作成されたフォルダが使用されます。",
+      "directory_write_check": "書き込み可能なディレクトリにのみ保存できます。書き込み不可のディレクトリは無効になります。"
+    }
+  },
+  "updating": {
+    "title": "LeviLauncher を更新中",
+    "body": "管理者権限を要求し、更新を実行中です。更新中はウィンドウを閉じないでください。",
+    "failed_title": "更新失敗",
+    "phase": {
+      "download": "更新パッケージをダウンロード中",
+      "install": "更新をインストール中"
+    }
+  },
+  "moddedcard": {
+    "title": "Mod",
+    "content": {
+      "none": "Mod が見つかりません",
+      "found": "{{count}} 個の Mod を発見"
+    },
+    "manage": "Mod 管理"
+  },
+  "downloadpage": {
+    "type": {
+      "install": "インストール済み",
+      "not_install": "未インストール"
+    },
+    "changelog": {
+      "title": "最新の更新履歴",
+      "loading": "読み込み中..."
+    },
+    "status": {
+      "downloaded": "ダウンロード済み",
+      "not_downloaded": "未ダウンロード",
+      "checking": "確認中…"
+    },
+    "table": {
+      "aria_label": "バージョンテーブル",
+      "empty": "データがありません",
+      "header": {
+        "version": "バージョン",
+        "type": "タイプ",
+        "status": "ステータス",
+        "actions": "操作"
+      },
+      "type": {
+        "release": "正式版",
+        "preview": "プレビュー版"
+      }
+    },
+    "topcontent": {
+      "rowperpage": "1ページあたりの行数：",
+      "types": "タイプ",
+      "types_all": "すべて",
+      "status": "ステータス",
+      "status_all": "すべて",
+      "status_downloaded": "ダウンロード済み",
+      "status_not_downloaded": "未ダウンロード",
+      "input": {
+        "placeholder": "バージョンで検索..."
+      }
+    },
+    "actions": {
+      "delete_installer": "ダウンロードパッケージを削除"
+    },
+    "bottomcontent": {
+      "total": "{{count}} 個のバージョン"
+    },
+    "install_folder": {
+      "confirm_title": "インストールフォルダの確認",
+      "name_label": "バージョン名",
+      "placeholder_name": "バージョン名を入力してください",
+      "suggest_default": "デフォルト値の使用を推奨：",
+      "description": "ゲームファイルのコピー先として使用されます",
+      "name_required": "名前は必須です",
+      "enable_isolation": "バージョン分離",
+      "enable_isolation_desc": "ワールド、設定、キャッシュなどのゲームデータを AppData ではなく versions/【名前】/ ディレクトリにリダイレクトします。",
+      "inherit_label": "継承元",
+      "inherit_hint": "すでに分離済みのバージョンからデータをコピーします（タイプが一致している必要があります）",
+      "inherit_none": "継承しない",
+      "inherit_gdk": "GDK ディレクトリから継承"
+    },
+    "mirror": {
+      "title": "ダウンロードミラーを選択",
+      "target": "ダウンロード対象",
+      "testing": "速度測定中…",
+      "unselected": "未選択",
+      "copy_link": "リンクをコピー",
+      "recommended": "推奨ミラー",
+      "auto_testing": "自動速度測定中…",
+      "no_recommended": "推奨ミラーがありません",
+      "others": "その他のミラー",
+      "testing_short": "測定中",
+      "failed": "失敗",
+      "no_mirrors": "このバージョンには利用可能なミラーがありません。",
+      "filename_fallback": "（ファイル）",
+      "retest": "再測定",
+      "download_selected": "選択したミラーからダウンロード",
+      "install_button": "インストール",
+      "install_selected": "選択したミラーをインストール"
+    },
+    "progress": {
+      "title": "ダウンロード進捗",
+      "dest_placeholder": "インストーラーディレクトリ下 (msixvc)",
+      "error_prefix": "エラー：",
+      "unknown_error": "不明なエラー"
+    },
+    "download": {
+      "success_title": "ダウンロード完了",
+      "success_body": "ファイルをダウンロードしました："
+    },
+    "delete": {
+      "title": "ダウンロードパッケージの削除確認",
+      "body": "以下のインストールパッケージを削除します：",
+      "warning": "この操作は取り消せません。",
+      "confirm": "削除",
+      "success_title": "削除完了",
+      "success_body": "インストールパッケージを削除しました："
+    },
+    "install": {
+      "version_label": "バージョン",
+      "hint": "しばらくお待ちください。この処理には時間がかかる場合があります…",
+      "estimated_size": "書き込み済みサイズ（推定）",
+      "target": "インストール先",
+      "success_title": "インストール完了",
+      "success": "バージョンのインストールが完了しました。",
+      "custom_installer": {
+        "label": "ローカルインストーラーを選択 (.msixvc)",
+        "hint": "デフォルトではインストーラーディレクトリ内のダウンロード済みファイルを使用します"
+      }
+    },
+    "vcr": {
+      "error_generic": "ランタイムライブラリの準備に失敗しました。ネットワークを確認のうえ、再度お試しください"
+    },
+    "customappx": {
+      "button": "カスタム",
+      "modal": {
+        "1": {
+          "header": "バージョン情報",
+          "body": {
+            "select": {
+              "label": "ゲームバージョンを選択",
+              "item1": "正式版",
+              "item2": "プレビュー版"
+            }
+          },
+          "footer": {
+            "cancel_button": "キャンセル",
+            "install_button": "インストール"
+          }
+        }
+      }
+    }
+  },
+  "settingscard": {
+    "header": {
+      "title": "設定",
+      "content": "ランチャーの一般的なオプションを設定"
+    },
+    "body": {
+      "version": {
+        "name": "現在のバージョン",
+        "hasnew": "新しいバージョンが利用可能です！",
+        "button": "更新を確認",
+        "ignore": "このバージョンを無視"
+      },
+      "paths": {
+        "title": "コンテンツパス",
+        "base_root": "ルートディレクトリ",
+        "apply": "適用",
+        "reset": "デフォルトに戻す",
+        "open_installers": "インストーラーディレクトリを開く",
+        "open_versions": "バージョンディレクトリを開く",
+        "installer": "インストーラーディレクトリ",
+        "versions": "バージョンディレクトリ",
+        "not_writable": "ディレクトリに書き込めません"
+      },
+      "browse": "参照...",
+      "language": {
+        "name": "言語",
+        "button": "変更"
+      },
+      "defaultdev": {
+        "label": "Dev モードで起動",
+        "description": "有効にすると、Minecraft を Dev モードで起動します。無効にすると通常モードで起動します。"
+      }
+    },
+    "footer": {
+      "cancel_button": "キャンセル",
+      "save_button": "保存"
+    },
+    "modal": {
+      "1": {
+        "header": {
+          "title": "更新を確認中..."
+        },
+        "body": {
+          "content": "更新を確認中..."
+        },
+        "footer": {
+          "cancel_button": "キャンセル"
+        }
+      },
+      "2": {
+        "header": {
+          "title": "新しいバージョンを検出"
+        },
+        "body": {
+          "content": "新しいバージョン ({{version}}) が利用可能です！"
+        },
+        "footer": {
+          "download_button": "更新",
+          "close_button": "閉じる"
+        }
+      },
+      "3": {
+        "header": {
+          "title": "更新中..."
+        }
+      },
+      "-2": {
+        "header": {
+          "title": "すでに最新バージョンです！"
+        },
+        "footer": {
+          "close_button": "閉じる"
+        }
+      }
+    }
+  },
+  "settings": {
+    "unsaved": {
+      "title": "未保存の変更があります",
+      "body": "コンテンツパスを変更しましたが、まだ保存していません。保存して終了しますか？",
+      "cancel": "キャンセル",
+      "save": "保存して終了"
+    },
+    "lang": {
+      "changed": "言語を変更しました，内容由 AI 生成，不保证 100%正确"
+    },
+    "discord_rpc": {
+      "title": "Discord ゲームステータス",
+      "desc": "Discord 上でゲームステータスを表示"
+    },
+    "reset": {
+      "confirm": {
+        "title": "デフォルトパスに戻しますか？",
+        "body": "コンテンツパスがデフォルト位置にリセットされます。よろしいですか？"
+      }
+    },
+    "gdk": {
+      "title": "Microsoft GDK 開発キット",
+      "installed": "インストール済み",
+      "install_button": "ダウンロードしてインストール",
+      "path_label": "パス：{{path}}",
+      "license": {
+        "title": "ライセンス契約",
+        "body": "続行するには、Microsoft GDK 公共開発キットライセンス契約に同意する必要があります。",
+        "accept": "ライセンス条項に同意します"
+      },
+      "download": {
+        "title": "GDK をダウンロード"
+      },
+      "install": {
+        "title": "GDK をインストール中",
+        "body": "しばらくお待ちください。インストーラーを実行中です…"
+      }
+    }
+  },
+  "downloadmodal": {
+    "download_button": "ダウンロード",
+    "information": {
+      "title": "情報の確認",
+      "spinner": {
+        "label": "ダウンロードリンクを取得中..."
+      },
+      "table": {
+        "version": "バージョン",
+        "type": "タイプ",
+        "size": "ファイルサイズ"
+      },
+      "input": {
+        "label": "バージョン名",
+        "placeholder": "バージョン名を入力",
+        "errormessage": "命名規則に違反しているか、すでに存在します！"
+      },
+      "switch": {
+        "label": "Mod を有効化",
+        "description": "これを有効にすると Mod 化が有効になり、プリローダーが自動インストールされ、元のファイル（Minecraft.Windows.exe）が変更されます。"
+      },
+      "close_button": "閉じる",
+      "download_button": "ダウンロード"
+    },
+    "downloading": {
+      "title": "ダウンロード中",
+      "body": {
+        "file_name": " ファイル：{{name}}",
+        "estimated_time_remaining": "残り時間（推定）："
+      },
+      "footer": {
+        "close_button": "閉じる"
+      }
+    },
+    "installing": {
+      "title": "インストール中"
+    },
+    "installcomplete": {
+      "title": "インストール完了",
+      "content": "インストールが正常に完了しました！",
+      "close_button": "閉じる"
+    },
+    "stopdownload": {
+      "title": "ダウンロードを停止しますか？",
+      "content": "ダウンロードを停止しますか？この操作は取り消せません！",
+      "cancel_button": "キャンセル",
+      "stop_button": "停止"
+    },
+    "downloadfailed": {
+      "title": "ダウンロード失敗",
+      "content": "ファイルのダウンロード中にエラーが発生しました。後ほど再試行してください。",
+      "close_button": "閉じる"
+    },
+    "installfailed": {
+      "title": "インストール失敗",
+      "content": "インストールに失敗しました。再度お試しください。",
+      "close_button": "閉じる"
+    },
+    "open_folder": "フォルダを開く"
+  },
+  "aboutcard": {
+    "title": "このアプリについて",
+    "description": " 2024-2025 {{name}} All Rights Reserved",
+    "font": "本ソフトウェアは {{name}} フォントを使用しています"
+  },
+  "about": {
+    "authors": "作者とメンテナー",
+    "author": "作者",
+    "ll_authors": "LeviLauncher 開発者",
+    "source": "ソースコードとオープンソース",
+    "thanks": "特別な感謝",
+    "thanks.desc": "LeviLauncher の開発を支援してくださった個人およびプロジェクトに深く感謝します。",
+    "sponsors": "サポーター（スポンサー）",
+    "sponsors.desc": "プロジェクトの発展にご協力いただいたすべてのサポーターおよびスポンサーに感謝します！",
+    "contribute": "貢献に参加",
+    "contribute.desc": "Issue の投稿や Pull Request の送信を通じて、LeviLauncher の改善にご協力ください。",
+    "afdian": "愛発電",
+    "patreon": "Patreon",
+    "github_repo": "GitHub · LeviLauncher",
+    "github_org": "LiteLDev 組織",
+    "license.tip": "ライセンスの詳細については、リポジトリ内の LICENSE ファイルをご確認ください。",
+    "website": "公式サイト",
+    "issue": "Issue",
+    "star_fork": "Star / Fork",
+    "rhymc_name": "旋律雲"
+  },
+  "common": {
+    "ok": "OK",
+    "cancel": "キャンセル",
+    "error": "エラー",
+    "retry": "再試行",
+    "refresh": "更新",
+    "open": "開く",
+    "select": "選択",
+    "preview": "プレビュー版",
+    "release": "正式版",
+    "back": "戻る",
+    "loading": "読み込み中",
+    "yes": "はい",
+    "no": "いいえ",
+    "go": "移動",
+    "close": "閉じる",
+    "cancel_and_clean": "キャンセルしてクリーンアップ",
+    "quit_launcher": "ランチャーを終了",
+    "confirm": "確認",
+    "delete": "削除",
+    "search": "検索",
+    "empty": "データなし",
+    "browse": "参照...",
+    "processing": "処理中...",
+    "done": "完了",
+    "wait": "お待ちください...",
+    "updating": "更新中",
+    "expand": "展開",
+    "collapse": "折りたたむ",
+    "save": "保存",
+    "add": "追加",
+    "save_failed": "保存に失敗しました",
+    "load_failed": "読み込みに失敗しました"
+  },
+  "content": {
+    "count": {
+      "worlds": "ワールド",
+      "resource_packs": "リソースパック",
+      "behavior_packs": "ビヘイビアパック",
+      "skin_packs": "スキンパック"
+    }
+  },
+  "contentpage": {
+    "not_ready_title": "ページ未完成",
+    "not_ready_body": "このページは開発中です。ホームに戻ってください。",
+    "current_version": "現在のバージョン",
+    "none": "なし",
+    "isolation": "バージョン分離",
+    "isolation_on": "バージョン分離：有効",
+    "isolation_off": "バージョン分離：無効",
+    "worlds": "ワールド",
+    "worlds_desc": "各プレイヤーは Users/<プレイヤー>/games/com.mojang/minecraftWorlds に個別に保存されます",
+    "select_player": "プレイヤーを選択",
+    "no_players": "プレイヤーがいません",
+    "no_worlds": "ワールドがありません",
+    "backup": "バックアップ",
+    "backup_success": "バックアップ成功",
+    "edit": "編集",
+    "resource_packs": "リソースパック",
+    "shared_desc": "全プレイヤー共有：Users/Shared/games/com.mojang/resource_packs",
+    "no_resource_packs": "リソースパックがありません",
+    "path": "パス",
+    "path_unknown": "パス不明",
+    "not_resolved": "未解決",
+    "behavior_packs": "ビヘイビアパック",
+    "shared_desc_bp": "全プレイヤー共有：Users/Shared/games/com.mojang/behavior_packs",
+    "no_behavior_packs": "ビヘイビアパックがありません",
+    "skin_packs": "スキンパック",
+    "no_skin_packs": "スキンパックがありません",
+    "count": "数",
+    "error_resolve_paths": "コンテンツパスを解決できません。",
+    "open_users_dir": "保存ディレクトリを開く",
+    "players_aria": "プレイヤーリスト",
+    "sort_aria": "並べ替え",
+    "sort_time": "日時",
+    "sort_asc": "昇順",
+    "sort_desc": "降順",
+    "min_engine_version": "最小ゲームバージョン",
+    "drop_hint": ".mcworld/.mcpack/.mcaddon をドラッグしてインポート",
+    "import_button": ".mcworld/.mcpack/.mcaddon をインポート",
+    "require_player_for_world_import": "ワールド (.mcworld) をインポートする前にプレイヤーを選択してください",
+    "no_player_selected": "プレイヤーが選択されていません",
+    "world_leveldat_editor": "ワールド level.dat 編集",
+    "basic": "基本",
+    "version": "バージョン番号",
+    "world_level_name": "ワールド名",
+    "add_field": "フィールドを追加",
+    "add_field_panel": "フィールド追加パネル",
+    "field_name": "名前",
+    "initial_value": "初期値",
+    "gamerules": "ゲームルール",
+    "others": "その他のフィールド",
+    "add_child_field": "子フィールドを追加",
+    "new_child_item": "新規子項目",
+    "field_type": "タイプ",
+    "select_player_title": "プレイヤーを選択",
+    "select_player_for_import": "インポート先のプレイヤーを選択してください"
+  },
+  "versions": {
+    "rename": {
+      "title": "バージョン名を変更",
+      "current": "現在の名前",
+      "new_name": "新しい名前",
+      "placeholder": "新しい名前を入力",
+      "hint": "フォルダ名のみ変更され、ゲームバージョンやタイプには影響しません。"
+    },
+    "info": {
+      "version": "ゲームバージョン",
+      "name": "名前"
+    },
+    "edit": {
+      "title": "バージョン設定",
+      "current": "現在の名前",
+      "new_name": "新しい名前",
+      "placeholder": "新しい名前を入力",
+      "hint": "フォルダ名のみ変更され、ゲームバージョンやタイプには影響しません。",
+      "enable_isolation": "バージョン分離を有効化",
+      "enable_console": "コンソールを有効化",
+      "enable_editor_mode": "エディターモードを有効化",
+      "danger_zone_title": "危険な操作",
+      "delete_hint": "誤操作防止のため、削除確認は別途開いてください。",
+      "unregister_button": "登録を解除",
+      "unregister_hint": "このバージョンはシステムに登録されています。登録解除後、リネームまたは削除が可能になります。",
+      "unregister_progress": {
+        "title": "登録解除中",
+        "body": "システム登録の解除を実行中です。しばらくお待ちください…"
+      },
+      "unregister_success": {
+        "title": "登録解除成功",
+        "body": "登録を正常に解除しました。これでこのバージョンを削除できます。"
+      }
+    },
+    "logo": {
+      "title": "カスタムアイコン（正方形必須）",
+      "change": "クリックして変更",
+      "clear": "クリア",
+      "hint": "LargeLogo.png としてバージョンフォルダに保存されます。アイコンをクリックして変更できます。"
+    },
+    "delete": {
+      "title": "バージョン削除の確認",
+      "body": "以下のバージョンフォルダを削除します：",
+      "warning": "この操作は取り消せません。",
+      "confirm": "削除",
+      "success_title": "削除完了",
+      "success_body": "バージョンを削除しました："
+    }
+  },
+  "errors": {
+    "ERR_GAME_ALREADY_RUNNING": "このバージョンの Minecraft はすでに実行中です。終了するか、別のバージョンを起動してください",
+    "ERR_TARGET_DIR_NOT_SPECIFIED": "対象ディレクトリが指定されていません",
+    "ERR_CREATE_TARGET_DIR": "対象ディレクトリを作成できません",
+    "ERR_NOT_FOUND_GAME_DIR": "ゲームディレクトリが見つかりません",
+    "ERR_NOT_FOUND_EXE": "実行ファイルが見つかりません",
+    "ERR_WRITE_TARGET": "対象設定の書き込みに失敗しました",
+    "ERR_LAUNCH_GAME": "ゲームの起動に失敗しました",
+    "ERR_GAME_CRASH_DURING_LAUNCH": "起動中にゲームがクラッシュしました",
+    "ERR_WAIT_KERNEL_TIMEOUT": "カーネルの準備待機がタイムアウトしました",
+    "ERR_COPY_WALK": "ファイル走査に失敗しました",
+    "ERR_COPY_FAILED": "コピーに失敗しました",
+    "ERR_NAME_REQUIRED": "名前は必須です",
+    "ERR_NAME_TOO_LONG": "名前が長すぎます",
+    "ERR_NAME_TRAILING_DOT_SPACE": "名前はスペースまたはピリオドで終わることはできません",
+    "ERR_NAME_INVALID_CHAR": "名前に無効な文字が含まれています: <>:\"/\\|?*",
+    "ERR_NAME_CONTROL_CHAR": "名前に制御文字が含まれています",
+    "ERR_NAME_RESERVED": "名前が Windows の予約語です",
+    "ERR_ICON_DECODE": "アイコンの解析に失敗しました",
+    "ERR_ICON_NOT_SQUARE": "アイコンは正方形である必要があります",
+    "ERR_ACCESS_VERSIONS_DIR": "バージョンディレクトリにアクセスできません",
+    "ERR_ACCESS_INSTALLERS_DIR": "インストーラーディレクトリにアクセスできません",
+    "ERR_READ_VERSIONS_DIR": "バージョンディレクトリの読み取りに失敗しました",
+    "ERR_NAME_EXISTS": "同じ名前がすでに存在します",
+    "ERR_INVALID_NAME": "無効な名前です",
+    "ERR_NOT_FOUND_OLD": "元のディレクトリが見つかりません",
+    "ERR_RENAME_FAILED": "リネームに失敗しました（使用中または権限不足の可能性があります）",
+    "ERR_MSIXVC_NOT_SPECIFIED": "インストーラーが指定されていません",
+    "ERR_MSIXVC_NOT_FOUND": "インストーラーが存在しません",
+    "ERR_APPX_UNINSTALL_FAILED": "既存ゲームのアンインストールに失敗しました",
+    "ERR_APPX_INSTALL_FAILED": "インストールに失敗しました。再度お試しください。",
+    "ERR_MC_NOT_AUTHORIZED": "{{typeLabel}} Minecraft の正規ライセンスをお持ちか確認してください。マイクロソフトアカウントで購入・ログイン後に再試行してください",
+    "ERR_INHERIT_SOURCE_NOT_FOUND": "継承元のバージョンが見つかりません",
+    "ERR_INHERIT_TARGET_NOT_FOUND": "継承先のバージョンが見つかりません",
+    "ERR_INHERIT_TYPE_MISMATCH": "タイプが一致しないため、継承できません",
+    "ERR_INHERIT_COPY_FAILED": "継承データのコピーに失敗しました",
+    "ERR_NO_GAME_DATA": "継承元にゲームデータが存在しません",
+    "ERR_DELETE_FAILED": "削除に失敗しました（使用中または権限不足の可能性があります）",
+    "ERR_VCRUNTIME_MISSING": "ランタイムライブラリが不足しており、インストールに失敗しました。Microsoft Visual C++ ランタイムがインストールされているか確認のうえ、再試行してください",
+    "ERR_SHORTCUT_CREATE_FAILED": "デスクトップショートカットの作成に失敗しました",
+    "ERR_UNREGISTER_FAILED": "登録解除に失敗しました",
+    "ERR_NOT_REGISTERED_THIS_VERSION": "このバージョンはシステムに登録されていません",
+    "ERR_DEV_MODE_REQUIRED": "開発者モードが有効になっておらず、自動有効化にも失敗しました。手動で開発者モードを有効にしてから再試行してください。"
+  },
+  "filemanager": {
+    "title": "ファイルマネージャー",
+    "drives_title": "ドライブ",
+    "computer": "PC",
+    "quick_access": "クイックアクセス",
+    "pinned": "ピン留め済み",
+    "navigation": "ナビゲーション",
+    "pins_empty": "ピン留めアイテムがありません。星マークでピン留めできます",
+    "choose_drive": "ドライブを選択してください",
+    "search_placeholder": "ファイル/フォルダを検索…",
+    "sort": {
+      "name": "名前",
+      "size": "サイズ",
+      "kind": "種類"
+    },
+    "empty": "ここには何もありません",
+    "drive_label": "ドライブ",
+    "up": "上へ",
+    "pin_current": "現在のパスをピン留め",
+    "refreshing": "更新中…",
+    "choose_this_dir": "このディレクトリを選択",
+    "dir_not_writable": "このディレクトリは書き込みできません。別の場所を選択してください",
+    "new_folder": "新規フォルダ",
+    "new_folder_placeholder": "フォルダ名を入力"
+  },
+  "file": {
+    "types": {
+      "folder": "フォルダ",
+      "executable": "実行可能ファイル",
+      "library": "ライブラリファイル",
+      "archive": "圧縮ファイル",
+      "image": "画像",
+      "text": "テキスト",
+      "json": "JSON",
+      "jar": "JAR パッケージ",
+      "mcpack": "MCPack",
+      "mcaddon": "MCAddon",
+      "file": "ファイル"
+    }
+  },
+  "splash": {
+    "preparing": "起動準備中..."
+  },
+  "mods": {
+    "import_button": ".zip/.dll をインポート",
+    "importing_title": "インポート中...",
+    "importing_body": "しばらくお待ちください。選択されたファイルを処理中です。",
+    "summary_title_done": "インポート完了",
+    "summary_title_partial": "インポート完了（一部失敗）",
+    "summary_success": "成功",
+    "summary_failed": "失敗",
+    "details_title": "Mod 詳細",
+    "field_name": "名前",
+    "field_version": "バージョン",
+    "field_type": "タイプ",
+    "field_entry": "エントリポイント",
+    "field_author": "作者",
+    "delete_summary_title_done": "削除完了",
+    "delete_summary_title_failed": "削除失敗",
+    "summary_deleted": "削除済み",
+    "confirm_delete_title": "削除の確認",
+    "confirm_delete_body": "この{{type}}を削除してもよろしいですか？この操作は取り消せません。",
+    "dll_modal_title": "DLL プラグインをインポート",
+    "dll_name": "プラグイン名",
+    "dll_type": "タイプ",
+    "dll_version": "バージョン",
+    "err_invalid_name": "無効なバージョン名またはモジュール名です",
+    "err_access_versions_dir": "バージョンディレクトリにアクセスできません",
+    "err_create_target_dir": "対象ディレクトリの作成に失敗しました",
+    "err_open_zip": "ZIP ファイルを開けません",
+    "err_manifest_not_found": "manifest.json が見つかりません",
+    "err_invalid_package": "無効なパッケージ構造です",
+    "err_duplicate_folder": "同名のモジュールフォルダがすでに存在します",
+    "err_read_zip_entry": "ZIP 内のエントリの読み取りに失敗しました",
+    "err_write_file": "ファイルの書き込みに失敗しました",
+    "err_unknown": "不明なエラー",
+    "overwrite_modal_title": "重複を検出",
+    "overwrite_modal_body": "同名のモジュールフォルダがすでに存在します。上書き（更新）しますか？",
+    "drag_import_unsupported_title": "ドラッグ＆ドロップインポートは未対応",
+    "drag_import_unsupported_body": "Wails のサポート待ちです。",
+    "toggle_label": "Mod を有効化",
+    "toggle_on": "有効",
+    "toggle_off": "無効",
+    "toggle_tip": "この Mod の有効/無効を切り替えます",
+    "toggle_desc_on": "Mod は有効です。ゲーム起動時に読み込まれます。",
+    "toggle_desc_off": "Mod は無効です。ゲーム起動時に読み込まれません。",
+    "only_enabled": "有効な Mod のみ表示",
+    "type_mod": "Mod"
+  },
+  "versionselect": {
+    "unsaved": {
+      "title": "未保存の変更があります",
+      "body": "選択したバージョンを変更しましたが、まだ保存していません。保存して終了しますか？",
+      "discard": "保存せずに終了",
+      "save_and_leave": "保存して終了"
+    }
+  },
+  "terms": {
+    "title": "LeviLauncher 利用規約",
+    "body": "LeviLauncher をご利用いただきありがとうございます。\n\n本ソフトウェアの使用により、以下の点に同意したものとみなされます：\n• これは非公式の Minecraft ランチャーです\n• 正規の Minecraft ライセンスをお持ちでない場合、体験版モードで起動されます\n• 海賊版やチート行為は一切禁止です\n• Mod やリソースパックの使用によるリスクは自己責任です\n• Mojang/Microsoft とは一切関係ありません\n\n引き続き使用することで、上記の規約に同意したものとみなされます。",
+    "agree": "同意して続行",
+    "decline": "同意しない（終了）"
+  },
+  "onboarding": {
+    "title": "初回起動ガイド",
+    "subtitle": "まずはコンテンツパスと言語を設定してください",
+    "skip": "スキップ",
+    "finish": "完了",
+    "unsaved": {
+      "title": "未保存の変更があります",
+      "body": "コンテンツパスを変更しましたが、まだ保存していません。保存してガイドを完了しますか？",
+      "cancel": "キャンセル",
+      "save": "保存して完了"
+    }
+  }
+}

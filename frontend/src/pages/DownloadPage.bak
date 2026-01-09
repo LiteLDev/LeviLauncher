@@ -22,6 +22,8 @@ import {
   ModalFooter,
   Progress,
   Spinner,
+  Accordion,
+  AccordionItem,
   useDisclosure,
   Card,
   CardBody,
@@ -563,40 +565,46 @@ export const DownloadPage: React.FC = () => {
   const isInstalled = (it: VersionItem) => getVersionStatus(it).isInstalled;
 
   return (
-    <>
-      <motion.div
-        className="w-full max-w-full mx-auto px-4 py-2 h-full flex flex-col"
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
-      >
-        <div className="flex flex-col h-full">
-          <Card className="flex-1 min-h-0 rounded-[2.5rem] shadow-xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border-none">
-            <CardBody className="p-0 flex flex-col h-full overflow-hidden">
-              <div className="p-4 sm:p-6 pb-2 flex flex-col sm:flex-row gap-4 justify-between items-center border-b border-default-200 dark:border-white/10">
-                <div className="flex items-center gap-3 w-full sm:max-w-md">
-                    <Input
-                      isClearable
-                      radius="full"
-                      classNames={{
-                        base: "max-w-full sm:max-w-[20rem] h-10",
-                        mainWrapper: "h-full",
-                        input: "text-small",
-                        inputWrapper: "h-full font-normal text-default-500 bg-default-400/20 dark:bg-default-500/20",
-                      }}
-                      placeholder={t("downloadpage.topcontent.input.placeholder")}
-                      value={query}
-                      onValueChange={setQuery}
-                      startContent={<FaSync size={14} className="text-default-400" />}
-                      onClear={() => setQuery("")}
-                    />
+    <motion.div
+      className="px-4 sm:px-6 lg:px-8 py-6 w-full max-w-none"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+    >
+      <Card className="rounded-2xl shadow-md bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/30">
+        <CardBody className="p-0">
+          <Table
+            aria-label={
+              t("downloadpage.table.aria_label", {
+                defaultValue: "versions-table",
+              }) as unknown as string
+            }
+            className="bg-transparent"
+            classNames={{
+              wrapper: "bg-transparent",
+            }}
+            topContent={
+              <motion.div
+                className="flex items-center justify-between gap-3 sm:gap-4 whitespace-nowrap overflow-x-auto px-4 pt-3"
+                initial={{ opacity: 0, y: -6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{ duration: 0.25 }}
+              >
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0 flex-1">
+                  <Input
+                    className="flex-1 min-w-[220px]"
+                    placeholder={t("downloadpage.topcontent.input.placeholder")}
+                    value={query}
+                    onValueChange={setQuery}
+                    radius="full"
+                  />
                 </div>
-                <div className="flex items-center gap-2 shrink-0 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                <div className="flex items-center gap-3 sm:gap-4 shrink-0">
                   <Button
                     radius="full"
-                    variant="flat"
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
-                    startContent={<FaSync className={refreshing ? "animate-spin" : ""} size={14} />}
+                    variant="bordered"
+                    className="shrink-0"
+                    startContent={<FaSync size={14} />}
                     isDisabled={items.length === 0}
                     isLoading={refreshing}
                     onPress={async () => {
@@ -607,8 +615,8 @@ export const DownloadPage: React.FC = () => {
                   </Button>
                   <Button
                     radius="full"
-                    variant="flat"
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
+                    variant="bordered"
+                    className="shrink-0"
                     onPress={() =>
                       navigate("/install", {
                         state: {
@@ -627,8 +635,8 @@ export const DownloadPage: React.FC = () => {
                     <DropdownTrigger>
                       <Button
                         radius="full"
-                        variant="flat"
-                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
+                        variant="bordered"
+                        className="shrink-0"
                       >
                         {t("downloadpage.topcontent.types")}
                       </Button>
@@ -658,8 +666,8 @@ export const DownloadPage: React.FC = () => {
                     <DropdownTrigger>
                       <Button
                         radius="full"
-                        variant="flat"
-                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
+                        variant="bordered"
+                        className="shrink-0"
                       >
                         {t("downloadpage.topcontent.status", {
                           defaultValue: "状态",
@@ -695,43 +703,27 @@ export const DownloadPage: React.FC = () => {
                     </DropdownMenu>
                   </Dropdown>
                 </div>
+              </motion.div>
+            }
+            bottomContent={
+              <div className="flex items-center justify-between px-4 py-3 gap-3">
+                <div className="text-sm text-default-500">
+                  {t("downloadpage.bottomcontent.total", {
+                    count: filtered.length,
+                  })}
+                </div>
+                <div className="flex items-center gap-3 ml-auto">
+                  <Pagination
+                    total={totalPages}
+                    page={page}
+                    onChange={setPage}
+                    radius="full"
+                    showControls
+                  />
+                </div>
               </div>
-
-              <Table
-                aria-label={
-                  t("downloadpage.table.aria_label", {
-                    defaultValue: "versions-table",
-                  }) as unknown as string
-                }
-                className="bg-transparent flex-1 overflow-auto min-h-0"
-                removeWrapper
-                classNames={{
-                   th: "bg-transparent text-default-500 border-b border-default-200 dark:border-white/10",
-                   td: "py-3 border-b border-default-100 dark:border-white/5 last:border-0",
-                }}
-                bottomContent={
-                  <div className="flex items-center justify-between px-6 py-4 border-t border-default-200 dark:border-white/10 bg-transparent">
-                    <div className="text-sm text-default-500">
-                      {t("downloadpage.bottomcontent.total", {
-                        count: filtered.length,
-                      })}
-                    </div>
-                    <div className="flex items-center gap-3 ml-auto">
-                      <Pagination
-                        total={totalPages}
-                        page={page}
-                        onChange={setPage}
-                        radius="full"
-                        showControls
-                        variant="light" 
-                        classNames={{
-                          cursor: "bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/30"
-                        }}
-                      />
-                    </div>
-                  </div>
-                }
-              >
+            }
+          >
             <TableHeader>
               <TableColumn>
                 {t("downloadpage.table.header.version")}
@@ -844,21 +836,11 @@ export const DownloadPage: React.FC = () => {
                     >
                       <Button
                         radius="full"
+                        variant="ghost"
+                        color="default"
                         size="sm"
                         startContent={<FaDownload size={14} />}
-                        className={`px-4 h-8 w-full transition-transform hover:-translate-y-0.5 ${
-                          !hasStatus(item) && refreshing
-                            ? ""
-                            : isDownloaded(item)
-                            ? "bg-gradient-to-r from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30 text-white font-bold"
-                            : "bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 text-white font-bold"
-                        }`}
-                        variant={
-                          !hasStatus(item) && refreshing ? "flat" : "solid"
-                        }
-                        color={
-                          !hasStatus(item) && refreshing ? "default" : undefined
-                        }
+                        className="px-4 h-8 rounded-full font-medium transition-transform hover:-translate-y-0.5 w-full"
                         isDisabled={!hasStatus(item) && refreshing}
                         onPress={() => {
                           const urls = item.urls || [];
@@ -907,48 +889,20 @@ export const DownloadPage: React.FC = () => {
         onOpenChange={onOpenChange}
         size="2xl"
         scrollBehavior="inside"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
-        <ModalContent className="max-w-[820px] shadow-none">
+        <ModalContent className="max-w-[820px]">
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-                <div className="flex flex-col gap-2">
-                  <motion.h2
-                    className="text-3xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, ease: "easeOut" }}
-                  >
-                    {t("downloadpage.mirror.title", {
-                      defaultValue: "选择下载镜像",
-                    })}
-                  </motion.h2>
-                  <motion.div
-                    className="flex items-center gap-2"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.3, delay: 0.1 }}
-                  >
-                     <Chip size="sm" variant="flat" color={mirrorType === "Preview" ? "secondary" : "warning"} className="h-6">
-                        {mirrorType}
-                     </Chip>
-                     <span className="text-small font-mono text-default-600 dark:text-zinc-400">{mirrorVersion}</span>
-                  </motion.div>
-                </div>
-                
-                <motion.div
-                  className="mt-6 rounded-2xl bg-default-100/50 dark:bg-zinc-800 border border-default-200/50 dark:border-white/5 p-4"
-                  initial={{ opacity: 0, y: 5 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.2 }}
-                >
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                    <div className="flex items-center gap-2 text-small font-bold text-default-700 dark:text-zinc-300 shrink-0">
-                      <div className="w-1 h-4 rounded-full bg-emerald-500"></div>
+              <ModalHeader className="flex flex-col gap-1">
+                <h2 className="text-xl font-bold">
+                  {t("downloadpage.mirror.title", {
+                    defaultValue: "选择下载镜像",
+                  })}
+                </h2>
+                <p className="text-small text-default-500">{mirrorVersion}</p>
+                <div className="rounded-medium bg-content2 border border-default-200 px-3 py-1">
+                  <div className="flex items-center justify-between gap-2">
+                    <div className="text-small text-default-500">
                       {t("downloadpage.mirror.target", {
                         defaultValue: "下载目标",
                       })}
@@ -958,188 +912,172 @@ export const DownloadPage: React.FC = () => {
                         selectedUrl || (!testing ? bestMirror?.url : "");
                       if (!target)
                         return (
-                          <div className="text-small text-default-400 dark:text-zinc-500 italic">
+                          <div className="text-small">
                             {testing
                               ? t("downloadpage.mirror.testing", {
-                                  defaultValue: "正在测速...",
+                                  defaultValue: "测速中…",
                                 })
                               : t("downloadpage.mirror.unselected", {
-                                  defaultValue: "请选择一个镜像",
+                                  defaultValue: "未选择",
                                 })}
                           </div>
                         );
                       const domain = labelFromUrl(target);
                       const fname = fileNameFromUrl(target);
                       return (
-                        <div className="flex items-center gap-3 min-w-0 bg-white/50 dark:bg-black/20 rounded-xl px-3 py-1.5 border border-black/5 dark:border-white/5">
-                          <div className="text-small truncate max-w-[400px] text-default-700 dark:text-zinc-300">
-                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{domain}</span>
-                            <span className="mx-1.5 opacity-30">|</span>
-                            {fname}
+                        <div className="flex items-center gap-3 min-w-0">
+                          <div className="text-small truncate max-w-[520px]">
+                            {domain} · {fname}
                           </div>
                           <Button
                             size="sm"
-                            variant="flat"
-                            className="h-7 min-w-[5rem] bg-default-200/50 dark:bg-white/10"
+                            variant="light"
+                            className="h-6 px-2"
                             onPress={() =>
                               navigator.clipboard?.writeText(target)
                             }
                             startContent={<FaCopy size={12} />}
                           >
                             {t("downloadpage.mirror.copy_link", {
-                              defaultValue: "复制",
+                              defaultValue: "复制链接",
                             })}
                           </Button>
                         </div>
                       );
                     })()}
                   </div>
-                </motion.div>
+                </div>
               </ModalHeader>
-              <ModalBody className="px-8 py-2 [&::-webkit-scrollbar]:hidden">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.3, delay: 0.25 }}
-                >
-                  {mirrorUrls && mirrorUrls.length > 0 ? (
-                    <div className="flex flex-col gap-4">
-                      {/* Recommended Section */}
-                      <div>
-                          <div className="flex items-center gap-3 mb-3 px-1">
-                            <span className="text-sm font-bold text-default-800 dark:text-zinc-300 uppercase tracking-wider">
-                              {t("downloadpage.mirror.recommended", {
-                                defaultValue: "推荐镜像",
-                              })}
-                            </span>
-                            {testing && (
-                              <Chip size="sm" variant="flat" color="success" startContent={<Spinner size="sm" color="success" className="w-3 h-3" />}>
-                                {t("downloadpage.mirror.auto_testing", { defaultValue: "测速中" })}
-                              </Chip>
-                            )}
-                          </div>
-                          
-                          {bestMirror ? (
-                            <div
-                              className={`group relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl border-2 p-4 transition-all cursor-pointer ${
-                                selectedUrl === bestMirror.url
-                                  ? "border-emerald-500 bg-emerald-500/5 shadow-xl shadow-emerald-500/10"
-                                  : "border-transparent bg-default-50 dark:bg-zinc-800/50 hover:bg-default-100 dark:hover:bg-zinc-800"
-                              }`}
-                              onClick={() => setSelectedUrl(bestMirror.url)}
-                            >
-                              <div className="flex items-center gap-4 min-w-0 z-10">
-                                <div className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                                    selectedUrl === bestMirror.url ? "bg-emerald-500 text-white" : "bg-default-200 text-default-500"
-                                }`}>
-                                    <FaDownload size={16} />
-                                </div>
-                                <div className="flex flex-col gap-0.5 min-w-0">
-                                  <div className="font-bold text-medium text-default-900 dark:text-white truncate">
-                                    {bestMirror.label}
-                                  </div>
-                                  <div className="text-tiny text-default-500 dark:text-zinc-400 truncate font-mono opacity-70">
-                                      {bestMirror.url}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3 shrink-0 z-10">
-                                <div className="flex flex-col items-end">
-                                    <span className="text-tiny text-default-500 font-medium">延迟</span>
-                                    <span className={`text-medium font-bold ${bestMirror.ok ? "text-emerald-500" : "text-danger-500"}`}>
-                                        {typeof bestMirror.latencyMs === "number" ? `${Math.round(bestMirror.latencyMs)}ms` : "-"}
-                                    </span>
-                                </div>
-                                {selectedUrl === bestMirror.url && (
-                                    <motion.div layoutId="selected-check" className="text-emerald-500">
-                                        <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
-                                            <svg className="w-3.5 h-3.5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="3" d="M5 13l4 4L19 7" /></svg>
-                                        </div>
-                                    </motion.div>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="p-8 rounded-2xl border border-dashed border-default-300 flex flex-col items-center justify-center text-default-500 gap-2">
-                                <span>暂无推荐镜像</span>
-                            </div>
-                          )}
+              <ModalBody>
+                {mirrorUrls && mirrorUrls.length > 0 ? (
+                  <div className="flex flex-col gap-4">
+                    <div className="rounded-lg border border-default-200 p-3">
+                      <div className="flex items-center gap-3 min-w-0">
+                        <span className="font-medium">
+                          {t("downloadpage.mirror.recommended", {
+                            defaultValue: "推荐镜像",
+                          })}
+                        </span>
+                        {testing ? (
+                          <span className="flex items-center gap-2 text-small text-default-500">
+                            <Spinner size="sm" />{" "}
+                            {t("downloadpage.mirror.auto_testing", {
+                              defaultValue: "自动测速中…",
+                            })}
+                          </span>
+                        ) : null}
                       </div>
-
-                      {/* Others Section */}
-                      <div className="flex flex-col gap-2">
-                        <div className="text-sm font-bold text-default-800 dark:text-zinc-300 uppercase tracking-wider px-1">
-                            {t("downloadpage.mirror.others", { defaultValue: "其它镜像" })}
+                      {bestMirror ? (
+                        <div
+                          className={`mt-2 flex items-center justify-between gap-2 rounded-md border p-2 transition-shadow hover:shadow-sm cursor-pointer ${
+                            selectedUrl === bestMirror.url
+                              ? "border-primary bg-primary/5"
+                              : "border-default-200 hover:bg-content2"
+                          }`}
+                          onClick={() => setSelectedUrl(bestMirror.url)}
+                        >
+                          <div className="min-w-0">
+                            <div className="font-medium text-small truncate">
+                              {bestMirror.label}
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2 shrink-0">
+                            <Chip
+                              color={bestMirror.ok ? "success" : "danger"}
+                              variant="flat"
+                              size="sm"
+                            >
+                              {typeof bestMirror.latencyMs === "number"
+                                ? `${Math.round(bestMirror.latencyMs)}ms`
+                                : "-"}
+                            </Chip>
+                          </div>
                         </div>
-                        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      ) : (
+                        <div className="text-small text-default-500 mt-2">
+                          {t("downloadpage.mirror.no_recommended", {
+                            defaultValue: "暂无推荐镜像",
+                          })}
+                        </div>
+                      )}
+                    </div>
+
+                    <Accordion
+                      variant="bordered"
+                      selectionMode="multiple"
+                      defaultSelectedKeys={[]}
+                    >
+                      <AccordionItem
+                        key="list"
+                        title={t("downloadpage.mirror.others", {
+                          defaultValue: "其它镜像",
+                        })}
+                      >
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                           {mirrorResults.map((m, i) => (
                             <div
                               key={`mirror-${i}`}
-                              className={`relative flex items-center justify-between gap-3 rounded-xl border p-2.5 transition-all cursor-pointer ${
+                              className={`flex items-center justify-between gap-2 rounded-md border p-2 transition-shadow hover:shadow-sm cursor-pointer ${
                                 selectedUrl === m.url
-                                  ? "border-emerald-500/50 bg-emerald-500/5"
-                                  : "border-default-200/50 dark:border-zinc-600 bg-white/50 dark:bg-zinc-700/30 hover:bg-default-100 dark:hover:bg-zinc-700 hover:border-default-300"
+                                  ? "border-primary bg-primary/5"
+                                  : "border-default-200 hover:bg-content2"
                               }`}
                               onClick={() => setSelectedUrl(m.url)}
                             >
-                              <div className="flex items-center gap-3 min-w-0 overflow-hidden">
-                                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-default-100 dark:bg-zinc-600 text-tiny font-bold text-default-600 dark:text-zinc-100 shrink-0">
-                                    {String.fromCharCode(65 + i)}
-                                  </div>
-                                  <div className="flex flex-col min-w-0">
-                                      <span className="text-small font-bold text-default-800 dark:text-zinc-100 truncate">
-                                        {m.label}
-                                      </span>
-                                  </div>
-                              </div>
+                              <Chip
+                                color="default"
+                                variant="flat"
+                                size="sm"
+                                className="shrink-0"
+                              >
+                                {String.fromCharCode(65 + i)}
+                              </Chip>
+                              <span className="text-[10px] text-default-400 truncate flex-1 min-w-0 px-1">
+                                {m.label}
+                              </span>
                               <div className="flex items-center gap-2 shrink-0">
-                                <span className={`text-xs font-bold ${
-                                    typeof m.latencyMs === 'number' 
-                                        ? m.latencyMs < 100 ? 'text-emerald-500' : m.latencyMs < 300 ? 'text-warning-500' : 'text-danger-500'
-                                        : 'text-default-400'
-                                }`}>
+                                <Chip
+                                  color={
+                                    m.ok
+                                      ? "success"
+                                      : testing
+                                      ? "warning"
+                                      : "danger"
+                                  }
+                                  variant="flat"
+                                  size="sm"
+                                >
                                   {typeof m.latencyMs === "number"
                                     ? `${Math.round(m.latencyMs)}ms`
                                     : testing
-                                    ? "..."
-                                    : "-"}
-                                </span>
+                                    ? t("downloadpage.mirror.testing_short", {
+                                        defaultValue: "测速中",
+                                      })
+                                    : t("downloadpage.mirror.failed", {
+                                        defaultValue: "失败",
+                                      })}
+                                </Chip>
                               </div>
-                              {selectedUrl === m.url && (
-                                <div className="absolute inset-0 border-2 border-emerald-500 rounded-xl pointer-events-none" />
-                              )}
                             </div>
                           ))}
                         </div>
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="flex flex-col items-center justify-center py-12 text-default-400 dark:text-zinc-500">
-                        <div className="w-16 h-16 rounded-full bg-default-100 flex items-center justify-center mb-4">
-                            <FaDownload size={24} className="opacity-50" />
-                        </div>
-                      <p>
-                        {t("downloadpage.mirror.no_mirrors", {
-                          defaultValue: "当前版本无可用镜像。",
-                        })}
-                      </p>
-                    </div>
-                  )}
-                </motion.div>
+                      </AccordionItem>
+                    </Accordion>
+                  </div>
+                ) : (
+                  <p className="text-default-500">
+                    {t("downloadpage.mirror.no_mirrors", {
+                      defaultValue: "当前版本无可用镜像。",
+                    })}
+                  </p>
+                )}
               </ModalBody>
-              <ModalFooter className="px-8 pb-8 pt-4">
-                <Button 
-                    className="font-medium text-default-500 hover:text-default-700"
-                    variant="light" 
-                    onPress={onClose}
-                >
+              <ModalFooter>
+                <Button color="danger" variant="light" onPress={onClose}>
                   {t("common.cancel")}
                 </Button>
                 <Button
-                  variant="flat"
-                  color="default"
-                  className="bg-default-100 dark:bg-white/10"
-                  startContent={<FaSync className={testing ? "animate-spin" : ""} />}
+                  variant="light"
                   onPress={() => {
                     startMirrorTests(mirrorUrls || []);
                   }}
@@ -1149,11 +1087,9 @@ export const DownloadPage: React.FC = () => {
                   })}
                 </Button>
                 <Button
-                  className="font-bold text-white shadow-lg shadow-emerald-500/20 bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                  color="primary"
                   radius="full"
-                  size="lg"
                   isDisabled={!selectedUrl}
-                  startContent={installMode ? null : <FaDownload />}
                   onPress={() => {
                     if (!selectedUrl) return;
                     ensureDlSubscriptions();
@@ -1214,29 +1150,20 @@ export const DownloadPage: React.FC = () => {
         isOpen={deleteDisclosure.isOpen}
         onOpenChange={deleteDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
-        <ModalContent className="shadow-none">
+        <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-danger-600">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                  className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0"
-                >
+              <ModalHeader className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
                   <svg
                     viewBox="0 0 24 24"
-                    width="24"
-                    height="24"
-                    className="text-red-500"
+                    width="14"
+                    height="14"
+                    className="text-white"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2.5"
+                    strokeWidth="3"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
@@ -1244,54 +1171,37 @@ export const DownloadPage: React.FC = () => {
                     <path d="M8 6v-2a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
                     <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
                   </svg>
-                </motion.div>
-                <motion.h2
-                  className="text-xl font-bold text-default-900 dark:text-white"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
+                </div>
+                <h2 className="text-lg font-semibold">
                   {t("downloadpage.delete.title", {
                     defaultValue: "确认删除下载包",
                   })}
-                </motion.h2>
+                </h2>
               </ModalHeader>
-              <ModalBody className="px-8 py-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                >
-                  <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
-                    {t("downloadpage.delete.body", {
-                      defaultValue: "将删除安装包：",
-                    })}
+              <ModalBody>
+                <div className="text-small text-default-600">
+                  {t("downloadpage.delete.body", {
+                    defaultValue: "将删除安装包：",
+                  })}
+                  <span className="font-mono text-default-700">
+                    {" "}
+                    {deleteItem?.fileName?.toLowerCase()?.endsWith(".msixvc")
+                      ? deleteItem?.fileName
+                      : `${deleteItem?.fileName || ""}.msixvc`}
+                  </span>
+                </div>
+                <div className="text-small text-default-500">
+                  {t("downloadpage.delete.warning", {
+                    defaultValue: "此操作不可恢复。",
+                  })}
+                </div>
+                {deleteError ? (
+                  <div className="text-small text-danger-500">
+                    {trErr(deleteError)}
                   </div>
-                  <div className="mt-2 p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50">
-                    <span className="font-mono text-default-800 dark:text-zinc-200 font-bold break-all text-small">
-                      {deleteItem?.fileName?.toLowerCase()?.endsWith(".msixvc")
-                        ? deleteItem?.fileName
-                        : `${deleteItem?.fileName || ""}.msixvc`}
-                    </span>
-                  </div>
-                  <div className="text-small text-danger-500 mt-3 font-bold flex items-center gap-2">
-                    <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
-                    {t("downloadpage.delete.warning", {
-                      defaultValue: "此操作不可恢复。",
-                    })}
-                  </div>
-                  {deleteError ? (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      className="text-small text-white bg-danger-500/90 px-3 py-2 rounded-lg mt-3"
-                    >
-                      {trErr(deleteError)}
-                    </motion.div>
-                  ) : null}
-                </motion.div>
+                ) : null}
               </ModalBody>
-              <ModalFooter className="px-8 pb-8">
+              <ModalFooter>
                 <Button
                   variant="light"
                   color="default"
@@ -1303,8 +1213,6 @@ export const DownloadPage: React.FC = () => {
                 </Button>
                 <Button
                   color="danger"
-                  className="bg-red-500 shadow-lg shadow-red-500/30 text-white font-bold"
-                  radius="full"
                   isLoading={deleteLoading}
                   onPress={async () => {
                     if (!hasBackend) {
@@ -1373,26 +1281,17 @@ export const DownloadPage: React.FC = () => {
         isOpen={deleteSuccessDisclosure.isOpen}
         onOpenChange={deleteSuccessDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
-        <ModalContent className="shadow-none">
+        <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                  className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0"
-                >
+              <ModalHeader className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
                   <svg
                     viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    className="text-emerald-500"
+                    width="14"
+                    height="14"
+                    className="text-white"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="3"
@@ -1401,38 +1300,27 @@ export const DownloadPage: React.FC = () => {
                   >
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
-                </motion.div>
-                <motion.h2
-                  className="text-xl font-bold text-default-900 dark:text-white"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
+                </div>
+                <h2 className="text-lg font-semibold">
                   {t("downloadpage.delete.success_title", {
                     defaultValue: "删除完成",
                   })}
-                </motion.h2>
+                </h2>
               </ModalHeader>
-              <ModalBody className="px-8 py-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                  className="text-medium text-default-700 dark:text-zinc-300 font-bold"
-                >
+              <ModalBody>
+                <div className="text-small text-default-600">
                   {t("downloadpage.delete.success_body", {
                     defaultValue: "已删除安装包：",
                   })}
-                  <div className="mt-2 p-3 bg-default-100/50 rounded-xl border border-default-200/50 font-mono text-small text-default-800 dark:text-zinc-200 font-bold break-all">
+                  <span className="font-mono text-default-700">
+                    {" "}
                     {deleteSuccessMsg}
-                  </div>
-                </motion.div>
+                  </span>
+                </div>
               </ModalBody>
-              <ModalFooter className="px-8 pb-8">
+              <ModalFooter>
                 <Button
-                  color="success"
-                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
-                  radius="full"
+                  color="primary"
                   onPress={() => {
                     onClose?.();
                   }}
@@ -1450,21 +1338,17 @@ export const DownloadPage: React.FC = () => {
         isOpen={downloadSuccessDisclosure.isOpen}
         onOpenChange={downloadSuccessDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
-        <ModalContent className="shadow-none">
+        <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
-                <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
+              <ModalHeader className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
                   <svg
                     viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    className="text-emerald-500"
+                    width="14"
+                    height="14"
+                    className="text-white"
                     fill="none"
                     stroke="currentColor"
                     strokeWidth="3"
@@ -1474,27 +1358,26 @@ export const DownloadPage: React.FC = () => {
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
                 </div>
-                <h2 className="text-xl font-bold text-default-900 dark:text-white">
+                <h2 className="text-lg font-semibold">
                   {t("downloadpage.download.success_title", {
                     defaultValue: "下载完成",
                   })}
                 </h2>
               </ModalHeader>
-              <ModalBody className="px-8 py-4">
-                <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
+              <ModalBody>
+                <div className="text-small text-default-600">
                   {t("downloadpage.download.success_body", {
                     defaultValue: "文件已下载：",
                   })}
-                  <div className="mt-2 p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 font-mono text-small text-default-800 dark:text-zinc-200 font-bold break-all">
+                  <span className="font-mono text-default-700">
+                    {" "}
                     {downloadSuccessMsg}
-                  </div>
+                  </span>
                 </div>
               </ModalBody>
-              <ModalFooter className="px-8 pb-8">
+              <ModalFooter>
                 <Button
                   color="primary"
-                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
-                  radius="full"
                   onPress={() => {
                     try {
                       if (mirrorVersion && mirrorType) {
@@ -1512,96 +1395,70 @@ export const DownloadPage: React.FC = () => {
         </ModalContent>
       </Modal>
 
-      {/* Install success modal */}
       <Modal
         isOpen={installSuccessDisclosure.isOpen}
         onOpenChange={installSuccessDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
-        <ModalContent className="shadow-none">
+        <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-success-600">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                  className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0"
-                >
+              <ModalHeader className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-green-500 flex items-center justify-center">
                   <svg
                     viewBox="0 0 24 24"
-                    width="24"
-                    height="24"
-                    className="text-emerald-500"
+                    width="20"
+                    height="20"
+                    className="text-white"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2.5"
+                    strokeWidth="3"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
                     <path d="M20 6L9 17l-5-5" />
                   </svg>
-                </motion.div>
+                </div>
                 <div className="flex flex-col">
-                  <motion.h2
-                    className="text-xl font-bold text-default-900 dark:text-white"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
+                  <h2 className="text-lg font-bold">
                     {t("downloadpage.install.success_title", {
                       defaultValue: "安装完成",
                     })}
-                  </motion.h2>
+                  </h2>
                   {installingVersion ? (
-                    <motion.div
-                      className="text-small text-default-600 dark:text-zinc-400 font-medium"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                    >
+                    <div className="text-small text-default-500">
                       {t("downloadpage.install.version_label", {
                         defaultValue: "版本",
                       })}
                       : {installingVersion}
-                    </motion.div>
+                    </div>
                   ) : null}
                 </div>
               </ModalHeader>
-              <ModalBody className="px-8 py-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                  className="flex flex-col gap-4"
-                >
-                  <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
+              <ModalBody>
+                <div className="flex flex-col gap-4">
+                  <div className="text-small text-default-600">
                     {installSuccessMsg ||
                       (t("downloadpage.install.success", {
                         defaultValue: "版本已成功安装。",
                       }) as unknown as string)}
                   </div>
                   {installingTargetName ? (
-                    <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small text-default-600 dark:text-zinc-400 font-medium">
+                    <div className="rounded-medium bg-content2 border border-default-200 px-3 py-2 text-small text-default-600">
                       {t("downloadpage.install.target", {
                         defaultValue: "安装目标",
                       })}
                       :{" "}
-                      <span className="font-mono text-default-800 dark:text-zinc-200 font-bold">
+                      <span className="font-mono text-default-700">
                         {installingTargetName}
                       </span>
                     </div>
                   ) : null}
-                </motion.div>
+                </div>
               </ModalBody>
-              <ModalFooter className="px-8 pb-8 pt-4">
+              <ModalFooter>
                 <Button
-                  className="bg-default-100 text-default-700 font-bold hover:bg-default-200"
-                  radius="full"
+                  variant="light"
                   onPress={() => {
                     onClose?.();
                   }}
@@ -1619,66 +1476,46 @@ export const DownloadPage: React.FC = () => {
         isOpen={installErrorDisclosure.isOpen}
         onOpenChange={installErrorDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
-        <ModalContent className="shadow-none">
+        <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-danger-600">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                  className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0"
-                >
+              <ModalHeader className="flex items-center gap-2">
+                <div className="w-6 h-6 rounded-full bg-red-500 flex items-center justify-center">
                   <svg
                     viewBox="0 0 24 24"
-                    width="24"
-                    height="24"
-                    className="text-red-500"
+                    width="14"
+                    height="14"
+                    className="text-white"
                     fill="none"
                     stroke="currentColor"
-                    strokeWidth="2.5"
+                    strokeWidth="3"
                     strokeLinecap="round"
                     strokeLinejoin="round"
                   >
                     <path d="M12 9v4" />
                     <path d="M12 17h.01" />
                   </svg>
-                </motion.div>
-                <motion.h2
-                  className="text-xl font-bold text-default-900 dark:text-white"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
+                </div>
+                <h2 className="text-lg font-semibold">
                   {t("downloadpage.progress.unknown_error", {
                     defaultValue: "未知错误",
                   })}
-                </motion.h2>
+                </h2>
               </ModalHeader>
-              <ModalBody className="px-8 py-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                  className="text-medium text-default-700 dark:text-zinc-300 font-bold"
-                >
+              <ModalBody>
+                <div className="text-small text-default-600">
                   {trErr(installError)}
-                </motion.div>
+                </div>
               </ModalBody>
-              <ModalFooter className="px-8 pb-8 pt-4">
+              <ModalFooter>
                 <Button
-                  className="bg-default-100 text-default-700 font-bold hover:bg-default-200"
-                  radius="full"
+                  color="primary"
                   onPress={() => {
                     onClose?.();
                   }}
                 >
-                  {t("common.close", { defaultValue: "关闭" })}
+                  {t("common.ok", { defaultValue: "确定" })}
                 </Button>
               </ModalFooter>
             </>
@@ -1686,36 +1523,40 @@ export const DownloadPage: React.FC = () => {
         </ModalContent>
       </Modal>
 
-      {/* Install progress modal */}
+      {/* Install progress modal (beautified) */}
       <Modal
         isOpen={installLoadingDisclosure.isOpen}
         onOpenChange={installLoadingDisclosure.onOpenChange}
         size="md"
         hideCloseButton
         isDismissable={false}
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-        }}
       >
-        <ModalContent className="shadow-none">
+        <ModalContent>
           {() => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-primary-600">
-                <Spinner size="lg" color="primary" />
-                <motion.h2
-                  className="text-xl font-bold text-default-900 dark:text-white"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {t("downloadpage.install.title", {
-                    defaultValue: "正在安装",
-                  })}
-                </motion.h2>
+              <ModalHeader className="flex items-center gap-3">
+                <div className="w-10 h-10 rounded-full bg-content2 border border-default-200 flex items-center justify-center">
+                  <Spinner size="sm" />
+                </div>
+                <div className="flex flex-col">
+                  <h2 className="text-lg font-bold">
+                    {t("downloadmodal.installing.title", {
+                      defaultValue: "正在安装",
+                    })}
+                  </h2>
+                  {installingVersion ? (
+                    <div className="text-small text-default-500">
+                      {t("downloadpage.install.version_label", {
+                        defaultValue: "版本",
+                      })}
+                      : {installingVersion}
+                    </div>
+                  ) : null}
+                </div>
               </ModalHeader>
-              <ModalBody className="px-8 py-8">
-                <div className="flex flex-col gap-6">
-                  <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
+              <ModalBody>
+                <div className="flex flex-col gap-4">
+                  <div className="text-small text-default-500">
                     {t("downloadpage.install.hint", {
                       defaultValue: "请稍候，正在卸载旧版本并注册安装包...",
                     })}
@@ -1724,17 +1565,13 @@ export const DownloadPage: React.FC = () => {
                     <Progress
                       aria-label="install-progress"
                       isIndeterminate
-                      size="md"
-                      classNames={{
-                        indicator: "bg-gradient-to-r from-emerald-500 to-teal-500",
-                        track: "bg-default-100",
-                      }}
+                      value={undefined}
                       className="flex-1"
                     />
                   </div>
                   {typeof extractInfo?.bytes === "number" &&
                   extractInfo.bytes > 0 ? (
-                    <div className="text-small text-default-600 dark:text-zinc-400 font-medium">
+                    <div className="text-small text-default-500">
                       {t("downloadpage.install.estimated_size", {
                         defaultValue: "已写入大小（估算）",
                       })}
@@ -1752,14 +1589,19 @@ export const DownloadPage: React.FC = () => {
                     </div>
                   ) : null}
                   {installingTargetName ? (
-                    <div className="p-3 bg-default-100/50 rounded-xl border border-default-200/50 text-small text-default-600 dark:text-zinc-400 font-medium">
+                    <div className="rounded-medium bg-content2 border border-default-200 px-3 py-2 text-small text-default-600">
                       {t("downloadpage.install.target", {
                         defaultValue: "安装目标",
                       })}
                       :{" "}
-                      <span className="font-mono text-default-700 dark:text-zinc-200 font-bold">
+                      <span className="font-mono text-default-700">
                         {installingTargetName}
                       </span>
+                    </div>
+                  ) : null}
+                  {extractError ? (
+                    <div className="text-small text-danger-500">
+                      {extractError}
                     </div>
                   ) : null}
                 </div>
@@ -1769,117 +1611,108 @@ export const DownloadPage: React.FC = () => {
         </ModalContent>
       </Modal>
 
-      {/* Download progress modal */}
       <Modal
         isOpen={progressDisclosure.isOpen}
         onOpenChange={progressDisclosure.onOpenChange}
         size="md"
-        hideCloseButton
+        hideCloseButton={true}
         isDismissable={false}
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-        }}
       >
-        <ModalContent className="shadow-none">
-          {() => (
+        <ModalContent>
+          {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-6 pt-6 pb-2 text-primary-600">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                  <FaDownload className="text-emerald-500 animate-pulse" size={20} />
-                </div>
-                <div className="flex flex-col">
-                  <motion.h2
-                    className="text-xl font-bold text-default-900 dark:text-white"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    {t("downloadpage.progress.title", {
-                      defaultValue: "下载进度",
+              <ModalHeader className="flex flex-col gap-1">
+                <h2 className="text-lg font-bold">
+                  {t("downloadpage.progress.title", {
+                    defaultValue: "下载进度",
+                  })}
+                </h2>
+                <p className="text-small text-default-500 truncate">
+                  {dlProgress?.dest ||
+                    t("downloadpage.progress.dest_placeholder", {
+                      defaultValue: "安装包目录下(msixvc)",
                     })}
-                  </motion.h2>
-                </div>
+                </p>
               </ModalHeader>
-              <ModalBody className="px-6 py-4">
-                <div className="flex flex-col gap-4">
-                  {dlError ? (
-                    <div className="p-4 rounded-xl bg-danger-500/10 border border-danger-500/20 text-danger-600 font-bold">
-                      {trErr(dlError)}
+              <ModalBody>
+                {dlError ? (
+                  <div className="text-danger">
+                    {t("downloadpage.progress.error_prefix", {
+                      defaultValue: "错误：",
+                    })}
+                    {dlError}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="h-2 w-full rounded bg-default-200 overflow-hidden">
+                      {(() => {
+                        const total = dlProgress?.total || 0;
+                        const done = dlProgress?.downloaded || 0;
+                        const pct =
+                          total > 0
+                            ? Math.min(100, Math.round((done / total) * 100))
+                            : 0;
+                        return (
+                          <div
+                            className="h-full bg-primary"
+                            style={{ width: `${pct}%` }}
+                          />
+                        );
+                      })()}
                     </div>
-                  ) : (
-                    <div className="flex flex-col gap-3 p-5 rounded-2xl bg-default-50 dark:bg-zinc-800/40 border border-default-100 dark:border-white/5">
-                      <div className="flex items-center justify-between text-small font-bold text-default-700 dark:text-zinc-200">
-                        <span>
-                          {dlProgress
-                            ? `${(
-                                (dlProgress.downloaded / dlProgress.total) *
-                                100
-                              ).toFixed(1)}%`
-                            : "0%"}
-                        </span>
-                        <span className="font-mono opacity-80">
-                          {dlSpeed < 1024 * 1024
-                            ? `${(dlSpeed / 1024).toFixed(1)} KB/s`
-                            : `${(dlSpeed / (1024 * 1024)).toFixed(1)} MB/s`}
-                        </span>
-                      </div>
-                      <Progress
-                        aria-label="download-progress"
-                        value={
-                          dlProgress
-                            ? (dlProgress.downloaded / dlProgress.total) * 100
-                            : 0
-                        }
-                        size="md"
-                        classNames={{
-                          indicator: "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/20",
-                          track: "bg-default-200/50 dark:bg-white/5",
-                        }}
-                      />
-                      <div className="flex justify-between text-tiny text-default-400 dark:text-zinc-500 font-mono">
-                        <span>
-                          {dlProgress
-                            ? `${(
-                                dlProgress.downloaded /
-                                (1024 * 1024)
-                              ).toFixed(2)} MB`
-                            : "0 MB"}
-                        </span>
-                        <span>
-                          {dlProgress
-                            ? `${(dlProgress.total / (1024 * 1024)).toFixed(
-                                2
-                              )} MB`
-                            : "0 MB"}
-                        </span>
-                      </div>
+                    <div className="text-small text-default-500">
+                      {(() => {
+                        const total = dlProgress?.total || 0;
+                        const done = dlProgress?.downloaded || 0;
+                        const pct =
+                          total > 0
+                            ? Math.min(100, Math.round((done / total) * 100))
+                            : 0;
+                        const fmt = (n: number) =>
+                          `${(n / (1024 * 1024)).toFixed(2)} MB`;
+                        const fmtSpd = (bps: number) =>
+                          `${(bps / (1024 * 1024)).toFixed(2)} MB/s`;
+                        return `${fmt(done)} / ${fmt(
+                          total
+                        )} (${pct}%) · ${fmtSpd(dlSpeed || 0)}`;
+                      })()}
                     </div>
-                  )}
-                </div>
+                  </div>
+                )}
               </ModalBody>
-              <ModalFooter className="px-6 pb-6 pt-2">
+              <ModalFooter>
                 <Button
                   color="danger"
-                  variant="flat"
+                  variant="light"
+                  isDisabled={
+                    !hasBackend ||
+                    dlStatus === "done" ||
+                    dlStatus === "cancelled"
+                  }
                   onPress={() => {
-                    if (hasBackend && minecraft?.CancelMsixvcDownload) {
+                    if (!hasBackend) return;
+                    if (minecraft.CancelMsixvcDownload) {
                       minecraft.CancelMsixvcDownload();
                     }
-                    setDlError("");
-                    setDlProgress(null);
-                    progressDisclosure.onClose();
+                    onClose?.();
                   }}
-                  radius="full"
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  color="primary"
+                  isDisabled={dlStatus !== "done"}
+                  onPress={() => onClose?.()}
+                >
+                  {t("common.ok")}
                 </Button>
               </ModalFooter>
             </>
           )}
         </ModalContent>
       </Modal>
-        </div>
-      </motion.div>
-    </>
+    </motion.div>
   );
 };
+
+export default DownloadPage;

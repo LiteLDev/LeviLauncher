@@ -527,7 +527,8 @@
     "save": "Save",
     "add": "Add",
     "save_failed": "Save failed",
-    "load_failed": "Load failed"
+    "load_failed": "Load failed",
+    "view_all": "View All"
   },
   "content": {
     "count": {

@@ -527,7 +527,8 @@
     "save": "保存",
     "add": "添加",
     "save_failed": "保存失败",
-    "load_failed": "加载失败"
+    "load_failed": "加载失败",
+    "view_all": "查看全部"
   },
   "content": {
     "count": {

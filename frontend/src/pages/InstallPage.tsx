@@ -414,100 +414,144 @@ export default function InstallPage() {
   };
 
   return (
-    <div className="w-full h-full max-w-[100vw] flex flex-col overflow-x-hidden gutter-stable overflow-auto no-scrollbar">
-      <div className="px-3 sm:px-5 lg:px-8 py-3 sm:py-4 lg:py-6 w-full flex flex-col flex-1 min-h-0">
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          <Card className="rounded-3xl shadow-lg mb-4 mx-3 sm:mx-5 lg:mx-8 bg-white/60 dark:bg-black/30 backdrop-blur-md border border-white/30">
-            <CardHeader className="flex flex-col gap-3 p-3 sm:p-4">
-              <div className="flex w-full items-center justify-between gap-2">
-                <div className="flex items-center gap-3">
-                  <div className="text-2xl font-bold">{headerTitle}</div>
-                  <div className="text-small text-default-500 flex items-center gap-2">
-                    <Chip
-                      size="sm"
-                      variant="flat"
-                      color={mirrorType === "Preview" ? "warning" : "primary"}
-                    >
-                      {mirrorType === "Preview"
-                        ? `${t("common.preview")} Minecraft`
-                        : `${t("common.release")} Minecraft`}
-                    </Chip>
-                    <span className="font-mono">{mirrorVersion}</span>
-                  </div>
+    <motion.div
+      className="w-full max-w-full mx-auto px-4 py-2 h-full flex flex-col"
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+    >
+      <div className="flex flex-col h-full">
+        <Card className="flex-1 min-h-0 rounded-[2.5rem] shadow-xl bg-white/50 dark:bg-zinc-900/40 backdrop-blur-xl border border-white/40 dark:border-zinc-700/50">
+          <CardHeader className="p-4 sm:p-6 pb-2 flex flex-col sm:flex-row gap-4 justify-between items-center border-b border-default-200 dark:border-white/10">
+            <div className="flex w-full items-center justify-between gap-2">
+              <div className="flex items-center gap-3">
+                <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  {headerTitle}
+                </div>
+                <div className="text-small text-default-500 flex items-center gap-2">
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={mirrorType === "Preview" ? "warning" : "primary"}
+                  >
+                    {mirrorType === "Preview"
+                      ? `${t("common.preview")} Minecraft`
+                      : `${t("common.release")} Minecraft`}
+                  </Chip>
+                  <span className="font-mono">{mirrorVersion}</span>
                 </div>
               </div>
-            </CardHeader>
+            </div>
+          </CardHeader>
 
-            <CardBody className="flex flex-col gap-4 p-4">
-              {installError ? (
-                <div className="rounded-xl border border-danger bg-danger-50 px-3 py-2">
-                  <div className="text-danger font-medium">
-                    {t("common.error", { defaultValue: "错误" })}
-                  </div>
-                  <div className="text-small text-danger-600">
-                    {trErr(installError, typeLabel)}
-                  </div>
+          <CardBody className="flex flex-col gap-4 p-4 overflow-y-auto">
+            {installError ? (
+              <motion.div
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: "auto" }}
+                className="rounded-xl border border-danger bg-danger-50 px-3 py-2"
+              >
+                <div className="text-danger font-medium">
+                  {t("common.error", { defaultValue: "错误" })}
                 </div>
-              ) : null}
+                <div className="text-small text-danger-600">
+                  {trErr(installError, typeLabel)}
+                </div>
+              </motion.div>
+            ) : null}
 
-              {resultMsg && !installing ? (
-                <div className="rounded-2xl border border-success bg-success-50 px-4 py-3 flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-success-500 flex items-center justify-center">
-                      <svg
-                        viewBox="0 0 24 24"
-                        width="20"
-                        height="20"
-                        className="text-white"
-                        fill="none"
-                        stroke="currentColor"
-                        strokeWidth="3"
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                      >
-                        <path d="M20 6L9 17l-5-5" />
-                      </svg>
-                    </div>
-                    <div className="flex flex-col">
-                      <div className="text-lg font-bold text-success-700">
-                        {t("downloadpage.install.success_title", {
-                          defaultValue: "安装完成",
+            {resultMsg && !installing ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="flex flex-col items-center justify-center h-full gap-4 py-4"
+              >
+                <div className="relative">
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    animate={{ scale: 1 }}
+                    transition={{
+                      type: "spring",
+                      stiffness: 260,
+                      damping: 20,
+                      delay: 0.1,
+                    }}
+                    className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30"
+                  >
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="32"
+                      height="32"
+                      className="text-white drop-shadow-md"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <motion.path
+                        initial={{ pathLength: 0 }}
+                        animate={{ pathLength: 1 }}
+                        transition={{ duration: 0.5, delay: 0.3 }}
+                        d="M20 6L9 17l-5-5"
+                      />
+                    </svg>
+                  </motion.div>
+                </div>
+
+                <div className="flex flex-col items-center gap-1 text-center">
+                  <h2 className="text-2xl font-black bg-gradient-to-br from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                    {t("downloadpage.install.success_title", {
+                      defaultValue: "安装完成",
+                    })}
+                  </h2>
+                  {installingVersion && (
+                    <Chip
+                      variant="flat"
+                      color="success"
+                      size="sm"
+                      classNames={{ content: "font-bold" }}
+                    >
+                      {installingVersion}
+                    </Chip>
+                  )}
+                </div>
+
+                <div className="w-full max-w-lg mt-1">
+                  {installingTargetName && (
+                    <div className="rounded-xl bg-default-100/50 dark:bg-zinc-800/50 border border-default-200/50 dark:border-white/5 p-3 flex flex-col gap-1 items-center">
+                      <span className="text-[10px] uppercase tracking-wider text-default-400 font-bold">
+                        {t("downloadpage.install.target", {
+                          defaultValue: "安装目标",
                         })}
-                      </div>
-                      {installingVersion ? (
-                        <div className="text-small text-success-600">
-                          {t("downloadpage.install.version_label", {
-                            defaultValue: "版本",
-                          })}
-                          : {installingVersion}
-                        </div>
-                      ) : null}
+                      </span>
+                      <span className="font-mono text-xs text-default-600 dark:text-zinc-400 truncate w-full text-center">
+                        {installingTargetName}
+                      </span>
                     </div>
-                  </div>
-                  <div className="text-small text-success-700">{resultMsg}</div>
-                  {installingTargetName ? (
-                    <div className="rounded-medium bg-success-100 border border-success-200 px-3 py-2 text-small text-success-700">
-                      {t("downloadpage.install.target", {
-                        defaultValue: "安装目标",
-                      })}
-                      :{" "}
-                      <span className="font-mono">{installingTargetName}</span>
-                    </div>
-                  ) : null}
-                  <div className="mt-1 flex flex-wrap justify-end gap-2">
-                    <Button variant="light" onPress={() => navigate(returnTo)}>
-                      {t("common.back", { defaultValue: "返回" })}
-                    </Button>
-                  </div>
+                  )}
                 </div>
-              ) : null}
 
-              {!installing && !resultMsg ? (
-                <>
+                <div className="mt-2">
+                  <Button
+                    className="font-bold text-white shadow-lg shadow-emerald-500/20 bg-gradient-to-r from-emerald-500 to-teal-600 px-8"
+                    radius="full"
+                    size="md"
+                    onPress={() => navigate(returnTo)}
+                  >
+                    {t("common.back", { defaultValue: "返回" })}
+                  </Button>
+                </div>
+              </motion.div>
+            ) : null}
+
+            {!installing && !resultMsg ? (
+              <>
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.1 }}
+                >
                   <Input
                     label={
                       t("downloadpage.install_folder.name_label", {
@@ -528,172 +572,219 @@ export default function InstallPage() {
                     variant="bordered"
                     size="sm"
                   />
-                  {!downloadResolved ? (
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0">
-                        <div className="text-small font-medium">
-                          {t("downloadpage.install.custom_installer.label", {
-                            defaultValue: "选择本地安装包 (.msixvc)",
-                          })}
-                        </div>
-                        <div className="text-tiny text-default-500">
-                          {customInstallerPath
-                            ? customInstallerPath
-                            : (t("downloadpage.install.custom_installer.hint", {
-                                defaultValue:
-                                  "默认使用安装器目录下已下载的文件",
-                              }) as unknown as string)}
-                        </div>
-                      </div>
-                      <Button
-                        variant="bordered"
-                        size="sm"
-                        onPress={() => {
-                          navigate("/filemanager", {
-                            state: {
-                              allowedExt: [".msixvc"],
-                              multi: false,
-                              title: t(
-                                "downloadpage.customappx.modal.1.header",
-                                {
-                                  defaultValue: "版本信息",
-                                }
-                              ),
-                              initialPath: installerDir || "",
-                              returnTo: "/install",
-                              returnState: {
-                                mirrorVersion,
-                                mirrorType,
-                                returnTo,
-                              },
-                            },
-                          });
-                        }}
-                      >
-                        {t("common.browse", { defaultValue: "选择..." })}
-                      </Button>
-                    </div>
-                  ) : null}
-                  <div className="flex items-center justify-between">
+                </motion.div>
+                {!downloadResolved ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.2 }}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-default-50/50 dark:bg-default-100/10 border border-default-100 dark:border-white/5"
+                  >
                     <div className="min-w-0">
                       <div className="text-small font-medium">
-                        {t("downloadpage.install_folder.enable_isolation")}
+                        {t("downloadpage.install.custom_installer.label", {
+                          defaultValue: "选择本地安装包 (.msixvc)",
+                        })}
                       </div>
                       <div className="text-tiny text-default-500">
-                        {t("downloadpage.install_folder.enable_isolation_desc")}
+                        {customInstallerPath
+                          ? customInstallerPath
+                          : (t("downloadpage.install.custom_installer.hint", {
+                              defaultValue:
+                                "默认使用安装器目录下已下载的文件",
+                            }) as unknown as string)}
                       </div>
                     </div>
-                    <Switch
-                      isSelected={installIsolation}
-                      onValueChange={setInstallIsolation}
-                    />
+                    <Button
+                      variant="flat"
+                      size="sm"
+                      className="bg-default-100 dark:bg-white/10"
+                      onPress={() => {
+                        navigate("/filemanager", {
+                          state: {
+                            allowedExt: [".msixvc"],
+                            multi: false,
+                            title: t(
+                              "downloadpage.customappx.modal.1.header",
+                              {
+                                defaultValue: "版本信息",
+                              }
+                            ),
+                            initialPath: installerDir || "",
+                            returnTo: "/install",
+                            returnState: {
+                              mirrorVersion,
+                              mirrorType,
+                              returnTo,
+                            },
+                          },
+                        });
+                      }}
+                    >
+                      {t("common.browse", { defaultValue: "选择..." })}
+                    </Button>
+                  </motion.div>
+                ) : null}
+
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="flex items-center justify-between p-3 rounded-2xl bg-default-50/50 dark:bg-default-100/10 border border-default-100 dark:border-white/5"
+                >
+                  <div className="min-w-0">
+                    <div className="text-small font-medium">
+                      {t("downloadpage.install_folder.enable_isolation")}
+                    </div>
+                    <div className="text-tiny text-default-500">
+                      {t("downloadpage.install_folder.enable_isolation_desc")}
+                    </div>
                   </div>
-                  {installIsolation ? (
-                    <div className="flex items-center justify-between">
-                      <div className="min-w-0">
-                        <div className="text-small font-medium">
-                          {t("downloadpage.install_folder.inherit_label")}
-                        </div>
-                        <div className="text-tiny text-default-500">
-                          {t("downloadpage.install_folder.inherit_hint")}
-                        </div>
+                  <Switch
+                    isSelected={installIsolation}
+                    onValueChange={setInstallIsolation}
+                    color="success"
+                  />
+                </motion.div>
+                {installIsolation ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.4 }}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-default-50/50 dark:bg-default-100/10 border border-default-100 dark:border-white/5"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-small font-medium">
+                        {t("downloadpage.install_folder.inherit_label")}
                       </div>
-                      <div className="shrink-0 min-w-[240px]">
-                        <Dropdown closeOnSelect>
-                          <DropdownTrigger>
-                            <Button
-                              variant="bordered"
-                              size="sm"
-                              className="w-full justify-between"
-                              endContent={<FaChevronDown size={12} />}
-                            >
-                              {inheritLabel}
-                            </Button>
-                          </DropdownTrigger>
-                          <DropdownMenu
-                            aria-label="inherit-source-select"
-                            selectionMode="single"
-                            disallowEmptySelection
-                            selectedKeys={new Set([inheritSource || "none"])}
-                            className="max-h-64 overflow-y-auto min-w-[240px] no-scrollbar"
-                            items={inheritMenuItems}
-                            onSelectionChange={(keys) => {
-                              const arr = Array.from(
-                                keys as unknown as Set<string>
-                              );
-                              const k = String(arr[0] || "");
-                              if (!k) return;
-                              setInheritSource(k === "none" ? "" : k);
-                            }}
+                      <div className="text-tiny text-default-500">
+                        {t("downloadpage.install_folder.inherit_hint")}
+                      </div>
+                    </div>
+                    <div className="shrink-0 min-w-[240px]">
+                      <Dropdown closeOnSelect>
+                        <DropdownTrigger>
+                          <Button
+                            variant="flat"
+                            size="sm"
+                            className="bg-default-100 dark:bg-white/10 w-full justify-between"
+                            endContent={<FaChevronDown size={12} />}
                           >
-                            {(item: { key: string; label: string }) => (
-                              <DropdownItem key={item.key}>{item.label}</DropdownItem>
-                            )}
-                          </DropdownMenu>
-                        </Dropdown>
-                      </div>
+                            {inheritLabel}
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                          aria-label="inherit-source-select"
+                          selectionMode="single"
+                          disallowEmptySelection
+                          selectedKeys={new Set([inheritSource || "none"])}
+                          className="max-h-64 overflow-y-auto min-w-[240px] no-scrollbar"
+                          items={inheritMenuItems}
+                          onSelectionChange={(keys) => {
+                            const arr = Array.from(
+                              keys as unknown as Set<string>
+                            );
+                            const k = String(arr[0] || "");
+                            if (!k) return;
+                            setInheritSource(k === "none" ? "" : k);
+                          }}
+                        >
+                          {(item: { key: string; label: string }) => (
+                            <DropdownItem key={item.key}>{item.label}</DropdownItem>
+                          )}
+                        </DropdownMenu>
+                      </Dropdown>
                     </div>
-                  ) : null}
+                  </motion.div>
+                ) : null}
 
-                  <div className="flex justify-end gap-2">
-                    <Button variant="light" onPress={() => navigate(returnTo)}>
-                      {t("common.cancel")}
-                    </Button>
-                    <Button color="primary" onPress={handleInstall}>
-                      {t(
-                        "downloadpage.customappx.modal.1.footer.install_button",
-                        { defaultValue: "安装" }
-                      )}
-                    </Button>
-                  </div>
-                </>
-              ) : null}
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="flex justify-end gap-2"
+                >
+                  <Button variant="light" onPress={() => navigate(returnTo)}>
+                    {t("common.cancel")}
+                  </Button>
+                  <Button
+                    className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                    radius="full"
+                    onPress={handleInstall}
+                  >
+                    {t(
+                      "downloadpage.customappx.modal.1.footer.install_button",
+                      { defaultValue: "安装" }
+                    )}
+                  </Button>
+                </motion.div>
+              </>
+            ) : null}
 
-              {installing ? (
-                <div className="flex flex-col gap-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-content2 border border-default-200 flex items-center justify-center">
-                      <Spinner size="sm" />
-                    </div>
-                    <div className="flex flex-col">
-                      <h2 className="text-lg font-bold">
-                        {t("downloadmodal.installing.title", {
-                          defaultValue: "正在安装",
-                        })}
-                      </h2>
-                      {installingVersion ? (
-                        <div className="text-small text-default-500">
-                          {t("downloadpage.install.version_label", {
-                            defaultValue: "版本",
-                          })}
-                          : {installingVersion}
-                        </div>
-                      ) : null}
-                    </div>
+            {installing ? (
+              <motion.div
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                className="flex flex-col items-center justify-center h-full gap-4 py-6"
+              >
+                <div className="relative flex items-center justify-center">
+                  <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse" />
+                  <div className="w-16 h-16 rounded-full bg-default-50 dark:bg-zinc-800 border-4 border-default-100 dark:border-zinc-700 flex items-center justify-center relative z-10">
+                    <Spinner size="md" color="success" classNames={{ wrapper: "w-8 h-8" }} />
                   </div>
-                  <div className="text-small text-default-500">
+                </div>
+
+                <div className="flex flex-col items-center gap-1 text-center max-w-sm">
+                  <h2 className="text-xl font-bold text-default-900 dark:text-white">
+                    {t("downloadmodal.installing.title", {
+                      defaultValue: "正在安装",
+                    })}
+                  </h2>
+                  <p className="text-small text-default-500">
                     {t("downloadpage.install.hint", {
                       defaultValue: "请稍候，正在卸载旧版本并注册安装包...",
                     })}
-                  </div>
-                  <div className="text-small text-default-700">
-                    {t("downloadpage.install.target", {
-                      defaultValue: "安装目标",
-                    })}
-                    : <span className="font-mono">{installingTargetName}</span>
-                  </div>
-                  <Progress
-                    aria-label="install-progress"
-                    isIndeterminate
-                    value={undefined}
-                    className="flex-1"
-                  />
+                  </p>
                 </div>
-              ) : null}
-            </CardBody>
-          </Card>
-        </motion.div>
+
+                <div className="w-full max-w-lg flex flex-col gap-2">
+                  {installingVersion && (
+                    <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-default-100/50 dark:bg-zinc-800/50">
+                       <span className="text-small font-medium text-default-500">{t("downloadpage.install.version_label", { defaultValue: "版本" })}</span>
+                       <span className="text-small font-bold text-default-700 dark:text-zinc-300">{installingVersion}</span>
+                    </div>
+                  )}
+                  
+                  {installingTargetName && (
+                    <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-default-100/50 dark:bg-zinc-800/50">
+                       <span className="text-[10px] font-bold uppercase tracking-wider text-default-400">
+                          {t("downloadpage.install.target", { defaultValue: "安装目标" })}
+                       </span>
+                       <span className="font-mono text-xs text-default-600 dark:text-zinc-400 truncate">
+                          {installingTargetName}
+                       </span>
+                    </div>
+                  )}
+
+                  <div className="mt-1">
+                    <Progress
+                      aria-label="install-progress"
+                      isIndeterminate
+                      size="sm"
+                      color="success"
+                      classNames={{
+                        indicator: "bg-gradient-to-r from-emerald-500 to-teal-500",
+                        track: "bg-default-200/50 dark:bg-zinc-700/50 border border-default-100 dark:border-white/5",
+                      }}
+                      className="w-full"
+                    />
+                  </div>
+                </div>
+              </motion.div>
+            ) : null}
+          </CardBody>
+        </Card>
       </div>
-    </div>
+    </motion.div>
   );
 }

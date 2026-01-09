@@ -46,6 +46,7 @@ import BehaviorPacksPage from "./pages/BehaviorPacksPage";
 import SkinPacksPage from "./pages/SkinPacksPage";
 import { useTranslation } from "react-i18next";
 import { VersionStatusProvider } from "./utils/VersionStatusContext";
+import { CurseForgeProvider } from "./utils/CurseForgeContext";
 import InstallPage from "./pages/InstallPage";
 import * as minecraft from "../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import ReactMarkdown from "react-markdown";
@@ -332,6 +333,7 @@ function App() {
 
   return (
     <VersionStatusProvider>
+      <CurseForgeProvider>
       <AnimatePresence>
         {splashVisible && (
           <motion.div
@@ -747,6 +749,7 @@ function App() {
           </ModalContent>
         </Modal>
       </div>
+      </CurseForgeProvider>
     </VersionStatusProvider>
   );
 }

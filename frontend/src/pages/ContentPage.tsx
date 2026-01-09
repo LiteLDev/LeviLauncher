@@ -1465,33 +1465,6 @@ export default function ContentPage() {
           </div>
           <div
             className="rounded-xl border border-default-200 bg-white/50 dark:bg-neutral-800/40 shadow-sm backdrop-blur-sm px-3 py-3 cursor-pointer transition hover:bg-white/70 dark:hover:bg-neutral-800/60"
-            onClick={() => navigate("/content/skin-packs", { state: { player: selectedPlayer } })}
-            role="button"
-            aria-label="skin-packs"
-          >
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <FaImage className="text-default-500" />
-                <span className="text-small text-default-600 truncate">
-                  {t("contentpage.skin_packs", { defaultValue: "皮肤包" })}
-                </span>
-              </div>
-              {loading ? (
-                <div className="flex items-center gap-2">
-                  <Spinner size="sm" />{" "}
-                  <span className="text-default-500">
-                    {t("common.loading", { defaultValue: "加载中" })}
-                  </span>
-                </div>
-              ) : (
-                <span className="text-base font-semibold text-default-800">
-                  {skinCount}
-                </span>
-              )}
-            </div>
-          </div>
-          <div
-            className="rounded-xl border border-default-200 bg-white/50 dark:bg-neutral-800/40 shadow-sm backdrop-blur-sm px-3 py-3 cursor-pointer transition hover:bg-white/70 dark:hover:bg-neutral-800/60"
             onClick={() => navigate("/content/resource-packs")}
             role="button"
             aria-label="resource-packs"
@@ -1540,6 +1513,33 @@ export default function ContentPage() {
               ) : (
                 <span className="text-base font-semibold text-default-800">
                   {bpCount}
+                </span>
+              )}
+            </div>
+          </div>
+          <div
+            className="rounded-xl border border-default-200 bg-white/50 dark:bg-neutral-800/40 shadow-sm backdrop-blur-sm px-3 py-3 cursor-pointer transition hover:bg-white/70 dark:hover:bg-neutral-800/60"
+            onClick={() => navigate("/content/skin-packs", { state: { player: selectedPlayer } })}
+            role="button"
+            aria-label="skin-packs"
+          >
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <FaImage className="text-default-500" />
+                <span className="text-small text-default-600 truncate">
+                  {t("contentpage.skin_packs", { defaultValue: "皮肤包" })}
+                </span>
+              </div>
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <Spinner size="sm" />{" "}
+                  <span className="text-default-500">
+                    {t("common.loading", { defaultValue: "加载中" })}
+                  </span>
+                </div>
+              ) : (
+                <span className="text-base font-semibold text-default-800">
+                  {skinCount}
                 </span>
               )}
             </div>

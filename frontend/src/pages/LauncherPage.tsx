@@ -37,9 +37,12 @@ import {
   FaWindows,
   FaFolderOpen,
   FaCheckCircle,
+  FaDesktop,
+  FaCube,
+  FaArrowRight,
 } from "react-icons/fa";
 import { ModCard } from "../components/ModdedCard";
-import { CurseForgeCard } from "../components/CurseForgeCard";
+import { ContentDownloadCard } from "../components/ContentDownloadCard";
 import {
   ModdedChip,
   ReleaseChip,
@@ -363,6 +366,53 @@ export const LauncherPage = (args: any) => {
         });
     }
   }, [currentVersion]);
+
+  const doOpenFolder = React.useCallback(async () => {
+    if (!currentVersion) return;
+    try {
+      const vdir = await minecraft.GetVersionsDir();
+      if (!vdir) return;
+      const path = vdir + "\\" + currentVersion;
+      await minecraft.OpenPathDir(path);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [currentVersion]);
+
+  const doRegister = React.useCallback(async () => {
+    if (!currentVersion) return;
+    setModalState(13);
+    setOverlayActive(true);
+    onOpen();
+    try {
+      const isPreview = localVersionMap.get(currentVersion)?.isPreview || false;
+      const result = await minecraft.RegisterVersionWithWdapp(currentVersion, isPreview);
+      if (result === "success" || result === "") {
+        setModalState(15);
+        const fn = (minecraft as any)?.GetVersionMeta;
+        if (typeof fn === "function") {
+          fn(currentVersion).then((m: any) => {
+            setLocalVersionMap((prev) => {
+              const map = new Map(prev);
+              const existing = map.get(currentVersion);
+              if (existing) {
+                map.set(currentVersion, { ...existing, isRegistered: Boolean(m?.registered) });
+              }
+              return map;
+            });
+          });
+        }
+      } else if (result === "ERR_GDK_MISSING") {
+        setModalState(17);
+      } else {
+        setLaunchErrorCode(result);
+        setModalState(16);
+      }
+    } catch (e) {
+      setLaunchErrorCode(String(e));
+      setModalState(16);
+    }
+  }, [currentVersion, localVersionMap, onOpen]);
 
   useEffect(() => {
     if (!hasBackend) return;
@@ -1275,7 +1325,7 @@ export const LauncherPage = (args: any) => {
       <AnimatePresence>
         {overlayActive && (
           <motion.div
-            className="fixed inset-0 z-50 bg-black/30 backdrop-blur-sm"
+            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1283,542 +1333,336 @@ export const LauncherPage = (args: any) => {
           />
         )}
       </AnimatePresence>
-      <div className="relative w-full max-w-none px-3 sm:px-5 lg:px-8 py-3 sm:py-4 lg:py-6">
-        <div className="fixed inset-0 -z-10 pointer-events-none">
-          <div className="absolute -top-32 -left-32 h-[28rem] w-[28rem] rounded-full bg-gradient-to-tr from-emerald-500/20 to-lime-400/20 blur-3xl" />
-          <div className="absolute -bottom-32 -right-32 h-[30rem] w-[30rem] rounded-full bg-gradient-to-tr from-cyan-500/20 to-indigo-400/20 blur-3xl" />
+      <div className="relative w-full max-w-full mx-auto px-4 py-4 h-full flex flex-col justify-center">
+        {/* Background Gradients */}
+        <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
+          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 blur-[100px]" />
+          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 blur-[100px]" />
         </div>
 
+        {/* Hero Launch Card */}
         <motion.div
-          initial={{ opacity: 0, y: -8 }}
+          initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
+          transition={{ duration: 0.4, ease: "easeOut" }}
+          className="mb-4 sm:mb-6"
         >
-          <Card className="rounded-3xl shadow-xl mb-4 bg-white/60 dark:bg-black/30 backdrop-blur-md border border-white/30">
-            <CardHeader className="flex flex-col gap-4 p-4 sm:p-6 lg:p-7">
-              <div className="flex w-full items-start justify-between">
-                <div className="flex items-center gap-3">
-                  <div className="text-3xl sm:text-4xl font-extrabold gradient-text">
-                    Minecraft
-                  </div>
-                  {localVersionMap.get(currentVersion)?.isPreLoader.valueOf() ||
-                  false ? (
-                    <ModdedChip />
-                  ) : currentVersion === "" ? (
-                    <></>
-                  ) : localVersionMap.get(currentVersion)?.isPreview ||
-                    false ? (
-                    <PreviewChip />
-                  ) : (
-                    <ReleaseChip />
-                  )}
-                  {Boolean(
-                    localVersionMap.get(currentVersion)?.isRegistered
-                  ) ? (
-                    <Chip
-                      color="success"
-                      variant="flat"
-                      size="sm"
-                      startContent={<FaCheckCircle size={12} />}
-                      className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-700 border border-emerald-400/40 shadow-sm"
+          <Card className="relative overflow-hidden border-none shadow-xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl rounded-[2rem]">
+            
+            <CardBody className="p-6 sm:p-8 relative flex flex-col gap-6">
+              {/* Main Layout */}
+              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+                
+                {/* Left: Title & Info */}
+                <div className="flex flex-col gap-1 min-w-0">
+                   <div className="flex items-center gap-3">
+                    <motion.h1 
+                      className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 truncate"
+                      initial={{ opacity: 0, x: -20 }}
+                      animate={{ opacity: 1, x: 0 }}
+                      transition={{ delay: 0.2 }}
                     >
-                      {
-                        t("launcherpage.registered_tip", {
-                          defaultValue: "已注册",
-                        }) as unknown as string
-                      }
-                    </Chip>
-                  ) : null}
-                </div>
-                <div className="flex items-center gap-2 text-xs sm:text-sm">
-                  <span className="text-default-500 font-medium mt-[2px]">
-                    {t("launcherpage.currentVersion")}
-                  </span>
-                  <Tooltip
-                    content={
-                      <div className="flex flex-col gap-2">
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          className="rounded-full justify-start shadow-none"
-                          startContent={<FaCog />}
-                          onPress={() => {
-                            if (currentVersion) {
-                              navigate("/version-settings", {
-                                state: { name: currentVersion, returnTo: "/" },
-                              });
-                            } else {
-                              navigate("/versions");
-                            }
-                          }}
-                          aria-label={
-                            t("launcherpage.go_version_settings", {
-                              defaultValue: "版本设置",
-                            }) as unknown as string
-                          }
-                        >
-                          {
-                            t("launcherpage.go_version_settings", {
-                              defaultValue: "版本设置",
-                            }) as unknown as string
-                          }
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          className="rounded-full justify-start shadow-none"
-                          startContent={<FaWindows />}
-                          onPress={doCreateShortcut}
-                        >
-                          {
-                            t("launcherpage.shortcut.create_button", {
-                              defaultValue: "创建桌面快捷方式",
-                            }) as unknown as string
-                          }
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          className="rounded-full justify-start shadow-none"
-                          startContent={<FaFolderOpen />}
-                          onPress={async () => {
-                            try {
-                              if (!currentVersion) {
-                                navigate("/versions");
-                                return;
-                              }
-                              const vdir = await (
-                                minecraft as any
-                              )?.GetVersionsDir?.();
-                              const base = String(vdir || "");
-                              if (!base) return;
-                              const dir = `${base}\\${currentVersion}`;
-                              await (minecraft as any)?.OpenPathDir?.(dir);
-                            } catch {}
-                          }}
-                          aria-label={
-                            t("launcherpage.open_exe_dir", {
-                              defaultValue: "打开游戏安装目录",
-                            }) as unknown as string
-                          }
-                        >
-                          {
-                            t("launcherpage.open_exe_dir", {
-                              defaultValue: "打开游戏安装目录",
-                            }) as unknown as string
-                          }
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          className="rounded-full justify-start shadow-none"
-                          startContent={<FaWindows />}
-                          onPress={async () => {
-                            try {
-                              if (!currentVersion) return;
-                              const isPrev = Boolean(
-                                localVersionMap.get(currentVersion)?.isPreview
-                              );
-                              try {
-                                const ok = await (
-                                  minecraft as any
-                                )?.IsGDKInstalled?.();
-                                if (!ok) {
-                                  setModalState(17);
-                                  setOverlayActive(true);
-                                  onOpen();
-                                  return;
-                                }
-                              } catch {}
-                              setModalState(13);
-                              setOverlayActive(true);
-                              onOpen();
-                              const fn = (minecraft as any)
-                                ?.RegisterVersionWithWdapp;
-                              if (typeof fn === "function") {
-                                const err = await fn(currentVersion, isPrev);
-                                if (err) {
-                                  setLaunchErrorCode(String(err));
-                                  setModalState(16);
-                                  setOverlayActive(true);
-                                  onOpen();
-                                } else {
-                                  try {
-                                    const listFn =
-                                      (minecraft as any)
-                                        ?.ListVersionMetasWithRegistered ??
-                                      (minecraft as any)?.ListVersionMetas;
-                                    if (typeof listFn === "function") {
-                                      const metas = await listFn();
-                                      setLocalVersionMap((prev) => {
-                                        const map = new Map(prev);
-                                        (metas || []).forEach((m: any) => {
-                                          const name = String(m?.name || "");
-                                          const cur = map.get(name) || {};
-                                          map.set(name, {
-                                            ...cur,
-                                            isRegistered: Boolean(
-                                              m?.registered
-                                            ),
-                                            isPreview:
-                                              String(
-                                                m?.type ||
-                                                  (cur?.isPreview
-                                                    ? "preview"
-                                                    : "release")
-                                              ).toLowerCase() === "preview",
-                                            version: String(
-                                              m?.gameVersion ||
-                                                cur?.version ||
-                                                ""
-                                            ),
-                                          });
-                                        });
-                                        return map;
-                                      });
-                                    }
-                                  } catch {}
-                                  setModalState(15);
-                                  setOverlayActive(true);
-                                  onOpen();
-                                }
-                              }
-                            } catch {}
-                          }}
-                        >
-                          {
-                            t("launcherpage.register_system_button", {
-                              defaultValue: "注册到系统",
-                            }) as unknown as string
-                          }
-                        </Button>
-                      </div>
-                    }
-                    placement="left"
-                    offset={8}
-                  >
-                    <div className="inline-flex items-center px-3 py-1 rounded-full bg-default-100/70 dark:bg-default-50/10 border border-white/30 backdrop-blur-sm">
-                      {logoDataUrl ? (
-                        <img
-                          src={logoDataUrl}
-                          alt="logo"
-                          className="mr-2 h-6 w-6 rounded"
-                        />
-                      ) : null}
-                      <div className="flex flex-col leading-tight">
-                        <span className="text-[0.95rem] sm:text-base font-semibold text-default-900 tracking-tight">
-                          {displayName ||
-                            currentVersion ||
-                            (t("launcherpage.currentVersion_none", {
-                              defaultValue: "None",
-                            }) as unknown as string)}
-                        </span>
-                        <span className="text-[0.70rem] sm:text-xs text-default-500">
-                          {displayVersion || ""}
-                        </span>
-                      </div>
-                    </div>
-                  </Tooltip>
-                </div>
-              </div>
-              <div className="flex w-full flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
-                <div className="text-default-600 text-sm sm:text-base min-h-[24px]">
-                  <AnimatePresence mode="wait">
-                    <motion.span
-                      key={`use-tip-${tipIndex}`}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {launchTips[tipIndex]}
-                    </motion.span>
-                  </AnimatePresence>
-                </div>
-                <div className="flex flex-col items-end gap-2 w-full sm:w-auto">
-                  <div className="flex items-center gap-2">
-                    <motion.div
-                      whileHover={{ scale: 1.02 }}
-                      whileTap={{ scale: 0.98 }}
-                    >
-                      <Button
-                        size="md"
+                      Minecraft
+                    </motion.h1>
+                    {localVersionMap.get(currentVersion)?.isRegistered && (
+                       <Chip
+                        startContent={<FaCheckCircle size={14} />}
+                        variant="flat"
                         color="success"
-                        className="text-white rounded-full px-4 sm:px-6 shadow-md flex items-center"
-                        onPress={doLaunch}
+                        classNames={{
+                          base: "bg-emerald-500/10 border border-emerald-500/20 hidden sm:flex",
+                          content: "font-semibold text-emerald-600 dark:text-emerald-400"
+                        }}
                       >
-                        <FaRocket className="mr-2" />
-                        {t("launcherpage.launch_button")}
-                      </Button>
-                    </motion.div>
+                        {t("launcherpage.registered_tip", { defaultValue: "已注册" })}
+                      </Chip>
+                    )}
+                   </div>
+                   <div className="flex items-center gap-2">
+                     <span className="text-lg sm:text-xl font-medium text-default-500 dark:text-zinc-400">
+                      {t("launcherpage.edition", { defaultValue: "Bedrock Edition" })}
+                     </span>
+                   </div>
+                </div>
 
-                    <Dropdown>
+                {/* Right: Actions */}
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-shrink-0">
+                  {/* Version Selector */}
+                  <div className="flex items-center gap-3 p-1.5 rounded-2xl">
+                    <Dropdown placement="bottom-end">
                       <DropdownTrigger>
-                        <Button
-                          isIconOnly
-                          size="md"
-                          variant="light"
-                          className="rounded-full"
-                          aria-label={
-                            t(
-                              "launcherpage.currentVersion_choose_version_aria",
-                              { defaultValue: "选择版本" }
-                            ) as unknown as string
-                          }
+                        <Button 
+                          variant="light" 
+                          className="h-12 px-3 bg-transparent data-[hover=true]:bg-default-200/50 dark:data-[hover=true]:bg-white/5"
                         >
-                          <FaChevronDown size={16} />
+                          <div className="flex items-center gap-3 text-left">
+                            <div className="w-8 h-8 rounded-lg bg-default-200/50 dark:bg-white/10 flex items-center justify-center overflow-hidden shadow-sm">
+                               {logoDataUrl ? (
+                                <img src={logoDataUrl} alt="logo" className="w-full h-full object-cover" />
+                              ) : (
+                                <span className="text-base font-bold text-default-500 dark:text-zinc-400">M</span>
+                              )}
+                            </div>
+                            <div className="flex flex-col hidden lg:flex">
+                              <span className="text-xs text-default-500 dark:text-zinc-400 font-medium">{t("launcherpage.currentVersion")}</span>
+                              <span className="text-sm font-bold text-default-900 dark:text-white leading-tight max-w-[120px] truncate">
+                                {displayName || t("launcherpage.currentVersion_none", { defaultValue: "Select Version" })}
+                              </span>
+                            </div>
+                            <span className="text-sm font-bold text-default-900 dark:text-white leading-tight max-w-[120px] truncate lg:hidden">
+                                {displayName || t("launcherpage.currentVersion_none", { defaultValue: "Select" })}
+                            </span>
+                            <FaChevronDown className="text-default-400 dark:text-zinc-300 ml-1" size={12} />
+                          </div>
                         </Button>
                       </DropdownTrigger>
                       <DropdownMenu
-                        aria-label="quick-version-select"
+                        aria-label="Version Selection"
                         selectionMode="single"
-                        disallowEmptySelection
-                        selectedKeys={
-                          new Set(currentVersion ? [currentVersion] : [])
-                        }
-                        className="max-h-72 overflow-y-auto min-w-[280px] no-scrollbar"
+                        selectedKeys={new Set(currentVersion ? [currentVersion] : [])}
+                        className="max-h-[400px] overflow-y-auto no-scrollbar min-w-[300px]"
                         topContent={
-                          <div className="p-2 flex items-center gap-2">
+                           <div className="p-3 border-b border-default-100 dark:border-default-50/10">
                             <Input
-                              className="flex-1"
                               size="sm"
-                              placeholder={
-                                t("launcherpage.search_versions", {
-                                  defaultValue: "搜索版本或名称",
-                                }) as unknown as string
-                              }
+                              placeholder={t("launcherpage.search_versions", { defaultValue: "Search versions..." })}
                               value={versionQuery}
                               onValueChange={setVersionQuery}
-                              autoFocus
+                              startContent={<FaList className="text-default-400" />}
+                              classNames={{
+                                inputWrapper: "bg-default-100 dark:bg-default-50/20"
+                              }}
                             />
                             <Button
+                              fullWidth
                               size="sm"
-                              variant="light"
-                              startContent={<FaList size={14} />}
+                              variant="flat"
+                              className="mt-2"
                               onPress={() => navigate("/versions")}
                             >
-                              {t("launcherpage.manage_versions", {
-                                defaultValue: "版本列表",
-                              })}
+                              {t("launcherpage.manage_versions", { defaultValue: "Manage All Versions" })}
                             </Button>
                           </div>
                         }
                         items={versionMenuItems}
                         onSelectionChange={(keys) => {
-                          const arr = Array.from(
-                            keys as unknown as Set<string>
-                          );
-                          const id = String(arr[0] || "");
-                          if (!id) return;
-                          const name = id;
-                          setCurrentVersion(name);
-                          setDisplayName(name);
-                          const ver = localVersionMap.get(name)?.version || "";
-                          setDisplayVersion(
-                            ver ||
-                              (t("launcherpage.currentVersion_none", {
-                                defaultValue: "None",
-                              }) as unknown as string)
-                          );
-                          try {
-                            localStorage.setItem("ll.currentVersionName", name);
-                          } catch {}
-                          try {
-                            const getter = minecraft?.GetVersionLogoDataUrl;
-                            if (typeof getter === "function") {
-                              getter(name).then((u: string) =>
-                                setLogoDataUrl(String(u || ""))
-                              );
-                            } else {
-                              setLogoDataUrl("");
-                            }
-                          } catch {
-                            setLogoDataUrl("");
+                          const selected = Array.from(keys)[0] as string;
+                          if (selected) {
+                            setCurrentVersion(selected);
+                            setDisplayName(selected);
+                             const ver = localVersionMap.get(selected)?.version || "";
+                            setDisplayVersion(ver || "None");
+                            try {
+                              localStorage.setItem("ll.currentVersionName", selected);
+                              const getter = minecraft?.GetVersionLogoDataUrl;
+                              if (typeof getter === "function") {
+                                getter(selected).then((u: string) => setLogoDataUrl(String(u || "")));
+                              }
+                            } catch {}
                           }
                         }}
                       >
-                        {(item: {
-                          key: string;
-                          name: string;
-                          version: string;
-                          isRegistered: boolean;
-                          isDisabled?: boolean;
-                        }) => (
+                        {(item: any) => (
                           <DropdownItem
                             key={item.key}
-                            isDisabled={item.isDisabled}
                             textValue={item.name}
+                            description={item.version}
                             startContent={
-                              item.isDisabled
-                                ? null
-                                : (() => {
-                                    const u = logoByName.get(item.name);
-                                    if (!u) ensureLogo(item.name);
-                                    return u ? (
-                                      <img
-                                        src={u}
-                                        alt="logo"
-                                        className="h-5 w-5 rounded"
-                                      />
-                                    ) : (
-                                      <div className="h-5 w-5 rounded bg-default-200" />
-                                    );
-                                  })()
+                              <div className="w-8 h-8 flex-shrink-0 rounded-lg bg-default-100 dark:bg-white/10 flex items-center justify-center overflow-hidden">
+                                {(() => {
+                                  const u = logoByName.get(item.name);
+                                  if (!u) ensureLogo(item.name);
+                                  return u ? <img src={u} className="w-full h-full object-cover" /> : null;
+                                })()}
+                              </div>
                             }
                           >
-                            <div className="flex items-center justify-between">
-                              <span
-                                className="font-medium truncate max-w-[160px]"
-                                title={item.name}
-                              >
-                                {item.name}
-                              </span>
-                              <div className="flex items-center gap-2 ml-2">
-                                {item.isRegistered ? (
-                                  <Chip
-                                    size="sm"
-                                    color="success"
-                                    variant="flat"
-                                    startContent={<FaCheckCircle size={12} />}
-                                    className="bg-gradient-to-r from-emerald-500/20 to-green-500/20 text-emerald-700 border border-emerald-400/40 shadow-sm transition-transform duration-200 hover:scale-[1.03]"
-                                  >
-                                    {
-                                      t("launcherpage.registered_tip", {
-                                        defaultValue: "已注册",
-                                      }) as unknown as string
-                                    }
-                                  </Chip>
-                                ) : null}
-                                <span className="text-xs text-default-500">
-                                  {item.version}
-                                </span>
-                              </div>
+                            <div className="flex justify-between items-center gap-2">
+                              <span className="font-semibold">{item.name}</span>
+                              {item.isRegistered && (
+                                <Chip
+                                  size="sm"
+                                  variant="flat"
+                                  color="success"
+                                  classNames={{
+                                    base: "bg-emerald-500/10 border border-emerald-500/20 h-5 px-1",
+                                    content: "text-emerald-600 dark:text-emerald-400 font-bold text-[10px]"
+                                  }}
+                                >
+                                  {t("launcherpage.registered_tip", { defaultValue: "已注册" })}
+                                </Chip>
+                              )}
                             </div>
                           </DropdownItem>
                         )}
                       </DropdownMenu>
                     </Dropdown>
+                    
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button
+                          isIconOnly
+                          variant="light"
+                          radius="full"
+                          size="sm"
+                          className="data-[hover=true]:bg-default-200/50 dark:data-[hover=true]:bg-white/5"
+                        >
+                          <FaCogs size={18} className="text-default-500 dark:text-zinc-400" />
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu aria-label="Version Actions">
+                        <DropdownItem
+                          key="settings"
+                          startContent={<FaCog />}
+                          onPress={() => {
+                            if (currentVersion) {
+                              navigate("/version-settings", { state: { name: currentVersion, returnTo: "/" } });
+                            } else {
+                              navigate("/versions");
+                            }
+                          }}
+                        >
+                          {t("launcherpage.go_version_settings", { defaultValue: "Version Settings" })}
+                        </DropdownItem>
+                        <DropdownItem
+                          key="shortcut"
+                          startContent={<FaDesktop />}
+                          onPress={doCreateShortcut}
+                        >
+                          {t("launcherpage.shortcut.create_button", { defaultValue: "Create Desktop Shortcut" })}
+                        </DropdownItem>
+                        <DropdownItem
+                          key="folder"
+                          startContent={<FaFolderOpen />}
+                          onPress={doOpenFolder}
+                        >
+                          {t("launcherpage.open_exe_dir", { defaultValue: "Open Installation Folder" })}
+                        </DropdownItem>
+                        <DropdownItem
+                          key="register"
+                          startContent={<FaWindows />}
+                          onPress={doRegister}
+                        >
+                          {t("launcherpage.register_system_button", { defaultValue: "Register to System" })}
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
                   </div>
+
+                  {/* Launch Button */}
+                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                    <Button
+                      size="lg"
+                      className="h-14 px-8 text-lg font-bold text-white shadow-emerald-500/30 shadow-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 rounded-2xl w-full sm:w-auto"
+                      startContent={<FaRocket className="mb-0.5" />}
+                      onPress={doLaunch}
+                      isLoading={modalState === 5} 
+                    >
+                      {t("launcherpage.launch_button", { defaultValue: "LAUNCH" })}
+                    </Button>
+                  </motion.div>
                 </div>
               </div>
-            </CardHeader>
+
+               {/* Tips (Bottom) */}
+               <div className="w-full rounded-xl px-4 py-2 flex items-center gap-2">
+                 <span className="text-lg">💡</span>
+                 <div className="flex-1 overflow-hidden h-[20px] relative">
+                   <AnimatePresence mode="wait">
+                     <motion.div
+                       key={tipIndex}
+                       initial={{ opacity: 0, y: 10 }}
+                       animate={{ opacity: 1, y: 0 }}
+                       exit={{ opacity: 0, y: -10 }}
+                       className="text-sm text-default-500 font-medium truncate absolute inset-0"
+                     >
+                       {launchTips[tipIndex]}
+                     </motion.div>
+                   </AnimatePresence>
+                 </div>
+               </div>
+            </CardBody>
           </Card>
         </motion.div>
 
-        <div className="grid items-stretch gap-3 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
+        {/* Content Grid - Responsive (1 col on mobile, 3 cols on md+) */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 items-stretch">
+           {/* Mod Card */}
+           <motion.div
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.1 }}
-          >
-            <ModCard
-              localVersionMap={localVersionMap}
-              currentVersion={currentVersion}
-            />
-          </motion.div>
+            transition={{ delay: 0.3 }}
+            className="md:col-span-1"
+           >
+              <ModCard localVersionMap={localVersionMap} currentVersion={currentVersion} />
+           </motion.div>
 
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
+           {/* Content Management */}
+           <motion.div
+            initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.15 }}
-          >
-            <CurseForgeCard />
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.2 }}
-          >
-            <Card className="rounded-2xl shadow-md h-full min-h-[160px] bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/30">
-              <CardBody className="relative p-4 sm:p-5 flex flex-col gap-3 text-left">
-                <div className="flex items-center gap-2">
-                  <span className="font-bold text-lg">
-                    {t("launcherpage.content_manage", {
-                      defaultValue: "内容管理",
-                    })}
-                  </span>
-                </div>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mt-2">
-                  <div className="rounded-xl border border-white/30 bg-default-100/70 dark:bg-default-50/10 shadow-sm backdrop-blur-sm px-3 py-2 cursor-pointer hover:shadow-md transition-all duration-200 hover:bg-default-100 dark:hover:bg-default-50/15"
-                    onClick={() => navigate("/content/worlds")}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FaGlobe className="text-default-500" />
-                        <span
-                          className={`text-default-600 ${labelSizeClass(
-                            worldsLabel
-                          )} truncate max-w-[140px] sm:max-w-[160px]`}
-                        >
-                          {worldsLabel}
-                        </span>
-                      </div>
-                      <span className="text-base font-semibold text-default-800">
-                        {contentCounts.worlds}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-white/30 bg-default-100/70 dark:bg-default-50/10 shadow-sm backdrop-blur-sm px-3 py-2 cursor-pointer hover:shadow-md transition-all duration-200 hover:bg-default-100 dark:hover:bg-default-50/15"
-                    onClick={() => navigate("/content/resource-packs")}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FaImage className="text-default-500" />
-                        <span
-                          className={`text-default-600 ${labelSizeClass(
-                            resourceLabel
-                          )} truncate max-w-[140px] sm:max-w-[160px]`}
-                        >
-                          {resourceLabel}
-                        </span>
-                      </div>
-                      <span className="text-base font-semibold text-default-800">
-                        {contentCounts.resourcePacks}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="rounded-xl border border-white/30 bg-default-100/70 dark:bg-default-50/10 shadow-sm backdrop-blur-sm px-3 py-2 cursor-pointer hover:shadow-md transition-all duration-200 hover:bg-default-100 dark:hover:bg-default-50/15"
-                    onClick={() => navigate("/content/behavior-packs")}>
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 min-w-0">
-                        <FaCogs className="text-default-500" />
-                        <span
-                          className={`text-default-600 ${labelSizeClass(
-                            behaviorLabel
-                          )} truncate max-w-[140px] sm:max-w-[160px]`}
-                        >
-                          {behaviorLabel}
-                        </span>
-                      </div>
-                      <span className="text-base font-semibold text-default-800">
-                        {contentCounts.behaviorPacks}
-                      </span>
-                    </div>
-                  </div>
-                </div>
-                <div className="absolute bottom-3 right-3">
-                  <Tooltip
-                    content={
-                      t("launcherpage.content_manage", {
-                        defaultValue: "内容管理",
-                      }) as unknown as string
-                    }
-                    placement="left"
-                  >
-                    <Button
-                      size="sm"
-                      variant="light"
-                      className="rounded-full px-4"
-                      onPress={() => navigate("/content")}
+            transition={{ delay: 0.4 }}
+            className="md:col-span-1"
+           >
+             <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-2xl transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group">
+               <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">
+                 <div className="flex items-center gap-2">
+                   <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400">
+                      <FaCube size={16} />
+                   </div>
+                   <h3 className="text-base font-bold text-default-800 dark:text-zinc-100">
+                      {t("launcherpage.content_manage", { defaultValue: "Content Management" })}
+                   </h3>
+                 </div>
+                 <Button
+                    size="sm"
+                    variant="light"
+                    className="text-xs text-default-500 dark:text-zinc-400 data-[hover=true]:text-default-800 dark:data-[hover=true]:text-zinc-200"
+                    endContent={<FaArrowRight size={10} />}
+                    onPress={() => navigate("/content")}
+                 >
+                    {t("common.view_all", { defaultValue: "View All" })}
+                 </Button>
+               </CardHeader>
+               <CardBody className="p-3 gap-2 relative">
+                  {[
+                    { label: worldsLabel, count: contentCounts.worlds, icon: FaGlobe, path: "/content/worlds", color: "text-blue-500" },
+                    { label: resourceLabel, count: contentCounts.resourcePacks, icon: FaImage, path: "/content/resource-packs", color: "text-purple-500" },
+                    { label: behaviorLabel, count: contentCounts.behaviorPacks, icon: FaCogs, path: "/content/behavior-packs", color: "text-orange-500" }
+                  ].map((item, idx) => (
+                    <div 
+                      key={idx}
+                      className="group/item flex items-center justify-between p-2 rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-200"
+                      onClick={() => navigate(item.path)}
                     >
-                      {t("common.go", { defaultValue: "前往" })}
-                    </Button>
-                  </Tooltip>
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
+                      <div className="flex items-center gap-3">
+                        <div className={`p-1.5 rounded-lg bg-default-100 dark:bg-default-50/20 ${item.color} bg-opacity-20`}>
+                          <item.icon size={16} />
+                        </div>
+                        <span className="font-medium text-sm text-default-600 dark:text-zinc-200 truncate max-w-[100px] lg:max-w-none">{item.label}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <span className="text-base font-bold text-default-800 dark:text-zinc-200">{item.count}</span>
+                        <FaChevronDown className="text-default-300 dark:text-zinc-500 -rotate-90" size={10} />
+                      </div>
+                    </div>
+                  ))}
+               </CardBody>
+             </Card>
+           </motion.div>
+
+           {/* Content Download */}
+           <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+            className="md:col-span-1"
+           >
+              <ContentDownloadCard />
+           </motion.div>
         </div>
 
+        {/* Modal Render */}
         <Modal
           size="xl"
           isOpen={isOpen}
@@ -1831,6 +1675,9 @@ export const LauncherPage = (args: any) => {
               args.refresh();
             }
           }}
+          classNames={{
+             base: "bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl border border-white/20 shadow-2xl rounded-3xl",
+          }}
         >
           <ModalContent>
             {(onClose) => (
@@ -1841,6 +1688,7 @@ export const LauncherPage = (args: any) => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.98 }}
                   transition={{ duration: 0.22 }}
+                  className="p-2"
                 >
                   {ModalUi(onClose)}
                 </motion.div>

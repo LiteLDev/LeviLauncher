@@ -36,7 +36,7 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-const curseForgeAPIKey = "$2a$10$QNbi2vCXdtq6WXROpLih9OSMR2KKpL47XoOHPPzK33OoKBp7Yzhbi"
+const curseForgeAPIKey = "$2a$10$jKlW9V6VUddFIwHg0hVYPOiph654Wx2dEY7cW2F1ivQ8af9ML.uDq"
 
 const (
 	EventGameInputEnsureStart      = "gameinput.ensure.start"

@@ -527,7 +527,8 @@
     "save": "Save",
     "add": "Add",
     "save_failed": "Save failed",
-    "load_failed": "Load failed"
+    "load_failed": "Load failed",
+    "view_all": "View All"
   },
   "content": {
     "count": {
@@ -806,6 +807,9 @@
     "content": "Browse and download mods",
     "browse": "Browse CurseForge"
   },
+  "contentdownload": {
+    "title": "Content Download"
+  },
   "curseforge": {
     "title": "CurseForge",
     "search_placeholder": "Search mods...",
@@ -813,16 +817,63 @@
     "minecraft_version": "Minecraft Version",
     "select_version": "Select version",
     "all_versions": "All Versions",
-    "mod_loader": "Mod Loader",
-    "select_loader": "Select loader",
-    "class": "Type",
-    "select_class": "Select type",
-    "all_classes": "All Types",
+    "load_error": "Failed to load data, please retry",
+    "search_error": "Search failed, please retry",
+    "class": "Class",
+    "select_class": "Select class",
+    "all_classes": "All classes",
     "category": "Category",
     "select_category": "Select category",
-    "sort_by": "Sort By",
+    "sort_by": "Sort by",
     "select_sort": "Select sort",
     "no_results": "No results found",
-    "view_details": "View Details"
+    "by_author": "By {{author}}",
+    "no_description": "No description available.",
+    "downloads": "Downloads",
+    "updated": "Updated",
+    "created": "Created",
+    "size": "Size",
+    "game_version": "Game Version",
+    "mod_not_found": "Mod not found",
+    "go_back": "Go Back",
+    "by": "By",
+    "updated_date": "Updated {{date}}",
+    "download_count": "{{count}} Downloads",
+    "install_action": "Install",
+    "website": "Website",
+    "source": "Source",
+    "issues": "Issues",
+    "share": "Share",
+    "no_download_url": "No download URL available",
+    "no_files_found": "No files found",
+    "sort": {
+      "featured": "Featured",
+      "popularity": "Popularity",
+      "last_updated": "Last Updated",
+      "creation_date": "Creation Date",
+      "total_downloads": "Total Downloads"
+    },
+    "install": {
+      "downloading_title": "Downloading Content",
+      "select_version_title": "Select Game Version",
+      "select_player_title": "Select Player",
+      "importing_title": "Importing Content",
+      "success_title": "Success",
+      "error_title": "Error",
+      "downloading_body": "Downloading file...",
+      "select_version_body": "Please select the game version to import to:",
+      "local_installation": "Local Installation",
+      "select_version_placeholder": "Select a version",
+      "registered": "Registered",
+      "select_player_body": "This content requires selecting a player:",
+      "player_label": "Player",
+      "select_player_placeholder": "Select a player",
+      "importing_body": "Importing content...",
+      "success_msg": "Import Successful",
+      "success_desc": "The content has been successfully imported to the selected version.",
+      "failed_msg": "Import Failed",
+      "next": "Next",
+      "close": "Close"
+    }
   }
 }

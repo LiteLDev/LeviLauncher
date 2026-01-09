@@ -149,7 +149,7 @@
     "title": "Mods",
     "content": {
       "none": "0 mods found",
-      "found": "{{count}} mods found"
+      "found": "{{count}} mod(s) found"
     },
     "manage": "Manage Mods"
   },

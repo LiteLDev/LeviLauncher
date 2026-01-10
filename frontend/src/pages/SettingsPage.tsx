@@ -16,11 +16,7 @@ import {
   DropdownItem,
   Spinner,
   Progress,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Switch,
 } from "@heroui/react";
@@ -52,6 +48,7 @@ import {
 import { Browser, Events } from "@wailsio/runtime";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -800,16 +797,16 @@ export const SettingsPage: React.FC = () => {
         </Card>
       </motion.div>
       {/* GDK License */}
-      <Modal
+      <BaseModal
         size="md"
         isOpen={gdkLicenseDisclosure.isOpen}
         onOpenChange={gdkLicenseDisclosure.onOpenChange}
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader>{t("settings.gdk.license.title")}</ModalHeader>
-              <ModalBody>
+              <BaseModalHeader>{t("settings.gdk.license.title")}</BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-default-700 text-sm">
                   {t("settings.gdk.license.body")}{" "}
                   <a
@@ -834,8 +831,8 @@ export const SettingsPage: React.FC = () => {
                     {t("settings.gdk.license.accept")}
                   </label>
                 </div>
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button variant="light" onPress={onClose}>
                   {t("common.cancel")}
                 </Button>
@@ -856,27 +853,27 @@ export const SettingsPage: React.FC = () => {
                 >
                   {t("downloadmodal.download_button")}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* GDK Download Progress */}
-      <Modal
+      <BaseModal
         size="md"
         isOpen={gdkProgressDisclosure.isOpen}
         onOpenChange={gdkProgressDisclosure.onOpenChange}
         hideCloseButton
         isDismissable={false}
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="text-medium">
+              <BaseModalHeader className="text-medium">
                 {t("settings.gdk.download.title")}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 {gdkDlError ? (
                   <div className="text-danger">{gdkDlError}</div>
                 ) : (
@@ -919,8 +916,8 @@ export const SettingsPage: React.FC = () => {
                     </div>
                   </div>
                 )}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="danger"
                   variant="light"
@@ -941,46 +938,46 @@ export const SettingsPage: React.FC = () => {
                 >
                   {t("common.ok")}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* GDK Install */}
-      <Modal
+      <BaseModal
         size="md"
         isOpen={gdkInstallDisclosure.isOpen}
         onOpenChange={gdkInstallDisclosure.onOpenChange}
         hideCloseButton
         isDismissable={false}
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {() => (
             <>
-              <ModalHeader>{t("settings.gdk.install.title")}</ModalHeader>
-              <ModalBody>
+              <BaseModalHeader>{t("settings.gdk.install.title")}</BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-small text-default-500">
                   {t("settings.gdk.install.body")}
                 </div>
-              </ModalBody>
+              </BaseModalBody>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={unsavedOpen}
         onOpenChange={unsavedOnOpenChange}
         hideCloseButton
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="text-warning-600">
+              <BaseModalHeader className="text-warning-600">
                 {t("settings.unsaved.title", { defaultValue: "未保存修改" })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-default-700 text-sm">
                   {t("settings.unsaved.body", {
                     defaultValue:
@@ -994,8 +991,8 @@ export const SettingsPage: React.FC = () => {
                     })}
                   </div>
                 )}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button variant="light" onPress={onClose}>
                   {t("settings.unsaved.cancel", { defaultValue: "取消" })}
                 </Button>
@@ -1028,34 +1025,34 @@ export const SettingsPage: React.FC = () => {
                 >
                   {t("settings.unsaved.save", { defaultValue: "保存并离开" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="sm"
         isOpen={resetOpen}
         onOpenChange={resetOnOpenChange}
         hideCloseButton
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="text-danger-600">
+              <BaseModalHeader className="text-danger-600">
                 {t("settings.reset.confirm.title", {
                   defaultValue: "恢复默认路径？",
                 })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-default-700 text-sm">
                   {t("settings.reset.confirm.body", {
                     defaultValue:
                       "这将把内容路径重置为默认位置。确定要继续吗？",
                   })}
                 </div>
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button variant="light" onPress={onClose}>
                   {t("common.cancel", { defaultValue: "取消" })}
                 </Button>
@@ -1080,11 +1077,11 @@ export const SettingsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
     </div>
   );
 };

@@ -24,6 +24,7 @@ import {
 import { listPlayers } from "../utils/content";
 import { readCurrentVersionName } from "../utils/currentVersion";
 import { compareVersions } from "../utils/version";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
 import { 
   Button, 
   Spinner, 
@@ -45,11 +46,7 @@ import {
   Tooltip,
   Select,
   SelectItem,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Progress,
   Skeleton
 } from "@heroui/react";
@@ -769,32 +766,32 @@ const CurseForgeModPage: React.FC = () => {
         </div>
       </ScrollShadow>
 
-      <Modal
+      <BaseModal 
         isOpen={installModalOpen} 
         onOpenChange={(open) => {
             if (!open) {
                 if (installStep === 'downloading') {
                     handleCancelDownload();
-                } else if (installStep !== 'importing') {
+                } else {
                     setInstallModalOpen(false);
                 }
             }
         }}
-        isDismissable={installStep !== 'importing'}
-        hideCloseButton={installStep === 'importing'}
+        isDismissable={false}
+        hideCloseButton={installStep === 'downloading' || installStep === 'importing'}
       >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">
+              <BaseModalHeader className="flex flex-col gap-1">
                 {installStep === 'downloading' && t("curseforge.install.downloading_title", { defaultValue: "Downloading Content" })}
                 {installStep === 'version_select' && t("curseforge.install.select_version_title", { defaultValue: "Select Game Version" })}
                 {installStep === 'player_select' && t("curseforge.install.select_player_title", { defaultValue: "Select Player" })}
                 {installStep === 'importing' && t("curseforge.install.importing_title", { defaultValue: "Importing Content" })}
                 {installStep === 'success' && t("curseforge.install.success_title", { defaultValue: "Success" })}
                 {installStep === 'error' && t("curseforge.install.error_title", { defaultValue: "Error" })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 {installStep === 'downloading' && (
                     <div className="flex flex-col items-center gap-4 py-4 w-full">
                         <p className="text-default-500">{t("curseforge.install.downloading_body", { defaultValue: "Downloading file..." })}</p>
@@ -896,8 +893,8 @@ const CurseForgeModPage: React.FC = () => {
                         <p className="text-default-500 text-center">{installError}</p>
                     </div>
                 )}
-              </ModalBody>
-              <ModalFooter>
+                </BaseModalBody>
+              <BaseModalFooter>
                 {installStep === 'downloading' && (
                   <Button color="danger" variant="flat" onPress={handleCancelDownload}>
                     {t("common.cancel", { defaultValue: "Cancel" })}
@@ -918,12 +915,12 @@ const CurseForgeModPage: React.FC = () => {
                         {t("curseforge.install.close", { defaultValue: "Close" })}
                     </Button>
                 )}
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={dupOpen}
         onOpenChange={(open) => {
@@ -936,12 +933,12 @@ const CurseForgeModPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-primary-600">
+              <BaseModalHeader className="text-primary-600">
                 {t("mods.overwrite_modal_title", {
                   defaultValue: "检测到重复",
                 })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-sm text-default-700">
                   {t("mods.overwrite_modal_body", {
                     defaultValue:
@@ -953,8 +950,8 @@ const CurseForgeModPage: React.FC = () => {
                     {dupName}
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -979,11 +976,11 @@ const CurseForgeModPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
     </div>
   );
 };

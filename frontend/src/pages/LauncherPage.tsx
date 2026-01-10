@@ -1,11 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Modal,
   useDisclosure,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
   Card,
   CardHeader,
@@ -45,17 +41,13 @@ import {
 } from "react-icons/fa";
 import { ModCard } from "../components/ModdedCard";
 import { ContentDownloadCard } from "../components/ContentDownloadCard";
-import {
-  ModdedChip,
-  ReleaseChip,
-  PreviewChip,
-} from "../components/LauncherChip";
 import { Events, Window, Browser } from "@wailsio/runtime";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { compareVersions } from "../utils/version";
 import { saveCurrentVersionName } from "../utils/currentVersion";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
 
 let __didCheckGameInput = false;
 let __didCheckGamingServices = false;
@@ -747,12 +739,12 @@ export const LauncherPage = (args: any) => {
   > = {
     1: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-danger-500">
             {t("launcherpage.launch.failed.title")}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
             <p className="font-medium text-center">
                 {(() => {
@@ -766,8 +758,8 @@ export const LauncherPage = (args: any) => {
                 })()}
             </p>
           </div>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           {launchErrorCode === "ERR_GAME_ALREADY_RUNNING" && (
             <Button
               color="warning"
@@ -798,19 +790,19 @@ export const LauncherPage = (args: any) => {
           >
             {t("launcherpage.launch.failed.close_button")}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     7: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
             {t("launcherpage.gameinput.installing.title", {
               defaultValue: "正在安装 GameInput",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.gameinput.installing.body", {
               defaultValue: "正在下载并启动安装程序，请根据系统提示完成安装。",
@@ -844,27 +836,27 @@ export const LauncherPage = (args: any) => {
               </div>
             )}
           </div>
-        </ModalBody>
+        </BaseModalBody>
       </>
     ),
     8: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.gameinput.missing.title", {
               defaultValue: "缺少 GameInput 组件",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.gameinput.missing.body", {
               defaultValue:
                 "运行游戏需要 Microsoft GameInput 组件。是否现在下载安装？",
             })}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button
             color="danger"
             variant="light"
@@ -890,27 +882,27 @@ export const LauncherPage = (args: any) => {
               defaultValue: "立即安装",
             })}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     9: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.gs.missing.title", {
               defaultValue: "缺少 Microsoft Gaming Services",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.gs.missing.body", {
               defaultValue:
                 "未检测到 Microsoft Gaming Services。该组件是 Minecraft 运行所必须的依赖项。",
             })}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button
             color="danger"
             variant="light"
@@ -951,27 +943,27 @@ export const LauncherPage = (args: any) => {
               defaultValue: "打开商店进行安装",
             })}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     10: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
             {t("launcherpage.install_confirm.title", {
               defaultValue: "是否已完成安装？",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.install_confirm.body", {
               defaultValue:
                 "安装完成后请点击“已完成，重新检测”。如果尚未完成，请继续安装。",
             })}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button
             color="default"
             variant="light"
@@ -1023,12 +1015,12 @@ export const LauncherPage = (args: any) => {
               defaultValue: "已完成，重新检测",
             })}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     4: () => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <motion.h2
             className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
             initial={{ opacity: 0, y: -10 }}
@@ -1037,8 +1029,8 @@ export const LauncherPage = (args: any) => {
           >
             {t("launcherpage.vcruntime.completing.title")}
           </motion.h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <motion.p
             className="text-default-600 font-medium"
             initial={{ opacity: 0 }}
@@ -1047,12 +1039,12 @@ export const LauncherPage = (args: any) => {
           >
             {t("launcherpage.vcruntime.completing.body")}
           </motion.p>
-        </ModalBody>
+        </BaseModalBody>
       </>
     ),
     5: () => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <motion.h2
             className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
             initial={{ opacity: 0, y: -10 }}
@@ -1061,8 +1053,8 @@ export const LauncherPage = (args: any) => {
           >
             {t("launcherpage.mclaunch.loading.title")}
           </motion.h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-4">
                 <Spinner size="lg" color="success" classNames={{ circle1: "border-b-emerald-500", circle2: "border-b-teal-500" }} />
@@ -1097,8 +1089,8 @@ export const LauncherPage = (args: any) => {
                 classNames={{ indicator: "bg-gradient-to-r from-emerald-500 to-teal-600" }} 
             />
           </div>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button
             color="primary"
             radius="full"
@@ -1111,22 +1103,22 @@ export const LauncherPage = (args: any) => {
           >
             {t("common.close", { defaultValue: "关闭" }) as unknown as string}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     2: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.adminconfirm.title")}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.adminconfirm.content")}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button color="default" variant="light" radius="full" onPress={onClose}>
             {t("launcherpage.adminconfirm.cancel_button")}
           </Button>
@@ -1140,22 +1132,22 @@ export const LauncherPage = (args: any) => {
           >
             {t("launcherpage.adminconfirm.confirm_button")}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     3: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-danger-500">
             {t("launcherpage.admindeny.title")}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium">
             {t("launcherpage.admindeny.content")}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter className="px-8 pb-8 pt-4">
           <Button color="default" variant="light" radius="full" onPress={onClose}>
             {t("launcherpage.admindeny.cancel_button")}
           </Button>
@@ -1169,12 +1161,12 @@ export const LauncherPage = (args: any) => {
           >
             {t("launcherpage.admindeny.confirm_button")}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     12: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-success-500">
             {
               t("launcherpage.shortcut.success.title", {
@@ -1182,8 +1174,8 @@ export const LauncherPage = (args: any) => {
               }) as unknown as string
             }
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium">
             {
               t("launcherpage.shortcut.success.body", {
@@ -1191,8 +1183,8 @@ export const LauncherPage = (args: any) => {
               }) as unknown as string
             }
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="primary"
             radius="full"
@@ -1205,19 +1197,19 @@ export const LauncherPage = (args: any) => {
           >
             {t("common.close", { defaultValue: "关闭" }) as unknown as string}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     13: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
             {t("launcherpage.register.installing.title", {
               defaultValue: "正在注册到系统",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium mb-4">
             {t("launcherpage.register.installing.body", {
               defaultValue: "正在调用 wdapp.exe 执行注册，请稍候…",
@@ -1229,26 +1221,26 @@ export const LauncherPage = (args: any) => {
             aria-label="Registering" 
             classNames={{ indicator: "bg-gradient-to-r from-emerald-500 to-teal-600" }} 
           />
-        </ModalBody>
+        </BaseModalBody>
       </>
     ),
     15: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-success-500">
             {t("launcherpage.register.success.title", {
               defaultValue: "注册完成",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium">
             {t("launcherpage.register.success.body", {
               defaultValue: "已成功注册到系统，您可以通过系统应用列表启动。",
             })}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="primary"
             radius="full"
@@ -1261,19 +1253,19 @@ export const LauncherPage = (args: any) => {
           >
             {t("common.close", { defaultValue: "关闭" }) as unknown as string}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     16: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-danger-500">
             {t("launcherpage.register.failed.title", {
               defaultValue: "注册失败",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody className="px-8 py-4">
           <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
              <p className="font-medium text-center">
                 {(() => {
@@ -1287,8 +1279,8 @@ export const LauncherPage = (args: any) => {
                 })()}
              </p>
           </div>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="primary"
             radius="full"
@@ -1301,27 +1293,27 @@ export const LauncherPage = (args: any) => {
           >
             {t("common.close", { defaultValue: "关闭" }) as unknown as string}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     17: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.gdk_missing.title", {
               defaultValue: "缺少 Microsoft GDK",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.gdk_missing.body", {
               defaultValue:
                 "未检测到 GDK 工具包，注册功能需先安装。是否跳转到设置页进行安装？",
             })}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button
             variant="light"
             radius="full"
@@ -1350,7 +1342,7 @@ export const LauncherPage = (args: any) => {
               }) as unknown as string
             }
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
   };
@@ -1703,7 +1695,7 @@ export const LauncherPage = (args: any) => {
         </div>
 
         {/* Modal Render */}
-        <Modal
+        <BaseModal
           size="xl"
           isOpen={isOpen}
           hideCloseButton={true}
@@ -1715,10 +1707,6 @@ export const LauncherPage = (args: any) => {
               args.refresh();
             }
           }}
-          classNames={{
-             base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-             closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-          }}
         >
           <ModalContent className="shadow-none">
             {(onClose) => (
@@ -1729,14 +1717,13 @@ export const LauncherPage = (args: any) => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.98 }}
                   transition={{ duration: 0.22 }}
-                  className="p-6"
                 >
                   {ModalUi(onClose)}
                 </motion.div>
               </AnimatePresence>
             )}
           </ModalContent>
-        </Modal>
+        </BaseModal>
       </div>
     </>
   );

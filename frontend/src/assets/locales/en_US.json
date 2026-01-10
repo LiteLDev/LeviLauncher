@@ -614,6 +614,7 @@
       "hint": "Only rename the folder. Game version and type are unaffected.",
       "enable_isolation": "Enable Isolation",
       "enable_console": "Enable Console",
+      "enable_render_dragon": "Load RenderDragon Shaders",
       "enable_editor_mode": "Enable Editor Mode",
       "danger_zone_title": "Danger Zone",
       "delete_hint": "Click to open delete confirmation to avoid accidental deletion.",
@@ -633,6 +634,9 @@
       "change": "Click to change",
       "clear": "Clear",
       "hint": "Will be saved as LargeLogo.png under the version folder. Click the icon to change."
+    },
+    "unsaved": {
+      "body": "You have unsaved changes to version settings. Do you want to save before leaving?"
     },
     "delete": {
       "title": "Confirm Version Deletion",

@@ -6,18 +6,20 @@ import {
   CardHeader,
   Chip,
   Input,
-  Modal,
   useDisclosure,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Progress,
   Switch,
   Tooltip,
   Checkbox,
+  ModalContent,
 } from "@heroui/react";
 import { useLocation, useNavigate } from "react-router-dom";
+import {
+  BaseModal,
+  BaseModalHeader,
+  BaseModalBody,
+  BaseModalFooter,
+} from "../components/BaseModal";
 import { useTranslation } from "react-i18next";
 import {
   OpenModsExplorer,
@@ -797,7 +799,7 @@ export const ModsPage: React.FC = () => {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <Modal
+      <BaseModal
         size="sm"
         isOpen={importing && !dllOpen}
         hideCloseButton
@@ -806,13 +808,13 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {() => (
             <>
-              <ModalHeader className="flex items-center gap-2 text-primary-600">
+              <BaseModalHeader className="flex items-center gap-2 text-primary-600">
                 <FiUploadCloud className="w-5 h-5" />
                 <span>
                   {t("mods.importing_title", { defaultValue: "正在导入..." })}
                 </span>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="py-1">
                   <Progress
                     isIndeterminate
@@ -830,12 +832,12 @@ export const ModsPage: React.FC = () => {
                     {currentFile}
                   </div>
                 ) : null}
-              </ModalBody>
+              </BaseModalBody>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={errOpen}
         onOpenChange={errOnOpenChange}
@@ -844,7 +846,7 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader
+              <BaseModalHeader
                 className={`flex items-center gap-2 ${
                   resultFailed.length ? "text-red-600" : "text-primary-600"
                 }`}
@@ -863,8 +865,8 @@ export const ModsPage: React.FC = () => {
                         defaultValue: "导入完成",
                       })}
                 </span>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 {resultSuccess.length ? (
                   <div className="mb-2">
                     <div className="text-sm font-semibold text-success">
@@ -891,8 +893,8 @@ export const ModsPage: React.FC = () => {
                     </div>
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="primary"
                   onPress={() => {
@@ -905,13 +907,13 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
-      <Modal
+      <BaseModal
         size="md"
         isOpen={delOpen}
         onOpenChange={delOnOpenChange}
@@ -920,7 +922,7 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader
+              <BaseModalHeader
                 className={`flex items-center gap-2 ${
                   resultFailed.length ? "text-red-600" : "text-primary-600"
                 }`}
@@ -939,8 +941,8 @@ export const ModsPage: React.FC = () => {
                         defaultValue: "删除完成",
                       })}
                 </span>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 {resultSuccess.length ? (
                   <div className="mb-2">
                     <div className="text-sm font-semibold text-success">
@@ -967,8 +969,8 @@ export const ModsPage: React.FC = () => {
                     </div>
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="primary"
                   onPress={() => {
@@ -982,12 +984,12 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={dllOpen}
         onOpenChange={dllOnOpenChange}
@@ -996,10 +998,10 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-primary-600">
+              <BaseModalHeader className="text-primary-600">
                 {t("mods.dll_modal_title", { defaultValue: "导入 DLL 插件" })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="flex flex-col gap-3">
                   <Input
                     label={
@@ -1027,8 +1029,8 @@ export const ModsPage: React.FC = () => {
                     size="sm"
                   />
                 </div>
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -1063,12 +1065,12 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={dupOpen}
         onOpenChange={dupOnOpenChange}
@@ -1077,12 +1079,12 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-primary-600">
+              <BaseModalHeader className="text-primary-600">
                 {t("mods.overwrite_modal_title", {
                   defaultValue: "检测到重复",
                 })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-sm text-default-700">
                   {t("mods.overwrite_modal_body", {
                     defaultValue: "同名模块文件夹已存在，是否覆盖（更新）？",
@@ -1093,8 +1095,8 @@ export const ModsPage: React.FC = () => {
                     {dupNameRef.current}
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -1119,11 +1121,11 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
       <div className="px-3 sm:px-5 lg:px-8 py-3 sm:py-4 lg:py-6 w-full flex flex-col gap-4">
         <motion.div
           initial={{ opacity: 0, y: -8 }}
@@ -1369,7 +1371,7 @@ export const ModsPage: React.FC = () => {
         </motion.div>
       </div>
 
-      <Modal
+      <BaseModal
         size="md"
         isOpen={infoOpen}
         onOpenChange={infoOnOpenChange}
@@ -1378,13 +1380,13 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-2 text-primary-600">
+              <BaseModalHeader className="flex items-center gap-2 text-primary-600">
                 <FaPuzzlePiece className="w-5 h-5" />
                 <span>
                   {t("mods.details_title", { defaultValue: "模组详情" })}
                 </span>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 {activeMod ? (
                   <div className="space-y-2 text-sm">
                     <div>
@@ -1495,8 +1497,8 @@ export const ModsPage: React.FC = () => {
                     </div>
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -1508,12 +1510,12 @@ export const ModsPage: React.FC = () => {
                 <Button color="danger" onPress={delCfmOnOpen}>
                   {t("common.delete", { defaultValue: "删除" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="sm"
         isOpen={delCfmOpen}
         onOpenChange={delCfmOnOpenChange}
@@ -1522,10 +1524,10 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-danger">
+              <BaseModalHeader className="text-danger">
                 {t("mods.confirm_delete_title", { defaultValue: "确认删除" })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-sm text-default-700 break-words whitespace-pre-wrap">
                   {t("mods.confirm_delete_body", {
                     type: t("moddedcard.title"),
@@ -1537,8 +1539,8 @@ export const ModsPage: React.FC = () => {
                     {activeMod.name}
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -1557,11 +1559,11 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
     </motion.div>
   );
 };

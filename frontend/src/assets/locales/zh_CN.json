@@ -614,6 +614,7 @@
       "hint": "仅修改文件夹名称，不影响游戏版本与类型。",
       "enable_isolation": "启用版本隔离",
       "enable_console": "启用控制台",
+      "enable_render_dragon": "启用渲染龙光影加载",
       "enable_editor_mode": "启用编辑器模式",
       "danger_zone_title": "危险操作",
       "delete_hint": "点击以打开删除确认，避免误触。",
@@ -633,6 +634,9 @@
       "change": "点击更换",
       "clear": "清除",
       "hint": "将保存到版本文件夹的 LargeLogo.png。点击图标更换。"
+    },
+    "unsaved": {
+      "body": "您更改了版本设置但尚未保存。是否保存后离开？"
     },
     "delete": {
       "title": "确认删除版本",

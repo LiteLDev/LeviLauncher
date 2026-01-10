@@ -24,6 +24,7 @@ type VersionMeta struct {
 	EnableIsolation  bool      `json:"enableIsolation"`
 	EnableConsole    bool      `json:"enableConsole"`
 	EnableEditorMode bool      `json:"enableEditorMode"`
+	EnableRenderDragon bool    `json:"enableRenderDragon"`
 	CreatedAt        time.Time `json:"createdAt"`
 	Registered       bool      `json:"registered,omitempty"`
 }

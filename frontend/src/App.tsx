@@ -1,15 +1,12 @@
 import "./polyfills/wails";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "./components/BaseModal";
 import {
   Button,
   Tooltip,
   Chip,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
@@ -254,7 +251,10 @@ function App() {
 
   const tryNavigate = (path: string) => {
     if (navLocked) return;
-    if (location.pathname === "/settings") {
+    if (
+      location.pathname === "/settings" ||
+      location.pathname === "/version-settings"
+    ) {
       try {
         window.dispatchEvent(
           new CustomEvent("ll-try-nav", { detail: { path } })
@@ -572,7 +572,7 @@ function App() {
             ))}
         </motion.div>
 
-        <Modal
+        <BaseModal
           size="lg"
           isOpen={termsOpen}
           hideCloseButton
@@ -581,18 +581,18 @@ function App() {
           <ModalContent>
             {() => (
               <>
-                <ModalHeader className="text-primary-700 text-[18px] sm:text-[20px] font-bold antialiased">
+                <BaseModalHeader className="text-primary-700 text-[18px] sm:text-[20px] font-bold antialiased">
                   {t("terms.title", { defaultValue: "用户协议" })}
-                </ModalHeader>
-                <ModalBody>
+                </BaseModalHeader>
+                <BaseModalBody>
                   <div className="text-[15px] sm:text-[16px] leading-7 text-default-900 font-medium antialiased whitespace-pre-wrap break-words max-h-[56vh] overflow-y-auto pr-1">
                     {t("terms.body", {
                       defaultValue:
                         "在使用本启动器之前，请仔细阅读并同意《用户协议》和相关条款。继续使用即表示您已同意。",
                     })}
                   </div>
-                </ModalBody>
-                <ModalFooter>
+                </BaseModalBody>
+                <BaseModalFooter>
                   <Button
                     variant="light"
                     onPress={() => {
@@ -612,17 +612,17 @@ function App() {
                         })} (${termsCountdown}s)`
                       : t("terms.agree", { defaultValue: "同意并继续" })}
                   </Button>
-                </ModalFooter>
+                </BaseModalFooter>
               </>
             )}
           </ModalContent>
-        </Modal>
+        </BaseModal>
 
-        <Modal size="md" isOpen={updateOpen} hideCloseButton>
+        <BaseModal size="md" isOpen={updateOpen} hideCloseButton>
           <ModalContent>
             {(onClose) => (
               <>
-                <ModalHeader className="flex items-center gap-2 text-primary-600">
+                <BaseModalHeader className="flex items-center gap-2 text-primary-600">
                   <FaRocket className="w-5 h-5" />
                   <span>
                     {t("settingscard.body.version.hasnew", {
@@ -630,8 +630,8 @@ function App() {
                     })}
                     {updateVersion}
                   </span>
-                </ModalHeader>
-                <ModalBody>
+                </BaseModalHeader>
+                <BaseModalBody>
                   {updateBody ? (
                     <div className="rounded-md bg-default-100/60 border border-default-200 px-3 py-2">
                       <div className="text-small font-semibold mb-1">
@@ -694,8 +694,8 @@ function App() {
                       </div>
                     </div>
                   ) : null}
-                </ModalBody>
-                <ModalFooter>
+                </BaseModalBody>
+                <BaseModalFooter>
                   <Button
                     variant="light"
                     onPress={() => {
@@ -743,11 +743,11 @@ function App() {
                       defaultValue: "更新",
                     })}
                   </Button>
-                </ModalFooter>
+                </BaseModalFooter>
               </>
             )}
           </ModalContent>
-        </Modal>
+        </BaseModal>
       </div>
       </CurseForgeProvider>
     </VersionStatusProvider>

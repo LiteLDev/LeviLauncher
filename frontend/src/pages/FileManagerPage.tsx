@@ -9,12 +9,9 @@ import {
   Input,
   Select,
   SelectItem,
-  Modal,
-  ModalBody,
   ModalContent,
-  ModalFooter,
-  ModalHeader,
 } from "@heroui/react";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -1334,7 +1331,7 @@ const FileManagerPage: React.FC = () => {
           </div>
         </section>
       </motion.div>
-      <Modal
+      <BaseModal
         size="sm"
         isOpen={mkdirOpen}
         onOpenChange={setMkdirOpen}
@@ -1343,10 +1340,10 @@ const FileManagerPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-primary-600">
+              <BaseModalHeader className="text-primary-600">
                 {t("filemanager.new_folder", { defaultValue: "新建文件夹" })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <Input
                   size="sm"
                   variant="bordered"
@@ -1378,8 +1375,8 @@ const FileManagerPage: React.FC = () => {
                     }
                   }}
                 />
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={onClose}
@@ -1410,11 +1407,11 @@ const FileManagerPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
     </motion.div>
   );
 };

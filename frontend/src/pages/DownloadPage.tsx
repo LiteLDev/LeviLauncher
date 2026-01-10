@@ -1,5 +1,6 @@
 "use client";
 import React, { useEffect, useMemo, useState, useRef } from "react";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
 import {
   Button,
   Chip,
@@ -15,11 +16,7 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Progress,
   Spinner,
   useDisclosure,
@@ -902,20 +899,16 @@ export const DownloadPage: React.FC = () => {
         </CardBody>
       </Card>
 
-      <Modal
+      <BaseModal
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         size="2xl"
         scrollBehavior="inside"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="max-w-[820px] shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+              <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
                 <div className="flex flex-col gap-2">
                   <motion.h2
                     className="text-3xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
@@ -995,8 +988,8 @@ export const DownloadPage: React.FC = () => {
                     })()}
                   </div>
                 </motion.div>
-              </ModalHeader>
-              <ModalBody className="px-8 py-2 [&::-webkit-scrollbar]:hidden">
+              </BaseModalHeader>
+              <BaseModalBody className="[&::-webkit-scrollbar]:hidden">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1126,8 +1119,8 @@ export const DownloadPage: React.FC = () => {
                     </div>
                   )}
                 </motion.div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8 pt-4">
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button 
                     className="font-medium text-default-500 hover:text-default-700"
                     variant="light" 
@@ -1203,26 +1196,22 @@ export const DownloadPage: React.FC = () => {
                         defaultValue: "下载所选镜像",
                       })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Delete confirm modal */}
-      <Modal
+      <BaseModal
         isOpen={deleteDisclosure.isOpen}
         onOpenChange={deleteDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-danger-600">
+              <BaseModalHeader className="flex items-center gap-3 text-danger-600">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1255,8 +1244,8 @@ export const DownloadPage: React.FC = () => {
                     defaultValue: "确认删除下载包",
                   })}
                 </motion.h2>
-              </ModalHeader>
-              <ModalBody className="px-8 py-4">
+              </BaseModalHeader>
+              <BaseModalBody>
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1290,8 +1279,8 @@ export const DownloadPage: React.FC = () => {
                     </motion.div>
                   ) : null}
                 </motion.div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8">
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   color="default"
@@ -1362,26 +1351,22 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("downloadpage.delete.confirm", { defaultValue: "删除" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Delete success modal */}
-      <Modal
+      <BaseModal
         isOpen={deleteSuccessDisclosure.isOpen}
         onOpenChange={deleteSuccessDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
+              <BaseModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1412,8 +1397,8 @@ export const DownloadPage: React.FC = () => {
                     defaultValue: "删除完成",
                   })}
                 </motion.h2>
-              </ModalHeader>
-              <ModalBody className="px-8 py-4">
+              </BaseModalHeader>
+              <BaseModalBody className="px-8 py-4">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1427,8 +1412,8 @@ export const DownloadPage: React.FC = () => {
                     {deleteSuccessMsg}
                   </div>
                 </motion.div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8">
+              </BaseModalBody>
+              <BaseModalFooter className="px-8 pb-8">
                 <Button
                   color="success"
                   className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
@@ -1439,26 +1424,22 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("common.ok", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Download success modal */}
-      <Modal
+      <BaseModal
         isOpen={downloadSuccessDisclosure.isOpen}
         onOpenChange={downloadSuccessDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
+              <BaseModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
                 <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
                   <svg
                     viewBox="0 0 24 24"
@@ -1479,8 +1460,8 @@ export const DownloadPage: React.FC = () => {
                     defaultValue: "下载完成",
                   })}
                 </h2>
-              </ModalHeader>
-              <ModalBody className="px-8 py-4">
+              </BaseModalHeader>
+              <BaseModalBody className="px-8 py-4">
                 <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
                   {t("downloadpage.download.success_body", {
                     defaultValue: "文件已下载：",
@@ -1489,8 +1470,8 @@ export const DownloadPage: React.FC = () => {
                     {downloadSuccessMsg}
                   </div>
                 </div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8">
+              </BaseModalBody>
+              <BaseModalFooter className="px-8 pb-8">
                 <Button
                   color="primary"
                   className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
@@ -1506,26 +1487,22 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("common.ok", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Install success modal */}
-      <Modal
+      <BaseModal
         isOpen={installSuccessDisclosure.isOpen}
         onOpenChange={installSuccessDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-success-600">
+              <BaseModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-success-600">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1571,8 +1548,8 @@ export const DownloadPage: React.FC = () => {
                     </motion.div>
                   ) : null}
                 </div>
-              </ModalHeader>
-              <ModalBody className="px-8 py-4">
+              </BaseModalHeader>
+              <BaseModalBody className="px-8 py-4">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1597,8 +1574,8 @@ export const DownloadPage: React.FC = () => {
                     </div>
                   ) : null}
                 </motion.div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8 pt-4">
+              </BaseModalBody>
+              <BaseModalFooter className="px-8 pb-8 pt-4">
                 <Button
                   className="bg-default-100 text-default-700 font-bold hover:bg-default-200"
                   radius="full"
@@ -1608,26 +1585,22 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("common.back", { defaultValue: "返回" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Install error modal */}
-      <Modal
+      <BaseModal
         isOpen={installErrorDisclosure.isOpen}
         onOpenChange={installErrorDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-danger-600">
+              <BaseModalHeader className="flex items-center gap-4 text-danger-600">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1659,8 +1632,8 @@ export const DownloadPage: React.FC = () => {
                     defaultValue: "未知错误",
                   })}
                 </motion.h2>
-              </ModalHeader>
-              <ModalBody className="px-8 py-4">
+              </BaseModalHeader>
+              <BaseModalBody>
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1669,8 +1642,8 @@ export const DownloadPage: React.FC = () => {
                 >
                   {trErr(installError)}
                 </motion.div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8 pt-4">
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   className="bg-default-100 text-default-700 font-bold hover:bg-default-200"
                   radius="full"
@@ -1680,27 +1653,24 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("common.close", { defaultValue: "关闭" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Install progress modal */}
-      <Modal
+      <BaseModal
         isOpen={installLoadingDisclosure.isOpen}
         onOpenChange={installLoadingDisclosure.onOpenChange}
         size="md"
         hideCloseButton
         isDismissable={false}
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-        }}
       >
         <ModalContent className="shadow-none">
           {() => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-primary-600">
+              <BaseModalHeader className="flex items-center gap-4 text-primary-600">
                 <Spinner size="lg" color="primary" />
                 <motion.h2
                   className="text-xl font-bold text-default-900 dark:text-white"
@@ -1712,8 +1682,8 @@ export const DownloadPage: React.FC = () => {
                     defaultValue: "正在安装",
                   })}
                 </motion.h2>
-              </ModalHeader>
-              <ModalBody className="px-8 py-8">
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="flex flex-col gap-6">
                   <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
                     {t("downloadpage.install.hint", {
@@ -1763,27 +1733,24 @@ export const DownloadPage: React.FC = () => {
                     </div>
                   ) : null}
                 </div>
-              </ModalBody>
+              </BaseModalBody>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Download progress modal */}
-      <Modal
+      <BaseModal
         isOpen={progressDisclosure.isOpen}
         onOpenChange={progressDisclosure.onOpenChange}
         size="md"
         hideCloseButton
         isDismissable={false}
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-        }}
       >
         <ModalContent className="shadow-none">
           {() => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-6 pt-6 pb-2 text-primary-600">
+              <BaseModalHeader className="flex items-center gap-4 text-primary-600">
                 <div className="w-12 h-12 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center shrink-0">
                   <FaDownload className="text-emerald-500 animate-pulse" size={20} />
                 </div>
@@ -1799,8 +1766,8 @@ export const DownloadPage: React.FC = () => {
                     })}
                   </motion.h2>
                 </div>
-              </ModalHeader>
-              <ModalBody className="px-6 py-4">
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="flex flex-col gap-4">
                   {dlError ? (
                     <div className="p-4 rounded-xl bg-danger-500/10 border border-danger-500/20 text-danger-600 font-bold">
@@ -1856,8 +1823,8 @@ export const DownloadPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-              </ModalBody>
-              <ModalFooter className="px-6 pb-6 pt-2">
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="danger"
                   variant="flat"
@@ -1873,11 +1840,11 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("common.cancel", { defaultValue: "取消" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
         </div>
       </motion.div>
     </>

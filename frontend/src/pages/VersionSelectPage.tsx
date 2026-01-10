@@ -1,4 +1,5 @@
 import React from "react";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
 import {
   Button,
   Card,
@@ -10,11 +11,7 @@ import {
   Chip,
   Select,
   SelectItem,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
 } from "@heroui/react";
 import { motion } from "framer-motion";
@@ -555,7 +552,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
         </div>
       </div>
 
-      <Modal
+      <BaseModal
         isOpen={unsavedDisclosure.isOpen}
         onOpenChange={unsavedDisclosure.onOpenChange}
         size="md"
@@ -563,22 +560,22 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-2">
+              <BaseModalHeader className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold">
                   {t("versionselect.unsaved.title", {
                     defaultValue: "未保存修改",
                   })}
                 </h2>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-small text-default-600">
                   {t("versionselect.unsaved.body", {
                     defaultValue:
                       "您更改了选择的版本，但尚未保存。是否保存后离开？",
                   })}
                 </div>
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -621,11 +618,11 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     defaultValue: "保存并离开",
                   })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
     </>
   );
 };

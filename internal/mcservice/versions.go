@@ -113,20 +113,21 @@ func GetContentCounts(name string) ContentCounts {
 	return ContentCounts{Worlds: worlds, ResourcePacks: res, BehaviorPacks: bp}
 }
 
-func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool) string {
+func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, enableRenderDragon bool) string {
 	vdir, err := utils.GetVersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
 	dir := filepath.Join(vdir, strings.TrimSpace(name))
 	meta := versions.VersionMeta{
-		Name:             strings.TrimSpace(name),
-		GameVersion:      strings.TrimSpace(gameVersion),
-		Type:             strings.TrimSpace(typeStr),
-		EnableIsolation:  enableIsolation,
-		EnableConsole:    enableConsole,
-		EnableEditorMode: enableEditorMode,
-		CreatedAt:        time.Now(),
+		Name:               strings.TrimSpace(name),
+		GameVersion:        strings.TrimSpace(gameVersion),
+		Type:               strings.TrimSpace(typeStr),
+		EnableIsolation:    enableIsolation,
+		EnableConsole:      enableConsole,
+		EnableEditorMode:   enableEditorMode,
+		EnableRenderDragon: enableRenderDragon,
+		CreatedAt:          time.Now(),
 	}
 	if err := versions.WriteMeta(dir, meta); err != nil {
 		return "ERR_WRITE_TARGET"

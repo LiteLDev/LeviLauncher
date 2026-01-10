@@ -12,13 +12,10 @@ import {
   DropdownMenu,
   DropdownItem,
   Divider,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
 } from "@heroui/react";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   GetLanguageNames,
@@ -364,7 +361,7 @@ export default function OnboardingPage() {
         </Card>
       </motion.div>
 
-      <Modal
+      <BaseModal
         size="md"
         isOpen={unsavedOpen}
         onOpenChange={unsavedOnOpenChange}
@@ -373,10 +370,10 @@ export default function OnboardingPage() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-warning-600">
+              <BaseModalHeader className="text-warning-600">
                 {t("onboarding.unsaved.title", { defaultValue: "未保存修改" })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-default-700 text-sm">
                   {t("onboarding.unsaved.body", {
                     defaultValue:
@@ -390,8 +387,8 @@ export default function OnboardingPage() {
                     })}
                   </div>
                 )}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button variant="light" onPress={onClose}>
                   {t("onboarding.unsaved.cancel", { defaultValue: "取消" })}
                 </Button>
@@ -424,11 +421,11 @@ export default function OnboardingPage() {
                 >
                   {t("onboarding.unsaved.save", { defaultValue: "保存并完成" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
     </div>
   );
 }

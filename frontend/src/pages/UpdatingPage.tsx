@@ -2,11 +2,7 @@ import React, { useEffect, useState } from "react";
 import {
   Card,
   CardBody,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
   Progress,
 } from "@heroui/react";
@@ -14,6 +10,7 @@ import { useTranslation } from "react-i18next";
 import { FaRocket } from "react-icons/fa";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { Events, Window } from "@wailsio/runtime";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
 
 export default function UpdatingPage() {
   const { t } = useTranslation();
@@ -163,23 +160,23 @@ export default function UpdatingPage() {
         </CardBody>
       </Card>
 
-      <Modal size="md" isOpen={!!error} hideCloseButton isDismissable={false}>
+      <BaseModal size="md" isOpen={!!error} hideCloseButton isDismissable={false}>
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-danger-600">
+              <BaseModalHeader className="text-danger-600">
                 {
                   t("updating.failed_title", {
                     defaultValue: "更新失败",
                   }) as string
                 }
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-default-700 text-sm break-words whitespace-pre-wrap">
                   {error}
                 </div>
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="primary"
                   onPress={() => {
@@ -188,11 +185,11 @@ export default function UpdatingPage() {
                 >
                   {t("common.confirm", { defaultValue: "确定" }) as string}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
     </div>
   );
 }

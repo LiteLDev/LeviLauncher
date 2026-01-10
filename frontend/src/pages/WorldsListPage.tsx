@@ -13,13 +13,15 @@ import {
   Tooltip,
   Input,
   Checkbox,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
 } from "@heroui/react";
+import {
+  BaseModal,
+  BaseModalHeader,
+  BaseModalBody,
+  BaseModalFooter,
+} from "../components/BaseModal";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -707,7 +709,7 @@ export default function WorldsListPage() {
           </CardBody>
         </Card>
 
-        <Modal
+        <BaseModal
           size="sm"
           isOpen={delCfmOpen}
           onOpenChange={delCfmOnOpenChange}
@@ -716,10 +718,10 @@ export default function WorldsListPage() {
           <ModalContent>
             {(onClose) => (
               <>
-                <ModalHeader className="text-danger">
+                <BaseModalHeader className="text-danger">
                   {t("mods.confirm_delete_title", { defaultValue: "确认删除" })}
-                </ModalHeader>
-                <ModalBody>
+                </BaseModalHeader>
+                <BaseModalBody>
                   <div className="text-sm text-default-700 break-words whitespace-pre-wrap">
                     {t("mods.confirm_delete_body", {
                       type: t("contentpage.worlds"),
@@ -731,8 +733,8 @@ export default function WorldsListPage() {
                       {activeWorld.levelName || activeWorld.name}
                     </div>
                   ) : null}
-                </ModalBody>
-                <ModalFooter>
+                </BaseModalBody>
+                <BaseModalFooter>
                   <Button
                     variant="light"
                     onPress={() => {
@@ -788,12 +790,12 @@ export default function WorldsListPage() {
                   >
                     {t("common.confirm", { defaultValue: "确定" })}
                   </Button>
-                </ModalFooter>
+                </BaseModalFooter>
               </>
             )}
           </ModalContent>
-        </Modal>
-        <Modal
+        </BaseModal>
+        <BaseModal
           size="sm"
           isOpen={delManyCfmOpen}
           onOpenChange={delManyCfmOnOpenChange}
@@ -802,10 +804,10 @@ export default function WorldsListPage() {
           <ModalContent>
             {(onClose) => (
               <>
-                <ModalHeader className="text-danger">
+                <BaseModalHeader className="text-danger">
                   {t("mods.confirm_delete_title", { defaultValue: "确认删除" })}
-                </ModalHeader>
-                <ModalBody>
+                </BaseModalHeader>
+                <BaseModalBody>
                   <div className="text-sm text-default-700 break-words whitespace-pre-wrap">
                     {t("mods.confirm_delete_body", {
                       type: t("contentpage.worlds"),
@@ -821,8 +823,8 @@ export default function WorldsListPage() {
                       })
                       .join("\n")}
                   </div>
-                </ModalBody>
-                <ModalFooter>
+                </BaseModalBody>
+                <BaseModalFooter>
                   <Button
                     variant="light"
                     onPress={() => {
@@ -867,12 +869,12 @@ export default function WorldsListPage() {
                   >
                     {t("common.confirm", { defaultValue: "确定" })}
                   </Button>
-                </ModalFooter>
+                </BaseModalFooter>
               </>
             )}
           </ModalContent>
-        </Modal>
-        <Modal
+        </BaseModal>
+        <BaseModal
           size="md"
           isOpen={delOpen}
           onOpenChange={delOnOpenChange}
@@ -881,7 +883,7 @@ export default function WorldsListPage() {
           <ModalContent>
             {(onClose) => (
               <>
-                <ModalHeader
+                <BaseModalHeader
                   className={`flex items-center gap-2 ${
                     resultFailed.length ? "text-red-600" : "text-primary-600"
                   }`}
@@ -895,8 +897,8 @@ export default function WorldsListPage() {
                           defaultValue: "删除完成",
                         })}
                   </span>
-                </ModalHeader>
-                <ModalBody>
+                </BaseModalHeader>
+                <BaseModalBody>
                   {resultSuccess.length ? (
                     <div className="mb-2">
                       <div className="text-sm font-semibold text-success">
@@ -921,8 +923,8 @@ export default function WorldsListPage() {
                       </div>
                     </div>
                   ) : null}
-                </ModalBody>
-                <ModalFooter>
+                </BaseModalBody>
+                <BaseModalFooter>
                   <Button
                     color="primary"
                     onPress={() => {
@@ -933,11 +935,11 @@ export default function WorldsListPage() {
                   >
                     {t("common.confirm", { defaultValue: "确定" })}
                   </Button>
-                </ModalFooter>
+                </BaseModalFooter>
               </>
             )}
           </ModalContent>
-        </Modal>
+        </BaseModal>
       </motion.div>
     </div>
   );

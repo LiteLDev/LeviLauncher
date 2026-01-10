@@ -8,14 +8,11 @@ import {
   DropdownTrigger,
   Spinner,
   Tooltip,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Progress,
   useDisclosure,
 } from "@heroui/react";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GetContentRoots } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -1061,17 +1058,17 @@ export default function ContentPage() {
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <Modal size="sm" isOpen={importing} hideCloseButton isDismissable={false}>
+      <BaseModal size="sm" isOpen={importing} hideCloseButton isDismissable={false}>
         <ModalContent>
           {() => (
             <>
-              <ModalHeader className="flex items-center gap-2 text-primary-600">
+              <BaseModalHeader className="flex-row items-center gap-2 text-primary-600">
                 <FiUploadCloud className="w-5 h-5" />
                 <span>
                   {t("mods.importing_title", { defaultValue: "正在导入..." })}
                 </span>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="py-1">
                   <Progress
                     isIndeterminate
@@ -1089,12 +1086,12 @@ export default function ContentPage() {
                     {currentFile}
                   </div>
                 ) : null}
-              </ModalBody>
+              </BaseModalBody>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={errOpen}
         onOpenChange={errOnOpenChange}
@@ -1103,8 +1100,8 @@ export default function ContentPage() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader
-                className={`flex items-center gap-2 ${
+              <BaseModalHeader
+                className={`flex-row items-center gap-2 ${
                   resultFailed.length ? "text-red-600" : "text-primary-600"
                 }`}
               >
@@ -1122,8 +1119,8 @@ export default function ContentPage() {
                         defaultValue: "导入完成",
                       })}
                 </span>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 {resultSuccess.length ? (
                   <div className="mb-2">
                     <div className="text-sm font-semibold text-success">
@@ -1150,8 +1147,8 @@ export default function ContentPage() {
                     </div>
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="primary"
                   onPress={() => {
@@ -1163,12 +1160,12 @@ export default function ContentPage() {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={dupOpen}
         onOpenChange={dupOnOpenChange}
@@ -1177,12 +1174,12 @@ export default function ContentPage() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-primary-600">
+              <BaseModalHeader className="text-primary-600">
                 {t("mods.overwrite_modal_title", {
                   defaultValue: "检测到重复",
                 })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-sm text-default-700">
                   {t("mods.overwrite_modal_body", {
                     defaultValue: "同名模块文件夹已存在，是否覆盖（更新）？",
@@ -1193,8 +1190,8 @@ export default function ContentPage() {
                     {dupNameRef.current}
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -1219,12 +1216,12 @@ export default function ContentPage() {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={playerSelectOpen}
         onOpenChange={playerSelectOnOpenChange}
@@ -1233,12 +1230,12 @@ export default function ContentPage() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-primary-600">
+              <BaseModalHeader className="text-primary-600">
                 {t("contentpage.select_player_title", {
                   defaultValue: "选择玩家",
                 })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-sm text-default-700">
                   {t("contentpage.select_player_for_import", {
                     defaultValue: "请选择要导入到的玩家",
@@ -1271,8 +1268,8 @@ export default function ContentPage() {
                     </div>
                   )}
                 </div>
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -1286,11 +1283,11 @@ export default function ContentPage() {
                 >
                   {t("common.cancel", { defaultValue: "取消" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
       <motion.div
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}

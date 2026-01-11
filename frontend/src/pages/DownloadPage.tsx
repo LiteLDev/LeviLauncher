@@ -1158,11 +1158,13 @@ export const DownloadPage: React.FC = () => {
                           returnTo: "/download",
                         },
                       });
+                      onClose?.();
                     } else {
+                      onClose?.();
                       if (hasBackend && minecraft?.StartMsixvcDownload) {
                         setDlError("");
                         setDlProgress(null);
-                        progressDisclosure.onOpen();
+                        
                         let urlWithFilename = selectedUrl;
                         try {
                           const u = new URL(selectedUrl);
@@ -1180,12 +1182,15 @@ export const DownloadPage: React.FC = () => {
                             desired
                           )}`;
                         }
-                        minecraft.StartMsixvcDownload(urlWithFilename);
+
+                        setTimeout(() => {
+                          progressDisclosure.onOpen();
+                          minecraft.StartMsixvcDownload(urlWithFilename);
+                        }, 200);
                       } else {
                         window.open(selectedUrl, "_blank");
                       }
                     }
-                    onClose?.();
                   }}
                 >
                   {installMode

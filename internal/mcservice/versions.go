@@ -2,6 +2,7 @@ package mcservice
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
 	"image"
 	_ "image/gif"
@@ -16,6 +17,7 @@ import (
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/icons"
+	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
@@ -132,6 +134,7 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 	if err := versions.WriteMeta(dir, meta); err != nil {
 		return "ERR_WRITE_TARGET"
 	}
+	peeditor.PrepareExecutableForLaunch(context.Background(), dir, enableConsole)
 	return ""
 }
 

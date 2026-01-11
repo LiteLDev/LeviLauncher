@@ -9,7 +9,7 @@ require (
 	github.com/goccy/go-json v0.10.5
 	github.com/google/go-github/v30 v30.1.0
 	github.com/mouuff/go-rocket-update v1.5.6
-	github.com/wailsapp/wails/v3 v3.0.0-alpha.57
+	github.com/wailsapp/wails/v3 v3.0.0-alpha.59
 	golang.org/x/sys v0.39.0
 )
 

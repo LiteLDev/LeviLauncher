@@ -312,38 +312,36 @@ export const SettingsPage: React.FC = () => {
   }, [hasBackend]);
 
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden relative">
-      <div className="z-20 px-3 sm:px-5 lg:px-8 pt-3 sm:pt-4 lg:pt-6 shrink-0">
-        <motion.div
-          initial={{ y: -8, opacity: 0 }}
-          animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.18, ease: [0.16, 0.84, 0.44, 1] }}
-        >
-          <Card className="rounded-[2rem] shadow-lg mb-6 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50">
-            <CardBody className="px-6 sm:px-8 py-5 w-full">
-              <div className="w-full">
-                <h1 className="text-3xl font-black tracking-tight bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent text-left !text-left">
-                  {t("settingscard.header.title")}
-                </h1>
-                <p className="mt-1 text-sm text-default-500 font-medium text-left !text-left">
-                  {t("settingscard.header.content")}
-                </p>
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
-      </div>
+    <div className="relative w-full p-4 lg:p-8 flex flex-col">
+      {/* Background Gradients */}
 
-      <div className="flex-1 overflow-auto">
-        <div className="px-3 sm:px-5 lg:px-8 pb-12 sm:pb-16 lg:pb-20">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 items-start">
+
+      <motion.div
+        initial={{ y: -8, opacity: 0 }}
+        animate={{ y: 0, opacity: 1 }}
+        transition={{ duration: 0.18, ease: [0.16, 0.84, 0.44, 1] }}
+        className="mb-8"
+      >
+        <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
+          <CardBody className="p-8">
+            <h1 className="text-3xl sm:text-4xl font-black tracking-tight bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+              {t("settingscard.header.title")}
+            </h1>
+            <p className="mt-2 text-lg font-medium text-default-500 dark:text-zinc-400">
+              {t("settingscard.header.content")}
+            </p>
+          </CardBody>
+        </Card>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             {/* Left Column: Paths */}
             <motion.div
               initial={{ opacity: 0, y: 8 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: 0.1 }}
             >
-              <Card className="rounded-[2rem] shadow-2xl h-full bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50">
+              <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
                 <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
@@ -502,13 +500,13 @@ export const SettingsPage: React.FC = () => {
             </motion.div>
 
             {/* Right Column: Preferences, GDK, Update, About */}
-            <div className="flex flex-col gap-4">
+            <div className="flex flex-col gap-6">
               <motion.div
                 initial={{ opacity: 0, y: 8 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: 0.15 }}
               >
-                <Card className="rounded-[2rem] shadow-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50">
+                <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
                   <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
                     {/* Language */}
                     <div className="flex items-center justify-between">
@@ -645,7 +643,7 @@ export const SettingsPage: React.FC = () => {
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: 0.2 }}
               >
-                <Card className="rounded-[2rem] shadow-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50">
+                <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
                   <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
                     <div className="flex items-center justify-between">
                       <div className="flex flex-col">
@@ -778,8 +776,6 @@ export const SettingsPage: React.FC = () => {
               </motion.div>
             </div>
           </div>
-        </div>
-      </div>
 
       {/* GDK License */}
       <BaseModal

@@ -19,7 +19,15 @@ import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GetContentRoots } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import { FaGlobe, FaImage, FaCogs, FaFolderOpen, FaUserTag } from "react-icons/fa";
+import {
+  FaArrowLeft,
+  FaCogs,
+  FaFolderOpen,
+  FaGlobe,
+  FaImage,
+  FaSync,
+  FaUserTag,
+} from "react-icons/fa";
 import { readCurrentVersionName } from "../utils/currentVersion";
 import { countDirectories } from "../utils/fs";
 import { listPlayers } from "../utils/content";
@@ -1082,16 +1090,26 @@ export default function ContentPage() {
       </AnimatePresence>
 
       <div className="flex-1 overflow-auto">
-        <div className="px-3 sm:px-5 lg:px-8 pt-3 sm:pt-4 lg:pt-6 pb-12 sm:pb-16 lg:pb-20 max-w-7xl mx-auto">
+        <div className="px-3 sm:px-5 lg:px-8 pt-3 sm:pt-4 lg:pt-6 pb-12 sm:pb-16 lg:pb-20 w-full max-w-none">
           {/* Header Card */}
           <Card className="rounded-[2rem] shadow-lg mb-6 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50">
             <CardBody className="px-6 sm:px-8 py-5">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
-                    <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                      {t("launcherpage.content_manage", { defaultValue: "内容管理" })}
-                    </h1>
+                    <div className="flex items-center gap-3">
+                      <Button
+                        isIconOnly
+                        radius="full"
+                        variant="light"
+                        onPress={() => navigate("/")}
+                      >
+                        <FaArrowLeft size={20} />
+                      </Button>
+                      <h1 className="text-3xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                        {t("launcherpage.content_manage", { defaultValue: "内容管理" })}
+                      </h1>
+                    </div>
                     <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
                       <span>{t("contentpage.current_version", { defaultValue: "当前版本" })}:</span>
                       <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
@@ -1149,14 +1167,6 @@ export default function ContentPage() {
                     </div>
                   </div>
                   <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="bordered"
-                      onPress={() => navigate("/")}
-                      className="rounded-full"
-                    >
-                      {t("common.back", { defaultValue: "返回" })}
-                    </Button>
                     <Tooltip
                       content={
                         t("contentpage.open_users_dir", {
@@ -1165,18 +1175,18 @@ export default function ContentPage() {
                       }
                     >
                       <Button
-                        size="sm"
-                        variant="bordered"
-                        isIconOnly
-                        isDisabled={!hasBackend || !roots.usersRoot}
+                        radius="full"
+                        variant="flat"
+                        startContent={<FaFolderOpen />}
                         onPress={() => {
                           if (roots.usersRoot) {
                             (minecraft as any)?.OpenPathDir(roots.usersRoot);
                           }
                         }}
-                        className="rounded-full"
+                        isDisabled={!hasBackend || !roots.usersRoot}
+                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
                       >
-                        <FaFolderOpen />
+                        {t("common.open", { defaultValue: "打开" })}
                       </Button>
                     </Tooltip>
                     <Tooltip
@@ -1187,13 +1197,16 @@ export default function ContentPage() {
                       }
                     >
                       <Button
-                        size="sm"
-                        variant="bordered"
+                        isIconOnly
+                        radius="full"
+                        variant="light"
                         onPress={() => refreshAll()}
                         isDisabled={loading}
-                        className="rounded-full px-4"
                       >
-                        {t("common.refresh", { defaultValue: "刷新" })}
+                        <FaSync
+                          className={loading ? "animate-spin" : ""}
+                          size={18}
+                        />
                       </Button>
                     </Tooltip>
                   </div>
@@ -1202,8 +1215,6 @@ export default function ContentPage() {
               </div>
             </CardBody>
           </Card>
-
-
 
           {/* Content Grid */}
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">

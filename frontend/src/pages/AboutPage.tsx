@@ -1,6 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { Button, Chip } from "@heroui/react";
+import { Button, Card, CardBody, Chip } from "@heroui/react";
 import {
   FaGithub,
   FaUsers,
@@ -18,216 +18,270 @@ export default function AboutPage() {
   const repoUrl = "https://github.com/LiteLDev/LeviLauncher";
   const orgUrl = "https://github.com/LiteLDev";
 
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.4,
+        ease: "easeOut",
+      },
+    }),
+  };
+
   return (
-    <motion.div
-      className="relative w-full h-full p-3 sm:p-4 lg:p-6"
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-    >
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-        <motion.section
-          className="rounded-2xl border border-default-200 bg-white/60 dark:bg-black/30 backdrop-blur-md shadow-sm p-4"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.05 }}
+    <div className="relative w-full p-4 lg:p-8 flex flex-col">
+      {/* Background Gradients */}
+
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mb-8"
+      >
+        <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
+          <CardBody className="p-8">
+            <h1 className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400">
+              {t("sidebar.about", { defaultValue: "About" })}
+            </h1>
+            <p className="mt-2 text-lg font-medium text-default-500 dark:text-zinc-400">
+              LeviLauncher - A Modern Minecraft Bedrock Launcher
+            </p>
+          </CardBody>
+        </Card>
+      </motion.div>
+
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        {/* Authors Section */}
+        <motion.div
+          custom={0}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <FaUsers className="text-default-600" />
-            <h2 className="text-base font-semibold">
-              {t("about.authors", { defaultValue: "作者与维护者" })}
-            </h2>
-          </div>
-          <div className="flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <img
-                src="https://avatars.githubusercontent.com/u/62042544?v=4"
-                alt="DreamGuXiang Avatar"
-                className="w-14 h-14 rounded-full border border-default-300 shadow-sm"
-              />
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-default-900 font-semibold">
-                    DreamGuXiang
-                  </span>
-                  <Chip size="sm" variant="flat" color="primary">
-                    {t("about.author", { defaultValue: "作者" })}
-                  </Chip>
+          <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
+            <CardBody className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-400">
+                  <FaUsers size={20} />
                 </div>
-                <div className="text-small text-default-600">
-                  {t("about.ll_authors", { defaultValue: "LeviLauncher作者" })}
+                <h2 className="text-xl font-bold text-default-800 dark:text-zinc-100">
+                  {t("about.authors", { defaultValue: "Authors & Maintainers" })}
+                </h2>
+              </div>
+              
+              <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-default-50/50 dark:bg-white/5 border border-default-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <img
+                    src="https://avatars.githubusercontent.com/u/62042544?v=4"
+                    alt="DreamGuXiang Avatar"
+                    className="w-14 h-14 rounded-full border-2 border-white dark:border-zinc-700 shadow-sm"
+                  />
+                  <div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-default-900 dark:text-zinc-100 font-bold text-lg">
+                        DreamGuXiang
+                      </span>
+                      <Chip size="sm" variant="flat" color="primary" classNames={{ base: "h-5" }}>
+                        {t("about.author", { defaultValue: "Author" })}
+                      </Chip>
+                    </div>
+                    <div className="text-small text-default-500">
+                      {t("about.ll_authors", { defaultValue: "LeviLauncher Author" })}
+                    </div>
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <Button
-                size="sm"
-                variant="flat"
-                startContent={<FaHeart />}
-                onPress={() =>
-                  Browser.OpenURL("https://afdian.com/a/DreamGuXiang")
-                }
-              >
-                {t("about.afdian", { defaultValue: "Afdian" })}
-              </Button>
-              <Button
-                size="sm"
-                variant="flat"
-                startContent={<FaPatreon />}
-                onPress={() =>
-                  Browser.OpenURL("https://www.patreon.com/c/DreamGuXiang")
-                }
-              >
-                {t("about.patreon", { defaultValue: "Patreon" })}
-              </Button>
-            </div>
-          </div>
-        </motion.section>
 
-        <motion.section
-          className="rounded-2xl border border-default-200 bg-white/60 dark:bg-black/30 backdrop-blur-md shadow-sm p-4"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.1 }}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <FaStar className="text-warning-500" />
-            <h2 className="text-base font-semibold">
-              {t("about.thanks", { defaultValue: "特别鸣谢" })}
-            </h2>
-          </div>
-          <p className="text-default-700 leading-7">
-            {t("about.thanks.desc", {
-              defaultValue:
-                "特别感谢为 LeviLauncher 提供帮助与支持的个人与项目。",
-            })}
-          </p>
-          <div className="mt-2 flex items-center justify-between gap-3">
-            <div className="flex items-center gap-3">
-              <img
-                src="https://www.rhymc.com/assets/img/logo.png"
-                alt={t("about.rhymc_name", { defaultValue: "旋律云" })}
-                className="h-10 rounded-md object-contain"
-              />
-            </div>
-            <Button
-              size="sm"
-              variant="light"
-              onPress={() => Browser.OpenURL("https://www.rhymc.com/")}
-            >
-              {t("about.website", { defaultValue: "官网" })}
-            </Button>
-          </div>
-        </motion.section>
+              <div className="flex gap-2 mt-4">
+                <Button
+                  size="sm"
+                  variant="flat"
+                  className="bg-default-100 dark:bg-white/10 text-default-600 dark:text-zinc-300"
+                  startContent={<FaHeart className="text-pink-500" />}
+                  onPress={() =>
+                    Browser.OpenURL("https://afdian.com/a/DreamGuXiang")
+                  }
+                >
+                  {t("about.afdian", { defaultValue: "Afdian" })}
+                </Button>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  className="bg-default-100 dark:bg-white/10 text-default-600 dark:text-zinc-300"
+                  startContent={<FaPatreon className="text-orange-500" />}
+                  onPress={() =>
+                    Browser.OpenURL("https://www.patreon.com/c/DreamGuXiang")
+                  }
+                >
+                  {t("about.patreon", { defaultValue: "Patreon" })}
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
+        </motion.div>
 
-        <motion.section
-          className="rounded-2xl border border-default-200 bg-white/60 dark:bg-black/30 backdrop-blur-md shadow-sm p-4"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.15 }}
+        {/* Special Thanks Section */}
+        <motion.div
+          custom={1}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
         >
-          <div className="flex items-center gap-2 mb-2">
-            <FaHeart className="text-danger-500" />
-            <h2 className="text-base font-semibold">
-              {t("about.sponsors", { defaultValue: "支持者（赞助者）" })}
-            </h2>
-          </div>
-          <p className="text-default-700 leading-7">
-            {t("about.sponsors.desc", {
-              defaultValue: "感谢所有为项目发展提供帮助的赞助者与支持者！",
-            })}
-          </p>
-        </motion.section>
-
-        <motion.section
-          className="rounded-2xl border border-default-200 bg-white/60 dark:bg-black/30 backdrop-blur-md shadow-sm p-4 lg:col-span-2"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.2 }}
-        >
-          <div className="flex items-center gap-2 mb-2">
-            <FaCode className="text-default-600" />
-            <h2 className="text-base font-semibold">
-              {t("about.source", { defaultValue: "源代码与开源" })}
-            </h2>
-          </div>
-          <div className="flex flex-wrap items-center gap-3">
-            <a
-              href={repoUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-default-300 px-3 py-2 hover:bg-default-100/60"
-              onClick={(e) => {
-                e.preventDefault();
-                Browser.OpenURL(repoUrl);
-              }}
-            >
-              <FaGithub />
-              <span>
-                {t("about.github_repo", {
-                  defaultValue: "GitHub · LeviLauncher",
+          <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
+            <CardBody className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                <div className="p-2 rounded-xl bg-warning-500/10 text-warning-600 dark:text-warning-400">
+                  <FaStar size={20} />
+                </div>
+                <h2 className="text-xl font-bold text-default-800 dark:text-zinc-100">
+                  {t("about.thanks", { defaultValue: "Special Thanks" })}
+                </h2>
+              </div>
+              <p className="text-default-600 dark:text-zinc-400 leading-relaxed mb-4">
+                {t("about.thanks.desc", {
+                  defaultValue:
+                    "Special thanks to the individuals and projects that provided help and support for LeviLauncher.",
                 })}
-              </span>
-            </a>
-            <a
-              href={orgUrl}
-              target="_blank"
-              rel="noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-default-300 px-3 py-2 hover:bg-default-100/60"
-              onClick={(e) => {
-                e.preventDefault();
-                Browser.OpenURL(orgUrl);
-              }}
-            >
-              <FaGithub />
-              <span>
-                {t("about.github_org", { defaultValue: "LiteLDev 组织" })}
-              </span>
-            </a>
-          </div>
-          <p className="mt-3 text-default-700 leading-7">
-            {t("about.license.tip", {
-              defaultValue: "许可证与详细信息请参见仓库中的 LICENSE 文件。",
-            })}
-          </p>
-        </motion.section>
+              </p>
+              <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-default-50/50 dark:bg-white/5 border border-default-100 dark:border-white/5">
+                <div className="flex items-center gap-3">
+                  <img
+                    src="https://www.rhymc.com/assets/img/logo.png"
+                    alt={t("about.rhymc_name", { defaultValue: "Rhymc" })}
+                    className="h-8 object-contain"
+                  />
+                  <span className="font-semibold text-default-800 dark:text-zinc-200">
+                     {t("about.rhymc_name", { defaultValue: "Rhymc" })}
+                  </span>
+                </div>
+                <Button
+                  size="sm"
+                  variant="light"
+                  onPress={() => Browser.OpenURL("https://www.rhymc.com/")}
+                >
+                  {t("about.website", { defaultValue: "Website" })}
+                </Button>
+              </div>
+            </CardBody>
+          </Card>
+        </motion.div>
 
-        <motion.section
-          className="rounded-2xl border border-default-200 bg-white/60 dark:bg-black/30 backdrop-blur-md shadow-sm p-4 lg:col-span-2"
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.3, delay: 0.25 }}
+        {/* Sponsors Section */}
+        <motion.div
+          custom={2}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+          className="lg:col-span-2"
         >
-          <div className="flex items-center gap-2 mb-2">
-            <FaGithub className="text-default-600" />
-            <h2 className="text-base font-semibold">
-              {t("about.contribute", { defaultValue: "参与贡献" })}
-            </h2>
-          </div>
-          <p className="text-default-700 leading-7">
-            {t("about.contribute.desc", {
-              defaultValue:
-                "欢迎通过提交 Issue 或 Pull Request 的方式参与贡献，共同完善 LeviLauncher。",
-            })}
-          </p>
-          <div className="flex gap-2 mt-2">
-            <Button
-              variant="flat"
-              startContent={<FaGithub />}
-              onPress={() => Browser.OpenURL(`${repoUrl}/issues`)}
-            >
-              {t("about.issue", { defaultValue: "Issue" })}
-            </Button>
-            <Button
-              color="primary"
-              startContent={<FaGithub />}
-              onPress={() => Browser.OpenURL(`${repoUrl}`)}
-            >
-              {t("about.star_fork", { defaultValue: "Star / Fork" })}
-            </Button>
-          </div>
-        </motion.section>
+          <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
+            <CardBody className="p-6">
+              <div className="flex items-center gap-3 mb-4">
+                 <div className="p-2 rounded-xl bg-danger-500/10 text-danger-600 dark:text-danger-400">
+                  <FaHeart size={20} />
+                </div>
+                <h2 className="text-xl font-bold text-default-800 dark:text-zinc-100">
+                  {t("about.sponsors", { defaultValue: "Sponsors & Supporters" })}
+                </h2>
+              </div>
+              <p className="text-default-600 dark:text-zinc-400 leading-relaxed">
+                {t("about.sponsors.desc", {
+                  defaultValue: "Thanks to all sponsors and supporters who helped the project develop!",
+                })}
+              </p>
+            </CardBody>
+          </Card>
+        </motion.div>
+
+        {/* Source Code Section */}
+        <motion.div
+          custom={3}
+          initial="hidden"
+          animate="visible"
+          variants={cardVariants}
+          className="lg:col-span-2"
+        >
+          <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
+            <CardBody className="p-6">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+                <div className="flex-1">
+                   <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-xl bg-blue-500/10 text-blue-600 dark:text-blue-400">
+                      <FaCode size={20} />
+                    </div>
+                    <h2 className="text-xl font-bold text-default-800 dark:text-zinc-100">
+                      {t("about.source", { defaultValue: "Source Code & Open Source" })}
+                    </h2>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-3 mb-4">
+                    <Button
+                        variant="flat"
+                        className="bg-default-100 dark:bg-white/10"
+                        startContent={<FaGithub className="text-lg" />}
+                        onPress={() => Browser.OpenURL(repoUrl)}
+                    >
+                      {t("about.github_repo", { defaultValue: "GitHub · LeviLauncher" })}
+                    </Button>
+                    <Button
+                        variant="flat"
+                        className="bg-default-100 dark:bg-white/10"
+                        startContent={<FaGithub className="text-lg" />}
+                        onPress={() => Browser.OpenURL(orgUrl)}
+                    >
+                      {t("about.github_org", { defaultValue: "LiteLDev Organization" })}
+                    </Button>
+                  </div>
+                   <p className="text-small text-default-500">
+                    {t("about.license.tip", {
+                      defaultValue: "For license and details, please refer to the LICENSE file in the repository.",
+                    })}
+                  </p>
+                </div>
+
+                <div className="flex-1 border-t md:border-t-0 md:border-l border-default-100 dark:border-white/5 pt-6 md:pt-0 md:pl-6">
+                   <div className="flex items-center gap-3 mb-4">
+                    <div className="p-2 rounded-xl bg-default-500/10 text-default-600 dark:text-default-400">
+                      <FaGithub size={20} />
+                    </div>
+                    <h2 className="text-xl font-bold text-default-800 dark:text-zinc-100">
+                      {t("about.contribute", { defaultValue: "Contribute" })}
+                    </h2>
+                  </div>
+                  <p className="text-default-600 dark:text-zinc-400 leading-relaxed mb-4">
+                    {t("about.contribute.desc", {
+                      defaultValue:
+                        "Welcome to contribute to LeviLauncher by submitting Issues or Pull Requests.",
+                    })}
+                  </p>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      className="bg-default-100 dark:bg-white/10"
+                      startContent={<FaGithub />}
+                      onPress={() => Browser.OpenURL(`${repoUrl}/issues`)}
+                    >
+                      {t("about.issue", { defaultValue: "Issue" })}
+                    </Button>
+                    <Button
+                      size="sm"
+                      color="primary"
+                      className="bg-gradient-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20"
+                      startContent={<FaStar />}
+                      onPress={() => Browser.OpenURL(`${repoUrl}`)}
+                    >
+                      {t("about.star_fork", { defaultValue: "Star / Fork" })}
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        </motion.div>
       </div>
-    </motion.div>
+    </div>
   );
 }

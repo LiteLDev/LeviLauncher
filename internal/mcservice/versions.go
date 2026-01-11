@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/base64"
+	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -11,6 +12,8 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
@@ -29,6 +32,114 @@ type ContentCounts struct {
 	Worlds        int `json:"worlds"`
 	ResourcePacks int `json:"resourcePacks"`
 	BehaviorPacks int `json:"behaviorPacks"`
+}
+
+var (
+	versionDLL                  = windows.NewLazySystemDLL("version.dll")
+	procGetFileVersionInfoSizeW = versionDLL.NewProc("GetFileVersionInfoSizeW")
+	procGetFileVersionInfoW     = versionDLL.NewProc("GetFileVersionInfoW")
+	procVerQueryValueW          = versionDLL.NewProc("VerQueryValueW")
+	fourPartVersionMatchRe      = regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
+	fourPartVersionExactMatchRe = regexp.MustCompile(`^\d+\.\d+\.\d+\.\d+$`)
+)
+
+type vsFixedFileInfo struct {
+	Signature        uint32
+	StrucVersion     uint32
+	FileVersionMS    uint32
+	FileVersionLS    uint32
+	ProductVersionMS uint32
+	ProductVersionLS uint32
+	FileFlagsMask    uint32
+	FileFlags        uint32
+	FileOS           uint32
+	FileType         uint32
+	FileSubtype      uint32
+	FileDateMS       uint32
+	FileDateLS       uint32
+}
+
+func normalizeBedrockGameVersion(raw string) string {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return ""
+	}
+	match := s
+	if !fourPartVersionExactMatchRe.MatchString(s) {
+		m := fourPartVersionMatchRe.FindString(s)
+		if m == "" {
+			return s
+		}
+		match = m
+	}
+	parts := strings.Split(match, ".")
+	if len(parts) != 4 {
+		return s
+	}
+	nums := make([]int, 4)
+	for i := 0; i < 4; i++ {
+		n, err := strconv.Atoi(parts[i])
+		if err != nil {
+			return s
+		}
+		nums[i] = n
+	}
+	return fmt.Sprintf("%d.%d.%d.%02d", nums[0], nums[1], nums[2], nums[3])
+}
+
+func isFourPartNumericVersion(s string) bool {
+	return fourPartVersionExactMatchRe.MatchString(strings.TrimSpace(s))
+}
+
+func readExeFileVersion(exePath string) (string, bool) {
+	p := strings.TrimSpace(exePath)
+	if p == "" || !utils.FileExists(p) {
+		return "", false
+	}
+	p16, err := windows.UTF16PtrFromString(p)
+	if err != nil {
+		return "", false
+	}
+	var handle uint32
+	r1, _, _ := procGetFileVersionInfoSizeW.Call(
+		uintptr(unsafe.Pointer(p16)),
+		uintptr(unsafe.Pointer(&handle)),
+	)
+	if r1 == 0 {
+		return "", false
+	}
+	sz := uint32(r1)
+	buf := make([]byte, sz)
+	r1, _, _ = procGetFileVersionInfoW.Call(
+		uintptr(unsafe.Pointer(p16)),
+		0,
+		uintptr(sz),
+		uintptr(unsafe.Pointer(&buf[0])),
+	)
+	if r1 == 0 {
+		return "", false
+	}
+	root16, _ := windows.UTF16PtrFromString(`\`)
+	var block uintptr
+	var blockLen uint32
+	r1, _, _ = procVerQueryValueW.Call(
+		uintptr(unsafe.Pointer(&buf[0])),
+		uintptr(unsafe.Pointer(root16)),
+		uintptr(unsafe.Pointer(&block)),
+		uintptr(unsafe.Pointer(&blockLen)),
+	)
+	if r1 == 0 || block == 0 || blockLen < uint32(unsafe.Sizeof(vsFixedFileInfo{})) {
+		return "", false
+	}
+	info := (*vsFixedFileInfo)(unsafe.Pointer(block))
+	if info.Signature != 0xFEEF04BD {
+		return "", false
+	}
+	major := int(info.FileVersionMS >> 16)
+	minor := int(info.FileVersionMS & 0xFFFF)
+	build := int(info.FileVersionLS >> 16)
+	rev := int(info.FileVersionLS & 0xFFFF)
+	return fmt.Sprintf("%d.%d.%d.%d", major, minor, build, rev), true
 }
 
 func GetContentRoots(name string) types.ContentRoots {
@@ -120,10 +231,27 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
-	dir := filepath.Join(vdir, strings.TrimSpace(name))
+	n := strings.TrimSpace(name)
+	dir := filepath.Join(vdir, n)
+
+	gvRaw := strings.TrimSpace(gameVersion)
+	gv := normalizeBedrockGameVersion(gvRaw)
+	if gv == "" {
+		gv = gvRaw
+	}
+	shouldDetect := gv == "" || (strings.EqualFold(gv, n) && !isFourPartNumericVersion(gv))
+	if shouldDetect {
+		if fv, ok := readExeFileVersion(filepath.Join(dir, "Minecraft.Windows.exe")); ok {
+			gv = normalizeBedrockGameVersion(fv)
+		}
+		if strings.EqualFold(strings.TrimSpace(gv), n) {
+			gv = ""
+		}
+	}
+
 	meta := versions.VersionMeta{
-		Name:               strings.TrimSpace(name),
-		GameVersion:        strings.TrimSpace(gameVersion),
+		Name:               n,
+		GameVersion:        strings.TrimSpace(gv),
 		Type:               strings.TrimSpace(typeStr),
 		EnableIsolation:    enableIsolation,
 		EnableConsole:      enableConsole,

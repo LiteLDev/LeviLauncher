@@ -636,9 +636,9 @@ function App() {
           <ModalContent>
             {(onClose) => (
               <>
-                <BaseModalHeader className="flex items-center gap-2 text-primary-600">
+                <BaseModalHeader className="flex-row items-center gap-2 text-primary-600 min-w-0">
                   <FaRocket className="w-5 h-5" />
-                  <span>
+                  <span className="truncate">
                     {t("settingscard.body.version.hasnew", {
                       defaultValue: "有新的版本更新！",
                     })}

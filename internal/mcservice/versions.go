@@ -710,20 +710,66 @@ func CreateDesktopShortcut(name string) string {
 	if exePath == "" {
 		return "ERR_SHORTCUT_CREATE_FAILED"
 	}
-	home, _ := os.UserHomeDir()
-	if strings.TrimSpace(home) == "" {
-		home = os.Getenv("USERPROFILE")
+
+	findDesktopDir := func() string {
+		candidates := []string{}
+		home, _ := os.UserHomeDir()
+		home = strings.TrimSpace(home)
+		if home == "" {
+			home = strings.TrimSpace(os.Getenv("USERPROFILE"))
+		}
+		if home != "" {
+			candidates = append(candidates, filepath.Join(home, "Desktop"))
+			candidates = append(candidates, filepath.Join(home, "OneDrive", "Desktop"))
+		}
+		for _, k := range []string{"OneDrive", "OneDriveConsumer", "OneDriveCommercial"} {
+			v := strings.TrimSpace(os.Getenv(k))
+			if v != "" {
+				candidates = append(candidates, filepath.Join(v, "Desktop"))
+			}
+		}
+		pub := strings.TrimSpace(os.Getenv("PUBLIC"))
+		if pub != "" {
+			candidates = append(candidates, filepath.Join(pub, "Desktop"))
+		}
+		for _, p := range candidates {
+			if strings.TrimSpace(p) == "" {
+				continue
+			}
+			if fi, err := os.Stat(p); err == nil && fi.IsDir() {
+				return p
+			}
+		}
+		return ""
 	}
-	if strings.TrimSpace(home) == "" {
+
+	desktop := findDesktopDir()
+	if desktop == "" {
 		return "ERR_SHORTCUT_CREATE_FAILED"
 	}
-	desktop := filepath.Join(home, "Desktop")
-	if fi, err := os.Stat(desktop); err != nil || !fi.IsDir() {
-		return "ERR_SHORTCUT_CREATE_FAILED"
+
+	safeName := strings.Map(func(r rune) rune {
+		switch r {
+		case '<', '>', ':', '"', '/', '\\', '|', '?', '*':
+			return '_'
+		}
+		if r < 32 {
+			return '_'
+		}
+		return r
+	}, n)
+	safeName = strings.TrimSpace(safeName)
+	safeName = strings.TrimRight(safeName, ". ")
+	if safeName == "" {
+		safeName = "Minecraft"
 	}
-	safeName := n
+
 	lnk := filepath.Join(desktop, "Minecraft - "+safeName+".lnk")
 	args := "--launch=" + n
+	if strings.ContainsAny(n, " \t") {
+		esc := strings.ReplaceAll(n, `"`, `\"`)
+		args = `--launch="` + esc + `"`
+	}
 	workdir := filepath.Dir(exePath)
 	iconPath := exePath
 	if vdir, err := utils.GetVersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
@@ -754,10 +800,14 @@ func CreateDesktopShortcut(name string) string {
 		"$Shortcut.WorkingDirectory = '" + esc(workdir) + "'; " +
 		"$Shortcut.IconLocation = '" + esc(iconPath) + "'; " +
 		"$Shortcut.Save()"
-	cmd := exec.Command("powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script)
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-Command", script)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if err := cmd.Run(); err != nil {
-		return "ERR_SHORTCUT_CREATE_FAILED"
+		cmdFile := filepath.Join(desktop, "Minecraft - "+safeName+".cmd")
+		data := "@echo off\r\nstart \"\" \"" + exePath + "\" " + args + "\r\n"
+		if werr := os.WriteFile(cmdFile, []byte(data), 0o644); werr != nil {
+			return "ERR_SHORTCUT_CREATE_FAILED"
+		}
 	}
 	return ""
 }

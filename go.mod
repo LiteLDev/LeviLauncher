@@ -11,6 +11,7 @@ require (
 	github.com/mouuff/go-rocket-update v1.5.6
 	github.com/wailsapp/wails/v3 v3.0.0-alpha.59
 	golang.org/x/sys v0.39.0
+	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 )
 
 require (
@@ -50,6 +51,5 @@ require (
 	golang.org/x/crypto v0.36.0 // indirect
 	golang.org/x/net v0.37.0 // indirect
 	golang.org/x/text v0.23.0 // indirect
-	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce // indirect
 	gopkg.in/warnings.v0 v0.1.2 // indirect
 )

@@ -59,7 +59,7 @@ export const SplashScreen = () => {
             className="relative z-20"
           >
             {/* Glassmorphism Card */}
-            <div className="relative flex items-center justify-center p-8 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-2xl rounded-[2.5rem] border border-white/40 dark:border-zinc-700/50 shadow-2xl">
+            <div className="relative flex items-center justify-center p-8 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-2xl rounded-[2rem] border border-white/40 dark:border-zinc-700/50 shadow-2xl">
               <LeviIcon
                 width={120}
                 height={120}

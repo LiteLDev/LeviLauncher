@@ -15,7 +15,7 @@ export const BaseModal: React.FC<ModalProps> = (props) => {
 
   const finalClassNames = {
     ...classNames,
-    base: `bg-white! dark:bg-zinc-900! border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem] ${
+    base: `bg-white! dark:bg-zinc-950! border border-default-200 dark:border-zinc-800 shadow-2xl rounded-[2.5rem] ${
       classNames?.base || ""
     }`,
     closeButton: `absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500 ${

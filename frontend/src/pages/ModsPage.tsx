@@ -652,7 +652,7 @@ export const ModsPage: React.FC = () => {
     OpenModsExplorer(name);
   };
 
-  const handleDrop: React.DragEventHandler<HTMLDivElement> = async (e) => {
+  const handleDrop = async (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     dragCounter.current = 0;
@@ -661,7 +661,7 @@ export const ModsPage: React.FC = () => {
     setErrorFile("");
     setResultSuccess([]);
     setResultFailed([]);
-    const files: File[] = Array.from(e.dataTransfer.files || []).filter(
+    const files: File[] = Array.from(e.dataTransfer?.files || []).filter(
       (f) =>
         f &&
         (f.name.toLowerCase().endsWith(".zip") ||
@@ -783,35 +783,54 @@ export const ModsPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const onDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current += 1;
+      if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
+        setDragActive(true);
+      }
+    };
+
+    const onDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current -= 1;
+      if (dragCounter.current <= 0) {
+        dragCounter.current = 0;
+        setDragActive(false);
+      }
+    };
+
+    const onDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const onDrop = (e: DragEvent) => {
+      handleDrop(e);
+    };
+
+    window.addEventListener("dragenter", onDragEnter);
+    window.addEventListener("dragleave", onDragLeave);
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("drop", onDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", onDragEnter);
+      window.removeEventListener("dragleave", onDragLeave);
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("drop", onDrop);
+    };
+  });
+
   return (
     <motion.div
       ref={scrollRef}
       className={`fixed inset-0 z-40 w-full h-full flex flex-col pt-[84px] px-6 pb-6 overflow-hidden bg-default-50 dark:bg-black ${
         dragActive ? "cursor-copy" : ""
       }`}
-      onDragOver={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          e.dataTransfer.dropEffect = "copy";
-        } catch {}
-      }}
-      onDragEnter={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          e.dataTransfer.dropEffect = "copy";
-        } catch {}
-        dragCounter.current++;
-        setDragActive(true);
-      }}
-      onDragLeave={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dragCounter.current = Math.max(0, dragCounter.current - 1);
-        if (dragCounter.current === 0) setDragActive(false);
-      }}
-      onDrop={handleDrop}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
@@ -1147,7 +1166,7 @@ export const ModsPage: React.FC = () => {
       <AnimatePresence>
         {dragActive ? (
           <motion.div
-            className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
+            className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -1165,7 +1184,7 @@ export const ModsPage: React.FC = () => {
         ) : null}
       </AnimatePresence>
 
-      <div className="flex flex-col gap-4 mb-6 shrink-0 bg-white/60 dark:bg-zinc-900/60 backdrop-blur-md p-6 rounded-4xl border border-white/40 dark:border-white/5 shadow-sm">
+      <div className="flex flex-col gap-4 mb-6 shrink-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md p-6 rounded-4xl">
         <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
           <div className="flex items-center gap-4">
             <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600 dark:text-emerald-400 shadow-sm">

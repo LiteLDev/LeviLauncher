@@ -72,7 +72,7 @@ export default function UpdatingPage() {
 
   return (
     <div className="relative w-full h-full px-6 py-6">
-      <Card className="rounded-3xl shadow-xl bg-white/60 dark:bg-black/30 backdrop-blur-md border border-white/30">
+      <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
         <CardBody className="p-6">
           <div className="flex items-center gap-2 text-primary-600 mb-3">
             <FaRocket className="w-5 h-5" />

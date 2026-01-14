@@ -139,7 +139,7 @@ export default function OnboardingPage() {
         transition={{ duration: 0.4, ease: "easeOut" }}
         className="w-full h-full"
       >
-        <Card className="relative w-full h-full overflow-hidden border-none shadow-2xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl rounded-4xl">
+        <Card className="relative w-full h-full overflow-hidden border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
           <div className="flex flex-col md:flex-row h-full">
             {/* Left Panel: Hero & Info */}
             <div className="w-full md:w-[35%] lg:w-[40%] bg-linear-to-br from-emerald-50/50 to-teal-50/50 dark:from-emerald-900/10 dark:to-teal-900/10 p-8 flex flex-col justify-center relative min-h-[400px] h-full">

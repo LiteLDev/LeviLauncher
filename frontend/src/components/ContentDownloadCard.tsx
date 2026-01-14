@@ -10,7 +10,7 @@ export const ContentDownloadCard = () => {
   const navigate = useNavigate();
 
   return (
-    <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-2xl transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group">
+    <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group">
       <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">

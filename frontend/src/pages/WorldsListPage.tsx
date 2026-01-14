@@ -427,7 +427,7 @@ export default function WorldsListPage() {
       transition={{ duration: 0.25 }}
       className="w-full max-w-full mx-auto p-4 h-full flex flex-col"
     >
-      <Card className="flex-1 min-h-0 rounded-[2.5rem] shadow-xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border-none">
+      <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
         <CardBody className="p-0 flex flex-col h-full overflow-hidden">
           {/* Header */}
           <div className="shrink-0 p-4 sm:p-6 pb-2 flex flex-col gap-4 border-b border-default-200 dark:border-white/10">
@@ -673,7 +673,7 @@ export default function WorldsListPage() {
                         className={`w-full p-4 bg-white dark:bg-zinc-900/50 hover:bg-default-50 dark:hover:bg-zinc-800 transition-all rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border ${
                           isSelectMode && selected[w.Path]
                             ? "border-primary bg-primary/10"
-                            : "border-default-200 dark:border-zinc-700/50 hover:border-default-400 dark:hover:border-zinc-600"
+                            : "border-transparent hover:border-default-200 dark:hover:border-zinc-700"
                         }`}
                         onClick={() => {
                           if (isSelectMode) toggleSelect(w.Path);

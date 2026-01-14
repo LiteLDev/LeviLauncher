@@ -734,50 +734,70 @@ export default function ContentPage() {
     }
   };
 
-  return (
-    <motion.div
-      className={`relative w-full max-w-full mx-auto p-4 h-full flex flex-col ${
-        dragActive ? "cursor-copy" : ""
-      }`}
-      onDragOver={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          e.dataTransfer.dropEffect = "copy";
-        } catch {}
-      }}
-      onDragEnter={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          e.dataTransfer.dropEffect = "copy";
-        } catch {}
-        dragCounter.current++;
+  React.useEffect(() => {
+    const onDragEnter = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current += 1;
+      if (e.dataTransfer?.items && e.dataTransfer.items.length > 0) {
         setDragActive(true);
-      }}
-      onDragLeave={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dragCounter.current = Math.max(0, dragCounter.current - 1);
-        if (dragCounter.current === 0) setDragActive(false);
-      }}
-      onDrop={async (e) => {
-        e.preventDefault();
-        e.stopPropagation();
+      }
+    };
+
+    const onDragLeave = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current -= 1;
+      if (dragCounter.current <= 0) {
         dragCounter.current = 0;
         setDragActive(false);
-        setErrorMsg("");
-        setResultSuccess([]);
-        setResultFailed([]);
-        const files: File[] = Array.from(e.dataTransfer.files || []).filter(
-          (f) =>
-            f &&
-            (f.name.toLowerCase().endsWith(".mcworld") ||
-              f.name.toLowerCase().endsWith(".mcpack") ||
-              f.name.toLowerCase().endsWith(".mcaddon"))
-        );
+      }
+    };
+
+    const onDragOver = (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+    };
+
+    const onDrop = async (e: DragEvent) => {
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current = 0;
+      setDragActive(false);
+      setErrorMsg("");
+      setResultSuccess([]);
+      setResultFailed([]);
+      
+      const files: File[] = Array.from(e.dataTransfer?.files || []).filter(
+        (f) =>
+          f &&
+          (f.name.toLowerCase().endsWith(".mcworld") ||
+            f.name.toLowerCase().endsWith(".mcpack") ||
+            f.name.toLowerCase().endsWith(".mcaddon"))
+      );
+      if (files.length > 0) {
         await handleImportFiles(files);
-      }}
+      }
+    };
+
+    window.addEventListener("dragenter", onDragEnter);
+    window.addEventListener("dragleave", onDragLeave);
+    window.addEventListener("dragover", onDragOver);
+    window.addEventListener("drop", onDrop);
+
+    return () => {
+      window.removeEventListener("dragenter", onDragEnter);
+      window.removeEventListener("dragleave", onDragLeave);
+      window.removeEventListener("dragover", onDragOver);
+      window.removeEventListener("drop", onDrop);
+    };
+  });
+
+  return (
+    <motion.div
+      className={`relative w-full max-w-full mx-auto h-full flex flex-col ${
+        dragActive ? "cursor-copy" : ""
+      }`}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
@@ -785,7 +805,7 @@ export default function ContentPage() {
       <AnimatePresence>
         {dragActive ? (
           <motion.div
-            className="pointer-events-none absolute inset-0 z-50 flex items-center justify-center bg-black/20 backdrop-blur-sm"
+            className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm"
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -803,10 +823,10 @@ export default function ContentPage() {
         ) : null}
       </AnimatePresence>
 
-      <div className="flex-1 overflow-auto">
+      <div className="flex-1 overflow-auto p-4">
         <div className="w-full max-w-none pb-12">
           {/* Header Card */}
-          <Card className="rounded-4xl shadow-lg mb-6 bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50">
+          <Card className="rounded-4xl shadow-md mb-6 bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none">
             <CardBody className="px-6 sm:px-8 py-5">
               <div className="flex flex-col gap-4">
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
@@ -935,7 +955,7 @@ export default function ContentPage() {
             <Card
               isPressable
               onPress={() => navigate("/content/worlds", { state: { player: selectedPlayer } })}
-              className="rounded-4xl shadow-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50 h-full"
+              className="rounded-4xl shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none h-full"
             >
               <CardBody className="p-6">
                 <div className="flex items-center justify-between w-full">
@@ -961,7 +981,7 @@ export default function ContentPage() {
             <Card
               isPressable
               onPress={() => navigate("/content/resource-packs")}
-              className="rounded-4xl shadow-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50 h-full"
+              className="rounded-4xl shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none h-full"
             >
               <CardBody className="p-6">
                 <div className="flex items-center justify-between w-full">
@@ -987,7 +1007,7 @@ export default function ContentPage() {
             <Card
               isPressable
               onPress={() => navigate("/content/behavior-packs")}
-              className="rounded-4xl shadow-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50 h-full"
+              className="rounded-4xl shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none h-full"
             >
               <CardBody className="p-6">
                 <div className="flex items-center justify-between w-full">
@@ -1013,7 +1033,7 @@ export default function ContentPage() {
             <Card
               isPressable
               onPress={() => navigate("/content/skin-packs", { state: { player: selectedPlayer } })}
-              className="rounded-4xl shadow-2xl bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50 h-full"
+              className="rounded-4xl shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none h-full"
             >
               <CardBody className="p-6">
                 <div className="flex items-center justify-between w-full">

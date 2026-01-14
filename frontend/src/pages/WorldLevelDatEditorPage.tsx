@@ -584,7 +584,7 @@ export default function WorldLevelDatEditorPage() {
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
-        <Card className="w-full min-h-[85vh] bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50 shadow-2xl rounded-[2.5rem]">
+        <Card className="w-full min-h-[85vh] border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
         <CardHeader className="flex flex-col gap-6 px-8 pt-8 pb-6 border-b border-default-100 dark:border-white/5">
           <div className="flex w-full items-center justify-between">
             <div className="flex items-center gap-4">

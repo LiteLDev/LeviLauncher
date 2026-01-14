@@ -378,12 +378,11 @@ function App() {
             exit={{ opacity: 0, y: -10 }}
             transition={{ duration: 0.6, ease: "easeOut" }}
           >
-              <div className="flex items-center w-full rounded-2xl border border-default-200 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md shadow-sm px-2 py-1 sm:px-3 sm:py-2">
+              <div className="flex items-center w-full rounded-2xl bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md shadow-sm px-2 py-1 sm:px-3 sm:py-2">
                 <div className="flex items-center gap-2 shrink-0">
                   <LeviIcon
                     width={24}
                     height={24}
-                    className="rounded-md shadow-sm"
                   />
                   <p className="font-bold text-[16px] sm:text-[18px] tracking-tight text-emerald-600 dark:text-emerald-400 animate-fadeInMove">
                     LeviLauncher
@@ -412,7 +411,7 @@ function App() {
                       onPress={() => {
                         tryNavigate("/");
                       }}
-                      className={`px-3 rounded-2xl ${
+                      className={`px-3 rounded-full ${
                         location.pathname === "/" ? "bg-default-200" : ""
                       }`}
                       startContent={<FaRocket size={18} />}
@@ -463,7 +462,7 @@ function App() {
                         variant="light"
                         aria-label="More Menu"
                         isDisabled={navLocked}
-                        className={`px-3 rounded-2xl ${
+                        className={`px-3 rounded-full ${
                           location.pathname.startsWith("/versions") ||
                           location.pathname.startsWith("/about")
                             ? "bg-default-200"
@@ -499,7 +498,7 @@ function App() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 ml-auto justify-end">
-                  <div className="flex items-center gap-1 rounded-xl bg-default-100/50 px-2 py-1">
+                  <div className="flex items-center gap-1 rounded-full bg-default-100/50 px-2 py-1">
                     <ThemeSwitcher />
                   </div>
                   <div className="h-6 w-px bg-default-300 mx-1" />

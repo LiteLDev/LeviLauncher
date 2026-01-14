@@ -310,7 +310,7 @@ export default function VersionSettingsPage() {
             animate={{ y: 0, opacity: 1 }}
             transition={{ duration: 0.18, ease: [0.16, 0.84, 0.44, 1] }}
           >
-            <Card className="rounded-4xl shadow-xl mb-6 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50">
+            <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl mb-6">
               <CardBody className="px-6 sm:px-8 py-5 w-full">
                 <div className="w-full">
                   <div className="flex items-center justify-between gap-4 w-full">
@@ -380,7 +380,7 @@ export default function VersionSettingsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.1 }}
           >
-            <Card className="rounded-4xl shadow-lg h-full min-h-[160px] bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50">
+            <Card className="h-full min-h-[160px] border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
               <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
                 <div>
                   <label className="text-small font-medium text-default-700 dark:text-default-200 mb-2 block">
@@ -508,7 +508,7 @@ export default function VersionSettingsPage() {
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.15 }}
           >
-            <Card className="rounded-4xl shadow-lg h-full min-h-[160px] bg-white/80 dark:bg-zinc-900/50 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50">
+            <Card className="h-full min-h-[160px] border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
               <CardBody className="p-6 sm:p-8 flex flex-col gap-5">
                 <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
                   <div className="text-medium font-medium">
@@ -834,7 +834,6 @@ export default function VersionSettingsPage() {
         closeButton
         aria-label="error-modal"
         classNames={{
-          base: "bg-white! dark:bg-zinc-900! border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
           closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
         }}
       >
@@ -885,7 +884,6 @@ export default function VersionSettingsPage() {
         }}
         size="md"
         classNames={{
-          base: "bg-white! dark:bg-zinc-900! border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
           closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
         }}
       >
@@ -944,7 +942,7 @@ export default function VersionSettingsPage() {
         hideCloseButton
         isDismissable={!deleting}
         classNames={{
-          base: "bg-white! dark:bg-zinc-900! border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
+
         }}
       >
         <ModalContent className="shadow-none">

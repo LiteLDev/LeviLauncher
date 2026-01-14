@@ -1272,7 +1272,7 @@ const FileManagerPage: React.FC = () => {
           if (!o) setMkdirName("");
         }}
         classNames={{
-          base: "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border border-white/40 dark:border-zinc-700/50 shadow-2xl rounded-4xl",
+          base: "bg-white/80 dark:bg-zinc-900/80 backdrop-blur-2xl border-none shadow-2xl rounded-4xl",
         }}
       >
         <ModalContent>
@@ -1293,8 +1293,9 @@ const FileManagerPage: React.FC = () => {
                       const name = mkdirName.trim();
                       setCreatingFolder(true);
                       minecraft
-                        ?.MakeDir(path + "\\" + name)
-                        .then(async () => {
+                        ?.CreateFolder(path, name)
+                        .then(async (err) => {
+                          if (String(err || "")) return;
                           await loadDir(path);
                           setMkdirOpen(false);
                         })
@@ -1316,8 +1317,9 @@ const FileManagerPage: React.FC = () => {
                     if (!name) return;
                     setCreatingFolder(true);
                     minecraft
-                      ?.MakeDir(path + "\\" + name)
-                      .then(async () => {
+                      ?.CreateFolder(path, name)
+                      .then(async (err) => {
+                        if (String(err || "")) return;
                         await loadDir(path);
                         setMkdirOpen(false);
                       })

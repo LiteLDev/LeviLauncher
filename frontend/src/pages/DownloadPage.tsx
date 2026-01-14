@@ -568,7 +568,7 @@ export const DownloadPage: React.FC = () => {
         transition={{ duration: 0.25 }}
       >
         <div className="flex flex-col h-full">
-          <Card className="flex-1 min-h-0 rounded-[2.5rem] shadow-xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border-none">
+          <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
             <CardBody className="p-0 flex flex-col h-full overflow-hidden">
               <div className="p-4 sm:p-6 pb-2 flex flex-col sm:flex-row gap-4 justify-between items-center border-b border-default-200 dark:border-white/10">
                 <div className="flex items-center gap-3 w-full sm:max-w-md">

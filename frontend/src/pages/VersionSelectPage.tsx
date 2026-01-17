@@ -4,8 +4,8 @@ import {
   BaseModalHeader,
   BaseModalBody,
   BaseModalFooter,
-} from "../components/BaseModal";
-import { PageHeader } from "../components/PageHeader";
+} from "@/components/BaseModal";
+import { PageHeader } from "@/components/PageHeader";
 import {
   Button,
   Card,
@@ -23,11 +23,11 @@ import {
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { compareVersions } from "../utils/version";
+import { compareVersions } from "@/utils/version";
 import {
   readCurrentVersionName,
   saveCurrentVersionName,
-} from "../utils/currentVersion";
+} from "@/utils/currentVersion";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 
 export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (

@@ -17,7 +17,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaChevronDown } from "react-icons/fa";
-import { useVersionStatus } from "../utils/VersionStatusContext";
+import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { motion } from "framer-motion";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 

@@ -1,7 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
-import { PageHeader } from "../components/PageHeader";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
+import { PageHeader } from "@/components/PageHeader";
 import {
   Button,
   Chip,
@@ -28,7 +28,7 @@ import {
 } from "@heroui/react";
 import { FaDownload, FaCopy, FaSync, FaTrash, FaBoxOpen, FaChevronDown } from "react-icons/fa";
 import { Events } from "@wailsio/runtime";
-import { useVersionStatus } from "../utils/VersionStatusContext";
+import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";

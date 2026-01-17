@@ -1,6 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
 import {
   Button,
   Card,
@@ -17,7 +17,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { FaWindows } from "react-icons/fa";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { PageHeader } from '@/components/PageHeader';
+import { PageHeader } from "@/components/PageHeader";
 
 export default function VersionSettingsPage() {
   const { t } = useTranslation();

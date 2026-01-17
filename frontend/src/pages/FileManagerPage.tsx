@@ -11,7 +11,7 @@ import {
   SelectItem,
   ModalContent,
 } from "@heroui/react";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";

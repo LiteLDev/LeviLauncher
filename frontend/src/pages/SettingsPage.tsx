@@ -44,8 +44,8 @@ import {
 import { Browser, Events } from "@wailsio/runtime";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
-import { PageHeader } from "../components/PageHeader";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
+import { PageHeader } from "@/components/PageHeader";
 import Logo from "../assets/images/ic_leaf_logo.png";
 
 export const SettingsPage: React.FC = () => {

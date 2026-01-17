@@ -15,8 +15,8 @@ import {
   ModalContent,
   useDisclosure,
 } from "@heroui/react";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
-import { PageHeader, SectionHeader } from "../components/PageHeader";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
+import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   GetLanguageNames,

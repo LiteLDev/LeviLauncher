@@ -10,7 +10,7 @@ import { useTranslation } from "react-i18next";
 import { FaRocket } from "react-icons/fa";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { Events, Window } from "@wailsio/runtime";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
 
 export default function UpdatingPage() {
   const { t } = useTranslation();

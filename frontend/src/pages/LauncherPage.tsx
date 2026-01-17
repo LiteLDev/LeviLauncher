@@ -40,15 +40,15 @@ import {
   FaCube,
   FaArrowRight,
 } from "react-icons/fa";
-import { ModCard } from "../components/ModdedCard";
-import { ContentDownloadCard } from "../components/ContentDownloadCard";
+import { ModCard } from "@/components/ModdedCard";
+import { ContentDownloadCard } from "@/components/ContentDownloadCard";
 import { Events, Window, Browser } from "@wailsio/runtime";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { compareVersions } from "../utils/version";
-import { saveCurrentVersionName } from "../utils/currentVersion";
+import { compareVersions } from "@/utils/version";
+import { saveCurrentVersionName } from "@/utils/currentVersion";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
 
 let __didCheckGameInput = false;
 let __didCheckGamingServices = false;

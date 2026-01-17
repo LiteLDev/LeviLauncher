@@ -10,7 +10,7 @@ import {
   Card,
   CardBody,
 } from "@heroui/react";
-import { PageHeader } from "../components/PageHeader";
+import { PageHeader } from "@/components/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -18,7 +18,7 @@ import {
   SearchCurseForgeMods,
   GetCurseForgeCategories,
 } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { useCurseForge } from "../utils/CurseForgeContext";
+import { useCurseForge } from "@/utils/CurseForgeContext";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { LuSearch, LuDownload, LuEye, LuClock, LuCalendar, LuFileDigit, LuGamepad2 } from "react-icons/lu";
 import { motion } from "framer-motion";

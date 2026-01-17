@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Card, CardBody, Chip } from "@heroui/react";
-import { PageHeader, SectionHeader } from "../components/PageHeader";
+import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import {
   FaGithub,
   FaUsers,

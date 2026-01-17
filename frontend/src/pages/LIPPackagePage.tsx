@@ -18,7 +18,7 @@ import {
   TableRow,
   TableCell,
 } from "@heroui/react";
-import { PageHeader, SectionHeader } from "../components/PageHeader";
+import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import { LuArrowLeft, LuDownload, LuGlobe, LuUser, LuClock, LuFlame, LuTag } from "react-icons/lu";
 import { motion } from "framer-motion";
 

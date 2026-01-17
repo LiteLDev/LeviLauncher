@@ -18,7 +18,7 @@ import {
   Card,
   CardBody,
 } from "@heroui/react";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -44,11 +44,11 @@ import {
 } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as packages from "../../bindings/github.com/liteldev/LeviLauncher/internal/packages/models";
-import { readCurrentVersionName } from "../utils/currentVersion";
+import { readCurrentVersionName } from "@/utils/currentVersion";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { renderMcText } from "../utils/mcformat";
+import { renderMcText } from "@/utils/mcformat";
 import { toast } from "react-hot-toast";
-import { PageHeader } from '@/components/PageHeader';
+import { PageHeader } from "@/components/PageHeader";
 
 export default function ResourcePacksPage() {
   const { t } = useTranslation();

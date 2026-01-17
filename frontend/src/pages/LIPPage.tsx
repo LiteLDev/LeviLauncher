@@ -10,7 +10,7 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import { PageHeader } from "../components/PageHeader";
+import { PageHeader } from "@/components/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { SearchLIPPackages } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";

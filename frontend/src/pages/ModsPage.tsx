@@ -19,7 +19,7 @@ import {
   BaseModalHeader,
   BaseModalBody,
   BaseModalFooter,
-} from "../components/BaseModal";
+} from "@/components/BaseModal";
 import { useTranslation } from "react-i18next";
 import {
   OpenModsExplorer,
@@ -35,7 +35,7 @@ import { FaSync, FaFilter, FaTimes } from "react-icons/fa";
 import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { PageHeader } from '@/components/PageHeader';
+import { PageHeader } from "@/components/PageHeader";
 
 const readCurrentVersionName = (): string => {
   try {

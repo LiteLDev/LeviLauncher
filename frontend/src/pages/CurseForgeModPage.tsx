@@ -21,10 +21,10 @@ import {
  import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
  import { VersionMeta } from "../../bindings/github.com/liteldev/LeviLauncher/internal/versions/models";
  import { ModData, File as ModFile } from "../../bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
-import { listPlayers } from "../utils/content";
-import { readCurrentVersionName } from "../utils/currentVersion";
-import { compareVersions } from "../utils/version";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { listPlayers } from "@/utils/content";
+import { readCurrentVersionName } from "@/utils/currentVersion";
+import { compareVersions } from "@/utils/version";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
 import { 
   Button, 
   Spinner, 

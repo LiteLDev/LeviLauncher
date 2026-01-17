@@ -14,7 +14,7 @@ import {
   Progress,
   useDisclosure,
 } from "@heroui/react";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GetContentRoots } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -28,12 +28,12 @@ import {
   FaSync,
   FaUserTag,
 } from "react-icons/fa";
-import { readCurrentVersionName } from "../utils/currentVersion";
-import { countDirectories } from "../utils/fs";
-import { listPlayers } from "../utils/content";
+import { readCurrentVersionName } from "@/utils/currentVersion";
+import { countDirectories } from "@/utils/fs";
+import { listPlayers } from "@/utils/content";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
-import { PageHeader } from '@/components/PageHeader';
+import { PageHeader } from "@/components/PageHeader";
 
 export default function ContentPage() {
   const { t } = useTranslation();

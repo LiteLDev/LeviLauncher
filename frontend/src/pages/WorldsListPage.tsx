@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { PageHeader } from '@/components/PageHeader';
+import { PageHeader } from "@/components/PageHeader";
 import {
   Button,
   Input,
@@ -50,8 +50,8 @@ import {
   BackupWorldWithVersion,
   OpenPathDir,
 } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { readCurrentVersionName } from "../utils/currentVersion";
-import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { readCurrentVersionName } from "@/utils/currentVersion";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
 import { useTranslation } from "react-i18next";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";

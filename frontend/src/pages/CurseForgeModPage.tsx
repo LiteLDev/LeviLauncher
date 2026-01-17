@@ -501,7 +501,7 @@ const CurseForgeModPage: React.FC = () => {
               <Button 
                 onPress={() => navigate(-1)} 
                 color="primary" 
-                className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
               >
                 {t("curseforge.go_back", { defaultValue: "Go Back" })}
               </Button>
@@ -588,7 +588,7 @@ const CurseForgeModPage: React.FC = () => {
                      </Chip>
                   </div>
 
-                  <p className="text-default-600 mt-2 text-base leading-relaxed max-w-4xl">
+                  <p className="text-default-600 mt-2 text-sm leading-relaxed max-w-4xl">
                       {mod.summary}
                   </p>
                 </div>
@@ -596,7 +596,7 @@ const CurseForgeModPage: React.FC = () => {
                 {/* Actions */}
                 <div className="flex flex-col gap-3 min-w-[240px] md:border-l md:border-default-100 md:pl-8 justify-center">
                   <Button 
-                    className="w-full font-semibold shadow-md shadow-emerald-500/20 text-white bg-linear-to-r from-emerald-500 to-teal-500"
+                    className="w-full font-semibold shadow-md shadow-emerald-900/20 text-white bg-linear-to-r from-emerald-500 to-teal-500"
                     startContent={<LuDownload size={20} />} 
                     size="lg" 
                     onPress={() => {
@@ -647,12 +647,12 @@ const CurseForgeModPage: React.FC = () => {
                         tabList: "gap-8 w-full relative rounded-none p-0 border-b border-default-200 mb-6",
                         cursor: "w-full bg-linear-to-r from-emerald-500 to-teal-500 h-[3px]",
                         tab: "max-w-fit px-0 h-12 text-base font-medium text-default-500",
-                        tabContent: "group-data-[selected=true]:text-emerald-600 dark:group-data-[selected=true]:text-emerald-400 font-bold"
+                        tabContent: "group-data-[selected=true]:text-emerald-600 dark:group-data-[selected=true]:text-emerald-500 font-bold"
                     }}
                 >
                   <Tab key="description" title="Description">
                     <ScrollShadow className="max-h-[800px] w-full pr-4 pretty-scrollbar">
-                        <div className="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-emerald-600 dark:prose-a:text-emerald-400">
+                        <div className="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-emerald-600 dark:prose-a:text-emerald-500">
                           {description ? (
                             <div dangerouslySetInnerHTML={{ __html: description }} />
                           ) : (
@@ -802,7 +802,7 @@ const CurseForgeModPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader className="flex flex-col gap-1">
-                <span className="text-xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
+                <span className="text-xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 bg-clip-text text-transparent">
                     {installStep === 'downloading' && t("curseforge.install.downloading_title", { defaultValue: "Downloading Content" })}
                     {installStep === 'version_select' && t("curseforge.install.select_version_title", { defaultValue: "Select Game Version" })}
                     {installStep === 'player_select' && t("curseforge.install.select_player_title", { defaultValue: "Select Player" })}
@@ -928,7 +928,7 @@ const CurseForgeModPage: React.FC = () => {
                         <Button 
                             color="primary" 
                             onPress={handleVersionSelectNext}
-                            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                         >
                             {t("curseforge.install.next", { defaultValue: "Next" })}
                         </Button>
@@ -938,7 +938,7 @@ const CurseForgeModPage: React.FC = () => {
                     <Button 
                         color="primary" 
                         onPress={onClose}
-                        className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                     >
                         {t("curseforge.install.close", { defaultValue: "Close" })}
                     </Button>
@@ -966,7 +966,7 @@ const CurseForgeModPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader className="">
-                <span className="text-xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent">
+                <span className="text-xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 bg-clip-text text-transparent">
                   {t("mods.overwrite_modal_title", {
                     defaultValue: "检测到重复",
                   })}
@@ -1000,7 +1000,7 @@ const CurseForgeModPage: React.FC = () => {
                 </Button>
                 <Button
                   color="primary"
-                  className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   onPress={() => {
                     try {
                       if (dupResolveRef.current) dupResolveRef.current(true);

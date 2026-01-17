@@ -10,6 +10,7 @@ import {
   Card,
   CardBody,
 } from "@heroui/react";
+import { PageHeader } from "../components/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
@@ -404,9 +405,7 @@ export const CurseForgePage: React.FC = () => {
     >
       <Card className="shrink-0 bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl shadow-md border-none">
         <CardBody className="p-6 flex flex-col gap-4">
-          <h1 className="text-4xl sm:text-3xl font-black tracking-tight bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent pb-1">
-            {t("curseforge.title", { defaultValue: "CurseForge" })}
-          </h1>
+          <PageHeader title={t("curseforge.title", { defaultValue: "CurseForge" })} />
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
@@ -428,7 +427,7 @@ export const CurseForgePage: React.FC = () => {
               onPress={handleSearch}
               startContent={<LuSearch />}
               size="sm"
-              className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             >
               {t("curseforge.search", { defaultValue: "搜索" })}
             </Button>
@@ -692,7 +691,7 @@ export const CurseForgePage: React.FC = () => {
                 className="gap-2"
                 radius="full"
                 classNames={{
-                  cursor: "bg-linear-to-r from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/20 font-bold",
+                  cursor: "bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20 font-bold",
                 }}
               />
             </div>

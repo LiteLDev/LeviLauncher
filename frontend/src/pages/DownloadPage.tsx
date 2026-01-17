@@ -1,6 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState, useRef } from "react";
 import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { PageHeader } from "../components/PageHeader";
 import {
   Button,
   Chip,
@@ -22,6 +23,7 @@ import {
   useDisclosure,
   Card,
   CardBody,
+  CardHeader,
   ButtonGroup,
 } from "@heroui/react";
 import { FaDownload, FaCopy, FaSync, FaTrash, FaBoxOpen, FaChevronDown } from "react-icons/fa";
@@ -723,7 +725,7 @@ export const DownloadPage: React.FC = () => {
                         showControls
                         variant="light" 
                         classNames={{
-                          cursor: "bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/30"
+                          cursor: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                         }}
                       />
                     </div>
@@ -906,7 +908,7 @@ export const DownloadPage: React.FC = () => {
               <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
                 <div className="flex flex-col gap-2">
                   <motion.h2
-                    className="text-3xl font-black tracking-tight bg-linear-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
+                    className="text-3xl font-black tracking-tight text-emerald-600"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
@@ -961,7 +963,7 @@ export const DownloadPage: React.FC = () => {
                       return (
                         <div className="flex items-center gap-3 min-w-0 bg-white/50 dark:bg-black/20 rounded-xl px-3 py-1.5 border border-black/5 dark:border-white/5">
                           <div className="text-small truncate max-w-[400px] text-default-700 dark:text-zinc-300">
-                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{domain}</span>
+                            <span className="font-semibold text-emerald-600 dark:text-emerald-500">{domain}</span>
                             <span className="mx-1.5 opacity-30">|</span>
                             {fname}
                           </div>
@@ -1137,7 +1139,7 @@ export const DownloadPage: React.FC = () => {
                   })}
                 </Button>
                 <Button
-                  className="font-bold text-white shadow-lg shadow-emerald-500/20 bg-linear-to-r from-emerald-500 to-teal-600 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                  className="font-bold text-white shadow-lg shadow-emerald-900/20 bg-emerald-600 hover:bg-emerald-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
                   radius="full"
                   size="lg"
                   isDisabled={!selectedUrl}
@@ -1416,7 +1418,7 @@ export const DownloadPage: React.FC = () => {
               <BaseModalFooter className="px-8 pb-8">
                 <Button
                   color="success"
-                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
+                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   radius="full"
                   onPress={() => {
                     onClose?.();
@@ -1474,7 +1476,7 @@ export const DownloadPage: React.FC = () => {
               <BaseModalFooter className="px-8 pb-8">
                 <Button
                   color="primary"
-                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
+                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   radius="full"
                   onPress={() => {
                     try {
@@ -1799,7 +1801,7 @@ export const DownloadPage: React.FC = () => {
                         }
                         size="md"
                         classNames={{
-                          indicator: "bg-linear-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/20",
+                          indicator: "bg-linear-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-900/20",
                           track: "bg-default-200/50 dark:bg-white/5",
                         }}
                       />

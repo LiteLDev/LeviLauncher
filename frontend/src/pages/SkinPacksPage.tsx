@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from '@/components/PageHeader';
 import {
   Button,
   Chip,
@@ -449,8 +450,9 @@ export default function SkinPacksPage() {
       <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
         <CardBody className="p-0 flex flex-col h-full overflow-hidden">
           <div className="shrink-0 p-4 sm:p-6 pb-2 flex flex-col gap-4 border-b border-default-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <PageHeader
+              title={t("contentpage.skin_packs", { defaultValue: "皮肤包" })}
+              startContent={
                 <Button
                   isIconOnly
                   radius="full"
@@ -459,92 +461,91 @@ export default function SkinPacksPage() {
                 >
                   <FaArrowLeft size={20} />
                 </Button>
-                <h1 className="text-3xl sm:text-1xl font-black tracking-tight bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent pb-1">
-            {t("contentpage.skin_packs", { defaultValue: "皮肤包" })}
-          </h1>
-              </div>
-              <div className="flex items-center gap-2">
-                <Dropdown>
-                  <DropdownTrigger>
-                    <Button
-                      radius="full"
-                      variant="flat"
-                      className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium w-full sm:w-auto sm:min-w-[200px]"
-                      isDisabled={!players.length}
-                      startContent={<FaUser />}
+              }
+              endContent={
+                <div className="flex items-center gap-2">
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button
+                        radius="full"
+                        variant="flat"
+                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium w-full sm:w-auto sm:min-w-[200px]"
+                        isDisabled={!players.length}
+                        startContent={<FaUser />}
+                      >
+                        {selectedPlayer ||
+                          t("contentpage.select_player", {
+                            defaultValue: "选择玩家",
+                          })}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label={
+                        t("contentpage.players_aria", {
+                          defaultValue: "Players",
+                        }) as unknown as string
+                      }
+                      selectionMode="single"
+                      selectedKeys={new Set([selectedPlayer])}
+                      onSelectionChange={(keys) => {
+                        const arr = Array.from(keys as unknown as Set<string>);
+                        const next = arr[0] || "";
+                        if (typeof next === "string") onChangePlayer(next);
+                      }}
                     >
-                      {selectedPlayer ||
-                        t("contentpage.select_player", {
-                          defaultValue: "选择玩家",
-                        })}
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu
-                    aria-label={
-                      t("contentpage.players_aria", {
-                        defaultValue: "Players",
+                      {players.length ? (
+                        players.map((p) => (
+                          <DropdownItem key={p} textValue={p}>
+                            {p}
+                          </DropdownItem>
+                        ))
+                      ) : (
+                        <DropdownItem key="none" isDisabled>
+                          {t("contentpage.no_players", { defaultValue: "暂无玩家" })}
+                        </DropdownItem>
+                      )}
+                    </DropdownMenu>
+                  </Dropdown>
+                  <Button
+                    radius="full"
+                    variant="flat"
+                    startContent={<FaFolderOpen />}
+                    onPress={async () => {
+                      if (!hasBackend || !roots.resourcePacks) return;
+                      let sp = roots.resourcePacks.replace(/resource_packs$/, "skin_packs");
+                      if (selectedPlayer && roots.usersRoot) {
+                        sp = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\skin_packs`;
+                      }
+                      await OpenPathDir(sp);
+                    }}
+                    isDisabled={!roots.resourcePacks || !hasBackend}
+                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
+                  >
+                    {t("common.open", { defaultValue: "打开" })}
+                  </Button>
+                  <Tooltip
+                    content={
+                      t("common.refresh", {
+                        defaultValue: "刷新",
                       }) as unknown as string
                     }
-                    selectionMode="single"
-                    selectedKeys={new Set([selectedPlayer])}
-                    onSelectionChange={(keys) => {
-                      const arr = Array.from(keys as unknown as Set<string>);
-                      const next = arr[0] || "";
-                      if (typeof next === "string") onChangePlayer(next);
-                    }}
                   >
-                    {players.length ? (
-                      players.map((p) => (
-                        <DropdownItem key={p} textValue={p}>
-                          {p}
-                        </DropdownItem>
-                      ))
-                    ) : (
-                      <DropdownItem key="none" isDisabled>
-                        {t("contentpage.no_players", { defaultValue: "暂无玩家" })}
-                      </DropdownItem>
-                    )}
-                  </DropdownMenu>
-                </Dropdown>
-                <Button
-                  radius="full"
-                  variant="flat"
-                  startContent={<FaFolderOpen />}
-                  onPress={async () => {
-                    if (!hasBackend || !roots.resourcePacks) return;
-                    let sp = roots.resourcePacks.replace(/resource_packs$/, "skin_packs");
-                    if (selectedPlayer && roots.usersRoot) {
-                       sp = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\skin_packs`;
-                    }
-                    await OpenPathDir(sp);
-                  }}
-                  isDisabled={!roots.resourcePacks || !hasBackend}
-                  className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
-                >
-                  {t("common.open", { defaultValue: "打开" })}
-                </Button>
-                <Tooltip
-                  content={
-                    t("common.refresh", {
-                      defaultValue: "刷新",
-                    }) as unknown as string
-                  }
-                >
-                  <Button
-                    isIconOnly
-                    radius="full"
-                    variant="light"
-                    onPress={() => refreshAll()}
-                    isDisabled={loading}
-                  >
-                    <FaSync
-                      className={loading ? "animate-spin" : ""}
-                      size={18}
-                    />
-                  </Button>
-                </Tooltip>
-              </div>
-            </div>
+                    <Button
+                      isIconOnly
+                      radius="full"
+                      variant="light"
+                      onPress={() => refreshAll()}
+                      isDisabled={loading}
+                    >
+                      <FaSync
+                        className={loading ? "animate-spin" : ""}
+                        size={18}
+                      />
+                    </Button>
+                  </Tooltip>
+                </div>
+              }
+            />
 
             <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
               <Input

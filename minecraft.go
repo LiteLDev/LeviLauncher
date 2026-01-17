@@ -28,6 +28,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
+	"github.com/liteldev/LeviLauncher/internal/preloader"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
@@ -53,6 +54,8 @@ const (
 	EventFileDownloadDone     = "file_download_done"
 	EventFileDownloadError    = "file_download_error"
 )
+
+var isPreloader = false
 
 type FileDownloadProgress struct {
 	Downloaded int64
@@ -787,10 +790,11 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	}
 	application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
 	_ = vcruntime.EnsureForVersion(a.ctx, dir)
-	//_ = preloader.EnsureForVersion(a.ctx, dir)
-	//_ = peeditor.EnsureForVersion(a.ctx, dir)
-	//_ = peeditor.RunForVersion(a.ctx, dir)
-
+	if isPreloader {
+		_ = preloader.EnsureForVersion(a.ctx, dir)
+		_ = peeditor.EnsureForVersion(a.ctx, dir)
+		_ = peeditor.RunForVersion(a.ctx, dir)
+	}
 	var args []string
 	toRun := exe
 	var gameVer string

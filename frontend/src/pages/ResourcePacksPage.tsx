@@ -48,6 +48,7 @@ import { readCurrentVersionName } from "../utils/currentVersion";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { renderMcText } from "../utils/mcformat";
 import { toast } from "react-hot-toast";
+import { PageHeader } from '@/components/PageHeader';
 
 export default function ResourcePacksPage() {
   const { t } = useTranslation();
@@ -436,8 +437,9 @@ export default function ResourcePacksPage() {
       <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
         <CardBody className="p-0 flex flex-col h-full overflow-hidden">
           <div className="shrink-0 p-4 sm:p-6 pb-2 flex flex-col gap-4 border-b border-default-200 dark:border-white/10">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
+            <PageHeader 
+              title={t("contentpage.resource_packs", { defaultValue: "资源包" })}
+              startContent={
                 <Button
                   isIconOnly
                   radius="full"
@@ -446,42 +448,41 @@ export default function ResourcePacksPage() {
                 >
                   <FaArrowLeft size={20} />
                 </Button>
-                <h1 className="text-3xl sm:text-1xl font-black tracking-tight bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent pb-1">
-            {t("contentpage.resource_packs", { defaultValue: "资源包" })}
-          </h1>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  radius="full"
-                  variant="flat"
-                  startContent={<FaFolderOpen />}
-                  onPress={() => OpenPathDir(roots.resourcePacks)}
-                  className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
-                >
-                  {t("common.open", { defaultValue: "打开" })}
-                </Button>
-                <Tooltip
-                  content={
-                    t("common.refresh", {
-                      defaultValue: "刷新",
-                    }) as unknown as string
-                  }
-                >
+              }
+              endContent={
+                <div className="flex items-center gap-2">
                   <Button
-                    isIconOnly
                     radius="full"
-                    variant="light"
-                    onPress={() => refreshAll()}
-                    isDisabled={loading}
+                    variant="flat"
+                    startContent={<FaFolderOpen />}
+                    onPress={() => OpenPathDir(roots.resourcePacks)}
+                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
                   >
-                    <FaSync
-                      className={loading ? "animate-spin" : ""}
-                      size={18}
-                    />
+                    {t("common.open", { defaultValue: "打开" })}
                   </Button>
-                </Tooltip>
-              </div>
-            </div>
+                  <Tooltip
+                    content={
+                      t("common.refresh", {
+                        defaultValue: "刷新",
+                      }) as unknown as string
+                    }
+                  >
+                    <Button
+                      isIconOnly
+                      radius="full"
+                      variant="light"
+                      onPress={() => refreshAll()}
+                      isDisabled={loading}
+                    >
+                      <FaSync
+                        className={loading ? "animate-spin" : ""}
+                        size={18}
+                      />
+                    </Button>
+                  </Tooltip>
+                </div>
+              }
+            />
 
             {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">

@@ -33,6 +33,7 @@ import { countDirectories } from "../utils/fs";
 import { listPlayers } from "../utils/content";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
+import { PageHeader } from '@/components/PageHeader';
 
 export default function ContentPage() {
   const { t } = useTranslation();
@@ -879,9 +880,10 @@ export default function ContentPage() {
                       >
                         <FaArrowLeft size={20} />
                       </Button>
-                      <h1 className="text-3xl sm:text-1xl font-black tracking-tight bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent pb-1">
-                        {t("launcherpage.content_manage", { defaultValue: "内容管理" })}
-                      </h1>
+                      <PageHeader 
+                        title={t("launcherpage.content_manage", { defaultValue: "内容管理" })}
+                        titleClassName="pb-1"
+                      />
                     </div>
                     <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
                       <span>{t("contentpage.current_version", { defaultValue: "当前版本" })}:</span>
@@ -1108,7 +1110,8 @@ export default function ContentPage() {
             <Button
               color="primary"
               variant="shadow"
-              className="rounded-full px-8 font-medium shadow-lg shadow-primary/30"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20"
+              startContent={<FiUploadCloud />}
               onPress={() =>
                 navigate("/filemanager", {
                   state: {

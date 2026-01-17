@@ -17,6 +17,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { FaArrowLeft, FaSave, FaSync, FaPlus, FaTimes, FaSearch } from "react-icons/fa";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { PageHeader } from '@/components/PageHeader';
 
 export default function WorldLevelDatEditorPage() {
   const { t } = useTranslation();
@@ -575,93 +576,88 @@ export default function WorldLevelDatEditorPage() {
   }, []);
 
   return (
-    <div
-      ref={scrollRef}
-      className="w-full h-full p-4 md:p-8 overflow-y-auto pretty-scrollbar bg-default-50/50 dark:bg-black/50"
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="w-full max-w-full mx-auto p-4 h-full flex flex-col"
     >
-      <motion.div
-        initial={{ opacity: 0, scale: 0.98 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      >
-        <Card className="w-full min-h-[85vh] border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-        <CardHeader className="flex flex-col gap-6 px-8 pt-8 pb-6 border-b border-default-100 dark:border-white/5">
-          <div className="flex w-full items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button
-                isIconOnly
-                radius="full"
-                variant="light"
-                onPress={() => navigate(-1)}
-                className="text-default-500 hover:text-default-900 dark:hover:text-white"
-              >
-                <FaArrowLeft className="w-5 h-5" />
-              </Button>
-              <div className="flex flex-col gap-1">
-                <h2 className="text-3xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  {t("contentpage.world_leveldat_editor", {
-                    defaultValue: "Level.dat Editor",
-                  })}
-                </h2>
-                <p className="text-sm text-default-400 font-mono">
-                  {levelName || "Unknown World"}
-                </p>
-              </div>
-            </div>
-            <div className="flex items-center gap-3">
-              <Input
-                size="sm"
-                radius="full"
-                variant="flat"
-                placeholder={t("common.search", { defaultValue: "搜索" }) as string}
-                value={filterText}
-                onValueChange={(v) => {
-                  beforeUpdate();
-                  setFilterText(v);
-                }}
-                isClearable
-                startContent={<FaSearch className="text-default-400" />}
-                className="w-48 sm:w-64"
-                classNames={{
-                  inputWrapper: "bg-default-100 dark:bg-default-50/20 group-data-[focus=true]:bg-default-200/50",
-                }}
-              />
-              <Tooltip content={t("common.refresh", { defaultValue: "刷新" })}>
+      <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+        <CardBody className="p-0 flex flex-col h-full overflow-hidden">
+          <div className="shrink-0 p-4 sm:p-6 pb-2 flex flex-col gap-4 border-b border-default-200 dark:border-white/10">
+          <PageHeader
+              title={t("contentpage.world_leveldat_editor", {
+                defaultValue: "Level.dat Editor",
+              })}
+              startContent={
                 <Button
                   isIconOnly
+                  radius="full"
+                  variant="light"
+                  onPress={() => navigate(-1)}
+                >
+                  <FaArrowLeft size={20} />
+                </Button>
+              }
+            endContent={
+              <>
+                <Input
+                  size="sm"
                   radius="full"
                   variant="flat"
-                  onPress={load}
-                  isLoading={loading}
-                  className="bg-default-100 dark:bg-default-50/20 text-default-600"
-                >
-                  <FaSync className={loading ? "animate-spin" : ""} />
-                </Button>
-              </Tooltip>
-              <Tooltip content={t("common.save", { defaultValue: "保存" })}>
-                <Button
-                  isIconOnly
-                  radius="full"
-                  color="primary"
-                  onPress={saveAll}
-                  isLoading={saving}
-                  isDisabled={!hasBackend || loading}
-                  className="bg-linear-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20"
-                >
-                  <FaSave className="w-4 h-4" />
-                </Button>
-              </Tooltip>
-            </div>
-          </div>
+                  placeholder={t("common.search", { defaultValue: "搜索" }) as string}
+                  value={filterText}
+                  onValueChange={(v) => {
+                    beforeUpdate();
+                    setFilterText(v);
+                  }}
+                  isClearable
+                  startContent={<FaSearch className="text-default-400" />}
+                  className="w-48 sm:w-64"
+                  classNames={{
+                    inputWrapper: "bg-default-100 dark:bg-default-50/20 group-data-[focus=true]:bg-default-200/50",
+                  }}
+                />
+                <Tooltip content={t("common.refresh", { defaultValue: "刷新" })}>
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    variant="flat"
+                    onPress={load}
+                    isLoading={loading}
+                    className="bg-default-100 dark:bg-default-50/20 text-default-600"
+                  >
+                    <FaSync className={loading ? "animate-spin" : ""} />
+                  </Button>
+                </Tooltip>
+                <Tooltip content={t("common.save", { defaultValue: "保存" })}>
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    color="primary"
+                    onPress={saveAll}
+                    isLoading={saving}
+                    isDisabled={!hasBackend || loading}
+                    className="bg-linear-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-900/20"
+                  >
+                    <FaSave className="w-4 h-4" />
+                  </Button>
+                </Tooltip>
+              </>
+            }
+          />
           
-          {error && (
-            <div className="w-full p-4 rounded-2xl bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800/50 text-danger flex items-center gap-2">
-              <FaTimes className="w-4 h-4" />
-              <span>{error}</span>
-            </div>
-          )}
-        </CardHeader>
-        <CardBody className="px-8 pb-12 pt-6">
+            {error && (
+              <div className="w-full p-4 rounded-2xl bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800/50 text-danger flex items-center gap-2">
+                <FaTimes className="w-4 h-4" />
+                <span>{error}</span>
+              </div>
+            )}
+          </div>
+          <div
+            ref={scrollRef}
+            className="flex-1 overflow-y-auto pretty-scrollbar p-4 sm:p-6 pt-0"
+          >
           {loading ? (
             <div className="flex flex-col items-center justify-center h-64 gap-4">
               <Spinner size="lg" color="success" />
@@ -816,7 +812,7 @@ export default function WorldLevelDatEditorPage() {
                       <Button
                         size="sm"
                         radius="lg"
-                        className="bg-linear-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-500/20"
+                        className="bg-linear-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-900/20"
                         onPress={() => {
                           const nm = String(newUnifiedField.name || "").trim();
                           const tg = String(
@@ -927,6 +923,7 @@ export default function WorldLevelDatEditorPage() {
                                 {items.map((it, idx) => (
                                   <Input
                                     key={`tf-${k}-li-${idx}`}
+                                    aria-label={`${k} item ${idx}`}
                                     size="sm"
                                     variant="flat"
                                     radius="lg"
@@ -1001,6 +998,7 @@ export default function WorldLevelDatEditorPage() {
                               delay={i * 0.015}
                             >
                               <Select
+                                aria-label={String(k)}
                                 size="sm"
                                 radius="lg"
                                 variant="flat"
@@ -1038,6 +1036,7 @@ export default function WorldLevelDatEditorPage() {
                               delay={i * 0.015}
                             >
                                 <Input
+                                  aria-label={String(k)}
                                   size="sm"
                                   variant="flat"
                                   radius="lg"
@@ -1167,6 +1166,7 @@ export default function WorldLevelDatEditorPage() {
                                       delay={si * 0.015}
                                     >
                                       <Select
+                                        aria-label={String(sf.name)}
                                         size="sm"
                                         radius="lg"
                                         variant="flat"
@@ -1204,6 +1204,7 @@ export default function WorldLevelDatEditorPage() {
                                     delay={si * 0.015}
                                   >
                                     <Input
+                                      aria-label={String(sf.name)}
                                       size="sm"
                                       variant="flat"
                                       radius="lg"
@@ -1253,6 +1254,7 @@ export default function WorldLevelDatEditorPage() {
                                         {items.map((it, idx) => (
                                           <Input
                                             key={`c-${k}-li-${idx}`}
+                                            aria-label={`${sf.name} item ${idx}`}
                                             size="sm"
                                             variant="flat"
                                             radius="lg"
@@ -1345,6 +1347,7 @@ export default function WorldLevelDatEditorPage() {
                                     delay={si * 0.015}
                                   >
                                     <Input
+                                      aria-label={String(sf.name)}
                                       size="sm"
                                       variant="flat"
                                       radius="lg"
@@ -1391,6 +1394,7 @@ export default function WorldLevelDatEditorPage() {
                                     return (
                                       <>
                                         <Input
+                                          aria-label={String(sf.name)}
                                           size="sm"
                                           variant="flat"
                                           radius="lg"
@@ -1464,9 +1468,9 @@ export default function WorldLevelDatEditorPage() {
                 })()}
             </div>
           )}
+          </div>
         </CardBody>
-        </Card>
-      </motion.div>
-    </div>
+      </Card>
+    </motion.div>
   );
 }

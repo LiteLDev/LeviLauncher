@@ -16,6 +16,7 @@ import {
   useDisclosure,
 } from "@heroui/react";
 import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { PageHeader, SectionHeader } from "../components/PageHeader";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   GetLanguageNames,
@@ -149,19 +150,18 @@ export default function OnboardingPage() {
                </div>
                
                <div className="relative z-10">
-                 <div className="w-16 h-16 mb-6 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30 flex items-center justify-center text-white">
+                 <div className="w-16 h-16 mb-6 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-900/20 flex items-center justify-center text-white">
                     <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                       <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 10V3L4 14h7v7l9-11h-7z" />
                     </svg>
                  </div>
-                 <h1 className="text-3xl lg:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 pb-2">
-                  {t("onboarding.title", { defaultValue: "首次启动引导" })}
-                 </h1>
-                 <p className="text-medium font-medium text-default-500 dark:text-zinc-400 mt-2 leading-relaxed">
-                  {t("onboarding.subtitle", {
-                    defaultValue: "请先设置内容路径与语言",
-                  })}
-                 </p>
+                 <PageHeader
+                   title={t("onboarding.title", { defaultValue: "首次启动引导" })}
+                   description={t("onboarding.subtitle", {
+                     defaultValue: "请先设置内容路径与语言",
+                   })}
+                   titleClassName="text-3xl lg:text-4xl"
+                 />
                </div>
             </div>
 
@@ -176,12 +176,10 @@ export default function OnboardingPage() {
                   className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-6"
                 >
                   <div className="mb-6">
-                    <p className="text-xl font-bold text-default-900 dark:text-zinc-100">
-                      {t("settingscard.body.paths.title", { defaultValue: "内容路径" })}
-                    </p>
-                    <p className="text-small text-default-500 mt-1">
-                       {t("settingscard.body.paths.subtitle", { defaultValue: "管理游戏数据存储位置" })}
-                    </p>
+                    <SectionHeader
+                      title={t("settingscard.body.paths.title", { defaultValue: "内容路径" })}
+                      description={t("settingscard.body.paths.subtitle", { defaultValue: "管理游戏数据存储位置" })}
+                    />
                   </div>
 
                   <div className="space-y-6">
@@ -233,7 +231,7 @@ export default function OnboardingPage() {
                                 size="sm"
                                 color="primary"
                                 radius="full"
-                                className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                                 isDisabled={!newBaseRoot || !baseRootWritable || (newBaseRoot === baseRoot)}
                                 isLoading={savingBaseRoot}
                                 onPress={async () => {
@@ -292,58 +290,55 @@ export default function OnboardingPage() {
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ duration: 0.4, delay: 0.2 }}
-                  className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-6 flex items-center justify-between"
+                  className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-6"
                 >
-                  <div>
-                    <p className="text-xl font-bold text-default-900 dark:text-zinc-100">
-                      {t("settingscard.body.language.name", {
-                        defaultValue: t("app.lang"),
-                      })}
-                    </p>
-                    <p className="text-small text-default-500 mt-1">
-                      {langNames.find((l) => l.code === selectedLang)?.language ||
-                        selectedLang}
-                    </p>
-                  </div>
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button 
-                        radius="full" 
-                        variant="flat"
-                        className="bg-default-100 dark:bg-white/10 font-medium"
-                      >
-                        {t("settingscard.body.language.button", {
-                          defaultValue: "更改",
-                        })}
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label="Language selection"
-                      variant="flat"
-                      disallowEmptySelection
-                      selectionMode="single"
-                      className="max-h-60 overflow-y-auto"
-                      selectedKeys={new Set([selectedLang])}
-                      onSelectionChange={(keys) => {
-                        const arr = Array.from(keys as unknown as Set<string>);
-                        const next = arr[0];
-                        if (typeof next === "string" && next.length > 0) {
-                          setSelectedLang(next);
-                          Promise.resolve(i18n.changeLanguage(next)).then(() => {
-                            try {
-                              localStorage.setItem("i18nextLng", next);
-                            } catch {}
-                          });
-                        }
-                      }}
-                    >
-                      {langNames.map((lang) => (
-                        <DropdownItem key={lang.code} textValue={lang.language}>
-                          {lang.language}
-                        </DropdownItem>
-                      ))}
-                    </DropdownMenu>
-                  </Dropdown>
+                  <SectionHeader
+                    title={t("settingscard.body.language.name", {
+                      defaultValue: t("app.lang"),
+                    })}
+                    description={langNames.find((l) => l.code === selectedLang)?.language || selectedLang}
+                    action={
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <Button 
+                            radius="full" 
+                            variant="flat"
+                            className="bg-default-100 dark:bg-white/10 font-medium"
+                          >
+                            {t("settingscard.body.language.button", {
+                              defaultValue: "更改",
+                            })}
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu
+                          aria-label="Language selection"
+                          variant="flat"
+                          disallowEmptySelection
+                          selectionMode="single"
+                          className="max-h-60 overflow-y-auto"
+                          selectedKeys={new Set([selectedLang])}
+                          onSelectionChange={(keys) => {
+                            const arr = Array.from(keys as unknown as Set<string>);
+                            const next = arr[0];
+                            if (typeof next === "string" && next.length > 0) {
+                              setSelectedLang(next);
+                              Promise.resolve(i18n.changeLanguage(next)).then(() => {
+                                try {
+                                  localStorage.setItem("i18nextLng", next);
+                                } catch {}
+                              });
+                            }
+                          }}
+                        >
+                          {langNames.map((lang) => (
+                            <DropdownItem key={lang.code} textValue={lang.language}>
+                              {lang.language}
+                            </DropdownItem>
+                          ))}
+                        </DropdownMenu>
+                      </Dropdown>
+                    }
+                  />
                 </motion.div>
               </div>
 
@@ -360,7 +355,7 @@ export default function OnboardingPage() {
                   <Button 
                     color="primary" 
                     radius="full"
-                    className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20 px-8"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20 px-8"
                     onPress={requestFinish}
                   >
                     {t("onboarding.finish", { defaultValue: "完成" })}

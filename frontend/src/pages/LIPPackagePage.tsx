@@ -18,6 +18,7 @@ import {
   TableRow,
   TableCell,
 } from "@heroui/react";
+import { PageHeader, SectionHeader } from "../components/PageHeader";
 import { LuArrowLeft, LuDownload, LuGlobe, LuUser, LuClock, LuFlame, LuTag } from "react-icons/lu";
 import { motion } from "framer-motion";
 
@@ -98,9 +99,7 @@ const LIPPackagePage: React.FC = () => {
               </div>
 
               <div className="flex flex-col grow gap-3">
-                <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-default-900 pb-1">
-                  {pkg.name}
-                </h1>
+                <PageHeader title={pkg.name} />
                 
                 <div className="flex items-center gap-4 text-default-500 text-sm flex-wrap">
                   <div className="flex items-center gap-1">
@@ -152,7 +151,11 @@ const LIPPackagePage: React.FC = () => {
           <div className="lg:col-span-2 space-y-6">
             <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none shadow-sm">
               <CardBody className="p-4">
-                <h2 className="text-xl font-bold mb-4">Versions</h2>
+                <SectionHeader 
+                  title="Versions" 
+                  className="mb-4"
+                  icon={<LuDownload size={20} />}
+                />
                 <Table aria-label="Versions table" removeWrapper color="default">
                   <TableHeader>
                     <TableColumn>VERSION</TableColumn>
@@ -192,7 +195,11 @@ const LIPPackagePage: React.FC = () => {
           <div className="space-y-6">
             <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none shadow-sm">
               <CardBody className="p-4">
-                <h2 className="text-xl font-bold mb-4">Contributors</h2>
+                <SectionHeader 
+                  title="Contributors" 
+                  className="mb-4"
+                  icon={<LuUser size={20} />}
+                />
                 <div className="flex flex-col gap-3">
                   {pkg.contributors.map((contrib) => (
                     <div key={contrib.username} className="flex justify-between items-center">

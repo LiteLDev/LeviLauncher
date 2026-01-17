@@ -5,6 +5,7 @@ import {
   BaseModalBody,
   BaseModalFooter,
 } from "../components/BaseModal";
+import { PageHeader } from "../components/PageHeader";
 import {
   Button,
   Card,
@@ -336,31 +337,31 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
         >
           <Card className="w-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
             <CardHeader className="flex flex-col gap-4 p-6">
-              <div className="flex w-full items-center justify-between gap-4">
-                <div className="text-3xl sm:text-4xl font-black tracking-tight text-transparent bg-clip-text bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 pb-1">
-                  {t("launcherpage.version_select.title", {
-                    defaultValue: "选择版本",
-                  })}
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="light"
-                    onPress={() => {
-                      guardBypassRef.current = true;
-                      navigate("/");
-                    }}
-                  >
-                    {t("common.cancel", { defaultValue: "取消" })}
-                  </Button>
-                  <Button
-                    color="primary"
-                    className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
-                    onPress={handleConfirm}
-                  >
-                    {t("common.ok", { defaultValue: "确定" })}
-                  </Button>
-                </div>
-              </div>
+              <PageHeader 
+                className="w-full"
+                title={t("launcherpage.version_select.title", { defaultValue: "选择版本" })}
+                titleClassName="text-left pb-1"
+                endContent={
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="light"
+                      onPress={() => {
+                        guardBypassRef.current = true;
+                        navigate("/");
+                      }}
+                    >
+                      {t("common.cancel", { defaultValue: "取消" })}
+                    </Button>
+                    <Button
+                      color="primary"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                      onPress={handleConfirm}
+                    >
+                      {t("common.ok", { defaultValue: "确定" })}
+                    </Button>
+                  </div>
+                }
+              />
               <div className="flex w-full flex-wrap items-center gap-3">
                 <Tabs
                   aria-label="Filter versions"
@@ -370,7 +371,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                   classNames={{
                     tabList: "bg-default-100/50 rounded-xl px-1",
                     cursor:
-                      "bg-linear-to-r from-emerald-500 to-teal-600 shadow-md",
+                      "bg-emerald-600 hover:bg-emerald-500 shadow-md",
                     tabContent: "group-data-[selected=true]:text-white",
                   }}
                 >
@@ -403,7 +404,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     variant="bordered"
                     size="sm"
                     classNames={{
-                      inputWrapper: "focus-within:border-emerald-500!",
+                      inputWrapper: "focus-within:border-emerald-600!",
                     }}
                   />
                 </div>
@@ -412,7 +413,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     <Select
                       size="sm"
                       classNames={{
-                        trigger: "data-[focus=true]:border-emerald-500",
+                        trigger: "data-[focus=true]:border-emerald-600",
                       }}
                       label={
                         t("versions.sort.label", {
@@ -498,7 +499,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
               <Card
                 className={`h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl transition ${
                   selectedVersionName === it.name
-                    ? "ring-2 ring-emerald-500"
+                    ? "ring-2 ring-emerald-700"
                     : ""
                 }`}
               >

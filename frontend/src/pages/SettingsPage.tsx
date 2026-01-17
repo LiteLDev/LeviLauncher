@@ -45,6 +45,7 @@ import { Browser, Events } from "@wailsio/runtime";
 import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "../components/BaseModal";
+import { PageHeader } from "../components/PageHeader";
 import Logo from "../assets/images/ic_leaf_logo.png";
 
 export const SettingsPage: React.FC = () => {
@@ -316,12 +317,10 @@ export const SettingsPage: React.FC = () => {
       >
         <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
           <CardBody className="p-8">
-            <h1 className="text-3xl sm:text-1xl font-black tracking-tight bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent pb-1">
-              {t("settingscard.header.title")}
-            </h1>
-            <p className="mt-2 text-lg font-medium text-default-500 dark:text-zinc-400">
-              {t("settingscard.header.content")}
-            </p>
+            <PageHeader
+              title={t("settingscard.header.title")}
+              description={t("settingscard.header.content")}
+            />
           </CardBody>
         </Card>
       </motion.div>
@@ -337,7 +336,6 @@ export const SettingsPage: React.FC = () => {
                 <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <LuFolderOpen size={20} className="text-emerald-500" />
                       <p className="text-large font-bold">
                         {t("settingscard.body.paths.title", {
                           defaultValue: "内容路径",
@@ -361,7 +359,7 @@ export const SettingsPage: React.FC = () => {
                         size="sm"
                         isDisabled={!newBaseRoot || !baseRootWritable}
                         isLoading={savingBaseRoot}
-                        className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                         onPress={async () => {
                           setSavingBaseRoot(true);
                           try {
@@ -669,7 +667,7 @@ export const SettingsPage: React.FC = () => {
                         >
                           <div className="rounded-xl bg-default-100/50 dark:bg-zinc-800/30 p-4 border border-default-200/50 dark:border-white/5">
                              <div className="flex items-center justify-between mb-3">
-                                <p className="text-small font-bold text-emerald-600 dark:text-emerald-400">
+                                <p className="text-small font-bold text-emerald-600 dark:text-emerald-500">
                                   {t("settingscard.body.version.hasnew")} {newVersion}
                                 </p>
                                 <Button
@@ -678,7 +676,7 @@ export const SettingsPage: React.FC = () => {
                                   size="sm"
                                   onPress={onUpdate}
                                   isDisabled={updating}
-                                  className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                                   startContent={<RxUpdate />}
                                 >
                                   {updating
@@ -713,7 +711,7 @@ export const SettingsPage: React.FC = () => {
                                      color="success"
                                      isIndeterminate={true}
                                      classNames={{
-                                         indicator: "bg-linear-to-r from-emerald-500 to-teal-600",
+                                         indicator: "bg-emerald-600 hover:bg-emerald-500",
                                      }}
                                    />
                                 </div>

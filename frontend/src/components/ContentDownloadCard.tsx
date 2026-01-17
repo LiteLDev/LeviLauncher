@@ -4,6 +4,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { SiCurseforge } from "react-icons/si";
 import { FaCloudDownloadAlt, FaCube } from "react-icons/fa";
+import { toast } from "react-hot-toast";
 
 export const ContentDownloadCard = () => {
   const { t } = useTranslation();
@@ -35,7 +36,11 @@ export const ContentDownloadCard = () => {
         
         <div 
           className="flex items-center justify-between p-3 rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-default-200/50 dark:hover:border-white/10"
-          onClick={() => navigate("/lip")}
+          onClick={() => {
+            toast(t("lip.maintenance"), {
+              icon: "🚧",
+            });
+          }}
         >
           <div className="flex items-center gap-3">
             <FaCube className="text-emerald-500 text-xl" />

@@ -687,5 +687,8 @@
       "next": "Далее",
       "close": "Закрыть"
     }
+  },
+  "lip": {
+    "maintenance": "Maintenance, not available yet"
   }
 }

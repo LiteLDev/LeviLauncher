@@ -35,6 +35,7 @@ import { FaSync, FaFilter, FaTimes } from "react-icons/fa";
 import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { PageHeader } from '@/components/PageHeader';
 
 const readCurrentVersionName = (): string => {
   try {
@@ -1202,16 +1203,10 @@ export const ModsPage: React.FC = () => {
       </AnimatePresence>
 
       <div className="flex flex-col gap-4 mb-6 shrink-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md p-6 rounded-4xl">
-        <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-4">
-            <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600 dark:text-emerald-400 shadow-sm">
-              <FaPuzzlePiece className="w-6 h-6" />
-            </div>
-            <div>
-              <h1 className="text-3xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                {t("moddedcard.title", { defaultValue: "Mods" })}
-              </h1>
-              <div className="text-default-500 text-sm font-medium flex items-center gap-2">
+        <PageHeader
+          title={t("moddedcard.title", { defaultValue: "Mods" })}
+          description={
+             <div className="flex items-center gap-2">
                 <span>{currentVersionName || "No Version Selected"}</span>
                 {modsInfo.length > 0 && (
                   <Chip
@@ -1223,45 +1218,50 @@ export const ModsPage: React.FC = () => {
                   </Chip>
                 )}
               </div>
+          }
+          startContent={
+             <div className="p-3 bg-emerald-100 dark:bg-emerald-900/30 rounded-2xl text-emerald-600 dark:text-emerald-400 shadow-sm">
+              <FaPuzzlePiece className="w-6 h-6" />
             </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <input
-              ref={fileInputRef}
-              type="file"
-              accept=".zip,.dll"
-              multiple
-              className="hidden"
-              onChange={handleFilePick}
-            />
-            <Button
-              color="primary"
-              variant="shadow"
-              className="bg-linear-to-r from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20"
-              startContent={<FiUploadCloud />}
-              onPress={() =>
-                navigate("/filemanager", {
-                  state: {
-                    allowedExt: [".zip", ".dll"],
-                    multi: true,
-                    returnTo: "/mods",
-                  },
-                })
-              }
-              isDisabled={importing}
-            >
-              {t("mods.import_button", { defaultValue: "导入 .zip/.dll" })}
-            </Button>
-            <Button
-              variant="flat"
-              className="bg-default-100 dark:bg-zinc-800"
-              onPress={openFolder}
-            >
-              {t("downloadmodal.open_folder", { defaultValue: "打开目录" })}
-            </Button>
-          </div>
-        </div>
+          }
+          endContent={
+            <>
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".zip,.dll"
+                  multiple
+                  className="hidden"
+                  onChange={handleFilePick}
+                />
+                <Button
+                  color="primary"
+                  variant="shadow"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20"
+                  startContent={<FiUploadCloud />}
+                  onPress={() =>
+                    navigate("/filemanager", {
+                      state: {
+                        allowedExt: [".zip", ".dll"],
+                        multi: true,
+                        returnTo: "/mods",
+                      },
+                    })
+                  }
+                  isDisabled={importing}
+                >
+                  {t("mods.import_button", { defaultValue: "导入 .zip/.dll" })}
+                </Button>
+                <Button
+                  variant="flat"
+                  className="bg-default-100 dark:bg-zinc-800"
+                  onPress={openFolder}
+                >
+                  {t("downloadmodal.open_folder", { defaultValue: "打开目录" })}
+                </Button>
+            </>
+          }
+        />
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <Input

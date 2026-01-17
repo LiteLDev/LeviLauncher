@@ -386,7 +386,7 @@ function App() {
                     width={24}
                     height={24}
                   />
-                  <p className="font-bold text-[16px] sm:text-[18px] tracking-tight text-emerald-600 dark:text-emerald-400 animate-fadeInMove">
+                  <p className="font-bold text-[16px] sm:text-[18px] tracking-tight text-emerald-600 dark:text-emerald-500 animate-fadeInMove">
                     LeviLauncher
                   </p>
                   {isBeta && (

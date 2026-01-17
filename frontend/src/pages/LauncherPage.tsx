@@ -821,7 +821,7 @@ export const LauncherPage = (args: any) => {
     7: (onClose) => (
       <>
         <BaseModalHeader>
-          <h2 className="text-2xl font-black tracking-tight bg-linear-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-black tracking-tight text-emerald-600">
             {t("launcherpage.gameinput.installing.title", {
               defaultValue: "正在安装 GameInput",
             })}
@@ -846,7 +846,7 @@ export const LauncherPage = (args: any) => {
                     color="success" 
                     size="md"
                     classNames={{
-                        indicator: "bg-linear-to-r from-emerald-500 to-teal-600"
+                        indicator: "bg-emerald-600 hover:bg-emerald-500"
                     }}
                  />
               </div>
@@ -895,7 +895,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={() => {
               setPendingInstallCheck("gi");
               EnsureGameInputInteractive();
@@ -956,7 +956,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={() => {
               setPendingInstallCheck("gs");
               Browser.OpenURL("ms-windows-store://pdp/?ProductId=9MWPM2CQNLHN");
@@ -974,7 +974,7 @@ export const LauncherPage = (args: any) => {
     10: (onClose) => (
       <>
         <BaseModalHeader>
-          <h2 className="text-2xl font-black tracking-tight bg-linear-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-black tracking-tight text-emerald-600">
             {t("launcherpage.install_confirm.title", {
               defaultValue: "是否已完成安装？",
             })}
@@ -1005,7 +1005,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={() => {
               try {
                 if (pendingInstallCheck === "gi") {
@@ -1047,7 +1047,7 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader>
           <motion.h2
-            className="text-2xl font-black tracking-tight bg-linear-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
+            className="text-2xl font-black tracking-tight text-emerald-600"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
@@ -1071,7 +1071,7 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader>
           <motion.h2
-            className="text-2xl font-black tracking-tight bg-linear-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
+            className="text-2xl font-black tracking-tight text-emerald-600"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
@@ -1111,7 +1111,7 @@ export const LauncherPage = (args: any) => {
                 size="sm" 
                 isIndeterminate 
                 aria-label="Loading" 
-                classNames={{ indicator: "bg-linear-to-r from-emerald-500 to-teal-600" }} 
+                classNames={{ indicator: "bg-emerald-600 hover:bg-emerald-500" }} 
             />
           </div>
         </BaseModalBody>
@@ -1119,7 +1119,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.();
               setOverlayActive(false);
@@ -1150,7 +1150,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
             }}
@@ -1179,7 +1179,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
             }}
@@ -1213,7 +1213,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1228,7 +1228,7 @@ export const LauncherPage = (args: any) => {
     13: (onClose) => (
       <>
         <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-          <h2 className="text-2xl font-black tracking-tight bg-linear-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
+          <h2 className="text-2xl font-black tracking-tight text-emerald-600">
             {t("launcherpage.register.installing.title", {
               defaultValue: "正在注册到系统",
             })}
@@ -1244,7 +1244,7 @@ export const LauncherPage = (args: any) => {
             size="sm" 
             isIndeterminate 
             aria-label="Registering" 
-            classNames={{ indicator: "bg-linear-to-r from-emerald-500 to-teal-600" }} 
+            classNames={{ indicator: "bg-emerald-600 hover:bg-emerald-500" }} 
           />
         </BaseModalBody>
       </>
@@ -1269,7 +1269,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1309,7 +1309,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1353,7 +1353,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1391,11 +1391,6 @@ export const LauncherPage = (args: any) => {
         )}
       </AnimatePresence>
       <div className="relative w-full max-w-full mx-auto px-4 py-4 h-full flex flex-col justify-center">
-        {/* Background Gradients */}
-        <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 blur-[100px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 blur-[100px]" />
-        </div>
 
         {/* Hero Launch Card */}
         <motion.div
@@ -1414,7 +1409,7 @@ export const LauncherPage = (args: any) => {
                 <div className="flex flex-col gap-1 min-w-0">
                    <div className="flex items-center gap-3">
                     <motion.h1 
-                      className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 truncate pb-2"
+                      className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 dark:bg-none dark:text-emerald-500 truncate pb-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -1428,7 +1423,7 @@ export const LauncherPage = (args: any) => {
                         color="success"
                         classNames={{
                           base: "bg-emerald-500/10 border border-emerald-500/20 hidden sm:flex",
-                          content: "font-semibold text-emerald-600 dark:text-emerald-400"
+                          content: "font-semibold text-emerald-600 dark:text-emerald-500"
                         }}
                       >
                         {t("launcherpage.registered_tip", { defaultValue: "已注册" })}
@@ -1552,7 +1547,7 @@ export const LauncherPage = (args: any) => {
                                   color="success"
                                   classNames={{
                                     base: "bg-emerald-500/10 border border-emerald-500/20 h-5 px-1",
-                                    content: "text-emerald-600 dark:text-emerald-400 font-bold text-[10px]"
+                                    content: "text-emerald-600 dark:text-emerald-500 font-bold text-[10px]"
                                   }}
                                 >
                                   {t("launcherpage.registered_tip", { defaultValue: "已注册" })}
@@ -1619,7 +1614,7 @@ export const LauncherPage = (args: any) => {
                   <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
                     <Button
                       size="lg"
-                      className="h-14 px-8 text-lg font-bold text-white shadow-emerald-500/30 shadow-lg bg-linear-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 rounded-2xl w-full sm:w-auto"
+                      className="h-14 px-8 text-lg font-bold text-white shadow-emerald-900/20 shadow-lg bg-emerald-600 hover:bg-emerald-500 rounded-2xl w-full sm:w-auto"
                       startContent={<FaRocket className="mb-0.5" />}
                       onPress={doLaunch}
                       isLoading={modalState === 5} 

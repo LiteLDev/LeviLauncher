@@ -17,6 +17,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { FaWindows } from "react-icons/fa";
 import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { PageHeader } from '@/components/PageHeader';
 
 export default function VersionSettingsPage() {
   const { t } = useTranslation();
@@ -312,31 +313,11 @@ export default function VersionSettingsPage() {
           >
             <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl mb-6">
               <CardBody className="px-6 sm:px-8 py-5 w-full">
-                <div className="w-full">
-                  <div className="flex items-center justify-between gap-4 w-full">
-                    <h1 className="text-3xl sm:text-1xl font-black tracking-tight bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 bg-clip-text text-transparent text-left text-left! pb-1">
-                      {t("versions.edit.title")}
-                    </h1>
-                    <div className="hidden sm:flex items-center gap-3">
-                      <Button
-                        variant="light"
-                        radius="full"
-                        onPress={() => navigate(returnToPath)}
-                        className="font-medium text-default-600"
-                      >
-                        {t("common.cancel")}
-                      </Button>
-                      <Button 
-                        color="primary" 
-                        radius="full"
-                        className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
-                        onPress={onSave}
-                      >
-                        {t("common.ok")}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-1 text-sm text-default-500 truncate text-left text-left!">
+                <PageHeader 
+                  title={t("versions.edit.title")}
+                  titleClassName="text-left pb-1"
+                  description={
+                    <div className="mt-1 text-sm text-default-500 truncate text-left text-left!">
                     {t("versions.info.version")}
                     :{" "}
                     <span className="text-default-700 font-medium">
@@ -367,7 +348,28 @@ export default function VersionSettingsPage() {
                       </Chip>
                     )}
                   </div>
-                </div>
+                  }
+                  endContent={
+                    <div className="hidden sm:flex items-center gap-3">
+                      <Button
+                        variant="light"
+                        radius="full"
+                        onPress={() => navigate(returnToPath)}
+                        className="font-medium text-default-600"
+                      >
+                        {t("common.cancel")}
+                      </Button>
+                      <Button 
+                        color="primary" 
+                        radius="full"
+                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                        onPress={onSave}
+                      >
+                        {t("common.ok")}
+                      </Button>
+                    </div>
+                  }
+                />
               </CardBody>
             </Card>
           </motion.div>
@@ -649,7 +651,7 @@ export default function VersionSettingsPage() {
         <Button 
           color="primary" 
           radius="full"
-          className="min-w-0 bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+          className="min-w-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
           onPress={onSave}
         >
           {t("common.ok")}
@@ -744,7 +746,7 @@ export default function VersionSettingsPage() {
                 <Button
                   color="primary"
                   radius="full"
-                  className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   onPress={() => {
                     onClose?.();
                     setUnregisterSuccessOpen(false);
@@ -809,7 +811,7 @@ export default function VersionSettingsPage() {
                 <Button
                   color="primary"
                   radius="full"
-                  className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   onPress={() => {
                     onClose?.();
                     setGdkMissingOpen(false);
@@ -918,7 +920,7 @@ export default function VersionSettingsPage() {
                 <Button
                   color="primary"
                   radius="full"
-                  className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   onPress={() => {
                     onClose?.();
                     setShortcutSuccessOpen(false);
@@ -1020,7 +1022,7 @@ export default function VersionSettingsPage() {
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.25 }}
                 >
-                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-500/30">
+                    <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-900/20">
                     <svg
                         viewBox="0 0 24 24"
                         width="16"
@@ -1060,7 +1062,7 @@ export default function VersionSettingsPage() {
                 <Button
                   color="primary"
                   radius="full"
-                  className="bg-linear-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   onPress={() => {
                     onClose?.();
                     setDeleteSuccessOpen(false);

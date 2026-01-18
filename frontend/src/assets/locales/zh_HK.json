@@ -1,8 +1,7 @@
 {
   "app": {
     "settings": "設定",
-    "lang": "語言",
-    "quit_launcher": "退出啟動器"
+    "lang": "語言"
   },
   "nav": {
     "versions": "版本",
@@ -12,11 +11,10 @@
   "launcherpage": {
     "launch_button": "啟動",
     "content_manage": "內容管理",
-    "quick_actions": "快捷功能",
     "go_version_settings": "版本設定",
     "manage_versions": "版本列表",
     "search_versions": "搜尋版本或名稱",
-    "open_exe_dir": "打開遊戲安裝目錄",
+    "open_exe_dir": "開啟遊戲安裝目錄",
     "register_system_button": "註冊到系統",
     "registered_tip": "已註冊",
     "register": {
@@ -26,7 +24,7 @@
       },
       "success": {
         "title": "註冊完成",
-        "body": "已成功註冊到系統，您可以透過系統應用列表啟動。"
+        "body": "已成功註冊到系統，您可以透過系統應用程式列表啟動。"
       },
       "failed": {
         "title": "註冊失敗",
@@ -35,15 +33,10 @@
     },
     "gdk_missing": {
       "title": "缺少 Microsoft GDK",
-      "body": "未檢測到 GDK 工具包，註冊功能需先安裝。是否跳轉到設定頁進行安裝？",
+      "body": "未偵測到 GDK 工具包，註冊功能需先安裝。是否跳轉到設定頁進行安裝？",
       "go_settings": "前往設定"
     },
     "delete": {
-      "failed": {
-        "title": "刪除失敗",
-        "content": "請稍後再試。",
-        "close_button": "關閉"
-      },
       "complete": {
         "title": "刪除完成",
         "content": "所選版本已成功刪除！",
@@ -51,35 +44,20 @@
       },
       "confirm": {
         "title": "確認刪除",
-        "content": "您確定要刪除此版本嗎？此操作無法撤銷。",
+        "content": "您確定要刪除此版本嗎？此操作無法復原。",
         "delete_button": "刪除",
         "cancel_button": "取消"
-      },
-      "deleting": {
-        "title": "正在刪除中..."
       }
     },
     "launch": {
       "failed": {
         "title": "啟動錯誤",
-        "content": "您沒有選擇任何版本，請前往下載頁面進行下載！",
-        "download_button": "下載頁面",
+        "content": "您未選擇任何版本，請前往下載頁面進行下載！",
         "close_button": "關閉"
       },
       "force_run_button": "強制啟動"
     },
-    "deleting": {
-      "title": "正在刪除"
-    },
-    "registering": {
-      "title": "正在註冊"
-    },
-    "startup": {
-      "title": "啟動成功",
-      "content": "所選版本已成功啟動！",
-      "close_button": "關閉"
-    },
-    "currentVersion": "當前版本",
+    "currentVersion": "目前版本",
     "vcruntime": {
       "completing": {
         "title": "正在補全缺失的 DLL",
@@ -103,46 +81,43 @@
       "installing": {
         "title": "正在安裝 GameInput",
         "body": "正在下載並啟動安裝程式，請根據系統提示完成安裝。",
-        "progress_prefix": "進度：",
         "preparing": "正在準備下載..."
       },
       "missing": {
         "title": "缺少 GameInput 元件",
-        "body": "運行遊戲需要 Microsoft GameInput 元件。是否現在下載安裝？",
+        "body": "執行遊戲需要 Microsoft GameInput 元件。是否現在下載安裝？",
         "install_now": "立即安裝"
       }
     },
     "gs": {
       "missing": {
         "title": "缺少 Microsoft Gaming Services",
-        "body": "未檢測到 Microsoft Gaming Services。該元件是 Minecraft 運行所必須的依賴項。",
-        "open_store": "打開商店進行安裝",
+        "body": "未偵測到 Microsoft Gaming Services。此元件是 Minecraft 執行所必需的依賴項。",
+        "open_store": "開啟商店進行安裝",
         "ignore_forever": "忽略並不再提醒"
       }
     },
     "install_confirm": {
       "title": "是否已完成安裝？",
-      "body": "安裝完成後請點擊「已完成，重新檢測」。如果尚未完成，請繼續安裝。",
+      "body": "安裝完成後請點擊「已完成，重新偵測」。如果尚未完成，請繼續安裝。",
       "continue": "繼續安裝",
-      "done_and_check": "已完成，重新檢測"
+      "done_and_check": "已完成，重新偵測"
     },
-    "currentVersion_choose_version_aria": "選擇版本",
     "currentVersion_none": "無",
     "version_select": {
       "title": "選擇版本",
-      "subtitle": "當前可選版本（本地檢測）：",
       "unknown": "未知"
     },
     "tip": {
-      "general": "提示：首次啟動可能較慢，請耐心等待。",
-      "choose_version_dropdown": "右側下拉按鈕可快速切換當前版本。",
-      "open_version_settings_gear": "懸停「當前版本」徽章，點擊氣泡內齒輪打開版本設定；支援更換圖示與啟用版本隔離。",
+      "general": "提示：首次啟動可能較慢，請耐心等候。",
+      "choose_version_dropdown": "右側下拉按鈕可快速切換目前版本。",
+      "open_version_settings_gear": "將滑鼠懸停於「目前版本」徽章上，點擊氣泡內齒輪圖示即可開啟版本設定；支援更換圖示與啟用版本隔離。",
       "mods_import_button": "點擊 Mods 卡片的「匯入 .zip/.dll」選擇檔案。",
-      "download_versions": "在「下載」頁安裝 Release/Preview，安裝後出現在下拉列表。",
+      "download_versions": "在「下載」頁安裝 Release/Preview，安裝後會出現在下拉清單中。",
       "content_counts_card": "主頁「內容管理」顯示世界、資源包、行為包數量。",
-      "file_manager_pick": "檔案管理器支援多選並回傳路徑到 Mods 匯入。",
-      "settings_base_root": "設定頁可修改內容儲存路徑，預設使用 %APPDATA% 下以當前可執行檔名命名的資料夾。",
-      "directory_write_check": "僅可儲存到可寫目錄；不可寫目錄將被禁用。"
+      "file_manager_pick": "檔案管理器支援多選並回傳路徑至 Mods 匯入。",
+      "settings_base_root": "設定頁可修改內容儲存路徑，預設使用 %APPDATA% 下以目前可執行檔名命名的資料夾。",
+      "directory_write_check": "僅可儲存至可寫入目錄；不可寫入目錄將被停用。"
     }
   },
   "updating": {
@@ -155,21 +130,15 @@
     }
   },
   "moddedcard": {
-    "title": "模組",
+    "title": "插件",
     "content": {
-      "none": "未找到模組",
-      "found": "找到 {{count}} 個模組"
+      "none": "未找到插件"
     },
-    "manage": "管理模組"
+    "manage": "管理插件"
   },
   "downloadpage": {
-    "type": {
-      "install": "已安裝",
-      "not_install": "未安裝"
-    },
     "changelog": {
-      "title": "最新更新日誌",
-      "loading": "載入中..."
+      "title": "最新更新日誌"
     },
     "status": {
       "downloaded": "已下載",
@@ -191,7 +160,6 @@
       }
     },
     "topcontent": {
-      "rowperpage": "每頁行數：",
       "types": "類型",
       "types_all": "全部",
       "status": "狀態",
@@ -212,13 +180,10 @@
       "confirm_title": "確認安裝資料夾",
       "name_label": "版本名稱",
       "placeholder_name": "請輸入版本名稱",
-      "suggest_default": "建議使用預設值：",
-      "description": "用於儲存複製後的遊戲檔案",
-      "name_required": "名稱不能為空",
       "enable_isolation": "版本隔離",
-      "enable_isolation_desc": "將遊戲資料（如世界、設定、快取等）重新導向至 versions/【名稱】/ 目錄下，而不是存放在 AppData 中。",
+      "enable_isolation_desc": "將遊戲資料（如世界、設定、快取等）重新導向至 versions/【名稱】/ 目錄下，而非存放於 AppData 中。",
       "inherit_label": "繼承來源",
-      "inherit_hint": "從已隔離版本複製資料，類型需與當前一致",
+      "inherit_hint": "從已隔離版本複製資料，類型需與目前一致",
       "inherit_none": "不繼承",
       "inherit_gdk": "從 GDK 目錄繼承"
     },
@@ -230,11 +195,8 @@
       "copy_link": "複製連結",
       "recommended": "推薦鏡像",
       "auto_testing": "自動測速中…",
-      "no_recommended": "暫無推薦鏡像",
       "others": "其他鏡像",
-      "testing_short": "測速中",
-      "failed": "失敗",
-      "no_mirrors": "當前版本無可用鏡像。",
+      "no_mirrors": "目前版本無可用鏡像。",
       "filename_fallback": "(檔案)",
       "retest": "重新測速",
       "download_selected": "下載所選鏡像",
@@ -243,8 +205,6 @@
     },
     "progress": {
       "title": "下載進度",
-      "dest_placeholder": "安裝包目錄下(msixvc)",
-      "error_prefix": "錯誤：",
       "unknown_error": "未知錯誤"
     },
     "download": {
@@ -254,7 +214,7 @@
     "delete": {
       "title": "確認刪除下載包",
       "body": "將刪除安裝包：",
-      "warning": "此操作不可恢復。",
+      "warning": "此操作不可復原。",
       "confirm": "刪除",
       "success_title": "刪除完成",
       "success_body": "已刪除安裝包："
@@ -267,12 +227,9 @@
       "success_title": "安裝完成",
       "success": "版本已成功安裝。",
       "custom_installer": {
-        "label": "選擇本地安裝包 (.msixvc)",
+        "label": "選擇本機安裝包 (.msixvc)",
         "hint": "預設使用安裝器目錄下已下載的檔案"
       }
-    },
-    "vcr": {
-      "error_generic": "執行庫準備失敗，請檢查網路後重試"
     },
     "customappx": {
       "button": "自訂",
@@ -281,13 +238,11 @@
           "header": "版本資訊",
           "body": {
             "select": {
-              "label": "請選擇遊戲版本",
               "item1": "正式版",
               "item2": "預覽版"
             }
           },
           "footer": {
-            "cancel_button": "取消",
             "install_button": "安裝"
           }
         }
@@ -297,75 +252,35 @@
   "settingscard": {
     "header": {
       "title": "設定",
-      "content": "配置啟動器常用選項"
+      "content": "設定啟動器常用選項"
     },
     "body": {
       "version": {
-        "name": "當前版本",
-        "hasnew": "有新的版本更新！",
+        "name": "目前版本",
+        "hasnew": "有新版本更新！",
         "button": "檢查更新",
-        "ignore": "屏蔽該版本"
+        "ignore": "屏蔽此版本"
       },
       "paths": {
         "title": "內容路徑",
+        "subtitle": "管理遊戲資料儲存位置",
         "base_root": "根目錄",
         "apply": "套用",
         "reset": "恢復預設",
-        "open_installers": "打開安裝器目錄",
-        "open_versions": "打開版本目錄",
         "installer": "安裝器目錄",
         "versions": "版本目錄",
-        "not_writable": "目錄不可寫入"
+        "unsaved": "變更未儲存",
+        "not_writable": "目錄無法寫入"
       },
-      "browse": "選擇...",
       "language": {
         "name": "語言",
         "button": "更改"
-      },
-      "defaultdev": {
-        "label": "以 Dev 模式啟動",
-        "description": "啟用後，啟動會以 Dev 模式啟動Minecraft。關閉則直接以普通模式啟動。"
       }
     },
-    "footer": {
-      "cancel_button": "取消",
-      "save_button": "儲存"
-    },
     "modal": {
-      "1": {
-        "header": {
-          "title": "正在檢查更新中..."
-        },
-        "body": {
-          "content": "正在檢查更新..."
-        },
-        "footer": {
-          "cancel_button": "取消"
-        }
-      },
       "2": {
-        "header": {
-          "title": "檢測到新版本"
-        },
-        "body": {
-          "content": "發現新的版本 ({{version}}) 可用！"
-        },
         "footer": {
-          "download_button": "更新",
-          "close_button": "關閉"
-        }
-      },
-      "3": {
-        "header": {
-          "title": "更新中..."
-        }
-      },
-      "-2": {
-        "header": {
-          "title": "您當前已經是最新版本！"
-        },
-        "footer": {
-          "close_button": "關閉"
+          "download_button": "更新"
         }
       }
     }
@@ -378,7 +293,7 @@
       "save": "儲存並離開"
     },
     "lang": {
-      "changed": "語言已更改，內容由 AI 生成，不保證 100%準確。"
+      "changed": "語言已更改"
     },
     "discord_rpc": {
       "title": "Discord 遊戲狀態",
@@ -387,7 +302,7 @@
     "reset": {
       "confirm": {
         "title": "恢復預設路徑？",
-        "body": "這將把內容路徑重置為預設位置。確定要繼續嗎？"
+        "body": "這將把內容路徑重設為預設位置。確定要繼續嗎？"
       }
     },
     "gdk": {
@@ -411,85 +326,33 @@
   },
   "downloadmodal": {
     "download_button": "下載",
-    "information": {
-      "title": "資訊確認",
-      "spinner": {
-        "label": "正在嘗試取得下載連結..."
-      },
-      "table": {
-        "version": "版本",
-        "type": "類型",
-        "size": "檔案大小"
-      },
-      "input": {
-        "label": "版本名稱",
-        "placeholder": "輸入您的版本名稱",
-        "errormessage": "不符合命名規則或已存在！"
-      },
-      "switch": {
-        "label": "啟用模組",
-        "description": "這將啟用您進行模組化，並自動安裝預載入器，以及修改原始檔案（Minecraft.Windows.exe）。"
-      },
-      "close_button": "關閉",
-      "download_button": "下載"
-    },
-    "downloading": {
-      "title": "正在下載",
-      "body": {
-        "file_name": " 檔案：{{name}}",
-        "estimated_time_remaining": "預計剩餘時間："
-      },
-      "footer": {
-        "close_button": "關閉"
-      }
-    },
     "installing": {
       "title": "正在安裝"
     },
-    "installcomplete": {
-      "title": "安裝完成",
-      "content": "您的安裝已成功！",
-      "close_button": "關閉"
-    },
-    "stopdownload": {
-      "title": "確認停止下載",
-      "content": "您確定要停止下載嗎？此操作將不可逆！",
-      "cancel_button": "取消",
-      "stop_button": "停止"
-    },
-    "downloadfailed": {
-      "title": "下載失敗",
-      "content": "下載檔案時發生錯誤。請稍後再試。",
-      "close_button": "關閉"
-    },
-    "installfailed": {
-      "title": "安裝失敗",
-      "content": "安裝失敗，請重試。",
-      "close_button": "關閉"
-    },
-    "open_folder": "打開目錄"
+    "open_folder": "開啟目錄"
   },
   "aboutcard": {
     "title": "關於",
     "description": " 2024-2025 {{name}} 保留所有權利",
-    "font": "本軟體使用 {{name}} 字體"
+    "font": "本軟體使用 {{name}} 字型"
   },
   "about": {
+    "description": "LeviLauncher - 一個現代化的 Minecraft 基岩版啟動器",
     "authors": "作者與維護者",
     "author": "作者",
-    "ll_authors": "LeviLauncher作者",
+    "ll_authors": "LeviLauncher 作者",
     "source": "原始碼與開源",
     "thanks": "特別鳴謝",
-    "thanks.desc": "特別感謝為 LeviLauncher 提供幫助與支援的個人與專案。",
-    "sponsors": "支援者（贊助者）",
-    "sponsors.desc": "感謝所有為專案發展提供幫助的贊助者與支援者！",
+    "thanks.desc": "特別感謝為 LeviLauncher 提供協助與支援的個人與專案。",
+    "sponsors": "支持者（贊助者）",
+    "sponsors.desc": "感謝所有為專案發展提供幫助的贊助者與支持者！",
     "contribute": "參與貢獻",
     "contribute.desc": "歡迎透過提交 Issue 或 Pull Request 的方式參與貢獻，共同完善 LeviLauncher。",
     "afdian": "愛發電",
     "patreon": "Patreon",
     "github_repo": "GitHub · LeviLauncher",
     "github_org": "LiteLDev 組織",
-    "license.tip": "授權證與詳細資訊請參見倉庫中的 LICENSE 檔案。",
+    "license.tip": "授權與詳細資訊請參見倉庫中的 LICENSE 檔案。",
     "website": "官網",
     "issue": "Issue",
     "star_fork": "Star / Fork",
@@ -499,23 +362,24 @@
     "ok": "確定",
     "cancel": "取消",
     "error": "錯誤",
-    "retry": "重試",
     "refresh": "重新整理",
-    "open": "打開",
-    "select": "選擇",
+    "open": "開啟",
+    "select_mode": "選擇模式",
+    "select_all": "全選",
     "preview": "預覽版",
     "release": "正式版",
     "back": "返回",
     "loading": "載入中",
     "yes": "是",
     "no": "否",
-    "go": "前往",
     "close": "關閉",
-    "cancel_and_clean": "取消並清理",
     "quit_launcher": "退出啟動器",
     "confirm": "確定",
+    "success": "操作成功",
     "delete": "刪除",
+    "delete_selected": "刪除選中",
     "search": "搜尋",
+    "search_placeholder": "搜尋...",
     "empty": "暫無資料",
     "browse": "選擇...",
     "processing": "正在處理...",
@@ -523,127 +387,102 @@
     "wait": "請稍候...",
     "updating": "更新中",
     "expand": "展開",
-    "collapse": "收起",
+    "collapse": "收合",
     "save": "儲存",
     "add": "新增",
     "save_failed": "儲存失敗",
-    "load_failed": "載入失敗"
+    "load_failed": "載入失敗",
+    "view_all": "檢視全部",
+    "confirm_delete": "確認刪除",
+    "deleting": "正在刪除...",
+    "no_results": "無搜尋結果"
   },
   "content": {
     "count": {
       "worlds": "世界",
       "resource_packs": "資源包",
-      "behavior_packs": "行為包",
-      "skin_packs": "皮膚包"
+      "behavior_packs": "行為包"
     }
   },
   "contentpage": {
-    "not_ready_title": "頁面未完成",
-    "not_ready_body": "該頁面尚在開發中，暫不提供訪問。請返回主頁。",
-    "current_version": "當前版本",
+    "current_version": "目前版本",
     "none": "無",
     "isolation": "版本隔離",
-    "isolation_on": "版本隔離：已開啟",
-    "isolation_off": "版本隔離：未開啟",
     "worlds": "世界",
-    "worlds_desc": "每位玩家單獨儲存在 Users/<玩家>/games/com.mojang/minecraftWorlds",
+    "worlds_list": "存檔清單",
     "select_player": "選擇玩家",
     "no_players": "暫無玩家",
-    "no_worlds": "暫無世界",
-    "backup": "備份",
     "backup_success": "備份成功",
-    "edit": "編輯",
     "resource_packs": "資源包",
-    "shared_desc": "所有玩家共享：Users/Shared/games/com.mojang/resource_packs",
     "no_resource_packs": "暫無資源包",
-    "path": "路徑",
-    "path_unknown": "路徑未知",
-    "not_resolved": "未解析",
     "behavior_packs": "行為包",
-    "shared_desc_bp": "所有玩家共享：Users/Shared/games/com.mojang/behavior_packs",
     "no_behavior_packs": "暫無行為包",
     "skin_packs": "皮膚包",
     "no_skin_packs": "暫無皮膚包",
-    "count": "數量",
     "error_resolve_paths": "無法解析內容路徑。",
-    "open_users_dir": "打開儲存目錄",
-    "players_aria": "玩家列表",
-    "sort_aria": "排序",
+    "open_users_dir": "開啟儲存目錄",
+    "players_aria": "玩家清單",
     "sort_time": "時間",
     "sort_asc": "由上至下",
     "sort_desc": "由下至上",
-    "min_engine_version": "最小遊戲版本",
     "drop_hint": "拖入 .mcworld/.mcpack/.mcaddon 以匯入",
     "import_button": "匯入 .mcworld/.mcpack/.mcaddon",
     "require_player_for_world_import": "匯入世界 (.mcworld) 前請先選擇玩家",
     "no_player_selected": "未選擇玩家",
     "world_leveldat_editor": "世界 level.dat 編輯",
-    "basic": "基礎",
     "version": "版本號",
-    "world_level_name": "世界名稱",
     "add_field": "新增欄位",
-    "add_field_panel": "新增欄位面板",
     "field_name": "名稱",
     "initial_value": "初始值",
-    "gamerules": "遊戲規則",
-    "others": "其他欄位",
-    "add_child_field": "新增子欄位",
-    "new_child_item": "新建子項",
-    "field_type": "類型",
     "select_player_title": "選擇玩家",
-    "select_player_for_import": "請選擇要匯入到的玩家"
+    "select_player_for_import": "請選擇要匯入到的玩家",
+    "no_items": "沒有找到項目",
+    "delete_pack_confirm": "確定要刪除 {{name}} 嗎？",
+    "delete_warning": "此操作無法復原！",
+    "delete_selected_confirm": "確定要刪除選中的 {{count}} 個項目嗎？",
+    "deleted_name": "已刪除 {{name}}",
+    "deleted_count": "已刪除 {{count}} 個項目",
+    "delete_world_confirm": "確定要刪除存檔 {{name}} 嗎？"
   },
   "versions": {
-    "rename": {
-      "title": "重新命名版本",
-      "current": "當前名稱",
-      "new_name": "新名稱",
-      "placeholder": "輸入新名稱",
-      "hint": "僅修改資料夾名稱，不影響遊戲版本與類型。"
-    },
     "info": {
       "version": "遊戲版本",
       "name": "名稱"
     },
     "edit": {
       "title": "版本設定",
-      "current": "當前名稱",
       "new_name": "新名稱",
       "placeholder": "輸入新名稱",
       "hint": "僅修改資料夾名稱，不影響遊戲版本與類型。",
       "enable_isolation": "啟用版本隔離",
-      "enable_console": "啟用控制台",
+      "enable_console": "啟用主控台",
+      "enable_render_dragon": "啟用 Render Dragon 光影載入",
       "enable_editor_mode": "啟用編輯器模式",
       "danger_zone_title": "危險操作",
-      "delete_hint": "點擊以打開刪除確認，避免誤觸。",
+      "delete_hint": "點擊以開啟刪除確認，避免誤觸。",
       "unregister_button": "取消註冊",
-      "unregister_hint": "該版本已註冊到系統，僅可取消註冊；取消後可重新命名或刪除。",
+      "unregister_hint": "此版本已註冊到系統，僅可取消註冊；取消後可重新命名或刪除。",
       "unregister_progress": {
         "title": "正在取消註冊",
         "body": "正在執行系統取消註冊，請稍候…"
       },
       "unregister_success": {
         "title": "取消註冊成功",
-        "body": "已成功取消註冊，現在可以刪除該版本了。"
+        "body": "已成功取消註冊，現在可以刪除此版本了。"
       }
     },
     "logo": {
       "title": "自訂圖示（要求正方形）",
       "change": "點擊更換",
       "clear": "清除",
-      "hint": "將儲存到版本資料夾的 LargeLogo.png。點擊圖示更換。"
+      "hint": "將儲存至版本資料夾的 LargeLogo.png。點擊圖示更換。"
     },
-    "delete": {
-      "title": "確認刪除版本",
-      "body": "將刪除版本資料夾：",
-      "warning": "此操作不可恢復。",
-      "confirm": "刪除",
-      "success_title": "刪除完成",
-      "success_body": "已刪除版本："
+    "unsaved": {
+      "body": "您更改了版本設定但尚未儲存。是否儲存後離開？"
     }
   },
   "errors": {
-    "ERR_GAME_ALREADY_RUNNING": "檢測到當前版本 Minecraft 已在運行，請先關閉再啟動或者切換其他版本",
+    "ERR_GAME_ALREADY_RUNNING": "偵測到目前版本 Minecraft 已在執行，請先關閉再啟動或切換其他版本",
     "ERR_TARGET_DIR_NOT_SPECIFIED": "未指定目標目錄",
     "ERR_CREATE_TARGET_DIR": "無法建立目標目錄",
     "ERR_NOT_FOUND_GAME_DIR": "未找到遊戲目錄",
@@ -656,60 +495,53 @@
     "ERR_COPY_FAILED": "複製失敗",
     "ERR_NAME_REQUIRED": "名稱不能為空",
     "ERR_NAME_TOO_LONG": "名稱過長",
-    "ERR_NAME_TRAILING_DOT_SPACE": "名稱不能以空白或點結尾",
-    "ERR_NAME_INVALID_CHAR": "名稱包含非法字元: <>:/|?*",
+    "ERR_NAME_TRAILING_DOT_SPACE": "名稱不能以空格或句點結尾",
+    "ERR_NAME_INVALID_CHAR": "名稱包含非法字元: <>:\"/\\|?*",
     "ERR_NAME_CONTROL_CHAR": "名稱包含控制字元",
-    "ERR_NAME_RESERVED": "名稱為 Windows 保留名",
+    "ERR_NAME_RESERVED": "名稱為 Windows 保留名稱",
     "ERR_ICON_DECODE": "圖示解析失敗",
-    "ERR_ICON_NOT_SQUARE": "圖示必須是正方形",
+    "ERR_ICON_NOT_SQUARE": "圖示必須為正方形",
     "ERR_ACCESS_VERSIONS_DIR": "無法存取版本目錄",
     "ERR_ACCESS_INSTALLERS_DIR": "無法存取安裝包目錄",
     "ERR_READ_VERSIONS_DIR": "無法讀取版本目錄",
     "ERR_NAME_EXISTS": "名稱已存在",
     "ERR_INVALID_NAME": "無效的名稱",
     "ERR_NOT_FOUND_OLD": "未找到原目錄",
-    "ERR_RENAME_FAILED": "重新命名失敗，可能被佔用或無權限",
+    "ERR_RENAME_FAILED": "重新命名失敗，可能已被佔用或無權限",
     "ERR_MSIXVC_NOT_SPECIFIED": "未指定安裝包",
     "ERR_MSIXVC_NOT_FOUND": "安裝包不存在",
     "ERR_APPX_UNINSTALL_FAILED": "解除安裝已安裝遊戲失敗",
     "ERR_APPX_INSTALL_FAILED": "安裝失敗，請重試。",
-    "ERR_MC_NOT_AUTHORIZED": "請確認您擁有正版 {{typeLabel}} Minecraft 授權，確保擁有該產品的微軟帳戶登入或購買後重試",
+    "ERR_MC_NOT_AUTHORIZED": "請確認您擁有正版 {{typeLabel}} Minecraft 授權，確保已使用擁有該產品的 Microsoft 帳戶登入或購買後重試",
     "ERR_INHERIT_SOURCE_NOT_FOUND": "未找到繼承來源版本",
     "ERR_INHERIT_TARGET_NOT_FOUND": "未找到目標版本",
-    "ERR_INHERIT_TYPE_MISMATCH": "類型不匹配，無法繼承",
+    "ERR_INHERIT_TYPE_MISMATCH": "類型不符，無法繼承",
     "ERR_INHERIT_COPY_FAILED": "複製繼承資料失敗",
-    "ERR_NO_GAME_DATA": "當前來源沒有任何遊戲資料",
-    "ERR_DELETE_FAILED": "刪除失敗，可能被佔用或無權限",
+    "ERR_NO_GAME_DATA": "目前來源沒有任何遊戲資料",
+    "ERR_DELETE_FAILED": "刪除失敗，可能已被佔用或無權限",
     "ERR_VCRUNTIME_MISSING": "缺少執行庫，安裝失敗。請確保已安裝 Microsoft Visual C++ 執行庫或重試",
     "ERR_SHORTCUT_CREATE_FAILED": "建立桌面捷徑失敗",
     "ERR_UNREGISTER_FAILED": "取消註冊失敗",
-    "ERR_NOT_REGISTERED_THIS_VERSION": "該版本未註冊到系統",
+    "ERR_NOT_REGISTERED_THIS_VERSION": "此版本未註冊到系統",
     "ERR_DEV_MODE_REQUIRED": "系統未開啟開發者模式，且自動開啟失敗。請手動開啟開發者模式後重試。"
   },
   "filemanager": {
-    "title": "檔案管理器",
     "drives_title": "磁碟機",
     "computer": "此電腦",
     "quick_access": "快速存取",
     "pinned": "已釘選",
-    "navigation": "導航",
-    "pins_empty": "暫無釘選項目，使用星號進行釘選",
     "choose_drive": "請選擇一個磁碟機",
     "search_placeholder": "搜尋檔案/資料夾…",
     "sort": {
       "name": "名稱",
-      "size": "大小",
       "kind": "類型"
     },
-    "empty": "這裡空空如也",
-    "drive_label": "磁碟機",
     "up": "上一層",
     "pin_current": "釘選目前路徑",
     "refreshing": "正在重新整理…",
     "choose_this_dir": "選擇此目錄",
-    "dir_not_writable": "該目錄不可寫入，請選擇其他位置",
-    "new_folder": "新增資料夾",
-    "new_folder_placeholder": "輸入資料夾名稱"
+    "dir_not_writable": "此目錄無法寫入，請選擇其他位置",
+    "new_folder": "新增資料夾"
   },
   "file": {
     "types": {
@@ -718,9 +550,9 @@
       "library": "函式庫檔案",
       "archive": "壓縮檔",
       "image": "圖片",
-      "text": "文字",
+      "text": "文字檔",
       "json": "JSON",
-      "jar": "JAR 包",
+      "jar": "JAR 封裝檔",
       "mcpack": "MCPack",
       "mcaddon": "MCAddon",
       "file": "檔案"
@@ -737,7 +569,7 @@
     "summary_title_partial": "匯入完成（部分失敗）",
     "summary_success": "成功",
     "summary_failed": "失敗",
-    "details_title": "模組詳情",
+    "details_title": "插件詳情",
     "field_name": "名稱",
     "field_version": "版本",
     "field_type": "類型",
@@ -747,33 +579,30 @@
     "delete_summary_title_failed": "刪除失敗",
     "summary_deleted": "已刪除",
     "confirm_delete_title": "確認刪除",
-    "confirm_delete_body": "確定要刪除此{{type}}嗎？此操作不可撤銷。",
-    "dll_modal_title": "匯入 DLL 外掛",
-    "dll_name": "外掛名稱",
+    "confirm_delete_body": "確定要刪除此{{type}}嗎？此操作不可復原。",
+    "dll_modal_title": "匯入 DLL 插件",
+    "dll_name": "插件名稱",
     "dll_type": "類型",
     "dll_version": "版本",
     "err_invalid_name": "無效的版本名或模組名",
     "err_access_versions_dir": "無法存取版本目錄",
     "err_create_target_dir": "建立目標目錄失敗",
-    "err_open_zip": "無法開啟ZIP檔案",
+    "err_open_zip": "無法開啟 ZIP 檔案",
     "err_manifest_not_found": "未找到 manifest.json",
     "err_invalid_package": "無效的封裝結構",
     "err_duplicate_folder": "同名模組資料夾已存在",
     "err_read_zip_entry": "讀取壓縮檔項目失敗",
     "err_write_file": "寫入檔案失敗",
     "err_unknown": "未知錯誤",
-    "overwrite_modal_title": "檢測到重複",
+    "overwrite_modal_title": "偵測到重複",
     "overwrite_modal_body": "同名模組資料夾已存在，是否覆蓋（更新）？",
-    "drag_import_unsupported_title": "拖曳匯入暫不支援",
-    "drag_import_ununsupported_body": "暫不支援，等待 Wails 支援。",
-    "toggle_label": "啟用模組",
+    "toggle_label": "啟用插件",
     "toggle_on": "已啟用",
     "toggle_off": "已關閉",
-    "toggle_tip": "切換此模組的啟用/關閉狀態",
-    "toggle_desc_on": "模組已啟用，啟動遊戲時會載入。",
-    "toggle_desc_off": "模組已關閉，啟動遊戲時不會載入。",
-    "only_enabled": "僅顯示已啟用的模組",
-    "type_mod": "模組"
+    "toggle_desc_on": "插件已啟用，啟動遊戲時會載入。",
+    "toggle_desc_off": "插件已關閉，啟動遊戲時不會載入。",
+    "only_enabled": "僅顯示已啟用的插件",
+    "drop_hint": "拖入 .zip 或 .dll 以匯入插件"
   },
   "versionselect": {
     "unsaved": {
@@ -785,14 +614,14 @@
   },
   "terms": {
     "title": "LeviLauncher 使用者協議",
-    "body": "歡迎使用 LeviLauncher\n\n使用本軟體即表示您同意：\n• 此為非官方 Minecraft 啟動器\n• 您需擁有合法授權的 Minecraft 副本，否則自動進入試玩版\n• 禁止任何形式的盜版或作弊行為\n• 模組/資源包使用風險自負\n• 與 Mojang/Microsoft 無關聯\n繼續使用視為接受條款",
+    "body": "歡迎使用 LeviLauncher\n\n使用本軟體即表示您同意：\n• 此為非官方 Minecraft 啟動器\n• 您需擁有合法授權的 Minecraft 副本，否則自動進入試玩版\n• 禁止任何形式的盜版或作弊行為\n• 模組/資源包使用風險自負\n• 與 Mojang/Microsoft 無關聯\n\n繼續使用視為接受條款",
     "agree": "同意並繼續",
     "decline": "不同意，退出"
   },
   "onboarding": {
     "title": "首次啟動引導",
     "subtitle": "請先設定內容路徑與語言",
-    "skip": "跳過",
+    "skip": "略過",
     "finish": "完成",
     "unsaved": {
       "title": "未儲存修改",
@@ -800,5 +629,77 @@
       "cancel": "取消",
       "save": "儲存並完成"
     }
+  },
+  "contentdownload": {
+    "title": "內容下載"
+  },
+  "curseforge": {
+    "title": "CurseForge",
+    "search_placeholder": "搜尋遊戲資源...",
+    "search": "搜尋",
+    "minecraft_version": "Minecraft 版本",
+    "select_version": "選擇版本",
+    "all_versions": "全部版本",
+    "load_error": "載入資料失敗，請重試",
+    "search_error": "搜尋失敗，請重試",
+    "class": "類型",
+    "select_class": "選擇類型",
+    "all_classes": "全部類型",
+    "category": "分類",
+    "select_category": "選擇分類",
+    "sort_by": "排序",
+    "select_sort": "選擇排序",
+    "no_results": "未找到結果",
+    "by_author": "作者：{{author}}",
+    "no_description": "暫無簡介。",
+    "downloads": "下載量",
+    "updated": "更新時間",
+    "created": "建立時間",
+    "size": "大小",
+    "game_version": "遊戲版本",
+    "mod_not_found": "未找到遊戲資源",
+    "go_back": "返回",
+    "by": "作者",
+    "updated_date": "更新於 {{date}}",
+    "download_count": "{{count}} 次下載",
+    "install_action": "安裝",
+    "website": "官網",
+    "source": "原始碼",
+    "issues": "回報問題",
+    "share": "分享",
+    "no_download_url": "無下載連結",
+    "no_files_found": "未找到檔案",
+    "sort": {
+      "featured": "精選",
+      "popularity": "熱門度",
+      "last_updated": "最近更新",
+      "creation_date": "建立日期",
+      "total_downloads": "總下載量"
+    },
+    "install": {
+      "downloading_title": "下載內容",
+      "select_version_title": "選擇遊戲版本",
+      "select_player_title": "選擇玩家",
+      "importing_title": "正在匯入",
+      "success_title": "成功",
+      "error_title": "錯誤",
+      "downloading_body": "正在下載檔案...",
+      "select_version_body": "請選擇要匯入到的遊戲版本：",
+      "local_installation": "本機安裝",
+      "select_version_placeholder": "選擇版本",
+      "registered": "已註冊",
+      "select_player_body": "此內容需要選擇玩家：",
+      "player_label": "玩家",
+      "select_player_placeholder": "選擇玩家",
+      "importing_body": "正在匯入內容...",
+      "success_msg": "匯入成功",
+      "success_desc": "內容已成功匯入至所選版本。",
+      "failed_msg": "匯入失敗",
+      "next": "下一步",
+      "close": "關閉"
+    }
+  },
+  "lip": {
+    "maintenance": "維護中，暫不開放"
   }
 }

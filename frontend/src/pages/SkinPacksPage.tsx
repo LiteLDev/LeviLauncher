@@ -1,5 +1,6 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/PageHeader";
 import {
   Button,
   Chip,
@@ -10,27 +11,51 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Input,
   Checkbox,
+  Pagination,
+  Card,
+  CardBody,
 } from "@heroui/react";
-import { motion } from "framer-motion";
+import {
+  FaArrowLeft,
+  FaSync,
+  FaFolderOpen,
+  FaFilter,
+  FaUser,
+  FaSortAmountDown,
+  FaSortAmountUp,
+  FaCheckSquare,
+  FaTrash,
+  FaFont,
+  FaClock,
+  FaTimes,
+  FaBox,
+  FaHdd,
+  FaTag,
+} from "react-icons/fa";
+import {
+  BaseModal,
+  BaseModalHeader,
+  BaseModalBody,
+  BaseModalFooter,
+} from "@/components/BaseModal";
+import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   GetContentRoots,
   ListPacksForVersion,
   OpenPathDir,
-} from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import { readCurrentVersionName } from "../utils/currentVersion";
-import { listPlayers } from "../utils/content";
-import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { renderMcText } from "../utils/mcformat";
+  DeletePack,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
+import { readCurrentVersionName } from "@/utils/currentVersion";
+import { listPlayers } from "@/utils/content";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { renderMcText } from "@/utils/mcformat";
+import { toast } from "react-hot-toast";
 
 export default function SkinPacksPage() {
   const { t } = useTranslation();
@@ -71,7 +96,7 @@ export default function SkinPacksPage() {
   const [sortKey, setSortKey] = React.useState<"name" | "time">(() => {
     try {
       const saved = JSON.parse(
-        localStorage.getItem("content.skin.sort") || "{}"
+        localStorage.getItem("content.skin.sort") || "{}",
       );
       const k = saved?.sortKey;
       if (k === "name" || k === "time") return k;
@@ -81,7 +106,7 @@ export default function SkinPacksPage() {
   const [sortAsc, setSortAsc] = React.useState<boolean>(() => {
     try {
       const saved = JSON.parse(
-        localStorage.getItem("content.skin.sort") || "{}"
+        localStorage.getItem("content.skin.sort") || "{}",
       );
       const a = saved?.sortAsc;
       if (typeof a === "boolean") return a;
@@ -89,17 +114,108 @@ export default function SkinPacksPage() {
     return true;
   });
   const [selected, setSelected] = React.useState<Record<string, boolean>>({});
+  const [isSelectMode, setIsSelectMode] = React.useState<boolean>(false);
   const {
     isOpen: delManyCfmOpen,
     onOpen: delManyCfmOnOpen,
     onOpenChange: delManyCfmOnOpenChange,
   } = useDisclosure();
-  const [selectMode, setSelectMode] = React.useState<boolean>(false);
   const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
+  const [currentPage, setCurrentPage] = React.useState(1);
+  const pageSize = 20;
+
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const lastScrollTopRef = React.useRef<number>(0);
   const restorePendingRef = React.useRef<boolean>(false);
+  const collectScrollTargets = React.useCallback(() => {
+    const seen = new Set<unknown>();
+    const targets: Array<Window | HTMLElement> = [];
+
+    const add = (target: Window | HTMLElement | null | undefined) => {
+      if (!target) return;
+      if (seen.has(target)) return;
+      seen.add(target);
+      targets.push(target);
+    };
+
+    add(window);
+    add((document.scrollingElement as HTMLElement) || document.documentElement);
+    add(document.body);
+
+    const walk = (seed: HTMLElement | null) => {
+      let el: HTMLElement | null = seed;
+      while (el) {
+        add(el);
+        el = el.parentElement;
+      }
+    };
+
+    walk(scrollRef.current);
+
+    return targets;
+  }, []);
+
+  // Memoized filtered and sorted packs
+  const filtered = React.useMemo(() => {
+    const q = query.trim().toLowerCase();
+    const f = packs.filter((p) => {
+      const nm = String(
+        p.name || p.path?.split("\\").pop() || "",
+      ).toLowerCase();
+      return q ? nm.includes(q) : true;
+    });
+    return f.sort((a: any, b: any) => {
+      if (sortKey === "name") {
+        const an = String(
+          a.name || a.path?.split("\\").pop() || "",
+        ).toLowerCase();
+        const bn = String(
+          b.name || b.path?.split("\\").pop() || "",
+        ).toLowerCase();
+        const res = an.localeCompare(bn);
+        return sortAsc ? res : -res;
+      } else {
+        const at = Number(a.modTime || 0);
+        const bt = Number(b.modTime || 0);
+        const res = at - bt;
+        return sortAsc ? res : -res;
+      }
+    });
+  }, [packs, query, sortKey, sortAsc]);
+
+  // Reset page when filter/sort changes
+  React.useEffect(() => {
+    setCurrentPage(1);
+  }, [query, sortKey, sortAsc]);
+
+  const paginatedItems = React.useMemo(() => {
+    const start = (currentPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, currentPage]);
+
+  const totalPages = Math.ceil(filtered.length / pageSize);
+
+  const selectedCount = Object.keys(selected).filter((k) => selected[k]).length;
+
+  const toggleSelect = (path: string) => {
+    setSelected((prev) => ({
+      ...prev,
+      [path]: !prev[path],
+    }));
+  };
+
+  const selectAll = (val: boolean) => {
+    if (val) {
+      const newSel: Record<string, boolean> = {};
+      filtered.forEach((p) => {
+        newSel[p.path] = true;
+      });
+      setSelected(newSel);
+    } else {
+      setSelected({});
+    }
+  };
 
   const refreshAll = React.useCallback(
     async (silent?: boolean, forcePlayer?: string) => {
@@ -135,19 +251,22 @@ export default function SkinPacksPage() {
           // Player handling
           let nextPlayer = forcePlayer;
           if (nextPlayer === undefined) {
-             const names = await listPlayers(safe.usersRoot);
-             setPlayers(names);
-             const passedPlayer = location?.state?.player || "";
-             nextPlayer = (selectedPlayer && names.includes(selectedPlayer))
+            const names = await listPlayers(safe.usersRoot);
+            setPlayers(names);
+            const passedPlayer = location?.state?.player || "";
+            nextPlayer =
+              selectedPlayer && names.includes(selectedPlayer)
                 ? selectedPlayer
-                : (names.includes(passedPlayer) ? passedPlayer : (names[0] || ""));
-             setSelectedPlayer(nextPlayer);
+                : names.includes(passedPlayer)
+                  ? passedPlayer
+                  : names[0] || "";
+            setSelectedPlayer(nextPlayer);
           }
 
           const allPacks = await ListPacksForVersion(name, nextPlayer || "");
-          
+
           const filtered = (allPacks || []).filter(
-            (p) => p.manifest.pack_type === 7
+            (p) => p.manifest.pack_type === 7,
           );
 
           const basic = await Promise.all(
@@ -167,7 +286,7 @@ export default function SkinPacksPage() {
                   path: p.path,
                 };
               }
-            })
+            }),
           );
           const withTime = await Promise.all(
             basic.map(async (p: any) => {
@@ -178,7 +297,7 @@ export default function SkinPacksPage() {
                 }
               } catch {}
               return { ...p, modTime };
-            })
+            }),
           );
           setPacks(withTime);
           Promise.resolve()
@@ -186,7 +305,7 @@ export default function SkinPacksPage() {
               const readCache = () => {
                 try {
                   return JSON.parse(
-                    localStorage.getItem("content.size.cache") || "{}"
+                    localStorage.getItem("content.size.cache") || "{}",
                   );
                 } catch {
                   return {};
@@ -213,24 +332,26 @@ export default function SkinPacksPage() {
                     ) {
                       setPacks((prev) =>
                         prev.map((it: any) =>
-                          it.path === key ? { ...it, size: c.size } : it
-                        )
+                          it.path === key ? { ...it, size: c.size } : it,
+                        ),
                       );
                     } else {
                       let size = 0;
                       try {
-                        if (typeof (minecraft as any).GetPathSize === "function") {
+                        if (
+                          typeof (minecraft as any).GetPathSize === "function"
+                        ) {
                           size = await (minecraft as any).GetPathSize(key);
                         }
                       } catch {}
                       cache[key] = { modTime: p.modTime || 0, size };
                       setPacks((prev) =>
                         prev.map((it: any) =>
-                          it.path === key ? { ...it, size } : it
-                        )
+                          it.path === key ? { ...it, size } : it,
+                        ),
                       );
                     }
-                  })
+                  }),
                 );
                 writeCache(cache);
               }
@@ -243,7 +364,7 @@ export default function SkinPacksPage() {
         if (!silent) setLoading(false);
       }
     },
-    [hasBackend, location?.state?.player, selectedPlayer]
+    [hasBackend, location?.state?.player, selectedPlayer],
   );
 
   React.useEffect(() => {
@@ -256,7 +377,7 @@ export default function SkinPacksPage() {
     try {
       localStorage.setItem(
         "content.skin.sort",
-        JSON.stringify({ sortKey, sortAsc })
+        JSON.stringify({ sortKey, sortAsc }),
       );
     } catch {}
   }, [sortKey, sortAsc]);
@@ -265,6 +386,36 @@ export default function SkinPacksPage() {
     setSelectedPlayer(player);
     await refreshAll(false, player);
   };
+
+  React.useEffect(() => {
+    const resetScroll = () => {
+      try {
+        const active = document.activeElement as HTMLElement | null;
+        if (active && scrollRef.current && scrollRef.current.contains(active)) {
+          active.blur();
+        }
+      } catch {}
+
+      for (const target of collectScrollTargets()) {
+        if (target === window) {
+          window.scrollTo({ top: 0, left: 0, behavior: "auto" });
+          continue;
+        }
+        target.scrollTop = 0;
+        target.scrollLeft = 0;
+      }
+    };
+
+    resetScroll();
+    const raf = requestAnimationFrame(resetScroll);
+    const t0 = window.setTimeout(resetScroll, 0);
+    const t1 = window.setTimeout(resetScroll, 120);
+    return () => {
+      cancelAnimationFrame(raf);
+      clearTimeout(t0);
+      clearTimeout(t1);
+    };
+  }, [currentPage, collectScrollTargets]);
 
   React.useLayoutEffect(() => {
     if (!restorePendingRef.current) return;
@@ -300,599 +451,643 @@ export default function SkinPacksPage() {
   };
 
   return (
-    <div
-      ref={scrollRef}
-      className="w-full h-full p-3 sm:p-4 lg:p-6 overflow-auto"
+    <motion.div
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.25 }}
+      className="w-full max-w-full mx-auto p-4 h-full flex flex-col"
     >
-      <motion.div
-        initial={{ opacity: 0, y: 8 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.25 }}
-        className="rounded-2xl border border-default-200 bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md p-5"
-      >
-        <div className="flex items-center justify-between">
-          <h1 className="text-2xl font-bold">
-            {t("contentpage.skin_packs", { defaultValue: "皮肤包" })}
-          </h1>
-          <div className="flex items-center gap-2">
-            <Button
-              size="sm"
-              variant="bordered"
-              onPress={() => navigate("/content", { state: { player: selectedPlayer } })}
-            >
-              {t("common.back", { defaultValue: "返回" })}
-            </Button>
-            <Tooltip
-              content={
-                t("common.refresh", {
-                  defaultValue: "刷新",
-                }) as unknown as string
-              }
-            >
-              <Button
-                size="sm"
-                variant="bordered"
-                onPress={() => refreshAll()}
-                isDisabled={loading}
-              >
-                {t("common.refresh", { defaultValue: "刷新" })}
-              </Button>
-            </Tooltip>
-          </div>
-        </div>
-        <div className="mt-2 text-default-500 text-sm">
-          {t("contentpage.current_version", { defaultValue: "当前版本" })}:{" "}
-          <span className="font-medium">
-            {currentVersionName ||
-              t("contentpage.none", { defaultValue: "无" })}
-          </span>
-          <span className="mx-2">·</span>
-          {t("contentpage.isolation", { defaultValue: "版本隔离" })}:{" "}
-          <span className="font-medium">
-            {roots.isIsolation
-              ? t("common.yes", { defaultValue: "是" })
-              : t("common.no", { defaultValue: "否" })}
-          </span>
-        </div>
-
-        <div className="rounded-xl border border-default-200 bg-white/50 dark:bg-neutral-800/40 shadow-sm backdrop-blur-sm px-3 py-2 mt-4 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Dropdown>
-              <DropdownTrigger>
+      <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+        <CardBody className="p-0 flex flex-col h-full overflow-hidden">
+          <div className="shrink-0 p-4 sm:p-6 pb-2 flex flex-col gap-4 border-b border-default-200 dark:border-white/10">
+            <PageHeader
+              title={t("contentpage.skin_packs", { defaultValue: "皮肤包" })}
+              startContent={
                 <Button
-                  size="sm"
-                  variant="flat"
-                  className="rounded-full"
-                  isDisabled={!players.length}
+                  isIconOnly
+                  radius="full"
+                  variant="light"
+                  onPress={() =>
+                    navigate("/content", { state: { player: selectedPlayer } })
+                  }
                 >
-                  {selectedPlayer ||
-                    t("contentpage.select_player", {
-                      defaultValue: "选择玩家",
-                    })}
+                  <FaArrowLeft size={20} />
                 </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                aria-label={
-                  t("contentpage.players_aria", {
-                    defaultValue: "Players",
-                  }) as unknown as string
-                }
-                selectionMode="single"
-                selectedKeys={new Set([selectedPlayer])}
-                onSelectionChange={(keys) => {
-                  const arr = Array.from(keys as unknown as Set<string>);
-                  const next = arr[0] || "";
-                  if (typeof next === "string") onChangePlayer(next);
-                }}
-              >
-                {players.length ? (
-                  players.map((p) => (
-                    <DropdownItem key={p} textValue={p}>
-                      {p}
-                    </DropdownItem>
-                  ))
-                ) : (
-                  <DropdownItem key="none" isDisabled>
-                    {t("contentpage.no_players", { defaultValue: "暂无玩家" })}
-                  </DropdownItem>
-                )}
-              </DropdownMenu>
-            </Dropdown>
-          </div>
-          <div className="flex items-center gap-2">
-            <Input
-              size="sm"
-              variant="bordered"
-              placeholder={
-                t("common.search", { defaultValue: "搜索" }) as string
               }
-              value={query}
-              onValueChange={setQuery}
-              className="w-40 sm:w-56"
+              endContent={
+                <div className="flex items-center gap-2">
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button
+                        radius="full"
+                        variant="flat"
+                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium w-full sm:w-auto sm:min-w-[200px]"
+                        isDisabled={!players.length}
+                        startContent={<FaUser />}
+                      >
+                        {selectedPlayer ||
+                          t("contentpage.select_player", {
+                            defaultValue: "选择玩家",
+                          })}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label={
+                        t("contentpage.players_aria", {
+                          defaultValue: "Players",
+                        }) as unknown as string
+                      }
+                      selectionMode="single"
+                      selectedKeys={new Set([selectedPlayer])}
+                      onSelectionChange={(keys) => {
+                        const arr = Array.from(keys as unknown as Set<string>);
+                        const next = arr[0] || "";
+                        if (typeof next === "string") onChangePlayer(next);
+                      }}
+                    >
+                      {players.length ? (
+                        players.map((p) => (
+                          <DropdownItem key={p} textValue={p}>
+                            {p}
+                          </DropdownItem>
+                        ))
+                      ) : (
+                        <DropdownItem key="none" isDisabled>
+                          {t("contentpage.no_players", {
+                            defaultValue: "暂无玩家",
+                          })}
+                        </DropdownItem>
+                      )}
+                    </DropdownMenu>
+                  </Dropdown>
+                  <Button
+                    radius="full"
+                    variant="flat"
+                    startContent={<FaFolderOpen />}
+                    onPress={async () => {
+                      if (!hasBackend || !roots.resourcePacks) return;
+                      let sp = roots.resourcePacks.replace(
+                        /resource_packs$/,
+                        "skin_packs",
+                      );
+                      if (selectedPlayer && roots.usersRoot) {
+                        sp = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\skin_packs`;
+                      }
+                      await OpenPathDir(sp);
+                    }}
+                    isDisabled={!roots.resourcePacks || !hasBackend}
+                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
+                  >
+                    {t("common.open", { defaultValue: "打开" })}
+                  </Button>
+                  <Tooltip
+                    content={
+                      t("common.refresh", {
+                        defaultValue: "刷新",
+                      }) as unknown as string
+                    }
+                  >
+                    <Button
+                      isIconOnly
+                      radius="full"
+                      variant="light"
+                      onPress={() => refreshAll()}
+                      isDisabled={loading}
+                    >
+                      <FaSync
+                        className={loading ? "animate-spin" : ""}
+                        size={18}
+                      />
+                    </Button>
+                  </Tooltip>
+                </div>
+              }
             />
-            <Dropdown>
-              <DropdownTrigger>
-                <Button size="sm" variant="flat" className="rounded-full">
-                  {sortKey === "name"
-                    ? (t("filemanager.sort.name", {
-                        defaultValue: "名称",
-                      }) as string)
-                    : (t("contentpage.sort_time", {
-                        defaultValue: "时间",
-                      }) as string)}
-                  {" / "}
-                  {sortAsc
-                    ? (t("contentpage.sort_asc", {
-                        defaultValue: "从上到下",
-                      }) as string)
-                    : (t("contentpage.sort_desc", {
-                        defaultValue: "从下到上",
-                      }) as string)}
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
-                aria-label={
-                  t("contentpage.sort_aria", { defaultValue: "排序" }) as string
-                }
-                selectionMode="single"
-                onSelectionChange={(keys) => {
-                  const k = Array.from(keys as unknown as Set<string>)[0] || "";
-                  if (k === "name" || k === "time") setSortKey(k as any);
-                }}
-              >
-                <DropdownItem key="name">
-                  {
-                    t("filemanager.sort.name", {
-                      defaultValue: "名称",
-                    }) as string
-                  }
-                </DropdownItem>
-                <DropdownItem key="time">
-                  {
-                    t("contentpage.sort_time", {
-                      defaultValue: "时间",
-                    }) as string
-                  }
-                </DropdownItem>
-              </DropdownMenu>
-            </Dropdown>
-            <Button
-              size="sm"
-              variant="bordered"
-              onPress={() => setSortAsc((v) => !v)}
-            >
-              {sortAsc
-                ? (t("contentpage.sort_asc", {
-                    defaultValue: "从上到下",
-                  }) as string)
-                : (t("contentpage.sort_desc", {
-                    defaultValue: "从下到上",
-                  }) as string)}
-            </Button>
-            <Button
-              size="sm"
-              variant="bordered"
-              onPress={async () => {
-                if (!hasBackend || !roots.resourcePacks) return;
-                let sp = roots.resourcePacks.replace(/resource_packs$/, "skin_packs");
-                if (selectedPlayer && roots.usersRoot) {
-                   sp = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\skin_packs`;
-                }
-                await OpenPathDir(sp);
-              }}
-              isDisabled={!roots.resourcePacks || !hasBackend}
-            >
-              {t("common.open", { defaultValue: "打开" })}
-            </Button>
-            <Button
-              size="sm"
-              variant="bordered"
-              onPress={() => setSelectMode((v) => !v)}
-            >
-              {selectMode
-                ? (t("common.cancel", { defaultValue: "取消选择" }) as string)
-                : (t("common.select", { defaultValue: "选择" }) as string)}
-            </Button>
-            {selectMode ? (
-              <Button
-                size="sm"
-                color="danger"
-                variant="bordered"
-                onPress={() => {
-                  const has = packs.some((p: any) => selected[p.path]);
-                  if (has) delManyCfmOnOpen();
-                }}
-                isDisabled={!packs.some((p: any) => selected[p.path])}
-              >
-                {t("common.delete", { defaultValue: "删除" })}
-              </Button>
-            ) : null}
-          </div>
-        </div>
 
-        <div className="mt-3">
-          {loading ? (
-            <div className="flex items-center gap-2">
-              <Spinner size="sm" />{" "}
-              <span className="text-default-500">
-                {t("common.loading", { defaultValue: "加载中" })}
+            <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
+              <Input
+                placeholder={t("common.search_placeholder", {
+                  defaultValue: "搜索...",
+                })}
+                value={query}
+                onValueChange={setQuery}
+                startContent={<FaFilter className="text-default-400" />}
+                endContent={
+                  query && (
+                    <button onClick={() => setQuery("")}>
+                      <FaTimes className="text-default-400 hover:text-default-600" />
+                    </button>
+                  )
+                }
+                radius="full"
+                variant="flat"
+                className="w-full md:max-w-xs"
+                classNames={{
+                  inputWrapper:
+                    "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
+                }}
+              />
+
+              <div className="flex items-center gap-3">
+                <Tooltip
+                  content={t("common.select_mode", {
+                    defaultValue: "选择模式",
+                  })}
+                >
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    variant={isSelectMode ? "solid" : "flat"}
+                    color={isSelectMode ? "primary" : "default"}
+                    onPress={() => {
+                      setIsSelectMode(!isSelectMode);
+                      if (isSelectMode) setSelected({});
+                    }}
+                  >
+                    <FaCheckSquare />
+                  </Button>
+                </Tooltip>
+
+                {isSelectMode && (
+                  <Checkbox
+                    isSelected={
+                      filtered.length > 0 && selectedCount === filtered.length
+                    }
+                    onValueChange={selectAll}
+                    radius="full"
+                    size="lg"
+                    classNames={{ wrapper: "after:bg-primary" }}
+                  >
+                    <span className="text-sm text-default-600">
+                      {t("common.select_all", { defaultValue: "全选" })}
+                    </span>
+                  </Checkbox>
+                )}
+
+                <Dropdown>
+                  <DropdownTrigger>
+                    <Button
+                      variant="flat"
+                      radius="full"
+                      startContent={
+                        sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
+                      }
+                      className="min-w-[120px]"
+                    >
+                      {sortKey === "name"
+                        ? (t("filemanager.sort.name", {
+                            defaultValue: "名称",
+                          }) as string)
+                        : (t("contentpage.sort_time", {
+                            defaultValue: "时间",
+                          }) as string)}
+                      {" / "}
+                      {sortAsc
+                        ? t("contentpage.sort_asc", {
+                            defaultValue: "从上到下",
+                          })
+                        : t("contentpage.sort_desc", {
+                            defaultValue: "从下到上",
+                          })}
+                    </Button>
+                  </DropdownTrigger>
+                  <DropdownMenu
+                    selectionMode="single"
+                    selectedKeys={
+                      new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])
+                    }
+                    onSelectionChange={(keys) => {
+                      const val = Array.from(keys)[0] as string;
+                      const [k, order] = val.split("-");
+                      setSortKey(k as "name" | "time");
+                      setSortAsc(order === "asc");
+                    }}
+                  >
+                    <DropdownItem
+                      key="name-asc"
+                      startContent={<FaSortAmountDown />}
+                    >
+                      {t("filemanager.sort.name", { defaultValue: "名称" })}{" "}
+                      (A-Z)
+                    </DropdownItem>
+                    <DropdownItem
+                      key="name-desc"
+                      startContent={<FaSortAmountUp />}
+                    >
+                      {t("filemanager.sort.name", { defaultValue: "名称" })}{" "}
+                      (Z-A)
+                    </DropdownItem>
+                    <DropdownItem
+                      key="time-asc"
+                      startContent={<FaSortAmountDown />}
+                    >
+                      {t("contentpage.sort_time", { defaultValue: "时间" })}{" "}
+                      (Old-New)
+                    </DropdownItem>
+                    <DropdownItem
+                      key="time-desc"
+                      startContent={<FaSortAmountUp />}
+                    >
+                      {t("contentpage.sort_time", { defaultValue: "时间" })}{" "}
+                      (New-Old)
+                    </DropdownItem>
+                  </DropdownMenu>
+                </Dropdown>
+
+                <AnimatePresence>
+                  {selectedCount > 0 && (
+                    <motion.div
+                      initial={{ opacity: 0, scale: 0.9 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.9 }}
+                    >
+                      <Button
+                        color="danger"
+                        variant="flat"
+                        radius="full"
+                        startContent={<FaTrash />}
+                        onPress={delManyCfmOnOpen}
+                      >
+                        {t("common.delete_selected", {
+                          count: selectedCount,
+                          defaultValue: "删除选中",
+                        })}
+                      </Button>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+            <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
+              <span>
+                {t("contentpage.current_version", { defaultValue: "当前版本" })}
+                :
+              </span>
+              <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
+                {currentVersionName ||
+                  t("contentpage.none", { defaultValue: "无" })}
+              </span>
+              <span className="text-default-300">|</span>
+              <span>
+                {t("contentpage.isolation", { defaultValue: "版本隔离" })}:
+              </span>
+              <span
+                className={`font-medium px-2 py-0.5 rounded-md ${
+                  roots.isIsolation
+                    ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
+                    : "bg-default-100 text-default-700"
+                }`}
+              >
+                {roots.isIsolation
+                  ? t("common.yes", { defaultValue: "是" })
+                  : t("common.no", { defaultValue: "否" })}
               </span>
             </div>
-          ) : (
-            <div className="flex flex-col gap-2">
-              {packs.length ? (
-                <div className="grid gap-4 grid-cols-1 sm:grid-cols-2">
-                  {(() => {
-                    const q = query.trim().toLowerCase();
-                    const filtered = packs.filter((p) => {
-                      const nm = String(
-                        p.name || p.path?.split("\\").pop() || ""
-                      ).toLowerCase();
-                      return q ? nm.includes(q) : true;
-                    });
-                    const sorted = filtered.sort((a: any, b: any) => {
-                      if (sortKey === "name") {
-                        const an = String(
-                          a.name || a.path?.split("\\").pop() || ""
-                        ).toLowerCase();
-                        const bn = String(
-                          b.name || b.path?.split("\\").pop() || ""
-                        ).toLowerCase();
-                        const res = an.localeCompare(bn);
-                        return sortAsc ? res : -res;
-                      } else {
-                        const at = Number(a.modTime || 0);
-                        const bt = Number(b.modTime || 0);
-                        const res = at - bt;
-                        return sortAsc ? res : -res;
-                      }
-                    });
-                    return sorted.map((p: any, idx: number) => (
-                      <div
+          </div>
+
+          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
+            {loading ? (
+              <div className="flex flex-col items-center justify-center py-20 gap-4">
+                <Spinner size="lg" />
+                <span className="text-default-500">
+                  {t("common.loading", { defaultValue: "加载中" })}
+                </span>
+              </div>
+            ) : (
+              <div className="flex flex-col gap-4">
+                {filtered.length ? (
+                  <div className="flex flex-col gap-3 pb-4">
+                    {paginatedItems.map((p, idx) => (
+                      <motion.div
                         key={`${p.path}-${idx}`}
-                        className={`relative rounded-xl border p-3 transition-colors h-36 ${
-                          selectMode ? "cursor-pointer" : "cursor-default"
-                        } ${
-                          selectMode && selected[p.path]
-                            ? "border-primary-300 dark:border-primary-400 bg-primary/10 dark:bg-primary/15 shadow-sm"
-                            : "border-default-200 bg-white/70 dark:bg-neutral-800/50 hover:bg-white/80 dark:hover:bg-neutral-800/60"
-                        }`}
-                        onClick={() => {
-                          if (!selectMode) return;
-                          setSelected((prev) => ({
-                            ...prev,
-                            [p.path]: !prev[p.path],
-                          }));
-                        }}
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        transition={{ duration: 0.2 }}
                       >
-                        <div className="flex items-start h-full">
-                          {selectMode ? (
-                            <div
-                              className="mr-2 shrink-0 flex items-center"
-                              onClick={(e) => e.stopPropagation()}
-                            >
+                        <div
+                          className={`w-full p-4 bg-white dark:bg-zinc-900/50 hover:bg-default-50 dark:hover:bg-zinc-800 transition-all rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border ${
+                            isSelectMode && selected[p.path]
+                              ? "border-primary bg-primary/10"
+                              : "border-default-200 dark:border-zinc-700/50 hover:border-default-400 dark:hover:border-zinc-600"
+                          }`}
+                          onClick={() => {
+                            if (isSelectMode) toggleSelect(p.path);
+                          }}
+                        >
+                          <div className="relative shrink-0">
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
+                              {p.iconDataUrl ? (
+                                <Image
+                                  src={p.iconDataUrl}
+                                  alt={p.name || p.path}
+                                  className="w-full h-full object-cover"
+                                  radius="none"
+                                />
+                              ) : (
+                                <FaFolderOpen className="text-3xl text-default-300" />
+                              )}
+                            </div>
+                            {isSelectMode && (
                               <Checkbox
-                                size="sm"
                                 isSelected={!!selected[p.path]}
-                                onValueChange={() =>
-                                  setSelected((prev) => ({
-                                    ...prev,
-                                    [p.path]: !prev[p.path],
-                                  }))
-                                }
+                                onValueChange={() => toggleSelect(p.path)}
+                                className="absolute -top-2 -left-2 z-20"
+                                classNames={{
+                                  wrapper:
+                                    "bg-white dark:bg-zinc-900 shadow-md",
+                                }}
                               />
-                            </div>
-                          ) : null}
-                          <div className="flex-1 min-w-0 flex flex-col pb-12 pr-3">
-                            <div className="flex items-center justify-between">
-                              <div className="font-semibold truncate">
+                            )}
+                          </div>
+
+                          <div className="flex flex-col flex-1 min-w-0 gap-1">
+                            <div className="flex items-baseline gap-2 truncate">
+                              <h3
+                                className="text-base sm:text-lg font-bold text-default-900 dark:text-white truncate"
+                                title={p.name}
+                              >
                                 {renderMcText(
-                                  p.name || p.path.split("\\").pop()
+                                  p.name || p.path.split("\\").pop(),
                                 )}
-                              </div>
-                              {p.version ? (
-                                <Chip
-                                  size="sm"
-                                  variant="flat"
-                                  className="shrink-0"
-                                >
-                                  {p.version}
-                                </Chip>
-                              ) : null}
+                              </h3>
                             </div>
-                            <div className="flex-1 min-h-0 overflow-hidden">
-                              <div className="text-small text-default-600 mt-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                                {renderMcText(p.description || "")}
-                              </div>
-                              <div className="text-tiny text-default-500 mt-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                                {p.minEngineVersion
-                                  ? `${t("contentpage.min_engine_version", {
-                                      defaultValue: "最小游戏版本",
-                                    })}: ${p.minEngineVersion}`
-                                  : "\u00A0"}
-                              </div>
-                              <div className="text-tiny text-default-500 mt-1 overflow-hidden text-ellipsis whitespace-nowrap">
-                                {`${t("filemanager.sort.size", {
+
+                            <p
+                              className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2 w-full"
+                              title={p.description}
+                            >
+                              {renderMcText(p.description || "")}
+                            </p>
+
+                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                              <div
+                                className="flex items-center gap-1"
+                                title={t("common.size", {
                                   defaultValue: "大小",
-                                })}: ${formatBytes(p.size)} · ${t(
-                                  "contentpage.sort_time",
-                                  { defaultValue: "时间" }
-                                )}: ${formatDate(p.modTime)}`}
+                                })}
+                              >
+                                <FaHdd />
+                                <span>{formatBytes(p.size)}</span>
                               </div>
+                              <div
+                                className="flex items-center gap-1"
+                                title={t("common.date", {
+                                  defaultValue: "日期",
+                                })}
+                              >
+                                <FaClock />
+                                <span>{formatDate(p.modTime)}</span>
+                              </div>
+                              {p.version && (
+                                <div
+                                  className="flex items-center gap-1"
+                                  title={t("common.version", {
+                                    defaultValue: "版本",
+                                  })}
+                                >
+                                  <FaTag />
+                                  <span>v{p.version}</span>
+                                </div>
+                              )}
+                            </div>
+
+                            <div className="flex flex-1 items-end justify-between mt-2">
+                              <div className="flex gap-1">
+                                {/* Placeholder for future tags */}
+                              </div>
+                              <Button
+                                size="sm"
+                                color="danger"
+                                variant="flat"
+                                radius="full"
+                                onPress={() => {
+                                  setActivePack(p);
+                                  delCfmOnOpen();
+                                }}
+                                className="h-8 min-w-0 px-3"
+                              >
+                                {t("common.delete", { defaultValue: "删除" })}
+                              </Button>
                             </div>
                           </div>
                         </div>
-                        <div
-                          className="absolute right-3 bottom-3 flex items-center gap-2"
-                          onClick={(e) => e.stopPropagation()}
-                        >
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            onPress={() => OpenPathDir(p.path)}
-                          >
-                            {t("common.open", { defaultValue: "打开" })}
-                          </Button>
-                          <Button
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            onPress={() => {
-                              setActivePack(p);
-                              delCfmOnOpen();
-                            }}
-                          >
-                            {t("common.delete", { defaultValue: "删除" })}
-                          </Button>
-                        </div>
-                      </div>
-                    ));
-                  })()}
-                </div>
-              ) : (
-                <div className="text-default-500">
-                  {t("contentpage.no_skin_packs", {
-                    defaultValue: "暂无皮肤包",
-                  })}
-                </div>
-              )}
-            </div>
-          )}
-        </div>
+                      </motion.div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="flex flex-col items-center justify-center py-20 text-default-400">
+                    <FaBox className="text-6xl mb-4 opacity-20" />
+                    <p>
+                      {query
+                        ? t("common.no_results", { defaultValue: "无搜索结果" })
+                        : t("contentpage.no_skin_packs", {
+                            defaultValue: "暂无皮肤包",
+                          })}
+                    </p>
+                  </div>
+                )}
 
-        <Modal
-          size="sm"
-          isOpen={delCfmOpen}
-          onOpenChange={delCfmOnOpenChange}
-          hideCloseButton
-        >
-          <ModalContent>
-            {(onClose) => (
-              <>
-                <ModalHeader className="text-danger">
-                  {t("mods.confirm_delete_title", { defaultValue: "确认删除" })}
-                </ModalHeader>
-                <ModalBody>
-                  <div className="text-sm text-default-700 break-words whitespace-pre-wrap">
-                    {t("mods.confirm_delete_body", {
-                      type: t("contentpage.skin_packs"),
-                      defaultValue: "确定要删除此包吗？此操作不可撤销。",
-                    })}
+                {totalPages > 1 && (
+                  <div className="flex justify-center pb-4">
+                    <Pagination
+                      total={totalPages}
+                      page={currentPage}
+                      onChange={setCurrentPage}
+                      showControls
+                      size="sm"
+                    />
                   </div>
-                  {activePack ? (
-                    <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm break-words whitespace-pre-wrap">
-                      {activePack.name || activePack.path}
-                    </div>
-                  ) : null}
-                </ModalBody>
-                <ModalFooter>
-                  <Button
-                    variant="light"
-                    onPress={() => {
-                      onClose();
-                    }}
-                  >
-                    {t("common.cancel", { defaultValue: "取消" })}
-                  </Button>
-                  <Button
-                    color="danger"
-                    isLoading={deletingOne}
-                    onPress={async () => {
-                      if (!activePack) {
-                        onClose();
-                        return;
-                      }
-                      const pos =
-                        scrollRef.current?.scrollTop ??
-                        (document.scrollingElement as any)?.scrollTop ??
-                        0;
-                      setDeletingOne(true);
-                      lastScrollTopRef.current = pos;
-                      restorePendingRef.current = true;
-                      const err = await (minecraft as any)?.DeletePack?.(
-                        currentVersionName,
-                        activePack.path
-                      );
-                      if (err) {
-                        setResultSuccess([]);
-                        setResultFailed([
-                          { name: activePack.name || activePack.path, err },
-                        ]);
-                        delOnOpen();
-                      } else {
-                        await refreshAll(true);
-                        requestAnimationFrame(() => {
-                          try {
-                            if (scrollRef.current)
-                              scrollRef.current.scrollTop = pos;
-                            else window.scrollTo({ top: pos });
-                          } catch {}
-                        });
-                        setResultSuccess([activePack.name || activePack.path]);
-                        setResultFailed([]);
-                        delOnOpen();
-                      }
-                      setDeletingOne(false);
-                      onClose();
-                    }}
-                  >
-                    {t("common.confirm", { defaultValue: "确定" })}
-                  </Button>
-                </ModalFooter>
-              </>
+                )}
+              </div>
             )}
-          </ModalContent>
-        </Modal>
-        <Modal
-          size="sm"
-          isOpen={delManyCfmOpen}
-          onOpenChange={delManyCfmOnOpenChange}
-          hideCloseButton
-        >
-          <ModalContent>
-            {(onClose) => (
-              <>
-                <ModalHeader className="text-danger">
-                  {t("mods.confirm_delete_title", { defaultValue: "确认删除" })}
-                </ModalHeader>
-                <ModalBody>
-                  <div className="text-sm text-default-700 break-words whitespace-pre-wrap">
-                    {t("mods.confirm_delete_body", {
-                      type: t("contentpage.skin_packs"),
-                      defaultValue: "确定要删除此包吗？此操作不可撤销。",
+          </div>
+        </CardBody>
+      </Card>
+
+      <BaseModal
+        isOpen={delCfmOpen}
+        onOpenChange={delCfmOnOpenChange}
+        isDismissable={!deletingOne}
+        hideCloseButton={deletingOne}
+        title={t("common.confirm_delete", { defaultValue: "确认删除" })}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <BaseModalHeader className="text-danger">
+                {t("common.confirm_delete", { defaultValue: "确认删除" })}
+              </BaseModalHeader>
+              <BaseModalBody>
+                {deletingOne ? (
+                  <div className="flex flex-col items-center justify-center py-6 gap-3">
+                    <Spinner size="lg" color="danger" />
+                    <p className="text-default-500 font-medium">
+                      {t("common.deleting", { defaultValue: "正在删除..." })}
+                    </p>
+                  </div>
+                ) : (
+                  <p>
+                    {t("contentpage.delete_pack_confirm", {
+                      name: activePack?.name || activePack?.path,
+                      defaultValue: `确定要删除 ${
+                        activePack?.name || activePack?.path
+                      } 吗？`,
                     })}
-                  </div>
-                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm break-words whitespace-pre-wrap">
-                    {packs
-                      .filter((p: any) => selected[p.path])
-                      .map((p: any) => p.name || p.path)
-                      .join("\n")}
-                  </div>
-                </ModalBody>
-                <ModalFooter>
-                  <Button
-                    variant="light"
-                    onPress={() => {
-                      onClose();
-                    }}
-                  >
-                    {t("common.cancel", { defaultValue: "取消" })}
-                  </Button>
-                  <Button
-                    color="danger"
-                    isLoading={deletingMany}
-                    onPress={async () => {
-                      setDeletingMany(true);
-                      const paths = packs
-                        .filter((p: any) => selected[p.path])
-                        .map((p: any) => p.path);
-                      const pos =
-                        scrollRef.current?.scrollTop ??
-                        (document.scrollingElement as any)?.scrollTop ??
-                        0;
-                      lastScrollTopRef.current = pos;
-                      restorePendingRef.current = true;
-                      const ok: string[] = [];
-                      const failed: Array<{ name: string; err: string }> = [];
-                      for (const p of paths) {
-                        const err = await (minecraft as any)?.DeletePack?.(
-                          currentVersionName,
-                          p
-                        );
-                        const it = packs.find((x: any) => x.path === p);
-                        const nm = it?.name || p;
-                        if (err) failed.push({ name: nm, err });
-                        else ok.push(nm);
-                      }
-                      setResultSuccess(ok);
-                      setResultFailed(failed);
-                      delOnOpen();
-                      await refreshAll(true);
-                      requestAnimationFrame(() => {
-                        try {
-                          if (scrollRef.current)
-                            scrollRef.current.scrollTop = pos;
-                          else window.scrollTo({ top: pos });
-                        } catch {}
-                      });
-                      setDeletingMany(false);
-                      onClose();
-                    }}
-                  >
-                    {t("common.confirm", { defaultValue: "确定" })}
-                  </Button>
-                </ModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
-        <Modal
-          size="md"
-          isOpen={delOpen}
-          onOpenChange={delOnOpenChange}
-          hideCloseButton
-        >
-          <ModalContent>
-            {(onClose) => (
-              <>
-                <ModalHeader
-                  className={`flex items-center gap-2 ${
-                    resultFailed.length ? "text-red-600" : "text-primary-600"
-                  }`}
+                  </p>
+                )}
+              </BaseModalBody>
+              <BaseModalFooter>
+                <Button
+                  variant="light"
+                  isDisabled={deletingOne}
+                  onPress={() => {
+                    onClose();
+                  }}
                 >
-                  <span>
-                    {resultFailed.length
-                      ? t("mods.delete_summary_title_failed", {
-                          defaultValue: "删除失败",
-                        })
-                      : t("mods.delete_summary_title_done", {
-                          defaultValue: "删除完成",
-                        })}
-                  </span>
-                </ModalHeader>
-                <ModalBody>
-                  {resultSuccess.length ? (
-                    <div className="mb-2">
-                      <div className="text-sm font-semibold text-success">
-                        {t("mods.summary_deleted", { defaultValue: "已删除" })}{" "}
-                        ({resultSuccess.length})
-                      </div>
-                      <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm break-words whitespace-pre-wrap">
-                        {resultSuccess.join("\n")}
-                      </div>
-                    </div>
-                  ) : null}
-                  {resultFailed.length ? (
-                    <div>
-                      <div className="text-sm font-semibold text-danger">
-                        {t("mods.summary_failed", { defaultValue: "失败" })} (
-                        {resultFailed.length})
-                      </div>
-                      <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm break-words whitespace-pre-wrap">
-                        {resultFailed
-                          .map((it) => `${it.name} - ${it.err}`)
-                          .join("\n")}
-                      </div>
-                    </div>
-                  ) : null}
-                </ModalBody>
-                <ModalFooter>
-                  <Button
-                    color="primary"
-                    onPress={() => {
-                      setResultSuccess([]);
-                      setResultFailed([]);
+                  {t("common.cancel", { defaultValue: "取消" })}
+                </Button>
+                <Button
+                  color="danger"
+                  isDisabled={deletingOne}
+                  onPress={async () => {
+                    if (!activePack) {
                       onClose();
-                    }}
-                  >
-                    {t("common.confirm", { defaultValue: "确定" })}
-                  </Button>
-                </ModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </Modal>
-      </motion.div>
-    </div>
+                      return;
+                    }
+                    const pos =
+                      scrollRef.current?.scrollTop ??
+                      (document.scrollingElement as any)?.scrollTop ??
+                      0;
+                    setDeletingOne(true);
+                    lastScrollTopRef.current = pos;
+                    restorePendingRef.current = true;
+                    try {
+                      await DeletePack(currentVersionName, activePack.path);
+                      setResultSuccess((prev) => [...prev, activePack.name]);
+                      refreshAll();
+                      toast.success(
+                        t("contentpage.deleted_name", {
+                          name: activePack.name,
+                          defaultValue: `已删除 ${activePack.name}`,
+                        }),
+                      );
+                      onClose();
+                    } catch (err) {
+                      setResultSuccess([]);
+                      setResultFailed([
+                        {
+                          name: activePack.name || activePack.path,
+                          err: String(err),
+                        },
+                      ]);
+                      toast.error(String(err));
+                    } finally {
+                      setDeletingOne(false);
+                    }
+                  }}
+                >
+                  {t("common.delete", { defaultValue: "删除" })}
+                </Button>
+              </BaseModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </BaseModal>
+
+      <BaseModal
+        isOpen={delManyCfmOpen}
+        onOpenChange={delManyCfmOnOpenChange}
+        isDismissable={!deletingMany}
+        hideCloseButton={deletingMany}
+        title={t("common.confirm_delete", { defaultValue: "确认删除" })}
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <BaseModalHeader className="text-danger">
+                {t("common.confirm_delete", { defaultValue: "确认删除" })}
+              </BaseModalHeader>
+              <BaseModalBody>
+                {deletingMany ? (
+                  <div className="flex flex-col items-center justify-center py-6 gap-3">
+                    <Spinner size="lg" color="danger" />
+                    <p className="text-default-500 font-medium">
+                      {t("common.deleting", { defaultValue: "正在删除..." })}
+                    </p>
+                  </div>
+                ) : (
+                  <p>
+                    {t("contentpage.delete_selected_confirm", {
+                      count: Object.values(selected).filter(Boolean).length,
+                      defaultValue: `确定要删除选中的 ${
+                        Object.values(selected).filter(Boolean).length
+                      } 个项目吗？`,
+                    })}
+                  </p>
+                )}
+              </BaseModalBody>
+              <BaseModalFooter>
+                <Button
+                  variant="light"
+                  isDisabled={deletingMany}
+                  onPress={() => {
+                    onClose();
+                  }}
+                >
+                  {t("common.cancel", { defaultValue: "取消" })}
+                </Button>
+                <Button
+                  color="danger"
+                  isDisabled={deletingMany}
+                  onPress={async () => {
+                    const targets = Object.keys(selected).filter(
+                      (k) => selected[k],
+                    );
+                    if (targets.length === 0) {
+                      onClose();
+                      return;
+                    }
+
+                    const pos =
+                      scrollRef.current?.scrollTop ??
+                      (document.scrollingElement as any)?.scrollTop ??
+                      0;
+                    setDeletingMany(true);
+                    lastScrollTopRef.current = pos;
+                    restorePendingRef.current = true;
+
+                    try {
+                      let success = 0;
+                      for (const p of targets) {
+                        try {
+                          await DeletePack(currentVersionName, p);
+                          success++;
+                        } catch (e) {
+                          console.error(e);
+                        }
+                      }
+
+                      toast.success(
+                        t("contentpage.deleted_count", {
+                          count: success,
+                          defaultValue: `已删除 ${success} 个项目`,
+                        }),
+                      );
+                      setSelected({});
+                      refreshAll();
+                      onClose();
+                    } finally {
+                      setDeletingMany(false);
+                    }
+                  }}
+                >
+                  {t("common.delete", { defaultValue: "删除" })}
+                </Button>
+              </BaseModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </BaseModal>
+    </motion.div>
   );
 }

@@ -10,9 +10,9 @@ import { Events } from "@wailsio/runtime";
 import {
   GetAllVersionsStatus,
   GetVersionStatus,
-} from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as main from "../../bindings/github.com/liteldev/LeviLauncher/models";
-import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as main from "bindings/github.com/liteldev/LeviLauncher/models";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 type ItemType = "Preview" | "Release";
 
 type VersionItemLite = {
@@ -25,7 +25,7 @@ type CtxValue = {
   map: Map<string, main.VersionStatus>;
   setCurrentDownloadingInfo: (
     short: string | null,
-    type: string | null
+    type: string | null,
   ) => void;
   refreshAll: (items: VersionItemLite[]) => Promise<void>;
   refreshOne: (short: string, type: string) => Promise<void>;
@@ -73,7 +73,7 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
   const downloadingTypeRef = useRef<string | null>(null);
   const setCurrentDownloadingInfo = (
     short: string | null,
-    type: string | null
+    type: string | null,
   ) => {
     downloadingShortRef.current = short;
     downloadingTypeRef.current = type ? type.toLowerCase() : null;
@@ -97,7 +97,7 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
           if (originalItem) {
             newMap.set(originalItem.short, status);
           }
-        }
+        },
       );
       setMap(newMap);
     } catch (err) {
@@ -182,7 +182,7 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
       refreshing,
       markDownloaded,
     }),
-    [map, refreshing]
+    [map, refreshing],
   );
 
   return (
@@ -196,7 +196,7 @@ export const useVersionStatus = () => {
   const ctx = useContext(VersionStatusContext);
   if (!ctx)
     throw new Error(
-      "useVersionStatus must be used within VersionStatusProvider"
+      "useVersionStatus must be used within VersionStatusProvider",
     );
   return ctx;
 };

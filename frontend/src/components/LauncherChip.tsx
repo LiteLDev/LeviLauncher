@@ -6,7 +6,7 @@ export function ModdedChip() {
     <Chip
       variant="shadow"
       classNames={{
-        base: "bg-gradient-to-br from-indigo-500 to-pink-500 border-small border-white/50 shadow-pink-500/30",
+        base: "bg-linear-to-br from-indigo-500 to-pink-500 border-small border-white/50 shadow-pink-500/30",
         content: "drop-shadow shadow-black text-white",
       }}
     >
@@ -20,7 +20,7 @@ export function VanillaChip() {
     <Chip
       variant="shadow"
       classNames={{
-        base: "bg-gradient-to-br from-green-500 to-yellow-500 border-small border-white/50 shadow-yellow-500/30",
+        base: "bg-linear-to-br from-green-500 to-yellow-500 border-small border-white/50 shadow-yellow-500/30",
         content: "drop-shadow shadow-black text-white",
       }}
     >
@@ -34,7 +34,7 @@ export function ReleaseChip() {
     <Chip
       variant="shadow"
       classNames={{
-        base: "bg-gradient-to-br from-blue-500 to-cyan-500 border-small border-white/50 shadow-cyan-500/30",
+        base: "bg-linear-to-br from-blue-500 to-cyan-500 border-small border-white/50 shadow-cyan-500/30",
         content: "drop-shadow shadow-black text-white",
       }}
     >
@@ -48,7 +48,7 @@ export function PreviewChip() {
     <Chip
       variant="shadow"
       classNames={{
-        base: "bg-gradient-to-br from-purple-500 to-fuchsia-500 border-small border-white/50 shadow-fuchsia-500/30",
+        base: "bg-linear-to-br from-purple-500 to-fuchsia-500 border-small border-white/50 shadow-fuchsia-500/30",
         content: "drop-shadow shadow-black text-white",
       }}
     >

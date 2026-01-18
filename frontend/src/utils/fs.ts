@@ -1,4 +1,4 @@
-import { ListDir } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { ListDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 
 export type DirEntry = { name: string; path: string };
 

@@ -17,9 +17,10 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaChevronDown } from "react-icons/fa";
-import { useVersionStatus } from "../utils/VersionStatusContext";
+import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { motion } from "framer-motion";
-import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { PageHeader } from "@/components/PageHeader";
 
 type ItemType = "Preview" | "Release";
 
@@ -31,7 +32,7 @@ export default function InstallPage() {
 
   const mirrorVersion: string = String(location?.state?.mirrorVersion || "");
   const mirrorType: ItemType = String(
-    location?.state?.mirrorType || "Release"
+    location?.state?.mirrorType || "Release",
   ) as ItemType;
   const typeLabel: string = (mirrorType === "Preview"
     ? (t("common.preview") as unknown as string)
@@ -59,7 +60,7 @@ export default function InstallPage() {
       window.dispatchEvent(
         new CustomEvent("ll-nav-lock-changed", {
           detail: { lock: guardActive },
-        })
+        }),
       );
     } catch {}
     const originalPush = window.history.pushState.bind(window.history);
@@ -80,7 +81,7 @@ export default function InstallPage() {
       try {
         (window as any).llNavLock = false;
         window.dispatchEvent(
-          new CustomEvent("ll-nav-lock-changed", { detail: { lock: false } })
+          new CustomEvent("ll-nav-lock-changed", { detail: { lock: false } }),
         );
       } catch {}
     };
@@ -161,14 +162,14 @@ export default function InstallPage() {
   const inheritOptions = useMemo(() => {
     const type = String(mirrorType || "Release").toLowerCase();
     const allowed = new Set(
-      (inheritCandidates || []).map((n) => String(n || ""))
+      (inheritCandidates || []).map((n) => String(n || "")),
     );
     return (inheritMetas || [])
       .filter(
         (m: any) =>
           Boolean(m?.enableIsolation) &&
           String(m?.type || "").toLowerCase() === type &&
-          allowed.has(String(m?.name || ""))
+          allowed.has(String(m?.name || "")),
       )
       .map((m: any) => ({
         key: String(m?.name || ""),
@@ -190,15 +191,19 @@ export default function InstallPage() {
     () => [
       {
         key: "none",
-        label: t("downloadpage.install_folder.inherit_none") as unknown as string,
+        label: t(
+          "downloadpage.install_folder.inherit_none",
+        ) as unknown as string,
       },
       {
         key: "gdk",
-        label: t("downloadpage.install_folder.inherit_gdk") as unknown as string,
+        label: t(
+          "downloadpage.install_folder.inherit_gdk",
+        ) as unknown as string,
       },
       ...inheritOptions,
     ],
-    [inheritOptions, t]
+    [inheritOptions, t],
   );
 
   useEffect(() => {
@@ -235,7 +240,7 @@ export default function InstallPage() {
         if (typeof resolver === "function") {
           const name = await resolver(
             `${mirrorType || "Release"} ${mirrorVersion}`,
-            String(mirrorType || "Release").toLowerCase()
+            String(mirrorType || "Release").toLowerCase(),
           );
           setDownloadResolved(Boolean(name));
         } else {
@@ -314,7 +319,7 @@ export default function InstallPage() {
             (mirrorType || "Release") +
               " " +
               (mirrorVersion || installName || ""),
-            String(mirrorType || "Release").toLowerCase()
+            String(mirrorType || "Release").toLowerCase(),
           );
         } catch {}
       }
@@ -350,7 +355,7 @@ export default function InstallPage() {
           String(mirrorType || "Release").toLowerCase(),
           installIsolation,
           false,
-          false
+          false,
         );
       }
 
@@ -377,7 +382,8 @@ export default function InstallPage() {
       }
 
       try {
-        let cachedItems: { version: string; short: string; type: ItemType }[] = [];
+        let cachedItems: { version: string; short: string; type: ItemType }[] =
+          [];
         try {
           const raw = localStorage.getItem("ll.version_items");
           const parsed = raw ? JSON.parse(raw) : [];
@@ -404,7 +410,7 @@ export default function InstallPage() {
       setResultMsg(
         t("downloadpage.install.success", {
           defaultValue: "安装完成",
-        }) as unknown as string
+        }) as unknown as string,
       );
       setInstalling(false);
     } catch (e: any) {
@@ -415,20 +421,18 @@ export default function InstallPage() {
 
   return (
     <motion.div
-      className="w-full max-w-full mx-auto px-4 py-2 h-full flex flex-col"
+      className="w-full max-w-full mx-auto p-4 h-full flex flex-col"
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
     >
       <div className="flex flex-col h-full">
-        <Card className="flex-1 min-h-0 rounded-[2.5rem] shadow-xl bg-white/50 dark:bg-zinc-900/40 backdrop-blur-xl border border-white/40 dark:border-zinc-700/50">
-          <CardHeader className="p-4 sm:p-6 pb-2 flex flex-col sm:flex-row gap-4 justify-between items-center border-b border-default-200 dark:border-white/10">
-            <div className="flex w-full items-center justify-between gap-2">
-              <div className="flex items-center gap-3">
-                <div className="text-2xl font-bold bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
-                  {headerTitle}
-                </div>
-                <div className="text-small text-default-500 flex items-center gap-2">
+        <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+          <CardHeader className="p-4 sm:p-6 pb-2 block border-b border-default-200 dark:border-white/10">
+            <PageHeader
+              title={headerTitle}
+              description={
+                <div className="flex items-center gap-2">
                   <Chip
                     size="sm"
                     variant="flat"
@@ -440,8 +444,8 @@ export default function InstallPage() {
                   </Chip>
                   <span className="font-mono">{mirrorVersion}</span>
                 </div>
-              </div>
-            </div>
+              }
+            />
           </CardHeader>
 
           <CardBody className="flex flex-col gap-4 p-4 overflow-y-auto">
@@ -476,7 +480,7 @@ export default function InstallPage() {
                       damping: 20,
                       delay: 0.1,
                     }}
-                    className="w-16 h-16 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-500/30"
+                    className="w-16 h-16 rounded-full bg-linear-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-900/20"
                   >
                     <svg
                       viewBox="0 0 24 24"
@@ -500,7 +504,7 @@ export default function InstallPage() {
                 </div>
 
                 <div className="flex flex-col items-center gap-1 text-center">
-                  <h2 className="text-2xl font-black bg-gradient-to-br from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+                  <h2 className="text-2xl font-black bg-linear-to-br from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 bg-clip-text text-transparent">
                     {t("downloadpage.install.success_title", {
                       defaultValue: "安装完成",
                     })}
@@ -534,7 +538,7 @@ export default function InstallPage() {
 
                 <div className="mt-2">
                   <Button
-                    className="font-bold text-white shadow-lg shadow-emerald-500/20 bg-gradient-to-r from-emerald-500 to-teal-600 px-8"
+                    className="font-bold text-white shadow-lg shadow-emerald-900/20 bg-emerald-600 hover:bg-emerald-500 px-8"
                     radius="full"
                     size="md"
                     onPress={() => navigate(returnTo)}
@@ -590,8 +594,7 @@ export default function InstallPage() {
                         {customInstallerPath
                           ? customInstallerPath
                           : (t("downloadpage.install.custom_installer.hint", {
-                              defaultValue:
-                                "默认使用安装器目录下已下载的文件",
+                              defaultValue: "默认使用安装器目录下已下载的文件",
                             }) as unknown as string)}
                       </div>
                     </div>
@@ -604,12 +607,9 @@ export default function InstallPage() {
                           state: {
                             allowedExt: [".msixvc"],
                             multi: false,
-                            title: t(
-                              "downloadpage.customappx.modal.1.header",
-                              {
-                                defaultValue: "版本信息",
-                              }
-                            ),
+                            title: t("downloadpage.customappx.modal.1.header", {
+                              defaultValue: "版本信息",
+                            }),
                             initialPath: installerDir || "",
                             returnTo: "/install",
                             returnState: {
@@ -682,7 +682,7 @@ export default function InstallPage() {
                           items={inheritMenuItems}
                           onSelectionChange={(keys) => {
                             const arr = Array.from(
-                              keys as unknown as Set<string>
+                              keys as unknown as Set<string>,
                             );
                             const k = String(arr[0] || "");
                             if (!k) return;
@@ -690,7 +690,9 @@ export default function InstallPage() {
                           }}
                         >
                           {(item: { key: string; label: string }) => (
-                            <DropdownItem key={item.key}>{item.label}</DropdownItem>
+                            <DropdownItem key={item.key}>
+                              {item.label}
+                            </DropdownItem>
                           )}
                         </DropdownMenu>
                       </Dropdown>
@@ -708,13 +710,13 @@ export default function InstallPage() {
                     {t("common.cancel")}
                   </Button>
                   <Button
-                    className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                     radius="full"
                     onPress={handleInstall}
                   >
                     {t(
                       "downloadpage.customappx.modal.1.footer.install_button",
-                      { defaultValue: "安装" }
+                      { defaultValue: "安装" },
                     )}
                   </Button>
                 </motion.div>
@@ -730,7 +732,11 @@ export default function InstallPage() {
                 <div className="relative flex items-center justify-center">
                   <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse" />
                   <div className="w-16 h-16 rounded-full bg-default-50 dark:bg-zinc-800 border-4 border-default-100 dark:border-zinc-700 flex items-center justify-center relative z-10">
-                    <Spinner size="md" color="success" classNames={{ wrapper: "w-8 h-8" }} />
+                    <Spinner
+                      size="md"
+                      color="success"
+                      classNames={{ wrapper: "w-8 h-8" }}
+                    />
                   </div>
                 </div>
 
@@ -750,19 +756,27 @@ export default function InstallPage() {
                 <div className="w-full max-w-lg flex flex-col gap-2">
                   {installingVersion && (
                     <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-default-100/50 dark:bg-zinc-800/50">
-                       <span className="text-small font-medium text-default-500">{t("downloadpage.install.version_label", { defaultValue: "版本" })}</span>
-                       <span className="text-small font-bold text-default-700 dark:text-zinc-300">{installingVersion}</span>
+                      <span className="text-small font-medium text-default-500">
+                        {t("downloadpage.install.version_label", {
+                          defaultValue: "版本",
+                        })}
+                      </span>
+                      <span className="text-small font-bold text-default-700 dark:text-zinc-300">
+                        {installingVersion}
+                      </span>
                     </div>
                   )}
-                  
+
                   {installingTargetName && (
                     <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-default-100/50 dark:bg-zinc-800/50">
-                       <span className="text-[10px] font-bold uppercase tracking-wider text-default-400">
-                          {t("downloadpage.install.target", { defaultValue: "安装目标" })}
-                       </span>
-                       <span className="font-mono text-xs text-default-600 dark:text-zinc-400 truncate">
-                          {installingTargetName}
-                       </span>
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-default-400">
+                        {t("downloadpage.install.target", {
+                          defaultValue: "安装目标",
+                        })}
+                      </span>
+                      <span className="font-mono text-xs text-default-600 dark:text-zinc-400 truncate">
+                        {installingTargetName}
+                      </span>
                     </div>
                   )}
 
@@ -773,8 +787,10 @@ export default function InstallPage() {
                       size="sm"
                       color="success"
                       classNames={{
-                        indicator: "bg-gradient-to-r from-emerald-500 to-teal-500",
-                        track: "bg-default-200/50 dark:bg-zinc-700/50 border border-default-100 dark:border-white/5",
+                        indicator:
+                          "bg-linear-to-r from-emerald-500 to-teal-500",
+                        track:
+                          "bg-default-200/50 dark:bg-zinc-700/50 border border-default-100 dark:border-white/5",
                       }}
                       className="w-full"
                     />

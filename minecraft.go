@@ -22,10 +22,13 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/lang"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	lipclient "github.com/liteldev/LeviLauncher/internal/lip/client"
+	liptypes "github.com/liteldev/LeviLauncher/internal/lip/client/types"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
+	"github.com/liteldev/LeviLauncher/internal/preloader"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
@@ -46,11 +49,13 @@ const (
 	EventGameInputDownloadDone     = "gameinput.download.done"
 	EventGameInputDownloadError    = "gameinput.download.error"
 
-	EventFileDownloadStatus   = "file_download_status"
-	EventFileDownloadProgress = "file_download_progress"
-	EventFileDownloadDone     = "file_download_done"
-	EventFileDownloadError    = "file_download_error"
+	EventFileDownloadStatus   = "file.download.status"
+	EventFileDownloadProgress = "file.download.progress"
+	EventFileDownloadDone     = "file.download.done"
+	EventFileDownloadError    = "file.download.error"
 )
+
+var isPreloader = false
 
 type FileDownloadProgress struct {
 	Downloaded int64
@@ -167,8 +172,8 @@ func (a *Minecraft) CreateDesktopShortcut(name string) string {
 	return mcservice.CreateDesktopShortcut(name)
 }
 
-func (a *Minecraft) SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool) string {
-	return mcservice.SaveVersionMeta(name, gameVersion, typeStr, enableIsolation, enableConsole, enableEditorMode)
+func (a *Minecraft) SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, enableRenderDragon bool) string {
+	return mcservice.SaveVersionMeta(name, gameVersion, typeStr, enableIsolation, enableConsole, enableEditorMode, enableRenderDragon)
 }
 
 func (a *Minecraft) ListVersionMetas() []versions.VersionMeta { return mcservice.ListVersionMetas() }
@@ -244,14 +249,24 @@ func (a *Minecraft) DeleteVersionFolder(name string) string {
 type Minecraft struct {
 	ctx         context.Context
 	curseClient client.CurseClient
+	lipClient   *lipclient.Client
 	packManager *packages.PackManager
 }
 
 func NewMinecraft() *Minecraft {
 	return &Minecraft{
 		curseClient: client.NewCurseClient(curseForgeAPIKey),
+		lipClient:   lipclient.NewClient(),
 		packManager: packages.NewPackManager(),
 	}
+}
+
+func (a *Minecraft) SearchLIPPackages(q string, perPage int, page int, sort string, order string) (*liptypes.SearchPackagesResponse, error) {
+	return a.lipClient.SearchPackages(q, perPage, page, sort, order)
+}
+
+func (a *Minecraft) GetLIPPackage(identifier string) (*liptypes.GetPackageResponse, error) {
+	return a.lipClient.GetPackage(identifier)
 }
 
 func (a *Minecraft) startup() {
@@ -775,10 +790,11 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	}
 	application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
 	_ = vcruntime.EnsureForVersion(a.ctx, dir)
-	//_ = preloader.EnsureForVersion(a.ctx, dir)
-	//_ = peeditor.EnsureForVersion(a.ctx, dir)
-	//_ = peeditor.RunForVersion(a.ctx, dir)
-
+	if isPreloader {
+		_ = preloader.EnsureForVersion(a.ctx, dir)
+		_ = peeditor.EnsureForVersion(a.ctx, dir)
+		_ = peeditor.RunForVersion(a.ctx, dir)
+	}
 	var args []string
 	toRun := exe
 	var gameVer string

@@ -1,8 +1,7 @@
 {
   "app": {
     "settings": "Settings",
-    "lang": "Language",
-    "quit_launcher": "Quit Launcher"
+    "lang": "Language"
   },
   "nav": {
     "versions": "Versions",
@@ -12,7 +11,6 @@
   "launcherpage": {
     "launch_button": "Launch",
     "content_manage": "Content Management",
-    "quick_actions": "Quick Actions",
     "go_version_settings": "Version Settings",
     "manage_versions": "Versions",
     "search_versions": "Search versions or names",
@@ -39,11 +37,6 @@
       "go_settings": "Open Settings"
     },
     "delete": {
-      "failed": {
-        "title": "Delete Failed",
-        "content": "Please try again later.",
-        "close_button": "Close"
-      },
       "complete": {
         "title": "Delete Complete",
         "content": "The selected version has been deleted successfully!",
@@ -54,30 +47,15 @@
         "content": "Are you sure you want to delete this version? This operation cannot be undone.",
         "delete_button": "Delete",
         "cancel_button": "Cancel"
-      },
-      "deleting": {
-        "title": "Deleting..."
       }
     },
     "launch": {
       "failed": {
         "title": "Launch Error",
         "content": "You did not select any version, please go to the download page to download it!",
-        "download_button": "Download Page",
         "close_button": "Close"
       },
       "force_run_button": "Force Launch"
-    },
-    "deleting": {
-      "title": "Deleting"
-    },
-    "registering": {
-      "title": "Registering"
-    },
-    "startup": {
-      "title": "Successful startup",
-      "content": "The selected version has been started successfully!",
-      "close_button": "Close"
     },
     "currentVersion": "Current Version",
     "vcruntime": {
@@ -103,7 +81,6 @@
       "installing": {
         "title": "Installing GameInput",
         "body": "Downloading and starting the installer. Follow system prompts to complete.",
-        "progress_prefix": "Progress: ",
         "preparing": "Preparing download..."
       },
       "missing": {
@@ -126,11 +103,9 @@
       "continue": "Continue Installing",
       "done_and_check": "Done, Recheck"
     },
-    "currentVersion_choose_version_aria": "Choose Version",
     "currentVersion_none": "None",
     "version_select": {
       "title": "Select Version",
-      "subtitle": "Available local versions:",
       "unknown": "Unknown"
     },
     "tip": {
@@ -148,8 +123,7 @@
   "moddedcard": {
     "title": "Mods",
     "content": {
-      "none": "0 mods found",
-      "found": "{{count}} mods found"
+      "none": "0 mods found"
     },
     "manage": "Manage Mods"
   },
@@ -163,13 +137,8 @@
     }
   },
   "downloadpage": {
-    "type": {
-      "install": "Install",
-      "not_install": "Not Install"
-    },
     "changelog": {
-      "title": "Latest Changelog",
-      "loading": "Loading..."
+      "title": "Latest Changelog"
     },
     "status": {
       "downloaded": "Downloaded",
@@ -191,7 +160,6 @@
       }
     },
     "topcontent": {
-      "rowperpage": "Row per page: ",
       "types": "Types",
       "types_all": "All",
       "status": "Status",
@@ -212,9 +180,6 @@
       "confirm_title": "Confirm Install Folder",
       "name_label": "Version Name",
       "placeholder_name": "Please enter version name",
-      "suggest_default": "Suggest use default: ",
-      "description": "Used to store the copied game files",
-      "name_required": "Name is required",
       "enable_isolation": "Version isolation",
       "enable_isolation_desc": "Redirect game data (worlds, settings, caches, etc.) to versions/<name>/ instead of storing in AppData.",
       "inherit_label": "Inherit From",
@@ -230,10 +195,7 @@
       "copy_link": "Copy Link",
       "recommended": "Recommended Mirror",
       "auto_testing": "Auto testing…",
-      "no_recommended": "No recommended mirror",
       "others": "Other Mirrors",
-      "testing_short": "Testing",
-      "failed": "Failed",
       "no_mirrors": "No mirrors available for this version.",
       "filename_fallback": "(file)",
       "retest": "Retest",
@@ -243,8 +205,6 @@
     },
     "progress": {
       "title": "Download Progress",
-      "dest_placeholder": "In installers directory (msixvc)",
-      "error_prefix": "Error: ",
       "unknown_error": "Unknown error"
     },
     "download": {
@@ -271,9 +231,6 @@
         "hint": "Defaults to using files in the installers directory"
       }
     },
-    "vcr": {
-      "error_generic": "Runtime library preparation failed. Please check network and retry"
-    },
     "customappx": {
       "button": "Custom",
       "modal": {
@@ -281,13 +238,11 @@
           "header": "Version Information",
           "body": {
             "select": {
-              "label": "Select Game Type",
               "item1": "Release",
               "item2": "Preview"
             }
           },
           "footer": {
-            "cancel_button": "Cancel",
             "install_button": "Install"
           }
         }
@@ -308,64 +263,24 @@
       },
       "paths": {
         "title": "Content Paths",
+        "subtitle": "Manage game data storage location",
         "base_root": "Base Root",
         "apply": "Apply",
         "reset": "Reset",
-        "open_installers": "Open Installers",
-        "open_versions": "Open Versions",
         "installer": "Installers",
         "versions": "Versions",
+        "unsaved": "Changes not saved",
         "not_writable": "Directory not writable"
       },
-      "browse": "Browse...",
       "language": {
         "name": "Language",
         "button": "Change"
-      },
-      "defaultdev": {
-        "label": "Launch in Dev Mode",
-        "description": "When enabled, Minecraft launches in Dev mode. When disabled, it launches directly in normal mode."
       }
     },
-    "footer": {
-      "cancel_button": "Cancel",
-      "save_button": "Save"
-    },
     "modal": {
-      "1": {
-        "header": {
-          "title": "Checking for updates..."
-        },
-        "body": {
-          "content": "Checking for updates..."
-        },
-        "footer": {
-          "cancel_button": "Cancel"
-        }
-      },
       "2": {
-        "header": {
-          "title": "New version detected"
-        },
-        "body": {
-          "content": "A new version ({{version}}) is available!"
-        },
         "footer": {
-          "download_button": "Update",
-          "close_button": "Close"
-        }
-      },
-      "3": {
-        "header": {
-          "title": "Updating..."
-        }
-      },
-      "-2": {
-        "header": {
-          "title": "You are already on the latest version!"
-        },
-        "footer": {
-          "close_button": "Close"
+          "download_button": "Update"
         }
       }
     }
@@ -411,61 +326,8 @@
   },
   "downloadmodal": {
     "download_button": "Download",
-    "information": {
-      "title": "Information Confirmation",
-      "spinner": {
-        "label": "Trying to get the download url now.."
-      },
-      "table": {
-        "version": "VERSION",
-        "type": "TYPE",
-        "size": "FILESIZE"
-      },
-      "input": {
-        "label": "Version Name",
-        "placeholder": "Enter your vserion name",
-        "errormessage": "Does not comply with naming rules or already exists!"
-      },
-      "switch": {
-        "label": "Enable Modded",
-        "description": "This will enable you to mod and auto install Preloader, as well as modify the original file(Minecraft.Windows.exe)."
-      },
-      "close_button": "Close",
-      "download_button": "Download"
-    },
-    "downloading": {
-      "title": "Downloading",
-      "body": {
-        "file_name": " File: {{name}}",
-        "estimated_time_remaining": "Estimated time remaining: "
-      },
-      "footer": {
-        "close_button": "Close"
-      }
-    },
     "installing": {
       "title": "Installing"
-    },
-    "installcomplete": {
-      "title": "Install Complete",
-      "content": "Your installation was successful!",
-      "close_button": "Close"
-    },
-    "stopdownload": {
-      "title": "Confirmation of stopping download",
-      "content": "Are you going to stop the download? This operation will be irreversible!",
-      "cancel_button": "Cancel",
-      "stop_button": "Stop"
-    },
-    "downloadfailed": {
-      "title": "Download Failed",
-      "content": "An error occurred while trying to download the file. Please try again later.",
-      "close_button": "Close"
-    },
-    "installfailed": {
-      "title": "Install Failed",
-      "content": "Please try again later.",
-      "close_button": "Close"
     },
     "open_folder": "Open Folder"
   },
@@ -475,6 +337,7 @@
     "font": "This software uses the {{name}} font"
   },
   "about": {
+    "description": "LeviLauncher - A Modern Minecraft Bedrock Launcher",
     "authors": "Authors & Maintainers",
     "author": "Author",
     "ll_authors": "LeviLauncher Authors",
@@ -499,15 +362,17 @@
     "ok": "OK",
     "cancel": "Cancel",
     "error": "Error",
-    "retry": "Retry",
     "refresh": "Refresh",
-    "cancel_and_clean": "Cancel and Clean",
     "quit_launcher": "Quit Launcher",
     "confirm": "Confirm",
+    "success": "Success",
     "delete": "Delete",
+    "delete_selected": "Delete selected",
     "search": "Search",
+    "search_placeholder": "Search...",
     "open": "Open",
-    "select": "Select",
+    "select_mode": "Select mode",
+    "select_all": "Select all",
     "preview": "Preview",
     "release": "Release",
     "back": "Back",
@@ -515,7 +380,6 @@
     "yes": "Yes",
     "no": "No",
     "close": "Close",
-    "go": "Go",
     "empty": "No data",
     "browse": "Browse...",
     "processing": "Processing...",
@@ -528,92 +392,71 @@
     "add": "Add",
     "save_failed": "Save failed",
     "load_failed": "Load failed",
-    "view_all": "View All"
+    "view_all": "View All",
+    "confirm_delete": "Confirm Delete",
+    "deleting": "Deleting...",
+    "no_results": "No results found"
   },
   "content": {
     "count": {
       "worlds": "Worlds",
       "resource_packs": "Resource Packs",
-      "behavior_packs": "Behavior Packs",
-      "skin_packs": "Skin Packs"
+      "behavior_packs": "Behavior Packs"
     }
   },
   "contentpage": {
-    "not_ready_title": "Page Not Ready",
-    "not_ready_body": "This page is under development and not accessible yet. Please return to the home page.",
     "current_version": "Current Version",
     "none": "None",
     "isolation": "Isolation",
-    "isolation_on": "Isolation: On",
-    "isolation_off": "Isolation: Off",
     "worlds": "Worlds",
-    "worlds_desc": "Stored per-player under Users/<player>/games/com.mojang/minecraftWorlds",
+    "worlds_list": "Worlds List",
     "select_player": "Select Player",
     "no_players": "No players",
-    "no_worlds": "No worlds",
-    "backup": "Backup",
     "backup_success": "Backup succeeded",
-    "edit": "Edit",
     "resource_packs": "Resource Packs",
-    "shared_desc": "Shared by all players: Users/Shared/games/com.mojang/resource_packs",
     "no_resource_packs": "No resource packs",
-    "path": "Path",
-    "path_unknown": "Path Unknown",
-    "not_resolved": "Not resolved",
     "behavior_packs": "Behavior Packs",
-    "shared_desc_bp": "Shared by all players: Users/Shared/games/com.mojang/behavior_packs",
     "no_behavior_packs": "No behavior packs",
     "skin_packs": "Skin Packs",
     "no_skin_packs": "No skin packs",
-    "count": "Count",
     "error_resolve_paths": "Failed to resolve content paths.",
     "open_users_dir": "Open Storage Directory",
     "players_aria": "Players",
-    "sort_aria": "Sort",
     "sort_time": "Time",
     "sort_asc": "Ascending",
     "sort_desc": "Descending",
-    "min_engine_version": "Min Engine Version",
     "drop_hint": "Drag .mcworld/.mcpack/.mcaddon to import",
     "import_button": "Import .mcworld/.mcpack/.mcaddon",
     "require_player_for_world_import": "Select a player before importing a world (.mcworld)",
     "no_player_selected": "No player selected",
     "world_leveldat_editor": "World level.dat editor",
-    "basic": "Basic",
     "version": "Version",
-    "world_level_name": "World Name",
     "add_field": "Add Field",
-    "add_field_panel": "Add Field Panel",
     "field_name": "Name",
     "initial_value": "Initial Value",
-    "gamerules": "Game Rules",
-    "others": "Other Fields",
-    "add_child_field": "Add Child Field",
-    "new_child_item": "New Child Item",
-    "field_type": "Type",
     "select_player_title": "Select Player",
-    "select_player_for_import": "Please select the player to import to"
+    "select_player_for_import": "Please select the player to import to",
+    "no_items": "No items found",
+    "delete_pack_confirm": "Are you sure you want to delete {{name}}?",
+    "delete_warning": "This action cannot be undone!",
+    "delete_selected_confirm": "Are you sure you want to delete the selected {{count}} items?",
+    "deleted_name": "Deleted {{name}}",
+    "deleted_count": "Deleted {{count}} items",
+    "delete_world_confirm": "Are you sure you want to delete world {{name}}?"
   },
   "versions": {
-    "rename": {
-      "title": "Rename Version",
-      "current": "Current Name",
-      "new_name": "New Name",
-      "placeholder": "Enter new name",
-      "hint": "Only rename the folder. Game version and type are unaffected."
-    },
     "info": {
       "version": "Game Version",
       "name": "Name"
     },
     "edit": {
       "title": "Version Settings",
-      "current": "Current Name",
       "new_name": "New Name",
       "placeholder": "Enter new name",
       "hint": "Only rename the folder. Game version and type are unaffected.",
       "enable_isolation": "Enable Isolation",
       "enable_console": "Enable Console",
+      "enable_render_dragon": "Load RenderDragon Shaders",
       "enable_editor_mode": "Enable Editor Mode",
       "danger_zone_title": "Danger Zone",
       "delete_hint": "Click to open delete confirmation to avoid accidental deletion.",
@@ -634,13 +477,8 @@
       "clear": "Clear",
       "hint": "Will be saved as LargeLogo.png under the version folder. Click the icon to change."
     },
-    "delete": {
-      "title": "Confirm Version Deletion",
-      "body": "This will delete the version folder: ",
-      "warning": "This action cannot be undone.",
-      "confirm": "Delete",
-      "success_title": "Deletion Complete",
-      "success_body": "Version deleted: "
+    "unsaved": {
+      "body": "You have unsaved changes to version settings. Do you want to save before leaving?"
     }
   },
   "errors": {
@@ -688,20 +526,14 @@
     "ERR_DEV_MODE_REQUIRED": "Developer Mode is not enabled, and auto-enable failed. Please enable Developer Mode manually and retry."
   },
   "filemanager": {
-    "title": "File Manager",
     "search_placeholder": "Search...",
     "sort": {
       "name": "Name",
-      "size": "Size",
       "kind": "Kind"
     },
-    "empty": "No items found",
-    "drive_label": "Drive",
     "drives_title": "Drives",
     "quick_access": "Quick Access",
     "pinned": "Pinned",
-    "navigation": "Navigation",
-    "pins_empty": "No pins. Use the star on items to pin.",
     "choose_drive": "Choose a drive",
     "computer": "Computer",
     "up": "Up",
@@ -709,8 +541,7 @@
     "refreshing": "Refreshing…",
     "choose_this_dir": "Choose this directory",
     "dir_not_writable": "Directory not writable. Please choose another location",
-    "new_folder": "New Folder",
-    "new_folder_placeholder": "Enter folder name"
+    "new_folder": "New Folder"
   },
   "file": {
     "types": {
@@ -765,16 +596,13 @@
     "err_unknown": "Unknown error",
     "overwrite_modal_title": "Duplicate Detected",
     "overwrite_modal_body": "A module folder with the same name exists. Overwrite (update)?",
-    "drag_import_unsupported_title": "Drag Import Unsupported",
-    "drag_import_unsupported_body": "Currently unsupported; waiting for Wails support.",
     "toggle_label": "Enable Mod",
     "toggle_on": "Enabled",
     "toggle_off": "Disabled",
-    "toggle_tip": "Toggle mod enable/disable state",
     "toggle_desc_on": "Mod is enabled and will load when the game starts.",
     "toggle_desc_off": "Mod is disabled and will not load when the game starts.",
     "only_enabled": "Only show enabled mods",
-    "type_mod": "Mod"
+    "drop_hint": "Drop .zip or .dll to import mods/plugins"
   },
   "versionselect": {
     "unsaved": {
@@ -791,28 +619,23 @@
     "decline": "Decline and Exit"
   },
   "onboarding": {
-    "title": "First-Run Setup",
-    "subtitle": "Please set content paths and language",
+    "title": "Welcome",
+    "subtitle": "Please configure content paths and language",
     "skip": "Skip",
     "finish": "Finish",
     "unsaved": {
       "title": "Unsaved Changes",
-      "body": "You changed the content path but haven't saved it. Save and finish?",
+      "body": "You have unsaved changes to the content path. Save before finishing?",
       "cancel": "Cancel",
-      "save": "Save and Finish"
+      "save": "Save & Finish"
     }
-  },
-  "curseforgecard": {
-    "title": "CurseForge",
-    "content": "Browse and download mods",
-    "browse": "Browse CurseForge"
   },
   "contentdownload": {
     "title": "Content Download"
   },
   "curseforge": {
     "title": "CurseForge",
-    "search_placeholder": "Search mods...",
+    "search_placeholder": "Search game resources...",
     "search": "Search",
     "minecraft_version": "Minecraft Version",
     "select_version": "Select version",
@@ -875,5 +698,8 @@
       "next": "Next",
       "close": "Close"
     }
+  },
+  "lip": {
+    "maintenance": "Maintenance, not available yet"
   }
 }

@@ -1,13 +1,17 @@
 package main
 
 import (
+	"bufio"
 	"embed"
 	"log"
+	"net"
 	"os"
 	"strings"
+	"time"
 	"unsafe"
 
 	win "golang.org/x/sys/windows"
+	"gopkg.in/natefinch/npipe.v2"
 
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
@@ -31,6 +35,8 @@ var assets embed.FS
 
 var singleInstanceGuard win.Handle
 
+const singleInstancePipe = `\\.\pipe\LeviLauncher_SingleInstance_Pipe`
+
 const (
 	SW_RESTORE = 9
 )
@@ -51,13 +57,85 @@ func focusExistingWindow() {
 	}
 }
 
-func ensureSingleInstance() bool {
+func parseArgs() (initialURL string, autoLaunchVersion string) {
+	initialURL = "/"
+	for _, arg := range os.Args[1:] {
+		if strings.HasPrefix(arg, "--self-update=") {
+			initialURL = "/#/updating"
+			break
+		}
+		if strings.HasPrefix(arg, "--launch=") {
+			v := strings.TrimSpace(strings.TrimPrefix(arg, "--launch="))
+			v = strings.Trim(v, `"'`)
+			autoLaunchVersion = v
+		}
+	}
+	return initialURL, autoLaunchVersion
+}
+
+func sendLaunchToExistingInstance(version string) bool {
+	v := strings.TrimSpace(version)
+	if v == "" {
+		return false
+	}
+	for i := 0; i < 8; i++ {
+		conn, err := npipe.DialTimeout(singleInstancePipe, 200*time.Millisecond)
+		if err == nil && conn != nil {
+			func() {
+				defer conn.Close()
+				_, _ = conn.Write([]byte("launch\t" + v + "\n"))
+			}()
+			return true
+		}
+		time.Sleep(120 * time.Millisecond)
+	}
+	return false
+}
+
+func startSingleInstanceServer(mc *Minecraft) {
+	ln, err := npipe.Listen(singleInstancePipe)
+	if err != nil {
+		return
+	}
+	go func() {
+		for {
+			conn, err := ln.Accept()
+			if err != nil {
+				return
+			}
+			go func(c net.Conn) {
+				defer c.Close()
+				s := bufio.NewScanner(c)
+				for s.Scan() {
+					line := strings.TrimSpace(s.Text())
+					if line == "" {
+						continue
+					}
+					parts := strings.SplitN(line, "\t", 2)
+					if len(parts) != 2 {
+						continue
+					}
+					cmd := strings.TrimSpace(parts[0])
+					payload := strings.TrimSpace(parts[1])
+					if cmd == "launch" && payload != "" {
+						go func(v string) {
+							_ = mc.LaunchVersionByNameForce(v)
+						}(payload)
+					}
+				}
+			}(conn)
+		}
+	}()
+}
+
+func ensureSingleInstance(autoLaunchVersion string) bool {
 	name, err := win.UTF16PtrFromString("Global\\LeviLauncher_SingleInstance")
 	if err != nil {
 		return true
 	}
 	h, err := win.CreateMutex(nil, true, name)
 	if err == win.ERROR_ALREADY_EXISTS {
+		_ = sendLaunchToExistingInstance(autoLaunchVersion)
 		focusExistingWindow()
 		return false
 	}
@@ -116,7 +194,9 @@ func init() {
 }
 
 func main() {
-	if !ensureSingleInstance() {
+	initialURL, autoLaunchVersion := parseArgs()
+
+	if !ensureSingleInstance(autoLaunchVersion) {
 		return
 	}
 	c, _ := config.Load()
@@ -126,6 +206,7 @@ func main() {
 		discord.Init()
 	}
 	mc := NewMinecraft()
+	startSingleInstanceServer(mc)
 	app := application.New(application.Options{
 		Name:        "LeviLauncher",
 		Description: "A Minecraft Launcher",
@@ -137,18 +218,6 @@ func main() {
 		},
 	})
 	mc.startup()
-
-	initialURL := "/"
-	var autoLaunchVersion string
-	for _, arg := range os.Args[1:] {
-		if strings.HasPrefix(arg, "--self-update=") {
-			initialURL = "/#/updating"
-			break
-		}
-		if strings.HasPrefix(arg, "--launch=") {
-			autoLaunchVersion = strings.TrimSpace(strings.TrimPrefix(arg, "--launch="))
-		}
-	}
 
 	if strings.TrimSpace(autoLaunchVersion) != "" && initialURL == "/" {
 		_ = mc.LaunchVersionByName(autoLaunchVersion)

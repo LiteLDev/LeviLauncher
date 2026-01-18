@@ -60,6 +60,7 @@ module.exports = {
         light: {
           colors: {
             background: "rgba(250, 250, 250, 0.9)", 
+            foreground: "#27272a",
           },
         },
         dark: {

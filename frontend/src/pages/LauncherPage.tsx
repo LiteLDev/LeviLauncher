@@ -1,11 +1,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Modal,
   useDisclosure,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Button,
   Card,
   CardHeader,
@@ -25,8 +21,9 @@ import { useTranslation } from "react-i18next";
 import {
   EnsureGameInputInteractive,
   GetContentRoots,
+  IsGDKInstalled,
   ListDir,
-} from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 
 import {
   FaRocket,
@@ -43,19 +40,20 @@ import {
   FaCube,
   FaArrowRight,
 } from "react-icons/fa";
-import { ModCard } from "../components/ModdedCard";
-import { ContentDownloadCard } from "../components/ContentDownloadCard";
-import {
-  ModdedChip,
-  ReleaseChip,
-  PreviewChip,
-} from "../components/LauncherChip";
+import { ModCard } from "@/components/ModdedCard";
+import { ContentDownloadCard } from "@/components/ContentDownloadCard";
 import { Events, Window, Browser } from "@wailsio/runtime";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { compareVersions } from "../utils/version";
-import { saveCurrentVersionName } from "../utils/currentVersion";
-import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { compareVersions } from "@/utils/version";
+import { saveCurrentVersionName } from "@/utils/currentVersion";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  BaseModal,
+  BaseModalHeader,
+  BaseModalBody,
+  BaseModalFooter,
+} from "@/components/BaseModal";
 
 let __didCheckGameInput = false;
 let __didCheckGamingServices = false;
@@ -88,8 +86,9 @@ export const LauncherPage = (args: any) => {
   const [logoDataUrl, setLogoDataUrl] = React.useState<string>("");
   const [versionQuery, setVersionQuery] = React.useState<string>("");
   const [logoByName, setLogoByName] = React.useState<Map<string, string>>(
-    new Map()
+    new Map(),
   );
+  const fetchingLogos = React.useRef<Set<string>>(new Set());
   const ensureOpsRef = React.useRef<number>(0);
   const launchTips = React.useMemo(
     () => [
@@ -122,7 +121,7 @@ export const LauncherPage = (args: any) => {
         defaultValue: "首次启动可能较慢，请耐心等待。",
       }) as unknown as string,
     ],
-    [t]
+    [t],
   );
   const [tipIndex, setTipIndex] = React.useState<number>(0);
   const tipTimerRef = React.useRef<number | null>(null);
@@ -170,7 +169,7 @@ export const LauncherPage = (args: any) => {
             const getter = (minecraft as any)?.GetVersionLogoDataUrl;
             if (typeof getter === "function") {
               getter(saved).then((u: string) =>
-                setLogoDataUrl(String(u || ""))
+                setLogoDataUrl(String(u || "")),
               );
             }
           })
@@ -218,7 +217,7 @@ export const LauncherPage = (args: any) => {
         name,
         version: String(info?.version || ""),
         isPreview: !!info?.isPreview,
-      })
+      }),
     );
     entries.sort((a, b) => {
       const byVer = compareVersions(b.version, a.version);
@@ -241,11 +240,11 @@ export const LauncherPage = (args: any) => {
 
   const versionMenuItems = React.useMemo(
     () =>
-      (filteredVersionNames.length === 0
+      filteredVersionNames.length === 0
         ? [
             {
               key: "__empty",
-              name: (t("common.empty", { defaultValue: "暂无数据" }) as string),
+              name: t("common.empty", { defaultValue: "暂无数据" }) as string,
               version: "",
               isRegistered: false,
               isDisabled: true,
@@ -257,27 +256,41 @@ export const LauncherPage = (args: any) => {
             version: String(localVersionMap.get(name)?.version || ""),
             isRegistered: Boolean(localVersionMap.get(name)?.isRegistered),
             isDisabled: false,
-          }))),
-    [filteredVersionNames, localVersionMap]
+            logo: logoByName.get(name),
+          })),
+    [filteredVersionNames, localVersionMap, logoByName],
   );
 
   const ensureLogo = React.useCallback(
     (name: string) => {
-      if (!name || logoByName.has(name)) return;
+      if (!name || logoByName.has(name) || fetchingLogos.current.has(name))
+        return;
+      fetchingLogos.current.add(name);
       try {
         const getter = minecraft?.GetVersionLogoDataUrl;
         if (typeof getter === "function") {
-          getter(name).then((u: string) => {
-            setLogoByName((prev) => {
-              const m = new Map(prev);
-              m.set(name, String(u || ""));
-              return m;
+          getter(name)
+            .then((u: string) => {
+              fetchingLogos.current.delete(name);
+              if (u) {
+                setLogoByName((prev) => {
+                  const m = new Map(prev);
+                  m.set(name, String(u));
+                  return m;
+                });
+              }
+            })
+            .catch(() => {
+              fetchingLogos.current.delete(name);
             });
-          });
+        } else {
+          fetchingLogos.current.delete(name);
         }
-      } catch {}
+      } catch {
+        fetchingLogos.current.delete(name);
+      }
     },
-    [logoByName]
+    [logoByName],
   );
 
   useEffect(() => {
@@ -383,12 +396,24 @@ export const LauncherPage = (args: any) => {
 
   const doRegister = React.useCallback(async () => {
     if (!currentVersion) return;
+    try {
+      const ok = await IsGDKInstalled();
+      if (!ok) {
+        setModalState(17);
+        setOverlayActive(true);
+        onOpen();
+        return;
+      }
+    } catch {}
     setModalState(13);
     setOverlayActive(true);
     onOpen();
     try {
       const isPreview = localVersionMap.get(currentVersion)?.isPreview || false;
-      const result = await minecraft.RegisterVersionWithWdapp(currentVersion, isPreview);
+      const result = await minecraft.RegisterVersionWithWdapp(
+        currentVersion,
+        isPreview,
+      );
       if (result === "success" || result === "") {
         setModalState(15);
         const fn = (minecraft as any)?.GetVersionMeta;
@@ -398,7 +423,10 @@ export const LauncherPage = (args: any) => {
               const map = new Map(prev);
               const existing = map.get(currentVersion);
               if (existing) {
-                map.set(currentVersion, { ...existing, isRegistered: Boolean(m?.registered) });
+                map.set(currentVersion, {
+                  ...existing,
+                  isRegistered: Boolean(m?.registered),
+                });
               }
               return map;
             });
@@ -414,7 +442,7 @@ export const LauncherPage = (args: any) => {
       setLaunchErrorCode(String(e));
       setModalState(16);
     }
-  }, [currentVersion, localVersionMap, onOpen]);
+  }, [currentVersion, localVersionMap, navigate, onOpen]);
 
   useEffect(() => {
     if (!hasBackend) return;
@@ -494,7 +522,7 @@ export const LauncherPage = (args: any) => {
         const d = event?.data || {};
         if (typeof d?.Total === "number") setGiTotal(d.Total);
         if (typeof d?.Downloaded === "number") setGiDownloaded(d.Downloaded);
-      }
+      },
     );
     const unlistenGiDlDone = Events.On("gameinput.download.done", () => {
       setGiDownloaded(giTotal);
@@ -505,7 +533,7 @@ export const LauncherPage = (args: any) => {
     });
     const unlistenGiDlError = Events.On(
       "gameinput.download.error",
-      (data) => {}
+      (data) => {},
     );
     const unlistenGiDone = Events.On("gameinput.ensure.done", () => {
       setPendingInstallCheck((prev) => prev ?? "gi");
@@ -725,7 +753,7 @@ export const LauncherPage = (args: any) => {
             const getter = minecraft?.GetVersionLogoDataUrl;
             if (typeof getter === "function" && useName) {
               getter(useName).then((u: string) =>
-                setLogoDataUrl(String(u || ""))
+                setLogoDataUrl(String(u || "")),
               );
             } else {
               setLogoDataUrl("");
@@ -747,27 +775,27 @@ export const LauncherPage = (args: any) => {
   > = {
     1: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-danger-500">
             {t("launcherpage.launch.failed.title")}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
             <p className="font-medium text-center">
-                {(() => {
+              {(() => {
                 const key = `errors.${launchErrorCode}`;
                 const translated = t(key) as unknown as string;
                 if (launchErrorCode && translated && translated !== key)
-                    return translated;
+                  return translated;
                 return t(
-                    "launcherpage.launch.failed.content"
+                  "launcherpage.launch.failed.content",
                 ) as unknown as string;
-                })()}
+              })()}
             </p>
           </div>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           {launchErrorCode === "ERR_GAME_ALREADY_RUNNING" && (
             <Button
               color="warning"
@@ -798,19 +826,19 @@ export const LauncherPage = (args: any) => {
           >
             {t("launcherpage.launch.failed.close_button")}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     7: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-          <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
+        <BaseModalHeader>
+          <h2 className="text-2xl font-black tracking-tight text-emerald-600">
             {t("launcherpage.gameinput.installing.title", {
               defaultValue: "正在安装 GameInput",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.gameinput.installing.body", {
               defaultValue: "正在下载并启动安装程序，请根据系统提示完成安装。",
@@ -819,52 +847,57 @@ export const LauncherPage = (args: any) => {
           <div className="mt-4">
             {giTotal > 0 ? (
               <div className="flex flex-col gap-2">
-                 <div className="flex justify-between text-small font-bold text-default-500">
-                    <span>{Math.min(100, Math.floor((giDownloaded / giTotal) * 100))}%</span>
-                    <span className="font-mono">{(giDownloaded / 1024 / 1024).toFixed(1)} / {(giTotal / 1024 / 1024).toFixed(1)} MB</span>
-                 </div>
-                 <Progress 
-                    aria-label="Downloading" 
-                    value={(giDownloaded / giTotal) * 100} 
-                    color="success" 
-                    size="md"
-                    classNames={{
-                        indicator: "bg-gradient-to-r from-emerald-500 to-teal-600"
-                    }}
-                 />
+                <div className="flex justify-between text-small font-bold text-default-500">
+                  <span>
+                    {Math.min(100, Math.floor((giDownloaded / giTotal) * 100))}%
+                  </span>
+                  <span className="font-mono">
+                    {(giDownloaded / 1024 / 1024).toFixed(1)} /{" "}
+                    {(giTotal / 1024 / 1024).toFixed(1)} MB
+                  </span>
+                </div>
+                <Progress
+                  aria-label="Downloading"
+                  value={(giDownloaded / giTotal) * 100}
+                  color="success"
+                  size="md"
+                  classNames={{
+                    indicator: "bg-emerald-600 hover:bg-emerald-500",
+                  }}
+                />
               </div>
             ) : (
               <div className="flex items-center gap-3 text-default-500">
                 <Spinner size="sm" color="success" />
                 <span>
-                    {t("launcherpage.gameinput.installing.preparing", {
+                  {t("launcherpage.gameinput.installing.preparing", {
                     defaultValue: "正在准备下载...",
-                    })}
+                  })}
                 </span>
               </div>
             )}
           </div>
-        </ModalBody>
+        </BaseModalBody>
       </>
     ),
     8: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.gameinput.missing.title", {
               defaultValue: "缺少 GameInput 组件",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.gameinput.missing.body", {
               defaultValue:
                 "运行游戏需要 Microsoft GameInput 组件。是否现在下载安装？",
             })}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button
             color="danger"
             variant="light"
@@ -878,7 +911,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={() => {
               setPendingInstallCheck("gi");
               EnsureGameInputInteractive();
@@ -890,27 +923,27 @@ export const LauncherPage = (args: any) => {
               defaultValue: "立即安装",
             })}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     9: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.gs.missing.title", {
               defaultValue: "缺少 Microsoft Gaming Services",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.gs.missing.body", {
               defaultValue:
                 "未检测到 Microsoft Gaming Services。该组件是 Minecraft 运行所必须的依赖项。",
             })}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button
             color="danger"
             variant="light"
@@ -939,7 +972,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={() => {
               setPendingInstallCheck("gs");
               Browser.OpenURL("ms-windows-store://pdp/?ProductId=9MWPM2CQNLHN");
@@ -951,27 +984,27 @@ export const LauncherPage = (args: any) => {
               defaultValue: "打开商店进行安装",
             })}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     10: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-          <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
+        <BaseModalHeader>
+          <h2 className="text-2xl font-black tracking-tight text-emerald-600">
             {t("launcherpage.install_confirm.title", {
               defaultValue: "是否已完成安装？",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.install_confirm.body", {
               defaultValue:
                 "安装完成后请点击“已完成，重新检测”。如果尚未完成，请继续安装。",
             })}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button
             color="default"
             variant="light"
@@ -988,7 +1021,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={() => {
               try {
                 if (pendingInstallCheck === "gi") {
@@ -1023,22 +1056,22 @@ export const LauncherPage = (args: any) => {
               defaultValue: "已完成，重新检测",
             })}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     4: () => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <motion.h2
-            className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
+            className="text-2xl font-black tracking-tight text-emerald-600"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
           >
             {t("launcherpage.vcruntime.completing.title")}
           </motion.h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <motion.p
             className="text-default-600 font-medium"
             initial={{ opacity: 0 }}
@@ -1047,62 +1080,69 @@ export const LauncherPage = (args: any) => {
           >
             {t("launcherpage.vcruntime.completing.body")}
           </motion.p>
-        </ModalBody>
+        </BaseModalBody>
       </>
     ),
     5: () => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <motion.h2
-            className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
+            className="text-2xl font-black tracking-tight text-emerald-600"
             initial={{ opacity: 0, y: -10 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25 }}
           >
             {t("launcherpage.mclaunch.loading.title")}
           </motion.h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-4">
-                <Spinner size="lg" color="success" classNames={{ circle1: "border-b-emerald-500", circle2: "border-b-teal-500" }} />
-                <div className="flex flex-col gap-1">
-                    <motion.p
-                    className="text-default-600 font-medium"
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.25, delay: 0.1 }}
+              <Spinner
+                size="lg"
+                color="success"
+                classNames={{
+                  circle1: "border-b-emerald-500",
+                  circle2: "border-b-teal-500",
+                }}
+              />
+              <div className="flex flex-col gap-1">
+                <motion.p
+                  className="text-default-600 font-medium"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.1 }}
+                >
+                  {t("launcherpage.mclaunch.loading.body")}
+                </motion.p>
+                <div className="min-h-[24px] text-sm text-default-400">
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={`tip-${tipIndex}`}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.2 }}
                     >
-                    {t("launcherpage.mclaunch.loading.body")}
-                    </motion.p>
-                     <div className="min-h-[24px] text-sm text-default-400">
-                        <AnimatePresence mode="wait">
-                            <motion.span
-                            key={`tip-${tipIndex}`}
-                            initial={{ opacity: 0, y: 4 }}
-                            animate={{ opacity: 1, y: 0 }}
-                            exit={{ opacity: 0, y: -4 }}
-                            transition={{ duration: 0.2 }}
-                            >
-                            {launchTips[tipIndex]}
-                            </motion.span>
-                        </AnimatePresence>
-                    </div>
+                      {launchTips[tipIndex]}
+                    </motion.span>
+                  </AnimatePresence>
                 </div>
+              </div>
             </div>
-            <Progress 
-                size="sm" 
-                isIndeterminate 
-                aria-label="Loading" 
-                classNames={{ indicator: "bg-gradient-to-r from-emerald-500 to-teal-600" }} 
+            <Progress
+              size="sm"
+              isIndeterminate
+              aria-label="Loading"
+              classNames={{ indicator: "bg-emerald-600 hover:bg-emerald-500" }}
             />
           </div>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button
             color="primary"
             radius="full"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.();
               setOverlayActive(false);
@@ -1111,70 +1151,80 @@ export const LauncherPage = (args: any) => {
           >
             {t("common.close", { defaultValue: "关闭" }) as unknown as string}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     2: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.adminconfirm.title")}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.adminconfirm.content")}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
-          <Button color="default" variant="light" radius="full" onPress={onClose}>
+        </BaseModalBody>
+        <BaseModalFooter>
+          <Button
+            color="default"
+            variant="light"
+            radius="full"
+            onPress={onClose}
+          >
             {t("launcherpage.adminconfirm.cancel_button")}
           </Button>
           <Button
             color="primary"
             radius="full"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
             }}
           >
             {t("launcherpage.adminconfirm.confirm_button")}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     3: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-danger-500">
             {t("launcherpage.admindeny.title")}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium">
             {t("launcherpage.admindeny.content")}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
-          <Button color="default" variant="light" radius="full" onPress={onClose}>
+        </BaseModalBody>
+        <BaseModalFooter className="px-8 pb-8 pt-4">
+          <Button
+            color="default"
+            variant="light"
+            radius="full"
+            onPress={onClose}
+          >
             {t("launcherpage.admindeny.cancel_button")}
           </Button>
           <Button
             color="primary"
             radius="full"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
             }}
           >
             {t("launcherpage.admindeny.confirm_button")}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     12: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-success-500">
             {
               t("launcherpage.shortcut.success.title", {
@@ -1182,8 +1232,8 @@ export const LauncherPage = (args: any) => {
               }) as unknown as string
             }
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium">
             {
               t("launcherpage.shortcut.success.body", {
@@ -1191,12 +1241,12 @@ export const LauncherPage = (args: any) => {
               }) as unknown as string
             }
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="primary"
             radius="full"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1205,54 +1255,54 @@ export const LauncherPage = (args: any) => {
           >
             {t("common.close", { defaultValue: "关闭" }) as unknown as string}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     13: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-          <h2 className="text-2xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent">
+        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+          <h2 className="text-2xl font-black tracking-tight text-emerald-600">
             {t("launcherpage.register.installing.title", {
               defaultValue: "正在注册到系统",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium mb-4">
             {t("launcherpage.register.installing.body", {
               defaultValue: "正在调用 wdapp.exe 执行注册，请稍候…",
             })}
           </p>
-          <Progress 
-            size="sm" 
-            isIndeterminate 
-            aria-label="Registering" 
-            classNames={{ indicator: "bg-gradient-to-r from-emerald-500 to-teal-600" }} 
+          <Progress
+            size="sm"
+            isIndeterminate
+            aria-label="Registering"
+            classNames={{ indicator: "bg-emerald-600 hover:bg-emerald-500" }}
           />
-        </ModalBody>
+        </BaseModalBody>
       </>
     ),
     15: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-success-500">
             {t("launcherpage.register.success.title", {
               defaultValue: "注册完成",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium">
             {t("launcherpage.register.success.body", {
               defaultValue: "已成功注册到系统，您可以通过系统应用列表启动。",
             })}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="primary"
             radius="full"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1261,38 +1311,38 @@ export const LauncherPage = (args: any) => {
           >
             {t("common.close", { defaultValue: "关闭" }) as unknown as string}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     16: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-danger-500">
             {t("launcherpage.register.failed.title", {
               defaultValue: "注册失败",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody className="px-8 py-4">
           <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
-             <p className="font-medium text-center">
-                {(() => {
+            <p className="font-medium text-center">
+              {(() => {
                 const key = `errors.${launchErrorCode}`;
                 const translated = t(key) as unknown as string;
                 if (launchErrorCode && translated && translated !== key)
-                    return translated;
+                  return translated;
                 return t("launcherpage.register.failed.body", {
-                    defaultValue: "注册过程中发生错误，请重试或检查环境。",
+                  defaultValue: "注册过程中发生错误，请重试或检查环境。",
                 }) as unknown as string;
-                })()}
-             </p>
+              })()}
+            </p>
           </div>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter className="px-8 pb-8 pt-4">
           <Button
             color="primary"
             radius="full"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1301,27 +1351,27 @@ export const LauncherPage = (args: any) => {
           >
             {t("common.close", { defaultValue: "关闭" }) as unknown as string}
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
     17: (onClose) => (
       <>
-        <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+        <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
             {t("launcherpage.gdk_missing.title", {
               defaultValue: "缺少 Microsoft GDK",
             })}
           </h2>
-        </ModalHeader>
-        <ModalBody className="px-8 py-4">
+        </BaseModalHeader>
+        <BaseModalBody>
           <p className="text-default-600 font-medium">
             {t("launcherpage.gdk_missing.body", {
               defaultValue:
                 "未检测到 GDK 工具包，注册功能需先安装。是否跳转到设置页进行安装？",
             })}
           </p>
-        </ModalBody>
-        <ModalFooter className="px-8 pb-8 pt-4">
+        </BaseModalBody>
+        <BaseModalFooter>
           <Button
             variant="light"
             radius="full"
@@ -1336,7 +1386,7 @@ export const LauncherPage = (args: any) => {
           <Button
             color="primary"
             radius="full"
-            className="bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/20"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             onPress={(e) => {
               onClose?.(e);
               setOverlayActive(false);
@@ -1350,7 +1400,7 @@ export const LauncherPage = (args: any) => {
               }) as unknown as string
             }
           </Button>
-        </ModalFooter>
+        </BaseModalFooter>
       </>
     ),
   };
@@ -1374,12 +1424,6 @@ export const LauncherPage = (args: any) => {
         )}
       </AnimatePresence>
       <div className="relative w-full max-w-full mx-auto px-4 py-4 h-full flex flex-col justify-center">
-        {/* Background Gradients */}
-        <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-          <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 blur-[100px]" />
-          <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 blur-[100px]" />
-        </div>
-
         {/* Hero Launch Card */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -1387,17 +1431,15 @@ export const LauncherPage = (args: any) => {
           transition={{ duration: 0.4, ease: "easeOut" }}
           className="mb-4 sm:mb-6"
         >
-          <Card className="relative overflow-hidden border-none shadow-xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl rounded-[2rem]">
-            
+          <Card className="relative overflow-hidden border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
             <CardBody className="p-6 sm:p-8 relative flex flex-col gap-6">
               {/* Main Layout */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
-                
                 {/* Left: Title & Info */}
                 <div className="flex flex-col gap-1 min-w-0">
-                   <div className="flex items-center gap-3">
-                    <motion.h1 
-                      className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 truncate"
+                  <div className="flex items-center gap-3">
+                    <motion.h1
+                      className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 dark:bg-none dark:text-emerald-500 truncate pb-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -1405,72 +1447,101 @@ export const LauncherPage = (args: any) => {
                       Minecraft
                     </motion.h1>
                     {localVersionMap.get(currentVersion)?.isRegistered && (
-                       <Chip
+                      <Chip
                         startContent={<FaCheckCircle size={14} />}
                         variant="flat"
                         color="success"
                         classNames={{
                           base: "bg-emerald-500/10 border border-emerald-500/20 hidden sm:flex",
-                          content: "font-semibold text-emerald-600 dark:text-emerald-400"
+                          content:
+                            "font-semibold text-emerald-600 dark:text-emerald-500",
                         }}
                       >
-                        {t("launcherpage.registered_tip", { defaultValue: "已注册" })}
+                        {t("launcherpage.registered_tip", {
+                          defaultValue: "已注册",
+                        })}
                       </Chip>
                     )}
-                   </div>
-                   <div className="flex items-center gap-2">
-                     <span className="text-lg sm:text-xl font-medium text-default-500 dark:text-zinc-400">
-                      {t("launcherpage.edition", { defaultValue: "Bedrock Edition" })}
-                     </span>
-                   </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <span className="text-lg sm:text-xl font-medium text-default-500 dark:text-zinc-400">
+                      {t("launcherpage.edition", {
+                        defaultValue: "Bedrock Edition",
+                      })}
+                    </span>
+                  </div>
                 </div>
 
                 {/* Right: Actions */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 flex-shrink-0">
+                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
                   {/* Version Selector */}
                   <div className="flex items-center gap-3 p-1.5 rounded-2xl">
                     <Dropdown placement="bottom-end">
                       <DropdownTrigger>
-                        <Button 
-                          variant="light" 
+                        <Button
+                          variant="light"
                           className="h-12 px-3 bg-transparent data-[hover=true]:bg-default-200/50 dark:data-[hover=true]:bg-white/5"
                         >
                           <div className="flex items-center gap-3 text-left">
                             <div className="w-8 h-8 rounded-lg bg-default-200/50 dark:bg-white/10 flex items-center justify-center overflow-hidden shadow-sm">
-                               {logoDataUrl ? (
-                                <img src={logoDataUrl} alt="logo" className="w-full h-full object-cover" />
+                              {logoDataUrl ? (
+                                <img
+                                  src={logoDataUrl}
+                                  alt="logo"
+                                  className="w-full h-full object-cover"
+                                />
                               ) : (
-                                <span className="text-base font-bold text-default-500 dark:text-zinc-400">M</span>
+                                <span className="text-base font-bold text-default-500 dark:text-zinc-400">
+                                  M
+                                </span>
                               )}
                             </div>
                             <div className="flex flex-col hidden lg:flex">
-                              <span className="text-xs text-default-500 dark:text-zinc-400 font-medium">{t("launcherpage.currentVersion")}</span>
+                              <span className="text-xs text-default-500 dark:text-zinc-400 font-medium">
+                                {t("launcherpage.currentVersion")}
+                              </span>
                               <span className="text-sm font-bold text-default-900 dark:text-white leading-tight max-w-[120px] truncate">
-                                {displayName || t("launcherpage.currentVersion_none", { defaultValue: "Select Version" })}
+                                {displayName ||
+                                  t("launcherpage.currentVersion_none", {
+                                    defaultValue: "Select Version",
+                                  })}
                               </span>
                             </div>
                             <span className="text-sm font-bold text-default-900 dark:text-white leading-tight max-w-[120px] truncate lg:hidden">
-                                {displayName || t("launcherpage.currentVersion_none", { defaultValue: "Select" })}
+                              {displayName ||
+                                t("launcherpage.currentVersion_none", {
+                                  defaultValue: "Select",
+                                })}
                             </span>
-                            <FaChevronDown className="text-default-400 dark:text-zinc-300 ml-1" size={12} />
+                            <FaChevronDown
+                              className="text-default-400 dark:text-zinc-300 ml-1"
+                              size={12}
+                            />
                           </div>
                         </Button>
                       </DropdownTrigger>
                       <DropdownMenu
                         aria-label="Version Selection"
                         selectionMode="single"
-                        selectedKeys={new Set(currentVersion ? [currentVersion] : [])}
+                        selectedKeys={
+                          new Set(currentVersion ? [currentVersion] : [])
+                        }
                         className="max-h-[400px] overflow-y-auto no-scrollbar min-w-[300px]"
                         topContent={
-                           <div className="p-3 border-b border-default-100 dark:border-default-50/10">
+                          <div className="p-3 border-b border-default-100 dark:border-default-50/10">
                             <Input
                               size="sm"
-                              placeholder={t("launcherpage.search_versions", { defaultValue: "Search versions..." })}
+                              placeholder={t("launcherpage.search_versions", {
+                                defaultValue: "Search versions...",
+                              })}
                               value={versionQuery}
                               onValueChange={setVersionQuery}
-                              startContent={<FaList className="text-default-400" />}
+                              startContent={
+                                <FaList className="text-default-400" />
+                              }
                               classNames={{
-                                inputWrapper: "bg-default-100 dark:bg-default-50/20"
+                                inputWrapper:
+                                  "bg-default-100 dark:bg-default-50/20",
                               }}
                             />
                             <Button
@@ -1480,7 +1551,9 @@ export const LauncherPage = (args: any) => {
                               className="mt-2"
                               onPress={() => navigate("/versions")}
                             >
-                              {t("launcherpage.manage_versions", { defaultValue: "Manage All Versions" })}
+                              {t("launcherpage.manage_versions", {
+                                defaultValue: "Manage All Versions",
+                              })}
                             </Button>
                           </div>
                         }
@@ -1490,13 +1563,19 @@ export const LauncherPage = (args: any) => {
                           if (selected) {
                             setCurrentVersion(selected);
                             setDisplayName(selected);
-                             const ver = localVersionMap.get(selected)?.version || "";
+                            const ver =
+                              localVersionMap.get(selected)?.version || "";
                             setDisplayVersion(ver || "None");
                             try {
-                              localStorage.setItem("ll.currentVersionName", selected);
+                              localStorage.setItem(
+                                "ll.currentVersionName",
+                                selected,
+                              );
                               const getter = minecraft?.GetVersionLogoDataUrl;
                               if (typeof getter === "function") {
-                                getter(selected).then((u: string) => setLogoDataUrl(String(u || "")));
+                                getter(selected).then((u: string) =>
+                                  setLogoDataUrl(String(u || "")),
+                                );
                               }
                             } catch {}
                           }
@@ -1508,11 +1587,21 @@ export const LauncherPage = (args: any) => {
                             textValue={item.name}
                             description={item.version}
                             startContent={
-                              <div className="w-8 h-8 flex-shrink-0 rounded-lg bg-default-100 dark:bg-white/10 flex items-center justify-center overflow-hidden">
+                              <div className="w-8 h-8 shrink-0 rounded-lg bg-default-100 dark:bg-white/10 flex items-center justify-center overflow-hidden">
                                 {(() => {
-                                  const u = logoByName.get(item.name);
+                                  const u =
+                                    item.logo || logoByName.get(item.name);
                                   if (!u) ensureLogo(item.name);
-                                  return u ? <img src={u} className="w-full h-full object-cover" /> : null;
+                                  return u ? (
+                                    <img
+                                      src={u}
+                                      className="w-full h-full object-cover"
+                                    />
+                                  ) : (
+                                    <span className="text-sm font-bold text-default-500 dark:text-zinc-400">
+                                      M
+                                    </span>
+                                  );
                                 })()}
                               </div>
                             }
@@ -1526,10 +1615,13 @@ export const LauncherPage = (args: any) => {
                                   color="success"
                                   classNames={{
                                     base: "bg-emerald-500/10 border border-emerald-500/20 h-5 px-1",
-                                    content: "text-emerald-600 dark:text-emerald-400 font-bold text-[10px]"
+                                    content:
+                                      "text-emerald-600 dark:text-emerald-500 font-bold text-[10px]",
                                   }}
                                 >
-                                  {t("launcherpage.registered_tip", { defaultValue: "已注册" })}
+                                  {t("launcherpage.registered_tip", {
+                                    defaultValue: "已注册",
+                                  })}
                                 </Chip>
                               )}
                             </div>
@@ -1537,7 +1629,7 @@ export const LauncherPage = (args: any) => {
                         )}
                       </DropdownMenu>
                     </Dropdown>
-                    
+
                     <Dropdown>
                       <DropdownTrigger>
                         <Button
@@ -1547,7 +1639,10 @@ export const LauncherPage = (args: any) => {
                           size="sm"
                           className="data-[hover=true]:bg-default-200/50 dark:data-[hover=true]:bg-white/5"
                         >
-                          <FaCogs size={18} className="text-default-500 dark:text-zinc-400" />
+                          <FaCogs
+                            size={18}
+                            className="text-default-500 dark:text-zinc-400"
+                          />
                         </Button>
                       </DropdownTrigger>
                       <DropdownMenu aria-label="Version Actions">
@@ -1556,154 +1651,201 @@ export const LauncherPage = (args: any) => {
                           startContent={<FaCog />}
                           onPress={() => {
                             if (currentVersion) {
-                              navigate("/version-settings", { state: { name: currentVersion, returnTo: "/" } });
+                              navigate("/version-settings", {
+                                state: { name: currentVersion, returnTo: "/" },
+                              });
                             } else {
                               navigate("/versions");
                             }
                           }}
                         >
-                          {t("launcherpage.go_version_settings", { defaultValue: "Version Settings" })}
+                          {t("launcherpage.go_version_settings", {
+                            defaultValue: "Version Settings",
+                          })}
                         </DropdownItem>
                         <DropdownItem
                           key="shortcut"
                           startContent={<FaDesktop />}
                           onPress={doCreateShortcut}
                         >
-                          {t("launcherpage.shortcut.create_button", { defaultValue: "Create Desktop Shortcut" })}
+                          {t("launcherpage.shortcut.create_button", {
+                            defaultValue: "Create Desktop Shortcut",
+                          })}
                         </DropdownItem>
                         <DropdownItem
                           key="folder"
                           startContent={<FaFolderOpen />}
                           onPress={doOpenFolder}
                         >
-                          {t("launcherpage.open_exe_dir", { defaultValue: "Open Installation Folder" })}
+                          {t("launcherpage.open_exe_dir", {
+                            defaultValue: "Open Installation Folder",
+                          })}
                         </DropdownItem>
                         <DropdownItem
                           key="register"
                           startContent={<FaWindows />}
                           onPress={doRegister}
                         >
-                          {t("launcherpage.register_system_button", { defaultValue: "Register to System" })}
+                          {t("launcherpage.register_system_button", {
+                            defaultValue: "Register to System",
+                          })}
                         </DropdownItem>
                       </DropdownMenu>
                     </Dropdown>
                   </div>
 
                   {/* Launch Button */}
-                  <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <motion.div
+                    whileHover={{ scale: 1.02 }}
+                    whileTap={{ scale: 0.98 }}
+                  >
                     <Button
                       size="lg"
-                      className="h-14 px-8 text-lg font-bold text-white shadow-emerald-500/30 shadow-lg bg-gradient-to-r from-emerald-500 to-teal-600 hover:from-emerald-400 hover:to-teal-500 rounded-2xl w-full sm:w-auto"
+                      className="h-14 px-8 text-lg font-bold text-white shadow-emerald-900/20 shadow-lg bg-emerald-600 hover:bg-emerald-500 rounded-2xl w-full sm:w-auto"
                       startContent={<FaRocket className="mb-0.5" />}
                       onPress={doLaunch}
-                      isLoading={modalState === 5} 
+                      isLoading={modalState === 5}
                     >
-                      {t("launcherpage.launch_button", { defaultValue: "LAUNCH" })}
+                      {t("launcherpage.launch_button", {
+                        defaultValue: "LAUNCH",
+                      })}
                     </Button>
                   </motion.div>
                 </div>
               </div>
 
-               {/* Tips (Bottom) */}
-               <div className="w-full rounded-xl px-4 py-2 flex items-center gap-2">
-                 <span className="text-lg">💡</span>
-                 <div className="flex-1 overflow-hidden h-[20px] relative">
-                   <AnimatePresence mode="wait">
-                     <motion.div
-                       key={tipIndex}
-                       initial={{ opacity: 0, y: 10 }}
-                       animate={{ opacity: 1, y: 0 }}
-                       exit={{ opacity: 0, y: -10 }}
-                       className="text-sm text-default-500 font-medium truncate absolute inset-0"
-                     >
-                       {launchTips[tipIndex]}
-                     </motion.div>
-                   </AnimatePresence>
-                 </div>
-               </div>
+              {/* Tips (Bottom) */}
+              <div className="w-full rounded-xl px-4 py-2 flex items-center gap-2">
+                <span className="text-lg">💡</span>
+                <div className="flex-1 overflow-hidden h-[20px] relative">
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={tipIndex}
+                      initial={{ opacity: 0, y: 10 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -10 }}
+                      className="text-sm text-default-500 font-medium truncate absolute inset-0"
+                    >
+                      {launchTips[tipIndex]}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+              </div>
             </CardBody>
           </Card>
         </motion.div>
 
         {/* Content Grid - Responsive (1 col on mobile, 3 cols on md+) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 items-stretch">
-           {/* Mod Card */}
-           <motion.div
+          {/* Mod Card */}
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
             className="md:col-span-1"
-           >
-              <ModCard localVersionMap={localVersionMap} currentVersion={currentVersion} />
-           </motion.div>
+          >
+            <ModCard
+              localVersionMap={localVersionMap}
+              currentVersion={currentVersion}
+            />
+          </motion.div>
 
-           {/* Content Management */}
-           <motion.div
+          {/* Content Management */}
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
             className="md:col-span-1"
-           >
-             <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-2xl transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group">
-               <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">
-                 <div className="flex items-center gap-2">
-                   <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400">
-                      <FaCube size={16} />
-                   </div>
-                   <h3 className="text-base font-bold text-default-800 dark:text-zinc-100">
-                      {t("launcherpage.content_manage", { defaultValue: "Content Management" })}
-                   </h3>
-                 </div>
-                 <Button
-                    size="sm"
-                    variant="light"
-                    className="text-xs text-default-500 dark:text-zinc-400 data-[hover=true]:text-default-800 dark:data-[hover=true]:text-zinc-200"
-                    endContent={<FaArrowRight size={10} />}
-                    onPress={() => navigate("/content")}
-                 >
-                    {t("common.view_all", { defaultValue: "View All" })}
-                 </Button>
-               </CardHeader>
-               <CardBody className="p-3 gap-2 relative">
-                  {[
-                    { label: worldsLabel, count: contentCounts.worlds, icon: FaGlobe, path: "/content/worlds", color: "text-blue-500" },
-                    { label: resourceLabel, count: contentCounts.resourcePacks, icon: FaImage, path: "/content/resource-packs", color: "text-purple-500" },
-                    { label: behaviorLabel, count: contentCounts.behaviorPacks, icon: FaCogs, path: "/content/behavior-packs", color: "text-orange-500" }
-                  ].map((item, idx) => (
-                    <div 
-                      key={idx}
-                      className="group/item flex items-center justify-between p-2 rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-200"
-                      onClick={() => navigate(item.path)}
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className={`p-1.5 rounded-lg bg-default-100 dark:bg-default-50/20 ${item.color} bg-opacity-20`}>
-                          <item.icon size={16} />
-                        </div>
-                        <span className="font-medium text-sm text-default-600 dark:text-zinc-200 truncate max-w-[100px] lg:max-w-none">{item.label}</span>
+          >
+            <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group">
+              <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">
+                <div className="flex items-center gap-2">
+                  <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400">
+                    <FaCube size={16} />
+                  </div>
+                  <h3 className="text-base font-bold text-default-800 dark:text-zinc-100">
+                    {t("launcherpage.content_manage", {
+                      defaultValue: "Content Management",
+                    })}
+                  </h3>
+                </div>
+                <Button
+                  size="sm"
+                  variant="light"
+                  className="text-xs text-default-500 dark:text-zinc-400 data-[hover=true]:text-default-800 dark:data-[hover=true]:text-zinc-200"
+                  endContent={<FaArrowRight size={10} />}
+                  onPress={() => navigate("/content")}
+                >
+                  {t("common.view_all", { defaultValue: "View All" })}
+                </Button>
+              </CardHeader>
+              <CardBody className="p-3 gap-2 relative">
+                {[
+                  {
+                    label: worldsLabel,
+                    count: contentCounts.worlds,
+                    icon: FaGlobe,
+                    path: "/content/worlds",
+                    color: "text-blue-500",
+                  },
+                  {
+                    label: resourceLabel,
+                    count: contentCounts.resourcePacks,
+                    icon: FaImage,
+                    path: "/content/resource-packs",
+                    color: "text-purple-500",
+                  },
+                  {
+                    label: behaviorLabel,
+                    count: contentCounts.behaviorPacks,
+                    icon: FaCogs,
+                    path: "/content/behavior-packs",
+                    color: "text-orange-500",
+                  },
+                ].map((item, idx) => (
+                  <div
+                    key={idx}
+                    className="group/item flex items-center justify-between p-2 rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-200"
+                    onClick={() => navigate(item.path)}
+                  >
+                    <div className="flex items-center gap-3">
+                      <div
+                        className={`p-1.5 rounded-lg bg-default-100 dark:bg-default-50/20 ${item.color} bg-opacity-20`}
+                      >
+                        <item.icon size={16} />
                       </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-base font-bold text-default-800 dark:text-zinc-200">{item.count}</span>
-                        <FaChevronDown className="text-default-300 dark:text-zinc-500 -rotate-90" size={10} />
-                      </div>
+                      <span className="font-medium text-sm text-default-600 dark:text-zinc-200 truncate max-w-[100px] lg:max-w-none">
+                        {item.label}
+                      </span>
                     </div>
-                  ))}
-               </CardBody>
-             </Card>
-           </motion.div>
+                    <div className="flex items-center gap-2">
+                      <span className="text-base font-bold text-default-800 dark:text-zinc-200">
+                        {item.count}
+                      </span>
+                      <FaChevronDown
+                        className="text-default-300 dark:text-zinc-500 -rotate-90"
+                        size={10}
+                      />
+                    </div>
+                  </div>
+                ))}
+              </CardBody>
+            </Card>
+          </motion.div>
 
-           {/* Content Download */}
-           <motion.div
+          {/* Content Download */}
+          <motion.div
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="md:col-span-1"
-           >
-              <ContentDownloadCard />
-           </motion.div>
+          >
+            <ContentDownloadCard />
+          </motion.div>
         </div>
 
         {/* Modal Render */}
-        <Modal
+        <BaseModal
           size="xl"
           isOpen={isOpen}
           hideCloseButton={true}
@@ -1715,10 +1857,6 @@ export const LauncherPage = (args: any) => {
               args.refresh();
             }
           }}
-          classNames={{
-             base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-             closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-          }}
         >
           <ModalContent className="shadow-none">
             {(onClose) => (
@@ -1729,14 +1867,13 @@ export const LauncherPage = (args: any) => {
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.98 }}
                   transition={{ duration: 0.22 }}
-                  className="p-6"
                 >
                   {ModalUi(onClose)}
                 </motion.div>
               </AnimatePresence>
             )}
           </ModalContent>
-        </Modal>
+        </BaseModal>
       </div>
     </>
   );

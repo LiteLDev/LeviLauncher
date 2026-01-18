@@ -1,6 +1,9 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import "tailwindcss";
+@plugin './hero.ts';
+/* Note: You may need to change the path to fit your project structure */
+@source '../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}';
+@custom-variant dark (&:is(.dark *));
+@config "../tailwind.config.js";
 
 body,
 html {
@@ -14,6 +17,11 @@ html {
   /* Internet Explorer/Edge */
   user-select: none;
   /* Non-prefixed version, currently supported by Chrome, Edge, Opera and Firefox */
+}
+
+img {
+  -webkit-user-drag: none;
+  user-drag: none;
 }
 
 /* Make root fill viewport and disable window-level scroll; internal panes should manage their own scrolling */
@@ -37,7 +45,7 @@ body::-webkit-scrollbar,
 
 @font-face {
   font-family: "MiSans";
-  src: local("MiSans"), url(./assets/fonts/MiSans-Medium.woff2);
+  src: local("MiSans"), url(@/assets/fonts/MiSans-Medium.woff2);
 }
 
 #wails-draggable {

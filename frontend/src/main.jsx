@@ -23,5 +23,5 @@ root.render(
         </React.StrictMode>
       </I18nextProvider>
     </NextThemesProvider>
-  </HeroUIProvider>
+  </HeroUIProvider>,
 );

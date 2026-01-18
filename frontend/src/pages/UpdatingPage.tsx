@@ -1,19 +1,15 @@
 import React, { useEffect, useState } from "react";
-import {
-  Card,
-  CardBody,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Button,
-  Progress,
-} from "@heroui/react";
+import { Card, CardBody, ModalContent, Button, Progress } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { FaRocket } from "react-icons/fa";
-import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { Events, Window } from "@wailsio/runtime";
+import {
+  BaseModal,
+  BaseModalHeader,
+  BaseModalBody,
+  BaseModalFooter,
+} from "@/components/BaseModal";
 
 export default function UpdatingPage() {
   const { t } = useTranslation();
@@ -27,7 +23,7 @@ export default function UpdatingPage() {
     try {
       (window as any).llNavLock = true;
       window.dispatchEvent(
-        new CustomEvent("ll-nav-lock-changed", { detail: { lock: true } })
+        new CustomEvent("ll-nav-lock-changed", { detail: { lock: true } }),
       );
     } catch {}
     const off1 = Events.On("app_update_status", (event) => {
@@ -67,7 +63,7 @@ export default function UpdatingPage() {
       try {
         (window as any).llNavLock = false;
         window.dispatchEvent(
-          new CustomEvent("ll-nav-lock-changed", { detail: { lock: false } })
+          new CustomEvent("ll-nav-lock-changed", { detail: { lock: false } }),
         );
       } catch {}
     };
@@ -75,7 +71,7 @@ export default function UpdatingPage() {
 
   return (
     <div className="relative w-full h-full px-6 py-6">
-      <Card className="rounded-3xl shadow-xl bg-white/60 dark:bg-black/30 backdrop-blur-md border border-white/30">
+      <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
         <CardBody className="p-6">
           <div className="flex items-center gap-2 text-primary-600 mb-3">
             <FaRocket className="w-5 h-5" />
@@ -110,7 +106,7 @@ export default function UpdatingPage() {
                   className="w-full"
                   value={Math.max(
                     0,
-                    Math.min(100, Math.round((downloaded / total) * 100))
+                    Math.min(100, Math.round((downloaded / total) * 100)),
                   )}
                 />
               ) : (
@@ -155,31 +151,36 @@ export default function UpdatingPage() {
                 {status === "installing"
                   ? t("common.processing", { defaultValue: "正在安装..." })
                   : status === "installed"
-                  ? t("common.done", { defaultValue: "安装完成" })
-                  : t("common.wait", { defaultValue: "请稍候..." })}
+                    ? t("common.done", { defaultValue: "安装完成" })
+                    : t("common.wait", { defaultValue: "请稍候..." })}
               </div>
             </div>
           </div>
         </CardBody>
       </Card>
 
-      <Modal size="md" isOpen={!!error} hideCloseButton isDismissable={false}>
+      <BaseModal
+        size="md"
+        isOpen={!!error}
+        hideCloseButton
+        isDismissable={false}
+      >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-danger-600">
+              <BaseModalHeader className="text-danger-600">
                 {
                   t("updating.failed_title", {
                     defaultValue: "更新失败",
                   }) as string
                 }
-              </ModalHeader>
-              <ModalBody>
-                <div className="text-default-700 text-sm break-words whitespace-pre-wrap">
+              </BaseModalHeader>
+              <BaseModalBody>
+                <div className="text-default-700 text-sm wrap-break-word whitespace-pre-wrap">
                   {error}
                 </div>
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="primary"
                   onPress={() => {
@@ -188,11 +189,11 @@ export default function UpdatingPage() {
                 >
                   {t("common.confirm", { defaultValue: "确定" }) as string}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
     </div>
   );
 }

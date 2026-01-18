@@ -1,5 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState, useRef } from "react";
+import { BaseModal, BaseModalHeader, BaseModalBody, BaseModalFooter } from "@/components/BaseModal";
+import { PageHeader } from "@/components/PageHeader";
 import {
   Button,
   Chip,
@@ -15,24 +17,22 @@ import {
   TableColumn,
   TableHeader,
   TableRow,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Progress,
   Spinner,
   useDisclosure,
   Card,
   CardBody,
+  CardHeader,
+  ButtonGroup,
 } from "@heroui/react";
-import { FaDownload, FaCopy, FaSync, FaTrash } from "react-icons/fa";
+import { FaDownload, FaCopy, FaSync, FaTrash, FaBoxOpen, FaChevronDown } from "react-icons/fa";
 import { Events } from "@wailsio/runtime";
-import { useVersionStatus } from "../utils/VersionStatusContext";
+import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 
 type ItemType = "Preview" | "Release";
 
@@ -565,13 +565,13 @@ export const DownloadPage: React.FC = () => {
   return (
     <>
       <motion.div
-        className="w-full max-w-full mx-auto px-4 py-2 h-full flex flex-col"
+        className="w-full max-w-full mx-auto p-4 h-full flex flex-col"
         initial={{ opacity: 0, y: 8 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
       >
         <div className="flex flex-col h-full">
-          <Card className="flex-1 min-h-0 rounded-[2.5rem] shadow-xl bg-white/70 dark:bg-zinc-900/60 backdrop-blur-xl border-none">
+          <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
             <CardBody className="p-0 flex flex-col h-full overflow-hidden">
               <div className="p-4 sm:p-6 pb-2 flex flex-col sm:flex-row gap-4 justify-between items-center border-b border-default-200 dark:border-white/10">
                 <div className="flex items-center gap-3 w-full sm:max-w-md">
@@ -725,7 +725,7 @@ export const DownloadPage: React.FC = () => {
                         showControls
                         variant="light" 
                         classNames={{
-                          cursor: "bg-gradient-to-r from-emerald-500 to-teal-600 text-white font-bold shadow-lg shadow-emerald-500/30"
+                          cursor: "bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                         }}
                       />
                     </div>
@@ -778,56 +778,14 @@ export const DownloadPage: React.FC = () => {
                         })}
                       </Chip>
                     ) : isDownloaded(item) ? (
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <Chip
-                            color="success"
-                            variant="flat"
-                            className="cursor-pointer"
-                          >
-                            {t("downloadpage.status.downloaded", {
-                              defaultValue: "Downloaded",
-                            })}
-                          </Chip>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                          aria-label="Downloaded actions"
-                          onAction={async (key) => {
-                            if (String(key) !== "delete_msixvc") return;
-                            setDeleteError("");
-                            setDeleteLoading(false);
-                            let fname = "";
-                            try {
-                              if (
-                                hasBackend &&
-                                typeof minecraft?.ResolveDownloadedMsixvc ===
-                                  "function"
-                              ) {
-                                fname = await minecraft.ResolveDownloadedMsixvc(
-                                  `${item.type} ${item.short}`,
-                                  String(item.type).toLowerCase()
-                                );
-                              }
-                            } catch {}
-                            setDeleteItem({
-                              short: item.short,
-                              type: item.type,
-                              fileName: fname || `${item.type} ${item.short}`,
-                            });
-                            deleteDisclosure.onOpen();
-                          }}
-                        >
-                          <DropdownItem
-                            key="delete_msixvc"
-                            color="danger"
-                            startContent={<FaTrash size={12} />}
-                          >
-                            {t("downloadpage.actions.delete_installer", {
-                              defaultValue: "删除下载包",
-                            })}
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
+                      <Chip
+                        color="success"
+                        variant="flat"
+                      >
+                        {t("downloadpage.status.downloaded", {
+                          defaultValue: "Downloaded",
+                        })}
+                      </Chip>
                     ) : (
                       <Chip color="danger" variant="flat">
                         {t("downloadpage.status.not_downloaded", {
@@ -840,59 +798,95 @@ export const DownloadPage: React.FC = () => {
                     <motion.div
                       whileHover={{ scale: 1.03 }}
                       whileTap={{ scale: 0.97 }}
-                      className="inline-flex items-center gap-2 w-[120px] justify-end"
+                      className="inline-flex items-center gap-2 min-w-[120px] justify-end"
                     >
-                      <Button
-                        radius="full"
-                        size="sm"
-                        startContent={<FaDownload size={14} />}
-                        className={`px-4 h-8 w-full transition-transform hover:-translate-y-0.5 ${
-                          !hasStatus(item) && refreshing
-                            ? ""
-                            : isDownloaded(item)
-                            ? "bg-gradient-to-r from-emerald-500 to-teal-600 shadow-lg shadow-emerald-500/30 text-white font-bold"
-                            : "bg-gradient-to-r from-blue-500 to-indigo-600 shadow-lg shadow-blue-500/30 text-white font-bold"
-                        }`}
-                        variant={
-                          !hasStatus(item) && refreshing ? "flat" : "solid"
-                        }
-                        color={
-                          !hasStatus(item) && refreshing ? "default" : undefined
-                        }
-                        isDisabled={!hasStatus(item) && refreshing}
-                        onPress={() => {
-                          const urls = item.urls || [];
-                          setMirrorUrls(urls);
-                          setMirrorVersion(item.short);
-                          setMirrorType(item.type);
-                          setSelectedUrl(null);
-                          const already = Boolean(isDownloaded(item));
-                          setInstallMode(already);
-                          if (already) {
-                            navigate("/install", {
-                              state: {
-                                mirrorVersion: item.short,
-                                mirrorType: item.type,
-                                returnTo: "/download",
-                              },
-                            });
-                          } else {
-                            setCurrentDownloadingInfo(item.short, item.type);
-                            onOpen();
-                            startMirrorTests(urls);
-                          }
-                        }}
-                      >
-                        {!hasStatus(item) && refreshing
-                          ? t("downloadpage.status.checking", {
-                              defaultValue: "检查中…",
-                            })
-                          : isDownloaded(item)
-                          ? t("downloadpage.mirror.install_button", {
-                              defaultValue: "安装",
-                            })
-                          : t("downloadmodal.download_button")}
-                      </Button>
+                      {isDownloaded(item) ? (
+                        <ButtonGroup radius="full" size="sm" variant="bordered" color="default" className="w-full">
+                            <Button
+                                className="px-3 h-8 font-bold flex-1"
+                                startContent={<FaBoxOpen size={14} />}
+                                onPress={() => {
+                                  navigate("/install", {
+                                    state: {
+                                      mirrorVersion: item.short,
+                                      mirrorType: item.type,
+                                      returnTo: "/download",
+                                    },
+                                  });
+                                }}
+                            >
+                                {t("downloadpage.mirror.install_button", { defaultValue: "安装" })}
+                            </Button>
+                            <Dropdown>
+                                <DropdownTrigger>
+                                    <Button isIconOnly className="h-8 min-w-8 w-8 px-0">
+                                        <FaChevronDown size={12} />
+                                    </Button>
+                                </DropdownTrigger>
+                                <DropdownMenu
+                                  aria-label="Actions"
+                                  onAction={async (key) => {
+                                    if (String(key) !== "delete_msixvc") return;
+                                    setDeleteError("");
+                                    setDeleteLoading(false);
+                                    let fname = "";
+                                    try {
+                                      if (
+                                        hasBackend &&
+                                        typeof minecraft?.ResolveDownloadedMsixvc === "function"
+                                      ) {
+                                        fname = await minecraft.ResolveDownloadedMsixvc(
+                                          `${item.type} ${item.short}`,
+                                          String(item.type).toLowerCase()
+                                        );
+                                      }
+                                    } catch {}
+                                    setDeleteItem({
+                                      short: item.short,
+                                      type: item.type,
+                                      fileName: fname || `${item.type} ${item.short}`,
+                                    });
+                                    deleteDisclosure.onOpen();
+                                  }}
+                                >
+                                    <DropdownItem
+                                      key="delete_msixvc"
+                                      color="danger"
+                                      startContent={<FaTrash size={12} />}
+                                    >
+                                      {t("downloadpage.actions.delete_installer", { defaultValue: "删除下载包" })}
+                                    </DropdownItem>
+                                </DropdownMenu>
+                            </Dropdown>
+                        </ButtonGroup>
+                      ) : (
+                          <Button
+                            radius="full"
+                            size="sm"
+                            startContent={<FaDownload size={14} />}
+                            className="px-4 h-8 w-full font-bold transition-transform hover:-translate-y-0.5"
+                            variant="bordered"
+                            color="default"
+                            isDisabled={!hasStatus(item) && refreshing}
+                            onPress={() => {
+                              const urls = item.urls || [];
+                              setMirrorUrls(urls);
+                              setMirrorVersion(item.short);
+                              setMirrorType(item.type);
+                              setSelectedUrl(null);
+                              setInstallMode(false);
+                              setCurrentDownloadingInfo(item.short, item.type);
+                              onOpen();
+                              startMirrorTests(urls);
+                            }}
+                          >
+                            {!hasStatus(item) && refreshing
+                              ? t("downloadpage.status.checking", {
+                                  defaultValue: "检查中…",
+                                })
+                              : t("downloadmodal.download_button")}
+                          </Button>
+                      )}
                     </motion.div>
                   </TableCell>
                 </TableRow>
@@ -902,23 +896,19 @@ export const DownloadPage: React.FC = () => {
         </CardBody>
       </Card>
 
-      <Modal
+      <BaseModal
         isOpen={isOpen}
         onOpenChange={onOpenChange}
         size="2xl"
         scrollBehavior="inside"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="max-w-[820px] shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
+              <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
                 <div className="flex flex-col gap-2">
                   <motion.h2
-                    className="text-3xl font-black tracking-tight bg-gradient-to-br from-emerald-500 to-teal-600 bg-clip-text text-transparent"
+                    className="text-3xl font-black tracking-tight text-emerald-600"
                     initial={{ opacity: 0, y: -10 }}
                     animate={{ opacity: 1, y: 0 }}
                     transition={{ duration: 0.3, ease: "easeOut" }}
@@ -973,14 +963,14 @@ export const DownloadPage: React.FC = () => {
                       return (
                         <div className="flex items-center gap-3 min-w-0 bg-white/50 dark:bg-black/20 rounded-xl px-3 py-1.5 border border-black/5 dark:border-white/5">
                           <div className="text-small truncate max-w-[400px] text-default-700 dark:text-zinc-300">
-                            <span className="font-semibold text-emerald-600 dark:text-emerald-400">{domain}</span>
+                            <span className="font-semibold text-emerald-600 dark:text-emerald-500">{domain}</span>
                             <span className="mx-1.5 opacity-30">|</span>
                             {fname}
                           </div>
                           <Button
                             size="sm"
                             variant="flat"
-                            className="h-7 min-w-[5rem] bg-default-200/50 dark:bg-white/10"
+                            className="h-7 min-w-20 bg-default-200/50 dark:bg-white/10"
                             onPress={() =>
                               navigator.clipboard?.writeText(target)
                             }
@@ -995,8 +985,8 @@ export const DownloadPage: React.FC = () => {
                     })()}
                   </div>
                 </motion.div>
-              </ModalHeader>
-              <ModalBody className="px-8 py-2 [&::-webkit-scrollbar]:hidden">
+              </BaseModalHeader>
+              <BaseModalBody className="[&::-webkit-scrollbar]:hidden">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1126,8 +1116,8 @@ export const DownloadPage: React.FC = () => {
                     </div>
                   )}
                 </motion.div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8 pt-4">
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button 
                     className="font-medium text-default-500 hover:text-default-700"
                     variant="light" 
@@ -1149,7 +1139,7 @@ export const DownloadPage: React.FC = () => {
                   })}
                 </Button>
                 <Button
-                  className="font-bold text-white shadow-lg shadow-emerald-500/20 bg-gradient-to-r from-emerald-500 to-teal-600 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                  className="font-bold text-white shadow-lg shadow-emerald-900/20 bg-emerald-600 hover:bg-emerald-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
                   radius="full"
                   size="lg"
                   isDisabled={!selectedUrl}
@@ -1165,11 +1155,13 @@ export const DownloadPage: React.FC = () => {
                           returnTo: "/download",
                         },
                       });
+                      onClose?.();
                     } else {
+                      onClose?.();
                       if (hasBackend && minecraft?.StartMsixvcDownload) {
                         setDlError("");
                         setDlProgress(null);
-                        progressDisclosure.onOpen();
+                        
                         let urlWithFilename = selectedUrl;
                         try {
                           const u = new URL(selectedUrl);
@@ -1187,12 +1179,15 @@ export const DownloadPage: React.FC = () => {
                             desired
                           )}`;
                         }
-                        minecraft.StartMsixvcDownload(urlWithFilename);
+
+                        setTimeout(() => {
+                          progressDisclosure.onOpen();
+                          minecraft.StartMsixvcDownload(urlWithFilename);
+                        }, 200);
                       } else {
                         window.open(selectedUrl, "_blank");
                       }
                     }
-                    onClose?.();
                   }}
                 >
                   {installMode
@@ -1203,26 +1198,22 @@ export const DownloadPage: React.FC = () => {
                         defaultValue: "下载所选镜像",
                       })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Delete confirm modal */}
-      <Modal
+      <BaseModal
         isOpen={deleteDisclosure.isOpen}
         onOpenChange={deleteDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-danger-600">
+              <BaseModalHeader className="flex items-center gap-3 text-danger-600">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1255,8 +1246,8 @@ export const DownloadPage: React.FC = () => {
                     defaultValue: "确认删除下载包",
                   })}
                 </motion.h2>
-              </ModalHeader>
-              <ModalBody className="px-8 py-4">
+              </BaseModalHeader>
+              <BaseModalBody>
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1290,8 +1281,8 @@ export const DownloadPage: React.FC = () => {
                     </motion.div>
                   ) : null}
                 </motion.div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8">
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   color="default"
@@ -1362,26 +1353,22 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("downloadpage.delete.confirm", { defaultValue: "删除" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Delete success modal */}
-      <Modal
+      <BaseModal
         isOpen={deleteSuccessDisclosure.isOpen}
         onOpenChange={deleteSuccessDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
+              <BaseModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1412,8 +1399,8 @@ export const DownloadPage: React.FC = () => {
                     defaultValue: "删除完成",
                   })}
                 </motion.h2>
-              </ModalHeader>
-              <ModalBody className="px-8 py-4">
+              </BaseModalHeader>
+              <BaseModalBody className="px-8 py-4">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1427,11 +1414,11 @@ export const DownloadPage: React.FC = () => {
                     {deleteSuccessMsg}
                   </div>
                 </motion.div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8">
+              </BaseModalBody>
+              <BaseModalFooter className="px-8 pb-8">
                 <Button
                   color="success"
-                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
+                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   radius="full"
                   onPress={() => {
                     onClose?.();
@@ -1439,26 +1426,22 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("common.ok", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Download success modal */}
-      <Modal
+      <BaseModal
         isOpen={downloadSuccessDisclosure.isOpen}
         onOpenChange={downloadSuccessDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
+              <BaseModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
                 <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
                   <svg
                     viewBox="0 0 24 24"
@@ -1479,8 +1462,8 @@ export const DownloadPage: React.FC = () => {
                     defaultValue: "下载完成",
                   })}
                 </h2>
-              </ModalHeader>
-              <ModalBody className="px-8 py-4">
+              </BaseModalHeader>
+              <BaseModalBody className="px-8 py-4">
                 <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
                   {t("downloadpage.download.success_body", {
                     defaultValue: "文件已下载：",
@@ -1489,11 +1472,11 @@ export const DownloadPage: React.FC = () => {
                     {downloadSuccessMsg}
                   </div>
                 </div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8">
+              </BaseModalBody>
+              <BaseModalFooter className="px-8 pb-8">
                 <Button
                   color="primary"
-                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-500/20"
+                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   radius="full"
                   onPress={() => {
                     try {
@@ -1506,26 +1489,22 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("common.ok", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Install success modal */}
-      <Modal
+      <BaseModal
         isOpen={installSuccessDisclosure.isOpen}
         onOpenChange={installSuccessDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-success-600">
+              <BaseModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-success-600">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1571,8 +1550,8 @@ export const DownloadPage: React.FC = () => {
                     </motion.div>
                   ) : null}
                 </div>
-              </ModalHeader>
-              <ModalBody className="px-8 py-4">
+              </BaseModalHeader>
+              <BaseModalBody className="px-8 py-4">
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1597,8 +1576,8 @@ export const DownloadPage: React.FC = () => {
                     </div>
                   ) : null}
                 </motion.div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8 pt-4">
+              </BaseModalBody>
+              <BaseModalFooter className="px-8 pb-8 pt-4">
                 <Button
                   className="bg-default-100 text-default-700 font-bold hover:bg-default-200"
                   radius="full"
@@ -1608,26 +1587,22 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("common.back", { defaultValue: "返回" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Install error modal */}
-      <Modal
+      <BaseModal
         isOpen={installErrorDisclosure.isOpen}
         onOpenChange={installErrorDisclosure.onOpenChange}
         size="md"
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-          closeButton: "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
-        }}
       >
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-danger-600">
+              <BaseModalHeader className="flex items-center gap-4 text-danger-600">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1659,8 +1634,8 @@ export const DownloadPage: React.FC = () => {
                     defaultValue: "未知错误",
                   })}
                 </motion.h2>
-              </ModalHeader>
-              <ModalBody className="px-8 py-4">
+              </BaseModalHeader>
+              <BaseModalBody>
                 <motion.div
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
@@ -1669,8 +1644,8 @@ export const DownloadPage: React.FC = () => {
                 >
                   {trErr(installError)}
                 </motion.div>
-              </ModalBody>
-              <ModalFooter className="px-8 pb-8 pt-4">
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   className="bg-default-100 text-default-700 font-bold hover:bg-default-200"
                   radius="full"
@@ -1680,27 +1655,24 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("common.close", { defaultValue: "关闭" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Install progress modal */}
-      <Modal
+      <BaseModal
         isOpen={installLoadingDisclosure.isOpen}
         onOpenChange={installLoadingDisclosure.onOpenChange}
         size="md"
         hideCloseButton
         isDismissable={false}
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-        }}
       >
         <ModalContent className="shadow-none">
           {() => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-primary-600">
+              <BaseModalHeader className="flex items-center gap-4 text-primary-600">
                 <Spinner size="lg" color="primary" />
                 <motion.h2
                   className="text-xl font-bold text-default-900 dark:text-white"
@@ -1712,8 +1684,8 @@ export const DownloadPage: React.FC = () => {
                     defaultValue: "正在安装",
                   })}
                 </motion.h2>
-              </ModalHeader>
-              <ModalBody className="px-8 py-8">
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="flex flex-col gap-6">
                   <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
                     {t("downloadpage.install.hint", {
@@ -1726,7 +1698,7 @@ export const DownloadPage: React.FC = () => {
                       isIndeterminate
                       size="md"
                       classNames={{
-                        indicator: "bg-gradient-to-r from-emerald-500 to-teal-500",
+                        indicator: "bg-linear-to-r from-emerald-500 to-teal-500",
                         track: "bg-default-100",
                       }}
                       className="flex-1"
@@ -1763,27 +1735,24 @@ export const DownloadPage: React.FC = () => {
                     </div>
                   ) : null}
                 </div>
-              </ModalBody>
+              </BaseModalBody>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
       {/* Download progress modal */}
-      <Modal
+      <BaseModal
         isOpen={progressDisclosure.isOpen}
         onOpenChange={progressDisclosure.onOpenChange}
         size="md"
         hideCloseButton
         isDismissable={false}
-        classNames={{
-          base: "!bg-white dark:!bg-zinc-900 border border-default-200 dark:border-zinc-700 shadow-2xl rounded-[2.5rem]",
-        }}
       >
         <ModalContent className="shadow-none">
           {() => (
             <>
-              <ModalHeader className="flex items-center gap-4 px-6 pt-6 pb-2 text-primary-600">
+              <BaseModalHeader className="flex items-center gap-4 text-primary-600">
                 <div className="w-12 h-12 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center shrink-0">
                   <FaDownload className="text-emerald-500 animate-pulse" size={20} />
                 </div>
@@ -1799,8 +1768,8 @@ export const DownloadPage: React.FC = () => {
                     })}
                   </motion.h2>
                 </div>
-              </ModalHeader>
-              <ModalBody className="px-6 py-4">
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="flex flex-col gap-4">
                   {dlError ? (
                     <div className="p-4 rounded-xl bg-danger-500/10 border border-danger-500/20 text-danger-600 font-bold">
@@ -1832,7 +1801,7 @@ export const DownloadPage: React.FC = () => {
                         }
                         size="md"
                         classNames={{
-                          indicator: "bg-gradient-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-500/20",
+                          indicator: "bg-linear-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-900/20",
                           track: "bg-default-200/50 dark:bg-white/5",
                         }}
                       />
@@ -1856,8 +1825,8 @@ export const DownloadPage: React.FC = () => {
                     </div>
                   )}
                 </div>
-              </ModalBody>
-              <ModalFooter className="px-6 pb-6 pt-2">
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="danger"
                   variant="flat"
@@ -1873,11 +1842,11 @@ export const DownloadPage: React.FC = () => {
                 >
                   {t("common.cancel", { defaultValue: "取消" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
         </div>
       </motion.div>
     </>

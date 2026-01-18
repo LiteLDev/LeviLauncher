@@ -1,7 +1,5 @@
 [
-  [ "en_US", "English (United States)" ],
-  [ "zh_CN", "中文(简体)" ],
-  [ "zh_HK", "中文(香港)" ],
-  [ "ru_RU", "Русский язык" ],
-  [ "ja_JP", "日本語" ]
+  ["en_US", "English (United States)"],
+  ["zh_CN", "中文(简体)"],
+  ["ru_RU", "Русский язык"]
 ]

@@ -2,7 +2,9 @@ package mcservice
 
 import (
 	"bytes"
+	"context"
 	"encoding/base64"
+	"fmt"
 	"image"
 	_ "image/gif"
 	_ "image/jpeg"
@@ -10,12 +12,15 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"regexp"
+	"strconv"
 	"strings"
 	"syscall"
 	"time"
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/icons"
+	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
@@ -27,6 +32,114 @@ type ContentCounts struct {
 	Worlds        int `json:"worlds"`
 	ResourcePacks int `json:"resourcePacks"`
 	BehaviorPacks int `json:"behaviorPacks"`
+}
+
+var (
+	versionDLL                  = windows.NewLazySystemDLL("version.dll")
+	procGetFileVersionInfoSizeW = versionDLL.NewProc("GetFileVersionInfoSizeW")
+	procGetFileVersionInfoW     = versionDLL.NewProc("GetFileVersionInfoW")
+	procVerQueryValueW          = versionDLL.NewProc("VerQueryValueW")
+	fourPartVersionMatchRe      = regexp.MustCompile(`\d+\.\d+\.\d+\.\d+`)
+	fourPartVersionExactMatchRe = regexp.MustCompile(`^\d+\.\d+\.\d+\.\d+$`)
+)
+
+type vsFixedFileInfo struct {
+	Signature        uint32
+	StrucVersion     uint32
+	FileVersionMS    uint32
+	FileVersionLS    uint32
+	ProductVersionMS uint32
+	ProductVersionLS uint32
+	FileFlagsMask    uint32
+	FileFlags        uint32
+	FileOS           uint32
+	FileType         uint32
+	FileSubtype      uint32
+	FileDateMS       uint32
+	FileDateLS       uint32
+}
+
+func normalizeBedrockGameVersion(raw string) string {
+	s := strings.TrimSpace(raw)
+	if s == "" {
+		return ""
+	}
+	match := s
+	if !fourPartVersionExactMatchRe.MatchString(s) {
+		m := fourPartVersionMatchRe.FindString(s)
+		if m == "" {
+			return s
+		}
+		match = m
+	}
+	parts := strings.Split(match, ".")
+	if len(parts) != 4 {
+		return s
+	}
+	nums := make([]int, 4)
+	for i := 0; i < 4; i++ {
+		n, err := strconv.Atoi(parts[i])
+		if err != nil {
+			return s
+		}
+		nums[i] = n
+	}
+	return fmt.Sprintf("%d.%d.%d.%02d", nums[0], nums[1], nums[2], nums[3])
+}
+
+func isFourPartNumericVersion(s string) bool {
+	return fourPartVersionExactMatchRe.MatchString(strings.TrimSpace(s))
+}
+
+func readExeFileVersion(exePath string) (string, bool) {
+	p := strings.TrimSpace(exePath)
+	if p == "" || !utils.FileExists(p) {
+		return "", false
+	}
+	p16, err := windows.UTF16PtrFromString(p)
+	if err != nil {
+		return "", false
+	}
+	var handle uint32
+	r1, _, _ := procGetFileVersionInfoSizeW.Call(
+		uintptr(unsafe.Pointer(p16)),
+		uintptr(unsafe.Pointer(&handle)),
+	)
+	if r1 == 0 {
+		return "", false
+	}
+	sz := uint32(r1)
+	buf := make([]byte, sz)
+	r1, _, _ = procGetFileVersionInfoW.Call(
+		uintptr(unsafe.Pointer(p16)),
+		0,
+		uintptr(sz),
+		uintptr(unsafe.Pointer(&buf[0])),
+	)
+	if r1 == 0 {
+		return "", false
+	}
+	root16, _ := windows.UTF16PtrFromString(`\`)
+	var block uintptr
+	var blockLen uint32
+	r1, _, _ = procVerQueryValueW.Call(
+		uintptr(unsafe.Pointer(&buf[0])),
+		uintptr(unsafe.Pointer(root16)),
+		uintptr(unsafe.Pointer(&block)),
+		uintptr(unsafe.Pointer(&blockLen)),
+	)
+	if r1 == 0 || block == 0 || blockLen < uint32(unsafe.Sizeof(vsFixedFileInfo{})) {
+		return "", false
+	}
+	info := (*vsFixedFileInfo)(unsafe.Pointer(block))
+	if info.Signature != 0xFEEF04BD {
+		return "", false
+	}
+	major := int(info.FileVersionMS >> 16)
+	minor := int(info.FileVersionMS & 0xFFFF)
+	build := int(info.FileVersionLS >> 16)
+	rev := int(info.FileVersionLS & 0xFFFF)
+	return fmt.Sprintf("%d.%d.%d.%d", major, minor, build, rev), true
 }
 
 func GetContentRoots(name string) types.ContentRoots {
@@ -113,24 +226,43 @@ func GetContentCounts(name string) ContentCounts {
 	return ContentCounts{Worlds: worlds, ResourcePacks: res, BehaviorPacks: bp}
 }
 
-func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool) string {
+func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, enableRenderDragon bool) string {
 	vdir, err := utils.GetVersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
-	dir := filepath.Join(vdir, strings.TrimSpace(name))
+	n := strings.TrimSpace(name)
+	dir := filepath.Join(vdir, n)
+
+	gvRaw := strings.TrimSpace(gameVersion)
+	gv := normalizeBedrockGameVersion(gvRaw)
+	if gv == "" {
+		gv = gvRaw
+	}
+	shouldDetect := gv == "" || (strings.EqualFold(gv, n) && !isFourPartNumericVersion(gv))
+	if shouldDetect {
+		if fv, ok := readExeFileVersion(filepath.Join(dir, "Minecraft.Windows.exe")); ok {
+			gv = normalizeBedrockGameVersion(fv)
+		}
+		if strings.EqualFold(strings.TrimSpace(gv), n) {
+			gv = ""
+		}
+	}
+
 	meta := versions.VersionMeta{
-		Name:             strings.TrimSpace(name),
-		GameVersion:      strings.TrimSpace(gameVersion),
-		Type:             strings.TrimSpace(typeStr),
-		EnableIsolation:  enableIsolation,
-		EnableConsole:    enableConsole,
-		EnableEditorMode: enableEditorMode,
-		CreatedAt:        time.Now(),
+		Name:               n,
+		GameVersion:        strings.TrimSpace(gv),
+		Type:               strings.TrimSpace(typeStr),
+		EnableIsolation:    enableIsolation,
+		EnableConsole:      enableConsole,
+		EnableEditorMode:   enableEditorMode,
+		EnableRenderDragon: enableRenderDragon,
+		CreatedAt:          time.Now(),
 	}
 	if err := versions.WriteMeta(dir, meta); err != nil {
 		return "ERR_WRITE_TARGET"
 	}
+	peeditor.PrepareExecutableForLaunch(context.Background(), dir, enableConsole)
 	return ""
 }
 
@@ -578,20 +710,66 @@ func CreateDesktopShortcut(name string) string {
 	if exePath == "" {
 		return "ERR_SHORTCUT_CREATE_FAILED"
 	}
-	home, _ := os.UserHomeDir()
-	if strings.TrimSpace(home) == "" {
-		home = os.Getenv("USERPROFILE")
+
+	findDesktopDir := func() string {
+		candidates := []string{}
+		home, _ := os.UserHomeDir()
+		home = strings.TrimSpace(home)
+		if home == "" {
+			home = strings.TrimSpace(os.Getenv("USERPROFILE"))
+		}
+		if home != "" {
+			candidates = append(candidates, filepath.Join(home, "Desktop"))
+			candidates = append(candidates, filepath.Join(home, "OneDrive", "Desktop"))
+		}
+		for _, k := range []string{"OneDrive", "OneDriveConsumer", "OneDriveCommercial"} {
+			v := strings.TrimSpace(os.Getenv(k))
+			if v != "" {
+				candidates = append(candidates, filepath.Join(v, "Desktop"))
+			}
+		}
+		pub := strings.TrimSpace(os.Getenv("PUBLIC"))
+		if pub != "" {
+			candidates = append(candidates, filepath.Join(pub, "Desktop"))
+		}
+		for _, p := range candidates {
+			if strings.TrimSpace(p) == "" {
+				continue
+			}
+			if fi, err := os.Stat(p); err == nil && fi.IsDir() {
+				return p
+			}
+		}
+		return ""
 	}
-	if strings.TrimSpace(home) == "" {
+
+	desktop := findDesktopDir()
+	if desktop == "" {
 		return "ERR_SHORTCUT_CREATE_FAILED"
 	}
-	desktop := filepath.Join(home, "Desktop")
-	if fi, err := os.Stat(desktop); err != nil || !fi.IsDir() {
-		return "ERR_SHORTCUT_CREATE_FAILED"
+
+	safeName := strings.Map(func(r rune) rune {
+		switch r {
+		case '<', '>', ':', '"', '/', '\\', '|', '?', '*':
+			return '_'
+		}
+		if r < 32 {
+			return '_'
+		}
+		return r
+	}, n)
+	safeName = strings.TrimSpace(safeName)
+	safeName = strings.TrimRight(safeName, ". ")
+	if safeName == "" {
+		safeName = "Minecraft"
 	}
-	safeName := n
+
 	lnk := filepath.Join(desktop, "Minecraft - "+safeName+".lnk")
 	args := "--launch=" + n
+	if strings.ContainsAny(n, " \t") {
+		esc := strings.ReplaceAll(n, `"`, `\"`)
+		args = `--launch="` + esc + `"`
+	}
 	workdir := filepath.Dir(exePath)
 	iconPath := exePath
 	if vdir, err := utils.GetVersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
@@ -622,10 +800,14 @@ func CreateDesktopShortcut(name string) string {
 		"$Shortcut.WorkingDirectory = '" + esc(workdir) + "'; " +
 		"$Shortcut.IconLocation = '" + esc(iconPath) + "'; " +
 		"$Shortcut.Save()"
-	cmd := exec.Command("powershell", "-NoProfile", "-WindowStyle", "Hidden", "-Command", script)
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-WindowStyle", "Hidden", "-Command", script)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if err := cmd.Run(); err != nil {
-		return "ERR_SHORTCUT_CREATE_FAILED"
+		cmdFile := filepath.Join(desktop, "Minecraft - "+safeName+".cmd")
+		data := "@echo off\r\nstart \"\" \"" + exePath + "\" " + args + "\r\n"
+		if werr := os.WriteFile(cmdFile, []byte(data), 0o644); werr != nil {
+			return "ERR_SHORTCUT_CREATE_FAILED"
+		}
 	}
 	return ""
 }

@@ -1,6 +1,9 @@
 import React, { createContext, useContext, useState, useRef } from "react";
-import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import { GameVersion, Categories } from "../../bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
+import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
+import {
+  GameVersion,
+  Categories,
+} from "bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
 
 interface CurseForgeContextValue {
   query: string;
@@ -33,13 +36,18 @@ interface CurseForgeContextValue {
   setHasSearched: (b: boolean) => void;
 }
 
-const CurseForgeContext = createContext<CurseForgeContextValue | undefined>(undefined);
+const CurseForgeContext = createContext<CurseForgeContextValue | undefined>(
+  undefined,
+);
 
-export const CurseForgeProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const CurseForgeProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const [query, setQuery] = useState("");
   const [mods, setMods] = useState<types.CurseForgeMod[]>([]);
   const [gameVersions, setGameVersions] = useState<GameVersion[]>([]);
-  const [selectedMinecraftVersion, setSelectedMinecraftVersion] = useState<string>("");
+  const [selectedMinecraftVersion, setSelectedMinecraftVersion] =
+    useState<string>("");
   const [allCategories, setAllCategories] = useState<Categories[]>([]);
   const [selectedClass, setSelectedClass] = useState<number>(0);
   const [selectedCategories, setSelectedCategories] = useState<number[]>([]);
@@ -52,20 +60,34 @@ export const CurseForgeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
   const [hasSearched, setHasSearched] = useState(false);
 
   const value = {
-    query, setQuery,
-    mods, setMods,
-    gameVersions, setGameVersions,
-    selectedMinecraftVersion, setSelectedMinecraftVersion,
-    allCategories, setAllCategories,
-    selectedClass, setSelectedClass,
-    selectedCategories, setSelectedCategories,
-    currentPage, setCurrentPage,
-    searchToken, setSearchToken,
-    totalCount, setTotalCount,
-    selectedSort, setSelectedSort,
-    initialLoaded, setInitialLoaded,
-    scrollPosition, setScrollPosition,
-    hasSearched, setHasSearched,
+    query,
+    setQuery,
+    mods,
+    setMods,
+    gameVersions,
+    setGameVersions,
+    selectedMinecraftVersion,
+    setSelectedMinecraftVersion,
+    allCategories,
+    setAllCategories,
+    selectedClass,
+    setSelectedClass,
+    selectedCategories,
+    setSelectedCategories,
+    currentPage,
+    setCurrentPage,
+    searchToken,
+    setSearchToken,
+    totalCount,
+    setTotalCount,
+    selectedSort,
+    setSelectedSort,
+    initialLoaded,
+    setInitialLoaded,
+    scrollPosition,
+    setScrollPosition,
+    hasSearched,
+    setHasSearched,
   };
 
   return (

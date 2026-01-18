@@ -1,7 +1,17 @@
 import React, { useEffect } from "react";
-import { Card, CardBody, Button, ScrollShadow, Chip, CardHeader } from "@heroui/react";
-import { GetMods } from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
+import {
+  Card,
+  CardBody,
+  Button,
+  ScrollShadow,
+  Chip,
+  CardHeader,
+} from "@heroui/react";
+import {
+  GetMods,
+  IsModEnabled,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { FaPuzzlePiece, FaArrowRight } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
@@ -18,20 +28,35 @@ export const ModCard = (args: {
   useEffect(() => {
     const name = String(args.currentVersion || "");
     if (name) {
-      GetMods(name)
-        .then((data) => setModsInfo(data || []))
-        .catch(() => setModsInfo([]));
+      (async () => {
+        try {
+          const data = (await GetMods(name)) || [];
+          const statusList = await Promise.all(
+            data.map(async (m) => {
+              try {
+                return await (IsModEnabled as any)?.(name, m.name);
+              } catch {
+                return false;
+              }
+            }),
+          );
+          const filtered = data.filter((_, i) => statusList[i]);
+          setModsInfo(filtered);
+        } catch {
+          setModsInfo([]);
+        }
+      })();
     } else {
       setModsInfo([]);
     }
   }, [args.currentVersion, args.localVersionMap]);
 
   return (
-    <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-2xl transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group">
+    <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group">
       <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
-             <FaPuzzlePiece size={16} />
+            <FaPuzzlePiece size={16} />
           </div>
           <h3 className="text-base font-bold text-default-800 dark:text-zinc-100">
             {t("moddedcard.title", { defaultValue: "Mods" })}
@@ -43,7 +68,7 @@ export const ModCard = (args: {
           </Chip>
         )}
       </CardHeader>
-      
+
       <CardBody className="p-0 overflow-hidden relative">
         <ScrollShadow className="h-[140px] w-full p-4 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
           {modsInfo.length > 0 ? (
@@ -67,26 +92,30 @@ export const ModCard = (args: {
               </AnimatePresence>
             </div>
           ) : (
-             <div className="h-full flex flex-col items-center justify-center text-default-400 gap-2">
-               <FaPuzzlePiece size={32} className="opacity-20" />
-               <span className="text-sm">{t("moddedcard.content.none", { defaultValue: "No mods found" })}</span>
-             </div>
+            <div className="h-full flex flex-col items-center justify-center text-default-400 gap-2">
+              <FaPuzzlePiece size={32} className="opacity-20" />
+              <span className="text-sm">
+                {t("moddedcard.content.none", {
+                  defaultValue: "No mods found",
+                })}
+              </span>
+            </div>
           )}
         </ScrollShadow>
 
         {/* Action Overlay / Footer */}
-        <div className="absolute bottom-0 left-0 right-0 p-3 bg-gradient-to-t from-white/90 via-white/50 to-transparent dark:from-zinc-900/90 dark:via-zinc-900/50 pt-6 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-           <Button
-             size="sm"
-             color="primary"
-             variant="flat"
-             endContent={<FaArrowRight />}
-             onPress={() => navigate("/mods")}
-             isDisabled={!args.currentVersion}
-             className="font-semibold shadow-sm"
-           >
-             {t("moddedcard.manage", { defaultValue: "Manage Mods" })}
-           </Button>
+        <div className="absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-white/90 via-white/50 to-transparent dark:from-zinc-900/90 dark:via-zinc-900/50 pt-6 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+          <Button
+            size="sm"
+            color="primary"
+            variant="flat"
+            endContent={<FaArrowRight />}
+            onPress={() => navigate("/mods")}
+            isDisabled={!args.currentVersion}
+            className="font-semibold shadow-sm"
+          >
+            {t("moddedcard.manage", { defaultValue: "Manage Mods" })}
+          </Button>
         </div>
       </CardBody>
     </Card>

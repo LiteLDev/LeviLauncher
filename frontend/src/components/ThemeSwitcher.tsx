@@ -1,8 +1,8 @@
 import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { Switch } from "@heroui/react";
-import { MoonIcon } from "../icons/MoonIcon";
-import { SunIcon } from "../icons/SunIcon";
+import { MoonIcon } from "@/icons/MoonIcon";
+import { SunIcon } from "@/icons/SunIcon";
 
 export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();

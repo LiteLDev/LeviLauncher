@@ -6,18 +6,20 @@ import {
   CardHeader,
   Chip,
   Input,
-  Modal,
   useDisclosure,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Progress,
   Switch,
   Tooltip,
   Checkbox,
+  ModalContent,
 } from "@heroui/react";
 import { useLocation, useNavigate } from "react-router-dom";
+import {
+  BaseModal,
+  BaseModalHeader,
+  BaseModalBody,
+  BaseModalFooter,
+} from "@/components/BaseModal";
 import { useTranslation } from "react-i18next";
 import {
   OpenModsExplorer,
@@ -26,12 +28,14 @@ import {
   EnableMod,
   DisableMod,
   IsModEnabled,
-} from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as types from "../../bindings/github.com/liteldev/LeviLauncher/internal/types/models";
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { FaPuzzlePiece } from "react-icons/fa6";
+import { FaSync, FaFilter, FaTimes } from "react-icons/fa";
 import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
-import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { PageHeader } from "@/components/PageHeader";
 
 const readCurrentVersionName = (): string => {
   try {
@@ -50,6 +54,7 @@ export const ModsPage: React.FC = () => {
   const [query, setQuery] = useState("");
   const [dragActive, setDragActive] = useState(false);
   const dragCounter = useRef(0);
+  const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
   const [errorFile, setErrorFile] = useState("");
@@ -98,7 +103,7 @@ export const ModsPage: React.FC = () => {
   const [activeMod, setActiveMod] = useState<types.ModInfo | null>(null);
   const [deleting, setDeleting] = useState<boolean>(false);
   const [enabledByName, setEnabledByName] = useState<Map<string, boolean>>(
-    new Map()
+    new Map(),
   );
   const [onlyEnabled, setOnlyEnabled] = useState<boolean>(false);
   const [dllName, setDllName] = useState("");
@@ -123,7 +128,7 @@ export const ModsPage: React.FC = () => {
   const postImportModZip = async (
     name: string,
     file: File,
-    overwrite: boolean
+    overwrite: boolean,
   ): Promise<string> => {
     try {
       const buf = await file.arrayBuffer();
@@ -131,7 +136,7 @@ export const ModsPage: React.FC = () => {
       const err = await (minecraft as any)?.ImportModZip?.(
         name,
         bytes,
-        overwrite
+        overwrite,
       );
       return String(err || "");
     } catch (e: any) {
@@ -145,7 +150,7 @@ export const ModsPage: React.FC = () => {
     modName: string,
     modType: string,
     version: string,
-    overwrite: boolean
+    overwrite: boolean,
   ): Promise<string> => {
     try {
       const buf = await file.arrayBuffer();
@@ -157,7 +162,7 @@ export const ModsPage: React.FC = () => {
         modName,
         modType,
         version,
-        overwrite
+        overwrite,
       );
       return String(err || "");
     } catch (e: any) {
@@ -190,6 +195,21 @@ export const ModsPage: React.FC = () => {
       }
       await new Promise((r) => setTimeout(r, 250));
     }
+  };
+
+  const refreshAll = async () => {
+    setLoading(true);
+    const name = currentVersionName || readCurrentVersionName();
+    if (name) {
+      try {
+        const data = await GetMods(name);
+        setModsInfo(data || []);
+        await refreshEnabledStates(name);
+      } catch {
+        setModsInfo([]);
+      }
+    }
+    setLoading(false);
   };
 
   useEffect(() => {
@@ -292,7 +312,7 @@ export const ModsPage: React.FC = () => {
         setErrorMsg(
           t("launcherpage.currentVersion_none", {
             defaultValue: "未选择版本",
-          }) as string
+          }) as string,
         );
         return;
       }
@@ -362,7 +382,7 @@ export const ModsPage: React.FC = () => {
             vals.name,
             vals.type || "preload-native",
             vals.version || "0.0.0",
-            false
+            false,
           );
           if (err) {
             if (String(err) === "ERR_DUPLICATE_FOLDER") {
@@ -379,7 +399,7 @@ export const ModsPage: React.FC = () => {
                   vals.name,
                   vals.type || "preload-native",
                   vals.version || "0.0.0",
-                  true
+                  true,
                 );
                 if (!err) {
                   succFiles.push(base || p);
@@ -424,7 +444,7 @@ export const ModsPage: React.FC = () => {
         setErrorMsg(
           t("launcherpage.currentVersion_none", {
             defaultValue: "未选择版本",
-          }) as string
+          }) as string,
         );
         return;
       }
@@ -435,18 +455,17 @@ export const ModsPage: React.FC = () => {
         (f) =>
           f &&
           (f.name.toLowerCase().endsWith(".zip") ||
-            f.name.toLowerCase().endsWith(".dll"))
+            f.name.toLowerCase().endsWith(".dll")),
       );
       for (const f of files) {
         const lower = f.name.toLowerCase();
-        const buf = await f.arrayBuffer();
-        const bytes = Array.from(new Uint8Array(buf));
         if (lower.endsWith(".zip")) {
           if (!started) {
             setImporting(true);
             started = true;
           }
           setCurrentFile(f.name);
+          await new Promise<void>((r) => setTimeout(r, 0));
           let err = await postImportModZip(currentVersionName, f, false);
           if (err) {
             if (String(err) === "ERR_DUPLICATE_FOLDER") {
@@ -476,7 +495,6 @@ export const ModsPage: React.FC = () => {
           setDllType("preload-native");
           setDllVersion("0.0.0");
           dllFileRef.current = f;
-          dllBytesRef.current = bytes;
           await new Promise<void>((resolve) => setTimeout(resolve, 0));
           dllOnOpen();
           const ok = await new Promise<boolean>((resolve) => {
@@ -490,6 +508,7 @@ export const ModsPage: React.FC = () => {
             started = true;
           }
           setCurrentFile(f.name);
+          await new Promise<void>((r) => setTimeout(r, 0));
           const vals = dllConfirmRef.current || {
             name: dllName,
             type: dllType,
@@ -503,7 +522,7 @@ export const ModsPage: React.FC = () => {
             vals.name,
             vals.type || "preload-native",
             vals.version || "0.0.0",
-            false
+            false,
           );
           if (err) {
             if (String(err) === "ERR_DUPLICATE_FOLDER") {
@@ -522,7 +541,7 @@ export const ModsPage: React.FC = () => {
                   vals.name,
                   vals.type || "preload-native",
                   vals.version || "0.0.0",
-                  true
+                  true,
                 );
                 if (!err) {
                   succFiles.push(f.name);
@@ -564,7 +583,7 @@ export const ModsPage: React.FC = () => {
     return list.filter(
       (m) =>
         `${m.name}`.toLowerCase().includes(q) ||
-        `${m.version}`.toLowerCase().includes(q)
+        `${m.version}`.toLowerCase().includes(q),
     );
   }, [modsInfo, query, onlyEnabled, enabledByName]);
 
@@ -580,7 +599,7 @@ export const ModsPage: React.FC = () => {
       setErrorMsg(
         t("launcherpage.currentVersion_none", {
           defaultValue: "未选择版本",
-        }) as string
+        }) as string,
       );
       errOnOpen();
       return;
@@ -633,7 +652,7 @@ export const ModsPage: React.FC = () => {
     OpenModsExplorer(name);
   };
 
-  const handleDrop: React.DragEventHandler<HTMLDivElement> = async (e) => {
+  const handleDrop = async (e: DragEvent) => {
     e.preventDefault();
     e.stopPropagation();
     dragCounter.current = 0;
@@ -642,11 +661,11 @@ export const ModsPage: React.FC = () => {
     setErrorFile("");
     setResultSuccess([]);
     setResultFailed([]);
-    const files: File[] = Array.from(e.dataTransfer.files || []).filter(
+    const files: File[] = Array.from(e.dataTransfer?.files || []).filter(
       (f) =>
         f &&
         (f.name.toLowerCase().endsWith(".zip") ||
-          f.name.toLowerCase().endsWith(".dll"))
+          f.name.toLowerCase().endsWith(".dll")),
     );
     if (!files.length) return;
     let started = false;
@@ -655,14 +674,13 @@ export const ModsPage: React.FC = () => {
     try {
       for (const f of files) {
         const lower = f.name.toLowerCase();
-        const buf = await f.arrayBuffer();
-        const bytes = Array.from(new Uint8Array(buf));
         if (lower.endsWith(".zip")) {
           if (!started) {
             setImporting(true);
             started = true;
           }
           setCurrentFile(f.name);
+          await new Promise<void>((r) => setTimeout(r, 0));
           let err = await postImportModZip(currentVersionName, f, false);
           if (err) {
             if (String(err) === "ERR_DUPLICATE_FOLDER") {
@@ -690,7 +708,6 @@ export const ModsPage: React.FC = () => {
           setDllType("preload-native");
           setDllVersion("0.0.0");
           dllFileRef.current = f;
-          dllBytesRef.current = bytes;
           await new Promise<void>((resolve) => setTimeout(resolve, 0));
           dllOnOpen();
           const ok = await new Promise<boolean>((resolve) => {
@@ -704,6 +721,7 @@ export const ModsPage: React.FC = () => {
             started = true;
           }
           setCurrentFile(f.name);
+          await new Promise<void>((r) => setTimeout(r, 0));
           const vals = dllConfirmRef.current || {
             name: dllName,
             type: dllType,
@@ -717,7 +735,7 @@ export const ModsPage: React.FC = () => {
             vals.name,
             vals.type || "preload-native",
             vals.version || "0.0.0",
-            false
+            false,
           );
           if (err) {
             if (String(err) === "ERR_DUPLICATE_FOLDER") {
@@ -736,7 +754,7 @@ export const ModsPage: React.FC = () => {
                   vals.name,
                   vals.type || "preload-native",
                   vals.version || "0.0.0",
-                  true
+                  true,
                 );
                 if (!err) {
                   succFiles.push(f.name);
@@ -764,40 +782,78 @@ export const ModsPage: React.FC = () => {
     }
   };
 
+  useEffect(() => {
+    const isFileDrag = (e: DragEvent) => {
+      try {
+        const dt = e?.dataTransfer;
+        if (!dt) return false;
+        const types = dt.types ? Array.from(dt.types) : [];
+        if (types.includes("Files")) return true;
+        const items = dt.items ? Array.from(dt.items) : [];
+        return items.some((it) => it?.kind === "file");
+      } catch {
+        return false;
+      }
+    };
+
+    const onDragEnter = (e: DragEvent) => {
+      if (!isFileDrag(e)) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current += 1;
+      setDragActive(true);
+    };
+
+    const onDragLeave = (e: DragEvent) => {
+      if (dragCounter.current <= 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      dragCounter.current -= 1;
+      if (dragCounter.current <= 0) {
+        dragCounter.current = 0;
+        setDragActive(false);
+      }
+    };
+
+    const onDragOver = (e: DragEvent) => {
+      if (!isFileDrag(e) && dragCounter.current <= 0) return;
+      e.preventDefault();
+      e.stopPropagation();
+      try {
+        (e.dataTransfer as any).dropEffect = "copy";
+      } catch {}
+    };
+
+    const onDrop = (e: DragEvent) => {
+      const hasFiles = (e.dataTransfer?.files?.length || 0) > 0;
+      if (!hasFiles && dragCounter.current <= 0 && !isFileDrag(e)) return;
+      handleDrop(e);
+    };
+
+    document.addEventListener("dragenter", onDragEnter, true);
+    document.addEventListener("dragleave", onDragLeave, true);
+    document.addEventListener("dragover", onDragOver, true);
+    document.addEventListener("drop", onDrop, true);
+
+    return () => {
+      document.removeEventListener("dragenter", onDragEnter, true);
+      document.removeEventListener("dragleave", onDragLeave, true);
+      document.removeEventListener("dragover", onDragOver, true);
+      document.removeEventListener("drop", onDrop, true);
+    };
+  });
+
   return (
     <motion.div
       ref={scrollRef}
-      className={`relative w-full h-full max-w-[100vw] flex flex-col overflow-x-hidden overflow-auto no-scrollbar ${
+      className={`fixed inset-0 z-40 w-full h-full flex flex-col pt-[84px] px-6 pb-6 overflow-hidden bg-default-50 dark:bg-black ${
         dragActive ? "cursor-copy" : ""
       }`}
-      onDragOver={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          e.dataTransfer.dropEffect = "copy";
-        } catch {}
-      }}
-      onDragEnter={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        try {
-          e.dataTransfer.dropEffect = "copy";
-        } catch {}
-        dragCounter.current++;
-        setDragActive(true);
-      }}
-      onDragLeave={(e) => {
-        e.preventDefault();
-        e.stopPropagation();
-        dragCounter.current = Math.max(0, dragCounter.current - 1);
-        if (dragCounter.current === 0) setDragActive(false);
-      }}
-      onDrop={handleDrop}
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
     >
-      <Modal
+      <BaseModal
         size="sm"
         isOpen={importing && !dllOpen}
         hideCloseButton
@@ -806,13 +862,13 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {() => (
             <>
-              <ModalHeader className="flex items-center gap-2 text-primary-600">
+              <BaseModalHeader className="flex items-center gap-2 text-primary-600">
                 <FiUploadCloud className="w-5 h-5" />
                 <span>
                   {t("mods.importing_title", { defaultValue: "正在导入..." })}
                 </span>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="py-1">
                   <Progress
                     isIndeterminate
@@ -826,16 +882,16 @@ export const ModsPage: React.FC = () => {
                   })}
                 </div>
                 {currentFile ? (
-                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm break-words whitespace-pre-wrap">
+                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
                     {currentFile}
                   </div>
                 ) : null}
-              </ModalBody>
+              </BaseModalBody>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={errOpen}
         onOpenChange={errOnOpenChange}
@@ -844,7 +900,7 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader
+              <BaseModalHeader
                 className={`flex items-center gap-2 ${
                   resultFailed.length ? "text-red-600" : "text-primary-600"
                 }`}
@@ -863,15 +919,15 @@ export const ModsPage: React.FC = () => {
                         defaultValue: "导入完成",
                       })}
                 </span>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 {resultSuccess.length ? (
                   <div className="mb-2">
                     <div className="text-sm font-semibold text-success">
                       {t("mods.summary_success", { defaultValue: "成功" })} (
                       {resultSuccess.length})
                     </div>
-                    <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm break-words whitespace-pre-wrap">
+                    <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm wrap-break-word whitespace-pre-wrap">
                       {resultSuccess.join("\n")}
                     </div>
                   </div>
@@ -882,17 +938,17 @@ export const ModsPage: React.FC = () => {
                       {t("mods.summary_failed", { defaultValue: "失败" })} (
                       {resultFailed.length})
                     </div>
-                    <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm break-words whitespace-pre-wrap">
+                    <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm wrap-break-word whitespace-pre-wrap">
                       {resultFailed
                         .map(
-                          (it) => `${it.name} - ${resolveImportError(it.err)}`
+                          (it) => `${it.name} - ${resolveImportError(it.err)}`,
                         )
                         .join("\n")}
                     </div>
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="primary"
                   onPress={() => {
@@ -905,13 +961,13 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
-      <Modal
+      <BaseModal
         size="md"
         isOpen={delOpen}
         onOpenChange={delOnOpenChange}
@@ -920,7 +976,7 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader
+              <BaseModalHeader
                 className={`flex items-center gap-2 ${
                   resultFailed.length ? "text-red-600" : "text-primary-600"
                 }`}
@@ -939,15 +995,15 @@ export const ModsPage: React.FC = () => {
                         defaultValue: "删除完成",
                       })}
                 </span>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 {resultSuccess.length ? (
                   <div className="mb-2">
                     <div className="text-sm font-semibold text-success">
                       {t("mods.summary_deleted", { defaultValue: "已删除" })} (
                       {resultSuccess.length})
                     </div>
-                    <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm break-words whitespace-pre-wrap">
+                    <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm wrap-break-word whitespace-pre-wrap">
                       {resultSuccess.join("\n")}
                     </div>
                   </div>
@@ -958,17 +1014,17 @@ export const ModsPage: React.FC = () => {
                       {t("mods.summary_failed", { defaultValue: "失败" })} (
                       {resultFailed.length})
                     </div>
-                    <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm break-words whitespace-pre-wrap">
+                    <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm wrap-break-word whitespace-pre-wrap">
                       {resultFailed
                         .map(
-                          (it) => `${it.name} - ${resolveImportError(it.err)}`
+                          (it) => `${it.name} - ${resolveImportError(it.err)}`,
                         )
                         .join("\n")}
                     </div>
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="primary"
                   onPress={() => {
@@ -982,12 +1038,12 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={dllOpen}
         onOpenChange={dllOnOpenChange}
@@ -996,10 +1052,10 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-primary-600">
+              <BaseModalHeader className="text-primary-600">
                 {t("mods.dll_modal_title", { defaultValue: "导入 DLL 插件" })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="flex flex-col gap-3">
                   <Input
                     label={
@@ -1027,8 +1083,8 @@ export const ModsPage: React.FC = () => {
                     size="sm"
                   />
                 </div>
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -1063,12 +1119,12 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="md"
         isOpen={dupOpen}
         onOpenChange={dupOnOpenChange}
@@ -1077,24 +1133,24 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-primary-600">
+              <BaseModalHeader className="text-primary-600">
                 {t("mods.overwrite_modal_title", {
                   defaultValue: "检测到重复",
                 })}
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 <div className="text-sm text-default-700">
                   {t("mods.overwrite_modal_body", {
                     defaultValue: "同名模块文件夹已存在，是否覆盖（更新）？",
                   })}
                 </div>
                 {dupNameRef.current ? (
-                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm break-words whitespace-pre-wrap">
+                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
                     {dupNameRef.current}
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -1119,257 +1175,263 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <div className="px-3 sm:px-5 lg:px-8 py-3 sm:py-4 lg:py-6 w-full flex flex-col gap-4">
-        <motion.div
-          initial={{ opacity: 0, y: -8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25 }}
-        >
-          <Card
-            className={`relative overflow-hidden rounded-3xl bg-white/60 dark:bg-black/30 backdrop-blur-md border border-white/30 ${
-              dragActive ? "border-2 border-dashed border-primary" : ""
-            }`}
+      </BaseModal>
+      {/* Drag Overlay */}
+      <AnimatePresence>
+        {dragActive ? (
+          <motion.div
+            className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
           >
-            <AnimatePresence>
-              {dragActive ? (
-                <motion.div
-                  className="pointer-events-none absolute inset-0 z-40 flex items-center justify-center bg-black/10 rounded-3xl"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  exit={{ opacity: 0 }}
-                  transition={{ duration: 0.2 }}
+            <div className="bg-white/90 dark:bg-zinc-900/90 p-8 rounded-4xl shadow-2xl flex flex-col items-center gap-4 border border-white/20">
+              <FiUploadCloud className="w-16 h-16 text-primary-500" />
+              <div className="text-xl font-bold bg-linear-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">
+                {t("mods.drop_hint", {
+                  defaultValue: "拖入 .zip 或 .dll 以导入模组/插件",
+                })}
+              </div>
+            </div>
+          </motion.div>
+        ) : null}
+      </AnimatePresence>
+
+      <div className="flex flex-col gap-4 mb-6 shrink-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md p-6 rounded-4xl">
+        <PageHeader
+          title={t("moddedcard.title", { defaultValue: "Mods" })}
+          description={
+            <div className="flex items-center gap-2">
+              <span>{currentVersionName || "No Version Selected"}</span>
+              {modsInfo.length > 0 && (
+                <Chip
+                  size="sm"
+                  variant="flat"
+                  className="h-5 text-xs bg-default-100 dark:bg-zinc-800"
                 >
-                  <div className="text-primary-600 text-xl font-semibold">
-                    {t("mods.drop_hint", {
-                      defaultValue: "拖入 .zip 或 .dll 以导入模组/插件",
-                    })}
-                  </div>
-                </motion.div>
-              ) : null}
-            </AnimatePresence>
-            <CardHeader className="flex items-center justify-between p-3 sm:p-4">
-              <div className="flex items-center gap-2">
-                <FaPuzzlePiece />
-                <div className="text-2xl font-bold">
-                  {t("moddedcard.title", { defaultValue: "Mods" })}
-                </div>
-                <Chip size="sm" variant="flat">
-                  {modsInfo?.length || 0}
+                  {modsInfo.length}
                 </Chip>
-              </div>
-              <div className="flex items-center gap-2">
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".zip,.dll"
-                  multiple
-                  className="hidden"
-                  onChange={handleFilePick}
-                />
-                <Button
-                  color="primary"
-                  variant="flat"
-                  onPress={() =>
-                    navigate("/filemanager", {
-                      state: {
-                        allowedExt: [".zip", ".dll"],
-                        multi: true,
-                        returnTo: "/mods",
-                      },
-                    })
-                  }
-                  isDisabled={importing}
-                >
-                  {t("mods.import_button", { defaultValue: "导入 .zip/.dll" })}
-                </Button>
-                <Button color="primary" onPress={openFolder}>
-                  {t("downloadmodal.open_folder", { defaultValue: "打开目录" })}
-                </Button>
-              </div>
-            </CardHeader>
-            <CardBody className={`p-3 sm:p-4 transition-colors`}>
-              <div className="flex items-center gap-3 mb-3">
-                <Input
-                  size="sm"
-                  variant="bordered"
-                  value={query}
-                  onValueChange={setQuery}
-                  placeholder={
-                    t("common.search", { defaultValue: "搜索模组" }) as string
-                  }
-                />
-                <Button
-                  size="sm"
-                  variant="flat"
-                  onPress={() => {
-                    const name = readCurrentVersionName();
-                    setCurrentVersionName(name);
-                    if (name) {
-                      GetMods(name)
-                        .then((d) => setModsInfo(d || []))
-                        .catch(() => setModsInfo([]));
-                    }
-                  }}
-                >
-                  {t("common.refresh", { defaultValue: "刷新" })}
-                </Button>
-                <Checkbox
-                  size="sm"
-                  isSelected={onlyEnabled}
-                  onValueChange={setOnlyEnabled}
-                >
-                  {
-                    t("mods.only_enabled", {
-                      defaultValue: "仅显示已启用的模组",
-                    }) as string
-                  }
-                </Checkbox>
-              </div>
-              {!currentVersionName ? (
-                <div className="text-default-600 text-sm">
-                  {t("launcherpage.currentVersion_none", {
-                    defaultValue: "未选择版本",
-                  })}
-                </div>
-              ) : filtered.length === 0 ? (
-                <div className="text-default-600 text-sm">
-                  {t("moddedcard.content.none", { defaultValue: "未找到模组" })}
-                </div>
-              ) : (
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-3">
-                  {filtered.map((m, idx) => {
-                    const delay = Math.min(idx * 40, 400);
-                    return (
-                      <motion.div
-                        key={`${m.name}-${m.version}-${idx}`}
-                        initial={{ opacity: 0, y: 8 }}
-                        animate={{ opacity: 1, y: 0 }}
-                        transition={{ duration: 0.3, delay: delay / 1000 }}
-                        className="h-full w-full"
-                      >
-                        <Card
-                          isPressable
-                          onPress={() => openDetails(m)}
-                          className="relative h-auto min-h-[80px] w-full rounded-xl bg-content2 hover:bg-content3 transition-colors border border-default-200 overflow-hidden shadow-sm hover:shadow-md transition-shadow duration-200"
-                        >
-                          <CardBody className="p-4 h-full">
-                            <div className="flex items-center justify-between gap-4">
-                              <div className="min-w-0 flex-1">
-                                <div className="flex items-center gap-2">
-                                  <div
-                                    className="font-semibold text-base truncate"
-                                    title={m.name}
-                                  >
-                                    {m.name}
-                                  </div>
-                                  <Chip
-                                    size="sm"
-                                    variant="flat"
-                                    className="shrink-0"
-                                  >
-                                    {m.type ||
-                                      (t("mods.type_mod", {
-                                        defaultValue: "模组",
-                                      }) as string)}
-                                  </Chip>
-                                </div>
-                                <div
-                                  className="text-tiny text-default-500 truncate"
-                                  title={
-                                    m.author
-                                      ? `${m.version} · ${m.author}`
-                                      : m.version
-                                  }
-                                >
-                                  {m.author
-                                    ? `${m.version} · ${m.author}`
-                                    : m.version}
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-2 shrink-0">
-                                <Chip
-                                  size="sm"
-                                  variant="flat"
-                                  color={
-                                    enabledByName.get(m.name)
-                                      ? "success"
-                                      : "warning"
-                                  }
-                                >
-                                  {enabledByName.get(m.name)
-                                    ? (t("mods.toggle_on", {
-                                        defaultValue: "已启用",
-                                      }) as string)
-                                    : (t("mods.toggle_off", {
-                                        defaultValue: "已关闭",
-                                      }) as string)}
-                                </Chip>
-                                <Tooltip
-                                  showArrow
-                                  placement="top"
-                                  content={
-                                    t("mods.toggle_tip", {
-                                      defaultValue: "切换此模组的启用/关闭状态",
-                                    }) as string
-                                  }
-                                >
-                                  <Switch
-                                    size="sm"
-                                    isSelected={!!enabledByName.get(m.name)}
-                                    onValueChange={async (val) => {
-                                      const name =
-                                        currentVersionName ||
-                                        readCurrentVersionName();
-                                      if (!name) return;
-                                      try {
-                                        if (val) {
-                                          const err = await (
-                                            EnableMod as any
-                                          )?.(name, m.name);
-                                          if (err) return;
-                                        } else {
-                                          const err = await (
-                                            DisableMod as any
-                                          )?.(name, m.name);
-                                          if (err) return;
-                                        }
-                                        const ok = await (
-                                          IsModEnabled as any
-                                        )?.(name, m.name);
-                                        setEnabledByName((prev) => {
-                                          const nm = new Map(prev);
-                                          nm.set(m.name, !!ok);
-                                          return nm;
-                                        });
-                                      } catch {}
-                                    }}
-                                    aria-label={
-                                      t("mods.toggle_label", {
-                                        defaultValue: "启用模组",
-                                      }) as string
-                                    }
-                                  />
-                                </Tooltip>
-                              </div>
-                            </div>
-                          </CardBody>
-                        </Card>
-                      </motion.div>
-                    );
-                  })}
-                </div>
               )}
-            </CardBody>
-          </Card>
-        </motion.div>
+            </div>
+          }
+          endContent={
+            <>
+              <input
+                ref={fileInputRef}
+                type="file"
+                accept=".zip,.dll"
+                multiple
+                className="hidden"
+                onChange={handleFilePick}
+              />
+              <Button
+                color="primary"
+                variant="shadow"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20"
+                startContent={<FiUploadCloud />}
+                onPress={() =>
+                  navigate("/filemanager", {
+                    state: {
+                      allowedExt: [".zip", ".dll"],
+                      multi: true,
+                      returnTo: "/mods",
+                    },
+                  })
+                }
+                isDisabled={importing}
+              >
+                {t("mods.import_button", { defaultValue: "导入 .zip/.dll" })}
+              </Button>
+              <Button
+                variant="flat"
+                className="bg-default-100 dark:bg-zinc-800"
+                onPress={openFolder}
+              >
+                {t("downloadmodal.open_folder", { defaultValue: "打开目录" })}
+              </Button>
+            </>
+          }
+        />
+
+        <div className="flex flex-col sm:flex-row items-center gap-3">
+          <Input
+            placeholder={t("common.search_placeholder", {
+              defaultValue: "搜索...",
+            })}
+            value={query}
+            onValueChange={setQuery}
+            startContent={<FaFilter className="text-default-400" />}
+            endContent={
+              query && (
+                <button onClick={() => setQuery("")}>
+                  <FaTimes className="text-default-400 hover:text-default-600" />
+                </button>
+              )
+            }
+            radius="full"
+            variant="flat"
+            className="w-full sm:max-w-xs"
+            classNames={{
+              inputWrapper:
+                "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
+            }}
+          />
+          <div className="w-px h-6 bg-default-200 dark:bg-white/10 hidden sm:block" />
+          <Checkbox
+            size="sm"
+            isSelected={onlyEnabled}
+            onValueChange={setOnlyEnabled}
+            classNames={{
+              base: "m-0",
+              label: "text-default-500",
+            }}
+          >
+            {
+              t("mods.only_enabled", {
+                defaultValue: "仅显示已启用的模组",
+              }) as string
+            }
+          </Checkbox>
+          <div className="flex-1" />
+          <Tooltip
+            content={
+              t("common.refresh", {
+                defaultValue: "刷新",
+              }) as unknown as string
+            }
+          >
+            <Button
+              size="sm"
+              variant="light"
+              isIconOnly
+              radius="full"
+              className="text-default-500"
+              onPress={() => refreshAll()}
+              isDisabled={loading}
+            >
+              <FaSync className={loading ? "animate-spin" : ""} size={16} />
+            </Button>
+          </Tooltip>
+        </div>
       </div>
 
-      <Modal
+      <div className="flex-1 overflow-hidden rounded-4xl bg-white/40 dark:bg-zinc-900/30 backdrop-blur-sm border border-white/20 dark:border-white/5 p-1">
+        <div className="h-full overflow-y-auto p-4 custom-scrollbar">
+          {!currentVersionName ? (
+            <div className="flex flex-col items-center justify-center h-full text-default-400 gap-2">
+              <FiAlertTriangle className="w-8 h-8 opacity-50" />
+              <p>
+                {t("launcherpage.currentVersion_none", {
+                  defaultValue: "未选择版本",
+                })}
+              </p>
+            </div>
+          ) : filtered.length === 0 ? (
+            <div className="flex flex-col items-center justify-center h-full text-default-400 gap-2">
+              <FaPuzzlePiece className="w-8 h-8 opacity-50" />
+              <p>
+                {t("moddedcard.content.none", { defaultValue: "未找到模组" })}
+              </p>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
+              {filtered.map((m, idx) => {
+                const delay = Math.min(idx * 40, 400);
+                return (
+                  <motion.div
+                    key={`${m.name}-${m.version}-${idx}`}
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.3, delay: delay / 1000 }}
+                  >
+                    <Card
+                      isPressable
+                      onPress={() => openDetails(m)}
+                      className="w-full h-full bg-white/80 dark:bg-zinc-800/50 backdrop-blur-md border border-white/40 dark:border-white/5 hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-all duration-200 group"
+                      shadow="sm"
+                    >
+                      <CardBody className="p-4 flex flex-row items-center gap-4">
+                        <div
+                          className={`p-3 rounded-xl transition-colors ${
+                            enabledByName.get(m.name)
+                              ? "bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
+                              : "bg-default-100 dark:bg-zinc-800 text-default-400"
+                          }`}
+                        >
+                          <FaPuzzlePiece className="w-5 h-5" />
+                        </div>
+                        <div className="flex-1 min-w-0 text-left">
+                          <div className="font-semibold text-default-900 truncate">
+                            {m.name}
+                          </div>
+                          <div className="text-tiny text-default-500 truncate">
+                            {m.version} {m.author ? `· ${m.author}` : ""}
+                          </div>
+                        </div>
+                        <div
+                          className="flex items-center"
+                          onClick={(e) => e.stopPropagation()}
+                        >
+                          <Switch
+                            size="sm"
+                            color="success"
+                            isSelected={!!enabledByName.get(m.name)}
+                            onValueChange={async (val) => {
+                              const name =
+                                currentVersionName || readCurrentVersionName();
+                              if (!name) return;
+                              try {
+                                if (val) {
+                                  const err = await (EnableMod as any)?.(
+                                    name,
+                                    m.name,
+                                  );
+                                  if (err) return;
+                                } else {
+                                  const err = await (DisableMod as any)?.(
+                                    name,
+                                    m.name,
+                                  );
+                                  if (err) return;
+                                }
+                                const ok = await (IsModEnabled as any)?.(
+                                  name,
+                                  m.name,
+                                );
+                                setEnabledByName((prev) => {
+                                  const nm = new Map(prev);
+                                  nm.set(m.name, !!ok);
+                                  return nm;
+                                });
+                              } catch {}
+                            }}
+                            aria-label={
+                              t("mods.toggle_label", {
+                                defaultValue: "启用模组",
+                              }) as string
+                            }
+                            classNames={{
+                              wrapper:
+                                "group-hover:scale-110 transition-transform",
+                            }}
+                          />
+                        </div>
+                      </CardBody>
+                    </Card>
+                  </motion.div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+      </div>
+
+      <BaseModal
         size="md"
         isOpen={infoOpen}
         onOpenChange={infoOnOpenChange}
@@ -1378,13 +1440,13 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-2 text-primary-600">
+              <BaseModalHeader className="flex items-center gap-2 text-primary-600">
                 <FaPuzzlePiece className="w-5 h-5" />
                 <span>
                   {t("mods.details_title", { defaultValue: "模组详情" })}
                 </span>
-              </ModalHeader>
-              <ModalBody>
+              </BaseModalHeader>
+              <BaseModalBody>
                 {activeMod ? (
                   <div className="space-y-2 text-sm">
                     <div>
@@ -1455,19 +1517,19 @@ export const ModsPage: React.FC = () => {
                               if (val) {
                                 const err = await (EnableMod as any)?.(
                                   name,
-                                  activeMod.name
+                                  activeMod.name,
                                 );
                                 if (err) return;
                               } else {
                                 const err = await (DisableMod as any)?.(
                                   name,
-                                  activeMod.name
+                                  activeMod.name,
                                 );
                                 if (err) return;
                               }
                               const ok = await (IsModEnabled as any)?.(
                                 name,
-                                activeMod.name
+                                activeMod.name,
                               );
                               setEnabledByName((prev) => {
                                 const nm = new Map(prev);
@@ -1495,8 +1557,8 @@ export const ModsPage: React.FC = () => {
                     </div>
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -1508,12 +1570,12 @@ export const ModsPage: React.FC = () => {
                 <Button color="danger" onPress={delCfmOnOpen}>
                   {t("common.delete", { defaultValue: "删除" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         size="sm"
         isOpen={delCfmOpen}
         onOpenChange={delCfmOnOpenChange}
@@ -1522,23 +1584,23 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="text-danger">
+              <BaseModalHeader className="text-danger">
                 {t("mods.confirm_delete_title", { defaultValue: "确认删除" })}
-              </ModalHeader>
-              <ModalBody>
-                <div className="text-sm text-default-700 break-words whitespace-pre-wrap">
+              </BaseModalHeader>
+              <BaseModalBody>
+                <div className="text-sm text-default-700 wrap-break-word whitespace-pre-wrap">
                   {t("mods.confirm_delete_body", {
                     type: t("moddedcard.title"),
                     defaultValue: "确定要删除此模组吗？此操作不可撤销。",
                   })}
                 </div>
                 {activeMod ? (
-                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm break-words whitespace-pre-wrap">
+                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
                     {activeMod.name}
                   </div>
                 ) : null}
-              </ModalBody>
-              <ModalFooter>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
                   onPress={() => {
@@ -1557,11 +1619,11 @@ export const ModsPage: React.FC = () => {
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
     </motion.div>
   );
 };

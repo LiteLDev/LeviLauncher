@@ -1,22 +1,28 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
+  BaseModal,
+  BaseModalHeader,
+  BaseModalBody,
+  BaseModalFooter,
+} from "@/components/BaseModal";
+import {
   Button,
   Card,
   CardBody,
   Input,
   Switch,
   Chip,
-  Modal,
   ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  Progress,
+  Spinner,
+  useDisclosure,
 } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { FaWindows } from "react-icons/fa";
-import * as minecraft from "../../bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { PageHeader } from "@/components/PageHeader";
 
 export default function VersionSettingsPage() {
   const { t } = useTranslation();
@@ -33,6 +39,8 @@ export default function VersionSettingsPage() {
   const [enableIsolation, setEnableIsolation] = React.useState<boolean>(false);
   const [enableConsole, setEnableConsole] = React.useState<boolean>(false);
   const [enableEditorMode, setEnableEditorMode] =
+    React.useState<boolean>(false);
+  const [enableRenderDragon, setEnableRenderDragon] =
     React.useState<boolean>(false);
   const [isRegistered, setIsRegistered] = React.useState<boolean>(false);
   const [loading, setLoading] = React.useState<boolean>(true);
@@ -51,6 +59,20 @@ export default function VersionSettingsPage() {
   const [deleting, setDeleting] = React.useState<boolean>(false);
   const [deleteSuccessMsg, setDeleteSuccessMsg] = React.useState<string>("");
 
+  const [originalIsolation, setOriginalIsolation] =
+    React.useState<boolean>(false);
+  const [originalConsole, setOriginalConsole] = React.useState<boolean>(false);
+  const [originalEditorMode, setOriginalEditorMode] =
+    React.useState<boolean>(false);
+  const [originalRenderDragon, setOriginalRenderDragon] =
+    React.useState<boolean>(false);
+  const {
+    isOpen: unsavedOpen,
+    onOpen: unsavedOnOpen,
+    onOpenChange: unsavedOnOpenChange,
+  } = useDisclosure();
+  const [pendingNavPath, setPendingNavPath] = React.useState<string>("");
+
   const hasBackend = minecraft !== undefined;
 
   React.useEffect(() => {
@@ -66,8 +88,13 @@ export default function VersionSettingsPage() {
             setVersionType(type);
             setIsPreview(type === "preview");
             setEnableIsolation(!!meta?.enableIsolation);
+            setOriginalIsolation(!!meta?.enableIsolation);
             setEnableConsole(!!meta?.enableConsole);
+            setOriginalConsole(!!meta?.enableConsole);
             setEnableEditorMode(!!meta?.enableEditorMode);
+            setOriginalEditorMode(!!meta?.enableEditorMode);
+            setEnableRenderDragon(!!meta?.enableRenderDragon);
+            setOriginalRenderDragon(!!meta?.enableRenderDragon);
             setIsRegistered(Boolean(meta?.registered));
           }
         }
@@ -89,16 +116,48 @@ export default function VersionSettingsPage() {
     setErrorOpen(!!error);
   }, [error]);
 
+  React.useEffect(() => {
+    const handler = (ev: any) => {
+      try {
+        const targetPath = String(ev?.detail?.path || "");
+        const hasUnsaved =
+          (newName && newName !== targetName) ||
+          enableIsolation !== originalIsolation ||
+          enableConsole !== originalConsole ||
+          enableEditorMode !== originalEditorMode ||
+          enableRenderDragon !== originalRenderDragon;
+
+        if (!targetPath || targetPath === location.pathname) return;
+        if (hasUnsaved) {
+          setPendingNavPath(targetPath);
+          unsavedOnOpen();
+          return;
+        }
+        navigate(targetPath);
+      } catch {}
+    };
+    window.addEventListener("ll-try-nav", handler as any);
+    return () => window.removeEventListener("ll-try-nav", handler as any);
+  }, [
+    newName,
+    targetName,
+    enableIsolation,
+    originalIsolation,
+    enableConsole,
+    originalConsole,
+    enableEditorMode,
+    originalEditorMode,
+    enableRenderDragon,
+    originalRenderDragon,
+    navigate,
+    location.pathname,
+    unsavedOnOpen,
+  ]);
+
   const errorDefaults: Record<string, string> = {
-    ERR_INVALID_NAME: t("errors.ERR_INVALID_NAME", {
-      defaultValue: "名称无效",
-    }) as string,
-    ERR_ICON_DECODE: t("errors.ERR_ICON_DECODE", {
-      defaultValue: "图标解析失败",
-    }) as string,
-    ERR_ICON_NOT_SQUARE: t("errors.ERR_ICON_NOT_SQUARE", {
-      defaultValue: "图标必须是正方形",
-    }) as string,
+    ERR_INVALID_NAME: t("errors.ERR_INVALID_NAME") as string,
+    ERR_ICON_DECODE: t("errors.ERR_ICON_DECODE") as string,
+    ERR_ICON_NOT_SQUARE: t("errors.ERR_ICON_NOT_SQUARE") as string,
   };
   const getErrorText = (code: string) => {
     if (!code) return "";
@@ -127,7 +186,7 @@ export default function VersionSettingsPage() {
             }
             if (typeof getter === "function") {
               getter(targetName).then((u: string) =>
-                setLogoDataUrl(String(u || ""))
+                setLogoDataUrl(String(u || "")),
               );
             }
           });
@@ -142,79 +201,86 @@ export default function VersionSettingsPage() {
     location?.pathname,
   ]);
 
-  const onSave = React.useCallback(async () => {
-    if (!hasBackend || !targetName) {
-      navigate(-1);
-      return;
-    }
-    const validate = minecraft?.ValidateVersionFolderName;
-    const rename = minecraft?.RenameVersionFolder;
-    const save = minecraft?.SaveVersionMeta;
-    const saver = minecraft?.SaveVersionLogoDataUrl;
+  const onSave = React.useCallback(
+    async (destPath?: string) => {
+      if (!hasBackend || !targetName) {
+        navigate(-1);
+        return false;
+      }
+      const validate = minecraft?.ValidateVersionFolderName;
+      const rename = minecraft?.RenameVersionFolder;
+      const save = minecraft?.SaveVersionMeta;
+      const saver = minecraft?.SaveVersionLogoDataUrl;
 
-    const nn = (newName || "").trim();
-    if (!nn) {
-      setError("ERR_INVALID_NAME");
-      return;
-    }
-    const type = versionType || (isPreview ? "preview" : "release");
+      const nn = (newName || "").trim();
+      if (!nn) {
+        setError("ERR_INVALID_NAME");
+        return false;
+      }
+      const type = versionType || (isPreview ? "preview" : "release");
 
-    if (nn !== targetName) {
-      if (typeof validate === "function") {
-        const msg: string = await validate(nn);
-        if (msg) {
-          setError(msg);
-          return;
+      if (nn !== targetName) {
+        if (typeof validate === "function") {
+          const msg: string = await validate(nn);
+          if (msg) {
+            setError(msg);
+            return false;
+          }
+        }
+        if (typeof rename === "function") {
+          const err: string = await rename(targetName, nn);
+          if (err) {
+            setError(err);
+            return false;
+          }
+        }
+        setTargetName(nn);
+      }
+
+      if (typeof save === "function") {
+        const err2: string = await save(
+          nn,
+          gameVersion,
+          type,
+          !!enableIsolation,
+          !!enableConsole,
+          !!enableEditorMode,
+          !!enableRenderDragon,
+        );
+        if (err2) {
+          setError(err2);
+          return false;
         }
       }
-      if (typeof rename === "function") {
-        const err: string = await rename(targetName, nn);
-        if (err) {
-          setError(err);
-          return;
+      try {
+        if (typeof saver === "function" && logoDataUrl) {
+          const e = await saver(nn, logoDataUrl);
+          if (e) {
+            setError(e);
+            return false;
+          }
         }
-      }
-      setTargetName(nn);
-    }
+      } catch {}
 
-    if (typeof save === "function") {
-      const err2: string = await save(
-        nn,
-        gameVersion,
-        type,
-        !!enableIsolation,
-        !!enableConsole,
-        !!enableEditorMode
-      );
-      if (err2) {
-        setError(err2);
-        return;
-      }
-    }
-    try {
-      if (typeof saver === "function" && logoDataUrl) {
-        const e = await saver(nn, logoDataUrl);
-        if (e) {
-          setError(e);
-          return;
-        }
-      }
-    } catch {}
-
-    navigate(returnToPath);
-  }, [
-    hasBackend,
-    targetName,
-    newName,
-    gameVersion,
-    isPreview,
-    enableIsolation,
-    enableConsole,
-    enableEditorMode,
-    logoDataUrl,
-    returnToPath,
-    navigate,
-  ]);
+      navigate(typeof destPath === "string" ? destPath : returnToPath);
+      return true;
+    },
+    [
+      hasBackend,
+      targetName,
+      newName,
+      gameVersion,
+      isPreview,
+      enableIsolation,
+      enableConsole,
+      enableEditorMode,
+      enableRenderDragon,
+      logoDataUrl,
+      returnToPath,
+      navigate,
+      versionType,
+    ],
+  );
 
   const onDeleteConfirm = React.useCallback(async () => {
     if (!hasBackend || !targetName) {
@@ -249,61 +315,44 @@ export default function VersionSettingsPage() {
   }, [hasBackend, targetName]);
 
   return (
-    <div className="w-full h-full flex flex-col overflow-auto">
-      <div className="px-3 sm:px-5 lg:px-8 py-3 sm:py-4 lg:py-6">
-        <div className="sticky top-2 z-10">
-          <motion.div
-            initial={{ y: -8, opacity: 0 }}
-            animate={{ y: 0, opacity: 1 }}
-            transition={{ duration: 0.18, ease: [0.16, 0.84, 0.44, 1] }}
-          >
-            <Card className="rounded-3xl shadow-xl mb-4 bg-white/60 dark:bg-black/30 backdrop-blur-md border border-white/30">
-              <CardBody className="px-4 sm:px-5 py-3 w-full">
-                <div className="w-full">
-                  <div className="flex items-center justify-between gap-2 w-full">
-                    <h1 className="text-2xl font-bold text-left !text-left">
-                      {t("versions.edit.title", { defaultValue: "版本设置" })}
-                    </h1>
-                    <div className="hidden sm:flex items-center gap-2">
-                      <Button
-                        variant="light"
-                        onPress={() => navigate(returnToPath)}
-                      >
-                        {t("common.cancel", { defaultValue: "取消" })}
-                      </Button>
-                      <Button color="primary" onPress={onSave}>
-                        {t("common.ok", { defaultValue: "确定" })}
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="mt-1 text-sm text-default-500 truncate text-left !text-left">
-                    {t("versions.info.version", {
-                      defaultValue: "Game Version",
-                    })}
-                    :{" "}
+    <div className="w-full h-full flex flex-col overflow-hidden relative">
+      <div className="z-20 px-3 sm:px-5 lg:px-8 pt-3 sm:pt-4 lg:pt-6 shrink-0">
+        <motion.div
+          initial={{ y: -8, opacity: 0 }}
+          animate={{ y: 0, opacity: 1 }}
+          transition={{ duration: 0.18, ease: [0.16, 0.84, 0.44, 1] }}
+        >
+          <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl mb-6">
+            <CardBody className="px-6 sm:px-8 py-5 w-full">
+              <PageHeader
+                title={t("versions.edit.title")}
+                titleClassName="text-left pb-1"
+                description={
+                  <div className="mt-1 text-sm text-default-500 truncate text-left text-left!">
+                    {t("versions.info.version")}:{" "}
                     <span className="text-default-700 font-medium">
                       {loading ? (
                         <span className="inline-block h-4 w-24 rounded bg-default-200 animate-pulse" />
                       ) : (
                         gameVersion ||
-                        (t("launcherpage.version_select.unknown", {
-                          defaultValue: "Unknown",
-                        }) as unknown as string)
+                        (t(
+                          "launcherpage.version_select.unknown",
+                        ) as unknown as string)
                       )}
                     </span>
                     <span className="mx-2 text-default-400">·</span>
-                    {t("versions.info.name", { defaultValue: "名称" })}:{" "}
+                    {t("versions.info.name")}:{" "}
                     <span className="text-default-700 font-medium">
                       {targetName || "-"}
                     </span>
                     <span className="mx-2 text-default-400">·</span>
                     {versionType === "preview" ? (
                       <Chip size="sm" variant="flat" color="warning">
-                        {t("common.preview", { defaultValue: "预览版" })}
+                        {t("common.preview")}
                       </Chip>
                     ) : versionType === "release" ? (
                       <span className="text-default-700 dark:text-default-200">
-                        {t("common.release", { defaultValue: "正式版" })}
+                        {t("common.release")}
                       </span>
                     ) : (
                       <Chip size="sm" variant="flat" color="secondary">
@@ -311,287 +360,321 @@ export default function VersionSettingsPage() {
                       </Chip>
                     )}
                   </div>
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-        </div>
-        <div className="mt-4 grid grid-cols-1 md:grid-cols-2 gap-4">
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.1 }}
-          >
-            <Card className="rounded-2xl shadow-md h-full min-h-[160px] bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/30">
-              <CardBody className="p-4 sm:p-6 flex flex-col gap-4">
-                <div>
-                  <label className="text-small text-default-700 dark:text-default-200 mb-1 block">
-                    {t("versions.edit.new_name", { defaultValue: "新名称" })}
-                  </label>
-                  <Input
-                    value={newName}
-                    onValueChange={(v) => {
-                      setNewName(v);
-                      if (error) setError("");
-                    }}
-                    size="sm"
-                    variant="bordered"
-                    isDisabled={isRegistered || loading}
-                    placeholder={
-                      t("versions.edit.placeholder", {
-                        defaultValue: "输入新名称",
-                      }) as unknown as string
-                    }
-                  />
-                  <p className="text-tiny text-default-400 mt-1">
-                    {t("versions.edit.hint", {
-                      defaultValue: "仅修改文件夹名称，不影响游戏版本与类型。",
-                    })}
-                  </p>
-                </div>
-                <div className="flex flex-col gap-2">
-                  <div className="text-small text-default-700 dark:text-default-200">
-                    {t("versions.logo.title", {
-                      defaultValue: "自定义图标（要求正方形）",
-                    })}
+                }
+                endContent={
+                  <div className="hidden sm:flex items-center gap-3">
+                    <Button
+                      variant="light"
+                      radius="full"
+                      onPress={() => navigate(returnToPath)}
+                      className="font-medium text-default-600"
+                    >
+                      {t("common.cancel")}
+                    </Button>
+                    <Button
+                      color="primary"
+                      radius="full"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                      onPress={onSave}
+                    >
+                      {t("common.ok")}
+                    </Button>
                   </div>
-                  <div className="flex items-center gap-3">
-                    <div
-                      className="relative h-20 w-20 rounded-xl overflow-hidden bg-default-100 flex items-center justify-center border border-default-200 cursor-pointer group"
-                      onClick={() => {
-                        navigate("/filemanager", {
-                          state: {
-                            allowedExt: [
-                              ".png",
-                              ".jpg",
-                              ".jpeg",
-                              ".gif",
-                              ".webp",
-                            ],
-                            multi: false,
-                            returnTo: "/version-settings",
-                            title: t("versions.logo.title", {
-                              defaultValue: "自定义图标（要求正方形）",
-                            }),
-                            returnState: {
-                              name: targetName,
-                              returnTo: returnToPath,
+                }
+              />
+            </CardBody>
+          </Card>
+        </motion.div>
+      </div>
+      <div className="flex-1 overflow-auto">
+        <div className="px-3 sm:px-5 lg:px-8 pb-3 sm:pb-4 lg:pb-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: 0.1 }}
+            >
+              <Card className="h-full min-h-[160px] border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+                <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
+                  <div>
+                    <label className="text-small font-medium text-default-700 dark:text-default-200 mb-2 block">
+                      {t("versions.edit.new_name")}
+                    </label>
+                    <Input
+                      value={newName}
+                      onValueChange={(v) => {
+                        setNewName(v);
+                        if (error) setError("");
+                      }}
+                      size="md"
+                      variant="bordered"
+                      radius="lg"
+                      classNames={{
+                        inputWrapper:
+                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                      }}
+                      isDisabled={isRegistered || loading}
+                      placeholder={
+                        t("versions.edit.placeholder") as unknown as string
+                      }
+                    />
+                    <p className="text-tiny text-default-400 mt-2">
+                      {t("versions.edit.hint")}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <div className="text-small font-medium text-default-700 dark:text-default-200">
+                      {t("versions.logo.title")}
+                    </div>
+                    <div className="flex items-center gap-4">
+                      <div
+                        className="relative h-24 w-24 rounded-2xl overflow-hidden bg-default-100 flex items-center justify-center border border-default-200 cursor-pointer group transition-all hover:scale-105 hover:shadow-lg"
+                        onClick={() => {
+                          navigate("/filemanager", {
+                            state: {
+                              allowedExt: [
+                                ".png",
+                                ".jpg",
+                                ".jpeg",
+                                ".gif",
+                                ".webp",
+                              ],
+                              multi: false,
+                              returnTo: "/version-settings",
+                              title: t("versions.logo.title"),
+                              returnState: {
+                                name: targetName,
+                                returnTo: returnToPath,
+                              },
                             },
-                          },
-                        });
-                      }}
-                      title={
-                        t("versions.logo.change", {
-                          defaultValue: "点击更换",
-                        }) as string
-                      }
-                    >
-                      {logoDataUrl ? (
-                        <img
-                          src={logoDataUrl}
-                          alt="logo"
-                          className="h-full w-full object-cover"
-                        />
-                      ) : null}
-                      <div className="absolute inset-0 bg-black/35 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-tiny">
-                        {t("versions.logo.change", {
-                          defaultValue: "点击更换",
-                        })}
+                          });
+                        }}
+                        title={t("versions.logo.change") as string}
+                      >
+                        {logoDataUrl ? (
+                          <img
+                            src={logoDataUrl}
+                            alt="logo"
+                            className="h-full w-full object-cover"
+                          />
+                        ) : null}
+                        <div className="absolute inset-0 bg-black/40 opacity-0 group-hover:opacity-100 transition flex items-center justify-center text-white text-tiny font-medium backdrop-blur-[2px]">
+                          {t("versions.logo.change")}
+                        </div>
                       </div>
-                    </div>
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      color="danger"
-                      className="rounded-full shadow-none"
-                      onPress={async () => {
-                        try {
-                          const rm = minecraft?.RemoveVersionLogo;
-                          if (typeof rm === "function") {
-                            await rm(targetName);
-                          }
-                        } catch {}
-                        setLogoDataUrl("");
-                      }}
-                    >
-                      {t("versions.logo.clear", { defaultValue: "清除" })}
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      className="rounded-full justify-start shadow-none"
-                      onPress={async () => {
-                        try {
-                          const err: string =
-                            await minecraft?.CreateDesktopShortcut(targetName);
-                          if (err) {
-                            setError(String(err));
-                          } else {
-                            setShortcutSuccessOpen(true);
-                          }
-                        } catch {
-                          setError("ERR_SHORTCUT_CREATE_FAILED");
-                        }
-                      }}
-                      startContent={<FaWindows />}
-                    >
-                      {
-                        t("launcherpage.shortcut.create_button", {
-                          defaultValue: "创建桌面快捷方式",
-                        }) as unknown as string
-                      }
-                    </Button>
-                  </div>
-                  <p className="text-tiny text-default-400">
-                    {t("versions.logo.hint", {
-                      defaultValue:
-                        "将保存到版本文件夹的 LeviLauncher/Logo.png。点击图标更换。",
-                    })}
-                  </p>
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.15 }}
-          >
-            <Card className="rounded-2xl shadow-md h-full min-h-[160px] bg-white/70 dark:bg-black/30 backdrop-blur-md border border-white/30">
-              <CardBody className="p-4 sm:p-6 flex flex-col gap-4">
-                <div className="flex items-center justify-between">
-                  <div className="text-small">
-                    {t("versions.edit.enable_isolation", {
-                      defaultValue: "启用隔离环境",
-                    })}
-                  </div>
-                  <Switch
-                    size="sm"
-                    isSelected={enableIsolation}
-                    onValueChange={setEnableIsolation}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-small">
-                    {t("versions.edit.enable_console", {
-                      defaultValue: "启用控制台",
-                    })}
-                  </div>
-                  <Switch
-                    size="sm"
-                    isSelected={enableConsole}
-                    onValueChange={setEnableConsole}
-                  />
-                </div>
-                <div className="flex items-center justify-between">
-                  <div className="text-small">
-                    {t("versions.edit.enable_editor_mode", {
-                      defaultValue: "启用编辑器模式",
-                    })}
-                  </div>
-                  <Switch
-                    size="sm"
-                    isSelected={enableEditorMode}
-                    onValueChange={setEnableEditorMode}
-                  />
-                </div>
-                <div className="mt-3 pt-3 border-t border-white/30">
-                  <div className="text-tiny text-default-500 mb-1">
-                    {t("versions.edit.danger_zone_title", {
-                      defaultValue: "危险操作",
-                    })}
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <div className="text-tiny text-default-400">
-                      {isRegistered
-                        ? (t("versions.edit.unregister_hint", {
-                            defaultValue:
-                              "该版本已注册到系统，仅可取消注册；取消后可重命名或删除。",
-                          }) as unknown as string)
-                        : (t("versions.edit.delete_hint", {
-                            defaultValue: "点击以打开删除确认，避免误触。",
-                          }) as unknown as string)}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      {isRegistered && (
+                      <div className="flex flex-col gap-2">
                         <Button
                           size="sm"
-                          variant="light"
-                          color="warning"
-                          isDisabled={loading}
+                          variant="flat"
+                          color="danger"
+                          radius="full"
+                          className="justify-start px-4 font-medium"
                           onPress={async () => {
                             try {
-                              const has = await (
-                                minecraft as any
-                              )?.IsGDKInstalled?.();
-                              if (!has) {
-                                setUnregisterOpen(false);
-                                setGdkMissingOpen(true);
-                                return;
+                              const rm = minecraft?.RemoveVersionLogo;
+                              if (typeof rm === "function") {
+                                await rm(targetName);
                               }
-                              const fn = (minecraft as any)
-                                ?.UnregisterVersionByName;
-                              if (typeof fn === "function") {
-                                setUnregisterOpen(true);
-                                const err: string = await fn(targetName);
-                                setUnregisterOpen(false);
-                                if (err) {
-                                  setError(String(err));
-                                } else {
-                                  setIsRegistered(false);
-                                  setUnregisterSuccessOpen(true);
-                                }
-                              }
-                            } catch {
-                              setUnregisterOpen(false);
-                              setError("ERR_UNREGISTER_FAILED");
-                            }
+                            } catch {}
+                            setLogoDataUrl("");
                           }}
                         >
+                          {t("versions.logo.clear")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          color="primary"
+                          radius="full"
+                          className="justify-start px-4 font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                          onPress={async () => {
+                            try {
+                              const err: string =
+                                await minecraft?.CreateDesktopShortcut(
+                                  targetName,
+                                );
+                              if (err) {
+                                setError(String(err));
+                              } else {
+                                setShortcutSuccessOpen(true);
+                              }
+                            } catch {
+                              setError("ERR_SHORTCUT_CREATE_FAILED");
+                            }
+                          }}
+                          startContent={<FaWindows />}
+                        >
                           {
-                            t("versions.edit.unregister_button", {
-                              defaultValue: "取消注册",
-                            }) as unknown as string
+                            t(
+                              "launcherpage.shortcut.create_button",
+                            ) as unknown as string
                           }
                         </Button>
-                      )}
-                      <Button
-                        size="sm"
-                        variant="light"
-                        color="danger"
-                        isDisabled={loading || isRegistered}
-                        onPress={() => setDeleteOpen(true)}
-                      >
-                        {
-                          t("launcherpage.delete.confirm.delete_button", {
-                            defaultValue: "删除",
-                          }) as unknown as string
-                        }
-                      </Button>
+                      </div>
+                    </div>
+                    <p className="text-tiny text-default-400">
+                      {t("versions.logo.hint")}
+                    </p>
+                  </div>
+                </CardBody>
+              </Card>
+            </motion.div>
+
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: 0.15 }}
+            >
+              <Card className="h-full min-h-[160px] border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+                <CardBody className="p-6 sm:p-8 flex flex-col gap-5">
+                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
+                    <div className="text-medium font-medium">
+                      {t("versions.edit.enable_isolation")}
+                    </div>
+                    <Switch
+                      size="md"
+                      color="success"
+                      isSelected={enableIsolation}
+                      onValueChange={setEnableIsolation}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-emerald-500",
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
+                    <div className="text-medium font-medium">
+                      {t("versions.edit.enable_console")}
+                    </div>
+                    <Switch
+                      size="md"
+                      color="success"
+                      isSelected={enableConsole}
+                      onValueChange={setEnableConsole}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-emerald-500",
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
+                    <div className="text-medium font-medium">
+                      {t("versions.edit.enable_render_dragon")}
+                    </div>
+                    <Switch
+                      size="md"
+                      color="success"
+                      isSelected={enableRenderDragon}
+                      onValueChange={setEnableRenderDragon}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-emerald-500",
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
+                    <div className="text-medium font-medium">
+                      {t("versions.edit.enable_editor_mode")}
+                    </div>
+                    <Switch
+                      size="md"
+                      color="success"
+                      isSelected={enableEditorMode}
+                      onValueChange={setEnableEditorMode}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-emerald-500",
+                      }}
+                    />
+                  </div>
+                  <div className="mt-4 pt-4 border-t border-default-200/50">
+                    <div className="text-xs font-bold text-danger-500 mb-2 uppercase tracking-wider">
+                      {t("versions.edit.danger_zone_title")}
+                    </div>
+                    <div className="flex items-center justify-between bg-danger-50 dark:bg-danger-500/10 p-4 rounded-2xl border border-danger-100 dark:border-danger-500/20">
+                      <div className="text-tiny text-default-500 max-w-[60%]">
+                        {isRegistered
+                          ? t("versions.edit.unregister_hint")
+                          : t("versions.edit.delete_hint")}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        {isRegistered ? (
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            color="warning"
+                            radius="full"
+                            isDisabled={loading}
+                            className="font-medium"
+                            onPress={async () => {
+                              try {
+                                const has = await (
+                                  minecraft as any
+                                )?.IsGDKInstalled?.();
+                                if (!has) {
+                                  setUnregisterOpen(false);
+                                  setGdkMissingOpen(true);
+                                  return;
+                                }
+                                const fn = (minecraft as any)
+                                  ?.UnregisterVersionByName;
+                                if (typeof fn === "function") {
+                                  setUnregisterOpen(true);
+                                  const err: string = await fn(targetName);
+                                  setUnregisterOpen(false);
+                                  if (err) {
+                                    setError(String(err));
+                                  } else {
+                                    setIsRegistered(false);
+                                    setUnregisterSuccessOpen(true);
+                                  }
+                                }
+                              } catch {
+                                setUnregisterOpen(false);
+                                setError("ERR_UNREGISTER_FAILED");
+                              }
+                            }}
+                          >
+                            {t("versions.edit.unregister_button")}
+                          </Button>
+                        ) : (
+                          <Button
+                            size="sm"
+                            color="danger"
+                            variant="flat"
+                            radius="full"
+                            className="font-medium bg-white/80 dark:bg-zinc-800/80 shadow-sm"
+                            onPress={() => setDeleteOpen(true)}
+                          >
+                            {t("common.delete")}
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </div>
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
+                </CardBody>
+              </Card>
+            </motion.div>
+          </div>
+        </div>
+
+        <div className="sm:hidden sticky bottom-0 inset-x-0 z-40 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl border-t border-default-200/50 px-4 py-3 flex items-center justify-end gap-3">
+          <Button
+            variant="light"
+            radius="full"
+            onPress={() => navigate(returnToPath)}
+            className="min-w-0 font-medium text-default-600"
+          >
+            {t("common.cancel")}
+          </Button>
+          <Button
+            color="primary"
+            radius="full"
+            className="min-w-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+            onPress={onSave}
+          >
+            {t("common.ok")}
+          </Button>
         </div>
       </div>
 
-      <div className="sm:hidden sticky bottom-0 inset-x-0 z-40 bg-white/60 dark:bg-black/30 backdrop-blur-md border-t border-white/30 px-3 py-2 flex items-center justify-end gap-2">
-        <Button
-          variant="light"
-          onPress={() => navigate(returnToPath)}
-          className="min-w-0"
-        >
-          {t("common.cancel", { defaultValue: "取消" })}
-        </Button>
-        <Button color="primary" onPress={onSave} className="min-w-0">
-          {t("common.ok", { defaultValue: "确定" })}
-        </Button>
-      </div>
-
-      <Modal
+      <BaseModal
         isOpen={unregisterOpen}
         onOpenChange={(open) => {
           if (!open) setUnregisterOpen(false);
@@ -599,128 +682,155 @@ export default function VersionSettingsPage() {
         hideCloseButton
         isDismissable={false}
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {
             (/* onClose */) => (
               <>
-                <ModalHeader className="text-warning-600">
-                  {
-                    t("versions.edit.unregister_progress.title", {
-                      defaultValue: "正在取消注册",
-                    }) as unknown as string
-                  }
-                </ModalHeader>
-                <ModalBody>
-                  <div className="text-small text-foreground mb-2">
+                <BaseModalHeader>
+                  <motion.h2
+                    className="text-2xl font-black tracking-tight text-warning-500"
+                    initial={{ opacity: 0, y: -10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.25 }}
+                  >
                     {
-                      t("versions.edit.unregister_progress.body", {
-                        defaultValue: "正在执行系统取消注册，请稍候…",
-                      }) as unknown as string
+                      t(
+                        "versions.edit.unregister_progress.title",
+                      ) as unknown as string
                     }
-                  </div>
-                  <div className="w-full max-w-md mx-auto">
-                    <div className="relative h-2 rounded-full bg-default-100/70 dark:bg-default-50/10 overflow-hidden border border-white/30">
-                      <div className="absolute top-0 bottom-0 rounded-full bg-default-400/60 indeterminate-bar1" />
-                      <div className="absolute top-0 bottom-0 rounded-full bg-default-400/40 indeterminate-bar2" />
+                  </motion.h2>
+                </BaseModalHeader>
+                <BaseModalBody>
+                  <motion.div
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.25, delay: 0.1 }}
+                  >
+                    <div className="text-medium font-medium text-default-600 mb-4">
+                      {
+                        t(
+                          "versions.edit.unregister_progress.body",
+                        ) as unknown as string
+                      }
                     </div>
-                  </div>
-                </ModalBody>
+                    <Progress
+                      size="sm"
+                      isIndeterminate
+                      aria-label="Unregistering"
+                      classNames={{ indicator: "bg-warning-500" }}
+                    />
+                  </motion.div>
+                </BaseModalBody>
               </>
             )
           }
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
-      <Modal
+      <BaseModal
         isOpen={unregisterSuccessOpen}
         onOpenChange={(open) => {
           if (!open) setUnregisterSuccessOpen(false);
         }}
         size="md"
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-2 text-success-600">
-                <h2 className="text-lg font-semibold">
+              <BaseModalHeader>
+                <motion.h2
+                  className="text-2xl font-black tracking-tight text-success-500"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
                   {
-                    t("versions.edit.unregister_success.title", {
-                      defaultValue: "取消注册成功",
-                    }) as unknown as string
+                    t(
+                      "versions.edit.unregister_success.title",
+                    ) as unknown as string
                   }
-                </h2>
-              </ModalHeader>
-              <ModalBody>
-                <div className="text-small text-foreground">
+                </motion.h2>
+              </BaseModalHeader>
+              <BaseModalBody>
+                <motion.div
+                  className="text-medium font-medium text-default-600"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.1 }}
+                >
                   {
-                    t("versions.edit.unregister_success.body", {
-                      defaultValue: "已成功取消注册，现在可以删除该版本了。",
-                    }) as unknown as string
+                    t(
+                      "versions.edit.unregister_success.body",
+                    ) as unknown as string
                   }
-                </div>
-              </ModalBody>
-              <ModalFooter>
+                </motion.div>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="primary"
+                  radius="full"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   onPress={() => {
                     onClose?.();
                     setUnregisterSuccessOpen(false);
                   }}
                 >
                   {
-                    t("launcherpage.delete.complete.close_button", {
-                      defaultValue: "关闭",
-                    }) as unknown as string
+                    t(
+                      "launcherpage.delete.complete.close_button",
+                    ) as unknown as string
                   }
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
-      <Modal
+      <BaseModal
         isOpen={gdkMissingOpen}
         onOpenChange={(open) => {
           if (!open) setGdkMissingOpen(false);
         }}
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="text-warning-600">
-                {
-                  t("launcherpage.gdk_missing.title", {
-                    defaultValue: "缺少 Microsoft GDK",
-                  }) as unknown as string
-                }
-              </ModalHeader>
-              <ModalBody>
-                <div className="text-small text-foreground">
-                  {
-                    t("launcherpage.gdk_missing.body", {
-                      defaultValue:
-                        "未检测到 GDK 工具包，注册功能需先安装。是否跳转到设置页进行安装？",
-                    }) as unknown as string
-                  }
-                </div>
-              </ModalBody>
-              <ModalFooter>
+              <BaseModalHeader>
+                <motion.h2
+                  className="text-2xl font-black tracking-tight text-warning-500"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  {t("launcherpage.gdk_missing.title") as unknown as string}
+                </motion.h2>
+              </BaseModalHeader>
+              <BaseModalBody>
+                <motion.div
+                  className="text-medium font-medium text-default-600"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.1 }}
+                >
+                  {t("launcherpage.gdk_missing.body") as unknown as string}
+                </motion.div>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
+                  radius="full"
                   onPress={() => {
                     onClose?.();
                     setGdkMissingOpen(false);
                   }}
                 >
-                  {
-                    t("common.cancel", {
-                      defaultValue: "取消",
-                    }) as unknown as string
-                  }
+                  {t("common.cancel") as unknown as string}
                 </Button>
                 <Button
                   color="primary"
+                  radius="full"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   onPress={() => {
                     onClose?.();
                     setGdkMissingOpen(false);
@@ -728,17 +838,17 @@ export default function VersionSettingsPage() {
                   }}
                 >
                   {
-                    t("launcherpage.gdk_missing.go_settings", {
-                      defaultValue: "前往设置",
-                    }) as unknown as string
+                    t(
+                      "launcherpage.gdk_missing.go_settings",
+                    ) as unknown as string
                   }
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
-      <Modal
+      </BaseModal>
+      <BaseModal
         isOpen={errorOpen}
         onOpenChange={(open) => {
           if (!open) setErrorOpen(false);
@@ -746,109 +856,150 @@ export default function VersionSettingsPage() {
         hideCloseButton
         closeButton
         aria-label="error-modal"
+        classNames={{
+          closeButton:
+            "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
+        }}
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="text-danger">
-                {t("common.error", { defaultValue: "错误" })}
-              </ModalHeader>
-              <ModalBody>
-                <div className="text-sm break-words">{getErrorText(error)}</div>
-              </ModalBody>
-              <ModalFooter>
+              <BaseModalHeader>
+                <motion.h2
+                  className="text-2xl font-black tracking-tight text-danger-500"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  {t("common.error")}
+                </motion.h2>
+              </BaseModalHeader>
+              <BaseModalBody>
+                <motion.div
+                  className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400 font-medium"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.1 }}
+                >
+                  <div className="text-medium wrap-break-word">
+                    {getErrorText(error)}
+                  </div>
+                </motion.div>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
+                  radius="full"
                   onPress={() => {
                     setError("");
                     onClose();
                   }}
                 >
-                  {t("common.ok", { defaultValue: "确定" })}
+                  {t("common.ok")}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
-      <Modal
+      <BaseModal
         isOpen={shortcutSuccessOpen}
         onOpenChange={(open) => {
           if (!open) setShortcutSuccessOpen(false);
         }}
         size="md"
+        classNames={{
+          closeButton:
+            "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
+        }}
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-2 text-success-600">
-                <h2 className="text-lg font-semibold">
+              <BaseModalHeader>
+                <motion.h2
+                  className="text-2xl font-black tracking-tight text-success-500"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
                   {
-                    t("launcherpage.shortcut.success.title", {
-                      defaultValue: "快捷方式已创建",
-                    }) as unknown as string
+                    t(
+                      "launcherpage.shortcut.success.title",
+                    ) as unknown as string
                   }
-                </h2>
-              </ModalHeader>
-              <ModalBody>
-                <div className="text-small text-foreground">
-                  {
-                    t("launcherpage.shortcut.success.body", {
-                      defaultValue: "已在桌面创建该版本的快捷方式。",
-                    }) as unknown as string
-                  }
-                </div>
-              </ModalBody>
-              <ModalFooter>
+                </motion.h2>
+              </BaseModalHeader>
+              <BaseModalBody>
+                <motion.div
+                  className="text-medium font-medium text-default-600"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.1 }}
+                >
+                  {t("launcherpage.shortcut.success.body") as unknown as string}
+                </motion.div>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="primary"
+                  radius="full"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   onPress={() => {
                     onClose?.();
                     setShortcutSuccessOpen(false);
                   }}
                 >
-                  {
-                    t("launcherpage.delete.complete.close_button", {
-                      defaultValue: "关闭",
-                    }) as unknown as string
-                  }
+                  {t("common.close") as unknown as string}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
-      <Modal
+      <BaseModal
         isOpen={deleteOpen}
         onOpenChange={(open) => {
           if (!open) setDeleteOpen(false);
         }}
         hideCloseButton
         isDismissable={!deleting}
+        classNames={{}}
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="text-danger">
-                {t("launcherpage.delete.confirm.title", {
-                  defaultValue: "确认删除",
-                })}
-              </ModalHeader>
-              <ModalBody>
-                <div className="text-sm text-default-700 break-words whitespace-pre-wrap">
-                  {t("launcherpage.delete.confirm.content", {
-                    defaultValue: "您确定要删除此版本吗？此操作无法撤销。",
-                  })}
-                </div>
-                <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm break-words whitespace-pre-wrap">
-                  {targetName}
-                </div>
-              </ModalBody>
-              <ModalFooter>
+              <BaseModalHeader>
+                <motion.h2
+                  className="text-2xl font-black tracking-tight text-danger-500"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  {t("launcherpage.delete.confirm.title")}
+                </motion.h2>
+              </BaseModalHeader>
+              <BaseModalBody>
+                <motion.div
+                  className="flex flex-col gap-4"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.1 }}
+                >
+                  <div className="text-medium font-medium text-default-600 wrap-break-word whitespace-pre-wrap">
+                    {t("launcherpage.delete.confirm.content")}
+                  </div>
+                  <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400 text-sm wrap-break-word whitespace-pre-wrap font-mono">
+                    {targetName}
+                  </div>
+                </motion.div>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   variant="light"
+                  radius="full"
                   onPress={() => {
                     onClose?.();
                   }}
@@ -860,84 +1011,132 @@ export default function VersionSettingsPage() {
                 </Button>
                 <Button
                   color="danger"
+                  radius="full"
+                  className="bg-danger shadow-lg shadow-danger-500/20 font-bold"
                   onPress={async () => {
                     await onDeleteConfirm();
                   }}
                   isLoading={deleting}
                 >
-                  {t("launcherpage.delete.confirm.delete_button", {
-                    defaultValue: "删除",
-                  })}
+                  {t("launcherpage.delete.confirm.delete_button")}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
 
-      <Modal
+      <BaseModal
         isOpen={deleteSuccessOpen}
         onOpenChange={(open) => {
           if (!open) setDeleteSuccessOpen(open);
         }}
         size="md"
       >
-        <ModalContent>
+        <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <ModalHeader className="flex items-center gap-2">
-                <div className="w-6 h-6 rounded-full bg-green-500 flex items-center justify-center">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="14"
-                    height="14"
-                    className="text-white"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                </div>
-                <h2 className="text-lg font-semibold">
-                  {t("launcherpage.delete.complete.title", {
-                    defaultValue: "删除完成",
-                  })}
-                </h2>
-              </ModalHeader>
-              <ModalBody>
-                <div className="text-small text-default-600">
-                  {t("launcherpage.delete.complete.content", {
-                    defaultValue: "所选版本已成功删除！",
-                  })}
+              <BaseModalHeader>
+                <motion.div
+                  className="flex items-center gap-3"
+                  initial={{ opacity: 0, y: -10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ duration: 0.25 }}
+                >
+                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-900/20">
+                    <svg
+                      viewBox="0 0 24 24"
+                      width="16"
+                      height="16"
+                      className="text-white"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="3"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                    >
+                      <path d="M20 6L9 17l-5-5" />
+                    </svg>
+                  </div>
+                  <h2 className="text-2xl font-black tracking-tight text-emerald-500">
+                    {t("launcherpage.delete.complete.title")}
+                  </h2>
+                </motion.div>
+              </BaseModalHeader>
+              <BaseModalBody>
+                <motion.div
+                  className="text-medium font-medium text-default-600"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.1 }}
+                >
+                  {t("launcherpage.delete.complete.content")}
                   {deleteSuccessMsg ? (
-                    <span className="font-mono text-default-700">
+                    <span className="font-mono text-default-700 font-bold">
                       {" "}
                       {deleteSuccessMsg}
                     </span>
                   ) : null}
-                </div>
-              </ModalBody>
-              <ModalFooter>
+                </motion.div>
+              </BaseModalBody>
+              <BaseModalFooter>
                 <Button
                   color="primary"
+                  radius="full"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                   onPress={() => {
                     onClose?.();
                     setDeleteSuccessOpen(false);
                     navigate(returnToPath);
                   }}
                 >
-                  {t("launcherpage.delete.complete.close_button", {
-                    defaultValue: "关闭",
-                  })}
+                  {t("launcherpage.delete.complete.close_button")}
                 </Button>
-              </ModalFooter>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>
-      </Modal>
+      </BaseModal>
+      <BaseModal
+        size="md"
+        isOpen={unsavedOpen}
+        onOpenChange={unsavedOnOpenChange}
+        hideCloseButton
+      >
+        <ModalContent className="shadow-none">
+          {(onClose) => (
+            <>
+              <BaseModalHeader className="text-warning-600">
+                {t("settings.unsaved.title", { defaultValue: "未保存修改" })}
+              </BaseModalHeader>
+              <BaseModalBody>
+                <div className="text-default-700 text-sm">
+                  {t("versions.unsaved.body", {
+                    defaultValue:
+                      "您更改了版本设置但尚未保存。是否保存后离开？",
+                  })}
+                </div>
+              </BaseModalBody>
+              <BaseModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  {t("settings.unsaved.cancel", { defaultValue: "取消" })}
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={async () => {
+                    const ok = await onSave(pendingNavPath);
+                    if (ok) {
+                      onClose();
+                    }
+                  }}
+                >
+                  {t("settings.unsaved.save", { defaultValue: "保存并离开" })}
+                </Button>
+              </BaseModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </BaseModal>
     </div>
   );
 }

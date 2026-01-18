@@ -5,11 +5,12 @@ import (
 	"context"
 	"crypto/sha256"
 	_ "embed"
-	"github.com/wailsapp/wails/v3/pkg/application"
 	"io"
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 const (
@@ -41,9 +42,9 @@ func EnsureForVersion(ctx context.Context, versionDir string) bool {
 		application.Get().Event.Emit(EventEnsureDone, false)
 		return false
 	}
-    dest := filepath.Join(dir, "PreLoader.dll")
+	dest := filepath.Join(dir, "PreLoader.dll")
 	if len(embeddedPreLoader) == 0 {
-            return false
+		return false
 	}
 	needWrite := true
 	if fi, err := os.Stat(dest); err == nil && fi.Size() > 0 {
@@ -58,7 +59,7 @@ func EnsureForVersion(ctx context.Context, versionDir string) bool {
 		tmp := dest + ".tmp"
 		if err := os.WriteFile(tmp, embeddedPreLoader, 0644); err != nil {
 			_ = os.Remove(tmp)
-            return false
+			return false
 		}
 		if err := os.Rename(tmp, dest); err != nil {
 			_ = os.Remove(tmp)
@@ -66,7 +67,7 @@ func EnsureForVersion(ctx context.Context, versionDir string) bool {
 			return false
 		}
 	}
-    return true
+	return true
 }
 
 func EnsureEmbedded(contentDir string, embedded []byte) {

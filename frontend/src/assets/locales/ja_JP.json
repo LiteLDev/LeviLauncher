@@ -85,7 +85,7 @@
       },
       "missing": {
         "title": "GameInput コンポーネント未検出",
-        "body": "ゲームの実行には Microsoft GameInput が必要です。今すぐインストールしますか？",
+        "body": "ゲームの実行には Microsoft GameInput が必要です。インストールしますか？",
         "install_now": "今すぐインストール"
       }
     },

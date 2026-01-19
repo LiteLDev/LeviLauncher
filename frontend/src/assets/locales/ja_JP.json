@@ -32,7 +32,7 @@
       }
     },
     "gdk_missing": {
-      "title": "Microsoft GDK 未検出",
+      "title": "Microsoft GDK がインストールされていません",
       "body": "GDKツールキットが検出されませんでした。登録にはインストールが必要です。設定を開いてインストールしますか？",
       "go_settings": "設定を開く"
     },

@@ -16,6 +16,7 @@ export const resources = {
   ru_RU: { translation: ru },
   "ru-RU": { translation: ru },
   ru: { translation: ru },
+  ja_JP: { translation: ja },
   "ja_JP": { translation: ja },
   ja: { translation: ja },
 };

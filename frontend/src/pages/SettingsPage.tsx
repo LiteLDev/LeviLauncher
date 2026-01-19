@@ -136,6 +136,7 @@ export const SettingsPage: React.FC = () => {
       const lower = lng.toLowerCase();
       if (lower === "en-us" || lower === "en") return "en_US";
       if (lower === "zh-cn" || lower === "zh") return "zh_CN";
+      if (lower === "ja-jp" || lower === "ja") return "ja_JP";
       return lng;
     };
     setSelectedLang(normalize(i18n.language));

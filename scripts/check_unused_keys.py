@@ -14,7 +14,7 @@ def get_keys(d, prefix=''):
     return keys
 
 locales_dir = r'd:\a\LiteLDev\LeviLauncher\frontend\src\assets\locales'
-locale_files = ['en_US.json', 'ru_RU.json', 'zh_CN.json']
+locale_files = ['en_US.json', 'ru_RU.json', 'zh_CN.json', 'ja_JP.json]
 
 all_keys = set()
 for lf in locale_files:

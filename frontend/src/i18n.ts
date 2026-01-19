@@ -38,6 +38,7 @@ i18n
       "ru_RU",
       "ru-RU",
       "ru",
+      "ja_JP",
       "ja-JP",
       "ja",
     ],

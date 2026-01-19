@@ -4,6 +4,7 @@ import LanguageDetector from "i18next-browser-languagedetector";
 import en from "@/assets/locales/en_US.json";
 import zh from "@/assets/locales/zh_CN.json";
 import ru from "@/assets/locales/ru_RU.json";
+import ja from "@/assets/locales/ja_JP.json";
 
 export const resources = {
   en_US: { translation: en },
@@ -15,6 +16,8 @@ export const resources = {
   ru_RU: { translation: ru },
   "ru-RU": { translation: ru },
   ru: { translation: ru },
+  "ja_JP": { translation: ja },
+  ja: { translation: JP },
 };
 
 i18n
@@ -34,6 +37,8 @@ i18n
       "ru_RU",
       "ru-RU",
       "ru",
+      "ja-JP",
+      "ja",
     ],
     lowerCaseLng: false,
     nonExplicitSupportedLngs: true,

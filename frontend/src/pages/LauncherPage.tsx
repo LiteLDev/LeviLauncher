@@ -18,6 +18,7 @@ import {
   Spinner,
 } from "@heroui/react";
 import { useTranslation } from "react-i18next";
+import { listPlayers } from "@/utils/content";
 import {
   EnsureGameInputInteractive,
   GetContentRoots,
@@ -631,11 +632,7 @@ export const LauncherPage = (args: any) => {
       let worlds = 0;
       if (safe.usersRoot) {
         try {
-          const entries = await ListDir(safe.usersRoot);
-          const players = (entries || [])
-            .filter((e: any) => e.isDir)
-            .map((e: any) => e.name)
-            .filter((n: string) => n && n.toLowerCase() !== "shared");
+          const players = await listPlayers(safe.usersRoot);
           const nextPlayer = players[0] || "";
           if (nextPlayer) {
             const wp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\minecraftWorlds`;
@@ -1447,20 +1444,31 @@ export const LauncherPage = (args: any) => {
                       Minecraft
                     </motion.h1>
                     {localVersionMap.get(currentVersion)?.isRegistered && (
-                      <Chip
-                        startContent={<FaCheckCircle size={14} />}
-                        variant="flat"
-                        color="success"
-                        classNames={{
-                          base: "bg-emerald-500/10 border border-emerald-500/20 hidden sm:flex",
-                          content:
-                            "font-semibold text-emerald-600 dark:text-emerald-500",
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8, x: -10 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        transition={{
+                          delay: 0.7,
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 30,
                         }}
                       >
-                        {t("launcherpage.registered_tip", {
-                          defaultValue: "已注册",
-                        })}
-                      </Chip>
+                        <Chip
+                          startContent={<FaCheckCircle size={14} />}
+                          variant="flat"
+                          color="success"
+                          classNames={{
+                            base: "bg-emerald-500/10 border border-emerald-500/20 hidden sm:flex",
+                            content:
+                              "font-semibold text-emerald-600 dark:text-emerald-500",
+                          }}
+                        >
+                          {t("launcherpage.registered_tip", {
+                            defaultValue: "已注册",
+                          })}
+                        </Chip>
+                      </motion.div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">

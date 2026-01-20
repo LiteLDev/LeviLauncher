@@ -428,6 +428,7 @@ Section "uninstall"
     
     DetailPrint "$(TXT_RemoveLocalParts)"
     Delete "$LocalPath\config.json"
+    Delete "$LocalPath\user_gamertag_map.json"
     IfErrors 0 +2
     DetailPrint "$(TXT_ConfigErr)"
     Push "$LocalPath\EBWebView"

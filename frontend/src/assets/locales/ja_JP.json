@@ -166,6 +166,7 @@
       "status_all": "すべて",
       "status_downloaded": "ダウンロード済み",
       "status_not_downloaded": "未ダウンロード",
+      "loader": "ローダー",
       "input": {
         "placeholder": "バージョンで検索..."
       }
@@ -220,6 +221,7 @@
       "success_body": "インストーラーを削除しました: "
     },
     "install": {
+      "levilamina_label": "LeviLamina をインストール",
       "version_label": "バージョン",
       "hint": "この処理には時間がかかる場合があります。お待ちください…",
       "estimated_size": "書き込みサイズ (推定)",
@@ -322,6 +324,28 @@
         "title": "GDKをインストール中",
         "body": "インストーラーを実行しています。お待ちください…"
       }
+    },
+    "lip": {
+      "title": "lip",
+      "description": "パッケージと依存関係を管理するためにlipをインストールしてください",
+      "installed": "v{{version}} をインストール済み",
+      "install_button": "インストール",
+      "installing": "LIPをインストール中...",
+      "update_button": "{{version}} に更新",
+      "installed_label": "インストール済み",
+      "status": {
+        "checking_update": "更新を確認中...",
+        "downloading": "ダウンロード中...",
+        "extracting": "展開中...",
+        "done": "インストール完了"
+      },
+      "error": {
+        "fetch_release_failed": "リリース情報の取得に失敗しました。",
+        "create_temp": "一時ディレクトリの作成に失敗しました。",
+        "download_failed": "ダウンロードに失敗しました。",
+        "create_target_dir": "ターゲットディレクトリの作成に失敗しました。",
+        "unzip_failed": "解凍に失敗しました。"
+      }
     }
   },
   "downloadmodal": {
@@ -395,7 +419,21 @@
     "view_all": "すべて表示",
     "confirm_delete": "削除確認",
     "deleting": "削除中...",
-    "no_results": "結果が見つかりません"
+    "no_results": "結果が見つかりません",
+    "hide": "非表示"
+  },
+  "useravatar": {
+    "no_login_retry": "Xbox ログインが検出されませんでした（クリックして再試行）",
+    "xbox_live": "Xbox Live",
+    "refresh_session_aria": "Xbox セッションを更新",
+    "xuid": "XUID: {{xuid}}",
+    "stats": {
+      "minutes_played": "プレイ時間",
+      "blocks_broken": "破壊したブロック",
+      "mobs_defeated": "倒したモブ",
+      "distance_travelled": "移動距離",
+      "time_format": "{{days}}日 {{hours}}時間 {{minutes}}分"
+    }
   },
   "content": {
     "count": {
@@ -602,7 +640,9 @@
     "toggle_desc_on": "Modは有効になっており、ゲーム開始時に読み込まれます。",
     "toggle_desc_off": "Modは無効になっており、ゲーム開始時に読み込まれません。",
     "only_enabled": "有効なModのみ表示",
-    "drop_hint": ".zip または .dll をドロップして Mod/プラグインをインポート"
+    "drop_hint": ".zip または .dll をドロップして Mod/プラグインをインポート",
+    "err_lip_not_installed": "LIP がインストールされていません",
+    "err_lip_install_failed_suggestion": "インストールに失敗しました。Minecraft を再インストールすることをお勧めします"
   },
   "versionselect": {
     "unsaved": {

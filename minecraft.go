@@ -2,6 +2,8 @@ package main
 
 import (
 	"context"
+	"encoding/base64"
+	"encoding/json"
 	"log"
 	"os"
 	"os/exec"
@@ -13,6 +15,7 @@ import (
 
 	"unsafe"
 
+	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/content"
 	"github.com/liteldev/LeviLauncher/internal/curseforge/client"
 	cursetypes "github.com/liteldev/LeviLauncher/internal/curseforge/client/types"
@@ -22,6 +25,8 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/lang"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/launchercore"
+	"github.com/liteldev/LeviLauncher/internal/lip"
 	lipclient "github.com/liteldev/LeviLauncher/internal/lip/client"
 	liptypes "github.com/liteldev/LeviLauncher/internal/lip/client/types"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
@@ -98,6 +103,18 @@ func (a *Minecraft) GetDriveStats(root string) map[string]uint64 {
 
 func (a *Minecraft) FetchHistoricalVersions(preferCN bool) map[string]interface{} {
 	return mcservice.FetchHistoricalVersions(preferCN)
+}
+
+func (a *Minecraft) FetchLeviLaminaVersionDB() map[string][]string {
+	res, err := mcservice.FetchLeviLaminaVersionDB()
+	if err != nil {
+		return map[string][]string{}
+	}
+	return res
+}
+
+func (a *Minecraft) InstallLeviLamina(mcVersion string, targetName string) string {
+	return mcservice.InstallLeviLamina(a.ctx, mcVersion, targetName)
 }
 
 type KnownFolder struct {
@@ -269,6 +286,22 @@ func (a *Minecraft) GetLIPPackage(identifier string) (*liptypes.GetPackageRespon
 	return a.lipClient.GetPackage(identifier)
 }
 
+func (a *Minecraft) InstallLip() string {
+	return lip.Install()
+}
+
+func (a *Minecraft) GetLipVersion() string {
+	return lip.GetVersion()
+}
+
+func (a *Minecraft) IsLipInstalled() bool {
+	return lip.IsInstalled()
+}
+
+func (a *Minecraft) GetLatestLipVersion() (string, error) {
+	return lip.GetLatestVersion()
+}
+
 func (a *Minecraft) startup() {
 	a.ctx = application.Get().Context()
 
@@ -288,6 +321,191 @@ func (a *Minecraft) IsGamingServicesInstalled() bool {
 		return true
 	}
 	return false
+}
+
+func (a *Minecraft) GetGamertagByXuid(xuidStr string) string {
+	xuid, err := strconv.ParseUint(xuidStr, 10, 64)
+	if err != nil {
+		return ""
+	}
+	s, err := launchercore.GetGamertagByXuid(xuid)
+	if err != nil {
+		return ""
+	}
+	return s
+}
+
+func (a *Minecraft) GetLocalUserId() string {
+	id, err := launchercore.GetLocalUserId()
+	if err != nil {
+		return ""
+	}
+	return strconv.FormatUint(id, 10)
+}
+
+func (a *Minecraft) GetLocalUserGamertag() string {
+	s, err := launchercore.GetLocalUserGamertag()
+	if err != nil {
+		return ""
+	}
+	return s
+}
+
+func (a *Minecraft) GetLocalUserGamerPicture(size int) string {
+	b, err := launchercore.GetLocalUserGamerPicture(size)
+	if err != nil {
+		return ""
+	}
+	return base64.StdEncoding.EncodeToString(b)
+}
+
+func (a *Minecraft) GetUserGamertagMap(usersRoot string) map[string]string {
+	usersRoot = strings.TrimSpace(usersRoot)
+	if usersRoot == "" {
+		return map[string]string{}
+	}
+
+	cachePath := filepath.Join(config.ConfigDir(), "user_gamertag_map.json")
+	out := map[string]string{}
+	loadMap := func(p string) {
+		b, err := os.ReadFile(p)
+		if err != nil || len(b) == 0 {
+			return
+		}
+		m := map[string]string{}
+		if err := json.Unmarshal(b, &m); err != nil {
+			return
+		}
+		for k, v := range m {
+			kk := strings.TrimSpace(k)
+			vv := strings.TrimSpace(v)
+			if kk == "" || vv == "" {
+				continue
+			}
+			if strings.TrimSpace(out[kk]) == "" {
+				out[kk] = vv
+			}
+		}
+	}
+
+	loadMap(cachePath)
+
+	entries, err := os.ReadDir(usersRoot)
+	if err != nil {
+		return out
+	}
+
+	changed := false
+	for _, e := range entries {
+		if !e.IsDir() {
+			continue
+		}
+		obf := strings.TrimSpace(e.Name())
+		if obf == "" || strings.EqualFold(obf, "shared") || obf == "9556213259376595538" {
+			continue
+		}
+		if v := strings.TrimSpace(out[obf]); v != "" {
+			continue
+		}
+
+		ss := filepath.Join(usersRoot, obf, "games", "com.mojang", "Screenshots")
+		xuidDirs, err := os.ReadDir(ss)
+		if err != nil {
+			continue
+		}
+
+		var xuidStr string
+		for _, xd := range xuidDirs {
+			if xd.IsDir() {
+				xuidStr = strings.TrimSpace(xd.Name())
+				if xuidStr != "" {
+					break
+				}
+			}
+		}
+		if xuidStr == "" {
+			continue
+		}
+
+		xuid, err := strconv.ParseUint(xuidStr, 10, 64)
+		if err != nil {
+			continue
+		}
+
+		raw, err := launchercore.GetGamertagByXuid(xuid)
+		if err != nil {
+			continue
+		}
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			continue
+		}
+
+		parts := strings.SplitN(raw, "|", 2)
+		gamertag := strings.TrimSpace(parts[0])
+		if gamertag == "" {
+			continue
+		}
+
+		key := obf
+		if len(parts) == 2 {
+			if k := strings.TrimSpace(parts[1]); k != "" {
+				key = k
+			}
+		}
+
+		if strings.TrimSpace(out[key]) != gamertag {
+			out[key] = gamertag
+			changed = true
+		}
+	}
+
+	if changed {
+		if b, err := json.Marshal(out); err == nil {
+			_ = os.WriteFile(cachePath, b, 0644)
+		}
+	}
+
+	return out
+}
+
+func (a *Minecraft) ResetSession() string {
+	if err := launchercore.ResetSession(); err != nil {
+		return err.Error()
+	}
+	return ""
+}
+
+func (a *Minecraft) XUserGetState() int {
+	state, err := launchercore.XUserGetState()
+	if err != nil {
+		return 1
+	}
+	return int(state)
+}
+
+type UserStatistics struct {
+	MinutesPlayed     int64   `json:"minutesPlayed"`
+	BlockBroken       int64   `json:"blockBroken"`
+	MobKilled         int64   `json:"mobKilled"`
+	DistanceTravelled float64 `json:"distanceTravelled"`
+}
+
+func (a *Minecraft) GetAggregatedUserStatistics(xuidStr string) UserStatistics {
+	xuid, err := strconv.ParseUint(xuidStr, 10, 64)
+	if err != nil {
+		return UserStatistics{}
+	}
+	mp, bb, mk, dt, err := launchercore.GetAggregatedUserStatisticsByXuid(xuid)
+	if err != nil {
+		return UserStatistics{}
+	}
+	return UserStatistics{
+		MinutesPlayed:     mp,
+		BlockBroken:       bb,
+		MobKilled:         mk,
+		DistanceTravelled: dt,
+	}
 }
 
 func (a *Minecraft) StartMsixvcDownload(url string) string {

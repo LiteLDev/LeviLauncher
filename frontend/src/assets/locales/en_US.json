@@ -152,6 +152,7 @@
         "version": "VERSION",
         "type": "TYPE",
         "status": "STATUS",
+        "loader": "LOADER",
         "actions": "ACTION"
       },
       "type": {
@@ -166,6 +167,9 @@
       "status_all": "All",
       "status_downloaded": "Downloaded",
       "status_not_downloaded": "Not downloaded",
+      "loader": "Loader",
+      "ll_supported": "Supported",
+      "ll_unsupported": "Unsupported",
       "input": {
         "placeholder": "Search by verison..."
       }
@@ -220,6 +224,7 @@
       "success_body": "Installer deleted: "
     },
     "install": {
+      "levilamina_label": "Install LeviLamina",
       "version_label": "Version",
       "hint": "Please wait, this process may take a while…",
       "estimated_size": "Written size (estimated)",
@@ -322,6 +327,28 @@
         "title": "Installing GDK",
         "body": "Please wait while the installer runs…"
       }
+    },
+    "lip": {
+      "title": "lip",
+      "description": "Install lip to manage packages and dependencies",
+      "installed": "Installed v{{version}}",
+      "install_button": "Install",
+      "installing": "Installing LIP...",
+      "update_button": "Update to {{version}}",
+      "installed_label": "Installed",
+      "status": {
+        "checking_update": "Checking for updates...",
+        "downloading": "Downloading...",
+        "extracting": "Extracting...",
+        "done": "Installation complete"
+      },
+      "error": {
+        "fetch_release_failed": "Failed to fetch release info.",
+        "create_temp": "Failed to create temp directory.",
+        "download_failed": "Download failed.",
+        "create_target_dir": "Failed to create target directory.",
+        "unzip_failed": "Failed to unzip."
+      }
     }
   },
   "downloadmodal": {
@@ -395,7 +422,21 @@
     "view_all": "View All",
     "confirm_delete": "Confirm Delete",
     "deleting": "Deleting...",
-    "no_results": "No results found"
+    "no_results": "No results found",
+    "hide": "Hide"
+  },
+  "useravatar": {
+    "no_login_retry": "Xbox login not detected (click to retry)",
+    "xbox_live": "Xbox Live",
+    "refresh_session_aria": "Refresh Xbox Session",
+    "xuid": "XUID: {{xuid}}",
+    "stats": {
+      "minutes_played": "Time Played",
+      "blocks_broken": "Blocks Broken",
+      "mobs_defeated": "Mobs Defeated",
+      "distance_travelled": "Distance Travelled",
+      "time_format": "{{days}}d {{hours}}h {{minutes}}m"
+    }
   },
   "content": {
     "count": {
@@ -602,7 +643,9 @@
     "toggle_desc_on": "Mod is enabled and will load when the game starts.",
     "toggle_desc_off": "Mod is disabled and will not load when the game starts.",
     "only_enabled": "Only show enabled mods",
-    "drop_hint": "Drop .zip or .dll to import mods/plugins"
+    "drop_hint": "Drop .zip or .dll to import mods/plugins",
+    "err_lip_not_installed": "LIP is not installed",
+    "err_lip_install_failed_suggestion": "Installation failed, please try reinstalling Minecraft"
   },
   "versionselect": {
     "unsaved": {

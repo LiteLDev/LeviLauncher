@@ -152,6 +152,7 @@
         "version": "ВЕРСИЯ",
         "type": "ТИП",
         "status": "СТАТУС",
+        "loader": "ЗАГРУЗЧИК",
         "actions": "ДЕЙСТВИЯ"
       },
       "type": {
@@ -166,6 +167,7 @@
       "status_all": "Все",
       "status_downloaded": "Загружено",
       "status_not_downloaded": "Не загружено",
+      "loader": "Загрузчик",
       "input": {
         "placeholder": "Поиск по версии..."
       }
@@ -322,6 +324,28 @@
         "title": "Установка GDK",
         "body": "Пожалуйста, подождите, пока установщик работает…"
       }
+    },
+    "lip": {
+      "title": "lip",
+      "description": "Установите lip для управления пакетами и зависимостями",
+      "installed": "Установлен v{{version}}",
+      "install_button": "Установить",
+      "installing": "Установка",
+      "update_button": "Обновить до {{version}}",
+      "installed_label": "Установлен",
+      "status": {
+        "checking_update": "Проверка обновлений...",
+        "downloading": "Загрузка...",
+        "extracting": "Распаковка...",
+        "done": "Установка завершена"
+      },
+      "error": {
+        "fetch_release_failed": "Не удалось получить информацию о версии.",
+        "create_temp": "Не удалось создать временную директорию.",
+        "download_failed": "Не удалось загрузить.",
+        "create_target_dir": "Не удалось создать целевую директорию.",
+        "unzip_failed": "Не удалось распаковать."
+      }
     }
   },
   "downloadmodal": {
@@ -392,7 +416,24 @@
     "add": "Добавить",
     "save_failed": "Не удалось сохранить",
     "load_failed": "Не удалось загрузить",
-    "no_results": "Ничего не найдено"
+    "no_results": "Ничего не найдено",
+    "view_all": "Посмотреть все",
+    "confirm_delete": "Подтверждение удаления",
+    "deleting": "Удаление...",
+    "hide": "Скрыть"
+  },
+  "useravatar": {
+    "no_login_retry": "Вход Xbox не обнаружен (нажмите, чтобы повторить)",
+    "xbox_live": "Xbox Live",
+    "refresh_session_aria": "Обновить сеанс Xbox",
+    "xuid": "XUID: {{xuid}}",
+    "stats": {
+      "minutes_played": "Время в игре",
+      "blocks_broken": "Разрушено блоков",
+      "mobs_defeated": "Убито мобов",
+      "distance_travelled": "Пройденное расстояние",
+      "time_format": "{{days}}д {{hours}}ч {{minutes}}м"
+    }
   },
   "content": {
     "count": {
@@ -433,7 +474,13 @@
     "field_name": "Имя",
     "initial_value": "Начальное значение",
     "select_player_title": "Выберите игрока",
-    "select_player_for_import": "Пожалуйста, выберите игрока для импорта"
+    "select_player_for_import": "Пожалуйста, выберите игрока для импорта",
+    "delete_pack_confirm": "Вы уверены, что хотите удалить {{name}}?",
+    "delete_warning": "Это действие нельзя отменить!",
+    "delete_selected_confirm": "Вы уверены, что хотите удалить выбранные элементы ({{count}})?",
+    "deleted_name": "Удалено: {{name}}",
+    "deleted_count": "Удалено элементов: {{count}}",
+    "delete_world_confirm": "Вы уверены, что хотите удалить мир {{name}}?"
   },
   "versions": {
     "info": {
@@ -513,7 +560,8 @@
     "ERR_VCRUNTIME_MISSING": "Отсутствует зависимость времени выполнения. Установите Microsoft Visual C++ Runtime и повторите попытку",
     "ERR_SHORTCUT_CREATE_FAILED": "Не удалось создать ярлык на рабочем столе",
     "ERR_UNREGISTER_FAILED": "Не удалось отменить регистрацию",
-    "ERR_NOT_REGISTERED_THIS_VERSION": "Эта версия не зарегистрирована в системе"
+    "ERR_NOT_REGISTERED_THIS_VERSION": "Эта версия не зарегистрирована в системе",
+    "ERR_DEV_MODE_REQUIRED": "Режим разработчика не включен, и автоматическое включение не удалось. Пожалуйста, включите режим разработчика вручную и повторите попытку."
   },
   "filemanager": {
     "search_placeholder": "Поиск...",
@@ -592,7 +640,9 @@
     "toggle_desc_on": "Мод включён и будет загружаться при запуске игры.",
     "toggle_desc_off": "Мод выключен и не будет загружаться при запуске игры.",
     "only_enabled": "Показывать только включённые моды",
-    "drop_hint": "Перетащите .zip или .dll для импорта модов/плагинов"
+    "drop_hint": "Перетащите .zip или .dll для импорта модов/плагинов",
+    "err_lip_not_installed": "LIP не установлен",
+    "err_lip_install_failed_suggestion": "Установка не удалась, попробуйте переустановить Minecraft"
   },
   "versionselect": {
     "unsaved": {

@@ -24,7 +24,11 @@ import {
   ModData,
   File as ModFile,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
-import { listPlayers } from "@/utils/content";
+import {
+  getPlayerGamertagMap,
+  listPlayers,
+  resolvePlayerDisplayName,
+} from "@/utils/content";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
 import {
@@ -155,6 +159,9 @@ const CurseForgeModPage: React.FC = () => {
   const [availableVersions, setAvailableVersions] = useState<VersionMeta[]>([]);
   const [versionLogos, setVersionLogos] = useState<Record<string, string>>({});
   const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
+  const [playerGamertagMap, setPlayerGamertagMap] = useState<
+    Record<string, string>
+  >({});
   const [selectedVersion, setSelectedVersion] = useState<string>("");
   const [selectedPlayer, setSelectedPlayer] = useState<string>("");
   const [installError, setInstallError] = useState<string>("");
@@ -322,13 +329,17 @@ const CurseForgeModPage: React.FC = () => {
       try {
         const roots = await GetContentRoots(selectedVersion);
         if (roots && roots.usersRoot) {
+          setPlayerGamertagMap(await getPlayerGamertagMap(roots.usersRoot));
           const players = await listPlayers(roots.usersRoot);
           setAvailablePlayers(players);
           if (players.length > 0) setSelectedPlayer(players[0]);
+        } else {
+          setPlayerGamertagMap({});
         }
       } catch (e) {
         console.error(e);
         setAvailablePlayers([]);
+        setPlayerGamertagMap({});
       }
     } else {
       await executeImport();
@@ -1086,7 +1097,7 @@ const CurseForgeModPage: React.FC = () => {
                     >
                       {availablePlayers.map((player) => (
                         <SelectItem key={player} value={player}>
-                          {player}
+                          {resolvePlayerDisplayName(player, playerGamertagMap)}
                         </SelectItem>
                       ))}
                     </Select>

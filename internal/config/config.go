@@ -87,6 +87,10 @@ func Save(c AppConfig) error {
 	return os.WriteFile(p, b, 0o644)
 }
 
+func ConfigDir() string {
+	return filepath.Dir(configPath())
+}
+
 func GetBaseRootOverride() string {
 	c, _ := Load()
 	return strings.TrimSpace(c.BaseRoot)

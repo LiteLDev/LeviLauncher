@@ -11,8 +11,6 @@ import {
   DropdownItem,
   Checkbox,
   Image,
-  Select,
-  SelectItem,
   Spinner,
   Tooltip,
   ModalContent,
@@ -61,6 +59,11 @@ import { useTranslation } from "react-i18next";
 import { toast } from "react-hot-toast";
 import { motion, AnimatePresence } from "framer-motion";
 import DefaultWorldPreview from "@/assets/images/world-preview-default.jpg";
+import {
+  getPlayerGamertagMap,
+  listPlayers,
+  resolvePlayerDisplayName,
+} from "@/utils/content";
 
 interface WorldInfo {
   Path: string;
@@ -81,6 +84,9 @@ export default function WorldsListPage() {
     location.state?.player || "",
   );
   const [players, setPlayers] = useState<string[]>([]);
+  const [playerGamertagMap, setPlayerGamertagMap] = useState<
+    Record<string, string>
+  >({});
   const [worlds, setWorlds] = useState<WorldInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [roots, setRoots] = useState<any>({});
@@ -171,23 +177,25 @@ export default function WorldsListPage() {
         const r = await GetContentRoots(currentVersionName || "");
         setRoots(r);
         if (r.usersRoot) {
-          const entries = await ListDir(r.usersRoot);
-          if (entries) {
-            const pList = entries.filter((e) => e.isDir).map((e) => e.name);
-            setPlayers(pList);
-            if (!selectedPlayer && pList.length > 0) {
-              setSelectedPlayer(pList[0]);
-            }
-          }
+          setPlayerGamertagMap(await getPlayerGamertagMap(r.usersRoot));
+          const pList = await listPlayers(r.usersRoot);
+          setPlayers(pList);
+          if (!selectedPlayer && pList.length > 0) setSelectedPlayer(pList[0]);
+        } else {
+          setPlayers([]);
+          setPlayerGamertagMap({});
         }
       } catch (e) {
         console.error("Failed to list players", e);
+        setPlayers([]);
+        setPlayerGamertagMap({});
       }
     };
     fetchPlayers();
   }, [currentVersionName]);
 
   useEffect(() => {
+    setWorlds([]);
     refreshAll();
   }, [selectedPlayer]);
 
@@ -451,46 +459,72 @@ export default function WorldsListPage() {
                   isIconOnly
                   variant="light"
                   radius="full"
-                  onPress={() => navigate("/content")}
+                  onPress={() =>
+                    navigate("/content", { state: { player: selectedPlayer } })
+                  }
                 >
                   <FaArrowLeft size={20} />
                 </Button>
               }
               endContent={
-                <>
-                  {players.length > 0 && (
-                    <Select
+                <div className="flex items-center gap-2">
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button
+                        radius="full"
+                        variant="flat"
+                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium w-full sm:w-auto sm:min-w-[200px]"
+                        isDisabled={!players.length}
+                        startContent={<FaUser />}
+                      >
+                        {selectedPlayer
+                          ? resolvePlayerDisplayName(
+                              selectedPlayer,
+                              playerGamertagMap,
+                            )
+                          : t("contentpage.select_player", {
+                              defaultValue: "选择玩家",
+                            })}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
                       aria-label={
                         t("contentpage.players_aria", {
-                          defaultValue: "玩家列表",
-                        }) as string
+                          defaultValue: "Players",
+                        }) as unknown as string
                       }
-                      placeholder={
-                        t("contentpage.select_player", {
-                          defaultValue: "选择玩家",
-                        }) as string
+                      selectionMode="single"
+                      selectedKeys={
+                        selectedPlayer ? new Set([selectedPlayer]) : new Set()
                       }
-                      selectedKeys={selectedPlayer ? [selectedPlayer] : []}
                       onSelectionChange={(keys) => {
-                        const val = Array.from(keys)[0] as string;
-                        if (val) setSelectedPlayer(val);
-                      }}
-                      startContent={<FaUser className="text-default-400" />}
-                      className="w-full sm:w-64"
-                      size="sm"
-                      radius="full"
-                      disallowEmptySelection
-                      classNames={{
-                        trigger: "bg-default-100 dark:bg-default-50/50",
+                        const arr = Array.from(keys as unknown as Set<string>);
+                        const next = arr[0] || "";
+                        if (typeof next === "string" && next)
+                          setSelectedPlayer(next);
                       }}
                     >
-                      {players.map((p) => (
-                        <SelectItem key={p} value={p}>
-                          {p}
-                        </SelectItem>
-                      ))}
-                    </Select>
-                  )}
+                      {players.length ? (
+                        players.map((p) => (
+                          <DropdownItem
+                            key={p}
+                            textValue={resolvePlayerDisplayName(
+                              p,
+                              playerGamertagMap,
+                            )}
+                          >
+                            {resolvePlayerDisplayName(p, playerGamertagMap)}
+                          </DropdownItem>
+                        ))
+                      ) : (
+                        <DropdownItem key="none" isDisabled>
+                          {t("contentpage.no_players", {
+                            defaultValue: "暂无玩家",
+                          })}
+                        </DropdownItem>
+                      )}
+                    </DropdownMenu>
+                  </Dropdown>
                   <Button
                     radius="full"
                     variant="flat"
@@ -523,7 +557,7 @@ export default function WorldsListPage() {
                       />
                     </Button>
                   </Tooltip>
-                </>
+                </div>
               }
             />
 

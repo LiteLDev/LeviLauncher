@@ -33,6 +33,7 @@ import {
   CanWriteToDir,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { normalizeLanguage } from "@/utils/i18nUtils";
 
 export default function OnboardingPage() {
   const { t, i18n } = useTranslation();
@@ -58,15 +59,7 @@ export default function OnboardingPage() {
   React.useEffect(() => {
     GetLanguageNames().then((res: any) => setLangNames(res));
 
-    const normalize = (lng: string) => {
-      if (!lng) return "en_US";
-      const lower = lng.toLowerCase();
-      if (lower === "en-us" || lower === "en") return "en_US";
-      if (lower === "zh-cn" || lower === "zh") return "zh_CN";
-      if (lower === "ja-jp" || lower === "ja") return "ja_JP";
-      return lng;
-    };
-    setSelectedLang(normalize(i18n.language));
+    setSelectedLang(normalizeLanguage(i18n.language));
     (async () => {
       try {
         if (hasBackend) {
@@ -101,19 +94,7 @@ export default function OnboardingPage() {
   }, [location?.state]);
 
   React.useEffect(() => {
-    const checkWritable = async () => {
-      try {
-        if (!newBaseRoot) {
-          setBaseRootWritable(false);
-          return;
-        }
-        const ok = await CanWriteToDir(newBaseRoot);
-        setBaseRootWritable(Boolean(ok));
-      } catch {
-        setBaseRootWritable(false);
-      }
-    };
-    checkWritable();
+    setBaseRootWritable(true);
   }, [newBaseRoot]);
 
   const proceedHome = () => {

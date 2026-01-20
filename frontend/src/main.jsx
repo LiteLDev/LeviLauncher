@@ -6,20 +6,27 @@ import { createRoot } from "react-dom/client";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { HeroUIProvider } from "@heroui/react";
 import App from "./App";
-import { HashRouter } from "react-router-dom";
+import {
+  createHashRouter,
+  RouterProvider,
+  createRoutesFromElements,
+  Route,
+} from "react-router-dom";
 
 const container = document.getElementById("root");
 
 const root = createRoot(container);
+
+const router = createHashRouter(
+  createRoutesFromElements(<Route path="/*" element={<App />} />),
+);
 
 root.render(
   <HeroUIProvider>
     <NextThemesProvider attribute="class" defaultTheme="light">
       <I18nextProvider i18n={i18n}>
         <React.StrictMode>
-          <HashRouter>
-            <App />
-          </HashRouter>
+          <RouterProvider router={router} />
         </React.StrictMode>
       </I18nextProvider>
     </NextThemesProvider>

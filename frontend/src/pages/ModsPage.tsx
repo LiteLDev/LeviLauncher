@@ -13,7 +13,7 @@ import {
   Checkbox,
   ModalContent,
 } from "@heroui/react";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useBlocker } from "react-router-dom";
 import {
   BaseModal,
   BaseModalHeader,
@@ -21,6 +21,7 @@ import {
   BaseModalFooter,
 } from "@/components/BaseModal";
 import { useTranslation } from "react-i18next";
+import toast from "react-hot-toast";
 import {
   OpenModsExplorer,
   GetMods,
@@ -36,6 +37,7 @@ import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { PageHeader } from "@/components/PageHeader";
+import { useLeviLamina } from "@/utils/LeviLaminaContext";
 
 const readCurrentVersionName = (): string => {
   try {
@@ -125,6 +127,81 @@ export const ModsPage: React.FC = () => {
   const lastScrollTopRef = useRef<number>(0);
   const restorePendingRef = useRef<boolean>(false);
 
+  const { isLLSupported, refreshLLDB } = useLeviLamina();
+  const [installingLL, setInstallingLL] = useState(false);
+  const [gameVersion, setGameVersion] = useState("");
+  const hasBackend = minecraft !== undefined;
+
+  useBlocker(() => installingLL || importing);
+
+  useEffect(() => {
+    const lock = installingLL || importing;
+    window.dispatchEvent(
+      new CustomEvent("ll-nav-lock-changed", { detail: { lock } }),
+    );
+    return () => {
+      if (lock) {
+        window.dispatchEvent(
+          new CustomEvent("ll-nav-lock-changed", { detail: { lock: false } }),
+        );
+      }
+    };
+  }, [installingLL, importing]);
+
+  useEffect(() => {
+    const fetchVersion = async () => {
+      if (!currentVersionName) return;
+      try {
+        const meta = await (minecraft as any)?.GetVersionMeta(currentVersionName);
+        if (meta && meta.GameVersion) {
+          setGameVersion(meta.GameVersion);
+        } else {
+          setGameVersion(currentVersionName);
+        }
+      } catch {
+        setGameVersion(currentVersionName);
+      }
+    };
+    fetchVersion();
+  }, [currentVersionName]);
+
+  const handleInstallLeviLamina = async () => {
+    const targetName = currentVersionName;
+    if (!hasBackend || !targetName || !gameVersion) return;
+    setInstallingLL(true);
+    try {
+      const isLip = await (minecraft as any)?.IsLipInstalled();
+      if (!isLip) {
+        toast.error(t("mods.err_lip_not_installed", { defaultValue: "LIP未安装" }));
+        setInstallingLL(false);
+        return;
+      }
+
+      const installLL = (minecraft as any)?.InstallLeviLamina;
+      if (typeof installLL === "function") {
+        const err: string = await installLL(gameVersion, targetName);
+        if (err) {
+          let msg = err;
+          if (err.includes("ERR_LIP_INSTALL_FAILED")) {
+            msg = t("mods.err_lip_install_failed_suggestion", {
+              defaultValue: "安装失败，建议重新安装Minecraft",
+            });
+          }
+          toast.error(msg);
+        } else {
+          toast.success(
+            t("downloadpage.install.success", { defaultValue: "安装完成" }),
+          );
+          await refreshAll();
+        }
+      }
+    } catch (e: any) {
+      toast.error(String(e?.message || e));
+    } finally {
+      setInstallingLL(false);
+    }
+  };
+
   const postImportModZip = async (
     name: string,
     file: File,
@@ -202,6 +279,7 @@ export const ModsPage: React.FC = () => {
     const name = currentVersionName || readCurrentVersionName();
     if (name) {
       try {
+        await refreshLLDB();
         const data = await GetMods(name);
         setModsInfo(data || []);
         await refreshEnabledStates(name);
@@ -1221,6 +1299,19 @@ export const ModsPage: React.FC = () => {
           }
           endContent={
             <>
+              {isLLSupported(gameVersion) && !modsInfo.some(m => m.name === "LeviLamina") && (
+                <Button
+                  color="success"
+                  variant="flat"
+                  className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold"
+                  onPress={handleInstallLeviLamina}
+                  isLoading={installingLL}
+                >
+                  {t("downloadpage.install.levilamina_label", {
+                    defaultValue: "Install LeviLamina",
+                  })}
+                </Button>
+              )}
               <input
                 ref={fileInputRef}
                 type="file"

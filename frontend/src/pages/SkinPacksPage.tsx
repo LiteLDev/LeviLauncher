@@ -52,7 +52,11 @@ import {
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
-import { listPlayers } from "@/utils/content";
+import {
+  getPlayerGamertagMap,
+  listPlayers,
+  resolvePlayerDisplayName,
+} from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { renderMcText } from "@/utils/mcformat";
 import { toast } from "react-hot-toast";
@@ -76,6 +80,9 @@ export default function SkinPacksPage() {
   });
   const [players, setPlayers] = React.useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = React.useState<string>("");
+  const [playerGamertagMap, setPlayerGamertagMap] = React.useState<
+    Record<string, string>
+  >({});
   const [packs, setPacks] = React.useState<any[]>([]);
   const [resultSuccess, setResultSuccess] = React.useState<string[]>([]);
   const [resultFailed, setResultFailed] = React.useState<
@@ -235,6 +242,7 @@ export default function SkinPacksPage() {
           });
           setPlayers([]);
           setSelectedPlayer("");
+          setPlayerGamertagMap({});
           setPacks([]);
         } else {
           const r = await GetContentRoots(name);
@@ -247,6 +255,11 @@ export default function SkinPacksPage() {
             isPreview: false,
           };
           setRoots(safe);
+          if (safe.usersRoot) {
+            setPlayerGamertagMap(await getPlayerGamertagMap(safe.usersRoot));
+          } else {
+            setPlayerGamertagMap({});
+          }
 
           // Player handling
           let nextPlayer = forcePlayer;
@@ -368,6 +381,7 @@ export default function SkinPacksPage() {
   );
 
   React.useEffect(() => {
+    setPacks([]);
     refreshAll();
   }, [refreshAll]);
 
@@ -485,10 +499,14 @@ export default function SkinPacksPage() {
                         isDisabled={!players.length}
                         startContent={<FaUser />}
                       >
-                        {selectedPlayer ||
-                          t("contentpage.select_player", {
-                            defaultValue: "选择玩家",
-                          })}
+                        {selectedPlayer
+                          ? resolvePlayerDisplayName(
+                              selectedPlayer,
+                              playerGamertagMap,
+                            )
+                          : t("contentpage.select_player", {
+                              defaultValue: "选择玩家",
+                            })}
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
@@ -507,8 +525,14 @@ export default function SkinPacksPage() {
                     >
                       {players.length ? (
                         players.map((p) => (
-                          <DropdownItem key={p} textValue={p}>
-                            {p}
+                          <DropdownItem
+                            key={p}
+                            textValue={resolvePlayerDisplayName(
+                              p,
+                              playerGamertagMap,
+                            )}
+                          >
+                            {resolvePlayerDisplayName(p, playerGamertagMap)}
                           </DropdownItem>
                         ))
                       ) : (

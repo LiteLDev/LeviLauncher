@@ -26,9 +26,10 @@ import {
   CardHeader,
   ButtonGroup,
 } from "@heroui/react";
-import { FaDownload, FaCopy, FaSync, FaTrash, FaBoxOpen, FaChevronDown } from "react-icons/fa";
+import { FaDownload, FaCopy, FaSync, FaTrash, FaBoxOpen, FaChevronDown, FaCheck, FaTimes } from "react-icons/fa";
 import { Events } from "@wailsio/runtime";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
+import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -62,6 +63,7 @@ export const DownloadPage: React.FC = () => {
   const [statusFilter, setStatusFilter] = useState<
     "all" | "downloaded" | "not_downloaded"
   >("all");
+  const [llFilter, setLlFilter] = useState<"all" | "levilamina">("all");
   const [rowsPerPage, setRowsPerPage] = useState<number>(6);
   const [page, setPage] = useState<number>(1);
 
@@ -110,6 +112,9 @@ export const DownloadPage: React.FC = () => {
   const [deleteError, setDeleteError] = useState<string>("");
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
   const [deleteSuccessMsg, setDeleteSuccessMsg] = useState<string>("");
+
+  const { isLLSupported } = useLeviLamina();
+  const hasBackend = minecraft !== undefined;
 
   const trErr = (msg: string, typeLabelOverride?: string): string => {
     const s = String(msg || "");
@@ -215,7 +220,7 @@ export const DownloadPage: React.FC = () => {
     }
   };
 
-  const hasBackend = minecraft !== undefined;
+
   const compareVersionDesc = (a: string, b: string) => {
     const pa = a.split(".").map((x) => parseInt(x, 10) || 0);
     const pb = b.split(".").map((x) => parseInt(x, 10) || 0);
@@ -439,6 +444,7 @@ export const DownloadPage: React.FC = () => {
   }, []);
 
   const reloadAll = async () => {
+    fetchLLDB();
     try {
       let data: any;
       if (
@@ -507,6 +513,13 @@ export const DownloadPage: React.FC = () => {
           : !Boolean(it._status?.isDownloaded)
       )
       .filter((it) =>
+        llFilter === "all"
+          ? true
+          : llFilter === "levilamina"
+          ? isLLSupported(it.short)
+          : true
+      )
+      .filter((it) =>
         q
           ? it.short.toLowerCase().includes(q) ||
             it.version.toLowerCase().includes(q) ||
@@ -519,14 +532,14 @@ export const DownloadPage: React.FC = () => {
         if (ta !== tb) return tb - ta;
         return compareVersionDesc(a.short, b.short);
       });
-  }, [itemsWithStatus, query, typeFilter, statusFilter]);
+  }, [itemsWithStatus, query, typeFilter, statusFilter, llFilter, isLLSupported]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
   const paged = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
 
   useEffect(() => {
     setPage(1);
-  }, [query, typeFilter, statusFilter]);
+  }, [query, typeFilter, statusFilter, llFilter]);
 
   useEffect(() => {
     const calcRows = () => {
@@ -694,6 +707,33 @@ export const DownloadPage: React.FC = () => {
                       </DropdownItem>
                     </DropdownMenu>
                   </Dropdown>
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button
+                        radius="full"
+                        variant="flat"
+                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
+                      >
+                        {t("downloadpage.topcontent.loader", { defaultValue: "加载器" })}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      disallowEmptySelection
+                      selectionMode="single"
+                      selectedKeys={new Set([llFilter])}
+                      onSelectionChange={(keys) => {
+                        const k = Array.from(keys)[0] as "all" | "levilamina";
+                        if (k) setLlFilter(k);
+                      }}
+                    >
+                      <DropdownItem key="all">
+                        {t("downloadpage.topcontent.status_all", {
+                          defaultValue: "全部",
+                        })}
+                      </DropdownItem>
+                      <DropdownItem key="levilamina">LeviLamina</DropdownItem>
+                    </DropdownMenu>
+                  </Dropdown>
                 </div>
               </div>
 
@@ -733,11 +773,12 @@ export const DownloadPage: React.FC = () => {
                 }
               >
             <TableHeader>
-              <TableColumn>
+              <TableColumn width={160}>
                 {t("downloadpage.table.header.version")}
               </TableColumn>
-              <TableColumn>{t("downloadpage.table.header.type")}</TableColumn>
-              <TableColumn>{t("downloadpage.table.header.status")}</TableColumn>
+              <TableColumn width={160}>{t("downloadpage.table.header.type")}</TableColumn>
+              <TableColumn width={160}>{t("downloadpage.table.header.status")}</TableColumn>
+              <TableColumn width={160}>{t("downloadpage.table.header.loader")}</TableColumn>
               <TableColumn className="text-right">
                 {t("downloadpage.table.header.actions")}
               </TableColumn>
@@ -794,6 +835,17 @@ export const DownloadPage: React.FC = () => {
                       </Chip>
                     )}
                   </TableCell>
+                  <TableCell>
+                    {isLLSupported(item.short) ? (
+                      <Chip color="success" variant="flat">
+                        LeviLamina
+                      </Chip>
+                    ) : (
+                      <Chip color="default" variant="flat" className="opacity-50">
+                        -
+                      </Chip>
+                    )}
+                  </TableCell>
                   <TableCell className="text-right">
                     <motion.div
                       whileHover={{ scale: 1.03 }}
@@ -811,6 +863,7 @@ export const DownloadPage: React.FC = () => {
                                       mirrorVersion: item.short,
                                       mirrorType: item.type,
                                       returnTo: "/download",
+                                      isLeviLaminaSupported: isLLSupported(item.short),
                                     },
                                   });
                                 }}

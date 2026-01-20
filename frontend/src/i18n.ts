@@ -1,28 +1,24 @@
 import i18n from "i18next";
 import { initReactI18next } from "react-i18next";
 import LanguageDetector from "i18next-browser-languagedetector";
-import en_US from "@/assets/locales/en_US.json";
-import zh_CN from "@/assets/locales/zh_CN.json";
-import ru_RU from "@/assets/locales/ru_RU.json";
-import zh_HK from "@/assets/locales/zh_HK.json";
-import ja_JP from "@/assets/locales/ja_JP.json";
+import en from "@/assets/locales/en_US.json";
+import zh from "@/assets/locales/zh_CN.json";
+import ru from "@/assets/locales/ru_RU.json";
+import ja from "@/assets/locales/ja_JP.json";
 
 export const resources = {
-  en_US: { translation: en_US },
-  "en-US": { translation: en_US },
-  en: { translation: en_US },
-  zh_CN: { translation: zh_CN },
-  "zh-CN": { translation: zh_CN },
-  zh: { translation: zh_CN },
-  ru_RU: { translation: ru_RU },
-  "ru-RU": { translation: ru_RU },
-  ru: { translation: ru_RU },
-  zh_HK: { translation: zh_HK },
-  "zh-HK": { translation: zh_HK },
-  zhhk: { translation: zh_HK },
-  ja_JP: { translation: ja_JP },
-  "ja-JP": { translation: ja_JP },
-  ja: { translation: ja_JP },
+  en_US: { translation: en },
+  "en-US": { translation: en },
+  en: { translation: en },
+  zh_CN: { translation: zh },
+  "zh-CN": { translation: zh },
+  zh: { translation: zh },
+  ru_RU: { translation: ru },
+  "ru-RU": { translation: ru },
+  ru: { translation: ru },
+  ja_JP: { translation: ja },
+  "ja-JP": { translation: ja },
+  ja: { translation: ja },
 };
 
 i18n
@@ -42,9 +38,6 @@ i18n
       "ru_RU",
       "ru-RU",
       "ru",
-      "zh_HK",
-      "zh-HK",
-      "zhhk",
       "ja_JP",
       "ja-JP",
       "ja",

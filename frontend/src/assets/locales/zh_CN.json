@@ -152,6 +152,7 @@
         "version": "版本",
         "type": "类型",
         "status": "状态",
+        "loader": "加载器",
         "actions": "操作"
       },
       "type": {
@@ -166,6 +167,9 @@
       "status_all": "全部",
       "status_downloaded": "已下载",
       "status_not_downloaded": "未下载",
+      "loader": "加载器",
+      "ll_supported": "支持",
+      "ll_unsupported": "不支持",
       "input": {
         "placeholder": "按版本搜索..."
       }
@@ -220,6 +224,7 @@
       "success_body": "已删除安装包："
     },
     "install": {
+      "levilamina_label": "安装 LeviLamina",
       "version_label": "版本",
       "hint": "请稍候，此过程可能需要较长时间…",
       "estimated_size": "已写入大小（估算）",
@@ -322,6 +327,28 @@
         "title": "正在安装 GDK",
         "body": "稍候，正在运行安装程序…"
       }
+    },
+    "lip": {
+      "title": "lip",
+      "description": "安装 lip 以管理包和依赖项",
+      "installed": "已安装 v{{version}}",
+      "install_button": "安装",
+      "installing": "正在安装 LIP...",
+      "update_button": "更新至 {{version}}",
+      "installed_label": "已安装",
+      "status": {
+        "checking_update": "正在检查更新...",
+        "downloading": "正在下载...",
+        "extracting": "正在解压...",
+        "done": "安装完成"
+      },
+      "error": {
+        "fetch_release_failed": "无法获取版本信息。",
+        "create_temp": "无法创建临时目录。",
+        "download_failed": "下载失败。",
+        "create_target_dir": "无法创建目标目录。",
+        "unzip_failed": "解压失败。"
+      }
     }
   },
   "downloadmodal": {
@@ -395,7 +422,21 @@
     "view_all": "查看全部",
     "confirm_delete": "确认删除",
     "deleting": "正在删除...",
-    "no_results": "无搜索结果"
+    "no_results": "无搜索结果",
+    "hide": "隐藏"
+  },
+  "useravatar": {
+    "no_login_retry": "未检测到 Xbox 登录（点击重试）",
+    "xbox_live": "Xbox Live",
+    "refresh_session_aria": "刷新 Xbox 会话",
+    "xuid": "XUID: {{xuid}}",
+    "stats": {
+      "minutes_played": "游戏时间",
+      "blocks_broken": "打破的方块",
+      "mobs_defeated": "已击败的生物",
+      "distance_travelled": "行驶距离",
+      "time_format": "{{days}}天 {{hours}} 小时 {{minutes}} 分"
+    }
   },
   "content": {
     "count": {
@@ -602,7 +643,9 @@
     "toggle_desc_on": "插件已启用，启动游戏时会加载。",
     "toggle_desc_off": "插件已关闭，启动游戏时不会加载。",
     "only_enabled": "仅显示已启用的插件",
-    "drop_hint": "拖入 .zip 或 .dll 以导入插件"
+    "drop_hint": "拖入 .zip 或 .dll 以导入插件",
+    "err_lip_not_installed": "LIP未安装",
+    "err_lip_install_failed_suggestion": "安装失败，建议重新安装Minecraft"
   },
   "versionselect": {
     "unsaved": {

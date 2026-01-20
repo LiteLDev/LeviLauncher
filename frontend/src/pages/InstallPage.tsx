@@ -38,9 +38,11 @@ export default function InstallPage() {
     ? (t("common.preview") as unknown as string)
     : (t("common.release") as unknown as string)) as unknown as string;
   const returnTo: string = String(location?.state?.returnTo || "/download");
+  const isLeviLaminaSupported = Boolean(location?.state?.isLeviLaminaSupported);
 
   const [installName, setInstallName] = useState<string>(mirrorVersion || "");
   const [installIsolation, setInstallIsolation] = useState<boolean>(true);
+  const [installLeviLamina, setInstallLeviLamina] = useState<boolean>(false);
   const [inheritSource, setInheritSource] = useState<string>("");
   const [inheritMetas, setInheritMetas] = useState<any[]>([]);
   const [inheritCandidates, setInheritCandidates] = useState<string[]>([]);
@@ -287,7 +289,29 @@ export default function InstallPage() {
   const handleInstall = async () => {
     setInstallError("");
     setResultMsg("");
+
+    if (installLeviLamina) {
+      try {
+        const lipInstalled = await minecraft.IsLipInstalled();
+        if (!lipInstalled) {
+          setInstallError("ERR_LIP_NOT_INSTALLED");
+          return;
+        }
+      } catch {}
+    }
+
     const name = (installName || "").trim();
+    let installationCreated = false;
+    const rollback = async () => {
+      if (!installationCreated) return;
+      try {
+        const del = (minecraft as any)?.DeleteVersionFolder;
+        if (typeof del === "function") {
+          await del(name);
+        }
+      } catch {}
+    };
+
     if (!name) {
       setInstallError("ERR_NAME_REQUIRED");
       return;
@@ -346,6 +370,7 @@ export default function InstallPage() {
           setInstalling(false);
           return;
         }
+        installationCreated = true;
       }
 
       if (typeof saveMeta === "function") {
@@ -372,11 +397,36 @@ export default function InstallPage() {
           if (copyErr) {
             setInstallError(copyErr);
             setInstalling(false);
+            await rollback();
             return;
           }
         } catch (e: any) {
           setInstallError(String(e?.message || e || ""));
           setInstalling(false);
+          await rollback();
+          return;
+        }
+      }
+
+      if (installLeviLamina) {
+        try {
+          const installLL = (minecraft as any)?.InstallLeviLamina;
+          if (typeof installLL === "function") {
+            const llErr: string = await installLL(
+              mirrorVersion || installName || "",
+              name,
+            );
+            if (llErr) {
+              setInstallError(llErr);
+              setInstalling(false);
+              await rollback();
+              return;
+            }
+          }
+        } catch (e: any) {
+          setInstallError(String(e?.message || e || ""));
+          setInstalling(false);
+          await rollback();
           return;
         }
       }
@@ -416,6 +466,7 @@ export default function InstallPage() {
     } catch (e: any) {
       setInstallError(String(e?.message || e || ""));
       setInstalling(false);
+      await rollback();
     }
   };
 
@@ -623,6 +674,34 @@ export default function InstallPage() {
                     >
                       {t("common.browse", { defaultValue: "选择..." })}
                     </Button>
+                  </motion.div>
+                ) : null}
+
+                {isLeviLaminaSupported ? (
+                  <motion.div
+                    initial={{ opacity: 0, y: 10 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 }}
+                    className="flex items-center justify-between p-3 rounded-2xl bg-default-50/50 dark:bg-default-100/10 border border-default-100 dark:border-white/5"
+                  >
+                    <div className="min-w-0">
+                      <div className="text-small font-medium">
+                        {t("downloadpage.install.levilamina_label", {
+                          defaultValue: "Install LeviLamina",
+                        })}
+                      </div>
+                      <div className="text-tiny text-default-500">
+                        {t("downloadpage.install.levilamina_desc", {
+                          defaultValue:
+                            "Automatically install LeviLamina loader",
+                        })}
+                      </div>
+                    </div>
+                    <Switch
+                      isSelected={installLeviLamina}
+                      onValueChange={setInstallLeviLamina}
+                      color="success"
+                    />
                   </motion.div>
                 ) : null}
 

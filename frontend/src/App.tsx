@@ -18,6 +18,7 @@ import {
   DropdownItem,
 } from "@heroui/react";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { UserAvatar } from "@/components/UserAvatar";
 import { IoCloseOutline } from "react-icons/io5";
 import { FiMinimize2 } from "react-icons/fi";
 import { LeviIcon } from "@/icons/LeviIcon";
@@ -28,6 +29,7 @@ import {
   FaList,
   FaEllipsisH,
   FaInfoCircle,
+  FaCube,
 } from "react-icons/fa";
 import { LauncherPage } from "@/pages/LauncherPage";
 import { DownloadPage } from "@/pages/DownloadPage";
@@ -49,6 +51,7 @@ import SkinPacksPage from "@/pages/SkinPacksPage";
 import { useTranslation } from "react-i18next";
 import { VersionStatusProvider } from "@/utils/VersionStatusContext";
 import { CurseForgeProvider } from "@/utils/CurseForgeContext";
+import { LeviLaminaProvider } from "@/utils/LeviLaminaContext";
 import InstallPage from "@/pages/InstallPage";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import ReactMarkdown from "react-markdown";
@@ -113,6 +116,20 @@ function App() {
       typeof window !== "undefined" ? String(window.location.hash || "") : "";
     return h.startsWith("#/onboarding");
   })();
+
+  const [hasEnteredLauncher, setHasEnteredLauncher] = useState(false);
+
+  useEffect(() => {
+    if (location.pathname === "/" && revealStarted) {
+      try {
+        const onboarded = localStorage.getItem("ll.onboarded");
+        if (onboarded) {
+          setHasEnteredLauncher(true);
+        }
+      } catch {}
+    }
+  }, [location.pathname, revealStarted]);
+
   useEffect(() => {
     if (isUpdatingMode || isOnboardingMode) setNavLocked(true);
     else setNavLocked(Boolean((window as any).llNavLock));
@@ -352,8 +369,9 @@ function App() {
 
   return (
     <VersionStatusProvider>
-      <CurseForgeProvider>
-        <Toaster
+      <LeviLaminaProvider>
+        <CurseForgeProvider>
+          <Toaster
           containerStyle={{ zIndex: 99999, top: 80 }}
           toastOptions={{
             style: {
@@ -520,6 +538,9 @@ function App() {
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 ml-auto justify-end">
+                  {!isUpdatingMode &&
+                    !isOnboardingMode &&
+                    hasEnteredLauncher && <UserAvatar />}
                   <div className="flex items-center gap-1 rounded-full bg-default-100/50 px-2 py-1">
                     <ThemeSwitcher />
                   </div>
@@ -794,6 +815,7 @@ function App() {
           </BaseModal>
         </div>
       </CurseForgeProvider>
+      </LeviLaminaProvider>
     </VersionStatusProvider>
   );
 }

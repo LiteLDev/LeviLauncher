@@ -108,6 +108,7 @@ export default function VersionSettingsPage() {
       } catch {
         setLogoDataUrl("");
       }
+
       setLoading(false);
     })();
   }, [hasBackend, targetName]);
@@ -200,6 +201,8 @@ export default function VersionSettingsPage() {
     navigate,
     location?.pathname,
   ]);
+
+
 
   const onSave = React.useCallback(
     async (destPath?: string) => {
@@ -583,6 +586,7 @@ export default function VersionSettingsPage() {
                       }}
                     />
                   </div>
+
                   <div className="mt-4 pt-4 border-t border-default-200/50">
                     <div className="text-xs font-bold text-danger-500 mb-2 uppercase tracking-wider">
                       {t("versions.edit.danger_zone_title")}

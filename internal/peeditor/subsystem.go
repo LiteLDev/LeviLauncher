@@ -3,7 +3,6 @@ package peeditor
 import (
 	"context"
 	"encoding/binary"
-	"fmt"
 	"os"
 )
 
@@ -33,28 +32,23 @@ func SetSubsystem(ctx context.Context, exePath string, console bool) bool {
 
 	data, err := os.ReadFile(exePath)
 	if err != nil {
-		fmt.Printf("Failed to read file: %v\n", err)
 		return false
 	}
 
 	if len(data) < 64 {
-		fmt.Printf("File too small\n")
 		return false
 	}
 
 	if data[0] != 'M' || data[1] != 'Z' {
-		fmt.Printf("Invalid DOS signature\n")
 		return false
 	}
 
 	peOffset := int(binary.LittleEndian.Uint32(data[60:64]))
 	if peOffset+4 >= len(data) {
-		fmt.Printf("Invalid PE header offset: %d\n", peOffset)
 		return false
 	}
 
 	if data[peOffset] != 'P' || data[peOffset+1] != 'E' || data[peOffset+2] != 0 || data[peOffset+3] != 0 {
-		fmt.Printf("Invalid PE signature\n")
 		return false
 	}
 
@@ -63,25 +57,21 @@ func SetSubsystem(ctx context.Context, exePath string, console bool) bool {
 	optionalHeaderStart := coffHeaderStart + 20
 
 	if optionalHeaderStart+2 >= len(data) {
-		fmt.Printf("Cannot read magic number\n")
 		return false
 	}
 
 	magic := binary.LittleEndian.Uint16(data[optionalHeaderStart : optionalHeaderStart+2])
-	fmt.Printf("PE Magic: 0x%x\n", magic)
 
 	var subsystemOffset int
-	if magic == 0x10b { // PE32
+	if magic == 0x10b {
 		subsystemOffset = optionalHeaderStart + 68
-	} else if magic == 0x20b { // PE32+
+	} else if magic == 0x20b {
 		subsystemOffset = optionalHeaderStart + 68
 	} else {
-		fmt.Printf("Unknown PE format: 0x%x\n", magic)
 		return false
 	}
 
 	if subsystemOffset+2 >= len(data) {
-		fmt.Printf("Subsystem offset out of range: %d\n", subsystemOffset)
 		return false
 	}
 
@@ -93,20 +83,15 @@ func SetSubsystem(ctx context.Context, exePath string, console bool) bool {
 	}
 
 	currentSubsystem := binary.LittleEndian.Uint16(data[subsystemOffset : subsystemOffset+2])
-	fmt.Printf("Current subsystem: %d, Target subsystem: %d\n", currentSubsystem, targetSubsystem)
 
 	if currentSubsystem == targetSubsystem {
-		fmt.Printf("Subsystem already set to target value\n")
 		return true
 	}
 
 	binary.LittleEndian.PutUint16(data[subsystemOffset:subsystemOffset+2], targetSubsystem)
 
 	if err := os.WriteFile(exePath, data, 0644); err != nil {
-		fmt.Printf("Failed to write file: %v\n", err)
 		return false
 	}
-
-	fmt.Printf("Successfully changed subsystem from %d to %d\n", currentSubsystem, targetSubsystem)
 	return true
 }

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, useMemo } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
@@ -40,6 +40,10 @@ import {
   GetDisableDiscordRPC,
   SetDisableDiscordRPC,
   ResetBaseRoot,
+  InstallLip,
+  GetLipVersion,
+  IsLipInstalled,
+  GetLatestLipVersion,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { Browser, Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
@@ -51,7 +55,7 @@ import {
   BaseModalFooter,
 } from "@/components/BaseModal";
 import { PageHeader } from "@/components/PageHeader";
-import Logo from "@/assets/images/ic_leaf_logo.png";
+import { normalizeLanguage } from "@/utils/i18nUtils";
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -85,6 +89,26 @@ export const SettingsPage: React.FC = () => {
   const gdkLicenseDisclosure = useDisclosure();
   const gdkInstallDisclosure = useDisclosure();
   const [gdkLicenseAccepted, setGdkLicenseAccepted] = useState<boolean>(false);
+  
+  // LIP State
+  const [lipInstalled, setLipInstalled] = useState<boolean>(false);
+  const [lipVersion, setLipVersion] = useState<string>("");
+  const [lipLatestVersion, setLipLatestVersion] = useState<string>("");
+  const [installingLip, setInstallingLip] = useState<boolean>(false);
+  const [lipStatus, setLipStatus] = useState<string>("");
+  const [lipProgress, setLipProgress] = useState<{
+    percentage: number;
+    current: number;
+    total: number;
+  }>({ percentage: 0, current: 0, total: 0 });
+  const [lipError, setLipError] = useState<string>("");
+  const lipProgressDisclosure = useDisclosure();
+
+  const hasLipUpdate = useMemo(() => {
+    if (!lipInstalled || !lipLatestVersion || !lipVersion) return false;
+    return lipLatestVersion.replace(/^v/, "") !== lipVersion.replace(/^v/, "");
+  }, [lipInstalled, lipLatestVersion, lipVersion]);
+
   const navigate = useNavigate();
   const location = useLocation();
   const {
@@ -131,14 +155,7 @@ export const SettingsPage: React.FC = () => {
 
     GetLanguageNames().then((res) => setLangNames(res));
 
-    const normalize = (lng: string) => {
-      if (!lng) return "en_US";
-      const lower = lng.toLowerCase();
-      if (lower === "en-us" || lower === "en") return "en_US";
-      if (lower === "zh-cn" || lower === "zh") return "zh_CN";
-      return lng;
-    };
-    setSelectedLang(normalize(i18n.language));
+    setSelectedLang(normalizeLanguage(i18n.language));
     setLanguageChanged(false);
     Promise.resolve()
       .then(async () => {
@@ -184,19 +201,7 @@ export const SettingsPage: React.FC = () => {
   }, [location?.state]);
 
   useEffect(() => {
-    const checkWritable = async () => {
-      try {
-        if (!newBaseRoot) {
-          setBaseRootWritable(false);
-          return;
-        }
-        const ok = await CanWriteToDir(newBaseRoot);
-        setBaseRootWritable(Boolean(ok));
-      } catch {
-        setBaseRootWritable(false);
-      }
-    };
-    checkWritable();
+    setBaseRootWritable(true);
   }, [newBaseRoot]);
 
   const onCheckUpdate = async () => {
@@ -309,6 +314,42 @@ export const SettingsPage: React.FC = () => {
     };
   }, [hasBackend]);
 
+  useEffect(() => {
+    if (!hasBackend) return;
+    IsLipInstalled().then((ok) => {
+      setLipInstalled(Boolean(ok));
+      if (ok) {
+        GetLipVersion().then(v => setLipVersion(String(v || "")));
+      }
+    });
+    GetLatestLipVersion().then(v => setLipLatestVersion(String(v || ""))).catch(() => {});
+
+    const offs: (() => void)[] = [];
+    offs.push(Events.On("lip_install_status", (e) => setLipStatus(String(e?.data || ""))));
+    offs.push(Events.On("lip_install_progress", (e) => {
+      const data = e?.data as any;
+      setLipProgress({
+        percentage: Number(data?.percentage || 0),
+        current: Number(data?.current || 0),
+        total: Number(data?.total || 0),
+      });
+    }));
+    offs.push(Events.On("lip_install_done", (e) => {
+      setInstallingLip(false);
+      setLipStatus("done");
+      setLipProgress({ percentage: 100, current: 0, total: 0 });
+      setLipInstalled(true);
+      setLipVersion(String(e?.data || ""));
+      setLipError("");
+    }));
+    offs.push(Events.On("lip_install_error", (e) => {
+      setInstallingLip(false);
+      setLipStatus("");
+      setLipError(String(e?.data || ""));
+    }));
+    return () => offs.forEach(off => off());
+  }, [hasBackend]);
+
   return (
     <div className="relative w-full p-4 flex flex-col">
       {/* Background Gradients */}
@@ -330,6 +371,7 @@ export const SettingsPage: React.FC = () => {
       </motion.div>
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <div className="flex flex-col gap-6">
         {/* Left Column: Paths */}
         <motion.div
           initial={{ opacity: 0, y: 8 }}
@@ -487,6 +529,111 @@ export const SettingsPage: React.FC = () => {
           </Card>
         </motion.div>
 
+        {/* Dependencies */}
+        <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.2 }}
+          >
+            <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+              <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
+                {/* GDK */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="font-medium">{t("settings.gdk.title")}</p>
+                    <p className="text-tiny text-default-500">
+                      {t("settings.gdk.path_label", {
+                        path: "C:\\Program Files (x86)\\Microsoft GDK",
+                      })}
+                    </p>
+                  </div>
+                  {gdkInstalled ? (
+                    <Chip color="success" variant="flat" size="sm">
+                      {t("settings.gdk.installed")}
+                    </Chip>
+                  ) : (
+                    <Button
+                      radius="full"
+                      variant="bordered"
+                      size="sm"
+                      onPress={() => {
+                        setGdkLicenseAccepted(false);
+                        gdkLicenseDisclosure.onOpen();
+                      }}
+                    >
+                      {t("settings.gdk.install_button")}
+                    </Button>
+                  )}
+                </div>
+
+                <Divider className="bg-default-200/50" />
+
+                {/* LIP */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="font-medium">{t("settings.lip.title")}</p>
+                    <p className="text-tiny text-default-500">
+                      {lipInstalled 
+                        ? t("settings.lip.installed", { version: lipVersion })
+                        : t("settings.lip.description")}
+                    </p>
+                  </div>
+                  {lipInstalled ? (
+                    <div className="flex items-center gap-2">
+                        <Chip color="success" variant="flat" size="sm">
+                            {t("settings.lip.installed_label")}
+                        </Chip>
+                        {hasLipUpdate && (
+                            <Button
+                                size="sm"
+                                variant="bordered"
+                                radius="full"
+                                isLoading={installingLip}
+                                isDisabled={installingLip}
+                                onPress={() => {
+                                    setInstallingLip(true);
+                                    setLipError("");
+                                    lipProgressDisclosure.onOpen();
+                                    InstallLip().then((err) => {
+                                        if (err) {
+                                            setInstallingLip(false);
+                                            setLipError(err);
+                                        }
+                                    });
+                                }}
+                            >
+                                {t("settings.lip.update_button", { version: lipLatestVersion })}
+                            </Button>
+                        )}
+                    </div>
+                  ) : (
+                    <Button
+                      radius="full"
+                      variant="bordered"
+                      size="sm"
+                      isLoading={installingLip}
+                      isDisabled={installingLip}
+                      onPress={() => {
+                          setInstallingLip(true);
+                          setLipError("");
+                          lipProgressDisclosure.onOpen();
+                          InstallLip().then((err) => {
+                             if (err) {
+                                 setInstallingLip(false);
+                                 setLipError(err);
+                             }
+                          });
+                      }}
+                    >
+                      {installingLip ? t("settings.lip.installing") : t("settings.lip.install_button")}
+                    </Button>
+                  )}
+                </div>
+              </CardBody>
+            </Card>
+          </motion.div>
+        </div>
+
         {/* Right Column: Preferences, GDK, Update, About */}
         <div className="flex flex-col gap-6">
           <motion.div
@@ -585,36 +732,7 @@ export const SettingsPage: React.FC = () => {
                   />
                 </div>
 
-                <Divider className="bg-default-200/50" />
 
-                {/* GDK */}
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <p className="font-medium">{t("settings.gdk.title")}</p>
-                    <p className="text-tiny text-default-500">
-                      {t("settings.gdk.path_label", {
-                        path: "C:\\Program Files (x86)\\Microsoft GDK",
-                      })}
-                    </p>
-                  </div>
-                  {gdkInstalled ? (
-                    <Chip color="success" variant="flat" size="sm">
-                      {t("settings.gdk.installed")}
-                    </Chip>
-                  ) : (
-                    <Button
-                      radius="full"
-                      variant="bordered"
-                      size="sm"
-                      onPress={() => {
-                        setGdkLicenseAccepted(false);
-                        gdkLicenseDisclosure.onOpen();
-                      }}
-                    >
-                      {t("settings.gdk.install_button")}
-                    </Button>
-                  )}
-                </div>
               </CardBody>
             </Card>
           </motion.div>
@@ -744,13 +862,6 @@ export const SettingsPage: React.FC = () => {
 
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-4">
-                    <div className="w-12 h-12 rounded-2xl bg-linear-to-br from-emerald-500/20 to-teal-500/20 p-2 border border-emerald-500/20 flex items-center justify-center">
-                      <img
-                        src={Logo}
-                        alt="Logo"
-                        className="w-full h-full object-contain"
-                      />
-                    </div>
                     <div>
                       <p className="font-medium text-large">
                         {t("aboutcard.title")}
@@ -959,6 +1070,75 @@ export const SettingsPage: React.FC = () => {
                   {t("settings.gdk.install.body")}
                 </div>
               </BaseModalBody>
+            </>
+          )}
+        </ModalContent>
+      </BaseModal>
+
+      {/* LIP Install Progress */}
+      <BaseModal
+        size="md"
+        isOpen={lipProgressDisclosure.isOpen}
+        onOpenChange={lipProgressDisclosure.onOpenChange}
+        hideCloseButton
+        isDismissable={false}
+      >
+        <ModalContent className="shadow-none">
+          {(onClose) => (
+            <>
+              <BaseModalHeader className="text-medium">
+                {t("settings.lip.installing", { defaultValue: "正在安装 LIP..." })}
+              </BaseModalHeader>
+              <BaseModalBody>
+                {lipError ? (
+                  <div className="text-danger">
+                    {t(
+                      `settings.lip.error.${lipError
+                        .toLowerCase()
+                        .replace(/^err_/, "")}`,
+                      { defaultValue: lipError },
+                    )}
+                  </div>
+                ) : (
+                  <div className="flex flex-col gap-3">
+                    <div className="h-2 w-full rounded bg-default-200 overflow-hidden">
+                      <div
+                        className="h-full bg-primary"
+                        style={{ width: `${lipProgress.percentage}%` }}
+                      />
+                    </div>
+                    <div className="text-small text-default-500">
+                      {t(`settings.lip.status.${lipStatus}`, {
+                        defaultValue: lipStatus,
+                      })}
+                      {lipProgress.total > 0 ? (
+                        <span className="ml-2">
+                          {`${(lipProgress.current / (1024 * 1024)).toFixed(2)} MB / ${(lipProgress.total / (1024 * 1024)).toFixed(2)} MB`}
+                        </span>
+                      ) : (
+                        ` (${lipProgress.percentage.toFixed(0)}%)`
+                      )}
+                    </div>
+                  </div>
+                )}
+              </BaseModalBody>
+              <BaseModalFooter>
+                <Button
+                  color="danger"
+                  variant="light"
+                  onPress={onClose}
+                  isDisabled={!installingLip} 
+                >
+                   {t("common.hide", { defaultValue: "隐藏" })}
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={onClose}
+                  isDisabled={installingLip && !lipError}
+                >
+                   {lipError ? t("common.close") : t("common.ok")}
+                </Button>
+              </BaseModalFooter>
             </>
           )}
         </ModalContent>

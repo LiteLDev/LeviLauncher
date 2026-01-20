@@ -74,16 +74,36 @@ func CanWriteDir(p string) bool {
 	if !filepath.IsAbs(v) {
 		return false
 	}
-	if err := os.MkdirAll(v, 0o755); err != nil {
-		return false
+
+	isWritable := func(dir string) bool {
+		tf := filepath.Join(dir, ".ll_write_test.tmp")
+		f, err := os.Create(tf)
+		if err != nil {
+			return false
+		}
+		_, werr := f.Write([]byte("ok"))
+		cerr := f.Close()
+		_ = os.Remove(tf)
+		return werr == nil && cerr == nil
 	}
-	tf := filepath.Join(v, ".ll_write_test.tmp")
-	f, err := os.Create(tf)
-	if err != nil {
-		return false
+
+	curr := v
+	for {
+		info, err := os.Stat(curr)
+		if err == nil {
+			if info.IsDir() {
+				return isWritable(curr)
+			}
+			return false
+		}
+		if !os.IsNotExist(err) {
+			return false
+		}
+
+		parent := filepath.Dir(curr)
+		if parent == curr {
+			return false
+		}
+		curr = parent
 	}
-	_, werr := f.Write([]byte("ok"))
-	cerr := f.Close()
-	_ = os.Remove(tf)
-	return werr == nil && cerr == nil
 }

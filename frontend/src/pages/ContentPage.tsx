@@ -35,7 +35,11 @@ import {
 } from "react-icons/fa";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { countDirectories } from "@/utils/fs";
-import { listPlayers } from "@/utils/content";
+import {
+  getPlayerGamertagMap,
+  listPlayers,
+  resolvePlayerDisplayName,
+} from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { PageHeader } from "@/components/PageHeader";
@@ -59,6 +63,9 @@ export default function ContentPage() {
   });
   const [players, setPlayers] = React.useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = React.useState<string>("");
+  const [playerGamertagMap, setPlayerGamertagMap] = React.useState<
+    Record<string, string>
+  >({});
   const [worldsCount, setWorldsCount] = React.useState<number>(0);
   const [resCount, setResCount] = React.useState<number>(0);
   const [bpCount, setBpCount] = React.useState<number>(0);
@@ -116,6 +123,7 @@ export default function ContentPage() {
         });
         setPlayers([]);
         setSelectedPlayer("");
+        setPlayerGamertagMap({});
         setWorldsCount(0);
         setResCount(0);
         setBpCount(0);
@@ -131,6 +139,7 @@ export default function ContentPage() {
         };
         setRoots(safe);
         if (safe.usersRoot) {
+          setPlayerGamertagMap(await getPlayerGamertagMap(safe.usersRoot));
           const names = await listPlayers(safe.usersRoot);
           setPlayers(names);
           const nextPlayer = names[0] || "";
@@ -164,6 +173,7 @@ export default function ContentPage() {
         } else {
           setPlayers([]);
           setSelectedPlayer("");
+          setPlayerGamertagMap({});
           setWorldsCount(0);
           setSkinCount(0);
         }
@@ -195,16 +205,21 @@ export default function ContentPage() {
   }, []);
 
   const onChangePlayer = async (player: string) => {
+    setLoading(true);
     setSelectedPlayer(player);
-    if (!hasBackend || !roots.usersRoot || !player) {
-      setWorldsCount(0);
-      setSkinCount(0);
-      return;
+    try {
+      if (!hasBackend || !roots.usersRoot || !player) {
+        setWorldsCount(0);
+        setSkinCount(0);
+        return;
+      }
+      const wp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
+      setWorldsCount(await countDirectories(wp));
+      const sp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
+      setSkinCount(await countDirectories(sp));
+    } finally {
+      setLoading(false);
     }
-    const wp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
-    setWorldsCount(await countDirectories(wp));
-    const sp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
-    setSkinCount(await countDirectories(sp));
   };
   const postImportMcpack = async (
     name: string,
@@ -933,10 +948,14 @@ export default function ContentPage() {
                             variant="light"
                             className="h-6 min-w-0 px-2 text-small font-medium text-default-700 bg-default-100 rounded-md"
                           >
-                            {selectedPlayer ||
-                              t("contentpage.no_players", {
-                                defaultValue: "暂无",
-                              })}
+                            {selectedPlayer
+                              ? resolvePlayerDisplayName(
+                                  selectedPlayer,
+                                  playerGamertagMap,
+                                )
+                              : t("contentpage.no_players", {
+                                  defaultValue: "暂无",
+                                })}
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu
@@ -953,8 +972,14 @@ export default function ContentPage() {
                         >
                           {players.length ? (
                             players.map((p) => (
-                              <DropdownItem key={p} textValue={p}>
-                                {p}
+                              <DropdownItem
+                                key={p}
+                                textValue={resolvePlayerDisplayName(
+                                  p,
+                                  playerGamertagMap,
+                                )}
+                              >
+                                {resolvePlayerDisplayName(p, playerGamertagMap)}
                               </DropdownItem>
                             ))
                           ) : (
@@ -1050,13 +1075,30 @@ export default function ContentPage() {
                       {t("contentpage.worlds", { defaultValue: "世界" })}
                     </span>
                   </div>
-                  {loading ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <span className="text-2xl font-bold text-default-900">
-                      {worldsCount}
-                    </span>
-                  )}
+                  <AnimatePresence mode="wait">
+                    {loading ? (
+                      <motion.div
+                        key="spinner"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Spinner size="sm" />
+                      </motion.div>
+                    ) : (
+                      <motion.span
+                        key="count"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-2xl font-bold text-default-900"
+                      >
+                        {worldsCount}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </div>
               </CardBody>
             </Card>
@@ -1078,13 +1120,30 @@ export default function ContentPage() {
                       })}
                     </span>
                   </div>
-                  {loading ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <span className="text-2xl font-bold text-default-900">
-                      {resCount}
-                    </span>
-                  )}
+                  <AnimatePresence mode="wait">
+                    {loading ? (
+                      <motion.div
+                        key="spinner"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Spinner size="sm" />
+                      </motion.div>
+                    ) : (
+                      <motion.span
+                        key="count"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-2xl font-bold text-default-900"
+                      >
+                        {resCount}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </div>
               </CardBody>
             </Card>
@@ -1106,13 +1165,30 @@ export default function ContentPage() {
                       })}
                     </span>
                   </div>
-                  {loading ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <span className="text-2xl font-bold text-default-900">
-                      {bpCount}
-                    </span>
-                  )}
+                  <AnimatePresence mode="wait">
+                    {loading ? (
+                      <motion.div
+                        key="spinner"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Spinner size="sm" />
+                      </motion.div>
+                    ) : (
+                      <motion.span
+                        key="count"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-2xl font-bold text-default-900"
+                      >
+                        {bpCount}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </div>
               </CardBody>
             </Card>
@@ -1136,13 +1212,30 @@ export default function ContentPage() {
                       {t("contentpage.skin_packs", { defaultValue: "皮肤包" })}
                     </span>
                   </div>
-                  {loading ? (
-                    <Spinner size="sm" />
-                  ) : (
-                    <span className="text-2xl font-bold text-default-900">
-                      {skinCount}
-                    </span>
-                  )}
+                  <AnimatePresence mode="wait">
+                    {loading ? (
+                      <motion.div
+                        key="spinner"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Spinner size="sm" />
+                      </motion.div>
+                    ) : (
+                      <motion.span
+                        key="count"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-2xl font-bold text-default-900"
+                      >
+                        {skinCount}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </div>
               </CardBody>
             </Card>
@@ -1385,7 +1478,7 @@ export default function ContentPage() {
                           }
                         }}
                       >
-                        {p}
+                        {resolvePlayerDisplayName(p, playerGamertagMap)}
                       </Button>
                     ))
                   ) : (

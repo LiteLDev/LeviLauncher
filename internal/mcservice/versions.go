@@ -120,7 +120,7 @@ func readExeFileVersion(exePath string) (string, bool) {
 		return "", false
 	}
 	root16, _ := windows.UTF16PtrFromString(`\`)
-	var block uintptr
+	var block unsafe.Pointer
 	var blockLen uint32
 	r1, _, _ = procVerQueryValueW.Call(
 		uintptr(unsafe.Pointer(&buf[0])),
@@ -128,10 +128,10 @@ func readExeFileVersion(exePath string) (string, bool) {
 		uintptr(unsafe.Pointer(&block)),
 		uintptr(unsafe.Pointer(&blockLen)),
 	)
-	if r1 == 0 || block == 0 || blockLen < uint32(unsafe.Sizeof(vsFixedFileInfo{})) {
+	if r1 == 0 || block == nil || blockLen < uint32(unsafe.Sizeof(vsFixedFileInfo{})) {
 		return "", false
 	}
-	info := (*vsFixedFileInfo)(unsafe.Pointer(block))
+	info := (*vsFixedFileInfo)(block)
 	if info.Signature != 0xFEEF04BD {
 		return "", false
 	}

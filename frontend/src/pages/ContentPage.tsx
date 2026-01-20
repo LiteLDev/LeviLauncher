@@ -139,10 +139,22 @@ export default function ContentPage() {
         };
         setRoots(safe);
         if (safe.usersRoot) {
-          setPlayerGamertagMap(await getPlayerGamertagMap(safe.usersRoot));
+          const map = await getPlayerGamertagMap(safe.usersRoot);
+          setPlayerGamertagMap(map);
           const names = await listPlayers(safe.usersRoot);
           setPlayers(names);
-          const nextPlayer = names[0] || "";
+          let nextPlayer = names[0] || "";
+          try {
+            const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+            if (tag) {
+              for (const p of names) {
+                if (map[p] === tag) {
+                  nextPlayer = p;
+                  break;
+                }
+              }
+            }
+          } catch {}
           const currentPlayer =
             playerToRefresh !== undefined ? playerToRefresh : selectedPlayer;
           if (playerToRefresh !== undefined) {

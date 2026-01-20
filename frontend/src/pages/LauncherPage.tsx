@@ -18,7 +18,6 @@ import {
   Spinner,
 } from "@heroui/react";
 import { useTranslation } from "react-i18next";
-import { listPlayers } from "@/utils/content";
 import {
   EnsureGameInputInteractive,
   GetContentRoots,
@@ -55,6 +54,10 @@ import {
   BaseModalBody,
   BaseModalFooter,
 } from "@/components/BaseModal";
+import {
+  getPlayerGamertagMap,
+  listPlayers,
+} from "@/utils/content";
 
 let __didCheckGameInput = false;
 let __didCheckGamingServices = false;
@@ -630,10 +633,25 @@ export const LauncherPage = (args: any) => {
         isPreview: false,
       };
       let worlds = 0;
+
       if (safe.usersRoot) {
         try {
           const players = await listPlayers(safe.usersRoot);
-          const nextPlayer = players[0] || "";
+          let nextPlayer = players[0] || "";
+          try {
+            const tag = await (minecraft as any)?.GetLocalUserGamertag?.();           
+            if (tag) {
+              const map = await getPlayerGamertagMap(safe.usersRoot);
+
+              for (const p of players) {
+                if (map[p] === tag) {
+                  nextPlayer = p;
+                  break;
+                }
+              }
+            }
+          } catch {}
+
           if (nextPlayer) {
             const wp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\minecraftWorlds`;
             worlds = await countDir(wp);

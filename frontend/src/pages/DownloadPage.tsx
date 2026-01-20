@@ -402,7 +402,6 @@ export const DownloadPage: React.FC = () => {
         ) {
           data = await minecraft.FetchHistoricalVersions(Boolean(isChinaUser));
         } else {
-          // data = await fetchDbJson();
           data = { previewVersions: [], releaseVersions: [] };
         }
         const preview: VersionItem[] = (data.previewVersions || []).map(
@@ -647,11 +646,12 @@ export const DownloadPage: React.FC = () => {
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
+                      disallowEmptySelection
                       selectionMode="single"
                       selectedKeys={[typeFilter]}
                       onSelectionChange={(keys) => {
                         const k = Array.from(keys)[0] as "all" | ItemType;
-                        setTypeFilter(k);
+                        if (k) setTypeFilter(k);
                       }}
                     >
                       <DropdownItem key="all">
@@ -680,6 +680,7 @@ export const DownloadPage: React.FC = () => {
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
+                      disallowEmptySelection
                       selectionMode="single"
                       selectedKeys={[statusFilter]}
                       onSelectionChange={(keys) => {
@@ -687,7 +688,7 @@ export const DownloadPage: React.FC = () => {
                           | "all"
                           | "downloaded"
                           | "not_downloaded";
-                        setStatusFilter(k);
+                        if (k) setStatusFilter(k);
                       }}
                     >
                       <DropdownItem key="all">

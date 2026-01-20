@@ -152,6 +152,7 @@
         "version": "バージョン",
         "type": "タイプ",
         "status": "ステータス",
+        "loader": "ローダー",
         "actions": "アクション"
       },
       "type": {
@@ -167,6 +168,8 @@
       "status_downloaded": "ダウンロード済み",
       "status_not_downloaded": "未ダウンロード",
       "loader": "ローダー",
+      "ll_supported": "対応",
+      "ll_unsupported": "非対応",
       "input": {
         "placeholder": "バージョンで検索..."
       }

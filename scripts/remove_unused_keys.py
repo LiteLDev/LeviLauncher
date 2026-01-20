@@ -26,7 +26,7 @@ unused_keys = [
 ]
 
 locales_dir = r'd:\a\LiteLDev\LeviLauncher\frontend\src\assets\locales'
-locale_files = ['en_US.json', 'ru_RU.json', 'zh_CN.json', 'ja_JP.json]
+locale_files = ['en_US.json', 'ru_RU.json', 'zh_CN.json', 'ja_JP.json', 'zh_HK.json']
 
 for lf in locale_files:
     path = os.path.join(locales_dir, lf)

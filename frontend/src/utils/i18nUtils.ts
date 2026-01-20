@@ -10,5 +10,6 @@ export const normalizeLanguage = (lng: string): string => {
   if (lower === "zh-cn" || lower === "zh") return "zh_CN";
   if (lower === "ja-jp" || lower === "ja") return "ja_JP";
   if (lower === "ru-ru" || lower === "ru") return "ru_RU";
+  if (lower === "zh-hk" || lower === "zhhk") return "zh_HK";
   return lng;
 };

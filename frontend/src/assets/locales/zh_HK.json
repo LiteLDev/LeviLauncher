@@ -152,6 +152,7 @@
         "version": "版本",
         "type": "類型",
         "status": "狀態",
+        "loader": "載入器",
         "actions": "操作"
       },
       "type": {
@@ -166,6 +167,9 @@
       "status_all": "全部",
       "status_downloaded": "已下載",
       "status_not_downloaded": "未下載",
+      "loader": "載入器",
+      "ll_supported": "支援",
+      "ll_unsupported": "不支援",
       "input": {
         "placeholder": "按版本搜尋..."
       }
@@ -220,6 +224,7 @@
       "success_body": "已刪除安裝包："
     },
     "install": {
+      "levilamina_label": "安裝 LeviLamina",
       "version_label": "版本",
       "hint": "請稍候，此過程可能需要較長時間…",
       "estimated_size": "已寫入大小（估算）",
@@ -322,6 +327,28 @@
         "title": "正在安裝 GDK",
         "body": "稍候，正在執行安裝程式…"
       }
+    },
+    "lip": {
+      "title": "LIP",
+      "description": "安裝 LIP 以管理套件與相依性",
+      "installed": "已安裝 v{{version}}",
+      "install_button": "安裝",
+      "installing": "正在安裝 LIP...",
+      "update_button": "更新至 {{version}}",
+      "installed_label": "已安裝",
+      "status": {
+        "checking_update": "正在檢查更新...",
+        "downloading": "下載中...",
+        "extracting": "解壓中...",
+        "done": "安裝完成"
+      },
+      "error": {
+        "fetch_release_failed": "取得版本資訊失敗。",
+        "create_temp": "建立暫存資料夾失敗。",
+        "download_failed": "下載失敗。",
+        "create_target_dir": "建立目標資料夾失敗。",
+        "unzip_failed": "解壓失敗。"
+      }
     }
   },
   "downloadmodal": {
@@ -388,6 +415,7 @@
     "updating": "更新中",
     "expand": "展開",
     "collapse": "收合",
+    "hide": "隱藏",
     "save": "儲存",
     "add": "新增",
     "save_failed": "儲存失敗",
@@ -396,6 +424,19 @@
     "confirm_delete": "確認刪除",
     "deleting": "正在刪除...",
     "no_results": "無搜尋結果"
+  },
+  "useravatar": {
+    "no_login_retry": "未偵測到 Xbox 登入（點擊以重試）",
+    "xbox_live": "Xbox Live",
+    "refresh_session_aria": "重新整理 Xbox 工作階段",
+    "xuid": "XUID：{{xuid}}",
+    "stats": {
+      "minutes_played": "遊玩時間",
+      "blocks_broken": "破壞方塊",
+      "mobs_defeated": "擊敗生物",
+      "distance_travelled": "移動距離",
+      "time_format": "{{days}}天 {{hours}}小時 {{minutes}}分鐘"
+    }
   },
   "content": {
     "count": {
@@ -594,6 +635,8 @@
     "err_read_zip_entry": "讀取壓縮檔項目失敗",
     "err_write_file": "寫入檔案失敗",
     "err_unknown": "未知錯誤",
+    "err_lip_not_installed": "尚未安裝 LIP",
+    "err_lip_install_failed_suggestion": "安裝失敗，請嘗試重新安裝 Minecraft",
     "overwrite_modal_title": "偵測到重複",
     "overwrite_modal_body": "同名模組資料夾已存在，是否覆蓋（更新）？",
     "toggle_label": "啟用插件",

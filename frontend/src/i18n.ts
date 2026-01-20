@@ -5,6 +5,9 @@ import en from "@/assets/locales/en_US.json";
 import zh from "@/assets/locales/zh_CN.json";
 import ru from "@/assets/locales/ru_RU.json";
 import ja from "@/assets/locales/ja_JP.json";
+import zhhk from "@/assets/locales/zh_HK.json";
+
+
 
 export const resources = {
   en_US: { translation: en },
@@ -19,6 +22,9 @@ export const resources = {
   ja_JP: { translation: ja },
   "ja-JP": { translation: ja },
   ja: { translation: ja },
+  zh_HK: { translation: zhhk },
+  "zh-HK": { translation: zhhk },
+  zhhk: { translation: zhhk },
 };
 
 i18n
@@ -41,6 +47,9 @@ i18n
       "ja_JP",
       "ja-JP",
       "ja",
+      "zh_HK",
+      "zh-HK",
+      "zhhk",
     ],
     lowerCaseLng: false,
     nonExplicitSupportedLngs: true,

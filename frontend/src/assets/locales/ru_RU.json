@@ -168,6 +168,8 @@
       "status_downloaded": "Загружено",
       "status_not_downloaded": "Не загружено",
       "loader": "Загрузчик",
+      "ll_supported": "Поддерживается",
+      "ll_unsupported": "Не поддерживается",
       "input": {
         "placeholder": "Поиск по версии..."
       }
@@ -222,6 +224,7 @@
       "success_body": "Установщик удалён: "
     },
     "install": {
+      "levilamina_label": "Установить LeviLamina",
       "version_label": "Версия",
       "hint": "Пожалуйста, подождите, процесс может занять некоторое время…",
       "estimated_size": "Записываемый объём (приблизительно)",

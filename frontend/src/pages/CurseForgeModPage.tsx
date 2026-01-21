@@ -329,10 +329,30 @@ const CurseForgeModPage: React.FC = () => {
       try {
         const roots = await GetContentRoots(selectedVersion);
         if (roots && roots.usersRoot) {
-          setPlayerGamertagMap(await getPlayerGamertagMap(roots.usersRoot));
           const players = await listPlayers(roots.usersRoot);
           setAvailablePlayers(players);
-          if (players.length > 0) setSelectedPlayer(players[0]);
+          let defaultP = "";
+          if (players.length > 0) {
+            defaultP = players[0];
+            setSelectedPlayer(defaultP);
+          }
+
+          (async () => {
+            try {
+              const map = await getPlayerGamertagMap(roots.usersRoot);
+              setPlayerGamertagMap(map);
+
+              const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+              if (tag) {
+                for (const p of players) {
+                  if (map[p] === tag) {
+                    if (p !== defaultP) setSelectedPlayer(p);
+                    break;
+                  }
+                }
+              }
+            } catch {}
+          })();
         } else {
           setPlayerGamertagMap({});
         }

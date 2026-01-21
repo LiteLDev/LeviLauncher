@@ -120,11 +120,9 @@ export default function WorldsListPage() {
   const [currentPage, setCurrentPage] = React.useState(1);
   const pageSize = 20;
 
-  // Backup / Delete
-  const [backingUp, setBackingUp] = useState(""); // world path being backed up
+  const [backingUp, setBackingUp] = useState("");
   const [activeWorld, setActiveWorld] = useState<WorldInfo | null>(null);
 
-  // Modals
   const {
     isOpen: delOpen,
     onOpen: delOnOpen,
@@ -137,7 +135,6 @@ export default function WorldsListPage() {
     onOpenChange: delManyCfmOnOpenChange,
   } = useDisclosure();
 
-  // Computed path state
   const [currentWorldsPath, setCurrentWorldsPath] = useState("");
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
@@ -177,10 +174,33 @@ export default function WorldsListPage() {
         const r = await GetContentRoots(currentVersionName || "");
         setRoots(r);
         if (r.usersRoot) {
-          setPlayerGamertagMap(await getPlayerGamertagMap(r.usersRoot));
           const pList = await listPlayers(r.usersRoot);
           setPlayers(pList);
-          if (!selectedPlayer && pList.length > 0) setSelectedPlayer(pList[0]);
+          
+          let defaultP = "";
+          if (!selectedPlayer && pList.length > 0) {
+            defaultP = pList[0];
+            setSelectedPlayer(defaultP);
+          }
+
+          (async () => {
+            try {
+              const map = await getPlayerGamertagMap(r.usersRoot);
+              setPlayerGamertagMap(map);
+
+              const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+              if (tag) {
+                for (const p of pList) {
+                  if (map[p] === tag) {
+                    if (p !== defaultP && (!selectedPlayer || selectedPlayer === defaultP)) {
+                       setSelectedPlayer(p);
+                    }
+                    break;
+                  }
+                }
+              }
+            } catch {}
+          })();
         } else {
           setPlayers([]);
           setPlayerGamertagMap({});
@@ -286,7 +306,6 @@ export default function WorldsListPage() {
     return list;
   }, [worlds, search, sortKey, sortAsc]);
 
-  // Reset page when filter/sort changes
   useEffect(() => {
     setCurrentPage(1);
   }, [search, sortKey, sortAsc]);

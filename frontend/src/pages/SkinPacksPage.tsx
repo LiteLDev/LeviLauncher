@@ -163,7 +163,6 @@ export default function SkinPacksPage() {
     return targets;
   }, []);
 
-  // Memoized filtered and sorted packs
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     const f = packs.filter((p) => {
@@ -191,7 +190,6 @@ export default function SkinPacksPage() {
     });
   }, [packs, query, sortKey, sortAsc]);
 
-  // Reset page when filter/sort changes
   React.useEffect(() => {
     setCurrentPage(1);
   }, [query, sortKey, sortAsc]);
@@ -255,17 +253,12 @@ export default function SkinPacksPage() {
             isPreview: false,
           };
           setRoots(safe);
-          if (safe.usersRoot) {
-            setPlayerGamertagMap(await getPlayerGamertagMap(safe.usersRoot));
-          } else {
-            setPlayerGamertagMap({});
-          }
 
-          // Player handling
+          const names = safe.usersRoot ? await listPlayers(safe.usersRoot) : [];
+          setPlayers(names);
+
           let nextPlayer = forcePlayer;
           if (nextPlayer === undefined) {
-            const names = await listPlayers(safe.usersRoot);
-            setPlayers(names);
             const passedPlayer = location?.state?.player || "";
             nextPlayer =
               selectedPlayer && names.includes(selectedPlayer)
@@ -275,6 +268,31 @@ export default function SkinPacksPage() {
                   : names[0] || "";
             setSelectedPlayer(nextPlayer);
           }
+
+          (async () => {
+            if (safe.usersRoot) {
+              const map = await getPlayerGamertagMap(safe.usersRoot);
+              setPlayerGamertagMap(map);
+
+              if (forcePlayer === undefined) {
+                try {
+                  const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+                  if (tag) {
+                    for (const p of names) {
+                      if (map[p] === tag) {
+                        if (p !== nextPlayer) {
+                          refreshAll(false, p);
+                        }
+                        break;
+                      }
+                    }
+                  }
+                } catch {}
+              }
+            } else {
+              setPlayerGamertagMap({});
+            }
+          })();
 
           const allPacks = await ListPacksForVersion(name, nextPlayer || "");
 
@@ -384,8 +402,6 @@ export default function SkinPacksPage() {
     setPacks([]);
     refreshAll();
   }, [refreshAll]);
-
-  // Old loadSkinPacks removed
 
   React.useEffect(() => {
     try {

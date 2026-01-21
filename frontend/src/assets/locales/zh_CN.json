@@ -387,6 +387,7 @@
   },
   "common": {
     "ok": "确定",
+    "continue": "继续",
     "cancel": "取消",
     "error": "错误",
     "refresh": "刷新",
@@ -460,6 +461,7 @@
     "no_behavior_packs": "暂无行为包",
     "skin_packs": "皮肤包",
     "no_skin_packs": "暂无皮肤包",
+    "servers": "服务器",
     "error_resolve_paths": "无法解析内容路径。",
     "open_users_dir": "打开存储目录",
     "players_aria": "玩家列表",
@@ -645,7 +647,13 @@
     "only_enabled": "仅显示已启用的插件",
     "drop_hint": "拖入 .zip 或 .dll 以导入插件",
     "err_lip_not_installed": "LIP未安装",
-    "err_lip_install_failed_suggestion": "安装失败，建议重新安装Minecraft"
+    "err_lip_install_failed_suggestion": "安装失败，建议重新安装Minecraft",
+    "rc_warning": {
+      "title": "实验性版本警告",
+      "body_1": "检测到您即将安装的 LeviLamina 版本 ({{version}}) 为候选发布版 (RC)。",
+      "body_2": "这是一个实验性版本，可能存在不稳定因素，仅建议开发者或高级用户使用。",
+      "body_3": "是否继续安装？"
+    }
   },
   "versionselect": {
     "unsaved": {
@@ -744,5 +752,10 @@
   },
   "lip": {
     "maintenance": "维护中，暂不开放"
+  },
+  "server": {
+    "offline": "离线 / 无法连接",
+    "players": "在线玩家",
+    "delay": "延迟"
   }
 }

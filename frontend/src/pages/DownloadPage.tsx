@@ -31,6 +31,7 @@ import { Events } from "@wailsio/runtime";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useTranslation } from "react-i18next";
+import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -77,8 +78,6 @@ export const DownloadPage: React.FC = () => {
   const [dlSpeed, setDlSpeed] = useState<number>(0);
   const [dlStatus, setDlStatus] = useState<string>("");
   const [dlError, setDlError] = useState<string>("");
-  const downloadSuccessDisclosure = useDisclosure();
-  const [downloadSuccessMsg, setDownloadSuccessMsg] = useState<string>("");
   const [extractInfo, setExtractInfo] = useState<{
     files: number;
     bytes: number;
@@ -95,15 +94,22 @@ export const DownloadPage: React.FC = () => {
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [installMode, setInstallMode] = useState<boolean>(false);
   const [mirrorType, setMirrorType] = useState<ItemType | null>(null);
+
+  const mirrorVersionRef = useRef(mirrorVersion);
+  const mirrorTypeRef = useRef(mirrorType);
+  useEffect(() => {
+    mirrorVersionRef.current = mirrorVersion;
+  }, [mirrorVersion]);
+  useEffect(() => {
+    mirrorTypeRef.current = mirrorType;
+  }, [mirrorType]);
+
   const [installError, setInstallError] = useState<string>("");
   const installLoadingDisclosure = useDisclosure();
-  const installSuccessDisclosure = useDisclosure();
   const installErrorDisclosure = useDisclosure();
-  const [installSuccessMsg, setInstallSuccessMsg] = useState<string>("");
   const [installingVersion, setInstallingVersion] = useState<string>("");
   const [installingTargetName, setInstallingTargetName] = useState<string>("");
   const deleteDisclosure = useDisclosure();
-  const deleteSuccessDisclosure = useDisclosure();
   const [deleteItem, setDeleteItem] = useState<{
     short: string;
     type: ItemType;
@@ -111,7 +117,7 @@ export const DownloadPage: React.FC = () => {
   } | null>(null);
   const [deleteError, setDeleteError] = useState<string>("");
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
-  const [deleteSuccessMsg, setDeleteSuccessMsg] = useState<string>("");
+
 
   const { isLLSupported } = useLeviLamina();
   const hasBackend = minecraft !== undefined;
@@ -341,8 +347,17 @@ export const DownloadPage: React.FC = () => {
             (t("downloadpage.progress.title", {
               defaultValue: "下载进度",
             }) as unknown as string);
-          setDownloadSuccessMsg(String(show));
-          downloadSuccessDisclosure.onOpen();
+          
+          toast.success(
+             t("downloadpage.download.success_body", {
+               defaultValue: "文件已下载：",
+             }) + " " + String(show)
+          );
+          try {
+            if (mirrorVersionRef.current && mirrorTypeRef.current) {
+                markDownloaded(mirrorVersionRef.current, String(mirrorTypeRef.current));
+            }
+          } catch {}
         } catch {}
       }, 120);
     });
@@ -368,12 +383,11 @@ export const DownloadPage: React.FC = () => {
           installLoadingDisclosure.onClose();
         } catch {}
         try {
-          setInstallSuccessMsg(
+          toast.success(
             t("downloadpage.install.success", {
               defaultValue: "安装完成",
             }) as unknown as string
           );
-          installSuccessDisclosure.onOpen();
         } catch {}
       }, 300);
     });
@@ -1267,7 +1281,7 @@ export const DownloadPage: React.FC = () => {
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <BaseModalHeader className="flex items-center gap-3 text-danger-600">
+              <BaseModalHeader className="flex flex-row items-center gap-3 text-danger-600">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1394,11 +1408,18 @@ export const DownloadPage: React.FC = () => {
                           ?.endsWith(".msixvc")
                           ? deleteItem?.fileName
                           : `${deleteItem?.fileName}.msixvc`;
-                        setDeleteSuccessMsg(disp || "");
+                        toast.success(
+                           t("downloadpage.delete.success_body", {
+                             defaultValue: "已删除安装包：",
+                           }) + " " + (disp || "")
+                        );
                       } catch {
-                        setDeleteSuccessMsg(String(deleteItem?.fileName || ""));
+                        toast.success(
+                           t("downloadpage.delete.success_body", {
+                             defaultValue: "已删除安装包：",
+                           }) + " " + String(deleteItem?.fileName || "")
+                        );
                       }
-                      deleteSuccessDisclosure.onOpen();
                     } catch (e: any) {
                       setDeleteError(String(e || ""));
                       setDeleteLoading(false);
@@ -1413,239 +1434,7 @@ export const DownloadPage: React.FC = () => {
         </ModalContent>
       </BaseModal>
 
-      {/* Delete success modal */}
-      <BaseModal
-        isOpen={deleteSuccessDisclosure.isOpen}
-        onOpenChange={deleteSuccessDisclosure.onOpenChange}
-        size="md"
-      >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                  className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    className="text-emerald-500"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                </motion.div>
-                <motion.h2
-                  className="text-xl font-bold text-default-900 dark:text-white"
-                  initial={{ opacity: 0, x: -10 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {t("downloadpage.delete.success_title", {
-                    defaultValue: "删除完成",
-                  })}
-                </motion.h2>
-              </BaseModalHeader>
-              <BaseModalBody className="px-8 py-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                  className="text-medium text-default-700 dark:text-zinc-300 font-bold"
-                >
-                  {t("downloadpage.delete.success_body", {
-                    defaultValue: "已删除安装包：",
-                  })}
-                  <div className="mt-2 p-3 bg-default-100/50 rounded-xl border border-default-200/50 font-mono text-small text-default-800 dark:text-zinc-200 font-bold break-all">
-                    {deleteSuccessMsg}
-                  </div>
-                </motion.div>
-              </BaseModalBody>
-              <BaseModalFooter className="px-8 pb-8">
-                <Button
-                  color="success"
-                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                  radius="full"
-                  onPress={() => {
-                    onClose?.();
-                  }}
-                >
-                  {t("common.ok", { defaultValue: "确定" })}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
 
-      {/* Download success modal */}
-      <BaseModal
-        isOpen={downloadSuccessDisclosure.isOpen}
-        onOpenChange={downloadSuccessDisclosure.onOpenChange}
-        size="md"
-      >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="flex items-center gap-3 px-8 pt-8 pb-4 text-success-600">
-                <div className="w-10 h-10 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="20"
-                    height="20"
-                    className="text-emerald-500"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="3"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                </div>
-                <h2 className="text-xl font-bold text-default-900 dark:text-white">
-                  {t("downloadpage.download.success_title", {
-                    defaultValue: "下载完成",
-                  })}
-                </h2>
-              </BaseModalHeader>
-              <BaseModalBody className="px-8 py-4">
-                <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
-                  {t("downloadpage.download.success_body", {
-                    defaultValue: "文件已下载：",
-                  })}
-                  <div className="mt-2 p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 font-mono text-small text-default-800 dark:text-zinc-200 font-bold break-all">
-                    {downloadSuccessMsg}
-                  </div>
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter className="px-8 pb-8">
-                <Button
-                  color="primary"
-                  className="bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                  radius="full"
-                  onPress={() => {
-                    try {
-                      if (mirrorVersion && mirrorType) {
-                        markDownloaded(mirrorVersion, String(mirrorType));
-                      }
-                    } catch {}
-                    onClose?.();
-                  }}
-                >
-                  {t("common.ok", { defaultValue: "确定" })}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-
-      {/* Install success modal */}
-      <BaseModal
-        isOpen={installSuccessDisclosure.isOpen}
-        onOpenChange={installSuccessDisclosure.onOpenChange}
-        size="md"
-      >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="flex items-center gap-4 px-8 pt-8 pb-4 text-success-600">
-                <motion.div
-                  initial={{ scale: 0 }}
-                  animate={{ scale: 1 }}
-                  transition={{ type: "spring", stiffness: 260, damping: 20 }}
-                  className="w-12 h-12 rounded-full bg-emerald-500/10 border border-emerald-500/20 flex items-center justify-center shrink-0"
-                >
-                  <svg
-                    viewBox="0 0 24 24"
-                    width="24"
-                    height="24"
-                    className="text-emerald-500"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="2.5"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                  >
-                    <path d="M20 6L9 17l-5-5" />
-                  </svg>
-                </motion.div>
-                <div className="flex flex-col">
-                  <motion.h2
-                    className="text-xl font-bold text-default-900 dark:text-white"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    {t("downloadpage.install.success_title", {
-                      defaultValue: "安装完成",
-                    })}
-                  </motion.h2>
-                  {installingVersion ? (
-                    <motion.div
-                      className="text-small text-default-600 dark:text-zinc-400 font-medium"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ delay: 0.1 }}
-                    >
-                      {t("downloadpage.install.version_label", {
-                        defaultValue: "版本",
-                      })}
-                      : {installingVersion}
-                    </motion.div>
-                  ) : null}
-                </div>
-              </BaseModalHeader>
-              <BaseModalBody className="px-8 py-4">
-                <motion.div
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                  className="flex flex-col gap-4"
-                >
-                  <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
-                    {installSuccessMsg ||
-                      (t("downloadpage.install.success", {
-                        defaultValue: "版本已成功安装。",
-                      }) as unknown as string)}
-                  </div>
-                  {installingTargetName ? (
-                    <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small text-default-600 dark:text-zinc-400 font-medium">
-                      {t("downloadpage.install.target", {
-                        defaultValue: "安装目标",
-                      })}
-                      :{" "}
-                      <span className="font-mono text-default-800 dark:text-zinc-200 font-bold">
-                        {installingTargetName}
-                      </span>
-                    </div>
-                  ) : null}
-                </motion.div>
-              </BaseModalBody>
-              <BaseModalFooter className="px-8 pb-8 pt-4">
-                <Button
-                  className="bg-default-100 text-default-700 font-bold hover:bg-default-200"
-                  radius="full"
-                  onPress={() => {
-                    onClose?.();
-                  }}
-                >
-                  {t("common.back", { defaultValue: "返回" })}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
 
       {/* Install error modal */}
       <BaseModal
@@ -1656,7 +1445,7 @@ export const DownloadPage: React.FC = () => {
         <ModalContent className="shadow-none">
           {(onClose) => (
             <>
-              <BaseModalHeader className="flex items-center gap-4 text-danger-600">
+              <BaseModalHeader className="flex flex-row items-center gap-4 text-danger-600">
                 <motion.div
                   initial={{ scale: 0 }}
                   animate={{ scale: 1 }}
@@ -1726,7 +1515,7 @@ export const DownloadPage: React.FC = () => {
         <ModalContent className="shadow-none">
           {() => (
             <>
-              <BaseModalHeader className="flex items-center gap-4 text-primary-600">
+              <BaseModalHeader className="flex flex-row items-center gap-4 text-primary-600">
                 <Spinner size="lg" color="primary" />
                 <motion.h2
                   className="text-xl font-bold text-default-900 dark:text-white"
@@ -1806,7 +1595,7 @@ export const DownloadPage: React.FC = () => {
         <ModalContent className="shadow-none">
           {() => (
             <>
-              <BaseModalHeader className="flex items-center gap-4 text-primary-600">
+              <BaseModalHeader className="flex flex-row items-center gap-4 text-primary-600">
                 <div className="w-12 h-12 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center shrink-0">
                   <FaDownload className="text-emerald-500 animate-pulse" size={20} />
                 </div>

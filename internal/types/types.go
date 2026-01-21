@@ -109,3 +109,11 @@ type ExtractProgress struct {
 	Bytes int64  `json:"bytes"`
 	Ts    int64  `json:"ts"`
 }
+
+type Server struct {
+	Index     string `json:"index"`
+	Name      string `json:"name"`
+	IP        string `json:"ip"`
+	Port      string `json:"port"`
+	Timestamp int64  `json:"timestamp"`
+}

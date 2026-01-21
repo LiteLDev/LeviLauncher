@@ -387,6 +387,7 @@
   },
   "common": {
     "ok": "OK",
+    "continue": "続行",
     "cancel": "キャンセル",
     "error": "エラー",
     "refresh": "更新",
@@ -460,6 +461,7 @@
     "no_behavior_packs": "ビヘイビアーパックがありません",
     "skin_packs": "スキンパック",
     "no_skin_packs": "スキンパックがありません",
+    "servers": "サーバー",
     "error_resolve_paths": "コンテンツパスの解決に失敗しました。",
     "open_users_dir": "保存先ディレクトリを開く",
     "players_aria": "プレイヤー",
@@ -645,7 +647,13 @@
     "only_enabled": "有効なModのみ表示",
     "drop_hint": ".zip または .dll をドロップして Mod/プラグインをインポート",
     "err_lip_not_installed": "LIP がインストールされていません",
-    "err_lip_install_failed_suggestion": "インストールに失敗しました。Minecraft を再インストールすることをお勧めします"
+    "err_lip_install_failed_suggestion": "インストールに失敗しました。Minecraft を再インストールすることをお勧めします",
+    "rc_warning": {
+      "title": "実験的バージョン警告",
+      "body_1": "インストールしようとしている LeviLamina バージョン ({{version}}) はリリース候補版 (RC) です。",
+      "body_2": "これは実験的なバージョンであり、不安定な可能性があります。開発者または上級ユーザーのみに推奨されます。",
+      "body_3": "インストールを続行しますか？"
+    }
   },
   "versionselect": {
     "unsaved": {
@@ -744,5 +752,10 @@
   },
   "lip": {
     "maintenance": "メンテナンス中につき、現在利用できません"
+  },
+  "server": {
+    "offline": "オフライン / 接続不可",
+    "players": "オンライン人数",
+    "delay": "遅延"
   }
 }

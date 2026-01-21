@@ -1,13 +1,10 @@
 package mcservice
 
 import (
-	"archive/zip"
 	"context"
 	"fmt"
-	"io"
 	"log"
 	"net/http"
-	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
@@ -60,15 +57,12 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string)
 		return "ERR_LIP_NOT_INSTALLED"
 	}
 
-	// 1. Fetch DB
 	db, err := FetchLeviLaminaVersionDB()
 	if err != nil {
 		log.Println("InstallLeviLamina: Fetch DB failed:", err)
 		return "ERR_FETCH_LL_DB"
 	}
 
-	// 2. Resolve MC Version to Key
-	// Logic: 1.21.50.07 -> 1.21.50
 	parts := strings.Split(mcVersion, ".")
 	if len(parts) < 3 {
 		return "ERR_INVALID_VERSION_FORMAT"
@@ -80,10 +74,8 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string)
 		return "ERR_LL_NOT_SUPPORTED"
 	}
 
-	// 3. Pick latest LL version (last is latest)
 	llVersion := versions[len(versions)-1]
 
-	// 4. Install using LIP
 	vdir, err := utils.GetVersionsDir()
 	if err != nil {
 		return "ERR_ACCESS_VERSIONS_DIR"
@@ -110,76 +102,36 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string)
 	return ""
 }
 
-func downloadFile(ctx context.Context, url string, dest string) error {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
+func UninstallLeviLamina(ctx context.Context, targetName string) string {
+	if !lip.IsInstalled() {
+		return "ERR_LIP_NOT_INSTALLED"
+	}
+
+	vdir, err := utils.GetVersionsDir()
 	if err != nil {
-		return err
+		return "ERR_ACCESS_VERSIONS_DIR"
 	}
-	req.Header.Set("User-Agent", uarand.GetRandom())
-
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("status %d", resp.StatusCode)
+	targetDir := filepath.Join(vdir, targetName)
+	if !utils.DirExists(targetDir) {
+		return "ERR_TARGET_NOT_FOUND"
 	}
 
-	out, err := os.Create(dest)
-	if err != nil {
-		return err
+	log.Printf("Uninstalling LeviLamina for %s using LIP", targetName)
+
+	lipExe := lip.LipExePath()
+	pkgs := []string{"github.com/LiteLDev/LeviLamina#client", "github.com/LiteLDev/bedrock-runtime-data"}
+
+	args := append([]string{"uninstall"}, pkgs...)
+	args = append(args, "-y")
+
+	cmd := exec.CommandContext(ctx, lipExe, args...)
+	cmd.Dir = targetDir
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+
+	if out, err := cmd.CombinedOutput(); err != nil {
+		log.Printf("UninstallLeviLamina: lip uninstall failed: %v, output: %s", err, string(out))
+		return "ERR_LIP_UNINSTALL_FAILED"
 	}
-	defer out.Close()
 
-	_, err = io.Copy(out, resp.Body)
-	return err
-}
-
-func unzip(src, dest string) error {
-	r, err := zip.OpenReader(src)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		fpath := filepath.Join(dest, f.Name)
-
-		// Check for ZipSlip
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-			return fmt.Errorf("illegal file path: %s", fpath)
-		}
-
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModePerm)
-			continue
-		}
-
-		if err := os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			return err
-		}
-
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return err
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			outFile.Close()
-			return err
-		}
-
-		_, err = io.Copy(outFile, rc)
-
-		outFile.Close()
-		rc.Close()
-
-		if err != nil {
-			return err
-		}
-	}
-	return nil
+	return ""
 }

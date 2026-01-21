@@ -3,25 +3,26 @@ package packages
 import (
 	"os"
 	"path/filepath"
+	"strconv"
 	"strings"
 
 	json "github.com/goccy/go-json"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
-type ManifestJSON struct {
+type RawManifest struct {
 	FormatVersion int `json:"format_version"`
 	Header        struct {
-		Name             string `json:"name"`
-		Description      string `json:"description"`
-		UUID             string `json:"uuid"`
-		Version          []int  `json:"version"`
-		MinEngineVersion []int  `json:"min_engine_version"`
+		Name             string      `json:"name"`
+		Description      string      `json:"description"`
+		UUID             string      `json:"uuid"`
+		Version          interface{} `json:"version"`            // []int or string
+		MinEngineVersion interface{} `json:"min_engine_version"` // []int or string
 	} `json:"header"`
 	Modules []struct {
-		Type    string `json:"type"`
-		UUID    string `json:"uuid"`
-		Version []int  `json:"version"`
+		Type    string      `json:"type"`
+		UUID    string      `json:"uuid"`
+		Version interface{} `json:"version"` // []int or string
 	} `json:"modules"`
 }
 
@@ -106,7 +107,7 @@ func parseManifest(path string, defaultType PackType) (PackManifest, error) {
 
 	b = utils.JsonCompatBytes(b)
 
-	var raw ManifestJSON
+	var raw RawManifest
 	if err := json.Unmarshal(b, &raw); err != nil {
 		return PackManifest{}, err
 	}
@@ -114,11 +115,13 @@ func parseManifest(path string, defaultType PackType) (PackManifest, error) {
 	pm := PackManifest{}
 
 	pm.Identity.UUID = raw.Header.UUID
-	if len(raw.Header.Version) >= 3 {
+
+	version := ParseVersion(raw.Header.Version)
+	if len(version) >= 3 {
 		pm.Identity.Version = SemVersion{
-			Major: raw.Header.Version[0],
-			Minor: raw.Header.Version[1],
-			Patch: raw.Header.Version[2],
+			Major: version[0],
+			Minor: version[1],
+			Patch: version[2],
 		}
 	}
 
@@ -137,12 +140,13 @@ func parseManifest(path string, defaultType PackType) (PackManifest, error) {
 	}
 	pm.Identity.PackType = pm.PackType
 
-	if len(raw.Header.MinEngineVersion) >= 3 {
+	minEngineVersion := ParseVersion(raw.Header.MinEngineVersion)
+	if len(minEngineVersion) >= 3 {
 		pm.MinEngineVersion = MinEngineVersion{
 			SemVersion: SemVersion{
-				Major: raw.Header.MinEngineVersion[0],
-				Minor: raw.Header.MinEngineVersion[1],
-				Patch: raw.Header.MinEngineVersion[2],
+				Major: minEngineVersion[0],
+				Minor: minEngineVersion[1],
+				Patch: minEngineVersion[2],
 			},
 		}
 	}
@@ -151,7 +155,7 @@ func parseManifest(path string, defaultType PackType) (PackManifest, error) {
 	pm.Description = raw.Header.Description
 	pm.Location = filepath.Dir(path)
 
-	texts := readPackTexts(pm.Location)
+	texts := ReadPackTexts(pm.Location)
 	if texts != nil {
 		if val, ok := texts[pm.Name]; ok {
 			pm.Name = val
@@ -169,7 +173,7 @@ func parseManifest(path string, defaultType PackType) (PackManifest, error) {
 	return pm, nil
 }
 
-func readPackTexts(root string) map[string]string {
+func ReadPackTexts(root string) map[string]string {
 	textsDir := filepath.Join(root, "texts")
 	if !utils.DirExists(textsDir) {
 		return nil
@@ -234,4 +238,29 @@ func readPackTexts(root string) map[string]string {
 		}
 	}
 	return m
+}
+
+func ParseVersion(v interface{}) []int {
+	switch val := v.(type) {
+	case []interface{}:
+		res := make([]int, len(val))
+		for i, x := range val {
+			if f, ok := x.(float64); ok {
+				res[i] = int(f)
+			}
+		}
+		return res
+	case []int:
+		return val
+	case string:
+		parts := strings.Split(val, ".")
+		res := make([]int, 0, len(parts))
+		for _, p := range parts {
+			if i, err := strconv.Atoi(p); err == nil {
+				res = append(res, i)
+			}
+		}
+		return res
+	}
+	return nil
 }

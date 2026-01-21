@@ -19,6 +19,7 @@ import (
 	json "github.com/goccy/go-json"
 
 	"github.com/liteldev/LeviLauncher/internal/nbt"
+	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
@@ -203,89 +204,6 @@ func coerceMapTo(old map[string]any, m map[string]any) map[string]any {
 	return m
 }
 
-type bedrockManifest struct {
-	FormatVersion int `json:"format_version"`
-	Header        struct {
-		Name             string `json:"name"`
-		Description      string `json:"description"`
-		MinEngineVersion []int  `json:"min_engine_version"`
-		Uuid             string `json:"uuid"`
-		Version          []int  `json:"version"`
-	} `json:"header"`
-	Modules []struct {
-		Type    string `json:"type"`
-		Uuid    string `json:"uuid"`
-		Version []int  `json:"version"`
-	} `json:"modules"`
-}
-
-func readPackTexts(root string) map[string]string {
-	textsDir := filepath.Join(root, "texts")
-	if !utils.DirExists(textsDir) {
-		return nil
-	}
-	langFile := filepath.Join(textsDir, "en_US.lang")
-	if !utils.FileExists(langFile) {
-		lj := filepath.Join(textsDir, "languages.json")
-		if utils.FileExists(lj) {
-			if b, err := os.ReadFile(lj); err == nil {
-				var langs []string
-				_ = json.Unmarshal(utils.JsonCompatBytes(b), &langs)
-				if len(langs) > 0 {
-					cand := filepath.Join(textsDir, strings.TrimSpace(langs[0])+".lang")
-					if utils.FileExists(cand) {
-						langFile = cand
-					}
-				}
-			}
-		}
-	}
-	if !utils.FileExists(langFile) {
-		ents, err := os.ReadDir(textsDir)
-		if err == nil {
-			for _, e := range ents {
-				if e.IsDir() {
-					continue
-				}
-				name := strings.ToLower(strings.TrimSpace(e.Name()))
-				if strings.HasSuffix(name, ".lang") {
-					langFile = filepath.Join(textsDir, e.Name())
-					break
-				}
-			}
-		}
-	}
-	if !utils.FileExists(langFile) {
-		return nil
-	}
-	b, err := os.ReadFile(langFile)
-	if err != nil {
-		return nil
-	}
-	lines := strings.Split(string(b), "\n")
-	m := make(map[string]string, 16)
-	for _, ln := range lines {
-		l := strings.TrimSpace(strings.TrimRight(ln, "\r"))
-		if l == "" || strings.HasPrefix(l, "#") {
-			continue
-		}
-		if idx := strings.IndexRune(l, '#'); idx >= 0 {
-			l = strings.TrimSpace(l[:idx])
-		}
-		if l == "" {
-			continue
-		}
-		if eq := strings.IndexRune(l, '='); eq >= 0 {
-			k := strings.TrimSpace(l[:eq])
-			v := strings.TrimSpace(l[eq+1:])
-			if k != "" {
-				m[k] = v
-			}
-		}
-	}
-	return m
-}
-
 func findManifestDir(dir string) string {
 	d := strings.TrimSpace(dir)
 	if d == "" {
@@ -351,11 +269,11 @@ func findPackPathsByUuid(uuid string, dirs ...string) []string {
 			if err != nil {
 				continue
 			}
-			var mf bedrockManifest
+			var mf packages.RawManifest
 			if err := json.Unmarshal(utils.JsonCompatBytes(b), &mf); err != nil {
 				continue
 			}
-			if mf.Header.Uuid == uuid {
+			if mf.Header.UUID == uuid {
 				paths = append(paths, p)
 			}
 		}
@@ -378,7 +296,7 @@ func ImportMcpackToDirs(data []byte, archiveName string, resDir string, bpDir st
 		return "ERR_OPEN_ZIP"
 	}
 	manifestDir := ""
-	var manifest bedrockManifest
+	var manifest packages.RawManifest
 	for _, f := range zr.File {
 		nameInZip := normalizeZipEntryName(f.Name)
 		if strings.HasSuffix(nameInZip, "/") {
@@ -402,7 +320,7 @@ func ImportMcpackToDirs(data []byte, archiveName string, resDir string, bpDir st
 		return "ERR_MANIFEST_NOT_FOUND"
 	}
 
-	existing := findPackPathsByUuid(manifest.Header.Uuid, resDir, bpDir)
+	existing := findPackPathsByUuid(manifest.Header.UUID, resDir, bpDir)
 	if len(existing) > 0 {
 		if !overwrite {
 			return "ERR_DUPLICATE_UUID"
@@ -531,7 +449,7 @@ func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir s
 		return "ERR_OPEN_ZIP"
 	}
 	manifestDir := ""
-	var manifest bedrockManifest
+	var manifest packages.RawManifest
 	for _, f := range zr.File {
 		nameInZip := normalizeZipEntryName(f.Name)
 		if strings.HasSuffix(nameInZip, "/") {
@@ -554,7 +472,7 @@ func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir s
 	if manifestDir == "" && len(manifest.Modules) == 0 {
 		return "ERR_MANIFEST_NOT_FOUND"
 	}
-	existing := findPackPathsByUuid(manifest.Header.Uuid, resDir, bpDir, skinDir)
+	existing := findPackPathsByUuid(manifest.Header.UUID, resDir, bpDir, skinDir)
 	if len(existing) > 0 {
 		if !overwrite {
 			return "ERR_DUPLICATE_UUID"
@@ -687,7 +605,7 @@ func ImportMcaddonToDirs2(data []byte, resDir string, bpDir string, skinDir stri
 
 	type packInfo struct {
 		dir      string
-		manifest bedrockManifest
+		manifest packages.RawManifest
 	}
 	packs := []packInfo{}
 	for _, f := range zr.File {
@@ -706,13 +624,13 @@ func ImportMcaddonToDirs2(data []byte, resDir string, bpDir string, skinDir stri
 			}
 			b, _ := io.ReadAll(rc)
 			_ = rc.Close()
-			var mf bedrockManifest
+			var mf packages.RawManifest
 			_ = json.Unmarshal(utils.JsonCompatBytes(b), &mf)
 			packs = append(packs, packInfo{dir: dir, manifest: mf})
 		}
 	}
 	for _, p := range packs {
-		existing := findPackPathsByUuid(p.manifest.Header.Uuid, resDir, bpDir, skinDir)
+		existing := findPackPathsByUuid(p.manifest.Header.UUID, resDir, bpDir, skinDir)
 		if len(existing) > 0 {
 			if !overwrite {
 				return "ERR_DUPLICATE_UUID"
@@ -846,7 +764,7 @@ func ImportMcaddonToDirs(data []byte, resDir string, bpDir string, overwrite boo
 
 	type packInfo struct {
 		dir      string
-		manifest bedrockManifest
+		manifest packages.RawManifest
 	}
 	packs := []packInfo{}
 	for _, f := range zr.File {
@@ -865,7 +783,7 @@ func ImportMcaddonToDirs(data []byte, resDir string, bpDir string, overwrite boo
 			}
 			b, _ := io.ReadAll(rc)
 			_ = rc.Close()
-			var mf bedrockManifest
+			var mf packages.RawManifest
 			_ = json.Unmarshal(utils.JsonCompatBytes(b), &mf)
 			packs = append(packs, packInfo{dir: dir, manifest: mf})
 		}
@@ -1050,12 +968,12 @@ func ReadPackInfoFromDir(dir string) types.PackInfo {
 	manifestPath := filepath.Join(target, "manifest.json")
 	if utils.FileExists(manifestPath) {
 		if b, err := os.ReadFile(manifestPath); err == nil {
-			var mf bedrockManifest
+			var mf packages.RawManifest
 			_ = json.Unmarshal(utils.JsonCompatBytes(b), &mf)
 			info.Name = strings.TrimSpace(mf.Header.Name)
 			info.Description = strings.TrimSpace(mf.Header.Description)
 			if (info.Name == "pack.name" || info.Description == "pack.description") && utils.DirExists(filepath.Join(target, "texts")) {
-				texts := readPackTexts(target)
+				texts := packages.ReadPackTexts(target)
 				if texts != nil {
 					if info.Name == "pack.name" {
 						if v, ok := texts["pack.name"]; ok {
@@ -1069,9 +987,11 @@ func ReadPackInfoFromDir(dir string) types.PackInfo {
 					}
 				}
 			}
-			if len(mf.Header.Version) > 0 {
+
+			version := packages.ParseVersion(mf.Header.Version)
+			if len(version) > 0 {
 				var vb strings.Builder
-				for i, n := range mf.Header.Version {
+				for i, n := range version {
 					if i > 0 {
 						vb.WriteRune('.')
 					}
@@ -1079,9 +999,11 @@ func ReadPackInfoFromDir(dir string) types.PackInfo {
 				}
 				info.Version = vb.String()
 			}
-			if len(mf.Header.MinEngineVersion) > 0 {
+
+			minEngineVersion := packages.ParseVersion(mf.Header.MinEngineVersion)
+			if len(minEngineVersion) > 0 {
 				var vb2 strings.Builder
-				for i, n := range mf.Header.MinEngineVersion {
+				for i, n := range minEngineVersion {
 					if i > 0 {
 						vb2.WriteRune('.')
 					}
@@ -1636,7 +1558,7 @@ func IsMcpackSkinPack(data []byte) bool {
 			}
 			b, _ := io.ReadAll(rc)
 			_ = rc.Close()
-			var mf bedrockManifest
+			var mf packages.RawManifest
 			_ = json.Unmarshal(utils.JsonCompatBytes(b), &mf)
 			for _, m := range mf.Modules {
 				tp := strings.ToLower(strings.TrimSpace(m.Type))

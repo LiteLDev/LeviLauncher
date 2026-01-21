@@ -32,6 +32,7 @@ import {
   FaImage,
   FaSync,
   FaUserTag,
+  FaServer,
 } from "react-icons/fa";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { countDirectories } from "@/utils/fs";
@@ -70,6 +71,7 @@ export default function ContentPage() {
   const [resCount, setResCount] = React.useState<number>(0);
   const [bpCount, setBpCount] = React.useState<number>(0);
   const [skinCount, setSkinCount] = React.useState<number>(0);
+  const [serversCount, setServersCount] = React.useState<number>(0);
   const [dragActive, setDragActive] = React.useState(false);
   const dragCounter = React.useRef(0);
   const [importing, setImporting] = React.useState(false);
@@ -139,55 +141,78 @@ export default function ContentPage() {
         };
         setRoots(safe);
         if (safe.usersRoot) {
-          const map = await getPlayerGamertagMap(safe.usersRoot);
-          setPlayerGamertagMap(map);
           const names = await listPlayers(safe.usersRoot);
           setPlayers(names);
+
           let nextPlayer = names[0] || "";
-          try {
-            const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
-            if (tag) {
-              for (const p of names) {
-                if (map[p] === tag) {
-                  nextPlayer = p;
-                  break;
-                }
-              }
-            }
-          } catch {}
           const currentPlayer =
             playerToRefresh !== undefined ? playerToRefresh : selectedPlayer;
+
+          if (names.includes(currentPlayer)) {
+            nextPlayer = currentPlayer;
+          }
+
           if (playerToRefresh !== undefined) {
             setSelectedPlayer(playerToRefresh);
-          }
-          if (names.includes(currentPlayer)) {
-            if (currentPlayer) {
-              const wp = `${safe.usersRoot}\\${currentPlayer}\\games\\com.mojang\\minecraftWorlds`;
-              setWorldsCount(await countDirectories(wp));
-              const sp = `${safe.usersRoot}\\${currentPlayer}\\games\\com.mojang\\skin_packs`;
-              setSkinCount(await countDirectories(sp));
-            } else {
-              setWorldsCount(0);
-              setSkinCount(0);
-            }
-          } else {
+          } else if (!names.includes(currentPlayer)) {
             setSelectedPlayer(nextPlayer);
-            if (nextPlayer) {
-              const wp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\minecraftWorlds`;
+          }
+
+          const loadCounts = async (player: string) => {
+            if (player) {
+              const wp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
               setWorldsCount(await countDirectories(wp));
-              const sp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\skin_packs`;
+              const sp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
               setSkinCount(await countDirectories(sp));
+              const srvs = await (minecraft as any)?.ListServers?.(
+                name,
+                player,
+              );
+              setServersCount(srvs?.length || 0);
             } else {
               setWorldsCount(0);
               setSkinCount(0);
+              setServersCount(0);
             }
-          }
+          };
+
+          await loadCounts(
+            names.includes(currentPlayer) ? currentPlayer : nextPlayer,
+          );
+
+          (async () => {
+            try {
+              const map = await getPlayerGamertagMap(safe.usersRoot);
+              setPlayerGamertagMap(map);
+
+              if (
+                playerToRefresh === undefined &&
+                !names.includes(currentPlayer)
+              ) {
+                const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+                if (tag) {
+                  let matched = "";
+                  for (const p of names) {
+                    if (map[p] === tag) {
+                      matched = p;
+                      break;
+                    }
+                  }
+                  if (matched && matched !== nextPlayer) {
+                    setSelectedPlayer(matched);
+                    await loadCounts(matched);
+                  }
+                }
+              }
+            } catch {}
+          })();
         } else {
           setPlayers([]);
           setSelectedPlayer("");
           setPlayerGamertagMap({});
           setWorldsCount(0);
           setSkinCount(0);
+          setServersCount(0);
         }
         setResCount(await countDirectories(safe.resourcePacks));
         setBpCount(await countDirectories(safe.behaviorPacks));
@@ -223,12 +248,15 @@ export default function ContentPage() {
       if (!hasBackend || !roots.usersRoot || !player) {
         setWorldsCount(0);
         setSkinCount(0);
+        setServersCount(0);
         return;
       }
       const wp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
       setWorldsCount(await countDirectories(wp));
       const sp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
       setSkinCount(await countDirectories(sp));
+      const srvs = await (minecraft as any)?.ListServers?.(currentVersionName || readCurrentVersionName(), player);
+      setServersCount(srvs?.length || 0);
     } finally {
       setLoading(false);
     }
@@ -1245,6 +1273,53 @@ export default function ContentPage() {
                         className="text-2xl font-bold text-default-900"
                       >
                         {skinCount}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
+                </div>
+              </CardBody>
+            </Card>
+
+            <Card
+              isPressable
+              onPress={() =>
+                navigate("/servers", {
+                  state: { player: selectedPlayer },
+                })
+              }
+              className="rounded-4xl shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none h-full"
+            >
+              <CardBody className="p-6">
+                <div className="flex items-center justify-between w-full">
+                  <div className="flex items-center gap-3">
+                    <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500">
+                      <FaServer className="w-6 h-6" />
+                    </div>
+                    <span className="text-lg font-medium text-default-700">
+                      {t("contentpage.servers", { defaultValue: "服务器" })}
+                    </span>
+                  </div>
+                  <AnimatePresence mode="wait">
+                    {loading ? (
+                      <motion.div
+                        key="spinner"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Spinner size="sm" />
+                      </motion.div>
+                    ) : (
+                      <motion.span
+                        key="count"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-2xl font-bold text-default-900"
+                      >
+                        {serversCount}
                       </motion.span>
                     )}
                   </AnimatePresence>

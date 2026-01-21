@@ -387,6 +387,7 @@
   },
   "common": {
     "ok": "確定",
+    "continue": "繼續",
     "cancel": "取消",
     "error": "錯誤",
     "refresh": "重新整理",
@@ -460,6 +461,7 @@
     "no_behavior_packs": "暫無行為包",
     "skin_packs": "皮膚包",
     "no_skin_packs": "暫無皮膚包",
+    "servers": "伺服器",
     "error_resolve_paths": "無法解析內容路徑。",
     "open_users_dir": "開啟儲存目錄",
     "players_aria": "玩家清單",
@@ -645,7 +647,13 @@
     "toggle_desc_on": "插件已啟用，啟動遊戲時會載入。",
     "toggle_desc_off": "插件已關閉，啟動遊戲時不會載入。",
     "only_enabled": "僅顯示已啟用的插件",
-    "drop_hint": "拖入 .zip 或 .dll 以匯入插件"
+    "drop_hint": "拖入 .zip 或 .dll 以匯入插件",
+    "rc_warning": {
+      "title": "實驗性版本警告",
+      "body_1": "檢測到您即將安裝的 LeviLamina 版本 ({{version}}) 為候選發布版 (RC)。",
+      "body_2": "這是一個實驗性版本，可能存在不穩定因素，僅建議開發者或高級用戶使用。",
+      "body_3": "是否繼續安裝？"
+    }
   },
   "versionselect": {
     "unsaved": {
@@ -744,5 +752,10 @@
   },
   "lip": {
     "maintenance": "維護中，暫不開放"
+  },
+  "server": {
+    "offline": "離線 / 無法連接",
+    "players": "在線玩家",
+    "delay": "延遲"
   }
 }

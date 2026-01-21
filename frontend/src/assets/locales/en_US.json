@@ -387,6 +387,7 @@
   },
   "common": {
     "ok": "OK",
+    "continue": "Continue",
     "cancel": "Cancel",
     "error": "Error",
     "refresh": "Refresh",
@@ -460,6 +461,7 @@
     "no_behavior_packs": "No behavior packs",
     "skin_packs": "Skin Packs",
     "no_skin_packs": "No skin packs",
+    "servers": "Servers",
     "error_resolve_paths": "Failed to resolve content paths.",
     "open_users_dir": "Open Storage Directory",
     "players_aria": "Players",
@@ -645,7 +647,13 @@
     "only_enabled": "Only show enabled mods",
     "drop_hint": "Drop .zip or .dll to import mods/plugins",
     "err_lip_not_installed": "LIP is not installed",
-    "err_lip_install_failed_suggestion": "Installation failed, please try reinstalling Minecraft"
+    "err_lip_install_failed_suggestion": "Installation failed, please try reinstalling Minecraft",
+    "rc_warning": {
+      "title": "Experimental Version Warning",
+      "body_1": "The LeviLamina version ({{version}}) you are about to install is a Release Candidate (RC).",
+      "body_2": "This is an experimental version that may be unstable. It is recommended for developers or advanced users only.",
+      "body_3": "Do you want to continue?"
+    }
   },
   "versionselect": {
     "unsaved": {
@@ -744,5 +752,10 @@
   },
   "lip": {
     "maintenance": "Maintenance, not available yet"
+  },
+  "server": {
+    "offline": "Offline / Can't connect",
+    "players": "Online Players",
+    "delay": "Latency"
   }
 }

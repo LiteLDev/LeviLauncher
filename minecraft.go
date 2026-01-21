@@ -117,6 +117,10 @@ func (a *Minecraft) InstallLeviLamina(mcVersion string, targetName string) strin
 	return mcservice.InstallLeviLamina(a.ctx, mcVersion, targetName)
 }
 
+func (a *Minecraft) UninstallLeviLamina(targetName string) string {
+	return mcservice.UninstallLeviLamina(a.ctx, targetName)
+}
+
 type KnownFolder struct {
 	Name string `json:"name"`
 	Path string `json:"path"`
@@ -175,6 +179,16 @@ func (a *Minecraft) ListPacksForVersion(versionName string, player string) []pac
 		return []packages.Pack{}
 	}
 	return packs
+}
+
+func (a *Minecraft) ListServers(versionName string, player string) []types.Server {
+	servers, _ := mcservice.ListServers(versionName, player)
+	return servers
+}
+
+func (a *Minecraft) PingServer(host string) *mcservice.MotdBEInfo {
+	info, _ := mcservice.MotdBE(host)
+	return info
 }
 
 func (a *Minecraft) LaunchVersionByName(name string) string {

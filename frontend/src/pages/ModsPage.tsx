@@ -29,6 +29,7 @@ import {
   EnableMod,
   DisableMod,
   IsModEnabled,
+  UninstallLeviLamina,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { FaPuzzlePiece } from "react-icons/fa6";
@@ -127,10 +128,18 @@ export const ModsPage: React.FC = () => {
   const lastScrollTopRef = useRef<number>(0);
   const restorePendingRef = useRef<boolean>(false);
 
-  const { isLLSupported, refreshLLDB } = useLeviLamina();
+  const { isLLSupported, refreshLLDB, llMap } = useLeviLamina();
   const [installingLL, setInstallingLL] = useState(false);
   const [gameVersion, setGameVersion] = useState("");
   const hasBackend = minecraft !== undefined;
+
+  const {
+    isOpen: rcOpen,
+    onOpen: rcOnOpen,
+    onOpenChange: rcOnOpenChange,
+    onClose: rcOnClose,
+  } = useDisclosure();
+  const [rcVersion, setRcVersion] = useState("");
 
   useBlocker(() => installingLL || importing);
 
@@ -165,14 +174,16 @@ export const ModsPage: React.FC = () => {
     fetchVersion();
   }, [currentVersionName]);
 
-  const handleInstallLeviLamina = async () => {
+  const proceedInstallLeviLamina = async () => {
     const targetName = currentVersionName;
     if (!hasBackend || !targetName || !gameVersion) return;
     setInstallingLL(true);
     try {
       const isLip = await (minecraft as any)?.IsLipInstalled();
       if (!isLip) {
-        toast.error(t("mods.err_lip_not_installed", { defaultValue: "LIP未安装" }));
+        toast.error(
+          t("mods.err_lip_not_installed", { defaultValue: "LIP未安装" }),
+        );
         setInstallingLL(false);
         return;
       }
@@ -200,6 +211,33 @@ export const ModsPage: React.FC = () => {
     } finally {
       setInstallingLL(false);
     }
+  };
+
+  const handleInstallLeviLamina = async () => {
+    const targetName = currentVersionName;
+    if (!hasBackend || !targetName || !gameVersion) return;
+
+    let targetLLVersion = "";
+    if (llMap && llMap.size > 0) {
+      let versions = llMap.get(gameVersion);
+      if (!versions && gameVersion.split(".").length >= 3) {
+        const parts = gameVersion.split(".");
+        const key = `${parts[0]}.${parts[1]}.${parts[2]}`;
+        versions = llMap.get(key);
+      }
+
+      if (versions && Array.isArray(versions) && versions.length > 0) {
+        targetLLVersion = versions[versions.length - 1];
+      }
+    }
+
+    if (targetLLVersion && targetLLVersion.includes("rc")) {
+      setRcVersion(targetLLVersion);
+      rcOnOpen();
+      return;
+    }
+
+    await proceedInstallLeviLamina();
   };
 
   const postImportModZip = async (
@@ -686,7 +724,12 @@ export const ModsPage: React.FC = () => {
     setDeleting(true);
     lastScrollTopRef.current = pos;
     restorePendingRef.current = true;
-    const err = await (DeleteMod as any)?.(name, activeMod.name);
+    let err = "";
+    if (activeMod.name === "LeviLamina") {
+      err = await (UninstallLeviLamina as any)?.(name);
+    } else {
+      err = await (DeleteMod as any)?.(name, activeMod.name);
+    }
     if (err) {
       setResultSuccess([]);
       setResultFailed([{ name: activeMod.name, err }]);
@@ -940,11 +983,13 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {() => (
             <>
-              <BaseModalHeader className="flex items-center gap-2 text-primary-600">
-                <FiUploadCloud className="w-5 h-5" />
-                <span>
-                  {t("mods.importing_title", { defaultValue: "正在导入..." })}
-                </span>
+              <BaseModalHeader className="text-primary-600">
+                <div className="flex items-center gap-2">
+                  <FiUploadCloud className="w-5 h-5" />
+                  <span>
+                    {t("mods.importing_title", { defaultValue: "正在导入..." })}
+                  </span>
+                </div>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="py-1">
@@ -979,24 +1024,26 @@ export const ModsPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader
-                className={`flex items-center gap-2 ${
+                className={`${
                   resultFailed.length ? "text-red-600" : "text-primary-600"
                 }`}
               >
-                {resultFailed.length ? (
-                  <FiAlertTriangle className="w-5 h-5" />
-                ) : (
-                  <FiUploadCloud className="w-5 h-5" />
-                )}
-                <span>
-                  {resultFailed.length
-                    ? t("mods.summary_title_partial", {
-                        defaultValue: "导入完成（部分失败）",
-                      })
-                    : t("mods.summary_title_done", {
-                        defaultValue: "导入完成",
-                      })}
-                </span>
+                <div className="flex items-center gap-2">
+                  {resultFailed.length ? (
+                    <FiAlertTriangle className="w-5 h-5" />
+                  ) : (
+                    <FiUploadCloud className="w-5 h-5" />
+                  )}
+                  <span>
+                    {resultFailed.length
+                      ? t("mods.summary_title_partial", {
+                          defaultValue: "导入完成（部分失败）",
+                        })
+                      : t("mods.summary_title_done", {
+                          defaultValue: "导入完成",
+                        })}
+                  </span>
+                </div>
               </BaseModalHeader>
               <BaseModalBody>
                 {resultSuccess.length ? (
@@ -1055,24 +1102,26 @@ export const ModsPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader
-                className={`flex items-center gap-2 ${
+                className={`${
                   resultFailed.length ? "text-red-600" : "text-primary-600"
                 }`}
               >
-                {resultFailed.length ? (
-                  <FiAlertTriangle className="w-5 h-5" />
-                ) : (
-                  <FiUploadCloud className="w-5 h-5" />
-                )}
-                <span>
-                  {resultFailed.length
-                    ? t("mods.delete_summary_title_failed", {
-                        defaultValue: "删除失败",
-                      })
-                    : t("mods.delete_summary_title_done", {
-                        defaultValue: "删除完成",
-                      })}
-                </span>
+                <div className="flex items-center gap-2">
+                  {resultFailed.length ? (
+                    <FiAlertTriangle className="w-5 h-5" />
+                  ) : (
+                    <FiUploadCloud className="w-5 h-5" />
+                  )}
+                  <span>
+                    {resultFailed.length
+                      ? t("mods.delete_summary_title_failed", {
+                          defaultValue: "删除失败",
+                        })
+                      : t("mods.delete_summary_title_done", {
+                          defaultValue: "删除完成",
+                        })}
+                  </span>
+                </div>
               </BaseModalHeader>
               <BaseModalBody>
                 {resultSuccess.length ? (
@@ -1131,7 +1180,12 @@ export const ModsPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-primary-600">
-                {t("mods.dll_modal_title", { defaultValue: "导入 DLL 插件" })}
+                <div className="flex items-center gap-2">
+                  <FaPuzzlePiece className="w-5 h-5" />
+                  <span>
+                    {t("mods.dll_modal_title", { defaultValue: "导入 DLL 插件" })}
+                  </span>
+                </div>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="flex flex-col gap-3">
@@ -1212,9 +1266,14 @@ export const ModsPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-primary-600">
-                {t("mods.overwrite_modal_title", {
-                  defaultValue: "检测到重复",
-                })}
+                <div className="flex items-center gap-2">
+                  <FiAlertTriangle className="w-5 h-5" />
+                  <span>
+                    {t("mods.overwrite_modal_title", {
+                      defaultValue: "检测到重复",
+                    })}
+                  </span>
+                </div>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-sm text-default-700">
@@ -1252,6 +1311,65 @@ export const ModsPage: React.FC = () => {
                   }}
                 >
                   {t("common.confirm", { defaultValue: "确定" })}
+                </Button>
+              </BaseModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </BaseModal>
+      <BaseModal
+        size="md"
+        isOpen={rcOpen}
+        onOpenChange={rcOnOpenChange}
+        hideCloseButton
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <BaseModalHeader className="text-warning-600">
+                <div className="flex items-center gap-2">
+                  <FiAlertTriangle className="w-5 h-5" />
+                  <span>
+                    {t("mods.rc_warning.title", {
+                      defaultValue: "实验性版本警告",
+                    })}
+                  </span>
+                </div>
+              </BaseModalHeader>
+              <BaseModalBody>
+                <div className="text-sm text-default-700 space-y-2">
+                  <p>
+                    {t("mods.rc_warning.body_1", {
+                      defaultValue:
+                        "检测到您即将安装的 LeviLamina 版本 ({{version}}) 为候选发布版 (RC)。",
+                      version: rcVersion,
+                    })}
+                  </p>
+                  <p className="font-semibold text-warning-700">
+                    {t("mods.rc_warning.body_2", {
+                      defaultValue:
+                        "这是一个实验性版本，可能存在不稳定因素，仅建议开发者或高级用户使用。",
+                    })}
+                  </p>
+                  <p>
+                    {t("mods.rc_warning.body_3", {
+                      defaultValue: "是否继续安装？",
+                    })}
+                  </p>
+                </div>
+              </BaseModalBody>
+              <BaseModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  {t("common.cancel", { defaultValue: "取消" })}
+                </Button>
+                <Button
+                  color="warning"
+                  onPress={() => {
+                    onClose();
+                    proceedInstallLeviLamina();
+                  }}
+                >
+                  {t("common.continue", { defaultValue: "继续" })}
                 </Button>
               </BaseModalFooter>
             </>
@@ -1531,9 +1649,9 @@ export const ModsPage: React.FC = () => {
         <ModalContent>
           {(onClose) => (
             <>
-              <BaseModalHeader className="flex items-center gap-2 text-primary-600">
-                <FaPuzzlePiece className="w-5 h-5" />
-                <span>
+              <BaseModalHeader className="flex flex-row items-center gap-3 text-primary-600">
+                <FaPuzzlePiece className="w-6 h-6" />
+                <span className="text-xl font-bold">
                   {t("mods.details_title", { defaultValue: "模组详情" })}
                 </span>
               </BaseModalHeader>
@@ -1676,7 +1794,12 @@ export const ModsPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-danger">
-                {t("mods.confirm_delete_title", { defaultValue: "确认删除" })}
+                <div className="flex items-center gap-2">
+                  <FiAlertTriangle className="w-5 h-5" />
+                  <span>
+                    {t("mods.confirm_delete_title", { defaultValue: "确认删除" })}
+                  </span>
+                </div>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-sm text-default-700 wrap-break-word whitespace-pre-wrap">

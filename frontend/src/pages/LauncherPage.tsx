@@ -634,33 +634,62 @@ export const LauncherPage = (args: any) => {
       };
       let worlds = 0;
 
+      let res = 0;
+      let bp = 0;
+      try {
+        res = await countDir(safe.resourcePacks);
+        bp = await countDir(safe.behaviorPacks);
+      } catch {}
+
       if (safe.usersRoot) {
         try {
           const players = await listPlayers(safe.usersRoot);
           let nextPlayer = players[0] || "";
-          try {
-            const tag = await (minecraft as any)?.GetLocalUserGamertag?.();           
-            if (tag) {
-              const map = await getPlayerGamertagMap(safe.usersRoot);
 
-              for (const p of players) {
-                if (map[p] === tag) {
-                  nextPlayer = p;
-                  break;
-                }
-              }
-            }
-          } catch {}
-
+          // Initial render with default player
           if (nextPlayer) {
             const wp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\minecraftWorlds`;
-            worlds = await countDir(wp);
+            const defaultWorlds = await countDir(wp);
+            setContentCounts({
+              worlds: defaultWorlds,
+              resourcePacks: res,
+              behaviorPacks: bp,
+            });
+          } else {
+            setContentCounts({
+              worlds: 0,
+              resourcePacks: res,
+              behaviorPacks: bp,
+            });
           }
+
+          // Async check for logged in user
+          (async () => {
+            try {
+              const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+              if (tag) {
+                const map = await getPlayerGamertagMap(safe.usersRoot);
+
+                let matchedPlayer = "";
+                for (const p of players) {
+                  if (map[p] === tag) {
+                    matchedPlayer = p;
+                    break;
+                  }
+                }
+
+                if (matchedPlayer && matchedPlayer !== nextPlayer) {
+                  const wp = `${safe.usersRoot}\\${matchedPlayer}\\games\\com.mojang\\minecraftWorlds`;
+                  const newWorlds = await countDir(wp);
+                  setContentCounts((prev) => ({ ...prev, worlds: newWorlds }));
+                }
+              }
+            } catch {}
+          })();
+          return;
         } catch {}
       }
-      const res = await countDir(safe.resourcePacks);
-      const bp = await countDir(safe.behaviorPacks);
-      setContentCounts({ worlds, resourcePacks: res, behaviorPacks: bp });
+      setContentCounts({ worlds: 0, resourcePacks: res, behaviorPacks: bp });
     } catch {
       setContentCounts({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
     }

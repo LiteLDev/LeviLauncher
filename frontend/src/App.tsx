@@ -62,6 +62,7 @@ import CurseForgePage from "@/pages/CurseForgePage";
 import CurseForgeModPage from "@/pages/CurseForgeModPage";
 import LIPPage from "@/pages/LIPPage";
 import LIPPackagePage from "@/pages/LIPPackagePage";
+import ServersPage from "@/pages/ServersPage";
 import { Toaster } from "react-hot-toast";
 import { useTheme } from "next-themes";
 
@@ -632,6 +633,7 @@ function App() {
                     path="/content/skin-packs"
                     element={<SkinPacksPage />}
                   />
+                  <Route path="/servers" element={<ServersPage />} />
                   <Route path="/about" element={<AboutPage />} />
                 </Routes>
               ))}

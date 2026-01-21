@@ -13,13 +13,23 @@ import {
   Chip,
   Spinner,
   Progress,
+  ModalContent,
+  useDisclosure,
 } from "@heroui/react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaChevronDown } from "react-icons/fa";
+import { FiAlertTriangle } from "react-icons/fi";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
+import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { motion } from "framer-motion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  BaseModal,
+  BaseModalHeader,
+  BaseModalBody,
+  BaseModalFooter,
+} from "@/components/BaseModal";
 import { PageHeader } from "@/components/PageHeader";
 
 type ItemType = "Preview" | "Release";
@@ -54,6 +64,14 @@ export default function InstallPage() {
   const [customInstallerPath, setCustomInstallerPath] = useState<string>("");
   const [installerDir, setInstallerDir] = useState<string>("");
   const [downloadResolved, setDownloadResolved] = useState<boolean>(false);
+  const { llMap } = useLeviLamina();
+  const {
+    isOpen: rcOpen,
+    onOpen: rcOnOpen,
+    onOpenChange: rcOnOpenChange,
+    onClose: rcOnClose,
+  } = useDisclosure();
+  const [rcVersion, setRcVersion] = useState("");
 
   useEffect(() => {
     const guardActive = installing && !resultMsg;
@@ -286,7 +304,7 @@ export default function InstallPage() {
     return t("downloadpage.install_folder.confirm_title") as unknown as string;
   }, [installing, resultMsg, t]);
 
-  const handleInstall = async () => {
+  const proceedInstall = async () => {
     setInstallError("");
     setResultMsg("");
 
@@ -468,6 +486,31 @@ export default function InstallPage() {
       setInstalling(false);
       await rollback();
     }
+  };
+
+  const handleInstall = async () => {
+    if (installLeviLamina && mirrorVersion) {
+      let targetLLVersion = "";
+      if (llMap && llMap.size > 0) {
+        let versions = llMap.get(mirrorVersion);
+        if (!versions && mirrorVersion.split(".").length >= 3) {
+          const parts = mirrorVersion.split(".");
+          const key = `${parts[0]}.${parts[1]}.${parts[2]}`;
+          versions = llMap.get(key);
+        }
+
+        if (versions && Array.isArray(versions) && versions.length > 0) {
+          targetLLVersion = versions[versions.length - 1];
+        }
+      }
+
+      if (targetLLVersion && targetLLVersion.includes("rc")) {
+        setRcVersion(targetLLVersion);
+        rcOnOpen();
+        return;
+      }
+    }
+    await proceedInstall();
   };
 
   return (
@@ -880,6 +923,63 @@ export default function InstallPage() {
           </CardBody>
         </Card>
       </div>
+      <BaseModal
+        size="md"
+        isOpen={rcOpen}
+        onOpenChange={rcOnOpenChange}
+        hideCloseButton
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <BaseModalHeader className="flex flex-row items-center gap-2 text-warning-600">
+                <FiAlertTriangle className="w-6 h-6" />
+                <span className="text-xl font-bold">
+                  {t("mods.rc_warning.title", {
+                    defaultValue: "实验性版本警告",
+                  })}
+                </span>
+              </BaseModalHeader>
+              <BaseModalBody>
+                <div className="text-sm text-default-700 space-y-2">
+                  <p>
+                    {t("mods.rc_warning.body_1", {
+                      defaultValue:
+                        "检测到您即将安装的 LeviLamina 版本 ({{version}}) 为候选发布版 (RC)。",
+                      version: rcVersion,
+                    })}
+                  </p>
+                  <p className="font-semibold text-warning-700">
+                    {t("mods.rc_warning.body_2", {
+                      defaultValue:
+                        "这是一个实验性版本，可能存在不稳定因素，仅建议开发者或高级用户使用。",
+                    })}
+                  </p>
+                  <p>
+                    {t("mods.rc_warning.body_3", {
+                      defaultValue: "是否继续安装？",
+                    })}
+                  </p>
+                </div>
+              </BaseModalBody>
+              <BaseModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  {t("common.cancel", { defaultValue: "取消" })}
+                </Button>
+                <Button
+                  color="warning"
+                  onPress={() => {
+                    onClose();
+                    proceedInstall();
+                  }}
+                >
+                  {t("common.continue", { defaultValue: "继续" })}
+                </Button>
+              </BaseModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </BaseModal>
     </motion.div>
   );
 }

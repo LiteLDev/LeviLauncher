@@ -92,6 +92,7 @@ export const LauncherPage = (args: any) => {
   const [logoByName, setLogoByName] = React.useState<Map<string, string>>(
     new Map(),
   );
+  const [isLoadingVersions, setIsLoadingVersions] = React.useState<boolean>(false);
   const fetchingLogos = React.useRef<Set<string>>(new Set());
   const ensureOpsRef = React.useRef<number>(0);
   const launchTips = React.useMemo(
@@ -646,7 +647,6 @@ export const LauncherPage = (args: any) => {
           const players = await listPlayers(safe.usersRoot);
           let nextPlayer = players[0] || "";
 
-          // Initial render with default player
           if (nextPlayer) {
             const wp = `${safe.usersRoot}\\${nextPlayer}\\games\\com.mojang\\minecraftWorlds`;
             const defaultWorlds = await countDir(wp);
@@ -663,7 +663,6 @@ export const LauncherPage = (args: any) => {
             });
           }
 
-          // Async check for logged in user
           (async () => {
             try {
               const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
@@ -743,69 +742,98 @@ export const LauncherPage = (args: any) => {
 
   useEffect(() => {
     if (hasBackend) {
-      const listFn =
-        (minecraft as any)?.ListVersionMetasWithRegistered ??
-        (minecraft as any)?.ListVersionMetas;
-      if (typeof listFn === "function") {
-        listFn().then((metas: any[]) => {
-          const newLocalVersionMap = new Map();
-          const newLocalVersionsMap = new Map();
-          metas?.forEach((m: any) => {
-            const name = String(m?.name || "");
-            const gameVersion = String(m?.gameVersion || "");
-            const type = String(m?.type || "release");
-            const isPreview = type.toLowerCase() === "preview";
-            const lv: any = {
-              name,
-              version: gameVersion,
-              isPreview,
-              isRegistered: Boolean(m?.registered),
-              isLaunched: false,
-              isPreLoader: false,
-            };
-            if (name) newLocalVersionMap.set(name, lv);
-            if (gameVersion) {
-              if (!newLocalVersionsMap.has(gameVersion))
-                newLocalVersionsMap.set(gameVersion, []);
-              if (!newLocalVersionsMap.get(gameVersion)?.includes(name))
-                newLocalVersionsMap.get(gameVersion)?.push(name);
-            }
-          });
-          setLocalVersionMap(newLocalVersionMap);
-
-          const saved = (() => {
-            try {
-              return localStorage.getItem("ll.currentVersionName") || "";
-            } catch {
-              return "";
-            }
-          })();
-          const useName =
-            saved && newLocalVersionMap.has(saved)
-              ? saved
-              : Array.from(newLocalVersionMap.keys())[0] || "";
-          setCurrentVersion(useName);
-          try {
-            saveCurrentVersionName(useName);
-          } catch {}
-          const ver = useName
-            ? newLocalVersionMap.get(useName)?.version || ""
-            : "";
-          setDisplayVersion(ver || "None");
-          setDisplayName(useName || "");
-          try {
-            const getter = minecraft?.GetVersionLogoDataUrl;
-            if (typeof getter === "function" && useName) {
-              getter(useName).then((u: string) =>
-                setLogoDataUrl(String(u || "")),
-              );
-            } else {
-              setLogoDataUrl("");
-            }
-          } catch {
-            setLogoDataUrl("");
+      setIsLoadingVersions(true);
+      
+      const processMetas = (metas: any[]) => {
+        const newLocalVersionMap = new Map();
+        const newLocalVersionsMap = new Map();
+        metas?.forEach((m: any) => {
+          const name = String(m?.name || "");
+          const gameVersion = String(m?.gameVersion || "");
+          const type = String(m?.type || "release");
+          const isPreview = type.toLowerCase() === "preview";
+          const lv: any = {
+            name,
+            version: gameVersion,
+            isPreview,
+            isRegistered: Boolean(m?.registered),
+            isLaunched: false,
+            isPreLoader: false,
+          };
+          if (name) newLocalVersionMap.set(name, lv);
+          if (gameVersion) {
+            if (!newLocalVersionsMap.has(gameVersion))
+              newLocalVersionsMap.set(gameVersion, []);
+            if (!newLocalVersionsMap.get(gameVersion)?.includes(name))
+              newLocalVersionsMap.get(gameVersion)?.push(name);
           }
         });
+        setLocalVersionMap(newLocalVersionMap);
+
+        const saved = (() => {
+          try {
+            return localStorage.getItem("ll.currentVersionName") || "";
+          } catch {
+            return "";
+          }
+        })();
+        const useName =
+          saved && newLocalVersionMap.has(saved)
+            ? saved
+            : Array.from(newLocalVersionMap.keys())[0] || "";
+        setCurrentVersion(useName);
+        try {
+          saveCurrentVersionName(useName);
+        } catch {}
+        const ver = useName
+          ? newLocalVersionMap.get(useName)?.version || ""
+          : "";
+        setDisplayVersion(ver || "None");
+        setDisplayName(useName || "");
+        try {
+          const getter = minecraft?.GetVersionLogoDataUrl;
+          if (typeof getter === "function" && useName) {
+            getter(useName).then((u: string) =>
+              setLogoDataUrl(String(u || "")),
+            );
+          } else {
+            setLogoDataUrl("");
+          }
+        } catch {
+          setLogoDataUrl("");
+        }
+      };
+
+      const fastFn = (minecraft as any)?.ListVersionMetas;
+      const slowFn = (minecraft as any)?.ListVersionMetasWithRegistered;
+
+      if (typeof fastFn === "function") {
+        fastFn().then((metas: any[]) => {
+          processMetas(metas);
+          setIsLoadingVersions(false);
+          
+          if (typeof slowFn === "function") {
+            slowFn().then((fullMetas: any[]) => {
+              processMetas(fullMetas);
+            }).catch(() => {});
+          }
+        }).catch(() => {
+          if (typeof slowFn === "function") {
+            slowFn().then((fullMetas: any[]) => {
+              processMetas(fullMetas);
+              setIsLoadingVersions(false);
+            }).catch(() => setIsLoadingVersions(false));
+          } else {
+            setIsLoadingVersions(false);
+          }
+        });
+      } else if (typeof slowFn === "function") {
+        slowFn().then((metas: any[]) => {
+          processMetas(metas);
+          setIsLoadingVersions(false);
+        }).catch(() => setIsLoadingVersions(false));
+      } else {
+        setIsLoadingVersions(false);
       }
     } else {
       setCurrentVersion("");
@@ -1582,6 +1610,18 @@ export const LauncherPage = (args: any) => {
                           new Set(currentVersion ? [currentVersion] : [])
                         }
                         className="max-h-[400px] overflow-y-auto no-scrollbar min-w-[300px]"
+                        bottomContent={
+                          isLoadingVersions ? (
+                            <div className="p-2 flex justify-center items-center gap-2 text-default-400 text-xs border-t border-default-100 dark:border-white/5">
+                              <Spinner size="sm" color="success" />
+                              <span>
+                                {t("common.loading", {
+                                  defaultValue: "Loading...",
+                                })}
+                              </span>
+                            </div>
+                          ) : null
+                        }
                         topContent={
                           <div className="p-3 border-b border-default-100 dark:border-default-50/10">
                             <Input

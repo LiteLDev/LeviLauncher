@@ -254,42 +254,6 @@
       }
     }
   },
-  "settingscard": {
-    "header": {
-      "title": "設定",
-      "content": "設定啟動器常用選項"
-    },
-    "body": {
-      "version": {
-        "name": "目前版本",
-        "hasnew": "有新版本更新！",
-        "button": "檢查更新",
-        "ignore": "屏蔽此版本"
-      },
-      "paths": {
-        "title": "內容路徑",
-        "subtitle": "管理遊戲資料儲存位置",
-        "base_root": "根目錄",
-        "apply": "套用",
-        "reset": "恢復預設",
-        "installer": "安裝器目錄",
-        "versions": "版本目錄",
-        "unsaved": "變更未儲存",
-        "not_writable": "目錄無法寫入"
-      },
-      "language": {
-        "name": "語言",
-        "button": "更改"
-      }
-    },
-    "modal": {
-      "2": {
-        "footer": {
-          "download_button": "更新"
-        }
-      }
-    }
-  },
   "settings": {
     "unsaved": {
       "title": "未儲存修改",
@@ -349,6 +313,51 @@
         "create_target_dir": "建立目標資料夾失敗。",
         "unzip_failed": "解壓失敗。"
       }
+    },
+    "header": {
+      "title": "設定",
+      "content": "設定啟動器常用選項"
+    },
+    "body": {
+      "version": {
+        "name": "目前版本",
+        "hasnew": "有新版本更新！",
+        "button": "檢查更新",
+        "ignore": "屏蔽此版本"
+      },
+      "paths": {
+        "title": "內容路徑",
+        "subtitle": "管理遊戲資料儲存位置",
+        "base_root": "根目錄",
+        "apply": "套用",
+        "reset": "恢復預設",
+        "installer": "安裝器目錄",
+        "versions": "版本目錄",
+        "unsaved": "變更未儲存",
+        "not_writable": "目錄無法寫入"
+      },
+      "language": {
+        "name": "語言",
+        "button": "更改"
+      }
+    },
+    "modal": {
+      "2": {
+        "footer": {
+          "download_button": "更新"
+        }
+      }
+    },
+    "process": {
+      "title": "進程管理",
+      "desc": "管理執行中的 Minecraft 進程",
+      "scan": "掃描進程",
+      "kill_all": "結束所有進程",
+      "kill": "結束",
+      "pid": "PID: {{pid}}",
+      "path": "路徑: {{path}}",
+      "launcher_version": "啟動器版本: {{name}}",
+      "no_process": "未發現執行中的 Minecraft 進程"
     }
   },
   "downloadmodal": {

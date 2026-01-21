@@ -254,42 +254,6 @@
       }
     }
   },
-  "settingscard": {
-    "header": {
-      "title": "设置",
-      "content": "配置启动器常用选项"
-    },
-    "body": {
-      "version": {
-        "name": "当前版本",
-        "hasnew": "有新的版本更新！",
-        "button": "检查更新",
-        "ignore": "屏蔽该版本"
-      },
-      "paths": {
-        "title": "内容路径",
-        "subtitle": "管理游戏数据存储位置",
-        "base_root": "根目录",
-        "apply": "应用",
-        "reset": "恢复默认",
-        "installer": "安装器目录",
-        "versions": "版本目录",
-        "unsaved": "更改未保存",
-        "not_writable": "目录不可写入"
-      },
-      "language": {
-        "name": "语言",
-        "button": "更改"
-      }
-    },
-    "modal": {
-      "2": {
-        "footer": {
-          "download_button": "更新"
-        }
-      }
-    }
-  },
   "settings": {
     "unsaved": {
       "title": "未保存修改",
@@ -349,6 +313,51 @@
         "create_target_dir": "无法创建目标目录。",
         "unzip_failed": "解压失败。"
       }
+    },
+    "header": {
+      "title": "设置",
+      "content": "配置启动器常用选项"
+    },
+    "body": {
+      "version": {
+        "name": "当前版本",
+        "hasnew": "有新的版本更新！",
+        "button": "检查更新",
+        "ignore": "屏蔽该版本"
+      },
+      "paths": {
+        "title": "内容路径",
+        "subtitle": "管理游戏数据存储位置",
+        "base_root": "根目录",
+        "apply": "应用",
+        "reset": "恢复默认",
+        "installer": "安装器目录",
+        "versions": "版本目录",
+        "unsaved": "更改未保存",
+        "not_writable": "目录不可写入"
+      },
+      "language": {
+        "name": "语言",
+        "button": "更改"
+      }
+    },
+    "modal": {
+      "2": {
+        "footer": {
+          "download_button": "更新"
+        }
+      }
+    },
+    "process": {
+      "title": "进程管理",
+      "desc": "管理运行中的 Minecraft 进程",
+      "scan": "扫描进程",
+      "kill_all": "结束所有进程",
+      "kill": "结束",
+      "pid": "PID: {{pid}}",
+      "path": "路径: {{path}}",
+      "launcher_version": "启动器版本: {{name}}",
+      "no_process": "未发现运行中的 Minecraft 进程"
     }
   },
   "downloadmodal": {

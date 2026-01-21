@@ -176,10 +176,10 @@ export default function OnboardingPage() {
                 >
                   <div className="mb-6">
                     <SectionHeader
-                      title={t("settingscard.body.paths.title", {
+                      title={t("settings.body.paths.title", {
                         defaultValue: "内容路径",
                       })}
-                      description={t("settingscard.body.paths.subtitle", {
+                      description={t("settings.body.paths.subtitle", {
                         defaultValue: "管理游戏数据存储位置",
                       })}
                     />
@@ -188,10 +188,10 @@ export default function OnboardingPage() {
                   <div className="space-y-6">
                     <Input
                       labelPlacement="outside"
-                      label={t("settingscard.body.paths.base_root", {
+                      label={t("settings.body.paths.base_root", {
                         defaultValue: "根目录",
                       })}
-                      placeholder={t("settingscard.body.paths.base_root", {
+                      placeholder={t("settings.body.paths.base_root", {
                         defaultValue: "根目录",
                       })}
                       value={newBaseRoot}
@@ -211,10 +211,10 @@ export default function OnboardingPage() {
                             }
                           >
                             {baseRootWritable
-                              ? t("settingscard.body.paths.unsaved", {
+                              ? t("settings.body.paths.unsaved", {
                                   defaultValue: "更改未保存",
                                 })
-                              : t("settingscard.body.paths.not_writable", {
+                              : t("settings.body.paths.not_writable", {
                                   defaultValue: "目录不可写入",
                                 })}
                           </span>
@@ -231,7 +231,7 @@ export default function OnboardingPage() {
                                 directoryPickMode: true,
                                 returnTo: "/onboarding",
                                 returnState: {},
-                                title: t("settingscard.body.paths.title", {
+                                title: t("settings.body.paths.title", {
                                   defaultValue: "内容路径",
                                 }),
                                 initialPath: newBaseRoot || baseRoot || "",
@@ -278,7 +278,7 @@ export default function OnboardingPage() {
                             setSavingBaseRoot(false);
                           }}
                         >
-                          {t("settingscard.body.paths.apply", {
+                          {t("settings.body.paths.apply", {
                             defaultValue: "应用",
                           })}
                         </Button>
@@ -303,7 +303,7 @@ export default function OnboardingPage() {
                             } catch {}
                           }}
                         >
-                          {t("settingscard.body.paths.reset", {
+                          {t("settings.body.paths.reset", {
                             defaultValue: "恢复默认",
                           })}
                         </Button>
@@ -320,7 +320,7 @@ export default function OnboardingPage() {
                   className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-6"
                 >
                   <SectionHeader
-                    title={t("settingscard.body.language.name", {
+                    title={t("settings.body.language.name", {
                       defaultValue: t("app.lang"),
                     })}
                     description={
@@ -335,7 +335,7 @@ export default function OnboardingPage() {
                             variant="flat"
                             className="bg-default-100 dark:bg-white/10 font-medium"
                           >
-                            {t("settingscard.body.language.button", {
+                            {t("settings.body.language.button", {
                               defaultValue: "更改",
                             })}
                           </Button>
@@ -424,7 +424,7 @@ export default function OnboardingPage() {
                 </div>
                 {!baseRootWritable && (
                   <div className="text-tiny text-danger-500 mt-1">
-                    {t("settingscard.body.paths.not_writable", {
+                    {t("settings.body.paths.not_writable", {
                       defaultValue: "目录不可写入",
                     })}
                   </div>

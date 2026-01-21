@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { FaWindows } from "react-icons/fa";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as mcservice from "bindings/github.com/liteldev/LeviLauncher/internal/mcservice/models";
 import { PageHeader } from "@/components/PageHeader";
 
 export default function VersionSettingsPage() {
@@ -47,6 +48,7 @@ export default function VersionSettingsPage() {
   const [unregisterOpen, setUnregisterOpen] = React.useState<boolean>(false);
   const [unregisterSuccessOpen, setUnregisterSuccessOpen] =
     React.useState<boolean>(false);
+
   const [gdkMissingOpen, setGdkMissingOpen] = React.useState<boolean>(false);
   const [error, setError] = React.useState<string>("");
   const [logoDataUrl, setLogoDataUrl] = React.useState<string>("");

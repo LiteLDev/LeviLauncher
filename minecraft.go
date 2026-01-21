@@ -1033,8 +1033,10 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 	var enableConsole bool
 	if m, err := versions.ReadMeta(dir); err == nil {
 		enableConsole = m.EnableConsole
-		p := peeditor.PrepareExecutableForLaunch(a.ctx, dir, m.EnableConsole)
-		if strings.TrimSpace(p) != "" {
+		p, err := peeditor.PrepareExecutableForLaunch(a.ctx, dir, m.EnableConsole)
+		if err != nil {
+			log.Printf("Failed to prepare executable: %v", err)
+		} else if strings.TrimSpace(p) != "" {
 			toRun = p
 		}
 		if m.Registered {
@@ -1096,6 +1098,26 @@ func (a *Minecraft) SetDisableDiscordRPC(disable bool) string {
 func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }
 
 func (a *Minecraft) CanWriteToDir(path string) bool { return mcservice.CanWriteToDir(path) }
+
+func (a *Minecraft) ListMinecraftProcesses() []types.ProcessInfo {
+	return mcservice.ListMinecraftProcesses()
+}
+
+func (a *Minecraft) KillProcess(pid int) string {
+	err := mcservice.KillProcess(pid)
+	if err != nil {
+		return err.Error()
+	}
+	return ""
+}
+
+func (a *Minecraft) KillAllMinecraftProcesses() string {
+	err := mcservice.KillAllMinecraftProcesses()
+	if err != nil {
+		return err.Error()
+	}
+	return ""
+}
 
 func (a *Minecraft) ReconcileRegisteredFlags() { mcservice.ReconcileRegisteredFlags() }
 

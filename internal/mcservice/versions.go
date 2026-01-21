@@ -259,10 +259,13 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 		EnableRenderDragon: enableRenderDragon,
 		CreatedAt:          time.Now(),
 	}
+	if _, err := peeditor.PrepareExecutableForLaunch(context.Background(), dir, enableConsole); err != nil {
+		return "ERR_PREPARE_EXE"
+	}
 	if err := versions.WriteMeta(dir, meta); err != nil {
 		return "ERR_WRITE_TARGET"
 	}
-	peeditor.PrepareExecutableForLaunch(context.Background(), dir, enableConsole)
+
 	return ""
 }
 

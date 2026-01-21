@@ -254,42 +254,6 @@
       }
     }
   },
-  "settingscard": {
-    "header": {
-      "title": "設定",
-      "content": "ランチャーの一般的なオプション設定"
-    },
-    "body": {
-      "version": {
-        "name": "現在のバージョン",
-        "hasnew": "新しいバージョンが利用可能です！ ",
-        "button": "更新を確認",
-        "ignore": "このバージョンを無視"
-      },
-      "paths": {
-        "title": "コンテンツパス",
-        "subtitle": "ゲームデータの保存場所を管理",
-        "base_root": "基本ルート",
-        "apply": "適用",
-        "reset": "リセット",
-        "installer": "インストーラー",
-        "versions": "バージョン",
-        "unsaved": "変更が保存されていません",
-        "not_writable": "ディレクトリへの書き込み不可"
-      },
-      "language": {
-        "name": "言語",
-        "button": "変更"
-      }
-    },
-    "modal": {
-      "2": {
-        "footer": {
-          "download_button": "更新"
-        }
-      }
-    }
-  },
   "settings": {
     "unsaved": {
       "title": "保存されていない変更",
@@ -349,6 +313,51 @@
         "create_target_dir": "ターゲットディレクトリの作成に失敗しました。",
         "unzip_failed": "解凍に失敗しました。"
       }
+    },
+    "header": {
+      "title": "設定",
+      "content": "ランチャーの一般的なオプション設定"
+    },
+    "body": {
+      "version": {
+        "name": "現在のバージョン",
+        "hasnew": "新しいバージョンが利用可能です！ ",
+        "button": "更新を確認",
+        "ignore": "このバージョンを無視"
+      },
+      "paths": {
+        "title": "コンテンツパス",
+        "subtitle": "ゲームデータの保存場所を管理",
+        "base_root": "基本ルート",
+        "apply": "適用",
+        "reset": "リセット",
+        "installer": "インストーラー",
+        "versions": "バージョン",
+        "unsaved": "変更が保存されていません",
+        "not_writable": "ディレクトリへの書き込み不可"
+      },
+      "language": {
+        "name": "言語",
+        "button": "変更"
+      }
+    },
+    "modal": {
+      "2": {
+        "footer": {
+          "download_button": "更新"
+        }
+      }
+    },
+    "process": {
+      "title": "プロセス管理",
+      "desc": "実行中の Minecraft プロセスを管理",
+      "scan": "プロセスをスキャン",
+      "kill_all": "すべてのプロセスを終了",
+      "kill": "終了",
+      "pid": "PID: {{pid}}",
+      "path": "パス: {{path}}",
+      "launcher_version": "ランチャーバージョン: {{name}}",
+      "no_process": "実行中の Minecraft プロセスが見つかりません"
     }
   },
   "downloadmodal": {

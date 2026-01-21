@@ -103,6 +103,13 @@ type LevelDatField struct {
 	Path        []string `json:"path,omitempty"`
 }
 
+type ProcessInfo struct {
+	Pid         int    `json:"pid"`
+	ExePath     string `json:"exePath"`
+	IsLauncher  bool   `json:"isLauncher"`
+	VersionName string `json:"versionName"`
+}
+
 type ExtractProgress struct {
 	Dir   string `json:"dir"`
 	Files int64  `json:"files"`

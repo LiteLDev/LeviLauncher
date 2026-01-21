@@ -5,6 +5,7 @@ import (
 	"context"
 	"crypto/sha256"
 	_ "embed"
+	"fmt"
 	"io"
 	"os"
 	"os/exec"
@@ -92,28 +93,10 @@ func RunForVersion(ctx context.Context, versionDir string) bool {
 	return true
 }
 
-func copyFile(src, dst string) bool {
-	s, err := os.Open(src)
-	if err != nil {
-		return false
-	}
-	defer s.Close()
-	_ = os.MkdirAll(filepath.Dir(dst), 0755)
-	d, err := os.Create(dst)
-	if err != nil {
-		return false
-	}
-	defer d.Close()
-	if _, err := io.Copy(d, s); err != nil {
-		return false
-	}
-	return true
-}
-
-func PrepareExecutableForLaunch(ctx context.Context, versionDir string, console bool) string {
+func PrepareExecutableForLaunch(ctx context.Context, versionDir string, console bool) (string, error) {
 	dir := strings.TrimSpace(versionDir)
 	if dir == "" {
-		return ""
+		return "", fmt.Errorf("version dir is empty")
 	}
 	c := filepath.Join(dir, "Minecraft.Windows.Console.exe")
 	if fileExists(c) {
@@ -121,10 +104,12 @@ func PrepareExecutableForLaunch(ctx context.Context, versionDir string, console 
 	}
 	src := filepath.Join(dir, "Minecraft.Windows.exe")
 	if !fileExists(src) {
-		return ""
+		return "", fmt.Errorf("Minecraft.Windows.exe not found in %s", dir)
 	}
-	_ = SetSubsystem(ctx, src, console)
-	return src
+	if !SetSubsystem(ctx, src, console) {
+		return "", fmt.Errorf("failed to set subsystem for %s", src)
+	}
+	return src, nil
 }
 
 func fileExists(p string) bool {

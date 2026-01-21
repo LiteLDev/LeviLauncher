@@ -254,42 +254,6 @@
       }
     }
   },
-  "settingscard": {
-    "header": {
-      "title": "Settings",
-      "content": "Configure common launcher options"
-    },
-    "body": {
-      "version": {
-        "name": "Current Version",
-        "hasnew": "New version available! ",
-        "button": "Check Update",
-        "ignore": "Ignore this version"
-      },
-      "paths": {
-        "title": "Content Paths",
-        "subtitle": "Manage game data storage location",
-        "base_root": "Base Root",
-        "apply": "Apply",
-        "reset": "Reset",
-        "installer": "Installers",
-        "versions": "Versions",
-        "unsaved": "Changes not saved",
-        "not_writable": "Directory not writable"
-      },
-      "language": {
-        "name": "Language",
-        "button": "Change"
-      }
-    },
-    "modal": {
-      "2": {
-        "footer": {
-          "download_button": "Update"
-        }
-      }
-    }
-  },
   "settings": {
     "unsaved": {
       "title": "Unsaved Changes",
@@ -348,6 +312,51 @@
         "download_failed": "Download failed.",
         "create_target_dir": "Failed to create target directory.",
         "unzip_failed": "Failed to unzip."
+      }
+    },
+    "header": {
+      "title": "Settings",
+      "content": "Configure common launcher options"
+    },
+    "body": {
+      "version": {
+        "name": "Current Version",
+        "hasnew": "New version available! ",
+        "button": "Check Update",
+        "ignore": "Ignore this version"
+      },
+      "paths": {
+        "title": "Content Paths",
+        "subtitle": "Manage game data storage location",
+        "base_root": "Base Root",
+        "apply": "Apply",
+        "reset": "Reset",
+        "installer": "Installers",
+        "versions": "Versions",
+        "unsaved": "Changes not saved",
+        "not_writable": "Directory not writable"
+      },
+      "language": {
+        "name": "Language",
+        "button": "Change"
+      }
+    },
+    "process": {
+      "title": "Process Manager",
+      "desc": "Manage running Minecraft processes",
+      "scan": "Scan Processes",
+      "kill_all": "End All Processes",
+      "kill": "End Task",
+      "pid": "PID: {{pid}}",
+      "path": "Path: {{path}}",
+      "launcher_version": "Launcher Version: {{name}}",
+      "no_process": "No running Minecraft processes found"
+    },
+    "modal": {
+      "2": {
+        "footer": {
+          "download_button": "Update"
+        }
       }
     }
   },

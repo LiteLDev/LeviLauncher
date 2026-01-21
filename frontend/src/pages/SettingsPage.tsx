@@ -44,6 +44,9 @@ import {
   GetLipVersion,
   IsLipInstalled,
   GetLatestLipVersion,
+  ListMinecraftProcesses,
+  KillProcess,
+  KillAllMinecraftProcesses,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { Browser, Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
@@ -103,6 +106,41 @@ export const SettingsPage: React.FC = () => {
   }>({ percentage: 0, current: 0, total: 0 });
   const [lipError, setLipError] = useState<string>("");
   const lipProgressDisclosure = useDisclosure();
+
+  // Process Management State
+  const [processModalOpen, setProcessModalOpen] = useState(false);
+  const [processes, setProcesses] = useState<types.ProcessInfo[]>([]);
+  const [scanningProcesses, setScanningProcesses] = useState(false);
+
+  const refreshProcesses = async () => {
+    setScanningProcesses(true);
+    try {
+      const list = await ListMinecraftProcesses();
+      setProcesses(list || []);
+    } finally {
+      setScanningProcesses(false);
+    }
+  };
+
+  const handleKillProcess = async (pid: number) => {
+    try {
+      await KillProcess(pid);
+      await refreshProcesses();
+    } catch {}
+  };
+
+  const handleKillAllProcesses = async () => {
+    try {
+      await KillAllMinecraftProcesses();
+      await refreshProcesses();
+    } catch {}
+  };
+
+  useEffect(() => {
+    if (processModalOpen) {
+      refreshProcesses();
+    }
+  }, [processModalOpen]);
 
   const hasLipUpdate = useMemo(() => {
     if (!lipInstalled || !lipLatestVersion || !lipVersion) return false;
@@ -363,8 +401,8 @@ export const SettingsPage: React.FC = () => {
         <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
           <CardBody className="p-8">
             <PageHeader
-              title={t("settingscard.header.title")}
-              description={t("settingscard.header.content")}
+              title={t("settings.header.title")}
+              description={t("settings.header.content")}
             />
           </CardBody>
         </Card>
@@ -383,7 +421,7 @@ export const SettingsPage: React.FC = () => {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <p className="text-large font-bold">
-                    {t("settingscard.body.paths.title", {
+                    {t("settings.body.paths.title", {
                       defaultValue: "内容路径",
                     })}
                   </p>
@@ -395,7 +433,7 @@ export const SettingsPage: React.FC = () => {
                     size="sm"
                     onPress={() => resetOnOpen()}
                   >
-                    {t("settingscard.body.paths.reset", {
+                    {t("settings.body.paths.reset", {
                       defaultValue: "恢复默认",
                     })}
                   </Button>
@@ -427,7 +465,7 @@ export const SettingsPage: React.FC = () => {
                       setSavingBaseRoot(false);
                     }}
                   >
-                    {t("settingscard.body.paths.apply", {
+                    {t("settings.body.paths.apply", {
                       defaultValue: "应用",
                     })}
                   </Button>
@@ -437,7 +475,7 @@ export const SettingsPage: React.FC = () => {
               <div className="space-y-4">
                 <Input
                   label={
-                    t("settingscard.body.paths.base_root", {
+                    t("settings.body.paths.base_root", {
                       defaultValue: "根目录",
                     }) as string
                   }
@@ -460,7 +498,7 @@ export const SettingsPage: React.FC = () => {
                             directoryPickMode: true,
                             returnTo: "/settings",
                             returnState: {},
-                            title: t("settingscard.body.paths.title", {
+                            title: t("settings.body.paths.title", {
                               defaultValue: "内容路径",
                             }),
                             initialPath: newBaseRoot || baseRoot || "",
@@ -477,7 +515,7 @@ export const SettingsPage: React.FC = () => {
                     className="text-tiny text-warning-500 px-1"
                     title={newBaseRoot}
                   >
-                    {t("settingscard.body.paths.base_root", {
+                    {t("settings.body.paths.base_root", {
                       defaultValue: "根目录",
                     }) +
                       ": " +
@@ -486,7 +524,7 @@ export const SettingsPage: React.FC = () => {
                 ) : null}
                 {!baseRootWritable ? (
                   <div className="text-tiny text-danger-500 px-1">
-                    {t("settingscard.body.paths.not_writable", {
+                    {t("settings.body.paths.not_writable", {
                       defaultValue: "目录不可写入",
                     })}
                   </div>
@@ -500,7 +538,7 @@ export const SettingsPage: React.FC = () => {
                     >
                       <LuHardDrive size={14} />
                       <span className="font-medium">
-                        {t("settingscard.body.paths.installer", {
+                        {t("settings.body.paths.installer", {
                           defaultValue: "安装器目录",
                         })}
                         :
@@ -515,7 +553,7 @@ export const SettingsPage: React.FC = () => {
                     >
                       <LuHardDrive size={14} />
                       <span className="font-medium">
-                        {t("settingscard.body.paths.versions", {
+                        {t("settings.body.paths.versions", {
                           defaultValue: "版本目录",
                         })}
                         :
@@ -629,6 +667,28 @@ export const SettingsPage: React.FC = () => {
                     </Button>
                   )}
                 </div>
+
+                <Divider className="bg-default-200/50" />
+
+                {/* Process Management */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="font-medium">
+                      {t("settings.process.title")}
+                    </p>
+                    <p className="text-tiny text-default-500">
+                      {t("settings.process.desc")}
+                    </p>
+                  </div>
+                  <Button
+                    radius="full"
+                    variant="bordered"
+                    size="sm"
+                    onPress={() => setProcessModalOpen(true)}
+                  >
+                    {t("settings.process.scan")}
+                  </Button>
+                </div>
               </CardBody>
             </Card>
           </motion.div>
@@ -647,7 +707,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <p className="font-medium text-large">
-                      {t("settingscard.body.language.name", {
+                      {t("settings.body.language.name", {
                         defaultValue: t("app.lang"),
                       })}
                     </p>
@@ -666,7 +726,7 @@ export const SettingsPage: React.FC = () => {
                   <Dropdown>
                     <DropdownTrigger>
                       <Button radius="full" variant="bordered">
-                        {t("settingscard.body.language.button", {
+                        {t("settings.body.language.button", {
                           defaultValue: "更改",
                         })}
                       </Button>
@@ -747,7 +807,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <p className="font-medium text-large">
-                      {t("settingscard.body.version.name")}
+                      {t("settings.body.version.name")}
                     </p>
                     <p className="text-small text-default-500">v{appVersion}</p>
                   </div>
@@ -759,7 +819,7 @@ export const SettingsPage: React.FC = () => {
                       variant="bordered"
                       onPress={onCheckUpdate}
                     >
-                      {t("settingscard.body.version.button")}
+                      {t("settings.body.version.button")}
                     </Button>
                   )}
                 </div>
@@ -775,7 +835,7 @@ export const SettingsPage: React.FC = () => {
                       <div className="rounded-xl bg-default-100/50 dark:bg-zinc-800/30 p-4 border border-default-200/50 dark:border-white/5">
                         <div className="flex items-center justify-between mb-3">
                           <p className="text-small font-bold text-emerald-600 dark:text-emerald-500">
-                            {t("settingscard.body.version.hasnew")} {newVersion}
+                            {t("settings.body.version.hasnew")} {newVersion}
                           </p>
                           <Button
                             color="primary"
@@ -789,7 +849,7 @@ export const SettingsPage: React.FC = () => {
                             {updating
                               ? t("common.updating", { defaultValue: "更新中" })
                               : t(
-                                  "settingscard.modal.2.footer.download_button",
+                                  "settings.modal.2.footer.download_button",
                                 )}
                           </Button>
                         </div>
@@ -959,6 +1019,111 @@ export const SettingsPage: React.FC = () => {
                   }}
                 >
                   {t("downloadmodal.download_button")}
+                </Button>
+              </BaseModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </BaseModal>
+
+      {/* Process Management Modal */}
+      <BaseModal
+        size="2xl"
+        isOpen={processModalOpen}
+        onOpenChange={setProcessModalOpen}
+        scrollBehavior="inside"
+      >
+        <ModalContent className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl">
+          {(onClose) => (
+            <>
+              <BaseModalHeader>
+                <div className="flex items-center justify-between w-full pr-8">
+                  <div className="flex flex-col gap-1">
+                    <span>{t("settings.process.title")}</span>
+                    <span className="text-small font-normal text-default-500">
+                      {t("settings.process.desc")}
+                    </span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      color="primary"
+                      isLoading={scanningProcesses}
+                      onPress={refreshProcesses}
+                    >
+                      {t("settings.process.scan")}
+                    </Button>
+                    {processes.length > 0 && (
+                      <Button
+                        size="sm"
+                        color="danger"
+                        variant="flat"
+                        onPress={handleKillAllProcesses}
+                      >
+                        {t("settings.process.kill_all")}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              </BaseModalHeader>
+              <BaseModalBody className="pretty-scrollbar">
+                <div className="flex flex-col gap-4">
+                  {processes.length === 0 ? (
+                    <div className="text-center py-8 text-default-500">
+                      {t("settings.process.no_process")}
+                    </div>
+                  ) : (
+                    <div className="flex flex-col gap-2">
+                      {processes.map((p) => (
+                        <div
+                          key={p.pid}
+                          className="flex items-center justify-between p-3 rounded-xl bg-default-100/50 dark:bg-default-100/10 border border-default-200/50"
+                        >
+                          <div className="flex flex-col gap-1 overflow-hidden">
+                            <div className="flex items-center gap-2">
+                              <span className="font-mono text-small bg-default-200/50 px-1.5 rounded text-default-600">
+                                {p.pid}
+                              </span>
+                              {p.isLauncher && p.versionName ? (
+                                <Chip
+                                  size="sm"
+                                  color="success"
+                                  variant="flat"
+                                  className="h-5 text-[10px]"
+                                >
+                                  {p.versionName}
+                                </Chip>
+                              ) : (
+                                <span className="text-small font-medium">
+                                  Minecraft.Windows.exe
+                                </span>
+                              )}
+                            </div>
+                            <span
+                              className="text-tiny text-default-400 truncate max-w-[400px]"
+                              title={p.exePath}
+                            >
+                              {p.exePath}
+                            </span>
+                          </div>
+                          <Button
+                            size="sm"
+                            color="danger"
+                            variant="light"
+                            onPress={() => handleKillProcess(p.pid)}
+                          >
+                            {t("settings.process.kill")}
+                          </Button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </BaseModalBody>
+              <BaseModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  {t("common.close")}
                 </Button>
               </BaseModalFooter>
             </>
@@ -1165,7 +1330,7 @@ export const SettingsPage: React.FC = () => {
                 </div>
                 {!baseRootWritable && (
                   <div className="text-tiny text-danger-500 mt-1">
-                    {t("settingscard.body.paths.not_writable", {
+                    {t("settings.body.paths.not_writable", {
                       defaultValue: "目录不可写入",
                     })}
                   </div>

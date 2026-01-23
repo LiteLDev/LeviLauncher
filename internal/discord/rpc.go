@@ -38,24 +38,7 @@ func Init() {
 	if c == nil {
 		return
 	}
-	now := time.Now()
-	if err := c.SetActivity(client.Activity{
-		Type:       0,
-		State:      "Using LeviLauncher",
-		Details:    "A Minecraft Bedrock Launcher",
-		LargeImage: "",
-		LargeText:  "LeviLauncher",
-		SmallImage: "",
-		SmallText:  "LeviLauncher",
-		Party:      nil,
-		Timestamps: &client.Timestamps{Start: &now},
-		Buttons: []*client.Button{
-			{Label: "GitHub", Url: "https://github.com/LiteLDev/LeviLauncher"},
-			{Label: "Discord", Url: "https://discord.gg/v5R5P4vRZk"},
-		},
-	}); err != nil {
-		return
-	}
+	SetLauncherIdle()
 }
 
 func SetLauncherIdle() {
@@ -66,7 +49,7 @@ func SetLauncherIdle() {
 	now := time.Now()
 	_ = c.SetActivity(client.Activity{
 		Type:       0,
-		State:      "Using LeviLauncher",
+		State:      "Idling in Launcher",
 		Details:    "A Minecraft Bedrock Launcher",
 		LargeImage: "appicon",
 		LargeText:  "LeviLauncher",

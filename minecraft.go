@@ -1056,7 +1056,7 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 			}
 			gameVer = strings.TrimSpace(m.GameVersion)
 			discord.SetPlayingVersion(gameVer)
-			go launch.MonitorMinecraftWindow(a.ctx)
+			go launch.MonitorGameProcess(a.ctx, dir)
 			return ""
 		}
 		if m.EnableEditorMode {
@@ -1081,7 +1081,7 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 		return "ERR_LAUNCH_GAME"
 	}
 	discord.SetPlayingVersion(gameVer)
-	go launch.MonitorMinecraftWindow(a.ctx)
+	go launch.MonitorGameProcess(a.ctx, dir)
 	return ""
 }
 

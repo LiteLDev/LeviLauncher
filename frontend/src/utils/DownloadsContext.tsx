@@ -20,7 +20,7 @@ export interface DownloadItem {
 
 interface DownloadsContextType {
   downloads: DownloadItem[];
-  startDownload: (url: string, filename?: string) => void;
+  startDownload: (url: string, filename?: string) => Promise<boolean>;
   cancelDownload: (dest?: string) => void;
   removeDownload: (dest: string) => void;
   clearError: (dest?: string) => void;
@@ -197,8 +197,8 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     };
   }, [t]);
 
-  const startDownload = async (url: string, filename?: string) => {
-    if (typeof minecraft === "undefined") return;
+  const startDownload = async (url: string, filename?: string): Promise<boolean> => {
+    if (typeof minecraft === "undefined") return false;
     
     const displayName = filename
       ? filename
@@ -220,7 +220,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
     if (isAlreadyDownloading) {
         toast.error(t("downloadpage.error.already_downloading", { defaultValue: "该文件正在下载中" }));
-        return;
+        return false;
     }
 
     let urlWithFilename = url;
@@ -250,8 +250,10 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         url: url, // Store original URL for retry
       }));
       toast.success(t("downloadpage.mirror.download_started", { defaultValue: "开始下载..." }));
+      return true;
     } catch (e) {
       toast.error(String(e));
+      return false;
     }
   };
 

@@ -928,6 +928,10 @@ export const DownloadPage: React.FC = () => {
                             color="default"
                             isDisabled={!hasStatus(item) && refreshing}
                             onPress={() => {
+                              if (isDownloading) {
+                                toast.error(t("downloadpage.error.already_downloading", { defaultValue: "当前已有下载任务正在进行" }));
+                                return;
+                              }
                               const urls = item.urls || [];
                               setMirrorUrls(urls);
                               setMirrorVersion(item.short);
@@ -1203,7 +1207,7 @@ export const DownloadPage: React.FC = () => {
                   size="lg"
                   isDisabled={!selectedUrl}
                   startContent={installMode ? null : <FaDownload />}
-                  onPress={(e) => {
+                  onPress={async (e) => {
                     if (!selectedUrl) return;
                     if (installMode) {
                       navigate("/install", {
@@ -1215,15 +1219,19 @@ export const DownloadPage: React.FC = () => {
                       });
                       onClose?.();
                     } else {
-                      triggerAnimation(e);
-                      onClose?.();
                       if (hasBackend && minecraft?.StartMsixvcDownload) {
                         const desired = `${
                             mirrorType || "Release"
                           } ${mirrorVersion}.msixvc`;
-                        startDownload(selectedUrl, desired);
+                        const success = await startDownload(selectedUrl, desired);
+                        if (success) {
+                            triggerAnimation(e);
+                            onClose?.();
+                        }
                       } else {
                         window.open(selectedUrl, "_blank");
+                        triggerAnimation(e);
+                        onClose?.();
                       }
                     }
                   }}

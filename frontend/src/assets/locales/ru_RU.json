@@ -418,6 +418,7 @@
     "continue": "Продолжить",
     "cancel": "Отмена",
     "error": "Ошибка",
+    "cancelled": "Отменено",
     "refresh": "Обновить",
     "quit_launcher": "Выйти из лаунчера",
     "confirm": "Подтвердить",

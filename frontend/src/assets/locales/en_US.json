@@ -127,6 +127,17 @@
     },
     "manage": "Manage Mods"
   },
+  "download_manager": {
+    "title": "Download Manager",
+    "short_title": "Tasks",
+    "description": "View and manage current download tasks",
+    "no_downloads": "No active download tasks",
+    "unknown_file": "Unknown File",
+    "actions": {
+      "retry": "Retry",
+      "delete": "Delete"
+    }
+  },
   "updating": {
     "title": "Updating LeviLauncher",
     "body": "Requesting administrator permission and performing update. Do not close this window during update.",
@@ -137,6 +148,9 @@
     }
   },
   "downloadpage": {
+    "error": {
+      "already_downloading": "This file is already downloading"
+    },
     "changelog": {
       "title": "Latest Changelog"
     },
@@ -192,6 +206,9 @@
       "inherit_gdk": "Inherit from GDK directory"
     },
     "mirror": {
+      "latency": "Latency",
+      "no_recommended": "No recommended mirror",
+      "download_started": "Download started...",
       "title": "Select Download Mirror",
       "target": "Target",
       "testing": "Testing…",
@@ -395,9 +412,12 @@
     "rhymc_name": "RhyMC"
   },
   "common": {
+    "completed": "Completed",
+    "downloading": "Downloading",
     "ok": "OK",
     "continue": "Continue",
     "cancel": "Cancel",
+    "cancelled": "Cancelled",
     "error": "Error",
     "refresh": "Refresh",
     "quit_launcher": "Quit Launcher",

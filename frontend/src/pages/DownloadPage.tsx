@@ -25,9 +25,11 @@ import {
   CardBody,
   CardHeader,
   ButtonGroup,
+  Tooltip,
 } from "@heroui/react";
-import { FaDownload, FaCopy, FaSync, FaTrash, FaBoxOpen, FaChevronDown, FaCheck, FaTimes } from "react-icons/fa";
+import { FaDownload, FaCopy, FaSync, FaTrash, FaBoxOpen, FaChevronDown, FaCheck, FaTimes, FaList, FaCircleNotch, FaCloudDownloadAlt } from "react-icons/fa";
 import { Events } from "@wailsio/runtime";
+import { createPortal } from "react-dom";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useTranslation } from "react-i18next";
@@ -35,6 +37,7 @@ import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { useDownloads } from "@/utils/DownloadsContext";
 
 type ItemType = "Preview" | "Release";
 
@@ -49,6 +52,7 @@ type VersionItem = {
 export const DownloadPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
+  const { startDownload, isDownloading } = useDownloads();
   const [items, setItems] = useState<VersionItem[]>([]);
   const {
     map: versionStatusMap,
@@ -69,15 +73,8 @@ export const DownloadPage: React.FC = () => {
   const [page, setPage] = useState<number>(1);
 
   const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  const progressDisclosure = useDisclosure();
-  const [dlProgress, setDlProgress] = useState<{
-    downloaded: number;
-    total: number;
-    dest?: string;
-  } | null>(null);
-  const [dlSpeed, setDlSpeed] = useState<number>(0);
-  const [dlStatus, setDlStatus] = useState<string>("");
-  const [dlError, setDlError] = useState<string>("");
+  // const progressDisclosure = useDisclosure(); // REMOVED
+  // dl* states REMOVED
   const [extractInfo, setExtractInfo] = useState<{
     files: number;
     bytes: number;
@@ -97,6 +94,10 @@ export const DownloadPage: React.FC = () => {
 
   const mirrorVersionRef = useRef(mirrorVersion);
   const mirrorTypeRef = useRef(mirrorType);
+  
+  const tasksButtonRef = useRef<HTMLButtonElement>(null);
+  const [flyingItems, setFlyingItems] = useState<{id: number, startX: number, startY: number, targetX: number, targetY: number}[]>([]);
+
   useEffect(() => {
     mirrorVersionRef.current = mirrorVersion;
   }, [mirrorVersion]);
@@ -186,7 +187,35 @@ export const DownloadPage: React.FC = () => {
     }
   }, [i18n?.language]);
 
+  const triggerAnimation = (e: any) => {
+    try {
+        // Use currentTarget to ensure we get the button element, not internal icons
+        const target = (e.currentTarget || e.target) as HTMLElement;
+        const startRect = target?.getBoundingClientRect ? target.getBoundingClientRect() : null;
+        const targetRect = tasksButtonRef.current?.getBoundingClientRect();
 
+        if (startRect && targetRect) {
+             // Calculate centers
+             // We need to account for the flying item's own size (w-8 = 32px) to center it
+             // x = center - width/2
+             const itemSize = 32;
+             const startX = startRect.left + startRect.width / 2 - itemSize / 2;
+             const startY = startRect.top + startRect.height / 2 - itemSize / 2;
+             const targetX = targetRect.left + targetRect.width / 2 - itemSize / 2;
+             const targetY = targetRect.top + targetRect.height / 2 - itemSize / 2;
+
+             setFlyingItems(prev => [...prev, {
+                 id: Date.now(),
+                 startX,
+                 startY,
+                 targetX,
+                 targetY
+             }]);
+        }
+    } catch (err) {
+        console.error("Animation trigger failed", err);
+    }
+  };
 
   const startMirrorTests = async (urls: string[]) => {
     if (!urls || urls.length === 0) return;
@@ -281,86 +310,20 @@ export const DownloadPage: React.FC = () => {
 
   const dlOffsRef = useRef<(() => void)[]>([]);
   const extractActiveRef = useRef<boolean>(false);
-  const dlLastRef = useRef<{ ts: number; bytes: number } | null>(null);
+
   const ensureDlSubscriptions = () => {
     if (!hasBackend) return;
     if (dlOffsRef.current.length > 0) return;
-    const off1 = Events.On("msixvc_download_progress", (event) => {
-      setDlProgress({
-        downloaded: Number(event.data.Downloaded || 0),
-        total: Number(event.data.Total || 0),
-        dest: String(event.data.Dest || ""),
-      });
-      try {
-        const now = Date.now();
-        const bytes = Number(event.data.Downloaded || 0);
-        const prev = dlLastRef.current;
-        if (prev) {
-          const dt = (now - prev.ts) / 1000;
-          const db = bytes - prev.bytes;
-          const spd = dt > 0 && db >= 0 ? db / dt : 0;
-          setDlSpeed(spd);
-        }
-        dlLastRef.current = { ts: now, bytes };
-      } catch {}
-    });
-    const off2 = Events.On("msixvc_download_status", (event) => {
-      const s = String(event.data || "");
-      setDlStatus(s);
-      if (s === "started" || s === "resumed" || s === "cancelled") {
-        setDlError("");
-        dlLastRef.current = null;
-        setDlSpeed(0);
-      }
-    });
-    const off3 = Events.On("msixvc_download_error", (event) => {
-      setDlError(
-        event.data
-          ? String(event.data)
-          : (t("downloadpage.progress.unknown_error", {
-              defaultValue: "未知错误",
-            }) as unknown as string)
-      );
-    });
+    
+    // Download done listener to update UI state
     const off4 = Events.On("msixvc_download_done", (event) => {
-      setDlStatus("done");
-      const d = String(event.data || "");
-      setDlProgress((p) => ({
-        downloaded: p?.total || 0,
-        total: p?.total || 0,
-        dest: d || String(p?.dest || ""),
-      }));
       try {
-        dlLastRef.current = null;
-        setDlSpeed(0);
+        if (mirrorVersionRef.current && mirrorTypeRef.current) {
+            markDownloaded(mirrorVersionRef.current, String(mirrorTypeRef.current));
+        }
       } catch {}
-      try {
-        progressDisclosure.onClose();
-      } catch {}
-      setTimeout(() => {
-        try {
-          const fname = d
-            ? d.split(/[\\/]/).pop() || ""
-            : dlProgress?.dest || "";
-          const show =
-            fname ||
-            (t("downloadpage.progress.title", {
-              defaultValue: "下载进度",
-            }) as unknown as string);
-          
-          toast.success(
-             t("downloadpage.download.success_body", {
-               defaultValue: "文件已下载：",
-             }) + " " + String(show)
-          );
-          try {
-            if (mirrorVersionRef.current && mirrorTypeRef.current) {
-                markDownloaded(mirrorVersionRef.current, String(mirrorTypeRef.current));
-            }
-          } catch {}
-        } catch {}
-      }, 120);
     });
+
     const off5 = Events.On("extract.progress", (event) => {
       const payload = event?.data || {};
       const files = Number(payload?.files || 0);
@@ -391,7 +354,7 @@ export const DownloadPage: React.FC = () => {
         } catch {}
       }, 300);
     });
-    dlOffsRef.current = [off1, off2, off3, off4, off5, off6, off7];
+    dlOffsRef.current = [off4, off5, off6, off7];
   };
 
   useEffect(() => {
@@ -749,6 +712,34 @@ export const DownloadPage: React.FC = () => {
                       <DropdownItem key="levilamina">LeviLamina</DropdownItem>
                     </DropdownMenu>
                   </Dropdown>
+
+                  <div className="h-6 w-px bg-default-300 mx-1" />
+                  
+                  <Tooltip content={t("download_manager.title", { defaultValue: "下载管理" })}>
+                    <Button
+                        ref={tasksButtonRef}
+                        isIconOnly
+                        radius="full"
+                        variant={isDownloading ? "solid" : "flat"}
+                        color={isDownloading ? "success" : "default"}
+                        className={`transition-all ${
+                            isDownloading 
+                                ? "bg-emerald-500 text-white" 
+                                : "bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 hover:bg-default-200 dark:hover:bg-zinc-700"
+                        }`}
+                        onPress={() => navigate("/tasks")}
+                    >
+                        <motion.div
+                            animate={isDownloading ? { y: [0, -2, 0] } : {}}
+                            transition={{ repeat: Infinity, duration: 1.5, ease: "easeInOut" }}
+                        >
+                            <FaCloudDownloadAlt size={20} />
+                        </motion.div>
+                        {isDownloading && (
+                            <span className="absolute -top-1 -right-1 w-3 h-3 bg-red-500 rounded-full border-2 border-white dark:border-zinc-900 animate-pulse" />
+                        )}
+                    </Button>
+                  </Tooltip>
                 </div>
               </div>
 
@@ -1071,7 +1062,7 @@ export const DownloadPage: React.FC = () => {
                               })}
                             </span>
                             {testing && (
-                              <Chip size="sm" variant="flat" color="success" startContent={<Spinner size="sm" color="success" className="w-3 h-3" />}>
+                              <Chip size="sm" variant="flat" color="success" startContent={<FaCircleNotch className="animate-spin" size={12} />}>
                                 {t("downloadpage.mirror.auto_testing", { defaultValue: "测速中" })}
                               </Chip>
                             )}
@@ -1119,7 +1110,7 @@ export const DownloadPage: React.FC = () => {
                             </div>
                           ) : (
                             <div className="p-8 rounded-2xl border border-dashed border-default-300 flex flex-col items-center justify-center text-default-500 gap-2">
-                                <span>暂无推荐镜像</span>
+                                <span>{t("downloadpage.mirror.no_recommended", { defaultValue: "暂无推荐镜像" })}</span>
                             </div>
                           )}
                       </div>
@@ -1212,9 +1203,8 @@ export const DownloadPage: React.FC = () => {
                   size="lg"
                   isDisabled={!selectedUrl}
                   startContent={installMode ? null : <FaDownload />}
-                  onPress={() => {
+                  onPress={(e) => {
                     if (!selectedUrl) return;
-                    ensureDlSubscriptions();
                     if (installMode) {
                       navigate("/install", {
                         state: {
@@ -1225,33 +1215,13 @@ export const DownloadPage: React.FC = () => {
                       });
                       onClose?.();
                     } else {
+                      triggerAnimation(e);
                       onClose?.();
                       if (hasBackend && minecraft?.StartMsixvcDownload) {
-                        setDlError("");
-                        setDlProgress(null);
-                        
-                        let urlWithFilename = selectedUrl;
-                        try {
-                          const u = new URL(selectedUrl);
-                          const desired = `${
+                        const desired = `${
                             mirrorType || "Release"
                           } ${mirrorVersion}.msixvc`;
-                          u.searchParams.set("filename", desired);
-                          urlWithFilename = u.toString();
-                        } catch {
-                          const desired = `${
-                            mirrorType || "Release"
-                          } ${mirrorVersion}.msixvc`;
-                          const sep = selectedUrl.includes("?") ? "&" : "?";
-                          urlWithFilename = `${selectedUrl}${sep}filename=${encodeURIComponent(
-                            desired
-                          )}`;
-                        }
-
-                        setTimeout(() => {
-                          progressDisclosure.onOpen();
-                          minecraft.StartMsixvcDownload(urlWithFilename);
-                        }, 200);
+                        startDownload(selectedUrl, desired);
                       } else {
                         window.open(selectedUrl, "_blank");
                       }
@@ -1584,112 +1554,31 @@ export const DownloadPage: React.FC = () => {
         </ModalContent>
       </BaseModal>
 
-      {/* Download progress modal */}
-      <BaseModal
-        isOpen={progressDisclosure.isOpen}
-        onOpenChange={progressDisclosure.onOpenChange}
-        size="md"
-        hideCloseButton
-        isDismissable={false}
-      >
-        <ModalContent className="shadow-none">
-          {() => (
-            <>
-              <BaseModalHeader className="flex flex-row items-center gap-4 text-primary-600">
-                <div className="w-12 h-12 rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 border border-emerald-500/20 flex items-center justify-center shrink-0">
-                  <FaDownload className="text-emerald-500 animate-pulse" size={20} />
+      {/* Flying Animation Items */}
+      {createPortal(
+        flyingItems.map(item => (
+            <motion.div
+                key={item.id}
+                initial={{ x: item.startX, y: item.startY, scale: 0.5, opacity: 0, rotate: 0 }}
+                animate={{ 
+                    x: [item.startX, item.targetX], 
+                    y: [item.startY, item.targetY],
+                    scale: [1, 0.5], 
+                    opacity: [1, 0],
+                    rotate: 360
+                }}
+                transition={{ duration: 1.2, ease: "easeInOut" }}
+                onAnimationComplete={() => setFlyingItems(prev => prev.filter(i => i.id !== item.id))}
+                style={{ position: 'fixed', top: 0, left: 0, zIndex: 99999, pointerEvents: 'none' }}
+            >
+                <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 text-white flex items-center justify-center">
+                     <FaCloudDownloadAlt size={14} />
                 </div>
-                <div className="flex flex-col">
-                  <motion.h2
-                    className="text-xl font-bold text-default-900 dark:text-white"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    {t("downloadpage.progress.title", {
-                      defaultValue: "下载进度",
-                    })}
-                  </motion.h2>
-                </div>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="flex flex-col gap-4">
-                  {dlError ? (
-                    <div className="p-4 rounded-xl bg-danger-500/10 border border-danger-500/20 text-danger-600 font-bold">
-                      {trErr(dlError)}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-3 p-5 rounded-2xl bg-default-50 dark:bg-zinc-800/40 border border-default-100 dark:border-white/5">
-                      <div className="flex items-center justify-between text-small font-bold text-default-700 dark:text-zinc-200">
-                        <span>
-                          {dlProgress
-                            ? `${(
-                                (dlProgress.downloaded / dlProgress.total) *
-                                100
-                              ).toFixed(1)}%`
-                            : "0%"}
-                        </span>
-                        <span className="font-mono opacity-80">
-                          {dlSpeed < 1024 * 1024
-                            ? `${(dlSpeed / 1024).toFixed(1)} KB/s`
-                            : `${(dlSpeed / (1024 * 1024)).toFixed(1)} MB/s`}
-                        </span>
-                      </div>
-                      <Progress
-                        aria-label="download-progress"
-                        value={
-                          dlProgress
-                            ? (dlProgress.downloaded / dlProgress.total) * 100
-                            : 0
-                        }
-                        size="md"
-                        classNames={{
-                          indicator: "bg-linear-to-r from-emerald-500 to-teal-500 shadow-lg shadow-emerald-900/20",
-                          track: "bg-default-200/50 dark:bg-white/5",
-                        }}
-                      />
-                      <div className="flex justify-between text-tiny text-default-400 dark:text-zinc-500 font-mono">
-                        <span>
-                          {dlProgress
-                            ? `${(
-                                dlProgress.downloaded /
-                                (1024 * 1024)
-                              ).toFixed(2)} MB`
-                            : "0 MB"}
-                        </span>
-                        <span>
-                          {dlProgress
-                            ? `${(dlProgress.total / (1024 * 1024)).toFixed(
-                                2
-                              )} MB`
-                            : "0 MB"}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  color="danger"
-                  variant="flat"
-                  onPress={() => {
-                    if (hasBackend && minecraft?.CancelMsixvcDownload) {
-                      minecraft.CancelMsixvcDownload();
-                    }
-                    setDlError("");
-                    setDlProgress(null);
-                    progressDisclosure.onClose();
-                  }}
-                  radius="full"
-                >
-                  {t("common.cancel", { defaultValue: "取消" })}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+            </motion.div>
+        )),
+        document.body
+      )}
+
         </div>
       </motion.div>
     </>

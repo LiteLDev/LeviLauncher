@@ -30,6 +30,15 @@ var msixMgr = downloader.NewManager(
 		ProgressFactory: func(p downloader.DownloadProgress) any {
 			return DownloadProgress{Downloaded: p.Downloaded, Total: p.Total, Dest: p.Dest}
 		},
+		StatusFactory: func(status string, dest string) any {
+			return DownloadStatus{Status: status, Dest: dest}
+		},
+		DoneFactory: func(dest string) any {
+			return DownloadDone{Dest: dest}
+		},
+		ErrorFactory: func(err string, dest string) any {
+			return DownloadError{Error: err, Dest: dest}
+		},
 	},
 	downloader.Options{Throttle: 250 * time.Millisecond, Resume: true, RemoveOnCancel: true},
 )
@@ -38,6 +47,20 @@ type DownloadProgress struct {
 	Downloaded int64
 	Total      int64
 	Dest       string
+}
+
+type DownloadStatus struct {
+	Status string
+	Dest   string
+}
+
+type DownloadDone struct {
+	Dest string
+}
+
+type DownloadError struct {
+	Error string
+	Dest  string
 }
 
 func StartDownload(ctx context.Context, rawurl string) string {
@@ -56,6 +79,12 @@ func Pause() { msixMgr.Pause() }
 func Resume() { msixMgr.Resume() }
 
 func Cancel() { msixMgr.Cancel() }
+
+func PauseTask(dest string) { msixMgr.PauseTask(dest) }
+
+func ResumeTask(dest string) { msixMgr.ResumeTask(dest) }
+
+func CancelTask(dest string) { msixMgr.CancelTask(dest) }
 
 func run() {}
 

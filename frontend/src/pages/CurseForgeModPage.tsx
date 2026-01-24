@@ -17,7 +17,7 @@ import {
   CancelFileDownload,
   GetVersionLogoDataUrl,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { Events } from "@wailsio/runtime";
+import { Events, Browser } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { VersionMeta } from "bindings/github.com/liteldev/LeviLauncher/internal/versions/models";
 import {
@@ -622,10 +622,9 @@ const CurseForgeModPage: React.FC = () => {
                       {mod.authors?.map((author: any, idx: number) => (
                         <React.Fragment key={author.id}>
                           <Link
-                            href={author.url}
-                            isExternal
+                            onPress={() => Browser.OpenURL(author.url)}
                             size="sm"
-                            className="text-primary hover:underline"
+                            className="text-primary hover:underline cursor-pointer"
                           >
                             {author.name}
                           </Link>
@@ -684,7 +683,7 @@ const CurseForgeModPage: React.FC = () => {
                 {/* Actions */}
                 <div className="flex flex-col gap-3 min-w-[240px] md:border-l md:border-default-100 md:pl-8 justify-center">
                   <Button
-                    className="w-full font-semibold shadow-md shadow-emerald-900/20 text-white bg-linear-to-r from-emerald-500 to-teal-500"
+                    className="w-full font-semibold shadow-md shadow-emerald-900/20 text-white bg-emerald-600 hover:bg-emerald-500"
                     startContent={<LuDownload size={20} />}
                     size="lg"
                     onPress={() => {
@@ -704,9 +703,7 @@ const CurseForgeModPage: React.FC = () => {
                   <div className="flex gap-2 justify-center">
                     {mod.links?.websiteUrl && (
                       <Button
-                        as={Link}
-                        href={mod.links.websiteUrl}
-                        isExternal
+                        onPress={() => Browser.OpenURL(mod.links.websiteUrl)}
                         isIconOnly
                         variant="flat"
                         aria-label={t("curseforge.website", {
@@ -718,9 +715,7 @@ const CurseForgeModPage: React.FC = () => {
                     )}
                     {mod.links?.sourceUrl && (
                       <Button
-                        as={Link}
-                        href={mod.links.sourceUrl}
-                        isExternal
+                        onPress={() => Browser.OpenURL(mod.links.sourceUrl)}
                         isIconOnly
                         variant="flat"
                         aria-label={t("curseforge.source", {
@@ -732,9 +727,7 @@ const CurseForgeModPage: React.FC = () => {
                     )}
                     {mod.links?.issuesUrl && (
                       <Button
-                        as={Link}
-                        href={mod.links.issuesUrl}
-                        isExternal
+                        onPress={() => Browser.OpenURL(mod.links.issuesUrl)}
                         isIconOnly
                         variant="flat"
                         aria-label={t("curseforge.issues", {

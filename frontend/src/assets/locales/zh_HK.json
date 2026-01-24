@@ -136,7 +136,21 @@
     },
     "manage": "管理插件"
   },
+  "download_manager": {
+    "title": "下載管理",
+    "short_title": "任務",
+    "description": "檢視和管理目前的下載任務",
+    "no_downloads": "目前沒有活動的下載任務",
+    "unknown_file": "未知檔案",
+    "actions": {
+      "retry": "重試",
+      "delete": "刪除"
+    }
+  },
   "downloadpage": {
+    "error": {
+      "already_downloading": "該檔案正在下載中"
+    },
     "changelog": {
       "title": "最新更新日誌"
     },
@@ -195,6 +209,8 @@
       "title": "選擇下載鏡像",
       "target": "下載目標",
       "testing": "測速中…",
+      "latency": "延遲",
+      "no_recommended": "暫無推薦鏡像",
       "unselected": "未選擇",
       "copy_link": "複製連結",
       "recommended": "推薦鏡像",
@@ -204,6 +220,7 @@
       "filename_fallback": "(檔案)",
       "retest": "重新測速",
       "download_selected": "下載所選鏡像",
+      "download_started": "下載已開始...",
       "install_button": "安裝",
       "install_selected": "安裝所選鏡像"
     },
@@ -395,6 +412,8 @@
     "rhymc_name": "旋律雲"
   },
   "common": {
+    "completed": "已完成",
+    "downloading": "下載中",
     "ok": "確定",
     "continue": "繼續",
     "cancel": "取消",

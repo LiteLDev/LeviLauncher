@@ -32,6 +32,8 @@ import {
   FaCube,
 } from "react-icons/fa";
 import { LauncherPage } from "@/pages/LauncherPage";
+import { DownloadManagerPage } from "@/pages/DownloadManagerPage";
+import { DownloadsProvider } from "@/utils/DownloadsContext";
 import { DownloadPage } from "@/pages/DownloadPage";
 import { SplashScreen } from "@/pages/SplashScreen";
 import { motion, AnimatePresence } from "framer-motion";
@@ -370,12 +372,14 @@ function App() {
 
   return (
     <VersionStatusProvider>
-      <LeviLaminaProvider>
+      <DownloadsProvider>
+        <LeviLaminaProvider>
         <CurseForgeProvider>
           <Toaster
           containerStyle={{ zIndex: 99999, top: 80 }}
           toastOptions={{
             style: {
+              maxWidth: 500,
               background: resolvedTheme === "dark" ? "#18181b" : "#fff",
               color: resolvedTheme === "dark" ? "#fff" : "#333",
               border:
@@ -594,6 +598,7 @@ function App() {
                     element={<LauncherPage refresh={refresh} count={count} />}
                   />
                   <Route path="/download" element={<DownloadPage />} />
+                  <Route path="/tasks" element={<DownloadManagerPage />} />
                   <Route path="/install" element={<InstallPage />} />
                   <Route path="/settings" element={<SettingsPage />} />
                   <Route
@@ -692,7 +697,7 @@ function App() {
                   <BaseModalHeader className="flex-row items-center gap-2 text-primary-600 min-w-0">
                     <FaRocket className="w-5 h-5" />
                     <span className="truncate">
-                      {t("settingscard.body.version.hasnew", {
+                      {t("settings.body.version.hasnew", {
                         defaultValue: "有新的版本更新！",
                       })}
                       {updateVersion}
@@ -787,7 +792,7 @@ function App() {
                         onClose();
                       }}
                     >
-                      {t("settingscard.body.version.ignore", {
+                      {t("settings.body.version.ignore", {
                         defaultValue: "屏蔽该版本",
                       })}
                     </Button>
@@ -806,7 +811,7 @@ function App() {
                         }
                       }}
                     >
-                      {t("settingscard.modal.2.footer.download_button", {
+                      {t("settings.modal.2.footer.download_button", {
                         defaultValue: "更新",
                       })}
                     </Button>
@@ -817,7 +822,8 @@ function App() {
           </BaseModal>
         </div>
       </CurseForgeProvider>
-      </LeviLaminaProvider>
+        </LeviLaminaProvider>
+      </DownloadsProvider>
     </VersionStatusProvider>
   );
 }

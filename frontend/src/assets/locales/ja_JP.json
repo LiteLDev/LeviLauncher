@@ -127,6 +127,17 @@
     },
     "manage": "Mod管理"
   },
+  "download_manager": {
+    "title": "ダウンロード管理",
+    "short_title": "タスク",
+    "description": "現在のダウンロードタスクを表示および管理します",
+    "no_downloads": "アクティブなダウンロードタスクはありません",
+    "unknown_file": "不明なファイル",
+    "actions": {
+      "retry": "再試行",
+      "delete": "削除"
+    }
+  },
   "updating": {
     "title": "LeviLauncher を更新中",
     "body": "管理者権限をリクエストし、更新を実行しています。更新中はウィンドウを閉じないでください。",
@@ -137,6 +148,9 @@
     }
   },
   "downloadpage": {
+    "error": {
+      "already_downloading": "このファイルは既にダウンロード中です"
+    },
     "changelog": {
       "title": "最新の変更ログ"
     },
@@ -195,6 +209,9 @@
       "title": "ダウンロードミラーの選択",
       "target": "ターゲット",
       "testing": "テスト中…",
+      "latency": "レイテンシ",
+      "no_recommended": "推奨ミラーはありません",
+      "download_started": "ダウンロードを開始しました...",
       "unselected": "未選択",
       "copy_link": "リンクをコピー",
       "recommended": "推奨ミラー",
@@ -395,6 +412,8 @@
     "rhymc_name": "RhyMC"
   },
   "common": {
+    "completed": "完了",
+    "downloading": "ダウンロード中",
     "ok": "OK",
     "continue": "続行",
     "cancel": "キャンセル",

@@ -21,6 +21,9 @@ type Events struct {
 	Done            string
 	Error           string
 	ProgressFactory func(DownloadProgress) any
+	StatusFactory   func(status string, dest string) any
+	DoneFactory     func(dest string) any
+	ErrorFactory    func(err string, dest string) any
 }
 
 type Options struct {
@@ -37,7 +40,7 @@ type DownloadProgress struct {
 
 type Manager struct {
 	mu     sync.Mutex
-	st     *state
+	tasks  map[string]*state
 	events Events
 	opts   Options
 }
@@ -58,7 +61,7 @@ func NewManager(events Events, opts Options) *Manager {
 	if opts.Throttle <= 0 {
 		opts.Throttle = 250 * time.Millisecond
 	}
-	return &Manager{events: events, opts: opts}
+	return &Manager{events: events, opts: opts, tasks: map[string]*state{}}
 }
 
 func (m *Manager) Start(ctx context.Context, src string, dest string) string {
@@ -67,67 +70,124 @@ func (m *Manager) Start(ctx context.Context, src string, dest string) string {
 		_ = os.MkdirAll(dir, 0o755)
 	}
 	m.mu.Lock()
-	if m.st != nil && m.st.running {
-		if m.st.cancelFn != nil {
-			m.st.cancelFn()
-		}
+	if m.tasks == nil {
+		m.tasks = map[string]*state{}
 	}
-	m.st = &state{ctx: ctx, url: src, dest: dest}
-	local := m.st
+	if existing, ok := m.tasks[dest]; ok && existing != nil && existing.running {
+		m.mu.Unlock()
+		m.emitStatus("started", dest)
+		return dest
+	}
+	local := &state{ctx: ctx, url: src, dest: dest}
+	m.tasks[dest] = local
 	m.mu.Unlock()
 	go m.run(local)
-	application.Get().Event.Emit(m.events.Status, "started")
+	m.emitStatus("started", dest)
 	return dest
 }
 
 func (m *Manager) Pause() {
 	m.mu.Lock()
-	if m.st != nil {
-		m.st.paused = true
-		if m.st.cancelFn != nil {
-			m.st.cancelFn()
+	for _, st := range m.tasks {
+		if st == nil {
+			continue
 		}
-		application.Get().Event.Emit(m.events.Status, "paused")
+		st.paused = true
+		if st.cancelFn != nil {
+			st.cancelFn()
+		}
+		m.emitStatus("paused", st.dest)
 	}
 	m.mu.Unlock()
 }
 
 func (m *Manager) Resume() {
 	m.mu.Lock()
-	local := m.st
-	if local != nil {
-		local.paused = false
-		go m.run(local)
-		application.Get().Event.Emit(m.events.Status, "resumed")
+	for _, st := range m.tasks {
+		if st == nil || st.cancelled {
+			continue
+		}
+		if st.running {
+			continue
+		}
+		st.paused = false
+		go m.run(st)
+		m.emitStatus("resumed", st.dest)
 	}
 	m.mu.Unlock()
 }
 
 func (m *Manager) Cancel() {
 	m.mu.Lock()
-	if m.st != nil {
-		m.st.cancelled = true
-		if m.st.cancelFn != nil {
-			m.st.cancelFn()
+	for dest, st := range m.tasks {
+		if st == nil {
+			continue
 		}
-		application.Get().Event.Emit(m.events.Status, "cancelled")
+		st.cancelled = true
+		if st.cancelFn != nil {
+			st.cancelFn()
+		}
+		if !st.running {
+			delete(m.tasks, dest)
+		}
+		m.emitStatus("cancelled", st.dest)
+	}
+	m.mu.Unlock()
+}
+
+func (m *Manager) PauseTask(dest string) {
+	m.mu.Lock()
+	if st, ok := m.tasks[dest]; ok && st != nil {
+		st.paused = true
+		if st.cancelFn != nil {
+			st.cancelFn()
+		}
+		m.emitStatus("paused", st.dest)
+	}
+	m.mu.Unlock()
+}
+
+func (m *Manager) ResumeTask(dest string) {
+	m.mu.Lock()
+	if st, ok := m.tasks[dest]; ok && st != nil && !st.cancelled && !st.running {
+		st.paused = false
+		go m.run(st)
+		m.emitStatus("resumed", st.dest)
+	}
+	m.mu.Unlock()
+}
+
+func (m *Manager) CancelTask(dest string) {
+	m.mu.Lock()
+	if st, ok := m.tasks[dest]; ok && st != nil {
+		st.cancelled = true
+		if st.cancelFn != nil {
+			st.cancelFn()
+		}
+		if !st.running {
+			delete(m.tasks, dest)
+		}
+		m.emitStatus("cancelled", st.dest)
 	}
 	m.mu.Unlock()
 }
 
 func (m *Manager) run(s *state) {
 	m.mu.Lock()
-	local := m.st
-	m.mu.Unlock()
+	local := m.tasks[s.dest]
 	if local != s {
+		m.mu.Unlock()
 		return
 	}
 	if local == nil || local.cancelled || local.paused {
+		m.mu.Unlock()
 		return
 	}
+	m.mu.Unlock()
 	var cur int64
+	downloadDest := local.dest + ".download"
 	if m.opts.Resume {
-		if fi, err := os.Stat(local.dest); err == nil {
+		if fi, err := os.Stat(downloadDest); err == nil {
 			cur = fi.Size()
 		}
 	}
@@ -136,12 +196,12 @@ func (m *Manager) run(s *state) {
 	m.mu.Lock()
 	local.cancelFn = cancel
 	local.running = true
-	m.st = local
+	m.tasks[local.dest] = local
 	m.mu.Unlock()
 
 	req, err := http.NewRequestWithContext(ctx, "GET", local.url, nil)
 	if err != nil {
-		application.Get().Event.Emit(m.events.Error, err.Error())
+		m.emitError(err.Error(), local.dest)
 		m.finishRunning(local)
 		return
 	}
@@ -151,19 +211,19 @@ func (m *Manager) run(s *state) {
 	}
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
-		application.Get().Event.Emit(m.events.Error, err.Error())
+		m.emitError(err.Error(), local.dest)
 		m.finishRunning(local)
 		return
 	}
 	defer resp.Body.Close()
 	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-		application.Get().Event.Emit(m.events.Error, fmt.Sprintf("HTTP %s", resp.Status))
+		m.emitError(fmt.Sprintf("HTTP %s", resp.Status), local.dest)
 		m.finishRunning(local)
 		return
 	}
 
 	if m.opts.Resume && cur > 0 && resp.StatusCode == http.StatusOK {
-		_ = os.Remove(local.dest)
+		_ = os.Remove(downloadDest)
 		cur = 0
 		local.downloaded = 0
 	}
@@ -188,16 +248,16 @@ func (m *Manager) run(s *state) {
 	if cur == 0 {
 		flags |= os.O_TRUNC
 	}
-	f, err := os.OpenFile(local.dest, flags, 0o644)
+	f, err := os.OpenFile(downloadDest, flags, 0o644)
 	if err != nil {
-		application.Get().Event.Emit(m.events.Error, err.Error())
+		m.emitError(err.Error(), local.dest)
 		m.finishRunning(local)
 		return
 	}
 	if m.opts.Resume && cur > 0 {
 		if _, err = f.Seek(cur, io.SeekStart); err != nil {
 			_ = f.Close()
-			application.Get().Event.Emit(m.events.Error, err.Error())
+			m.emitError(err.Error(), local.dest)
 			m.finishRunning(local)
 			return
 		}
@@ -214,12 +274,12 @@ func (m *Manager) run(s *state) {
 	for {
 		if local.cancelled || local.paused {
 			_ = f.Close()
-			if local.cancelled && m.opts.RemoveOnCancel && local.dest != "" {
-				_ = os.Remove(local.dest)
+			if local.cancelled && m.opts.RemoveOnCancel && downloadDest != "" {
+				_ = os.Remove(downloadDest)
 			}
 			m.finishRunning(local)
 			if local.cancelled {
-				application.Get().Event.Emit(m.events.Status, "cancelled")
+				m.emitStatus("cancelled", local.dest)
 			}
 			return
 		}
@@ -227,7 +287,7 @@ func (m *Manager) run(s *state) {
 		if n > 0 {
 			if _, werr := f.Write(buf[:n]); werr != nil {
 				_ = f.Close()
-				application.Get().Event.Emit(m.events.Error, werr.Error())
+				m.emitError(werr.Error(), local.dest)
 				m.finishRunning(local)
 				return
 			}
@@ -244,22 +304,26 @@ func (m *Manager) run(s *state) {
 		if er != nil {
 			if er == io.EOF {
 				_ = f.Close()
-				payload := any(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
-				if m.events.ProgressFactory != nil {
-					payload = m.events.ProgressFactory(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
+				if err := os.Rename(downloadDest, local.dest); err != nil {
+					m.emitError(err.Error(), local.dest)
+				} else {
+					payload := any(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
+					if m.events.ProgressFactory != nil {
+						payload = m.events.ProgressFactory(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
+					}
+					application.Get().Event.Emit(m.events.Progress, payload)
+					m.emitDone(local.dest)
 				}
-				application.Get().Event.Emit(m.events.Progress, payload)
-				application.Get().Event.Emit(m.events.Done, local.dest)
 			} else {
 				if ctx.Err() == context.Canceled || local.cancelled {
 					_ = f.Close()
-					if m.opts.RemoveOnCancel && local.dest != "" {
-						_ = os.Remove(local.dest)
+					if m.opts.RemoveOnCancel && downloadDest != "" {
+						_ = os.Remove(downloadDest)
 					}
-					application.Get().Event.Emit(m.events.Status, "cancelled")
+					m.emitStatus("cancelled", local.dest)
 				} else {
 					_ = f.Close()
-					application.Get().Event.Emit(m.events.Error, er.Error())
+					m.emitError(er.Error(), local.dest)
 				}
 			}
 			m.finishRunning(local)
@@ -271,10 +335,47 @@ func (m *Manager) run(s *state) {
 func (m *Manager) finishRunning(s *state) {
 	m.mu.Lock()
 	s.running = false
-	if m.st == s {
-		m.st = nil
+	if s.cancelled || !s.paused {
+		if m.tasks != nil {
+			if cur, ok := m.tasks[s.dest]; ok && cur == s {
+				delete(m.tasks, s.dest)
+			}
+		}
 	}
 	m.mu.Unlock()
+}
+
+func (m *Manager) emitStatus(status string, dest string) {
+	if m.events.Status == "" {
+		return
+	}
+	payload := any(status)
+	if m.events.StatusFactory != nil {
+		payload = m.events.StatusFactory(status, dest)
+	}
+	application.Get().Event.Emit(m.events.Status, payload)
+}
+
+func (m *Manager) emitDone(dest string) {
+	if m.events.Done == "" {
+		return
+	}
+	payload := any(dest)
+	if m.events.DoneFactory != nil {
+		payload = m.events.DoneFactory(dest)
+	}
+	application.Get().Event.Emit(m.events.Done, payload)
+}
+
+func (m *Manager) emitError(err string, dest string) {
+	if m.events.Error == "" {
+		return
+	}
+	payload := any(err)
+	if m.events.ErrorFactory != nil {
+		payload = m.events.ErrorFactory(err, dest)
+	}
+	application.Get().Event.Emit(m.events.Error, payload)
 }
 
 func parseInt64(s string) (int64, error) {

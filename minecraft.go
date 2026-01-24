@@ -527,6 +527,9 @@ func (a *Minecraft) StartMsixvcDownload(url string) string {
 }
 func (a *Minecraft) ResumeMsixvcDownload() { mcservice.ResumeMsixvcDownload() }
 func (a *Minecraft) CancelMsixvcDownload() { mcservice.CancelMsixvcDownload() }
+func (a *Minecraft) CancelMsixvcDownloadTask(dest string) {
+	mcservice.CancelMsixvcDownloadTask(dest)
+}
 
 func (a *Minecraft) InstallExtractMsixvc(name string, folderName string, isPreview bool) string {
 	return mcservice.InstallExtractMsixvc(a.ctx, name, folderName, isPreview)

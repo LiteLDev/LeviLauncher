@@ -136,7 +136,21 @@
     },
     "manage": "管理插件"
   },
+  "download_manager": {
+    "title": "下载管理",
+    "short_title": "任务",
+    "description": "查看和管理当前的下载任务",
+    "no_downloads": "当前没有活动的下载任务",
+    "unknown_file": "未知文件",
+    "actions": {
+      "retry": "重试",
+      "delete": "删除"
+    }
+  },
   "downloadpage": {
+    "error": {
+      "already_downloading": "该文件正在下载中"
+    },
     "changelog": {
       "title": "最新更新日志"
     },
@@ -192,6 +206,9 @@
       "inherit_gdk": "从 GDK 目录继承"
     },
     "mirror": {
+      "latency": "延迟",
+      "no_recommended": "暂无推荐镜像",
+      "download_started": "开始下载...",
       "title": "选择下载镜像",
       "target": "下载目标",
       "testing": "测速中…",
@@ -395,9 +412,12 @@
     "rhymc_name": "旋律云"
   },
   "common": {
+    "completed": "已完成",
+    "downloading": "下载中",
     "ok": "确定",
     "continue": "继续",
     "cancel": "取消",
+    "cancelled": "已取消",
     "error": "错误",
     "refresh": "刷新",
     "open": "打开",

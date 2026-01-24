@@ -123,9 +123,20 @@
   "moddedcard": {
     "title": "Моды",
     "content": {
-      "none": "Модов не найдено"
+      "none": "Моды не найдены"
     },
     "manage": "Управление модами"
+  },
+  "download_manager": {
+    "title": "Менеджер загрузок",
+    "short_title": "Задачи",
+    "description": "Просмотр и управление текущими задачами загрузки",
+    "no_downloads": "Нет активных задач загрузки",
+    "unknown_file": "Неизвестный файл",
+    "actions": {
+      "retry": "Повторить",
+      "delete": "Удалить"
+    }
   },
   "updating": {
     "title": "Обновление LeviLauncher",
@@ -137,6 +148,9 @@
     }
   },
   "downloadpage": {
+    "error": {
+      "already_downloading": "Этот файл уже загружается"
+    },
     "changelog": {
       "title": "Последний журнал изменений"
     },
@@ -192,6 +206,9 @@
       "inherit_gdk": "Наследовать из каталога GDK"
     },
     "mirror": {
+      "latency": "Задержка",
+      "no_recommended": "Нет рекомендуемого зеркала",
+      "download_started": "Загрузка началась...",
       "title": "Выбор зеркала загрузки",
       "target": "Цель",
       "testing": "Тестирование…",
@@ -395,6 +412,8 @@
     "rhymc_name": "RhyMC"
   },
   "common": {
+    "completed": "Завершено",
+    "downloading": "Загрузка",
     "ok": "ОК",
     "continue": "Продолжить",
     "cancel": "Отмена",

@@ -138,7 +138,8 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
   useEffect(() => {
     if (!hasBackend) return;
     const off = Events.On("msixvc_download_done", (event) => {
-      const d = String(event?.data || "");
+      const raw = event?.data;
+      const d = typeof raw === "string" ? String(raw) : String(raw?.Dest || raw?.dest || "");
       const inferShort = () => {
         if (downloadingShortRef.current)
           return String(downloadingShortRef.current);

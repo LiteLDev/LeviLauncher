@@ -164,10 +164,10 @@ func init() {
 	application.RegisterEvent[struct{}](launch.EventMcLaunchFailed)
 	application.RegisterEvent[struct{}](launch.EventGamingServicesMissing)
 	//msixvc
-	application.RegisterEvent[string](msixvc.EventDownloadStatus)
+	application.RegisterEvent[msixvc.DownloadStatus](msixvc.EventDownloadStatus)
 	application.RegisterEvent[msixvc.DownloadProgress](msixvc.EventDownloadProgress)
-	application.RegisterEvent[string](msixvc.EventDownloadDone)
-	application.RegisterEvent[string](msixvc.EventDownloadError)
+	application.RegisterEvent[msixvc.DownloadDone](msixvc.EventDownloadDone)
+	application.RegisterEvent[msixvc.DownloadError](msixvc.EventDownloadError)
 	application.RegisterEvent[bool](msixvc.EventAppxInstallLoading)
 	// gdk
 	application.RegisterEvent[string](gdk.EventDownloadStatus)

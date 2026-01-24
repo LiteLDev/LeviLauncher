@@ -882,16 +882,37 @@ export const SettingsPage: React.FC = () => {
                                 li: ({ children }) => (
                                   <li className="my-0.5">{children}</li>
                                 ),
-                                a: ({ href, children }) => (
-                                  <a
-                                    href={href}
-                                    target="_blank"
-                                    rel="noreferrer"
-                                    className="text-emerald-500 underline"
-                                  >
-                                    {children}
-                                  </a>
-                                ),
+                                a: ({ href, children }) => {
+                                  const cleanUrl = (url: string) => {
+                                    const target = "https://github.com";
+                                    const idx = url.lastIndexOf(target);
+                                    return idx > 0 ? url.substring(idx) : url;
+                                  };
+                                  return (
+                                    <a
+                                      href={href}
+                                      target="_blank"
+                                      rel="noreferrer"
+                                      className="text-emerald-500 underline"
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        if (href) {
+                                          Browser.OpenURL(cleanUrl(href));
+                                        }
+                                      }}
+                                    >
+                                      {Array.isArray(children)
+                                        ? children.map((child) =>
+                                            typeof child === "string"
+                                              ? cleanUrl(child)
+                                              : child,
+                                          )
+                                        : typeof children === "string"
+                                          ? cleanUrl(children)
+                                          : children}
+                                    </a>
+                                  );
+                                },
                               }}
                             >
                               {changelog}

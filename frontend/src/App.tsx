@@ -37,7 +37,7 @@ import { DownloadsProvider } from "@/utils/DownloadsContext";
 import { DownloadPage } from "@/pages/DownloadPage";
 import { SplashScreen } from "@/pages/SplashScreen";
 import { motion, AnimatePresence } from "framer-motion";
-import { Events, Window } from "@wailsio/runtime";
+import { Events, Window, Browser } from "@wailsio/runtime";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { VersionSelectPage } from "@/pages/VersionSelectPage";
 import VersionSettingsPage from "@/pages/VersionSettingsPage";
@@ -746,16 +746,38 @@ function App() {
                               li: ({ children }) => (
                                 <li className="my-1">{children}</li>
                               ),
-                              a: ({ href, children }) => (
-                                <a
-                                  href={href}
-                                  target="_blank"
-                                  rel="noreferrer"
-                                  className="text-primary underline"
-                                >
-                                  {children}
-                                </a>
-                              ),
+                              a: ({ href, children }) => {
+                                const cleanUrl = (url: string) => {
+                                  const target = "https://github.com";
+                                  const idx = url.lastIndexOf(target);
+                                  return idx > 0 ? url.substring(idx) : url;
+                                };
+
+                                return (
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-primary underline cursor-pointer"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      if (href) {
+                                        Browser.OpenURL(cleanUrl(href));
+                                      }
+                                    }}
+                                  >
+                                    {Array.isArray(children)
+                                      ? children.map((child) =>
+                                          typeof child === "string"
+                                            ? cleanUrl(child)
+                                            : child,
+                                        )
+                                      : typeof children === "string"
+                                        ? cleanUrl(children)
+                                        : children}
+                                  </a>
+                                );
+                              },
                               hr: () => (
                                 <hr className="my-3 border-default-200" />
                               ),

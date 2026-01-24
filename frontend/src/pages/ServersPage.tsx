@@ -39,6 +39,7 @@ import {
   listPlayers,
   resolvePlayerDisplayName,
 } from "@/utils/content";
+import { renderMcText } from "@/utils/mcformat";
 import { toast } from "react-hot-toast";
 
 interface Server {
@@ -73,7 +74,6 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
     const fetchStatus = async () => {
       try {
         const host = `${server.ip}:${server.port}`;
-        // Call the backend PingServer function
         const res = await (minecraft as any)?.PingServer?.(host);
         if (mounted) {
           setInfo(res);
@@ -106,7 +106,7 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
               <FaServer size={24} />
             </div>
             <div className="flex flex-col min-w-0">
-              <h3 className="text-base font-bold truncate text-default-900">{server.name}</h3>
+              <h3 className="text-base font-bold truncate text-default-900">{renderMcText(server.name)}</h3>
               <div className="flex items-center gap-2 text-xs text-default-500 font-mono">
                 <span>{server.ip}:{server.port}</span>
               </div>
@@ -123,7 +123,7 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
             ) : info?.status === "online" ? (
                 <div className="flex flex-col gap-1">
                     <div className="text-sm text-default-700 truncate font-medium">
-                        {info.motd || info.level_name || t("common.unknown", { defaultValue: "未知" })}
+                        {renderMcText(info.motd || info.level_name || t("common.unknown", { defaultValue: "未知" }))}
                     </div>
                     <div className="flex items-center gap-2 text-xs text-default-500">
                         <span className="bg-default-100 px-1.5 py-0.5 rounded text-default-600">{info.version}</span>
@@ -175,18 +175,15 @@ export default function ServersPage() {
   const [servers, setServers] = useState<Server[]>([]);
   const [currentVersionName, setCurrentVersionName] = useState<string>("");
   
-  // Player & Roots State
   const [roots, setRoots] = useState<any>({});
   const [players, setPlayers] = useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<string>("");
   const [playerGamertagMap, setPlayerGamertagMap] = useState<Record<string, string>>({});
 
-  // Search & Sort State
   const [query, setQuery] = useState<string>("");
   const [sortKey, setSortKey] = useState<"name" | "time">("time");
   const [sortAsc, setSortAsc] = useState<boolean>(true);
 
-  // Initialization & Player Loading
   useEffect(() => {
     const init = async () => {
       const name = readCurrentVersionName();
@@ -200,7 +197,6 @@ export default function ServersPage() {
             const pList = await listPlayers(r.usersRoot);
             setPlayers(pList);
 
-            // Determine initial player
             let targetPlayer = location.state?.player || "";
             let currentSelection = "";
 
@@ -270,7 +266,6 @@ export default function ServersPage() {
     }
   }, [selectedPlayer, refreshAll]);
 
-  // Filtering & Sorting
   const filteredServers = useMemo(() => {
     let list = [...servers];
     if (query.trim()) {

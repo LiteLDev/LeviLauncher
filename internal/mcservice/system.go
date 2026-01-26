@@ -117,5 +117,3 @@ func TestMirrorLatencies(urls []string, timeoutMs int) []map[string]interface{} 
 	}
 	return results
 }
-
-// GetLicenseInfo removed per project preference to keep license in README only

@@ -454,7 +454,9 @@
     "view_all": "檢視全部",
     "confirm_delete": "確認刪除",
     "deleting": "正在刪除...",
-    "no_results": "無搜尋結果"
+    "no_results": "無搜尋結果",
+    "edit": "編輯",
+    "backup": "備份"
   },
   "useravatar": {
     "no_login_retry": "未偵測到 Xbox 登入（點擊以重試）",

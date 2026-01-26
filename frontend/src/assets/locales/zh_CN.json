@@ -453,7 +453,9 @@
     "confirm_delete": "确认删除",
     "deleting": "正在删除...",
     "no_results": "无搜索结果",
-    "hide": "隐藏"
+    "hide": "隐藏",
+    "edit": "编辑",
+    "backup": "备份"
   },
   "useravatar": {
     "no_login_retry": "未检测到 Xbox 登录（点击重试）",

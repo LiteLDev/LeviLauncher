@@ -31,6 +31,7 @@ import {
   IsModEnabled,
   UninstallLeviLamina,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { Dialogs } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { FaPuzzlePiece } from "react-icons/fa6";
 import { FaSync, FaFilter, FaTimes } from "react-icons/fa";
@@ -161,7 +162,9 @@ export const ModsPage: React.FC = () => {
     const fetchVersion = async () => {
       if (!currentVersionName) return;
       try {
-        const meta = await (minecraft as any)?.GetVersionMeta(currentVersionName);
+        const meta = await (minecraft as any)?.GetVersionMeta(
+          currentVersionName,
+        );
         if (meta && meta.GameVersion) {
           setGameVersion(meta.GameVersion);
         } else {
@@ -406,19 +409,6 @@ export const ModsPage: React.FC = () => {
         );
     }
   };
-
-  useEffect(() => {
-    const result: string[] | undefined = location?.state?.fileManagerResult;
-    if (!result || !Array.isArray(result) || result.length === 0) return;
-    const sig = result.join("|");
-    if (fmProcessedRef.current === sig) return;
-    fmProcessedRef.current = sig;
-    navigate(location.pathname, {
-      replace: true,
-      state: { ...(location.state || {}), fileManagerResult: undefined },
-    });
-    void doImportFromPaths(result);
-  }, [location?.state?.fileManagerResult]);
 
   const doImportFromPaths = async (paths: string[]) => {
     try {
@@ -1183,7 +1173,9 @@ export const ModsPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <FaPuzzlePiece className="w-5 h-5" />
                   <span>
-                    {t("mods.dll_modal_title", { defaultValue: "导入 DLL 插件" })}
+                    {t("mods.dll_modal_title", {
+                      defaultValue: "导入 DLL 插件",
+                    })}
                   </span>
                 </div>
               </BaseModalHeader>
@@ -1417,19 +1409,20 @@ export const ModsPage: React.FC = () => {
           }
           endContent={
             <>
-              {isLLSupported(gameVersion) && !modsInfo.some(m => m.name === "LeviLamina") && (
-                <Button
-                  color="success"
-                  variant="flat"
-                  className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold"
-                  onPress={handleInstallLeviLamina}
-                  isLoading={installingLL}
-                >
-                  {t("downloadpage.install.levilamina_label", {
-                    defaultValue: "Install LeviLamina",
-                  })}
-                </Button>
-              )}
+              {isLLSupported(gameVersion) &&
+                !modsInfo.some((m) => m.name === "LeviLamina") && (
+                  <Button
+                    color="success"
+                    variant="flat"
+                    className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold"
+                    onPress={handleInstallLeviLamina}
+                    isLoading={installingLL}
+                  >
+                    {t("downloadpage.install.levilamina_label", {
+                      defaultValue: "Install LeviLamina",
+                    })}
+                  </Button>
+                )}
               <input
                 ref={fileInputRef}
                 type="file"
@@ -1443,15 +1436,24 @@ export const ModsPage: React.FC = () => {
                 variant="shadow"
                 className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20"
                 startContent={<FiUploadCloud />}
-                onPress={() =>
-                  navigate("/filemanager", {
-                    state: {
-                      allowedExt: [".zip", ".dll"],
-                      multi: true,
-                      returnTo: "/mods",
-                    },
-                  })
-                }
+                onPress={async () => {
+                  try {
+                    const result = await Dialogs.OpenFile({
+                      Filters: [
+                        { DisplayName: "Mod Files", Pattern: "*.zip;*.dll" },
+                      ],
+                      AllowsMultipleSelection: true,
+                      Title: t("mods.import_button", {
+                        defaultValue: "导入 .zip/.dll",
+                      }),
+                    });
+                    if (result && result.length > 0) {
+                      void doImportFromPaths(result);
+                    }
+                  } catch (e) {
+                    console.error(e);
+                  }
+                }}
                 isDisabled={importing}
               >
                 {t("mods.import_button", { defaultValue: "导入 .zip/.dll" })}
@@ -1797,7 +1799,9 @@ export const ModsPage: React.FC = () => {
                 <div className="flex items-center gap-2">
                   <FiAlertTriangle className="w-5 h-5" />
                   <span>
-                    {t("mods.confirm_delete_title", { defaultValue: "确认删除" })}
+                    {t("mods.confirm_delete_title", {
+                      defaultValue: "确认删除",
+                    })}
                   </span>
                 </div>
               </BaseModalHeader>

@@ -276,7 +276,9 @@ export default function SkinPacksPage() {
 
               if (forcePlayer === undefined) {
                 try {
-                  const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+                  const tag = await (
+                    minecraft as any
+                  )?.GetLocalUserGamertag?.();
                   if (tag) {
                     for (const p of names) {
                       if (map[p] === tag) {
@@ -891,10 +893,16 @@ export default function SkinPacksPage() {
                               )}
                             </div>
 
-                            <div className="flex flex-1 items-end justify-between mt-2">
-                              <div className="flex gap-1">
-                                {/* Placeholder for future tags */}
-                              </div>
+                            <div className="flex flex-1 items-end justify-end gap-2 mt-2">
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                radius="full"
+                                onPress={() => OpenPathDir(p.path)}
+                                className="h-8 min-w-0 px-3 bg-default-100 text-default-600 dark:bg-zinc-700 dark:text-zinc-200"
+                              >
+                                {t("common.open", { defaultValue: "打开" })}
+                              </Button>
                               <Button
                                 size="sm"
                                 color="danger"

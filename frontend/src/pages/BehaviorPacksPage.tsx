@@ -73,14 +73,12 @@ export default function BehaviorPacksPage() {
   const [packs, setPacks] = React.useState<any[]>([]);
   const [activePack, setActivePack] = React.useState<any | null>(null);
 
-  // Single delete modal
   const {
     isOpen: delOpen,
     onOpen: delOnOpen,
     onOpenChange: delOnOpenChange,
   } = useDisclosure();
 
-  // Batch delete confirmation modal
   const {
     isOpen: delManyCfmOpen,
     onOpen: delManyCfmOnOpen,
@@ -146,7 +144,6 @@ export default function BehaviorPacksPage() {
     return targets;
   }, []);
 
-  // Memoized filtered and sorted packs
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     const f = packs.filter((p) => {
@@ -174,7 +171,6 @@ export default function BehaviorPacksPage() {
     });
   }, [packs, query, sortKey, sortAsc]);
 
-  // Reset page when filter/sort changes
   React.useEffect(() => {
     setCurrentPage(1);
   }, [query, sortKey, sortAsc]);
@@ -239,7 +235,6 @@ export default function BehaviorPacksPage() {
           };
           setRoots(safe);
 
-          // Filter for behavior packs (type 4)
           const filtered = (allPacks || []).filter(
             (p) => p.manifest.pack_type === 4,
           );
@@ -277,7 +272,6 @@ export default function BehaviorPacksPage() {
           );
           setPacks(withTime);
 
-          // Size caching logic
           Promise.resolve()
             .then(async () => {
               const readCache = () => {
@@ -809,10 +803,16 @@ export default function BehaviorPacksPage() {
                               )}
                             </div>
 
-                            <div className="flex flex-1 items-end justify-between mt-2">
-                              <div className="flex gap-1">
-                                {/* Placeholder for future tags */}
-                              </div>
+                            <div className="flex flex-1 items-end justify-end gap-2 mt-2">
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                radius="full"
+                                onPress={() => OpenPathDir(p.path)}
+                                className="h-8 min-w-0 px-3 bg-default-100 text-default-600 dark:bg-zinc-700 dark:text-zinc-200"
+                              >
+                                {t("common.open", { defaultValue: "打开" })}
+                              </Button>
                               <Button
                                 size="sm"
                                 color="danger"

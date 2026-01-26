@@ -48,7 +48,7 @@ import {
   KillProcess,
   KillAllMinecraftProcesses,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { Browser, Events } from "@wailsio/runtime";
+import { Browser, Events, Dialogs } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
@@ -92,7 +92,7 @@ export const SettingsPage: React.FC = () => {
   const gdkLicenseDisclosure = useDisclosure();
   const gdkInstallDisclosure = useDisclosure();
   const [gdkLicenseAccepted, setGdkLicenseAccepted] = useState<boolean>(false);
-  
+
   // LIP State
   const [lipInstalled, setLipInstalled] = useState<boolean>(false);
   const [lipVersion, setLipVersion] = useState<string>("");
@@ -200,13 +200,8 @@ export const SettingsPage: React.FC = () => {
         try {
           if (hasBackend) {
             const br = await GetBaseRoot();
-            const pick = (location?.state as any)?.baseRootPickResult;
             setBaseRoot(String(br || ""));
-            setNewBaseRoot(
-              typeof pick === "string" && pick.length > 0
-                ? String(pick)
-                : String(br || ""),
-            );
+            setNewBaseRoot(String(br || ""));
             const id = await GetInstallerDir();
             setInstallerDir(String(id || ""));
             const vd = await GetVersionsDir();
@@ -224,19 +219,6 @@ export const SettingsPage: React.FC = () => {
       })
       .catch(() => {});
   }, []);
-
-  useEffect(() => {
-    const v: string | undefined = (location?.state as any)?.baseRootPickResult;
-    if (v && typeof v === "string" && v.length > 0) {
-      setNewBaseRoot(v);
-      setTimeout(() => {
-        navigate(location.pathname, {
-          replace: true,
-          state: { ...(location.state as any), baseRootPickResult: undefined },
-        });
-      }, 0);
-    }
-  }, [location?.state]);
 
   useEffect(() => {
     setBaseRootWritable(true);
@@ -357,35 +339,47 @@ export const SettingsPage: React.FC = () => {
     IsLipInstalled().then((ok) => {
       setLipInstalled(Boolean(ok));
       if (ok) {
-        GetLipVersion().then(v => setLipVersion(String(v || "")));
+        GetLipVersion().then((v) => setLipVersion(String(v || "")));
       }
     });
-    GetLatestLipVersion().then(v => setLipLatestVersion(String(v || ""))).catch(() => {});
+    GetLatestLipVersion()
+      .then((v) => setLipLatestVersion(String(v || "")))
+      .catch(() => {});
 
     const offs: (() => void)[] = [];
-    offs.push(Events.On("lip_install_status", (e) => setLipStatus(String(e?.data || ""))));
-    offs.push(Events.On("lip_install_progress", (e) => {
-      const data = e?.data as any;
-      setLipProgress({
-        percentage: Number(data?.percentage || 0),
-        current: Number(data?.current || 0),
-        total: Number(data?.total || 0),
-      });
-    }));
-    offs.push(Events.On("lip_install_done", (e) => {
-      setInstallingLip(false);
-      setLipStatus("done");
-      setLipProgress({ percentage: 100, current: 0, total: 0 });
-      setLipInstalled(true);
-      setLipVersion(String(e?.data || ""));
-      setLipError("");
-    }));
-    offs.push(Events.On("lip_install_error", (e) => {
-      setInstallingLip(false);
-      setLipStatus("");
-      setLipError(String(e?.data || ""));
-    }));
-    return () => offs.forEach(off => off());
+    offs.push(
+      Events.On("lip_install_status", (e) =>
+        setLipStatus(String(e?.data || "")),
+      ),
+    );
+    offs.push(
+      Events.On("lip_install_progress", (e) => {
+        const data = e?.data as any;
+        setLipProgress({
+          percentage: Number(data?.percentage || 0),
+          current: Number(data?.current || 0),
+          total: Number(data?.total || 0),
+        });
+      }),
+    );
+    offs.push(
+      Events.On("lip_install_done", (e) => {
+        setInstallingLip(false);
+        setLipStatus("done");
+        setLipProgress({ percentage: 100, current: 0, total: 0 });
+        setLipInstalled(true);
+        setLipVersion(String(e?.data || ""));
+        setLipError("");
+      }),
+    );
+    offs.push(
+      Events.On("lip_install_error", (e) => {
+        setInstallingLip(false);
+        setLipStatus("");
+        setLipError(String(e?.data || ""));
+      }),
+    );
+    return () => offs.forEach((off) => off());
   }, [hasBackend]);
 
   return (
@@ -410,165 +404,180 @@ export const SettingsPage: React.FC = () => {
 
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <div className="flex flex-col gap-6">
-        {/* Left Column: Paths */}
-        <motion.div
-          initial={{ opacity: 0, y: 8 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.25, delay: 0.1 }}
-        >
-          <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-            <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center gap-2">
-                  <p className="text-large font-bold">
-                    {t("settings.body.paths.title", {
-                      defaultValue: "内容路径",
-                    })}
-                  </p>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Button
-                    variant="light"
-                    radius="full"
-                    size="sm"
-                    onPress={() => resetOnOpen()}
-                  >
-                    {t("settings.body.paths.reset", {
-                      defaultValue: "恢复默认",
-                    })}
-                  </Button>
-                  <Button
-                    color="primary"
-                    radius="full"
-                    size="sm"
-                    isDisabled={!newBaseRoot || !baseRootWritable}
-                    isLoading={savingBaseRoot}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                    onPress={async () => {
-                      setSavingBaseRoot(true);
-                      try {
-                        const ok = await CanWriteToDir(newBaseRoot);
-                        if (!ok) {
-                          setBaseRootWritable(false);
-                        } else {
-                          const err = await SetBaseRoot(newBaseRoot);
-                          if (!err) {
-                            const br = await GetBaseRoot();
-                            setBaseRoot(String(br || ""));
-                            const id = await GetInstallerDir();
-                            setInstallerDir(String(id || ""));
-                            const vd = await GetVersionsDir();
-                            setVersionsDir(String(vd || ""));
-                          }
-                        }
-                      } catch {}
-                      setSavingBaseRoot(false);
-                    }}
-                  >
-                    {t("settings.body.paths.apply", {
-                      defaultValue: "应用",
-                    })}
-                  </Button>
-                </div>
-              </div>
-
-              <div className="space-y-4">
-                <Input
-                  label={
-                    t("settings.body.paths.base_root", {
-                      defaultValue: "根目录",
-                    }) as string
-                  }
-                  value={newBaseRoot}
-                  onValueChange={setNewBaseRoot}
-                  radius="lg"
-                  variant="bordered"
-                  classNames={{
-                    inputWrapper:
-                      "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
-                  }}
-                  endContent={
+          {/* Left Column: Paths */}
+          <motion.div
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.25, delay: 0.1 }}
+          >
+            <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+              <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <p className="text-large font-bold">
+                      {t("settings.body.paths.title", {
+                        defaultValue: "内容路径",
+                      })}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-2">
                     <Button
-                      size="sm"
-                      variant="flat"
+                      variant="light"
                       radius="full"
-                      onPress={() => {
-                        navigate("/filemanager", {
-                          state: {
-                            directoryPickMode: true,
-                            returnTo: "/settings",
-                            returnState: {},
-                            title: t("settings.body.paths.title", {
-                              defaultValue: "内容路径",
-                            }),
-                            initialPath: newBaseRoot || baseRoot || "",
-                          },
-                        });
+                      size="sm"
+                      onPress={() => resetOnOpen()}
+                    >
+                      {t("settings.body.paths.reset", {
+                        defaultValue: "恢复默认",
+                      })}
+                    </Button>
+                    <Button
+                      color="primary"
+                      radius="full"
+                      size="sm"
+                      isDisabled={!newBaseRoot || !baseRootWritable}
+                      isLoading={savingBaseRoot}
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                      onPress={async () => {
+                        setSavingBaseRoot(true);
+                        try {
+                          const ok = await CanWriteToDir(newBaseRoot);
+                          if (!ok) {
+                            setBaseRootWritable(false);
+                          } else {
+                            const err = await SetBaseRoot(newBaseRoot);
+                            if (!err) {
+                              const br = await GetBaseRoot();
+                              setBaseRoot(String(br || ""));
+                              const id = await GetInstallerDir();
+                              setInstallerDir(String(id || ""));
+                              const vd = await GetVersionsDir();
+                              setVersionsDir(String(vd || ""));
+                            }
+                          }
+                        } catch {}
+                        setSavingBaseRoot(false);
                       }}
                     >
-                      {t("common.browse", { defaultValue: "选择..." })}
+                      {t("settings.body.paths.apply", {
+                        defaultValue: "应用",
+                      })}
                     </Button>
-                  }
-                />
-                {newBaseRoot && newBaseRoot !== baseRoot && baseRootWritable ? (
-                  <div
-                    className="text-tiny text-warning-500 px-1"
-                    title={newBaseRoot}
-                  >
-                    {t("settings.body.paths.base_root", {
-                      defaultValue: "根目录",
-                    }) +
-                      ": " +
-                      newBaseRoot}
                   </div>
-                ) : null}
-                {!baseRootWritable ? (
-                  <div className="text-tiny text-danger-500 px-1">
-                    {t("settings.body.paths.not_writable", {
-                      defaultValue: "目录不可写入",
-                    })}
-                  </div>
-                ) : null}
+                </div>
 
-                <div className="grid grid-cols-1 gap-2 pt-2">
-                  <div className="p-3 rounded-xl bg-default-100/50 dark:bg-zinc-800/30 border border-default-200/50 dark:border-white/5">
+                <div className="space-y-4">
+                  <Input
+                    label={
+                      t("settings.body.paths.base_root", {
+                        defaultValue: "根目录",
+                      }) as string
+                    }
+                    value={newBaseRoot}
+                    onValueChange={setNewBaseRoot}
+                    radius="lg"
+                    variant="bordered"
+                    classNames={{
+                      inputWrapper:
+                        "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                    }}
+                    endContent={
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        radius="full"
+                        onPress={async () => {
+                          try {
+                            const options: any = {
+                              Title: t("settings.body.paths.title", {
+                                defaultValue: "内容路径",
+                              }),
+                              CanChooseDirectories: true,
+                              CanChooseFiles: false,
+                              PromptForSingleSelection: true,
+                            };
+                            if (baseRoot) {
+                              options.Directory = baseRoot;
+                            }
+                            console.log(options);
+                            const result = await Dialogs.OpenFile(options);
+                            if (Array.isArray(result) && result.length > 0) {
+                              setNewBaseRoot(result[0]);
+                            } else if (typeof result === "string" && result) {
+                              setNewBaseRoot(result);
+                            }
+                          } catch (e) {
+                            console.error(e);
+                          }
+                        }}
+                      >
+                        {t("common.browse", { defaultValue: "选择..." })}
+                      </Button>
+                    }
+                  />
+                  {newBaseRoot &&
+                  newBaseRoot !== baseRoot &&
+                  baseRootWritable ? (
                     <div
-                      className="text-tiny text-default-500 flex items-center gap-2 truncate"
-                      title={installerDir || "-"}
+                      className="text-tiny text-warning-500 px-1"
+                      title={newBaseRoot}
                     >
-                      <LuHardDrive size={14} />
-                      <span className="font-medium">
-                        {t("settings.body.paths.installer", {
-                          defaultValue: "安装器目录",
-                        })}
-                        :
-                      </span>
-                      <span className="opacity-70">{installerDir || "-"}</span>
+                      {t("settings.body.paths.base_root", {
+                        defaultValue: "根目录",
+                      }) +
+                        ": " +
+                        newBaseRoot}
                     </div>
-                  </div>
-                  <div className="p-3 rounded-xl bg-default-100/50 dark:bg-zinc-800/30 border border-default-200/50 dark:border-white/5">
-                    <div
-                      className="text-tiny text-default-500 flex items-center gap-2 truncate"
-                      title={versionsDir || "-"}
-                    >
-                      <LuHardDrive size={14} />
-                      <span className="font-medium">
-                        {t("settings.body.paths.versions", {
-                          defaultValue: "版本目录",
-                        })}
-                        :
-                      </span>
-                      <span className="opacity-70">{versionsDir || "-"}</span>
+                  ) : null}
+                  {!baseRootWritable ? (
+                    <div className="text-tiny text-danger-500 px-1">
+                      {t("settings.body.paths.not_writable", {
+                        defaultValue: "目录不可写入",
+                      })}
+                    </div>
+                  ) : null}
+
+                  <div className="grid grid-cols-1 gap-2 pt-2">
+                    <div className="p-3 rounded-xl bg-default-100/50 dark:bg-zinc-800/30 border border-default-200/50 dark:border-white/5">
+                      <div
+                        className="text-tiny text-default-500 flex items-center gap-2 truncate"
+                        title={installerDir || "-"}
+                      >
+                        <LuHardDrive size={14} />
+                        <span className="font-medium">
+                          {t("settings.body.paths.installer", {
+                            defaultValue: "安装器目录",
+                          })}
+                          :
+                        </span>
+                        <span className="opacity-70">
+                          {installerDir || "-"}
+                        </span>
+                      </div>
+                    </div>
+                    <div className="p-3 rounded-xl bg-default-100/50 dark:bg-zinc-800/30 border border-default-200/50 dark:border-white/5">
+                      <div
+                        className="text-tiny text-default-500 flex items-center gap-2 truncate"
+                        title={versionsDir || "-"}
+                      >
+                        <LuHardDrive size={14} />
+                        <span className="font-medium">
+                          {t("settings.body.paths.versions", {
+                            defaultValue: "版本目录",
+                          })}
+                          :
+                        </span>
+                        <span className="opacity-70">{versionsDir || "-"}</span>
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
-            </CardBody>
-          </Card>
-        </motion.div>
+              </CardBody>
+            </Card>
+          </motion.div>
 
-        {/* Dependencies */}
-        <motion.div
+          {/* Dependencies */}
+          <motion.div
             initial={{ opacity: 0, y: 8 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.25, delay: 0.2 }}
@@ -611,38 +620,40 @@ export const SettingsPage: React.FC = () => {
                   <div className="flex flex-col gap-1">
                     <p className="font-medium">{t("settings.lip.title")}</p>
                     <p className="text-tiny text-default-500">
-                      {lipInstalled 
+                      {lipInstalled
                         ? t("settings.lip.installed", { version: lipVersion })
                         : t("settings.lip.description")}
                     </p>
                   </div>
                   {lipInstalled ? (
                     <div className="flex items-center gap-2">
-                        <Chip color="success" variant="flat" size="sm">
-                            {t("settings.lip.installed_label")}
-                        </Chip>
-                        {hasLipUpdate && (
-                            <Button
-                                size="sm"
-                                variant="bordered"
-                                radius="full"
-                                isLoading={installingLip}
-                                isDisabled={installingLip}
-                                onPress={() => {
-                                    setInstallingLip(true);
-                                    setLipError("");
-                                    lipProgressDisclosure.onOpen();
-                                    InstallLip().then((err) => {
-                                        if (err) {
-                                            setInstallingLip(false);
-                                            setLipError(err);
-                                        }
-                                    });
-                                }}
-                            >
-                                {t("settings.lip.update_button", { version: lipLatestVersion })}
-                            </Button>
-                        )}
+                      <Chip color="success" variant="flat" size="sm">
+                        {t("settings.lip.installed_label")}
+                      </Chip>
+                      {hasLipUpdate && (
+                        <Button
+                          size="sm"
+                          variant="bordered"
+                          radius="full"
+                          isLoading={installingLip}
+                          isDisabled={installingLip}
+                          onPress={() => {
+                            setInstallingLip(true);
+                            setLipError("");
+                            lipProgressDisclosure.onOpen();
+                            InstallLip().then((err) => {
+                              if (err) {
+                                setInstallingLip(false);
+                                setLipError(err);
+                              }
+                            });
+                          }}
+                        >
+                          {t("settings.lip.update_button", {
+                            version: lipLatestVersion,
+                          })}
+                        </Button>
+                      )}
                     </div>
                   ) : (
                     <Button
@@ -652,18 +663,20 @@ export const SettingsPage: React.FC = () => {
                       isLoading={installingLip}
                       isDisabled={installingLip}
                       onPress={() => {
-                          setInstallingLip(true);
-                          setLipError("");
-                          lipProgressDisclosure.onOpen();
-                          InstallLip().then((err) => {
-                             if (err) {
-                                 setInstallingLip(false);
-                                 setLipError(err);
-                             }
-                          });
+                        setInstallingLip(true);
+                        setLipError("");
+                        lipProgressDisclosure.onOpen();
+                        InstallLip().then((err) => {
+                          if (err) {
+                            setInstallingLip(false);
+                            setLipError(err);
+                          }
+                        });
                       }}
                     >
-                      {installingLip ? t("settings.lip.installing") : t("settings.lip.install_button")}
+                      {installingLip
+                        ? t("settings.lip.installing")
+                        : t("settings.lip.install_button")}
                     </Button>
                   )}
                 </div>
@@ -673,9 +686,7 @@ export const SettingsPage: React.FC = () => {
                 {/* Process Management */}
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
-                    <p className="font-medium">
-                      {t("settings.process.title")}
-                    </p>
+                    <p className="font-medium">{t("settings.process.title")}</p>
                     <p className="text-tiny text-default-500">
                       {t("settings.process.desc")}
                     </p>
@@ -791,8 +802,6 @@ export const SettingsPage: React.FC = () => {
                     }}
                   />
                 </div>
-
-
               </CardBody>
             </Card>
           </motion.div>
@@ -848,9 +857,7 @@ export const SettingsPage: React.FC = () => {
                           >
                             {updating
                               ? t("common.updating", { defaultValue: "更新中" })
-                              : t(
-                                  "settings.modal.2.footer.download_button",
-                                )}
+                              : t("settings.modal.2.footer.download_button")}
                           </Button>
                         </div>
 
@@ -1273,7 +1280,9 @@ export const SettingsPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-medium">
-                {t("settings.lip.installing", { defaultValue: "正在安装 LIP..." })}
+                {t("settings.lip.installing", {
+                  defaultValue: "正在安装 LIP...",
+                })}
               </BaseModalHeader>
               <BaseModalBody>
                 {lipError ? (
@@ -1313,16 +1322,16 @@ export const SettingsPage: React.FC = () => {
                   color="danger"
                   variant="light"
                   onPress={onClose}
-                  isDisabled={!installingLip} 
+                  isDisabled={!installingLip}
                 >
-                   {t("common.hide", { defaultValue: "隐藏" })}
+                  {t("common.hide", { defaultValue: "隐藏" })}
                 </Button>
                 <Button
                   color="primary"
                   onPress={onClose}
                   isDisabled={installingLip && !lipError}
                 >
-                   {lipError ? t("common.close") : t("common.ok")}
+                  {lipError ? t("common.close") : t("common.ok")}
                 </Button>
               </BaseModalFooter>
             </>

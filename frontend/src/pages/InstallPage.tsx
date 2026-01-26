@@ -23,6 +23,7 @@ import { FiAlertTriangle } from "react-icons/fi";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { motion } from "framer-motion";
+import { Dialogs } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   BaseModal,
@@ -225,15 +226,6 @@ export default function InstallPage() {
     ],
     [inheritOptions, t],
   );
-
-  useEffect(() => {
-    try {
-      const r = (location?.state as any)?.fileManagerResult;
-      if (Array.isArray(r) && r.length > 0) {
-        setCustomInstallerPath(String(r[0] || ""));
-      }
-    } catch {}
-  }, [location?.state]);
 
   useEffect(() => {
     try {
@@ -696,23 +688,29 @@ export default function InstallPage() {
                       variant="flat"
                       size="sm"
                       className="bg-default-100 dark:bg-white/10"
-                      onPress={() => {
-                        navigate("/filemanager", {
-                          state: {
-                            allowedExt: [".msixvc"],
-                            multi: false,
-                            title: t("downloadpage.customappx.modal.1.header", {
+                      onPress={async () => {
+                        try {
+                          const paths = await Dialogs.OpenFile({
+                            Title: t("downloadpage.customappx.modal.1.header", {
                               defaultValue: "版本信息",
                             }),
-                            initialPath: installerDir || "",
-                            returnTo: "/install",
-                            returnState: {
-                              mirrorVersion,
-                              mirrorType,
-                              returnTo,
-                            },
-                          },
-                        });
+                            Filters: [
+                              {
+                                DisplayName: "Installer Files",
+                                Pattern: "*.msixvc",
+                              },
+                            ],
+                            AllowsMultipleSelection: false,
+                            Directory: installerDir || "",
+                          });
+                          if (Array.isArray(paths) && paths.length > 0) {
+                            setCustomInstallerPath(paths[0]);
+                          } else if (typeof paths === "string" && paths) {
+                            setCustomInstallerPath(paths);
+                          }
+                        } catch (e) {
+                          console.error(e);
+                        }
                       }}
                     >
                       {t("common.browse", { defaultValue: "选择..." })}

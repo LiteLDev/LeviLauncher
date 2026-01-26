@@ -202,7 +202,6 @@ const LIPPackagePage: React.FC = () => {
                             startContent={<LuDownload />}
                             isDisabled={!ver.source}
                             onPress={() => {
-                              // TODO: Implement install logic
                               window.open(ver.source, "_blank");
                             }}
                           >

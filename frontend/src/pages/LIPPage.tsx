@@ -95,7 +95,7 @@ const LIPPage: React.FC = () => {
       if (res) {
         setPackages(res.items || []);
         setTotalPages(res.totalPages || 1);
-        setTotalCount(res.totalPages * 20); // Approximation as API might not return total count
+        setTotalCount(res.totalPages * 20);
       }
       setHasSearched(true);
     } catch (err) {

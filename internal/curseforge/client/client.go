@@ -43,7 +43,6 @@ type curseClient struct {
 	cacheMu sync.RWMutex
 }
 
-// NewCurseClient creates a new Curseforge client
 func NewCurseClient(apiKey string, opts ...CfgFunc) CurseClient {
 	opt := NewConfig(apiKey, opts...)
 	return &curseClient{

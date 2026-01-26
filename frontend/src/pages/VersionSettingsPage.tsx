@@ -1,5 +1,6 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
+import { Dialogs } from "@wailsio/runtime";
 import {
   BaseModal,
   BaseModalHeader,
@@ -168,43 +169,6 @@ export default function VersionSettingsPage() {
       errorDefaults[code] || t(`errors.${code}`, { defaultValue: code });
     return def as string;
   };
-
-  React.useEffect(() => {
-    const result: string[] | undefined = location?.state?.fileManagerResult;
-    if (!hasBackend || !targetName) return;
-    if (result && Array.isArray(result) && result.length === 1) {
-      const nextState = {
-        ...(location.state || {}),
-        fileManagerResult: undefined,
-      };
-      navigate(location.pathname, { replace: true, state: nextState });
-      try {
-        const saver = minecraft?.SaveVersionLogoFromPath;
-        const getter = minecraft?.GetVersionLogoDataUrl;
-        if (typeof saver === "function") {
-          saver(targetName, result[0]).then((err: string) => {
-            if (err) {
-              setError(String(err || "ERR_ICON_DECODE"));
-              return;
-            }
-            if (typeof getter === "function") {
-              getter(targetName).then((u: string) =>
-                setLogoDataUrl(String(u || "")),
-              );
-            }
-          });
-        }
-      } catch {}
-    }
-  }, [
-    hasBackend,
-    targetName,
-    location?.state?.fileManagerResult,
-    navigate,
-    location?.pathname,
-  ]);
-
-
 
   const onSave = React.useCallback(
     async (destPath?: string) => {
@@ -434,25 +398,45 @@ export default function VersionSettingsPage() {
                     <div className="flex items-center gap-4">
                       <div
                         className="relative h-24 w-24 rounded-2xl overflow-hidden bg-default-100 flex items-center justify-center border border-default-200 cursor-pointer group transition-all hover:scale-105 hover:shadow-lg"
-                        onClick={() => {
-                          navigate("/filemanager", {
-                            state: {
-                              allowedExt: [
-                                ".png",
-                                ".jpg",
-                                ".jpeg",
-                                ".gif",
-                                ".webp",
+                        onClick={async () => {
+                          try {
+                            const paths = await Dialogs.OpenFile({
+                              Title: t("versions.logo.title"),
+                              Filters: [
+                                {
+                                  DisplayName: "Image Files",
+                                  Pattern: "*.png;*.jpg;*.jpeg;*.gif;*.webp",
+                                },
                               ],
-                              multi: false,
-                              returnTo: "/version-settings",
-                              title: t("versions.logo.title"),
-                              returnState: {
-                                name: targetName,
-                                returnTo: returnToPath,
-                              },
-                            },
-                          });
+                              AllowsMultipleSelection: false,
+                            });
+                            let path = "";
+                            if (Array.isArray(paths) && paths.length > 0) {
+                              path = paths[0];
+                            } else if (typeof paths === "string" && paths) {
+                              path = paths;
+                            }
+
+                            if (path) {
+                              const saver = minecraft?.SaveVersionLogoFromPath;
+                              const getter = minecraft?.GetVersionLogoDataUrl;
+                              if (typeof saver === "function") {
+                                saver(targetName, path).then((err: string) => {
+                                  if (err) {
+                                    setError(String(err || "ERR_ICON_DECODE"));
+                                    return;
+                                  }
+                                  if (typeof getter === "function") {
+                                    getter(targetName).then((u: string) =>
+                                      setLogoDataUrl(String(u || "")),
+                                    );
+                                  }
+                                });
+                              }
+                            }
+                          } catch (e) {
+                            console.error(e);
+                          }
                         }}
                         title={t("versions.logo.change") as string}
                       >

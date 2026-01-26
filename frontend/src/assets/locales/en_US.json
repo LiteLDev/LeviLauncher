@@ -453,7 +453,9 @@
     "confirm_delete": "Confirm Delete",
     "deleting": "Deleting...",
     "no_results": "No results found",
-    "hide": "Hide"
+    "hide": "Hide",
+    "edit": "Edit",
+    "backup": "Backup"
   },
   "useravatar": {
     "no_login_retry": "Xbox login not detected (click to retry)",

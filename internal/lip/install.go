@@ -109,9 +109,7 @@ func Install() string {
 
 	application.Get().Event.Emit(EventLipInstallStatus, "downloading")
 
-	// Try download
 	if err := downloadFile(downloadUrl, zipPath); err != nil {
-		// Try with proxy
 		proxyUrl := "https://gh-proxy.org/" + downloadUrl
 		if err := downloadFile(proxyUrl, zipPath); err != nil {
 			return "ERR_DOWNLOAD_FAILED"
@@ -121,7 +119,6 @@ func Install() string {
 	application.Get().Event.Emit(EventLipInstallStatus, "extracting")
 	targetDir := LipDir()
 
-	// Clean old installation
 	os.RemoveAll(targetDir)
 
 	if err := os.MkdirAll(targetDir, 0755); err != nil {
@@ -157,7 +154,6 @@ func downloadFile(url string, dest string) error {
 	}
 	defer out.Close()
 
-	// Progress tracking
 	total := resp.ContentLength
 	counter := &progressWriter{
 		total: float64(total),
@@ -184,7 +180,7 @@ func (pw *progressWriter) Write(p []byte) (int, error) {
 	n := len(p)
 	pw.current += float64(n)
 	now := time.Now().UnixMilli()
-	if now-pw.lastUpdate > 100 { // throttle events
+	if now-pw.lastUpdate > 100 { 
 		if pw.total > 0 {
 			pw.onProgress((pw.current/pw.total)*100, pw.current, pw.total)
 		}
@@ -203,7 +199,7 @@ func unzip(src string, dest string) error {
 	for _, f := range r.File {
 		fpath := filepath.Join(dest, f.Name)
 		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-			continue // illegal file path
+			continue
 		}
 
 		if f.FileInfo().IsDir() {

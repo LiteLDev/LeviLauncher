@@ -454,7 +454,9 @@
     "confirm_delete": "削除確認",
     "deleting": "削除中...",
     "no_results": "結果が見つかりません",
-    "hide": "非表示"
+    "hide": "非表示",
+    "edit": "編集",
+    "backup": "バックアップ"
   },
   "useravatar": {
     "no_login_retry": "Xbox ログインが検出されませんでした（クリックして再試行）",

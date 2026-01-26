@@ -118,7 +118,6 @@ export default function ResourcePacksPage() {
     onOpen: delManyCfmOnOpen,
     onOpenChange: delManyCfmOnOpenChange,
   } = useDisclosure();
-  // const [selectMode, setSelectMode] = React.useState<boolean>(false); // Removed selectMode
   const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
   const [currentPage, setCurrentPage] = React.useState(1);
@@ -155,7 +154,6 @@ export default function ResourcePacksPage() {
     return targets;
   }, []);
 
-  // Memoized filtered and sorted packs
   const filtered = React.useMemo(() => {
     const q = query.trim().toLowerCase();
     const f = packs.filter((p) => {
@@ -183,7 +181,6 @@ export default function ResourcePacksPage() {
     });
   }, [packs, query, sortKey, sortAsc]);
 
-  // Reset page when filter/sort changes
   React.useEffect(() => {
     setCurrentPage(1);
   }, [query, sortKey, sortAsc]);
@@ -778,10 +775,16 @@ export default function ResourcePacksPage() {
                               )}
                             </div>
 
-                            <div className="flex flex-1 items-end justify-between mt-2">
-                              <div className="flex gap-1">
-                                {/* Placeholder for future tags */}
-                              </div>
+                            <div className="flex flex-1 items-end justify-end gap-2 mt-2">
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                radius="full"
+                                onPress={() => OpenPathDir(p.path)}
+                                className="h-8 min-w-0 px-3 bg-default-100 text-default-600 dark:bg-zinc-700 dark:text-zinc-200"
+                              >
+                                {t("common.open", { defaultValue: "打开" })}
+                              </Button>
                               <Button
                                 size="sm"
                                 color="danger"
@@ -884,7 +887,7 @@ export default function ResourcePacksPage() {
                   isDisabled={deletingOne}
                   onPress={async () => {
                     if (activePack) {
-                      setDeletingOne(true); // Ensure state is set if not already handled by wrapper
+                      setDeletingOne(true);
                       try {
                         await DeletePack(currentVersionName, activePack.path);
                         toast.success(
@@ -984,7 +987,6 @@ export default function ResourcePacksPage() {
                       }),
                     );
                     setSelected({});
-                    // setSelectMode(false);
                     refreshAll();
                     setDeletingMany(false);
                     onClose();

@@ -176,7 +176,7 @@ export default function WorldsListPage() {
         if (r.usersRoot) {
           const pList = await listPlayers(r.usersRoot);
           setPlayers(pList);
-          
+
           let defaultP = "";
           if (!selectedPlayer && pList.length > 0) {
             defaultP = pList[0];
@@ -192,8 +192,11 @@ export default function WorldsListPage() {
               if (tag) {
                 for (const p of pList) {
                   if (map[p] === tag) {
-                    if (p !== defaultP && (!selectedPlayer || selectedPlayer === defaultP)) {
-                       setSelectedPlayer(p);
+                    if (
+                      p !== defaultP &&
+                      (!selectedPlayer || selectedPlayer === defaultP)
+                    ) {
+                      setSelectedPlayer(p);
                     }
                     break;
                   }
@@ -872,6 +875,19 @@ export default function WorldsListPage() {
                               {/* Placeholder for future tags */}
                             </div>
                             <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                radius="full"
+                                isIconOnly
+                                onPress={() => OpenPathDir(w.Path)}
+                                className="h-8 w-8 min-w-0"
+                                title={t("common.open", {
+                                  defaultValue: "打开",
+                                })}
+                              >
+                                <FaFolderOpen className="text-xs" />
+                              </Button>
                               <Button
                                 size="sm"
                                 variant="flat"

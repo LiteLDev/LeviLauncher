@@ -8,7 +8,6 @@ import (
 	"net/http"
 )
 
-// Logger is a logger definition to be used with client
 type Logger interface {
 	Printf(format string, v ...any)
 	Println(v ...any)
@@ -33,7 +32,6 @@ type DefaultSlogClientLogger struct {
 	l *slog.Logger
 }
 
-// NewDefaultSlogClientLogger creates a default logger using log/slog
 func NewDefaultSlogClientLogger(logger *slog.Logger) Logger {
 	return &DefaultSlogClientLogger{l: logger}
 }

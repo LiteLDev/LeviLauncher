@@ -34,6 +34,7 @@ import {
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { normalizeLanguage } from "@/utils/i18nUtils";
+import { Dialogs } from "@wailsio/runtime";
 
 export default function OnboardingPage() {
   const { t, i18n } = useTranslation();
@@ -64,13 +65,8 @@ export default function OnboardingPage() {
       try {
         if (hasBackend) {
           const br = await GetBaseRoot();
-          const pick = (location?.state as any)?.baseRootPickResult;
           setBaseRoot(String(br || ""));
-          setNewBaseRoot(
-            typeof pick === "string" && pick.length > 0
-              ? String(pick)
-              : String(br || ""),
-          );
+          setNewBaseRoot(String(br || ""));
           const id = await GetInstallerDir();
           setInstallerDir(String(id || ""));
           const vd = await GetVersionsDir();
@@ -79,19 +75,6 @@ export default function OnboardingPage() {
       } catch {}
     })();
   }, []);
-
-  React.useEffect(() => {
-    const v: string | undefined = (location?.state as any)?.baseRootPickResult;
-    if (v && typeof v === "string" && v.length > 0) {
-      setNewBaseRoot(v);
-      setTimeout(() => {
-        navigate(location.pathname, {
-          replace: true,
-          state: { ...(location.state as any), baseRootPickResult: undefined },
-        });
-      }, 0);
-    }
-  }, [location?.state]);
 
   React.useEffect(() => {
     setBaseRootWritable(true);
@@ -225,18 +208,28 @@ export default function OnboardingPage() {
                           size="sm"
                           variant="flat"
                           className="bg-default-200/50 dark:bg-white/10 font-medium"
-                          onPress={() => {
-                            navigate("/filemanager", {
-                              state: {
-                                directoryPickMode: true,
-                                returnTo: "/onboarding",
-                                returnState: {},
-                                title: t("settings.body.paths.title", {
+                          onPress={async () => {
+                            try {
+                              const options: any = {
+                                Title: t("settings.body.paths.title", {
                                   defaultValue: "内容路径",
                                 }),
-                                initialPath: newBaseRoot || baseRoot || "",
-                              },
-                            });
+                                CanChooseDirectories: true,
+                                CanChooseFiles: false,
+                                PromptForSingleSelection: true,
+                              };
+                              if (baseRoot) {
+                                options.Directory = baseRoot;
+                              }
+                              const result = await Dialogs.OpenFile(options);
+                              if (Array.isArray(result) && result.length > 0) {
+                                setNewBaseRoot(result[0]);
+                              } else if (typeof result === "string" && result) {
+                                setNewBaseRoot(result);
+                              }
+                            } catch (e) {
+                              console.error(e);
+                            }
                           }}
                         >
                           {t("common.browse", { defaultValue: "选择..." })}

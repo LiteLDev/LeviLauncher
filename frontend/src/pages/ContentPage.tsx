@@ -14,6 +14,7 @@ import {
   Progress,
   useDisclosure,
 } from "@heroui/react";
+import { Dialogs } from "@wailsio/runtime";
 import {
   BaseModal,
   BaseModalHeader,
@@ -82,7 +83,6 @@ export default function ContentPage() {
     Array<{ name: string; err: string }>
   >([]);
   const fileInputRef = React.useRef<HTMLInputElement | null>(null);
-  const fmProcessedRef = React.useRef<string | null>(null);
   const dupResolveRef = React.useRef<((overwrite: boolean) => void) | null>(
     null,
   );
@@ -255,7 +255,10 @@ export default function ContentPage() {
       setWorldsCount(await countDirectories(wp));
       const sp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
       setSkinCount(await countDirectories(sp));
-      const srvs = await (minecraft as any)?.ListServers?.(currentVersionName || readCurrentVersionName(), player);
+      const srvs = await (minecraft as any)?.ListServers?.(
+        currentVersionName || readCurrentVersionName(),
+        player,
+      );
       setServersCount(srvs?.length || 0);
     } finally {
       setLoading(false);
@@ -367,19 +370,6 @@ export default function ContentPage() {
         );
     }
   };
-
-  React.useEffect(() => {
-    const result: string[] | undefined = location?.state?.fileManagerResult;
-    if (!result || !Array.isArray(result) || result.length === 0) return;
-    const sig = result.join("|");
-    if (fmProcessedRef.current === sig) return;
-    fmProcessedRef.current = sig;
-    navigate(location.pathname, {
-      replace: true,
-      state: { ...(location.state || {}), fileManagerResult: undefined },
-    });
-    void doImportFromPaths(result);
-  }, [location?.state?.fileManagerResult]);
 
   const doImportFromPaths = async (paths: string[]) => {
     try {
@@ -713,9 +703,6 @@ export default function ContentPage() {
           if (!playerToUse) {
             err = "ERR_NO_PLAYER";
           } else {
-            // Use ImportMcworld if available, or fallback to temp file + ImportMcworldPath logic if needed.
-            // Since we don't have postImportMcworld, we implement inline.
-            // Assuming ImportMcworld exists and takes bytes like ImportMcpack
             const buf = await f.arrayBuffer();
             const bytes = Array.from(new Uint8Array(buf));
             if (typeof (minecraft as any)?.ImportMcworld === "function") {
@@ -726,12 +713,7 @@ export default function ContentPage() {
                 false,
               );
             } else {
-              // Fallback: write temp file and use ImportMcworldPath
-              // This requires exposing WriteTempFile which we don't know if we have.
-              // But wait, the existing code for paths uses ImportMcworldPath.
-              // If ImportMcworld is not available, we can't easily import from bytes without a helper.
-              // We will assume ImportMcworld exists for now as it's consistent with ImportMcpack.
-              err = "ERR_NOT_IMPLEMENTED"; // Placeholder if function missing
+              err = "ERR_NOT_IMPLEMENTED";
             }
           }
         }
@@ -1342,15 +1324,27 @@ export default function ContentPage() {
               variant="shadow"
               className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20"
               startContent={<FiUploadCloud />}
-              onPress={() =>
-                navigate("/filemanager", {
-                  state: {
-                    allowedExt: [".mcworld", ".mcpack", ".mcaddon"],
-                    multi: true,
-                    returnTo: "/content",
-                  },
-                })
-              }
+              onPress={async () => {
+                try {
+                  const paths = await Dialogs.OpenFile({
+                    Title: t("contentpage.import_button", {
+                      defaultValue: "导入 .mcworld/.mcpack/.mcaddon",
+                    }),
+                    Filters: [
+                      {
+                        DisplayName: "Content Files",
+                        Pattern: "*.mcworld;*.mcpack;*.mcaddon",
+                      },
+                    ],
+                    AllowsMultipleSelection: true,
+                  });
+                  if (paths && Array.isArray(paths) && paths.length > 0) {
+                    doImportFromPaths(paths);
+                  }
+                } catch (e) {
+                  console.error(e);
+                }
+              }}
               isDisabled={importing}
             >
               {t("contentpage.import_button", {

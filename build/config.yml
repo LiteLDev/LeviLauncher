@@ -9,9 +9,9 @@ info:
   productName: "LeviLauncher" # The name of the application
   productIdentifier: "org.levimc.launcher" # The unique product identifier
   description: "A Minecraft Launcher" # The application description
-  copyright: "(c) 2025, LeviMC" # Copyright text
+  copyright: "(c) 2025-2026, LeviMC" # Copyright text
   comments: "Some Product Comments" # Comments
-  version: "0.1.8" # The application version
+  version: "0.1.9" # The application version
   beta: "true" # Whether the application is in beta or not
 
 # Dev mode configuration

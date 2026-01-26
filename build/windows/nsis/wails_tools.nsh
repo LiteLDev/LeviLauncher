@@ -14,10 +14,10 @@
     !define INFO_PRODUCTNAME "LeviLauncher"
 !endif
 !ifndef INFO_PRODUCTVERSION
-    !define INFO_PRODUCTVERSION "0.1.8"
+    !define INFO_PRODUCTVERSION "0.1.9"
 !endif
 !ifndef INFO_COPYRIGHT
-    !define INFO_COPYRIGHT "(c) 2025, LeviMC"
+    !define INFO_COPYRIGHT "(c) 2025-2026, LeviMC"
 !endif
 !ifndef PRODUCT_EXECUTABLE
     !define PRODUCT_EXECUTABLE "${INFO_PROJECTNAME}.exe"

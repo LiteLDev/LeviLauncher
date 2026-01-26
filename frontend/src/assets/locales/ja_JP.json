@@ -276,7 +276,7 @@
       "title": "保存されていない変更",
       "body": "コンテンツパスが変更されていますが、保存されていません。保存して移動しますか？",
       "cancel": "キャンセル",
-    "cancelled": "キャンセル済み",
+      "cancelled": "キャンセル済み",
       "save": "保存して移動"
     },
     "lang": {
@@ -387,7 +387,7 @@
   },
   "aboutcard": {
     "title": "About",
-    "description": " 2024-2025 {{name}} All rights reserved",
+    "description": " 2024-2026 {{name}} All rights reserved",
     "font": "このソフトウェアは {{name}} フォントを使用しています"
   },
   "about": {

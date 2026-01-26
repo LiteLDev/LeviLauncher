@@ -276,7 +276,7 @@
       "title": "未儲存修改",
       "body": "您更改了內容路徑但尚未儲存。是否儲存後離開？",
       "cancel": "取消",
-    "cancelled": "已取消",
+      "cancelled": "已取消",
       "save": "儲存並離開"
     },
     "lang": {
@@ -387,7 +387,7 @@
   },
   "aboutcard": {
     "title": "關於",
-    "description": " 2024-2025 {{name}} 保留所有權利",
+    "description": " 2024-2026 {{name}} 保留所有權利",
     "font": "本軟體使用 {{name}} 字型"
   },
   "about": {

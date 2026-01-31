@@ -7,37 +7,15 @@ import {
   BaseModalBody,
   BaseModalFooter,
 } from "@/components/BaseModal";
-import {
-  Button,
-  Tooltip,
-  Chip,
-  ModalContent,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
-import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { UserAvatar } from "@/components/UserAvatar";
-import { IoCloseOutline } from "react-icons/io5";
-import { FiMinimize2 } from "react-icons/fi";
-import { LeviIcon } from "@/icons/LeviIcon";
-import {
-  FaDownload,
-  FaRocket,
-  FaCog,
-  FaList,
-  FaEllipsisH,
-  FaInfoCircle,
-  FaCube,
-} from "react-icons/fa";
+import { Button, Tooltip, ModalContent } from "@heroui/react";
+import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { LauncherPage } from "@/pages/LauncherPage";
 import { DownloadManagerPage } from "@/pages/DownloadManagerPage";
 import { DownloadsProvider } from "@/utils/DownloadsContext";
 import { DownloadPage } from "@/pages/DownloadPage";
 import { SplashScreen } from "@/pages/SplashScreen";
 import { motion, AnimatePresence } from "framer-motion";
-import { Events, Window, Browser } from "@wailsio/runtime";
+import { Events, Browser } from "@wailsio/runtime";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { VersionSelectPage } from "@/pages/VersionSelectPage";
 import VersionSettingsPage from "@/pages/VersionSettingsPage";
@@ -432,181 +410,17 @@ function App() {
                   updateOpen ? "overflow-y-hidden" : ""
                 }`}
               >
-                <AnimatePresence>
-                  <motion.div
-                    key="navbar"
-                    id="wails-draggable"
-                    className="fixed top-0 left-0 right-0 z-50 px-4 py-2"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{
-                      opacity: revealStarted ? 1 : 0,
-                      y: revealStarted ? 0 : -10,
-                    }}
-                    exit={{ opacity: 0, y: -10 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                  >
-                    <div className="flex items-center w-full rounded-2xl bg-white/60 dark:bg-neutral-900/60 backdrop-blur-md shadow-sm px-2 py-1 sm:px-3 sm:py-2">
-                      <div className="flex items-center gap-2 shrink-0">
-                        <LeviIcon width={24} height={24} />
-                        <p className="font-bold text-[16px] sm:text-[18px] tracking-tight text-emerald-600 dark:text-emerald-500 animate-fadeInMove">
-                          LeviLauncher
-                        </p>
-                        {isBeta && (
-                          <Chip
-                            size="sm"
-                            color="warning"
-                            variant="flat"
-                            className="uppercase font-semibold"
-                          >
-                            Beta
-                          </Chip>
-                        )}
-                      </div>
-                      <div className="flex-1 flex items-center gap-2 justify-center whitespace-nowrap overflow-x-auto px-1">
-                        <Tooltip
-                          content={t("launcherpage.launch_button")}
-                          delay={0}
-                          closeDelay={0}
-                        >
-                          <Button
-                            variant="light"
-                            aria-label="Start"
-                            isDisabled={navLocked}
-                            onPress={() => {
-                              tryNavigate("/");
-                            }}
-                            className={`px-3 rounded-full ${
-                              location.pathname === "/" ? "bg-default-200" : ""
-                            }`}
-                            startContent={<FaRocket size={18} />}
-                          >
-                            {t("launcherpage.launch_button")}
-                          </Button>
-                        </Tooltip>
+                <GlobalNavbar
+                  isBeta={isBeta}
+                  navLocked={navLocked}
+                  revealStarted={revealStarted}
+                  isUpdatingMode={isUpdatingMode}
+                  isOnboardingMode={isOnboardingMode}
+                  hasEnteredLauncher={hasEnteredLauncher}
+                  tryNavigate={tryNavigate}
+                />
 
-                        <Tooltip
-                          content={t("downloadmodal.download_button")}
-                          delay={0}
-                          closeDelay={0}
-                        >
-                          <Button
-                            variant="light"
-                            aria-label="Download Page"
-                            isDisabled={navLocked}
-                            onPress={() => {
-                              tryNavigate("/download");
-                            }}
-                            className={`px-3 rounded-2xl ${
-                              location.pathname === "/download"
-                                ? "bg-default-200"
-                                : ""
-                            }`}
-                            startContent={<FaDownload size={18} />}
-                          >
-                            {t("downloadmodal.download_button")}
-                          </Button>
-                        </Tooltip>
-                        <Tooltip
-                          content={t("app.settings")}
-                          delay={0}
-                          closeDelay={0}
-                        >
-                          <Button
-                            variant="light"
-                            aria-label="Settings Page"
-                            isDisabled={navLocked}
-                            onPress={() => {
-                              tryNavigate("/settings");
-                            }}
-                            className={`px-3 rounded-2xl ${
-                              location.pathname === "/settings"
-                                ? "bg-default-200"
-                                : ""
-                            }`}
-                            startContent={<FaCog size={18} />}
-                          >
-                            {t("app.settings")}
-                          </Button>
-                        </Tooltip>
-                        <Dropdown>
-                          <DropdownTrigger>
-                            <Button
-                              variant="light"
-                              aria-label="More Menu"
-                              isDisabled={navLocked}
-                              className={`px-3 rounded-full ${
-                                location.pathname.startsWith("/versions") ||
-                                location.pathname.startsWith("/about")
-                                  ? "bg-default-200"
-                                  : ""
-                              }`}
-                              startContent={<FaEllipsisH size={18} />}
-                            >
-                              {t("nav.more", { defaultValue: "更多" })}
-                            </Button>
-                          </DropdownTrigger>
-                          <DropdownMenu
-                            aria-label="more-menu"
-                            onAction={(key) => {
-                              const k = String(key);
-                              if (k === "versions") tryNavigate("/versions");
-                              if (k === "about") tryNavigate("/about");
-                            }}
-                          >
-                            <DropdownItem
-                              key="versions"
-                              startContent={<FaList size={14} />}
-                            >
-                              {t("nav.versions", { defaultValue: "版本" })}
-                            </DropdownItem>
-                            <DropdownItem
-                              key="about"
-                              startContent={<FaInfoCircle size={14} />}
-                            >
-                              {t("nav.about", { defaultValue: "关于" })}
-                            </DropdownItem>
-                          </DropdownMenu>
-                        </Dropdown>
-                      </div>
-
-                      <div className="flex items-center gap-2 shrink-0 ml-auto justify-end">
-                        {!isUpdatingMode &&
-                          !isOnboardingMode &&
-                          hasEnteredLauncher && <UserAvatar />}
-                        <div className="flex items-center gap-1 rounded-full bg-default-100/50 px-2 py-1">
-                          <ThemeSwitcher />
-                        </div>
-                        <div className="h-6 w-px bg-default-300 mx-1" />
-                        <Button
-                          isIconOnly
-                          variant="light"
-                          aria-label="Minimize"
-                          isDisabled={navLocked && !isOnboardingMode}
-                          onPress={() => {
-                            if (navLocked && !isOnboardingMode) return;
-                            Window.Minimise();
-                          }}
-                        >
-                          <FiMinimize2 size={24} />
-                        </Button>
-                        <Button
-                          isIconOnly
-                          variant="light"
-                          aria-label="Close"
-                          isDisabled={navLocked && !isOnboardingMode}
-                          onPress={() => {
-                            if (navLocked && !isOnboardingMode) return;
-                            Window.Close();
-                          }}
-                        >
-                          <IoCloseOutline size={28} />
-                        </Button>
-                      </div>
-                    </div>
-                  </motion.div>
-                </AnimatePresence>
-
-                <div className="h-[68px]" />
+                <div className="h-[69px]" />
 
                 <motion.div
                   className="w-full flex-1 min-h-0 overflow-hidden"

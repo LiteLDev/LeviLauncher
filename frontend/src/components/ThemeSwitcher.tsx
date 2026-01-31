@@ -27,7 +27,14 @@ export function ThemeSwitcher() {
           <SunIcon className={className} />
         )
       }
-      onChange={() => setTheme(theme === "light" ? "dark" : "light")}
+      onChange={(e) => {
+        setTheme(theme === "light" ? "dark" : "light");
+        e.target.blur();
+      }}
+      className="outline-none"
+      classNames={{
+        wrapper: "group-data-[focus-visible=true]:ring-0 group-data-[focus-visible=true]:ring-offset-0",
+      }}
     ></Switch>
   );
 }

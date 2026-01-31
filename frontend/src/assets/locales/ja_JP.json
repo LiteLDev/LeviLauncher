@@ -242,6 +242,7 @@
     },
     "install": {
       "levilamina_label": "LeviLamina をインストール",
+      "levilamina_desc": "LeviLamina ローダーを自動的にインストールします",
       "version_label": "バージョン",
       "hint": "この処理には時間がかかる場合があります。お待ちください…",
       "estimated_size": "書き込みサイズ (推定)",

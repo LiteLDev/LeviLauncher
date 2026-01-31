@@ -242,6 +242,7 @@
     },
     "install": {
       "levilamina_label": "Установить LeviLamina",
+      "levilamina_desc": "Автоматически установить загрузчик LeviLamina",
       "version_label": "Версия",
       "hint": "Пожалуйста, подождите, процесс может занять некоторое время…",
       "estimated_size": "Записываемый объём (приблизительно)",

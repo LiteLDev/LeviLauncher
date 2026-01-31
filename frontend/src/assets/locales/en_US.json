@@ -242,6 +242,7 @@
     },
     "install": {
       "levilamina_label": "Install LeviLamina",
+      "levilamina_desc": "Automatically install LeviLamina loader",
       "version_label": "Version",
       "hint": "Please wait, this process may take a while…",
       "estimated_size": "Written size (estimated)",

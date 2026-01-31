@@ -242,6 +242,7 @@
     },
     "install": {
       "levilamina_label": "安裝 LeviLamina",
+      "levilamina_desc": "自動安裝 LeviLamina 載入器",
       "version_label": "版本",
       "hint": "請稍候，此過程可能需要較長時間…",
       "estimated_size": "已寫入大小（估算）",

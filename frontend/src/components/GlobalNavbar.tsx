@@ -127,7 +127,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className="pointer-events-auto w-full bg-white/80 dark:bg-zinc-900/40 backdrop-blur-2xl border border-white/40 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 rounded-2xl px-2 py-2 sm:px-4 flex items-center gap-4 transition-all duration-300">
+        <div className="pointer-events-auto w-full bg-white/80 dark:bg-zinc-900/40 backdrop-blur-2xl border border-white/40 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 rounded-2xl px-2 py-2 sm:px-4 flex items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
             <div className="p-1">
               <LeviIcon width={28} height={28} />
@@ -144,7 +144,6 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             </div>
           </div>
 
-          {/* Navigation Items - Center */}
           <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap overflow-x-auto px-2 scrollbar-hide">
             {navItems.map((item) => {
               const isActive = location.pathname === item.path;
@@ -223,7 +222,6 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             </div>
           </div>
 
-          {/* Right Section - User & Window Controls */}
           <div className="flex items-center gap-2 shrink-0 justify-end">
             {!isUpdatingMode && !isOnboardingMode && hasEnteredLauncher && (
               <UserAvatar />

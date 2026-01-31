@@ -19,6 +19,7 @@ import (
 	"github.com/Masterminds/semver/v3"
 	"github.com/corpix/uarand"
 	buildcfg "github.com/liteldev/LeviLauncher/build"
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/mouuff/go-rocket-update/pkg/provider"
@@ -201,7 +202,7 @@ func Update(version string) error {
 		execName += ".exe"
 	}
 
-	base := utils.BaseRoot()
+	base := apppath.BaseRoot()
 	updDir := filepath.Join(base, "updates")
 	if err := os.MkdirAll(updDir, 0o755); err != nil {
 		return fmt.Errorf("create updates dir: %w", err)

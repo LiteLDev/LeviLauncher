@@ -10,6 +10,7 @@ import (
 
 	json "github.com/goccy/go-json"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/content"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
@@ -71,7 +72,7 @@ func BackupWorld(worldDir string) string {
 	}
 	safe := utils.SanitizeFilename(level)
 	ts := time.Now().Format("20060102-150405")
-	base := utils.BaseRoot()
+	base := apppath.BaseRoot()
 	backupDir := filepath.Join(base, "backups", "worlds", safe)
 	if err := utils.CreateDir(backupDir); err != nil {
 		return ""
@@ -99,7 +100,7 @@ func BackupWorldWithVersion(worldDir string, versionName string) string {
 		safeVersion = "default"
 	}
 	ts := time.Now().Format("20060102-150405")
-	base := utils.BaseRoot()
+	base := apppath.BaseRoot()
 	backupDir := filepath.Join(base, "backups", "worlds", safeVersion, safeFolder+"_"+safeWorld)
 	if err := utils.CreateDir(backupDir); err != nil {
 		return ""

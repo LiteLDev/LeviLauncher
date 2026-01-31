@@ -299,12 +299,6 @@ body::-webkit-scrollbar,
   }
 }
 
-/* Disable default focus outline for all elements (desktop app feel) */
-button:focus,
-button:focus-visible {
-  outline: none;
-}
-
 @keyframes progress-md-bar2 {
   0% {
     left: -200%;

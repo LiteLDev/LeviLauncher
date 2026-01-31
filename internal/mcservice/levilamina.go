@@ -13,6 +13,7 @@ import (
 
 	"github.com/corpix/uarand"
 	json "github.com/goccy/go-json"
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
@@ -76,7 +77,7 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string)
 
 	llVersion := versions[len(versions)-1]
 
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -107,8 +108,8 @@ func UninstallLeviLamina(ctx context.Context, targetName string) string {
 		return "ERR_LIP_NOT_INSTALLED"
 	}
 
-	vdir, err := utils.GetVersionsDir()
-	if err != nil {
+	vdir, err := apppath.VersionsDir()
+	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
 	targetDir := filepath.Join(vdir, targetName)

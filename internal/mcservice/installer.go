@@ -7,6 +7,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/types"
@@ -36,7 +37,7 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 	}
 	inPath := n
 	if !filepath.IsAbs(inPath) {
-		if dir, err := utils.GetInstallerDir(); err == nil && dir != "" {
+		if dir, err := apppath.InstallersDir(); err == nil && dir != "" {
 			inPath += ".msixvc"
 			inPath = filepath.Join(dir, inPath)
 		}
@@ -44,7 +45,7 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 	if !utils.FileExists(inPath) {
 		return "ERR_MSIXVC_NOT_FOUND"
 	}
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -100,7 +101,7 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 }
 
 func ResolveDownloadedMsixvc(version string, versionType string) string {
-	dir, err := utils.GetInstallerDir()
+	dir, err := apppath.InstallersDir()
 	if err != nil || strings.TrimSpace(dir) == "" {
 		return ""
 	}
@@ -139,7 +140,7 @@ func DeleteDownloadedMsixvc(version string, versionType string) string {
 	if name == "" {
 		return "ERR_MSIXVC_NOT_FOUND"
 	}
-	dir, err := utils.GetInstallerDir()
+	dir, err := apppath.InstallersDir()
 	if err != nil || strings.TrimSpace(dir) == "" {
 		return "ERR_ACCESS_INSTALLERS_DIR"
 	}
@@ -160,7 +161,7 @@ func DeleteDownloadedMsixvc(version string, versionType string) string {
 }
 
 func GetInstallerDir() string {
-	dir, err := utils.GetInstallerDir()
+	dir, err := apppath.InstallersDir()
 	if err != nil {
 		return ""
 	}
@@ -168,7 +169,7 @@ func GetInstallerDir() string {
 }
 
 func GetVersionsDir() string {
-	dir, err := utils.GetVersionsDir()
+	dir, err := apppath.VersionsDir()
 	if err != nil {
 		return ""
 	}

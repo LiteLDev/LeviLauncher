@@ -8,8 +8,8 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/types"
-	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
 func ListMinecraftProcesses() []types.ProcessInfo {
@@ -45,8 +45,10 @@ func ListMinecraftProcesses() []types.ProcessInfo {
 		return []types.ProcessInfo{}
 	}
 
-	versionsDir, _ := utils.GetVersionsDir()
-	versionsDir = strings.ToLower(filepath.Clean(versionsDir))
+	versionsDir, _ := apppath.VersionsDir()
+	if versionsDir != "" {
+		versionsDir = strings.ToLower(filepath.Clean(versionsDir))
+	}
 
 	var processes []types.ProcessInfo
 	for _, record := range records[1:] {

@@ -15,6 +15,7 @@ import (
 
 	"unsafe"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/content"
 	"github.com/liteldev/LeviLauncher/internal/curseforge/client"
@@ -210,7 +211,7 @@ func (a *Minecraft) SaveVersionMeta(name string, gameVersion string, typeStr str
 func (a *Minecraft) ListVersionMetas() []versions.VersionMeta { return mcservice.ListVersionMetas() }
 func (a *Minecraft) ListVersionMetasWithRegistered() []versions.VersionMeta {
 	metas := mcservice.ListVersionMetas()
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return metas
 	}
@@ -555,7 +556,7 @@ func (a *Minecraft) InstallGDKFromZip(zipPath string) string {
 }
 
 func (a *Minecraft) RegisterVersionWithWdapp(name string, isPreview bool) string {
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -590,7 +591,7 @@ func (a *Minecraft) RegisterVersionWithWdapp(name string, isPreview bool) string
 }
 
 func (a *Minecraft) UnregisterVersionByName(name string) string {
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -1014,7 +1015,7 @@ func (a *Minecraft) TestMirrorLatencies(urls []string, timeoutMs int) []map[stri
 }
 
 func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string {
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}

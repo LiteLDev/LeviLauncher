@@ -10,10 +10,9 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	winreg "golang.org/x/sys/windows/registry"
-
-	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
 var (
@@ -58,7 +57,7 @@ func EnsureInteractive(ctx context.Context) {
 		return
 	}
 
-	dir, _ := utils.GetInstallerDir()
+	dir, _ := apppath.InstallersDir()
 	if dir == "" {
 		dir = "."
 	}

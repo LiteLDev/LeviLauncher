@@ -123,7 +123,9 @@ export default function VersionSettingsPage() {
   React.useEffect(() => {
     const handler = (ev: any) => {
       try {
-        const targetPath = String(ev?.detail?.path || "");
+        let targetPath = ev?.detail?.path;
+        if (targetPath === -1) targetPath = "-1";
+        targetPath = String(targetPath || "");
         const hasUnsaved =
           (newName && newName !== targetName) ||
           enableIsolation !== originalIsolation ||
@@ -137,7 +139,11 @@ export default function VersionSettingsPage() {
           unsavedOnOpen();
           return;
         }
-        navigate(targetPath);
+        if (targetPath === "-1") {
+          navigate(-1);
+        } else {
+          navigate(targetPath);
+        }
       } catch {}
     };
     window.addEventListener("ll-try-nav", handler as any);
@@ -231,7 +237,11 @@ export default function VersionSettingsPage() {
         }
       } catch {}
 
-      navigate(typeof destPath === "string" ? destPath : returnToPath);
+      if (destPath === "-1") {
+        navigate(-1);
+      } else {
+        navigate(typeof destPath === "string" ? destPath : returnToPath);
+      }
       return true;
     },
     [

@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 )
 
 func CreateDir(path string) error {
@@ -41,15 +43,11 @@ func GetLastDirName(path string) string {
 }
 
 func GetAppDataPath() string {
-	path := os.Getenv("APPDATA")
-	return path
+	return apppath.AppData()
 }
 
 func GetMinecraftGDKDataPath(ispreview bool) string {
-	if ispreview {
-		return filepath.Join(GetAppDataPath(), "Minecraft Bedrock Preview")
-	}
-	return filepath.Join(GetAppDataPath(), "Minecraft Bedrock")
+	return apppath.MinecraftData(ispreview)
 }
 
 func FileExists(path string) bool {

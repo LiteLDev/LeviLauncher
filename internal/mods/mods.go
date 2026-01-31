@@ -10,6 +10,7 @@ import (
 
 	json "github.com/goccy/go-json"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
@@ -19,7 +20,7 @@ func GetMods(mcname string) (result []types.ModInfo) {
 	if name == "" {
 		return result
 	}
-	vroot, err := utils.GetVersionsDir()
+	vroot, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return result
 	}
@@ -65,7 +66,7 @@ func DeleteMod(mcname string, modFolder string) string {
 	if name == "" || mod == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := utils.GetVersionsDir()
+	vroot, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -94,7 +95,7 @@ func DisableMod(mcname string, modFolder string) string {
 	if name == "" || mod == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := utils.GetVersionsDir()
+	vroot, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -131,7 +132,7 @@ func EnableMod(mcname string, modFolder string) string {
 	if name == "" || mod == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := utils.GetVersionsDir()
+	vroot, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -168,7 +169,7 @@ func IsModEnabled(mcname string, modFolder string) bool {
 	if name == "" || mod == "" {
 		return false
 	}
-	vroot, err := utils.GetVersionsDir()
+	vroot, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return false
 	}
@@ -197,7 +198,7 @@ func ImportZipToMods(mcname string, data []byte, overwrite bool) string {
 	if name == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := utils.GetVersionsDir()
+	vroot, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -307,7 +308,7 @@ func ImportDllToMods(mcname string, dllFileName string, data []byte, modName str
 	if name == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vroot, err := utils.GetVersionsDir()
+	vroot, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vroot) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}

@@ -9,8 +9,8 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/downloader"
-	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
 const (
@@ -64,7 +64,7 @@ type DownloadError struct {
 }
 
 func StartDownload(ctx context.Context, rawurl string) string {
-	dir, err := utils.GetInstallerDir()
+	dir, err := apppath.InstallersDir()
 	if err != nil {
 		application.Get().Event.Emit(EventDownloadError, err.Error())
 		return ""

@@ -8,6 +8,7 @@ import (
 	"strings"
 	"syscall"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
@@ -49,7 +50,7 @@ func OpenMods(name string) bool {
 	if n == "" {
 		return false
 	}
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return false
 	}
@@ -63,9 +64,17 @@ func OpenWorlds(isPreview bool) bool {
 }
 
 func OpenInstallers() bool {
-	dir, err := utils.GetInstallerDir()
+	dir, err := apppath.InstallersDir()
 	if err != nil || dir == "" {
 		return false
 	}
 	return OpenPath(dir)
+}
+
+func OpenVersionsDir() string {
+	vdir, err := apppath.VersionsDir()
+	if err != nil {
+		return "ERR_ACCESS_VERSIONS_DIR"
+	}
+	return vdir
 }

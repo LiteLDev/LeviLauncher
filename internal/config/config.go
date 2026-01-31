@@ -2,10 +2,17 @@ package config
 
 import (
 	"os"
-	"path/filepath"
 	"strings"
+	"sync"
 
 	json "github.com/goccy/go-json"
+	"github.com/liteldev/LeviLauncher/internal/apppath"
+)
+
+var (
+	cachedConfig AppConfig
+	configMutex  sync.RWMutex
+	isLoaded     bool
 )
 
 type AppConfig struct {
@@ -15,88 +22,81 @@ type AppConfig struct {
 	DisableDiscordRPC bool   `json:"disable_discord_rpc"`
 }
 
-func localAppData() string {
-	if v := os.Getenv("APPDATA"); strings.TrimSpace(v) != "" {
-		return v
-	}
-	if v, _ := os.UserCacheDir(); strings.TrimSpace(v) != "" {
-		return v
-	}
-	return "."
-}
-
-func configPath() string {
-	exeName := func() string {
-		if exe, err := os.Executable(); err == nil {
-			b := strings.TrimSpace(filepath.Base(exe))
-			if b != "" {
-				return strings.ToLower(b)
-			}
-		}
-		return "levilauncher.exe"
-	}()
-	base := filepath.Join(localAppData(), exeName)
-	_ = os.MkdirAll(base, 0o755)
-	return filepath.Join(base, "config.json")
-}
-
-func oldConfigPath() string {
-	la := strings.TrimSpace(os.Getenv("LOCALAPPDATA"))
-	if la == "" {
-		return ""
-	}
-	p := filepath.Join(la, "levilauncher", "config.json")
-	if _, err := os.Stat(p); err == nil {
-		return p
-	}
-	p2 := filepath.Join(la, "LeviLauncher", "config.json")
-	if _, err := os.Stat(p2); err == nil {
-		return p2
-	}
-	return ""
-}
-
 func Load() (AppConfig, error) {
-	var c AppConfig
-	p := configPath()
-	if b, err := os.ReadFile(p); err == nil {
-		_ = json.Unmarshal(b, &c)
+	configMutex.RLock()
+	if isLoaded {
+		c := cachedConfig
+		configMutex.RUnlock()
 		return c, nil
 	}
-	_ = os.MkdirAll(filepath.Dir(p), 0o755)
-	if old := oldConfigPath(); old != "" {
-		if ob, err := os.ReadFile(old); err == nil {
-			_ = json.Unmarshal(ob, &c)
-			if err2 := os.WriteFile(p, ob, 0o644); err2 == nil {
-				_ = os.Remove(old)
-			}
-			return c, nil
-		}
+	configMutex.RUnlock()
+
+	return Reload()
+}
+
+func Reload() (AppConfig, error) {
+	configMutex.Lock()
+	defer configMutex.Unlock()
+
+	var c AppConfig
+	p := apppath.ConfigPath()
+	if b, err := os.ReadFile(p); err == nil {
+		_ = json.Unmarshal(b, &c)
+		cachedConfig = c
+		isLoaded = true
+		apppath.SetBaseRootOverride(c.BaseRoot)
+		return c, nil
 	}
+
 	db, _ := json.MarshalIndent(c, "", "  ")
 	_ = os.WriteFile(p, db, 0o644)
+	cachedConfig = c
+	isLoaded = true
+	apppath.SetBaseRootOverride(c.BaseRoot)
 	return c, nil
 }
 
 func Save(c AppConfig) error {
-	p := configPath()
+	configMutex.Lock()
+	defer configMutex.Unlock()
+
+	p := apppath.ConfigPath()
 	b, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
 	}
+	cachedConfig = c
+	isLoaded = true
+	apppath.SetBaseRootOverride(c.BaseRoot)
 	return os.WriteFile(p, b, 0o644)
 }
 
 func ConfigDir() string {
-	return filepath.Dir(configPath())
+	return apppath.ConfigDir()
 }
 
 func GetBaseRootOverride() string {
+	configMutex.RLock()
+	if isLoaded {
+		v := cachedConfig.BaseRoot
+		configMutex.RUnlock()
+		return strings.TrimSpace(v)
+	}
+	configMutex.RUnlock()
+
 	c, _ := Load()
 	return strings.TrimSpace(c.BaseRoot)
 }
 
 func GetDiscordRPCDisabled() bool {
+	configMutex.RLock()
+	if isLoaded {
+		v := cachedConfig.DisableDiscordRPC
+		configMutex.RUnlock()
+		return v
+	}
+	configMutex.RUnlock()
+
 	c, _ := Load()
 	return c.DisableDiscordRPC
 }

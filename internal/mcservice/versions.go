@@ -19,6 +19,7 @@ import (
 	"time"
 	"unsafe"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/icons"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/registry"
@@ -148,7 +149,7 @@ func GetContentRoots(name string) types.ContentRoots {
 	isPreview := false
 	isIsolation := false
 	if verName != "" {
-		if vdir, err := utils.GetVersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
+		if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
 			dir := filepath.Join(vdir, verName)
 			if m, merr := versions.ReadMeta(dir); merr == nil {
 				isIsolation = m.EnableIsolation
@@ -164,7 +165,7 @@ func GetContentRoots(name string) types.ContentRoots {
 	}
 	base := ""
 	if isIsolation && verName != "" {
-		if vdir, err := utils.GetVersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
+		if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
 			base = filepath.Join(vdir, verName, gameDirName)
 		}
 	} else {
@@ -227,7 +228,7 @@ func GetContentCounts(name string) ContentCounts {
 }
 
 func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, enableRenderDragon bool) string {
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -270,7 +271,7 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 }
 
 func ListVersionMetas() []versions.VersionMeta {
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return []versions.VersionMeta{}
 	}
@@ -283,7 +284,7 @@ func ListVersionMetas() []versions.VersionMeta {
 
 func GetVersionMeta(name string) versions.VersionMeta {
 	var m versions.VersionMeta
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return m
 	}
@@ -296,7 +297,7 @@ func GetVersionMeta(name string) versions.VersionMeta {
 }
 
 func ReconcileRegisteredFlags() {
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return
 	}
@@ -340,7 +341,7 @@ func ListInheritableVersionNames(versionType string) []string {
 	if vt != "release" && vt != "preview" {
 		vt = "release"
 	}
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return []string{}
 	}
@@ -379,7 +380,7 @@ func CopyVersionDataFromVersion(sourceName string, targetName string) string {
 	if s == "" || t == "" {
 		return "ERR_TARGET_DIR_NOT_SPECIFIED"
 	}
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -421,7 +422,7 @@ func CopyVersionDataFromGDK(isPreview bool, targetName string) string {
 	if t == "" {
 		return "ERR_TARGET_DIR_NOT_SPECIFIED"
 	}
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -453,7 +454,7 @@ func CopyVersionDataFromGDK(isPreview bool, targetName string) string {
 }
 
 func SaveVersionLogoDataUrl(name string, dataUrl string) string {
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -499,7 +500,7 @@ func SaveVersionLogoDataUrl(name string, dataUrl string) string {
 }
 
 func SaveVersionLogoFromPath(name string, filePath string) string {
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -539,7 +540,7 @@ func SaveVersionLogoFromPath(name string, filePath string) string {
 }
 
 func GetVersionLogoDataUrl(name string) string {
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return ""
 	}
@@ -556,7 +557,7 @@ func GetVersionLogoDataUrl(name string) string {
 }
 
 func RemoveVersionLogo(name string) string {
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -583,7 +584,7 @@ func ValidateVersionFolderName(name string) string {
 	if _, ok := reserved[lower]; ok {
 		return "ERR_NAME_RESERVED"
 	}
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || vdir == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -608,7 +609,7 @@ func RenameVersionFolder(oldName string, newName string) string {
 	if on == "" || nn == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -685,7 +686,7 @@ func DeleteVersionFolder(name string) string {
 	if n == "" {
 		return "ERR_INVALID_NAME"
 	}
-	vdir, err := utils.GetVersionsDir()
+	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -775,7 +776,7 @@ func CreateDesktopShortcut(name string) string {
 	}
 	workdir := filepath.Dir(exePath)
 	iconPath := exePath
-	if vdir, err := utils.GetVersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
+	if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
 		dir := filepath.Join(vdir, n)
 		e := filepath.Join(dir, "Minecraft.Windows.exe")
 		isPreview := false

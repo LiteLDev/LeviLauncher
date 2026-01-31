@@ -14,6 +14,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/downloader"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
@@ -53,7 +54,7 @@ func IsInstalled() bool {
 }
 
 func StartDownload(ctx context.Context, url string) string {
-	dir, err := utils.GetInstallerDir()
+	dir, err := apppath.InstallersDir()
 	if err != nil {
 		application.Get().Event.Emit(EventDownloadError, err.Error())
 		return ""

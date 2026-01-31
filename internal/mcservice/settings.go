@@ -3,12 +3,13 @@ package mcservice
 import (
 	"strings"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
-func GetBaseRoot() string { return utils.BaseRoot() }
+func GetBaseRoot() string { return apppath.BaseRoot() }
 
 func SetBaseRoot(root string) string {
 	r := strings.TrimSpace(root)
@@ -32,7 +33,7 @@ func ResetBaseRoot() string {
 	if err := config.Save(c); err != nil {
 		return "ERR_WRITE_FILE"
 	}
-	br := utils.BaseRoot()
+	br := apppath.BaseRoot()
 	c.BaseRoot = strings.TrimSpace(br)
 	if err := config.Save(c); err != nil {
 		return "ERR_WRITE_FILE"

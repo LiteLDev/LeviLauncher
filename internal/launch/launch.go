@@ -95,11 +95,6 @@ func MonitorGameProcess(ctx context.Context, versionDir string) {
 	var found bool
 	for i := 0; i < maxWait; i++ {
 		if isGameRunning(versionDir) {
-			application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
-			w := application.Get().Window.Current()
-			if w != nil {
-				w.Minimise()
-			}
 			found = true
 			break
 		}
@@ -112,6 +107,30 @@ func MonitorGameProcess(ctx context.Context, versionDir string) {
 		return
 	}
 
+	const windowWait = 60
+	for i := 0; i < windowWait; i++ {
+		if i%4 == 0 && !isGameRunning(versionDir) {
+			found = false
+			break
+		}
+		if FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview") {
+			break
+		}
+		time.Sleep(500 * time.Millisecond)
+	}
+
+	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
+
+	if !found {
+		discord.SetLauncherIdle()
+		return
+	}
+
+	w := application.Get().Window.Current()
+	if w != nil {
+		w.Minimise()
+	}
+
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 
@@ -122,10 +141,11 @@ func MonitorGameProcess(ctx context.Context, versionDir string) {
 		case <-ticker.C:
 			if !isGameRunning(versionDir) {
 				discord.SetLauncherIdle()
-				w := application.Get().Window.Current()
-				if w != nil {
-					w.Restore()
-				}
+				// 似乎会出现Bug，后续修复
+				//w := application.Get().Window.Current()
+				//if w != nil {
+					//w.Restore()
+				//}
 				return
 			}
 		}

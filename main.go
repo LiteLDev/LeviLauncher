@@ -135,8 +135,9 @@ func ensureSingleInstance(autoLaunchVersion string) bool {
 	}
 	h, err := win.CreateMutex(nil, true, name)
 	if err == win.ERROR_ALREADY_EXISTS {
-		_ = sendLaunchToExistingInstance(autoLaunchVersion)
-		focusExistingWindow()
+		if !sendLaunchToExistingInstance(autoLaunchVersion) {
+			focusExistingWindow()
+		}
 		return false
 	}
 	if err != nil {

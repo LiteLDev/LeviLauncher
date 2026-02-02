@@ -20,6 +20,7 @@ import (
 	"github.com/corpix/uarand"
 	buildcfg "github.com/liteldev/LeviLauncher/build"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/mouuff/go-rocket-update/pkg/provider"
@@ -104,18 +105,20 @@ func GetAppVersion() string {
 
 func CheckUpdate(version string) types.CheckUpdate {
 	apis := []string{
-		"https://api.github.com/repos/LiteLDev/LeviLauncher/releases/latest",
-		"https://cdn.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases/latest",
-		"https://edgeone.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases/latest",
-		"https://gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases/latest",
-		"https://hk.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases/latest",
+		"https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
+		"https://cdn.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
+		"https://edgeone.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
+		"https://gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
+		"https://hk.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
 	}
 	useReverse := isChinaUser()
-	var payload struct {
-		TagName string `json:"tag_name"`
-		Body    string `json:"body"`
+	var releases []struct {
+		TagName    string `json:"tag_name"`
+		Body       string `json:"body"`
+		Prerelease bool   `json:"prerelease"`
 	}
-	latestTag := ""
+
+	found := false
 	for i := 0; i < len(apis); i++ {
 		idx := i
 		if useReverse {
@@ -136,29 +139,50 @@ func CheckUpdate(version string) types.CheckUpdate {
 			continue
 		}
 		dec := json.NewDecoder(resp.Body)
-		if err := dec.Decode(&payload); err != nil {
+		if err := dec.Decode(&releases); err != nil {
 			resp.Body.Close()
 			continue
 		}
 		resp.Body.Close()
-		latestTag = strings.TrimSpace(payload.TagName)
-		if latestTag != "" {
+		if len(releases) > 0 {
+			found = true
 			break
 		}
 	}
-	if latestTag == "" {
+
+	if !found || len(releases) == 0 {
 		return types.CheckUpdate{IsUpdate: false, Version: version}
 	}
+
+	cfg, _ := config.Load()
+	acceptBeta := cfg.EnableBetaUpdates || isBeta
+
 	cur := strings.TrimPrefix(strings.TrimSpace(version), "v")
-	latest := strings.TrimPrefix(latestTag, "v")
 	vCur, err1 := semver.NewVersion(cur)
-	vLatest, err2 := semver.NewVersion(latest)
-	if err1 != nil || err2 != nil {
-		return types.CheckUpdate{IsUpdate: latestTag != version, Version: latestTag, Body: payload.Body}
+
+	for _, r := range releases {
+		if r.Prerelease && !acceptBeta {
+			continue
+		}
+
+		tag := strings.TrimPrefix(strings.TrimSpace(r.TagName), "v")
+		vRel, err := semver.NewVersion(tag)
+		if err != nil {
+			continue
+		}
+
+		if err1 != nil {
+			if r.TagName != version {
+				return types.CheckUpdate{IsUpdate: true, Version: r.TagName, Body: r.Body}
+			}
+			continue
+		}
+
+		if vRel.GreaterThan(vCur) {
+			return types.CheckUpdate{IsUpdate: true, Version: r.TagName, Body: r.Body}
+		}
 	}
-	if vLatest.GreaterThan(vCur) {
-		return types.CheckUpdate{IsUpdate: true, Version: latestTag, Body: payload.Body}
-	}
+
 	return types.CheckUpdate{IsUpdate: false, Version: version}
 }
 

@@ -1099,6 +1099,12 @@ func (a *Minecraft) SetDisableDiscordRPC(disable bool) string {
 	return mcservice.SetDisableDiscordRPC(disable)
 }
 
+func (a *Minecraft) GetEnableBetaUpdates() bool { return mcservice.GetEnableBetaUpdates() }
+
+func (a *Minecraft) SetEnableBetaUpdates(enable bool) string {
+	return mcservice.SetEnableBetaUpdates(enable)
+}
+
 func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }
 
 func (a *Minecraft) CanWriteToDir(path string) bool { return mcservice.CanWriteToDir(path) }

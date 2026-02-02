@@ -286,6 +286,10 @@
       "title": "Discord Rich Presence",
       "desc": "Show your game status on Discord"
     },
+    "beta_updates": {
+      "title": "Receive Beta Updates",
+      "desc": "Enable to receive prerelease updates"
+    },
     "reset": {
       "confirm": {
         "title": "Restore default path?",

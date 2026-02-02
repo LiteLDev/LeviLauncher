@@ -286,6 +286,10 @@
       "title": "Discord 游戏状态",
       "desc": "在 Discord 上显示您的游戏状态"
     },
+    "beta_updates": {
+      "title": "接收测试版更新",
+      "desc": "开启后将接收测试版（Prerelease）推送"
+    },
     "reset": {
       "confirm": {
         "title": "恢复默认路径？",

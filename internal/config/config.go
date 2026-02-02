@@ -20,6 +20,7 @@ type AppConfig struct {
 	WindowWidth       int    `json:"window_width"`
 	WindowHeight      int    `json:"window_height"`
 	DisableDiscordRPC bool   `json:"disable_discord_rpc"`
+	EnableBetaUpdates bool   `json:"enable_beta_updates"`
 }
 
 func Load() (AppConfig, error) {

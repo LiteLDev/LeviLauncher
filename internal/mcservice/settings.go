@@ -60,3 +60,17 @@ func SetDisableDiscordRPC(disable bool) string {
 	}
 	return ""
 }
+
+func GetEnableBetaUpdates() bool {
+	c, _ := config.Load()
+	return c.EnableBetaUpdates
+}
+
+func SetEnableBetaUpdates(enable bool) string {
+	c, _ := config.Load()
+	c.EnableBetaUpdates = enable
+	if err := config.Save(c); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
+}

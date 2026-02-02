@@ -45,6 +45,7 @@ import ServersPage from "@/pages/ServersPage";
 import { Toaster } from "react-hot-toast";
 import { useTheme } from "next-themes";
 import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
+import { FaRocket } from "react-icons/fa";
 
 const GlobalShortcuts = ({
   tryNavigate,

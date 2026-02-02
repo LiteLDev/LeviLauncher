@@ -39,6 +39,8 @@ import {
   InstallGDKFromZip,
   GetDisableDiscordRPC,
   SetDisableDiscordRPC,
+  GetEnableBetaUpdates,
+  SetEnableBetaUpdates,
   ResetBaseRoot,
   InstallLip,
   GetLipVersion,
@@ -79,6 +81,7 @@ export const SettingsPage: React.FC = () => {
   const [savingBaseRoot, setSavingBaseRoot] = useState<boolean>(false);
   const [baseRootWritable, setBaseRootWritable] = useState<boolean>(true);
   const [discordRpcEnabled, setDiscordRpcEnabled] = useState<boolean>(true);
+  const [enableBetaUpdates, setEnableBetaUpdates] = useState<boolean>(false);
   const [gdkInstalled, setGdkInstalled] = useState<boolean>(false);
   const [gdkDlProgress, setGdkDlProgress] = useState<{
     downloaded: number;
@@ -215,6 +218,10 @@ export const SettingsPage: React.FC = () => {
             try {
               const disabled = await GetDisableDiscordRPC();
               setDiscordRpcEnabled(!disabled);
+            } catch {}
+            try {
+              const enabled = await GetEnableBetaUpdates();
+              setEnableBetaUpdates(enabled);
             } catch {}
             try {
               const ok = await IsGDKInstalled();
@@ -802,6 +809,34 @@ export const SettingsPage: React.FC = () => {
                     onValueChange={(isSelected) => {
                       setDiscordRpcEnabled(isSelected);
                       SetDisableDiscordRPC(!isSelected);
+                    }}
+                    classNames={{
+                      wrapper: "group-data-[selected=true]:bg-emerald-500",
+                    }}
+                  />
+                </div>
+
+                <Divider className="bg-default-200/50" />
+
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="font-medium">
+                      {t("settings.beta_updates.title", {
+                        defaultValue: "接收测试版更新",
+                      })}
+                    </p>
+                    <p className="text-tiny text-default-500">
+                      {t("settings.beta_updates.desc", {
+                        defaultValue: "开启后将接收测试版（Prerelease）推送",
+                      })}
+                    </p>
+                  </div>
+                  <Switch
+                    size="sm"
+                    isSelected={enableBetaUpdates}
+                    onValueChange={(isSelected) => {
+                      setEnableBetaUpdates(isSelected);
+                      SetEnableBetaUpdates(isSelected);
                     }}
                     classNames={{
                       wrapper: "group-data-[selected=true]:bg-emerald-500",

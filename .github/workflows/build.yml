@@ -83,6 +83,23 @@ jobs:
           echo "Artifacts directory structure:"
           ls -R ./artifacts/
 
+      - name: Determine Prerelease Status
+        id: check_prerelease
+        run: |
+          # Extract beta value from build/config.yml
+          # Look for line with "beta:", extract content between quotes
+          BETA=$(grep 'beta:' build/config.yml | sed -n 's/.*beta:[[:space:]]*"\([^"]*\)".*/\1/p')
+
+          echo "Beta value found: $BETA"
+
+          if [ "$BETA" == "true" ]; then
+            echo "is_prerelease=true" >> $GITHUB_OUTPUT
+            echo "Detected beta: true, setting prerelease to true"
+          else
+            echo "is_prerelease=false" >> $GITHUB_OUTPUT
+            echo "Detected beta: $BETA, setting prerelease to false"
+          fi
+
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -92,7 +109,7 @@ jobs:
           tag_name: ${{ github.ref_name }}
           release_name: Release ${{ github.ref_name }}
           draft: false
-          prerelease: false
+          prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
           generate_release_notes: true
 
       - name: Upload Release Assets

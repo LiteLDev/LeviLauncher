@@ -286,6 +286,10 @@
       "title": "Discord Rich Presence",
       "desc": "Показывать статус игры в Discord"
     },
+    "beta_updates": {
+      "title": "Получать бета-обновления",
+      "desc": "Включить получение предварительных версий (prerelease)"
+    },
     "reset": {
       "confirm": {
         "title": "Восстановить путь по умолчанию?",

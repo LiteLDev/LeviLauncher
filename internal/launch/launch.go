@@ -90,15 +90,68 @@ func isGameRunning(versionDir string) bool {
 	return false
 }
 
-func MonitorGameProcess(ctx context.Context, versionDir string) {
-	const maxWait = 120
-	var found bool
-	for i := 0; i < maxWait; i++ {
-		if isGameRunning(versionDir) {
-			found = true
-			break
+func isGameWindowVisible() bool {
+	return FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview")
+}
+
+func waitForGameProcess(ctx context.Context, versionDir string, timeout time.Duration) (bool, bool) {
+	if isGameRunning(versionDir) {
+		return true, false
+	}
+	ticker := time.NewTicker(1 * time.Second)
+	defer ticker.Stop()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	for {
+		select {
+		case <-ctx.Done():
+			return false, true
+		case <-timer.C:
+			return false, false
+		case <-ticker.C:
+			if isGameRunning(versionDir) {
+				return true, false
+			}
 		}
-		time.Sleep(1 * time.Second)
+	}
+}
+
+func waitForGameWindow(ctx context.Context, versionDir string, timeout time.Duration) (bool, bool, bool) {
+	if isGameWindowVisible() {
+		return true, true, false
+	}
+	if !isGameRunning(versionDir) {
+		return false, false, false
+	}
+	ticker := time.NewTicker(500 * time.Millisecond)
+	defer ticker.Stop()
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+	lastRunningCheck := time.Now()
+	for {
+		select {
+		case <-ctx.Done():
+			return false, false, true
+		case <-timer.C:
+			return true, false, false
+		case <-ticker.C:
+			if isGameWindowVisible() {
+				return true, true, false
+			}
+			if time.Since(lastRunningCheck) >= 2*time.Second {
+				lastRunningCheck = time.Now()
+				if !isGameRunning(versionDir) {
+					return false, false, false
+				}
+			}
+		}
+	}
+}
+
+func MonitorGameProcess(ctx context.Context, versionDir string) {
+	found, canceled := waitForGameProcess(ctx, versionDir, 120*time.Second)
+	if canceled {
+		return
 	}
 
 	if !found {
@@ -107,16 +160,9 @@ func MonitorGameProcess(ctx context.Context, versionDir string) {
 		return
 	}
 
-	const windowWait = 60
-	for i := 0; i < windowWait; i++ {
-		if i%4 == 0 && !isGameRunning(versionDir) {
-			found = false
-			break
-		}
-		if FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview") {
-			break
-		}
-		time.Sleep(500 * time.Millisecond)
+	found, visible, canceled := waitForGameWindow(ctx, versionDir, 60*time.Second)
+	if canceled {
+		return
 	}
 
 	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
@@ -126,9 +172,11 @@ func MonitorGameProcess(ctx context.Context, versionDir string) {
 		return
 	}
 
-	w := application.Get().Window.Current()
-	if w != nil {
-		w.Minimise()
+	if visible {
+		w := application.Get().Window.Current()
+		if w != nil {
+			w.Minimise()
+		}
 	}
 
 	ticker := time.NewTicker(3 * time.Second)

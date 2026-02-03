@@ -147,8 +147,6 @@ jobs:
 
           curl -H "Content-Type: application/json" \
           -d "{
-            \"username\": \"LeviLauncher Bot\",
-            \"avatar_url\": \"$THUMB_URL\",
             \"embeds\": [{
               \"title\": \"$EMBED_TITLE\",
               \"description\": \"$EMBED_DESC\",
@@ -165,10 +163,7 @@ jobs:
                   \"value\": \"[**Click here to download EXE**]($EXE_URL)\",
                   \"inline\": true
                 }
-              ],
-              \"footer\": {
-                \"text\": \"Hosted on GitHub\"
-              }
+              ] 
             }]
           }" \
           "$DISCORD_WEBHOOK"

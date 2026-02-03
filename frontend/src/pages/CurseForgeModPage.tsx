@@ -18,12 +18,8 @@ import {
   GetVersionLogoDataUrl,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { Events, Browser } from "@wailsio/runtime";
-import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { VersionMeta } from "bindings/github.com/liteldev/LeviLauncher/internal/versions/models";
-import {
-  ModData,
-  File as ModFile,
-} from "bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
+import { File as ModFile } from "bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
 import {
   getPlayerGamertagMap,
   listPlayers,
@@ -44,7 +40,6 @@ import {
   Image,
   ScrollShadow,
   Link,
-  Divider,
   Card,
   CardBody,
   Tabs,
@@ -65,17 +60,14 @@ import {
 import {
   LuArrowLeft,
   LuDownload,
-  LuClock,
   LuCalendar,
   LuFileDigit,
-  LuExternalLink,
   LuGlobe,
   LuGithub,
   LuBug,
   LuShare2,
   LuGamepad2,
 } from "react-icons/lu";
-import { motion } from "framer-motion";
 
 const formatNumber = (num: number | undefined) => {
   if (num === undefined) return "0";
@@ -501,6 +493,55 @@ const CurseForgeModPage: React.FC = () => {
       .finally(() => setLoading(false));
   }, [id]);
 
+  const handleDescriptionClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    const target = (e.target as HTMLElement).closest("a");
+    const href = target?.getAttribute("href");
+
+    if (!target || !href) return;
+
+    e.preventDefault();
+
+    let url = href;
+
+    if (url.includes("linkout?remoteUrl=")) {
+      const match = url.match(/remoteUrl=(.+)$/);
+      if (match?.[1]) {
+        try {
+          url = decodeURIComponent(match[1]);
+        } catch (err) {
+          console.warn("Failed to decode remoteUrl", err);
+        }
+      }
+    } else if (url.startsWith("/")) {
+      url = "https://www.curseforge.com" + url;
+    }
+
+    if (/^https?%3a/i.test(url)) {
+      try {
+        url = decodeURIComponent(url);
+      } catch (e) {
+        console.warn("Failed to decode encoded URL", e);
+      }
+    }
+
+    if (!url || url.startsWith("#")) return;
+
+    if (!/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(url)) {
+      url = "https://" + url;
+    }
+
+    try {
+      const parsedUrl = new URL(url);
+      if (["http:", "https:"].includes(parsedUrl.protocol)) {
+        Browser.OpenURL(parsedUrl.toString());
+      } else {
+        console.warn("Blocked opening non-http/https URL:", url);
+      }
+    } catch (e) {
+      console.warn("Invalid URL:", url, e);
+    }
+  };
+
   if (loading) {
     return (
       <div className="w-full h-full flex flex-col overflow-hidden relative bg-background">
@@ -778,6 +819,7 @@ const CurseForgeModPage: React.FC = () => {
                         {description ? (
                           <div
                             dangerouslySetInnerHTML={{ __html: description }}
+                            onClick={handleDescriptionClick}
                           />
                         ) : (
                           <div className="flex flex-col items-center justify-center py-12 text-default-400 gap-3">

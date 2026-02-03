@@ -467,7 +467,7 @@ export default function VersionSettingsPage() {
                           variant="flat"
                           color="danger"
                           radius="full"
-                          className="justify-start px-4 font-medium"
+                          className="px-4 font-medium"
                           onPress={async () => {
                             try {
                               const rm = minecraft?.RemoveVersionLogo;

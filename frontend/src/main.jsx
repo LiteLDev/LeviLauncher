@@ -17,6 +17,28 @@ const container = document.getElementById("root");
 
 const root = createRoot(container);
 
+window.addEventListener("contextmenu", (e) => {
+  const target = e.target;
+  const tagName = target.tagName;
+  const isInput =
+    tagName === "INPUT" || tagName === "TEXTAREA" || target.isContentEditable;
+
+  if (isInput) {
+    const type = target.getAttribute("type")?.toLowerCase();
+    if (
+      !type ||
+      ["text", "password", "email", "number", "search", "url", "tel"].includes(
+        type,
+      ) ||
+      tagName === "TEXTAREA"
+    ) {
+      return;
+    }
+  }
+
+  e.preventDefault();
+});
+
 const router = createHashRouter(
   createRoutesFromElements(<Route path="/*" element={<App />} />),
 );

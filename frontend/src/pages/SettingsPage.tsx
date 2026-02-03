@@ -1082,7 +1082,7 @@ export const SettingsPage: React.FC = () => {
                       setGdkDlProgress(null);
                       gdkProgressDisclosure.onOpen();
                       StartGDKDownload(
-                        "https://github.bibk.top/microsoft/GDK/releases/download/October-2025-v2510.0.6194/GDK_2510.0.6194.zip",
+                        "https://github.bibk.top/microsoft/GDK/releases/download/October-2025-Update-1-v2510.1.6224/GDK_2510.1.6224.zip",
                       );
                     } catch {}
                   }}

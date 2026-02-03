@@ -1,4 +1,3 @@
-
 /**
  * Normalize language code to standard format used in the application.
  * e.g. "en-us" -> "en_US", "zh-cn" -> "zh_CN"

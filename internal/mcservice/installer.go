@@ -1,12 +1,16 @@
 package mcservice
 
 import (
+	"bufio"
 	"context"
+	"encoding/json"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
+	"github.com/Microsoft/go-winio"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
@@ -53,37 +57,45 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 	if err := os.MkdirAll(outDir, 0755); err != nil {
 		return "ERR_CREATE_TARGET_DIR"
 	}
-	stopCh := make(chan struct{})
-	go func(dir string) {
-		ticker := time.NewTicker(300 * time.Millisecond)
-		defer ticker.Stop()
-		for {
-			select {
-			case <-ticker.C:
-				var totalBytes int64
-				var files int64
-				_ = filepath.WalkDir(dir, func(path string, d os.DirEntry, err error) error {
-					if err != nil {
-						return nil
-					}
-					if d.IsDir() {
-						return nil
-					}
-					if fi, e := os.Stat(path); e == nil {
-						totalBytes += fi.Size()
-						files++
-					}
-					return nil
+	pipeName := fmt.Sprintf(`\\.\pipe\levi_msixvc_progress_%d`, time.Now().UnixNano())
+	ln, err := winio.ListenPipe(pipeName, nil)
+	if err != nil {
+		return "ERR_CREATE_PIPE"
+	}
+	defer ln.Close()
+
+	go func() {
+		conn, err := ln.Accept()
+		if err != nil {
+			return
+		}
+		defer conn.Close()
+		scanner := bufio.NewScanner(conn)
+		for scanner.Scan() {
+			text := scanner.Text()
+			text = strings.ReplaceAll(text, "\\", "/")
+			var p struct {
+				File          string `json:"file"`
+				Current       int64  `json:"current"`
+				Total         int64  `json:"total"`
+				GlobalCurrent int64  `json:"global_current"`
+				GlobalTotal   int64  `json:"global_total"`
+			}
+			if err := json.Unmarshal([]byte(text), &p); err == nil {
+				application.Get().Event.Emit(EventExtractProgress, types.ExtractProgress{
+					Dir:           outDir,
+					Bytes:         p.Current,
+					TotalBytes:    p.Total,
+					GlobalCurrent: p.GlobalCurrent,
+					GlobalTotal:   p.GlobalTotal,
+					CurrentFile:   p.File,
+					Ts:            time.Now().UnixMilli(),
 				})
-				application.Get().Event.Emit(EventExtractProgress, types.ExtractProgress{Dir: dir, Files: files, Bytes: totalBytes, Ts: time.Now().UnixMilli()})
-			case <-stopCh:
-				return
 			}
 		}
-	}(outDir)
+	}()
 
-	rc, msg := extractor.Get(inPath, outDir)
-	close(stopCh)
+	rc, msg := extractor.GetWithPipe(inPath, outDir, pipeName)
 	if rc != 0 {
 		application.Get().Event.Emit(EventExtractError, msg)
 		if strings.TrimSpace(msg) == "" {
@@ -93,9 +105,6 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 		return msg
 	}
 	_ = vcruntime.EnsureForVersion(ctx, outDir)
-	//_ = preloader.EnsureForVersion(ctx, outDir)
-	//_ = peeditor.EnsureForVersion(ctx, outDir)
-	//_ = peeditor.RunForVersion(ctx, outDir)
 	application.Get().Event.Emit(EventExtractDone, outDir)
 	return ""
 }

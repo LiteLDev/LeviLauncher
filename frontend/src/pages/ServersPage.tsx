@@ -31,7 +31,10 @@ import {
 } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { GetContentRoots, OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetContentRoots,
+  OpenPathDir,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { motion } from "framer-motion";
 import {
@@ -102,13 +105,19 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
         <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
           {/* Icon & Basic Info */}
           <div className="flex items-center gap-4 min-w-[200px] flex-1">
-            <div className={`p-3 rounded-xl shrink-0 ${info?.status === "online" ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500" : "bg-default-100 dark:bg-zinc-800 text-default-400"}`}>
+            <div
+              className={`p-3 rounded-xl shrink-0 ${info?.status === "online" ? "bg-emerald-50 dark:bg-emerald-900/20 text-emerald-500" : "bg-default-100 dark:bg-zinc-800 text-default-400"}`}
+            >
               <FaServer size={24} />
             </div>
             <div className="flex flex-col min-w-0">
-              <h3 className="text-base font-bold truncate text-default-900">{renderMcText(server.name)}</h3>
+              <h3 className="text-base font-bold truncate text-default-900">
+                {renderMcText(server.name)}
+              </h3>
               <div className="flex items-center gap-2 text-xs text-default-500 font-mono">
-                <span>{server.ip}:{server.port}</span>
+                <span>
+                  {server.ip}:{server.port}
+                </span>
               </div>
             </div>
           </div>
@@ -116,50 +125,74 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
           {/* Status & MOTD */}
           <div className="flex-1 min-w-0 flex flex-col justify-center w-full md:w-auto">
             {loading ? (
-               <div className="flex items-center gap-2 text-xs text-default-400">
-                  <Spinner size="sm" color="default" />
-                  <span>{t("common.loading", { defaultValue: "Ping..." })}</span>
-               </div>
+              <div className="flex items-center gap-2 text-xs text-default-400">
+                <Spinner size="sm" color="default" />
+                <span>{t("common.loading", { defaultValue: "Ping..." })}</span>
+              </div>
             ) : info?.status === "online" ? (
-                <div className="flex flex-col gap-1">
-                    <div className="text-sm text-default-700 truncate font-medium">
-                        {renderMcText(info.motd || info.level_name || t("common.unknown", { defaultValue: "未知" }))}
-                    </div>
-                    <div className="flex items-center gap-2 text-xs text-default-500">
-                        <span className="bg-default-100 px-1.5 py-0.5 rounded text-default-600">{info.version}</span>
-                        <span>{info.gamemode}</span>
-                    </div>
+              <div className="flex flex-col gap-1">
+                <div className="text-sm text-default-700 truncate font-medium">
+                  {renderMcText(
+                    info.motd ||
+                      info.level_name ||
+                      t("common.unknown", { defaultValue: "未知" }),
+                  )}
                 </div>
+                <div className="flex items-center gap-2 text-xs text-default-500">
+                  <span className="bg-default-100 px-1.5 py-0.5 rounded text-default-600">
+                    {info.version}
+                  </span>
+                  <span>{info.gamemode}</span>
+                </div>
+              </div>
             ) : (
-                <span className="text-sm text-default-400 italic">
-                    {t("server.offline", { defaultValue: "离线 / 无法连接" })}
-                </span>
+              <span className="text-sm text-default-400 italic">
+                {t("server.offline", { defaultValue: "离线 / 无法连接" })}
+              </span>
             )}
           </div>
 
           {/* Stats (Players & Delay) */}
           <div className="flex items-center gap-4 md:justify-end w-full md:w-auto shrink-0 mt-2 md:mt-0 border-t md:border-t-0 border-default-100 pt-2 md:pt-0">
-             {loading ? (
-                 <div className="h-8 w-20 bg-default-100 rounded-lg animate-pulse" />
-             ) : info?.status === "online" ? (
-                 <>
-                    <Tooltip content={t("server.players", { defaultValue: "在线玩家" })}>
-                        <Chip size="sm" variant="flat" startContent={<FaUser size={10} />} className="gap-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500">
-                            {info.online}/{info.max}
-                        </Chip>
-                    </Tooltip>
-                    
-                    <Tooltip content={t("server.delay", { defaultValue: "延迟" })}>
-                        <Chip size="sm" variant="flat" color={delayColor} startContent={<FaSignal size={10} />} className="gap-1">
-                            {info.delay}ms
-                        </Chip>
-                    </Tooltip>
-                 </>
-             ) : (
-                 <Chip size="sm" variant="flat" color="default" className="text-default-400">
-                    {t("server.offline", { defaultValue: "Offline" })}
-                 </Chip>
-             )}
+            {loading ? (
+              <div className="h-8 w-20 bg-default-100 rounded-lg animate-pulse" />
+            ) : info?.status === "online" ? (
+              <>
+                <Tooltip
+                  content={t("server.players", { defaultValue: "在线玩家" })}
+                >
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    startContent={<FaUser size={10} />}
+                    className="gap-1 bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500"
+                  >
+                    {info.online}/{info.max}
+                  </Chip>
+                </Tooltip>
+
+                <Tooltip content={t("server.delay", { defaultValue: "延迟" })}>
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={delayColor}
+                    startContent={<FaSignal size={10} />}
+                    className="gap-1"
+                  >
+                    {info.delay}ms
+                  </Chip>
+                </Tooltip>
+              </>
+            ) : (
+              <Chip
+                size="sm"
+                variant="flat"
+                color="default"
+                className="text-default-400"
+              >
+                {t("server.offline", { defaultValue: "Offline" })}
+              </Chip>
+            )}
           </div>
         </div>
       </CardBody>
@@ -174,11 +207,13 @@ export default function ServersPage() {
   const [loading, setLoading] = useState<boolean>(true);
   const [servers, setServers] = useState<Server[]>([]);
   const [currentVersionName, setCurrentVersionName] = useState<string>("");
-  
+
   const [roots, setRoots] = useState<any>({});
   const [players, setPlayers] = useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = useState<string>("");
-  const [playerGamertagMap, setPlayerGamertagMap] = useState<Record<string, string>>({});
+  const [playerGamertagMap, setPlayerGamertagMap] = useState<
+    Record<string, string>
+  >({});
 
   const [query, setQuery] = useState<string>("");
   const [sortKey, setSortKey] = useState<"name" | "time">("time");
@@ -188,54 +223,54 @@ export default function ServersPage() {
     const init = async () => {
       const name = readCurrentVersionName();
       setCurrentVersionName(name);
-      
+
       try {
         const r = await GetContentRoots(name);
         setRoots(r || {});
 
         if (r && r.usersRoot) {
-            const pList = await listPlayers(r.usersRoot);
-            setPlayers(pList);
+          const pList = await listPlayers(r.usersRoot);
+          setPlayers(pList);
 
-            let targetPlayer = location.state?.player || "";
-            let currentSelection = "";
+          let targetPlayer = location.state?.player || "";
+          let currentSelection = "";
 
-            if (!targetPlayer && pList.length > 0) {
-                targetPlayer = pList[0];
-            }
-            if (targetPlayer && pList.includes(targetPlayer)) {
-                currentSelection = targetPlayer;
-                setSelectedPlayer(targetPlayer);
-            } else if (pList.length > 0) {
-                currentSelection = pList[0];
-                setSelectedPlayer(pList[0]);
-            }
+          if (!targetPlayer && pList.length > 0) {
+            targetPlayer = pList[0];
+          }
+          if (targetPlayer && pList.includes(targetPlayer)) {
+            currentSelection = targetPlayer;
+            setSelectedPlayer(targetPlayer);
+          } else if (pList.length > 0) {
+            currentSelection = pList[0];
+            setSelectedPlayer(pList[0]);
+          }
 
-            (async () => {
-              try {
-                const map = await getPlayerGamertagMap(r.usersRoot);
-                setPlayerGamertagMap(map);
+          (async () => {
+            try {
+              const map = await getPlayerGamertagMap(r.usersRoot);
+              setPlayerGamertagMap(map);
 
-                const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
-                if (tag) {
-                  for (const p of pList) {
-                    if (map[p] === tag) {
-                      if (p !== currentSelection) {
-                        setSelectedPlayer(p);
-                      }
-                      break;
+              const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+              if (tag) {
+                for (const p of pList) {
+                  if (map[p] === tag) {
+                    if (p !== currentSelection) {
+                      setSelectedPlayer(p);
                     }
+                    break;
                   }
                 }
-              } catch {}
-            })();
-            if (pList.length === 0) {
-                setLoading(false);
-            }
-        } else {
-            setPlayers([]);
-            setPlayerGamertagMap({});
+              }
+            } catch {}
+          })();
+          if (pList.length === 0) {
             setLoading(false);
+          }
+        } else {
+          setPlayers([]);
+          setPlayerGamertagMap({});
+          setLoading(false);
         }
       } catch (e) {
         console.error("Failed to init servers page", e);
@@ -249,41 +284,41 @@ export default function ServersPage() {
     if (!selectedPlayer) return;
     setLoading(true);
     try {
-        const v = readCurrentVersionName();
-        const srvs = await (minecraft as any)?.ListServers?.(v, selectedPlayer);
-        setServers(srvs || []);
+      const v = readCurrentVersionName();
+      const srvs = await (minecraft as any)?.ListServers?.(v, selectedPlayer);
+      setServers(srvs || []);
     } catch (err) {
-        console.error(err);
-        toast.error(t("common.error_load", { defaultValue: "加载失败" }));
+      console.error(err);
+      toast.error(t("common.error_load", { defaultValue: "加载失败" }));
     } finally {
-        setLoading(false);
+      setLoading(false);
     }
   }, [selectedPlayer, t]);
 
   useEffect(() => {
     if (selectedPlayer) {
-        refreshAll();
+      refreshAll();
     }
   }, [selectedPlayer, refreshAll]);
 
   const filteredServers = useMemo(() => {
     let list = [...servers];
     if (query.trim()) {
-        const q = query.toLowerCase();
-        list = list.filter(s => 
-            s.name.toLowerCase().includes(q) || 
-            s.ip.toLowerCase().includes(q)
-        );
+      const q = query.toLowerCase();
+      list = list.filter(
+        (s) =>
+          s.name.toLowerCase().includes(q) || s.ip.toLowerCase().includes(q),
+      );
     }
 
     list.sort((a, b) => {
-        if (sortKey === "name") {
-            const res = a.name.localeCompare(b.name);
-            return sortAsc ? res : -res;
-        } else {
-            const res = a.timestamp - b.timestamp;
-            return sortAsc ? res : -res;
-        }
+      if (sortKey === "name") {
+        const res = a.name.localeCompare(b.name);
+        return sortAsc ? res : -res;
+      } else {
+        const res = a.timestamp - b.timestamp;
+        return sortAsc ? res : -res;
+      }
     });
 
     return list;
@@ -291,8 +326,8 @@ export default function ServersPage() {
 
   const handleOpenFolder = async () => {
     if (roots.usersRoot && selectedPlayer) {
-        const path = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\minecraftpe`;
-        await OpenPathDir(path);
+      const path = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\minecraftpe`;
+      await OpenPathDir(path);
     }
   };
 
@@ -333,8 +368,13 @@ export default function ServersPage() {
                         startContent={<FaUser />}
                       >
                         {selectedPlayer
-                          ? resolvePlayerDisplayName(selectedPlayer, playerGamertagMap)
-                          : t("contentpage.select_player", { defaultValue: "选择玩家" })}
+                          ? resolvePlayerDisplayName(
+                              selectedPlayer,
+                              playerGamertagMap,
+                            )
+                          : t("contentpage.select_player", {
+                              defaultValue: "选择玩家",
+                            })}
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
@@ -348,13 +388,21 @@ export default function ServersPage() {
                     >
                       {players.length ? (
                         players.map((p) => (
-                          <DropdownItem key={p} textValue={resolvePlayerDisplayName(p, playerGamertagMap)}>
+                          <DropdownItem
+                            key={p}
+                            textValue={resolvePlayerDisplayName(
+                              p,
+                              playerGamertagMap,
+                            )}
+                          >
                             {resolvePlayerDisplayName(p, playerGamertagMap)}
                           </DropdownItem>
                         ))
                       ) : (
                         <DropdownItem key="none" isDisabled>
-                          {t("contentpage.no_players", { defaultValue: "暂无玩家" })}
+                          {t("contentpage.no_players", {
+                            defaultValue: "暂无玩家",
+                          })}
                         </DropdownItem>
                       )}
                     </DropdownMenu>
@@ -371,7 +419,11 @@ export default function ServersPage() {
                     {t("common.open", { defaultValue: "打开" })}
                   </Button>
 
-                  <Tooltip content={t("common.refresh", { defaultValue: "刷新" }) as string}>
+                  <Tooltip
+                    content={
+                      t("common.refresh", { defaultValue: "刷新" }) as string
+                    }
+                  >
                     <Button
                       isIconOnly
                       radius="full"
@@ -379,7 +431,10 @@ export default function ServersPage() {
                       onPress={refreshAll}
                       isDisabled={loading}
                     >
-                      <FaSync className={loading ? "animate-spin" : ""} size={18} />
+                      <FaSync
+                        className={loading ? "animate-spin" : ""}
+                        size={18}
+                      />
                     </Button>
                   </Tooltip>
                 </div>
@@ -389,7 +444,9 @@ export default function ServersPage() {
             {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
               <Input
-                placeholder={t("common.search_placeholder", { defaultValue: "搜索..." })}
+                placeholder={t("common.search_placeholder", {
+                  defaultValue: "搜索...",
+                })}
                 value={query}
                 onValueChange={setQuery}
                 startContent={<FaFilter className="text-default-400" />}
@@ -404,18 +461,20 @@ export default function ServersPage() {
                 variant="flat"
                 className="w-full md:max-w-xs"
                 classNames={{
-                    inputWrapper:
-                      "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
-                  }}
+                  inputWrapper:
+                    "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
+                }}
               />
 
               <div className="flex items-center gap-3">
-                 <Dropdown>
+                <Dropdown>
                   <DropdownTrigger>
                     <Button
                       variant="flat"
                       radius="full"
-                      startContent={sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />}
+                      startContent={
+                        sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
+                      }
                       className="min-w-[120px]"
                     >
                       {sortKey === "name"
@@ -423,13 +482,19 @@ export default function ServersPage() {
                         : t("contentpage.sort_time", { defaultValue: "时间" })}
                       {" / "}
                       {sortAsc
-                        ? t("contentpage.sort_asc", { defaultValue: "从上到下" })
-                        : t("contentpage.sort_desc", { defaultValue: "从下到上" })}
+                        ? t("contentpage.sort_asc", {
+                            defaultValue: "从上到下",
+                          })
+                        : t("contentpage.sort_desc", {
+                            defaultValue: "从下到上",
+                          })}
                     </Button>
                   </DropdownTrigger>
                   <DropdownMenu
                     selectionMode="single"
-                    selectedKeys={new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])}
+                    selectedKeys={
+                      new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])
+                    }
                     onSelectionChange={(keys) => {
                       const val = Array.from(keys)[0] as string;
                       const [k, order] = val.split("-");
@@ -437,17 +502,33 @@ export default function ServersPage() {
                       setSortAsc(order === "asc");
                     }}
                   >
-                    <DropdownItem key="name-asc" startContent={<FaSortAmountDown />}>
-                      {t("filemanager.sort.name", { defaultValue: "名称" })} (A-Z)
+                    <DropdownItem
+                      key="name-asc"
+                      startContent={<FaSortAmountDown />}
+                    >
+                      {t("filemanager.sort.name", { defaultValue: "名称" })}{" "}
+                      (A-Z)
                     </DropdownItem>
-                    <DropdownItem key="name-desc" startContent={<FaSortAmountUp />}>
-                      {t("filemanager.sort.name", { defaultValue: "名称" })} (Z-A)
+                    <DropdownItem
+                      key="name-desc"
+                      startContent={<FaSortAmountUp />}
+                    >
+                      {t("filemanager.sort.name", { defaultValue: "名称" })}{" "}
+                      (Z-A)
                     </DropdownItem>
-                    <DropdownItem key="time-asc" startContent={<FaSortAmountDown />}>
-                      {t("contentpage.sort_time", { defaultValue: "时间" })} (Old-New)
+                    <DropdownItem
+                      key="time-asc"
+                      startContent={<FaSortAmountDown />}
+                    >
+                      {t("contentpage.sort_time", { defaultValue: "时间" })}{" "}
+                      (Old-New)
                     </DropdownItem>
-                    <DropdownItem key="time-desc" startContent={<FaSortAmountUp />}>
-                      {t("contentpage.sort_time", { defaultValue: "时间" })} (New-Old)
+                    <DropdownItem
+                      key="time-desc"
+                      startContent={<FaSortAmountUp />}
+                    >
+                      {t("contentpage.sort_time", { defaultValue: "时间" })}{" "}
+                      (New-Old)
                     </DropdownItem>
                   </DropdownMenu>
                 </Dropdown>
@@ -456,12 +537,18 @@ export default function ServersPage() {
 
             {/* Version Info */}
             <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
-              <span>{t("contentpage.current_version", { defaultValue: "当前版本" })}:</span>
+              <span>
+                {t("contentpage.current_version", { defaultValue: "当前版本" })}
+                :
+              </span>
               <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
-                {currentVersionName || t("contentpage.none", { defaultValue: "无" })}
+                {currentVersionName ||
+                  t("contentpage.none", { defaultValue: "无" })}
               </span>
               <span className="text-default-300">|</span>
-              <span>{t("contentpage.isolation", { defaultValue: "版本隔离" })}:</span>
+              <span>
+                {t("contentpage.isolation", { defaultValue: "版本隔离" })}:
+              </span>
               <span
                 className={`font-medium px-2 py-0.5 rounded-md ${
                   roots.isIsolation
@@ -481,7 +568,9 @@ export default function ServersPage() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <Spinner size="lg" />
-                <span className="text-default-500">{t("common.loading", { defaultValue: "加载中" })}</span>
+                <span className="text-default-500">
+                  {t("common.loading", { defaultValue: "加载中" })}
+                </span>
               </div>
             ) : filteredServers.length === 0 ? (
               <div className="flex flex-col items-center justify-center py-20 text-default-400">
@@ -489,7 +578,9 @@ export default function ServersPage() {
                 <p>
                   {query
                     ? t("common.no_results", { defaultValue: "无搜索结果" })
-                    : t("contentpage.no_items", { defaultValue: "没有找到项目" })}
+                    : t("contentpage.no_items", {
+                        defaultValue: "没有找到项目",
+                      })}
                 </p>
               </div>
             ) : (

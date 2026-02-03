@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useRef, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useRef,
+  useState,
+} from "react";
 import { Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { toast } from "react-hot-toast";
@@ -37,9 +43,13 @@ export const useDownloads = () => {
   return context;
 };
 
-export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
+  children,
+}) => {
   const { t } = useTranslation();
-  const [downloadsMap, setDownloadsMap] = useState<Record<string, DownloadItem>>({});
+  const [downloadsMap, setDownloadsMap] = useState<
+    Record<string, DownloadItem>
+  >({});
   const speedRef = useRef<Record<string, { ts: number; bytes: number }>>({});
   const downloadsRef = useRef<Record<string, DownloadItem>>({});
   const cancelledRef = useRef<Set<string>>(new Set());
@@ -49,9 +59,12 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
     return dest.split(/[\\/]/).pop() || "";
   };
 
-  const updateDownload = (dest: string, updater: (current: DownloadItem) => DownloadItem) => {
+  const updateDownload = (
+    dest: string,
+    updater: (current: DownloadItem) => DownloadItem,
+  ) => {
     if (!dest) return;
-    setDownloadsMap(prev => {
+    setDownloadsMap((prev) => {
       const existing = prev[dest];
       const base: DownloadItem = existing || {
         dest,
@@ -73,133 +86,164 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
   useEffect(() => {
     const offs: (() => void)[] = [];
 
-    offs.push(Events.On("msixvc_download_progress", (event) => {
-      const downloaded = Number(event?.data?.Downloaded || 0);
-      const total = Number(event?.data?.Total || 0);
-      const dest = String(event?.data?.Dest || "");
-      if (!dest || cancelledRef.current.has(dest)) return;
+    offs.push(
+      Events.On("msixvc_download_progress", (event) => {
+        const downloaded = Number(event?.data?.Downloaded || 0);
+        const total = Number(event?.data?.Total || 0);
+        const dest = String(event?.data?.Dest || "");
+        if (!dest || cancelledRef.current.has(dest)) return;
 
-      updateDownload(dest, (prev) => {
-        let speed = prev.speed;
-        try {
-          const now = Date.now();
-          const prevRef = speedRef.current[dest];
-          if (prevRef) {
-            const dt = (now - prevRef.ts) / 1000;
-            const db = downloaded - prevRef.bytes;
-            if (dt > 0 && db >= 0) {
-              const newSpeed = db / dt;
-              if (newSpeed > 0 || (newSpeed === 0 && dt > 2)) {
-                 speed = newSpeed;
+        updateDownload(dest, (prev) => {
+          let speed = prev.speed;
+          try {
+            const now = Date.now();
+            const prevRef = speedRef.current[dest];
+            if (prevRef) {
+              const dt = (now - prevRef.ts) / 1000;
+              const db = downloaded - prevRef.bytes;
+              if (dt > 0 && db >= 0) {
+                const newSpeed = db / dt;
+                if (newSpeed > 0 || (newSpeed === 0 && dt > 2)) {
+                  speed = newSpeed;
+                }
               }
             }
-          }
-          if (!prevRef || (now - prevRef.ts) >= 1000) {
-             speedRef.current[dest] = { ts: now, bytes: downloaded };
-          }
-        } catch {}
-
-        return {
-          ...prev,
-          progress: { downloaded, total, dest },
-          speed,
-          fileName: prev.fileName || getFileNameFromDest(dest),
-        };
-      });
-    }));
-
-    offs.push(Events.On("msixvc_download_status", (event) => {
-      const raw = event?.data;
-      const status =
-        typeof raw === "string"
-          ? String(raw)
-          : String(raw?.Status || raw?.status || "");
-      const dest = typeof raw === "string" ? "" : String(raw?.Dest || raw?.dest || "");
-
-      if (dest && cancelledRef.current.has(dest)) return;
-
-      const applyStatus = (key: string) => {
-        updateDownload(key, (prev) => {
-          const next = { ...prev, status };
-          if (status === "started" || status === "resumed" || status === "cancelled") {
-            next.error = "";
-            if (status !== "resumed") {
-              speedRef.current[key] = { ts: 0, bytes: 0 };
-              next.speed = 0;
+            if (!prevRef || now - prevRef.ts >= 1000) {
+              speedRef.current[dest] = { ts: now, bytes: downloaded };
             }
-            if (status === "cancelled") {
-              next.progress = null;
-              next.speed = 0;
-            }
-          }
-          return next;
+          } catch {}
+
+          return {
+            ...prev,
+            progress: { downloaded, total, dest },
+            speed,
+            fileName: prev.fileName || getFileNameFromDest(dest),
+          };
         });
-      };
+      }),
+    );
 
-      if (dest) {
-        applyStatus(dest);
-      } else {
-        Object.keys(downloadsRef.current).forEach(applyStatus);
-      }
-    }));
+    offs.push(
+      Events.On("msixvc_download_status", (event) => {
+        const raw = event?.data;
+        const status =
+          typeof raw === "string"
+            ? String(raw)
+            : String(raw?.Status || raw?.status || "");
+        const dest =
+          typeof raw === "string" ? "" : String(raw?.Dest || raw?.dest || "");
 
-    offs.push(Events.On("msixvc_download_error", (event) => {
-      const raw = event?.data;
-      const msg =
-        typeof raw === "string"
-          ? String(raw)
-          : String(raw?.Error || raw?.error || "Unknown Error");
-      const dest = typeof raw === "string" ? "" : String(raw?.Dest || raw?.dest || "");
-      
-      if (dest && cancelledRef.current.has(dest)) return;
+        if (dest && cancelledRef.current.has(dest)) return;
 
-      if (dest) {
-        updateDownload(dest, (prev) => ({ ...prev, error: msg, status: "error", speed: 0 }));
-      } else {
-        setDownloadsMap(prev => {
-          const next: Record<string, DownloadItem> = { ...prev };
-          Object.keys(next).forEach((key) => {
-            next[key] = { ...next[key], error: msg, status: "error", speed: 0 };
+        const applyStatus = (key: string) => {
+          updateDownload(key, (prev) => {
+            const next = { ...prev, status };
+            if (
+              status === "started" ||
+              status === "resumed" ||
+              status === "cancelled"
+            ) {
+              next.error = "";
+              if (status !== "resumed") {
+                speedRef.current[key] = { ts: 0, bytes: 0 };
+                next.speed = 0;
+              }
+              if (status === "cancelled") {
+                next.progress = null;
+                next.speed = 0;
+              }
+            }
+            return next;
           });
-          return next;
-        });
-      }
-      toast.error(msg);
-    }));
+        };
 
-    offs.push(Events.On("msixvc_download_done", (event) => {
-      const raw = event?.data;
-      const dest =
-        typeof raw === "string" ? String(raw) : String(raw?.Dest || raw?.dest || "");
-      if (!dest) return;
-      const fname = getFileNameFromDest(dest);
-      updateDownload(dest, (prev) => ({
-        ...prev,
-        status: "done",
-        progress: {
-          downloaded: prev.progress?.total || prev.progress?.downloaded || 0,
-          total: prev.progress?.total || 0,
-          dest,
-        },
-        speed: 0,
-        fileName: fname || prev.fileName,
-      }));
-      speedRef.current[dest] = { ts: 0, bytes: 0 };
-      toast.success(
-        t("downloadpage.download.success_body", { defaultValue: "文件已下载：" }) +
-          " " +
-          (fname || ""),
-      );
-    }));
+        if (dest) {
+          applyStatus(dest);
+        } else {
+          Object.keys(downloadsRef.current).forEach(applyStatus);
+        }
+      }),
+    );
+
+    offs.push(
+      Events.On("msixvc_download_error", (event) => {
+        const raw = event?.data;
+        const msg =
+          typeof raw === "string"
+            ? String(raw)
+            : String(raw?.Error || raw?.error || "Unknown Error");
+        const dest =
+          typeof raw === "string" ? "" : String(raw?.Dest || raw?.dest || "");
+
+        if (dest && cancelledRef.current.has(dest)) return;
+
+        if (dest) {
+          updateDownload(dest, (prev) => ({
+            ...prev,
+            error: msg,
+            status: "error",
+            speed: 0,
+          }));
+        } else {
+          setDownloadsMap((prev) => {
+            const next: Record<string, DownloadItem> = { ...prev };
+            Object.keys(next).forEach((key) => {
+              next[key] = {
+                ...next[key],
+                error: msg,
+                status: "error",
+                speed: 0,
+              };
+            });
+            return next;
+          });
+        }
+        toast.error(msg);
+      }),
+    );
+
+    offs.push(
+      Events.On("msixvc_download_done", (event) => {
+        const raw = event?.data;
+        const dest =
+          typeof raw === "string"
+            ? String(raw)
+            : String(raw?.Dest || raw?.dest || "");
+        if (!dest) return;
+        const fname = getFileNameFromDest(dest);
+        updateDownload(dest, (prev) => ({
+          ...prev,
+          status: "done",
+          progress: {
+            downloaded: prev.progress?.total || prev.progress?.downloaded || 0,
+            total: prev.progress?.total || 0,
+            dest,
+          },
+          speed: 0,
+          fileName: fname || prev.fileName,
+        }));
+        speedRef.current[dest] = { ts: 0, bytes: 0 };
+        toast.success(
+          t("downloadpage.download.success_body", {
+            defaultValue: "文件已下载：",
+          }) +
+            " " +
+            (fname || ""),
+        );
+      }),
+    );
 
     return () => {
-      offs.forEach(off => off());
+      offs.forEach((off) => off());
     };
   }, [t]);
 
-  const startDownload = async (url: string, filename?: string): Promise<boolean> => {
+  const startDownload = async (
+    url: string,
+    filename?: string,
+  ): Promise<boolean> => {
     if (typeof minecraft === "undefined") return false;
-    
+
     const displayName = filename
       ? filename
       : (() => {
@@ -213,26 +257,33 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         })();
 
     const isAlreadyDownloading = Object.values(downloadsRef.current).some(
-        (dl) => 
-            (dl.fileName === displayName || (dl.dest && getFileNameFromDest(dl.dest) === displayName)) && 
-            (dl.status === "started" || dl.status === "resumed" || dl.status === "starting")
+      (dl) =>
+        (dl.fileName === displayName ||
+          (dl.dest && getFileNameFromDest(dl.dest) === displayName)) &&
+        (dl.status === "started" ||
+          dl.status === "resumed" ||
+          dl.status === "starting"),
     );
 
     if (isAlreadyDownloading) {
-        toast.error(t("downloadpage.error.already_downloading", { defaultValue: "该文件正在下载中" }));
-        return false;
+      toast.error(
+        t("downloadpage.error.already_downloading", {
+          defaultValue: "该文件正在下载中",
+        }),
+      );
+      return false;
     }
 
     let urlWithFilename = url;
     if (filename) {
-        try {
-            const u = new URL(url);
-            u.searchParams.set("filename", filename);
-            urlWithFilename = u.toString();
-        } catch {
-             const sep = url.includes("?") ? "&" : "?";
-             urlWithFilename = `${url}${sep}filename=${encodeURIComponent(filename)}`;
-        }
+      try {
+        const u = new URL(url);
+        u.searchParams.set("filename", filename);
+        urlWithFilename = u.toString();
+      } catch {
+        const sep = url.includes("?") ? "&" : "?";
+        urlWithFilename = `${url}${sep}filename=${encodeURIComponent(filename)}`;
+      }
     }
     try {
       const dest = await minecraft.StartMsixvcDownload(urlWithFilename);
@@ -249,7 +300,11 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
         fileName: displayName || prev.fileName || getFileNameFromDest(key),
         url: url, // Store original URL for retry
       }));
-      toast.success(t("downloadpage.mirror.download_started", { defaultValue: "开始下载..." }));
+      toast.success(
+        t("downloadpage.mirror.download_started", {
+          defaultValue: "开始下载...",
+        }),
+      );
       return true;
     } catch (e) {
       toast.error(String(e));
@@ -259,65 +314,82 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const cancelDownload = (dest?: string) => {
     if (typeof minecraft === "undefined") return;
-    
+
     // 如果指定了 dest，只取消特定任务
     if (dest) {
-        if (typeof minecraft.CancelMsixvcDownloadTask === "function") {
-             minecraft.CancelMsixvcDownloadTask(dest);
-        }
-        
-        // Update local status to cancelled, do NOT delete yet
-        updateDownload(dest, (prev) => ({
-             ...prev,
-             status: "cancelled",
-             error: "",
-             speed: 0
-        }));
-        return;
+      if (typeof minecraft.CancelMsixvcDownloadTask === "function") {
+        minecraft.CancelMsixvcDownloadTask(dest);
+      }
+
+      // Update local status to cancelled, do NOT delete yet
+      updateDownload(dest, (prev) => ({
+        ...prev,
+        status: "cancelled",
+        error: "",
+        speed: 0,
+      }));
+      return;
     }
 
     // 如果没有指定 dest，取消所有
     minecraft.CancelMsixvcDownload();
-    setDownloadsMap(prev => {
-         const next = { ...prev };
-         Object.keys(next).forEach(key => {
-             if (next[key].status === "started" || next[key].status === "starting" || next[key].status === "resumed") {
-                 next[key] = { ...next[key], status: "cancelled", error: "", speed: 0 };
-             }
-         });
-         return next;
+    setDownloadsMap((prev) => {
+      const next = { ...prev };
+      Object.keys(next).forEach((key) => {
+        if (
+          next[key].status === "started" ||
+          next[key].status === "starting" ||
+          next[key].status === "resumed"
+        ) {
+          next[key] = {
+            ...next[key],
+            status: "cancelled",
+            error: "",
+            speed: 0,
+          };
+        }
+      });
+      return next;
     });
   };
 
   const removeDownload = (dest: string) => {
-      cancelledRef.current.add(dest);
-      setDownloadsMap(prev => {
-          const next = { ...prev };
-          delete next[dest];
-          return next;
-      });
+    cancelledRef.current.add(dest);
+    setDownloadsMap((prev) => {
+      const next = { ...prev };
+      delete next[dest];
+      return next;
+    });
   };
 
   const clearError = (dest?: string) => {
     if (dest) {
-        setDownloadsMap(prev => {
-            const next = { ...prev };
-            if (next[dest]?.status === "done" || next[dest]?.status === "cancelled" || next[dest]?.status === "error") {
-                delete next[dest];
-            } else {
-                 next[dest] = { ...next[dest], error: "" };
-            }
-            return next;
-        });
+      setDownloadsMap((prev) => {
+        const next = { ...prev };
+        if (
+          next[dest]?.status === "done" ||
+          next[dest]?.status === "cancelled" ||
+          next[dest]?.status === "error"
+        ) {
+          delete next[dest];
+        } else {
+          next[dest] = { ...next[dest], error: "" };
+        }
+        return next;
+      });
       return;
     }
-    setDownloadsMap(prev => {
+    setDownloadsMap((prev) => {
       const next: Record<string, DownloadItem> = { ...prev };
       Object.keys(next).forEach((key) => {
-        if (next[key]?.status === "done" || next[key]?.status === "cancelled" || next[key]?.status === "error") {
-             delete next[key];
+        if (
+          next[key]?.status === "done" ||
+          next[key]?.status === "cancelled" ||
+          next[key]?.status === "error"
+        ) {
+          delete next[key];
         } else {
-             next[key] = { ...next[key], error: "" };
+          next[key] = { ...next[key], error: "" };
         }
       });
       return next;
@@ -326,11 +398,23 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({ chi
 
   const downloads = Object.values(downloadsMap);
   const isDownloading = downloads.some(
-    (dl) => dl.status === "started" || dl.status === "resumed" || dl.status === "starting",
+    (dl) =>
+      dl.status === "started" ||
+      dl.status === "resumed" ||
+      dl.status === "starting",
   );
 
   return (
-    <DownloadsContext.Provider value={{ downloads, startDownload, cancelDownload, removeDownload, clearError, isDownloading }}>
+    <DownloadsContext.Provider
+      value={{
+        downloads,
+        startDownload,
+        cancelDownload,
+        removeDownload,
+        clearError,
+        isDownloading,
+      }}
+    >
       {children}
     </DownloadsContext.Provider>
   );

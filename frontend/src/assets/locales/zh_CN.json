@@ -249,6 +249,7 @@
       "target": "安装目标",
       "success_title": "安装完成",
       "success": "版本已成功安装。",
+      "progress": "安装进度",
       "custom_installer": {
         "label": "选择本地安装包 (.msixvc)",
         "hint": "默认使用安装器目录下已下载的文件"

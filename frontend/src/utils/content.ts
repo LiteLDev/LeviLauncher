@@ -6,9 +6,7 @@ export async function listPlayers(usersRoot: string): Promise<string[]> {
   const entries = await listDirectories(usersRoot);
   return entries
     .map((e) => e.name)
-    .filter(
-      (n) => n  && n !== "9556213259376595538",
-    );
+    .filter((n) => n && n !== "9556213259376595538");
 }
 
 let cachedUsersRoot = "";

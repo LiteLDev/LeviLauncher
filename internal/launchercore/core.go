@@ -24,6 +24,7 @@ var (
 	apiOnce                            sync.Once
 	apiErr                             error
 	miProc                             *windows.LazyProc
+	pGetWithPipe                       *windows.LazyProc
 	useWide                            bool
 	k32                                *windows.LazyDLL
 	pWideCharToMultiByte               *windows.LazyProc
@@ -198,6 +199,7 @@ func EnsureCoreLoaded() error {
 		pWideCharToMultiByte = k32.NewProc("WideCharToMultiByte")
 		pMultiByteToWideChar = k32.NewProc("MultiByteToWideChar")
 		_ = k32.Load()
+		pGetWithPipe = dll.NewProc("GetWithPipe")
 	})
 	return coreErr
 }
@@ -301,6 +303,40 @@ func Extract(msixvcPath string, outDir string) (int, string) {
 			uintptr(unsafe.Pointer(&bOut[0])),
 		)
 	}
+
+	rc := int(r1)
+	if rc == 0 {
+		return 0, ""
+	}
+	if rc == 3 {
+		return 3, "ERR_MC_NOT_AUTHORIZED"
+	}
+	return 1, "ERR_APPX_INSTALL_FAILED"
+}
+
+func ExtractWithPipe(msixvcPath, outDir, pipeName string) (int, string) {
+	if err := EnsureCoreLoaded(); err != nil {
+		return 1, err.Error()
+	}
+
+	bMsix, err := utf8ToACP(msixvcPath)
+	if err != nil {
+		return 1, err.Error()
+	}
+	bOut, err := utf8ToACP(outDir)
+	if err != nil {
+		return 1, err.Error()
+	}
+	bPipe, err := utf8ToACP(pipeName)
+	if err != nil {
+		return 1, err.Error()
+	}
+
+	r1, _, _ := pGetWithPipe.Call(
+		uintptr(unsafe.Pointer(&bMsix[0])),
+		uintptr(unsafe.Pointer(&bOut[0])),
+		uintptr(unsafe.Pointer(&bPipe[0])),
+	)
 
 	rc := int(r1)
 	if rc == 0 {

@@ -111,10 +111,14 @@ type ProcessInfo struct {
 }
 
 type ExtractProgress struct {
-	Dir   string `json:"dir"`
-	Files int64  `json:"files"`
-	Bytes int64  `json:"bytes"`
-	Ts    int64  `json:"ts"`
+	Dir           string `json:"dir"`
+	Files         int64  `json:"files"`
+	Bytes         int64  `json:"bytes"`
+	TotalBytes    int64  `json:"totalBytes"`
+	GlobalCurrent int64  `json:"global_current"`
+	GlobalTotal   int64  `json:"global_total"`
+	CurrentFile   string `json:"currentFile"`
+	Ts            int64  `json:"ts"`
 }
 
 type Server struct {

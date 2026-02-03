@@ -249,6 +249,7 @@
       "target": "インストール先",
       "success_title": "インストール完了",
       "success": "インストールが正常に完了しました。",
+      "progress": "インストール進捗",
       "custom_installer": {
         "label": "ローカルのインストーラーを選択 (.msixvc)",
         "hint": "デフォルトでは installers ディレクトリ内のファイルを使用します"

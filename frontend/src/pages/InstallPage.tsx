@@ -23,7 +23,7 @@ import { FiAlertTriangle } from "react-icons/fi";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { motion } from "framer-motion";
-import { Dialogs } from "@wailsio/runtime";
+import { Dialogs, Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   BaseModal,
@@ -73,6 +73,45 @@ export default function InstallPage() {
     onClose: rcOnClose,
   } = useDisclosure();
   const [rcVersion, setRcVersion] = useState("");
+  const [extractInfo, setExtractInfo] = useState<{
+    files: number;
+    bytes: number;
+    dir: string;
+    totalBytes?: number;
+    currentFile?: string;
+  } | null>(null);
+
+  useEffect(() => {
+    if (!installing) {
+      setExtractInfo(null);
+      return;
+    }
+
+    const off = Events.On("extract.progress", (event) => {
+      const payload = event?.data || {};
+      const files = Number(payload?.files || 0);
+
+      const globalTotal =
+        payload?.global_total !== undefined ? Number(payload.global_total) : 0;
+      const globalCurrent =
+        payload?.global_current !== undefined
+          ? Number(payload.global_current)
+          : 0;
+
+      const hasGlobal = globalTotal > 0;
+
+      const totalBytes = hasGlobal
+        ? globalTotal
+        : Number(payload?.totalBytes || 0);
+
+      const bytes = hasGlobal ? globalCurrent : Number(payload?.bytes || 0);
+
+      const dir = String(payload?.dir || "");
+      const currentFile = String(payload?.file || payload?.currentFile || "");
+      setExtractInfo({ files, bytes, dir, totalBytes, currentFile });
+    });
+    return () => off();
+  }, [installing]);
 
   useEffect(() => {
     const guardActive = installing && !resultMsg;
@@ -900,20 +939,77 @@ export default function InstallPage() {
                     </div>
                   )}
 
-                  <div className="mt-1">
-                    <Progress
-                      aria-label="install-progress"
-                      isIndeterminate
-                      size="sm"
-                      color="success"
-                      classNames={{
-                        indicator:
-                          "bg-linear-to-r from-emerald-500 to-teal-500",
-                        track:
-                          "bg-default-200/50 dark:bg-zinc-700/50 border border-default-100 dark:border-white/5",
-                      }}
-                      className="w-full"
-                    />
+                  <div className="mt-1 flex flex-col gap-2">
+                    <div className="h-1.5 w-full rounded-full bg-default-200/50 dark:bg-zinc-700/50 overflow-hidden border border-default-100 dark:border-white/5 relative">
+                      {extractInfo?.totalBytes ? (
+                        <motion.div
+                          className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+                          initial={{ width: 0 }}
+                          animate={{
+                            width: `${Math.min(
+                              100,
+                              Math.max(
+                                0,
+                                (extractInfo.bytes / extractInfo.totalBytes) *
+                                  100,
+                              ),
+                            )}%`,
+                          }}
+                          transition={{ duration: 0.3, ease: "easeOut" }}
+                        />
+                      ) : (
+                        <></>
+                      )}
+                    </div>
+
+                    {typeof extractInfo?.bytes === "number" &&
+                    extractInfo.bytes > 0 ? (
+                      <div className="flex justify-between text-tiny text-default-500 font-medium">
+                        <span>
+                          {extractInfo.totalBytes
+                            ? (() => {
+                                const formatSize = (n: number) => {
+                                  const kb = 1024;
+                                  const mb = kb * 1024;
+                                  const gb = mb * 1024;
+                                  if (n >= gb)
+                                    return (n / gb).toFixed(2) + " GB";
+                                  if (n >= mb)
+                                    return (n / mb).toFixed(2) + " MB";
+                                  if (n >= kb)
+                                    return (n / kb).toFixed(2) + " KB";
+                                  return n + " B";
+                                };
+                                return `${formatSize(extractInfo.bytes)} / ${formatSize(extractInfo.totalBytes)}`;
+                              })()
+                            : t("downloadpage.install.estimated_size", {
+                                defaultValue: "已写入大小（估算）",
+                              })}
+                        </span>
+                        <span className="font-mono">
+                          {(() => {
+                            const formatSize = (n: number) => {
+                              const kb = 1024;
+                              const mb = kb * 1024;
+                              const gb = mb * 1024;
+                              if (n >= gb) return (n / gb).toFixed(2) + " GB";
+                              if (n >= mb) return (n / mb).toFixed(2) + " MB";
+                              if (n >= kb) return (n / kb).toFixed(2) + " KB";
+                              return n + " B";
+                            };
+                            const current = formatSize(extractInfo?.bytes ?? 0);
+                            if (extractInfo?.totalBytes) {
+                              const percent = (
+                                (extractInfo.bytes / extractInfo.totalBytes) *
+                                100
+                              ).toFixed(1);
+                              return `${percent}%`;
+                            }
+                            return current;
+                          })()}
+                        </span>
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               </motion.div>

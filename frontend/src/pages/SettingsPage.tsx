@@ -437,7 +437,6 @@ export const SettingsPage: React.FC = () => {
                     <Button
                       variant="light"
                       radius="full"
-                      size="sm"
                       onPress={() => resetOnOpen()}
                     >
                       {t("settings.body.paths.reset", {
@@ -447,7 +446,6 @@ export const SettingsPage: React.FC = () => {
                     <Button
                       color="primary"
                       radius="full"
-                      size="sm"
                       isDisabled={!newBaseRoot || !baseRootWritable}
                       isLoading={savingBaseRoot}
                       className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
@@ -608,7 +606,7 @@ export const SettingsPage: React.FC = () => {
                     </p>
                   </div>
                   {gdkInstalled ? (
-                    <Chip color="success" variant="flat" size="sm">
+                    <Chip color="success" variant="flat">
                       {t("settings.gdk.installed")}
                     </Chip>
                   ) : (
@@ -640,12 +638,11 @@ export const SettingsPage: React.FC = () => {
                   </div>
                   {lipInstalled ? (
                     <div className="flex items-center gap-2">
-                      <Chip color="success" variant="flat" size="sm">
+                      <Chip color="success" variant="flat">
                         {t("settings.lip.installed_label")}
                       </Chip>
                       {hasLipUpdate && (
                         <Button
-                          size="sm"
                           variant="bordered"
                           radius="full"
                           isLoading={installingLip}
@@ -707,7 +704,6 @@ export const SettingsPage: React.FC = () => {
                   <Button
                     radius="full"
                     variant="bordered"
-                    size="sm"
                     onPress={() => setProcessModalOpen(true)}
                   >
                     {t("settings.process.scan")}
@@ -890,7 +886,6 @@ export const SettingsPage: React.FC = () => {
                           <Button
                             color="primary"
                             radius="full"
-                            size="sm"
                             onPress={onUpdate}
                             isDisabled={updating}
                             className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"

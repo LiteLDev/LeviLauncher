@@ -18,6 +18,7 @@ import {
   Progress,
   Spinner,
   useDisclosure,
+  Textarea,
 } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -44,6 +45,8 @@ export default function VersionSettingsPage() {
     React.useState<boolean>(false);
   const [enableRenderDragon, setEnableRenderDragon] =
     React.useState<boolean>(false);
+  const [envVars, setEnvVars] = React.useState<string>("");
+  const [launchArgs, setLaunchArgs] = React.useState<string>("");
   const [isRegistered, setIsRegistered] = React.useState<boolean>(false);
   const [loading, setLoading] = React.useState<boolean>(true);
   const [unregisterOpen, setUnregisterOpen] = React.useState<boolean>(false);
@@ -69,6 +72,9 @@ export default function VersionSettingsPage() {
     React.useState<boolean>(false);
   const [originalRenderDragon, setOriginalRenderDragon] =
     React.useState<boolean>(false);
+  const [originalEnvVars, setOriginalEnvVars] = React.useState<string>("");
+  const [originalLaunchArgs, setOriginalLaunchArgs] =
+    React.useState<string>("");
   const {
     isOpen: unsavedOpen,
     onOpen: unsavedOnOpen,
@@ -98,6 +104,10 @@ export default function VersionSettingsPage() {
             setOriginalEditorMode(!!meta?.enableEditorMode);
             setEnableRenderDragon(!!meta?.enableRenderDragon);
             setOriginalRenderDragon(!!meta?.enableRenderDragon);
+            setEnvVars(String(meta?.envVars || ""));
+            setOriginalEnvVars(String(meta?.envVars || ""));
+            setLaunchArgs(String(meta?.launchArgs || ""));
+            setOriginalLaunchArgs(String(meta?.launchArgs || ""));
             setIsRegistered(Boolean(meta?.registered));
           }
         }
@@ -131,7 +141,9 @@ export default function VersionSettingsPage() {
           enableIsolation !== originalIsolation ||
           enableConsole !== originalConsole ||
           enableEditorMode !== originalEditorMode ||
-          enableRenderDragon !== originalRenderDragon;
+          enableRenderDragon !== originalRenderDragon ||
+          envVars !== originalEnvVars ||
+          launchArgs !== originalLaunchArgs;
 
         if (!targetPath || targetPath === location.pathname) return;
         if (hasUnsaved) {
@@ -221,6 +233,8 @@ export default function VersionSettingsPage() {
           !!enableConsole,
           !!enableEditorMode,
           !!enableRenderDragon,
+          launchArgs,
+          envVars,
         );
         if (err2) {
           setError(err2);
@@ -258,6 +272,8 @@ export default function VersionSettingsPage() {
       returnToPath,
       navigate,
       versionType,
+      envVars,
+      launchArgs,
     ],
   );
 
@@ -399,6 +415,60 @@ export default function VersionSettingsPage() {
                     />
                     <p className="text-tiny text-default-400 mt-2">
                       {t("versions.edit.hint")}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <label className="text-small font-medium text-default-700 dark:text-default-200 block">
+                      {t("versions.edit.launch_args")}
+                    </label>
+                    <Input
+                      value={launchArgs}
+                      onValueChange={(v) => {
+                        setLaunchArgs(v);
+                        if (error) setError("");
+                      }}
+                      size="md"
+                      variant="bordered"
+                      radius="lg"
+                      placeholder={
+                        t(
+                          "versions.edit.launch_args_placeholder",
+                        ) as unknown as string
+                      }
+                      classNames={{
+                        inputWrapper:
+                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                      }}
+                    />
+                    <p className="text-tiny text-default-400">
+                      {t("versions.edit.launch_args_hint")}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <label className="text-small font-medium text-default-700 dark:text-default-200 block">
+                      {t("versions.edit.env_vars")}
+                    </label>
+                    <Textarea
+                      value={envVars}
+                      onValueChange={(v) => {
+                        setEnvVars(v);
+                        if (error) setError("");
+                      }}
+                      minRows={3}
+                      variant="bordered"
+                      radius="lg"
+                      placeholder={
+                        t(
+                          "versions.edit.env_vars_placeholder",
+                        ) as unknown as string
+                      }
+                      classNames={{
+                        inputWrapper:
+                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                      }}
+                    />
+                    <p className="text-tiny text-default-400">
+                      {t("versions.edit.env_vars_hint")}
                     </p>
                   </div>
                   <div className="flex flex-col gap-3">

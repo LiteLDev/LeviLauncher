@@ -25,6 +25,8 @@ type VersionMeta struct {
 	EnableConsole      bool      `json:"enableConsole"`
 	EnableEditorMode   bool      `json:"enableEditorMode"`
 	EnableRenderDragon bool      `json:"enableRenderDragon"`
+	LaunchArgs         string    `json:"launchArgs"`
+	EnvVars            string    `json:"envVars"`
 	CreatedAt          time.Time `json:"createdAt"`
 	Registered         bool      `json:"registered,omitempty"`
 }

@@ -204,8 +204,8 @@ func (a *Minecraft) CreateDesktopShortcut(name string) string {
 	return mcservice.CreateDesktopShortcut(name)
 }
 
-func (a *Minecraft) SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, enableRenderDragon bool) string {
-	return mcservice.SaveVersionMeta(name, gameVersion, typeStr, enableIsolation, enableConsole, enableEditorMode, enableRenderDragon)
+func (a *Minecraft) SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, enableRenderDragon bool, launchArgs string, envVars string) string {
+	return mcservice.SaveVersionMeta(name, gameVersion, typeStr, enableIsolation, enableConsole, enableEditorMode, enableRenderDragon, launchArgs, envVars)
 }
 
 func (a *Minecraft) ListVersionMetas() []versions.VersionMeta { return mcservice.ListVersionMetas() }
@@ -336,6 +336,32 @@ func (a *Minecraft) IsGamingServicesInstalled() bool {
 		return true
 	}
 	return false
+}
+
+func parseCommandLineArgs(input string) []string {
+	var args []string
+	var current strings.Builder
+	inQuote := false
+
+	for _, r := range input {
+		switch r {
+		case '"':
+			inQuote = !inQuote
+		case ' ', '\t', '\n', '\r':
+			if inQuote {
+				current.WriteRune(r)
+			} else if current.Len() > 0 {
+				args = append(args, current.String())
+				current.Reset()
+			}
+		default:
+			current.WriteRune(r)
+		}
+	}
+	if current.Len() > 0 {
+		args = append(args, current.String())
+	}
+	return args
 }
 
 func (a *Minecraft) GetGamertagByXuid(xuidStr string) string {
@@ -1032,10 +1058,21 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 		_ = peeditor.RunForVersion(a.ctx, dir)
 	}
 	var args []string
+	var envs []string
 	toRun := exe
 	var gameVer string
 	var enableConsole bool
 	if m, err := versions.ReadMeta(dir); err == nil {
+		if m.EnvVars != "" {
+			for _, l := range strings.Split(m.EnvVars, "\n") {
+				if t := strings.TrimSpace(l); t != "" {
+					envs = append(envs, t)
+				}
+			}
+		}
+		if m.LaunchArgs != "" {
+			args = append(args, parseCommandLineArgs(m.LaunchArgs)...)
+		}
 		enableConsole = m.EnableConsole
 		p, err := peeditor.PrepareExecutableForLaunch(a.ctx, dir, m.EnableConsole)
 		if err != nil {
@@ -1055,6 +1092,9 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 			}
 
 			c := exec.Command("cmd", "/c", "start", "", url)
+			if len(envs) > 0 {
+				c.Env = append(os.Environ(), envs...)
+			}
 			if err := c.Start(); err != nil {
 				return "ERR_LAUNCH_GAME"
 			}
@@ -1074,6 +1114,9 @@ func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string
 		}
 	}
 	cmd := exec.Command(toRun, args...)
+	if len(envs) > 0 {
+		cmd.Env = append(os.Environ(), envs...)
+	}
 	cmd.Dir = filepath.Dir(toRun)
 	if enableConsole {
 		cmd.SysProcAttr = &syscall.SysProcAttr{

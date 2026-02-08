@@ -52,6 +52,10 @@ body::-webkit-scrollbar,
   --wails-draggable: drag;
 }
 
+.wails-no-drag {
+  --wails-draggable: no-drag;
+}
+
 .spin-animation {
   animation: spin 5s linear infinite;
 }

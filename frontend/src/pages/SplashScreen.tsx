@@ -6,7 +6,10 @@ export const SplashScreen = () => {
   const { t } = useTranslation();
 
   return (
-    <div className="relative h-dvh w-full overflow-hidden bg-background flex flex-col items-center justify-center">
+    <div
+      id="wails-draggable"
+      className="relative h-dvh w-full overflow-hidden bg-background flex flex-col items-center justify-center"
+    >
       {/* Background Blobs */}
       <div className="absolute inset-0 -z-10 overflow-hidden pointer-events-none">
         <motion.div
@@ -99,7 +102,7 @@ export const SplashScreen = () => {
           </div>
 
           <p className="text-center text-sm text-default-500 font-medium animate-pulse">
-            {t("splash.preparing", { defaultValue: "正在准备启动..." })}
+            {t("splash.preparing")}
           </p>
         </motion.div>
       </div>

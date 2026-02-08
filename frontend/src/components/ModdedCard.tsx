@@ -59,7 +59,7 @@ export const ModCard = (args: {
             <FaPuzzlePiece size={16} />
           </div>
           <h3 className="text-base font-bold text-default-800 dark:text-zinc-100">
-            {t("moddedcard.title", { defaultValue: "Mods" })}
+            {t("moddedcard.title")}
           </h3>
         </div>
         {modsInfo.length > 0 && (
@@ -94,16 +94,11 @@ export const ModCard = (args: {
           ) : (
             <div className="h-full flex flex-col items-center justify-center text-default-400 gap-2">
               <FaPuzzlePiece size={32} className="opacity-20" />
-              <span className="text-sm">
-                {t("moddedcard.content.none", {
-                  defaultValue: "No mods found",
-                })}
-              </span>
+              <span className="text-sm">{t("moddedcard.content.none")}</span>
             </div>
           )}
         </ScrollShadow>
 
-        {/* Action Overlay / Footer */}
         <div className="absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-white/90 via-white/50 to-transparent dark:from-zinc-900/90 dark:via-zinc-900/50 pt-6 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Button
             size="sm"
@@ -114,7 +109,7 @@ export const ModCard = (args: {
             isDisabled={!args.currentVersion}
             className="font-semibold shadow-sm"
           >
-            {t("moddedcard.manage", { defaultValue: "Manage Mods" })}
+            {t("moddedcard.manage")}
           </Button>
         </div>
       </CardBody>

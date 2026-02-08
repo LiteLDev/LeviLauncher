@@ -18,6 +18,7 @@ const container = document.getElementById("root");
 const root = createRoot(container);
 
 window.addEventListener("contextmenu", (e) => {
+  if (import.meta.env.DEV) return;
   const target = e.target;
   const tagName = target.tagName;
   const isInput =

@@ -27,7 +27,6 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
 
   return (
     <div className="flex items-center gap-1">
-      {/* Separator */}
       <div className="w-px h-6 bg-default-200 dark:bg-zinc-700 mx-2" />
 
       <Button
@@ -44,7 +43,7 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
             document.activeElement.blur();
           }
         }}
-        className="min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        className="wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
       >
         <IoRemoveOutline size={20} />
       </Button>
@@ -57,7 +56,7 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
         aria-label="Maximize"
         isDisabled={navLocked && !isOnboardingMode}
         onPress={handleToggleMaximize}
-        className="min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        className="wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
       >
         {isMaximized ? (
           <IoCopyOutline size={18} />
@@ -80,7 +79,7 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
             document.activeElement.blur();
           }
         }}
-        className="min-w-8 w-8 h-8 text-zinc-500 hover:text-red-600 hover:bg-red-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-red-900/20"
+        className="wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-red-600 hover:bg-red-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-red-900/20"
       >
         <IoCloseOutline size={22} />
       </Button>

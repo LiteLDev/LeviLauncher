@@ -96,278 +96,254 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="fixed inset-0 z-40 flex items-center justify-center px-4 pb-4 pt-[84px] overflow-hidden bg-default-50 dark:bg-black">
-      {/* Background Gradients */}
-      <div className="fixed inset-0 -z-10 pointer-events-none overflow-hidden">
-        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-emerald-500/10 dark:bg-emerald-500/20 blur-[100px]" />
-        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-indigo-500/10 dark:bg-indigo-500/20 blur-[100px]" />
-      </div>
-
+    <div className="relative w-full h-full flex items-center justify-center px-4 pb-4 overflow-hidden bg-default-50 dark:bg-black">
       <motion.div
         initial={{ opacity: 0, scale: 0.95 }}
         animate={{ opacity: 1, scale: 1 }}
         transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full h-full"
+        className="w-full max-w-2xl mx-auto flex flex-col justify-center py-6"
       >
-        <Card className="relative w-full h-full overflow-hidden border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-          <div className="flex flex-col md:flex-row h-full">
-            {/* Left Panel: Hero & Info */}
-            <div className="w-full md:w-[35%] lg:w-[40%] bg-linear-to-br from-emerald-50/50 to-teal-50/50 dark:from-emerald-900/10 dark:to-teal-900/10 p-8 flex flex-col justify-center relative min-h-[400px] h-full">
-              <div className="absolute top-0 left-0 w-full h-full overflow-hidden pointer-events-none">
-                <div className="absolute -top-20 -left-20 w-60 h-60 bg-emerald-400/20 rounded-full blur-3xl" />
-                <div className="absolute bottom-0 right-0 w-60 h-60 bg-teal-400/20 rounded-full blur-3xl" />
-              </div>
+        <div className="flex flex-row items-center justify-center gap-6 mb-6">
+          <div className="w-16 h-16 rounded-3xl bg-linear-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/20 flex items-center justify-center text-white shrink-0">
+            <svg
+              className="w-8 h-8"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+              xmlns="http://www.w3.org/2000/svg"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M13 10V3L4 14h7v7l9-11h-7z"
+              />
+            </svg>
+          </div>
+          <div className="flex flex-col items-start text-left">
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 mb-1">
+              {t("onboarding.title")}
+            </h1>
+            <p className="text-default-500 text-base max-w-md">
+              {t("onboarding.subtitle")}
+            </p>
+          </div>
+        </div>
 
-              <div className="relative z-10">
-                <div className="w-16 h-16 mb-6 rounded-2xl bg-linear-to-br from-emerald-500 to-teal-600 shadow-lg shadow-emerald-900/20 flex items-center justify-center text-white">
-                  <svg
-                    className="w-8 h-8"
-                    fill="none"
-                    stroke="currentColor"
-                    viewBox="0 0 24 24"
-                    xmlns="http://www.w3.org/2000/svg"
-                  >
-                    <path
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                      strokeWidth={2}
-                      d="M13 10V3L4 14h7v7l9-11h-7z"
-                    />
-                  </svg>
-                </div>
-                <PageHeader
-                  title={t("onboarding.title")}
-                  description={t("onboarding.subtitle")}
-                  titleClassName="text-3xl lg:text-4xl"
+        <Card className="w-full border-none shadow-xl bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl rounded-[2rem] p-2">
+          <CardBody className="p-4 space-y-4">
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.1 }}
+              className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-4"
+            >
+              <div className="mb-3">
+                <SectionHeader
+                  title={t("settings.body.paths.title")}
+                  description={t("settings.body.paths.subtitle")}
                 />
               </div>
-            </div>
 
-            {/* Right Panel: Settings */}
-            <div className="w-full md:w-[65%] lg:w-[60%] p-6 flex flex-col h-full overflow-hidden">
-              <div className="flex-1 flex flex-col justify-center space-y-8 pr-2">
-                {/* Paths Section */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.1 }}
-                  className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-6"
-                >
-                  <div className="mb-6">
-                    <SectionHeader
-                      title={t("settings.body.paths.title")}
-                      description={t("settings.body.paths.subtitle")}
-                    />
-                  </div>
-
-                  <div className="space-y-6">
-                    <Input
-                      labelPlacement="outside"
-                      label={t("settings.body.paths.base_root")}
-                      placeholder={t("settings.body.paths.base_root")}
-                      value={newBaseRoot}
-                      onValueChange={setNewBaseRoot}
-                      variant="bordered"
-                      classNames={{
-                        inputWrapper:
-                          "bg-default-50/50 dark:bg-black/20 border-default-200 dark:border-white/10 shadow-none",
-                      }}
-                      description={
-                        newBaseRoot && newBaseRoot !== baseRoot ? (
-                          <span
-                            className={
-                              baseRootWritable
-                                ? "text-warning-500 font-medium"
-                                : "text-danger-500 font-medium"
-                            }
-                          >
-                            {baseRootWritable
-                              ? t("settings.body.paths.unsaved")
-                              : t("settings.body.paths.not_writable")}
-                          </span>
-                        ) : null
-                      }
-                      endContent={
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          className="bg-default-200/50 dark:bg-white/10 font-medium"
-                          onPress={async () => {
-                            try {
-                              const options: any = {
-                                Title: t("settings.body.paths.title"),
-                                CanChooseDirectories: true,
-                                CanChooseFiles: false,
-                                PromptForSingleSelection: true,
-                              };
-                              if (baseRoot) {
-                                options.Directory = baseRoot;
-                              }
-                              const result = await Dialogs.OpenFile(options);
-                              if (Array.isArray(result) && result.length > 0) {
-                                setNewBaseRoot(result[0]);
-                              } else if (typeof result === "string" && result) {
-                                setNewBaseRoot(result);
-                              }
-                            } catch (e) {
-                              console.error(e);
-                            }
-                          }}
-                        >
-                          {t("common.browse")}
-                        </Button>
-                      }
-                    />
-
-                    <div className="flex items-center justify-between">
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          color="primary"
-                          radius="full"
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                          isDisabled={
-                            !newBaseRoot ||
-                            !baseRootWritable ||
-                            newBaseRoot === baseRoot
+              <div className="space-y-3">
+                <Input
+                  labelPlacement="outside"
+                  label={t("settings.body.paths.base_root")}
+                  placeholder={t("settings.body.paths.base_root")}
+                  value={newBaseRoot}
+                  onValueChange={setNewBaseRoot}
+                  variant="bordered"
+                  classNames={{
+                    inputWrapper:
+                      "bg-default-50/50 dark:bg-black/20 border-default-200 dark:border-white/10 shadow-none",
+                  }}
+                  description={
+                    newBaseRoot && newBaseRoot !== baseRoot ? (
+                      <span
+                        className={
+                          baseRootWritable
+                            ? "text-warning-500 font-medium"
+                            : "text-danger-500 font-medium"
+                        }
+                      >
+                        {baseRootWritable
+                          ? t("settings.body.paths.unsaved")
+                          : t("settings.body.paths.not_writable")}
+                      </span>
+                    ) : null
+                  }
+                  endContent={
+                    <Button
+                      size="sm"
+                      variant="flat"
+                      className="bg-default-200/50 dark:bg-white/10 font-medium"
+                      onPress={async () => {
+                        try {
+                          const options: any = {
+                            Title: t("settings.body.paths.title"),
+                            CanChooseDirectories: true,
+                            CanChooseFiles: false,
+                            PromptForSingleSelection: true,
+                          };
+                          if (baseRoot) {
+                            options.Directory = baseRoot;
                           }
-                          isLoading={savingBaseRoot}
-                          onPress={async () => {
-                            setSavingBaseRoot(true);
-                            try {
-                              const ok = await CanWriteToDir(newBaseRoot);
-                              if (!ok) {
-                                setBaseRootWritable(false);
-                              } else {
-                                const err = await SetBaseRoot(newBaseRoot);
-                                if (!err) {
-                                  const br = await GetBaseRoot();
-                                  setBaseRoot(String(br || ""));
-                                  const id = await GetInstallerDir();
-                                  setInstallerDir(String(id || ""));
-                                  const vd = await GetVersionsDir();
-                                  setVersionsDir(String(vd || ""));
-                                }
-                              }
-                            } catch {}
-                            setSavingBaseRoot(false);
-                          }}
-                        >
-                          {t("settings.body.paths.apply")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="light"
-                          radius="full"
-                          className="text-default-500 hover:text-default-700"
-                          onPress={async () => {
-                            try {
-                              const err = await ResetBaseRoot();
-                              if (!err) {
-                                const br = await GetBaseRoot();
-                                setBaseRoot(String(br || ""));
-                                setNewBaseRoot(String(br || ""));
-                                const id = await GetInstallerDir();
-                                setInstallerDir(String(id || ""));
-                                const vd = await GetVersionsDir();
-                                setVersionsDir(String(vd || ""));
-                                setBaseRootWritable(true);
-                              }
-                            } catch {}
-                          }}
-                        >
-                          {t("settings.body.paths.reset")}
-                        </Button>
-                      </div>
-                    </div>
-                  </div>
-                </motion.div>
+                          const result = await Dialogs.OpenFile(options);
+                          if (Array.isArray(result) && result.length > 0) {
+                            setNewBaseRoot(result[0]);
+                          } else if (typeof result === "string" && result) {
+                            setNewBaseRoot(result);
+                          }
+                        } catch (e) {
+                          console.error(e);
+                        }
+                      }}
+                    >
+                      {t("common.browse")}
+                    </Button>
+                  }
+                />
 
-                {/* Language Section */}
-                <motion.div
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.4, delay: 0.2 }}
-                  className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-6"
-                >
-                  <SectionHeader
-                    title={t("settings.body.language.name")}
-                    description={
-                      langNames.find((l) => l.code === selectedLang)
-                        ?.language || selectedLang
-                    }
-                    action={
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <Button
-                            radius="full"
-                            variant="flat"
-                            className="bg-default-100 dark:bg-white/10 font-medium"
-                          >
-                            {t("settings.body.language.button")}
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu
-                          aria-label="Language selection"
-                          variant="flat"
-                          disallowEmptySelection
-                          selectionMode="single"
-                          className="max-h-60 overflow-y-auto"
-                          selectedKeys={new Set([selectedLang])}
-                          onSelectionChange={(keys) => {
-                            const arr = Array.from(
-                              keys as unknown as Set<string>,
-                            );
-                            const next = arr[0];
-                            if (typeof next === "string" && next.length > 0) {
-                              setSelectedLang(next);
-                              Promise.resolve(i18n.changeLanguage(next)).then(
-                                () => {
-                                  try {
-                                    localStorage.setItem("i18nextLng", next);
-                                  } catch {}
-                                },
-                              );
+                <div className="flex items-center justify-between">
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      color="primary"
+                      radius="full"
+                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                      isDisabled={
+                        !newBaseRoot ||
+                        !baseRootWritable ||
+                        newBaseRoot === baseRoot
+                      }
+                      isLoading={savingBaseRoot}
+                      onPress={async () => {
+                        setSavingBaseRoot(true);
+                        try {
+                          const ok = await CanWriteToDir(newBaseRoot);
+                          if (!ok) {
+                            setBaseRootWritable(false);
+                          } else {
+                            const err = await SetBaseRoot(newBaseRoot);
+                            if (!err) {
+                              const br = await GetBaseRoot();
+                              setBaseRoot(String(br || ""));
+                              const id = await GetInstallerDir();
+                              setInstallerDir(String(id || ""));
+                              const vd = await GetVersionsDir();
+                              setVersionsDir(String(vd || ""));
                             }
-                          }}
-                        >
-                          {langNames.map((lang) => (
-                            <DropdownItem
-                              key={lang.code}
-                              textValue={lang.language}
-                            >
-                              {lang.language}
-                            </DropdownItem>
-                          ))}
-                        </DropdownMenu>
-                      </Dropdown>
-                    }
-                  />
-                </motion.div>
+                          }
+                        } catch {}
+                        setSavingBaseRoot(false);
+                      }}
+                    >
+                      {t("settings.body.paths.apply")}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="light"
+                      radius="full"
+                      className="text-default-500 hover:text-default-700"
+                      onPress={async () => {
+                        try {
+                          const err = await ResetBaseRoot();
+                          if (!err) {
+                            const br = await GetBaseRoot();
+                            setBaseRoot(String(br || ""));
+                            setNewBaseRoot(String(br || ""));
+                            const id = await GetInstallerDir();
+                            setInstallerDir(String(id || ""));
+                            const vd = await GetVersionsDir();
+                            setVersionsDir(String(vd || ""));
+                            setBaseRootWritable(true);
+                          }
+                        } catch {}
+                      }}
+                    >
+                      {t("settings.body.paths.reset")}
+                    </Button>
+                  </div>
+                </div>
               </div>
+            </motion.div>
 
-              {/* Bottom Actions */}
-              <div className="flex items-center justify-end gap-3 pt-6 mt-auto">
-                <Button
-                  variant="light"
-                  radius="full"
-                  onPress={requestFinish}
-                  className="font-medium text-default-500"
-                >
-                  {t("onboarding.skip")}
-                </Button>
-                <Button
-                  color="primary"
-                  radius="full"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20 px-8"
-                  onPress={requestFinish}
-                >
-                  {t("onboarding.finish")}
-                </Button>
-              </div>
-            </div>
-          </div>
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.4, delay: 0.2 }}
+              className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-4"
+            >
+              <SectionHeader
+                title={t("settings.body.language.name")}
+                description={
+                  langNames.find((l) => l.code === selectedLang)?.language ||
+                  selectedLang
+                }
+                action={
+                  <Dropdown>
+                    <DropdownTrigger>
+                      <Button
+                        radius="full"
+                        variant="flat"
+                        className="bg-default-100 dark:bg-white/10 font-medium"
+                      >
+                        {t("settings.body.language.button")}
+                      </Button>
+                    </DropdownTrigger>
+                    <DropdownMenu
+                      aria-label="Language selection"
+                      variant="flat"
+                      disallowEmptySelection
+                      selectionMode="single"
+                      className="max-h-60 overflow-y-auto"
+                      selectedKeys={new Set([selectedLang])}
+                      onSelectionChange={(keys) => {
+                        const arr = Array.from(keys as unknown as Set<string>);
+                        const next = arr[0];
+                        if (typeof next === "string" && next.length > 0) {
+                          setSelectedLang(next);
+                          Promise.resolve(i18n.changeLanguage(next)).then(
+                            () => {
+                              try {
+                                localStorage.setItem("i18nextLng", next);
+                              } catch {}
+                            },
+                          );
+                        }
+                      }}
+                    >
+                      {langNames.map((lang) => (
+                        <DropdownItem key={lang.code} textValue={lang.language}>
+                          {lang.language}
+                        </DropdownItem>
+                      ))}
+                    </DropdownMenu>
+                  </Dropdown>
+                }
+              />
+            </motion.div>
+          </CardBody>
         </Card>
+
+        <div className="flex items-center justify-end gap-3 mt-4 w-full">
+          <Button
+            variant="light"
+            radius="full"
+            onPress={requestFinish}
+            className="font-medium text-default-500"
+          >
+            {t("onboarding.skip")}
+          </Button>
+          <Button
+            color="primary"
+            radius="full"
+            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20 px-8"
+            onPress={requestFinish}
+          >
+            {t("onboarding.finish")}
+          </Button>
+        </div>
       </motion.div>
 
       <BaseModal

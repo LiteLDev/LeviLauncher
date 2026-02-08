@@ -39,7 +39,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       <motion.div
         key="topbar"
         id="wails-draggable"
-        className="fixed top-0 right-0 left-0 h-14 z-40 flex items-center justify-between px-4 bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl"
+        className="fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between px-4 bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl"
         initial={{ x: -80, opacity: 0 }}
         animate={{
           x: revealStarted ? 0 : -80,
@@ -62,7 +62,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               radius="lg"
               onPress={() => navigate(-1)}
               isDisabled={navLocked}
-              className="text-default-500"
+              className="wails-no-drag text-default-500"
               aria-label="Go back"
             >
               <IoArrowBack size={20} />
@@ -74,7 +74,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               radius="lg"
               onPress={() => navigate(1)}
               isDisabled={navLocked}
-              className="text-default-500"
+              className="wails-no-drag text-default-500"
               aria-label="Go forward"
             >
               <IoArrowForward size={20} />

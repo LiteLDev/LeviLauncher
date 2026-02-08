@@ -4,7 +4,7 @@
     "lang": "Language"
   },
   "nav": {
-    "versions": "Versions",
+    "versions": "Instances",
     "more": "More",
     "about": "About",
     "back": "Back"
@@ -15,9 +15,9 @@
   "launcherpage": {
     "launch_button": "Launch",
     "content_manage": "Content Management",
-    "go_version_settings": "Version Settings",
-    "manage_versions": "Versions",
-    "search_versions": "Search versions or names",
+    "go_version_settings": "Instance Settings",
+    "manage_versions": "Instances",
+    "search_versions": "Search instances or names",
     "open_exe_dir": "Open Game Installation Directory",
     "register_system_button": "Register to System",
     "registered_tip": "Registered",
@@ -28,7 +28,7 @@
       },
       "success": {
         "title": "Registration Complete",
-        "body": "Version has been registered. You can launch from system apps list."
+        "body": "Instance has been registered. You can launch from system apps list."
       },
       "failed": {
         "title": "Registration Failed",
@@ -43,12 +43,12 @@
     "delete": {
       "complete": {
         "title": "Delete Complete",
-        "content": "The selected version has been deleted successfully!",
+        "content": "The selected instance has been deleted successfully!",
         "close_button": "Close"
       },
       "confirm": {
         "title": "Confirm Delete",
-        "content": "Are you sure you want to delete this version? This operation cannot be undone.",
+        "content": "Are you sure you want to delete this instance? This operation cannot be undone.",
         "delete_button": "Delete",
         "cancel_button": "Cancel"
       }
@@ -56,12 +56,12 @@
     "launch": {
       "failed": {
         "title": "Launch Error",
-        "content": "You did not select any version, please go to the download page to download it!",
+        "content": "You did not select any instance, please go to the download page to download it!",
         "close_button": "Close"
       },
       "force_run_button": "Force Launch"
     },
-    "currentVersion": "Current Version",
+    "currentVersion": "Current Instance",
     "vcruntime": {
       "completing": {
         "title": "Completing missing DLL",
@@ -78,7 +78,7 @@
       "create_button": "Create Desktop Shortcut",
       "success": {
         "title": "Shortcut Created",
-        "body": "A desktop shortcut for this version has been created."
+        "body": "A desktop shortcut for this instance has been created."
       }
     },
     "gameinput": {
@@ -109,13 +109,13 @@
     },
     "currentVersion_none": "None",
     "version_select": {
-      "title": "Select Version",
+      "title": "Select Instance",
       "unknown": "Unknown"
     },
     "tip": {
       "general": "Tip: First launch may be slow. Please wait.",
-      "choose_version_dropdown": "Use the dropdown on the right to switch versions quickly.",
-      "open_version_settings_gear": "Hover the Current Version badge and click the gear in the tooltip to open Version Settings; supports icon customization and isolation.",
+      "choose_version_dropdown": "Use the dropdown on the right to switch instances quickly.",
+      "open_version_settings_gear": "Hover the Current Instance badge and click the gear in the tooltip to open Instance Settings; supports icon customization and isolation.",
       "mods_import_button": "Use the “Import .zip/.dll” button on the Mods card to pick files.",
       "download_versions": "Install Release/Preview on the Download page; it appears in the dropdown afterward.",
       "content_counts_card": "The Content card shows counts of worlds, resource and behavior packs.",
@@ -503,9 +503,9 @@
     }
   },
   "contentpage": {
-    "current_version": "Current Version",
+    "current_version": "Current Instance",
     "none": "None",
-    "isolation": "Isolation",
+    "isolation": "Instance Isolation",
     "worlds": "Worlds",
     "worlds_list": "Worlds List",
     "select_player": "Select Player",
@@ -552,7 +552,7 @@
       "name": "Name"
     },
     "edit": {
-      "title": "Version Settings",
+      "title": "Instance Settings",
       "new_name": "New Name",
       "placeholder": "Enter new name",
       "hint": "Only rename the folder. Game version and type are unaffected.",
@@ -569,7 +569,7 @@
       "danger_zone_title": "Danger Zone",
       "delete_hint": "Click to open delete confirmation to avoid accidental deletion.",
       "unregister_button": "Unregister",
-      "unregister_hint": "This version is registered to system. Only unregister is allowed; then you can rename or delete.",
+      "unregister_hint": "This instance is registered to system. Only unregister is allowed; then you can rename or delete.",
       "unregister_progress": {
         "title": "Unregistering",
         "body": "Performing system unregister. Please wait…"
@@ -586,7 +586,7 @@
       "hint": "Will be saved as LargeLogo.png under the version folder. Click the icon to change."
     },
     "unsaved": {
-      "body": "You have unsaved changes to version settings. Do you want to save before leaving?"
+      "body": "You have unsaved changes to instance settings. Do you want to save before leaving?"
     },
     "sort": {
       "label": "Sort by",
@@ -604,7 +604,7 @@
     }
   },
   "errors": {
-    "ERR_GAME_ALREADY_RUNNING": "Detected the current version of Minecraft is already running. Please close it before launching or switch to another version.",
+    "ERR_GAME_ALREADY_RUNNING": "Detected the current instance of Minecraft is already running. Please close it before launching or switch to another instance.",
     "ERR_TARGET_DIR_NOT_SPECIFIED": "Target directory not specified",
     "ERR_CREATE_TARGET_DIR": "Failed to create target directory",
     "ERR_NOT_FOUND_GAME_DIR": "Game content directory not found",
@@ -761,7 +761,7 @@
     "updated": "Updated",
     "created": "Created",
     "size": "Size",
-    "game_version": "Game Version",
+    "game_version": "Minecraft Version",
     "mod_not_found": "Mod not found",
     "go_back": "Go Back",
     "by": "By",
@@ -783,22 +783,22 @@
     },
     "install": {
       "downloading_title": "Downloading Content",
-      "select_version_title": "Select Game Version",
+      "select_version_title": "Select Game Instance",
       "select_player_title": "Select Player",
       "importing_title": "Importing Content",
       "success_title": "Success",
       "error_title": "Error",
       "downloading_body": "Downloading file...",
-      "select_version_body": "Please select the game version to import to:",
-      "local_installation": "Local Installation",
-      "select_version_placeholder": "Select a version",
+      "select_version_body": "Please select the game instance to import to:",
+      "local_installation": "Local Instance",
+      "select_version_placeholder": "Select an instance",
       "registered": "Registered",
       "select_player_body": "This content requires selecting a player:",
       "player_label": "Player",
       "select_player_placeholder": "Select a player",
       "importing_body": "Importing content...",
       "success_msg": "Import Successful",
-      "success_desc": "The content has been successfully imported to the selected version.",
+      "success_desc": "The content has been successfully imported to the selected instance.",
       "failed_msg": "Import Failed",
       "next": "Next",
       "close": "Close"

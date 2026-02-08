@@ -474,6 +474,7 @@ export const CurseForgePage: React.FC = () => {
                 trigger:
                   "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
               }}
+              defaultValue={t("curseforge.minecraft_version")}
             >
               <SelectItem key="" value="">
                 {t("curseforge.all_versions")}
@@ -647,36 +648,28 @@ export const CurseForgePage: React.FC = () => {
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-default-400 mt-1">
                           <div
                             className="flex items-center gap-1"
-                            title={t("curseforge.downloads", {
-                              defaultValue: "Downloads",
-                            })}
+                            title={t("curseforge.downloads")}
                           >
                             <LuDownload />
                             <span>{formatNumber(mod.downloadCount)}</span>
                           </div>
                           <div
                             className="flex items-center gap-1"
-                            title={t("curseforge.updated", {
-                              defaultValue: "Updated",
-                            })}
+                            title={t("curseforge.updated")}
                           >
                             <LuClock />
                             <span>{formatDate(mod.dateModified)}</span>
                           </div>
                           <div
                             className="flex items-center gap-1"
-                            title={t("curseforge.created", {
-                              defaultValue: "Created",
-                            })}
+                            title={t("curseforge.created")}
                           >
                             <LuCalendar />
                             <span>{formatDate(mod.dateCreated)}</span>
                           </div>
                           <div
                             className="flex items-center gap-1"
-                            title={t("curseforge.size", {
-                              defaultValue: "Size",
-                            })}
+                            title={t("curseforge.size")}
                           >
                             <LuFileDigit />
                             <span>
@@ -685,9 +678,7 @@ export const CurseForgePage: React.FC = () => {
                           </div>
                           <div
                             className="flex items-center gap-1"
-                            title={t("curseforge.game_version", {
-                              defaultValue: "Game Version",
-                            })}
+                            title={t("curseforge.game_version")}
                           >
                             <LuGamepad2 />
                             <span>

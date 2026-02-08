@@ -4,7 +4,7 @@
     "lang": "语言"
   },
   "nav": {
-    "versions": "版本",
+    "versions": "实例列表",
     "more": "更多",
     "about": "关于",
     "back": "返回"
@@ -15,9 +15,9 @@
   "launcherpage": {
     "launch_button": "启动",
     "content_manage": "内容管理",
-    "go_version_settings": "版本设置",
-    "manage_versions": "版本列表",
-    "search_versions": "搜索版本或名称",
+    "go_version_settings": "实例设置",
+    "manage_versions": "实例列表",
+    "search_versions": "搜索实例或名称",
     "open_exe_dir": "打开游戏安装目录",
     "register_system_button": "注册到系统",
     "registered_tip": "已注册",
@@ -43,12 +43,12 @@
     "delete": {
       "complete": {
         "title": "删除完成",
-        "content": "所选版本已成功删除！",
+        "content": "所选实例已成功删除！",
         "close_button": "关闭"
       },
       "confirm": {
         "title": "确认删除",
-        "content": "您确定要删除此版本吗？此操作无法撤销。",
+        "content": "您确定要删除此实例吗？此操作无法撤销。",
         "delete_button": "删除",
         "cancel_button": "取消"
       }
@@ -56,12 +56,12 @@
     "launch": {
       "failed": {
         "title": "启动错误",
-        "content": "您没有选择任何版本，请前往下载页面进行下载！",
+        "content": "您没有选择任何实例，请前往下载页面进行下载！",
         "close_button": "关闭"
       },
       "force_run_button": "强制启动"
     },
-    "currentVersion": "当前版本",
+    "currentVersion": "当前实例",
     "vcruntime": {
       "completing": {
         "title": "正在补全缺失的 DLL",
@@ -78,7 +78,7 @@
       "create_button": "创建桌面快捷方式",
       "success": {
         "title": "快捷方式已创建",
-        "body": "已在桌面创建该版本的快捷方式。"
+        "body": "已在桌面创建该实例的快捷方式。"
       }
     },
     "gameinput": {
@@ -109,13 +109,13 @@
     },
     "currentVersion_none": "无",
     "version_select": {
-      "title": "选择版本",
+      "title": "选择实例",
       "unknown": "未知"
     },
     "tip": {
       "general": "提示：首次启动可能较慢，请耐心等待。",
-      "choose_version_dropdown": "右侧下拉按钮可快速切换当前版本。",
-      "open_version_settings_gear": "悬停“当前版本”徽章，点击气泡内齿轮打开版本设置；支持更换图标与启用版本隔离。",
+      "choose_version_dropdown": "右侧下拉按钮可快速切换当前实例。",
+      "open_version_settings_gear": "悬停“当前实例”徽章，点击气泡内齿轮打开实例设置；支持更换图标与启用实例隔离。",
       "mods_import_button": "点击 Mods 卡片的“导入 .zip/.dll”选择文件。",
       "download_versions": "在“下载”页安装 Release/Preview，安装后出现在下拉列表。",
       "content_counts_card": "主页“内容管理”显示世界、资源包、行为包数量。",
@@ -210,12 +210,12 @@
     },
     "install_folder": {
       "confirm_title": "确认安装文件夹",
-      "name_label": "版本名称",
-      "placeholder_name": "请输入版本名称",
-      "enable_isolation": "版本隔离",
+      "name_label": "实例名称",
+      "placeholder_name": "请输入实例名称",
+      "enable_isolation": "实例隔离",
       "enable_isolation_desc": "将游戏数据（如世界、设置、缓存等）重定向到 versions/【名称】/ 目录下，而不是存放在 AppData 中。",
       "inherit_label": "继承来源",
-      "inherit_hint": "从已隔离版本复制数据，类型需与当前一致",
+      "inherit_hint": "从已隔离实例复制数据，类型需与当前一致",
       "inherit_none": "不继承",
       "inherit_gdk": "从 GDK 目录继承"
     },
@@ -371,7 +371,7 @@
         "apply": "应用",
         "reset": "恢复默认",
         "installer": "安装器目录",
-        "versions": "版本目录",
+        "versions": "实例目录",
         "unsaved": "更改未保存",
         "not_writable": "目录不可写入"
       },
@@ -503,9 +503,9 @@
     }
   },
   "contentpage": {
-    "current_version": "当前版本",
+    "current_version": "当前实例",
     "none": "无",
-    "isolation": "版本隔离",
+    "isolation": "实例隔离",
     "worlds": "世界",
     "worlds_list": "存档列表",
     "select_player": "选择玩家",
@@ -552,11 +552,11 @@
       "name": "名称"
     },
     "edit": {
-      "title": "版本设置",
+      "title": "实例设置",
       "new_name": "新名称",
       "placeholder": "输入新名称",
       "hint": "仅修改文件夹名称，不影响游戏版本与类型。",
-      "enable_isolation": "启用版本隔离",
+      "enable_isolation": "启用实例隔离",
       "enable_console": "启用控制台",
       "enable_render_dragon": "启用渲染龙光影加载",
       "enable_editor_mode": "启用编辑器模式",
@@ -569,24 +569,24 @@
       "danger_zone_title": "危险操作",
       "delete_hint": "点击以打开删除确认，避免误触。",
       "unregister_button": "取消注册",
-      "unregister_hint": "该版本已注册到系统，仅可取消注册；取消后可重命名或删除。",
+      "unregister_hint": "该实例已注册到系统，仅可取消注册；取消后可重命名或删除。",
       "unregister_progress": {
         "title": "正在取消注册",
         "body": "正在执行系统取消注册，请稍候…"
       },
       "unregister_success": {
         "title": "取消注册成功",
-        "body": "已成功取消注册，现在可以删除该版本了。"
+        "body": "已成功取消注册，现在可以删除该实例了。"
       }
     },
     "logo": {
       "title": "自定义图标（要求正方形）",
       "change": "点击更换",
       "clear": "清除",
-      "hint": "将保存到版本文件夹的 LargeLogo.png。点击图标更换。"
+      "hint": "将保存到实例文件夹的 LargeLogo.png。点击图标更换。"
     },
     "unsaved": {
-      "body": "您更改了版本设置但尚未保存。是否保存后离开？"
+      "body": "您更改了实例设置但尚未保存。是否保存后离开？"
     },
     "sort": {
       "label": "排序方式",
@@ -604,7 +604,7 @@
     }
   },
   "errors": {
-    "ERR_GAME_ALREADY_RUNNING": "检测到当前版本 Minecraft 已在运行，请先关闭再启动或者切换其他版本",
+    "ERR_GAME_ALREADY_RUNNING": "检测到当前实例 Minecraft 已在运行，请先关闭再启动或者切换其他实例",
     "ERR_TARGET_DIR_NOT_SPECIFIED": "未指定目标目录",
     "ERR_CREATE_TARGET_DIR": "无法创建目标目录",
     "ERR_NOT_FOUND_GAME_DIR": "未找到游戏目录",
@@ -742,7 +742,7 @@
     "title": "CurseForge",
     "search_placeholder": "搜索游戏资源...",
     "search": "搜索",
-    "minecraft_version": "Minecraft版本",
+    "minecraft_version": "Minecraft 版本",
     "select_version": "选择版本",
     "all_versions": "全部版本",
     "load_error": "加载数据失败，请重试",
@@ -761,7 +761,7 @@
     "updated": "更新时间",
     "created": "创建时间",
     "size": "大小",
-    "game_version": "游戏版本",
+    "game_version": "Minecraft 版本",
     "mod_not_found": "未找到游戏资源",
     "go_back": "返回",
     "by": "作者",
@@ -783,22 +783,22 @@
     },
     "install": {
       "downloading_title": "下载内容",
-      "select_version_title": "选择游戏版本",
+      "select_version_title": "选择游戏实例",
       "select_player_title": "选择玩家",
       "importing_title": "正在导入",
       "success_title": "成功",
       "error_title": "错误",
       "downloading_body": "正在下载文件...",
-      "select_version_body": "请选择要导入到的游戏版本：",
-      "local_installation": "本地安装",
-      "select_version_placeholder": "选择版本",
+      "select_version_body": "请选择要导入到的游戏实例：",
+      "local_installation": "本地实例",
+      "select_version_placeholder": "选择实例",
       "registered": "已注册",
       "select_player_body": "此内容需要选择玩家：",
       "player_label": "玩家",
       "select_player_placeholder": "选择玩家",
       "importing_body": "正在导入内容...",
       "success_msg": "导入成功",
-      "success_desc": "内容已成功导入到选定的版本。",
+      "success_desc": "内容已成功导入到选定的实例。",
       "failed_msg": "导入失败",
       "next": "下一步",
       "close": "关闭"

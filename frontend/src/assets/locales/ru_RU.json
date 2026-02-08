@@ -15,9 +15,9 @@
   "launcherpage": {
     "launch_button": "Запуск",
     "content_manage": "Управление контентом",
-    "go_version_settings": "Настройки версий",
-    "manage_versions": "Версии",
-    "search_versions": "Искать версии или названия",
+    "go_version_settings": "Настройки инстанса",
+    "manage_versions": "Инстансы",
+    "search_versions": "Искать инстансы или названия",
     "open_exe_dir": "Открыть папку установки игры",
     "register_system_button": "Зарегистрировать в системе",
     "registered_tip": "Зарегистрирован",
@@ -43,7 +43,7 @@
     "delete": {
       "complete": {
         "title": "Удалено",
-        "content": "Выбранная версия успешно удалена!",
+        "content": "Выбранный экземпляр успешно удален!",
         "close_button": "Закрыть"
       },
       "confirm": {
@@ -56,12 +56,12 @@
     "launch": {
       "failed": {
         "title": "Ошибка запуска",
-        "content": "Вы не выбрали версию для запуска, пожалуйста, установите версию для начала",
+        "content": "Вы не выбрали экземпляр для запуска, пожалуйста, установите экземпляр для начала",
         "close_button": "Закрыть"
       },
       "force_run_button": "Принудительный запуск"
     },
-    "currentVersion": "Текущая версия",
+    "currentVersion": "Текущий экземпляр",
     "vcruntime": {
       "completing": {
         "title": "Установка отсутствующего DLL",
@@ -75,7 +75,7 @@
       }
     },
     "shortcut": {
-      "create_button": "Создать ярлык версии на рабочем столе",
+      "create_button": "Создать ярлык экземпляра на рабочем столе",
       "success": {
         "title": "Ярлык создан",
         "body": "Ярлык для этой версии успешно создан на рабочем столе"
@@ -109,13 +109,13 @@
     },
     "currentVersion_none": "Нет",
     "version_select": {
-      "title": "Выбор версии",
+      "title": "Выбор инстанса",
       "unknown": "Неизвестно"
     },
     "tip": {
       "general": "Подсказка: первый запуск может быть медленным. Пожалуйста, подождите.",
-      "choose_version_dropdown": "Используйте выпадающий список справа для быстрого переключения версий.",
-      "open_version_settings_gear": "Наведите курсор на значок текущей версии и нажмите шестерёнку во всплывающей подсказке, чтобы открыть настройки версии; поддерживается настройка иконки и изоляция.",
+      "choose_version_dropdown": "Используйте выпадающий список справа для быстрого переключения экземпляров.",
+      "open_version_settings_gear": "Наведите курсор на значок текущего экземпляра и нажмите шестерёнку во всплывающей подсказке, чтобы открыть настройки экземпляра; поддерживается настройка иконки и изоляция.",
       "mods_import_button": "Используйте кнопку «Импорт .zip/.dll» на вкладке модов для выбора файлов.",
       "download_versions": "Установите Release/Preview на странице загрузки — после этого они появятся в выпадающем списке.",
       "content_counts_card": "Карточка контента показывает количество миров, ресурс-паков и поведенческих паков.",
@@ -491,7 +491,7 @@
     }
   },
   "contentpage": {
-    "current_version": "Текущая версия",
+    "current_version": "Текущий экземпляр",
     "none": "Нет",
     "isolation": "Изоляция",
     "worlds": "Миры",
@@ -743,62 +743,62 @@
     "search_placeholder": "Поиск игровых ресурсов...",
     "search": "Поиск",
     "minecraft_version": "Версия Minecraft",
-    "select_version": "Выберите версию",
+    "select_version": "Выбрать версию",
     "all_versions": "Все версии",
-    "load_error": "Ошибка загрузки данных, повторите попытку",
-    "search_error": "Ошибка поиска, повторите попытку",
-    "class": "Тип",
-    "select_class": "Выберите тип",
-    "all_classes": "Все типы",
+    "load_error": "Не удалось загрузить данные, попробуйте еще раз",
+    "search_error": "Ошибка поиска, попробуйте еще раз",
+    "class": "Класс",
+    "select_class": "Выбрать класс",
+    "all_classes": "Все классы",
     "category": "Категория",
-    "select_category": "Выберите категорию",
-    "sort_by": "Сортировать по",
-    "select_sort": "Выберите сортировку",
-    "no_results": "Результатов не найдено",
+    "select_category": "Выбрать категорию",
+    "sort_by": "Сортировка",
+    "select_sort": "Выбрать сортировку",
+    "no_results": "Результаты не найдены",
     "by_author": "Автор: {{author}}",
     "no_description": "Описание отсутствует.",
     "downloads": "Загрузки",
     "updated": "Обновлено",
     "created": "Создано",
     "size": "Размер",
-    "game_version": "Версия игры",
-    "mod_not_found": "Игровой ресурс не найден",
+    "game_version": "Версия Minecraft",
+    "mod_not_found": "Мод не найден",
     "go_back": "Назад",
-    "by": "От",
+    "by": "Автор",
     "updated_date": "Обновлено {{date}}",
-    "download_count": "{{count}} Скачиваний",
+    "download_count": "{{count}} загрузок",
     "install_action": "Установить",
-    "website": "Сайт",
+    "website": "Веб-сайт",
     "source": "Исходный код",
     "issues": "Проблемы",
     "share": "Поделиться",
     "no_download_url": "Нет ссылки для скачивания",
     "no_files_found": "Файлы не найдены",
     "sort": {
-      "featured": "Рекомендуемые",
-      "popularity": "Популярные",
-      "last_updated": "Последние обновления",
+      "featured": "Избранное",
+      "popularity": "Популярность",
+      "last_updated": "Последнее обновление",
       "creation_date": "Дата создания",
-      "total_downloads": "Всего скачиваний"
+      "total_downloads": "Всего загрузок"
     },
     "install": {
       "downloading_title": "Загрузка контента",
-      "select_version_title": "Выбор версии игры",
+      "select_version_title": "Выбор игрового инстанса",
       "select_player_title": "Выбор игрока",
       "importing_title": "Импорт контента",
-      "success_title": "Успех",
+      "success_title": "Успешно",
       "error_title": "Ошибка",
       "downloading_body": "Загрузка файла...",
-      "select_version_body": "Пожалуйста, выберите версию игры для импорта:",
-      "local_installation": "Локальная установка",
-      "select_version_placeholder": "Выберите версию",
+      "select_version_body": "Пожалуйста, выберите игровой инстанс для импорта:",
+      "local_installation": "Локальный инстанс",
+      "select_version_placeholder": "Выберите инстанс",
       "registered": "Зарегистрировано",
       "select_player_body": "Этот контент требует выбора игрока:",
       "player_label": "Игрок",
       "select_player_placeholder": "Выберите игрока",
       "importing_body": "Импорт контента...",
       "success_msg": "Импорт выполнен успешно",
-      "success_desc": "Контент был успешно импортирован в выбранную версию.",
+      "success_desc": "Контент был успешно импортирован в выбранный инстанс.",
       "failed_msg": "Ошибка импорта",
       "next": "Далее",
       "close": "Закрыть"

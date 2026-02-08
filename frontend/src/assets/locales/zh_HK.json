@@ -4,7 +4,7 @@
     "lang": "語言"
   },
   "nav": {
-    "versions": "版本",
+    "versions": "實例",
     "more": "更多",
     "about": "關於",
     "back": "返回"
@@ -15,9 +15,9 @@
   "launcherpage": {
     "launch_button": "啟動",
     "content_manage": "內容管理",
-    "go_version_settings": "版本設定",
-    "manage_versions": "版本列表",
-    "search_versions": "搜尋版本或名稱",
+    "go_version_settings": "實例設定",
+    "manage_versions": "實例列表",
+    "search_versions": "搜尋實例或名稱",
     "open_exe_dir": "開啟遊戲安裝目錄",
     "register_system_button": "註冊到系統",
     "registered_tip": "已註冊",
@@ -43,12 +43,12 @@
     "delete": {
       "complete": {
         "title": "刪除完成",
-        "content": "所選版本已成功刪除！",
+        "content": "所選實例已成功刪除！",
         "close_button": "關閉"
       },
       "confirm": {
         "title": "確認刪除",
-        "content": "您確定要刪除此版本嗎？此操作無法復原。",
+        "content": "您確定要刪除此實例嗎？此操作無法復原。",
         "delete_button": "刪除",
         "cancel_button": "取消"
       }
@@ -56,12 +56,12 @@
     "launch": {
       "failed": {
         "title": "啟動錯誤",
-        "content": "您未選擇任何版本，請前往下載頁面進行下載！",
+        "content": "您未選擇任何實例，請前往下載頁面進行下載！",
         "close_button": "關閉"
       },
       "force_run_button": "強制啟動"
     },
-    "currentVersion": "目前版本",
+    "currentVersion": "目前實例",
     "vcruntime": {
       "completing": {
         "title": "正在補全缺失的 DLL",
@@ -109,13 +109,13 @@
     },
     "currentVersion_none": "無",
     "version_select": {
-      "title": "選擇版本",
+      "title": "選擇實例",
       "unknown": "未知"
     },
     "tip": {
       "general": "提示：首次啟動可能較慢，請耐心等候。",
-      "choose_version_dropdown": "右側下拉按鈕可快速切換目前版本。",
-      "open_version_settings_gear": "將滑鼠懸停於「目前版本」徽章上，點擊氣泡內齒輪圖示即可開啟版本設定；支援更換圖示與啟用版本隔離。",
+      "choose_version_dropdown": "右側下拉按鈕可快速切換目前實例。",
+      "open_version_settings_gear": "將滑鼠懸停於「目前實例」徽章上，點擊氣泡內齒輪圖示即可開啟實例設定；支援更換圖示與啟用實例隔離。",
       "mods_import_button": "點擊 Mods 卡片的「匯入 .zip/.dll」選擇檔案。",
       "download_versions": "在「下載」頁安裝 Release/Preview，安裝後會出現在下拉清單中。",
       "content_counts_card": "主頁「內容管理」顯示世界、資源包、行為包數量。",
@@ -210,12 +210,12 @@
     },
     "install_folder": {
       "confirm_title": "確認安裝資料夾",
-      "name_label": "版本名稱",
-      "placeholder_name": "請輸入版本名稱",
-      "enable_isolation": "版本隔離",
+      "name_label": "實例名稱",
+      "placeholder_name": "請輸入實例名稱",
+      "enable_isolation": "實例隔離",
       "enable_isolation_desc": "將遊戲資料（如世界、設定、快取等）重新導向至 versions/【名稱】/ 目錄下，而非存放於 AppData 中。",
       "inherit_label": "繼承來源",
-      "inherit_hint": "從已隔離版本複製資料，類型需與目前一致",
+      "inherit_hint": "從已隔離實例複製資料，類型需與目前一致",
       "inherit_none": "不繼承",
       "inherit_gdk": "從 GDK 目錄繼承"
     },
@@ -359,7 +359,7 @@
         "apply": "套用",
         "reset": "恢復預設",
         "installer": "安裝器目錄",
-        "versions": "版本目錄",
+        "versions": "實例目錄",
         "unsaved": "變更未儲存",
         "not_writable": "目錄無法寫入"
       },
@@ -491,9 +491,9 @@
     }
   },
   "contentpage": {
-    "current_version": "目前版本",
+    "current_version": "目前實例",
     "none": "無",
-    "isolation": "版本隔離",
+    "isolation": "實例隔離",
     "worlds": "世界",
     "worlds_list": "存檔清單",
     "select_player": "選擇玩家",
@@ -540,11 +540,11 @@
       "name": "名稱"
     },
     "edit": {
-      "title": "版本設定",
+      "title": "實例設定",
       "new_name": "新名稱",
       "placeholder": "輸入新名稱",
       "hint": "僅修改資料夾名稱，不影響遊戲版本與類型。",
-      "enable_isolation": "啟用版本隔離",
+      "enable_isolation": "啟用實例隔離",
       "enable_console": "啟用主控台",
       "enable_render_dragon": "啟用 Render Dragon 光影載入",
       "enable_editor_mode": "啟用編輯器模式",
@@ -557,24 +557,24 @@
       "danger_zone_title": "危險操作",
       "delete_hint": "點擊以開啟刪除確認，避免誤觸。",
       "unregister_button": "取消註冊",
-      "unregister_hint": "此版本已註冊到系統，僅可取消註冊；取消後可重新命名或刪除。",
+      "unregister_hint": "此實例已註冊到系統，僅可取消註冊；取消後可重新命名或刪除。",
       "unregister_progress": {
         "title": "正在取消註冊",
         "body": "正在執行系統取消註冊，請稍候…"
       },
       "unregister_success": {
         "title": "取消註冊成功",
-        "body": "已成功取消註冊，現在可以刪除此版本了。"
+        "body": "已成功取消註冊，現在可以刪除此實例了。"
       }
     },
     "logo": {
       "title": "自訂圖示（要求正方形）",
       "change": "點擊更換",
       "clear": "清除",
-      "hint": "將儲存至版本資料夾的 LargeLogo.png。點擊圖示更換。"
+      "hint": "將儲存至實例資料夾的 LargeLogo.png。點擊圖示更換。"
     },
     "unsaved": {
-      "body": "您更改了版本設定但尚未儲存。是否儲存後離開？"
+      "body": "您更改了實例設定但尚未儲存。是否儲存後離開？"
     },
     "sort": {
       "label": "排序方式",
@@ -592,7 +592,7 @@
     }
   },
   "errors": {
-    "ERR_GAME_ALREADY_RUNNING": "偵測到目前版本 Minecraft 已在執行，請先關閉再啟動或切換其他版本",
+    "ERR_GAME_ALREADY_RUNNING": "偵測到目前實例 Minecraft 已在執行，請先關閉再啟動或切換其他實例",
     "ERR_TARGET_DIR_NOT_SPECIFIED": "未指定目標目錄",
     "ERR_CREATE_TARGET_DIR": "無法建立目標目錄",
     "ERR_NOT_FOUND_GAME_DIR": "未找到遊戲目錄",
@@ -761,7 +761,7 @@
     "updated": "更新時間",
     "created": "建立時間",
     "size": "大小",
-    "game_version": "遊戲版本",
+    "game_version": "Minecraft 版本",
     "mod_not_found": "未找到遊戲資源",
     "go_back": "返回",
     "by": "作者",
@@ -769,36 +769,36 @@
     "download_count": "{{count}} 次下載",
     "install_action": "安裝",
     "website": "官網",
-    "source": "原始碼",
-    "issues": "回報問題",
+    "source": "源碼",
+    "issues": "反饋",
     "share": "分享",
     "no_download_url": "無下載連結",
     "no_files_found": "未找到檔案",
     "sort": {
       "featured": "精選",
-      "popularity": "熱門度",
+      "popularity": "熱度",
       "last_updated": "最近更新",
       "creation_date": "建立日期",
       "total_downloads": "總下載量"
     },
     "install": {
       "downloading_title": "下載內容",
-      "select_version_title": "選擇遊戲版本",
+      "select_version_title": "選擇遊戲實例",
       "select_player_title": "選擇玩家",
       "importing_title": "正在匯入",
       "success_title": "成功",
       "error_title": "錯誤",
       "downloading_body": "正在下載檔案...",
-      "select_version_body": "請選擇要匯入到的遊戲版本：",
-      "local_installation": "本機安裝",
-      "select_version_placeholder": "選擇版本",
+      "select_version_body": "請選擇要匯入到的遊戲實例：",
+      "local_installation": "本機實例",
+      "select_version_placeholder": "選擇實例",
       "registered": "已註冊",
       "select_player_body": "此內容需要選擇玩家：",
       "player_label": "玩家",
       "select_player_placeholder": "選擇玩家",
       "importing_body": "正在匯入內容...",
       "success_msg": "匯入成功",
-      "success_desc": "內容已成功匯入至所選版本。",
+      "success_desc": "內容已成功匯入至所選實例。",
       "failed_msg": "匯入失敗",
       "next": "下一步",
       "close": "關閉"

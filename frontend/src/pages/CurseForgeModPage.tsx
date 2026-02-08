@@ -797,7 +797,7 @@ const CurseForgeModPage: React.FC = () => {
                         <h3 className="text-lg font-semibold">All Files</h3>
                         <div className="w-48">
                           <Select
-                            label="Game Version"
+                            label={t("curseforge.minecraft_version")}
                             size="sm"
                             selectedKeys={[selectedGameVersion]}
                             onChange={(e) =>
@@ -805,7 +805,7 @@ const CurseForgeModPage: React.FC = () => {
                             }
                           >
                             <SelectItem key="all" value="all">
-                              All Versions
+                              {t("curseforge.all_versions")}
                             </SelectItem>
                             {gameVersions.map((version) => (
                               <SelectItem key={version} value={version}>
@@ -823,7 +823,9 @@ const CurseForgeModPage: React.FC = () => {
                             <TableColumn>Name</TableColumn>
                             <TableColumn>Uploaded</TableColumn>
                             <TableColumn>Size</TableColumn>
-                            <TableColumn>Game Version</TableColumn>
+                            <TableColumn>
+                              {t("curseforge.minecraft_version")}
+                            </TableColumn>
                             <TableColumn>Downloads</TableColumn>
                             <TableColumn>Actions</TableColumn>
                           </TableHeader>
@@ -1188,16 +1190,12 @@ const CurseForgeModPage: React.FC = () => {
             <>
               <BaseModalHeader className="">
                 <span className="text-xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 bg-clip-text text-transparent">
-                  {t("mods.overwrite_modal_title", {
-                    defaultValue: "检测到重复",
-                  })}
+                  {t("mods.overwrite_modal_title")}
                 </span>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-sm text-default-700">
-                  {t("mods.overwrite_modal_body", {
-                    defaultValue: "同名模块文件夹已存在，是否覆盖（更新）？",
-                  })}
+                  {t("mods.overwrite_modal_body")}
                 </div>
                 {dupName ? (
                   <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
@@ -1216,7 +1214,7 @@ const CurseForgeModPage: React.FC = () => {
                     }
                   }}
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="primary"
@@ -1229,7 +1227,7 @@ const CurseForgeModPage: React.FC = () => {
                     }
                   }}
                 >
-                  {t("common.confirm", { defaultValue: "确定" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>

@@ -96,6 +96,17 @@ export const SettingsPage: React.FC = () => {
   const gdkInstallDisclosure = useDisclosure();
   const [gdkLicenseAccepted, setGdkLicenseAccepted] = useState<boolean>(false);
 
+  const [layoutMode, setLayoutMode] = useState<"navbar" | "sidebar">(() => {
+    try {
+      return (
+        (localStorage.getItem("app.layoutMode") as "navbar" | "sidebar") ||
+        "sidebar"
+      );
+    } catch {
+      return "sidebar";
+    }
+  });
+
   // LIP State
   const [lipInstalled, setLipInstalled] = useState<boolean>(false);
   const [lipVersion, setLipVersion] = useState<string>("");
@@ -428,9 +439,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <p className="text-large font-bold">
-                      {t("settings.body.paths.title", {
-                        defaultValue: "内容路径",
-                      })}
+                      {t("settings.body.paths.title")}
                     </p>
                   </div>
                   <div className="flex items-center gap-2">
@@ -439,9 +448,7 @@ export const SettingsPage: React.FC = () => {
                       radius="full"
                       onPress={() => resetOnOpen()}
                     >
-                      {t("settings.body.paths.reset", {
-                        defaultValue: "恢复默认",
-                      })}
+                      {t("settings.body.paths.reset")}
                     </Button>
                     <Button
                       color="primary"
@@ -470,20 +477,14 @@ export const SettingsPage: React.FC = () => {
                         setSavingBaseRoot(false);
                       }}
                     >
-                      {t("settings.body.paths.apply", {
-                        defaultValue: "应用",
-                      })}
+                      {t("settings.body.paths.apply")}
                     </Button>
                   </div>
                 </div>
 
                 <div className="space-y-4">
                   <Input
-                    label={
-                      t("settings.body.paths.base_root", {
-                        defaultValue: "根目录",
-                      }) as string
-                    }
+                    label={t("settings.body.paths.base_root") as string}
                     value={newBaseRoot}
                     onValueChange={setNewBaseRoot}
                     radius="lg"
@@ -500,9 +501,7 @@ export const SettingsPage: React.FC = () => {
                         onPress={async () => {
                           try {
                             const options: any = {
-                              Title: t("settings.body.paths.title", {
-                                defaultValue: "内容路径",
-                              }),
+                              Title: t("settings.body.paths.title"),
                               CanChooseDirectories: true,
                               CanChooseFiles: false,
                               PromptForSingleSelection: true,
@@ -522,7 +521,7 @@ export const SettingsPage: React.FC = () => {
                           }
                         }}
                       >
-                        {t("common.browse", { defaultValue: "选择..." })}
+                        {t("common.browse")}
                       </Button>
                     }
                   />
@@ -533,18 +532,12 @@ export const SettingsPage: React.FC = () => {
                       className="text-tiny text-warning-500 px-1"
                       title={newBaseRoot}
                     >
-                      {t("settings.body.paths.base_root", {
-                        defaultValue: "根目录",
-                      }) +
-                        ": " +
-                        newBaseRoot}
+                      {t("settings.body.paths.base_root") + ": " + newBaseRoot}
                     </div>
                   ) : null}
                   {!baseRootWritable ? (
                     <div className="text-tiny text-danger-500 px-1">
-                      {t("settings.body.paths.not_writable", {
-                        defaultValue: "目录不可写入",
-                      })}
+                      {t("settings.body.paths.not_writable")}
                     </div>
                   ) : null}
 
@@ -556,10 +549,7 @@ export const SettingsPage: React.FC = () => {
                       >
                         <LuHardDrive size={14} />
                         <span className="font-medium">
-                          {t("settings.body.paths.installer", {
-                            defaultValue: "安装器目录",
-                          })}
-                          :
+                          {t("settings.body.paths.installer")}:
                         </span>
                         <span className="opacity-70">
                           {installerDir || "-"}
@@ -573,10 +563,7 @@ export const SettingsPage: React.FC = () => {
                       >
                         <LuHardDrive size={14} />
                         <span className="font-medium">
-                          {t("settings.body.paths.versions", {
-                            defaultValue: "版本目录",
-                          })}
-                          :
+                          {t("settings.body.paths.versions")}:
                         </span>
                         <span className="opacity-70">{versionsDir || "-"}</span>
                       </div>
@@ -723,13 +710,40 @@ export const SettingsPage: React.FC = () => {
           >
             <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
               <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
+                {/* Navigation Layout */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col gap-1">
+                    <p className="font-medium text-large">
+                      {t("settings.layout.title_navbar")}
+                    </p>
+                    <p className="text-small text-default-500">
+                      {t("settings.layout.desc_navbar")}
+                    </p>
+                  </div>
+                  <Switch
+                    size="sm"
+                    isSelected={layoutMode === "navbar"}
+                    onValueChange={(isSelected) => {
+                      const mode = isSelected ? "navbar" : "sidebar";
+                      setLayoutMode(mode);
+                      localStorage.setItem("app.layoutMode", mode);
+                      window.dispatchEvent(
+                        new CustomEvent("app-layout-changed"),
+                      );
+                    }}
+                    classNames={{
+                      wrapper: "group-data-[selected=true]:bg-emerald-500",
+                    }}
+                  />
+                </div>
+
+                <Divider className="bg-default-200/50" />
+
                 {/* Language */}
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <p className="font-medium text-large">
-                      {t("settings.body.language.name", {
-                        defaultValue: t("app.lang"),
-                      })}
+                      {t("settings.body.language.name")}
                     </p>
                     <p className="text-small text-default-500">
                       {langNames.find((l) => l.code === selectedLang)
@@ -737,18 +751,14 @@ export const SettingsPage: React.FC = () => {
                     </p>
                     {languageChanged && (
                       <div className="text-tiny text-warning-500 mt-1">
-                        {t("settings.lang.changed", {
-                          defaultValue: "语言已更改",
-                        })}
+                        {t("settings.lang.changed")}
                       </div>
                     )}
                   </div>
                   <Dropdown>
                     <DropdownTrigger>
                       <Button radius="full" variant="bordered">
-                        {t("settings.body.language.button", {
-                          defaultValue: "更改",
-                        })}
+                        {t("settings.body.language.button")}
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
@@ -789,14 +799,10 @@ export const SettingsPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <p className="font-medium">
-                      {t("settings.discord_rpc.title", {
-                        defaultValue: "Discord 游戏状态",
-                      })}
+                      {t("settings.discord_rpc.title")}
                     </p>
                     <p className="text-tiny text-default-500">
-                      {t("settings.discord_rpc.desc", {
-                        defaultValue: "在 Discord 上显示您的游戏状态",
-                      })}
+                      {t("settings.discord_rpc.desc")}
                     </p>
                   </div>
                   <Switch
@@ -817,14 +823,10 @@ export const SettingsPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <p className="font-medium">
-                      {t("settings.beta_updates.title", {
-                        defaultValue: "接收测试版更新",
-                      })}
+                      {t("settings.beta_updates.title")}
                     </p>
                     <p className="text-tiny text-default-500">
-                      {t("settings.beta_updates.desc", {
-                        defaultValue: "开启后将接收测试版（Prerelease）推送",
-                      })}
+                      {t("settings.beta_updates.desc")}
                     </p>
                   </div>
                   <Switch
@@ -892,7 +894,7 @@ export const SettingsPage: React.FC = () => {
                             startContent={<RxUpdate />}
                           >
                             {updating
-                              ? t("common.updating", { defaultValue: "更新中" })
+                              ? t("common.updating")
                               : t("settings.modal.2.footer.download_button")}
                           </Button>
                         </div>
@@ -1316,9 +1318,7 @@ export const SettingsPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-medium">
-                {t("settings.lip.installing", {
-                  defaultValue: "正在安装 LIP...",
-                })}
+                {t("settings.lip.installing")}
               </BaseModalHeader>
               <BaseModalBody>
                 {lipError ? (
@@ -1327,7 +1327,6 @@ export const SettingsPage: React.FC = () => {
                       `settings.lip.error.${lipError
                         .toLowerCase()
                         .replace(/^err_/, "")}`,
-                      { defaultValue: lipError },
                     )}
                   </div>
                 ) : (
@@ -1339,9 +1338,7 @@ export const SettingsPage: React.FC = () => {
                       />
                     </div>
                     <div className="text-small text-default-500">
-                      {t(`settings.lip.status.${lipStatus}`, {
-                        defaultValue: lipStatus,
-                      })}
+                      {t(`settings.lip.status.${lipStatus}`)}
                       {lipProgress.total > 0 ? (
                         <span className="ml-2">
                           {`${(lipProgress.current / (1024 * 1024)).toFixed(2)} MB / ${(lipProgress.total / (1024 * 1024)).toFixed(2)} MB`}
@@ -1360,7 +1357,7 @@ export const SettingsPage: React.FC = () => {
                   onPress={onClose}
                   isDisabled={!installingLip}
                 >
-                  {t("common.hide", { defaultValue: "隐藏" })}
+                  {t("common.hide")}
                 </Button>
                 <Button
                   color="primary"
@@ -1385,26 +1382,21 @@ export const SettingsPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-warning-600">
-                {t("settings.unsaved.title", { defaultValue: "未保存修改" })}
+                {t("settings.unsaved.title")}
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-default-700 text-sm">
-                  {t("settings.unsaved.body", {
-                    defaultValue:
-                      "您更改了内容路径但尚未保存。是否保存后离开？",
-                  })}
+                  {t("settings.unsaved.body")}
                 </div>
                 {!baseRootWritable && (
                   <div className="text-tiny text-danger-500 mt-1">
-                    {t("settings.body.paths.not_writable", {
-                      defaultValue: "目录不可写入",
-                    })}
+                    {t("settings.body.paths.not_writable")}
                   </div>
                 )}
               </BaseModalBody>
               <BaseModalFooter>
                 <Button variant="light" onPress={onClose}>
-                  {t("settings.unsaved.cancel", { defaultValue: "取消" })}
+                  {t("settings.unsaved.cancel")}
                 </Button>
                 <Button
                   color="primary"
@@ -1437,7 +1429,7 @@ export const SettingsPage: React.FC = () => {
                     setSavingBaseRoot(false);
                   }}
                 >
-                  {t("settings.unsaved.save", { defaultValue: "保存并离开" })}
+                  {t("settings.unsaved.save")}
                 </Button>
               </BaseModalFooter>
             </>
@@ -1455,21 +1447,16 @@ export const SettingsPage: React.FC = () => {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-danger-600">
-                {t("settings.reset.confirm.title", {
-                  defaultValue: "恢复默认路径？",
-                })}
+                {t("settings.reset.confirm.title")}
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-default-700 text-sm">
-                  {t("settings.reset.confirm.body", {
-                    defaultValue:
-                      "这将把内容路径重置为默认位置。确定要继续吗？",
-                  })}
+                  {t("settings.reset.confirm.body")}
                 </div>
               </BaseModalBody>
               <BaseModalFooter>
                 <Button variant="light" onPress={onClose}>
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="danger"
@@ -1489,7 +1476,7 @@ export const SettingsPage: React.FC = () => {
                     onClose();
                   }}
                 >
-                  {t("common.confirm", { defaultValue: "确定" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>

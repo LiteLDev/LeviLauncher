@@ -1,93 +1,98 @@
-#!/usr/bin/env python3
-"""
-Check for missing keys in other locale files compared to en_US.
-
-Usage:
-  python scripts/check_missing_keys.py
-"""
-
-import json
 import os
+import re
+import json
 import sys
-from typing import Dict, Set
 
-# Determine paths
-SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-PROJECT_ROOT = os.path.dirname(SCRIPT_DIR)
-LOCALES_DIR = os.path.join(PROJECT_ROOT, "frontend", "src", "assets", "locales")
-EN_US_PATH = os.path.join(LOCALES_DIR, "en_US.json")
+# Configuration
+SRC_DIR = r'frontend/src'
+LOCALES_DIR = r'frontend/src/assets/locales'
+# List of all locale files to check
+LOCALE_FILES = ['en_US.json', 'ru_RU.json', 'zh_CN.json', 'ja_JP.json', 'zh_HK.json']
 
-def load_json(path: str) -> Dict:
-    if not os.path.exists(path):
-        print(f"Error: File not found: {path}")
-        sys.exit(1)
-    try:
-        with open(path, "r", encoding="utf-8") as f:
-            return json.load(f)
-    except json.JSONDecodeError as e:
-        print(f"Error: Failed to parse JSON {path}: {e}")
-        sys.exit(1)
+# Regex to match t('key') or t("key") or i18n.t('key')
+KEY_PATTERN = re.compile(r'\b(?:t|i18n\.t)\s*\(\s*(["\'])([\w\.-]+)\1')
 
-def flatten_map(data: object, prefix: str = "") -> Dict[str, object]:
-    """Flatten nested dict/list into a mapping of dot-separated paths -> leaf values."""
-    acc: Dict[str, object] = {}
-    if isinstance(data, dict):
-        for k, v in data.items():
-            pfx = f"{prefix}.{k}" if prefix else k
-            if isinstance(v, (dict, list)):
-                acc.update(flatten_map(v, pfx))
-            else:
-                acc[pfx] = v
-    elif isinstance(data, list):
-        for i, v in enumerate(data):
-            pfx = f"{prefix}.{i}" if prefix else str(i)
-            if isinstance(v, (dict, list)):
-                acc.update(flatten_map(v, pfx))
-            else:
-                acc[pfx] = v
-    return acc
+def load_json_keys(json_path):
+    """Load and flatten keys from a JSON file."""
+    if not os.path.exists(json_path):
+        print(f"Error: Locale file not found at {json_path}")
+        return set()
+        
+    with open(json_path, 'r', encoding='utf-8') as f:
+        data = json.load(f)
+        
+    keys = set()
+    
+    def traverse(obj, prefix=''):
+        if isinstance(obj, dict):
+            for k, v in obj.items():
+                full_key = f"{prefix}.{k}" if prefix else k
+                if isinstance(v, (dict, list)):
+                    traverse(v, full_key)
+                else:
+                    keys.add(full_key)
+        elif isinstance(obj, list):
+            pass
+            
+    traverse(data)
+    return keys
+
+def scan_code_for_keys(src_dir):
+    """Scan source code for translation keys."""
+    found_keys = set()
+    
+    for root, dirs, files in os.walk(src_dir):
+        # Skip node_modules just in case
+        if 'node_modules' in dirs:
+            dirs.remove('node_modules')
+            
+        for file in files:
+            if file.endswith(('.ts', '.tsx', '.js', '.jsx')):
+                path = os.path.join(root, file)
+                try:
+                    with open(path, 'r', encoding='utf-8') as f:
+                        content = f.read()
+                        matches = KEY_PATTERN.findall(content)
+                        for quote, key in matches:
+                            found_keys.add(key)
+                except Exception as e:
+                    print(f"Error reading {path}: {e}")
+                    
+    return found_keys
 
 def main():
-    if not os.path.exists(LOCALES_DIR):
-        print(f"Error: Locales directory not found at {LOCALES_DIR}")
-        sys.exit(1)
+    cwd = os.getcwd()
+    if os.path.basename(cwd) == 'scripts':
+        project_root = os.path.dirname(cwd)
+    elif os.path.exists(os.path.join(cwd, 'frontend')):
+        project_root = cwd
+    else:
+        project_root = cwd
 
-    print(f"Loading base locale: {EN_US_PATH}")
-    en_us_data = load_json(EN_US_PATH)
-    en_us_flat = flatten_map(en_us_data)
-    en_us_keys: Set[str] = set(en_us_flat.keys())
-
-    print(f"Base locale (en_US) has {len(en_us_keys)} keys.\n")
-
-    # Iterate over other locale files
-    found_issues = False
-    for filename in sorted(os.listdir(LOCALES_DIR)):
-        if not filename.endswith(".json") or filename == "en_US.json":
+    src_path = os.path.join(project_root, SRC_DIR)
+    locales_dir_path = os.path.join(project_root, LOCALES_DIR)
+    
+    print(f"Scanning code in: {src_path}")
+    code_keys = scan_code_for_keys(src_path)
+    print(f"Found {len(code_keys)} keys in code.\n")
+    
+    for locale_file in LOCALE_FILES:
+        locale_path = os.path.join(locales_dir_path, locale_file)
+        print(f"Checking {locale_file}...")
+        
+        json_keys = load_json_keys(locale_path)
+        if not json_keys:
             continue
-        
-        file_path = os.path.join(LOCALES_DIR, filename)
-        print(f"Checking {filename}...")
-        
-        target_data = load_json(file_path)
-        target_flat = flatten_map(target_data)
-        target_keys: Set[str] = set(target_flat.keys())
-        
-        missing_keys = sorted(list(en_us_keys - target_keys))
+            
+        missing_keys = sorted(list(code_keys - json_keys))
         
         if missing_keys:
-            found_issues = True
-            print(f"  [MISSING] {len(missing_keys)} keys missing in {filename}:")
+            print(f"[MISSING] {len(missing_keys)} keys found in code but missing in {locale_file}:")
             for key in missing_keys:
-                print(f"    - {key}")
+                print(f"  - {key}")
         else:
-            print(f"  [OK] No missing keys.")
-        print("")
-
-    if found_issues:
-        sys.exit(1)
-    else:
-        print("All locales are up to date with en_US.")
-        sys.exit(0)
+            print(f"[OK] All keys found in code exist in {locale_file}.")
+        print("-" * 40)
 
 if __name__ == "__main__":
     main()

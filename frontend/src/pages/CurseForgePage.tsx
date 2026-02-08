@@ -366,11 +366,7 @@ export const CurseForgePage: React.FC = () => {
       }
     } catch (error) {
       console.error("Failed to load initial data:", error);
-      setError(
-        t("curseforge.load_error", {
-          defaultValue: "Failed to load data, please retry",
-        }),
-      );
+      setError(t("curseforge.load_error"));
     } finally {
       setLoading(false);
       setInitialLoaded(true);
@@ -409,11 +405,7 @@ export const CurseForgePage: React.FC = () => {
       console.error("Failed to search mods:", error);
       setMods([]);
       setTotalCount(0);
-      setError(
-        t("curseforge.search_error", {
-          defaultValue: "Search failed, please retry",
-        }),
-      );
+      setError(t("curseforge.search_error"));
     } finally {
       if (seq !== searchSeqRef.current) return;
       setLoading(false);
@@ -440,15 +432,11 @@ export const CurseForgePage: React.FC = () => {
     >
       <Card className="shrink-0 bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl shadow-md border-none">
         <CardBody className="p-6 flex flex-col gap-4">
-          <PageHeader
-            title={t("curseforge.title", { defaultValue: "CurseForge" })}
-          />
+          <PageHeader title={t("curseforge.title")} />
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
-              placeholder={t("curseforge.search_placeholder", {
-                defaultValue: "搜索模组...",
-              })}
+              placeholder={t("curseforge.search_placeholder")}
               value={query}
               onValueChange={setQuery}
               onKeyPress={handleKeyPress}
@@ -467,18 +455,14 @@ export const CurseForgePage: React.FC = () => {
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             >
-              {t("curseforge.search", { defaultValue: "搜索" })}
+              {t("curseforge.search")}
             </Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Select
-              label={t("curseforge.minecraft_version", {
-                defaultValue: "Minecraft版本",
-              })}
-              placeholder={t("curseforge.select_version", {
-                defaultValue: "选择版本",
-              })}
+              label={t("curseforge.minecraft_version")}
+              placeholder={t("curseforge.select_version")}
               selectedKeys={[selectedMinecraftVersion]}
               onSelectionChange={(keys) => {
                 const value = Array.from(keys)[0] as string;
@@ -492,7 +476,7 @@ export const CurseForgePage: React.FC = () => {
               }}
             >
               <SelectItem key="" value="">
-                {t("curseforge.all_versions", { defaultValue: "全部版本" })}
+                {t("curseforge.all_versions")}
               </SelectItem>
               {gameVersions.map((version) => (
                 <SelectItem key={version.name} value={version.name}>
@@ -502,10 +486,8 @@ export const CurseForgePage: React.FC = () => {
             </Select>
 
             <Select
-              label={t("curseforge.class", { defaultValue: "类型" })}
-              placeholder={t("curseforge.select_class", {
-                defaultValue: "选择类型",
-              })}
+              label={t("curseforge.class")}
+              placeholder={t("curseforge.select_class")}
               selectedKeys={
                 selectedClass !== undefined ? [String(selectedClass)] : []
               }
@@ -522,7 +504,7 @@ export const CurseForgePage: React.FC = () => {
               }}
             >
               <SelectItem key="0" value="0">
-                {t("curseforge.all_classes", { defaultValue: "全部类型" })}
+                {t("curseforge.all_classes")}
               </SelectItem>
               {classes.map((cls) => (
                 <SelectItem key={String(cls.id)} value={String(cls.id)}>
@@ -532,10 +514,8 @@ export const CurseForgePage: React.FC = () => {
             </Select>
 
             <Select
-              label={t("curseforge.category", { defaultValue: "分类" })}
-              placeholder={t("curseforge.select_category", {
-                defaultValue: "选择分类",
-              })}
+              label={t("curseforge.category")}
+              placeholder={t("curseforge.select_category")}
               isDisabled={!selectedClass}
               selectionMode="multiple"
               selectedKeys={selectedCategories.map(String)}
@@ -560,10 +540,8 @@ export const CurseForgePage: React.FC = () => {
             </Select>
 
             <Select
-              label={t("curseforge.sort_by", { defaultValue: "排序" })}
-              placeholder={t("curseforge.select_sort", {
-                defaultValue: "选择排序",
-              })}
+              label={t("curseforge.sort_by")}
+              placeholder={t("curseforge.select_sort")}
               selectedKeys={selectedSort ? [String(selectedSort)] : []}
               onSelectionChange={(keys) => {
                 const value = Array.from(keys)[0] as string;
@@ -612,16 +590,14 @@ export const CurseForgePage: React.FC = () => {
                     }
                   }}
                 >
-                  {t("retry", { defaultValue: "Retry" })}
+                  {t("retry")}
                 </Button>
               </div>
             ) : loading || !hasSearched ? (
               <div className="flex flex-col gap-3">{renderSkeletons()}</div>
             ) : mods.length === 0 ? (
               <div className="flex items-center justify-center h-full text-default-500">
-                <p>
-                  {t("curseforge.no_results", { defaultValue: "未找到结果" })}
-                </p>
+                <p>{t("curseforge.no_results")}</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -660,16 +636,12 @@ export const CurseForgePage: React.FC = () => {
                                 mod.authors?.[0]?.name ||
                                 mod.author ||
                                 "Unknown",
-                              defaultValue: `By ${mod.authors?.[0]?.name || mod.author || "Unknown"}`,
                             })}
                           </span>
                         </div>
 
                         <p className="text-xs sm:text-sm text-default-500 line-clamp-2 w-full">
-                          {mod.summary ||
-                            t("curseforge.no_description", {
-                              defaultValue: "No description available.",
-                            })}
+                          {mod.summary || t("curseforge.no_description")}
                         </p>
 
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-default-400 mt-1">

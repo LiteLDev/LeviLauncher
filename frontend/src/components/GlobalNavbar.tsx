@@ -12,6 +12,7 @@ import {
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { UserAvatar } from "@/components/UserAvatar";
 import { LeviIcon } from "@/icons/LeviIcon";
+import { WindowControls } from "@/components/WindowControls";
 import {
   FaRocket,
   FaDownload,
@@ -20,8 +21,6 @@ import {
   FaList,
   FaInfoCircle,
 } from "react-icons/fa";
-import { FiMinimize2 } from "react-icons/fi";
-import { IoCloseOutline } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
 import { Window } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
@@ -72,7 +71,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
     },
     {
       key: "versions",
-      label: t("nav.versions", { defaultValue: "版本" }),
+      label: t("nav.versions"),
       path: "/versions",
       icon: <FaList size={18} />,
       navbarClass: "hidden lg:flex",
@@ -81,7 +80,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
     },
     {
       key: "about",
-      label: t("nav.about", { defaultValue: "关于" }),
+      label: t("nav.about"),
       path: "/about",
       icon: <FaInfoCircle size={18} />,
       navbarClass: "hidden lg:flex",
@@ -194,9 +193,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                     className={moreButtonClass}
                     startContent={<FaEllipsisH size={18} />}
                   >
-                    <span className="hidden md:inline">
-                      {t("nav.more", { defaultValue: "更多" })}
-                    </span>
+                    <span className="hidden md:inline">{t("nav.more")}</span>
                   </Button>
                 </DropdownTrigger>
                 <DropdownMenu
@@ -222,55 +219,18 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             </div>
           </div>
 
-          <div className="flex items-center gap-2 shrink-0 justify-end">
-            {!isUpdatingMode && !isOnboardingMode && hasEnteredLauncher && (
-              <UserAvatar />
-            )}
-
+          <div className="flex items-center gap-3 shrink-0 justify-end">
             <div className="h-8 w-px bg-default-200 dark:bg-zinc-700 mx-1 hidden sm:block" />
 
-            <div className="flex items-center gap-1 bg-default-100/50 dark:bg-zinc-800/50 p-1 rounded-full border border-default-200/50 dark:border-zinc-700/50">
-              <ThemeSwitcher />
+            <ThemeSwitcher />
+            <div className="hidden sm:block">
+              <UserAvatar />
             </div>
 
-            <div className="flex items-center gap-1 ml-1">
-              <Button
-                isIconOnly
-                variant="light"
-                size="sm"
-                radius="full"
-                aria-label="Minimize"
-                isDisabled={navLocked && !isOnboardingMode}
-                onPress={() => {
-                  if (navLocked && !isOnboardingMode) return;
-                  Window.Minimise();
-                  if (document.activeElement instanceof HTMLElement) {
-                    document.activeElement.blur();
-                  }
-                }}
-                className="text-zinc-600 hover:text-black hover:bg-zinc-100 dark:text-zinc-400 dark:hover:text-zinc-200 dark:hover:bg-zinc-800 outline-none data-[focus-visible=true]:outline-none"
-              >
-                <FiMinimize2 size={18} />
-              </Button>
-              <Button
-                isIconOnly
-                variant="light"
-                size="sm"
-                radius="full"
-                aria-label="Close"
-                isDisabled={navLocked && !isOnboardingMode}
-                onPress={() => {
-                  if (navLocked && !isOnboardingMode) return;
-                  Window.Close();
-                  if (document.activeElement instanceof HTMLElement) {
-                    document.activeElement.blur();
-                  }
-                }}
-                className="text-zinc-600 hover:text-red-600 hover:bg-red-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-red-900/20 outline-none data-[focus-visible=true]:outline-none"
-              >
-                <IoCloseOutline size={20} />
-              </Button>
-            </div>
+            <WindowControls
+              navLocked={navLocked}
+              isOnboardingMode={isOnboardingMode}
+            />
           </div>
         </div>
       </motion.div>

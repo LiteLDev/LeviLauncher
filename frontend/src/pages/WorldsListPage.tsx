@@ -344,7 +344,7 @@ export default function WorldsListPage() {
     setDeletingOne(true);
     try {
       await DeleteWorld(currentVersionName || "", activeWorld.Path);
-      toast.success(t("common.success", { defaultValue: "操作成功" }));
+      toast.success(t("common.success"));
       refreshAll();
       delOnOpenChange(false);
     } catch (e) {
@@ -372,7 +372,6 @@ export default function WorldsListPage() {
       toast.success(
         t("contentpage.deleted_count", {
           count: successCount,
-          defaultValue: `已删除 ${successCount} 个存档`,
         }),
       );
       setSelected({});
@@ -394,20 +393,12 @@ export default function WorldsListPage() {
       }
 
       if (dest) {
-        toast.success(
-          t("contentpage.backup_success", { defaultValue: "备份成功" }),
-        );
+        toast.success(t("contentpage.backup_success"));
       } else {
-        toast.error(
-          t("contentpage.backup_failed", { defaultValue: "备份失败" }),
-        );
+        toast.error(t("contentpage.backup_failed"));
       }
     } catch (e) {
-      toast.error(
-        t("contentpage.backup_failed", { defaultValue: "备份失败" }) +
-          ": " +
-          String(e),
-      );
+      toast.error(t("contentpage.backup_failed") + ": " + String(e));
     } finally {
       setBackingUp("");
     }
@@ -475,7 +466,7 @@ export default function WorldsListPage() {
           {/* Header */}
           <div className="shrink-0 p-4 sm:p-6 pb-2 flex flex-col gap-4 border-b border-default-200 dark:border-white/10">
             <PageHeader
-              title={t("contentpage.worlds_list", { defaultValue: "存档列表" })}
+              title={t("contentpage.worlds_list")}
               startContent={
                 <Button
                   isIconOnly
@@ -504,16 +495,12 @@ export default function WorldsListPage() {
                               selectedPlayer,
                               playerGamertagMap,
                             )
-                          : t("contentpage.select_player", {
-                              defaultValue: "选择玩家",
-                            })}
+                          : t("contentpage.select_player")}
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
                       aria-label={
-                        t("contentpage.players_aria", {
-                          defaultValue: "Players",
-                        }) as unknown as string
+                        t("contentpage.players_aria") as unknown as string
                       }
                       selectionMode="single"
                       selectedKeys={
@@ -540,9 +527,7 @@ export default function WorldsListPage() {
                         ))
                       ) : (
                         <DropdownItem key="none" isDisabled>
-                          {t("contentpage.no_players", {
-                            defaultValue: "暂无玩家",
-                          })}
+                          {t("contentpage.no_players")}
                         </DropdownItem>
                       )}
                     </DropdownMenu>
@@ -557,15 +542,9 @@ export default function WorldsListPage() {
                     isDisabled={!currentWorldsPath}
                     className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
                   >
-                    {t("common.open", { defaultValue: "打开" })}
+                    {t("common.open")}
                   </Button>
-                  <Tooltip
-                    content={
-                      t("common.refresh", {
-                        defaultValue: "刷新",
-                      }) as unknown as string
-                    }
-                  >
+                  <Tooltip content={t("common.refresh") as unknown as string}>
                     <Button
                       isIconOnly
                       radius="full"
@@ -586,11 +565,7 @@ export default function WorldsListPage() {
             {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
               <Input
-                placeholder={
-                  t("common.search_placeholder", {
-                    defaultValue: "搜索...",
-                  }) as string
-                }
+                placeholder={t("common.search_placeholder") as string}
                 value={search}
                 onValueChange={setSearch}
                 startContent={<FaFilter className="text-default-400" />}
@@ -611,11 +586,7 @@ export default function WorldsListPage() {
               />
 
               <div className="flex items-center gap-3">
-                <Tooltip
-                  content={t("common.select_mode", {
-                    defaultValue: "选择模式",
-                  })}
-                >
+                <Tooltip content={t("common.select_mode")}>
                   <Button
                     isIconOnly
                     radius="full"
@@ -641,7 +612,7 @@ export default function WorldsListPage() {
                     classNames={{ wrapper: "after:bg-primary" }}
                   >
                     <span className="text-sm text-default-600">
-                      {t("common.select_all", { defaultValue: "全选" })}
+                      {t("common.select_all")}
                     </span>
                   </Checkbox>
                 )}

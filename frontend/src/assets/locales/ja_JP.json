@@ -6,7 +6,11 @@
   "nav": {
     "versions": "バージョン",
     "more": "その他",
-    "about": "情報"
+    "about": "情報",
+    "back": "戻る"
+  },
+  "theme": {
+    "toggle": "テーマの切り替え"
   },
   "launcherpage": {
     "launch_button": "起動",
@@ -118,7 +122,20 @@
       "file_manager_pick": "ファイルマネージャーは複数選択に対応しており、Modのインポートパスとして返されます。",
       "settings_base_root": "設定でコンテンツの基本パスを変更できます。デフォルトは %APPDATA%\\<現在の実行ファイル名> です。",
       "directory_write_check": "書き込み可能なディレクトリにのみ保存してください。書き込み不可のディレクトリは無効化されています。"
-    }
+    },
+    "adminconfirm": {
+      "title": "権限が必要です",
+      "content": "この操作には管理者権限が必要です。",
+      "confirm_button": "許可",
+      "cancel_button": "キャンセル"
+    },
+    "admindeny": {
+      "title": "権限が拒否されました",
+      "content": "権限リクエストを拒否しました。",
+      "confirm_button": "再試行",
+      "cancel_button": "キャンセル"
+    },
+    "edition": "Bedrock Edition"
   },
   "moddedcard": {
     "title": "Mod",
@@ -129,7 +146,6 @@
   },
   "download_manager": {
     "title": "ダウンロード管理",
-    "short_title": "タスク",
     "description": "現在のダウンロードタスクを表示および管理します",
     "no_downloads": "アクティブなダウンロードタスクはありません",
     "unknown_file": "不明なファイル",
@@ -182,8 +198,6 @@
       "status_downloaded": "ダウンロード済み",
       "status_not_downloaded": "未ダウンロード",
       "loader": "ローダー",
-      "ll_supported": "対応",
-      "ll_unsupported": "非対応",
       "input": {
         "placeholder": "バージョンで検索..."
       }
@@ -209,7 +223,6 @@
       "title": "ダウンロードミラーの選択",
       "target": "ターゲット",
       "testing": "テスト中…",
-      "latency": "レイテンシ",
       "no_recommended": "推奨ミラーはありません",
       "download_started": "ダウンロードを開始しました...",
       "unselected": "未選択",
@@ -225,11 +238,9 @@
       "install_selected": "選択項目をインストール"
     },
     "progress": {
-      "title": "ダウンロード状況",
       "unknown_error": "不明なエラー"
     },
     "download": {
-      "success_title": "ダウンロード完了",
       "success_body": "ファイルをダウンロードしました: "
     },
     "delete": {
@@ -237,7 +248,6 @@
       "body": "次のインストーラーを削除します: ",
       "warning": "この操作は取り消せません。",
       "confirm": "削除",
-      "success_title": "削除完了",
       "success_body": "インストーラーを削除しました: "
     },
     "install": {
@@ -253,7 +263,8 @@
       "custom_installer": {
         "label": "ローカルのインストーラーを選択 (.msixvc)",
         "hint": "デフォルトでは installers ディレクトリ内のファイルを使用します"
-      }
+      },
+      "title": "インストール"
     },
     "customappx": {
       "button": "カスタム",
@@ -274,11 +285,16 @@
     }
   },
   "settings": {
+    "layout": {
+      "title": "サイドバーレイアウト",
+      "desc": "トップナビゲーションバーの代わりに垂直サイドバーを使用する",
+      "title_navbar": "トップナビゲーションバーを使用",
+      "desc_navbar": "有効にすると、デフォルトの垂直サイドバーの代わりにトップナビゲーションバーを使用します"
+    },
     "unsaved": {
       "title": "保存されていない変更",
       "body": "コンテンツパスが変更されていますが、保存されていません。保存して移動しますか？",
       "cancel": "キャンセル",
-      "cancelled": "キャンセル済み",
       "save": "保存して移動"
     },
     "lang": {
@@ -323,20 +339,7 @@
       "install_button": "インストール",
       "installing": "LIPをインストール中...",
       "update_button": "{{version}} に更新",
-      "installed_label": "インストール済み",
-      "status": {
-        "checking_update": "更新を確認中...",
-        "downloading": "ダウンロード中...",
-        "extracting": "展開中...",
-        "done": "インストール完了"
-      },
-      "error": {
-        "fetch_release_failed": "リリース情報の取得に失敗しました。",
-        "create_temp": "一時ディレクトリの作成に失敗しました。",
-        "download_failed": "ダウンロードに失敗しました。",
-        "create_target_dir": "ターゲットディレクトリの作成に失敗しました。",
-        "unzip_failed": "解凍に失敗しました。"
-      }
+      "installed_label": "インストール済み"
     },
     "header": {
       "title": "設定",
@@ -378,9 +381,6 @@
       "scan": "プロセスをスキャン",
       "kill_all": "すべてのプロセスを終了",
       "kill": "終了",
-      "pid": "PID: {{pid}}",
-      "path": "パス: {{path}}",
-      "launcher_version": "ランチャーバージョン: {{name}}",
       "no_process": "実行中の Minecraft プロセスが見つかりません"
     }
   },
@@ -418,6 +418,7 @@
     "star_fork": "Star / Fork",
     "rhymc_name": "RhyMC"
   },
+  "retry": "再試行",
   "common": {
     "completed": "完了",
     "downloading": "ダウンロード中",
@@ -462,7 +463,12 @@
     "no_results": "結果が見つかりません",
     "hide": "非表示",
     "edit": "編集",
-    "backup": "バックアップ"
+    "backup": "バックアップ",
+    "date": "日付",
+    "error_load": "読み込みに失敗しました",
+    "size": "サイズ",
+    "unknown": "不明",
+    "version": "バージョン"
   },
   "useravatar": {
     "no_login_retry": "Xbox ログインが検出されませんでした（クリックして再試行）",
@@ -493,6 +499,7 @@
     "select_player": "プレイヤーを選択",
     "no_players": "プレイヤーがいません",
     "backup_success": "バックアップ成功",
+    "backup_failed": "バックアップに失敗しました",
     "resource_packs": "リソースパック",
     "no_resource_packs": "リソースパックがありません",
     "behavior_packs": "ビヘイビアーパック",
@@ -523,7 +530,9 @@
     "delete_selected_confirm": "選択した {{count}} 個の項目を削除してもよろしいですか？",
     "deleted_name": "{{name}} を削除しました",
     "deleted_count": "{{count}} 個の項目を削除しました",
-    "delete_world_confirm": "本当にワールド {{name}} を削除しますか？"
+    "delete_world_confirm": "本当にワールド {{name}} を削除しますか？",
+    "basic_info": "基本情報",
+    "level_name": "ワールド名"
   },
   "versions": {
     "info": {
@@ -566,6 +575,20 @@
     },
     "unsaved": {
       "body": "バージョン設定に未保存の変更があります。保存してから移動しますか？"
+    },
+    "sort": {
+      "label": "並び替え",
+      "name": "名前 (A-Z)",
+      "name_za": "名前 (Z-A)",
+      "order_asc": "昇順",
+      "order_desc": "降順",
+      "version": "バージョン (新しい順)",
+      "version_old_new": "バージョン (古い順)"
+    },
+    "tab": {
+      "all": "すべて",
+      "preview": "プレビュー",
+      "release": "リリース"
     }
   },
   "errors": {
@@ -613,22 +636,9 @@
     "ERR_DEV_MODE_REQUIRED": "開発者モードが有効になっておらず、自動有効化に失敗しました。手動で開発者モードを有効にして再試行してください。"
   },
   "filemanager": {
-    "search_placeholder": "検索...",
     "sort": {
-      "name": "名前",
-      "kind": "種類"
-    },
-    "drives_title": "ドライブ",
-    "quick_access": "クイックアクセス",
-    "pinned": "ピン留め済み",
-    "choose_drive": "ドライブを選択",
-    "computer": "コンピューター",
-    "up": "上へ",
-    "pin_current": "現在のパスをピン留め",
-    "refreshing": "更新中…",
-    "choose_this_dir": "このディレクトリを選択",
-    "dir_not_writable": "ディレクトリに書き込みできません。別の場所を選択してください",
-    "new_folder": "新しいフォルダ"
+      "name": "名前"
+    }
   },
   "file": {
     "types": {
@@ -795,7 +805,11 @@
     }
   },
   "lip": {
-    "maintenance": "メンテナンス中につき、現在利用できません"
+    "maintenance": "メンテナンス中につき、現在利用できません",
+    "search_placeholder": "パッケージを検索...",
+    "sort_by": "並び替え",
+    "select_sort": "並び替えを選択",
+    "no_description": "説明なし"
   },
   "server": {
     "offline": "オフライン / 接続不可",

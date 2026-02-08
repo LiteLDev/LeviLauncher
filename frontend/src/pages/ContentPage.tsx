@@ -26,7 +26,6 @@ import { useLocation, useNavigate } from "react-router-dom";
 import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
-  FaArrowLeft,
   FaCogs,
   FaFolderOpen,
   FaGlobe,
@@ -218,11 +217,7 @@ export default function ContentPage() {
         setBpCount(await countDirectories(safe.behaviorPacks));
       }
     } catch (e) {
-      setError(
-        t("contentpage.error_resolve_paths", {
-          defaultValue: "无法解析内容路径。",
-        }) as string,
-      );
+      setError(t("contentpage.error_resolve_paths") as string);
     } finally {
       setLoading(false);
     }
@@ -324,50 +319,27 @@ export default function ContentPage() {
     const code = String(err || "").trim();
     switch (code) {
       case "ERR_NO_PLAYER":
-        return t("contentpage.no_player_selected", {
-          defaultValue: "未选择玩家",
-        }) as string;
+        return t("contentpage.no_player_selected") as string;
       case "ERR_INVALID_NAME":
-        return t("mods.err_invalid_name", {
-          defaultValue: "无效的版本名或模块名",
-        }) as string;
+        return t("mods.err_invalid_name") as string;
       case "ERR_ACCESS_VERSIONS_DIR":
-        return t("mods.err_access_versions_dir", {
-          defaultValue: "无法访问版本目录",
-        }) as string;
+        return t("mods.err_access_versions_dir") as string;
       case "ERR_CREATE_TARGET_DIR":
-        return t("mods.err_create_target_dir", {
-          defaultValue: "创建目标目录失败",
-        }) as string;
+        return t("mods.err_create_target_dir") as string;
       case "ERR_OPEN_ZIP":
-        return t("mods.err_open_zip", {
-          defaultValue: "无法打开ZIP文件",
-        }) as string;
+        return t("mods.err_open_zip") as string;
       case "ERR_MANIFEST_NOT_FOUND":
-        return t("mods.err_manifest_not_found", {
-          defaultValue: "未找到 manifest.json",
-        }) as string;
+        return t("mods.err_manifest_not_found") as string;
       case "ERR_INVALID_PACKAGE":
-        return t("mods.err_invalid_package", {
-          defaultValue: "无效的包结构",
-        }) as string;
+        return t("mods.err_invalid_package") as string;
       case "ERR_DUPLICATE_FOLDER":
-        return t("mods.err_duplicate_folder", {
-          defaultValue: "同名模块文件夹已存在",
-        }) as string;
+        return t("mods.err_duplicate_folder") as string;
       case "ERR_READ_ZIP_ENTRY":
-        return t("mods.err_read_zip_entry", {
-          defaultValue: "读取压缩包条目失败",
-        }) as string;
+        return t("mods.err_read_zip_entry") as string;
       case "ERR_WRITE_FILE":
-        return t("mods.err_write_file", {
-          defaultValue: "写入文件失败",
-        }) as string;
+        return t("mods.err_write_file") as string;
       default:
-        return (
-          code ||
-          (t("mods.err_unknown", { defaultValue: "未知错误" }) as string)
-        );
+        return code || (t("mods.err_unknown") as string);
     }
   };
 
@@ -376,11 +348,7 @@ export default function ContentPage() {
       if (!paths?.length) return;
       const name = currentVersionName || readCurrentVersionName();
       if (!name) {
-        setErrorMsg(
-          t("launcherpage.currentVersion_none", {
-            defaultValue: "未选择版本",
-          }) as string,
-        );
+        setErrorMsg(t("launcherpage.currentVersion_none") as string);
         return;
       }
       const hasWorld = paths.some((p) => p?.toLowerCase().endsWith(".mcworld"));
@@ -618,11 +586,7 @@ export default function ContentPage() {
   const handleImportFiles = async (files: File[]) => {
     if (!files.length) return;
     if (!currentVersionName) {
-      setErrorMsg(
-        t("launcherpage.currentVersion_none", {
-          defaultValue: "未选择版本",
-        }) as string,
-      );
+      setErrorMsg(t("launcherpage.currentVersion_none") as string);
       return;
     }
 
@@ -894,9 +858,7 @@ export default function ContentPage() {
             <div className="bg-white/90 dark:bg-zinc-900/90 p-8 rounded-4xl shadow-2xl flex flex-col items-center gap-4 border border-white/20">
               <FiUploadCloud className="w-16 h-16 text-primary-500" />
               <div className="text-xl font-bold bg-linear-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">
-                {t("contentpage.drop_hint", {
-                  defaultValue: "拖入 .mcworld/.mcpack/.mcaddon 以导入",
-                })}
+                {t("contentpage.drop_hint")}
               </div>
             </div>
           </motion.div>
@@ -912,39 +874,18 @@ export default function ContentPage() {
                 <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
                   <div>
                     <div className="flex items-center gap-3">
-                      <Button
-                        isIconOnly
-                        radius="full"
-                        variant="light"
-                        onPress={() => navigate("/")}
-                      >
-                        <FaArrowLeft size={20} />
-                      </Button>
                       <PageHeader
-                        title={t("launcherpage.content_manage", {
-                          defaultValue: "内容管理",
-                        })}
+                        title={t("launcherpage.content_manage")}
                         titleClassName="pb-1"
                       />
                     </div>
                     <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
-                      <span>
-                        {t("contentpage.current_version", {
-                          defaultValue: "当前版本",
-                        })}
-                        :
-                      </span>
+                      <span>{t("contentpage.current_version")}:</span>
                       <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
-                        {currentVersionName ||
-                          t("contentpage.none", { defaultValue: "无" })}
+                        {currentVersionName || t("contentpage.none")}
                       </span>
                       <span className="text-default-300">|</span>
-                      <span>
-                        {t("contentpage.isolation", {
-                          defaultValue: "版本隔离",
-                        })}
-                        :
-                      </span>
+                      <span>{t("contentpage.isolation")}:</span>
                       <span
                         className={`font-medium px-2 py-0.5 rounded-md ${
                           roots.isIsolation
@@ -952,17 +893,10 @@ export default function ContentPage() {
                             : "bg-default-100 text-default-700"
                         }`}
                       >
-                        {roots.isIsolation
-                          ? t("common.yes", { defaultValue: "是" })
-                          : t("common.no", { defaultValue: "否" })}
+                        {roots.isIsolation ? t("common.yes") : t("common.no")}
                       </span>
                       <span className="text-default-300">|</span>
-                      <span>
-                        {t("contentpage.select_player", {
-                          defaultValue: "玩家",
-                        })}
-                        :
-                      </span>
+                      <span>{t("contentpage.select_player")}:</span>
                       <Dropdown>
                         <DropdownTrigger>
                           <Button
@@ -975,9 +909,7 @@ export default function ContentPage() {
                                   selectedPlayer,
                                   playerGamertagMap,
                                 )
-                              : t("contentpage.no_players", {
-                                  defaultValue: "暂无",
-                                })}
+                              : t("contentpage.no_players")}
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu
@@ -1006,20 +938,14 @@ export default function ContentPage() {
                             ))
                           ) : (
                             <DropdownItem key="none" isDisabled>
-                              {t("contentpage.no_players", {
-                                defaultValue: "暂无玩家",
-                              })}
+                              {t("contentpage.no_players")}
                             </DropdownItem>
                           )}
                         </DropdownMenu>
                       </Dropdown>
                       {!selectedPlayer && (
                         <span className="text-danger-500 text-xs">
-                          (
-                          {t("contentpage.require_player_for_world_import", {
-                            defaultValue: "需选择玩家",
-                          })}
-                          )
+                          ({t("contentpage.require_player_for_world_import")})
                         </span>
                       )}
                     </div>
@@ -1027,9 +953,7 @@ export default function ContentPage() {
                   <div className="flex items-center gap-2">
                     <Tooltip
                       content={
-                        t("contentpage.open_users_dir", {
-                          defaultValue: "打开存储目录",
-                        }) as unknown as string
+                        t("contentpage.open_users_dir") as unknown as string
                       }
                     >
                       <Button
@@ -1044,16 +968,10 @@ export default function ContentPage() {
                         isDisabled={!hasBackend || !roots.usersRoot}
                         className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
                       >
-                        {t("common.open", { defaultValue: "打开" })}
+                        {t("common.open")}
                       </Button>
                     </Tooltip>
-                    <Tooltip
-                      content={
-                        t("common.refresh", {
-                          defaultValue: "刷新",
-                        }) as unknown as string
-                      }
-                    >
+                    <Tooltip content={t("common.refresh") as unknown as string}>
                       <Button
                         isIconOnly
                         radius="full"
@@ -1094,7 +1012,7 @@ export default function ContentPage() {
                       <FaGlobe className="w-6 h-6" />
                     </div>
                     <span className="text-lg font-medium text-default-700">
-                      {t("contentpage.worlds", { defaultValue: "世界" })}
+                      {t("contentpage.worlds")}
                     </span>
                   </div>
                   <AnimatePresence mode="wait">
@@ -1137,9 +1055,7 @@ export default function ContentPage() {
                       <FaImage className="w-6 h-6" />
                     </div>
                     <span className="text-lg font-medium text-default-700">
-                      {t("contentpage.resource_packs", {
-                        defaultValue: "资源包",
-                      })}
+                      {t("contentpage.resource_packs")}
                     </span>
                   </div>
                   <AnimatePresence mode="wait">
@@ -1182,9 +1098,7 @@ export default function ContentPage() {
                       <FaCogs className="w-6 h-6" />
                     </div>
                     <span className="text-lg font-medium text-default-700">
-                      {t("contentpage.behavior_packs", {
-                        defaultValue: "行为包",
-                      })}
+                      {t("contentpage.behavior_packs")}
                     </span>
                   </div>
                   <AnimatePresence mode="wait">
@@ -1231,7 +1145,7 @@ export default function ContentPage() {
                       <FaUserTag className="w-6 h-6" />
                     </div>
                     <span className="text-lg font-medium text-default-700">
-                      {t("contentpage.skin_packs", { defaultValue: "皮肤包" })}
+                      {t("contentpage.skin_packs")}
                     </span>
                   </div>
                   <AnimatePresence mode="wait">
@@ -1278,7 +1192,7 @@ export default function ContentPage() {
                       <FaServer className="w-6 h-6" />
                     </div>
                     <span className="text-lg font-medium text-default-700">
-                      {t("contentpage.servers", { defaultValue: "服务器" })}
+                      {t("contentpage.servers")}
                     </span>
                   </div>
                   <AnimatePresence mode="wait">
@@ -1327,9 +1241,7 @@ export default function ContentPage() {
               onPress={async () => {
                 try {
                   const paths = await Dialogs.OpenFile({
-                    Title: t("contentpage.import_button", {
-                      defaultValue: "导入 .mcworld/.mcpack/.mcaddon",
-                    }),
+                    Title: t("contentpage.import_button"),
                     Filters: [
                       {
                         DisplayName: "Content Files",
@@ -1347,9 +1259,7 @@ export default function ContentPage() {
               }}
               isDisabled={importing}
             >
-              {t("contentpage.import_button", {
-                defaultValue: "导入 .mcworld/.mcpack/.mcaddon",
-              })}
+              {t("contentpage.import_button")}
             </Button>
           </div>
         </div>
@@ -1366,9 +1276,7 @@ export default function ContentPage() {
             <>
               <BaseModalHeader className="flex-row items-center gap-2 text-primary-600">
                 <FiUploadCloud className="w-5 h-5" />
-                <span>
-                  {t("mods.importing_title", { defaultValue: "正在导入..." })}
-                </span>
+                <span>{t("mods.importing_title")}</span>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="py-1">
@@ -1379,9 +1287,7 @@ export default function ContentPage() {
                   />
                 </div>
                 <div className="text-default-600 text-sm">
-                  {t("mods.importing_body", {
-                    defaultValue: "请稍候，正在处理所选文件。",
-                  })}
+                  {t("mods.importing_body")}
                 </div>
                 {currentFile ? (
                   <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
@@ -1414,20 +1320,15 @@ export default function ContentPage() {
                 )}
                 <span>
                   {resultFailed.length
-                    ? t("mods.summary_title_partial", {
-                        defaultValue: "导入完成（部分失败）",
-                      })
-                    : t("mods.summary_title_done", {
-                        defaultValue: "导入完成",
-                      })}
+                    ? t("mods.summary_title_partial")
+                    : t("mods.summary_title_done")}
                 </span>
               </BaseModalHeader>
               <BaseModalBody>
                 {resultSuccess.length ? (
                   <div className="mb-2">
                     <div className="text-sm font-semibold text-success">
-                      {t("mods.summary_success", { defaultValue: "成功" })} (
-                      {resultSuccess.length})
+                      {t("mods.summary_success")} ({resultSuccess.length})
                     </div>
                     <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm wrap-break-word whitespace-pre-wrap">
                       {resultSuccess.join("\n")}
@@ -1437,8 +1338,7 @@ export default function ContentPage() {
                 {resultFailed.length ? (
                   <div>
                     <div className="text-sm font-semibold text-danger">
-                      {t("mods.summary_failed", { defaultValue: "失败" })} (
-                      {resultFailed.length})
+                      {t("mods.summary_failed")} ({resultFailed.length})
                     </div>
                     <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm wrap-break-word whitespace-pre-wrap">
                       {resultFailed
@@ -1460,7 +1360,7 @@ export default function ContentPage() {
                     onClose();
                   }}
                 >
-                  {t("common.confirm", { defaultValue: "确定" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>
@@ -1477,15 +1377,11 @@ export default function ContentPage() {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-primary-600">
-                {t("mods.overwrite_modal_title", {
-                  defaultValue: "检测到重复",
-                })}
+                {t("mods.overwrite_modal_title")}
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-sm text-default-700">
-                  {t("mods.overwrite_modal_body", {
-                    defaultValue: "同名模块文件夹已存在，是否覆盖（更新）？",
-                  })}
+                  {t("mods.overwrite_modal_body")}
                 </div>
                 {dupNameRef.current ? (
                   <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
@@ -1504,7 +1400,7 @@ export default function ContentPage() {
                     }
                   }}
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="primary"
@@ -1516,7 +1412,7 @@ export default function ContentPage() {
                     }
                   }}
                 >
-                  {t("common.confirm", { defaultValue: "确定" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>
@@ -1533,15 +1429,11 @@ export default function ContentPage() {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-primary-600">
-                {t("contentpage.select_player_title", {
-                  defaultValue: "选择玩家",
-                })}
+                {t("contentpage.select_player_title")}
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-sm text-default-700">
-                  {t("contentpage.select_player_for_import", {
-                    defaultValue: "请选择要导入到的玩家",
-                  })}
+                  {t("contentpage.select_player_for_import")}
                 </div>
                 <div className="mt-3 space-y-2">
                   {players.length ? (
@@ -1564,9 +1456,7 @@ export default function ContentPage() {
                     ))
                   ) : (
                     <div className="text-sm text-default-500">
-                      {t("contentpage.no_players", {
-                        defaultValue: "暂无玩家",
-                      })}
+                      {t("contentpage.no_players")}
                     </div>
                   )}
                 </div>
@@ -1583,7 +1473,7 @@ export default function ContentPage() {
                     }
                   }}
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
               </BaseModalFooter>
             </>

@@ -43,11 +43,8 @@ export default function AboutPage() {
         <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
           <CardBody className="p-8">
             <PageHeader
-              title={t("nav.about", { defaultValue: "About" })}
-              description={t("about.description", {
-                defaultValue:
-                  "LeviLauncher - A Modern Minecraft Bedrock Launcher",
-              })}
+              title={t("nav.about")}
+              description={t("about.description")}
             />
           </CardBody>
         </Card>
@@ -66,9 +63,7 @@ export default function AboutPage() {
               <SectionHeader
                 className="mb-4"
                 icon={<FaUsers size={20} />}
-                title={t("about.authors", {
-                  defaultValue: "Authors & Maintainers",
-                })}
+                title={t("about.authors")}
               />
 
               <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-default-50/50 dark:bg-white/5 border border-default-100 dark:border-white/5">
@@ -89,13 +84,11 @@ export default function AboutPage() {
                         color="primary"
                         classNames={{ base: "h-5" }}
                       >
-                        {t("about.author", { defaultValue: "Author" })}
+                        {t("about.author")}
                       </Chip>
                     </div>
                     <div className="text-small text-default-500">
-                      {t("about.ll_authors", {
-                        defaultValue: "LeviLauncher Author",
-                      })}
+                      {t("about.ll_authors")}
                     </div>
                   </div>
                 </div>
@@ -111,7 +104,7 @@ export default function AboutPage() {
                     Browser.OpenURL("https://afdian.com/a/DreamGuXiang")
                   }
                 >
-                  {t("about.afdian", { defaultValue: "Afdian" })}
+                  {t("about.afdian")}
                 </Button>
                 <Button
                   size="sm"
@@ -122,7 +115,7 @@ export default function AboutPage() {
                     Browser.OpenURL("https://www.patreon.com/c/DreamGuXiang")
                   }
                 >
-                  {t("about.patreon", { defaultValue: "Patreon" })}
+                  {t("about.patreon")}
                 </Button>
               </div>
             </CardBody>
@@ -142,23 +135,20 @@ export default function AboutPage() {
                 className="mb-4"
                 icon={<FaStar size={20} />}
                 iconWrapperClassName="bg-warning-500/10 text-warning-600 dark:text-warning-400"
-                title={t("about.thanks", { defaultValue: "Special Thanks" })}
+                title={t("about.thanks")}
               />
               <p className="text-default-600 dark:text-zinc-400 leading-relaxed mb-4">
-                {t("about.thanks.desc", {
-                  defaultValue:
-                    "Special thanks to the individuals and projects that provided help and support for LeviLauncher.",
-                })}
+                {t("about.thanks.desc")}
               </p>
               <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-default-50/50 dark:bg-white/5 border border-default-100 dark:border-white/5">
                 <div className="flex items-center gap-3">
                   <img
                     src="https://www.rhymc.com/assets/img/logo.png"
-                    alt={t("about.rhymc_name", { defaultValue: "Rhymc" })}
+                    alt={t("about.rhymc_name")}
                     className="h-8 object-contain"
                   />
                   <span className="font-semibold text-default-800 dark:text-zinc-200">
-                    {t("about.rhymc_name", { defaultValue: "Rhymc" })}
+                    {t("about.rhymc_name")}
                   </span>
                 </div>
                 <Button
@@ -166,7 +156,7 @@ export default function AboutPage() {
                   variant="light"
                   onPress={() => Browser.OpenURL("https://www.rhymc.com/")}
                 >
-                  {t("about.website", { defaultValue: "Website" })}
+                  {t("about.website")}
                 </Button>
               </div>
             </CardBody>
@@ -187,15 +177,10 @@ export default function AboutPage() {
                 className="mb-4"
                 icon={<FaHeart size={20} />}
                 iconWrapperClassName="bg-danger-500/10 text-danger-600 dark:text-danger-400"
-                title={t("about.sponsors", {
-                  defaultValue: "Sponsors & Supporters",
-                })}
+                title={t("about.sponsors")}
               />
               <p className="text-default-600 dark:text-zinc-400 leading-relaxed">
-                {t("about.sponsors.desc", {
-                  defaultValue:
-                    "Thanks to all sponsors and supporters who helped the project develop!",
-                })}
+                {t("about.sponsors.desc")}
               </p>
             </CardBody>
           </Card>
@@ -217,9 +202,7 @@ export default function AboutPage() {
                     className="mb-4"
                     icon={<FaCode size={20} />}
                     iconWrapperClassName="bg-blue-500/10 text-blue-600 dark:text-blue-400"
-                    title={t("about.source", {
-                      defaultValue: "Source Code & Open Source",
-                    })}
+                    title={t("about.source")}
                   />
                   <div className="flex flex-wrap items-center gap-3 mb-4">
                     <Button
@@ -228,9 +211,7 @@ export default function AboutPage() {
                       startContent={<FaGithub className="text-lg" />}
                       onPress={() => Browser.OpenURL(repoUrl)}
                     >
-                      {t("about.github_repo", {
-                        defaultValue: "GitHub · LeviLauncher",
-                      })}
+                      {t("about.github_repo")}
                     </Button>
                     <Button
                       variant="flat"
@@ -238,16 +219,11 @@ export default function AboutPage() {
                       startContent={<FaGithub className="text-lg" />}
                       onPress={() => Browser.OpenURL(orgUrl)}
                     >
-                      {t("about.github_org", {
-                        defaultValue: "LiteLDev Organization",
-                      })}
+                      {t("about.github_org")}
                     </Button>
                   </div>
                   <p className="text-small text-default-500">
-                    {t("about.license.tip", {
-                      defaultValue:
-                        "For license and details, please refer to the LICENSE file in the repository.",
-                    })}
+                    {t("about.license.tip")}
                   </p>
                 </div>
 
@@ -256,15 +232,10 @@ export default function AboutPage() {
                     className="mb-4"
                     icon={<FaGithub size={20} />}
                     iconWrapperClassName="bg-default-500/10 text-default-600 dark:text-default-400"
-                    title={t("about.contribute", {
-                      defaultValue: "Contribute",
-                    })}
+                    title={t("about.contribute")}
                   />
                   <p className="text-default-600 dark:text-zinc-400 leading-relaxed mb-4">
-                    {t("about.contribute.desc", {
-                      defaultValue:
-                        "Welcome to contribute to LeviLauncher by submitting Issues or Pull Requests.",
-                    })}
+                    {t("about.contribute.desc")}
                   </p>
                   <div className="flex gap-2">
                     <Button
@@ -274,7 +245,7 @@ export default function AboutPage() {
                       startContent={<FaGithub />}
                       onPress={() => Browser.OpenURL(`${repoUrl}/issues`)}
                     >
-                      {t("about.issue", { defaultValue: "Issue" })}
+                      {t("about.issue")}
                     </Button>
                     <Button
                       size="sm"
@@ -283,7 +254,7 @@ export default function AboutPage() {
                       startContent={<FaStar />}
                       onPress={() => Browser.OpenURL(`${repoUrl}`)}
                     >
-                      {t("about.star_fork", { defaultValue: "Star / Fork" })}
+                      {t("about.star_fork")}
                     </Button>
                   </div>
                 </div>

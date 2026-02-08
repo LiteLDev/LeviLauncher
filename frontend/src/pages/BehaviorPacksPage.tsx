@@ -331,11 +331,7 @@ export default function BehaviorPacksPage() {
             .catch(() => {});
         }
       } catch (e) {
-        setError(
-          t("contentpage.error_resolve_paths", {
-            defaultValue: "无法解析内容路径。",
-          }) as string,
-        );
+        setError(t("contentpage.error_resolve_paths") as string);
       } finally {
         if (!silent) setLoading(false);
       }
@@ -403,7 +399,7 @@ export default function BehaviorPacksPage() {
     setDeletingOne(true);
     try {
       await DeletePack(currentVersionName, activePack.path);
-      toast.success(t("common.success", { defaultValue: "操作成功" }));
+      toast.success(t("common.success"));
       refreshAll(true);
       delOnOpenChange(false);
     } catch (e) {
@@ -430,7 +426,6 @@ export default function BehaviorPacksPage() {
     toast.success(
       t("contentpage.deleted_count", {
         count: successCount,
-        defaultValue: `已删除 ${successCount} 个项目`,
       }),
     );
     setSelected({});
@@ -464,9 +459,7 @@ export default function BehaviorPacksPage() {
         <CardBody className="p-0 flex flex-col h-full overflow-hidden">
           <div className="shrink-0 p-4 sm:p-6 pb-2 flex flex-col gap-4 border-b border-default-200 dark:border-white/10">
             <PageHeader
-              title={t("contentpage.behavior_packs", {
-                defaultValue: "行为包",
-              })}
+              title={t("contentpage.behavior_packs")}
               startContent={
                 <Button
                   isIconOnly
@@ -487,15 +480,9 @@ export default function BehaviorPacksPage() {
                     isDisabled={!roots.behaviorPacks}
                     className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
                   >
-                    {t("common.open", { defaultValue: "打开" })}
+                    {t("common.open")}
                   </Button>
-                  <Tooltip
-                    content={
-                      t("common.refresh", {
-                        defaultValue: "刷新",
-                      }) as unknown as string
-                    }
-                  >
+                  <Tooltip content={t("common.refresh") as unknown as string}>
                     <Button
                       isIconOnly
                       radius="full"
@@ -516,9 +503,7 @@ export default function BehaviorPacksPage() {
             {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
               <Input
-                placeholder={t("common.search_placeholder", {
-                  defaultValue: "搜索...",
-                })}
+                placeholder={t("common.search_placeholder")}
                 value={query}
                 onValueChange={setQuery}
                 startContent={<FaFilter className="text-default-400" />}
@@ -539,11 +524,7 @@ export default function BehaviorPacksPage() {
               />
 
               <div className="flex items-center gap-3">
-                <Tooltip
-                  content={t("common.select_mode", {
-                    defaultValue: "选择模式",
-                  })}
-                >
+                <Tooltip content={t("common.select_mode")}>
                   <Button
                     isIconOnly
                     radius="full"
@@ -569,7 +550,7 @@ export default function BehaviorPacksPage() {
                     classNames={{ wrapper: "after:bg-primary" }}
                   >
                     <span className="text-sm text-default-600">
-                      {t("common.select_all", { defaultValue: "全选" })}
+                      {t("common.select_all")}
                     </span>
                   </Checkbox>
                 )}
@@ -585,20 +566,12 @@ export default function BehaviorPacksPage() {
                       className="min-w-[120px]"
                     >
                       {sortKey === "name"
-                        ? (t("filemanager.sort.name", {
-                            defaultValue: "名称",
-                          }) as string)
-                        : (t("contentpage.sort_time", {
-                            defaultValue: "时间",
-                          }) as string)}
+                        ? (t("filemanager.sort.name") as string)
+                        : (t("contentpage.sort_time") as string)}
                       {" / "}
                       {sortAsc
-                        ? t("contentpage.sort_asc", {
-                            defaultValue: "从上到下",
-                          })
-                        : t("contentpage.sort_desc", {
-                            defaultValue: "从下到上",
-                          })}
+                        ? t("contentpage.sort_asc")
+                        : t("contentpage.sort_desc")}
                     </Button>
                   </DropdownTrigger>
                   <DropdownMenu
@@ -617,29 +590,25 @@ export default function BehaviorPacksPage() {
                       key="name-asc"
                       startContent={<FaSortAmountDown />}
                     >
-                      {t("filemanager.sort.name", { defaultValue: "名称" })}{" "}
-                      (A-Z)
+                      {t("filemanager.sort.name")} (A-Z)
                     </DropdownItem>
                     <DropdownItem
                       key="name-desc"
                       startContent={<FaSortAmountUp />}
                     >
-                      {t("filemanager.sort.name", { defaultValue: "名称" })}{" "}
-                      (Z-A)
+                      {t("filemanager.sort.name")} (Z-A)
                     </DropdownItem>
                     <DropdownItem
                       key="time-asc"
                       startContent={<FaSortAmountDown />}
                     >
-                      {t("contentpage.sort_time", { defaultValue: "时间" })}{" "}
-                      (Old-New)
+                      {t("contentpage.sort_time")} (Old-New)
                     </DropdownItem>
                     <DropdownItem
                       key="time-desc"
                       startContent={<FaSortAmountUp />}
                     >
-                      {t("contentpage.sort_time", { defaultValue: "时间" })}{" "}
-                      (New-Old)
+                      {t("contentpage.sort_time")} (New-Old)
                     </DropdownItem>
                   </DropdownMenu>
                 </Dropdown>
@@ -660,7 +629,6 @@ export default function BehaviorPacksPage() {
                       >
                         {t("common.delete_selected", {
                           count: selectedCount,
-                          defaultValue: "删除选中",
                         })}
                       </Button>
                     </motion.div>
@@ -669,18 +637,12 @@ export default function BehaviorPacksPage() {
               </div>
             </div>
             <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
-              <span>
-                {t("contentpage.current_version", { defaultValue: "当前版本" })}
-                :
-              </span>
+              <span>{t("contentpage.current_version")}:</span>
               <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
-                {currentVersionName ||
-                  t("contentpage.none", { defaultValue: "无" })}
+                {currentVersionName || t("contentpage.none")}
               </span>
               <span className="text-default-300">|</span>
-              <span>
-                {t("contentpage.isolation", { defaultValue: "版本隔离" })}:
-              </span>
+              <span>{t("contentpage.isolation")}:</span>
               <span
                 className={`font-medium px-2 py-0.5 rounded-md ${
                   roots.isIsolation
@@ -688,9 +650,7 @@ export default function BehaviorPacksPage() {
                     : "bg-default-100 text-default-700"
                 }`}
               >
-                {roots.isIsolation
-                  ? t("common.yes", { defaultValue: "是" })
-                  : t("common.no", { defaultValue: "否" })}
+                {roots.isIsolation ? t("common.yes") : t("common.no")}
               </span>
             </div>
           </div>
@@ -699,9 +659,7 @@ export default function BehaviorPacksPage() {
             {loading ? (
               <div className="flex flex-col items-center justify-center py-20 gap-4">
                 <Spinner size="lg" />
-                <span className="text-default-500">
-                  {t("common.loading", { defaultValue: "加载中" })}
-                </span>
+                <span className="text-default-500">{t("common.loading")}</span>
               </div>
             ) : (
               <div className="flex flex-col gap-4">
@@ -772,18 +730,14 @@ export default function BehaviorPacksPage() {
                             <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
                               <div
                                 className="flex items-center gap-1"
-                                title={t("common.size", {
-                                  defaultValue: "大小",
-                                })}
+                                title={t("common.size")}
                               >
                                 <FaHdd />
                                 <span>{formatBytes(p.size)}</span>
                               </div>
                               <div
                                 className="flex items-center gap-1"
-                                title={t("common.date", {
-                                  defaultValue: "日期",
-                                })}
+                                title={t("common.date")}
                               >
                                 <FaClock />
                                 <span>
@@ -793,9 +747,7 @@ export default function BehaviorPacksPage() {
                               {p.version && (
                                 <div
                                   className="flex items-center gap-1"
-                                  title={t("common.version", {
-                                    defaultValue: "版本",
-                                  })}
+                                  title={t("common.version")}
                                 >
                                   <FaTag />
                                   <span>v{p.version}</span>
@@ -811,7 +763,7 @@ export default function BehaviorPacksPage() {
                                 onPress={() => OpenPathDir(p.path)}
                                 className="h-8 min-w-0 px-3 bg-default-100 text-default-600 dark:bg-zinc-700 dark:text-zinc-200"
                               >
-                                {t("common.open", { defaultValue: "打开" })}
+                                {t("common.open")}
                               </Button>
                               <Button
                                 size="sm"
@@ -824,7 +776,7 @@ export default function BehaviorPacksPage() {
                                 }}
                                 className="h-8 min-w-0 px-3"
                               >
-                                {t("common.delete", { defaultValue: "删除" })}
+                                {t("common.delete")}
                               </Button>
                             </div>
                           </div>
@@ -837,10 +789,8 @@ export default function BehaviorPacksPage() {
                     <FaBox className="text-6xl mb-4 opacity-20" />
                     <p>
                       {query
-                        ? t("common.no_results", { defaultValue: "无搜索结果" })
-                        : t("contentpage.no_behavior_packs", {
-                            defaultValue: "暂无行为包",
-                          })}
+                        ? t("common.no_results")
+                        : t("contentpage.no_behavior_packs")}
                     </p>
                   </div>
                 )}
@@ -868,27 +818,26 @@ export default function BehaviorPacksPage() {
         onClose={() => delOnOpenChange(false)}
         isDismissable={!deletingOne}
         hideCloseButton={deletingOne}
-        title={t("common.confirm_delete", { defaultValue: "确认删除" })}
+        title={t("common.confirm_delete")}
       >
         <ModalContent>
           {(onClose) => (
             <>
               <BaseModalHeader className="text-danger">
-                {t("common.confirm_delete", { defaultValue: "确认删除" })}
+                {t("common.confirm_delete")}
               </BaseModalHeader>
               <BaseModalBody>
                 {deletingOne ? (
                   <div className="flex flex-col items-center justify-center py-6 gap-3">
                     <Spinner size="lg" color="danger" />
                     <p className="text-default-500 font-medium">
-                      {t("common.deleting", { defaultValue: "正在删除..." })}
+                      {t("common.deleting")}
                     </p>
                   </div>
                 ) : (
                   <p>
                     {t("contentpage.delete_pack_confirm", {
                       name: activePack?.name || "",
-                      defaultValue: `确定要删除行为包 "${activePack?.name}" 吗？`,
                     })}
                   </p>
                 )}
@@ -899,14 +848,14 @@ export default function BehaviorPacksPage() {
                   onPress={onClose}
                   isDisabled={deletingOne}
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="danger"
                   onPress={handleDelete}
                   isDisabled={deletingOne}
                 >
-                  {t("common.confirm", { defaultValue: "确认" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>
@@ -920,27 +869,26 @@ export default function BehaviorPacksPage() {
         onClose={() => delManyCfmOnOpenChange(false)}
         isDismissable={!deletingMany}
         hideCloseButton={deletingMany}
-        title={t("common.confirm_delete", { defaultValue: "确认删除" })}
+        title={t("common.confirm_delete")}
       >
         <ModalContent>
           {(onClose) => (
             <>
               <BaseModalHeader className="text-danger">
-                {t("common.confirm_delete", { defaultValue: "确认删除" })}
+                {t("common.confirm_delete")}
               </BaseModalHeader>
               <BaseModalBody>
                 {deletingMany ? (
                   <div className="flex flex-col items-center justify-center py-6 gap-3">
                     <Spinner size="lg" color="danger" />
                     <p className="text-default-500 font-medium">
-                      {t("common.deleting", { defaultValue: "正在删除..." })}
+                      {t("common.deleting")}
                     </p>
                   </div>
                 ) : (
                   <p>
                     {t("contentpage.delete_selected_confirm", {
                       count: selectedCount,
-                      defaultValue: `确定要删除选中的 ${selectedCount} 个项目吗？`,
                     })}
                   </p>
                 )}
@@ -951,14 +899,14 @@ export default function BehaviorPacksPage() {
                   onPress={onClose}
                   isDisabled={deletingMany}
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="danger"
                   onPress={handleBatchDelete}
                   isDisabled={deletingMany}
                 >
-                  {t("common.confirm", { defaultValue: "确认" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>

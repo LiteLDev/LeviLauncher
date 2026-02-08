@@ -439,9 +439,7 @@ export default function ResourcePacksPage() {
         <CardBody className="p-0 flex flex-col h-full overflow-hidden">
           <div className="shrink-0 p-4 sm:p-6 pb-2 flex flex-col gap-4 border-b border-default-200 dark:border-white/10">
             <PageHeader
-              title={t("contentpage.resource_packs", {
-                defaultValue: "资源包",
-              })}
+              title={t("contentpage.resource_packs")}
               startContent={
                 <Button
                   isIconOnly

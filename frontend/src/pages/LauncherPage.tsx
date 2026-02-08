@@ -54,10 +54,7 @@ import {
   BaseModalBody,
   BaseModalFooter,
 } from "@/components/BaseModal";
-import {
-  getPlayerGamertagMap,
-  listPlayers,
-} from "@/utils/content";
+import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 
 let __didCheckGameInput = false;
 let __didCheckGamingServices = false;
@@ -92,54 +89,30 @@ export const LauncherPage = (args: any) => {
   const [logoByName, setLogoByName] = React.useState<Map<string, string>>(
     new Map(),
   );
-  const [isLoadingVersions, setIsLoadingVersions] = React.useState<boolean>(false);
+  const [isLoadingVersions, setIsLoadingVersions] =
+    React.useState<boolean>(false);
   const fetchingLogos = React.useRef<Set<string>>(new Set());
   const ensureOpsRef = React.useRef<number>(0);
   const launchTips = React.useMemo(
     () => [
-      t("launcherpage.tip.choose_version_dropdown", {
-        defaultValue: "右侧下拉按钮可快速切换当前版本。",
-      }) as unknown as string,
-      t("launcherpage.tip.open_version_settings_gear", {
-        defaultValue: "点击齿轮打开“版本设置”，可更换图标并启用版本隔离。",
-      }) as unknown as string,
-      t("launcherpage.tip.mods_import_button", {
-        defaultValue: "点击 Mods 卡片的“导入 .zip/.dll”选择文件。",
-      }) as unknown as string,
-      t("launcherpage.tip.file_manager_pick", {
-        defaultValue: "文件管理器支持多选并回传路径到 Mods 导入。",
-      }) as unknown as string,
-      t("launcherpage.tip.download_versions", {
-        defaultValue: "在“下载”页安装 Release/Preview，安装后出现在下拉列表。",
-      }) as unknown as string,
-      t("launcherpage.tip.content_counts_card", {
-        defaultValue: "主页“内容管理”显示世界、资源包、行为包数量。",
-      }) as unknown as string,
-      t("launcherpage.tip.settings_base_root", {
-        defaultValue:
-          "设置页可修改内容存储路径，默认使用 %APPDATA% 下以当前可执行文件名命名的文件夹。",
-      }) as unknown as string,
-      t("launcherpage.tip.directory_write_check", {
-        defaultValue: "仅可保存到可写目录；不可写目录将被禁用。",
-      }) as unknown as string,
-      t("launcherpage.tip.general", {
-        defaultValue: "首次启动可能较慢，请耐心等待。",
-      }) as unknown as string,
+      t("launcherpage.tip.choose_version_dropdown") as unknown as string,
+      t("launcherpage.tip.open_version_settings_gear") as unknown as string,
+      t("launcherpage.tip.mods_import_button") as unknown as string,
+      t("launcherpage.tip.file_manager_pick") as unknown as string,
+      t("launcherpage.tip.download_versions") as unknown as string,
+      t("launcherpage.tip.content_counts_card") as unknown as string,
+      t("launcherpage.tip.settings_base_root") as unknown as string,
+      t("launcherpage.tip.directory_write_check") as unknown as string,
+      t("launcherpage.tip.general") as unknown as string,
     ],
     [t],
   );
   const [tipIndex, setTipIndex] = React.useState<number>(0);
   const tipTimerRef = React.useRef<number | null>(null);
 
-  const worldsLabel = t("content.count.worlds", {
-    defaultValue: "世界",
-  }) as string;
-  const resourceLabel = t("content.count.resource_packs", {
-    defaultValue: "资源包",
-  }) as string;
-  const behaviorLabel = t("content.count.behavior_packs", {
-    defaultValue: "行为包",
-  }) as string;
+  const worldsLabel = t("content.count.worlds") as string;
+  const resourceLabel = t("content.count.resource_packs") as string;
+  const behaviorLabel = t("content.count.behavior_packs") as string;
   const labelSizeClass = (s: string) => {
     const len = s?.length || 0;
     if (len <= 4) return "text-base";
@@ -249,7 +222,7 @@ export const LauncherPage = (args: any) => {
         ? [
             {
               key: "__empty",
-              name: t("common.empty", { defaultValue: "暂无数据" }) as string,
+              name: t("common.empty") as string,
               version: "",
               isRegistered: false,
               isDisabled: true,
@@ -743,7 +716,7 @@ export const LauncherPage = (args: any) => {
   useEffect(() => {
     if (hasBackend) {
       setIsLoadingVersions(true);
-      
+
       const processMetas = (metas: any[]) => {
         const newLocalVersionMap = new Map();
         const newLocalVersionsMap = new Map();
@@ -808,30 +781,38 @@ export const LauncherPage = (args: any) => {
       const slowFn = (minecraft as any)?.ListVersionMetasWithRegistered;
 
       if (typeof fastFn === "function") {
-        fastFn().then((metas: any[]) => {
-          processMetas(metas);
-          setIsLoadingVersions(false);
-          
-          if (typeof slowFn === "function") {
-            slowFn().then((fullMetas: any[]) => {
-              processMetas(fullMetas);
-            }).catch(() => {});
-          }
-        }).catch(() => {
-          if (typeof slowFn === "function") {
-            slowFn().then((fullMetas: any[]) => {
-              processMetas(fullMetas);
-              setIsLoadingVersions(false);
-            }).catch(() => setIsLoadingVersions(false));
-          } else {
+        fastFn()
+          .then((metas: any[]) => {
+            processMetas(metas);
             setIsLoadingVersions(false);
-          }
-        });
+
+            if (typeof slowFn === "function") {
+              slowFn()
+                .then((fullMetas: any[]) => {
+                  processMetas(fullMetas);
+                })
+                .catch(() => {});
+            }
+          })
+          .catch(() => {
+            if (typeof slowFn === "function") {
+              slowFn()
+                .then((fullMetas: any[]) => {
+                  processMetas(fullMetas);
+                  setIsLoadingVersions(false);
+                })
+                .catch(() => setIsLoadingVersions(false));
+            } else {
+              setIsLoadingVersions(false);
+            }
+          });
       } else if (typeof slowFn === "function") {
-        slowFn().then((metas: any[]) => {
-          processMetas(metas);
-          setIsLoadingVersions(false);
-        }).catch(() => setIsLoadingVersions(false));
+        slowFn()
+          .then((metas: any[]) => {
+            processMetas(metas);
+            setIsLoadingVersions(false);
+          })
+          .catch(() => setIsLoadingVersions(false));
       } else {
         setIsLoadingVersions(false);
       }
@@ -880,9 +861,7 @@ export const LauncherPage = (args: any) => {
                 doForceLaunch();
               }}
             >
-              {t("launcherpage.launch.force_run_button", {
-                defaultValue: "强制启动",
-              })}
+              {t("launcherpage.launch.force_run_button")}
             </Button>
           )}
           <Button
@@ -905,16 +884,12 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-emerald-600">
-            {t("launcherpage.gameinput.installing.title", {
-              defaultValue: "正在安装 GameInput",
-            })}
+            {t("launcherpage.gameinput.installing.title")}
           </h2>
         </BaseModalHeader>
         <BaseModalBody>
           <p className="text-default-600 font-medium">
-            {t("launcherpage.gameinput.installing.body", {
-              defaultValue: "正在下载并启动安装程序，请根据系统提示完成安装。",
-            })}
+            {t("launcherpage.gameinput.installing.body")}
           </p>
           <div className="mt-4">
             {giTotal > 0 ? (
@@ -1002,17 +977,12 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
-            {t("launcherpage.gs.missing.title", {
-              defaultValue: "缺少 Microsoft Gaming Services",
-            })}
+            {t("launcherpage.gs.missing.title")}
           </h2>
         </BaseModalHeader>
         <BaseModalBody>
           <p className="text-default-600 font-medium">
-            {t("launcherpage.gs.missing.body", {
-              defaultValue:
-                "未检测到 Microsoft Gaming Services。该组件是 Minecraft 运行所必须的依赖项。",
-            })}
+            {t("launcherpage.gs.missing.body")}
           </p>
         </BaseModalBody>
         <BaseModalFooter>
@@ -1024,7 +994,7 @@ export const LauncherPage = (args: any) => {
               Window.Close();
             }}
           >
-            {t("common.quit_launcher", { defaultValue: "退出启动器" })}
+            {t("common.quit_launcher")}
           </Button>
           <Button
             color="default"
@@ -1037,9 +1007,7 @@ export const LauncherPage = (args: any) => {
               onClose && onClose({} as any);
             }}
           >
-            {t("launcherpage.gs.missing.ignore_forever", {
-              defaultValue: "忽略并不再提醒",
-            })}
+            {t("launcherpage.gs.missing.ignore_forever")}
           </Button>
           <Button
             color="primary"
@@ -1052,9 +1020,7 @@ export const LauncherPage = (args: any) => {
               setOverlayActive(true);
             }}
           >
-            {t("launcherpage.gs.missing.open_store", {
-              defaultValue: "打开商店进行安装",
-            })}
+            {t("launcherpage.gs.missing.open_store")}
           </Button>
         </BaseModalFooter>
       </>
@@ -1063,17 +1029,12 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-emerald-600">
-            {t("launcherpage.install_confirm.title", {
-              defaultValue: "是否已完成安装？",
-            })}
+            {t("launcherpage.install_confirm.title")}
           </h2>
         </BaseModalHeader>
         <BaseModalBody>
           <p className="text-default-600 font-medium">
-            {t("launcherpage.install_confirm.body", {
-              defaultValue:
-                "安装完成后请点击“已完成，重新检测”。如果尚未完成，请继续安装。",
-            })}
+            {t("launcherpage.install_confirm.body")}
           </p>
         </BaseModalBody>
         <BaseModalFooter>
@@ -1086,9 +1047,7 @@ export const LauncherPage = (args: any) => {
               else if (pendingInstallCheck === "gs") setModalState(9);
             }}
           >
-            {t("launcherpage.install_confirm.continue", {
-              defaultValue: "继续安装",
-            })}
+            {t("launcherpage.install_confirm.continue")}
           </Button>
           <Button
             color="primary"
@@ -1495,7 +1454,7 @@ export const LauncherPage = (args: any) => {
           />
         )}
       </AnimatePresence>
-      <div className="relative w-full max-w-full mx-auto px-4 py-4 h-full flex flex-col justify-center">
+      <div className="relative w-full max-w-full mx-auto px-4 py-4 h-full flex flex-col justify-start">
         {/* Hero Launch Card */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -1539,18 +1498,14 @@ export const LauncherPage = (args: any) => {
                               "font-semibold text-emerald-600 dark:text-emerald-500",
                           }}
                         >
-                          {t("launcherpage.registered_tip", {
-                            defaultValue: "已注册",
-                          })}
+                          {t("launcherpage.registered_tip")}
                         </Chip>
                       </motion.div>
                     )}
                   </div>
                   <div className="flex items-center gap-2">
                     <span className="text-lg sm:text-xl font-medium text-default-500 dark:text-zinc-400">
-                      {t("launcherpage.edition", {
-                        defaultValue: "Bedrock Edition",
-                      })}
+                      {t("launcherpage.edition")}
                     </span>
                   </div>
                 </div>
@@ -1585,16 +1540,12 @@ export const LauncherPage = (args: any) => {
                               </span>
                               <span className="text-sm font-bold text-default-900 dark:text-white leading-tight max-w-[120px] truncate">
                                 {displayName ||
-                                  t("launcherpage.currentVersion_none", {
-                                    defaultValue: "Select Version",
-                                  })}
+                                  t("launcherpage.currentVersion_none")}
                               </span>
                             </div>
                             <span className="text-sm font-bold text-default-900 dark:text-white leading-tight max-w-[120px] truncate lg:hidden">
                               {displayName ||
-                                t("launcherpage.currentVersion_none", {
-                                  defaultValue: "Select",
-                                })}
+                                t("launcherpage.currentVersion_none")}
                             </span>
                             <FaChevronDown
                               className="text-default-400 dark:text-zinc-300 ml-1"
@@ -1626,9 +1577,7 @@ export const LauncherPage = (args: any) => {
                           <div className="p-3 border-b border-default-100 dark:border-default-50/10">
                             <Input
                               size="sm"
-                              placeholder={t("launcherpage.search_versions", {
-                                defaultValue: "Search versions...",
-                              })}
+                              placeholder={t("launcherpage.search_versions")}
                               value={versionQuery}
                               onValueChange={setVersionQuery}
                               startContent={
@@ -1646,9 +1595,7 @@ export const LauncherPage = (args: any) => {
                               className="mt-2"
                               onPress={() => navigate("/versions")}
                             >
-                              {t("launcherpage.manage_versions", {
-                                defaultValue: "Manage All Versions",
-                              })}
+                              {t("launcherpage.manage_versions")}
                             </Button>
                           </div>
                         }
@@ -1714,9 +1661,7 @@ export const LauncherPage = (args: any) => {
                                       "text-emerald-600 dark:text-emerald-500 font-bold text-[10px]",
                                   }}
                                 >
-                                  {t("launcherpage.registered_tip", {
-                                    defaultValue: "已注册",
-                                  })}
+                                  {t("launcherpage.registered_tip")}
                                 </Chip>
                               )}
                             </div>
@@ -1754,36 +1699,28 @@ export const LauncherPage = (args: any) => {
                             }
                           }}
                         >
-                          {t("launcherpage.go_version_settings", {
-                            defaultValue: "Version Settings",
-                          })}
+                          {t("launcherpage.go_version_settings")}
                         </DropdownItem>
                         <DropdownItem
                           key="shortcut"
                           startContent={<FaDesktop />}
                           onPress={doCreateShortcut}
                         >
-                          {t("launcherpage.shortcut.create_button", {
-                            defaultValue: "Create Desktop Shortcut",
-                          })}
+                          {t("launcherpage.shortcut.create_button")}
                         </DropdownItem>
                         <DropdownItem
                           key="folder"
                           startContent={<FaFolderOpen />}
                           onPress={doOpenFolder}
                         >
-                          {t("launcherpage.open_exe_dir", {
-                            defaultValue: "Open Installation Folder",
-                          })}
+                          {t("launcherpage.open_exe_dir")}
                         </DropdownItem>
                         <DropdownItem
                           key="register"
                           startContent={<FaWindows />}
                           onPress={doRegister}
                         >
-                          {t("launcherpage.register_system_button", {
-                            defaultValue: "Register to System",
-                          })}
+                          {t("launcherpage.register_system_button")}
                         </DropdownItem>
                       </DropdownMenu>
                     </Dropdown>
@@ -1801,9 +1738,7 @@ export const LauncherPage = (args: any) => {
                       onPress={doLaunch}
                       isLoading={modalState === 5}
                     >
-                      {t("launcherpage.launch_button", {
-                        defaultValue: "LAUNCH",
-                      })}
+                      {t("launcherpage.launch_button")}
                     </Button>
                   </motion.div>
                 </div>
@@ -1859,9 +1794,7 @@ export const LauncherPage = (args: any) => {
                     <FaCube size={16} />
                   </div>
                   <h3 className="text-base font-bold text-default-800 dark:text-zinc-100">
-                    {t("launcherpage.content_manage", {
-                      defaultValue: "Content Management",
-                    })}
+                    {t("launcherpage.content_manage")}
                   </h3>
                 </div>
                 <Button
@@ -1871,7 +1804,7 @@ export const LauncherPage = (args: any) => {
                   endContent={<FaArrowRight size={10} />}
                   onPress={() => navigate("/content")}
                 >
-                  {t("common.view_all", { defaultValue: "View All" })}
+                  {t("common.view_all")}
                 </Button>
               </CardHeader>
               <CardBody className="p-3 gap-2 relative">

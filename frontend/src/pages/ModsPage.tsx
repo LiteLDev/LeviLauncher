@@ -184,9 +184,7 @@ export const ModsPage: React.FC = () => {
     try {
       const isLip = await (minecraft as any)?.IsLipInstalled();
       if (!isLip) {
-        toast.error(
-          t("mods.err_lip_not_installed", { defaultValue: "LIP未安装" }),
-        );
+        toast.error(t("mods.err_lip_not_installed"));
         setInstallingLL(false);
         return;
       }
@@ -197,15 +195,11 @@ export const ModsPage: React.FC = () => {
         if (err) {
           let msg = err;
           if (err.includes("ERR_LIP_INSTALL_FAILED")) {
-            msg = t("mods.err_lip_install_failed_suggestion", {
-              defaultValue: "安装失败，建议重新安装Minecraft",
-            });
+            msg = t("mods.err_lip_install_failed_suggestion");
           }
           toast.error(msg);
         } else {
-          toast.success(
-            t("downloadpage.install.success", { defaultValue: "安装完成" }),
-          );
+          toast.success(t("downloadpage.install.success"));
           await refreshAll();
         }
       }
@@ -367,46 +361,25 @@ export const ModsPage: React.FC = () => {
     const code = String(err || "").trim();
     switch (code) {
       case "ERR_INVALID_NAME":
-        return t("mods.err_invalid_name", {
-          defaultValue: "无效的版本名或模块名",
-        }) as string;
+        return t("mods.err_invalid_name") as string;
       case "ERR_ACCESS_VERSIONS_DIR":
-        return t("mods.err_access_versions_dir", {
-          defaultValue: "无法访问版本目录",
-        }) as string;
+        return t("mods.err_access_versions_dir") as string;
       case "ERR_CREATE_TARGET_DIR":
-        return t("mods.err_create_target_dir", {
-          defaultValue: "创建目标目录失败",
-        }) as string;
+        return t("mods.err_create_target_dir") as string;
       case "ERR_OPEN_ZIP":
-        return t("mods.err_open_zip", {
-          defaultValue: "无法打开ZIP文件",
-        }) as string;
+        return t("mods.err_open_zip") as string;
       case "ERR_MANIFEST_NOT_FOUND":
-        return t("mods.err_manifest_not_found", {
-          defaultValue: "未找到 manifest.json",
-        }) as string;
+        return t("mods.err_manifest_not_found") as string;
       case "ERR_INVALID_PACKAGE":
-        return t("mods.err_invalid_package", {
-          defaultValue: "无效的包结构",
-        }) as string;
+        return t("mods.err_invalid_package") as string;
       case "ERR_DUPLICATE_FOLDER":
-        return t("mods.err_duplicate_folder", {
-          defaultValue: "同名模块文件夹已存在",
-        }) as string;
+        return t("mods.err_duplicate_folder") as string;
       case "ERR_READ_ZIP_ENTRY":
-        return t("mods.err_read_zip_entry", {
-          defaultValue: "读取压缩包条目失败",
-        }) as string;
+        return t("mods.err_read_zip_entry") as string;
       case "ERR_WRITE_FILE":
-        return t("mods.err_write_file", {
-          defaultValue: "写入文件失败",
-        }) as string;
+        return t("mods.err_write_file") as string;
       default:
-        return (
-          code ||
-          (t("mods.err_unknown", { defaultValue: "未知错误" }) as string)
-        );
+        return code || (t("mods.err_unknown") as string);
     }
   };
 
@@ -415,11 +388,7 @@ export const ModsPage: React.FC = () => {
       if (!paths?.length) return;
       const name = currentVersionName || readCurrentVersionName();
       if (!name) {
-        setErrorMsg(
-          t("launcherpage.currentVersion_none", {
-            defaultValue: "未选择版本",
-          }) as string,
-        );
+        setErrorMsg(t("launcherpage.currentVersion_none") as string);
         return;
       }
       let started = false;
@@ -547,11 +516,7 @@ export const ModsPage: React.FC = () => {
       const list = e.target.files;
       if (!list || list.length === 0) return;
       if (!currentVersionName) {
-        setErrorMsg(
-          t("launcherpage.currentVersion_none", {
-            defaultValue: "未选择版本",
-          }) as string,
-        );
+        setErrorMsg(t("launcherpage.currentVersion_none") as string);
         return;
       }
       let started = false;
@@ -702,11 +667,7 @@ export const ModsPage: React.FC = () => {
     if (!activeMod) return;
     const name = currentVersionName || readCurrentVersionName();
     if (!name) {
-      setErrorMsg(
-        t("launcherpage.currentVersion_none", {
-          defaultValue: "未选择版本",
-        }) as string,
-      );
+      setErrorMsg(t("launcherpage.currentVersion_none") as string);
       errOnOpen();
       return;
     }
@@ -957,7 +918,7 @@ export const ModsPage: React.FC = () => {
   return (
     <motion.div
       ref={scrollRef}
-      className={`fixed inset-0 z-40 w-full h-full flex flex-col pt-[84px] px-6 pb-6 overflow-hidden bg-default-50 dark:bg-black ${
+      className={`relative w-full h-full flex flex-col px-4 py-4 overflow-hidden ${
         dragActive ? "cursor-copy" : ""
       }`}
       initial={{ opacity: 0, y: 8 }}
@@ -976,9 +937,7 @@ export const ModsPage: React.FC = () => {
               <BaseModalHeader className="text-primary-600">
                 <div className="flex items-center gap-2">
                   <FiUploadCloud className="w-5 h-5" />
-                  <span>
-                    {t("mods.importing_title", { defaultValue: "正在导入..." })}
-                  </span>
+                  <span>{t("mods.importing_title")}</span>
                 </div>
               </BaseModalHeader>
               <BaseModalBody>
@@ -990,9 +949,7 @@ export const ModsPage: React.FC = () => {
                   />
                 </div>
                 <div className="text-default-600 text-sm">
-                  {t("mods.importing_body", {
-                    defaultValue: "请稍候，正在处理所选文件。",
-                  })}
+                  {t("mods.importing_body")}
                 </div>
                 {currentFile ? (
                   <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
@@ -1026,12 +983,8 @@ export const ModsPage: React.FC = () => {
                   )}
                   <span>
                     {resultFailed.length
-                      ? t("mods.summary_title_partial", {
-                          defaultValue: "导入完成（部分失败）",
-                        })
-                      : t("mods.summary_title_done", {
-                          defaultValue: "导入完成",
-                        })}
+                      ? t("mods.summary_title_partial")
+                      : t("mods.summary_title_done")}
                   </span>
                 </div>
               </BaseModalHeader>
@@ -1039,8 +992,7 @@ export const ModsPage: React.FC = () => {
                 {resultSuccess.length ? (
                   <div className="mb-2">
                     <div className="text-sm font-semibold text-success">
-                      {t("mods.summary_success", { defaultValue: "成功" })} (
-                      {resultSuccess.length})
+                      {t("mods.summary_success")} ({resultSuccess.length})
                     </div>
                     <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm wrap-break-word whitespace-pre-wrap">
                       {resultSuccess.join("\n")}
@@ -1050,8 +1002,7 @@ export const ModsPage: React.FC = () => {
                 {resultFailed.length ? (
                   <div>
                     <div className="text-sm font-semibold text-danger">
-                      {t("mods.summary_failed", { defaultValue: "失败" })} (
-                      {resultFailed.length})
+                      {t("mods.summary_failed")} ({resultFailed.length})
                     </div>
                     <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm wrap-break-word whitespace-pre-wrap">
                       {resultFailed
@@ -1074,7 +1025,7 @@ export const ModsPage: React.FC = () => {
                     onClose();
                   }}
                 >
-                  {t("common.confirm", { defaultValue: "确定" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>
@@ -1104,12 +1055,8 @@ export const ModsPage: React.FC = () => {
                   )}
                   <span>
                     {resultFailed.length
-                      ? t("mods.delete_summary_title_failed", {
-                          defaultValue: "删除失败",
-                        })
-                      : t("mods.delete_summary_title_done", {
-                          defaultValue: "删除完成",
-                        })}
+                      ? t("mods.delete_summary_title_failed")
+                      : t("mods.delete_summary_title_done")}
                   </span>
                 </div>
               </BaseModalHeader>
@@ -1117,8 +1064,7 @@ export const ModsPage: React.FC = () => {
                 {resultSuccess.length ? (
                   <div className="mb-2">
                     <div className="text-sm font-semibold text-success">
-                      {t("mods.summary_deleted", { defaultValue: "已删除" })} (
-                      {resultSuccess.length})
+                      {t("mods.summary_deleted")} ({resultSuccess.length})
                     </div>
                     <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm wrap-break-word whitespace-pre-wrap">
                       {resultSuccess.join("\n")}
@@ -1128,8 +1074,7 @@ export const ModsPage: React.FC = () => {
                 {resultFailed.length ? (
                   <div>
                     <div className="text-sm font-semibold text-danger">
-                      {t("mods.summary_failed", { defaultValue: "失败" })} (
-                      {resultFailed.length})
+                      {t("mods.summary_failed")} ({resultFailed.length})
                     </div>
                     <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm wrap-break-word whitespace-pre-wrap">
                       {resultFailed
@@ -1153,7 +1098,7 @@ export const ModsPage: React.FC = () => {
                     delOnClose();
                   }}
                 >
-                  {t("common.confirm", { defaultValue: "确定" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>
@@ -1172,36 +1117,26 @@ export const ModsPage: React.FC = () => {
               <BaseModalHeader className="text-primary-600">
                 <div className="flex items-center gap-2">
                   <FaPuzzlePiece className="w-5 h-5" />
-                  <span>
-                    {t("mods.dll_modal_title", {
-                      defaultValue: "导入 DLL 插件",
-                    })}
-                  </span>
+                  <span>{t("mods.dll_modal_title")}</span>
                 </div>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="flex flex-col gap-3">
                   <Input
-                    label={
-                      t("mods.dll_name", { defaultValue: "插件名称" }) as string
-                    }
+                    label={t("mods.dll_name") as string}
                     value={dllName}
                     onValueChange={setDllName}
                     autoFocus
                     size="sm"
                   />
                   <Input
-                    label={
-                      t("mods.dll_type", { defaultValue: "类型" }) as string
-                    }
+                    label={t("mods.dll_type") as string}
                     value={dllType}
                     onValueChange={setDllType}
                     size="sm"
                   />
                   <Input
-                    label={
-                      t("mods.dll_version", { defaultValue: "版本" }) as string
-                    }
+                    label={t("mods.dll_version") as string}
                     value={dllVersion}
                     onValueChange={setDllVersion}
                     size="sm"
@@ -1220,7 +1155,7 @@ export const ModsPage: React.FC = () => {
                     }
                   }}
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="primary"
@@ -1241,7 +1176,7 @@ export const ModsPage: React.FC = () => {
                     }
                   }}
                 >
-                  {t("common.confirm", { defaultValue: "确定" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>
@@ -1260,18 +1195,12 @@ export const ModsPage: React.FC = () => {
               <BaseModalHeader className="text-primary-600">
                 <div className="flex items-center gap-2">
                   <FiAlertTriangle className="w-5 h-5" />
-                  <span>
-                    {t("mods.overwrite_modal_title", {
-                      defaultValue: "检测到重复",
-                    })}
-                  </span>
+                  <span>{t("mods.overwrite_modal_title")}</span>
                 </div>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-sm text-default-700">
-                  {t("mods.overwrite_modal_body", {
-                    defaultValue: "同名模块文件夹已存在，是否覆盖（更新）？",
-                  })}
+                  {t("mods.overwrite_modal_body")}
                 </div>
                 {dupNameRef.current ? (
                   <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
@@ -1290,7 +1219,7 @@ export const ModsPage: React.FC = () => {
                     }
                   }}
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="primary"
@@ -1302,7 +1231,7 @@ export const ModsPage: React.FC = () => {
                     }
                   }}
                 >
-                  {t("common.confirm", { defaultValue: "确定" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>
@@ -1321,38 +1250,25 @@ export const ModsPage: React.FC = () => {
               <BaseModalHeader className="text-warning-600">
                 <div className="flex items-center gap-2">
                   <FiAlertTriangle className="w-5 h-5" />
-                  <span>
-                    {t("mods.rc_warning.title", {
-                      defaultValue: "实验性版本警告",
-                    })}
-                  </span>
+                  <span>{t("mods.rc_warning.title")}</span>
                 </div>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-sm text-default-700 space-y-2">
                   <p>
                     {t("mods.rc_warning.body_1", {
-                      defaultValue:
-                        "检测到您即将安装的 LeviLamina 版本 ({{version}}) 为候选发布版 (RC)。",
                       version: rcVersion,
                     })}
                   </p>
                   <p className="font-semibold text-warning-700">
-                    {t("mods.rc_warning.body_2", {
-                      defaultValue:
-                        "这是一个实验性版本，可能存在不稳定因素，仅建议开发者或高级用户使用。",
-                    })}
+                    {t("mods.rc_warning.body_2")}
                   </p>
-                  <p>
-                    {t("mods.rc_warning.body_3", {
-                      defaultValue: "是否继续安装？",
-                    })}
-                  </p>
+                  <p>{t("mods.rc_warning.body_3")}</p>
                 </div>
               </BaseModalBody>
               <BaseModalFooter>
                 <Button variant="light" onPress={onClose}>
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="warning"
@@ -1361,7 +1277,7 @@ export const ModsPage: React.FC = () => {
                     proceedInstallLeviLamina();
                   }}
                 >
-                  {t("common.continue", { defaultValue: "继续" })}
+                  {t("common.continue")}
                 </Button>
               </BaseModalFooter>
             </>
@@ -1381,9 +1297,7 @@ export const ModsPage: React.FC = () => {
             <div className="bg-white/90 dark:bg-zinc-900/90 p-8 rounded-4xl shadow-2xl flex flex-col items-center gap-4 border border-white/20">
               <FiUploadCloud className="w-16 h-16 text-primary-500" />
               <div className="text-xl font-bold bg-linear-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">
-                {t("mods.drop_hint", {
-                  defaultValue: "拖入 .zip 或 .dll 以导入模组/插件",
-                })}
+                {t("mods.drop_hint")}
               </div>
             </div>
           </motion.div>
@@ -1392,7 +1306,7 @@ export const ModsPage: React.FC = () => {
 
       <div className="flex flex-col gap-4 mb-6 shrink-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md p-6 rounded-4xl">
         <PageHeader
-          title={t("moddedcard.title", { defaultValue: "Mods" })}
+          title={t("moddedcard.title")}
           description={
             <div className="flex items-center gap-2">
               <span>{currentVersionName || "No Version Selected"}</span>
@@ -1418,9 +1332,7 @@ export const ModsPage: React.FC = () => {
                     onPress={handleInstallLeviLamina}
                     isLoading={installingLL}
                   >
-                    {t("downloadpage.install.levilamina_label", {
-                      defaultValue: "Install LeviLamina",
-                    })}
+                    {t("downloadpage.install.levilamina_label")}
                   </Button>
                 )}
               <input
@@ -1443,9 +1355,7 @@ export const ModsPage: React.FC = () => {
                         { DisplayName: "Mod Files", Pattern: "*.zip;*.dll" },
                       ],
                       AllowsMultipleSelection: true,
-                      Title: t("mods.import_button", {
-                        defaultValue: "导入 .zip/.dll",
-                      }),
+                      Title: t("mods.import_button"),
                     });
                     if (result && result.length > 0) {
                       void doImportFromPaths(result);
@@ -1456,14 +1366,14 @@ export const ModsPage: React.FC = () => {
                 }}
                 isDisabled={importing}
               >
-                {t("mods.import_button", { defaultValue: "导入 .zip/.dll" })}
+                {t("mods.import_button")}
               </Button>
               <Button
                 variant="flat"
                 className="bg-default-100 dark:bg-zinc-800"
                 onPress={openFolder}
               >
-                {t("downloadmodal.open_folder", { defaultValue: "打开目录" })}
+                {t("downloadmodal.open_folder")}
               </Button>
             </>
           }
@@ -1471,9 +1381,7 @@ export const ModsPage: React.FC = () => {
 
         <div className="flex flex-col sm:flex-row items-center gap-3">
           <Input
-            placeholder={t("common.search_placeholder", {
-              defaultValue: "搜索...",
-            })}
+            placeholder={t("common.search_placeholder")}
             value={query}
             onValueChange={setQuery}
             startContent={<FaFilter className="text-default-400" />}
@@ -1502,20 +1410,10 @@ export const ModsPage: React.FC = () => {
               label: "text-default-500",
             }}
           >
-            {
-              t("mods.only_enabled", {
-                defaultValue: "仅显示已启用的模组",
-              }) as string
-            }
+            {t("mods.only_enabled") as string}
           </Checkbox>
           <div className="flex-1" />
-          <Tooltip
-            content={
-              t("common.refresh", {
-                defaultValue: "刷新",
-              }) as unknown as string
-            }
-          >
+          <Tooltip content={t("common.refresh") as unknown as string}>
             <Button
               size="sm"
               variant="light"
@@ -1536,18 +1434,12 @@ export const ModsPage: React.FC = () => {
           {!currentVersionName ? (
             <div className="flex flex-col items-center justify-center h-full text-default-400 gap-2">
               <FiAlertTriangle className="w-8 h-8 opacity-50" />
-              <p>
-                {t("launcherpage.currentVersion_none", {
-                  defaultValue: "未选择版本",
-                })}
-              </p>
+              <p>{t("launcherpage.currentVersion_none")}</p>
             </div>
           ) : filtered.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-default-400 gap-2">
               <FaPuzzlePiece className="w-8 h-8 opacity-50" />
-              <p>
-                {t("moddedcard.content.none", { defaultValue: "未找到模组" })}
-              </p>
+              <p>{t("moddedcard.content.none")}</p>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
@@ -1621,11 +1513,7 @@ export const ModsPage: React.FC = () => {
                                 });
                               } catch {}
                             }}
-                            aria-label={
-                              t("mods.toggle_label", {
-                                defaultValue: "启用模组",
-                              }) as string
-                            }
+                            aria-label={t("mods.toggle_label") as string}
                             classNames={{
                               wrapper:
                                 "group-hover:scale-110 transition-transform",
@@ -1654,7 +1542,7 @@ export const ModsPage: React.FC = () => {
               <BaseModalHeader className="flex flex-row items-center gap-3 text-primary-600">
                 <FaPuzzlePiece className="w-6 h-6" />
                 <span className="text-xl font-bold">
-                  {t("mods.details_title", { defaultValue: "模组详情" })}
+                  {t("mods.details_title")}
                 </span>
               </BaseModalHeader>
               <BaseModalBody>
@@ -1662,32 +1550,32 @@ export const ModsPage: React.FC = () => {
                   <div className="space-y-2 text-sm">
                     <div>
                       <span className="text-default-500">
-                        {t("mods.field_name", { defaultValue: "名称" })}：
+                        {t("mods.field_name")}：
                       </span>
                       {activeMod.name}
                     </div>
                     <div>
                       <span className="text-default-500">
-                        {t("mods.field_version", { defaultValue: "版本" })}：
+                        {t("mods.field_version")}：
                       </span>
                       {activeMod.version || "-"}
                     </div>
                     <div>
                       <span className="text-default-500">
-                        {t("mods.field_type", { defaultValue: "类型" })}：
+                        {t("mods.field_type")}：
                       </span>
                       {activeMod.type || "-"}
                     </div>
                     <div>
                       <span className="text-default-500">
-                        {t("mods.field_entry", { defaultValue: "入口" })}：
+                        {t("mods.field_entry")}：
                       </span>
                       {activeMod.entry || "-"}
                     </div>
                     {activeMod.author ? (
                       <div>
                         <span className="text-default-500">
-                          {t("mods.field_author", { defaultValue: "作者" })}：
+                          {t("mods.field_author")}：
                         </span>
                         {activeMod.author}
                       </div>
@@ -1696,9 +1584,7 @@ export const ModsPage: React.FC = () => {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
                           <span className="text-default-500">
-                            {t("mods.toggle_label", {
-                              defaultValue: "启用模组",
-                            })}
+                            {t("mods.toggle_label")}
                           </span>
                           <Chip
                             size="sm"
@@ -1710,12 +1596,8 @@ export const ModsPage: React.FC = () => {
                             }
                           >
                             {enabledByName.get(activeMod.name)
-                              ? (t("mods.toggle_on", {
-                                  defaultValue: "已启用",
-                                }) as string)
-                              : (t("mods.toggle_off", {
-                                  defaultValue: "已关闭",
-                                }) as string)}
+                              ? (t("mods.toggle_on") as string)
+                              : (t("mods.toggle_off") as string)}
                           </Chip>
                         </div>
                         <Switch
@@ -1749,21 +1631,13 @@ export const ModsPage: React.FC = () => {
                               });
                             } catch {}
                           }}
-                          aria-label={
-                            t("mods.toggle_label", {
-                              defaultValue: "启用模组",
-                            }) as string
-                          }
+                          aria-label={t("mods.toggle_label") as string}
                         />
                       </div>
                       <div className="text-default-500 text-xs mt-1">
                         {enabledByName.get(activeMod.name)
-                          ? (t("mods.toggle_desc_on", {
-                              defaultValue: "模组已启用，启动游戏时会加载。",
-                            }) as string)
-                          : (t("mods.toggle_desc_off", {
-                              defaultValue: "模组已关闭，启动游戏时不会加载。",
-                            }) as string)}
+                          ? (t("mods.toggle_desc_on") as string)
+                          : (t("mods.toggle_desc_off") as string)}
                       </div>
                     </div>
                   </div>
@@ -1776,10 +1650,10 @@ export const ModsPage: React.FC = () => {
                     onClose();
                   }}
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button color="danger" onPress={delCfmOnOpen}>
-                  {t("common.delete", { defaultValue: "删除" })}
+                  {t("common.delete")}
                 </Button>
               </BaseModalFooter>
             </>

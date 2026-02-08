@@ -576,11 +576,7 @@ export default function ServersPage() {
               <div className="flex flex-col items-center justify-center py-20 text-default-400">
                 <FaBox className="text-6xl mb-4 opacity-20" />
                 <p>
-                  {query
-                    ? t("common.no_results", { defaultValue: "无搜索结果" })
-                    : t("contentpage.no_items", {
-                        defaultValue: "没有找到项目",
-                      })}
+                  {query ? t("common.no_results") : t("contentpage.no_items")}
                 </p>
               </div>
             ) : (

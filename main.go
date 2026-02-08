@@ -3,6 +3,7 @@ package main
 import (
 	"bufio"
 	"embed"
+	"io/fs"
 	"log"
 	"net"
 	"os"
@@ -208,6 +209,12 @@ func main() {
 	}
 	mc := NewMinecraft()
 	startSingleInstanceServer(mc)
+
+	assets, err := fs.Sub(assets, "frontend/dist")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	app := application.New(application.Options{
 		Name:        "LeviLauncher",
 		Description: "A Minecraft Launcher",
@@ -283,7 +290,7 @@ func main() {
 			_ = config.Save(c)
 		}
 	})
-	err := app.Run()
+	err = app.Run()
 
 	if err != nil {
 		log.Fatal(err.Error())

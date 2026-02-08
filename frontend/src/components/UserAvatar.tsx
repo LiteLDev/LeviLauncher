@@ -88,12 +88,8 @@ export const UserAvatar = () => {
 
   if (!gamertag) {
     return (
-      <div className="flex items-center gap-2 mr-2">
-        <Tooltip
-          content={t("useravatar.no_login_retry", {
-            defaultValue: "未检测到 Xbox 登录（点击重试）",
-          })}
-        >
+      <div className="flex items-center gap-2">
+        <Tooltip content={t("useravatar.no_login_retry")}>
           <Button
             isIconOnly
             variant="light"
@@ -123,7 +119,6 @@ export const UserAvatar = () => {
       days,
       hours,
       minutes,
-      defaultValue: `${days}d ${hours}h ${minutes}m`,
     });
   };
 
@@ -157,7 +152,7 @@ export const UserAvatar = () => {
       }}
     >
       <PopoverTrigger>
-        <div className="flex items-center gap-2 mr-2 cursor-pointer transition-transform hover:scale-105 active:scale-95">
+        <div className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95">
           <Avatar
             src={avatar}
             name={gamertag}
@@ -178,15 +173,13 @@ export const UserAvatar = () => {
               size="sm"
               className="bg-emerald-100/70 dark:bg-emerald-900/25 text-emerald-700 dark:text-emerald-400"
             >
-              {t("useravatar.xbox_live", { defaultValue: "Xbox Live" })}
+              {t("useravatar.xbox_live")}
             </Chip>
             <Button
               isIconOnly
               variant="light"
               size="sm"
-              aria-label={t("useravatar.refresh_session_aria", {
-                defaultValue: "Refresh Xbox Session",
-              })}
+              aria-label={t("useravatar.refresh_session_aria")}
               isLoading={refreshing}
               onPress={async () => {
                 setRefreshing(true);
@@ -212,7 +205,6 @@ export const UserAvatar = () => {
               <div className="flex flex-col gap-1">
                 <span className="text-xs text-default-500">
                   {t("useravatar.xuid", {
-                    defaultValue: "XUID: {{xuid}}",
                     xuid,
                   })}
                 </span>
@@ -239,9 +231,7 @@ export const UserAvatar = () => {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
-                      {t("useravatar.stats.minutes_played", {
-                        defaultValue: "游戏时间",
-                      })}
+                      {t("useravatar.stats.minutes_played")}
                     </span>
                     <span className="text-xs font-bold text-default-700 dark:text-default-300">
                       {formatPlayTime(stats.minutesPlayed)}
@@ -254,9 +244,7 @@ export const UserAvatar = () => {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
-                      {t("useravatar.stats.blocks_broken", {
-                        defaultValue: "打破的方块",
-                      })}
+                      {t("useravatar.stats.blocks_broken")}
                     </span>
                     <span className="text-xs font-bold text-default-700 dark:text-default-300">
                       {stats.blockBroken?.toLocaleString()}
@@ -269,9 +257,7 @@ export const UserAvatar = () => {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
-                      {t("useravatar.stats.mobs_defeated", {
-                        defaultValue: "已击败的生物",
-                      })}
+                      {t("useravatar.stats.mobs_defeated")}
                     </span>
                     <span className="text-xs font-bold text-default-700 dark:text-default-300">
                       {stats.mobKilled?.toLocaleString()}
@@ -284,9 +270,7 @@ export const UserAvatar = () => {
                   </div>
                   <div className="flex flex-col">
                     <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
-                      {t("useravatar.stats.distance_travelled", {
-                        defaultValue: "行驶距离",
-                      })}
+                      {t("useravatar.stats.distance_travelled")}
                     </span>
                     <span className="text-xs font-bold text-default-700 dark:text-default-300">
                       {(stats.distanceTravelled / 1000).toFixed(1)} km

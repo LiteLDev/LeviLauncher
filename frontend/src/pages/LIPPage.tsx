@@ -156,9 +156,7 @@ const LIPPage: React.FC = () => {
 
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
-              placeholder={t("curseforge.search_placeholder", {
-                defaultValue: "Search packages...",
-              })}
+              placeholder={t("lip.search_placeholder")}
               value={query}
               onValueChange={setQuery}
               onKeyDown={handleKeyDown}
@@ -177,16 +175,14 @@ const LIPPage: React.FC = () => {
               size="sm"
               className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
             >
-              {t("common.search", { defaultValue: "Search" })}
+              {t("common.search")}
             </Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <Select
-              label={t("curseforge.sort_by", { defaultValue: "Sort by" })}
-              placeholder={t("curseforge.select_sort", {
-                defaultValue: "Select sort",
-              })}
+              label={t("lip.sort_by")}
+              placeholder={t("lip.select_sort")}
               selectedKeys={[sort]}
               onChange={(e) => {
                 setSort(e.target.value);
@@ -219,11 +215,7 @@ const LIPPage: React.FC = () => {
               <div className="flex flex-col gap-3">{renderSkeletons()}</div>
             ) : packages.length === 0 ? (
               <div className="flex items-center justify-center h-full text-default-500">
-                <p>
-                  {t("curseforge.no_results", {
-                    defaultValue: "No results found",
-                  })}
-                </p>
+                <p>{t("common.no_results")}</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
@@ -264,10 +256,7 @@ const LIPPage: React.FC = () => {
                         </div>
 
                         <p className="text-xs sm:text-sm text-default-500 line-clamp-2 w-full">
-                          {pkg.description ||
-                            t("curseforge.no_description", {
-                              defaultValue: "No description available.",
-                            })}
+                          {pkg.description || t("lip.no_description")}
                         </p>
 
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-default-400 mt-1">

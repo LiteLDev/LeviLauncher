@@ -9,6 +9,8 @@ import {
 } from "@/components/BaseModal";
 import { Button, Tooltip, ModalContent } from "@heroui/react";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
+import { Sidebar } from "@/components/Sidebar";
+import { TopBar } from "@/components/TopBar";
 import { LauncherPage } from "@/pages/LauncherPage";
 import { DownloadManagerPage } from "@/pages/DownloadManagerPage";
 import { DownloadsProvider } from "@/utils/DownloadsContext";
@@ -63,7 +65,7 @@ const GlobalShortcuts = ({
         e.preventDefault();
         tryNavigate(-1);
       },
-      t("nav.back", { defaultValue: "返回" }),
+      t("nav.back"),
     );
 
     return () => {
@@ -102,6 +104,29 @@ function App() {
   const [updateVersion, setUpdateVersion] = useState<string>("");
   const [updateBody, setUpdateBody] = useState<string>("");
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
+  const [layoutMode, setLayoutMode] = useState<"navbar" | "sidebar">(() => {
+    try {
+      return (
+        (localStorage.getItem("app.layoutMode") as "navbar" | "sidebar") ||
+        "sidebar"
+      );
+    } catch {
+      return "sidebar";
+    }
+  });
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const mode =
+          (localStorage.getItem("app.layoutMode") as "navbar" | "sidebar") ||
+          "sidebar";
+        setLayoutMode(mode);
+      } catch {}
+    };
+    window.addEventListener("app-layout-changed", handler);
+    return () => window.removeEventListener("app-layout-changed", handler);
+  }, []);
 
   const refresh = () => {
     setCount((prevCount) => {
@@ -395,7 +420,7 @@ function App() {
                 {splashVisible && (
                   <motion.div
                     key="splash-overlay"
-                    className="fixed inset-0 z-9999"
+                    className="fixed inset-0 z-[9999]"
                     initial={{ opacity: 1 }}
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
@@ -407,24 +432,48 @@ function App() {
               </AnimatePresence>
 
               <div
-                className={`w-full min-h-dvh flex flex-col overflow-x-hidden bg-background text-foreground ${
+                className={`w-full min-h-dvh flex ${
+                  layoutMode === "sidebar" ? "flex-row" : "flex-col"
+                } overflow-x-hidden bg-background text-foreground ${
                   updateOpen ? "overflow-y-hidden" : ""
                 }`}
               >
-                <GlobalNavbar
-                  isBeta={isBeta}
-                  navLocked={navLocked}
-                  revealStarted={revealStarted}
-                  isUpdatingMode={isUpdatingMode}
-                  isOnboardingMode={isOnboardingMode}
-                  hasEnteredLauncher={hasEnteredLauncher}
-                  tryNavigate={tryNavigate}
-                />
-
-                <div className="h-[69px]" />
+                {layoutMode === "navbar" ? (
+                  <>
+                    <GlobalNavbar
+                      isBeta={isBeta}
+                      navLocked={navLocked}
+                      revealStarted={revealStarted}
+                      isUpdatingMode={isUpdatingMode}
+                      isOnboardingMode={isOnboardingMode}
+                      hasEnteredLauncher={hasEnteredLauncher}
+                      tryNavigate={tryNavigate}
+                    />
+                    <div className="h-[69px]" />
+                  </>
+                ) : (
+                  <>
+                    <Sidebar
+                      isBeta={isBeta}
+                      navLocked={navLocked}
+                      revealStarted={revealStarted}
+                      isUpdatingMode={isUpdatingMode}
+                      isOnboardingMode={isOnboardingMode}
+                      hasEnteredLauncher={hasEnteredLauncher}
+                      tryNavigate={tryNavigate}
+                    />
+                    <TopBar
+                      navLocked={navLocked}
+                      isOnboardingMode={isOnboardingMode}
+                      revealStarted={revealStarted}
+                    />
+                  </>
+                )}
 
                 <motion.div
-                  className="w-full flex-1 min-h-0 overflow-hidden"
+                  className={`w-full flex-1 min-h-0 overflow-hidden ${
+                    layoutMode === "sidebar" ? "pl-14 pt-14" : ""
+                  }`}
                   initial={{ opacity: 0 }}
                   animate={{ opacity: revealStarted ? 1 : 0 }}
                   transition={{ duration: 0.6, ease: "easeOut" }}
@@ -512,14 +561,11 @@ function App() {
                     {() => (
                       <>
                         <BaseModalHeader className="text-primary-700 text-[18px] sm:text-[20px] font-bold antialiased">
-                          {t("terms.title", { defaultValue: "用户协议" })}
+                          {t("terms.title")}
                         </BaseModalHeader>
                         <BaseModalBody>
                           <div className="text-[15px] sm:text-[16px] leading-7 text-default-900 font-medium antialiased whitespace-pre-wrap wrap-break-word max-h-[56vh] overflow-y-auto pr-1">
-                            {t("terms.body", {
-                              defaultValue:
-                                "在使用本启动器之前，请仔细阅读并同意《用户协议》和相关条款。继续使用即表示您已同意。",
-                            })}
+                            {t("terms.body")}
                           </div>
                         </BaseModalBody>
                         <BaseModalFooter>
@@ -529,9 +575,7 @@ function App() {
                               Window.Close();
                             }}
                           >
-                            {t("terms.decline", {
-                              defaultValue: "不同意，退出",
-                            })}
+                            {t("terms.decline")}
                           </Button>
                           <Button
                             color="primary"
@@ -539,12 +583,8 @@ function App() {
                             onPress={acceptTerms}
                           >
                             {termsCountdown > 0
-                              ? `${t("terms.agree", {
-                                  defaultValue: "同意并继续",
-                                })} (${termsCountdown}s)`
-                              : t("terms.agree", {
-                                  defaultValue: "同意并继续",
-                                })}
+                              ? `${t("terms.agree")} (${termsCountdown}s)`
+                              : t("terms.agree")}
                           </Button>
                         </BaseModalFooter>
                       </>
@@ -559,9 +599,7 @@ function App() {
                         <BaseModalHeader className="flex-row items-center gap-2 text-primary-600 min-w-0">
                           <FaRocket className="w-5 h-5" />
                           <span className="truncate">
-                            {t("settings.body.version.hasnew", {
-                              defaultValue: "有新的版本更新！",
-                            })}
+                            {t("settings.body.version.hasnew")}
                             {updateVersion}
                           </span>
                         </BaseModalHeader>
@@ -569,9 +607,7 @@ function App() {
                           {updateBody ? (
                             <div className="rounded-md bg-default-100/60 border border-default-200 px-3 py-2">
                               <div className="text-small font-semibold mb-1">
-                                {t("downloadpage.changelog.title", {
-                                  defaultValue: "最新更新日志",
-                                })}
+                                {t("downloadpage.changelog.title")}
                               </div>
                               <div className="text-small wrap-break-word leading-6 max-h-[32vh] sm:max-h-[40vh] lg:max-h-[44vh] overflow-y-auto pr-1">
                                 <ReactMarkdown
@@ -662,7 +698,7 @@ function App() {
                               onClose();
                             }}
                           >
-                            {t("common.cancel", { defaultValue: "取消" })}
+                            {t("common.cancel")}
                           </Button>
                           <Button
                             variant="flat"
@@ -678,9 +714,7 @@ function App() {
                               onClose();
                             }}
                           >
-                            {t("settings.body.version.ignore", {
-                              defaultValue: "屏蔽该版本",
-                            })}
+                            {t("settings.body.version.ignore")}
                           </Button>
                           <Button
                             color="primary"
@@ -697,9 +731,7 @@ function App() {
                               }
                             }}
                           >
-                            {t("settings.modal.2.footer.download_button", {
-                              defaultValue: "更新",
-                            })}
+                            {t("settings.modal.2.footer.download_button")}
                           </Button>
                         </BaseModalFooter>
                       </>

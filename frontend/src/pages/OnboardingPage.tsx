@@ -136,12 +136,8 @@ export default function OnboardingPage() {
                   </svg>
                 </div>
                 <PageHeader
-                  title={t("onboarding.title", {
-                    defaultValue: "首次启动引导",
-                  })}
-                  description={t("onboarding.subtitle", {
-                    defaultValue: "请先设置内容路径与语言",
-                  })}
+                  title={t("onboarding.title")}
+                  description={t("onboarding.subtitle")}
                   titleClassName="text-3xl lg:text-4xl"
                 />
               </div>
@@ -159,24 +155,16 @@ export default function OnboardingPage() {
                 >
                   <div className="mb-6">
                     <SectionHeader
-                      title={t("settings.body.paths.title", {
-                        defaultValue: "内容路径",
-                      })}
-                      description={t("settings.body.paths.subtitle", {
-                        defaultValue: "管理游戏数据存储位置",
-                      })}
+                      title={t("settings.body.paths.title")}
+                      description={t("settings.body.paths.subtitle")}
                     />
                   </div>
 
                   <div className="space-y-6">
                     <Input
                       labelPlacement="outside"
-                      label={t("settings.body.paths.base_root", {
-                        defaultValue: "根目录",
-                      })}
-                      placeholder={t("settings.body.paths.base_root", {
-                        defaultValue: "根目录",
-                      })}
+                      label={t("settings.body.paths.base_root")}
+                      placeholder={t("settings.body.paths.base_root")}
                       value={newBaseRoot}
                       onValueChange={setNewBaseRoot}
                       variant="bordered"
@@ -194,12 +182,8 @@ export default function OnboardingPage() {
                             }
                           >
                             {baseRootWritable
-                              ? t("settings.body.paths.unsaved", {
-                                  defaultValue: "更改未保存",
-                                })
-                              : t("settings.body.paths.not_writable", {
-                                  defaultValue: "目录不可写入",
-                                })}
+                              ? t("settings.body.paths.unsaved")
+                              : t("settings.body.paths.not_writable")}
                           </span>
                         ) : null
                       }
@@ -211,9 +195,7 @@ export default function OnboardingPage() {
                           onPress={async () => {
                             try {
                               const options: any = {
-                                Title: t("settings.body.paths.title", {
-                                  defaultValue: "内容路径",
-                                }),
+                                Title: t("settings.body.paths.title"),
                                 CanChooseDirectories: true,
                                 CanChooseFiles: false,
                                 PromptForSingleSelection: true,
@@ -232,7 +214,7 @@ export default function OnboardingPage() {
                             }
                           }}
                         >
-                          {t("common.browse", { defaultValue: "选择..." })}
+                          {t("common.browse")}
                         </Button>
                       }
                     />
@@ -271,9 +253,7 @@ export default function OnboardingPage() {
                             setSavingBaseRoot(false);
                           }}
                         >
-                          {t("settings.body.paths.apply", {
-                            defaultValue: "应用",
-                          })}
+                          {t("settings.body.paths.apply")}
                         </Button>
                         <Button
                           size="sm"
@@ -296,9 +276,7 @@ export default function OnboardingPage() {
                             } catch {}
                           }}
                         >
-                          {t("settings.body.paths.reset", {
-                            defaultValue: "恢复默认",
-                          })}
+                          {t("settings.body.paths.reset")}
                         </Button>
                       </div>
                     </div>
@@ -313,9 +291,7 @@ export default function OnboardingPage() {
                   className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-6"
                 >
                   <SectionHeader
-                    title={t("settings.body.language.name", {
-                      defaultValue: t("app.lang"),
-                    })}
+                    title={t("settings.body.language.name")}
                     description={
                       langNames.find((l) => l.code === selectedLang)
                         ?.language || selectedLang
@@ -328,9 +304,7 @@ export default function OnboardingPage() {
                             variant="flat"
                             className="bg-default-100 dark:bg-white/10 font-medium"
                           >
-                            {t("settings.body.language.button", {
-                              defaultValue: "更改",
-                            })}
+                            {t("settings.body.language.button")}
                           </Button>
                         </DropdownTrigger>
                         <DropdownMenu
@@ -380,7 +354,7 @@ export default function OnboardingPage() {
                   onPress={requestFinish}
                   className="font-medium text-default-500"
                 >
-                  {t("onboarding.skip", { defaultValue: "跳过" })}
+                  {t("onboarding.skip")}
                 </Button>
                 <Button
                   color="primary"
@@ -388,7 +362,7 @@ export default function OnboardingPage() {
                   className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20 px-8"
                   onPress={requestFinish}
                 >
-                  {t("onboarding.finish", { defaultValue: "完成" })}
+                  {t("onboarding.finish")}
                 </Button>
               </div>
             </div>
@@ -406,26 +380,21 @@ export default function OnboardingPage() {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-warning-600">
-                {t("onboarding.unsaved.title", { defaultValue: "未保存修改" })}
+                {t("onboarding.unsaved.title")}
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-default-700 text-sm">
-                  {t("onboarding.unsaved.body", {
-                    defaultValue:
-                      "您更改了内容路径但尚未保存。是否保存后完成引导？",
-                  })}
+                  {t("onboarding.unsaved.body")}
                 </div>
                 {!baseRootWritable && (
                   <div className="text-tiny text-danger-500 mt-1">
-                    {t("settings.body.paths.not_writable", {
-                      defaultValue: "目录不可写入",
-                    })}
+                    {t("settings.body.paths.not_writable")}
                   </div>
                 )}
               </BaseModalBody>
               <BaseModalFooter>
                 <Button variant="light" onPress={onClose}>
-                  {t("onboarding.unsaved.cancel", { defaultValue: "取消" })}
+                  {t("onboarding.unsaved.cancel")}
                 </Button>
                 <Button
                   color="primary"
@@ -454,7 +423,7 @@ export default function OnboardingPage() {
                     setSavingBaseRoot(false);
                   }}
                 >
-                  {t("onboarding.unsaved.save", { defaultValue: "保存并完成" })}
+                  {t("onboarding.unsaved.save")}
                 </Button>
               </BaseModalFooter>
             </>

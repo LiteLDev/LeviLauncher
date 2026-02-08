@@ -183,8 +183,7 @@ export default function VersionSettingsPage() {
   };
   const getErrorText = (code: string) => {
     if (!code) return "";
-    const def =
-      errorDefaults[code] || t(`errors.${code}`, { defaultValue: code });
+    const def = errorDefaults[code] || t(`errors.${code}`);
     return def as string;
   };
 
@@ -311,7 +310,7 @@ export default function VersionSettingsPage() {
 
   return (
     <div className="w-full h-full flex flex-col overflow-hidden relative">
-      <div className="z-20 px-3 sm:px-5 lg:px-8 pt-3 sm:pt-4 lg:pt-6 shrink-0">
+      <div className="z-20 px-4 pt-4 shrink-0">
         <motion.div
           initial={{ y: -8, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -382,7 +381,7 @@ export default function VersionSettingsPage() {
         </motion.div>
       </div>
       <div className="flex-1 overflow-auto">
-        <div className="px-3 sm:px-5 lg:px-8 pb-3 sm:pb-4 lg:pb-6">
+        <div className="px-4 pb-4">
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <motion.div
               initial={{ opacity: 0, y: 8 }}
@@ -1075,9 +1074,7 @@ export default function VersionSettingsPage() {
                   }}
                   isDisabled={deleting}
                 >
-                  {t("launcherpage.delete.confirm.cancel_button", {
-                    defaultValue: "取消",
-                  })}
+                  {t("launcherpage.delete.confirm.cancel_button")}
                 </Button>
                 <Button
                   color="danger"
@@ -1177,19 +1174,16 @@ export default function VersionSettingsPage() {
           {(onClose) => (
             <>
               <BaseModalHeader className="text-warning-600">
-                {t("settings.unsaved.title", { defaultValue: "未保存修改" })}
+                {t("settings.unsaved.title")}
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-default-700 text-sm">
-                  {t("versions.unsaved.body", {
-                    defaultValue:
-                      "您更改了版本设置但尚未保存。是否保存后离开？",
-                  })}
+                  {t("versions.unsaved.body")}
                 </div>
               </BaseModalBody>
               <BaseModalFooter>
                 <Button variant="light" onPress={onClose}>
-                  {t("settings.unsaved.cancel", { defaultValue: "取消" })}
+                  {t("settings.unsaved.cancel")}
                 </Button>
                 <Button
                   color="primary"
@@ -1200,7 +1194,7 @@ export default function VersionSettingsPage() {
                     }
                   }}
                 >
-                  {t("settings.unsaved.save", { defaultValue: "保存并离开" })}
+                  {t("settings.unsaved.save")}
                 </Button>
               </BaseModalFooter>
             </>

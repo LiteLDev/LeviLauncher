@@ -6,7 +6,11 @@
   "nav": {
     "versions": "版本",
     "more": "更多",
-    "about": "關於"
+    "about": "關於",
+    "back": "返回"
+  },
+  "theme": {
+    "toggle": "切換主題"
   },
   "launcherpage": {
     "launch_button": "啟動",
@@ -118,7 +122,20 @@
       "file_manager_pick": "檔案管理器支援多選並回傳路徑至 Mods 匯入。",
       "settings_base_root": "設定頁可修改內容儲存路徑，預設使用 %APPDATA% 下以目前可執行檔名命名的資料夾。",
       "directory_write_check": "僅可儲存至可寫入目錄；不可寫入目錄將被停用。"
-    }
+    },
+    "adminconfirm": {
+      "title": "需要權限",
+      "content": "此操作需要管理員權限。",
+      "confirm_button": "授權",
+      "cancel_button": "取消"
+    },
+    "admindeny": {
+      "title": "權限被拒絕",
+      "content": "您拒絕了權限請求。",
+      "confirm_button": "重試",
+      "cancel_button": "取消"
+    },
+    "edition": "Bedrock Edition"
   },
   "updating": {
     "title": "正在更新 LeviLauncher",
@@ -138,7 +155,6 @@
   },
   "download_manager": {
     "title": "下載管理",
-    "short_title": "任務",
     "description": "檢視和管理目前的下載任務",
     "no_downloads": "目前沒有活動的下載任務",
     "unknown_file": "未知檔案",
@@ -182,8 +198,6 @@
       "status_downloaded": "已下載",
       "status_not_downloaded": "未下載",
       "loader": "載入器",
-      "ll_supported": "支援",
-      "ll_unsupported": "不支援",
       "input": {
         "placeholder": "按版本搜尋..."
       }
@@ -209,7 +223,6 @@
       "title": "選擇下載鏡像",
       "target": "下載目標",
       "testing": "測速中…",
-      "latency": "延遲",
       "no_recommended": "暫無推薦鏡像",
       "unselected": "未選擇",
       "copy_link": "複製連結",
@@ -225,11 +238,9 @@
       "install_selected": "安裝所選鏡像"
     },
     "progress": {
-      "title": "下載進度",
       "unknown_error": "未知錯誤"
     },
     "download": {
-      "success_title": "下載完成",
       "success_body": "檔案已下載："
     },
     "delete": {
@@ -237,7 +248,6 @@
       "body": "將刪除安裝包：",
       "warning": "此操作不可復原。",
       "confirm": "刪除",
-      "success_title": "刪除完成",
       "success_body": "已刪除安裝包："
     },
     "install": {
@@ -253,7 +263,8 @@
       "custom_installer": {
         "label": "選擇本機安裝包 (.msixvc)",
         "hint": "預設使用安裝器目錄下已下載的檔案"
-      }
+      },
+      "title": "安裝"
     },
     "customappx": {
       "button": "自訂",
@@ -274,11 +285,16 @@
     }
   },
   "settings": {
+    "layout": {
+      "title": "側邊欄佈局",
+      "desc": "使用垂直側邊欄代替頂部導航欄",
+      "title_navbar": "使用頂部導航欄",
+      "desc_navbar": "開啟後使用頂部導航欄代替默認的垂直側邊欄"
+    },
     "unsaved": {
       "title": "未儲存修改",
       "body": "您更改了內容路徑但尚未儲存。是否儲存後離開？",
       "cancel": "取消",
-      "cancelled": "已取消",
       "save": "儲存並離開"
     },
     "lang": {
@@ -323,20 +339,7 @@
       "install_button": "安裝",
       "installing": "正在安裝 LIP...",
       "update_button": "更新至 {{version}}",
-      "installed_label": "已安裝",
-      "status": {
-        "checking_update": "正在檢查更新...",
-        "downloading": "下載中...",
-        "extracting": "解壓中...",
-        "done": "安裝完成"
-      },
-      "error": {
-        "fetch_release_failed": "取得版本資訊失敗。",
-        "create_temp": "建立暫存資料夾失敗。",
-        "download_failed": "下載失敗。",
-        "create_target_dir": "建立目標資料夾失敗。",
-        "unzip_failed": "解壓失敗。"
-      }
+      "installed_label": "已安裝"
     },
     "header": {
       "title": "設定",
@@ -378,9 +381,6 @@
       "scan": "掃描進程",
       "kill_all": "結束所有進程",
       "kill": "結束",
-      "pid": "PID: {{pid}}",
-      "path": "路徑: {{path}}",
-      "launcher_version": "啟動器版本: {{name}}",
       "no_process": "未發現執行中的 Minecraft 進程"
     }
   },
@@ -418,6 +418,7 @@
     "star_fork": "Star / Fork",
     "rhymc_name": "旋律雲"
   },
+  "retry": "重試",
   "common": {
     "completed": "已完成",
     "downloading": "下載中",
@@ -462,7 +463,12 @@
     "deleting": "正在刪除...",
     "no_results": "無搜尋結果",
     "edit": "編輯",
-    "backup": "備份"
+    "backup": "備份",
+    "date": "日期",
+    "error_load": "載入失敗",
+    "size": "大小",
+    "unknown": "未知",
+    "version": "版本"
   },
   "useravatar": {
     "no_login_retry": "未偵測到 Xbox 登入（點擊以重試）",
@@ -493,6 +499,7 @@
     "select_player": "選擇玩家",
     "no_players": "暫無玩家",
     "backup_success": "備份成功",
+    "backup_failed": "備份失敗",
     "resource_packs": "資源包",
     "no_resource_packs": "暫無資源包",
     "behavior_packs": "行為包",
@@ -523,7 +530,9 @@
     "delete_selected_confirm": "確定要刪除選中的 {{count}} 個項目嗎？",
     "deleted_name": "已刪除 {{name}}",
     "deleted_count": "已刪除 {{count}} 個項目",
-    "delete_world_confirm": "確定要刪除存檔 {{name}} 嗎？"
+    "delete_world_confirm": "確定要刪除存檔 {{name}} 嗎？",
+    "basic_info": "基本資訊",
+    "level_name": "存檔名稱"
   },
   "versions": {
     "info": {
@@ -566,6 +575,20 @@
     },
     "unsaved": {
       "body": "您更改了版本設定但尚未儲存。是否儲存後離開？"
+    },
+    "sort": {
+      "label": "排序方式",
+      "name": "名稱 (A-Z)",
+      "name_za": "名稱 (Z-A)",
+      "order_asc": "升序",
+      "order_desc": "降序",
+      "version": "版本 (新到舊)",
+      "version_old_new": "版本 (舊到新)"
+    },
+    "tab": {
+      "all": "全部",
+      "preview": "預覽版",
+      "release": "正式版"
     }
   },
   "errors": {
@@ -613,22 +636,9 @@
     "ERR_DEV_MODE_REQUIRED": "系統未開啟開發者模式，且自動開啟失敗。請手動開啟開發者模式後重試。"
   },
   "filemanager": {
-    "drives_title": "磁碟機",
-    "computer": "此電腦",
-    "quick_access": "快速存取",
-    "pinned": "已釘選",
-    "choose_drive": "請選擇一個磁碟機",
-    "search_placeholder": "搜尋檔案/資料夾…",
     "sort": {
-      "name": "名稱",
-      "kind": "類型"
-    },
-    "up": "上一層",
-    "pin_current": "釘選目前路徑",
-    "refreshing": "正在重新整理…",
-    "choose_this_dir": "選擇此目錄",
-    "dir_not_writable": "此目錄無法寫入，請選擇其他位置",
-    "new_folder": "新增資料夾"
+      "name": "名稱"
+    }
   },
   "file": {
     "types": {
@@ -795,7 +805,11 @@
     }
   },
   "lip": {
-    "maintenance": "維護中，暫不開放"
+    "maintenance": "維護中，暫不開放",
+    "search_placeholder": "搜尋套件...",
+    "sort_by": "排序",
+    "select_sort": "選擇排序",
+    "no_description": "暫無簡介"
   },
   "server": {
     "offline": "離線 / 無法連接",

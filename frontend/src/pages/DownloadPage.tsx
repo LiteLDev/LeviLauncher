@@ -323,16 +323,13 @@ export const DownloadPage: React.FC = () => {
       const segs = url.pathname.split("/").filter(Boolean);
       return (
         segs[segs.length - 1] ||
-        (t("downloadpage.mirror.filename_fallback", {
-          defaultValue: "(文件)",
-        }) as unknown as string)
+        (t("downloadpage.mirror.filename_fallback") as unknown as string)
       );
     } catch {
       const segs = String(u).split("/").filter(Boolean);
       return (
         segs[segs.length - 1] ||
         (t("downloadpage.mirror.filename_fallback", {
-          defaultValue: "(文件)",
         }) as unknown as string)
       );
     }
@@ -576,7 +573,7 @@ export const DownloadPage: React.FC = () => {
                       await reloadAll();
                     }}
                   >
-                    {t("common.refresh", { defaultValue: "刷新" })}
+                    {t("common.refresh")}
                   </Button>
                   <Button
                     radius="full"
@@ -592,9 +589,7 @@ export const DownloadPage: React.FC = () => {
                       })
                     }
                   >
-                    {t("downloadpage.customappx.button", {
-                      defaultValue: "自定义",
-                    })}
+                    {t("downloadpage.customappx.button")}
                   </Button>
                   <Dropdown>
                     <DropdownTrigger>
@@ -616,9 +611,7 @@ export const DownloadPage: React.FC = () => {
                       }}
                     >
                       <DropdownItem key="all">
-                        {t("downloadpage.topcontent.types_all", {
-                          defaultValue: "All",
-                        })}
+                        {t("downloadpage.topcontent.types_all")}
                       </DropdownItem>
                       <DropdownItem key="Release">
                         {t("downloadpage.customappx.modal.1.body.select.item1")}
@@ -635,9 +628,7 @@ export const DownloadPage: React.FC = () => {
                         variant="flat"
                         className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
                       >
-                        {t("downloadpage.topcontent.status", {
-                          defaultValue: "状态",
-                        })}
+                        {t("downloadpage.topcontent.status")}
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
@@ -653,19 +644,13 @@ export const DownloadPage: React.FC = () => {
                       }}
                     >
                       <DropdownItem key="all">
-                        {t("downloadpage.topcontent.status_all", {
-                          defaultValue: "全部",
-                        })}
+                        {t("downloadpage.topcontent.status_all")}
                       </DropdownItem>
                       <DropdownItem key="downloaded">
-                        {t("downloadpage.topcontent.status_downloaded", {
-                          defaultValue: "已下载",
-                        })}
+                        {t("downloadpage.topcontent.status_downloaded")}
                       </DropdownItem>
                       <DropdownItem key="not_downloaded">
-                        {t("downloadpage.topcontent.status_not_downloaded", {
-                          defaultValue: "未下载",
-                        })}
+                        {t("downloadpage.topcontent.status_not_downloaded")}
                       </DropdownItem>
                     </DropdownMenu>
                   </Dropdown>
@@ -676,9 +661,7 @@ export const DownloadPage: React.FC = () => {
                         variant="flat"
                         className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
                       >
-                        {t("downloadpage.topcontent.loader", {
-                          defaultValue: "加载器",
-                        })}
+                        {t("downloadpage.topcontent.loader")}
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
@@ -691,9 +674,7 @@ export const DownloadPage: React.FC = () => {
                       }}
                     >
                       <DropdownItem key="all">
-                        {t("downloadpage.topcontent.status_all", {
-                          defaultValue: "全部",
-                        })}
+                        {t("downloadpage.topcontent.status_all")}
                       </DropdownItem>
                       <DropdownItem key="levilamina">LeviLamina</DropdownItem>
                     </DropdownMenu>
@@ -701,11 +682,7 @@ export const DownloadPage: React.FC = () => {
 
                   <div className="h-6 w-px bg-default-300 mx-1" />
 
-                  <Tooltip
-                    content={t("download_manager.title", {
-                      defaultValue: "下载管理",
-                    })}
-                  >
+                  <Tooltip content={t("download_manager.title")}>
                     <Button
                       ref={tasksButtonRef}
                       isIconOnly
@@ -739,9 +716,7 @@ export const DownloadPage: React.FC = () => {
 
               <Table
                 aria-label={
-                  t("downloadpage.table.aria_label", {
-                    defaultValue: "versions-table",
-                  }) as unknown as string
+                  t("downloadpage.table.aria_label") as unknown as string
                 }
                 className="bg-transparent flex-1 overflow-auto min-h-0"
                 removeWrapper
@@ -792,9 +767,7 @@ export const DownloadPage: React.FC = () => {
                 </TableHeader>
                 <TableBody
                   emptyContent={
-                    t("downloadpage.table.empty", {
-                      defaultValue: "暂无数据",
-                    }) as unknown as string
+                    t("downloadpage.table.empty") as unknown as string
                   }
                   items={paged}
                 >
@@ -812,32 +785,22 @@ export const DownloadPage: React.FC = () => {
                           variant="flat"
                         >
                           {item.type === "Release"
-                            ? t("downloadpage.table.type.release", {
-                                defaultValue: "Release",
-                              })
-                            : t("downloadpage.table.type.preview", {
-                                defaultValue: "Preview",
-                              })}
+                            ? t("downloadpage.table.type.release")
+                            : t("downloadpage.table.type.preview")}
                         </Chip>
                       </TableCell>
                       <TableCell>
                         {!hasStatus(item) && refreshing ? (
                           <Chip color="default" variant="flat">
-                            {t("downloadpage.status.checking", {
-                              defaultValue: "Checking…",
-                            })}
+                            {t("downloadpage.status.checking")}
                           </Chip>
                         ) : isDownloaded(item) ? (
                           <Chip color="success" variant="flat">
-                            {t("downloadpage.status.downloaded", {
-                              defaultValue: "Downloaded",
-                            })}
+                            {t("downloadpage.status.downloaded")}
                           </Chip>
                         ) : (
                           <Chip color="danger" variant="flat">
-                            {t("downloadpage.status.not_downloaded", {
-                              defaultValue: "Not downloaded",
-                            })}
+                            {t("downloadpage.status.not_downloaded")}
                           </Chip>
                         )}
                       </TableCell>
@@ -886,9 +849,7 @@ export const DownloadPage: React.FC = () => {
                                   });
                                 }}
                               >
-                                {t("downloadpage.mirror.install_button", {
-                                  defaultValue: "安装",
-                                })}
+                                {t("downloadpage.mirror.install_button")}
                               </Button>
                               <Dropdown>
                                 <DropdownTrigger>
@@ -933,10 +894,7 @@ export const DownloadPage: React.FC = () => {
                                     color="danger"
                                     startContent={<FaTrash size={12} />}
                                   >
-                                    {t(
-                                      "downloadpage.actions.delete_installer",
-                                      { defaultValue: "删除下载包" },
-                                    )}
+                                    {t("downloadpage.actions.delete_installer")}
                                   </DropdownItem>
                                 </DropdownMenu>
                               </Dropdown>
@@ -953,13 +911,7 @@ export const DownloadPage: React.FC = () => {
                               onPress={() => {
                                 if (isDownloading) {
                                   toast.error(
-                                    t(
-                                      "downloadpage.error.already_downloading",
-                                      {
-                                        defaultValue:
-                                          "当前已有下载任务正在进行",
-                                      },
-                                    ),
+                                    t("downloadpage.error.already_downloading"),
                                   );
                                   return;
                                 }
@@ -978,9 +930,7 @@ export const DownloadPage: React.FC = () => {
                               }}
                             >
                               {!hasStatus(item) && refreshing
-                                ? t("downloadpage.status.checking", {
-                                    defaultValue: "检查中…",
-                                  })
+                                ? t("downloadpage.status.checking")
                                 : t("downloadmodal.download_button")}
                             </Button>
                           )}
@@ -1010,9 +960,7 @@ export const DownloadPage: React.FC = () => {
                         animate={{ opacity: 1, y: 0 }}
                         transition={{ duration: 0.3, ease: "easeOut" }}
                       >
-                        {t("downloadpage.mirror.title", {
-                          defaultValue: "选择下载镜像",
-                        })}
+                        {t("downloadpage.mirror.title")}
                       </motion.h2>
                       <motion.div
                         className="flex items-center gap-2"
@@ -1045,9 +993,7 @@ export const DownloadPage: React.FC = () => {
                       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                         <div className="flex items-center gap-2 text-small font-bold text-default-700 dark:text-zinc-300 shrink-0">
                           <div className="w-1 h-4 rounded-full bg-emerald-500"></div>
-                          {t("downloadpage.mirror.target", {
-                            defaultValue: "下载目标",
-                          })}
+                          {t("downloadpage.mirror.target")}
                         </div>
                         {(() => {
                           const target =
@@ -1056,12 +1002,8 @@ export const DownloadPage: React.FC = () => {
                             return (
                               <div className="text-small text-default-400 dark:text-zinc-500 italic">
                                 {testing
-                                  ? t("downloadpage.mirror.testing", {
-                                      defaultValue: "正在测速...",
-                                    })
-                                  : t("downloadpage.mirror.unselected", {
-                                      defaultValue: "请选择一个镜像",
-                                    })}
+                                  ? t("downloadpage.mirror.testing")
+                                  : t("downloadpage.mirror.unselected")}
                               </div>
                             );
                           const domain = labelFromUrl(target);
@@ -1084,9 +1026,7 @@ export const DownloadPage: React.FC = () => {
                                 }
                                 startContent={<FaCopy size={12} />}
                               >
-                                {t("downloadpage.mirror.copy_link", {
-                                  defaultValue: "复制",
-                                })}
+                                {t("downloadpage.mirror.copy_link")}
                               </Button>
                             </div>
                           );
@@ -1106,9 +1046,7 @@ export const DownloadPage: React.FC = () => {
                           <div>
                             <div className="flex items-center gap-3 mb-3 px-1">
                               <span className="text-sm font-bold text-default-800 dark:text-zinc-300 uppercase tracking-wider">
-                                {t("downloadpage.mirror.recommended", {
-                                  defaultValue: "推荐镜像",
-                                })}
+                                {t("downloadpage.mirror.recommended")}
                               </span>
                               {testing && (
                                 <Chip
@@ -1122,9 +1060,7 @@ export const DownloadPage: React.FC = () => {
                                     />
                                   }
                                 >
-                                  {t("downloadpage.mirror.auto_testing", {
-                                    defaultValue: "测速中",
-                                  })}
+                                  {t("downloadpage.mirror.auto_testing")}
                                 </Chip>
                               )}
                             </div>
@@ -1197,9 +1133,7 @@ export const DownloadPage: React.FC = () => {
                             ) : (
                               <div className="p-8 rounded-2xl border border-dashed border-default-300 flex flex-col items-center justify-center text-default-500 gap-2">
                                 <span>
-                                  {t("downloadpage.mirror.no_recommended", {
-                                    defaultValue: "暂无推荐镜像",
-                                  })}
+                                  {t("downloadpage.mirror.no_recommended")}
                                 </span>
                               </div>
                             )}
@@ -1208,9 +1142,7 @@ export const DownloadPage: React.FC = () => {
                           {/* Others Section */}
                           <div className="flex flex-col gap-2">
                             <div className="text-sm font-bold text-default-800 dark:text-zinc-300 uppercase tracking-wider px-1">
-                              {t("downloadpage.mirror.others", {
-                                defaultValue: "其它镜像",
-                              })}
+                              {t("downloadpage.mirror.others")}
                             </div>
                             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                               {mirrorResults.map((m, i) => (
@@ -1265,11 +1197,7 @@ export const DownloadPage: React.FC = () => {
                           <div className="w-16 h-16 rounded-full bg-default-100 flex items-center justify-center mb-4">
                             <FaDownload size={24} className="opacity-50" />
                           </div>
-                          <p>
-                            {t("downloadpage.mirror.no_mirrors", {
-                              defaultValue: "当前版本无可用镜像。",
-                            })}
-                          </p>
+                          <p>{t("downloadpage.mirror.no_mirrors")}</p>
                         </div>
                       )}
                     </motion.div>
@@ -1293,9 +1221,7 @@ export const DownloadPage: React.FC = () => {
                         startMirrorTests(mirrorUrls || []);
                       }}
                     >
-                      {t("downloadpage.mirror.retest", {
-                        defaultValue: "重新测速",
-                      })}
+                      {t("downloadpage.mirror.retest")}
                     </Button>
                     <Button
                       className="font-bold text-white shadow-lg shadow-emerald-900/20 bg-emerald-600 hover:bg-emerald-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
@@ -1336,12 +1262,8 @@ export const DownloadPage: React.FC = () => {
                       }}
                     >
                       {installMode
-                        ? t("downloadpage.mirror.install_selected", {
-                            defaultValue: "安装所选镜像",
-                          })
-                        : t("downloadpage.mirror.download_selected", {
-                            defaultValue: "下载所选镜像",
-                          })}
+                        ? t("downloadpage.mirror.install_selected")
+                        : t("downloadpage.mirror.download_selected")}
                     </Button>
                   </BaseModalFooter>
                 </>
@@ -1391,9 +1313,7 @@ export const DownloadPage: React.FC = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.25 }}
                     >
-                      {t("downloadpage.delete.title", {
-                        defaultValue: "确认删除下载包",
-                      })}
+                      {t("downloadpage.delete.title")}
                     </motion.h2>
                   </BaseModalHeader>
                   <BaseModalBody>
@@ -1403,9 +1323,7 @@ export const DownloadPage: React.FC = () => {
                       transition={{ duration: 0.25, delay: 0.1 }}
                     >
                       <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
-                        {t("downloadpage.delete.body", {
-                          defaultValue: "将删除安装包：",
-                        })}
+                        {t("downloadpage.delete.body")}
                       </div>
                       <div className="mt-2 p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50">
                         <span className="font-mono text-default-800 dark:text-zinc-200 font-bold break-all text-small">
@@ -1430,9 +1348,7 @@ export const DownloadPage: React.FC = () => {
                             d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
                           />
                         </svg>
-                        {t("downloadpage.delete.warning", {
-                          defaultValue: "此操作不可恢复。",
-                        })}
+                        {t("downloadpage.delete.warning")}
                       </div>
                       {deleteError ? (
                         <motion.div
@@ -1453,7 +1369,7 @@ export const DownloadPage: React.FC = () => {
                         onClose?.();
                       }}
                     >
-                      {t("common.cancel", { defaultValue: "取消" })}
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       color="danger"
@@ -1507,17 +1423,13 @@ export const DownloadPage: React.FC = () => {
                               ? deleteItem?.fileName
                               : `${deleteItem?.fileName}.msixvc`;
                             toast.success(
-                              t("downloadpage.delete.success_body", {
-                                defaultValue: "已删除安装包：",
-                              }) +
+                              t("downloadpage.delete.success_body") +
                                 " " +
                                 (disp || ""),
                             );
                           } catch {
                             toast.success(
-                              t("downloadpage.delete.success_body", {
-                                defaultValue: "已删除安装包：",
-                              }) +
+                              t("downloadpage.delete.success_body") +
                                 " " +
                                 String(deleteItem?.fileName || ""),
                             );
@@ -1528,9 +1440,7 @@ export const DownloadPage: React.FC = () => {
                         }
                       }}
                     >
-                      {t("downloadpage.delete.confirm", {
-                        defaultValue: "删除",
-                      })}
+                      {t("downloadpage.delete.confirm")}
                     </Button>
                   </BaseModalFooter>
                 </>
@@ -1579,9 +1489,7 @@ export const DownloadPage: React.FC = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.25 }}
                     >
-                      {t("downloadpage.progress.unknown_error", {
-                        defaultValue: "未知错误",
-                      })}
+                      {t("downloadpage.progress.unknown_error")}
                     </motion.h2>
                   </BaseModalHeader>
                   <BaseModalBody>
@@ -1602,7 +1510,7 @@ export const DownloadPage: React.FC = () => {
                         onClose?.();
                       }}
                     >
-                      {t("common.close", { defaultValue: "关闭" })}
+                      {t("common.close")}
                     </Button>
                   </BaseModalFooter>
                 </>
@@ -1629,17 +1537,13 @@ export const DownloadPage: React.FC = () => {
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ duration: 0.25 }}
                     >
-                      {t("downloadpage.install.title", {
-                        defaultValue: "正在安装",
-                      })}
+                      {t("downloadpage.install.title")}
                     </motion.h2>
                   </BaseModalHeader>
                   <BaseModalBody>
                     <div className="flex flex-col gap-6">
                       <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
-                        {t("downloadpage.install.hint", {
-                          defaultValue: "请稍候，正在卸载旧版本并注册安装包...",
-                        })}
+                        {t("downloadpage.install.hint")}
                       </div>
                       <div className="flex items-center gap-3">
                         <Progress
@@ -1667,12 +1571,8 @@ export const DownloadPage: React.FC = () => {
                         <div className="flex justify-between text-small text-default-600 dark:text-zinc-400 font-medium">
                           <span>
                             {extractInfo.totalBytes
-                              ? t("downloadpage.install.progress", {
-                                  defaultValue: "安装进度",
-                                })
-                              : t("downloadpage.install.estimated_size", {
-                                  defaultValue: "已写入大小（估算）",
-                                })}
+                              ? t("downloadpage.install.progress")
+                              : t("downloadpage.install.estimated_size")}
                             :{" "}
                           </span>
                           <span className="font-mono">
@@ -1701,10 +1601,7 @@ export const DownloadPage: React.FC = () => {
                       ) : null}
                       {installingTargetName ? (
                         <div className="p-3 bg-default-100/50 rounded-xl border border-default-200/50 text-small text-default-600 dark:text-zinc-400 font-medium">
-                          {t("downloadpage.install.target", {
-                            defaultValue: "安装目标",
-                          })}
-                          :{" "}
+                          {t("downloadpage.install.target")}:{" "}
                           <span className="font-mono text-default-700 dark:text-zinc-200 font-bold">
                             {installingTargetName}
                           </span>

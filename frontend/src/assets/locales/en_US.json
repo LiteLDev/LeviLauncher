@@ -6,7 +6,11 @@
   "nav": {
     "versions": "Versions",
     "more": "More",
-    "about": "About"
+    "about": "About",
+    "back": "Back"
+  },
+  "theme": {
+    "toggle": "Toggle Theme"
   },
   "launcherpage": {
     "launch_button": "Launch",
@@ -118,7 +122,20 @@
       "file_manager_pick": "File Manager supports multi-select and returns paths to Mods import.",
       "settings_base_root": "Settings lets you change the content base path; default %APPDATA%\\<current executable name>.",
       "directory_write_check": "Save only to writable directories; non-writable directories are disabled."
-    }
+    },
+    "adminconfirm": {
+      "title": "Permission Required",
+      "content": "This action requires administrator privileges.",
+      "confirm_button": "Grant",
+      "cancel_button": "Cancel"
+    },
+    "admindeny": {
+      "title": "Permission Denied",
+      "content": "You denied the permission request.",
+      "confirm_button": "Retry",
+      "cancel_button": "Cancel"
+    },
+    "edition": "Bedrock Edition"
   },
   "moddedcard": {
     "title": "Mods",
@@ -129,7 +146,6 @@
   },
   "download_manager": {
     "title": "Download Manager",
-    "short_title": "Tasks",
     "description": "View and manage current download tasks",
     "no_downloads": "No active download tasks",
     "unknown_file": "Unknown File",
@@ -182,8 +198,6 @@
       "status_downloaded": "Downloaded",
       "status_not_downloaded": "Not downloaded",
       "loader": "Loader",
-      "ll_supported": "Supported",
-      "ll_unsupported": "Unsupported",
       "input": {
         "placeholder": "Search by verison..."
       }
@@ -206,7 +220,6 @@
       "inherit_gdk": "Inherit from GDK directory"
     },
     "mirror": {
-      "latency": "Latency",
       "no_recommended": "No recommended mirror",
       "download_started": "Download started...",
       "title": "Select Download Mirror",
@@ -225,11 +238,9 @@
       "install_selected": "Install Selected"
     },
     "progress": {
-      "title": "Download Progress",
       "unknown_error": "Unknown error"
     },
     "download": {
-      "success_title": "Download Complete",
       "success_body": "File downloaded: "
     },
     "delete": {
@@ -237,7 +248,6 @@
       "body": "This will delete installer: ",
       "warning": "This action cannot be undone.",
       "confirm": "Delete",
-      "success_title": "Deletion Complete",
       "success_body": "Installer deleted: "
     },
     "install": {
@@ -253,7 +263,8 @@
       "custom_installer": {
         "label": "Choose local installer (.msixvc)",
         "hint": "Defaults to using files in the installers directory"
-      }
+      },
+      "title": "Install"
     },
     "customappx": {
       "button": "Custom",
@@ -273,7 +284,25 @@
       }
     }
   },
+  "onboarding": {
+    "title": "First Launch Setup",
+    "subtitle": "Please set content path and language first",
+    "skip": "Skip",
+    "finish": "Finish",
+    "unsaved": {
+      "title": "Unsaved Changes",
+      "body": "You have unsaved changes to the content path. Do you want to save before finishing?",
+      "cancel": "Cancel",
+      "save": "Save and Finish"
+    }
+  },
   "settings": {
+    "layout": {
+      "title": "Sidebar Layout",
+      "desc": "Use vertical sidebar instead of top navigation bar",
+      "title_navbar": "Use Top Navigation Bar",
+      "desc_navbar": "Enable to use the top navigation bar instead of the default vertical sidebar"
+    },
     "unsaved": {
       "title": "Unsaved Changes",
       "body": "You changed the content path but haven't saved it. Save and leave?",
@@ -322,20 +351,7 @@
       "install_button": "Install",
       "installing": "Installing LIP...",
       "update_button": "Update to {{version}}",
-      "installed_label": "Installed",
-      "status": {
-        "checking_update": "Checking for updates...",
-        "downloading": "Downloading...",
-        "extracting": "Extracting...",
-        "done": "Installation complete"
-      },
-      "error": {
-        "fetch_release_failed": "Failed to fetch release info.",
-        "create_temp": "Failed to create temp directory.",
-        "download_failed": "Download failed.",
-        "create_target_dir": "Failed to create target directory.",
-        "unzip_failed": "Failed to unzip."
-      }
+      "installed_label": "Installed"
     },
     "header": {
       "title": "Settings",
@@ -370,9 +386,6 @@
       "scan": "Scan Processes",
       "kill_all": "End All Processes",
       "kill": "End Task",
-      "pid": "PID: {{pid}}",
-      "path": "Path: {{path}}",
-      "launcher_version": "Launcher Version: {{name}}",
       "no_process": "No running Minecraft processes found"
     },
     "modal": {
@@ -417,6 +430,7 @@
     "star_fork": "Star / Fork",
     "rhymc_name": "RhyMC"
   },
+  "retry": "Retry",
   "common": {
     "completed": "Completed",
     "downloading": "Downloading",
@@ -461,7 +475,12 @@
     "no_results": "No results found",
     "hide": "Hide",
     "edit": "Edit",
-    "backup": "Backup"
+    "backup": "Backup",
+    "date": "Date",
+    "error_load": "Failed to load",
+    "size": "Size",
+    "unknown": "Unknown",
+    "version": "Version"
   },
   "useravatar": {
     "no_login_retry": "Xbox login not detected (click to retry)",
@@ -492,6 +511,7 @@
     "select_player": "Select Player",
     "no_players": "No players",
     "backup_success": "Backup succeeded",
+    "backup_failed": "Backup failed",
     "resource_packs": "Resource Packs",
     "no_resource_packs": "No resource packs",
     "behavior_packs": "Behavior Packs",
@@ -522,7 +542,9 @@
     "delete_selected_confirm": "Are you sure you want to delete the selected {{count}} items?",
     "deleted_name": "Deleted {{name}}",
     "deleted_count": "Deleted {{count}} items",
-    "delete_world_confirm": "Are you sure you want to delete world {{name}}?"
+    "delete_world_confirm": "Are you sure you want to delete world {{name}}?",
+    "basic_info": "Basic Info",
+    "level_name": "Level Name"
   },
   "versions": {
     "info": {
@@ -565,6 +587,20 @@
     },
     "unsaved": {
       "body": "You have unsaved changes to version settings. Do you want to save before leaving?"
+    },
+    "sort": {
+      "label": "Sort by",
+      "name": "Name (A-Z)",
+      "name_za": "Name (Z-A)",
+      "order_asc": "Ascending",
+      "order_desc": "Descending",
+      "version": "Version (Newest)",
+      "version_old_new": "Version (Oldest)"
+    },
+    "tab": {
+      "all": "All",
+      "preview": "Preview",
+      "release": "Release"
     }
   },
   "errors": {
@@ -612,22 +648,9 @@
     "ERR_DEV_MODE_REQUIRED": "Developer Mode is not enabled, and auto-enable failed. Please enable Developer Mode manually and retry."
   },
   "filemanager": {
-    "search_placeholder": "Search...",
     "sort": {
-      "name": "Name",
-      "kind": "Kind"
-    },
-    "drives_title": "Drives",
-    "quick_access": "Quick Access",
-    "pinned": "Pinned",
-    "choose_drive": "Choose a drive",
-    "computer": "Computer",
-    "up": "Up",
-    "pin_current": "Pin Current Path",
-    "refreshing": "Refreshing…",
-    "choose_this_dir": "Choose this directory",
-    "dir_not_writable": "Directory not writable. Please choose another location",
-    "new_folder": "New Folder"
+      "name": "Name"
+    }
   },
   "file": {
     "types": {
@@ -712,18 +735,6 @@
     "agree": "Agree and Continue",
     "decline": "Decline and Exit"
   },
-  "onboarding": {
-    "title": "Welcome",
-    "subtitle": "Please configure content paths and language",
-    "skip": "Skip",
-    "finish": "Finish",
-    "unsaved": {
-      "title": "Unsaved Changes",
-      "body": "You have unsaved changes to the content path. Save before finishing?",
-      "cancel": "Cancel",
-      "save": "Save & Finish"
-    }
-  },
   "contentdownload": {
     "title": "Content Download"
   },
@@ -794,7 +805,11 @@
     }
   },
   "lip": {
-    "maintenance": "Maintenance, not available yet"
+    "maintenance": "Under maintenance, not available yet",
+    "search_placeholder": "Search packages...",
+    "sort_by": "Sort by",
+    "select_sort": "Select sort",
+    "no_description": "No description available"
   },
   "server": {
     "offline": "Offline / Can't connect",

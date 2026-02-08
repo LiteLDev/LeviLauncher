@@ -226,7 +226,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
 
   const openEditFor = React.useCallback(
     (name: string) => {
-      navigate("/version-settings", { state: { name, returnTo: "/versions" } });
+      navigate("/versionSettings", { state: { name, returnTo: "/versions" } });
     },
     [navigate],
   );
@@ -339,9 +339,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
             <CardHeader className="flex flex-col gap-4 p-6">
               <PageHeader
                 className="w-full"
-                title={t("launcherpage.version_select.title", {
-                  defaultValue: "选择版本",
-                })}
+                title={t("launcherpage.version_select.title")}
                 titleClassName="text-left pb-1"
                 endContent={
                   <div className="flex items-center gap-2">
@@ -352,14 +350,14 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                         navigate("/");
                       }}
                     >
-                      {t("common.cancel", { defaultValue: "取消" })}
+                      {t("common.cancel")}
                     </Button>
                     <Button
                       color="primary"
                       className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
                       onPress={handleConfirm}
                     >
-                      {t("common.ok", { defaultValue: "确定" })}
+                      {t("common.ok")}
                     </Button>
                   </div>
                 }
@@ -376,32 +374,15 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     tabContent: "group-data-[selected=true]:text-white",
                   }}
                 >
-                  <Tab
-                    key="all"
-                    title={t("versions.tab.all", { defaultValue: "All" })}
-                  />
-                  <Tab
-                    key="release"
-                    title={t("versions.tab.release", {
-                      defaultValue: "Release",
-                    })}
-                  />
-                  <Tab
-                    key="preview"
-                    title={t("versions.tab.preview", {
-                      defaultValue: "Preview",
-                    })}
-                  />
+                  <Tab key="all" title={t("versions.tab.all")} />
+                  <Tab key="release" title={t("versions.tab.release")} />
+                  <Tab key="preview" title={t("versions.tab.preview")} />
                 </Tabs>
                 <div className="flex-1 min-w-[200px]">
                   <Input
                     value={query}
                     onValueChange={setQuery}
-                    placeholder={
-                      t("common.search", {
-                        defaultValue: "Search name or version",
-                      }) as string
-                    }
+                    placeholder={t("common.search") as string}
                     variant="bordered"
                     size="sm"
                     classNames={{
@@ -416,11 +397,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                       classNames={{
                         trigger: "data-[focus=true]:border-emerald-600",
                       }}
-                      label={
-                        t("versions.sort.label", {
-                          defaultValue: "Sort by",
-                        }) as string
-                      }
+                      label={t("versions.sort.label") as string}
                       selectedKeys={new Set([sortBy])}
                       onSelectionChange={(keys) => {
                         const v = Array.from(keys as Set<string>)[0] as any;
@@ -429,21 +406,13 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     >
                       <SelectItem key="version">
                         {sortAsc
-                          ? t("versions.sort.version_old_new", {
-                              defaultValue: "Version (old → new)",
-                            })
-                          : t("versions.sort.version", {
-                              defaultValue: "Version (new → old)",
-                            })}
+                          ? t("versions.sort.version_old_new")
+                          : t("versions.sort.version")}
                       </SelectItem>
                       <SelectItem key="name">
                         {sortAsc
-                          ? t("versions.sort.name_za", {
-                              defaultValue: "Name (Z → A)",
-                            })
-                          : t("versions.sort.name", {
-                              defaultValue: "Name (A → Z)",
-                            })}
+                          ? t("versions.sort.name_za")
+                          : t("versions.sort.name")}
                       </SelectItem>
                     </Select>
                   </div>
@@ -454,12 +423,8 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     className="min-w-0 px-2 sm:px-3"
                     aria-label={
                       (sortAsc
-                        ? t("versions.sort.order_asc", {
-                            defaultValue: "升序",
-                          })
-                        : t("versions.sort.order_desc", {
-                            defaultValue: "降序",
-                          })) as string
+                        ? t("versions.sort.order_asc")
+                        : t("versions.sort.order_desc")) as string
                     }
                   >
                     {sortAsc ? "↑" : "↓"}
@@ -558,10 +523,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     })()}
                     <span>
                       Vanilla{" "}
-                      {it.version ||
-                        t("launcherpage.version_select.unknown", {
-                          defaultValue: "Unknown",
-                        })}
+                      {it.version || t("launcherpage.version_select.unknown")}
                     </span>
                   </div>
                 </CardBody>
@@ -581,17 +543,12 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
             <>
               <BaseModalHeader className="flex items-center gap-2">
                 <h2 className="text-lg font-semibold">
-                  {t("versionselect.unsaved.title", {
-                    defaultValue: "未保存修改",
-                  })}
+                  {t("versionselect.unsaved.title")}
                 </h2>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-small text-default-600">
-                  {t("versionselect.unsaved.body", {
-                    defaultValue:
-                      "您更改了选择的版本，但尚未保存。是否保存后离开？",
-                  })}
+                  {t("versionselect.unsaved.body")}
                 </div>
               </BaseModalBody>
               <BaseModalFooter>
@@ -602,7 +559,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     if (navAttemptRef.current) navAttemptRef.current = null;
                   }}
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="danger"
@@ -612,9 +569,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     commitNavAttempt();
                   }}
                 >
-                  {t("versionselect.unsaved.discard", {
-                    defaultValue: "不保存离开",
-                  })}
+                  {t("versionselect.unsaved.discard")}
                 </Button>
                 <Button
                   color="primary"
@@ -633,9 +588,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     commitNavAttempt();
                   }}
                 >
-                  {t("versionselect.unsaved.save_and_leave", {
-                    defaultValue: "保存并离开",
-                  })}
+                  {t("versionselect.unsaved.save_and_leave")}
                 </Button>
               </BaseModalFooter>
             </>

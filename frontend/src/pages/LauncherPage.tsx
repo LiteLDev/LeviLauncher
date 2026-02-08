@@ -916,11 +916,7 @@ export const LauncherPage = (args: any) => {
             ) : (
               <div className="flex items-center gap-3 text-default-500">
                 <Spinner size="sm" color="success" />
-                <span>
-                  {t("launcherpage.gameinput.installing.preparing", {
-                    defaultValue: "正在准备下载...",
-                  })}
-                </span>
+                <span>{t("launcherpage.gameinput.installing.preparing")}</span>
               </div>
             )}
           </div>
@@ -931,17 +927,12 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
-            {t("launcherpage.gameinput.missing.title", {
-              defaultValue: "缺少 GameInput 组件",
-            })}
+            {t("launcherpage.gameinput.missing.title")}
           </h2>
         </BaseModalHeader>
         <BaseModalBody>
           <p className="text-default-600 font-medium">
-            {t("launcherpage.gameinput.missing.body", {
-              defaultValue:
-                "运行游戏需要 Microsoft GameInput 组件。是否现在下载安装？",
-            })}
+            {t("launcherpage.gameinput.missing.body")}
           </p>
         </BaseModalBody>
         <BaseModalFooter>
@@ -953,7 +944,7 @@ export const LauncherPage = (args: any) => {
               Window.Close();
             }}
           >
-            {t("common.quit_launcher", { defaultValue: "退出启动器" })}
+            {t("common.quit_launcher")}
           </Button>
           <Button
             color="primary"
@@ -966,9 +957,7 @@ export const LauncherPage = (args: any) => {
               setOverlayActive(true);
             }}
           >
-            {t("launcherpage.gameinput.missing.install_now", {
-              defaultValue: "立即安装",
-            })}
+            {t("launcherpage.gameinput.missing.install_now")}
           </Button>
         </BaseModalFooter>
       </>
@@ -1083,9 +1072,7 @@ export const LauncherPage = (args: any) => {
               } catch {}
             }}
           >
-            {t("launcherpage.install_confirm.done_and_check", {
-              defaultValue: "已完成，重新检测",
-            })}
+            {t("launcherpage.install_confirm.done_and_check")}
           </Button>
         </BaseModalFooter>
       </>
@@ -1180,7 +1167,7 @@ export const LauncherPage = (args: any) => {
               setModalState(0);
             }}
           >
-            {t("common.close", { defaultValue: "关闭" }) as unknown as string}
+            {t("common.close") as unknown as string}
           </Button>
         </BaseModalFooter>
       </>
@@ -1257,20 +1244,12 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-success-500">
-            {
-              t("launcherpage.shortcut.success.title", {
-                defaultValue: "快捷方式已创建",
-              }) as unknown as string
-            }
+            {t("launcherpage.shortcut.success.title") as unknown as string}
           </h2>
         </BaseModalHeader>
         <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium">
-            {
-              t("launcherpage.shortcut.success.body", {
-                defaultValue: "已在桌面创建该版本的快捷方式。",
-              }) as unknown as string
-            }
+            {t("launcherpage.shortcut.success.body") as unknown as string}
           </p>
         </BaseModalBody>
         <BaseModalFooter className="px-8 pb-8 pt-4">
@@ -1284,7 +1263,7 @@ export const LauncherPage = (args: any) => {
               setModalState(0);
             }}
           >
-            {t("common.close", { defaultValue: "关闭" }) as unknown as string}
+            {t("common.close") as unknown as string}
           </Button>
         </BaseModalFooter>
       </>
@@ -1293,16 +1272,12 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-emerald-600">
-            {t("launcherpage.register.installing.title", {
-              defaultValue: "正在注册到系统",
-            })}
+            {t("launcherpage.register.installing.title")}
           </h2>
         </BaseModalHeader>
         <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium mb-4">
-            {t("launcherpage.register.installing.body", {
-              defaultValue: "正在调用 wdapp.exe 执行注册，请稍候…",
-            })}
+            {t("launcherpage.register.installing.body")}
           </p>
           <Progress
             size="sm"
@@ -1317,16 +1292,12 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-success-500">
-            {t("launcherpage.register.success.title", {
-              defaultValue: "注册完成",
-            })}
+            {t("launcherpage.register.success.title")}
           </h2>
         </BaseModalHeader>
         <BaseModalBody className="px-8 py-4">
           <p className="text-default-600 font-medium">
-            {t("launcherpage.register.success.body", {
-              defaultValue: "已成功注册到系统，您可以通过系统应用列表启动。",
-            })}
+            {t("launcherpage.register.success.body")}
           </p>
         </BaseModalBody>
         <BaseModalFooter className="px-8 pb-8 pt-4">
@@ -1340,7 +1311,7 @@ export const LauncherPage = (args: any) => {
               setModalState(0);
             }}
           >
-            {t("common.close", { defaultValue: "关闭" }) as unknown as string}
+            {t("common.close") as unknown as string}
           </Button>
         </BaseModalFooter>
       </>
@@ -1349,9 +1320,7 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
           <h2 className="text-2xl font-black tracking-tight text-danger-500">
-            {t("launcherpage.register.failed.title", {
-              defaultValue: "注册失败",
-            })}
+            {t("launcherpage.register.failed.title")}
           </h2>
         </BaseModalHeader>
         <BaseModalBody className="px-8 py-4">
@@ -1362,9 +1331,9 @@ export const LauncherPage = (args: any) => {
                 const translated = t(key) as unknown as string;
                 if (launchErrorCode && translated && translated !== key)
                   return translated;
-                return t("launcherpage.register.failed.body", {
-                  defaultValue: "注册过程中发生错误，请重试或检查环境。",
-                }) as unknown as string;
+                return t(
+                  "launcherpage.register.failed.body",
+                ) as unknown as string;
               })()}
             </p>
           </div>
@@ -1380,7 +1349,7 @@ export const LauncherPage = (args: any) => {
               setModalState(0);
             }}
           >
-            {t("common.close", { defaultValue: "关闭" }) as unknown as string}
+            {t("common.close") as unknown as string}
           </Button>
         </BaseModalFooter>
       </>
@@ -1389,17 +1358,12 @@ export const LauncherPage = (args: any) => {
       <>
         <BaseModalHeader>
           <h2 className="text-2xl font-black tracking-tight text-warning-500">
-            {t("launcherpage.gdk_missing.title", {
-              defaultValue: "缺少 Microsoft GDK",
-            })}
+            {t("launcherpage.gdk_missing.title")}
           </h2>
         </BaseModalHeader>
         <BaseModalBody>
           <p className="text-default-600 font-medium">
-            {t("launcherpage.gdk_missing.body", {
-              defaultValue:
-                "未检测到 GDK 工具包，注册功能需先安装。是否跳转到设置页进行安装？",
-            })}
+            {t("launcherpage.gdk_missing.body")}
           </p>
         </BaseModalBody>
         <BaseModalFooter>
@@ -1412,7 +1376,7 @@ export const LauncherPage = (args: any) => {
               setModalState(0);
             }}
           >
-            {t("common.cancel", { defaultValue: "取消" }) as unknown as string}
+            {t("common.cancel") as unknown as string}
           </Button>
           <Button
             color="primary"
@@ -1425,11 +1389,7 @@ export const LauncherPage = (args: any) => {
               navigate("/settings");
             }}
           >
-            {
-              t("launcherpage.gdk_missing.go_settings", {
-                defaultValue: "前往设置",
-              }) as unknown as string
-            }
+            {t("launcherpage.gdk_missing.go_settings") as unknown as string}
           </Button>
         </BaseModalFooter>
       </>
@@ -1565,11 +1525,7 @@ export const LauncherPage = (args: any) => {
                           isLoadingVersions ? (
                             <div className="p-2 flex justify-center items-center gap-2 text-default-400 text-xs border-t border-default-100 dark:border-white/5">
                               <Spinner size="sm" color="success" />
-                              <span>
-                                {t("common.loading", {
-                                  defaultValue: "Loading...",
-                                })}
-                              </span>
+                              <span>{t("common.loading")}</span>
                             </div>
                           ) : null
                         }
@@ -1691,7 +1647,7 @@ export const LauncherPage = (args: any) => {
                           startContent={<FaCog />}
                           onPress={() => {
                             if (currentVersion) {
-                              navigate("/version-settings", {
+                              navigate("/versionSettings", {
                                 state: { name: currentVersion, returnTo: "/" },
                               });
                             } else {

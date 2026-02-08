@@ -302,7 +302,7 @@ function App() {
     if (navLocked) return;
     if (
       location.pathname === "/settings" ||
-      location.pathname === "/version-settings"
+      location.pathname === "/versionSettings"
     ) {
       try {
         window.dispatchEvent(
@@ -502,7 +502,7 @@ function App() {
                           element={<VersionSelectPage refresh={refresh} />}
                         />
                         <Route
-                          path="/version-settings"
+                          path="/versionSettings"
                           element={<VersionSettingsPage />}
                         />
                         <Route path="/mods" element={<ModsPage />} />

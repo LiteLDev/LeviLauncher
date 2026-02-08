@@ -7,6 +7,7 @@ import { IoArrowBack, IoArrowForward, IoChevronForward } from "react-icons/io5";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { LeviIcon } from "@/icons/LeviIcon";
 import { motion, AnimatePresence } from "framer-motion";
+import { useTranslation } from "react-i18next";
 
 interface TopBarProps {
   navLocked: boolean;
@@ -19,6 +20,7 @@ export const TopBar: React.FC<TopBarProps> = ({
   isOnboardingMode,
   revealStarted,
 }) => {
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -26,9 +28,10 @@ export const TopBar: React.FC<TopBarProps> = ({
 
   const getName = (value: string) => {
     try {
-      return decodeURIComponent(value);
+      const decoded = decodeURIComponent(value);
+      return decoded.charAt(0).toUpperCase() + decoded.slice(1);
     } catch {
-      return value;
+      return value.charAt(0).toUpperCase() + value.slice(1);
     }
   };
 
@@ -39,7 +42,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       <motion.div
         key="topbar"
         id="wails-draggable"
-        className="fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between px-4 bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl"
+        className="fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4 bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl"
         initial={{ x: -80, opacity: 0 }}
         animate={{
           x: revealStarted ? 0 : -80,
@@ -49,8 +52,8 @@ export const TopBar: React.FC<TopBarProps> = ({
         transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="absolute bottom-0 right-0 left-[calc(3.5rem+20px)] h-px bg-default-200/50 dark:bg-zinc-800/50" />
-        <div className="flex items-center gap-2 pl-2 overflow-hidden">
-          <div className="shrink-0 flex items-center">
+        <div className="flex items-center gap-2 overflow-hidden">
+          <div className="w-14 shrink-0 flex items-center justify-center">
             <LeviIcon width={32} height={32} />
           </div>
 
@@ -92,7 +95,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                     : "text-default-500"
                 }`}
               >
-                LeviLauncher
+                {pathnames.length === 0 ? "LeviLauncher" : "Home"}
               </span>
             ) : (
               <Link
@@ -103,7 +106,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                     : "text-default-500 hover:text-default-900"
                 }`}
               >
-                LeviLauncher
+                {pathnames.length === 0 ? "LeviLauncher" : "Home"}
               </Link>
             )}
             {pathnames.map((value, index) => {

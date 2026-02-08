@@ -16,7 +16,6 @@ import {
   Chip,
   ModalContent,
   Progress,
-  Spinner,
   useDisclosure,
   Textarea,
 } from "@heroui/react";
@@ -24,7 +23,6 @@ import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { FaWindows } from "react-icons/fa";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as mcservice from "bindings/github.com/liteldev/LeviLauncher/internal/mcservice/models";
 import { PageHeader } from "@/components/PageHeader";
 
 export default function VersionSettingsPage() {

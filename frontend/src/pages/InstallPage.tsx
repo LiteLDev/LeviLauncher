@@ -32,6 +32,9 @@ import {
   BaseModalFooter,
 } from "@/components/BaseModal";
 import { PageHeader } from "@/components/PageHeader";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 
 type ItemType = "Preview" | "Release";
 
@@ -537,15 +540,10 @@ export default function InstallPage() {
   };
 
   return (
-    <motion.div
-      className="w-full max-w-full mx-auto p-4 h-full flex flex-col"
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-    >
+    <PageContainer>
       <div className="flex flex-col h-full">
-        <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-          <CardHeader className="p-6 block border-b border-default-200 dark:border-white/10">
+        <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
+          <CardHeader className={LAYOUT.GLASS_CARD.HEADER}>
             <PageHeader
               title={headerTitle}
               description={
@@ -1029,6 +1027,6 @@ export default function InstallPage() {
           )}
         </ModalContent>
       </BaseModal>
-    </motion.div>
+    </PageContainer>
   );
 }

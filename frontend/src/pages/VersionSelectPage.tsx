@@ -5,6 +5,10 @@ import {
   BaseModalBody,
   BaseModalFooter,
 } from "@/components/BaseModal";
+import { getPlayerGamertagMap } from "@/utils/content";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 import { PageHeader } from "@/components/PageHeader";
 import {
   Button,
@@ -329,13 +333,13 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
 
   return (
     <>
-      <div className="relative w-full p-4 flex flex-col gap-6">
+      <PageContainer className="relative" animate={false}>
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
-          <Card className="w-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+          <Card className={cn("w-full", LAYOUT.GLASS_CARD.BASE)}>
             <CardHeader className="flex flex-col gap-6 p-6">
               <PageHeader
                 className="w-full"
@@ -458,32 +462,42 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
               transition={{
                 layout: { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] },
               }}
-              whileHover={{ y: -2 }}
+              whileHover={{ scale: 1.02 }}
               whileTap={{ scale: 0.98 }}
               className="w-full min-w-0"
             >
               <Card
-                className={`h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl transition ${
+                isPressable
+                onPress={() => selectVersionByUser(it.name)}
+                className={cn(
+                  "w-full h-full transition-all",
+                  LAYOUT.GLASS_CARD.BASE,
+                  "border-2 border-solid",
                   selectedVersionName === it.name
-                    ? "ring-2 ring-emerald-700"
-                    : ""
-                }`}
+                    ? "border-emerald-600 dark:border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 shadow-emerald-500/20"
+                    : "border-transparent hover:border-default-200 dark:hover:border-zinc-700",
+                )}
               >
-                <CardBody
-                  className="p-3 sm:p-4"
-                  onClick={() => selectVersionByUser(it.name)}
-                >
-                  <div className="flex items-center justify-between gap-2">
-                    <div className="font-semibold text-base truncate">
-                      {it.name}
-                    </div>
+                <CardBody className="p-4 flex flex-col gap-1">
+                  <div className="flex items-center justify-between w-full">
+                    <div className="font-bold text-lg truncate">{it.name}</div>
                     <div className="flex items-center gap-2">
                       {it.isPreview ? (
-                        <Chip size="sm" color="warning" variant="flat">
+                        <Chip
+                          size="sm"
+                          color="warning"
+                          variant="flat"
+                          className="shrink-0"
+                        >
                           Preview
                         </Chip>
                       ) : (
-                        <Chip size="sm" color="success" variant="flat">
+                        <Chip
+                          size="sm"
+                          color="success"
+                          variant="flat"
+                          className="shrink-0"
+                        >
                           Release
                         </Chip>
                       )}
@@ -495,6 +509,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                           openEditFor(it.name);
                         }}
                         aria-label="settings"
+                        className="shrink-0"
                       >
                         <svg
                           width="18"
@@ -512,7 +527,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                       </Button>
                     </div>
                   </div>
-                  <div className="text-xs text-default-500 mt-1 flex items-center gap-2">
+                  <div className="flex items-center gap-2 text-default-500 shrink-0 text-sm">
                     {(() => {
                       const u = logoMap.get(it.name);
                       return u ? (
@@ -531,7 +546,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
             </motion.div>
           ))}
         </motion.div>
-      </div>
+      </PageContainer>
 
       <BaseModal
         isOpen={unsavedDisclosure.isOpen}

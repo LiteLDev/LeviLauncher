@@ -55,12 +55,16 @@ import {
   BaseModalFooter,
 } from "@/components/BaseModal";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 
 let __didCheckGameInput = false;
 let __didCheckGamingServices = false;
 const IGNORE_GS_KEY = "ll.ignore.gs";
 
 export const LauncherPage = (args: any) => {
+  const [isAnimating, setIsAnimating] = React.useState(true);
   let [currentVersion, setCurrentVersion] = React.useState<string>("");
   const [displayVersion, setDisplayVersion] = React.useState<string>("");
   const [displayName, setDisplayName] = React.useState<string>("");
@@ -1414,15 +1418,19 @@ export const LauncherPage = (args: any) => {
           />
         )}
       </AnimatePresence>
-      <div className="relative w-full max-w-full mx-auto px-4 py-4 h-full flex flex-col justify-start">
+      <PageContainer
+        className={cn("relative", isAnimating ? "overflow-hidden" : "")}
+        animate={false}
+      >
         {/* Hero Launch Card */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
-          className="mb-4 sm:mb-6"
         >
-          <Card className="relative overflow-hidden border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+          <Card
+            className={cn("relative overflow-hidden", LAYOUT.GLASS_CARD.BASE)}
+          >
             <CardBody className="p-6 relative flex flex-col gap-6">
               {/* Main Layout */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -1743,7 +1751,12 @@ export const LauncherPage = (args: any) => {
             transition={{ delay: 0.4 }}
             className="md:col-span-1"
           >
-            <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group">
+            <Card
+              className={cn(
+                "h-full transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group",
+                LAYOUT.GLASS_CARD.BASE,
+              )}
+            >
               <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">
                 <div className="flex items-center gap-2">
                   <div className="p-1.5 rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400">
@@ -1823,6 +1836,7 @@ export const LauncherPage = (args: any) => {
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
             className="md:col-span-1"
+            onAnimationComplete={() => setIsAnimating(false)}
           >
             <ContentDownloadCard />
           </motion.div>
@@ -1858,7 +1872,7 @@ export const LauncherPage = (args: any) => {
             )}
           </ModalContent>
         </BaseModal>
-      </div>
+      </PageContainer>
     </>
   );
 };

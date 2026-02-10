@@ -21,8 +21,8 @@ import {
   FaList,
   FaInfoCircle,
 } from "react-icons/fa";
+import { IoArrowBack } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
-import { Window } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 
 interface GlobalNavbarProps {
@@ -63,13 +63,6 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
       navbarClass: "flex",
     },
     {
-      key: "settings",
-      label: t("app.settings"),
-      path: "/settings",
-      icon: <FaCog size={18} />,
-      navbarClass: "flex",
-    },
-    {
       key: "versions",
       label: t("nav.versions"),
       path: "/versions",
@@ -86,6 +79,13 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
       navbarClass: "hidden lg:flex",
       menuClass: "flex lg:hidden",
       breakpoint: "lg",
+    },
+    {
+      key: "settings",
+      label: t("app.settings"),
+      path: "/settings",
+      icon: <FaCog size={18} />,
+      navbarClass: "flex",
     },
   ];
 
@@ -128,6 +128,17 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
       >
         <div className="pointer-events-auto w-full bg-white/80 dark:bg-zinc-900/40 backdrop-blur-2xl border border-white/40 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 rounded-2xl px-2 py-2 sm:px-4 flex items-center gap-4">
           <div className="flex items-center gap-3 shrink-0">
+            <Button
+              isIconOnly
+              variant="light"
+              size="sm"
+              radius="lg"
+              onPress={() => tryNavigate(-1)}
+              isDisabled={navLocked}
+              className="wails-no-drag text-default-500"
+            >
+              <IoArrowBack size={20} />
+            </Button>
             <div className="p-1">
               <LeviIcon width={28} height={28} />
             </div>

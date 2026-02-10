@@ -478,6 +478,12 @@ function App() {
                 </AnimatePresence>
 
                 <div
+                  style={
+                    {
+                      "--content-pt":
+                        layoutMode === "sidebar" ? "4.5rem" : "5rem",
+                    } as React.CSSProperties
+                  }
                   className={`w-full min-h-dvh flex ${
                     layoutMode === "sidebar" ? "flex-row" : "flex-col"
                   } overflow-x-hidden bg-background text-foreground ${
@@ -495,7 +501,6 @@ function App() {
                         hasEnteredLauncher={hasEnteredLauncher}
                         tryNavigate={tryNavigate}
                       />
-                      <div className="h-[69px]" />
                     </>
                   ) : (
                     <>
@@ -518,7 +523,7 @@ function App() {
 
                   <motion.div
                     className={`w-full flex-1 min-h-0 overflow-hidden ${
-                      layoutMode === "sidebar" ? "pl-14 pt-14" : ""
+                      layoutMode === "sidebar" ? "pl-14" : ""
                     }`}
                     initial={{ opacity: 0 }}
                     animate={{ opacity: revealStarted ? 1 : 0 }}

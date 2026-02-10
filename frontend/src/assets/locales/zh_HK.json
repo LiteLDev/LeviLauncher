@@ -7,7 +7,8 @@
     "versions": "實例",
     "more": "更多",
     "about": "關於",
-    "back": "返回"
+    "back": "返回",
+    "forward": "前進"
   },
   "theme": {
     "toggle": "切換主題"
@@ -147,11 +148,11 @@
     }
   },
   "moddedcard": {
-    "title": "插件",
+    "title": "模組",
     "content": {
-      "none": "未找到插件"
+      "none": "未找到模組"
     },
-    "manage": "管理插件"
+    "manage": "管理模組"
   },
   "download_manager": {
     "title": "下載管理",
@@ -264,6 +265,7 @@
         "label": "選擇本機安裝包 (.msixvc)",
         "hint": "預設使用安裝器目錄下已下載的檔案"
       },
+      "levilamina_unsupported": "此遊戲版本不支援 LeviLamina",
       "title": "安裝"
     },
     "customappx": {
@@ -290,6 +292,13 @@
       "desc": "使用垂直側邊欄代替頂部導航欄",
       "title_navbar": "使用頂部導航欄",
       "desc_navbar": "開啟後使用頂部導航欄代替默認的垂直側邊欄"
+    },
+    "tabs": {
+      "general": "基礎設定",
+      "components": "第三方元件",
+      "others": "其他設定",
+      "updates": "軟體更新",
+      "about": "關於"
     },
     "unsaved": {
       "title": "未儲存修改",
@@ -552,6 +561,13 @@
       "name": "名稱"
     },
     "edit": {
+      "tabs": {
+        "general": "一般",
+        "launch": "啟動",
+        "features": "功能",
+        "manage": "管理",
+        "loader": "載入器"
+      },
       "title": "實例設定",
       "new_name": "新名稱",
       "placeholder": "輸入新名稱",
@@ -678,7 +694,7 @@
     "summary_title_partial": "匯入完成（部分失敗）",
     "summary_success": "成功",
     "summary_failed": "失敗",
-    "details_title": "插件詳情",
+    "details_title": "模組詳情",
     "field_name": "名稱",
     "field_version": "版本",
     "field_type": "類型",
@@ -689,8 +705,8 @@
     "summary_deleted": "已刪除",
     "confirm_delete_title": "確認刪除",
     "confirm_delete_body": "確定要刪除此{{type}}嗎？此操作不可復原。",
-    "dll_modal_title": "匯入 DLL 插件",
-    "dll_name": "插件名稱",
+    "dll_modal_title": "匯入 DLL 模組",
+    "dll_name": "模組名稱",
     "dll_type": "類型",
     "dll_version": "版本",
     "err_invalid_name": "無效的版本名或模組名",
@@ -707,13 +723,13 @@
     "err_lip_install_failed_suggestion": "安裝失敗，請嘗試重新安裝 Minecraft",
     "overwrite_modal_title": "偵測到重複",
     "overwrite_modal_body": "同名模組資料夾已存在，是否覆蓋（更新）？",
-    "toggle_label": "啟用插件",
+    "toggle_label": "啟用模組",
     "toggle_on": "已啟用",
     "toggle_off": "已關閉",
-    "toggle_desc_on": "插件已啟用，啟動遊戲時會載入。",
-    "toggle_desc_off": "插件已關閉，啟動遊戲時不會載入。",
-    "only_enabled": "僅顯示已啟用的插件",
-    "drop_hint": "拖入 .zip 或 .dll 以匯入插件",
+    "toggle_desc_on": "模組已啟用，啟動遊戲時會載入。",
+    "toggle_desc_off": "模組已關閉，啟動遊戲時不會載入。",
+    "only_enabled": "僅顯示已啟用的模組",
+    "drop_hint": "拖入 .zip 或 .dll 以匯入模組",
     "rc_warning": {
       "title": "實驗性版本警告",
       "body_1": "檢測到您即將安裝的 LeviLamina 版本 ({{version}}) 為候選發布版 (RC)。",

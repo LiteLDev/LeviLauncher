@@ -18,10 +18,12 @@ import {
   ModalContent,
   useDisclosure,
   Switch,
+  Tabs,
+  Tab,
 } from "@heroui/react";
 import { RxUpdate } from "react-icons/rx";
 import { FaGithub, FaDiscord } from "react-icons/fa";
-import { LuFolderOpen, LuHardDrive, LuMonitor } from "react-icons/lu";
+import { LuHardDrive } from "react-icons/lu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -61,6 +63,8 @@ import {
 } from "@/components/BaseModal";
 import { PageHeader } from "@/components/PageHeader";
 import { normalizeLanguage } from "@/utils/i18nUtils";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -95,6 +99,9 @@ export const SettingsPage: React.FC = () => {
   const gdkLicenseDisclosure = useDisclosure();
   const gdkInstallDisclosure = useDisclosure();
   const [gdkLicenseAccepted, setGdkLicenseAccepted] = useState<boolean>(false);
+
+  // Tab State
+  const [selectedTab, setSelectedTab] = useState<string>("general");
 
   const [layoutMode, setLayoutMode] = useState<"navbar" | "sidebar">(() => {
     try {
@@ -414,296 +421,451 @@ export const SettingsPage: React.FC = () => {
     return () => offs.forEach((off) => off());
   }, [hasBackend]);
 
-  const cardVariants = {
-    hidden: { opacity: 0, y: 20 },
-    visible: (i: number) => ({
-      opacity: 1,
-      y: 0,
-      transition: {
-        delay: i * 0.1,
-        duration: 0.4,
-        ease: "easeOut",
-      },
-    }),
-  };
-
   return (
-    <div className="relative w-full p-4 flex flex-col">
-      {/* Background Gradients */}
+    <PageContainer className="relative" animate={false}>
+      <div className="flex flex-col gap-6">
+        {/* Header Card */}
+        <motion.div
+          initial={{ opacity: 0, y: -20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4 }}
+        >
+          <Card className={LAYOUT.GLASS_CARD.BASE}>
+            <CardBody className="p-6">
+              <PageHeader
+                title={t("settings.header.title")}
+                description={t("settings.header.content")}
+              />
+              <Tabs
+                aria-label="Settings Tabs"
+                selectedKey={selectedTab}
+                onSelectionChange={(k) => setSelectedTab(k as string)}
+                classNames={{
+                  base: "mt-4",
+                }}
+              >
+                <Tab key="general" title={t("settings.tabs.general")} />
+                <Tab key="components" title={t("settings.tabs.components")} />
+                <Tab key="others" title={t("settings.tabs.others")} />
+                <Tab key="updates" title={t("settings.tabs.updates")} />
+                <Tab key="about" title={t("settings.tabs.about")} />
+              </Tabs>
+            </CardBody>
+          </Card>
+        </motion.div>
 
-      <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.4 }}
-        className="mb-6"
-      >
-        <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-          <CardBody className="p-6">
-            <PageHeader
-              title={t("settings.header.title")}
-              description={t("settings.header.content")}
-            />
-          </CardBody>
-        </Card>
-      </motion.div>
+        {/* Content Card */}
+        <motion.div
+          key={selectedTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className={LAYOUT.GLASS_CARD.BASE}>
+            <CardBody className="p-6">
+              {selectedTab === "general" && (
+                <div className="flex flex-col gap-6">
+                  {/* Paths */}
+                  <div className="flex flex-col gap-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">
+                          {t("settings.body.paths.title")}
+                        </p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          variant="light"
+                          radius="full"
+                          onPress={() => resetOnOpen()}
+                        >
+                          {t("settings.body.paths.reset")}
+                        </Button>
+                        <Button
+                          color="primary"
+                          radius="full"
+                          isDisabled={!newBaseRoot || !baseRootWritable}
+                          isLoading={savingBaseRoot}
+                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                          onPress={async () => {
+                            setSavingBaseRoot(true);
+                            try {
+                              const ok = await CanWriteToDir(newBaseRoot);
+                              if (!ok) {
+                                setBaseRootWritable(false);
+                              } else {
+                                const err = await SetBaseRoot(newBaseRoot);
+                                if (!err) {
+                                  const br = await GetBaseRoot();
+                                  setBaseRoot(String(br || ""));
+                                  const id = await GetInstallerDir();
+                                  setInstallerDir(String(id || ""));
+                                  const vd = await GetVersionsDir();
+                                  setVersionsDir(String(vd || ""));
+                                }
+                              }
+                            } catch {}
+                            setSavingBaseRoot(false);
+                          }}
+                        >
+                          {t("settings.body.paths.apply")}
+                        </Button>
+                      </div>
+                    </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-        <div className="flex flex-col gap-6">
-          {/* Left Column: Paths */}
-          <motion.div
-            custom={0}
-            initial="hidden"
-            animate="visible"
-            variants={cardVariants}
-          >
-            <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-              <CardBody className="p-6 flex flex-col gap-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <p className="text-large font-bold">
-                      {t("settings.body.paths.title")}
-                    </p>
+                    <div className="space-y-4">
+                      <Input
+                        label={t("settings.body.paths.base_root") as string}
+                        value={newBaseRoot}
+                        onValueChange={setNewBaseRoot}
+                        radius="lg"
+                        variant="bordered"
+                        classNames={{
+                          inputWrapper:
+                            "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                        }}
+                        endContent={
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            radius="full"
+                            onPress={async () => {
+                              try {
+                                const options: any = {
+                                  Title: t("settings.body.paths.title"),
+                                  CanChooseDirectories: true,
+                                  CanChooseFiles: false,
+                                  PromptForSingleSelection: true,
+                                };
+                                if (baseRoot) {
+                                  options.Directory = baseRoot;
+                                }
+                                console.log(options);
+                                const result = await Dialogs.OpenFile(options);
+                                if (
+                                  Array.isArray(result) &&
+                                  result.length > 0
+                                ) {
+                                  setNewBaseRoot(result[0]);
+                                } else if (
+                                  typeof result === "string" &&
+                                  result
+                                ) {
+                                  setNewBaseRoot(result);
+                                }
+                              } catch (e) {
+                                console.error(e);
+                              }
+                            }}
+                          >
+                            {t("common.browse")}
+                          </Button>
+                        }
+                      />
+                      {newBaseRoot &&
+                      newBaseRoot !== baseRoot &&
+                      baseRootWritable ? (
+                        <div
+                          className="text-tiny text-warning-500 px-1"
+                          title={newBaseRoot}
+                        >
+                          {t("settings.body.paths.base_root") +
+                            ": " +
+                            newBaseRoot}
+                        </div>
+                      ) : null}
+                      {!baseRootWritable ? (
+                        <div className="text-tiny text-danger-500 px-1">
+                          {t("settings.body.paths.not_writable")}
+                        </div>
+                      ) : null}
+
+                      <div className="grid grid-cols-1 gap-2 pt-2">
+                        <div className="p-3 rounded-xl bg-default-100/50 dark:bg-zinc-800/30 border border-default-200/50 dark:border-white/5">
+                          <div
+                            className="text-tiny text-default-500 flex items-center gap-2 truncate"
+                            title={installerDir || "-"}
+                          >
+                            <LuHardDrive size={14} />
+                            <span className="font-medium">
+                              {t("settings.body.paths.installer")}:
+                            </span>
+                            <span className="opacity-70">
+                              {installerDir || "-"}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="p-3 rounded-xl bg-default-100/50 dark:bg-zinc-800/30 border border-default-200/50 dark:border-white/5">
+                          <div
+                            className="text-tiny text-default-500 flex items-center gap-2 truncate"
+                            title={versionsDir || "-"}
+                          >
+                            <LuHardDrive size={14} />
+                            <span className="font-medium">
+                              {t("settings.body.paths.versions")}:
+                            </span>
+                            <span className="opacity-70">
+                              {versionsDir || "-"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="light"
-                      radius="full"
-                      onPress={() => resetOnOpen()}
-                    >
-                      {t("settings.body.paths.reset")}
-                    </Button>
-                    <Button
-                      color="primary"
-                      radius="full"
-                      isDisabled={!newBaseRoot || !baseRootWritable}
-                      isLoading={savingBaseRoot}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                      onPress={async () => {
-                        setSavingBaseRoot(true);
-                        try {
-                          const ok = await CanWriteToDir(newBaseRoot);
-                          if (!ok) {
-                            setBaseRootWritable(false);
-                          } else {
-                            const err = await SetBaseRoot(newBaseRoot);
-                            if (!err) {
-                              const br = await GetBaseRoot();
-                              setBaseRoot(String(br || ""));
-                              const id = await GetInstallerDir();
-                              setInstallerDir(String(id || ""));
-                              const vd = await GetVersionsDir();
-                              setVersionsDir(String(vd || ""));
-                            }
-                          }
-                        } catch {}
-                        setSavingBaseRoot(false);
-                      }}
-                    >
-                      {t("settings.body.paths.apply")}
-                    </Button>
-                  </div>
-                </div>
 
-                <div className="space-y-4">
-                  <Input
-                    label={t("settings.body.paths.base_root") as string}
-                    value={newBaseRoot}
-                    onValueChange={setNewBaseRoot}
-                    radius="lg"
-                    variant="bordered"
-                    classNames={{
-                      inputWrapper:
-                        "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
-                    }}
-                    endContent={
-                      <Button
-                        size="sm"
+                  <Divider className="bg-default-200/50" />
+
+                  {/* Language */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <p className="font-medium">
+                        {t("settings.body.language.name")}
+                      </p>
+                      <p className="text-tiny text-default-500">
+                        {langNames.find((l) => l.code === selectedLang)
+                          ?.language || selectedLang}
+                      </p>
+                      {languageChanged && (
+                        <div className="text-tiny text-warning-500 mt-1">
+                          {t("settings.lang.changed")}
+                        </div>
+                      )}
+                    </div>
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button radius="full" variant="bordered">
+                          {t("settings.body.language.button")}
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu
+                        aria-label="Language selection"
                         variant="flat"
-                        radius="full"
-                        onPress={async () => {
-                          try {
-                            const options: any = {
-                              Title: t("settings.body.paths.title"),
-                              CanChooseDirectories: true,
-                              CanChooseFiles: false,
-                              PromptForSingleSelection: true,
-                            };
-                            if (baseRoot) {
-                              options.Directory = baseRoot;
-                            }
-                            console.log(options);
-                            const result = await Dialogs.OpenFile(options);
-                            if (Array.isArray(result) && result.length > 0) {
-                              setNewBaseRoot(result[0]);
-                            } else if (typeof result === "string" && result) {
-                              setNewBaseRoot(result);
-                            }
-                          } catch (e) {
-                            console.error(e);
+                        disallowEmptySelection
+                        selectionMode="single"
+                        className="max-h-60 overflow-y-auto"
+                        selectedKeys={new Set([selectedLang])}
+                        onSelectionChange={(keys) => {
+                          const arr = Array.from(
+                            keys as unknown as Set<string>,
+                          );
+                          const next = arr[0];
+                          if (typeof next === "string" && next.length > 0) {
+                            setSelectedLang(next);
+                            Promise.resolve(i18n.changeLanguage(next)).then(
+                              () => {
+                                try {
+                                  localStorage.setItem("i18nextLng", next);
+                                } catch {}
+                                setLanguageChanged(true);
+                              },
+                            );
                           }
                         }}
                       >
-                        {t("common.browse")}
-                      </Button>
-                    }
-                  />
-                  {newBaseRoot &&
-                  newBaseRoot !== baseRoot &&
-                  baseRootWritable ? (
-                    <div
-                      className="text-tiny text-warning-500 px-1"
-                      title={newBaseRoot}
-                    >
-                      {t("settings.body.paths.base_root") + ": " + newBaseRoot}
-                    </div>
-                  ) : null}
-                  {!baseRootWritable ? (
-                    <div className="text-tiny text-danger-500 px-1">
-                      {t("settings.body.paths.not_writable")}
-                    </div>
-                  ) : null}
+                        {langNames.map((lang) => (
+                          <DropdownItem
+                            key={lang.code}
+                            textValue={lang.language}
+                          >
+                            {lang.language}
+                          </DropdownItem>
+                        ))}
+                      </DropdownMenu>
+                    </Dropdown>
+                  </div>
 
-                  <div className="grid grid-cols-1 gap-2 pt-2">
-                    <div className="p-3 rounded-xl bg-default-100/50 dark:bg-zinc-800/30 border border-default-200/50 dark:border-white/5">
-                      <div
-                        className="text-tiny text-default-500 flex items-center gap-2 truncate"
-                        title={installerDir || "-"}
-                      >
-                        <LuHardDrive size={14} />
-                        <span className="font-medium">
-                          {t("settings.body.paths.installer")}:
-                        </span>
-                        <span className="opacity-70">
-                          {installerDir || "-"}
-                        </span>
+                  <Divider className="bg-default-200/50" />
+
+                  {/* Navigation Layout */}
+                  <div className="flex flex-col gap-6">
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">
+                          {t("settings.layout.title_navbar")}
+                        </p>
+                        <p className="text-tiny text-default-500">
+                          {t("settings.layout.desc_navbar")}
+                        </p>
                       </div>
+                      <Switch
+                        size="sm"
+                        isSelected={layoutMode === "navbar"}
+                        onValueChange={(isSelected) => {
+                          const mode = isSelected ? "navbar" : "sidebar";
+                          setLayoutMode(mode);
+                          localStorage.setItem("app.layoutMode", mode);
+                          window.dispatchEvent(
+                            new CustomEvent("app-layout-changed"),
+                          );
+                        }}
+                        classNames={{
+                          wrapper: "group-data-[selected=true]:bg-emerald-500",
+                        }}
+                      />
                     </div>
-                    <div className="p-3 rounded-xl bg-default-100/50 dark:bg-zinc-800/30 border border-default-200/50 dark:border-white/5">
-                      <div
-                        className="text-tiny text-default-500 flex items-center gap-2 truncate"
-                        title={versionsDir || "-"}
-                      >
-                        <LuHardDrive size={14} />
-                        <span className="font-medium">
-                          {t("settings.body.paths.versions")}:
-                        </span>
-                        <span className="opacity-70">{versionsDir || "-"}</span>
+
+                    <Divider className="bg-default-200/50" />
+
+                    {/* Animation */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col">
+                        <p className="font-medium">
+                          {t("settings.appearance.disable_animations")}
+                        </p>
+                        <p className="text-tiny text-default-500">
+                          {t("settings.appearance.disable_animations_desc")}
+                        </p>
                       </div>
+                      <Switch
+                        size="sm"
+                        isSelected={disableAnimations}
+                        onValueChange={(isSelected) => {
+                          setDisableAnimations(isSelected);
+                          localStorage.setItem(
+                            "app.disableAnimations",
+                            String(isSelected),
+                          );
+                          window.dispatchEvent(
+                            new CustomEvent("app-animations-changed"),
+                          );
+                        }}
+                        classNames={{
+                          wrapper: "group-data-[selected=true]:bg-emerald-500",
+                        }}
+                      />
+                    </div>
+
+                    <Divider className="bg-default-200/50" />
+
+                    {/* Discord RPC */}
+                    <div className="flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">
+                          {t("settings.discord_rpc.title")}
+                        </p>
+                        <p className="text-tiny text-default-500">
+                          {t("settings.discord_rpc.desc")}
+                        </p>
+                      </div>
+                      <Switch
+                        size="sm"
+                        isSelected={discordRpcEnabled}
+                        onValueChange={(isSelected) => {
+                          setDiscordRpcEnabled(isSelected);
+                          SetDisableDiscordRPC(!isSelected);
+                        }}
+                        classNames={{
+                          wrapper: "group-data-[selected=true]:bg-emerald-500",
+                        }}
+                      />
                     </div>
                   </div>
                 </div>
-              </CardBody>
-            </Card>
-          </motion.div>
+              )}
 
-          {/* Dependencies */}
-          <motion.div
-            custom={2}
-            initial="hidden"
-            animate="visible"
-            variants={cardVariants}
-          >
-            <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-              <CardBody className="p-6 flex flex-col gap-6">
-                {/* GDK */}
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <p className="font-medium">{t("settings.gdk.title")}</p>
-                    <p className="text-tiny text-default-500">
-                      {t("settings.gdk.path_label", {
-                        path: "C:\\Program Files (x86)\\Microsoft GDK",
-                      })}
-                    </p>
-                  </div>
-                  {gdkInstalled ? (
-                    <Chip color="success" variant="flat">
-                      {t("settings.gdk.installed")}
-                    </Chip>
-                  ) : (
-                    <Button
-                      radius="full"
-                      variant="bordered"
-                      size="sm"
-                      onPress={() => {
-                        setGdkLicenseAccepted(false);
-                        gdkLicenseDisclosure.onOpen();
-                      }}
-                    >
-                      {t("settings.gdk.install_button")}
-                    </Button>
-                  )}
-                </div>
-
-                <Divider className="bg-default-200/50" />
-
-                {/* LIP */}
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <p className="font-medium">{t("settings.lip.title")}</p>
-                    <p className="text-tiny text-default-500">
-                      {lipInstalled
-                        ? t("settings.lip.installed", { version: lipVersion })
-                        : t("settings.lip.description")}
-                    </p>
-                  </div>
-                  {lipInstalled ? (
-                    <div className="flex items-center gap-2">
+              {selectedTab === "components" && (
+                <div className="flex flex-col gap-6">
+                  {/* GDK */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">{t("settings.gdk.title")}</p>
+                      <p className="text-tiny text-default-500">
+                        {t("settings.gdk.path_label", {
+                          path: "C:\\Program Files (x86)\\Microsoft GDK",
+                        })}
+                      </p>
+                    </div>
+                    {gdkInstalled ? (
                       <Chip color="success" variant="flat">
-                        {t("settings.lip.installed_label")}
+                        {t("settings.gdk.installed")}
                       </Chip>
-                      {hasLipUpdate && (
-                        <Button
-                          variant="bordered"
-                          radius="full"
-                          isLoading={installingLip}
-                          isDisabled={installingLip}
-                          onPress={() => {
-                            setInstallingLip(true);
-                            setLipError("");
-                            lipProgressDisclosure.onOpen();
-                            InstallLip().then((err) => {
-                              if (err) {
-                                setInstallingLip(false);
-                                setLipError(err);
-                              }
-                            });
-                          }}
-                        >
-                          {t("settings.lip.update_button", {
-                            version: lipLatestVersion,
-                          })}
-                        </Button>
-                      )}
+                    ) : (
+                      <Button
+                        radius="full"
+                        variant="bordered"
+                        size="sm"
+                        onPress={() => {
+                          setGdkLicenseAccepted(false);
+                          gdkLicenseDisclosure.onOpen();
+                        }}
+                      >
+                        {t("settings.gdk.install_button")}
+                      </Button>
+                    )}
+                  </div>
+
+                  <Divider className="bg-default-200/50" />
+
+                  {/* LIP */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">{t("settings.lip.title")}</p>
+                      <p className="text-tiny text-default-500">
+                        {lipInstalled
+                          ? t("settings.lip.installed", {
+                              version: lipVersion,
+                            })
+                          : t("settings.lip.description")}
+                      </p>
                     </div>
-                  ) : (
-                    <Button
-                      radius="full"
-                      variant="bordered"
-                      size="sm"
-                      isLoading={installingLip}
-                      isDisabled={installingLip}
-                      onPress={() => {
-                        setInstallingLip(true);
-                        setLipError("");
-                        lipProgressDisclosure.onOpen();
-                        InstallLip().then((err) => {
-                          if (err) {
-                            setInstallingLip(false);
-                            setLipError(err);
-                          }
-                        });
-                      }}
-                    >
-                      {installingLip
-                        ? t("settings.lip.installing")
-                        : t("settings.lip.install_button")}
-                    </Button>
-                  )}
+                    {lipInstalled ? (
+                      <div className="flex items-center gap-2">
+                        <Chip color="success" variant="flat">
+                          {t("settings.lip.installed_label")}
+                        </Chip>
+                        {hasLipUpdate && (
+                          <Button
+                            variant="bordered"
+                            radius="full"
+                            isLoading={installingLip}
+                            isDisabled={installingLip}
+                            onPress={() => {
+                              setInstallingLip(true);
+                              setLipError("");
+                              lipProgressDisclosure.onOpen();
+                              InstallLip().then((err) => {
+                                if (err) {
+                                  setInstallingLip(false);
+                                  setLipError(err);
+                                }
+                              });
+                            }}
+                          >
+                            {t("settings.lip.update_button", {
+                              version: lipLatestVersion,
+                            })}
+                          </Button>
+                        )}
+                      </div>
+                    ) : (
+                      <Button
+                        radius="full"
+                        variant="bordered"
+                        size="sm"
+                        isLoading={installingLip}
+                        isDisabled={installingLip}
+                        onPress={() => {
+                          setInstallingLip(true);
+                          setLipError("");
+                          lipProgressDisclosure.onOpen();
+                          InstallLip().then((err) => {
+                            if (err) {
+                              setInstallingLip(false);
+                              setLipError(err);
+                            }
+                          });
+                        }}
+                      >
+                        {installingLip
+                          ? t("settings.lip.installing")
+                          : t("settings.lip.install_button")}
+                      </Button>
+                    )}
+                  </div>
                 </div>
+              )}
 
-                <Divider className="bg-default-200/50" />
-
-                {/* Process Management */}
+              {selectedTab === "others" && (
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <p className="font-medium">{t("settings.process.title")}</p>
@@ -719,368 +881,212 @@ export const SettingsPage: React.FC = () => {
                     {t("settings.process.scan")}
                   </Button>
                 </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-        </div>
+              )}
 
-        {/* Right Column: Preferences, GDK, Update, About */}
-        <div className="flex flex-col gap-6">
-          <motion.div
-            custom={1}
-            initial="hidden"
-            animate="visible"
-            variants={cardVariants}
-          >
-            <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-              <CardBody className="p-6 flex flex-col gap-6">
-                {/* Navigation Layout */}
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <p className="font-medium text-large">
-                      {t("settings.layout.title_navbar")}
-                    </p>
-                    <p className="text-small text-default-500">
-                      {t("settings.layout.desc_navbar")}
-                    </p>
-                  </div>
-                  <Switch
-                    size="sm"
-                    isSelected={layoutMode === "navbar"}
-                    onValueChange={(isSelected) => {
-                      const mode = isSelected ? "navbar" : "sidebar";
-                      setLayoutMode(mode);
-                      localStorage.setItem("app.layoutMode", mode);
-                      window.dispatchEvent(
-                        new CustomEvent("app-layout-changed"),
-                      );
-                    }}
-                    classNames={{
-                      wrapper: "group-data-[selected=true]:bg-emerald-500",
-                    }}
-                  />
-                </div>
-
-                <Divider className="bg-default-200/50" />
-
-                {/* Animation */}
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <p className="font-medium text-large">
-                      {t("settings.appearance.disable_animations")}
-                    </p>
-                    <p className="text-small text-default-500">
-                      {t("settings.appearance.disable_animations_desc")}
-                    </p>
-                  </div>
-                  <Switch
-                    size="sm"
-                    isSelected={disableAnimations}
-                    onValueChange={(isSelected) => {
-                      setDisableAnimations(isSelected);
-                      localStorage.setItem(
-                        "app.disableAnimations",
-                        String(isSelected),
-                      );
-                      window.dispatchEvent(
-                        new CustomEvent("app-animations-changed"),
-                      );
-                    }}
-                    classNames={{
-                      wrapper: "group-data-[selected=true]:bg-emerald-500",
-                    }}
-                  />
-                </div>
-
-                <Divider className="bg-default-200/50" />
-
-                {/* Language */}
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <p className="font-medium text-large">
-                      {t("settings.body.language.name")}
-                    </p>
-                    <p className="text-small text-default-500">
-                      {langNames.find((l) => l.code === selectedLang)
-                        ?.language || selectedLang}
-                    </p>
-                    {languageChanged && (
-                      <div className="text-tiny text-warning-500 mt-1">
-                        {t("settings.lang.changed")}
-                      </div>
-                    )}
-                  </div>
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button radius="full" variant="bordered">
-                        {t("settings.body.language.button")}
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label="Language selection"
-                      variant="flat"
-                      disallowEmptySelection
-                      selectionMode="single"
-                      className="max-h-60 overflow-y-auto"
-                      selectedKeys={new Set([selectedLang])}
-                      onSelectionChange={(keys) => {
-                        const arr = Array.from(keys as unknown as Set<string>);
-                        const next = arr[0];
-                        if (typeof next === "string" && next.length > 0) {
-                          setSelectedLang(next);
-                          Promise.resolve(i18n.changeLanguage(next)).then(
-                            () => {
-                              try {
-                                localStorage.setItem("i18nextLng", next);
-                              } catch {}
-                              setLanguageChanged(true);
-                            },
-                          );
-                        }
-                      }}
-                    >
-                      {langNames.map((lang) => (
-                        <DropdownItem key={lang.code} textValue={lang.language}>
-                          {lang.language}
-                        </DropdownItem>
-                      ))}
-                    </DropdownMenu>
-                  </Dropdown>
-                </div>
-
-                <Divider className="bg-default-200/50" />
-
-                {/* Discord RPC */}
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <p className="font-medium">
-                      {t("settings.discord_rpc.title")}
-                    </p>
-                    <p className="text-tiny text-default-500">
-                      {t("settings.discord_rpc.desc")}
-                    </p>
-                  </div>
-                  <Switch
-                    size="sm"
-                    isSelected={discordRpcEnabled}
-                    onValueChange={(isSelected) => {
-                      setDiscordRpcEnabled(isSelected);
-                      SetDisableDiscordRPC(!isSelected);
-                    }}
-                    classNames={{
-                      wrapper: "group-data-[selected=true]:bg-emerald-500",
-                    }}
-                  />
-                </div>
-
-                <Divider className="bg-default-200/50" />
-
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <p className="font-medium">
-                      {t("settings.beta_updates.title")}
-                    </p>
-                    <p className="text-tiny text-default-500">
-                      {t("settings.beta_updates.desc")}
-                    </p>
-                  </div>
-                  <Switch
-                    size="sm"
-                    isSelected={enableBetaUpdates}
-                    onValueChange={(isSelected) => {
-                      setEnableBetaUpdates(isSelected);
-                      SetEnableBetaUpdates(isSelected);
-                    }}
-                    classNames={{
-                      wrapper: "group-data-[selected=true]:bg-emerald-500",
-                    }}
-                  />
-                </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-
-          <motion.div
-            custom={3}
-            initial="hidden"
-            animate="visible"
-            variants={cardVariants}
-          >
-            <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-              <CardBody className="p-6 flex flex-col gap-6">
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col">
-                    <p className="font-medium text-large">
-                      {t("settings.body.version.name")}
-                    </p>
-                    <p className="text-small text-default-500">v{appVersion}</p>
-                  </div>
-                  {checkingUpdate ? (
-                    <Spinner size="sm" color="success" />
-                  ) : (
-                    <Button
-                      radius="full"
-                      variant="bordered"
-                      onPress={onCheckUpdate}
-                    >
-                      {t("settings.body.version.button")}
-                    </Button>
-                  )}
-                </div>
-
-                <AnimatePresence>
-                  {hasUpdate && (
-                    <motion.div
-                      initial={{ opacity: 0, height: 0 }}
-                      animate={{ opacity: 1, height: "auto" }}
-                      exit={{ opacity: 0, height: 0 }}
-                      className="overflow-hidden"
-                    >
-                      <div className="rounded-xl bg-default-100/50 dark:bg-zinc-800/30 p-4 border border-default-200/50 dark:border-white/5">
-                        <div className="flex items-center justify-between mb-3">
-                          <p className="text-small font-bold text-emerald-600 dark:text-emerald-500">
-                            {t("settings.body.version.hasnew")} {newVersion}
-                          </p>
-                          <Button
-                            color="primary"
-                            radius="full"
-                            onPress={onUpdate}
-                            isDisabled={updating}
-                            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                            startContent={<RxUpdate />}
-                          >
-                            {updating
-                              ? t("common.updating")
-                              : t("settings.modal.2.footer.download_button")}
-                          </Button>
-                        </div>
-
-                        {changelog && (
-                          <div className="text-small wrap-break-word leading-6 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-default-300">
-                            <ReactMarkdown
-                              remarkPlugins={[remarkGfm]}
-                              components={{
-                                h1: ({ children }) => (
-                                  <h1 className="text-base font-bold my-1">
-                                    {children}
-                                  </h1>
-                                ),
-                                h2: ({ children }) => (
-                                  <h2 className="text-sm font-bold my-1">
-                                    {children}
-                                  </h2>
-                                ),
-                                p: ({ children }) => (
-                                  <p className="my-1 text-default-600">
-                                    {children}
-                                  </p>
-                                ),
-                                ul: ({ children }) => (
-                                  <ul className="list-disc pl-5 my-1 text-default-600">
-                                    {children}
-                                  </ul>
-                                ),
-                                li: ({ children }) => (
-                                  <li className="my-0.5">{children}</li>
-                                ),
-                                a: ({ href, children }) => {
-                                  const cleanUrl = (url: string) => {
-                                    const target = "https://github.com";
-                                    const idx = url.lastIndexOf(target);
-                                    return idx > 0 ? url.substring(idx) : url;
-                                  };
-                                  return (
-                                    <a
-                                      href={href}
-                                      target="_blank"
-                                      rel="noreferrer"
-                                      className="text-emerald-500 underline"
-                                      onClick={(e) => {
-                                        e.preventDefault();
-                                        if (href) {
-                                          Browser.OpenURL(cleanUrl(href));
-                                        }
-                                      }}
-                                    >
-                                      {Array.isArray(children)
-                                        ? children.map((child) =>
-                                            typeof child === "string"
-                                              ? cleanUrl(child)
-                                              : child,
-                                          )
-                                        : typeof children === "string"
-                                          ? cleanUrl(children)
-                                          : children}
-                                    </a>
-                                  );
-                                },
-                              }}
-                            >
-                              {changelog}
-                            </ReactMarkdown>
-                          </div>
-                        )}
-
-                        {updating && (
-                          <div className="mt-3">
-                            <Progress
-                              size="sm"
-                              radius="sm"
-                              color="success"
-                              isIndeterminate={true}
-                              classNames={{
-                                indicator:
-                                  "bg-emerald-600 hover:bg-emerald-500",
-                              }}
-                            />
-                          </div>
-                        )}
-                      </div>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-
-                <Divider className="bg-default-200/50" />
-
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div>
-                      <p className="font-medium text-large">
-                        {t("aboutcard.title")}
+              {selectedTab === "updates" && (
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">
+                        {t("settings.beta_updates.title")}
                       </p>
                       <p className="text-tiny text-default-500">
-                        {t("aboutcard.description", { name: "LeviMC" })} ·{" "}
-                        {t("aboutcard.font", { name: "MiSans" })}
+                        {t("settings.beta_updates.desc")}
                       </p>
                     </div>
+                    <Switch
+                      size="sm"
+                      isSelected={enableBetaUpdates}
+                      onValueChange={(isSelected) => {
+                        setEnableBetaUpdates(isSelected);
+                        SetEnableBetaUpdates(isSelected);
+                      }}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-emerald-500",
+                      }}
+                    />
                   </div>
-                  <div className="flex items-center gap-1">
-                    <Button
-                      isIconOnly
-                      variant="light"
-                      radius="full"
-                      onPress={() =>
-                        Browser.OpenURL("https://github.com/liteldev")
-                      }
-                    >
-                      <FaGithub size={20} className="text-default-500" />
-                    </Button>
-                    <Button
-                      isIconOnly
-                      variant="light"
-                      radius="full"
-                      onPress={() =>
-                        Browser.OpenURL("https://discord.gg/v5R5P4vRZk")
-                      }
-                    >
-                      <FaDiscord size={20} className="text-default-500" />
-                    </Button>
+
+                  <Divider className="bg-default-200/50" />
+
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col">
+                      <p className="font-medium text-large">
+                        {t("settings.body.version.name")}
+                      </p>
+                      <p className="text-tiny text-default-500">
+                        v{appVersion}
+                      </p>
+                    </div>
+                    {checkingUpdate ? (
+                      <Spinner size="sm" color="success" />
+                    ) : (
+                      <Button
+                        radius="full"
+                        variant="bordered"
+                        onPress={onCheckUpdate}
+                      >
+                        {t("settings.body.version.button")}
+                      </Button>
+                    )}
+                  </div>
+
+                  <AnimatePresence>
+                    {hasUpdate && (
+                      <motion.div
+                        initial={{ opacity: 0, height: 0 }}
+                        animate={{ opacity: 1, height: "auto" }}
+                        exit={{ opacity: 0, height: 0 }}
+                        className="overflow-hidden"
+                      >
+                        <div className="rounded-xl bg-default-100/50 dark:bg-zinc-800/30 p-4 border border-default-200/50 dark:border-white/5">
+                          <div className="flex items-center justify-between mb-3">
+                            <p className="text-small font-bold text-emerald-600 dark:text-emerald-500">
+                              {t("settings.body.version.hasnew")} {newVersion}
+                            </p>
+                            <Button
+                              color="primary"
+                              radius="full"
+                              onPress={onUpdate}
+                              isDisabled={updating}
+                              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                              startContent={<RxUpdate />}
+                            >
+                              {updating
+                                ? t("common.updating")
+                                : t("settings.modal.2.footer.download_button")}
+                            </Button>
+                          </div>
+
+                          {changelog && (
+                            <div className="text-small wrap-break-word leading-6 max-h-[200px] overflow-y-auto pr-1 scrollbar-thin scrollbar-thumb-default-300">
+                              <ReactMarkdown
+                                remarkPlugins={[remarkGfm]}
+                                components={{
+                                  h1: ({ children }) => (
+                                    <h1 className="text-base font-bold my-1">
+                                      {children}
+                                    </h1>
+                                  ),
+                                  h2: ({ children }) => (
+                                    <h2 className="text-sm font-bold my-1">
+                                      {children}
+                                    </h2>
+                                  ),
+                                  p: ({ children }) => (
+                                    <p className="my-1 text-default-600">
+                                      {children}
+                                    </p>
+                                  ),
+                                  ul: ({ children }) => (
+                                    <ul className="list-disc pl-5 my-1 text-default-600">
+                                      {children}
+                                    </ul>
+                                  ),
+                                  li: ({ children }) => (
+                                    <li className="my-0.5">{children}</li>
+                                  ),
+                                  a: ({ href, children }) => {
+                                    const cleanUrl = (url: string) => {
+                                      const target = "https://github.com";
+                                      const idx = url.lastIndexOf(target);
+                                      return idx > 0 ? url.substring(idx) : url;
+                                    };
+                                    return (
+                                      <a
+                                        href={href}
+                                        target="_blank"
+                                        rel="noreferrer"
+                                        className="text-emerald-500 underline"
+                                        onClick={(e) => {
+                                          e.preventDefault();
+                                          if (href) {
+                                            Browser.OpenURL(cleanUrl(href));
+                                          }
+                                        }}
+                                      >
+                                        {Array.isArray(children)
+                                          ? children.map((child) =>
+                                              typeof child === "string"
+                                                ? cleanUrl(child)
+                                                : child,
+                                            )
+                                          : typeof children === "string"
+                                            ? cleanUrl(children)
+                                            : children}
+                                      </a>
+                                    );
+                                  },
+                                }}
+                              >
+                                {changelog}
+                              </ReactMarkdown>
+                            </div>
+                          )}
+
+                          {updating && (
+                            <div className="mt-3">
+                              <Progress
+                                size="sm"
+                                radius="sm"
+                                color="success"
+                                isIndeterminate={true}
+                                classNames={{
+                                  indicator:
+                                    "bg-emerald-600 hover:bg-emerald-500",
+                                }}
+                              />
+                            </div>
+                          )}
+                        </div>
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+                </div>
+              )}
+
+              {selectedTab === "about" && (
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div>
+                        <p className="font-medium text-large">
+                          {t("aboutcard.title")}
+                        </p>
+                        <p className="text-tiny text-default-500">
+                          {t("aboutcard.description", { name: "LeviMC" })} ·{" "}
+                          {t("aboutcard.font", { name: "MiSans" })}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-1">
+                      <Button
+                        isIconOnly
+                        variant="light"
+                        radius="full"
+                        onPress={() =>
+                          Browser.OpenURL("https://github.com/liteldev")
+                        }
+                      >
+                        <FaGithub size={20} className="text-default-500" />
+                      </Button>
+                      <Button
+                        isIconOnly
+                        variant="light"
+                        radius="full"
+                        onPress={() =>
+                          Browser.OpenURL("https://discord.gg/v5R5P4vRZk")
+                        }
+                      >
+                        <FaDiscord size={20} className="text-default-500" />
+                      </Button>
+                    </div>
                   </div>
                 </div>
-              </CardBody>
-            </Card>
-          </motion.div>
-        </div>
+              )}
+            </CardBody>
+          </Card>
+        </motion.div>
       </div>
 
       {/* GDK License */}
@@ -1539,7 +1545,7 @@ export const SettingsPage: React.FC = () => {
           )}
         </ModalContent>
       </BaseModal>
-    </div>
+    </PageContainer>
   );
 };
 

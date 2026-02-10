@@ -60,6 +60,9 @@ import {
 } from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { renderMcText } from "@/utils/mcformat";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 
 export default function SkinPacksPage() {
   const { t } = useTranslation();
@@ -486,14 +489,9 @@ export default function SkinPacksPage() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className="relative w-full p-4 flex flex-col"
-    >
+    <PageContainer>
       <div className="w-full max-w-none pb-12 flex flex-col gap-6">
-        <Card className="rounded-4xl shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none">
+        <Card className={LAYOUT.GLASS_CARD.BASE}>
           <CardBody className="p-6 flex flex-col gap-6">
             <PageHeader
               title={t("contentpage.skin_packs")}
@@ -1063,6 +1061,6 @@ export default function SkinPacksPage() {
           )}
         </ModalContent>
       </BaseModal>
-    </motion.div>
+    </PageContainer>
   );
 }

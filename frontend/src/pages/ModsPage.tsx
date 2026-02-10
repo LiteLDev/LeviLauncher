@@ -16,7 +16,6 @@ import {
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
-  addToast,
 } from "@heroui/react";
 import { useLocation, useNavigate, useBlocker } from "react-router-dom";
 import {
@@ -58,7 +57,9 @@ import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { PageHeader } from "@/components/PageHeader";
-import { useLeviLamina } from "@/utils/LeviLaminaContext";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 
 const readCurrentVersionName = (): string => {
   try {
@@ -153,23 +154,13 @@ export const ModsPage: React.FC = () => {
   const lastScrollTopRef = useRef<number>(0);
   const restorePendingRef = useRef<boolean>(false);
 
-  const { isLLSupported, refreshLLDB, llMap } = useLeviLamina();
-  const [installingLL, setInstallingLL] = useState(false);
   const [gameVersion, setGameVersion] = useState("");
   const hasBackend = minecraft !== undefined;
 
-  const {
-    isOpen: rcOpen,
-    onOpen: rcOnOpen,
-    onOpenChange: rcOnOpenChange,
-    onClose: rcOnClose,
-  } = useDisclosure();
-  const [rcVersion, setRcVersion] = useState("");
-
-  useBlocker(() => installingLL || importing);
+  useBlocker(() => importing);
 
   useEffect(() => {
-    const lock = installingLL || importing;
+    const lock = importing;
     window.dispatchEvent(
       new CustomEvent("ll-nav-lock-changed", { detail: { lock } }),
     );
@@ -180,7 +171,7 @@ export const ModsPage: React.FC = () => {
         );
       }
     };
-  }, [installingLL, importing]);
+  }, [importing]);
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -200,75 +191,6 @@ export const ModsPage: React.FC = () => {
     };
     fetchVersion();
   }, [currentVersionName]);
-
-  const proceedInstallLeviLamina = async () => {
-    const targetName = currentVersionName;
-    if (!hasBackend || !targetName || !gameVersion) return;
-    setInstallingLL(true);
-    try {
-      const isLip = await (minecraft as any)?.IsLipInstalled();
-      if (!isLip) {
-        addToast({
-          description: t("mods.err_lip_not_installed"),
-          color: "danger",
-        });
-        setInstallingLL(false);
-        return;
-      }
-
-      const installLL = (minecraft as any)?.InstallLeviLamina;
-      if (typeof installLL === "function") {
-        const err: string = await installLL(gameVersion, targetName);
-        if (err) {
-          let msg = err;
-          if (err.includes("ERR_LIP_INSTALL_FAILED")) {
-            msg = t("mods.err_lip_install_failed_suggestion");
-          }
-          addToast({ description: msg, color: "danger" });
-        } else {
-          addToast({
-            title: t("downloadpage.install.success"),
-            color: "success",
-          });
-          await refreshAll();
-        }
-      }
-    } catch (e: any) {
-      addToast({
-        description: String(e?.message || e),
-        color: "danger",
-      });
-    } finally {
-      setInstallingLL(false);
-    }
-  };
-
-  const handleInstallLeviLamina = async () => {
-    const targetName = currentVersionName;
-    if (!hasBackend || !targetName || !gameVersion) return;
-
-    let targetLLVersion = "";
-    if (llMap && llMap.size > 0) {
-      let versions = llMap.get(gameVersion);
-      if (!versions && gameVersion.split(".").length >= 3) {
-        const parts = gameVersion.split(".");
-        const key = `${parts[0]}.${parts[1]}.${parts[2]}`;
-        versions = llMap.get(key);
-      }
-
-      if (versions && Array.isArray(versions) && versions.length > 0) {
-        targetLLVersion = versions[versions.length - 1];
-      }
-    }
-
-    if (targetLLVersion && targetLLVersion.includes("rc")) {
-      setRcVersion(targetLLVersion);
-      rcOnOpen();
-      return;
-    }
-
-    await proceedInstallLeviLamina();
-  };
 
   const postImportModZip = async (
     name: string,
@@ -347,7 +269,6 @@ export const ModsPage: React.FC = () => {
     const name = currentVersionName || readCurrentVersionName();
     if (name) {
       try {
-        await refreshLLDB();
         const data = await GetMods(name);
         setModsInfo(data || []);
         await refreshEnabledStates(name);
@@ -1043,14 +964,9 @@ export const ModsPage: React.FC = () => {
   });
 
   return (
-    <motion.div
+    <PageContainer
       ref={scrollRef}
-      className={`relative w-full h-full flex flex-col px-4 py-4 overflow-hidden ${
-        dragActive ? "cursor-copy" : ""
-      }`}
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
+      className={`relative overflow-hidden ${dragActive ? "cursor-copy" : ""}`}
     >
       <BaseModal
         size="sm"
@@ -1365,52 +1281,6 @@ export const ModsPage: React.FC = () => {
           )}
         </ModalContent>
       </BaseModal>
-      <BaseModal
-        size="md"
-        isOpen={rcOpen}
-        onOpenChange={rcOnOpenChange}
-        hideCloseButton
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-warning-600">
-                <div className="flex items-center gap-2">
-                  <FiAlertTriangle className="w-5 h-5" />
-                  <span>{t("mods.rc_warning.title")}</span>
-                </div>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-sm text-default-700 space-y-2">
-                  <p>
-                    {t("mods.rc_warning.body_1", {
-                      version: rcVersion,
-                    })}
-                  </p>
-                  <p className="font-semibold text-warning-700">
-                    {t("mods.rc_warning.body_2")}
-                  </p>
-                  <p>{t("mods.rc_warning.body_3")}</p>
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="warning"
-                  onPress={() => {
-                    onClose();
-                    proceedInstallLeviLamina();
-                  }}
-                >
-                  {t("common.continue")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
       {/* Drag Overlay */}
       <AnimatePresence>
         {dragActive ? (
@@ -1431,7 +1301,7 @@ export const ModsPage: React.FC = () => {
         ) : null}
       </AnimatePresence>
 
-      <Card className="mb-6 shrink-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+      <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
         <CardBody className="p-6 flex flex-col gap-6">
           <PageHeader
             title={t("moddedcard.title")}
@@ -1451,18 +1321,6 @@ export const ModsPage: React.FC = () => {
             }
             endContent={
               <>
-                {isLLSupported(gameVersion) &&
-                  !modsInfo.some((m) => m.name === "LeviLamina") && (
-                    <Button
-                      color="success"
-                      variant="flat"
-                      className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold"
-                      onPress={handleInstallLeviLamina}
-                      isLoading={installingLL}
-                    >
-                      {t("downloadpage.install.levilamina_label")}
-                    </Button>
-                  )}
                 <input
                   ref={fileInputRef}
                   type="file"
@@ -1509,7 +1367,7 @@ export const ModsPage: React.FC = () => {
         </CardBody>
       </Card>
 
-      <div className="flex flex-col sm:flex-row items-center gap-3 px-2 mb-4">
+      <div className="flex flex-col sm:flex-row items-center gap-3 px-2">
         <Input
           placeholder={t("common.search_placeholder")}
           value={query}
@@ -1974,7 +1832,7 @@ export const ModsPage: React.FC = () => {
           )}
         </ModalContent>
       </BaseModal>
-    </motion.div>
+    </PageContainer>
   );
 };
 

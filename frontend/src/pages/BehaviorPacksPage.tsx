@@ -53,6 +53,9 @@ import { readCurrentVersionName } from "@/utils/currentVersion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { renderMcText } from "@/utils/mcformat";
 import { PageHeader } from "@/components/PageHeader";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 
 export default function BehaviorPacksPage() {
   const { t } = useTranslation();
@@ -454,354 +457,346 @@ export default function BehaviorPacksPage() {
   };
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className="relative w-full p-4 flex flex-col"
-    >
-      <div className="w-full max-w-none pb-12 flex flex-col gap-6">
-        <Card className="rounded-4xl shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none">
-          <CardBody className="p-6 flex flex-col gap-6">
-            <PageHeader
-              title={t("contentpage.behavior_packs")}
-              endContent={
-                <div className="flex items-center gap-2">
-                  <Button
-                    radius="full"
-                    variant="flat"
-                    startContent={<FaFolderOpen />}
-                    onPress={() => OpenPathDir(roots.behaviorPacks)}
-                    isDisabled={!roots.behaviorPacks}
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
-                  >
-                    {t("common.open")}
-                  </Button>
-                  <Tooltip content={t("common.refresh") as unknown as string}>
-                    <Button
-                      isIconOnly
-                      radius="full"
-                      variant="light"
-                      onPress={() => refreshAll()}
-                      isDisabled={loading}
-                    >
-                      <FaSync
-                        className={loading ? "animate-spin" : ""}
-                        size={18}
-                      />
-                    </Button>
-                  </Tooltip>
-                </div>
-              }
-            />
-
-            <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
-              <Input
-                placeholder={t("common.search_placeholder")}
-                value={query}
-                onValueChange={setQuery}
-                startContent={<FaFilter className="text-default-400" />}
-                endContent={
-                  query && (
-                    <button onClick={() => setQuery("")}>
-                      <FaTimes className="text-default-400 hover:text-default-600" />
-                    </button>
-                  )
-                }
-                radius="full"
-                variant="flat"
-                className="w-full md:max-w-xs"
-                classNames={{
-                  inputWrapper:
-                    "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
-                }}
-              />
-
-              <div className="flex items-center gap-3">
-                <Tooltip content={t("common.select_mode")}>
+    <PageContainer>
+      <Card className={LAYOUT.GLASS_CARD.BASE}>
+        <CardBody className="p-6 flex flex-col gap-6">
+          <PageHeader
+            title={t("contentpage.behavior_packs")}
+            endContent={
+              <div className="flex items-center gap-2">
+                <Button
+                  radius="full"
+                  variant="flat"
+                  startContent={<FaFolderOpen />}
+                  onPress={() => OpenPathDir(roots.behaviorPacks)}
+                  isDisabled={!roots.behaviorPacks}
+                  className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
+                >
+                  {t("common.open")}
+                </Button>
+                <Tooltip content={t("common.refresh") as unknown as string}>
                   <Button
                     isIconOnly
                     radius="full"
-                    variant={isSelectMode ? "solid" : "flat"}
-                    color={isSelectMode ? "primary" : "default"}
-                    onPress={() => {
-                      setIsSelectMode(!isSelectMode);
-                      if (isSelectMode) setSelected({});
-                    }}
+                    variant="light"
+                    onPress={() => refreshAll()}
+                    isDisabled={loading}
                   >
-                    <FaCheckSquare />
+                    <FaSync
+                      className={loading ? "animate-spin" : ""}
+                      size={18}
+                    />
                   </Button>
                 </Tooltip>
+              </div>
+            }
+          />
 
-                {isSelectMode && (
-                  <Checkbox
-                    isSelected={
-                      filtered.length > 0 && selectedCount === filtered.length
-                    }
-                    onValueChange={selectAll}
+          <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
+            <Input
+              placeholder={t("common.search_placeholder")}
+              value={query}
+              onValueChange={setQuery}
+              startContent={<FaFilter className="text-default-400" />}
+              endContent={
+                query && (
+                  <button onClick={() => setQuery("")}>
+                    <FaTimes className="text-default-400 hover:text-default-600" />
+                  </button>
+                )
+              }
+              radius="full"
+              variant="flat"
+              className="w-full md:max-w-xs"
+              classNames={{
+                inputWrapper:
+                  "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
+              }}
+            />
+
+            <div className="flex items-center gap-3">
+              <Tooltip content={t("common.select_mode")}>
+                <Button
+                  isIconOnly
+                  radius="full"
+                  variant={isSelectMode ? "solid" : "flat"}
+                  color={isSelectMode ? "primary" : "default"}
+                  onPress={() => {
+                    setIsSelectMode(!isSelectMode);
+                    if (isSelectMode) setSelected({});
+                  }}
+                >
+                  <FaCheckSquare />
+                </Button>
+              </Tooltip>
+
+              {isSelectMode && (
+                <Checkbox
+                  isSelected={
+                    filtered.length > 0 && selectedCount === filtered.length
+                  }
+                  onValueChange={selectAll}
+                  radius="full"
+                  size="lg"
+                  classNames={{ wrapper: "after:bg-primary" }}
+                >
+                  <span className="text-sm text-default-600">
+                    {t("common.select_all")}
+                  </span>
+                </Checkbox>
+              )}
+
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button
+                    variant="flat"
                     radius="full"
-                    size="lg"
-                    classNames={{ wrapper: "after:bg-primary" }}
+                    startContent={
+                      sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
+                    }
+                    className="min-w-[120px]"
                   >
-                    <span className="text-sm text-default-600">
-                      {t("common.select_all")}
-                    </span>
-                  </Checkbox>
-                )}
+                    {sortKey === "name"
+                      ? (t("filemanager.sort.name") as string)
+                      : (t("contentpage.sort_time") as string)}
+                    {" / "}
+                    {sortAsc
+                      ? t("contentpage.sort_asc")
+                      : t("contentpage.sort_desc")}
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu
+                  selectionMode="single"
+                  selectedKeys={
+                    new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])
+                  }
+                  onSelectionChange={(keys) => {
+                    const val = Array.from(keys)[0] as string;
+                    const [k, order] = val.split("-");
+                    setSortKey(k as "name" | "time");
+                    setSortAsc(order === "asc");
+                  }}
+                >
+                  <DropdownItem
+                    key="name-asc"
+                    startContent={<FaSortAmountDown />}
+                  >
+                    {t("filemanager.sort.name")} (A-Z)
+                  </DropdownItem>
+                  <DropdownItem
+                    key="name-desc"
+                    startContent={<FaSortAmountUp />}
+                  >
+                    {t("filemanager.sort.name")} (Z-A)
+                  </DropdownItem>
+                  <DropdownItem
+                    key="time-asc"
+                    startContent={<FaSortAmountDown />}
+                  >
+                    {t("contentpage.sort_time")} (Old-New)
+                  </DropdownItem>
+                  <DropdownItem
+                    key="time-desc"
+                    startContent={<FaSortAmountUp />}
+                  >
+                    {t("contentpage.sort_time")} (New-Old)
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
 
-                <Dropdown>
-                  <DropdownTrigger>
+              <AnimatePresence>
+                {selectedCount > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                  >
                     <Button
+                      color="danger"
                       variant="flat"
                       radius="full"
-                      startContent={
-                        sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
-                      }
-                      className="min-w-[120px]"
+                      startContent={<FaTrash />}
+                      onPress={delManyCfmOnOpen}
                     >
-                      {sortKey === "name"
-                        ? (t("filemanager.sort.name") as string)
-                        : (t("contentpage.sort_time") as string)}
-                      {" / "}
-                      {sortAsc
-                        ? t("contentpage.sort_asc")
-                        : t("contentpage.sort_desc")}
+                      {t("common.delete_selected", {
+                        count: selectedCount,
+                      })}
                     </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu
-                    selectionMode="single"
-                    selectedKeys={
-                      new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])
-                    }
-                    onSelectionChange={(keys) => {
-                      const val = Array.from(keys)[0] as string;
-                      const [k, order] = val.split("-");
-                      setSortKey(k as "name" | "time");
-                      setSortAsc(order === "asc");
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
+            <span>{t("contentpage.current_version")}:</span>
+            <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
+              {currentVersionName || t("contentpage.none")}
+            </span>
+            <span className="text-default-300">|</span>
+            <span>{t("contentpage.isolation")}:</span>
+            <span
+              className={`font-medium px-2 py-0.5 rounded-md ${
+                roots.isIsolation
+                  ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
+                  : "bg-default-100 text-default-700"
+              }`}
+            >
+              {roots.isIsolation ? t("common.yes") : t("common.no")}
+            </span>
+          </div>
+        </CardBody>
+      </Card>
+
+      {loading ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <Spinner size="lg" />
+          <span className="text-default-500">{t("common.loading")}</span>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          {filtered.length ? (
+            <div className="flex flex-col gap-3">
+              {paginatedItems.map((p, idx) => (
+                <motion.div
+                  key={`${p.path}-${idx}`}
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.2 }}
+                >
+                  <div
+                    className={`w-full p-4 bg-white dark:bg-zinc-900/50 hover:bg-default-50 dark:hover:bg-zinc-800 transition-all rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border ${
+                      isSelectMode && selected[p.path]
+                        ? "border-primary bg-primary/10"
+                        : "border-default-200 dark:border-zinc-700/50 hover:border-default-400 dark:hover:border-zinc-600"
+                    }`}
+                    onClick={() => {
+                      if (isSelectMode) toggleSelect(p.path);
                     }}
                   >
-                    <DropdownItem
-                      key="name-asc"
-                      startContent={<FaSortAmountDown />}
-                    >
-                      {t("filemanager.sort.name")} (A-Z)
-                    </DropdownItem>
-                    <DropdownItem
-                      key="name-desc"
-                      startContent={<FaSortAmountUp />}
-                    >
-                      {t("filemanager.sort.name")} (Z-A)
-                    </DropdownItem>
-                    <DropdownItem
-                      key="time-asc"
-                      startContent={<FaSortAmountDown />}
-                    >
-                      {t("contentpage.sort_time")} (Old-New)
-                    </DropdownItem>
-                    <DropdownItem
-                      key="time-desc"
-                      startContent={<FaSortAmountUp />}
-                    >
-                      {t("contentpage.sort_time")} (New-Old)
-                    </DropdownItem>
-                  </DropdownMenu>
-                </Dropdown>
-
-                <AnimatePresence>
-                  {selectedCount > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                    >
-                      <Button
-                        color="danger"
-                        variant="flat"
-                        radius="full"
-                        startContent={<FaTrash />}
-                        onPress={delManyCfmOnOpen}
-                      >
-                        {t("common.delete_selected", {
-                          count: selectedCount,
-                        })}
-                      </Button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-
-            <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
-              <span>{t("contentpage.current_version")}:</span>
-              <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
-                {currentVersionName || t("contentpage.none")}
-              </span>
-              <span className="text-default-300">|</span>
-              <span>{t("contentpage.isolation")}:</span>
-              <span
-                className={`font-medium px-2 py-0.5 rounded-md ${
-                  roots.isIsolation
-                    ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
-                    : "bg-default-100 text-default-700"
-                }`}
-              >
-                {roots.isIsolation ? t("common.yes") : t("common.no")}
-              </span>
-            </div>
-          </CardBody>
-        </Card>
-
-        {loading ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Spinner size="lg" />
-            <span className="text-default-500">{t("common.loading")}</span>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            {filtered.length ? (
-              <div className="flex flex-col gap-3">
-                {paginatedItems.map((p, idx) => (
-                  <motion.div
-                    key={`${p.path}-${idx}`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div
-                      className={`w-full p-4 bg-white dark:bg-zinc-900/50 hover:bg-default-50 dark:hover:bg-zinc-800 transition-all rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border ${
-                        isSelectMode && selected[p.path]
-                          ? "border-primary bg-primary/10"
-                          : "border-default-200 dark:border-zinc-700/50 hover:border-default-400 dark:hover:border-zinc-600"
-                      }`}
-                      onClick={() => {
-                        if (isSelectMode) toggleSelect(p.path);
-                      }}
-                    >
-                      <div className="relative shrink-0">
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
-                          {p.iconDataUrl ? (
-                            <Image
-                              src={p.iconDataUrl}
-                              alt={p.name || p.path}
-                              className="w-full h-full object-cover"
-                              radius="none"
-                            />
-                          ) : (
-                            <FaBox className="text-3xl text-default-300" />
-                          )}
-                        </div>
-                        {isSelectMode && (
-                          <Checkbox
-                            isSelected={!!selected[p.path]}
-                            onValueChange={() => toggleSelect(p.path)}
-                            className="absolute -top-2 -left-2 z-20"
-                            classNames={{
-                              wrapper: "bg-white dark:bg-zinc-900 shadow-md",
-                            }}
+                    <div className="relative shrink-0">
+                      <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
+                        {p.iconDataUrl ? (
+                          <Image
+                            src={p.iconDataUrl}
+                            alt={p.name || p.path}
+                            className="w-full h-full object-cover"
+                            radius="none"
                           />
+                        ) : (
+                          <FaBox className="text-3xl text-default-300" />
+                        )}
+                      </div>
+                      {isSelectMode && (
+                        <Checkbox
+                          isSelected={!!selected[p.path]}
+                          onValueChange={() => toggleSelect(p.path)}
+                          className="absolute -top-2 -left-2 z-20"
+                          classNames={{
+                            wrapper: "bg-white dark:bg-zinc-900 shadow-md",
+                          }}
+                        />
+                      )}
+                    </div>
+
+                    <div className="flex flex-col flex-1 min-w-0 gap-1">
+                      <div className="flex items-baseline gap-2 truncate">
+                        <h3
+                          className="text-base sm:text-lg font-bold text-default-900 dark:text-white truncate"
+                          title={p.name}
+                        >
+                          {renderMcText(p.name || p.path.split("\\").pop())}
+                        </h3>
+                      </div>
+
+                      <p
+                        className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2 w-full"
+                        title={p.description}
+                      >
+                        {renderMcText(p.description || "")}
+                      </p>
+
+                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                        <div
+                          className="flex items-center gap-1"
+                          title={t("common.size")}
+                        >
+                          <FaHdd />
+                          <span>{formatBytes(p.size)}</span>
+                        </div>
+                        <div
+                          className="flex items-center gap-1"
+                          title={t("common.date")}
+                        >
+                          <FaClock />
+                          <span>{new Date(p.modTime).toLocaleString()}</span>
+                        </div>
+                        {p.version && (
+                          <div
+                            className="flex items-center gap-1"
+                            title={t("common.version")}
+                          >
+                            <FaTag />
+                            <span>v{p.version}</span>
+                          </div>
                         )}
                       </div>
 
-                      <div className="flex flex-col flex-1 min-w-0 gap-1">
-                        <div className="flex items-baseline gap-2 truncate">
-                          <h3
-                            className="text-base sm:text-lg font-bold text-default-900 dark:text-white truncate"
-                            title={p.name}
-                          >
-                            {renderMcText(p.name || p.path.split("\\").pop())}
-                          </h3>
-                        </div>
-
-                        <p
-                          className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2 w-full"
-                          title={p.description}
+                      <div className="flex flex-1 items-end justify-end gap-2 mt-2">
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          radius="full"
+                          onPress={() => OpenPathDir(p.path)}
+                          className="h-8 min-w-0 px-3 bg-default-100 text-default-600 dark:bg-zinc-700 dark:text-zinc-200"
                         >
-                          {renderMcText(p.description || "")}
-                        </p>
-
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                          <div
-                            className="flex items-center gap-1"
-                            title={t("common.size")}
-                          >
-                            <FaHdd />
-                            <span>{formatBytes(p.size)}</span>
-                          </div>
-                          <div
-                            className="flex items-center gap-1"
-                            title={t("common.date")}
-                          >
-                            <FaClock />
-                            <span>{new Date(p.modTime).toLocaleString()}</span>
-                          </div>
-                          {p.version && (
-                            <div
-                              className="flex items-center gap-1"
-                              title={t("common.version")}
-                            >
-                              <FaTag />
-                              <span>v{p.version}</span>
-                            </div>
-                          )}
-                        </div>
-
-                        <div className="flex flex-1 items-end justify-end gap-2 mt-2">
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            radius="full"
-                            onPress={() => OpenPathDir(p.path)}
-                            className="h-8 min-w-0 px-3 bg-default-100 text-default-600 dark:bg-zinc-700 dark:text-zinc-200"
-                          >
-                            {t("common.open")}
-                          </Button>
-                          <Button
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            radius="full"
-                            onPress={() => {
-                              setActivePack(p);
-                              delOnOpen();
-                            }}
-                            className="h-8 min-w-0 px-3"
-                          >
-                            {t("common.delete")}
-                          </Button>
-                        </div>
+                          {t("common.open")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          color="danger"
+                          variant="flat"
+                          radius="full"
+                          onPress={() => {
+                            setActivePack(p);
+                            delOnOpen();
+                          }}
+                          className="h-8 min-w-0 px-3"
+                        >
+                          {t("common.delete")}
+                        </Button>
                       </div>
                     </div>
-                  </motion.div>
-                ))}
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-default-400">
-                <FaBox className="text-6xl mb-4 opacity-20" />
-                <p>
-                  {query
-                    ? t("common.no_results")
-                    : t("contentpage.no_behavior_packs")}
-                </p>
-              </div>
-            )}
+                  </div>
+                </motion.div>
+              ))}
+            </div>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-20 text-default-400">
+              <FaBox className="text-6xl mb-4 opacity-20" />
+              <p>
+                {query
+                  ? t("common.no_results")
+                  : t("contentpage.no_behavior_packs")}
+              </p>
+            </div>
+          )}
 
-            {totalPages > 1 && (
-              <div className="relative h-12">
-                <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-full flex justify-center">
-                  <Pagination
-                    total={totalPages}
-                    page={currentPage}
-                    onChange={setCurrentPage}
-                    showControls
-                    size="sm"
-                  />
-                </div>
+          {totalPages > 1 && (
+            <div className="relative h-12">
+              <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-full flex justify-center">
+                <Pagination
+                  total={totalPages}
+                  page={currentPage}
+                  onChange={setCurrentPage}
+                  showControls
+                  size="sm"
+                />
               </div>
-            )}
-          </div>
-        )}
-      </div>
-
+            </div>
+          )}
+        </div>
+      )}
       {/* Delete Confirmation Modal */}
       <BaseModal
         isOpen={delOpen}
@@ -903,6 +898,6 @@ export default function BehaviorPacksPage() {
           )}
         </ModalContent>
       </BaseModal>
-    </motion.div>
+    </PageContainer>
   );
 }

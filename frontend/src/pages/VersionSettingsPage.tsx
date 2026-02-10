@@ -7,6 +7,9 @@ import {
   BaseModalBody,
   BaseModalFooter,
 } from "@/components/BaseModal";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 import {
   Button,
   Card,
@@ -18,12 +21,18 @@ import {
   Progress,
   useDisclosure,
   Textarea,
+  Tabs,
+  Tab,
+  addToast,
 } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { FaWindows } from "react-icons/fa";
+import { FiAlertTriangle } from "react-icons/fi";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { PageHeader } from "@/components/PageHeader";
+import { useLeviLamina } from "@/utils/LeviLaminaContext";
+import LeviLaminaIcon from "@/assets/images/LeviLamina.png";
 
 export default function VersionSettingsPage() {
   const { t } = useTranslation();
@@ -33,6 +42,7 @@ export default function VersionSettingsPage() {
   const returnToPath: string = String(location?.state?.returnTo || "/versions");
 
   const [targetName, setTargetName] = React.useState<string>(initialName);
+  const [selectedTab, setSelectedTab] = React.useState<string>("general");
   const [newName, setNewName] = React.useState<string>(initialName);
   const [gameVersion, setGameVersion] = React.useState<string>("");
   const [versionType, setVersionType] = React.useState<string>("");
@@ -79,6 +89,30 @@ export default function VersionSettingsPage() {
     onOpenChange: unsavedOnOpenChange,
   } = useDisclosure();
   const [pendingNavPath, setPendingNavPath] = React.useState<string>("");
+  const { isLLSupported, refreshLLDB, llMap } = useLeviLamina();
+  const [installingLL, setInstallingLL] = React.useState(false);
+  const {
+    isOpen: rcOpen,
+    onOpen: rcOnOpen,
+    onOpenChange: rcOnOpenChange,
+    onClose: rcOnClose,
+  } = useDisclosure();
+  const [rcVersion, setRcVersion] = React.useState("");
+  const [isLLInstalled, setIsLLInstalled] = React.useState(false);
+
+  React.useEffect(() => {
+    if (selectedTab === "loader" && targetName) {
+      (minecraft as any)
+        ?.GetMods?.(targetName)
+        .then((mods: any[]) => {
+          if (mods) {
+            const installed = mods.some((m: any) => m.name === "LeviLamina");
+            setIsLLInstalled(installed);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [selectedTab, targetName, installingLL]);
 
   const hasBackend = minecraft !== undefined;
 
@@ -306,21 +340,105 @@ export default function VersionSettingsPage() {
     }
   }, [hasBackend, targetName]);
 
+  const proceedInstallLeviLamina = async () => {
+    if (!hasBackend || !targetName || !gameVersion) return;
+    setInstallingLL(true);
+    try {
+      const isLip = await (minecraft as any)?.IsLipInstalled();
+      if (!isLip) {
+        addToast({
+          description: t("mods.err_lip_not_installed"),
+          color: "danger",
+        });
+        setInstallingLL(false);
+        return;
+      }
+
+      const installLL = (minecraft as any)?.InstallLeviLamina;
+      if (typeof installLL === "function") {
+        const err: string = await installLL(gameVersion, targetName);
+        if (err) {
+          let msg = err;
+          if (err.includes("ERR_LIP_INSTALL_FAILED")) {
+            msg = t("mods.err_lip_install_failed_suggestion");
+          }
+          addToast({ description: msg, color: "danger" });
+        } else {
+          addToast({
+            title: t("downloadpage.install.success"),
+            color: "success",
+          });
+        }
+      }
+    } catch (e: any) {
+      addToast({
+        description: String(e?.message || e),
+        color: "danger",
+      });
+    } finally {
+      setInstallingLL(false);
+    }
+  };
+
+  const handleInstallLeviLamina = async () => {
+    if (!hasBackend || !targetName || !gameVersion) return;
+
+    let targetLLVersion = "";
+    if (llMap && llMap.size > 0) {
+      let versions = llMap.get(gameVersion);
+      if (!versions && gameVersion.split(".").length >= 3) {
+        const parts = gameVersion.split(".");
+        const key = `${parts[0]}.${parts[1]}.${parts[2]}`;
+        versions = llMap.get(key);
+      }
+
+      if (versions && Array.isArray(versions) && versions.length > 0) {
+        targetLLVersion = versions[versions.length - 1];
+      }
+    }
+
+    if (targetLLVersion && targetLLVersion.includes("rc")) {
+      setRcVersion(targetLLVersion);
+      rcOnOpen();
+      return;
+    }
+
+    await proceedInstallLeviLamina();
+  };
+
+  const handleUninstallLL = async () => {
+    if (!targetName) return;
+    setInstallingLL(true);
+    try {
+      const err = await (minecraft as any)?.UninstallLeviLamina?.(targetName);
+      if (err) {
+        addToast({ description: String(err), color: "danger" });
+      } else {
+        setIsLLInstalled(false);
+        addToast({ title: t("common.success"), color: "success" });
+      }
+    } catch (e) {
+      addToast({ description: String(e), color: "danger" });
+    } finally {
+      setInstallingLL(false);
+    }
+  };
+
   return (
-    <div className="w-full h-full flex flex-col overflow-hidden relative">
-      <div className="z-20 px-4 pt-4 shrink-0">
+    <PageContainer className="relative" animate={false}>
+      <div className="flex flex-col gap-6">
         <motion.div
-          initial={{ y: -8, opacity: 0 }}
+          initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.18, ease: [0.16, 0.84, 0.44, 1] }}
+          transition={{ duration: 0.4 }}
         >
-          <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl mb-6">
+          <Card className={LAYOUT.GLASS_CARD.BASE}>
             <CardBody className="p-6 w-full">
               <PageHeader
                 title={t("versions.edit.title")}
                 titleClassName="text-left pb-1"
                 description={
-                  <div className="mt-1 text-sm text-default-500 truncate text-left text-left!">
+                  <div className="mt-1 text-xs text-default-500 truncate text-left">
                     {t("versions.info.version")}:{" "}
                     <span className="text-default-700 font-medium">
                       {loading ? (
@@ -374,20 +492,32 @@ export default function VersionSettingsPage() {
                   </div>
                 }
               />
+              <Tabs
+                aria-label="Version Settings Tabs"
+                selectedKey={selectedTab}
+                onSelectionChange={(k) => setSelectedTab(k as string)}
+                classNames={{ base: "mt-4" }}
+              >
+                <Tab key="general" title={t("versions.edit.tabs.general")} />
+                <Tab key="launch" title={t("versions.edit.tabs.launch")} />
+                <Tab key="loader" title={t("versions.edit.tabs.loader")} />
+                <Tab key="features" title={t("versions.edit.tabs.features")} />
+                <Tab key="manage" title={t("versions.edit.tabs.manage")} />
+              </Tabs>
             </CardBody>
           </Card>
         </motion.div>
-      </div>
-      <div className="flex-1 overflow-auto">
-        <div className="px-4 pb-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: 0.1 }}
-            >
-              <Card className="h-full min-h-[160px] border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-                <CardBody className="p-6 flex flex-col gap-6">
+
+        <motion.div
+          key={selectedTab}
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          <Card className={LAYOUT.GLASS_CARD.BASE}>
+            <CardBody className="p-6">
+              {selectedTab === "general" && (
+                <div className="flex flex-col gap-6">
                   <div>
                     <label className="text-small font-medium text-default-700 dark:text-default-200 mb-2 block">
                       {t("versions.edit.new_name")}
@@ -412,60 +542,6 @@ export default function VersionSettingsPage() {
                     />
                     <p className="text-tiny text-default-400 mt-2">
                       {t("versions.edit.hint")}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <label className="text-small font-medium text-default-700 dark:text-default-200 block">
-                      {t("versions.edit.launch_args")}
-                    </label>
-                    <Input
-                      value={launchArgs}
-                      onValueChange={(v) => {
-                        setLaunchArgs(v);
-                        if (error) setError("");
-                      }}
-                      size="md"
-                      variant="bordered"
-                      radius="lg"
-                      placeholder={
-                        t(
-                          "versions.edit.launch_args_placeholder",
-                        ) as unknown as string
-                      }
-                      classNames={{
-                        inputWrapper:
-                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
-                      }}
-                    />
-                    <p className="text-tiny text-default-400">
-                      {t("versions.edit.launch_args_hint")}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <label className="text-small font-medium text-default-700 dark:text-default-200 block">
-                      {t("versions.edit.env_vars")}
-                    </label>
-                    <Textarea
-                      value={envVars}
-                      onValueChange={(v) => {
-                        setEnvVars(v);
-                        if (error) setError("");
-                      }}
-                      minRows={3}
-                      variant="bordered"
-                      radius="lg"
-                      placeholder={
-                        t(
-                          "versions.edit.env_vars_placeholder",
-                        ) as unknown as string
-                      }
-                      classNames={{
-                        inputWrapper:
-                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
-                      }}
-                    />
-                    <p className="text-tiny text-default-400">
-                      {t("versions.edit.env_vars_hint")}
                     </p>
                   </div>
                   <div className="flex flex-col gap-3">
@@ -582,17 +658,10 @@ export default function VersionSettingsPage() {
                       {t("versions.logo.hint")}
                     </p>
                   </div>
-                </CardBody>
-              </Card>
-            </motion.div>
-
-            <motion.div
-              initial={{ opacity: 0, y: 8 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.25, delay: 0.15 }}
-            >
-              <Card className="h-full min-h-[160px] border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-                <CardBody className="p-6 flex flex-col gap-5">
+                </div>
+              )}
+              {selectedTab === "launch" && (
+                <div className="flex flex-col gap-6">
                   <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
                     <div className="text-medium font-medium">
                       {t("versions.edit.enable_isolation")}
@@ -621,6 +690,129 @@ export default function VersionSettingsPage() {
                       }}
                     />
                   </div>
+                  <div className="flex flex-col gap-3">
+                    <label className="text-small font-medium text-default-700 dark:text-default-200 block">
+                      {t("versions.edit.launch_args")}
+                    </label>
+                    <Input
+                      value={launchArgs}
+                      onValueChange={(v) => {
+                        setLaunchArgs(v);
+                        if (error) setError("");
+                      }}
+                      size="md"
+                      variant="bordered"
+                      radius="lg"
+                      placeholder={
+                        t(
+                          "versions.edit.launch_args_placeholder",
+                        ) as unknown as string
+                      }
+                      classNames={{
+                        inputWrapper:
+                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                      }}
+                    />
+                    <p className="text-tiny text-default-400">
+                      {t("versions.edit.launch_args_hint")}
+                    </p>
+                  </div>
+                  <div className="flex flex-col gap-3">
+                    <label className="text-small font-medium text-default-700 dark:text-default-200 block">
+                      {t("versions.edit.env_vars")}
+                    </label>
+                    <Textarea
+                      value={envVars}
+                      onValueChange={(v) => {
+                        setEnvVars(v);
+                        if (error) setError("");
+                      }}
+                      minRows={3}
+                      variant="bordered"
+                      radius="lg"
+                      placeholder={
+                        t(
+                          "versions.edit.env_vars_placeholder",
+                        ) as unknown as string
+                      }
+                      classNames={{
+                        inputWrapper:
+                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                      }}
+                    />
+                    <p className="text-tiny text-default-400">
+                      {t("versions.edit.env_vars_hint")}
+                    </p>
+                  </div>
+                </div>
+              )}
+              {selectedTab === "loader" && (
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center justify-between p-4 rounded-xl border border-default-200 dark:border-default-100/10 bg-default-50 dark:bg-default-100/10">
+                    <div className="flex items-center gap-4">
+                      <div className="w-12 h-12 rounded-xl overflow-hidden">
+                        <img
+                          src={LeviLaminaIcon}
+                          alt="LeviLamina"
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div>
+                        <div className="text-medium font-bold text-foreground">
+                          LeviLamina
+                        </div>
+                        <div className="text-small text-default-500">
+                          {t("downloadpage.install.levilamina_desc")}
+                        </div>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-3">
+                      {isLLSupported(gameVersion) ? (
+                        <>
+                          {isLLInstalled && (
+                            <Button
+                              color="danger"
+                              variant="flat"
+                              onPress={handleUninstallLL}
+                              isDisabled={installingLL}
+                            >
+                              {t("common.remove")}
+                            </Button>
+                          )}
+                          <Button
+                            color="success"
+                            variant="flat"
+                            className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold"
+                            onPress={() => {
+                              if (isLLInstalled) {
+                                addToast({
+                                  title: "提示",
+                                  description: "该功能暂时不可用",
+                                  color: "warning",
+                                });
+                                return;
+                              }
+                              handleInstallLeviLamina();
+                            }}
+                            isLoading={installingLL}
+                          >
+                            {isLLInstalled
+                              ? t("common.update")
+                              : t("downloadpage.install.levilamina_label")}
+                          </Button>
+                        </>
+                      ) : (
+                        <div className="text-small text-default-400 italic">
+                          {t("downloadpage.install.levilamina_unsupported") ||
+                            "Not Supported"}
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              )}
+              {selectedTab === "features" && (
+                <div className="flex flex-col gap-5">
                   <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
                     <div className="text-medium font-medium">
                       {t("versions.edit.enable_render_dragon")}
@@ -649,96 +841,76 @@ export default function VersionSettingsPage() {
                       }}
                     />
                   </div>
-
-                  <div className="mt-4 pt-4 border-t border-default-200/50">
-                    <div className="text-xs font-bold text-danger-500 mb-2 uppercase tracking-wider">
-                      {t("versions.edit.danger_zone_title")}
-                    </div>
-                    <div className="flex items-center justify-between bg-danger-50 dark:bg-danger-500/10 p-4 rounded-2xl border border-danger-100 dark:border-danger-500/20">
-                      <div className="text-tiny text-default-500 max-w-[60%]">
-                        {isRegistered
-                          ? t("versions.edit.unregister_hint")
-                          : t("versions.edit.delete_hint")}
-                      </div>
-                      <div className="flex items-center gap-2">
-                        {isRegistered ? (
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            color="warning"
-                            radius="full"
-                            isDisabled={loading}
-                            className="font-medium"
-                            onPress={async () => {
-                              try {
-                                const has = await (
-                                  minecraft as any
-                                )?.IsGDKInstalled?.();
-                                if (!has) {
-                                  setUnregisterOpen(false);
-                                  setGdkMissingOpen(true);
-                                  return;
-                                }
-                                const fn = (minecraft as any)
-                                  ?.UnregisterVersionByName;
-                                if (typeof fn === "function") {
-                                  setUnregisterOpen(true);
-                                  const err: string = await fn(targetName);
-                                  setUnregisterOpen(false);
-                                  if (err) {
-                                    setError(String(err));
-                                  } else {
-                                    setIsRegistered(false);
-                                    setUnregisterSuccessOpen(true);
-                                  }
-                                }
-                              } catch {
-                                setUnregisterOpen(false);
-                                setError("ERR_UNREGISTER_FAILED");
-                              }
-                            }}
-                          >
-                            {t("versions.edit.unregister_button")}
-                          </Button>
-                        ) : (
-                          <Button
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            radius="full"
-                            className="font-medium bg-white/80 dark:bg-zinc-800/80 shadow-sm"
-                            onPress={() => setDeleteOpen(true)}
-                          >
-                            {t("common.delete")}
-                          </Button>
-                        )}
-                      </div>
-                    </div>
+                </div>
+              )}
+              {selectedTab === "manage" && (
+                <div className="flex flex-col gap-1">
+                  <div className="text-medium font-bold text-default-900 dark:text-default-100">
+                    {isRegistered
+                      ? t("versions.edit.unregister_button")
+                      : t("common.delete")}
                   </div>
-                </CardBody>
-              </Card>
-            </motion.div>
-          </div>
-        </div>
-
-        <div className="sm:hidden sticky bottom-0 inset-x-0 z-40 bg-white/80 dark:bg-zinc-900/50 backdrop-blur-xl border-t border-default-200/50 px-4 py-3 flex items-center justify-end gap-3">
-          <Button
-            variant="light"
-            radius="full"
-            onPress={() => navigate(returnToPath)}
-            className="min-w-0 font-medium text-default-600"
-          >
-            {t("common.cancel")}
-          </Button>
-          <Button
-            color="primary"
-            radius="full"
-            className="min-w-0 bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={onSave}
-          >
-            {t("common.ok")}
-          </Button>
-        </div>
+                  <div className="text-small text-default-500 mb-4 max-w-lg">
+                    {isRegistered
+                      ? t("versions.edit.unregister_hint")
+                      : t("versions.edit.delete_hint")}
+                  </div>
+                  <div>
+                    {isRegistered ? (
+                      <Button
+                        color="warning"
+                        variant="flat"
+                        radius="lg"
+                        isDisabled={loading}
+                        className="font-medium"
+                        onPress={async () => {
+                          try {
+                            const has = await (
+                              minecraft as any
+                            )?.IsGDKInstalled?.();
+                            if (!has) {
+                              setUnregisterOpen(false);
+                              setGdkMissingOpen(true);
+                              return;
+                            }
+                            const fn = (minecraft as any)
+                              ?.UnregisterVersionByName;
+                            if (typeof fn === "function") {
+                              setUnregisterOpen(true);
+                              const err: string = await fn(targetName);
+                              setUnregisterOpen(false);
+                              if (err) {
+                                setError(String(err));
+                              } else {
+                                setIsRegistered(false);
+                                setUnregisterSuccessOpen(true);
+                              }
+                            }
+                          } catch {
+                            setUnregisterOpen(false);
+                            setError("ERR_UNREGISTER_FAILED");
+                          }
+                        }}
+                      >
+                        {t("versions.edit.unregister_button")}
+                      </Button>
+                    ) : (
+                      <Button
+                        color="danger"
+                        variant="flat"
+                        radius="lg"
+                        className="font-medium"
+                        onPress={() => setDeleteOpen(true)}
+                      >
+                        {t("common.delete")}
+                      </Button>
+                    )}
+                  </div>
+                </div>
+              )}
+            </CardBody>
+          </Card>
+        </motion.div>
       </div>
 
       <BaseModal
@@ -1199,6 +1371,53 @@ export default function VersionSettingsPage() {
           )}
         </ModalContent>
       </BaseModal>
-    </div>
+
+      <BaseModal
+        size="md"
+        isOpen={rcOpen}
+        onOpenChange={rcOnOpenChange}
+        hideCloseButton
+      >
+        <ModalContent>
+          {(onClose) => (
+            <>
+              <BaseModalHeader className="text-warning-600">
+                <div className="flex items-center gap-2">
+                  <FiAlertTriangle className="w-5 h-5" />
+                  <span>{t("mods.rc_warning.title")}</span>
+                </div>
+              </BaseModalHeader>
+              <BaseModalBody>
+                <div className="text-sm text-default-700 space-y-2">
+                  <p>
+                    {t("mods.rc_warning.body_1", {
+                      version: rcVersion,
+                    })}
+                  </p>
+                  <p className="font-semibold text-warning-700">
+                    {t("mods.rc_warning.body_2")}
+                  </p>
+                  <p>{t("mods.rc_warning.body_3")}</p>
+                </div>
+              </BaseModalBody>
+              <BaseModalFooter>
+                <Button variant="light" onPress={onClose}>
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  color="warning"
+                  onPress={() => {
+                    onClose();
+                    proceedInstallLeviLamina();
+                  }}
+                >
+                  {t("common.continue")}
+                </Button>
+              </BaseModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </BaseModal>
+    </PageContainer>
   );
 }

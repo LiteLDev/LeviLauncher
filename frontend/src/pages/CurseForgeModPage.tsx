@@ -541,7 +541,7 @@ const CurseForgeModPage: React.FC = () => {
     return (
       <div className="w-full h-full flex flex-col overflow-hidden relative bg-background">
         <ScrollShadow className="w-full h-full">
-          <div className="w-full px-4 sm:px-6 py-8 flex flex-col gap-6">
+          <div className="w-full px-4 sm:px-6 pb-8 pt-20 flex flex-col gap-6">
             <Card className="shrink-0 bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl shadow-md border-none">
               <CardBody className="p-6">
                 <div className="flex flex-col md:flex-row gap-6">
@@ -612,7 +612,7 @@ const CurseForgeModPage: React.FC = () => {
   return (
     <div className="w-full h-full flex flex-col overflow-hidden relative bg-background">
       <ScrollShadow className="w-full h-full">
-        <div className="w-full max-w-full mx-auto p-4 flex flex-col gap-6">
+        <div className="w-full max-w-full mx-auto px-4 pb-4 pt-20 flex flex-col gap-6">
           {/* Header Card */}
           <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl shadow-md border-none">
             <CardBody className="p-6">

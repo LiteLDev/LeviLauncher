@@ -25,6 +25,9 @@ import {
 } from "react-icons/fa";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { PageHeader } from "@/components/PageHeader";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 
 export default function WorldLevelDatEditorPage() {
   const { t } = useTranslation();
@@ -582,13 +585,8 @@ export default function WorldLevelDatEditorPage() {
   }, []);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className="w-full max-w-full mx-auto p-4 h-full flex flex-col"
-    >
-      <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+    <PageContainer>
+      <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
         <CardBody className="p-0 flex flex-col h-full overflow-hidden">
           <div className="shrink-0 p-6 flex flex-col gap-6 border-b border-default-200 dark:border-white/10">
             <PageHeader
@@ -1510,6 +1508,6 @@ export default function WorldLevelDatEditorPage() {
           </div>
         </CardBody>
       </Card>
-    </motion.div>
+    </PageContainer>
   );
 }

@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useState } from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Card, CardBody, Chip } from "@heroui/react";
 import { PageHeader, SectionHeader } from "@/components/PageHeader";
@@ -12,9 +12,13 @@ import {
 } from "react-icons/fa";
 import { Browser } from "@wailsio/runtime";
 import { motion } from "framer-motion";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 
 export default function AboutPage() {
   const { t } = useTranslation();
+  const [isAnimating, setIsAnimating] = useState(true);
 
   const repoUrl = "https://github.com/LiteLDev/LeviLauncher";
   const orgUrl = "https://github.com/LiteLDev";
@@ -33,14 +37,16 @@ export default function AboutPage() {
   };
 
   return (
-    <div className="relative w-full p-4 flex flex-col">
+    <PageContainer
+      className={cn("relative", isAnimating && "overflow-hidden")}
+      animate={false}
+    >
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
-        className="mb-6"
       >
-        <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+        <Card className={LAYOUT.GLASS_CARD.BASE}>
           <CardBody className="p-6">
             <PageHeader
               title={t("nav.about")}
@@ -58,7 +64,7 @@ export default function AboutPage() {
           animate="visible"
           variants={cardVariants}
         >
-          <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+          <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
             <CardBody className="p-6">
               <SectionHeader
                 className="mb-4"
@@ -129,7 +135,7 @@ export default function AboutPage() {
           animate="visible"
           variants={cardVariants}
         >
-          <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+          <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
             <CardBody className="p-6">
               <SectionHeader
                 className="mb-4"
@@ -171,7 +177,7 @@ export default function AboutPage() {
           variants={cardVariants}
           className="lg:col-span-2"
         >
-          <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+          <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
             <CardBody className="p-6">
               <SectionHeader
                 className="mb-4"
@@ -193,8 +199,9 @@ export default function AboutPage() {
           animate="visible"
           variants={cardVariants}
           className="lg:col-span-2"
+          onAnimationComplete={() => setIsAnimating(false)}
         >
-          <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+          <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
             <CardBody className="p-6">
               <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
                 <div className="flex-1">
@@ -263,6 +270,6 @@ export default function AboutPage() {
           </Card>
         </motion.div>
       </div>
-    </div>
+    </PageContainer>
   );
 }

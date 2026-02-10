@@ -148,11 +148,11 @@
     }
   },
   "moddedcard": {
-    "title": "插件",
+    "title": "模组",
     "content": {
-      "none": "未找到插件"
+      "none": "未找到模组"
     },
-    "manage": "管理插件"
+    "manage": "管理模组"
   },
   "download_manager": {
     "title": "下载管理",
@@ -273,6 +273,7 @@
         "label": "选择本地安装包 (.msixvc)",
         "hint": "默认使用安装器目录下已下载的文件"
       },
+      "levilamina_unsupported": "该游戏版本不支持 LeviLamina",
       "title": "安装"
     },
     "customappx": {
@@ -311,6 +312,13 @@
       "desc": "使用垂直侧边栏代替顶部导航栏",
       "title_navbar": "使用顶部导航栏",
       "desc_navbar": "开启后使用顶部导航栏代替默认的垂直侧边栏"
+    },
+    "tabs": {
+      "general": "基础设置",
+      "components": "第三方组件",
+      "others": "其他设置",
+      "updates": "软件更新",
+      "about": "关于"
     },
     "unsaved": {
       "title": "未保存修改",
@@ -578,6 +586,13 @@
       "name": "名称"
     },
     "edit": {
+      "tabs": {
+        "general": "基础设置",
+        "launch": "启动选项",
+        "features": "功能",
+        "manage": "管理",
+        "loader": "加载器"
+      },
       "title": "实例设置",
       "new_name": "新名称",
       "placeholder": "输入新名称",
@@ -593,9 +608,9 @@
       "env_vars_placeholder": "环境变量 (KEY=VALUE)，每行一个",
       "env_vars_hint": "设置启动时的环境变量。",
       "danger_zone_title": "危险操作",
-      "delete_hint": "点击以打开删除确认，避免误触。",
+      "delete_hint": "永久从您的设备中删除该实例，包括世界、配置及所有安装内容。请谨慎操作，删除后无法恢复。",
       "unregister_button": "取消注册",
-      "unregister_hint": "该实例已注册到系统，仅可取消注册；取消后可重命名或删除。",
+      "unregister_hint": "取消该实例在系统中的注册，使其不再显示于系统应用列表。此操作不会删除文件。",
       "unregister_progress": {
         "title": "正在取消注册",
         "body": "正在执行系统取消注册，请稍候…"
@@ -704,7 +719,7 @@
     "summary_title_partial": "导入完成（部分失败）",
     "summary_success": "成功",
     "summary_failed": "失败",
-    "details_title": "插件详情",
+    "details_title": "模组详情",
     "field_name": "名称",
     "field_version": "版本",
     "field_type": "类型",
@@ -715,8 +730,8 @@
     "summary_deleted": "已删除",
     "confirm_delete_title": "确认删除",
     "confirm_delete_body": "确定要删除此{{type}}吗？此操作不可撤销。",
-    "dll_modal_title": "导入 DLL 插件",
-    "dll_name": "插件名称",
+    "dll_modal_title": "导入 DLL 模组",
+    "dll_name": "模组名称",
     "dll_type": "类型",
     "dll_version": "版本",
     "err_invalid_name": "无效的版本名或模块名",
@@ -731,13 +746,13 @@
     "err_unknown": "未知错误",
     "overwrite_modal_title": "检测到重复",
     "overwrite_modal_body": "同名模块文件夹已存在，是否覆盖（更新）？",
-    "toggle_label": "启用插件",
+    "toggle_label": "启用模组",
     "toggle_on": "已启用",
     "toggle_off": "已关闭",
-    "toggle_desc_on": "插件已启用，启动游戏时会加载。",
-    "toggle_desc_off": "插件已关闭，启动游戏时不会加载。",
-    "only_enabled": "仅显示已启用的插件",
-    "drop_hint": "拖入 .zip 或 .dll 以导入插件",
+    "toggle_desc_on": "模组已启用，启动游戏时会加载。",
+    "toggle_desc_off": "模组已关闭，启动游戏时不会加载。",
+    "only_enabled": "仅显示已启用的模组",
+    "drop_hint": "拖入 .zip 或 .dll 以导入模组",
     "err_lip_not_installed": "LIP未安装",
     "err_lip_install_failed_suggestion": "安装失败，建议重新安装Minecraft",
     "rc_warning": {

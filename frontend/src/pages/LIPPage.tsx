@@ -13,6 +13,9 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 import { SearchLIPPackages } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as liptypes from "bindings/github.com/liteldev/LeviLauncher/internal/lip/client/types";
 import { LuSearch, LuDownload, LuClock, LuFlame } from "react-icons/lu";
@@ -146,11 +149,8 @@ const LIPPage: React.FC = () => {
   };
 
   return (
-    <div
-      ref={pageRootRef}
-      className="w-full max-w-full mx-auto p-4 h-full min-h-0 flex flex-col gap-6"
-    >
-      <Card className="shrink-0 bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl shadow-md border-none">
+    <PageContainer ref={pageRootRef} className="min-h-0" animate={false}>
+      <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
         <CardBody className="p-6 flex flex-col gap-6">
           <PageHeader title="LIP Content" />
 
@@ -205,7 +205,7 @@ const LIPPage: React.FC = () => {
         </CardBody>
       </Card>
 
-      <Card className="flex-1 min-h-0 bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl shadow-md border-none">
+      <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
         <CardBody className="p-0 overflow-hidden flex flex-col">
           <div
             ref={scrollContainerRef}
@@ -319,7 +319,7 @@ const LIPPage: React.FC = () => {
           )}
         </CardBody>
       </Card>
-    </div>
+    </PageContainer>
   );
 };
 

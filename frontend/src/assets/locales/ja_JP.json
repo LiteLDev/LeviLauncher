@@ -7,7 +7,8 @@
     "versions": "バージョン",
     "more": "その他",
     "about": "情報",
-    "back": "戻る"
+    "back": "戻る",
+    "forward": "進む"
   },
   "theme": {
     "toggle": "テーマの切り替え"
@@ -264,6 +265,7 @@
         "label": "ローカルのインストーラーを選択 (.msixvc)",
         "hint": "デフォルトでは installers ディレクトリ内のファイルを使用します"
       },
+      "levilamina_unsupported": "このゲームバージョンでは LeviLamina はサポートされていません",
       "title": "インストール"
     },
     "customappx": {
@@ -290,6 +292,13 @@
       "desc": "トップナビゲーションバーの代わりに垂直サイドバーを使用する",
       "title_navbar": "トップナビゲーションバーを使用",
       "desc_navbar": "有効にすると、デフォルトの垂直サイドバーの代わりにトップナビゲーションバーを使用します"
+    },
+    "tabs": {
+      "general": "基本設定",
+      "components": "サードパーティ製コンポーネント",
+      "others": "その他",
+      "updates": "アップデート",
+      "about": "情報"
     },
     "unsaved": {
       "title": "保存されていない変更",
@@ -552,6 +561,13 @@
       "name": "名前"
     },
     "edit": {
+      "tabs": {
+        "general": "全般",
+        "launch": "起動設定",
+        "features": "機能",
+        "manage": "管理",
+        "loader": "ローダー"
+      },
       "title": "バージョン設定",
       "new_name": "新しい名前",
       "placeholder": "新しい名前を入力",

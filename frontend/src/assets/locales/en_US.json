@@ -265,6 +265,7 @@
         "label": "Choose local installer (.msixvc)",
         "hint": "Defaults to using files in the installers directory"
       },
+      "levilamina_unsupported": "LeviLamina is not supported for this game version",
       "title": "Install"
     },
     "customappx": {
@@ -303,6 +304,13 @@
       "desc": "Use vertical sidebar instead of top navigation bar",
       "title_navbar": "Use Top Navigation Bar",
       "desc_navbar": "Enable to use the top navigation bar instead of the default vertical sidebar"
+    },
+    "tabs": {
+      "general": "Basic Settings",
+      "components": "Third-party Components",
+      "others": "Others",
+      "updates": "Updates",
+      "about": "About"
     },
     "unsaved": {
       "title": "Unsaved Changes",
@@ -570,6 +578,13 @@
       "name": "Name"
     },
     "edit": {
+      "tabs": {
+        "general": "General",
+        "launch": "Launch Options",
+        "features": "Features",
+        "manage": "Management",
+        "loader": "Loader"
+      },
       "title": "Instance Settings",
       "new_name": "New Name",
       "placeholder": "Enter new name",
@@ -585,9 +600,9 @@
       "env_vars_placeholder": "Environment Variables (KEY=VALUE), one per line",
       "env_vars_hint": "Set launch environment variables.",
       "danger_zone_title": "Danger Zone",
-      "delete_hint": "Click to open delete confirmation to avoid accidental deletion.",
+      "delete_hint": "Permanently deletes this instance from your device, including worlds, configs, and installed content. This action cannot be undone.",
       "unregister_button": "Unregister",
-      "unregister_hint": "This instance is registered to system. Only unregister is allowed; then you can rename or delete.",
+      "unregister_hint": "Unregister this instance from the system so it no longer appears in the system app list. This will not delete any files.",
       "unregister_progress": {
         "title": "Unregistering",
         "body": "Performing system unregister. Please wait…"

@@ -64,6 +64,9 @@ import {
   listPlayers,
   resolvePlayerDisplayName,
 } from "@/utils/content";
+import { PageContainer } from "@/components/PageContainer";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 
 interface WorldInfo {
   Path: string;
@@ -467,426 +470,418 @@ export default function WorldsListPage() {
   }, [worlds]);
 
   return (
-    <motion.div
-      initial={{ opacity: 0, y: 8 }}
-      animate={{ opacity: 1, y: 0 }}
-      transition={{ duration: 0.25 }}
-      className="relative w-full p-4 flex flex-col"
-    >
-      <div className="w-full max-w-none pb-12 flex flex-col gap-6">
-        <Card className="rounded-4xl shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none">
-          <CardBody className="p-6 flex flex-col gap-6">
-            <PageHeader
-              title={t("contentpage.worlds_list")}
-              endContent={
-                <div className="flex items-center gap-2">
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button
-                        radius="full"
-                        variant="flat"
-                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium w-full sm:w-auto sm:min-w-[200px]"
-                        isDisabled={!players.length}
-                        startContent={<FaUser />}
-                      >
-                        {selectedPlayer
-                          ? resolvePlayerDisplayName(
-                              selectedPlayer,
-                              playerGamertagMap,
-                            )
-                          : t("contentpage.select_player")}
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label={
-                        t("contentpage.players_aria") as unknown as string
-                      }
-                      selectionMode="single"
-                      selectedKeys={
-                        selectedPlayer ? new Set([selectedPlayer]) : new Set()
-                      }
-                      onSelectionChange={(keys) => {
-                        const arr = Array.from(keys as unknown as Set<string>);
-                        const next = arr[0] || "";
-                        if (typeof next === "string" && next)
-                          setSelectedPlayer(next);
-                      }}
-                    >
-                      {players.length ? (
-                        players.map((p) => (
-                          <DropdownItem
-                            key={p}
-                            textValue={resolvePlayerDisplayName(
-                              p,
-                              playerGamertagMap,
-                            )}
-                          >
-                            {resolvePlayerDisplayName(p, playerGamertagMap)}
-                          </DropdownItem>
-                        ))
-                      ) : (
-                        <DropdownItem key="none" isDisabled>
-                          {t("contentpage.no_players")}
-                        </DropdownItem>
-                      )}
-                    </DropdownMenu>
-                  </Dropdown>
-                  <Button
-                    radius="full"
-                    variant="flat"
-                    startContent={<FaFolderOpen />}
-                    onPress={() => {
-                      if (currentWorldsPath) OpenPathDir(currentWorldsPath);
-                    }}
-                    isDisabled={!currentWorldsPath}
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
-                  >
-                    {t("common.open")}
-                  </Button>
-                  <Tooltip content={t("common.refresh") as unknown as string}>
-                    <Button
-                      isIconOnly
-                      radius="full"
-                      variant="light"
-                      onPress={() => refreshAll()}
-                      isDisabled={loading}
-                    >
-                      <FaSync
-                        className={loading ? "animate-spin" : ""}
-                        size={18}
-                      />
-                    </Button>
-                  </Tooltip>
-                </div>
-              }
-            />
-
-            <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
-              <Input
-                placeholder={t("common.search_placeholder") as string}
-                value={search}
-                onValueChange={setSearch}
-                startContent={<FaFilter className="text-default-400" />}
-                endContent={
-                  search && (
-                    <button onClick={() => setSearch("")}>
-                      <FaTimes className="text-default-400 hover:text-default-600" />
-                    </button>
-                  )
-                }
-                radius="full"
-                variant="flat"
-                className="w-full md:max-w-xs"
-                classNames={{
-                  inputWrapper:
-                    "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
-                }}
-              />
-
-              <div className="flex items-center gap-3">
-                <Tooltip content={t("common.select_mode")}>
-                  <Button
-                    isIconOnly
-                    radius="full"
-                    variant={isSelectMode ? "solid" : "flat"}
-                    color={isSelectMode ? "primary" : "default"}
-                    onPress={() => {
-                      setIsSelectMode(!isSelectMode);
-                      if (isSelectMode) setSelected({});
-                    }}
-                  >
-                    <FaCheckSquare />
-                  </Button>
-                </Tooltip>
-
-                {isSelectMode && (
-                  <Checkbox
-                    isSelected={
-                      filtered.length > 0 && selectedCount === filtered.length
-                    }
-                    onValueChange={selectAll}
-                    radius="full"
-                    size="lg"
-                    classNames={{ wrapper: "after:bg-primary" }}
-                  >
-                    <span className="text-sm text-default-600">
-                      {t("common.select_all")}
-                    </span>
-                  </Checkbox>
-                )}
-
+    <PageContainer>
+      <Card className={LAYOUT.GLASS_CARD.BASE}>
+        <CardBody className="p-6 flex flex-col gap-6">
+          <PageHeader
+            title={t("contentpage.worlds_list")}
+            endContent={
+              <div className="flex items-center gap-2">
                 <Dropdown>
                   <DropdownTrigger>
                     <Button
-                      variant="flat"
                       radius="full"
-                      startContent={
-                        sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
-                      }
-                      className="min-w-[120px]"
+                      variant="flat"
+                      className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium w-full sm:w-auto sm:min-w-[200px]"
+                      isDisabled={!players.length}
+                      startContent={<FaUser />}
                     >
-                      {sortKey === "name"
-                        ? (t("filemanager.sort.name") as string)
-                        : (t("contentpage.sort_time") as string)}
-                      {" / "}
-                      {sortAsc
-                        ? t("contentpage.sort_asc")
-                        : t("contentpage.sort_desc")}
+                      {selectedPlayer
+                        ? resolvePlayerDisplayName(
+                            selectedPlayer,
+                            playerGamertagMap,
+                          )
+                        : t("contentpage.select_player")}
                     </Button>
                   </DropdownTrigger>
                   <DropdownMenu
+                    aria-label={
+                      t("contentpage.players_aria") as unknown as string
+                    }
                     selectionMode="single"
                     selectedKeys={
-                      new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])
+                      selectedPlayer ? new Set([selectedPlayer]) : new Set()
                     }
                     onSelectionChange={(keys) => {
-                      const val = Array.from(keys)[0] as string;
-                      const [k, order] = val.split("-");
-                      const nextKey = (k as "name" | "time") || "name";
-                      const nextAsc = order === "asc";
-                      setSortKey(nextKey);
-                      setSortAsc(nextAsc);
-                      persistSort(nextKey, nextAsc);
+                      const arr = Array.from(keys as unknown as Set<string>);
+                      const next = arr[0] || "";
+                      if (typeof next === "string" && next)
+                        setSelectedPlayer(next);
                     }}
                   >
-                    <DropdownItem
-                      key="name-asc"
-                      startContent={<FaSortAmountDown />}
-                    >
-                      {t("filemanager.sort.name")} (A-Z)
-                    </DropdownItem>
-                    <DropdownItem
-                      key="name-desc"
-                      startContent={<FaSortAmountUp />}
-                    >
-                      {t("filemanager.sort.name")} (Z-A)
-                    </DropdownItem>
-                    <DropdownItem
-                      key="time-asc"
-                      startContent={<FaSortAmountDown />}
-                    >
-                      {t("contentpage.sort_time")} (Old-New)
-                    </DropdownItem>
-                    <DropdownItem
-                      key="time-desc"
-                      startContent={<FaSortAmountUp />}
-                    >
-                      {t("contentpage.sort_time")} (New-Old)
-                    </DropdownItem>
+                    {players.length ? (
+                      players.map((p) => (
+                        <DropdownItem
+                          key={p}
+                          textValue={resolvePlayerDisplayName(
+                            p,
+                            playerGamertagMap,
+                          )}
+                        >
+                          {resolvePlayerDisplayName(p, playerGamertagMap)}
+                        </DropdownItem>
+                      ))
+                    ) : (
+                      <DropdownItem key="none" isDisabled>
+                        {t("contentpage.no_players")}
+                      </DropdownItem>
+                    )}
                   </DropdownMenu>
                 </Dropdown>
-
-                <AnimatePresence>
-                  {selectedCount > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                    >
-                      <Button
-                        color="danger"
-                        variant="flat"
-                        radius="full"
-                        startContent={<FaTrash />}
-                        onPress={delManyCfmOnOpen}
-                      >
-                        {t("common.delete_selected", {
-                          count: selectedCount,
-                        })}
-                      </Button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
-              </div>
-            </div>
-
-            <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
-              <span>{t("contentpage.current_version")}:</span>
-              <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
-                {currentVersionName || t("contentpage.none")}
-              </span>
-              <span className="text-default-300">|</span>
-              <span>{t("contentpage.isolation")}:</span>
-              <span
-                className={`font-medium px-2 py-0.5 rounded-md ${
-                  roots.isIsolation
-                    ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
-                    : "bg-default-100 text-default-700"
-                }`}
-              >
-                {roots.isIsolation ? t("common.yes") : t("common.no")}
-              </span>
-            </div>
-          </CardBody>
-        </Card>
-
-        {loading && worlds.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 gap-4">
-            <Spinner size="lg" />
-            <span className="text-default-500">{t("common.loading")}</span>
-          </div>
-        ) : filtered.length === 0 ? (
-          <div className="flex flex-col items-center justify-center py-20 text-default-400">
-            <FaBox className="text-6xl mb-4 opacity-20" />
-            <p>{search ? t("common.no_results") : t("contentpage.no_items")}</p>
-          </div>
-        ) : (
-          <div className="flex flex-col gap-4">
-            <div className="flex flex-col gap-3">
-              {paginatedItems.map((w, idx) => (
-                <motion.div
-                  key={`${w.Path}-${idx}`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.2 }}
+                <Button
+                  radius="full"
+                  variant="flat"
+                  startContent={<FaFolderOpen />}
+                  onPress={() => {
+                    if (currentWorldsPath) OpenPathDir(currentWorldsPath);
+                  }}
+                  isDisabled={!currentWorldsPath}
+                  className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
                 >
-                  <div
-                    className={`w-full p-4 bg-white dark:bg-zinc-900/50 hover:bg-default-50 dark:hover:bg-zinc-800 transition-all rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border ${
-                      isSelectMode && selected[w.Path]
-                        ? "border-primary bg-primary/10"
-                        : "border-default-200 dark:border-zinc-700/50 hover:border-default-400 dark:hover:border-zinc-600"
-                    }`}
-                    onClick={() => {
-                      if (isSelectMode) toggleSelect(w.Path);
-                    }}
+                  {t("common.open")}
+                </Button>
+                <Tooltip content={t("common.refresh") as unknown as string}>
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    variant="light"
+                    onPress={() => refreshAll()}
+                    isDisabled={loading}
                   >
-                    <div className="relative shrink-0">
-                      <div className="h-20 sm:h-24 aspect-video rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
-                        <Image
-                          src={w.IconBase64 || DefaultWorldPreview}
-                          alt={w.FolderName}
-                          classNames={{
-                            wrapper: "w-full h-full",
-                            img: "w-full h-full object-cover object-center",
-                          }}
-                          radius="none"
-                          fallbackSrc={DefaultWorldPreview}
-                        />
-                      </div>
-                      {isSelectMode && (
-                        <Checkbox
-                          isSelected={!!selected[w.Path]}
-                          onValueChange={() => toggleSelect(w.Path)}
-                          className="absolute -top-2 -left-2 z-20"
-                          classNames={{
-                            wrapper: "bg-white dark:bg-zinc-900 shadow-md",
-                          }}
-                        />
-                      )}
+                    <FaSync
+                      className={loading ? "animate-spin" : ""}
+                      size={18}
+                    />
+                  </Button>
+                </Tooltip>
+              </div>
+            }
+          />
+
+          <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
+            <Input
+              placeholder={t("common.search_placeholder") as string}
+              value={search}
+              onValueChange={setSearch}
+              startContent={<FaFilter className="text-default-400" />}
+              endContent={
+                search && (
+                  <button onClick={() => setSearch("")}>
+                    <FaTimes className="text-default-400 hover:text-default-600" />
+                  </button>
+                )
+              }
+              radius="full"
+              variant="flat"
+              className="w-full md:max-w-xs"
+              classNames={{
+                inputWrapper:
+                  "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
+              }}
+            />
+
+            <div className="flex items-center gap-3">
+              <Tooltip content={t("common.select_mode")}>
+                <Button
+                  isIconOnly
+                  radius="full"
+                  variant={isSelectMode ? "solid" : "flat"}
+                  color={isSelectMode ? "primary" : "default"}
+                  onPress={() => {
+                    setIsSelectMode(!isSelectMode);
+                    if (isSelectMode) setSelected({});
+                  }}
+                >
+                  <FaCheckSquare />
+                </Button>
+              </Tooltip>
+
+              {isSelectMode && (
+                <Checkbox
+                  isSelected={
+                    filtered.length > 0 && selectedCount === filtered.length
+                  }
+                  onValueChange={selectAll}
+                  radius="full"
+                  size="lg"
+                  classNames={{ wrapper: "after:bg-primary" }}
+                >
+                  <span className="text-sm text-default-600">
+                    {t("common.select_all")}
+                  </span>
+                </Checkbox>
+              )}
+
+              <Dropdown>
+                <DropdownTrigger>
+                  <Button
+                    variant="flat"
+                    radius="full"
+                    startContent={
+                      sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
+                    }
+                    className="min-w-[120px]"
+                  >
+                    {sortKey === "name"
+                      ? (t("filemanager.sort.name") as string)
+                      : (t("contentpage.sort_time") as string)}
+                    {" / "}
+                    {sortAsc
+                      ? t("contentpage.sort_asc")
+                      : t("contentpage.sort_desc")}
+                  </Button>
+                </DropdownTrigger>
+                <DropdownMenu
+                  selectionMode="single"
+                  selectedKeys={
+                    new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])
+                  }
+                  onSelectionChange={(keys) => {
+                    const val = Array.from(keys)[0] as string;
+                    const [k, order] = val.split("-");
+                    const nextKey = (k as "name" | "time") || "name";
+                    const nextAsc = order === "asc";
+                    setSortKey(nextKey);
+                    setSortAsc(nextAsc);
+                    persistSort(nextKey, nextAsc);
+                  }}
+                >
+                  <DropdownItem
+                    key="name-asc"
+                    startContent={<FaSortAmountDown />}
+                  >
+                    {t("filemanager.sort.name")} (A-Z)
+                  </DropdownItem>
+                  <DropdownItem
+                    key="name-desc"
+                    startContent={<FaSortAmountUp />}
+                  >
+                    {t("filemanager.sort.name")} (Z-A)
+                  </DropdownItem>
+                  <DropdownItem
+                    key="time-asc"
+                    startContent={<FaSortAmountDown />}
+                  >
+                    {t("contentpage.sort_time")} (Old-New)
+                  </DropdownItem>
+                  <DropdownItem
+                    key="time-desc"
+                    startContent={<FaSortAmountUp />}
+                  >
+                    {t("contentpage.sort_time")} (New-Old)
+                  </DropdownItem>
+                </DropdownMenu>
+              </Dropdown>
+
+              <AnimatePresence>
+                {selectedCount > 0 && (
+                  <motion.div
+                    initial={{ opacity: 0, scale: 0.9 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.9 }}
+                  >
+                    <Button
+                      color="danger"
+                      variant="flat"
+                      radius="full"
+                      startContent={<FaTrash />}
+                      onPress={delManyCfmOnOpen}
+                    >
+                      {t("common.delete_selected", {
+                        count: selectedCount,
+                      })}
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </div>
+
+          <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
+            <span>{t("contentpage.current_version")}:</span>
+            <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
+              {currentVersionName || t("contentpage.none")}
+            </span>
+            <span className="text-default-300">|</span>
+            <span>{t("contentpage.isolation")}:</span>
+            <span
+              className={`font-medium px-2 py-0.5 rounded-md ${
+                roots.isIsolation
+                  ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
+                  : "bg-default-100 text-default-700"
+              }`}
+            >
+              {roots.isIsolation ? t("common.yes") : t("common.no")}
+            </span>
+          </div>
+        </CardBody>
+      </Card>
+
+      {loading && worlds.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 gap-4">
+          <Spinner size="lg" />
+          <span className="text-default-500">{t("common.loading")}</span>
+        </div>
+      ) : filtered.length === 0 ? (
+        <div className="flex flex-col items-center justify-center py-20 text-default-400">
+          <FaBox className="text-6xl mb-4 opacity-20" />
+          <p>{search ? t("common.no_results") : t("contentpage.no_items")}</p>
+        </div>
+      ) : (
+        <div className="flex flex-col gap-4">
+          <div className="flex flex-col gap-3">
+            {paginatedItems.map((w, idx) => (
+              <motion.div
+                key={`${w.Path}-${idx}`}
+                initial={{ opacity: 0 }}
+                animate={{ opacity: 1 }}
+                transition={{ duration: 0.2 }}
+              >
+                <div
+                  className={`w-full p-4 bg-white dark:bg-zinc-900/50 hover:bg-default-50 dark:hover:bg-zinc-800 transition-all rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border ${
+                    isSelectMode && selected[w.Path]
+                      ? "border-primary bg-primary/10"
+                      : "border-default-200 dark:border-zinc-700/50 hover:border-default-400 dark:hover:border-zinc-600"
+                  }`}
+                  onClick={() => {
+                    if (isSelectMode) toggleSelect(w.Path);
+                  }}
+                >
+                  <div className="relative shrink-0">
+                    <div className="h-20 sm:h-24 aspect-video rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
+                      <Image
+                        src={w.IconBase64 || DefaultWorldPreview}
+                        alt={w.FolderName}
+                        classNames={{
+                          wrapper: "w-full h-full",
+                          img: "w-full h-full object-cover object-center",
+                        }}
+                        radius="none"
+                        fallbackSrc={DefaultWorldPreview}
+                      />
+                    </div>
+                    {isSelectMode && (
+                      <Checkbox
+                        isSelected={!!selected[w.Path]}
+                        onValueChange={() => toggleSelect(w.Path)}
+                        className="absolute -top-2 -left-2 z-20"
+                        classNames={{
+                          wrapper: "bg-white dark:bg-zinc-900 shadow-md",
+                        }}
+                      />
+                    )}
+                  </div>
+
+                  <div className="flex flex-col flex-1 min-w-0 gap-1">
+                    <div className="flex items-baseline gap-2 truncate">
+                      <h3
+                        className="text-base sm:text-lg font-bold text-default-900 dark:text-white truncate"
+                        title={w.FolderName}
+                      >
+                        {w.FolderName}
+                      </h3>
                     </div>
 
-                    <div className="flex flex-col flex-1 min-w-0 gap-1">
-                      <div className="flex items-baseline gap-2 truncate">
-                        <h3
-                          className="text-base sm:text-lg font-bold text-default-900 dark:text-white truncate"
-                          title={w.FolderName}
-                        >
-                          {w.FolderName}
-                        </h3>
+                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2 w-full"></p>
+
+                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                      <div
+                        className="flex items-center gap-1"
+                        title={t("common.size")}
+                      >
+                        <FaHdd />
+                        <span>{formatBytes(w.Size)}</span>
                       </div>
-
-                      <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2 w-full"></p>
-
-                      <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                        <div
-                          className="flex items-center gap-1"
-                          title={t("common.size")}
-                        >
-                          <FaHdd />
-                          <span>{formatBytes(w.Size)}</span>
-                        </div>
-                        <div
-                          className="flex items-center gap-1"
-                          title={t("common.date")}
-                        >
-                          <FaClock />
-                          <span>
-                            {new Date(w.LastModified * 1000).toLocaleString()}
-                          </span>
-                        </div>
+                      <div
+                        className="flex items-center gap-1"
+                        title={t("common.date")}
+                      >
+                        <FaClock />
+                        <span>
+                          {new Date(w.LastModified * 1000).toLocaleString()}
+                        </span>
                       </div>
+                    </div>
 
-                      <div className="flex flex-1 items-end justify-between mt-2">
-                        <div className="flex gap-1"></div>
-                        <div className="flex gap-2">
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            radius="full"
-                            isIconOnly
-                            onPress={() => OpenPathDir(w.Path)}
-                            className="h-8 w-8 min-w-0"
-                            title={t("common.open")}
-                          >
-                            <FaFolderOpen className="text-xs" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            radius="full"
-                            isIconOnly
-                            onPress={() => handleBackup(w)}
-                            isLoading={backingUp === w.Path}
-                            className="h-8 w-8 min-w-0"
-                            title={t("common.backup")}
-                          >
-                            <FaArchive className="text-xs" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            radius="full"
-                            isIconOnly
-                            onPress={() =>
-                              navigate(
-                                `/content/worlds/worldEdit?path=${encodeURIComponent(
-                                  w.Path,
-                                )}`,
-                              )
-                            }
-                            className="h-8 w-8 min-w-0"
-                            title={t("common.edit")}
-                          >
-                            <FaEdit className="text-xs" />
-                          </Button>
-                          <Button
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            radius="full"
-                            isIconOnly
-                            onPress={() => {
-                              setActiveWorld(w);
-                              delOnOpen();
-                            }}
-                            className="h-8 w-8 min-w-0"
-                            title={t("common.delete")}
-                          >
-                            <FaTrash className="text-xs" />
-                          </Button>
-                        </div>
+                    <div className="flex flex-1 items-end justify-between mt-2">
+                      <div className="flex gap-1"></div>
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          radius="full"
+                          isIconOnly
+                          onPress={() => OpenPathDir(w.Path)}
+                          className="h-8 w-8 min-w-0"
+                          title={t("common.open")}
+                        >
+                          <FaFolderOpen className="text-xs" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          radius="full"
+                          isIconOnly
+                          onPress={() => handleBackup(w)}
+                          isLoading={backingUp === w.Path}
+                          className="h-8 w-8 min-w-0"
+                          title={t("common.backup")}
+                        >
+                          <FaArchive className="text-xs" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          radius="full"
+                          isIconOnly
+                          onPress={() =>
+                            navigate(
+                              `/content/worlds/worldEdit?path=${encodeURIComponent(
+                                w.Path,
+                              )}`,
+                            )
+                          }
+                          className="h-8 w-8 min-w-0"
+                          title={t("common.edit")}
+                        >
+                          <FaEdit className="text-xs" />
+                        </Button>
+                        <Button
+                          size="sm"
+                          color="danger"
+                          variant="flat"
+                          radius="full"
+                          isIconOnly
+                          onPress={() => {
+                            setActiveWorld(w);
+                            delOnOpen();
+                          }}
+                          className="h-8 w-8 min-w-0"
+                          title={t("common.delete")}
+                        >
+                          <FaTrash className="text-xs" />
+                        </Button>
                       </div>
                     </div>
                   </div>
-                </motion.div>
-              ))}
-            </div>
-
-            {totalPages > 1 && (
-              <div className="flex justify-center pb-4">
-                <Pagination
-                  total={totalPages}
-                  page={currentPage}
-                  onChange={setCurrentPage}
-                  showControls
-                  size="sm"
-                />
-              </div>
-            )}
+                </div>
+              </motion.div>
+            ))}
           </div>
-        )}
-      </div>
 
+          {totalPages > 1 && (
+            <div className="flex justify-center pb-4">
+              <Pagination
+                total={totalPages}
+                page={currentPage}
+                onChange={setCurrentPage}
+                showControls
+                size="sm"
+              />
+            </div>
+          )}
+        </div>
+      )}
       <BaseModal
         isOpen={delOpen}
         onClose={() => delOnOpenChange(false)}
@@ -986,6 +981,6 @@ export default function WorldsListPage() {
           )}
         </ModalContent>
       </BaseModal>
-    </motion.div>
+    </PageContainer>
   );
 }

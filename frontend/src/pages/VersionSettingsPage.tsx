@@ -315,7 +315,7 @@ export default function VersionSettingsPage() {
           transition={{ duration: 0.18, ease: [0.16, 0.84, 0.44, 1] }}
         >
           <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl mb-6">
-            <CardBody className="px-6 sm:px-8 py-5 w-full">
+            <CardBody className="p-6 w-full">
               <PageHeader
                 title={t("versions.edit.title")}
                 titleClassName="text-left pb-1"
@@ -387,7 +387,7 @@ export default function VersionSettingsPage() {
               transition={{ duration: 0.25, delay: 0.1 }}
             >
               <Card className="h-full min-h-[160px] border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-                <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
+                <CardBody className="p-6 flex flex-col gap-6">
                   <div>
                     <label className="text-small font-medium text-default-700 dark:text-default-200 mb-2 block">
                       {t("versions.edit.new_name")}
@@ -592,7 +592,7 @@ export default function VersionSettingsPage() {
               transition={{ duration: 0.25, delay: 0.15 }}
             >
               <Card className="h-full min-h-[160px] border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-                <CardBody className="p-6 sm:p-8 flex flex-col gap-5">
+                <CardBody className="p-6 flex flex-col gap-5">
                   <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
                     <div className="text-medium font-medium">
                       {t("versions.edit.enable_isolation")}

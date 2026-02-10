@@ -336,7 +336,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
           transition={{ duration: 0.4, ease: "easeOut" }}
         >
           <Card className="w-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-            <CardHeader className="flex flex-col gap-4 p-6">
+            <CardHeader className="flex flex-col gap-6 p-6">
               <PageHeader
                 className="w-full"
                 title={t("launcherpage.version_select.title")}

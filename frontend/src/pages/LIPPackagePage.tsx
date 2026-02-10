@@ -57,7 +57,7 @@ const LIPPackagePage: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="p-8 max-w-7xl mx-auto space-y-6">
+      <div className="p-6 max-w-7xl mx-auto space-y-6">
         <Skeleton className="h-8 w-32 rounded-lg" />
         <div className="flex gap-6">
           <Skeleton className="w-32 h-32 rounded-2xl" />
@@ -83,7 +83,7 @@ const LIPPackagePage: React.FC = () => {
   }
 
   return (
-    <div className="h-full w-full overflow-y-auto p-4 sm:p-6 lg:p-8">
+    <div className="h-full w-full overflow-y-auto p-6">
       <div className="max-w-7xl mx-auto">
         <Button
           variant="light"
@@ -91,12 +91,12 @@ const LIPPackagePage: React.FC = () => {
           onPress={() => navigate(-1)}
           className="mb-4"
         >
-          {t("common.back", { defaultValue: "Back" })}
+          {t("common.back")}
         </Button>
 
         <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none shadow-md mb-6">
-          <CardBody className="p-6 sm:p-8">
-            <div className="flex flex-col md:flex-row gap-8">
+          <CardBody className="p-6">
+            <div className="flex flex-col md:flex-row gap-6">
               <div className="shrink-0">
                 <Image
                   src={pkg.avatarUrl}
@@ -106,7 +106,7 @@ const LIPPackagePage: React.FC = () => {
                 />
               </div>
 
-              <div className="flex flex-col grow gap-3">
+              <div className="flex flex-col grow gap-6">
                 <PageHeader title={pkg.name} />
 
                 <div className="flex items-center gap-4 text-default-500 text-sm flex-wrap">

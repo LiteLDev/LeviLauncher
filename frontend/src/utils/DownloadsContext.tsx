@@ -7,7 +7,7 @@ import React, {
 } from "react";
 import { Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { toast } from "react-hot-toast";
+import { addToast } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 
 export interface DownloadItem {
@@ -198,7 +198,10 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
             return next;
           });
         }
-        toast.error(msg);
+        addToast({
+          description: msg,
+          color: "danger",
+        });
       }),
     );
 
@@ -223,13 +226,10 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
           fileName: fname || prev.fileName,
         }));
         speedRef.current[dest] = { ts: 0, bytes: 0 };
-        toast.success(
-          t("downloadpage.download.success_body", {
-            defaultValue: "文件已下载：",
-          }) +
-            " " +
-            (fname || ""),
-        );
+        addToast({
+          title: t("downloadpage.download.success_body") + " " + (fname || ""),
+          color: "success",
+        });
       }),
     );
 
@@ -266,11 +266,10 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     if (isAlreadyDownloading) {
-      toast.error(
-        t("downloadpage.error.already_downloading", {
-          defaultValue: "该文件正在下载中",
-        }),
-      );
+      addToast({
+        description: t("downloadpage.error.already_downloading"),
+        color: "danger",
+      });
       return false;
     }
 
@@ -300,14 +299,16 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         fileName: displayName || prev.fileName || getFileNameFromDest(key),
         url: url, // Store original URL for retry
       }));
-      toast.success(
-        t("downloadpage.mirror.download_started", {
-          defaultValue: "开始下载...",
-        }),
-      );
+      addToast({
+        title: t("downloadpage.mirror.download_started"),
+        color: "success",
+      });
       return true;
     } catch (e) {
-      toast.error(String(e));
+      addToast({
+        description: String(e),
+        color: "danger",
+      });
       return false;
     }
   };

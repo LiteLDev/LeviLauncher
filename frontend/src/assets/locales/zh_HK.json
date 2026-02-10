@@ -375,6 +375,10 @@
         }
       }
     },
+    "appearance": {
+      "disable_animations": "停用動畫",
+      "disable_animations_desc": "停用介面過渡動畫以提升效能或減少動態效果"
+    },
     "process": {
       "title": "進程管理",
       "desc": "管理執行中的 Minecraft 進程",
@@ -468,7 +472,15 @@
     "error_load": "載入失敗",
     "size": "大小",
     "unknown": "未知",
-    "version": "版本"
+    "version": "版本",
+    "details": "詳情",
+    "disable": "停用",
+    "enable": "啟用",
+    "open_folder": "開啟資料夾",
+    "remove": "移除",
+    "update": "更新",
+    "update_all": "全部更新",
+    "updated": "已更新"
   },
   "useravatar": {
     "no_login_retry": "未偵測到 Xbox 登入（點擊以重試）",
@@ -514,7 +526,7 @@
     "sort_asc": "由上至下",
     "sort_desc": "由下至上",
     "drop_hint": "拖入 .mcworld/.mcpack/.mcaddon 以匯入",
-    "import_button": "匯入 .mcworld/.mcpack/.mcaddon",
+    "import_button": "匯入",
     "require_player_for_world_import": "匯入世界 (.mcworld) 前請先選擇玩家",
     "no_player_selected": "未選擇玩家",
     "world_leveldat_editor": "世界 level.dat 編輯",
@@ -814,6 +826,8 @@
   "server": {
     "offline": "離線 / 無法連接",
     "players": "在線玩家",
-    "delay": "延遲"
+    "delay": "延遲",
+    "online": "在線",
+    "version": "版本"
   }
 }

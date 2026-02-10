@@ -17,6 +17,7 @@ import {
   Pagination,
   Card,
   CardBody,
+  addToast,
 } from "@heroui/react";
 import {
   BaseModal,
@@ -51,7 +52,6 @@ import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { renderMcText } from "@/utils/mcformat";
-import { toast } from "react-hot-toast";
 import { PageHeader } from "@/components/PageHeader";
 
 export default function BehaviorPacksPage() {
@@ -399,11 +399,15 @@ export default function BehaviorPacksPage() {
     setDeletingOne(true);
     try {
       await DeletePack(currentVersionName, activePack.path);
-      toast.success(t("common.success"));
+      addToast({ title: t("common.success"), color: "success" });
       refreshAll(true);
       delOnOpenChange(false);
     } catch (e) {
-      toast.error(String(e));
+      addToast({
+        title: "Error",
+        description: String(e),
+        color: "danger",
+      });
     } finally {
       setDeletingOne(false);
     }
@@ -423,11 +427,12 @@ export default function BehaviorPacksPage() {
         console.error(e);
       }
     }
-    toast.success(
-      t("contentpage.deleted_count", {
+    addToast({
+      title: t("contentpage.deleted_count", {
         count: successCount,
       }),
-    );
+      color: "success",
+    });
     setSelected({});
     refreshAll(true);
     delManyCfmOnOpenChange(false);
@@ -453,23 +458,13 @@ export default function BehaviorPacksPage() {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.25 }}
-      className="w-full max-w-full mx-auto p-4 h-full flex flex-col"
+      className="relative w-full p-4 flex flex-col"
     >
-      <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-        <CardBody className="p-0 flex flex-col h-full overflow-hidden">
-          <div className="shrink-0 p-4 sm:p-6 pb-2 flex flex-col gap-4 border-b border-default-200 dark:border-white/10">
+      <div className="w-full max-w-none pb-12 flex flex-col gap-6">
+        <Card className="rounded-4xl shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none">
+          <CardBody className="p-6 flex flex-col gap-6">
             <PageHeader
               title={t("contentpage.behavior_packs")}
-              startContent={
-                <Button
-                  isIconOnly
-                  radius="full"
-                  variant="light"
-                  onPress={() => navigate("/content")}
-                >
-                  <FaArrowLeft size={20} />
-                </Button>
-              }
               endContent={
                 <div className="flex items-center gap-2">
                   <Button
@@ -500,7 +495,6 @@ export default function BehaviorPacksPage() {
               }
             />
 
-            {/* Toolbar */}
             <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
               <Input
                 placeholder={t("common.search_placeholder")}
@@ -636,6 +630,7 @@ export default function BehaviorPacksPage() {
                 </AnimatePresence>
               </div>
             </div>
+
             <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
               <span>{t("contentpage.current_version")}:</span>
               <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
@@ -653,164 +648,159 @@ export default function BehaviorPacksPage() {
                 {roots.isIsolation ? t("common.yes") : t("common.no")}
               </span>
             </div>
-          </div>
+          </CardBody>
+        </Card>
 
-          <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6">
-            {loading ? (
-              <div className="flex flex-col items-center justify-center py-20 gap-4">
-                <Spinner size="lg" />
-                <span className="text-default-500">{t("common.loading")}</span>
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-20 gap-4">
+            <Spinner size="lg" />
+            <span className="text-default-500">{t("common.loading")}</span>
+          </div>
+        ) : (
+          <div className="flex flex-col gap-4">
+            {filtered.length ? (
+              <div className="flex flex-col gap-3">
+                {paginatedItems.map((p, idx) => (
+                  <motion.div
+                    key={`${p.path}-${idx}`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <div
+                      className={`w-full p-4 bg-white dark:bg-zinc-900/50 hover:bg-default-50 dark:hover:bg-zinc-800 transition-all rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border ${
+                        isSelectMode && selected[p.path]
+                          ? "border-primary bg-primary/10"
+                          : "border-default-200 dark:border-zinc-700/50 hover:border-default-400 dark:hover:border-zinc-600"
+                      }`}
+                      onClick={() => {
+                        if (isSelectMode) toggleSelect(p.path);
+                      }}
+                    >
+                      <div className="relative shrink-0">
+                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
+                          {p.iconDataUrl ? (
+                            <Image
+                              src={p.iconDataUrl}
+                              alt={p.name || p.path}
+                              className="w-full h-full object-cover"
+                              radius="none"
+                            />
+                          ) : (
+                            <FaBox className="text-3xl text-default-300" />
+                          )}
+                        </div>
+                        {isSelectMode && (
+                          <Checkbox
+                            isSelected={!!selected[p.path]}
+                            onValueChange={() => toggleSelect(p.path)}
+                            className="absolute -top-2 -left-2 z-20"
+                            classNames={{
+                              wrapper: "bg-white dark:bg-zinc-900 shadow-md",
+                            }}
+                          />
+                        )}
+                      </div>
+
+                      <div className="flex flex-col flex-1 min-w-0 gap-1">
+                        <div className="flex items-baseline gap-2 truncate">
+                          <h3
+                            className="text-base sm:text-lg font-bold text-default-900 dark:text-white truncate"
+                            title={p.name}
+                          >
+                            {renderMcText(p.name || p.path.split("\\").pop())}
+                          </h3>
+                        </div>
+
+                        <p
+                          className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2 w-full"
+                          title={p.description}
+                        >
+                          {renderMcText(p.description || "")}
+                        </p>
+
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+                          <div
+                            className="flex items-center gap-1"
+                            title={t("common.size")}
+                          >
+                            <FaHdd />
+                            <span>{formatBytes(p.size)}</span>
+                          </div>
+                          <div
+                            className="flex items-center gap-1"
+                            title={t("common.date")}
+                          >
+                            <FaClock />
+                            <span>{new Date(p.modTime).toLocaleString()}</span>
+                          </div>
+                          {p.version && (
+                            <div
+                              className="flex items-center gap-1"
+                              title={t("common.version")}
+                            >
+                              <FaTag />
+                              <span>v{p.version}</span>
+                            </div>
+                          )}
+                        </div>
+
+                        <div className="flex flex-1 items-end justify-end gap-2 mt-2">
+                          <Button
+                            size="sm"
+                            variant="flat"
+                            radius="full"
+                            onPress={() => OpenPathDir(p.path)}
+                            className="h-8 min-w-0 px-3 bg-default-100 text-default-600 dark:bg-zinc-700 dark:text-zinc-200"
+                          >
+                            {t("common.open")}
+                          </Button>
+                          <Button
+                            size="sm"
+                            color="danger"
+                            variant="flat"
+                            radius="full"
+                            onPress={() => {
+                              setActivePack(p);
+                              delOnOpen();
+                            }}
+                            className="h-8 min-w-0 px-3"
+                          >
+                            {t("common.delete")}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </motion.div>
+                ))}
               </div>
             ) : (
-              <div className="flex flex-col gap-4">
-                {filtered.length ? (
-                  <div className="flex flex-col gap-3 pb-4">
-                    {paginatedItems.map((p, idx) => (
-                      <motion.div
-                        key={`${p.path}-${idx}`}
-                        initial={{ opacity: 0 }}
-                        animate={{ opacity: 1 }}
-                        transition={{ duration: 0.2 }}
-                      >
-                        <div
-                          className={`w-full p-4 bg-white dark:bg-zinc-900/50 hover:bg-default-50 dark:hover:bg-zinc-800 transition-all rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border ${
-                            isSelectMode && selected[p.path]
-                              ? "border-primary bg-primary/10"
-                              : "border-default-200 dark:border-zinc-700/50 hover:border-default-400 dark:hover:border-zinc-600"
-                          }`}
-                          onClick={() => {
-                            if (isSelectMode) toggleSelect(p.path);
-                          }}
-                        >
-                          <div className="relative shrink-0">
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
-                              {p.iconDataUrl ? (
-                                <Image
-                                  src={p.iconDataUrl}
-                                  alt={p.name || p.path}
-                                  className="w-full h-full object-cover"
-                                  radius="none"
-                                />
-                              ) : (
-                                <FaBox className="text-3xl text-default-300" />
-                              )}
-                            </div>
-                            {isSelectMode && (
-                              <Checkbox
-                                isSelected={!!selected[p.path]}
-                                onValueChange={() => toggleSelect(p.path)}
-                                className="absolute -top-2 -left-2 z-20"
-                                classNames={{
-                                  wrapper:
-                                    "bg-white dark:bg-zinc-900 shadow-md",
-                                }}
-                              />
-                            )}
-                          </div>
+              <div className="flex flex-col items-center justify-center py-20 text-default-400">
+                <FaBox className="text-6xl mb-4 opacity-20" />
+                <p>
+                  {query
+                    ? t("common.no_results")
+                    : t("contentpage.no_behavior_packs")}
+                </p>
+              </div>
+            )}
 
-                          <div className="flex flex-col flex-1 min-w-0 gap-1">
-                            <div className="flex items-baseline gap-2 truncate">
-                              <h3
-                                className="text-base sm:text-lg font-bold text-default-900 dark:text-white truncate"
-                                title={p.name}
-                              >
-                                {renderMcText(
-                                  p.name || p.path.split("\\").pop(),
-                                )}
-                              </h3>
-                            </div>
-
-                            <p
-                              className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2 w-full"
-                              title={p.description}
-                            >
-                              {renderMcText(p.description || "")}
-                            </p>
-
-                            <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                              <div
-                                className="flex items-center gap-1"
-                                title={t("common.size")}
-                              >
-                                <FaHdd />
-                                <span>{formatBytes(p.size)}</span>
-                              </div>
-                              <div
-                                className="flex items-center gap-1"
-                                title={t("common.date")}
-                              >
-                                <FaClock />
-                                <span>
-                                  {new Date(p.modTime).toLocaleString()}
-                                </span>
-                              </div>
-                              {p.version && (
-                                <div
-                                  className="flex items-center gap-1"
-                                  title={t("common.version")}
-                                >
-                                  <FaTag />
-                                  <span>v{p.version}</span>
-                                </div>
-                              )}
-                            </div>
-
-                            <div className="flex flex-1 items-end justify-end gap-2 mt-2">
-                              <Button
-                                size="sm"
-                                variant="flat"
-                                radius="full"
-                                onPress={() => OpenPathDir(p.path)}
-                                className="h-8 min-w-0 px-3 bg-default-100 text-default-600 dark:bg-zinc-700 dark:text-zinc-200"
-                              >
-                                {t("common.open")}
-                              </Button>
-                              <Button
-                                size="sm"
-                                color="danger"
-                                variant="flat"
-                                radius="full"
-                                onPress={() => {
-                                  setActivePack(p);
-                                  delOnOpen();
-                                }}
-                                className="h-8 min-w-0 px-3"
-                              >
-                                {t("common.delete")}
-                              </Button>
-                            </div>
-                          </div>
-                        </div>
-                      </motion.div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="flex flex-col items-center justify-center py-20 text-default-400">
-                    <FaBox className="text-6xl mb-4 opacity-20" />
-                    <p>
-                      {query
-                        ? t("common.no_results")
-                        : t("contentpage.no_behavior_packs")}
-                    </p>
-                  </div>
-                )}
-
-                {totalPages > 1 && (
-                  <div className="flex justify-center pb-4">
-                    <Pagination
-                      total={totalPages}
-                      page={currentPage}
-                      onChange={setCurrentPage}
-                      showControls
-                      size="sm"
-                    />
-                  </div>
-                )}
+            {totalPages > 1 && (
+              <div className="relative h-12">
+                <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-full flex justify-center">
+                  <Pagination
+                    total={totalPages}
+                    page={currentPage}
+                    onChange={setCurrentPage}
+                    showControls
+                    size="sm"
+                  />
+                </div>
               </div>
             )}
           </div>
-        </CardBody>
-      </Card>
+        )}
+      </div>
 
       {/* Delete Confirmation Modal */}
       <BaseModal

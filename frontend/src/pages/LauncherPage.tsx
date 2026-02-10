@@ -1423,7 +1423,7 @@ export const LauncherPage = (args: any) => {
           className="mb-4 sm:mb-6"
         >
           <Card className="relative overflow-hidden border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-            <CardBody className="p-6 sm:p-8 relative flex flex-col gap-6">
+            <CardBody className="p-6 relative flex flex-col gap-6">
               {/* Main Layout */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 {/* Left: Title & Info */}
@@ -1776,14 +1776,14 @@ export const LauncherPage = (args: any) => {
                     label: resourceLabel,
                     count: contentCounts.resourcePacks,
                     icon: FaImage,
-                    path: "/content/resource-packs",
+                    path: "/content/resourcePacks",
                     color: "text-purple-500",
                   },
                   {
                     label: behaviorLabel,
                     count: contentCounts.behaviorPacks,
                     icon: FaCogs,
-                    path: "/content/behavior-packs",
+                    path: "/content/behaviorPacks",
                     color: "text-orange-500",
                   },
                 ].map((item, idx) => (

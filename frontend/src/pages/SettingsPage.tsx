@@ -107,6 +107,14 @@ export const SettingsPage: React.FC = () => {
     }
   });
 
+  const [disableAnimations, setDisableAnimations] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("app.disableAnimations") === "true";
+    } catch {
+      return false;
+    }
+  });
+
   // LIP State
   const [lipInstalled, setLipInstalled] = useState<boolean>(false);
   const [lipVersion, setLipVersion] = useState<string>("");
@@ -406,18 +414,31 @@ export const SettingsPage: React.FC = () => {
     return () => offs.forEach((off) => off());
   }, [hasBackend]);
 
+  const cardVariants = {
+    hidden: { opacity: 0, y: 20 },
+    visible: (i: number) => ({
+      opacity: 1,
+      y: 0,
+      transition: {
+        delay: i * 0.1,
+        duration: 0.4,
+        ease: "easeOut",
+      },
+    }),
+  };
+
   return (
     <div className="relative w-full p-4 flex flex-col">
       {/* Background Gradients */}
 
       <motion.div
-        initial={{ y: -8, opacity: 0 }}
-        animate={{ y: 0, opacity: 1 }}
-        transition={{ duration: 0.18, ease: [0.16, 0.84, 0.44, 1] }}
-        className="mb-8"
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+        className="mb-6"
       >
         <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-          <CardBody className="p-8">
+          <CardBody className="p-6">
             <PageHeader
               title={t("settings.header.title")}
               description={t("settings.header.content")}
@@ -430,12 +451,13 @@ export const SettingsPage: React.FC = () => {
         <div className="flex flex-col gap-6">
           {/* Left Column: Paths */}
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.1 }}
+            custom={0}
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
           >
             <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-              <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
+              <CardBody className="p-6 flex flex-col gap-6">
                 <div className="flex items-center justify-between">
                   <div className="flex items-center gap-2">
                     <p className="text-large font-bold">
@@ -576,12 +598,13 @@ export const SettingsPage: React.FC = () => {
 
           {/* Dependencies */}
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.2 }}
+            custom={2}
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
           >
             <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-              <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
+              <CardBody className="p-6 flex flex-col gap-6">
                 {/* GDK */}
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
@@ -704,12 +727,13 @@ export const SettingsPage: React.FC = () => {
         {/* Right Column: Preferences, GDK, Update, About */}
         <div className="flex flex-col gap-6">
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.15 }}
+            custom={1}
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
           >
             <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-              <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
+              <CardBody className="p-6 flex flex-col gap-6">
                 {/* Navigation Layout */}
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
@@ -729,6 +753,37 @@ export const SettingsPage: React.FC = () => {
                       localStorage.setItem("app.layoutMode", mode);
                       window.dispatchEvent(
                         new CustomEvent("app-layout-changed"),
+                      );
+                    }}
+                    classNames={{
+                      wrapper: "group-data-[selected=true]:bg-emerald-500",
+                    }}
+                  />
+                </div>
+
+                <Divider className="bg-default-200/50" />
+
+                {/* Animation */}
+                <div className="flex items-center justify-between">
+                  <div className="flex flex-col">
+                    <p className="font-medium text-large">
+                      {t("settings.appearance.disable_animations")}
+                    </p>
+                    <p className="text-small text-default-500">
+                      {t("settings.appearance.disable_animations_desc")}
+                    </p>
+                  </div>
+                  <Switch
+                    size="sm"
+                    isSelected={disableAnimations}
+                    onValueChange={(isSelected) => {
+                      setDisableAnimations(isSelected);
+                      localStorage.setItem(
+                        "app.disableAnimations",
+                        String(isSelected),
+                      );
+                      window.dispatchEvent(
+                        new CustomEvent("app-animations-changed"),
                       );
                     }}
                     classNames={{
@@ -846,12 +901,13 @@ export const SettingsPage: React.FC = () => {
           </motion.div>
 
           <motion.div
-            initial={{ opacity: 0, y: 8 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25, delay: 0.2 }}
+            custom={3}
+            initial="hidden"
+            animate="visible"
+            variants={cardVariants}
           >
             <Card className="border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-              <CardBody className="p-6 sm:p-8 flex flex-col gap-6">
+              <CardBody className="p-6 flex flex-col gap-6">
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col">
                     <p className="font-medium text-large">

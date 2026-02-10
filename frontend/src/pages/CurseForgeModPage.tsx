@@ -615,8 +615,8 @@ const CurseForgeModPage: React.FC = () => {
         <div className="w-full max-w-full mx-auto p-4 flex flex-col gap-6">
           {/* Header Card */}
           <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl shadow-md border-none">
-            <CardBody className="p-6 sm:p-8">
-              <div className="flex flex-col md:flex-row gap-8">
+            <CardBody className="p-6">
+              <div className="flex flex-col md:flex-row gap-6">
                 <div className="shrink-0">
                   <Image
                     src={mod.logo?.url}
@@ -756,7 +756,7 @@ const CurseForgeModPage: React.FC = () => {
 
           {/* Content Card */}
           <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl shadow-md border-none min-h-[500px]">
-            <CardBody className="p-6 sm:p-8">
+            <CardBody className="p-6">
               <div ref={tabsRef} className="flex w-full flex-col scroll-mt-24">
                 <Tabs
                   aria-label="Mod Details"
@@ -766,7 +766,7 @@ const CurseForgeModPage: React.FC = () => {
                   onSelectionChange={(key) => setSelectedTab(key as string)}
                   classNames={{
                     tabList:
-                      "gap-8 w-full relative rounded-none p-0 border-b border-default-200 mb-6",
+                      "gap-6 w-full relative rounded-none p-0 border-b border-default-200 mb-6",
                     cursor:
                       "w-full bg-linear-to-r from-emerald-500 to-teal-500 h-[3px]",
                     tab: "max-w-fit px-0 h-12 text-base font-medium text-default-500",

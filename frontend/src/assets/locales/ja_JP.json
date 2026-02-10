@@ -375,6 +375,10 @@
         }
       }
     },
+    "appearance": {
+      "disable_animations": "アニメーションを無効化",
+      "disable_animations_desc": "パフォーマンス向上のためインターフェースのアニメーションを無効にします"
+    },
     "process": {
       "title": "プロセス管理",
       "desc": "実行中の Minecraft プロセスを管理",
@@ -468,7 +472,15 @@
     "error_load": "読み込みに失敗しました",
     "size": "サイズ",
     "unknown": "不明",
-    "version": "バージョン"
+    "version": "バージョン",
+    "details": "詳細",
+    "disable": "無効",
+    "enable": "有効",
+    "open_folder": "フォルダを開く",
+    "remove": "削除",
+    "update": "更新",
+    "update_all": "すべて更新",
+    "updated": "更新済み"
   },
   "useravatar": {
     "no_login_retry": "Xbox ログインが検出されませんでした（クリックして再試行）",
@@ -514,7 +526,7 @@
     "sort_asc": "昇順",
     "sort_desc": "降順",
     "drop_hint": ".mcworld/.mcpack/.mcaddon をドラッグしてインポート",
-    "import_button": ".mcworld/.mcpack/.mcaddon をインポート",
+    "import_button": "インポート",
     "require_player_for_world_import": "ワールド (.mcworld) をインポートする前にプレイヤーを選択してください",
     "no_player_selected": "プレイヤーが選択されていません",
     "world_leveldat_editor": "ワールド level.dat エディタ",
@@ -814,6 +826,8 @@
   "server": {
     "offline": "オフライン / 接続不可",
     "players": "オンライン人数",
-    "delay": "遅延"
+    "delay": "遅延",
+    "online": "オンライン",
+    "version": "バージョン"
   }
 }

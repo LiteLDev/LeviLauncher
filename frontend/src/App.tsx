@@ -7,7 +7,7 @@ import {
   BaseModalBody,
   BaseModalFooter,
 } from "@/components/BaseModal";
-import { Button, Tooltip, ModalContent } from "@heroui/react";
+import { Button, Tooltip, ModalContent, ToastProvider } from "@heroui/react";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
@@ -16,7 +16,7 @@ import { DownloadManagerPage } from "@/pages/DownloadManagerPage";
 import { DownloadsProvider } from "@/utils/DownloadsContext";
 import { DownloadPage } from "@/pages/DownloadPage";
 import { SplashScreen } from "@/pages/SplashScreen";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, MotionGlobalConfig } from "framer-motion";
 import { Events, Browser } from "@wailsio/runtime";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { VersionSelectPage } from "@/pages/VersionSelectPage";
@@ -44,10 +44,11 @@ import CurseForgeModPage from "@/pages/CurseForgeModPage";
 import LIPPage from "@/pages/LIPPage";
 import LIPPackagePage from "@/pages/LIPPackagePage";
 import ServersPage from "@/pages/ServersPage";
-import { Toaster } from "react-hot-toast";
 import { useTheme } from "next-themes";
 import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
 import { FaRocket } from "react-icons/fa";
+
+import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
 
 const GlobalShortcuts = ({
   tryNavigate,
@@ -114,6 +115,59 @@ function App() {
       return "sidebar";
     }
   });
+  const [disableAnimations, setDisableAnimations] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("app.disableAnimations") === "true";
+    } catch {
+      return false;
+    }
+  });
+
+  useEffect(() => {
+    MotionGlobalConfig.skipAnimations = disableAnimations;
+
+    if (disableAnimations) {
+      const style = document.createElement("style");
+      style.id = "disable-animations-style";
+      style.innerHTML = `
+        *, *::before, *::after {
+          animation-duration: 0s !important;
+          animation-delay: 0s !important;
+          transition-duration: 0s !important;
+          transition-delay: 0s !important;
+        }
+      `;
+      document.head.appendChild(style);
+    } else {
+      const style = document.getElementById("disable-animations-style");
+      if (style) {
+        style.remove();
+      }
+    }
+
+    return () => {
+      const style = document.getElementById("disable-animations-style");
+      if (style) {
+        style.remove();
+      }
+    };
+  }, [disableAnimations]);
+
+  useEffect(() => {
+    const handleAnimationsChange = () => {
+      try {
+        const val = localStorage.getItem("app.disableAnimations") === "true";
+        setDisableAnimations(val);
+      } catch {}
+    };
+    window.addEventListener("app-animations-changed", handleAnimationsChange);
+    return () => {
+      window.removeEventListener(
+        "app-animations-changed",
+        handleAnimationsChange,
+      );
+    };
+  }, []);
 
   useEffect(() => {
     const handler = () => {
@@ -402,343 +456,343 @@ function App() {
         <DownloadsProvider>
           <LeviLaminaProvider>
             <CurseForgeProvider>
-              <Toaster
-                containerStyle={{ zIndex: 99999, top: 80 }}
-                toastOptions={{
-                  style: {
-                    maxWidth: 500,
-                    background: resolvedTheme === "dark" ? "#18181b" : "#fff",
-                    color: resolvedTheme === "dark" ? "#fff" : "#333",
-                    border:
-                      resolvedTheme === "dark"
-                        ? "1px solid #27272a"
-                        : "1px solid #e4e4e7",
-                  },
-                }}
-              />
-              <AnimatePresence>
-                {splashVisible && (
-                  <motion.div
-                    key="splash-overlay"
-                    className="fixed inset-0 z-[9999]"
-                    initial={{ opacity: 1 }}
-                    animate={{ opacity: 1 }}
-                    exit={{ opacity: 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                  >
-                    <SplashScreen />
-                  </motion.div>
-                )}
-              </AnimatePresence>
+              <NavigationHistoryProvider>
+                <ToastProvider
+                  placement="top-center"
+                  toastOffset={80}
+                  toastProps={{ timeout: 2000 }}
+                />
+                <AnimatePresence>
+                  {splashVisible && (
+                    <motion.div
+                      key="splash-overlay"
+                      className="fixed inset-0 z-[9999]"
+                      initial={{ opacity: 1 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: 0.6, ease: "easeOut" }}
+                    >
+                      <SplashScreen />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
 
-              <div
-                className={`w-full min-h-dvh flex ${
-                  layoutMode === "sidebar" ? "flex-row" : "flex-col"
-                } overflow-x-hidden bg-background text-foreground ${
-                  updateOpen ? "overflow-y-hidden" : ""
-                }`}
-              >
-                {layoutMode === "navbar" ? (
-                  <>
-                    <GlobalNavbar
-                      isBeta={isBeta}
-                      navLocked={navLocked}
-                      revealStarted={revealStarted}
-                      isUpdatingMode={isUpdatingMode}
-                      isOnboardingMode={isOnboardingMode}
-                      hasEnteredLauncher={hasEnteredLauncher}
-                      tryNavigate={tryNavigate}
-                    />
-                    <div className="h-[69px]" />
-                  </>
-                ) : (
-                  <>
-                    <Sidebar
-                      isBeta={isBeta}
-                      navLocked={navLocked}
-                      revealStarted={revealStarted}
-                      isUpdatingMode={isUpdatingMode}
-                      isOnboardingMode={isOnboardingMode}
-                      hasEnteredLauncher={hasEnteredLauncher}
-                      tryNavigate={tryNavigate}
-                    />
-                    <TopBar
-                      navLocked={navLocked}
-                      isOnboardingMode={isOnboardingMode}
-                      revealStarted={revealStarted}
-                    />
-                  </>
-                )}
-
-                <motion.div
-                  className={`w-full flex-1 min-h-0 overflow-hidden ${
-                    layoutMode === "sidebar" ? "pl-14 pt-14" : ""
+                <div
+                  className={`w-full min-h-dvh flex ${
+                    layoutMode === "sidebar" ? "flex-row" : "flex-col"
+                  } overflow-x-hidden bg-background text-foreground ${
+                    updateOpen ? "overflow-y-hidden" : ""
                   }`}
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: revealStarted ? 1 : 0 }}
-                  transition={{ duration: 0.6, ease: "easeOut" }}
-                  style={{ pointerEvents: revealStarted ? "auto" : "none" }}
                 >
-                  {revealStarted &&
-                    (isFirstLoad ? (
-                      <></>
-                    ) : (
-                      <Routes>
-                        <Route
-                          path="/"
-                          element={
-                            <LauncherPage refresh={refresh} count={count} />
-                          }
-                        />
-                        <Route path="/download" element={<DownloadPage />} />
-                        <Route
-                          path="/tasks"
-                          element={<DownloadManagerPage />}
-                        />
-                        <Route path="/install" element={<InstallPage />} />
-                        <Route path="/settings" element={<SettingsPage />} />
-                        <Route
-                          path="/versions"
-                          element={<VersionSelectPage refresh={refresh} />}
-                        />
-                        <Route
-                          path="/versionSettings"
-                          element={<VersionSettingsPage />}
-                        />
-                        <Route path="/mods" element={<ModsPage />} />
-                        <Route
-                          path="/curseforge"
-                          element={<CurseForgePage />}
-                        />
-                        <Route
-                          path="/curseforge/mod/:id"
-                          element={<CurseForgeModPage />}
-                        />
-                        <Route path="/lip" element={<LIPPage />} />
-                        <Route
-                          path="/lip/package/:id"
-                          element={<LIPPackagePage />}
-                        />
-                        <Route path="/updating" element={<UpdatingPage />} />
-                        <Route
-                          path="/onboarding"
-                          element={<OnboardingPage />}
-                        />
-                        <Route path="/content" element={<ContentPage />} />
-                        <Route
-                          path="/content/worlds"
-                          element={<WorldsListPage />}
-                        />
-                        <Route
-                          path="/content/world-edit"
-                          element={<WorldLevelDatEditorPage />}
-                        />
-                        <Route
-                          path="/content/resource-packs"
-                          element={<ResourcePacksPage />}
-                        />
-                        <Route
-                          path="/content/behavior-packs"
-                          element={<BehaviorPacksPage />}
-                        />
-                        <Route
-                          path="/content/skin-packs"
-                          element={<SkinPacksPage />}
-                        />
-                        <Route path="/servers" element={<ServersPage />} />
-                        <Route path="/about" element={<AboutPage />} />
-                      </Routes>
-                    ))}
-                </motion.div>
+                  {layoutMode === "navbar" ? (
+                    <>
+                      <GlobalNavbar
+                        isBeta={isBeta}
+                        navLocked={navLocked}
+                        revealStarted={revealStarted}
+                        isUpdatingMode={isUpdatingMode}
+                        isOnboardingMode={isOnboardingMode}
+                        hasEnteredLauncher={hasEnteredLauncher}
+                        tryNavigate={tryNavigate}
+                      />
+                      <div className="h-[69px]" />
+                    </>
+                  ) : (
+                    <>
+                      <Sidebar
+                        isBeta={isBeta}
+                        navLocked={navLocked}
+                        revealStarted={revealStarted}
+                        isUpdatingMode={isUpdatingMode}
+                        isOnboardingMode={isOnboardingMode}
+                        hasEnteredLauncher={hasEnteredLauncher}
+                        tryNavigate={tryNavigate}
+                      />
+                      <TopBar
+                        navLocked={navLocked}
+                        isOnboardingMode={isOnboardingMode}
+                        revealStarted={revealStarted}
+                      />
+                    </>
+                  )}
 
-                <BaseModal
-                  size="lg"
-                  isOpen={termsOpen}
-                  hideCloseButton
-                  isDismissable={false}
-                >
-                  <ModalContent>
-                    {() => (
-                      <>
-                        <BaseModalHeader className="text-primary-700 text-[18px] sm:text-[20px] font-bold antialiased">
-                          {t("terms.title")}
-                        </BaseModalHeader>
-                        <BaseModalBody>
-                          <div className="text-[15px] sm:text-[16px] leading-7 text-default-900 font-medium antialiased whitespace-pre-wrap wrap-break-word max-h-[56vh] overflow-y-auto pr-1">
-                            {t("terms.body")}
-                          </div>
-                        </BaseModalBody>
-                        <BaseModalFooter>
-                          <Button
-                            variant="light"
-                            onPress={() => {
-                              Window.Close();
-                            }}
-                          >
-                            {t("terms.decline")}
-                          </Button>
-                          <Button
-                            color="primary"
-                            isDisabled={termsCountdown > 0}
-                            onPress={acceptTerms}
-                          >
-                            {termsCountdown > 0
-                              ? `${t("terms.agree")} (${termsCountdown}s)`
-                              : t("terms.agree")}
-                          </Button>
-                        </BaseModalFooter>
-                      </>
-                    )}
-                  </ModalContent>
-                </BaseModal>
+                  <motion.div
+                    className={`w-full flex-1 min-h-0 overflow-hidden ${
+                      layoutMode === "sidebar" ? "pl-14 pt-14" : ""
+                    }`}
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: revealStarted ? 1 : 0 }}
+                    transition={{ duration: 0.6, ease: "easeOut" }}
+                    style={{ pointerEvents: revealStarted ? "auto" : "none" }}
+                  >
+                    {revealStarted &&
+                      (isFirstLoad ? (
+                        <></>
+                      ) : (
+                        <Routes>
+                          <Route
+                            path="/"
+                            element={
+                              <LauncherPage refresh={refresh} count={count} />
+                            }
+                          />
+                          <Route path="/download" element={<DownloadPage />} />
+                          <Route
+                            path="/tasks"
+                            element={<DownloadManagerPage />}
+                          />
+                          <Route path="/install" element={<InstallPage />} />
+                          <Route path="/settings" element={<SettingsPage />} />
+                          <Route
+                            path="/versions"
+                            element={<VersionSelectPage refresh={refresh} />}
+                          />
+                          <Route
+                            path="/versionSettings"
+                            element={<VersionSettingsPage />}
+                          />
+                          <Route path="/mods" element={<ModsPage />} />
+                          <Route
+                            path="/curseforge"
+                            element={<CurseForgePage />}
+                          />
+                          <Route
+                            path="/curseforge/mod/:id"
+                            element={<CurseForgeModPage />}
+                          />
+                          <Route path="/lip" element={<LIPPage />} />
+                          <Route
+                            path="/lip/package/:id"
+                            element={<LIPPackagePage />}
+                          />
+                          <Route path="/updating" element={<UpdatingPage />} />
+                          <Route
+                            path="/onboarding"
+                            element={<OnboardingPage />}
+                          />
+                          <Route path="/content" element={<ContentPage />} />
+                          <Route
+                            path="/content/worlds"
+                            element={<WorldsListPage />}
+                          />
+                          <Route
+                            path="/content/worlds/worldEdit"
+                            element={<WorldLevelDatEditorPage />}
+                          />
+                          <Route
+                            path="/content/resourcePacks"
+                            element={<ResourcePacksPage />}
+                          />
+                          <Route
+                            path="/content/behaviorPacks"
+                            element={<BehaviorPacksPage />}
+                          />
+                          <Route
+                            path="/content/skinPacks"
+                            element={<SkinPacksPage />}
+                          />
+                          <Route
+                            path="/content/servers"
+                            element={<ServersPage />}
+                          />
+                          <Route path="/about" element={<AboutPage />} />
+                        </Routes>
+                      ))}
+                  </motion.div>
 
-                <BaseModal size="md" isOpen={updateOpen} hideCloseButton>
-                  <ModalContent>
-                    {(onClose) => (
-                      <>
-                        <BaseModalHeader className="flex-row items-center gap-2 text-primary-600 min-w-0">
-                          <FaRocket className="w-5 h-5" />
-                          <span className="truncate">
-                            {t("settings.body.version.hasnew")}
-                            {updateVersion}
-                          </span>
-                        </BaseModalHeader>
-                        <BaseModalBody>
-                          {updateBody ? (
-                            <div className="rounded-md bg-default-100/60 border border-default-200 px-3 py-2">
-                              <div className="text-small font-semibold mb-1">
-                                {t("downloadpage.changelog.title")}
-                              </div>
-                              <div className="text-small wrap-break-word leading-6 max-h-[32vh] sm:max-h-[40vh] lg:max-h-[44vh] overflow-y-auto pr-1">
-                                <ReactMarkdown
-                                  remarkPlugins={[remarkGfm]}
-                                  components={{
-                                    h1: ({ children }) => (
-                                      <h1 className="text-xl font-semibold mt-2 mb-2">
-                                        {children}
-                                      </h1>
-                                    ),
-                                    h2: ({ children }) => (
-                                      <h2 className="text-lg font-semibold mt-2 mb-2">
-                                        {children}
-                                      </h2>
-                                    ),
-                                    h3: ({ children }) => (
-                                      <h3 className="text-base font-semibold mt-2 mb-2">
-                                        {children}
-                                      </h3>
-                                    ),
-                                    p: ({ children }) => (
-                                      <p className="my-1">{children}</p>
-                                    ),
-                                    ul: ({ children }) => (
-                                      <ul className="list-disc pl-6 my-2">
-                                        {children}
-                                      </ul>
-                                    ),
-                                    ol: ({ children }) => (
-                                      <ol className="list-decimal pl-6 my-2">
-                                        {children}
-                                      </ol>
-                                    ),
-                                    li: ({ children }) => (
-                                      <li className="my-1">{children}</li>
-                                    ),
-                                    a: ({ href, children }) => {
-                                      const cleanUrl = (url: string) => {
-                                        const target = "https://github.com";
-                                        const idx = url.lastIndexOf(target);
-                                        return idx > 0
-                                          ? url.substring(idx)
-                                          : url;
-                                      };
-
-                                      return (
-                                        <a
-                                          href={href}
-                                          target="_blank"
-                                          rel="noreferrer"
-                                          className="text-primary underline cursor-pointer"
-                                          onClick={(e) => {
-                                            e.preventDefault();
-                                            if (href) {
-                                              Browser.OpenURL(cleanUrl(href));
-                                            }
-                                          }}
-                                        >
-                                          {Array.isArray(children)
-                                            ? children.map((child) =>
-                                                typeof child === "string"
-                                                  ? cleanUrl(child)
-                                                  : child,
-                                              )
-                                            : typeof children === "string"
-                                              ? cleanUrl(children)
-                                              : children}
-                                        </a>
-                                      );
-                                    },
-                                    hr: () => (
-                                      <hr className="my-3 border-default-200" />
-                                    ),
-                                  }}
-                                >
-                                  {updateBody}
-                                </ReactMarkdown>
-                              </div>
+                  <BaseModal
+                    size="lg"
+                    isOpen={termsOpen}
+                    hideCloseButton
+                    isDismissable={false}
+                  >
+                    <ModalContent>
+                      {() => (
+                        <>
+                          <BaseModalHeader className="text-primary-700 text-[18px] sm:text-[20px] font-bold antialiased">
+                            {t("terms.title")}
+                          </BaseModalHeader>
+                          <BaseModalBody>
+                            <div className="text-[15px] sm:text-[16px] leading-7 text-default-900 font-medium antialiased whitespace-pre-wrap wrap-break-word max-h-[56vh] overflow-y-auto pr-1">
+                              {t("terms.body")}
                             </div>
-                          ) : null}
-                        </BaseModalBody>
-                        <BaseModalFooter>
-                          <Button
-                            variant="light"
-                            onPress={() => {
-                              setUpdateOpen(false);
-                              setNavLocked(Boolean((window as any).llNavLock));
-                              onClose();
-                            }}
-                          >
-                            {t("common.cancel")}
-                          </Button>
-                          <Button
-                            variant="flat"
-                            onPress={() => {
-                              try {
-                                localStorage.setItem(
-                                  "ll.ignoreVersion",
-                                  updateVersion || "",
-                                );
-                              } catch {}
-                              setUpdateOpen(false);
-                              setNavLocked(Boolean((window as any).llNavLock));
-                              onClose();
-                            }}
-                          >
-                            {t("settings.body.version.ignore")}
-                          </Button>
-                          <Button
-                            color="primary"
-                            isLoading={updateLoading}
-                            onPress={async () => {
-                              setUpdateLoading(true);
-                              try {
+                          </BaseModalBody>
+                          <BaseModalFooter>
+                            <Button
+                              variant="light"
+                              onPress={() => {
+                                Window.Close();
+                              }}
+                            >
+                              {t("terms.decline")}
+                            </Button>
+                            <Button
+                              color="primary"
+                              isDisabled={termsCountdown > 0}
+                              onPress={acceptTerms}
+                            >
+                              {termsCountdown > 0
+                                ? `${t("terms.agree")} (${termsCountdown}s)`
+                                : t("terms.agree")}
+                            </Button>
+                          </BaseModalFooter>
+                        </>
+                      )}
+                    </ModalContent>
+                  </BaseModal>
+
+                  <BaseModal size="md" isOpen={updateOpen} hideCloseButton>
+                    <ModalContent>
+                      {(onClose) => (
+                        <>
+                          <BaseModalHeader className="flex-row items-center gap-2 text-primary-600 min-w-0">
+                            <FaRocket className="w-5 h-5" />
+                            <span className="truncate">
+                              {t("settings.body.version.hasnew")}
+                              {updateVersion}
+                            </span>
+                          </BaseModalHeader>
+                          <BaseModalBody>
+                            {updateBody ? (
+                              <div className="rounded-md bg-default-100/60 border border-default-200 px-3 py-2">
+                                <div className="text-small font-semibold mb-1">
+                                  {t("downloadpage.changelog.title")}
+                                </div>
+                                <div className="text-small wrap-break-word leading-6 max-h-[32vh] sm:max-h-[40vh] lg:max-h-[44vh] overflow-y-auto pr-1">
+                                  <ReactMarkdown
+                                    remarkPlugins={[remarkGfm]}
+                                    components={{
+                                      h1: ({ children }) => (
+                                        <h1 className="text-xl font-semibold mt-2 mb-2">
+                                          {children}
+                                        </h1>
+                                      ),
+                                      h2: ({ children }) => (
+                                        <h2 className="text-lg font-semibold mt-2 mb-2">
+                                          {children}
+                                        </h2>
+                                      ),
+                                      h3: ({ children }) => (
+                                        <h3 className="text-base font-semibold mt-2 mb-2">
+                                          {children}
+                                        </h3>
+                                      ),
+                                      p: ({ children }) => (
+                                        <p className="my-1">{children}</p>
+                                      ),
+                                      ul: ({ children }) => (
+                                        <ul className="list-disc pl-6 my-2">
+                                          {children}
+                                        </ul>
+                                      ),
+                                      ol: ({ children }) => (
+                                        <ol className="list-decimal pl-6 my-2">
+                                          {children}
+                                        </ol>
+                                      ),
+                                      li: ({ children }) => (
+                                        <li className="my-1">{children}</li>
+                                      ),
+                                      a: ({ href, children }) => {
+                                        const cleanUrl = (url: string) => {
+                                          const target = "https://github.com";
+                                          const idx = url.lastIndexOf(target);
+                                          return idx > 0
+                                            ? url.substring(idx)
+                                            : url;
+                                        };
+
+                                        return (
+                                          <a
+                                            href={href}
+                                            target="_blank"
+                                            rel="noreferrer"
+                                            className="text-primary underline cursor-pointer"
+                                            onClick={(e) => {
+                                              e.preventDefault();
+                                              if (href) {
+                                                Browser.OpenURL(cleanUrl(href));
+                                              }
+                                            }}
+                                          >
+                                            {Array.isArray(children)
+                                              ? children.map((child) =>
+                                                  typeof child === "string"
+                                                    ? cleanUrl(child)
+                                                    : child,
+                                                )
+                                              : typeof children === "string"
+                                                ? cleanUrl(children)
+                                                : children}
+                                          </a>
+                                        );
+                                      },
+                                      hr: () => (
+                                        <hr className="my-3 border-default-200" />
+                                      ),
+                                    }}
+                                  >
+                                    {updateBody}
+                                  </ReactMarkdown>
+                                </div>
+                              </div>
+                            ) : null}
+                          </BaseModalBody>
+                          <BaseModalFooter>
+                            <Button
+                              variant="light"
+                              onPress={() => {
                                 setUpdateOpen(false);
-                                setNavLocked(true);
+                                setNavLocked(
+                                  Boolean((window as any).llNavLock),
+                                );
                                 onClose();
-                                navigate("/updating", { replace: true });
-                              } finally {
-                                setUpdateLoading(false);
-                              }
-                            }}
-                          >
-                            {t("settings.modal.2.footer.download_button")}
-                          </Button>
-                        </BaseModalFooter>
-                      </>
-                    )}
-                  </ModalContent>
-                </BaseModal>
-              </div>
+                              }}
+                            >
+                              {t("common.cancel")}
+                            </Button>
+                            <Button
+                              variant="flat"
+                              onPress={() => {
+                                try {
+                                  localStorage.setItem(
+                                    "ll.ignoreVersion",
+                                    updateVersion || "",
+                                  );
+                                } catch {}
+                                setUpdateOpen(false);
+                                setNavLocked(
+                                  Boolean((window as any).llNavLock),
+                                );
+                                onClose();
+                              }}
+                            >
+                              {t("settings.body.version.ignore")}
+                            </Button>
+                            <Button
+                              color="primary"
+                              isLoading={updateLoading}
+                              onPress={async () => {
+                                setUpdateLoading(true);
+                                try {
+                                  setUpdateOpen(false);
+                                  setNavLocked(true);
+                                  onClose();
+                                  navigate("/updating", { replace: true });
+                                } finally {
+                                  setUpdateLoading(false);
+                                }
+                              }}
+                            >
+                              {t("settings.modal.2.footer.download_button")}
+                            </Button>
+                          </BaseModalFooter>
+                        </>
+                      )}
+                    </ModalContent>
+                  </BaseModal>
+                </div>
+              </NavigationHistoryProvider>
             </CurseForgeProvider>
           </LeviLaminaProvider>
         </DownloadsProvider>

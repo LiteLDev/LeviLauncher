@@ -325,13 +325,9 @@ export default function InstallPage() {
 
   const headerTitle = useMemo(() => {
     if (installing)
-      return t("downloadmodal.installing.title", {
-        defaultValue: "正在安装",
-      }) as unknown as string;
+      return t("downloadmodal.installing.title") as unknown as string;
     if (resultMsg)
-      return t("downloadpage.install.success_title", {
-        defaultValue: "安装完成",
-      }) as unknown as string;
+      return t("downloadpage.install.success_title") as unknown as string;
     return t("downloadpage.install_folder.confirm_title") as unknown as string;
   }, [installing, resultMsg, t]);
 
@@ -506,11 +502,7 @@ export default function InstallPage() {
               ];
         await refreshAll(itemsToRefresh as any);
       } catch {}
-      setResultMsg(
-        t("downloadpage.install.success", {
-          defaultValue: "安装完成",
-        }) as unknown as string,
-      );
+      setResultMsg(t("downloadpage.install.success") as unknown as string);
       setInstalling(false);
     } catch (e: any) {
       setInstallError(String(e?.message || e || ""));
@@ -553,7 +545,7 @@ export default function InstallPage() {
     >
       <div className="flex flex-col h-full">
         <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-          <CardHeader className="p-4 sm:p-6 pb-2 block border-b border-default-200 dark:border-white/10">
+          <CardHeader className="p-6 block border-b border-default-200 dark:border-white/10">
             <PageHeader
               title={headerTitle}
               description={
@@ -581,7 +573,7 @@ export default function InstallPage() {
                 className="rounded-xl border border-danger bg-danger-50 px-3 py-2"
               >
                 <div className="text-danger font-medium">
-                  {t("common.error", { defaultValue: "错误" })}
+                  {t("common.error")}
                 </div>
                 <div className="text-small text-danger-600">
                   {trErr(installError, typeLabel)}
@@ -630,9 +622,7 @@ export default function InstallPage() {
 
                 <div className="flex flex-col items-center gap-1 text-center">
                   <h2 className="text-2xl font-black bg-linear-to-br from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 bg-clip-text text-transparent">
-                    {t("downloadpage.install.success_title", {
-                      defaultValue: "安装完成",
-                    })}
+                    {t("downloadpage.install.success_title")}
                   </h2>
                   {installingVersion && (
                     <Chip
@@ -650,9 +640,7 @@ export default function InstallPage() {
                   {installingTargetName && (
                     <div className="rounded-xl bg-default-100/50 dark:bg-zinc-800/50 border border-default-200/50 dark:border-white/5 p-3 flex flex-col gap-1 items-center">
                       <span className="text-[10px] uppercase tracking-wider text-default-400 font-bold">
-                        {t("downloadpage.install.target", {
-                          defaultValue: "安装目标",
-                        })}
+                        {t("downloadpage.install.target")}
                       </span>
                       <span className="font-mono text-xs text-default-600 dark:text-zinc-400 truncate w-full text-center">
                         {installingTargetName}
@@ -668,7 +656,7 @@ export default function InstallPage() {
                     size="md"
                     onPress={() => navigate(returnTo)}
                   >
-                    {t("common.back", { defaultValue: "返回" })}
+                    {t("common.back")}
                   </Button>
                 </div>
               </motion.div>
@@ -683,14 +671,14 @@ export default function InstallPage() {
                 >
                   <Input
                     label={
-                      t("downloadpage.install_folder.name_label", {
-                        defaultValue: "版本名称",
-                      }) as unknown as string
+                      t(
+                        "downloadpage.install_folder.name_label",
+                      ) as unknown as string
                     }
                     placeholder={
-                      t("downloadpage.install_folder.placeholder_name", {
-                        defaultValue: "请输入版本名称",
-                      }) as unknown as string
+                      t(
+                        "downloadpage.install_folder.placeholder_name",
+                      ) as unknown as string
                     }
                     value={installName}
                     onValueChange={setInstallName}
@@ -711,16 +699,14 @@ export default function InstallPage() {
                   >
                     <div className="min-w-0">
                       <div className="text-small font-medium">
-                        {t("downloadpage.install.custom_installer.label", {
-                          defaultValue: "选择本地安装包 (.msixvc)",
-                        })}
+                        {t("downloadpage.install.custom_installer.label")}
                       </div>
                       <div className="text-tiny text-default-500">
                         {customInstallerPath
                           ? customInstallerPath
-                          : (t("downloadpage.install.custom_installer.hint", {
-                              defaultValue: "默认使用安装器目录下已下载的文件",
-                            }) as unknown as string)}
+                          : (t(
+                              "downloadpage.install.custom_installer.hint",
+                            ) as unknown as string)}
                       </div>
                     </div>
                     <Button
@@ -730,9 +716,7 @@ export default function InstallPage() {
                       onPress={async () => {
                         try {
                           const paths = await Dialogs.OpenFile({
-                            Title: t("downloadpage.customappx.modal.1.header", {
-                              defaultValue: "版本信息",
-                            }),
+                            Title: t("downloadpage.customappx.modal.1.header"),
                             Filters: [
                               {
                                 DisplayName: "Installer Files",
@@ -752,7 +736,7 @@ export default function InstallPage() {
                         }
                       }}
                     >
-                      {t("common.browse", { defaultValue: "选择..." })}
+                      {t("common.browse")}
                     </Button>
                   </motion.div>
                 ) : null}
@@ -766,15 +750,10 @@ export default function InstallPage() {
                   >
                     <div className="min-w-0">
                       <div className="text-small font-medium">
-                        {t("downloadpage.install.levilamina_label", {
-                          defaultValue: "Install LeviLamina",
-                        })}
+                        {t("downloadpage.install.levilamina_label")}
                       </div>
                       <div className="text-tiny text-default-500">
-                        {t("downloadpage.install.levilamina_desc", {
-                          defaultValue:
-                            "Automatically install LeviLamina loader",
-                        })}
+                        {t("downloadpage.install.levilamina_desc")}
                       </div>
                     </div>
                     <Switch
@@ -873,10 +852,7 @@ export default function InstallPage() {
                     radius="full"
                     onPress={handleInstall}
                   >
-                    {t(
-                      "downloadpage.customappx.modal.1.footer.install_button",
-                      { defaultValue: "安装" },
-                    )}
+                    {t("downloadpage.customappx.modal.1.footer.install_button")}
                   </Button>
                 </motion.div>
               </>
@@ -901,14 +877,10 @@ export default function InstallPage() {
 
                 <div className="flex flex-col items-center gap-1 text-center max-w-sm">
                   <h2 className="text-xl font-bold text-default-900 dark:text-white">
-                    {t("downloadmodal.installing.title", {
-                      defaultValue: "正在安装",
-                    })}
+                    {t("downloadmodal.installing.title")}
                   </h2>
                   <p className="text-small text-default-500">
-                    {t("downloadpage.install.hint", {
-                      defaultValue: "请稍候，正在卸载旧版本并注册安装包...",
-                    })}
+                    {t("downloadpage.install.hint")}
                   </p>
                 </div>
 
@@ -916,9 +888,7 @@ export default function InstallPage() {
                   {installingVersion && (
                     <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-default-100/50 dark:bg-zinc-800/50">
                       <span className="text-small font-medium text-default-500">
-                        {t("downloadpage.install.version_label", {
-                          defaultValue: "版本",
-                        })}
+                        {t("downloadpage.install.version_label")}
                       </span>
                       <span className="text-small font-bold text-default-700 dark:text-zinc-300">
                         {installingVersion}
@@ -929,9 +899,7 @@ export default function InstallPage() {
                   {installingTargetName && (
                     <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-default-100/50 dark:bg-zinc-800/50">
                       <span className="text-[10px] font-bold uppercase tracking-wider text-default-400">
-                        {t("downloadpage.install.target", {
-                          defaultValue: "安装目标",
-                        })}
+                        {t("downloadpage.install.target")}
                       </span>
                       <span className="font-mono text-xs text-default-600 dark:text-zinc-400 truncate">
                         {installingTargetName}
@@ -982,9 +950,7 @@ export default function InstallPage() {
                                 };
                                 return `${formatSize(extractInfo.bytes)} / ${formatSize(extractInfo.totalBytes)}`;
                               })()
-                            : t("downloadpage.install.estimated_size", {
-                                defaultValue: "已写入大小（估算）",
-                              })}
+                            : t("downloadpage.install.estimated_size")}
                         </span>
                         <span className="font-mono">
                           {(() => {
@@ -1029,36 +995,25 @@ export default function InstallPage() {
               <BaseModalHeader className="flex flex-row items-center gap-2 text-warning-600">
                 <FiAlertTriangle className="w-6 h-6" />
                 <span className="text-xl font-bold">
-                  {t("mods.rc_warning.title", {
-                    defaultValue: "实验性版本警告",
-                  })}
+                  {t("mods.rc_warning.title")}
                 </span>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-sm text-default-700 space-y-2">
                   <p>
                     {t("mods.rc_warning.body_1", {
-                      defaultValue:
-                        "检测到您即将安装的 LeviLamina 版本 ({{version}}) 为候选发布版 (RC)。",
                       version: rcVersion,
                     })}
                   </p>
                   <p className="font-semibold text-warning-700">
-                    {t("mods.rc_warning.body_2", {
-                      defaultValue:
-                        "这是一个实验性版本，可能存在不稳定因素，仅建议开发者或高级用户使用。",
-                    })}
+                    {t("mods.rc_warning.body_2")}
                   </p>
-                  <p>
-                    {t("mods.rc_warning.body_3", {
-                      defaultValue: "是否继续安装？",
-                    })}
-                  </p>
+                  <p>{t("mods.rc_warning.body_3")}</p>
                 </div>
               </BaseModalBody>
               <BaseModalFooter>
                 <Button variant="light" onPress={onClose}>
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="warning"
@@ -1067,7 +1022,7 @@ export default function InstallPage() {
                     proceedInstall();
                   }}
                 >
-                  {t("common.continue", { defaultValue: "继续" })}
+                  {t("common.continue")}
                 </Button>
               </BaseModalFooter>
             </>

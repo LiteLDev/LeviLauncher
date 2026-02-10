@@ -2,12 +2,13 @@ import React from "react";
 import { WindowControls } from "./WindowControls";
 import { UserAvatar } from "@/components/UserAvatar";
 
-import { Button } from "@heroui/react";
+import { Button, Tooltip } from "@heroui/react";
 import { IoArrowBack, IoArrowForward, IoChevronForward } from "react-icons/io5";
 import { useNavigate, useLocation, Link } from "react-router-dom";
 import { LeviIcon } from "@/icons/LeviIcon";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
 
 interface TopBarProps {
   navLocked: boolean;
@@ -23,6 +24,8 @@ export const TopBar: React.FC<TopBarProps> = ({
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
+  const { canGoBack, canGoForward, getBackEntry, getForwardEntry } =
+    useNavigationHistory();
 
   const pathnames = location.pathname.split("/").filter((x) => x);
 
@@ -58,30 +61,44 @@ export const TopBar: React.FC<TopBarProps> = ({
           </div>
 
           <div className="flex items-center gap-1 shrink-0">
-            <Button
-              isIconOnly
-              variant="light"
-              size="sm"
-              radius="lg"
-              onPress={() => navigate(-1)}
-              isDisabled={navLocked}
-              className="wails-no-drag text-default-500"
-              aria-label="Go back"
+            <Tooltip
+              content={getBackEntry()?.title || t("nav.back")}
+              delay={500}
+              closeDelay={0}
+              isDisabled={!canGoBack || navLocked}
             >
-              <IoArrowBack size={20} />
-            </Button>
-            <Button
-              isIconOnly
-              variant="light"
-              size="sm"
-              radius="lg"
-              onPress={() => navigate(1)}
-              isDisabled={navLocked}
-              className="wails-no-drag text-default-500"
-              aria-label="Go forward"
+              <Button
+                isIconOnly
+                variant="light"
+                size="sm"
+                radius="lg"
+                onPress={() => navigate(-1)}
+                isDisabled={navLocked || !canGoBack}
+                className="wails-no-drag text-default-500"
+                aria-label="Go back"
+              >
+                <IoArrowBack size={20} />
+              </Button>
+            </Tooltip>
+            <Tooltip
+              content={getForwardEntry()?.title || t("nav.forward")}
+              delay={500}
+              closeDelay={0}
+              isDisabled={!canGoForward || navLocked}
             >
-              <IoArrowForward size={20} />
-            </Button>
+              <Button
+                isIconOnly
+                variant="light"
+                size="sm"
+                radius="lg"
+                onPress={() => navigate(1)}
+                isDisabled={navLocked || !canGoForward}
+                className="wails-no-drag text-default-500"
+                aria-label="Go forward"
+              >
+                <IoArrowForward size={20} />
+              </Button>
+            </Tooltip>
           </div>
 
           <div className="w-px h-5 bg-default-300/50 mx-1 shrink-0" />

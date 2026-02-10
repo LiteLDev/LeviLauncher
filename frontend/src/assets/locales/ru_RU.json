@@ -375,6 +375,10 @@
         }
       }
     },
+    "appearance": {
+      "disable_animations": "Отключить анимацию",
+      "disable_animations_desc": "Отключить анимацию интерфейса для повышения производительности"
+    },
     "process": {
       "title": "Управление процессами",
       "desc": "Управление запущенными процессами Minecraft",
@@ -468,7 +472,15 @@
     "error_load": "Ошибка загрузки",
     "size": "Размер",
     "unknown": "Неизвестно",
-    "version": "Версия"
+    "version": "Версия",
+    "details": "Подробнее",
+    "disable": "Отключить",
+    "enable": "Включить",
+    "open_folder": "Открыть папку",
+    "remove": "Удалить",
+    "update": "Обновить",
+    "update_all": "Обновить все",
+    "updated": "Обновлено"
   },
   "useravatar": {
     "no_login_retry": "Вход Xbox не обнаружен (нажмите, чтобы повторить)",
@@ -515,7 +527,7 @@
     "sort_desc": "По убыванию",
     "no_items": "Элементы не найдены",
     "drop_hint": "Перетащите .mcworld/.mcpack/.mcaddon для импорта",
-    "import_button": "Импорт .mcworld/.mcpack/.mcaddon",
+    "import_button": "Импорт",
     "require_player_for_world_import": "Для импорта мира (.mcworld) сначала выберите игрока",
     "no_player_selected": "Игрок не выбран",
     "world_leveldat_editor": "Редактор level.dat мира",
@@ -814,6 +826,8 @@
   "server": {
     "offline": "Офлайн / Нет соединения",
     "players": "Игроков онлайн",
-    "delay": "Задержка"
+    "delay": "Задержка",
+    "online": "В сети",
+    "version": "Версия"
   }
 }

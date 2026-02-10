@@ -1,10 +1,9 @@
 import React from "react";
-import { Card, CardBody, CardHeader } from "@heroui/react";
+import { Card, CardBody, CardHeader, addToast } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { SiCurseforge } from "react-icons/si";
 import { FaCloudDownloadAlt, FaCube } from "react-icons/fa";
-import { toast } from "react-hot-toast";
 
 export const ContentDownloadCard = () => {
   const { t } = useTranslation();
@@ -18,7 +17,7 @@ export const ContentDownloadCard = () => {
             <FaCloudDownloadAlt size={16} />
           </div>
           <h3 className="text-base font-bold text-default-800 dark:text-zinc-100">
-            {t("contentdownload.title", { defaultValue: "Content Download" })}
+            {t("contentdownload.title")}
           </h3>
         </div>
       </CardHeader>
@@ -31,7 +30,7 @@ export const ContentDownloadCard = () => {
           <div className="flex items-center gap-3">
             <SiCurseforge className="text-[#f16436] text-xl" />
             <span className="font-medium text-default-700 dark:text-zinc-200">
-              {t("curseforge.title", { defaultValue: "CurseForge" })}
+              {t("curseforge.title")}
             </span>
           </div>
         </div>
@@ -39,7 +38,8 @@ export const ContentDownloadCard = () => {
         <div
           className="flex items-center justify-between p-3 rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-default-200/50 dark:hover:border-white/10"
           onClick={() => {
-            toast(t("lip.maintenance"), {
+            addToast({
+              description: t("lip.maintenance"),
               icon: "🚧",
             });
           }}

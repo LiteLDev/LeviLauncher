@@ -348,11 +348,7 @@ export default function WorldLevelDatEditorPage() {
     setError("");
     try {
       if (!hasBackend || !worldPath) {
-        setError(
-          t("contentpage.error_resolve_paths", {
-            defaultValue: "无法解析内容路径。",
-          }) as string,
-        );
+        setError(t("contentpage.error_resolve_paths") as string);
         return;
       }
       const res2 = await (minecraft as any)?.ReadWorldLevelDatFields?.(
@@ -369,7 +365,7 @@ export default function WorldLevelDatEditorPage() {
         setLevelName(String(txt || ""));
       } catch {}
     } catch {
-      setError(t("common.load_failed", { defaultValue: "加载失败" }) as string);
+      setError(t("common.load_failed") as string);
     } finally {
       setLoading(false);
     }
@@ -501,14 +497,12 @@ export default function WorldLevelDatEditorPage() {
         if (erx) err4 = erx;
       }
       if (err2 || err3 || err4) {
-        setError(
-          t("common.save_failed", { defaultValue: "保存失败" }) as string,
-        );
+        setError(t("common.save_failed") as string);
       } else {
         navigate(-1);
       }
     } catch {
-      setError(t("common.save_failed", { defaultValue: "保存失败" }) as string);
+      setError(t("common.save_failed") as string);
     } finally {
       setSaving(false);
     }
@@ -596,11 +590,9 @@ export default function WorldLevelDatEditorPage() {
     >
       <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
         <CardBody className="p-0 flex flex-col h-full overflow-hidden">
-          <div className="shrink-0 p-4 sm:p-6 pb-2 flex flex-col gap-4 border-b border-default-200 dark:border-white/10">
+          <div className="shrink-0 p-6 flex flex-col gap-6 border-b border-default-200 dark:border-white/10">
             <PageHeader
-              title={t("contentpage.world_leveldat_editor", {
-                defaultValue: "Level.dat Editor",
-              })}
+              title={t("contentpage.world_leveldat_editor")}
               startContent={
                 <Button
                   isIconOnly
@@ -617,9 +609,7 @@ export default function WorldLevelDatEditorPage() {
                     size="sm"
                     radius="full"
                     variant="flat"
-                    placeholder={
-                      t("common.search", { defaultValue: "搜索" }) as string
-                    }
+                    placeholder={t("common.search") as string}
                     value={filterText}
                     onValueChange={(v) => {
                       beforeUpdate();
@@ -633,9 +623,7 @@ export default function WorldLevelDatEditorPage() {
                         "bg-default-100 dark:bg-default-50/20 group-data-[focus=true]:bg-default-200/50",
                     }}
                   />
-                  <Tooltip
-                    content={t("common.refresh", { defaultValue: "刷新" })}
-                  >
+                  <Tooltip content={t("common.refresh")}>
                     <Button
                       isIconOnly
                       radius="full"
@@ -647,7 +635,7 @@ export default function WorldLevelDatEditorPage() {
                       <FaSync className={loading ? "animate-spin" : ""} />
                     </Button>
                   </Tooltip>
-                  <Tooltip content={t("common.save", { defaultValue: "保存" })}>
+                  <Tooltip content={t("common.save")}>
                     <Button
                       isIconOnly
                       radius="full"
@@ -679,11 +667,11 @@ export default function WorldLevelDatEditorPage() {
               <div className="flex flex-col items-center justify-center h-64 gap-4">
                 <Spinner size="lg" color="success" />
                 <div className="text-default-400 animate-pulse">
-                  {t("common.loading", { defaultValue: "加载中..." })}
+                  {t("common.loading")}
                 </div>
               </div>
             ) : (
-              <div className="flex flex-col gap-8">
+              <div className="flex flex-col gap-6">
                 {/* Basic Info Section */}
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
@@ -694,16 +682,12 @@ export default function WorldLevelDatEditorPage() {
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-1 h-6 rounded-full bg-linear-to-b from-emerald-500 to-teal-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
                     <h3 className="text-lg font-bold text-default-700 dark:text-default-300">
-                      {t("contentpage.basic_info", {
-                        defaultValue: "基础信息",
-                      })}
+                      {t("contentpage.basic_info")}
                     </h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <Input
-                      label={t("contentpage.level_name", {
-                        defaultValue: "世界名称",
-                      })}
+                      label={t("contentpage.level_name")}
                       labelPlacement="outside"
                       placeholder="My World"
                       value={levelName}
@@ -720,7 +704,7 @@ export default function WorldLevelDatEditorPage() {
                     />
                     <div className="flex flex-col gap-2">
                       <label className="text-sm text-default-600">
-                        {t("contentpage.version", { defaultValue: "版本" })}
+                        {t("contentpage.version")}
                       </label>
                       <div className="h-10 px-3 flex items-center rounded-lg bg-default-100 dark:bg-default-50/20 text-default-500 text-sm font-mono border border-transparent">
                         {typedVersion}
@@ -735,9 +719,7 @@ export default function WorldLevelDatEditorPage() {
                     <div className="flex items-center gap-4">
                       <div className="w-1 h-6 rounded-full bg-linear-to-b from-emerald-500 to-teal-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
                       <h3 className="text-lg font-bold text-default-700 dark:text-default-300">
-                        {t("contentpage.add_field", {
-                          defaultValue: "新增字段",
-                        })}
+                        {t("contentpage.add_field")}
                       </h3>
                     </div>
                     <Button
@@ -748,9 +730,7 @@ export default function WorldLevelDatEditorPage() {
                       onPress={() => setAddOpen((o) => !o)}
                       startContent={addOpen ? <FaTimes /> : <FaPlus />}
                     >
-                      {addOpen
-                        ? t("common.collapse", { defaultValue: "收起" })
-                        : t("common.expand", { defaultValue: "展开" })}
+                      {addOpen ? t("common.collapse") : t("common.expand")}
                     </Button>
                   </div>
 
@@ -791,9 +771,7 @@ export default function WorldLevelDatEditorPage() {
                               radius="lg"
                               variant="flat"
                               placeholder={
-                                t("contentpage.field_name", {
-                                  defaultValue: "名称",
-                                }) as string
+                                t("contentpage.field_name") as string
                               }
                               value={newUnifiedField.name}
                               onValueChange={(v) =>
@@ -838,9 +816,7 @@ export default function WorldLevelDatEditorPage() {
                               radius="lg"
                               variant="flat"
                               placeholder={
-                                t("contentpage.initial_value", {
-                                  defaultValue: "初始值",
-                                }) as string
+                                t("contentpage.initial_value") as string
                               }
                               value={newUnifiedField.value}
                               onValueChange={(v) =>
@@ -941,7 +917,7 @@ export default function WorldLevelDatEditorPage() {
                                 });
                               }}
                             >
-                              {t("common.add", { defaultValue: "添加" })}
+                              {t("common.add")}
                             </Button>
                           </div>
                         </div>
@@ -1200,8 +1176,8 @@ export default function WorldLevelDatEditorPage() {
                               }}
                             >
                               {compoundOpen[pathKey]
-                                ? t("common.collapse", { defaultValue: "收起" })
-                                : t("common.expand", { defaultValue: "展开" })}
+                                ? t("common.collapse")
+                                : t("common.expand")}
                             </Button>
                           </div>
                         </div>
@@ -1503,9 +1479,7 @@ export default function WorldLevelDatEditorPage() {
                                               loadCompound(nextPath);
                                             }}
                                           >
-                                            {t("common.expand", {
-                                              defaultValue: "展开",
-                                            })}
+                                            {t("common.expand")}
                                           </Button>
                                         </div>
                                       </>

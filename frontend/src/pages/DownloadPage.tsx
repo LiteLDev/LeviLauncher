@@ -6,7 +6,6 @@ import {
   BaseModalBody,
   BaseModalFooter,
 } from "@/components/BaseModal";
-import { PageHeader } from "@/components/PageHeader";
 import {
   Button,
   Chip,
@@ -31,6 +30,7 @@ import {
   CardHeader,
   ButtonGroup,
   Tooltip,
+  addToast,
 } from "@heroui/react";
 import {
   FaDownload,
@@ -50,7 +50,6 @@ import { createPortal } from "react-dom";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useTranslation } from "react-i18next";
-import { toast } from "react-hot-toast";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -329,8 +328,7 @@ export const DownloadPage: React.FC = () => {
       const segs = String(u).split("/").filter(Boolean);
       return (
         segs[segs.length - 1] ||
-        (t("downloadpage.mirror.filename_fallback", {
-        }) as unknown as string)
+        (t("downloadpage.mirror.filename_fallback", {}) as unknown as string)
       );
     }
   };
@@ -493,7 +491,7 @@ export const DownloadPage: React.FC = () => {
   useEffect(() => {
     const calcRows = () => {
       const rowH = 56;
-      const reserve = 300;
+      const reserve = 280;
       const computed = Math.max(
         4,
         Math.floor((window.innerHeight - reserve) / rowH),
@@ -532,10 +530,10 @@ export const DownloadPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.25 }}
       >
-        <div className="flex flex-col h-full">
-          <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
-            <CardBody className="p-0 flex flex-col h-full overflow-hidden">
-              <div className="p-4 sm:p-6 pb-2 flex flex-col sm:flex-row gap-4 justify-between items-center border-b border-default-200 dark:border-white/10">
+        <div className="flex flex-col gap-2 h-full">
+          <Card className="flex-none border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
+            <CardBody className="p-4">
+              <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
                 <div className="flex items-center gap-3 w-full sm:max-w-md">
                   <Input
                     isClearable
@@ -713,7 +711,11 @@ export const DownloadPage: React.FC = () => {
                   </Tooltip>
                 </div>
               </div>
+            </CardBody>
+          </Card>
 
+          <Card className="flex-1 min-h-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-[2rem]">
+            <CardBody className="p-0 flex flex-col h-full overflow-hidden">
               <Table
                 aria-label={
                   t("downloadpage.table.aria_label") as unknown as string
@@ -724,29 +726,6 @@ export const DownloadPage: React.FC = () => {
                   th: "bg-transparent text-default-500 border-b border-default-200 dark:border-white/10",
                   td: "py-3 border-b border-default-100 dark:border-white/5 last:border-0",
                 }}
-                bottomContent={
-                  <div className="flex items-center justify-between px-6 py-4 border-t border-default-200 dark:border-white/10 bg-transparent">
-                    <div className="text-sm text-default-500">
-                      {t("downloadpage.bottomcontent.total", {
-                        count: filtered.length,
-                      })}
-                    </div>
-                    <div className="flex items-center gap-3 ml-auto">
-                      <Pagination
-                        total={totalPages}
-                        page={page}
-                        onChange={setPage}
-                        radius="full"
-                        showControls
-                        variant="light"
-                        classNames={{
-                          cursor:
-                            "bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20",
-                        }}
-                      />
-                    </div>
-                  </div>
-                }
               >
                 <TableHeader>
                   <TableColumn width={160}>
@@ -910,9 +889,12 @@ export const DownloadPage: React.FC = () => {
                               isDisabled={!hasStatus(item) && refreshing}
                               onPress={() => {
                                 if (isDownloading) {
-                                  toast.error(
-                                    t("downloadpage.error.already_downloading"),
-                                  );
+                                  addToast({
+                                    title: t(
+                                      "downloadpage.error.already_downloading",
+                                    ),
+                                    color: "danger",
+                                  });
                                   return;
                                 }
                                 const urls = item.urls || [];
@@ -940,6 +922,27 @@ export const DownloadPage: React.FC = () => {
                   )}
                 </TableBody>
               </Table>
+              <div className="flex items-center justify-between px-6 py-4 border-t border-default-200 dark:border-white/10 bg-transparent shrink-0">
+                <div className="text-sm text-default-500">
+                  {t("downloadpage.bottomcontent.total", {
+                    count: filtered.length,
+                  })}
+                </div>
+                <div className="flex items-center gap-3 ml-auto">
+                  <Pagination
+                    total={totalPages}
+                    page={page}
+                    onChange={setPage}
+                    radius="full"
+                    showControls
+                    variant="light"
+                    classNames={{
+                      cursor:
+                        "bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20",
+                    }}
+                  />
+                </div>
+              </div>
             </CardBody>
           </Card>
 
@@ -1422,17 +1425,21 @@ export const DownloadPage: React.FC = () => {
                               ?.endsWith(".msixvc")
                               ? deleteItem?.fileName
                               : `${deleteItem?.fileName}.msixvc`;
-                            toast.success(
-                              t("downloadpage.delete.success_body") +
+                            addToast({
+                              title:
+                                t("downloadpage.delete.success_body") +
                                 " " +
                                 (disp || ""),
-                            );
+                              color: "success",
+                            });
                           } catch {
-                            toast.success(
-                              t("downloadpage.delete.success_body") +
+                            addToast({
+                              title:
+                                t("downloadpage.delete.success_body") +
                                 " " +
                                 String(deleteItem?.fileName || ""),
-                            );
+                              color: "success",
+                            });
                           }
                         } catch (e: any) {
                           setDeleteError(String(e || ""));
@@ -1614,7 +1621,6 @@ export const DownloadPage: React.FC = () => {
             </ModalContent>
           </BaseModal>
 
-          {/* Flying Animation Items */}
           {createPortal(
             flyingItems.map((item) => (
               <motion.div

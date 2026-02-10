@@ -489,21 +489,21 @@ func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir s
 	if strings.TrimSpace(baseName) == "" {
 		baseName = "pack"
 	}
-	targets := make([]string, 0, 3)
+	targetsMap := make(map[string]bool)
 	hasAny := false
 	hadSkin := false
 	for _, m := range manifest.Modules {
 		tp := strings.ToLower(strings.TrimSpace(m.Type))
 		if tp == "resources" && strings.TrimSpace(resDir) != "" {
-			targets = append(targets, filepath.Join(resDir, baseName))
+			targetsMap[filepath.Join(resDir, baseName)] = true
 			hasAny = true
 		} else if (tp == "data" || tp == "script") && strings.TrimSpace(bpDir) != "" {
-			targets = append(targets, filepath.Join(bpDir, baseName))
+			targetsMap[filepath.Join(bpDir, baseName)] = true
 			hasAny = true
 		} else if tp == "skin_pack" {
 			hadSkin = true
 			if strings.TrimSpace(skinDir) != "" {
-				targets = append(targets, filepath.Join(skinDir, baseName))
+				targetsMap[filepath.Join(skinDir, baseName)] = true
 				hasAny = true
 			}
 		}
@@ -514,7 +514,7 @@ func ImportMcpackToDirs2(data []byte, archiveName string, resDir string, bpDir s
 		}
 		return "ERR_INVALID_PACKAGE"
 	}
-	for _, targetRoot := range targets {
+	for targetRoot := range targetsMap {
 		if utils.DirExists(targetRoot) {
 			if overwrite {
 				if err := utils.RemoveDir(targetRoot); err != nil {
@@ -645,21 +645,21 @@ func ImportMcaddonToDirs2(data []byte, resDir string, bpDir string, skinDir stri
 		if strings.TrimSpace(baseName) == "" {
 			baseName = "pack"
 		}
-		targets := make([]string, 0, 3)
+		targetsMap := make(map[string]bool)
 		hasAny := false
 		packHadSkin := false
 		for _, m := range p.manifest.Modules {
 			tp := strings.ToLower(strings.TrimSpace(m.Type))
 			if tp == "resources" && strings.TrimSpace(resDir) != "" {
-				targets = append(targets, filepath.Join(resDir, baseName))
+				targetsMap[filepath.Join(resDir, baseName)] = true
 				hasAny = true
 			} else if (tp == "data" || tp == "script") && strings.TrimSpace(bpDir) != "" {
-				targets = append(targets, filepath.Join(bpDir, baseName))
+				targetsMap[filepath.Join(bpDir, baseName)] = true
 				hasAny = true
 			} else if tp == "skin_pack" {
 				packHadSkin = true
 				if strings.TrimSpace(skinDir) != "" {
-					targets = append(targets, filepath.Join(skinDir, baseName))
+					targetsMap[filepath.Join(skinDir, baseName)] = true
 					hasAny = true
 				}
 			}
@@ -670,7 +670,7 @@ func ImportMcaddonToDirs2(data []byte, resDir string, bpDir string, skinDir stri
 			}
 			continue
 		}
-		for _, targetRoot := range targets {
+		for targetRoot := range targetsMap {
 			if utils.DirExists(targetRoot) {
 				if overwrite {
 					if err := utils.RemoveDir(targetRoot); err != nil {

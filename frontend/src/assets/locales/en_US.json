@@ -7,7 +7,8 @@
     "versions": "Instances",
     "more": "More",
     "about": "About",
-    "back": "Back"
+    "back": "Back",
+    "forward": "Forward"
   },
   "theme": {
     "toggle": "Toggle Theme"
@@ -378,6 +379,11 @@
       "language": {
         "name": "Language",
         "button": "Change"
+      },
+      "appearance": {
+        "title": "Appearance",
+        "disable_animations": "Disable Animations",
+        "disable_animations_desc": "Disable interface transition animations for performance or reduced motion"
       }
     },
     "process": {
@@ -394,6 +400,10 @@
           "download_button": "Update"
         }
       }
+    },
+    "appearance": {
+      "disable_animations": "Disable Animations",
+      "disable_animations_desc": "Disable interface transition animations for performance or reduced motion"
     }
   },
   "downloadmodal": {
@@ -480,7 +490,15 @@
     "error_load": "Failed to load",
     "size": "Size",
     "unknown": "Unknown",
-    "version": "Version"
+    "version": "Version",
+    "details": "Details",
+    "disable": "Disable",
+    "enable": "Enable",
+    "open_folder": "Open Folder",
+    "remove": "Remove",
+    "update": "Update",
+    "update_all": "Update All",
+    "updated": "Updated"
   },
   "useravatar": {
     "no_login_retry": "Xbox login not detected (click to retry)",
@@ -526,7 +544,7 @@
     "sort_asc": "Ascending",
     "sort_desc": "Descending",
     "drop_hint": "Drag .mcworld/.mcpack/.mcaddon to import",
-    "import_button": "Import .mcworld/.mcpack/.mcaddon",
+    "import_button": "Import",
     "require_player_for_world_import": "Select a player before importing a world (.mcworld)",
     "no_player_selected": "No player selected",
     "world_leveldat_editor": "World level.dat editor",
@@ -814,6 +832,8 @@
   "server": {
     "offline": "Offline / Can't connect",
     "players": "Online Players",
-    "delay": "Latency"
+    "delay": "Latency",
+    "online": "Online",
+    "version": "Version"
   }
 }

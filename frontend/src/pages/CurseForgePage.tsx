@@ -428,10 +428,10 @@ export const CurseForgePage: React.FC = () => {
   return (
     <div
       ref={pageRootRef}
-      className="w-full max-w-full mx-auto p-4 h-full min-h-0 flex flex-col gap-4"
+      className="w-full max-w-full mx-auto p-4 h-full min-h-0 flex flex-col gap-6"
     >
       <Card className="shrink-0 bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl shadow-md border-none">
-        <CardBody className="p-6 flex flex-col gap-4">
+        <CardBody className="p-6 flex flex-col gap-6">
           <PageHeader title={t("curseforge.title")} />
 
           <div className="flex flex-col sm:flex-row gap-3">

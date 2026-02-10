@@ -7,7 +7,8 @@
     "versions": "实例列表",
     "more": "更多",
     "about": "关于",
-    "back": "返回"
+    "back": "返回",
+    "forward": "前进"
   },
   "theme": {
     "toggle": "切换主题"
@@ -180,6 +181,14 @@
       "empty": "暂无数据",
       "header": {
         "version": "版本",
+        "details": "详情",
+        "disable": "禁用",
+        "enable": "启用",
+        "open_folder": "打开文件夹",
+        "remove": "移除",
+        "update": "更新",
+        "update_all": "全部更新",
+        "updated": "已更新",
         "type": "类型",
         "status": "状态",
         "loader": "加载器",
@@ -378,6 +387,11 @@
       "language": {
         "name": "语言",
         "button": "更改"
+      },
+      "appearance": {
+        "title": "外观",
+        "disable_animations": "禁用动画",
+        "disable_animations_desc": "关闭界面过渡动画以提高性能或减少动态效果"
       }
     },
     "modal": {
@@ -386,6 +400,10 @@
           "download_button": "更新"
         }
       }
+    },
+    "appearance": {
+      "disable_animations": "禁用动画",
+      "disable_animations_desc": "禁用界面过渡动画以提高性能或减少动态效果"
     },
     "process": {
       "title": "进程管理",
@@ -480,7 +498,15 @@
     "error_load": "加载失败",
     "size": "大小",
     "unknown": "未知",
-    "version": "版本"
+    "version": "版本",
+    "details": "详情",
+    "disable": "禁用",
+    "enable": "启用",
+    "open_folder": "打开文件夹",
+    "remove": "移除",
+    "update": "更新",
+    "update_all": "全部更新",
+    "updated": "已更新"
   },
   "useravatar": {
     "no_login_retry": "未检测到 Xbox 登录（点击重试）",
@@ -526,7 +552,7 @@
     "sort_asc": "从上到下",
     "sort_desc": "从下到上",
     "drop_hint": "拖入 .mcworld/.mcpack/.mcaddon 以导入",
-    "import_button": "导入 .mcworld/.mcpack/.mcaddon",
+    "import_button": "导入",
     "require_player_for_world_import": "导入世界 (.mcworld) 前请先选择玩家",
     "no_player_selected": "未选择玩家",
     "world_leveldat_editor": "世界 level.dat 编辑",
@@ -814,6 +840,8 @@
   "server": {
     "offline": "离线 / 无法连接",
     "players": "在线玩家",
-    "delay": "延迟"
+    "delay": "延迟",
+    "online": "在线",
+    "version": "版本"
   }
 }

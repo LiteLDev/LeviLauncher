@@ -12,6 +12,11 @@ import {
   Tooltip,
   Checkbox,
   ModalContent,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+  addToast,
 } from "@heroui/react";
 import { useLocation, useNavigate, useBlocker } from "react-router-dom";
 import {
@@ -21,7 +26,6 @@ import {
   BaseModalFooter,
 } from "@/components/BaseModal";
 import { useTranslation } from "react-i18next";
-import toast from "react-hot-toast";
 import {
   OpenModsExplorer,
   GetMods,
@@ -33,8 +37,23 @@ import {
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { Dialogs } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import { FaPuzzlePiece } from "react-icons/fa6";
-import { FaSync, FaFilter, FaTimes } from "react-icons/fa";
+import {
+  FaPuzzlePiece,
+  FaTrash,
+  FaDownload,
+  FaEllipsisVertical,
+  FaChevronUp,
+  FaChevronDown,
+  FaBan,
+  FaCheck,
+} from "react-icons/fa6";
+import {
+  FaSync,
+  FaFilter,
+  FaTimes,
+  FaFolderOpen,
+  FaInfoCircle,
+} from "react-icons/fa";
 import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -113,6 +132,11 @@ export const ModsPage: React.FC = () => {
   const [dllName, setDllName] = useState("");
   const [dllType, setDllType] = useState("preload-native");
   const [dllVersion, setDllVersion] = useState("0.0.0");
+  const [selectedKeys, setSelectedKeys] = useState<Set<string>>(new Set());
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: "asc" | "desc";
+  }>({ key: "name", direction: "asc" });
   const dllFileRef = useRef<File | null>(null);
   const dllBytesRef = useRef<number[] | null>(null);
   const dllResolveRef = useRef<((ok: boolean) => void) | null>(null);
@@ -184,7 +208,10 @@ export const ModsPage: React.FC = () => {
     try {
       const isLip = await (minecraft as any)?.IsLipInstalled();
       if (!isLip) {
-        toast.error(t("mods.err_lip_not_installed"));
+        addToast({
+          description: t("mods.err_lip_not_installed"),
+          color: "danger",
+        });
         setInstallingLL(false);
         return;
       }
@@ -197,14 +224,20 @@ export const ModsPage: React.FC = () => {
           if (err.includes("ERR_LIP_INSTALL_FAILED")) {
             msg = t("mods.err_lip_install_failed_suggestion");
           }
-          toast.error(msg);
+          addToast({ description: msg, color: "danger" });
         } else {
-          toast.success(t("downloadpage.install.success"));
+          addToast({
+            title: t("downloadpage.install.success"),
+            color: "success",
+          });
           await refreshAll();
         }
       }
     } catch (e: any) {
-      toast.error(String(e?.message || e));
+      addToast({
+        description: String(e?.message || e),
+        color: "danger",
+      });
     } finally {
       setInstallingLL(false);
     }
@@ -658,6 +691,80 @@ export const ModsPage: React.FC = () => {
     );
   }, [modsInfo, query, onlyEnabled, enabledByName]);
 
+  const sortedItems = useMemo(() => {
+    const items = [...filtered];
+    if (sortConfig.key === "name") {
+      items.sort((a, b) => {
+        const nameA = a.name.toLowerCase();
+        const nameB = b.name.toLowerCase();
+        if (nameA < nameB) return sortConfig.direction === "asc" ? -1 : 1;
+        if (nameA > nameB) return sortConfig.direction === "asc" ? 1 : -1;
+        return 0;
+      });
+    }
+    return items;
+  }, [filtered, sortConfig]);
+
+  const handleSort = (key: string) => {
+    let direction: "asc" | "desc" = "asc";
+    if (sortConfig.key === key && sortConfig.direction === "asc") {
+      direction = "desc";
+    }
+    setSortConfig({ key, direction });
+  };
+
+  const onSelectionChange = (name: string) => {
+    setSelectedKeys((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(name)) newSet.delete(name);
+      else newSet.add(name);
+      return newSet;
+    });
+  };
+
+  const onSelectAll = (val: boolean) => {
+    if (val) {
+      setSelectedKeys(new Set(sortedItems.map((i) => i.name)));
+    } else {
+      setSelectedKeys(new Set());
+    }
+  };
+
+  const handleBatchEnable = async () => {
+    const name = currentVersionName || readCurrentVersionName();
+    if (!name) return;
+    for (const modName of selectedKeys) {
+      try {
+        await (EnableMod as any)?.(name, modName);
+      } catch {}
+    }
+    await refreshEnabledStates(name);
+  };
+
+  const handleBatchDisable = async () => {
+    const name = currentVersionName || readCurrentVersionName();
+    if (!name) return;
+    for (const modName of selectedKeys) {
+      try {
+        await (DisableMod as any)?.(name, modName);
+      } catch {}
+    }
+    await refreshEnabledStates(name);
+  };
+
+  const handleBatchRemove = async () => {
+    const name = currentVersionName || readCurrentVersionName();
+    if (!name) return;
+    for (const modName of selectedKeys) {
+      try {
+        if (modName === "LeviLamina") continue; // Skip LL
+        await (DeleteMod as any)?.(name, modName);
+      } catch {}
+    }
+    await refreshAll();
+    setSelectedKeys(new Set());
+  };
+
   const openDetails = (m: types.ModInfo) => {
     setActiveMod(m);
     infoOnOpen();
@@ -722,6 +829,26 @@ export const ModsPage: React.FC = () => {
       return;
     }
     OpenModsExplorer(name);
+  };
+
+  const openModFolder = async (mod: types.ModInfo) => {
+    const name = currentVersionName;
+    if (!name) return;
+
+    try {
+      const versionsDir = await (minecraft as any).GetVersionsDir();
+      const sep = versionsDir.includes("\\") ? "\\" : "/";
+      const modPath = `${versionsDir}${sep}${name}${sep}mods${sep}${mod.name}`;
+
+      try {
+        await (minecraft as any).ListDir(modPath);
+        await (minecraft as any).OpenPathDir(modPath);
+      } catch {
+        OpenModsExplorer(name);
+      }
+    } catch {
+      OpenModsExplorer(name);
+    }
   };
 
   const handleDrop = async (e: DragEvent) => {
@@ -1304,228 +1431,364 @@ export const ModsPage: React.FC = () => {
         ) : null}
       </AnimatePresence>
 
-      <div className="flex flex-col gap-4 mb-6 shrink-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md p-6 rounded-4xl">
-        <PageHeader
-          title={t("moddedcard.title")}
-          description={
-            <div className="flex items-center gap-2">
-              <span>{currentVersionName || "No Version Selected"}</span>
-              {modsInfo.length > 0 && (
-                <Chip
-                  size="sm"
-                  variant="flat"
-                  className="h-5 text-xs bg-default-100 dark:bg-zinc-800"
-                >
-                  {modsInfo.length}
-                </Chip>
-              )}
-            </div>
-          }
-          endContent={
-            <>
-              {isLLSupported(gameVersion) &&
-                !modsInfo.some((m) => m.name === "LeviLamina") && (
-                  <Button
-                    color="success"
+      <Card className="mb-6 shrink-0 border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl">
+        <CardBody className="p-6 flex flex-col gap-6">
+          <PageHeader
+            title={t("moddedcard.title")}
+            description={
+              <div className="flex items-center gap-2">
+                <span>{currentVersionName || "No Version Selected"}</span>
+                {modsInfo.length > 0 && (
+                  <Chip
+                    size="sm"
                     variant="flat"
-                    className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold"
-                    onPress={handleInstallLeviLamina}
-                    isLoading={installingLL}
+                    className="h-5 text-xs bg-default-100 dark:bg-zinc-800"
                   >
-                    {t("downloadpage.install.levilamina_label")}
-                  </Button>
+                    {modsInfo.length}
+                  </Chip>
                 )}
-              <input
-                ref={fileInputRef}
-                type="file"
-                accept=".zip,.dll"
-                multiple
-                className="hidden"
-                onChange={handleFilePick}
-              />
-              <Button
-                color="primary"
-                variant="shadow"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20"
-                startContent={<FiUploadCloud />}
-                onPress={async () => {
-                  try {
-                    const result = await Dialogs.OpenFile({
-                      Filters: [
-                        { DisplayName: "Mod Files", Pattern: "*.zip;*.dll" },
-                      ],
-                      AllowsMultipleSelection: true,
-                      Title: t("mods.import_button"),
-                    });
-                    if (result && result.length > 0) {
-                      void doImportFromPaths(result);
-                    }
-                  } catch (e) {
-                    console.error(e);
-                  }
-                }}
-                isDisabled={importing}
-              >
-                {t("mods.import_button")}
-              </Button>
-              <Button
-                variant="flat"
-                className="bg-default-100 dark:bg-zinc-800"
-                onPress={openFolder}
-              >
-                {t("downloadmodal.open_folder")}
-              </Button>
-            </>
-          }
-        />
-
-        <div className="flex flex-col sm:flex-row items-center gap-3">
-          <Input
-            placeholder={t("common.search_placeholder")}
-            value={query}
-            onValueChange={setQuery}
-            startContent={<FaFilter className="text-default-400" />}
-            endContent={
-              query && (
-                <button onClick={() => setQuery("")}>
-                  <FaTimes className="text-default-400 hover:text-default-600" />
-                </button>
-              )
+              </div>
             }
-            radius="full"
-            variant="flat"
-            className="w-full sm:max-w-xs"
-            classNames={{
-              inputWrapper:
-                "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
-            }}
+            endContent={
+              <>
+                {isLLSupported(gameVersion) &&
+                  !modsInfo.some((m) => m.name === "LeviLamina") && (
+                    <Button
+                      color="success"
+                      variant="flat"
+                      className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold"
+                      onPress={handleInstallLeviLamina}
+                      isLoading={installingLL}
+                    >
+                      {t("downloadpage.install.levilamina_label")}
+                    </Button>
+                  )}
+                <input
+                  ref={fileInputRef}
+                  type="file"
+                  accept=".zip,.dll"
+                  multiple
+                  className="hidden"
+                  onChange={handleFilePick}
+                />
+                <Button
+                  color="primary"
+                  variant="shadow"
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20"
+                  startContent={<FiUploadCloud />}
+                  onPress={async () => {
+                    try {
+                      const result = await Dialogs.OpenFile({
+                        Filters: [
+                          { DisplayName: "Mod Files", Pattern: "*.zip;*.dll" },
+                        ],
+                        AllowsMultipleSelection: true,
+                        Title: t("mods.import_button"),
+                      });
+                      if (result && result.length > 0) {
+                        void doImportFromPaths(result);
+                      }
+                    } catch (e) {
+                      console.error(e);
+                    }
+                  }}
+                  isDisabled={importing}
+                >
+                  {t("mods.import_button")}
+                </Button>
+                <Button
+                  variant="flat"
+                  className="bg-default-100 dark:bg-zinc-800"
+                  onPress={openFolder}
+                >
+                  {t("downloadmodal.open_folder")}
+                </Button>
+              </>
+            }
           />
-          <div className="w-px h-6 bg-default-200 dark:bg-white/10 hidden sm:block" />
-          <Checkbox
-            size="sm"
-            isSelected={onlyEnabled}
-            onValueChange={setOnlyEnabled}
-            classNames={{
-              base: "m-0",
-              label: "text-default-500",
-            }}
-          >
-            {t("mods.only_enabled") as string}
-          </Checkbox>
-          <div className="flex-1" />
-          <Tooltip content={t("common.refresh") as unknown as string}>
-            <Button
-              size="sm"
-              variant="light"
-              isIconOnly
-              radius="full"
-              className="text-default-500"
-              onPress={() => refreshAll()}
-              isDisabled={loading}
-            >
-              <FaSync className={loading ? "animate-spin" : ""} size={16} />
-            </Button>
-          </Tooltip>
-        </div>
+        </CardBody>
+      </Card>
+
+      <div className="flex flex-col sm:flex-row items-center gap-3 px-2 mb-4">
+        <Input
+          placeholder={t("common.search_placeholder")}
+          value={query}
+          onValueChange={setQuery}
+          startContent={<FaFilter className="text-default-400" />}
+          endContent={
+            query && (
+              <button onClick={() => setQuery("")}>
+                <FaTimes className="text-default-400 hover:text-default-600" />
+              </button>
+            )
+          }
+          radius="full"
+          variant="flat"
+          className="w-full sm:max-w-xs"
+          classNames={{
+            inputWrapper:
+              "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
+          }}
+        />
+        <div className="w-px h-6 bg-default-200 dark:bg-white/10 hidden sm:block" />
+        <Checkbox
+          size="sm"
+          isSelected={onlyEnabled}
+          onValueChange={setOnlyEnabled}
+          classNames={{
+            base: "m-0",
+            label: "text-default-500",
+          }}
+        >
+          {t("mods.only_enabled") as string}
+        </Checkbox>
       </div>
 
-      <div className="flex-1 overflow-hidden rounded-4xl bg-white/40 dark:bg-zinc-900/30 backdrop-blur-sm border border-white/20 dark:border-white/5 p-1">
-        <div className="h-full overflow-y-auto p-4 custom-scrollbar">
+      <div className="flex-1 overflow-hidden flex flex-col">
+        <div className="flex flex-row items-center px-5 py-2 text-sm text-default-500 font-semibold">
+          <div className="w-10 flex justify-center">
+            <Checkbox
+              size="sm"
+              classNames={{ wrapper: "after:bg-emerald-500" }}
+              isSelected={
+                sortedItems.length > 0 &&
+                selectedKeys.size === sortedItems.length
+              }
+              isIndeterminate={
+                selectedKeys.size > 0 && selectedKeys.size < sortedItems.length
+              }
+              onValueChange={onSelectAll}
+            />
+          </div>
+          {selectedKeys.size > 0 ? (
+            <div className="flex-1 flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-200">
+              {/* Update button hidden
+              <Button
+                size="sm"
+                color="success"
+                variant="flat"
+                className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold h-8 min-w-0 px-3"
+                startContent={<FaDownload />}
+              >
+                {t("common.update")}
+              </Button>
+              */}
+              <Button
+                size="sm"
+                variant="flat"
+                className="bg-default-100 dark:bg-zinc-800 h-8 min-w-0 px-3"
+                startContent={<FaCheck />}
+                onPress={handleBatchEnable}
+              >
+                {t("common.enable")}
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                className="bg-default-100 dark:bg-zinc-800 h-8 min-w-0 px-3"
+                startContent={<FaBan />}
+                onPress={handleBatchDisable}
+              >
+                {t("common.disable")}
+              </Button>
+              <Button
+                size="sm"
+                color="danger"
+                variant="flat"
+                className="bg-danger-500/10 text-danger h-8 min-w-0 px-3"
+                startContent={<FaTrash />}
+                onPress={handleBatchRemove}
+              >
+                {t("common.remove")}
+              </Button>
+            </div>
+          ) : (
+            <>
+              <div
+                className="flex-1 cursor-pointer flex items-center gap-1 hover:text-default-700 transition-colors select-none"
+                onClick={() => handleSort("name")}
+              >
+                {t("mods.field_name")}{" "}
+                {sortConfig.key === "name" &&
+                  (sortConfig.direction === "asc" ? (
+                    <FaChevronUp className="text-xs" />
+                  ) : (
+                    <FaChevronDown className="text-xs" />
+                  ))}
+              </div>
+              <div className="flex-[0.6]">{t("common.version")}</div>
+              <div className="flex items-center gap-6 text-xs">
+                <button
+                  className="flex items-center gap-1.5 hover:text-default-700 transition-colors"
+                  onClick={() => refreshAll()}
+                  disabled={loading}
+                >
+                  <FaSync className={loading ? "animate-spin" : ""} />
+                  {t("common.refresh")}
+                </button>
+                {/* Update All button hidden
+                <button className="flex items-center gap-1.5 text-emerald-500 hover:text-emerald-400 transition-colors">
+                  <FaDownload />
+                  {t("common.update_all")}
+                </button>
+                */}
+              </div>
+            </>
+          )}
+        </div>
+
+        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar flex flex-col gap-2">
           {!currentVersionName ? (
             <div className="flex flex-col items-center justify-center h-full text-default-400 gap-2">
               <FiAlertTriangle className="w-8 h-8 opacity-50" />
               <p>{t("launcherpage.currentVersion_none")}</p>
             </div>
-          ) : filtered.length === 0 ? (
+          ) : sortedItems.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-default-400 gap-2">
               <FaPuzzlePiece className="w-8 h-8 opacity-50" />
               <p>{t("moddedcard.content.none")}</p>
             </div>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {filtered.map((m, idx) => {
-                const delay = Math.min(idx * 40, 400);
-                return (
-                  <motion.div
-                    key={`${m.name}-${m.version}-${idx}`}
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: delay / 1000 }}
+            sortedItems.map((m, idx) => {
+              return (
+                <div
+                  key={`${m.name}-${m.version}-${idx}`}
+                  className={`group flex flex-row items-center p-3 rounded-2xl bg-white/60 dark:bg-zinc-800/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 border transition-all gap-4 ${
+                    selectedKeys.has(m.name)
+                      ? "border-emerald-500/50 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-900/10"
+                      : "border-white/40 dark:border-white/5"
+                  }`}
+                >
+                  <div
+                    className="w-10 flex justify-center"
+                    onClick={(e) => e.stopPropagation()}
                   >
-                    <Card
-                      isPressable
-                      onPress={() => openDetails(m)}
-                      className="w-full h-full bg-white/80 dark:bg-zinc-800/50 backdrop-blur-md border border-white/40 dark:border-white/5 hover:border-emerald-500/30 dark:hover:border-emerald-500/30 transition-all duration-200 group"
-                      shadow="sm"
+                    <Checkbox
+                      size="sm"
+                      color="success"
+                      isSelected={selectedKeys.has(m.name)}
+                      onValueChange={() => onSelectionChange(m.name)}
+                    />
+                  </div>
+
+                  <div className="w-12 h-12 rounded-xl bg-default-100 dark:bg-zinc-900 flex items-center justify-center text-default-500 shrink-0">
+                    <FaPuzzlePiece className="w-6 h-6" />
+                  </div>
+
+                  <div className="flex-1 min-w-0 flex flex-col justify-center">
+                    <div className="font-bold text-default-900 truncate text-base">
+                      {m.name}
+                    </div>
+                    <div className="text-xs text-default-500 truncate">
+                      by {m.author || "Unknown"}
+                    </div>
+                  </div>
+
+                  <div className="flex-[0.6] min-w-0 flex flex-col justify-center">
+                    <div className="text-default-700 truncate text-sm">
+                      {m.version || "-"}
+                    </div>
+                    <div className="text-xs text-default-500 truncate font-mono opacity-70">
+                      {m.entry || m.type}
+                    </div>
+                  </div>
+
+                  <div
+                    className="flex items-center gap-3 pr-2"
+                    onClick={(e) => e.stopPropagation()}
+                  >
+                    {/* Individual Update button hidden
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      className="text-default-400 hover:text-emerald-500 transition-opacity"
                     >
-                      <CardBody className="p-4 flex flex-row items-center gap-4">
-                        <div
-                          className={`p-3 rounded-xl transition-colors ${
-                            enabledByName.get(m.name)
-                              ? "bg-emerald-100/50 dark:bg-emerald-900/20 text-emerald-600 dark:text-emerald-400"
-                              : "bg-default-100 dark:bg-zinc-800 text-default-400"
-                          }`}
+                      <FaDownload />
+                    </Button>
+                    */}
+
+                    <Switch
+                      size="sm"
+                      color="success"
+                      isSelected={!!enabledByName.get(m.name)}
+                      onValueChange={async (val) => {
+                        const name =
+                          currentVersionName || readCurrentVersionName();
+                        if (!name) return;
+                        try {
+                          if (val) {
+                            const err = await (EnableMod as any)?.(
+                              name,
+                              m.name,
+                            );
+                            if (err) return;
+                          } else {
+                            const err = await (DisableMod as any)?.(
+                              name,
+                              m.name,
+                            );
+                            if (err) return;
+                          }
+                          const ok = await (IsModEnabled as any)?.(
+                            name,
+                            m.name,
+                          );
+                          setEnabledByName((prev) => {
+                            const nm = new Map(prev);
+                            nm.set(m.name, !!ok);
+                            return nm;
+                          });
+                        } catch {}
+                      }}
+                      aria-label={t("mods.toggle_label") as string}
+                    />
+
+                    <Button
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      className="text-default-400 hover:text-danger transition-opacity"
+                      onPress={() => {
+                        setActiveMod(m);
+                        delCfmOnOpen();
+                      }}
+                    >
+                      <FaTrash />
+                    </Button>
+
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant="light"
+                          className="text-default-400"
                         >
-                          <FaPuzzlePiece className="w-5 h-5" />
-                        </div>
-                        <div className="flex-1 min-w-0 text-left">
-                          <div className="font-semibold text-default-900 truncate">
-                            {m.name}
-                          </div>
-                          <div className="text-tiny text-default-500 truncate">
-                            {m.version} {m.author ? `· ${m.author}` : ""}
-                          </div>
-                        </div>
-                        <div
-                          className="flex items-center"
-                          onClick={(e) => e.stopPropagation()}
+                          <FaEllipsisVertical />
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu aria-label="Mod Actions">
+                        <DropdownItem
+                          key="folder"
+                          startContent={<FaFolderOpen />}
+                          onPress={() => openModFolder(m)}
                         >
-                          <Switch
-                            size="sm"
-                            color="success"
-                            isSelected={!!enabledByName.get(m.name)}
-                            onValueChange={async (val) => {
-                              const name =
-                                currentVersionName || readCurrentVersionName();
-                              if (!name) return;
-                              try {
-                                if (val) {
-                                  const err = await (EnableMod as any)?.(
-                                    name,
-                                    m.name,
-                                  );
-                                  if (err) return;
-                                } else {
-                                  const err = await (DisableMod as any)?.(
-                                    name,
-                                    m.name,
-                                  );
-                                  if (err) return;
-                                }
-                                const ok = await (IsModEnabled as any)?.(
-                                  name,
-                                  m.name,
-                                );
-                                setEnabledByName((prev) => {
-                                  const nm = new Map(prev);
-                                  nm.set(m.name, !!ok);
-                                  return nm;
-                                });
-                              } catch {}
-                            }}
-                            aria-label={t("mods.toggle_label") as string}
-                            classNames={{
-                              wrapper:
-                                "group-hover:scale-110 transition-transform",
-                            }}
-                          />
-                        </div>
-                      </CardBody>
-                    </Card>
-                  </motion.div>
-                );
-              })}
-            </div>
+                          {t("common.open_folder")}
+                        </DropdownItem>
+                        <DropdownItem
+                          key="details"
+                          startContent={<FaInfoCircle />}
+                          onPress={() => openDetails(m)}
+                        >
+                          {t("common.details")}
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
+                  </div>
+                </div>
+              );
+            })
           )}
         </div>
       </div>
@@ -1672,18 +1935,13 @@ export const ModsPage: React.FC = () => {
               <BaseModalHeader className="text-danger">
                 <div className="flex items-center gap-2">
                   <FiAlertTriangle className="w-5 h-5" />
-                  <span>
-                    {t("mods.confirm_delete_title", {
-                      defaultValue: "确认删除",
-                    })}
-                  </span>
+                  <span>{t("mods.confirm_delete_title")}</span>
                 </div>
               </BaseModalHeader>
               <BaseModalBody>
                 <div className="text-sm text-default-700 wrap-break-word whitespace-pre-wrap">
                   {t("mods.confirm_delete_body", {
                     type: t("moddedcard.title"),
-                    defaultValue: "确定要删除此模组吗？此操作不可撤销。",
                   })}
                 </div>
                 {activeMod ? (
@@ -1699,7 +1957,7 @@ export const ModsPage: React.FC = () => {
                     onClose();
                   }}
                 >
-                  {t("common.cancel", { defaultValue: "取消" })}
+                  {t("common.cancel")}
                 </Button>
                 <Button
                   color="danger"
@@ -1709,7 +1967,7 @@ export const ModsPage: React.FC = () => {
                     onClose();
                   }}
                 >
-                  {t("common.confirm", { defaultValue: "确定" })}
+                  {t("common.confirm")}
                 </Button>
               </BaseModalFooter>
             </>

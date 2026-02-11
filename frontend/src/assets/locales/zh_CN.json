@@ -205,7 +205,7 @@
       "total": "共 {{count}} 个版本"
     },
     "install_folder": {
-      "confirm_title": "确认安装文件夹",
+      "confirm_title": "安装实例",
       "name_label": "实例名称",
       "placeholder_name": "请输入实例名称",
       "enable_isolation": "实例隔离",
@@ -253,7 +253,7 @@
       "estimated_size": "已写入大小（估算）",
       "target": "安装目标",
       "success_title": "安装完成",
-      "success": "版本已成功安装。",
+      "success": "版本已成功安装",
       "progress": "安装进度",
       "custom_installer": {
         "label": "选择本地安装包 (.msixvc)",
@@ -358,15 +358,15 @@
         "downloading": "正在下载...",
         "extracting": "正在解压...",
         "done": "安装完成"
-       },
-       "error": {
-         "fetch_release_failed": "获取版本信息失败",
-         "create_temp": "创建临时目录失败",
-         "download_failed": "下载失败",
-         "create_target_dir": "创建目标目录失败",
-         "unzip_failed": "解压失败"
-       }
-     },
+      },
+      "error": {
+        "fetch_release_failed": "获取版本信息失败",
+        "create_temp": "创建临时目录失败",
+        "download_failed": "下载失败",
+        "create_target_dir": "创建目标目录失败",
+        "unzip_failed": "解压失败"
+      }
+    },
     "header": {
       "title": "设置",
       "content": "配置启动器常用选项"
@@ -841,5 +841,18 @@
     "delay": "延迟",
     "online": "在线",
     "version": "版本"
+  },
+  "installpage": {
+    "error": {
+      "decompress_failed": "解压失败",
+      "invalid_args": "参数错误",
+      "file_invalid": "文件无效（可能是 MD5 不匹配）",
+      "launcher_name_modified": "请不要修改启动器名称",
+      "dll_dependency_missing": "缺少 VC++ 运行库",
+      "name_required": "名称不能为空",
+      "msixvc_not_specified": "未指定安装包",
+      "lip_not_installed": "LIP未安装",
+      "unknown": "未知错误"
+    }
   }
 }

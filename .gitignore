@@ -36,3 +36,5 @@ bin
 .agent
 .trae
 .kiro
+
+.env

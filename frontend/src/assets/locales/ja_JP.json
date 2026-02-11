@@ -64,6 +64,16 @@
       "completing": {
         "title": "不足DLLの補完中",
         "body": "vcruntime140_1.dll をダウンロードして補完しています。お待ちください…"
+      },
+      "installing": {
+        "title": "Visual C++ ランタイムをインストール中",
+        "body": "Microsoft Visual C++ ランタイムをダウンロードしてインストールしています。お待ちください...",
+        "preparing": "ダウンロードの準備中..."
+      },
+      "missing": {
+        "title": "Visual C++ ランタイムが見つかりません",
+        "body": "ゲームを実行するには Microsoft Visual C++ 2015-2022 Redistributable (x64) が必要です。今すぐインストールしますか？",
+        "install_now": "今すぐインストール"
       }
     },
     "mclaunch": {
@@ -195,7 +205,7 @@
       "total": "全 {{count}} バージョン"
     },
     "install_folder": {
-      "confirm_title": "インストール先フォルダの確認",
+      "confirm_title": "インスタンスをインストール",
       "name_label": "インスタンス名",
       "placeholder_name": "インスタンス名を入力してください",
       "enable_isolation": "インスタンス隔離",
@@ -833,5 +843,18 @@
     "delay": "遅延",
     "online": "オンライン",
     "version": "バージョン"
+  },
+  "installpage": {
+    "error": {
+      "decompress_failed": "解凍に失敗しました",
+      "invalid_args": "無効な引数",
+      "file_invalid": "ファイルが無効です (MD5不一致の可能性があります)",
+      "launcher_name_modified": "ランチャーの名前を変更しないでください",
+      "dll_dependency_missing": "VC++ ランタイムが不足しています",
+      "name_required": "名前は必須です",
+      "msixvc_not_specified": "インストールパッケージが指定されていません",
+      "lip_not_installed": "LIP がインストールされていません",
+      "unknown": "不明なエラー"
+    }
   }
 }

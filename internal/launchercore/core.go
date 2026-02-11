@@ -305,13 +305,20 @@ func Extract(msixvcPath string, outDir string) (int, string) {
 	}
 
 	rc := int(r1)
-	if rc == 0 {
+	switch rc {
+	case 0:
 		return 0, ""
+	case 1:
+		return 1, "ERR_DECOMPRESS_FAILED"
+	case 2:
+		return 2, "ERR_INVALID_ARGS"
+	case 3:
+		return 3, "ERR_FILE_INVALID"
+	case 4:
+		return 4, "ERR_LAUNCHER_NAME_MODIFIED"
+	default:
+		return rc, "ERR_UNKNOWN"
 	}
-	if rc == 3 {
-		return 3, "ERR_MC_NOT_AUTHORIZED"
-	}
-	return 1, "ERR_APPX_INSTALL_FAILED"
 }
 
 func ExtractWithPipe(msixvcPath, outDir, pipeName string) (int, string) {
@@ -339,13 +346,20 @@ func ExtractWithPipe(msixvcPath, outDir, pipeName string) (int, string) {
 	)
 
 	rc := int(r1)
-	if rc == 0 {
+	switch rc {
+	case 0:
 		return 0, ""
+	case 1:
+		return 1, "ERR_DECOMPRESS_FAILED"
+	case 2:
+		return 2, "ERR_INVALID_ARGS"
+	case 3:
+		return 3, "ERR_FILE_INVALID"
+	case 4:
+		return 4, "ERR_LAUNCHER_NAME_MODIFIED"
+	default:
+		return rc, "ERR_UNKNOWN"
 	}
-	if rc == 3 {
-		return 3, "ERR_MC_NOT_AUTHORIZED"
-	}
-	return 1, "ERR_APPX_INSTALL_FAILED"
 }
 
 func utf8ToACP(s string) ([]byte, error) {

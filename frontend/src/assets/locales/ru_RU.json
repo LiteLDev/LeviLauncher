@@ -64,6 +64,16 @@
       "completing": {
         "title": "Установка отсутствующего DLL",
         "body": "Загрузка и установка vcruntime140_1.dll, пожалуйста подождите…"
+      },
+      "installing": {
+        "title": "Установка Visual C++ Runtime",
+        "body": "Скачивание и установка Microsoft Visual C++ Runtime, пожалуйста, подождите...",
+        "preparing": "Подготовка к загрузке..."
+      },
+      "missing": {
+        "title": "Отсутствует Visual C++ Runtime",
+        "body": "Для запуска игры требуется Microsoft Visual C++ 2015-2022 Redistributable (x64). Установить сейчас?",
+        "install_now": "Установить сейчас"
       }
     },
     "mclaunch": {
@@ -195,8 +205,8 @@
       "total": "Всего версий: {{count}}"
     },
     "install_folder": {
-      "confirm_title": "Подтверждение папки установки",
-      "name_label": "Имя версии",
+      "confirm_title": "Установить инстанс",
+      "name_label": "Имя инстанса",
       "placeholder_name": "Введите имя версии",
       "enable_isolation": "Изоляция версии",
       "enable_isolation_desc": "Перенаправляет данные игры (миры, настройки, кэши и т.д.) в папку versions/<имя>/ вместо AppData.",
@@ -833,5 +843,18 @@
     "delay": "Задержка",
     "online": "В сети",
     "version": "Версия"
+  },
+  "installpage": {
+    "error": {
+      "decompress_failed": "Ошибка распаковки",
+      "invalid_args": "Неверные аргументы",
+      "file_invalid": "Неверный файл (возможно, не совпадает MD5)",
+      "launcher_name_modified": "Пожалуйста, не изменяйте имя лаунчера",
+      "dll_dependency_missing": "Отсутствует библиотека VC++",
+      "name_required": "Требуется имя",
+      "msixvc_not_specified": "Пакет установки не указан",
+      "lip_not_installed": "LIP не установлен",
+      "unknown": "Неизвестная ошибка"
+    }
   }
 }

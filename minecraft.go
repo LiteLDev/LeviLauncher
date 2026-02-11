@@ -45,8 +45,6 @@ import (
 	"golang.org/x/sys/windows"
 )
 
-const curseForgeAPIKey = "$2a$10$jKlW9V6VUddFIwHg0hVYPOiph654Wx2dEY7cW2F1ivQ8af9ML.uDq"
-
 const (
 	EventGameInputEnsureStart      = "gameinput.ensure.start"
 	EventGameInputEnsureDone       = "gameinput.ensure.done"
@@ -295,7 +293,7 @@ type Minecraft struct {
 
 func NewMinecraft() *Minecraft {
 	return &Minecraft{
-		curseClient: client.NewCurseClient(curseForgeAPIKey),
+		curseClient: client.NewCurseClient(os.Getenv("CURSEFORGE_API_KEY")),
 		lipClient:   lipclient.NewClient(),
 		packManager: packages.NewPackManager(),
 	}

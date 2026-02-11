@@ -14,6 +14,7 @@ import (
 	win "golang.org/x/sys/windows"
 	"gopkg.in/natefinch/npipe.v2"
 
+	"github.com/joho/godotenv"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/extractor"
@@ -198,6 +199,7 @@ func init() {
 
 
 func main() {
+	_ = godotenv.Load()
 	initialURL, autoLaunchVersion := parseArgs()
 
 	if !ensureSingleInstance(autoLaunchVersion) {

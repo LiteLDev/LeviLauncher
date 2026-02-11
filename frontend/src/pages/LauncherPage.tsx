@@ -41,7 +41,6 @@ import {
   FaArrowRight,
   FaDownload,
 } from "react-icons/fa";
-import { FiAlertTriangle, FiCheckCircle, FiUploadCloud } from "react-icons/fi";
 import { ModCard } from "@/components/ModdedCard";
 import { ContentDownloadCard } from "@/components/ContentDownloadCard";
 import { Events, Window, Browser } from "@wailsio/runtime";

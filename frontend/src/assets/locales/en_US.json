@@ -205,7 +205,7 @@
       "total": "Total {{count}} verions"
     },
     "install_folder": {
-      "confirm_title": "Confirm Install Folder",
+      "confirm_title": "Install Instance",
       "name_label": "Version Name",
       "placeholder_name": "Please enter version name",
       "enable_isolation": "Version isolation",
@@ -841,5 +841,18 @@
     "delay": "Latency",
     "online": "Online",
     "version": "Version"
+  },
+  "installpage": {
+    "error": {
+      "decompress_failed": "Decompression failed",
+      "invalid_args": "Invalid arguments",
+      "file_invalid": "File invalid (MD5 mismatch?)",
+      "launcher_name_modified": "Please do not modify the launcher name",
+      "dll_dependency_missing": "VC++ Runtime missing",
+      "name_required": "Name is required",
+      "msixvc_not_specified": "Installer package not specified",
+      "lip_not_installed": "LIP is not installed",
+      "unknown": "Unknown error"
+    }
   }
 }

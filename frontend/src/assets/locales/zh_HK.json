@@ -64,6 +64,16 @@
       "completing": {
         "title": "正在補全缺失的 DLL",
         "body": "正在下載並補全 vcruntime140_1.dll，請稍候…"
+      },
+      "installing": {
+        "title": "正在安裝 Visual C++ 運行庫",
+        "body": "正在下載並安裝 Microsoft Visual C++ 運行庫，請稍候…",
+        "preparing": "正在準備下載..."
+      },
+      "missing": {
+        "title": "缺少 Visual C++ 運行庫",
+        "body": "運行遊戲需要 Microsoft Visual C++ 2015-2022 Redistributable (x64) 運行庫。是否現在下載安裝？",
+        "install_now": "立即安裝"
       }
     },
     "mclaunch": {
@@ -195,7 +205,7 @@
       "total": "共 {{count}} 個版本"
     },
     "install_folder": {
-      "confirm_title": "確認安裝資料夾",
+      "confirm_title": "安裝實例",
       "name_label": "實例名稱",
       "placeholder_name": "請輸入實例名稱",
       "enable_isolation": "實例隔離",
@@ -243,7 +253,7 @@
       "estimated_size": "已寫入大小（估算）",
       "target": "安裝目標",
       "success_title": "安裝完成",
-      "success": "版本已成功安裝。",
+      "success": "版本已成功安裝",
       "progress": "安裝進度",
       "custom_installer": {
         "label": "選擇本機安裝包 (.msixvc)",
@@ -833,5 +843,18 @@
     "delay": "延遲",
     "online": "在線",
     "version": "版本"
+  },
+  "installpage": {
+    "error": {
+      "decompress_failed": "解壓失敗",
+      "invalid_args": "參數錯誤",
+      "file_invalid": "檔案無效（可能是 MD5 不相符）",
+      "launcher_name_modified": "請不要修改啟動器名稱",
+      "dll_dependency_missing": "缺少 VC++ 執行庫",
+      "name_required": "名稱不能為空",
+      "msixvc_not_specified": "未指定安裝包",
+      "lip_not_installed": "LIP未安裝",
+      "unknown": "未知錯誤"
+    }
   }
 }

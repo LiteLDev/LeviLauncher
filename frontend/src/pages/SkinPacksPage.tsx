@@ -44,9 +44,11 @@ import {
   ListPacksForVersion,
   OpenPathDir,
   DeletePack,
+  GetVersionMeta,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
+import { compareVersions } from "@/utils/version";
 import {
   getPlayerGamertagMap,
   listPlayers,
@@ -119,6 +121,7 @@ export default function SkinPacksPage() {
   });
   const [selected, setSelected] = React.useState<Record<string, boolean>>({});
   const [isSelectMode, setIsSelectMode] = React.useState<boolean>(false);
+  const [isSharedMode, setIsSharedMode] = React.useState<boolean>(false);
   const {
     isOpen: delManyCfmOpen,
     onOpen: delManyCfmOnOpen,
@@ -251,47 +254,64 @@ export default function SkinPacksPage() {
           };
           setRoots(safe);
 
-          const names = safe.usersRoot ? await listPlayers(safe.usersRoot) : [];
-          setPlayers(names);
+          let meta: any = {};
+          try {
+            meta = await GetVersionMeta(name);
+          } catch {}
+          const isShared =
+            meta.gameVersion && compareVersions(meta.gameVersion, "1.26.0") > 0;
+          setIsSharedMode(isShared);
 
           let nextPlayer = forcePlayer;
-          if (nextPlayer === undefined) {
-            const passedPlayer = location?.state?.player || "";
-            nextPlayer =
-              selectedPlayer && names.includes(selectedPlayer)
-                ? selectedPlayer
-                : names.includes(passedPlayer)
-                  ? passedPlayer
-                  : names[0] || "";
-            setSelectedPlayer(nextPlayer || "");
-          }
+          let names: string[] = [];
 
-          (async () => {
-            if (safe.usersRoot) {
-              const map = await getPlayerGamertagMap(safe.usersRoot);
-              setPlayerGamertagMap(map);
+          if (isShared) {
+            setPlayers([]);
+            setSelectedPlayer("");
+            setPlayerGamertagMap({});
+            nextPlayer = "";
+          } else {
+            names = safe.usersRoot ? await listPlayers(safe.usersRoot) : [];
+            setPlayers(names);
 
-              if (forcePlayer === undefined) {
-                try {
-                  const tag = await (
-                    minecraft as any
-                  )?.GetLocalUserGamertag?.();
-                  if (tag) {
-                    for (const p of names) {
-                      if (map[p] === tag) {
-                        if (p !== nextPlayer) {
-                          refreshAll(false, p);
+            if (nextPlayer === undefined) {
+              const passedPlayer = location?.state?.player || "";
+              nextPlayer =
+                selectedPlayer && names.includes(selectedPlayer)
+                  ? selectedPlayer
+                  : names.includes(passedPlayer)
+                    ? passedPlayer
+                    : names[0] || "";
+              setSelectedPlayer(nextPlayer || "");
+            }
+
+            (async () => {
+              if (safe.usersRoot) {
+                const map = await getPlayerGamertagMap(safe.usersRoot);
+                setPlayerGamertagMap(map);
+
+                if (forcePlayer === undefined) {
+                  try {
+                    const tag = await (
+                      minecraft as any
+                    )?.GetLocalUserGamertag?.();
+                    if (tag) {
+                      for (const p of names) {
+                        if (map[p] === tag) {
+                          if (p !== nextPlayer) {
+                            refreshAll(false, p);
+                          }
+                          break;
                         }
-                        break;
                       }
                     }
-                  }
-                } catch {}
+                  } catch {}
+                }
+              } else {
+                setPlayerGamertagMap({});
               }
-            } else {
-              setPlayerGamertagMap({});
-            }
-          })();
+            })();
+          }
 
           const allPacks = await ListPacksForVersion(name, nextPlayer || "");
 
@@ -493,65 +513,73 @@ export default function SkinPacksPage() {
               title={t("contentpage.skin_packs")}
               endContent={
                 <div className="flex items-center gap-2">
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button
-                        radius="full"
-                        variant="flat"
-                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium w-full sm:w-auto sm:min-w-[200px]"
-                        isDisabled={!players.length}
-                        startContent={<FaUser />}
+                  {!isSharedMode && (
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button
+                          radius="full"
+                          variant="flat"
+                          className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium w-full sm:w-auto sm:min-w-[200px]"
+                          isDisabled={!players.length}
+                          startContent={<FaUser />}
+                        >
+                          {selectedPlayer
+                            ? resolvePlayerDisplayName(
+                                selectedPlayer,
+                                playerGamertagMap,
+                              )
+                            : t("contentpage.select_player")}
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu
+                        aria-label={
+                          t("contentpage.players_aria") as unknown as string
+                        }
+                        selectionMode="single"
+                        selectedKeys={new Set([selectedPlayer])}
+                        onSelectionChange={(keys) => {
+                          const arr = Array.from(
+                            keys as unknown as Set<string>,
+                          );
+                          const next = arr[0] || "";
+                          if (typeof next === "string") onChangePlayer(next);
+                        }}
                       >
-                        {selectedPlayer
-                          ? resolvePlayerDisplayName(
-                              selectedPlayer,
-                              playerGamertagMap,
-                            )
-                          : t("contentpage.select_player")}
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label={
-                        t("contentpage.players_aria") as unknown as string
-                      }
-                      selectionMode="single"
-                      selectedKeys={new Set([selectedPlayer])}
-                      onSelectionChange={(keys) => {
-                        const arr = Array.from(keys as unknown as Set<string>);
-                        const next = arr[0] || "";
-                        if (typeof next === "string") onChangePlayer(next);
-                      }}
-                    >
-                      {players.length ? (
-                        players.map((p) => (
-                          <DropdownItem
-                            key={p}
-                            textValue={resolvePlayerDisplayName(
-                              p,
-                              playerGamertagMap,
-                            )}
-                          >
-                            {resolvePlayerDisplayName(p, playerGamertagMap)}
+                        {players.length ? (
+                          players.map((p) => (
+                            <DropdownItem
+                              key={p}
+                              textValue={resolvePlayerDisplayName(
+                                p,
+                                playerGamertagMap,
+                              )}
+                            >
+                              {resolvePlayerDisplayName(p, playerGamertagMap)}
+                            </DropdownItem>
+                          ))
+                        ) : (
+                          <DropdownItem key="none" isDisabled>
+                            {t("contentpage.no_players")}
                           </DropdownItem>
-                        ))
-                      ) : (
-                        <DropdownItem key="none" isDisabled>
-                          {t("contentpage.no_players")}
-                        </DropdownItem>
-                      )}
-                    </DropdownMenu>
-                  </Dropdown>
+                        )}
+                      </DropdownMenu>
+                    </Dropdown>
+                  )}
                   <Button
                     radius="full"
                     variant="flat"
                     startContent={<FaFolderOpen />}
                     onPress={async () => {
                       if (!hasBackend || !roots.resourcePacks) return;
-                      let sp = roots.resourcePacks.replace(
-                        /resource_packs$/,
-                        "skin_packs",
+                      const dir = roots.resourcePacks.replace(
+                        /[\\/]resource_packs[\\/]?$/,
+                        "",
                       );
-                      if (selectedPlayer && roots.usersRoot) {
+                      const sep = roots.resourcePacks.includes("/")
+                        ? "/"
+                        : "\\";
+                      let sp = `${dir}${sep}skin_packs`;
+                      if (selectedPlayer && roots.usersRoot && !isSharedMode) {
                         sp = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\skin_packs`;
                       }
                       await OpenPathDir(sp);

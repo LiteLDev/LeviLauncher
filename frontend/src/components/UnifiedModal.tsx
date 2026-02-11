@@ -51,6 +51,8 @@ export interface UnifiedModalProps {
   titleClass?: string;
   iconBgClass?: string;
   classNames?: Record<string, string>;
+  motionProps?: any;
+  contentKey?: string | number;
 }
 
 const TYPE_CONFIG: Record<
@@ -123,6 +125,8 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   titleClass,
   iconBgClass,
   classNames,
+  motionProps,
+  contentKey,
 }) => {
   const config = TYPE_CONFIG[type];
   const Icon = config.icon;
@@ -146,6 +150,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
       isDismissable={isDismissable}
       scrollBehavior={scrollBehavior}
       classNames={classNames}
+      motionProps={motionProps}
     >
       <ModalContent className="shadow-none">
         {(onClose) => (
@@ -183,6 +188,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
             </BaseModalHeader>
             <BaseModalBody className={hideScrollbar ? "no-scrollbar" : ""}>
               <motion.div
+                key={contentKey || type}
                 initial={{ opacity: 0, y: 10 }}
                 animate={{ opacity: 1, y: 0 }}
                 transition={{ duration: 0.25, delay: 0.1 }}

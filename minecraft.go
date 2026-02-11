@@ -708,9 +708,52 @@ func (a *Minecraft) IsModEnabled(name string, modName string) bool {
 	return mods.IsModEnabled(name, modName)
 }
 
+func compareVersions(v1, v2 string) int {
+	parts1 := strings.Split(v1, ".")
+	parts2 := strings.Split(v2, ".")
+	maxLen := len(parts1)
+	if len(parts2) > maxLen {
+		maxLen = len(parts2)
+	}
+	for i := 0; i < maxLen; i++ {
+		var s1, s2 string
+		if i < len(parts1) {
+			s1 = parts1[i]
+		}
+		if i < len(parts2) {
+			s2 = parts2[i]
+		}
+
+		n1, err1 := strconv.Atoi(s1)
+		n2, err2 := strconv.Atoi(s2)
+
+		if err1 == nil && err2 == nil {
+			if n1 != n2 {
+				if n1 > n2 {
+					return 1
+				}
+				return -1
+			}
+		} else {
+			if s1 != s2 {
+				if s1 > s2 {
+					return 1
+				}
+				return -1
+			}
+		}
+	}
+	return 0
+}
+
 func (a *Minecraft) ImportMcpack(name string, data []byte, overwrite bool) string {
 	roots := a.GetContentRoots(name)
-	return content.ImportMcpackToDirs2(data, "", roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
+	skinDir := ""
+	meta := a.GetVersionMeta(name)
+	if compareVersions(meta.GameVersion, "1.26.0.0") > 0 {
+		skinDir = filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
+	}
+	return content.ImportMcpackToDirs2(data, "", roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (a *Minecraft) ImportMcpackPath(name string, path string, overwrite bool) string {
@@ -722,12 +765,22 @@ func (a *Minecraft) ImportMcpackPath(name string, path string, overwrite bool) s
 		return "ERR_OPEN_ZIP"
 	}
 	roots := a.GetContentRoots(name)
-	return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
+	skinDir := ""
+	meta := a.GetVersionMeta(name)
+	if compareVersions(meta.GameVersion, "1.26.0.0") > 0 {
+		skinDir = filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
+	}
+	return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (a *Minecraft) ImportMcaddon(name string, data []byte, overwrite bool) string {
 	roots := a.GetContentRoots(name)
-	return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
+	skinDir := ""
+	meta := a.GetVersionMeta(name)
+	if compareVersions(meta.GameVersion, "1.26.0.0") > 0 {
+		skinDir = filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
+	}
+	return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (a *Minecraft) ImportMcaddonPath(name string, path string, overwrite bool) string {
@@ -739,7 +792,12 @@ func (a *Minecraft) ImportMcaddonPath(name string, path string, overwrite bool) 
 		return "ERR_OPEN_ZIP"
 	}
 	roots := a.GetContentRoots(name)
-	return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, "", overwrite)
+	skinDir := ""
+	meta := a.GetVersionMeta(name)
+	if compareVersions(meta.GameVersion, "1.26.0.0") > 0 {
+		skinDir = filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
+	}
+	return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (a *Minecraft) ImportMcaddonWithPlayer(name string, player string, data []byte, overwrite bool) string {

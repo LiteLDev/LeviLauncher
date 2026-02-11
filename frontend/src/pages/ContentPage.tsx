@@ -18,7 +18,10 @@ import { UnifiedModal } from "@/components/UnifiedModal";
 import { ImportResultModal } from "@/components/ImportResultModal";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
-import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetContentRoots,
+  GetVersionMeta,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
   FaCogs,
@@ -30,6 +33,7 @@ import {
   FaServer,
 } from "react-icons/fa";
 import { readCurrentVersionName } from "@/utils/currentVersion";
+import { compareVersions } from "@/utils/version";
 import { countDirectories } from "@/utils/fs";
 import {
   getPlayerGamertagMap,
@@ -66,6 +70,7 @@ export default function ContentPage() {
   });
   const [players, setPlayers] = React.useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = React.useState<string>("");
+  const [isSharedMode, setIsSharedMode] = React.useState<boolean>(false);
   const [playerGamertagMap, setPlayerGamertagMap] = React.useState<
     Record<string, string>
   >({});
@@ -140,6 +145,15 @@ export default function ContentPage() {
           isPreview: false,
         };
         setRoots(safe);
+
+        let isShared = false;
+        try {
+          const meta: any = await GetVersionMeta(name);
+          isShared =
+            meta.gameVersion && compareVersions(meta.gameVersion, "1.26.0") > 0;
+        } catch {}
+        setIsSharedMode(isShared);
+
         if (safe.usersRoot) {
           const names = await listPlayers(safe.usersRoot);
           setPlayers(names);
@@ -162,8 +176,22 @@ export default function ContentPage() {
             if (player) {
               const wp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
               setWorldsCount(await countDirectories(wp));
-              const sp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
-              setSkinCount(await countDirectories(sp));
+              if (isShared) {
+                if (safe.resourcePacks) {
+                  const dir = safe.resourcePacks.replace(
+                    /[\\/]resource_packs[\\/]?$/,
+                    "",
+                  );
+                  const sep = safe.resourcePacks.includes("/") ? "/" : "\\";
+                  const sp = `${dir}${sep}skin_packs`;
+                  setSkinCount(await countDirectories(sp));
+                } else {
+                  setSkinCount(0);
+                }
+              } else {
+                const sp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
+                setSkinCount(await countDirectories(sp));
+              }
               const srvs = await (minecraft as any)?.ListServers?.(
                 name,
                 player,
@@ -261,8 +289,22 @@ export default function ContentPage() {
       }
       const wp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
       setWorldsCount(await countDirectories(wp));
-      const sp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
-      setSkinCount(await countDirectories(sp));
+      if (isSharedMode) {
+        if (roots.resourcePacks) {
+          const dir = roots.resourcePacks.replace(
+            /[\\/]resource_packs[\\/]?$/,
+            "",
+          );
+          const sep = roots.resourcePacks.includes("/") ? "/" : "\\";
+          const sp = `${dir}${sep}skin_packs`;
+          setSkinCount(await countDirectories(sp));
+        } else {
+          setSkinCount(0);
+        }
+      } else {
+        const sp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
+        setSkinCount(await countDirectories(sp));
+      }
       const srvs = await (minecraft as any)?.ListServers?.(
         currentVersionName || readCurrentVersionName(),
         player,
@@ -298,7 +340,10 @@ export default function ContentPage() {
         }
       }
       let chosenPlayer = "";
-      if (hasWorld || hasSkin) {
+
+      const needsPlayer = hasWorld || (hasSkin && !isSharedMode);
+
+      if (needsPlayer) {
         pendingImportPathsRef.current = paths;
         playerSelectOnOpen();
         chosenPlayer = await new Promise<string>((resolve) => {
@@ -329,14 +374,18 @@ export default function ContentPage() {
           }
           const base = p.replace(/\\/g, "/").split("/").pop() || p;
           setCurrentFile(base);
+
           let err = "";
+          const isSkin = await (minecraft as any)?.IsMcpackSkinPackPath?.(p);
+          const effectivePlayer = isSkin && isSharedMode ? "" : playerToUse;
+
           if (
-            playerToUse &&
+            effectivePlayer &&
             typeof (minecraft as any)?.ImportMcpackPathWithPlayer === "function"
           ) {
             err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
               name,
-              playerToUse,
+              effectivePlayer,
               p,
               false,
             );
@@ -356,13 +405,13 @@ export default function ContentPage() {
               });
               if (ok) {
                 if (
-                  playerToUse &&
+                  effectivePlayer &&
                   typeof (minecraft as any)?.ImportMcpackPathWithPlayer ===
                     "function"
                 ) {
                   err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
                     name,
-                    playerToUse,
+                    effectivePlayer,
                     p,
                     true,
                   );
@@ -531,6 +580,7 @@ export default function ContentPage() {
       id="content-drop-zone"
       {...({ "data-file-drop-target": true } as any)}
       className="relative"
+      animate={false}
     >
       {/* Drag Overlay */}
       <FileDropOverlay
@@ -539,155 +589,176 @@ export default function ContentPage() {
       />
 
       {/* Header Card */}
-      <Card className={LAYOUT.GLASS_CARD.BASE}>
-        <CardBody className="p-6">
-          <div className="flex flex-col gap-6">
-            <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-              <div>
-                <div className="flex items-center gap-3">
-                  <PageHeader
-                    title={t("launcherpage.content_manage")}
-                    titleClassName="pb-1"
-                  />
-                </div>
-                <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
-                  <span>{t("contentpage.current_version")}:</span>
-                  <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
-                    {currentVersionName || t("contentpage.none")}
-                  </span>
-                  <span className="text-default-300 dark:text-zinc-600">|</span>
-                  <span>{t("contentpage.isolation")}:</span>
-                  <span
-                    className={`font-medium px-2 py-0.5 rounded-md ${
-                      roots.isIsolation
-                        ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
-                        : "bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
-                    }`}
-                  >
-                    {roots.isIsolation ? t("common.yes") : t("common.no")}
-                  </span>
-                  <span className="text-default-300 dark:text-zinc-600">|</span>
-                  <span>{t("contentpage.select_player")}:</span>
-                  <Dropdown>
-                    <DropdownTrigger>
-                      <Button
-                        size="sm"
-                        variant="light"
-                        className="h-6 min-w-0 px-2 text-small font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 rounded-md"
-                      >
-                        {selectedPlayer
-                          ? resolvePlayerDisplayName(
-                              selectedPlayer,
-                              playerGamertagMap,
-                            )
-                          : t("contentpage.no_players")}
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label="Players"
-                      selectionMode="single"
-                      selectedKeys={new Set([selectedPlayer])}
-                      onSelectionChange={(keys) => {
-                        const arr = Array.from(keys as unknown as Set<string>);
-                        const next = arr[0] || "";
-                        if (typeof next === "string") onChangePlayer(next);
-                      }}
-                    >
-                      {players.length ? (
-                        players.map((p) => (
-                          <DropdownItem
-                            key={p}
-                            textValue={resolvePlayerDisplayName(
-                              p,
-                              playerGamertagMap,
-                            )}
-                          >
-                            {resolvePlayerDisplayName(p, playerGamertagMap)}
-                          </DropdownItem>
-                        ))
-                      ) : (
-                        <DropdownItem key="none" isDisabled>
-                          {t("contentpage.no_players")}
-                        </DropdownItem>
-                      )}
-                    </DropdownMenu>
-                  </Dropdown>
-                  {!selectedPlayer && (
-                    <span className="text-danger-500 text-xs">
-                      ({t("contentpage.require_player_for_world_import")})
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <Card className={LAYOUT.GLASS_CARD.BASE}>
+          <CardBody className="p-6">
+            <div className="flex flex-col gap-6">
+              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+                <div>
+                  <div className="flex items-center gap-3">
+                    <PageHeader
+                      title={t("launcherpage.content_manage")}
+                      titleClassName="pb-1"
+                    />
+                  </div>
+                  <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
+                    <span>{t("contentpage.current_version")}:</span>
+                    <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+                      {currentVersionName || t("contentpage.none")}
                     </span>
-                  )}
+                    <span className="text-default-300 dark:text-zinc-600">
+                      |
+                    </span>
+                    <span>{t("contentpage.isolation")}:</span>
+                    <span
+                      className={`font-medium px-2 py-0.5 rounded-md ${
+                        roots.isIsolation
+                          ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
+                          : "bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
+                      }`}
+                    >
+                      {roots.isIsolation ? t("common.yes") : t("common.no")}
+                    </span>
+                    <span className="text-default-300 dark:text-zinc-600">
+                      |
+                    </span>
+                    <span>{t("contentpage.select_player")}:</span>
+                    <Dropdown>
+                      <DropdownTrigger>
+                        <Button
+                          size="sm"
+                          variant="light"
+                          className="h-6 min-w-0 px-2 text-small font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 rounded-md"
+                        >
+                          {selectedPlayer
+                            ? resolvePlayerDisplayName(
+                                selectedPlayer,
+                                playerGamertagMap,
+                              )
+                            : t("contentpage.no_players")}
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu
+                        aria-label="Players"
+                        selectionMode="single"
+                        selectedKeys={new Set([selectedPlayer])}
+                        onSelectionChange={(keys) => {
+                          const arr = Array.from(
+                            keys as unknown as Set<string>,
+                          );
+                          const next = arr[0] || "";
+                          if (typeof next === "string") onChangePlayer(next);
+                        }}
+                      >
+                        {players.length ? (
+                          players.map((p) => (
+                            <DropdownItem
+                              key={p}
+                              textValue={resolvePlayerDisplayName(
+                                p,
+                                playerGamertagMap,
+                              )}
+                            >
+                              {resolvePlayerDisplayName(p, playerGamertagMap)}
+                            </DropdownItem>
+                          ))
+                        ) : (
+                          <DropdownItem key="none" isDisabled>
+                            {t("contentpage.no_players")}
+                          </DropdownItem>
+                        )}
+                      </DropdownMenu>
+                    </Dropdown>
+                    {!selectedPlayer && (
+                      <span className="text-danger-500 text-xs">
+                        ({t("contentpage.require_player_for_world_import")})
+                      </span>
+                    )}
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-center gap-2">
-                <Button
-                  radius="full"
-                  className="bg-emerald-600 text-white font-medium shadow-sm"
-                  startContent={<FiUploadCloud />}
-                  onPress={async () => {
-                    try {
-                      const paths = await Dialogs.OpenFile({
-                        Title: t("contentpage.import_button"),
-                        Filters: [
-                          {
-                            DisplayName: "Content Files",
-                            Pattern: "*.mcworld;*.mcpack;*.mcaddon",
-                          },
-                        ],
-                        AllowsMultipleSelection: true,
-                      });
-                      if (paths && Array.isArray(paths) && paths.length > 0) {
-                        doImportFromPaths(paths);
-                      }
-                    } catch (e) {
-                      console.error(e);
-                    }
-                  }}
-                  isDisabled={importing}
-                >
-                  {t("contentpage.import_button")}
-                </Button>
-                <Tooltip
-                  content={t("contentpage.open_users_dir") as unknown as string}
-                >
+                <div className="flex items-center gap-2">
                   <Button
                     radius="full"
-                    variant="flat"
-                    startContent={<FaFolderOpen />}
-                    onPress={() => {
-                      if (roots.usersRoot) {
-                        (minecraft as any)?.OpenPathDir(roots.usersRoot);
+                    className="bg-emerald-600 text-white font-medium shadow-sm"
+                    startContent={<FiUploadCloud />}
+                    onPress={async () => {
+                      try {
+                        const paths = await Dialogs.OpenFile({
+                          Title: t("contentpage.import_button"),
+                          Filters: [
+                            {
+                              DisplayName: "Content Files",
+                              Pattern: "*.mcworld;*.mcpack;*.mcaddon",
+                            },
+                          ],
+                          AllowsMultipleSelection: true,
+                        });
+                        if (paths && Array.isArray(paths) && paths.length > 0) {
+                          doImportFromPaths(paths);
+                        }
+                      } catch (e) {
+                        console.error(e);
                       }
                     }}
-                    isDisabled={!hasBackend || !roots.usersRoot}
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
+                    isDisabled={importing}
                   >
-                    {t("common.open")}
+                    {t("contentpage.import_button")}
                   </Button>
-                </Tooltip>
-                <Tooltip content={t("common.refresh") as unknown as string}>
-                  <Button
-                    isIconOnly
-                    radius="full"
-                    variant="light"
-                    onPress={() => refreshAll()}
-                    isDisabled={loading}
+                  <Tooltip
+                    content={
+                      t("contentpage.open_users_dir") as unknown as string
+                    }
                   >
-                    <FaSync
-                      className={loading ? "animate-spin" : ""}
-                      size={18}
-                    />
-                  </Button>
-                </Tooltip>
+                    <Button
+                      radius="full"
+                      variant="flat"
+                      startContent={<FaFolderOpen />}
+                      onPress={() => {
+                        if (roots.usersRoot) {
+                          (minecraft as any)?.OpenPathDir(roots.usersRoot);
+                        }
+                      }}
+                      isDisabled={!hasBackend || !roots.usersRoot}
+                      className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
+                    >
+                      {t("common.open")}
+                    </Button>
+                  </Tooltip>
+                  <Tooltip content={t("common.refresh") as unknown as string}>
+                    <Button
+                      isIconOnly
+                      radius="full"
+                      variant="light"
+                      onPress={() => refreshAll()}
+                      isDisabled={loading}
+                    >
+                      <FaSync
+                        className={loading ? "animate-spin" : ""}
+                        size={18}
+                      />
+                    </Button>
+                  </Tooltip>
+                </div>
               </div>
+              {!!error && (
+                <div className="text-danger-500 text-sm">{error}</div>
+              )}
             </div>
-            {!!error && <div className="text-danger-500 text-sm">{error}</div>}
-          </div>
-        </CardBody>
-      </Card>
+          </CardBody>
+        </Card>
+      </motion.div>
 
       {/* Content Grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+      <motion.div
+        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
         <Card
           isPressable
           onPress={() =>
@@ -914,7 +985,7 @@ export default function ContentPage() {
             </div>
           </CardBody>
         </Card>
-      </div>
+      </motion.div>
 
       <UnifiedModal
         isOpen={importing}

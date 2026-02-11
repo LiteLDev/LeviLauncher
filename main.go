@@ -193,7 +193,9 @@ func init() {
 	application.RegisterEvent[string](update.EventAppUpdateStatus)
 	application.RegisterEvent[update.AppUpdateProgress](update.EventAppUpdateProgress)
 	application.RegisterEvent[string](update.EventAppUpdateError)
+	application.RegisterEvent[types.FilesDroppedEvent]("files-dropped")
 }
+
 
 func main() {
 	initialURL, autoLaunchVersion := parseArgs()
@@ -280,6 +282,16 @@ func main() {
 		}()
 	}
 
+	windows.OnWindowEvent(events.Common.WindowFilesDropped, func(event *application.WindowEvent) {
+		files := event.Context().DroppedFiles()
+		details := event.Context().DropTargetDetails()
+		if len(files) > 0 {
+			windows.EmitEvent("files-dropped", types.FilesDroppedEvent{
+				Files:  files,
+				Target: details.ElementID,
+			})
+		}
+	})
 	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		w := windows.Width()
 		h := windows.Height()

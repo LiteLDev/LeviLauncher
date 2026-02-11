@@ -104,7 +104,9 @@ export default function InstallPage() {
       const bytes = hasGlobal ? globalCurrent : Number(payload?.bytes || 0);
 
       const dir = String(payload?.dir || "");
-      const currentFile = String(payload?.file || payload?.currentFile || "");
+      const currentFile = String(
+        (payload as any)?.file || (payload as any)?.currentFile || "",
+      );
       setExtractInfo({ files, bytes, dir, totalBytes, currentFile });
     });
     return () => off();
@@ -423,6 +425,9 @@ export default function InstallPage() {
           installIsolation,
           false,
           false,
+          false,
+          "",
+          "",
         );
       }
 

@@ -11,7 +11,7 @@ import {
   FaStar,
 } from "react-icons/fa";
 import { Browser } from "@wailsio/runtime";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
@@ -23,7 +23,7 @@ export default function AboutPage() {
   const repoUrl = "https://github.com/LiteLDev/LeviLauncher";
   const orgUrl = "https://github.com/LiteLDev";
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i: number) => ({
       opacity: 1,

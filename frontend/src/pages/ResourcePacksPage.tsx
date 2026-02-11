@@ -372,8 +372,10 @@ export default function ResourcePacksPage() {
           window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           continue;
         }
-        target.scrollTop = 0;
-        target.scrollLeft = 0;
+        if (target instanceof HTMLElement) {
+          target.scrollTop = 0;
+          target.scrollLeft = 0;
+        }
       }
     };
 
@@ -422,7 +424,7 @@ export default function ResourcePacksPage() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer ref={scrollRef}>
       <Card className={LAYOUT.GLASS_CARD.BASE}>
         <CardBody className="p-6 flex flex-col gap-6">
           <PageHeader

@@ -16,6 +16,7 @@ import {
   StartFileDownload,
   CancelFileDownload,
   GetVersionLogoDataUrl,
+  GetLocalUserGamertag,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { Events, Browser } from "@wailsio/runtime";
 import { VersionMeta } from "bindings/github.com/liteldev/LeviLauncher/internal/versions/models";
@@ -326,7 +327,7 @@ const CurseForgeModPage: React.FC = () => {
               const map = await getPlayerGamertagMap(roots.usersRoot);
               setPlayerGamertagMap(map);
 
-              const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+              const tag = await GetLocalUserGamertag();
               if (tag) {
                 for (const p of players) {
                   if (map[p] === tag) {
@@ -654,7 +655,7 @@ const CurseForgeModPage: React.FC = () => {
                     <span className="flex items-center gap-1">
                       <LuDownload size={14} />
                       {t("curseforge.download_count", {
-                        count: formatNumber(mod.downloadCount),
+                        count: mod.downloadCount,
                       })}
                     </span>
                   </div>
@@ -800,15 +801,22 @@ const CurseForgeModPage: React.FC = () => {
                             onChange={(e) =>
                               setSelectedGameVersion(e.target.value || "all")
                             }
+                            items={[
+                              {
+                                key: "all",
+                                label: t("curseforge.all_versions"),
+                              },
+                              ...gameVersions.map((v) => ({
+                                key: v,
+                                label: v,
+                              })),
+                            ]}
                           >
-                            <SelectItem key="all" value="all">
-                              {t("curseforge.all_versions")}
-                            </SelectItem>
-                            {gameVersions.map((version) => (
-                              <SelectItem key={version} value={version}>
-                                {version}
+                            {(item) => (
+                              <SelectItem key={item.key}>
+                                {item.label}
                               </SelectItem>
-                            ))}
+                            )}
                           </Select>
                         </div>
                       </div>
@@ -958,7 +966,6 @@ const CurseForgeModPage: React.FC = () => {
         hideCloseButton={
           installStep === "downloading" || installStep === "importing"
         }
-        backdrop="blur"
         classNames={{
           base: "bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
         }}
@@ -1081,13 +1088,10 @@ const CurseForgeModPage: React.FC = () => {
               placeholder={t("curseforge.install.select_version_placeholder")}
               selectedKeys={selectedVersion ? [selectedVersion] : []}
               onChange={(e) => setSelectedVersion(e.target.value)}
+              items={availableVersions}
             >
-              {availableVersions.map((ver) => (
-                <SelectItem
-                  key={ver.name}
-                  value={ver.name}
-                  textValue={ver.name}
-                >
+              {(ver) => (
+                <SelectItem key={ver.name} textValue={ver.name}>
                   <div className="flex gap-2 items-center">
                     <div className="w-8 h-8 rounded bg-default-200 flex items-center justify-center overflow-hidden">
                       <img
@@ -1120,7 +1124,7 @@ const CurseForgeModPage: React.FC = () => {
                     )}
                   </div>
                 </SelectItem>
-              ))}
+              )}
             </Select>
           </div>
         )}
@@ -1137,7 +1141,7 @@ const CurseForgeModPage: React.FC = () => {
               onChange={(e) => setSelectedPlayer(e.target.value)}
             >
               {availablePlayers.map((player) => (
-                <SelectItem key={player} value={player}>
+                <SelectItem key={player}>
                   {resolvePlayerDisplayName(player, playerGamertagMap)}
                 </SelectItem>
               ))}
@@ -1189,7 +1193,6 @@ const CurseForgeModPage: React.FC = () => {
           }
         }}
         hideCloseButton
-        backdrop="blur"
         classNames={{
           base: "bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
         }}

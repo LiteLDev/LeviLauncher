@@ -15,16 +15,17 @@ export const BaseModal: React.FC<ModalProps> = (props) => {
 
   const finalClassNames = {
     ...classNames,
-    backdrop: `top-14 backdrop-blur-md bg-black/50 ${classNames?.backdrop || ""}`,
     base: `bg-white! dark:bg-zinc-950! border border-default-200 dark:border-zinc-800 shadow-2xl rounded-[2.5rem] ${
       classNames?.base || ""
     }`,
     closeButton: `absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500 ${
       classNames?.closeButton || ""
     }`,
+    backdrop: `z-[70] ${classNames?.backdrop || ""}`,
+    wrapper: `z-[70] ${classNames?.wrapper || ""}`,
   };
 
-  return <Modal {...rest} classNames={finalClassNames} />;
+  return <Modal {...rest} backdrop="blur" classNames={finalClassNames} />;
 };
 
 export const BaseModalHeader: React.FC<ModalHeaderProps> = ({

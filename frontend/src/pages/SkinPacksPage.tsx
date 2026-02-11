@@ -15,6 +15,8 @@ import {
   Pagination,
   Card,
   CardBody,
+  Input,
+  useDisclosure,
   addToast,
 } from "@heroui/react";
 import {
@@ -261,7 +263,7 @@ export default function SkinPacksPage() {
                 : names.includes(passedPlayer)
                   ? passedPlayer
                   : names[0] || "";
-            setSelectedPlayer(nextPlayer);
+            setSelectedPlayer(nextPlayer || "");
           }
 
           (async () => {
@@ -431,8 +433,10 @@ export default function SkinPacksPage() {
           window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           continue;
         }
-        target.scrollTop = 0;
-        target.scrollLeft = 0;
+        if (target instanceof HTMLElement) {
+          target.scrollTop = 0;
+          target.scrollLeft = 0;
+        }
       }
     };
 
@@ -481,7 +485,7 @@ export default function SkinPacksPage() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer ref={scrollRef}>
       <div className="w-full max-w-none pb-12 flex flex-col gap-6">
         <Card className={LAYOUT.GLASS_CARD.BASE}>
           <CardBody className="p-6 flex flex-col gap-6">

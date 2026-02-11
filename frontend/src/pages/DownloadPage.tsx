@@ -44,7 +44,7 @@ import { createPortal } from "react-dom";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
+import { motion, Variants } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { useDownloads } from "@/utils/DownloadsContext";
@@ -86,9 +86,8 @@ export const DownloadPage: React.FC = () => {
   const [rowsPerPage, setRowsPerPage] = useState<number>(6);
   const [page, setPage] = useState<number>(1);
 
-  const { isOpen, onOpen, onOpenChange } = useDisclosure();
-  // const progressDisclosure = useDisclosure(); // REMOVED
-  // dl* states REMOVED
+  const { isOpen, onOpen, onClose, onOpenChange } = useDisclosure();
+
   const [extractInfo, setExtractInfo] = useState<{
     files: number;
     bytes: number;
@@ -143,7 +142,7 @@ export const DownloadPage: React.FC = () => {
   const [deleteError, setDeleteError] = useState<string>("");
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
 
-  const { isLLSupported } = useLeviLamina();
+  const { isLLSupported, refreshLLDB } = useLeviLamina();
   const hasBackend = minecraft !== undefined;
 
   const trErr = (msg: string, typeLabelOverride?: string): string => {
@@ -212,7 +211,6 @@ export const DownloadPage: React.FC = () => {
 
   const triggerAnimation = (e: any) => {
     try {
-      // Use currentTarget to ensure we get the button element, not internal icons
       const target = (e.currentTarget || e.target) as HTMLElement;
       const startRect = target?.getBoundingClientRect
         ? target.getBoundingClientRect()
@@ -220,9 +218,6 @@ export const DownloadPage: React.FC = () => {
       const targetRect = tasksButtonRef.current?.getBoundingClientRect();
 
       if (startRect && targetRect) {
-        // Calculate centers
-        // We need to account for the flying item's own size (w-8 = 32px) to center it
-        // x = center - width/2
         const itemSize = 32;
         const startX = startRect.left + startRect.width / 2 - itemSize / 2;
         const startY = startRect.top + startRect.height / 2 - itemSize / 2;
@@ -382,7 +377,7 @@ export const DownloadPage: React.FC = () => {
   }, []);
 
   const reloadAll = async () => {
-    fetchLLDB();
+    refreshLLDB();
     try {
       let data: any;
       if (
@@ -520,7 +515,7 @@ export const DownloadPage: React.FC = () => {
   const isDownloaded = (it: VersionItem) => getVersionStatus(it).isDownloaded;
   const isInstalled = (it: VersionItem) => getVersionStatus(it).isInstalled;
 
-  const cardVariants = {
+  const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
     visible: (i: number) => ({
       opacity: 1,
@@ -533,7 +528,7 @@ export const DownloadPage: React.FC = () => {
     }),
   };
 
-  const rowVariants = {
+  const rowVariants: Variants = {
     hidden: { opacity: 0, y: 10 },
     visible: (i: number) => ({
       opacity: 1,
@@ -1049,7 +1044,7 @@ export const DownloadPage: React.FC = () => {
               <Button
                 className="font-medium text-default-500 dark:text-zinc-400 hover:text-default-700 dark:hover:text-zinc-200"
                 variant="light"
-                onPress={() => onOpenChange(false)}
+                onPress={onClose}
               >
                 {t("common.cancel")}
               </Button>
@@ -1082,21 +1077,21 @@ export const DownloadPage: React.FC = () => {
                         returnTo: "/download",
                       },
                     });
-                    onOpenChange(false);
+                    onClose();
                   } else {
-                    if (hasBackend && minecraft?.StartMsixvcDownload) {
+                    if (hasBackend) {
                       const desired = `${
                         mirrorType || "Release"
                       } ${mirrorVersion}.msixvc`;
                       const success = await startDownload(selectedUrl, desired);
                       if (success) {
                         triggerAnimation(e);
-                        onOpenChange(false);
+                        onClose();
                       }
                     } else {
                       window.open(selectedUrl, "_blank");
                       triggerAnimation(e);
-                      onOpenChange(false);
+                      onClose();
                     }
                   }
                 }}
@@ -1409,7 +1404,7 @@ export const DownloadPage: React.FC = () => {
           type="error"
           title={t("downloadpage.progress.unknown_error")}
           confirmText={t("common.close")}
-          onConfirm={() => installErrorDisclosure.onOpenChange(false)}
+          onConfirm={installErrorDisclosure.onClose}
           showCancelButton={false}
         >
           <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">

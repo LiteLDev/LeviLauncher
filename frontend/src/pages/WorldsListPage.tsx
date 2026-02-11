@@ -47,7 +47,9 @@ import {
   BackupWorld,
   BackupWorldWithVersion,
   OpenPathDir,
+  GetLocalUserGamertag,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { useTranslation } from "react-i18next";
@@ -123,12 +125,14 @@ export default function WorldsListPage() {
   const {
     isOpen: delOpen,
     onOpen: delOnOpen,
+    onClose: delOnClose,
     onOpenChange: delOnOpenChange,
   } = useDisclosure();
 
   const {
     isOpen: delManyCfmOpen,
     onOpen: delManyCfmOnOpen,
+    onClose: delManyCfmOnClose,
     onOpenChange: delManyCfmOnOpenChange,
   } = useDisclosure();
 
@@ -185,7 +189,7 @@ export default function WorldsListPage() {
               const map = await getPlayerGamertagMap(r.usersRoot);
               setPlayerGamertagMap(map);
 
-              const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+              const tag = await GetLocalUserGamertag();
               if (tag) {
                 for (const p of pList) {
                   if (map[p] === tag) {
@@ -347,7 +351,7 @@ export default function WorldsListPage() {
       await DeleteWorld(currentVersionName || "", activeWorld.Path);
       addToast({ title: t("common.success"), color: "success" });
       refreshAll();
-      delOnOpenChange(false);
+      delOnClose();
     } catch (e) {
       addToast({ description: String(e), color: "danger" });
     } finally {
@@ -376,7 +380,7 @@ export default function WorldsListPage() {
       });
       setSelected({});
       refreshAll();
-      delManyCfmOnOpenChange(false);
+      delManyCfmOnClose();
     } finally {
       setDeletingMany(false);
     }
@@ -435,8 +439,10 @@ export default function WorldsListPage() {
           window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           continue;
         }
-        target.scrollTop = 0;
-        target.scrollLeft = 0;
+        if (target instanceof HTMLElement) {
+          target.scrollTop = 0;
+          target.scrollLeft = 0;
+        }
       }
     };
 
@@ -464,7 +470,7 @@ export default function WorldsListPage() {
   }, [worlds]);
 
   return (
-    <PageContainer>
+    <PageContainer ref={scrollRef}>
       <Card className={LAYOUT.GLASS_CARD.BASE}>
         <CardBody className="p-6 flex flex-col gap-6">
           <PageHeader

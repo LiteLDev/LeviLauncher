@@ -39,7 +39,6 @@ export interface UnifiedModalProps {
     | "full";
   scrollBehavior?: "inside" | "outside" | "normal";
   icon?: React.ReactNode;
-  // Shortcut buttons
   onConfirm?: () => void;
   confirmText?: string;
   onCancel?: () => void;
@@ -51,15 +50,16 @@ export interface UnifiedModalProps {
   hideScrollbar?: boolean;
   titleClass?: string;
   iconBgClass?: string;
+  classNames?: Record<string, string>;
 }
 
 const TYPE_CONFIG: Record<
   ModalType,
   {
     icon: React.ElementType;
-    colorClass: string; // Text color
-    bgClass: string; // Icon bg
-    borderClass: string; // Icon border
+    colorClass: string;
+    bgClass: string;
+    borderClass: string;
     buttonColor: ButtonProps["color"];
   }
 > = {
@@ -68,7 +68,7 @@ const TYPE_CONFIG: Record<
     colorClass: "text-success-500",
     bgClass: "bg-success-50 dark:bg-success-500/10",
     borderClass: "border-success-100 dark:border-success-500/20",
-    buttonColor: "success", // Usually maps to emerald in this project
+    buttonColor: "success",
   },
   warning: {
     icon: FiAlertTriangle,
@@ -122,11 +122,11 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   hideScrollbar,
   titleClass,
   iconBgClass,
+  classNames,
 }) => {
   const config = TYPE_CONFIG[type];
   const Icon = config.icon;
 
-  // Custom emerald override for success buttons to match project style
   const confirmBtnColor =
     confirmButtonProps?.color ||
     (type === "success" ? "primary" : config.buttonColor);
@@ -145,6 +145,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
       hideCloseButton={true}
       isDismissable={isDismissable}
       scrollBehavior={scrollBehavior}
+      classNames={classNames}
     >
       <ModalContent className="shadow-none">
         {(onClose) => (

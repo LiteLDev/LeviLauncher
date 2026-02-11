@@ -13,10 +13,9 @@ import {
   Progress,
   useDisclosure,
 } from "@heroui/react";
-import { Dialogs } from "@wailsio/runtime";
+import { Dialogs, Events } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { ImportResultModal } from "@/components/ImportResultModal";
-import { resolveImportError } from "@/utils/importError";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -38,14 +37,18 @@ import {
   resolvePlayerDisplayName,
 } from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
+import { FiUploadCloud } from "react-icons/fi";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
+import { FileDropOverlay } from "@/components/FileDropOverlay";
+import { useFileDrag } from "@/hooks/useFileDrag";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 
 export default function ContentPage() {
   const { t } = useTranslation();
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  const isDragActive = useFileDrag(scrollRef as React.RefObject<HTMLElement>);
   const navigate = useNavigate();
   const location = useLocation() as any;
   const hasBackend = minecraft !== undefined;
@@ -71,8 +74,6 @@ export default function ContentPage() {
   const [bpCount, setBpCount] = React.useState<number>(0);
   const [skinCount, setSkinCount] = React.useState<number>(0);
   const [serversCount, setServersCount] = React.useState<number>(0);
-  const [dragActive, setDragActive] = React.useState(false);
-  const dragCounter = React.useRef(0);
   const [importing, setImporting] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState("");
   const [currentFile, setCurrentFile] = React.useState("");
@@ -80,7 +81,6 @@ export default function ContentPage() {
   const [resultFailed, setResultFailed] = React.useState<
     Array<{ name: string; err: string }>
   >([]);
-  const fileInputRef = React.useRef<HTMLInputElement | null>(null);
   const dupResolveRef = React.useRef<((overwrite: boolean) => void) | null>(
     null,
   );
@@ -88,22 +88,24 @@ export default function ContentPage() {
   const {
     isOpen: errOpen,
     onOpen: errOnOpen,
+    onClose: errOnClose,
     onOpenChange: errOnOpenChange,
   } = useDisclosure();
   const {
     isOpen: dupOpen,
     onOpen: dupOnOpen,
+    onClose: dupOnClose,
     onOpenChange: dupOnOpenChange,
   } = useDisclosure();
   const {
     isOpen: playerSelectOpen,
     onOpen: playerSelectOnOpen,
+    onClose: playerSelectOnClose,
     onOpenChange: playerSelectOnOpenChange,
   } = useDisclosure();
   const playerSelectResolveRef = React.useRef<
     ((player: string) => void) | null
   >(null);
-  const pendingImportFilesRef = React.useRef<File[]>([]);
   const pendingImportPathsRef = React.useRef<string[]>([]);
 
   const refreshAll = async (playerToRefresh?: string) => {
@@ -270,62 +272,6 @@ export default function ContentPage() {
       setLoading(false);
     }
   };
-  const postImportMcpack = async (
-    name: string,
-    file: File,
-    overwrite: boolean,
-  ): Promise<string> => {
-    try {
-      const buf = await file.arrayBuffer();
-      const bytes = Array.from(new Uint8Array(buf));
-      let err = "";
-      if (
-        selectedPlayer &&
-        typeof (minecraft as any)?.ImportMcpackWithPlayer === "function"
-      ) {
-        err = await (minecraft as any)?.ImportMcpackWithPlayer?.(
-          name,
-          selectedPlayer,
-          file.name,
-          bytes,
-          overwrite,
-        );
-      } else {
-        err = await (minecraft as any)?.ImportMcpack?.(name, bytes, overwrite);
-      }
-      return String(err || "");
-    } catch (e: any) {
-      return String(e?.message || "IMPORT_ERROR");
-    }
-  };
-  const postImportMcaddon = async (
-    name: string,
-    file: File,
-    overwrite: boolean,
-  ): Promise<string> => {
-    try {
-      const buf = await file.arrayBuffer();
-      const bytes = Array.from(new Uint8Array(buf));
-      let err = "";
-      if (
-        selectedPlayer &&
-        typeof (minecraft as any)?.ImportMcaddonWithPlayer === "function"
-      ) {
-        err = await (minecraft as any)?.ImportMcaddonWithPlayer?.(
-          name,
-          selectedPlayer,
-          bytes,
-          overwrite,
-        );
-      } else {
-        err = await (minecraft as any)?.ImportMcaddon?.(name, bytes, overwrite);
-      }
-      return String(err || "");
-    } catch (e: any) {
-      return String(e?.message || "IMPORT_ERROR");
-    }
-  };
-
   const doImportFromPaths = async (paths: string[]) => {
     try {
       if (!paths?.length) return;
@@ -552,10 +498,10 @@ export default function ContentPage() {
           succFiles.push(base);
         }
       }
-      await refreshAll(playerToUse);
-      setResultSuccess(succFiles);
-      setResultFailed(errPairs);
       if (succFiles.length > 0 || errPairs.length > 0) {
+        await refreshAll(playerToUse);
+        setResultSuccess(succFiles);
+        setResultFailed(errPairs);
         errOnOpen();
       }
     } catch (e: any) {
@@ -566,286 +512,31 @@ export default function ContentPage() {
     }
   };
 
-  const handleImportFiles = async (files: File[]) => {
-    if (!files.length) return;
-    if (!currentVersionName) {
-      setErrorMsg(t("launcherpage.currentVersion_none") as string);
-      return;
-    }
-
-    let chosenPlayer = "";
-    let started = false;
-    const succFiles: string[] = [];
-    const errPairs: Array<{ name: string; err: string }> = [];
-    let filesToImport: File[] = files;
-    let playerToUse = selectedPlayer || "";
-
-    try {
-      setImporting(true);
-      started = true;
-      setCurrentFile(files[0]?.name || "");
-      await new Promise<void>((r) => setTimeout(r, 0));
-
-      const hasWorld = files.some((f) =>
-        f?.name?.toLowerCase().endsWith(".mcworld"),
-      );
-      let hasSkin = false;
-      for (const f of files) {
-        if (f?.name?.toLowerCase().endsWith(".mcpack")) {
-          setCurrentFile(f.name);
-          await new Promise<void>((r) => setTimeout(r, 0));
-          const buf = await f.arrayBuffer();
-          const bytes = Array.from(new Uint8Array(buf));
-          const isSkin = await (minecraft as any)?.IsMcpackSkinPack?.(bytes);
-          if (isSkin) {
-            hasSkin = true;
-            break;
-          }
-        }
-      }
-
-      if (hasWorld || hasSkin) {
-        setImporting(false);
-        setCurrentFile("");
-        started = false;
-        await new Promise<void>((r) => setTimeout(r, 0));
-
-        pendingImportFilesRef.current = files;
-        playerSelectOnOpen();
-        chosenPlayer = await new Promise<string>((resolve) => {
-          playerSelectResolveRef.current = resolve;
-        });
-        if (!chosenPlayer) {
-          pendingImportFilesRef.current = [];
-          return;
-        }
-        setSelectedPlayer(chosenPlayer);
-        await onChangePlayer(chosenPlayer);
-
-        setImporting(true);
-        started = true;
-        filesToImport = pendingImportFilesRef.current.length
-          ? pendingImportFilesRef.current
-          : files;
-        pendingImportFilesRef.current = [];
-        playerToUse = chosenPlayer || selectedPlayer || "";
-        setCurrentFile(filesToImport[0]?.name || "");
-        await new Promise<void>((r) => setTimeout(r, 0));
-      } else {
-        pendingImportFilesRef.current = [];
-        filesToImport = files;
-        playerToUse = selectedPlayer || "";
-      }
-
-      for (const f of filesToImport) {
-        const lower = f.name.toLowerCase();
-        setCurrentFile(f.name);
-
-        let err = "";
-        if (lower.endsWith(".mcpack")) {
-          err = await postImportMcpack(currentVersionName, f, false);
-        } else if (lower.endsWith(".mcaddon")) {
-          err = await postImportMcaddon(currentVersionName, f, false);
-        } else if (lower.endsWith(".mcworld")) {
-          if (!playerToUse) {
-            err = "ERR_NO_PLAYER";
-          } else {
-            const buf = await f.arrayBuffer();
-            const bytes = Array.from(new Uint8Array(buf));
-            if (typeof (minecraft as any)?.ImportMcworld === "function") {
-              err = await (minecraft as any)?.ImportMcworld?.(
-                currentVersionName,
-                playerToUse,
-                bytes,
-                false,
-              );
-            } else {
-              err = "ERR_NOT_IMPLEMENTED";
-            }
-          }
-        }
-
-        if (err) {
-          if (
-            String(err) === "ERR_DUPLICATE_FOLDER" ||
-            String(err) === "ERR_DUPLICATE_UUID"
-          ) {
-            dupNameRef.current = f.name;
-            await new Promise<void>((r) => setTimeout(r, 0));
-            dupOnOpen();
-            const ok = await new Promise<boolean>((resolve) => {
-              dupResolveRef.current = resolve;
-            });
-            if (ok) {
-              if (lower.endsWith(".mcpack")) {
-                err = await postImportMcpack(currentVersionName, f, true);
-              } else if (lower.endsWith(".mcaddon")) {
-                err = await postImportMcaddon(currentVersionName, f, true);
-              } else if (lower.endsWith(".mcworld")) {
-                const buf = await f.arrayBuffer();
-                const bytes = Array.from(new Uint8Array(buf));
-                if (typeof (minecraft as any)?.ImportMcworld === "function") {
-                  err = await (minecraft as any)?.ImportMcworld?.(
-                    currentVersionName,
-                    playerToUse,
-                    bytes,
-                    true,
-                  );
-                }
-              }
-              if (!err) {
-                succFiles.push(f.name);
-                continue;
-              }
-            } else {
-              continue;
-            }
-          }
-          errPairs.push({ name: f.name, err });
-          continue;
-        }
-        succFiles.push(f.name);
-      }
-      await refreshAll(playerToUse);
-      setResultSuccess(succFiles);
-      setResultFailed(errPairs);
-      if (succFiles.length > 0 || errPairs.length > 0) {
-        errOnOpen();
-      }
-    } catch (e: any) {
-      setErrorMsg(String(e?.message || e || "IMPORT_ERROR"));
-    } finally {
-      setImporting(false);
-      setCurrentFile("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
-
-  const handleFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      setErrorMsg("");
-      setResultSuccess([]);
-      setResultFailed([]);
-      const list = e.target.files;
-      if (!list || list.length === 0) return;
-
-      const files: File[] = Array.from(list).filter(
-        (f) =>
-          f &&
-          (f.name.toLowerCase().endsWith(".mcworld") ||
-            f.name.toLowerCase().endsWith(".mcpack") ||
-            f.name.toLowerCase().endsWith(".mcaddon")),
-      );
-      await handleImportFiles(files);
-    } catch (e: any) {
-      setErrorMsg(String(e?.message || e || "IMPORT_ERROR"));
-    }
-  };
+  const doImportRef = React.useRef(doImportFromPaths);
+  doImportRef.current = doImportFromPaths;
 
   React.useEffect(() => {
-    const isFileDrag = (e: DragEvent) => {
-      try {
-        const dt = e?.dataTransfer;
-        if (!dt) return false;
-        const types = dt.types ? Array.from(dt.types) : [];
-        if (types.includes("Files")) return true;
-        const items = dt.items ? Array.from(dt.items) : [];
-        return items.some((it) => it?.kind === "file");
-      } catch {
-        return false;
+    return Events.On("files-dropped", (event) => {
+      const data = (event.data as { files: string[] }) || {};
+      // Ignore target check to ensure stability, as we are inside the component
+      if (data.files && data.files.length > 0) {
+        void doImportRef.current(data.files);
       }
-    };
-
-    const onDragEnter = (e: DragEvent) => {
-      if (!isFileDrag(e)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      dragCounter.current += 1;
-      setDragActive(true);
-    };
-
-    const onDragLeave = (e: DragEvent) => {
-      if (dragCounter.current <= 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      dragCounter.current -= 1;
-      if (dragCounter.current <= 0) {
-        dragCounter.current = 0;
-        setDragActive(false);
-      }
-    };
-
-    const onDragOver = (e: DragEvent) => {
-      if (!isFileDrag(e) && dragCounter.current <= 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      try {
-        (e.dataTransfer as any).dropEffect = "copy";
-      } catch {}
-    };
-
-    const onDrop = async (e: DragEvent) => {
-      const hasFiles = (e.dataTransfer?.files?.length || 0) > 0;
-      if (!hasFiles && dragCounter.current <= 0 && !isFileDrag(e)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      dragCounter.current = 0;
-      setDragActive(false);
-      setErrorMsg("");
-      setResultSuccess([]);
-      setResultFailed([]);
-
-      const files: File[] = Array.from(e.dataTransfer?.files || []).filter(
-        (f) =>
-          f &&
-          (f.name.toLowerCase().endsWith(".mcworld") ||
-            f.name.toLowerCase().endsWith(".mcpack") ||
-            f.name.toLowerCase().endsWith(".mcaddon")),
-      );
-      if (files.length > 0) {
-        await handleImportFiles(files);
-      }
-    };
-
-    document.addEventListener("dragenter", onDragEnter, true);
-    document.addEventListener("dragleave", onDragLeave, true);
-    document.addEventListener("dragover", onDragOver, true);
-    document.addEventListener("drop", onDrop, true);
-
-    return () => {
-      document.removeEventListener("dragenter", onDragEnter, true);
-      document.removeEventListener("dragleave", onDragLeave, true);
-      document.removeEventListener("dragover", onDragOver, true);
-      document.removeEventListener("drop", onDrop, true);
-    };
-  });
+    });
+  }, []);
 
   return (
-    <PageContainer className={`relative ${dragActive ? "cursor-copy" : ""}`}>
-      <AnimatePresence>
-        {dragActive ? (
-          <motion.div
-            className="pointer-events-none fixed inset-0 z-40 flex items-center justify-center bg-black/20 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div
-              className={cn(
-                "p-8 flex flex-col items-center gap-4 border border-white/20",
-                LAYOUT.GLASS_CARD.BASE,
-                "bg-white/90 dark:bg-zinc-900/90",
-              )}
-            >
-              <FiUploadCloud className="w-16 h-16 text-primary-500" />
-              <div className="text-xl font-bold bg-linear-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">
-                {t("contentpage.drop_hint")}
-              </div>
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
+    <PageContainer
+      ref={scrollRef}
+      id="content-drop-zone"
+      {...({ "data-file-drop-target": true } as any)}
+      className="relative"
+    >
+      {/* Drag Overlay */}
+      <FileDropOverlay
+        isDragActive={isDragActive}
+        text={t("contentpage.drop_hint")}
+      />
 
       {/* Header Card */}
       <Card className={LAYOUT.GLASS_CARD.BASE}>
@@ -1225,15 +916,6 @@ export default function ContentPage() {
         </Card>
       </div>
 
-      <input
-        ref={fileInputRef}
-        type="file"
-        accept=".mcworld,.mcpack,.mcaddon"
-        multiple
-        className="hidden"
-        onChange={handleFilePick}
-      />
-
       <UnifiedModal
         isOpen={importing}
         onOpenChange={() => {}}
@@ -1276,8 +958,8 @@ export default function ContentPage() {
       <UnifiedModal
         isOpen={dupOpen}
         onOpenChange={(open) => {
-          dupOnOpenChange(open);
           if (!open) {
+            dupOnClose();
             dupResolveRef.current?.(false);
           }
         }}
@@ -1288,11 +970,11 @@ export default function ContentPage() {
         showCancelButton
         onConfirm={() => {
           dupResolveRef.current?.(true);
-          dupOnOpenChange(false);
+          dupOnClose();
         }}
         onCancel={() => {
           dupResolveRef.current?.(false);
-          dupOnOpenChange(false);
+          dupOnClose();
         }}
       >
         <div className="flex flex-col gap-4">
@@ -1309,8 +991,8 @@ export default function ContentPage() {
       <UnifiedModal
         isOpen={playerSelectOpen}
         onOpenChange={(open) => {
-          playerSelectOnOpenChange(open);
           if (!open) {
+            playerSelectOnClose();
             playerSelectResolveRef.current?.("");
           }
         }}
@@ -1321,7 +1003,7 @@ export default function ContentPage() {
         showConfirmButton={false}
         onCancel={() => {
           playerSelectResolveRef.current?.("");
-          playerSelectOnOpenChange(false);
+          playerSelectOnClose();
         }}
       >
         <div className="flex flex-col gap-4">
@@ -1337,7 +1019,7 @@ export default function ContentPage() {
                   className="w-full justify-start bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
                   onPress={() => {
                     playerSelectResolveRef.current?.(p);
-                    playerSelectOnOpenChange(false);
+                    playerSelectOnClose();
                   }}
                 >
                   {resolvePlayerDisplayName(p, playerGamertagMap)}

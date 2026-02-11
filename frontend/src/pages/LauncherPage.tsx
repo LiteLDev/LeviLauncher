@@ -19,6 +19,7 @@ import {
 import { useTranslation } from "react-i18next";
 import {
   EnsureGameInputInteractive,
+  EnsureVcRuntimeInteractive,
   GetContentRoots,
   IsGDKInstalled,
   ListDir,
@@ -57,6 +58,7 @@ import { cn } from "@/utils/cn";
 
 let __didCheckGameInput = false;
 let __didCheckGamingServices = false;
+let __didCheckVcRuntime = false;
 const IGNORE_GS_KEY = "ll.ignore.gs";
 
 export const LauncherPage = (args: any) => {
@@ -68,10 +70,11 @@ export const LauncherPage = (args: any) => {
     Map<string, any>
   >(new Map());
 
-  // Modal Disclosures
   const launchFailedDisclosure = useDisclosure();
   const gameInputInstallingDisclosure = useDisclosure();
   const gameInputMissingDisclosure = useDisclosure();
+  const vcRuntimeInstallingDisclosure = useDisclosure();
+  const vcRuntimeMissingDisclosure = useDisclosure();
   const gamingServicesMissingDisclosure = useDisclosure();
   const installConfirmDisclosure = useDisclosure();
   const vcRuntimeCompletingDisclosure = useDisclosure();
@@ -93,8 +96,10 @@ export const LauncherPage = (args: any) => {
   }>({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
   const [giTotal, setGiTotal] = React.useState<number>(0);
   const [giDownloaded, setGiDownloaded] = React.useState<number>(0);
+  const [vcTotal, setVcTotal] = React.useState<number>(0);
+  const [vcDownloaded, setVcDownloaded] = React.useState<number>(0);
   const [pendingInstallCheck, setPendingInstallCheck] = React.useState<
-    "gi" | "gs" | null
+    "gi" | "gs" | "vc" | null
   >(null);
   const [logoDataUrl, setLogoDataUrl] = React.useState<string>("");
   const [versionQuery, setVersionQuery] = React.useState<string>("");
@@ -425,6 +430,16 @@ export const LauncherPage = (args: any) => {
   useEffect(() => {
     if (!hasBackend) return;
     const timer = setTimeout(() => {
+      if (!__didCheckVcRuntime) {
+        __didCheckVcRuntime = true;
+        try {
+          (minecraft as any)?.IsVcRuntimeInstalled?.().then((ok: boolean) => {
+            if (!ok) {
+              vcRuntimeMissingDisclosure.onOpen();
+            }
+          });
+        } catch {}
+      }
       if (!__didCheckGameInput) {
         __didCheckGameInput = true;
         try {
@@ -500,10 +515,57 @@ export const LauncherPage = (args: any) => {
       "gameinput.download.error",
       (data) => {},
     );
-    const unlistenGiDone = Events.On("gameinput.ensure.done", () => {
-      setPendingInstallCheck((prev) => prev ?? "gi");
+    const unlistenGiDone = Events.On("gameinput.ensure.done", (event) => {
+      const success = Boolean(event?.data);
       gameInputInstallingDisclosure.onClose();
+      if (success) {
+        setPendingInstallCheck(null);
+        installConfirmDisclosure.onClose();
+      } else {
+        setPendingInstallCheck((prev) => prev ?? "gi");
+        installConfirmDisclosure.onOpen();
+      }
+    });
+
+    const unlistenVcStart = Events.On("vcruntime.ensure.start", () => {
+      if (pendingInstallCheck === "vc") return;
+      vcRuntimeInstallingDisclosure.onOpen();
+    });
+    const unlistenVcDlStart = Events.On("vcruntime.download.start", (event) => {
+      if (pendingInstallCheck === "vc") return;
+      setVcTotal(Number(event?.data || 0));
+      setVcDownloaded(0);
+      vcRuntimeInstallingDisclosure.onOpen();
+    });
+    const unlistenVcDlProgress = Events.On(
+      "vcruntime.download.progress",
+      (event) => {
+        if (pendingInstallCheck === "vc") return;
+        const d = event?.data || {};
+        if (typeof d?.Total === "number") setVcTotal(d.Total);
+        if (typeof d?.Downloaded === "number") setVcDownloaded(d.Downloaded);
+      },
+    );
+    const unlistenVcDlDone = Events.On("vcruntime.download.done", () => {
+      setVcDownloaded(vcTotal);
+      setPendingInstallCheck((prev) => prev ?? "vc");
+      vcRuntimeInstallingDisclosure.onClose();
       installConfirmDisclosure.onOpen();
+    });
+    const unlistenVcDlError = Events.On(
+      "vcruntime.download.error",
+      (data) => {},
+    );
+    const unlistenVcDone = Events.On("vcruntime.ensure.done", (event) => {
+      const success = Boolean(event?.data);
+      vcRuntimeInstallingDisclosure.onClose();
+      if (success) {
+        setPendingInstallCheck(null);
+        installConfirmDisclosure.onClose();
+      } else {
+        setPendingInstallCheck((prev) => prev ?? "vc");
+        installConfirmDisclosure.onOpen();
+      }
     });
 
     const unlistenGsMissing = Events.On("gamingservices.missing", () => {
@@ -548,6 +610,24 @@ export const LauncherPage = (args: any) => {
       } catch {}
       try {
         unlistenGiDone && (unlistenGiDone as any)();
+      } catch {}
+      try {
+        unlistenVcStart && (unlistenVcStart as any)();
+      } catch {}
+      try {
+        unlistenVcDlStart && (unlistenVcDlStart as any)();
+      } catch {}
+      try {
+        unlistenVcDlProgress && (unlistenVcDlProgress as any)();
+      } catch {}
+      try {
+        unlistenVcDlDone && (unlistenVcDlDone as any)();
+      } catch {}
+      try {
+        unlistenVcDlError && (unlistenVcDlError as any)();
+      } catch {}
+      try {
+        unlistenVcDone && (unlistenVcDone as any)();
       } catch {}
       try {
         unlistenGsMissing && (unlistenGsMissing as any)();
@@ -1358,6 +1438,94 @@ export const LauncherPage = (args: any) => {
           </p>
         </UnifiedModal>
 
+        {/* VCRuntime Installing */}
+        <UnifiedModal
+          isOpen={vcRuntimeInstallingDisclosure.isOpen}
+          onOpenChange={vcRuntimeInstallingDisclosure.onOpenChange}
+          type="success"
+          title={t("launcherpage.vcruntime.installing.title")}
+          hideCloseButton
+          icon={<FaDownload className="w-6 h-6 text-success-500" />}
+        >
+          <>
+            <p className="text-default-600 dark:text-zinc-300 font-medium">
+              {t("launcherpage.vcruntime.installing.body")}
+            </p>
+            <div className="mt-4">
+              {vcTotal > 0 ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between text-small font-bold text-default-500 dark:text-zinc-400">
+                    <span>
+                      {Math.min(
+                        100,
+                        Math.floor((vcDownloaded / vcTotal) * 100),
+                      )}
+                      %
+                    </span>
+                    <span className="font-mono">
+                      {(vcDownloaded / 1024 / 1024).toFixed(1)} /{" "}
+                      {(vcTotal / 1024 / 1024).toFixed(1)} MB
+                    </span>
+                  </div>
+                  <Progress
+                    aria-label="Downloading"
+                    value={(vcDownloaded / vcTotal) * 100}
+                    color="success"
+                    size="md"
+                    classNames={{
+                      indicator: "bg-emerald-600 hover:bg-emerald-500",
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 text-default-500 dark:text-zinc-400">
+                  <Spinner size="sm" color="success" />
+                  <span>
+                    {t("launcherpage.vcruntime.installing.preparing")}
+                  </span>
+                </div>
+              )}
+            </div>
+          </>
+        </UnifiedModal>
+
+        {/* VCRuntime Missing */}
+        <UnifiedModal
+          isOpen={vcRuntimeMissingDisclosure.isOpen}
+          onOpenChange={vcRuntimeMissingDisclosure.onOpenChange}
+          type="warning"
+          title={t("launcherpage.vcruntime.missing.title")}
+          footer={
+            <>
+              <Button
+                color="danger"
+                variant="light"
+                radius="full"
+                onPress={() => Window.Close()}
+              >
+                {t("common.quit_launcher")}
+              </Button>
+              <Button
+                color="warning"
+                radius="full"
+                className="text-white font-bold"
+                onPress={() => {
+                  setPendingInstallCheck("vc");
+                  EnsureVcRuntimeInteractive();
+                  vcRuntimeMissingDisclosure.onClose();
+                  installConfirmDisclosure.onOpen();
+                }}
+              >
+                {t("launcherpage.vcruntime.missing.install_now")}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-default-600 dark:text-zinc-300 font-medium">
+            {t("launcherpage.vcruntime.missing.body")}
+          </p>
+        </UnifiedModal>
+
         {/* Gaming Services Missing */}
         <UnifiedModal
           isOpen={gamingServicesMissingDisclosure.isOpen}
@@ -1413,8 +1581,12 @@ export const LauncherPage = (args: any) => {
         <UnifiedModal
           isOpen={installConfirmDisclosure.isOpen}
           onOpenChange={(open) => {
-            installConfirmDisclosure.onOpenChange(open);
-            if (!open) args.refresh();
+            if (open) {
+              installConfirmDisclosure.onOpen();
+            } else {
+              installConfirmDisclosure.onClose();
+              args.refresh();
+            }
           }}
           type="success"
           title={t("launcherpage.install_confirm.title")}
@@ -1430,6 +1602,8 @@ export const LauncherPage = (args: any) => {
                     gameInputMissingDisclosure.onOpen();
                   else if (pendingInstallCheck === "gs")
                     gamingServicesMissingDisclosure.onOpen();
+                  else if (pendingInstallCheck === "vc")
+                    vcRuntimeMissingDisclosure.onOpen();
                   installConfirmDisclosure.onClose();
                 }}
               >
@@ -1463,6 +1637,18 @@ export const LauncherPage = (args: any) => {
                           } else {
                             installConfirmDisclosure.onClose();
                             gamingServicesMissingDisclosure.onOpen();
+                          }
+                        });
+                    } else if (pendingInstallCheck === "vc") {
+                      (minecraft as any)
+                        ?.IsVcRuntimeInstalled?.()
+                        .then((ok: boolean) => {
+                          if (ok) {
+                            setPendingInstallCheck(null);
+                            installConfirmDisclosure.onClose();
+                          } else {
+                            installConfirmDisclosure.onClose();
+                            vcRuntimeMissingDisclosure.onOpen();
                           }
                         });
                     }
@@ -1600,7 +1786,8 @@ export const LauncherPage = (args: any) => {
         <UnifiedModal
           isOpen={registerSuccessDisclosure.isOpen}
           onOpenChange={(open) => {
-            registerSuccessDisclosure.onOpenChange(open);
+            if (open) registerSuccessDisclosure.onOpen();
+            else registerSuccessDisclosure.onClose();
             if (!open) args.refresh();
           }}
           type="success"

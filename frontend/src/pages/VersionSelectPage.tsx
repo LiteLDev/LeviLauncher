@@ -554,7 +554,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
             <Button
               variant="light"
               onPress={() => {
-                unsavedDisclosure.onOpenChange(false);
+                unsavedDisclosure.onClose();
                 if (navAttemptRef.current) navAttemptRef.current = null;
               }}
             >
@@ -564,7 +564,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
               color="danger"
               variant="light"
               onPress={() => {
-                unsavedDisclosure.onOpenChange(false);
+                unsavedDisclosure.onClose();
                 commitNavAttempt();
               }}
             >
@@ -583,7 +583,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                   props.refresh && props.refresh();
                 } catch {}
                 setPersistedName(name || persistedName);
-                unsavedDisclosure.onOpenChange(false);
+                unsavedDisclosure.onClose();
                 commitNavAttempt();
               }}
             >

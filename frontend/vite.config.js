@@ -2,11 +2,19 @@ import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
 import wails from "@wailsio/runtime/plugins/vite";
 import tailwindcss from "@tailwindcss/vite";
+import checker from "vite-plugin-checker";
 import { resolve } from 'path';
 
 // https://vitejs.dev/config/
 export default defineConfig({
-  plugins: [react(), wails("./bindings"), tailwindcss()],
+  plugins: [
+    react(),
+    wails("./bindings"),
+    tailwindcss(),
+    checker({
+      typescript: true,
+    }),
+  ],
   base: "./",
   resolve: {
     alias: {

@@ -5,9 +5,10 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build:dev": "vite build --minify false --mode development",
-    "build": "vite build --mode production",
-    "preview": "vite preview"
+    "build:dev": "tsc --noEmit && vite build --minify false --mode development",
+    "build": "tsc --noEmit && vite build --mode production",
+    "preview": "vite preview",
+    "type-check": "tsc --noEmit"
   },
   "dependencies": {
     "@heroui/react": "^2.8.7",
@@ -43,6 +44,8 @@
     "autoprefixer": "^10.4.23",
     "postcss": "^8.5.6",
     "tailwindcss": "^4.1.18",
-    "vite": "^7.3.1"
+    "typescript": "^5.9.3",
+    "vite": "^7.3.1",
+    "vite-plugin-checker": "^0.12.0"
   }
 }

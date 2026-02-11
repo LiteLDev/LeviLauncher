@@ -73,12 +73,14 @@ export default function BehaviorPacksPage() {
   const {
     isOpen: delOpen,
     onOpen: delOnOpen,
+    onClose: delOnClose,
     onOpenChange: delOnOpenChange,
   } = useDisclosure();
 
   const {
     isOpen: delManyCfmOpen,
     onOpen: delManyCfmOnOpen,
+    onClose: delManyCfmOnClose,
     onOpenChange: delManyCfmOnOpenChange,
   } = useDisclosure();
 
@@ -363,8 +365,10 @@ export default function BehaviorPacksPage() {
           window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           continue;
         }
-        target.scrollTop = 0;
-        target.scrollLeft = 0;
+        if (target instanceof HTMLElement) {
+          target.scrollTop = 0;
+          target.scrollLeft = 0;
+        }
       }
     };
 
@@ -398,7 +402,7 @@ export default function BehaviorPacksPage() {
       await DeletePack(currentVersionName, activePack.path);
       addToast({ title: t("common.success"), color: "success" });
       refreshAll(true);
-      delOnOpenChange(false);
+      delOnClose();
     } catch (e) {
       addToast({
         title: "Error",
@@ -432,7 +436,7 @@ export default function BehaviorPacksPage() {
     });
     setSelected({});
     refreshAll(true);
-    delManyCfmOnOpenChange(false);
+    delManyCfmOnClose();
     setDeletingMany(false);
   };
 
@@ -451,7 +455,7 @@ export default function BehaviorPacksPage() {
   };
 
   return (
-    <PageContainer>
+    <PageContainer ref={scrollRef}>
       <Card className={LAYOUT.GLASS_CARD.BASE}>
         <CardBody className="p-6 flex flex-col gap-6">
           <PageHeader

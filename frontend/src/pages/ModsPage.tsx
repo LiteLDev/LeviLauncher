@@ -28,7 +28,7 @@ import {
   IsModEnabled,
   UninstallLeviLamina,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { Dialogs } from "@wailsio/runtime";
+import { Dialogs, Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
   FaPuzzlePiece,
@@ -49,6 +49,8 @@ import {
 import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { AnimatePresence, motion } from "framer-motion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { FileDropOverlay } from "@/components/FileDropOverlay";
+import { useFileDrag } from "@/hooks/useFileDrag";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -69,8 +71,6 @@ export const ModsPage: React.FC = () => {
   const [currentVersionName, setCurrentVersionName] = useState<string>("");
   const [modsInfo, setModsInfo] = useState<Array<types.ModInfo>>([]);
   const [query, setQuery] = useState("");
-  const [dragActive, setDragActive] = useState(false);
-  const dragCounter = useRef(0);
   const [loading, setLoading] = useState(false);
   const [importing, setImporting] = useState(false);
   const [errorMsg, setErrorMsg] = useState("");
@@ -131,7 +131,6 @@ export const ModsPage: React.FC = () => {
     key: string;
     direction: "asc" | "desc";
   }>({ key: "name", direction: "asc" });
-  const dllFileRef = useRef<File | null>(null);
   const dllResolveRef = useRef<((ok: boolean) => void) | null>(null);
   const dllConfirmRef = useRef<{
     name: string;
@@ -140,8 +139,8 @@ export const ModsPage: React.FC = () => {
   } | null>(null);
   const dupResolveRef = useRef<((overwrite: boolean) => void) | null>(null);
   const dupNameRef = useRef<string>("");
-  const fileInputRef = useRef<HTMLInputElement | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
+  const isDragActive = useFileDrag(scrollRef as React.RefObject<HTMLElement>);
   const lastScrollTopRef = useRef<number>(0);
   const restorePendingRef = useRef<boolean>(false);
 
@@ -181,51 +180,6 @@ export const ModsPage: React.FC = () => {
     };
     fetchVersion();
   }, [currentVersionName]);
-
-  const postImportModZip = async (
-    name: string,
-    file: File,
-    overwrite: boolean,
-  ): Promise<string> => {
-    try {
-      const buf = await file.arrayBuffer();
-      const bytes = Array.from(new Uint8Array(buf));
-      const err = await (minecraft as any)?.ImportModZip?.(
-        name,
-        bytes,
-        overwrite,
-      );
-      return String(err || "");
-    } catch (e: any) {
-      return String(e?.message || "IMPORT_ERROR");
-    }
-  };
-  const postImportModDll = async (
-    name: string,
-    file: File,
-    fileName: string,
-    modName: string,
-    modType: string,
-    version: string,
-    overwrite: boolean,
-  ): Promise<string> => {
-    try {
-      const buf = await file.arrayBuffer();
-      const bytes = Array.from(new Uint8Array(buf));
-      const err = await (minecraft as any)?.ImportModDll?.(
-        name,
-        fileName,
-        bytes,
-        modName,
-        modType,
-        version,
-        overwrite,
-      );
-      return String(err || "");
-    } catch (e: any) {
-      return String(e?.message || "IMPORT_ERROR");
-    }
-  };
 
   const refreshEnabledStates = async (name: string) => {
     try {
@@ -425,141 +379,17 @@ export const ModsPage: React.FC = () => {
     }
   };
 
-  const handleFilePick = async (e: React.ChangeEvent<HTMLInputElement>) => {
-    try {
-      setErrorMsg("");
-      setErrorFile("");
-      setResultSuccess([]);
-      setResultFailed([]);
-      const list = e.target.files;
-      if (!list || list.length === 0) return;
-      if (!currentVersionName) {
-        setErrorMsg(t("launcherpage.currentVersion_none") as string);
-        return;
+  const doImportRef = useRef(doImportFromPaths);
+  doImportRef.current = doImportFromPaths;
+
+  useEffect(() => {
+    return Events.On("files-dropped", (event) => {
+      const data = (event.data as { files: string[] }) || {};
+      if (data.files && data.files.length > 0) {
+        void doImportRef.current(data.files);
       }
-      let started = false;
-      const succFiles: string[] = [];
-      const errPairs: Array<{ name: string; err: string }> = [];
-      const files: File[] = Array.from(list).filter(
-        (f) =>
-          f &&
-          (f.name.toLowerCase().endsWith(".zip") ||
-            f.name.toLowerCase().endsWith(".dll")),
-      );
-      for (const f of files) {
-        const lower = f.name.toLowerCase();
-        if (lower.endsWith(".zip")) {
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          setCurrentFile(f.name);
-          await new Promise<void>((r) => setTimeout(r, 0));
-          let err = await postImportModZip(currentVersionName, f, false);
-          if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
-              dupNameRef.current = f.name;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                err = await postImportModZip(currentVersionName, f, true);
-                if (!err) {
-                  succFiles.push(f.name);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: f.name, err });
-            continue;
-          }
-          succFiles.push(f.name);
-        } else if (lower.endsWith(".dll")) {
-          const base = f.name.replace(/\.[^/.]+$/, "");
-          setDllName(base);
-          setDllType("preload-native");
-          setDllVersion("0.0.0");
-          dllFileRef.current = f;
-          await new Promise<void>((resolve) => setTimeout(resolve, 0));
-          dllOnOpen();
-          const ok = await new Promise<boolean>((resolve) => {
-            dllResolveRef.current = resolve;
-          });
-          if (!ok) {
-            continue;
-          }
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          setCurrentFile(f.name);
-          await new Promise<void>((r) => setTimeout(r, 0));
-          const vals = dllConfirmRef.current || {
-            name: dllName,
-            type: dllType,
-            version: dllVersion,
-          };
-          dllConfirmRef.current = null;
-          let err = await postImportModDll(
-            currentVersionName,
-            dllFileRef.current || f,
-            f.name,
-            vals.name,
-            vals.type || "preload-native",
-            vals.version || "0.0.0",
-            false,
-          );
-          if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
-              dupNameRef.current = f.name;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dllOnClose();
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                err = await postImportModDll(
-                  currentVersionName,
-                  dllFileRef.current || f,
-                  f.name,
-                  vals.name,
-                  vals.type || "preload-native",
-                  vals.version || "0.0.0",
-                  true,
-                );
-                if (!err) {
-                  succFiles.push(f.name);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: f.name, err });
-            continue;
-          }
-          succFiles.push(f.name);
-        }
-      }
-      await refreshModsAndStates(currentVersionName);
-      setResultSuccess(succFiles);
-      setResultFailed(errPairs);
-      if (succFiles.length > 0 || errPairs.length > 0) {
-        errOnOpen();
-      }
-    } catch (e: any) {
-      setErrorMsg(String(e?.message || e || "IMPORT_ERROR"));
-    } finally {
-      setImporting(false);
-      setCurrentFile("");
-      if (fileInputRef.current) fileInputRef.current.value = "";
-    }
-  };
+    });
+  }, []);
 
   const filtered = useMemo(() => {
     let list = modsInfo || [];
@@ -736,202 +566,16 @@ export const ModsPage: React.FC = () => {
     }
   };
 
-  const handleDrop = async (e: DragEvent) => {
-    e.preventDefault();
-    e.stopPropagation();
-    dragCounter.current = 0;
-    setDragActive(false);
-    setErrorMsg("");
-    setErrorFile("");
-    setResultSuccess([]);
-    setResultFailed([]);
-    const files: File[] = Array.from(e.dataTransfer?.files || []).filter(
-      (f) =>
-        f &&
-        (f.name.toLowerCase().endsWith(".zip") ||
-          f.name.toLowerCase().endsWith(".dll")),
-    );
-    if (!files.length) return;
-    let started = false;
-    const succFiles: string[] = [];
-    const errPairs: Array<{ name: string; err: string }> = [];
-    try {
-      for (const f of files) {
-        const lower = f.name.toLowerCase();
-        if (lower.endsWith(".zip")) {
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          setCurrentFile(f.name);
-          await new Promise<void>((r) => setTimeout(r, 0));
-          let err = await postImportModZip(currentVersionName, f, false);
-          if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
-              dupNameRef.current = f.name;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                err = await postImportModZip(currentVersionName, f, true);
-                if (!err) {
-                  succFiles.push(f.name);
-                  continue;
-                }
-              }
-            }
-            errPairs.push({ name: f.name, err });
-            continue;
-          }
-          succFiles.push(f.name);
-        } else if (lower.endsWith(".dll")) {
-          const base = f.name.replace(/\.[^/.]+$/, "");
-          setDllName(base);
-          setDllType("preload-native");
-          setDllVersion("0.0.0");
-          dllFileRef.current = f;
-          await new Promise<void>((resolve) => setTimeout(resolve, 0));
-          dllOnOpen();
-          const ok = await new Promise<boolean>((resolve) => {
-            dllResolveRef.current = resolve;
-          });
-          if (!ok) {
-            continue;
-          }
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          setCurrentFile(f.name);
-          await new Promise<void>((r) => setTimeout(r, 0));
-          const vals = dllConfirmRef.current || {
-            name: dllName,
-            type: dllType,
-            version: dllVersion,
-          };
-          dllConfirmRef.current = null;
-          let err = await postImportModDll(
-            currentVersionName,
-            dllFileRef.current || f,
-            f.name,
-            vals.name,
-            vals.type || "preload-native",
-            vals.version || "0.0.0",
-            false,
-          );
-          if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
-              dupNameRef.current = f.name;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dllOnClose();
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                err = await postImportModDll(
-                  currentVersionName,
-                  dllFileRef.current || f,
-                  f.name,
-                  vals.name,
-                  vals.type || "preload-native",
-                  vals.version || "0.0.0",
-                  true,
-                );
-                if (!err) {
-                  succFiles.push(f.name);
-                  continue;
-                }
-              }
-            }
-            errPairs.push({ name: f.name, err });
-            continue;
-          }
-          succFiles.push(f.name);
-        }
-      }
-      await refreshModsAndStates(currentVersionName);
-      setResultSuccess(succFiles);
-      setResultFailed(errPairs);
-      if (succFiles.length > 0 || errPairs.length > 0) {
-        errOnOpen();
-      }
-    } catch (e: any) {
-      setErrorMsg(String(e?.message || e || "IMPORT_ERROR"));
-    } finally {
-      setImporting(false);
-      setCurrentFile("");
-    }
-  };
-
-  useEffect(() => {
-    const isFileDrag = (e: DragEvent) => {
-      try {
-        const dt = e?.dataTransfer;
-        if (!dt) return false;
-        const types = dt.types ? Array.from(dt.types) : [];
-        if (types.includes("Files")) return true;
-        const items = dt.items ? Array.from(dt.items) : [];
-        return items.some((it) => it?.kind === "file");
-      } catch {
-        return false;
-      }
-    };
-
-    const onDragEnter = (e: DragEvent) => {
-      if (!isFileDrag(e)) return;
-      e.preventDefault();
-      e.stopPropagation();
-      dragCounter.current += 1;
-      setDragActive(true);
-    };
-
-    const onDragLeave = (e: DragEvent) => {
-      if (dragCounter.current <= 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      dragCounter.current -= 1;
-      if (dragCounter.current <= 0) {
-        dragCounter.current = 0;
-        setDragActive(false);
-      }
-    };
-
-    const onDragOver = (e: DragEvent) => {
-      if (!isFileDrag(e) && dragCounter.current <= 0) return;
-      e.preventDefault();
-      e.stopPropagation();
-      try {
-        (e.dataTransfer as any).dropEffect = "copy";
-      } catch {}
-    };
-
-    const onDrop = (e: DragEvent) => {
-      const hasFiles = (e.dataTransfer?.files?.length || 0) > 0;
-      if (!hasFiles && dragCounter.current <= 0 && !isFileDrag(e)) return;
-      handleDrop(e);
-    };
-
-    document.addEventListener("dragenter", onDragEnter, true);
-    document.addEventListener("dragleave", onDragLeave, true);
-    document.addEventListener("dragover", onDragOver, true);
-    document.addEventListener("drop", onDrop, true);
-
-    return () => {
-      document.removeEventListener("dragenter", onDragEnter, true);
-      document.removeEventListener("dragleave", onDragLeave, true);
-      document.removeEventListener("dragover", onDragOver, true);
-      document.removeEventListener("drop", onDrop, true);
-    };
-  });
-
   return (
     <PageContainer
       ref={scrollRef}
-      className={`relative overflow-hidden ${dragActive ? "cursor-copy" : ""}`}
+      id="mods-drop-zone"
+      {...({ "data-file-drop-target": true } as any)}
+      className="relative"
     >
+      {/* Drag Overlay */}
+      <FileDropOverlay isDragActive={isDragActive} text={t("mods.drop_hint")} />
+
       <UnifiedModal
         isOpen={importing && !dllOpen}
         onOpenChange={() => {}}
@@ -1074,25 +718,6 @@ export const ModsPage: React.FC = () => {
       </UnifiedModal>
 
       {/* Drag Overlay */}
-      <AnimatePresence>
-        {dragActive ? (
-          <motion.div
-            className="pointer-events-none fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          >
-            <div className="bg-white/90 dark:bg-zinc-900/90 p-8 rounded-4xl shadow-2xl flex flex-col items-center gap-4 border border-white/20">
-              <FiUploadCloud className="w-16 h-16 text-primary-500" />
-              <div className="text-xl font-bold bg-linear-to-r from-primary-500 to-secondary-500 bg-clip-text text-transparent">
-                {t("mods.drop_hint")}
-              </div>
-            </div>
-          </motion.div>
-        ) : null}
-      </AnimatePresence>
-
       <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
         <CardBody className="p-6 flex flex-col gap-6">
           <PageHeader
@@ -1113,14 +738,6 @@ export const ModsPage: React.FC = () => {
             }
             endContent={
               <>
-                <input
-                  ref={fileInputRef}
-                  type="file"
-                  accept=".zip,.dll"
-                  multiple
-                  className="hidden"
-                  onChange={handleFilePick}
-                />
                 <Button
                   color="primary"
                   variant="shadow"

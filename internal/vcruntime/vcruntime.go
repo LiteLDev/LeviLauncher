@@ -9,13 +9,17 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
+	"syscall"
 	"time"
 
 	"github.com/corpix/uarand"
 	"github.com/google/go-github/v30/github"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -23,12 +27,23 @@ const (
 	EventEnsureStart    = "vcruntime.ensure.start"
 	EventEnsureProgress = "vcruntime.ensure.progress"
 	EventEnsureDone     = "vcruntime.ensure.done"
+
+	EventDownloadStart    = "vcruntime.download.start"
+	EventDownloadProgress = "vcruntime.download.progress"
+	EventDownloadDone     = "vcruntime.download.done"
+	EventDownloadError    = "vcruntime.download.error"
+	EventMissing          = "vcruntime.missing"
 )
 
 type EnsureProgress struct {
 	Downloaded int64
 	Total      int64
 }
+
+var (
+	mu       sync.Mutex
+	ensuring bool
+)
 
 //go:embed vcruntime140_1.dll
 var embeddedVcruntime []byte
@@ -46,6 +61,142 @@ func fileSHA256(p string) ([]byte, error) {
 		return nil, err
 	}
 	return h.Sum(nil), nil
+}
+
+func IsInstalled() bool {
+	psCmd := `Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*, HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Where-Object { $_.DisplayName -like "*Visual C++*" } | Select-Object -ExpandProperty DisplayName`
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", psCmd)
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	out, err := cmd.Output()
+	if err != nil {
+		return false
+	}
+	output := string(out)
+	lines := strings.Split(output, "\n")
+	for _, line := range lines {
+		l := strings.TrimSpace(line)
+		if strings.Contains(l, "Visual C++") && strings.Contains(l, "X64") || strings.Contains(l, "x64"){
+			if strings.Contains(l, "2022") && strings.Contains(l, "Minimum Runtime") {		
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func EnsureInteractive(ctx context.Context) {
+	mu.Lock()
+	if ensuring {
+		mu.Unlock()
+		return
+	}
+	ensuring = true
+	mu.Unlock()
+	defer func() {
+		mu.Lock()
+		ensuring = false
+		mu.Unlock()
+	}()
+
+	if IsInstalled() {
+		return
+	}
+
+	application.Get().Event.Emit(EventEnsureStart, struct{}{})
+
+	dir, _ := apppath.InstallersDir()
+	if dir == "" {
+		dir = filepath.Join(os.TempDir(), "LeviLauncher", "Installers")
+	}
+	_ = os.MkdirAll(dir, 0755)
+	dlPath := filepath.Join(dir, "vc_redist.x64.exe")
+	tmpPath := dlPath + ".part"
+
+	downloadURL := "https://aka.ms/vc14/vc_redist.x64.exe"
+
+	req, err := http.NewRequestWithContext(ctx, "GET", downloadURL, nil)
+	if err != nil {
+		application.Get().Event.Emit(EventDownloadError, err.Error())
+		application.Get().Event.Emit(EventEnsureDone, false)
+		return
+	}
+	req.Header.Set("User-Agent", uarand.GetRandom())
+	resp, err := http.DefaultClient.Do(req)
+	if err != nil {
+		application.Get().Event.Emit(EventDownloadError, err.Error())
+		application.Get().Event.Emit(EventEnsureDone, false)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		application.Get().Event.Emit(EventDownloadError, resp.Status)
+		application.Get().Event.Emit(EventEnsureDone, false)
+		return
+	}
+
+	application.Get().Event.Emit(EventDownloadStart, resp.ContentLength)
+
+	f, err := os.Create(tmpPath)
+	if err != nil {
+		application.Get().Event.Emit(EventDownloadError, err.Error())
+		application.Get().Event.Emit(EventEnsureDone, false)
+		return
+	}
+
+	var downloaded int64
+	buf := make([]byte, 64*1024)
+	for {
+		n, rerr := resp.Body.Read(buf)
+		if n > 0 {
+			if _, werr := f.Write(buf[:n]); werr != nil {
+				f.Close()
+				application.Get().Event.Emit(EventDownloadError, werr.Error())
+				application.Get().Event.Emit(EventEnsureDone, false)
+				return
+			}
+			downloaded += int64(n)
+			application.Get().Event.Emit(EventDownloadProgress, EnsureProgress{Downloaded: downloaded, Total: resp.ContentLength})
+		}
+		if rerr == io.EOF {
+			break
+		}
+		if rerr != nil {
+			f.Close()
+			application.Get().Event.Emit(EventDownloadError, rerr.Error())
+			application.Get().Event.Emit(EventEnsureDone, false)
+			return
+		}
+	}
+	f.Close()
+
+	if err := os.Rename(tmpPath, dlPath); err != nil {
+		_ = os.Remove(dlPath) 
+		if err := os.Rename(tmpPath, dlPath); err != nil {
+			application.Get().Event.Emit(EventDownloadError, err.Error())
+			application.Get().Event.Emit(EventEnsureDone, false)
+			return
+		}
+	}
+
+	application.Get().Event.Emit(EventDownloadDone, struct{}{})
+
+	cmd := exec.Command(dlPath, "/install", "/quiet", "/norestart")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	if err := cmd.Run(); err != nil {
+		log.Println("failed to run VC Runtime installer:", err)
+	}
+
+	installed := false
+	for i := 0; i < 30; i++ {
+		if IsInstalled() {
+			installed = true
+			break
+		}
+		time.Sleep(1 * time.Second)
+	}
+	log.Println("VC Runtime installed:", installed)
+	application.Get().Event.Emit(EventEnsureDone, installed)
 }
 
 func EnsureForVersion(ctx context.Context, versionDir string) bool {

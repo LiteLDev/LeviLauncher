@@ -9,6 +9,7 @@
     "strict": true,
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
+    "moduleResolution": "bundler",
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",

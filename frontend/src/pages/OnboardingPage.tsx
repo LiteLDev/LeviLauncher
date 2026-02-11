@@ -48,6 +48,7 @@ export default function OnboardingPage() {
   const {
     isOpen: unsavedOpen,
     onOpen: unsavedOnOpen,
+    onClose: unsavedOnClose,
     onOpenChange: unsavedOnOpenChange,
   } = useDisclosure();
 
@@ -353,7 +354,7 @@ export default function OnboardingPage() {
           isLoading: savingBaseRoot,
           isDisabled: !newBaseRoot || !baseRootWritable,
         }}
-        onCancel={() => unsavedOnOpenChange(false)}
+        onCancel={() => unsavedOnClose()}
         onConfirm={async () => {
           setSavingBaseRoot(true);
           try {
@@ -369,7 +370,7 @@ export default function OnboardingPage() {
                 setInstallerDir(String(id || ""));
                 const vd = await GetVersionsDir();
                 setVersionsDir(String(vd || ""));
-                unsavedOnOpenChange(false);
+                unsavedOnClose();
                 proceedHome();
               }
             }

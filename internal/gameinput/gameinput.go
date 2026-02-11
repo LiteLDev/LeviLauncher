@@ -7,7 +7,6 @@ import (
 	"os/exec"
 	"path/filepath"
 	"sync"
-	"syscall"
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
@@ -53,7 +52,7 @@ func EnsureInteractive(ctx context.Context) {
 	if len(msiBytes) == 0 {
 		application.Get().Event.Emit("gameinput.download.error", "MSI not embedded")
 		log.Println("gameinput msi not embedded")
-		application.Get().Event.Emit("gameinput.ensure.done", struct{}{})
+		application.Get().Event.Emit("gameinput.ensure.done", false)
 		return
 	}
 
@@ -64,7 +63,7 @@ func EnsureInteractive(ctx context.Context) {
 	if err := os.MkdirAll(dir, 0755); err != nil {
 		application.Get().Event.Emit("gameinput.download.error", err.Error())
 		log.Println("mkdir installers error:", err)
-		application.Get().Event.Emit("gameinput.ensure.done", struct{}{})
+		application.Get().Event.Emit("gameinput.ensure.done", false)
 		return
 	}
 	dlPath := filepath.Join(dir, "GameInputRedist.msi")
@@ -74,7 +73,7 @@ func EnsureInteractive(ctx context.Context) {
 	if err := os.WriteFile(tmpPath, msiBytes, 0644); err != nil {
 		application.Get().Event.Emit("gameinput.download.error", err.Error())
 		log.Println("gameinput write error:", err)
-		application.Get().Event.Emit("gameinput.ensure.done", struct{}{})
+		application.Get().Event.Emit("gameinput.ensure.done", false)
 		return
 	}
 	if _, stErr := os.Stat(dlPath); stErr == nil {
@@ -83,14 +82,13 @@ func EnsureInteractive(ctx context.Context) {
 	if err := os.Rename(tmpPath, dlPath); err != nil {
 		log.Println("gameinput rename error:", err)
 		application.Get().Event.Emit("gameinput.download.error", err.Error())
-		application.Get().Event.Emit("gameinput.ensure.done", struct{}{})
+		application.Get().Event.Emit("gameinput.ensure.done", false)
 		return
 	}
 	application.Get().Event.Emit("gameinput.download.done", struct{}{})
 	log.Println("GameInputRedist prepared:", dlPath)
 
-	cmd := exec.Command("msiexec", "/i", dlPath)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	cmd := exec.Command("msiexec", "/i", dlPath, "/passive")
 	if err := cmd.Run(); err != nil {
 		log.Println("failed to run GameInput installer:", err)
 	}
@@ -107,5 +105,5 @@ func EnsureInteractive(ctx context.Context) {
 		time.Sleep(1 * time.Second)
 	}
 	log.Println("GameInput installed:", installed)
-	application.Get().Event.Emit("gameinput.ensure.done", struct{}{})
+	application.Get().Event.Emit("gameinput.ensure.done", installed)
 }

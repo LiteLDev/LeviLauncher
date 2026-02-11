@@ -24,33 +24,49 @@ type LeviLaminaVersionDB struct {
 }
 
 func FetchLeviLaminaVersionDB() (map[string][]string, error) {
-	const url = "https://github.bibk.top/LiteLDev/levilamina-client-version-db/raw/refs/heads/main/version-db.json"
-
-	client := &http.Client{Timeout: 10 * time.Second}
-	req, err := http.NewRequest(http.MethodGet, url, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("User-Agent", uarand.GetRandom())
-
-	resp, err := client.Do(req)
-	if err != nil {
-		log.Println("FetchLeviLaminaVersionDB error:", err)
-		return nil, err
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("status %d", resp.StatusCode)
+	urls := []string{
+		"https://cdn.jsdelivr.net/gh/LiteLDev/levilamina-client-version-db@main/version-db.json",
+		"https://fastly.jsdelivr.net/gh/LiteLDev/levilamina-client-version-db@main/version-db.json",
+		"https://raw.githubusercontent.com/LiteLDev/levilamina-client-version-db/refs/heads/main/version-db.json",
+		"https://github.bibk.top/LiteLDev/levilamina-client-version-db/raw/refs/heads/main/version-db.json",
 	}
 
-	var db LeviLaminaVersionDB
-	if err := json.NewDecoder(resp.Body).Decode(&db); err != nil {
-		log.Println("FetchLeviLaminaVersionDB decode error:", err)
-		return nil, err
+	var lastErr error
+	for _, url := range urls {
+		client := &http.Client{Timeout: 10 * time.Second}
+		req, err := http.NewRequest(http.MethodGet, url, nil)
+		if err != nil {
+			lastErr = err
+			continue
+		}
+		req.Header.Set("User-Agent", uarand.GetRandom())
+
+		resp, err := client.Do(req)
+		if err != nil {
+			log.Printf("FetchLeviLaminaVersionDB error fetching %s: %v", url, err)
+			lastErr = err
+			continue
+		}
+
+		if resp.StatusCode != http.StatusOK {
+			resp.Body.Close()
+			lastErr = fmt.Errorf("status %d from %s", resp.StatusCode, url)
+			continue
+		}
+
+		var db LeviLaminaVersionDB
+		err = json.NewDecoder(resp.Body).Decode(&db)
+		resp.Body.Close()
+		if err != nil {
+			log.Printf("FetchLeviLaminaVersionDB decode error from %s: %v", url, err)
+			lastErr = err
+			continue
+		}
+
+		return db.Versions, nil
 	}
 
-	return db.Versions, nil
+	return nil, lastErr
 }
 
 func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string) string {

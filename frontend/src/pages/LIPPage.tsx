@@ -73,8 +73,10 @@ const LIPPage: React.FC = () => {
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
         continue;
       }
-      target.scrollTop = 0;
-      target.scrollLeft = 0;
+      if (target instanceof HTMLElement) {
+        target.scrollTop = 0;
+        target.scrollLeft = 0;
+      }
     }
   };
 
@@ -194,12 +196,8 @@ const LIPPage: React.FC = () => {
                   "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
               }}
             >
-              <SelectItem key="hotness" value="hotness">
-                Hotness
-              </SelectItem>
-              <SelectItem key="updated" value="updated">
-                Updated
-              </SelectItem>
+              <SelectItem key="hotness">Hotness</SelectItem>
+              <SelectItem key="updated">Updated</SelectItem>
             </Select>
           </div>
         </CardBody>

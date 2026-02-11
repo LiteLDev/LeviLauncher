@@ -87,6 +87,7 @@ export default function VersionSettingsPage() {
   const {
     isOpen: unsavedOpen,
     onOpen: unsavedOnOpen,
+    onClose: unsavedOnClose,
     onOpenChange: unsavedOnOpenChange,
   } = useDisclosure();
   const [pendingNavPath, setPendingNavPath] = React.useState<string>("");
@@ -486,7 +487,7 @@ export default function VersionSettingsPage() {
                       color="primary"
                       radius="full"
                       className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                      onPress={onSave}
+                      onPress={() => onSave()}
                     >
                       {t("common.ok")}
                     </Button>
@@ -1083,10 +1084,7 @@ export default function VersionSettingsPage() {
         title={t("settings.unsaved.title")}
         footer={
           <>
-            <Button
-              variant="light"
-              onPress={unsavedOnOpenChange.bind(null, false)}
-            >
+            <Button variant="light" onPress={unsavedOnClose}>
               {t("settings.unsaved.cancel")}
             </Button>
             <Button
@@ -1094,7 +1092,7 @@ export default function VersionSettingsPage() {
               onPress={async () => {
                 const ok = await onSave(pendingNavPath);
                 if (ok) {
-                  unsavedOnOpenChange(false);
+                  unsavedOnClose();
                 }
               }}
             >

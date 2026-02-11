@@ -164,9 +164,32 @@ export const TopBar: React.FC<TopBarProps> = ({
             <UserAvatar />
           </div>
 
+          <div className="opacity-0 pointer-events-none" aria-hidden="true">
+            <WindowControls
+              navLocked={navLocked}
+              isOnboardingMode={isOnboardingMode}
+            />
+          </div>
+        </div>
+      </motion.div>
+
+      <motion.div
+        key="topbar-controls"
+        className="fixed top-0 right-0 h-14 z-[80] flex items-center justify-end pr-4 pointer-events-none"
+        initial={{ x: -80, opacity: 0 }}
+        animate={{
+          x: revealStarted ? 0 : -80,
+          opacity: revealStarted ? 1 : 0,
+        }}
+        exit={{ x: -80, opacity: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+      >
+        <div className="pointer-events-auto">
           <WindowControls
             navLocked={navLocked}
             isOnboardingMode={isOnboardingMode}
+            hideSeparator
+            className="text-default-600 dark:text-zinc-300 [&_button]:text-default-600 dark:[&_button]:text-zinc-300 [&_button:hover]:text-default-900 dark:[&_button:hover]:text-zinc-100"
           />
         </div>
       </motion.div>

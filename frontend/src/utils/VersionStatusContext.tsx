@@ -142,7 +142,7 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
       const d =
         typeof raw === "string"
           ? String(raw)
-          : String(raw?.Dest || raw?.dest || "");
+          : String(raw?.Dest || raw?.Dest || "");
       const inferShort = () => {
         if (downloadingShortRef.current)
           return String(downloadingShortRef.current);

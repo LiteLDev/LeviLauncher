@@ -127,11 +127,8 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
       Events.On("msixvc_download_status", (event) => {
         const raw = event?.data;
         const status =
-          typeof raw === "string"
-            ? String(raw)
-            : String(raw?.Status || raw?.status || "");
-        const dest =
-          typeof raw === "string" ? "" : String(raw?.Dest || raw?.dest || "");
+          typeof raw === "string" ? String(raw) : String(raw?.Status || "");
+        const dest = typeof raw === "string" ? "" : String(raw?.Dest || "");
 
         if (dest && cancelledRef.current.has(dest)) return;
 
@@ -171,9 +168,8 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         const msg =
           typeof raw === "string"
             ? String(raw)
-            : String(raw?.Error || raw?.error || "Unknown Error");
-        const dest =
-          typeof raw === "string" ? "" : String(raw?.Dest || raw?.dest || "");
+            : String(raw?.Error || "Unknown Error");
+        const dest = typeof raw === "string" ? "" : String(raw?.Dest || "");
 
         if (dest && cancelledRef.current.has(dest)) return;
 
@@ -209,9 +205,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
       Events.On("msixvc_download_done", (event) => {
         const raw = event?.data;
         const dest =
-          typeof raw === "string"
-            ? String(raw)
-            : String(raw?.Dest || raw?.dest || "");
+          typeof raw === "string" ? String(raw) : String(raw?.Dest || "");
         if (!dest) return;
         const fname = getFileNameFromDest(dest);
         updateDownload(dest, (prev) => ({
@@ -297,7 +291,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         progress: null,
         speed: 0,
         fileName: displayName || prev.fileName || getFileNameFromDest(key),
-        url: url, // Store original URL for retry
+        url: url,
       }));
       addToast({
         title: t("downloadpage.mirror.download_started"),
@@ -316,13 +310,11 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
   const cancelDownload = (dest?: string) => {
     if (typeof minecraft === "undefined") return;
 
-    // 如果指定了 dest，只取消特定任务
     if (dest) {
       if (typeof minecraft.CancelMsixvcDownloadTask === "function") {
         minecraft.CancelMsixvcDownloadTask(dest);
       }
 
-      // Update local status to cancelled, do NOT delete yet
       updateDownload(dest, (prev) => ({
         ...prev,
         status: "cancelled",
@@ -332,7 +324,6 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
       return;
     }
 
-    // 如果没有指定 dest，取消所有
     minecraft.CancelMsixvcDownload();
     setDownloadsMap((prev) => {
       const next = { ...prev };

@@ -128,3 +128,8 @@ type Server struct {
 	Port      string `json:"port"`
 	Timestamp int64  `json:"timestamp"`
 }
+
+type FilesDroppedEvent struct {
+	Files  []string `json:"files"`
+	Target string   `json:"target"`
+}

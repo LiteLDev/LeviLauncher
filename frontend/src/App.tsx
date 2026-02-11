@@ -1,7 +1,7 @@
 import "./polyfills/wails";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import { Button, Tooltip, ToastProvider } from "@heroui/react";
+import { Button, ToastProvider } from "@heroui/react";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { Sidebar } from "@/components/Sidebar";
@@ -12,7 +12,7 @@ import { DownloadsProvider } from "@/utils/DownloadsContext";
 import { DownloadPage } from "@/pages/DownloadPage";
 import { SplashScreen } from "@/pages/SplashScreen";
 import { motion, AnimatePresence, MotionGlobalConfig } from "framer-motion";
-import { Events, Browser } from "@wailsio/runtime";
+import { Events, Browser, Window } from "@wailsio/runtime";
 import { SettingsPage } from "@/pages/SettingsPage";
 import { VersionSelectPage } from "@/pages/VersionSelectPage";
 import VersionSettingsPage from "@/pages/VersionSettingsPage";
@@ -42,7 +42,6 @@ import ServersPage from "@/pages/ServersPage";
 import { useTheme } from "next-themes";
 import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
 import { FaRocket } from "react-icons/fa";
-
 import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
 
 const GlobalShortcuts = ({

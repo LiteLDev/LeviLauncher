@@ -102,7 +102,6 @@ export const SettingsPage: React.FC = () => {
   const gdkInstallDisclosure = useDisclosure();
   const [gdkLicenseAccepted, setGdkLicenseAccepted] = useState<boolean>(false);
 
-  // Tab State
   const [selectedTab, setSelectedTab] = useState<string>("general");
 
   const [layoutMode, setLayoutMode] = useState<"navbar" | "sidebar">(() => {
@@ -124,7 +123,6 @@ export const SettingsPage: React.FC = () => {
     }
   });
 
-  // LIP State
   const [lipInstalled, setLipInstalled] = useState<boolean>(false);
   const [lipVersion, setLipVersion] = useState<string>("");
   const [lipLatestVersion, setLipLatestVersion] = useState<string>("");
@@ -138,7 +136,6 @@ export const SettingsPage: React.FC = () => {
   const [lipError, setLipError] = useState<string>("");
   const lipProgressDisclosure = useDisclosure();
 
-  // Process Management State
   const [processModalOpen, setProcessModalOpen] = useState(false);
   const [processes, setProcesses] = useState<types.ProcessInfo[]>([]);
   const [scanningProcesses, setScanningProcesses] = useState(false);
@@ -184,12 +181,14 @@ export const SettingsPage: React.FC = () => {
     isOpen: unsavedOpen,
     onOpen: unsavedOnOpen,
     onOpenChange: unsavedOnOpenChange,
+    onClose: unsavedOnClose,
   } = useDisclosure();
   const [pendingNavPath, setPendingNavPath] = useState<string>("");
   const {
     isOpen: resetOpen,
     onOpen: resetOnOpen,
     onOpenChange: resetOnOpenChange,
+    onClose: resetOnClose,
   } = useDisclosure();
 
   useEffect(() => {
@@ -1412,10 +1411,7 @@ export const SettingsPage: React.FC = () => {
         title={t("settings.unsaved.title")}
         footer={
           <>
-            <Button
-              variant="light"
-              onPress={unsavedOnOpenChange.bind(null, false)}
-            >
+            <Button variant="light" onPress={unsavedOnClose}>
               {t("settings.unsaved.cancel")}
             </Button>
             <Button
@@ -1437,7 +1433,7 @@ export const SettingsPage: React.FC = () => {
                       setInstallerDir(String(id || ""));
                       const vd = await GetVersionsDir();
                       setVersionsDir(String(vd || ""));
-                      unsavedOnOpenChange(false);
+                      unsavedOnClose();
                       if (pendingNavPath === "-1") {
                         navigate(-1);
                       } else if (pendingNavPath) {
@@ -1473,10 +1469,7 @@ export const SettingsPage: React.FC = () => {
         title={t("settings.reset.confirm.title")}
         footer={
           <>
-            <Button
-              variant="light"
-              onPress={resetOnOpenChange.bind(null, false)}
-            >
+            <Button variant="light" onPress={resetOnClose}>
               {t("common.cancel")}
             </Button>
             <Button
@@ -1494,7 +1487,7 @@ export const SettingsPage: React.FC = () => {
                     setVersionsDir(String(vd || ""));
                   }
                 } catch {}
-                resetOnOpenChange(false);
+                resetOnClose();
               }}
             >
               {t("common.confirm")}

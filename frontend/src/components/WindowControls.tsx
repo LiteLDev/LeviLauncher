@@ -11,11 +11,15 @@ import { Window } from "@wailsio/runtime";
 interface WindowControlsProps {
   navLocked: boolean;
   isOnboardingMode: boolean;
+  hideSeparator?: boolean;
+  className?: string;
 }
 
 export const WindowControls: React.FC<WindowControlsProps> = ({
   navLocked,
   isOnboardingMode,
+  hideSeparator,
+  className,
 }) => {
   const [isMaximized, setIsMaximized] = useState(false);
 
@@ -26,8 +30,10 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
   };
 
   return (
-    <div className="flex items-center gap-1">
-      <div className="w-px h-6 bg-default-200 dark:bg-zinc-700 mx-2" />
+    <div className={`flex items-center gap-1 ${className || ""}`}>
+      {!hideSeparator && (
+        <div className="w-px h-6 bg-default-200 dark:bg-zinc-700 mx-2" />
+      )}
 
       <Button
         isIconOnly

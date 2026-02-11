@@ -64,6 +64,16 @@
       "completing": {
         "title": "正在补全缺失的 DLL",
         "body": "正在下载并补全 vcruntime140_1.dll，请稍候…"
+      },
+      "installing": {
+        "title": "正在安装 Visual C++ 运行库",
+        "body": "正在下载并安装 Microsoft Visual C++ 运行库，请稍候…",
+        "preparing": "正在准备下载..."
+      },
+      "missing": {
+        "title": "缺少 Visual C++ 运行库",
+        "body": "运行游戏需要 Microsoft Visual C++ 2015-2022 Redistributable (x64) 运行库。是否现在下载安装？",
+        "install_now": "立即安装"
       }
     },
     "mclaunch": {

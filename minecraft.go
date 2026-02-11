@@ -59,6 +59,14 @@ const (
 	EventFileDownloadProgress = "file.download.progress"
 	EventFileDownloadDone     = "file.download.done"
 	EventFileDownloadError    = "file.download.error"
+
+	EventVcRuntimeEnsureStart      = "vcruntime.ensure.start"
+	EventVcRuntimeEnsureDone       = "vcruntime.ensure.done"
+	EventVcRuntimeDownloadStart    = "vcruntime.download.start"
+	EventVcRuntimeDownloadProgress = "vcruntime.download.progress"
+	EventVcRuntimeDownloadDone     = "vcruntime.download.done"
+	EventVcRuntimeDownloadError    = "vcruntime.download.error"
+	EventVcRuntimeMissing          = "vcruntime.missing"
 )
 
 var isPreloader = false
@@ -330,6 +338,10 @@ func (a *Minecraft) startup() {
 func (a *Minecraft) EnsureGameInputInteractive() { go gameinput.EnsureInteractive(a.ctx) }
 
 func (a *Minecraft) IsGameInputInstalled() bool { return gameinput.IsInstalled() }
+
+func (a *Minecraft) EnsureVcRuntimeInteractive() { go vcruntime.EnsureInteractive(a.ctx) }
+
+func (a *Minecraft) IsVcRuntimeInstalled() bool { return vcruntime.IsInstalled() }
 
 func (a *Minecraft) IsGamingServicesInstalled() bool {
 	if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err == nil {

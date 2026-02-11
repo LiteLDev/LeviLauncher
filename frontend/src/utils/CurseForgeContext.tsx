@@ -1,15 +1,15 @@
 import React, { createContext, useContext, useState, useRef } from "react";
-import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
   GameVersion,
   Categories,
+  ModData,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
 
 interface CurseForgeContextValue {
   query: string;
   setQuery: (q: string) => void;
-  mods: types.CurseForgeMod[];
-  setMods: (mods: types.CurseForgeMod[]) => void;
+  mods: ModData[];
+  setMods: (mods: ModData[]) => void;
   gameVersions: GameVersion[];
   setGameVersions: (v: GameVersion[]) => void;
   selectedMinecraftVersion: string;
@@ -44,7 +44,7 @@ export const CurseForgeProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const [query, setQuery] = useState("");
-  const [mods, setMods] = useState<types.CurseForgeMod[]>([]);
+  const [mods, setMods] = useState<ModData[]>([]);
   const [gameVersions, setGameVersions] = useState<GameVersion[]>([]);
   const [selectedMinecraftVersion, setSelectedMinecraftVersion] =
     useState<string>("");

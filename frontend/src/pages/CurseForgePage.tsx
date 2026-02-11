@@ -21,8 +21,8 @@ import {
   SearchCurseForgeMods,
   GetCurseForgeCategories,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { ModData } from "bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
 import { useCurseForge } from "@/utils/CurseForgeContext";
-import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
   LuSearch,
   LuDownload,
@@ -61,7 +61,7 @@ const formatSize = (bytes: number | undefined) => {
   return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
 };
 
-const getLatestSupportedVersion = (mod: types.CurseForgeMod) => {
+const getLatestSupportedVersion = (mod: ModData) => {
   const versions = new Set<string>();
 
   mod.latestFilesIndexes?.forEach((idx) => {
@@ -224,7 +224,7 @@ export const CurseForgePage: React.FC = () => {
         best = Math.max(best, window.scrollY || 0);
         continue;
       }
-      best = Math.max(best, target.scrollTop || 0);
+      best = Math.max(best, (target as HTMLElement).scrollTop || 0);
     }
     return best;
   };
@@ -235,7 +235,7 @@ export const CurseForgePage: React.FC = () => {
         window.scrollTo({ top: y, left: 0, behavior: "auto" });
         continue;
       }
-      target.scrollTop = y;
+      (target as HTMLElement).scrollTop = y;
     }
   };
 
@@ -296,8 +296,10 @@ export const CurseForgePage: React.FC = () => {
           window.scrollTo({ top: 0, left: 0, behavior: "auto" });
           continue;
         }
-        target.scrollTop = 0;
-        target.scrollLeft = 0;
+        if (target instanceof HTMLElement) {
+          target.scrollTop = 0;
+          target.scrollLeft = 0;
+        }
       }
     };
 
@@ -474,16 +476,12 @@ export const CurseForgePage: React.FC = () => {
                 trigger:
                   "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
               }}
-              defaultValue={t("curseforge.minecraft_version")}
+              items={[
+                { key: "", label: t("curseforge.all_versions") },
+                ...gameVersions.map((v) => ({ key: v.name, label: v.name })),
+              ]}
             >
-              <SelectItem key="" value="">
-                {t("curseforge.all_versions")}
-              </SelectItem>
-              {gameVersions.map((version) => (
-                <SelectItem key={version.name} value={version.name}>
-                  {version.name}
-                </SelectItem>
-              ))}
+              {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
             </Select>
 
             <Select
@@ -503,15 +501,11 @@ export const CurseForgePage: React.FC = () => {
                 trigger:
                   "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
               }}
+              items={[{ name: t("curseforge.all_classes"), id: 0 }, ...classes]}
             >
-              <SelectItem key="0" value="0">
-                {t("curseforge.all_classes")}
-              </SelectItem>
-              {classes.map((cls) => (
-                <SelectItem key={String(cls.id)} value={String(cls.id)}>
-                  {cls.name}
-                </SelectItem>
-              ))}
+              {(item) => (
+                <SelectItem key={String(item.id)}>{item.name}</SelectItem>
+              )}
             </Select>
 
             <Select
@@ -534,9 +528,7 @@ export const CurseForgePage: React.FC = () => {
               }}
             >
               {categories.map((cat) => (
-                <SelectItem key={String(cat.id)} value={String(cat.id)}>
-                  {cat.name}
-                </SelectItem>
+                <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>
               ))}
             </Select>
 
@@ -554,12 +546,11 @@ export const CurseForgePage: React.FC = () => {
                 trigger:
                   "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
               }}
+              items={sortOptions}
             >
-              {sortOptions.map((opt) => (
-                <SelectItem key={String(opt.value)} value={String(opt.value)}>
-                  {opt.label}
-                </SelectItem>
-              ))}
+              {(opt) => (
+                <SelectItem key={String(opt.value)}>{opt.label}</SelectItem>
+              )}
             </Select>
           </div>
         </CardBody>
@@ -633,10 +624,7 @@ export const CurseForgePage: React.FC = () => {
                           <span className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 truncate">
                             |{" "}
                             {t("curseforge.by_author", {
-                              author:
-                                mod.authors?.[0]?.name ||
-                                mod.author ||
-                                "Unknown",
+                              author: mod.authors?.[0]?.name || "Unknown",
                             })}
                           </span>
                         </div>

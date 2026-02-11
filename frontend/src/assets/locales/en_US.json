@@ -64,6 +64,16 @@
       "completing": {
         "title": "Completing missing DLL",
         "body": "Downloading and completing vcruntime140_1.dll, please wait…"
+      },
+      "installing": {
+        "title": "Installing Visual C++ Runtime",
+        "body": "Downloading and installing Microsoft Visual C++ Runtime, please wait…",
+        "preparing": "Preparing download..."
+      },
+      "missing": {
+        "title": "Visual C++ Runtime Missing",
+        "body": "Microsoft Visual C++ 2015-2022 Redistributable (x64) is required to run the game. Install now?",
+        "install_now": "Install Now"
       }
     },
     "mclaunch": {

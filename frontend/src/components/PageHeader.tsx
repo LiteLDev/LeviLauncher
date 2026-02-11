@@ -76,7 +76,9 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
         {action}
       </div>
       {description && (
-        <p className={`text-sm text-default-500 ${icon ? "ml-12" : ""}`}>
+        <p
+          className={`text-sm text-default-500 dark:text-zinc-400 ${icon ? "ml-12" : ""}`}
+        >
           {description}
         </p>
       )}

@@ -12,15 +12,9 @@ import {
   DropdownMenu,
   DropdownItem,
   Divider,
-  ModalContent,
   useDisclosure,
 } from "@heroui/react";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
@@ -124,7 +118,7 @@ export default function OnboardingPage() {
             <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 mb-1">
               {t("onboarding.title")}
             </h1>
-            <p className="text-default-500 text-base max-w-md">
+            <p className="text-default-500 dark:text-zinc-400 text-base max-w-md">
               {t("onboarding.subtitle")}
             </p>
           </div>
@@ -244,7 +238,7 @@ export default function OnboardingPage() {
                       size="sm"
                       variant="light"
                       radius="full"
-                      className="text-default-500 hover:text-default-700"
+                      className="text-default-500 dark:text-zinc-400 hover:text-default-700 dark:hover:text-zinc-200"
                       onPress={async () => {
                         try {
                           const err = await ResetBaseRoot();
@@ -331,7 +325,7 @@ export default function OnboardingPage() {
             variant="light"
             radius="full"
             onPress={requestFinish}
-            className="font-medium text-default-500"
+            className="font-medium text-default-500 dark:text-zinc-400"
           >
             {t("onboarding.skip")}
           </Button>
@@ -346,66 +340,54 @@ export default function OnboardingPage() {
         </div>
       </motion.div>
 
-      <BaseModal
+      <UnifiedModal
         size="md"
         isOpen={unsavedOpen}
         onOpenChange={unsavedOnOpenChange}
-        hideCloseButton
+        type="warning"
+        title={t("onboarding.unsaved.title")}
+        cancelText={t("onboarding.unsaved.cancel")}
+        confirmText={t("onboarding.unsaved.save")}
+        showCancelButton
+        confirmButtonProps={{
+          isLoading: savingBaseRoot,
+          isDisabled: !newBaseRoot || !baseRootWritable,
+        }}
+        onCancel={() => unsavedOnOpenChange(false)}
+        onConfirm={async () => {
+          setSavingBaseRoot(true);
+          try {
+            const ok = await CanWriteToDir(newBaseRoot);
+            if (!ok) {
+              setBaseRootWritable(false);
+            } else {
+              const err = await SetBaseRoot(newBaseRoot);
+              if (!err) {
+                const br = await GetBaseRoot();
+                setBaseRoot(String(br || ""));
+                const id = await GetInstallerDir();
+                setInstallerDir(String(id || ""));
+                const vd = await GetVersionsDir();
+                setVersionsDir(String(vd || ""));
+                unsavedOnOpenChange(false);
+                proceedHome();
+              }
+            }
+          } catch {}
+          setSavingBaseRoot(false);
+        }}
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-warning-600">
-                {t("onboarding.unsaved.title")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-default-700 text-sm">
-                  {t("onboarding.unsaved.body")}
-                </div>
-                {!baseRootWritable && (
-                  <div className="text-tiny text-danger-500 mt-1">
-                    {t("settings.body.paths.not_writable")}
-                  </div>
-                )}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  {t("onboarding.unsaved.cancel")}
-                </Button>
-                <Button
-                  color="primary"
-                  isLoading={savingBaseRoot}
-                  isDisabled={!newBaseRoot || !baseRootWritable}
-                  onPress={async () => {
-                    setSavingBaseRoot(true);
-                    try {
-                      const ok = await CanWriteToDir(newBaseRoot);
-                      if (!ok) {
-                        setBaseRootWritable(false);
-                      } else {
-                        const err = await SetBaseRoot(newBaseRoot);
-                        if (!err) {
-                          const br = await GetBaseRoot();
-                          setBaseRoot(String(br || ""));
-                          const id = await GetInstallerDir();
-                          setInstallerDir(String(id || ""));
-                          const vd = await GetVersionsDir();
-                          setVersionsDir(String(vd || ""));
-                          onClose();
-                          proceedHome();
-                        }
-                      }
-                    } catch {}
-                    setSavingBaseRoot(false);
-                  }}
-                >
-                  {t("onboarding.unsaved.save")}
-                </Button>
-              </BaseModalFooter>
-            </>
+        <div className="flex flex-col gap-2">
+          <div className="text-default-700 dark:text-zinc-300 text-sm">
+            {t("onboarding.unsaved.body")}
+          </div>
+          {!baseRootWritable && (
+            <div className="text-tiny text-danger-500">
+              {t("settings.body.paths.not_writable")}
+            </div>
           )}
-        </ModalContent>
-      </BaseModal>
+        </div>
+      </UnifiedModal>
     </div>
   );
 }

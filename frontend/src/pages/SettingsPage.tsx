@@ -22,7 +22,14 @@ import {
   Tab,
 } from "@heroui/react";
 import { RxUpdate } from "react-icons/rx";
-import { FaGithub, FaDiscord } from "react-icons/fa";
+import {
+  FaGithub,
+  FaDiscord,
+  FaDownload,
+  FaCogs,
+  FaList,
+} from "react-icons/fa";
+import { FiAlertTriangle, FiCheckCircle, FiUploadCloud } from "react-icons/fi";
 import { LuHardDrive } from "react-icons/lu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -55,12 +62,7 @@ import {
 import { Browser, Events, Dialogs } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader } from "@/components/PageHeader";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { PageContainer } from "@/components/PageContainer";
@@ -583,7 +585,7 @@ export const SettingsPage: React.FC = () => {
                       <div className="grid grid-cols-1 gap-2 pt-2">
                         <div className="p-3 rounded-xl bg-default-100/50 dark:bg-zinc-800/30 border border-default-200/50 dark:border-white/5">
                           <div
-                            className="text-tiny text-default-500 flex items-center gap-2 truncate"
+                            className="text-tiny text-default-500 dark:text-zinc-400 flex items-center gap-2 truncate"
                             title={installerDir || "-"}
                           >
                             <LuHardDrive size={14} />
@@ -597,7 +599,7 @@ export const SettingsPage: React.FC = () => {
                         </div>
                         <div className="p-3 rounded-xl bg-default-100/50 dark:bg-zinc-800/30 border border-default-200/50 dark:border-white/5">
                           <div
-                            className="text-tiny text-default-500 flex items-center gap-2 truncate"
+                            className="text-tiny text-default-500 dark:text-zinc-400 flex items-center gap-2 truncate"
                             title={versionsDir || "-"}
                           >
                             <LuHardDrive size={14} />
@@ -621,7 +623,7 @@ export const SettingsPage: React.FC = () => {
                       <p className="font-medium">
                         {t("settings.body.language.name")}
                       </p>
-                      <p className="text-tiny text-default-500">
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
                         {langNames.find((l) => l.code === selectedLang)
                           ?.language || selectedLang}
                       </p>
@@ -683,7 +685,7 @@ export const SettingsPage: React.FC = () => {
                         <p className="font-medium">
                           {t("settings.layout.title_navbar")}
                         </p>
-                        <p className="text-tiny text-default-500">
+                        <p className="text-tiny text-default-500 dark:text-zinc-400">
                           {t("settings.layout.desc_navbar")}
                         </p>
                       </div>
@@ -712,7 +714,7 @@ export const SettingsPage: React.FC = () => {
                         <p className="font-medium">
                           {t("settings.appearance.disable_animations")}
                         </p>
-                        <p className="text-tiny text-default-500">
+                        <p className="text-tiny text-default-500 dark:text-zinc-400">
                           {t("settings.appearance.disable_animations_desc")}
                         </p>
                       </div>
@@ -743,7 +745,7 @@ export const SettingsPage: React.FC = () => {
                         <p className="font-medium">
                           {t("settings.discord_rpc.title")}
                         </p>
-                        <p className="text-tiny text-default-500">
+                        <p className="text-tiny text-default-500 dark:text-zinc-400">
                           {t("settings.discord_rpc.desc")}
                         </p>
                       </div>
@@ -769,7 +771,7 @@ export const SettingsPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <p className="font-medium">{t("settings.gdk.title")}</p>
-                      <p className="text-tiny text-default-500">
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
                         {t("settings.gdk.path_label", {
                           path: "C:\\Program Files (x86)\\Microsoft GDK",
                         })}
@@ -800,7 +802,7 @@ export const SettingsPage: React.FC = () => {
                   <div className="flex items-center justify-between">
                     <div className="flex flex-col gap-1">
                       <p className="font-medium">{t("settings.lip.title")}</p>
-                      <p className="text-tiny text-default-500">
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
                         {lipInstalled
                           ? t("settings.lip.installed", {
                               version: lipVersion,
@@ -869,7 +871,7 @@ export const SettingsPage: React.FC = () => {
                 <div className="flex items-center justify-between">
                   <div className="flex flex-col gap-1">
                     <p className="font-medium">{t("settings.process.title")}</p>
-                    <p className="text-tiny text-default-500">
+                    <p className="text-tiny text-default-500 dark:text-zinc-400">
                       {t("settings.process.desc")}
                     </p>
                   </div>
@@ -890,7 +892,7 @@ export const SettingsPage: React.FC = () => {
                       <p className="font-medium">
                         {t("settings.beta_updates.title")}
                       </p>
-                      <p className="text-tiny text-default-500">
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
                         {t("settings.beta_updates.desc")}
                       </p>
                     </div>
@@ -914,7 +916,7 @@ export const SettingsPage: React.FC = () => {
                       <p className="font-medium text-large">
                         {t("settings.body.version.name")}
                       </p>
-                      <p className="text-tiny text-default-500">
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
                         v{appVersion}
                       </p>
                     </div>
@@ -1053,7 +1055,7 @@ export const SettingsPage: React.FC = () => {
                         <p className="font-medium text-large">
                           {t("aboutcard.title")}
                         </p>
-                        <p className="text-tiny text-default-500">
+                        <p className="text-tiny text-default-500 dark:text-zinc-400">
                           {t("aboutcard.description", { name: "LeviMC" })} ·{" "}
                           {t("aboutcard.font", { name: "MiSans" })}
                         </p>
@@ -1068,7 +1070,10 @@ export const SettingsPage: React.FC = () => {
                           Browser.OpenURL("https://github.com/liteldev")
                         }
                       >
-                        <FaGithub size={20} className="text-default-500" />
+                        <FaGithub
+                          size={20}
+                          className="text-default-500 dark:text-zinc-400"
+                        />
                       </Button>
                       <Button
                         isIconOnly
@@ -1078,7 +1083,10 @@ export const SettingsPage: React.FC = () => {
                           Browser.OpenURL("https://discord.gg/v5R5P4vRZk")
                         }
                       >
-                        <FaDiscord size={20} className="text-default-500" />
+                        <FaDiscord
+                          size={20}
+                          className="text-default-500 dark:text-zinc-400"
+                        />
                       </Button>
                     </div>
                   </div>
@@ -1090,461 +1098,414 @@ export const SettingsPage: React.FC = () => {
       </div>
 
       {/* GDK License */}
-      <BaseModal
+      <UnifiedModal
         size="md"
         isOpen={gdkLicenseDisclosure.isOpen}
         onOpenChange={gdkLicenseDisclosure.onOpenChange}
+        type="info"
+        title={t("settings.gdk.license.title")}
+        icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+        footer={
+          <>
+            <Button variant="light" onPress={gdkLicenseDisclosure.onClose}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              color="primary"
+              isDisabled={!gdkLicenseAccepted}
+              onPress={() => {
+                gdkLicenseDisclosure.onClose();
+                try {
+                  setGdkDlError("");
+                  setGdkDlProgress(null);
+                  gdkProgressDisclosure.onOpen();
+                  StartGDKDownload(
+                    "https://github.bibk.top/microsoft/GDK/releases/download/October-2025-Update-1-v2510.1.6224/GDK_2510.1.6224.zip",
+                  );
+                } catch {}
+              }}
+            >
+              {t("downloadmodal.download_button")}
+            </Button>
+          </>
+        }
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader>
-                {t("settings.gdk.license.title")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-default-700 text-sm">
-                  {t("settings.gdk.license.body")}{" "}
-                  <a
-                    className="text-primary underline"
-                    href="https://aka.ms/GDK_EULA"
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Microsoft Public Game Development Kit License Agreement
-                  </a>
-                </div>
-                <div className="flex items-center gap-2 mt-3">
-                  <input
-                    type="checkbox"
-                    id="gdk-license"
-                    checked={gdkLicenseAccepted}
-                    onChange={(e) =>
-                      setGdkLicenseAccepted(Boolean(e.target.checked))
-                    }
-                  />
-                  <label htmlFor="gdk-license" className="text-small">
-                    {t("settings.gdk.license.accept")}
-                  </label>
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="primary"
-                  isDisabled={!gdkLicenseAccepted}
-                  onPress={() => {
-                    onClose?.();
-                    try {
-                      setGdkDlError("");
-                      setGdkDlProgress(null);
-                      gdkProgressDisclosure.onOpen();
-                      StartGDKDownload(
-                        "https://github.bibk.top/microsoft/GDK/releases/download/October-2025-Update-1-v2510.1.6224/GDK_2510.1.6224.zip",
-                      );
-                    } catch {}
-                  }}
-                >
-                  {t("downloadmodal.download_button")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-default-700 dark:text-zinc-300 text-sm">
+          {t("settings.gdk.license.body")}{" "}
+          <a
+            className="text-primary underline"
+            href="https://aka.ms/GDK_EULA"
+            target="_blank"
+            rel="noreferrer"
+          >
+            Microsoft Public Game Development Kit License Agreement
+          </a>
+        </div>
+        <div className="flex items-center gap-2 mt-3">
+          <input
+            type="checkbox"
+            id="gdk-license"
+            checked={gdkLicenseAccepted}
+            onChange={(e) => setGdkLicenseAccepted(Boolean(e.target.checked))}
+          />
+          <label htmlFor="gdk-license" className="text-small">
+            {t("settings.gdk.license.accept")}
+          </label>
+        </div>
+      </UnifiedModal>
 
       {/* Process Management Modal */}
-      <BaseModal
+      <UnifiedModal
         size="2xl"
         isOpen={processModalOpen}
         onOpenChange={setProcessModalOpen}
         scrollBehavior="inside"
+        type="primary"
+        title={
+          <div className="flex flex-col gap-1">
+            <span>{t("settings.process.title")}</span>
+            <span className="text-small font-normal text-default-500 dark:text-zinc-400">
+              {t("settings.process.desc")}
+            </span>
+          </div>
+        }
+        icon={<FaList className="w-6 h-6 text-primary-500" />}
+        footer={
+          <Button variant="light" onPress={() => setProcessModalOpen(false)}>
+            {t("common.close")}
+          </Button>
+        }
       >
-        <ModalContent className="bg-white/90 dark:bg-zinc-900/90 backdrop-blur-xl">
-          {(onClose) => (
-            <>
-              <BaseModalHeader>
-                <div className="flex items-center justify-between w-full pr-8">
-                  <div className="flex flex-col gap-1">
-                    <span>{t("settings.process.title")}</span>
-                    <span className="text-small font-normal text-default-500">
-                      {t("settings.process.desc")}
+        <div className="flex items-center justify-end mb-4 gap-2">
+          <Button
+            size="sm"
+            variant="flat"
+            color="primary"
+            isLoading={scanningProcesses}
+            onPress={refreshProcesses}
+          >
+            {t("settings.process.scan")}
+          </Button>
+          {processes.length > 0 && (
+            <Button
+              size="sm"
+              color="danger"
+              variant="flat"
+              onPress={handleKillAllProcesses}
+            >
+              {t("settings.process.kill_all")}
+            </Button>
+          )}
+        </div>
+        <div className="flex flex-col gap-4">
+          {processes.length === 0 ? (
+            <div className="text-center py-8 text-default-500 dark:text-zinc-400">
+              {t("settings.process.no_process")}
+            </div>
+          ) : (
+            <div className="flex flex-col gap-2">
+              {processes.map((p) => (
+                <div
+                  key={p.pid}
+                  className="flex items-center justify-between p-3 rounded-xl bg-default-100/50 dark:bg-default-100/10 border border-default-200/50"
+                >
+                  <div className="flex flex-col gap-1 overflow-hidden">
+                    <div className="flex items-center gap-2">
+                      <span className="font-mono text-small bg-default-200/50 px-1.5 rounded text-default-600">
+                        {p.pid}
+                      </span>
+                      {p.isLauncher && p.versionName ? (
+                        <Chip
+                          size="sm"
+                          color="success"
+                          variant="flat"
+                          className="h-5 text-[10px]"
+                        >
+                          {p.versionName}
+                        </Chip>
+                      ) : (
+                        <span className="text-small font-medium">
+                          Minecraft.Windows.exe
+                        </span>
+                      )}
+                    </div>
+                    <span
+                      className="text-tiny text-default-400 truncate max-w-[400px]"
+                      title={p.exePath}
+                    >
+                      {p.exePath}
                     </span>
                   </div>
-                  <div className="flex items-center gap-2">
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      color="primary"
-                      isLoading={scanningProcesses}
-                      onPress={refreshProcesses}
-                    >
-                      {t("settings.process.scan")}
-                    </Button>
-                    {processes.length > 0 && (
-                      <Button
-                        size="sm"
-                        color="danger"
-                        variant="flat"
-                        onPress={handleKillAllProcesses}
-                      >
-                        {t("settings.process.kill_all")}
-                      </Button>
-                    )}
-                  </div>
+                  <Button
+                    size="sm"
+                    color="danger"
+                    variant="light"
+                    onPress={() => handleKillProcess(p.pid)}
+                  >
+                    {t("settings.process.kill")}
+                  </Button>
                 </div>
-              </BaseModalHeader>
-              <BaseModalBody className="pretty-scrollbar">
-                <div className="flex flex-col gap-4">
-                  {processes.length === 0 ? (
-                    <div className="text-center py-8 text-default-500">
-                      {t("settings.process.no_process")}
-                    </div>
-                  ) : (
-                    <div className="flex flex-col gap-2">
-                      {processes.map((p) => (
-                        <div
-                          key={p.pid}
-                          className="flex items-center justify-between p-3 rounded-xl bg-default-100/50 dark:bg-default-100/10 border border-default-200/50"
-                        >
-                          <div className="flex flex-col gap-1 overflow-hidden">
-                            <div className="flex items-center gap-2">
-                              <span className="font-mono text-small bg-default-200/50 px-1.5 rounded text-default-600">
-                                {p.pid}
-                              </span>
-                              {p.isLauncher && p.versionName ? (
-                                <Chip
-                                  size="sm"
-                                  color="success"
-                                  variant="flat"
-                                  className="h-5 text-[10px]"
-                                >
-                                  {p.versionName}
-                                </Chip>
-                              ) : (
-                                <span className="text-small font-medium">
-                                  Minecraft.Windows.exe
-                                </span>
-                              )}
-                            </div>
-                            <span
-                              className="text-tiny text-default-400 truncate max-w-[400px]"
-                              title={p.exePath}
-                            >
-                              {p.exePath}
-                            </span>
-                          </div>
-                          <Button
-                            size="sm"
-                            color="danger"
-                            variant="light"
-                            onPress={() => handleKillProcess(p.pid)}
-                          >
-                            {t("settings.process.kill")}
-                          </Button>
-                        </div>
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  {t("common.close")}
-                </Button>
-              </BaseModalFooter>
-            </>
+              ))}
+            </div>
           )}
-        </ModalContent>
-      </BaseModal>
+        </div>
+      </UnifiedModal>
 
       {/* GDK Download Progress */}
-      <BaseModal
+      <UnifiedModal
         size="md"
         isOpen={gdkProgressDisclosure.isOpen}
         onOpenChange={gdkProgressDisclosure.onOpenChange}
         hideCloseButton
         isDismissable={false}
+        type="info"
+        title={t("settings.gdk.download.title")}
+        icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+        footer={
+          <>
+            <Button
+              color="danger"
+              variant="light"
+              isDisabled={gdkDlStatus === "done"}
+              onPress={() => {
+                try {
+                  CancelGDKDownload();
+                } catch {}
+                gdkProgressDisclosure.onClose();
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              color="primary"
+              isDisabled={gdkDlStatus !== "done"}
+              onPress={() => gdkProgressDisclosure.onClose()}
+            >
+              {t("common.ok")}
+            </Button>
+          </>
+        }
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-medium">
-                {t("settings.gdk.download.title")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                {gdkDlError ? (
-                  <div className="text-danger">{gdkDlError}</div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <div className="h-2 w-full rounded bg-default-200 overflow-hidden">
-                      {(() => {
-                        const total = gdkDlProgress?.total || 0;
-                        const done = gdkDlProgress?.downloaded || 0;
-                        const pct =
-                          total > 0
-                            ? Math.min(100, Math.round((done / total) * 100))
-                            : 0;
-                        return (
-                          <div
-                            className="h-full bg-primary"
-                            style={{ width: `${pct}%` }}
-                          />
-                        );
-                      })()}
-                    </div>
-                    <div className="text-small text-default-500">
-                      {(() => {
-                        const total = gdkDlProgress?.total || 0;
-                        const done = gdkDlProgress?.downloaded || 0;
-                        const fmt = (n: number) =>
-                          `${(n / (1024 * 1024)).toFixed(2)} MB`;
-                        const fmtSpd = (bps: number) =>
-                          `${(bps / (1024 * 1024)).toFixed(2)} MB/s`;
-                        if (total > 0) {
-                          const pct = Math.min(
-                            100,
-                            Math.round((done / total) * 100),
-                          );
-                          return `${fmt(done)} / ${fmt(
-                            total,
-                          )} (${pct}%) · ${fmtSpd(gdkDlSpeed || 0)}`;
-                        }
-                        return `${fmt(done)} · ${fmtSpd(gdkDlSpeed || 0)}`;
-                      })()}
-                    </div>
-                  </div>
-                )}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  color="danger"
-                  variant="light"
-                  isDisabled={gdkDlStatus === "done"}
-                  onPress={() => {
-                    try {
-                      CancelGDKDownload();
-                    } catch {}
-                    onClose?.();
-                  }}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="primary"
-                  isDisabled={gdkDlStatus !== "done"}
-                  onPress={() => onClose?.()}
-                >
-                  {t("common.ok")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        {gdkDlError ? (
+          <div className="text-danger">{gdkDlError}</div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="h-2 w-full rounded bg-default-200 overflow-hidden">
+              {(() => {
+                const total = gdkDlProgress?.total || 0;
+                const done = gdkDlProgress?.downloaded || 0;
+                const pct =
+                  total > 0
+                    ? Math.min(100, Math.round((done / total) * 100))
+                    : 0;
+                return (
+                  <div
+                    className="h-full bg-primary"
+                    style={{ width: `${pct}%` }}
+                  />
+                );
+              })()}
+            </div>
+            <div className="text-small text-default-500 dark:text-zinc-400">
+              {(() => {
+                const total = gdkDlProgress?.total || 0;
+                const done = gdkDlProgress?.downloaded || 0;
+                const fmt = (n: number) =>
+                  `${(n / (1024 * 1024)).toFixed(2)} MB`;
+                const fmtSpd = (bps: number) =>
+                  `${(bps / (1024 * 1024)).toFixed(2)} MB/s`;
+                if (total > 0) {
+                  const pct = Math.min(100, Math.round((done / total) * 100));
+                  return `${fmt(done)} / ${fmt(total)} (${pct}%) · ${fmtSpd(
+                    gdkDlSpeed || 0,
+                  )}`;
+                }
+                return `${fmt(done)} · ${fmtSpd(gdkDlSpeed || 0)}`;
+              })()}
+            </div>
+          </div>
+        )}
+      </UnifiedModal>
 
       {/* GDK Install */}
-      <BaseModal
+      <UnifiedModal
         size="md"
         isOpen={gdkInstallDisclosure.isOpen}
         onOpenChange={gdkInstallDisclosure.onOpenChange}
         hideCloseButton
         isDismissable={false}
+        type="info"
+        title={t("settings.gdk.install.title")}
+        icon={<FaCogs className="w-6 h-6 text-primary-500" />}
       >
-        <ModalContent className="shadow-none">
-          {() => (
-            <>
-              <BaseModalHeader>
-                {t("settings.gdk.install.title")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-small text-default-500">
-                  {t("settings.gdk.install.body")}
-                </div>
-              </BaseModalBody>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-small text-default-500 dark:text-zinc-400">
+          {t("settings.gdk.install.body")}
+        </div>
+      </UnifiedModal>
 
       {/* LIP Install Progress */}
-      <BaseModal
+      <UnifiedModal
         size="md"
         isOpen={lipProgressDisclosure.isOpen}
         onOpenChange={lipProgressDisclosure.onOpenChange}
         hideCloseButton
         isDismissable={false}
+        type="info"
+        title={t("settings.lip.installing")}
+        icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+        footer={
+          <>
+            <Button
+              color="danger"
+              variant="light"
+              onPress={lipProgressDisclosure.onClose}
+              isDisabled={!installingLip}
+            >
+              {t("common.hide")}
+            </Button>
+            <Button
+              color="primary"
+              onPress={lipProgressDisclosure.onClose}
+              isDisabled={installingLip && !lipError}
+            >
+              {lipError ? t("common.close") : t("common.ok")}
+            </Button>
+          </>
+        }
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-medium">
-                {t("settings.lip.installing")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                {lipError ? (
-                  <div className="text-danger">
-                    {t(
-                      `settings.lip.error.${lipError
-                        .toLowerCase()
-                        .replace(/^err_/, "")}`,
-                    )}
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-3">
-                    <div className="h-2 w-full rounded bg-default-200 overflow-hidden">
-                      <div
-                        className="h-full bg-primary"
-                        style={{ width: `${lipProgress.percentage}%` }}
-                      />
-                    </div>
-                    <div className="text-small text-default-500">
-                      {t(`settings.lip.status.${lipStatus}`)}
-                      {lipProgress.total > 0 ? (
-                        <span className="ml-2">
-                          {`${(lipProgress.current / (1024 * 1024)).toFixed(2)} MB / ${(lipProgress.total / (1024 * 1024)).toFixed(2)} MB`}
-                        </span>
-                      ) : (
-                        ` (${lipProgress.percentage.toFixed(0)}%)`
-                      )}
-                    </div>
-                  </div>
-                )}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  color="danger"
-                  variant="light"
-                  onPress={onClose}
-                  isDisabled={!installingLip}
-                >
-                  {t("common.hide")}
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={onClose}
-                  isDisabled={installingLip && !lipError}
-                >
-                  {lipError ? t("common.close") : t("common.ok")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        {lipError ? (
+          <div className="text-danger">
+            {t(
+              `settings.lip.error.${lipError
+                .toLowerCase()
+                .replace(/^err_/, "")}`,
+            )}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-3">
+            <div className="h-2 w-full rounded bg-default-200 overflow-hidden">
+              <div
+                className="h-full bg-primary"
+                style={{ width: `${lipProgress.percentage}%` }}
+              />
+            </div>
+            <div className="text-small text-default-500 dark:text-zinc-400">
+              {t(`settings.lip.status.${lipStatus}`)}
+              {lipProgress.total > 0 ? (
+                <span className="ml-2">
+                  {`${(lipProgress.current / (1024 * 1024)).toFixed(2)} MB / ${(lipProgress.total / (1024 * 1024)).toFixed(2)} MB`}
+                </span>
+              ) : (
+                ` (${lipProgress.percentage.toFixed(0)}%)`
+              )}
+            </div>
+          </div>
+        )}
+      </UnifiedModal>
 
-      <BaseModal
+      <UnifiedModal
         size="md"
         isOpen={unsavedOpen}
         onOpenChange={unsavedOnOpenChange}
         hideCloseButton
-      >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-warning-600">
-                {t("settings.unsaved.title")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-default-700 text-sm">
-                  {t("settings.unsaved.body")}
-                </div>
-                {!baseRootWritable && (
-                  <div className="text-tiny text-danger-500 mt-1">
-                    {t("settings.body.paths.not_writable")}
-                  </div>
-                )}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  {t("settings.unsaved.cancel")}
-                </Button>
-                <Button
-                  color="primary"
-                  isLoading={savingBaseRoot}
-                  isDisabled={!newBaseRoot || !baseRootWritable}
-                  onPress={async () => {
-                    setSavingBaseRoot(true);
-                    try {
-                      const ok = await CanWriteToDir(newBaseRoot);
-                      if (!ok) {
-                        setBaseRootWritable(false);
-                      } else {
-                        const err = await SetBaseRoot(newBaseRoot);
-                        if (!err) {
-                          const br = await GetBaseRoot();
-                          setBaseRoot(String(br || ""));
-                          const id = await GetInstallerDir();
-                          setInstallerDir(String(id || ""));
-                          const vd = await GetVersionsDir();
-                          setVersionsDir(String(vd || ""));
-                          onClose();
-                          if (pendingNavPath === "-1") {
-                            navigate(-1);
-                          } else if (pendingNavPath) {
-                            navigate(pendingNavPath);
-                          }
-                        }
+        type="warning"
+        title={t("settings.unsaved.title")}
+        footer={
+          <>
+            <Button
+              variant="light"
+              onPress={unsavedOnOpenChange.bind(null, false)}
+            >
+              {t("settings.unsaved.cancel")}
+            </Button>
+            <Button
+              color="primary"
+              isLoading={savingBaseRoot}
+              isDisabled={!newBaseRoot || !baseRootWritable}
+              onPress={async () => {
+                setSavingBaseRoot(true);
+                try {
+                  const ok = await CanWriteToDir(newBaseRoot);
+                  if (!ok) {
+                    setBaseRootWritable(false);
+                  } else {
+                    const err = await SetBaseRoot(newBaseRoot);
+                    if (!err) {
+                      const br = await GetBaseRoot();
+                      setBaseRoot(String(br || ""));
+                      const id = await GetInstallerDir();
+                      setInstallerDir(String(id || ""));
+                      const vd = await GetVersionsDir();
+                      setVersionsDir(String(vd || ""));
+                      unsavedOnOpenChange(false);
+                      if (pendingNavPath === "-1") {
+                        navigate(-1);
+                      } else if (pendingNavPath) {
+                        navigate(pendingNavPath);
                       }
-                    } catch {}
-                    setSavingBaseRoot(false);
-                  }}
-                >
-                  {t("settings.unsaved.save")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+                    }
+                  }
+                } catch {}
+                setSavingBaseRoot(false);
+              }}
+            >
+              {t("settings.unsaved.save")}
+            </Button>
+          </>
+        }
+      >
+        <div className="text-default-700 dark:text-zinc-300 text-sm">
+          {t("settings.unsaved.body")}
+        </div>
+        {!baseRootWritable && (
+          <div className="text-tiny text-danger-500 mt-1">
+            {t("settings.body.paths.not_writable")}
+          </div>
+        )}
+      </UnifiedModal>
 
-      <BaseModal
+      <UnifiedModal
         size="sm"
         isOpen={resetOpen}
         onOpenChange={resetOnOpenChange}
         hideCloseButton
+        type="error"
+        title={t("settings.reset.confirm.title")}
+        footer={
+          <>
+            <Button
+              variant="light"
+              onPress={resetOnOpenChange.bind(null, false)}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              color="danger"
+              onPress={async () => {
+                try {
+                  const err = await ResetBaseRoot();
+                  if (!err) {
+                    const br = await GetBaseRoot();
+                    setBaseRoot(String(br || ""));
+                    setNewBaseRoot(String(br || ""));
+                    const id = await GetInstallerDir();
+                    setInstallerDir(String(id || ""));
+                    const vd = await GetVersionsDir();
+                    setVersionsDir(String(vd || ""));
+                  }
+                } catch {}
+                resetOnOpenChange(false);
+              }}
+            >
+              {t("common.confirm")}
+            </Button>
+          </>
+        }
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-danger-600">
-                {t("settings.reset.confirm.title")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-default-700 text-sm">
-                  {t("settings.reset.confirm.body")}
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="danger"
-                  onPress={async () => {
-                    try {
-                      const err = await ResetBaseRoot();
-                      if (!err) {
-                        const br = await GetBaseRoot();
-                        setBaseRoot(String(br || ""));
-                        setNewBaseRoot(String(br || ""));
-                        const id = await GetInstallerDir();
-                        setInstallerDir(String(id || ""));
-                        const vd = await GetVersionsDir();
-                        setVersionsDir(String(vd || ""));
-                      }
-                    } catch {}
-                    onClose();
-                  }}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-default-700 dark:text-zinc-300 text-sm">
+          {t("settings.reset.confirm.body")}
+        </div>
+      </UnifiedModal>
     </PageContainer>
   );
 };

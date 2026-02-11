@@ -78,7 +78,7 @@ export const DownloadManagerPage: React.FC = () => {
                             {task.fileName ||
                               t("download_manager.unknown_file")}
                           </h3>
-                          <div className="flex items-center gap-2 text-small text-default-500">
+                          <div className="flex items-center gap-2 text-small text-default-500 dark:text-zinc-400">
                             {task.status === "done" ? (
                               <Chip
                                 color="success"
@@ -169,7 +169,7 @@ export const DownloadManagerPage: React.FC = () => {
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <div className="flex justify-between text-tiny text-default-500 font-medium">
+                      <div className="flex justify-between text-tiny text-default-500 dark:text-zinc-400 font-medium">
                         <span>
                           {task.progress
                             ? formatBytes(task.progress.downloaded)

@@ -10,17 +10,13 @@ import {
   DropdownTrigger,
   Spinner,
   Tooltip,
-  ModalContent,
   Progress,
   useDisclosure,
 } from "@heroui/react";
 import { Dialogs } from "@wailsio/runtime";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
+import { ImportResultModal } from "@/components/ImportResultModal";
+import { resolveImportError } from "@/utils/importError";
 import { AnimatePresence, motion } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -327,34 +323,6 @@ export default function ContentPage() {
       return String(err || "");
     } catch (e: any) {
       return String(e?.message || "IMPORT_ERROR");
-    }
-  };
-
-  const resolveImportError = (err: string): string => {
-    const code = String(err || "").trim();
-    switch (code) {
-      case "ERR_NO_PLAYER":
-        return t("contentpage.no_player_selected") as string;
-      case "ERR_INVALID_NAME":
-        return t("mods.err_invalid_name") as string;
-      case "ERR_ACCESS_VERSIONS_DIR":
-        return t("mods.err_access_versions_dir") as string;
-      case "ERR_CREATE_TARGET_DIR":
-        return t("mods.err_create_target_dir") as string;
-      case "ERR_OPEN_ZIP":
-        return t("mods.err_open_zip") as string;
-      case "ERR_MANIFEST_NOT_FOUND":
-        return t("mods.err_manifest_not_found") as string;
-      case "ERR_INVALID_PACKAGE":
-        return t("mods.err_invalid_package") as string;
-      case "ERR_DUPLICATE_FOLDER":
-        return t("mods.err_duplicate_folder") as string;
-      case "ERR_READ_ZIP_ENTRY":
-        return t("mods.err_read_zip_entry") as string;
-      case "ERR_WRITE_FILE":
-        return t("mods.err_write_file") as string;
-      default:
-        return code || (t("mods.err_unknown") as string);
     }
   };
 
@@ -891,30 +859,30 @@ export default function ContentPage() {
                     titleClassName="pb-1"
                   />
                 </div>
-                <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
+                <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
                   <span>{t("contentpage.current_version")}:</span>
-                  <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
+                  <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
                     {currentVersionName || t("contentpage.none")}
                   </span>
-                  <span className="text-default-300">|</span>
+                  <span className="text-default-300 dark:text-zinc-600">|</span>
                   <span>{t("contentpage.isolation")}:</span>
                   <span
                     className={`font-medium px-2 py-0.5 rounded-md ${
                       roots.isIsolation
-                        ? "bg-success-50 text-success-600"
-                        : "bg-default-100 text-default-700"
+                        ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
+                        : "bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
                     }`}
                   >
                     {roots.isIsolation ? t("common.yes") : t("common.no")}
                   </span>
-                  <span className="text-default-300">|</span>
+                  <span className="text-default-300 dark:text-zinc-600">|</span>
                   <span>{t("contentpage.select_player")}:</span>
                   <Dropdown>
                     <DropdownTrigger>
                       <Button
                         size="sm"
                         variant="light"
-                        className="h-6 min-w-0 px-2 text-small font-medium text-default-700 bg-default-100 rounded-md"
+                        className="h-6 min-w-0 px-2 text-small font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 rounded-md"
                       >
                         {selectedPlayer
                           ? resolvePlayerDisplayName(
@@ -1044,7 +1012,7 @@ export default function ContentPage() {
                 <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500">
                   <FaGlobe className="w-6 h-6" />
                 </div>
-                <span className="text-lg font-medium text-default-700">
+                <span className="text-lg font-medium text-default-700 dark:text-zinc-200">
                   {t("contentpage.worlds")}
                 </span>
               </div>
@@ -1066,7 +1034,7 @@ export default function ContentPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="text-2xl font-bold text-default-900"
+                    className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
                     {worldsCount}
                   </motion.span>
@@ -1087,7 +1055,7 @@ export default function ContentPage() {
                 <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-500">
                   <FaImage className="w-6 h-6" />
                 </div>
-                <span className="text-lg font-medium text-default-700">
+                <span className="text-lg font-medium text-default-700 dark:text-zinc-200">
                   {t("contentpage.resource_packs")}
                 </span>
               </div>
@@ -1109,7 +1077,7 @@ export default function ContentPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="text-2xl font-bold text-default-900"
+                    className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
                     {resCount}
                   </motion.span>
@@ -1130,7 +1098,7 @@ export default function ContentPage() {
                 <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-500">
                   <FaCogs className="w-6 h-6" />
                 </div>
-                <span className="text-lg font-medium text-default-700">
+                <span className="text-lg font-medium text-default-700 dark:text-zinc-200">
                   {t("contentpage.behavior_packs")}
                 </span>
               </div>
@@ -1152,7 +1120,7 @@ export default function ContentPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="text-2xl font-bold text-default-900"
+                    className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
                     {bpCount}
                   </motion.span>
@@ -1177,7 +1145,7 @@ export default function ContentPage() {
                 <div className="p-2 rounded-xl bg-pink-50 dark:bg-pink-900/20 text-pink-500">
                   <FaUserTag className="w-6 h-6" />
                 </div>
-                <span className="text-lg font-medium text-default-700">
+                <span className="text-lg font-medium text-default-700 dark:text-zinc-200">
                   {t("contentpage.skin_packs")}
                 </span>
               </div>
@@ -1199,7 +1167,7 @@ export default function ContentPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="text-2xl font-bold text-default-900"
+                    className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
                     {skinCount}
                   </motion.span>
@@ -1224,7 +1192,7 @@ export default function ContentPage() {
                 <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500">
                   <FaServer className="w-6 h-6" />
                 </div>
-                <span className="text-lg font-medium text-default-700">
+                <span className="text-lg font-medium text-default-700 dark:text-zinc-200">
                   {t("contentpage.servers")}
                 </span>
               </div>
@@ -1246,7 +1214,7 @@ export default function ContentPage() {
                     animate={{ opacity: 1 }}
                     exit={{ opacity: 0 }}
                     transition={{ duration: 0.2 }}
-                    className="text-2xl font-bold text-default-900"
+                    className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
                     {serversCount}
                   </motion.span>
@@ -1266,221 +1234,123 @@ export default function ContentPage() {
         onChange={handleFilePick}
       />
 
-      <BaseModal
-        size="sm"
+      <UnifiedModal
         isOpen={importing}
+        onOpenChange={() => {}}
+        type="primary"
+        title={t("mods.importing_title")}
+        icon={<FiUploadCloud className="w-6 h-6 text-primary-500" />}
         hideCloseButton
         isDismissable={false}
+        showConfirmButton={false}
+        showCancelButton={false}
       >
-        <ModalContent>
-          {() => (
-            <>
-              <BaseModalHeader className="flex-row items-center gap-2 text-primary-600">
-                <FiUploadCloud className="w-5 h-5" />
-                <span>{t("mods.importing_title")}</span>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="py-1">
-                  <Progress
-                    isIndeterminate
-                    aria-label="importing"
-                    className="w-full"
-                  />
-                </div>
-                <div className="text-default-600 text-sm">
-                  {t("mods.importing_body")}
-                </div>
-                {currentFile ? (
-                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
-                    {currentFile}
-                  </div>
-                ) : null}
-              </BaseModalBody>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-      <BaseModal
-        size="md"
+        <div className="flex flex-col gap-4">
+          <Progress
+            isIndeterminate
+            aria-label="importing"
+            className="w-full"
+            size="sm"
+            color="primary"
+          />
+          <div className="text-default-600 dark:text-zinc-300 text-sm">
+            {t("mods.importing_body")}
+          </div>
+          {currentFile ? (
+            <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
+              {currentFile}
+            </div>
+          ) : null}
+        </div>
+      </UnifiedModal>
+      <ImportResultModal
         isOpen={errOpen}
         onOpenChange={errOnOpenChange}
-        hideCloseButton
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader
-                className={`flex-row items-center gap-2 ${
-                  resultFailed.length ? "text-red-600" : "text-primary-600"
-                }`}
-              >
-                {resultFailed.length ? (
-                  <FiAlertTriangle className="w-5 h-5" />
-                ) : (
-                  <FiUploadCloud className="w-5 h-5" />
-                )}
-                <span>
-                  {resultFailed.length
-                    ? t("mods.summary_title_partial")
-                    : t("mods.summary_title_done")}
-                </span>
-              </BaseModalHeader>
-              <BaseModalBody>
-                {resultSuccess.length ? (
-                  <div className="mb-2">
-                    <div className="text-sm font-semibold text-success">
-                      {t("mods.summary_success")} ({resultSuccess.length})
-                    </div>
-                    <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm wrap-break-word whitespace-pre-wrap">
-                      {resultSuccess.join("\n")}
-                    </div>
-                  </div>
-                ) : null}
-                {resultFailed.length ? (
-                  <div>
-                    <div className="text-sm font-semibold text-danger">
-                      {t("mods.summary_failed")} ({resultFailed.length})
-                    </div>
-                    <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm wrap-break-word whitespace-pre-wrap">
-                      {resultFailed
-                        .map(
-                          (it) => `${it.name} - ${resolveImportError(it.err)}`,
-                        )
-                        .join("\n")}
-                    </div>
-                  </div>
-                ) : null}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  color="primary"
-                  onPress={() => {
-                    setErrorMsg("");
-                    setResultSuccess([]);
-                    setResultFailed([]);
-                    onClose();
-                  }}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-      <BaseModal
-        size="md"
+        results={{ success: resultSuccess, failed: resultFailed }}
+        onConfirm={() => {
+          setErrorMsg("");
+          setResultSuccess([]);
+          setResultFailed([]);
+        }}
+      />
+      <UnifiedModal
         isOpen={dupOpen}
-        onOpenChange={dupOnOpenChange}
-        hideCloseButton
+        onOpenChange={(open) => {
+          dupOnOpenChange(open);
+          if (!open) {
+            dupResolveRef.current?.(false);
+          }
+        }}
+        type="warning"
+        title={t("mods.overwrite_modal_title")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+        showCancelButton
+        onConfirm={() => {
+          dupResolveRef.current?.(true);
+          dupOnOpenChange(false);
+        }}
+        onCancel={() => {
+          dupResolveRef.current?.(false);
+          dupOnOpenChange(false);
+        }}
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-primary-600">
-                {t("mods.overwrite_modal_title")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-sm text-default-700">
-                  {t("mods.overwrite_modal_body")}
-                </div>
-                {dupNameRef.current ? (
-                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
-                    {dupNameRef.current}
-                  </div>
-                ) : null}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="light"
-                  onPress={() => {
-                    try {
-                      dupResolveRef.current && dupResolveRef.current(false);
-                    } finally {
-                      onClose();
-                    }
-                  }}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={() => {
-                    try {
-                      dupResolveRef.current && dupResolveRef.current(true);
-                    } finally {
-                      onClose();
-                    }
-                  }}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-      <BaseModal
-        size="md"
+        <div className="flex flex-col gap-4">
+          <div className="text-sm text-default-700 dark:text-zinc-300">
+            {t("mods.overwrite_modal_body")}
+          </div>
+          {dupNameRef.current ? (
+            <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
+              {dupNameRef.current}
+            </div>
+          ) : null}
+        </div>
+      </UnifiedModal>
+      <UnifiedModal
         isOpen={playerSelectOpen}
-        onOpenChange={playerSelectOnOpenChange}
-        hideCloseButton
+        onOpenChange={(open) => {
+          playerSelectOnOpenChange(open);
+          if (!open) {
+            playerSelectResolveRef.current?.("");
+          }
+        }}
+        type="primary"
+        title={t("contentpage.select_player_title")}
+        cancelText={t("common.cancel")}
+        showCancelButton
+        showConfirmButton={false}
+        onCancel={() => {
+          playerSelectResolveRef.current?.("");
+          playerSelectOnOpenChange(false);
+        }}
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-primary-600">
-                {t("contentpage.select_player_title")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-sm text-default-700">
-                  {t("contentpage.select_player_for_import")}
-                </div>
-                <div className="mt-3 space-y-2">
-                  {players.length ? (
-                    players.map((p) => (
-                      <Button
-                        key={p}
-                        variant="bordered"
-                        className="w-full justify-start"
-                        onPress={() => {
-                          try {
-                            playerSelectResolveRef.current &&
-                              playerSelectResolveRef.current(p);
-                          } finally {
-                            onClose();
-                          }
-                        }}
-                      >
-                        {resolvePlayerDisplayName(p, playerGamertagMap)}
-                      </Button>
-                    ))
-                  ) : (
-                    <div className="text-sm text-default-500">
-                      {t("contentpage.no_players")}
-                    </div>
-                  )}
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
+        <div className="flex flex-col gap-4">
+          <div className="text-sm text-default-700 dark:text-zinc-300">
+            {t("contentpage.select_player_for_import")}
+          </div>
+          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar p-1">
+            {players.length ? (
+              players.map((p) => (
                 <Button
-                  variant="light"
+                  key={p}
+                  variant="flat"
+                  className="w-full justify-start bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
                   onPress={() => {
-                    try {
-                      playerSelectResolveRef.current &&
-                        playerSelectResolveRef.current("");
-                    } finally {
-                      onClose();
-                    }
+                    playerSelectResolveRef.current?.(p);
+                    playerSelectOnOpenChange(false);
                   }}
                 >
-                  {t("common.cancel")}
+                  {resolvePlayerDisplayName(p, playerGamertagMap)}
                 </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+              ))
+            ) : (
+              <div className="text-sm text-default-500 dark:text-zinc-400">
+                {t("contentpage.no_players")}
+              </div>
+            )}
+          </div>
+        </div>
+      </UnifiedModal>
     </PageContainer>
   );
 }

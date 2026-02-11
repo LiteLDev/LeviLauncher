@@ -1,10 +1,4 @@
 import React from "react";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
 import { getPlayerGamertagMap } from "@/utils/content";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -21,9 +15,9 @@ import {
   Chip,
   Select,
   SelectItem,
-  ModalContent,
   useDisclosure,
 } from "@heroui/react";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -527,7 +521,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                       </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-default-500 shrink-0 text-sm">
+                  <div className="flex items-center gap-2 text-default-500 dark:text-zinc-400 shrink-0 text-sm">
                     {(() => {
                       const u = logoMap.get(it.name);
                       return u ? (
@@ -548,68 +542,60 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
         </motion.div>
       </PageContainer>
 
-      <BaseModal
+      <UnifiedModal
         isOpen={unsavedDisclosure.isOpen}
         onOpenChange={unsavedDisclosure.onOpenChange}
-        size="md"
+        type="warning"
+        title={t("versionselect.unsaved.title")}
+        showConfirmButton={false}
+        showCancelButton={false}
+        footer={
+          <div className="flex w-full justify-end gap-2">
+            <Button
+              variant="light"
+              onPress={() => {
+                unsavedDisclosure.onOpenChange(false);
+                if (navAttemptRef.current) navAttemptRef.current = null;
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              color="danger"
+              variant="light"
+              onPress={() => {
+                unsavedDisclosure.onOpenChange(false);
+                commitNavAttempt();
+              }}
+            >
+              {t("versionselect.unsaved.discard")}
+            </Button>
+            <Button
+              color="primary"
+              onPress={() => {
+                const name = selectedVersionName;
+                if (name) {
+                  try {
+                    localStorage.setItem("ll.currentVersionName", name);
+                  } catch {}
+                }
+                try {
+                  props.refresh && props.refresh();
+                } catch {}
+                setPersistedName(name || persistedName);
+                unsavedDisclosure.onOpenChange(false);
+                commitNavAttempt();
+              }}
+            >
+              {t("versionselect.unsaved.save_and_leave")}
+            </Button>
+          </div>
+        }
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="flex items-center gap-2">
-                <h2 className="text-lg font-semibold">
-                  {t("versionselect.unsaved.title")}
-                </h2>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-small text-default-600">
-                  {t("versionselect.unsaved.body")}
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="light"
-                  onPress={() => {
-                    onClose?.();
-                    if (navAttemptRef.current) navAttemptRef.current = null;
-                  }}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="danger"
-                  variant="light"
-                  onPress={() => {
-                    onClose?.();
-                    commitNavAttempt();
-                  }}
-                >
-                  {t("versionselect.unsaved.discard")}
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={() => {
-                    const name = selectedVersionName;
-                    if (name) {
-                      try {
-                        localStorage.setItem("ll.currentVersionName", name);
-                      } catch {}
-                    }
-                    try {
-                      props.refresh && props.refresh();
-                    } catch {}
-                    setPersistedName(name || persistedName);
-                    onClose?.();
-                    commitNavAttempt();
-                  }}
-                >
-                  {t("versionselect.unsaved.save_and_leave")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-small text-default-600 dark:text-zinc-300">
+          {t("versionselect.unsaved.body")}
+        </div>
+      </UnifiedModal>
     </>
   );
 };

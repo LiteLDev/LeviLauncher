@@ -1,7 +1,6 @@
 {
   "app": {
-    "settings": "设置",
-    "lang": "语言"
+    "settings": "设置"
   },
   "nav": {
     "versions": "实例列表",
@@ -49,9 +48,7 @@
       },
       "confirm": {
         "title": "确认删除",
-        "content": "您确定要删除此实例吗？此操作无法撤销。",
-        "delete_button": "删除",
-        "cancel_button": "取消"
+        "content": "您确定要删除此实例吗？此操作无法撤销。"
       }
     },
     "launch": {
@@ -124,18 +121,6 @@
       "settings_base_root": "设置页可修改内容存储路径，默认使用 %APPDATA% 下以当前可执行文件名命名的文件夹。",
       "directory_write_check": "仅可保存到可写目录；不可写目录将被禁用。"
     },
-    "adminconfirm": {
-      "title": "需要权限",
-      "content": "此操作需要管理员权限。",
-      "confirm_button": "授权",
-      "cancel_button": "取消"
-    },
-    "admindeny": {
-      "title": "权限被拒绝",
-      "content": "您拒绝了权限请求。",
-      "confirm_button": "重试",
-      "cancel_button": "取消"
-    },
     "edition": "Bedrock Edition"
   },
   "updating": {
@@ -181,14 +166,6 @@
       "empty": "暂无数据",
       "header": {
         "version": "版本",
-        "details": "详情",
-        "disable": "禁用",
-        "enable": "启用",
-        "open_folder": "打开文件夹",
-        "remove": "移除",
-        "update": "更新",
-        "update_all": "全部更新",
-        "updated": "已更新",
         "type": "类型",
         "status": "状态",
         "loader": "加载器",
@@ -256,7 +233,6 @@
       "title": "确认删除下载包",
       "body": "将删除安装包：",
       "warning": "此操作不可恢复。",
-      "confirm": "删除",
       "success_body": "已删除安装包："
     },
     "install": {
@@ -308,8 +284,6 @@
   },
   "settings": {
     "layout": {
-      "title": "侧边栏布局",
-      "desc": "使用垂直侧边栏代替顶部导航栏",
       "title_navbar": "使用顶部导航栏",
       "desc_navbar": "开启后使用顶部导航栏代替默认的垂直侧边栏"
     },
@@ -368,8 +342,21 @@
       "install_button": "安装",
       "installing": "正在安装 LIP...",
       "update_button": "更新至 {{version}}",
-      "installed_label": "已安装"
-    },
+      "installed_label": "已安装",
+      "status": {
+        "checking_update": "正在检查更新...",
+        "downloading": "正在下载...",
+        "extracting": "正在解压...",
+        "done": "安装完成"
+       },
+       "error": {
+         "fetch_release_failed": "获取版本信息失败",
+         "create_temp": "创建临时目录失败",
+         "download_failed": "下载失败",
+         "create_target_dir": "创建目标目录失败",
+         "unzip_failed": "解压失败"
+       }
+     },
     "header": {
       "title": "设置",
       "content": "配置启动器常用选项"
@@ -395,11 +382,6 @@
       "language": {
         "name": "语言",
         "button": "更改"
-      },
-      "appearance": {
-        "title": "外观",
-        "disable_animations": "禁用动画",
-        "disable_animations_desc": "关闭界面过渡动画以提高性能或减少动态效果"
       }
     },
     "modal": {
@@ -497,24 +479,19 @@
     "load_failed": "加载失败",
     "view_all": "查看全部",
     "confirm_delete": "确认删除",
-    "deleting": "正在删除...",
     "no_results": "无搜索结果",
     "hide": "隐藏",
     "edit": "编辑",
     "backup": "备份",
     "date": "日期",
-    "error_load": "加载失败",
     "size": "大小",
-    "unknown": "未知",
     "version": "版本",
     "details": "详情",
     "disable": "禁用",
     "enable": "启用",
     "open_folder": "打开文件夹",
     "remove": "移除",
-    "update": "更新",
-    "update_all": "全部更新",
-    "updated": "已更新"
+    "update": "更新"
   },
   "useravatar": {
     "no_login_retry": "未检测到 Xbox 登录（点击重试）",
@@ -582,7 +559,6 @@
   },
   "versions": {
     "info": {
-      "version": "游戏版本",
       "name": "名称"
     },
     "edit": {
@@ -594,6 +570,7 @@
         "loader": "加载器"
       },
       "title": "实例设置",
+      "mc_version": "游戏版本",
       "new_name": "新名称",
       "placeholder": "输入新名称",
       "hint": "仅修改文件夹名称，不影响游戏版本与类型。",
@@ -607,7 +584,6 @@
       "env_vars": "环境变量",
       "env_vars_placeholder": "环境变量 (KEY=VALUE)，每行一个",
       "env_vars_hint": "设置启动时的环境变量。",
-      "danger_zone_title": "危险操作",
       "delete_hint": "永久从您的设备中删除该实例，包括世界、配置及所有安装内容。请谨慎操作，删除后无法恢复。",
       "unregister_button": "取消注册",
       "unregister_hint": "取消该实例在系统中的注册，使其不再显示于系统应用列表。此操作不会删除文件。",
@@ -725,9 +701,6 @@
     "field_type": "类型",
     "field_entry": "入口",
     "field_author": "作者",
-    "delete_summary_title_done": "删除完成",
-    "delete_summary_title_failed": "删除失败",
-    "summary_deleted": "已删除",
     "confirm_delete_title": "确认删除",
     "confirm_delete_body": "确定要删除此{{type}}吗？此操作不可撤销。",
     "dll_modal_title": "导入 DLL 模组",

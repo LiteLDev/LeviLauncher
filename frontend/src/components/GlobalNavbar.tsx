@@ -135,7 +135,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
               radius="lg"
               onPress={() => tryNavigate(-1)}
               isDisabled={navLocked}
-              className="wails-no-drag text-default-500"
+              className="wails-no-drag text-default-500 dark:text-zinc-400"
             >
               <IoArrowBack size={20} />
             </Button>

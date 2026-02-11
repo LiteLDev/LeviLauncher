@@ -74,7 +74,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 radius="lg"
                 onPress={() => navigate(-1)}
                 isDisabled={navLocked || !canGoBack}
-                className="wails-no-drag text-default-500"
+                className="wails-no-drag text-default-500 dark:text-zinc-400"
                 aria-label="Go back"
               >
                 <IoArrowBack size={20} />
@@ -93,7 +93,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 radius="lg"
                 onPress={() => navigate(1)}
                 isDisabled={navLocked || !canGoForward}
-                className="wails-no-drag text-default-500"
+                className="wails-no-drag text-default-500 dark:text-zinc-400"
                 aria-label="Go forward"
               >
                 <IoArrowForward size={20} />
@@ -109,7 +109,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 className={`${
                   pathnames.length === 0
                     ? "font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent"
-                    : "text-default-500"
+                    : "text-default-500 dark:text-zinc-400"
                 }`}
               >
                 {pathnames.length === 0 ? "LeviLauncher" : "Home"}
@@ -120,7 +120,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 className={`transition-colors hover:opacity-80 ${
                   pathnames.length === 0
                     ? "font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent"
-                    : "text-default-500 hover:text-default-900"
+                    : "text-default-500 dark:text-zinc-400 hover:text-default-900 dark:hover:text-zinc-200"
                 }`}
               >
                 {pathnames.length === 0 ? "LeviLauncher" : "Home"}
@@ -139,8 +139,8 @@ export const TopBar: React.FC<TopBarProps> = ({
                     <span
                       className={`${
                         isLast
-                          ? "font-bold text-default-900"
-                          : "text-default-500"
+                          ? "font-bold text-default-900 dark:text-zinc-100"
+                          : "text-default-500 dark:text-zinc-400"
                       } truncate`}
                     >
                       {name}
@@ -148,7 +148,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   ) : (
                     <Link
                       to={to}
-                      className="text-default-500 hover:text-default-900 transition-colors truncate"
+                      className="text-default-500 dark:text-zinc-400 hover:text-default-900 dark:hover:text-zinc-200 transition-colors truncate"
                     >
                       {name}
                     </Link>

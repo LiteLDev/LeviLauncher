@@ -3,27 +3,21 @@ import {
   Button,
   Card,
   CardBody,
-  CardHeader,
   Chip,
   Input,
   useDisclosure,
   Progress,
   Switch,
-  Tooltip,
   Checkbox,
-  ModalContent,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
 } from "@heroui/react";
 import { useLocation, useNavigate, useBlocker } from "react-router-dom";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
+import { ImportResultModal } from "@/components/ImportResultModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import { useTranslation } from "react-i18next";
 import {
   OpenModsExplorer,
@@ -39,7 +33,6 @@ import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types
 import {
   FaPuzzlePiece,
   FaTrash,
-  FaDownload,
   FaEllipsisVertical,
   FaChevronUp,
   FaChevronDown,
@@ -139,7 +132,6 @@ export const ModsPage: React.FC = () => {
     direction: "asc" | "desc";
   }>({ key: "name", direction: "asc" });
   const dllFileRef = useRef<File | null>(null);
-  const dllBytesRef = useRef<number[] | null>(null);
   const dllResolveRef = useRef<((ok: boolean) => void) | null>(null);
   const dllConfirmRef = useRef<{
     name: string;
@@ -149,13 +141,11 @@ export const ModsPage: React.FC = () => {
   const dupResolveRef = useRef<((overwrite: boolean) => void) | null>(null);
   const dupNameRef = useRef<string>("");
   const fileInputRef = useRef<HTMLInputElement | null>(null);
-  const fmProcessedRef = useRef<string | null>(null);
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const lastScrollTopRef = useRef<number>(0);
   const restorePendingRef = useRef<boolean>(false);
 
   const [gameVersion, setGameVersion] = useState("");
-  const hasBackend = minecraft !== undefined;
 
   useBlocker(() => importing);
 
@@ -310,32 +300,6 @@ export const ModsPage: React.FC = () => {
     }, 1000);
     return () => window.clearInterval(id);
   }, [currentVersionName]);
-
-  const resolveImportError = (err: string): string => {
-    const code = String(err || "").trim();
-    switch (code) {
-      case "ERR_INVALID_NAME":
-        return t("mods.err_invalid_name") as string;
-      case "ERR_ACCESS_VERSIONS_DIR":
-        return t("mods.err_access_versions_dir") as string;
-      case "ERR_CREATE_TARGET_DIR":
-        return t("mods.err_create_target_dir") as string;
-      case "ERR_OPEN_ZIP":
-        return t("mods.err_open_zip") as string;
-      case "ERR_MANIFEST_NOT_FOUND":
-        return t("mods.err_manifest_not_found") as string;
-      case "ERR_INVALID_PACKAGE":
-        return t("mods.err_invalid_package") as string;
-      case "ERR_DUPLICATE_FOLDER":
-        return t("mods.err_duplicate_folder") as string;
-      case "ERR_READ_ZIP_ENTRY":
-        return t("mods.err_read_zip_entry") as string;
-      case "ERR_WRITE_FILE":
-        return t("mods.err_write_file") as string;
-      default:
-        return code || (t("mods.err_unknown") as string);
-    }
-  };
 
   const doImportFromPaths = async (paths: string[]) => {
     try {
@@ -968,319 +932,147 @@ export const ModsPage: React.FC = () => {
       ref={scrollRef}
       className={`relative overflow-hidden ${dragActive ? "cursor-copy" : ""}`}
     >
-      <BaseModal
-        size="sm"
+      <UnifiedModal
         isOpen={importing && !dllOpen}
+        onOpenChange={() => {}}
+        title={t("mods.importing_title")}
+        type="primary"
+        icon={<FiUploadCloud className="w-6 h-6 text-primary-500" />}
         hideCloseButton
         isDismissable={false}
+        showConfirmButton={false}
       >
-        <ModalContent>
-          {() => (
-            <>
-              <BaseModalHeader className="text-primary-600">
-                <div className="flex items-center gap-2">
-                  <FiUploadCloud className="w-5 h-5" />
-                  <span>{t("mods.importing_title")}</span>
-                </div>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="py-1">
-                  <Progress
-                    isIndeterminate
-                    aria-label="importing"
-                    className="w-full"
-                  />
-                </div>
-                <div className="text-default-600 text-sm">
-                  {t("mods.importing_body")}
-                </div>
-                {currentFile ? (
-                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
-                    {currentFile}
-                  </div>
-                ) : null}
-              </BaseModalBody>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-      <BaseModal
-        size="md"
+        <div className="py-1">
+          <Progress isIndeterminate aria-label="importing" className="w-full" />
+        </div>
+        <div className="text-default-600 dark:text-zinc-300 text-sm mt-2">
+          {t("mods.importing_body")}
+        </div>
+        {currentFile ? (
+          <div className="mt-2 rounded-md bg-default-100/60 dark:bg-zinc-800/60 border border-default-200 dark:border-zinc-700 px-3 py-2 text-default-800 dark:text-zinc-100 text-sm wrap-break-word whitespace-pre-wrap font-mono">
+            {currentFile}
+          </div>
+        ) : null}
+      </UnifiedModal>
+
+      <ImportResultModal
         isOpen={errOpen}
         onOpenChange={errOnOpenChange}
-        hideCloseButton
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader
-                className={`${
-                  resultFailed.length ? "text-red-600" : "text-primary-600"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {resultFailed.length ? (
-                    <FiAlertTriangle className="w-5 h-5" />
-                  ) : (
-                    <FiUploadCloud className="w-5 h-5" />
-                  )}
-                  <span>
-                    {resultFailed.length
-                      ? t("mods.summary_title_partial")
-                      : t("mods.summary_title_done")}
-                  </span>
-                </div>
-              </BaseModalHeader>
-              <BaseModalBody>
-                {resultSuccess.length ? (
-                  <div className="mb-2">
-                    <div className="text-sm font-semibold text-success">
-                      {t("mods.summary_success")} ({resultSuccess.length})
-                    </div>
-                    <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm wrap-break-word whitespace-pre-wrap">
-                      {resultSuccess.join("\n")}
-                    </div>
-                  </div>
-                ) : null}
-                {resultFailed.length ? (
-                  <div>
-                    <div className="text-sm font-semibold text-danger">
-                      {t("mods.summary_failed")} ({resultFailed.length})
-                    </div>
-                    <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm wrap-break-word whitespace-pre-wrap">
-                      {resultFailed
-                        .map(
-                          (it) => `${it.name} - ${resolveImportError(it.err)}`,
-                        )
-                        .join("\n")}
-                    </div>
-                  </div>
-                ) : null}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  color="primary"
-                  onPress={() => {
-                    setErrorMsg("");
-                    setErrorFile("");
-                    setResultSuccess([]);
-                    setResultFailed([]);
-                    onClose();
-                  }}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        results={{ success: resultSuccess, failed: resultFailed }}
+        onConfirm={() => {
+          setErrorMsg("");
+          setErrorFile("");
+          setResultSuccess([]);
+          setResultFailed([]);
+          errOnClose();
+        }}
+      />
 
-      <BaseModal
-        size="md"
+      <ImportResultModal
         isOpen={delOpen}
         onOpenChange={delOnOpenChange}
-        hideCloseButton
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader
-                className={`${
-                  resultFailed.length ? "text-red-600" : "text-primary-600"
-                }`}
-              >
-                <div className="flex items-center gap-2">
-                  {resultFailed.length ? (
-                    <FiAlertTriangle className="w-5 h-5" />
-                  ) : (
-                    <FiUploadCloud className="w-5 h-5" />
-                  )}
-                  <span>
-                    {resultFailed.length
-                      ? t("mods.delete_summary_title_failed")
-                      : t("mods.delete_summary_title_done")}
-                  </span>
-                </div>
-              </BaseModalHeader>
-              <BaseModalBody>
-                {resultSuccess.length ? (
-                  <div className="mb-2">
-                    <div className="text-sm font-semibold text-success">
-                      {t("mods.summary_deleted")} ({resultSuccess.length})
-                    </div>
-                    <div className="mt-1 rounded-md bg-success/5 border border-success/30 px-3 py-2 text-success-700 text-sm wrap-break-word whitespace-pre-wrap">
-                      {resultSuccess.join("\n")}
-                    </div>
-                  </div>
-                ) : null}
-                {resultFailed.length ? (
-                  <div>
-                    <div className="text-sm font-semibold text-danger">
-                      {t("mods.summary_failed")} ({resultFailed.length})
-                    </div>
-                    <div className="mt-1 rounded-md bg-danger/5 border border-danger/30 px-3 py-2 text-danger-700 text-sm wrap-break-word whitespace-pre-wrap">
-                      {resultFailed
-                        .map(
-                          (it) => `${it.name} - ${resolveImportError(it.err)}`,
-                        )
-                        .join("\n")}
-                    </div>
-                  </div>
-                ) : null}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  color="primary"
-                  onPress={() => {
-                    setErrorMsg("");
-                    setErrorFile("");
-                    setResultSuccess([]);
-                    setResultFailed([]);
-                    onClose();
-                    delOnClose();
-                  }}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-      <BaseModal
-        size="md"
+        results={{ success: resultSuccess, failed: resultFailed }}
+        onConfirm={() => {
+          setErrorMsg("");
+          setErrorFile("");
+          setResultSuccess([]);
+          setResultFailed([]);
+          delOnClose();
+        }}
+      />
+
+      <UnifiedModal
         isOpen={dllOpen}
         onOpenChange={dllOnOpenChange}
+        title={t("mods.dll_modal_title")}
+        type="primary"
+        icon={<FaPuzzlePiece className="w-6 h-6 text-primary-500" />}
         hideCloseButton
+        onConfirm={() => {
+          const nm = dllName.trim();
+          if (!nm) return;
+          const tp = (dllType || "").trim() || "preload-native";
+          const ver = (dllVersion || "").trim() || "0.0.0";
+          dllConfirmRef.current = {
+            name: nm,
+            type: tp,
+            version: ver,
+          };
+          try {
+            dllResolveRef.current && dllResolveRef.current(true);
+          } finally {
+            dllOnClose();
+          }
+        }}
+        onCancel={() => {
+          try {
+            dllConfirmRef.current = null;
+            dllResolveRef.current && dllResolveRef.current(false);
+          } finally {
+            dllOnClose();
+          }
+        }}
+        showCancelButton
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-primary-600">
-                <div className="flex items-center gap-2">
-                  <FaPuzzlePiece className="w-5 h-5" />
-                  <span>{t("mods.dll_modal_title")}</span>
-                </div>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="flex flex-col gap-3">
-                  <Input
-                    label={t("mods.dll_name") as string}
-                    value={dllName}
-                    onValueChange={setDllName}
-                    autoFocus
-                    size="sm"
-                  />
-                  <Input
-                    label={t("mods.dll_type") as string}
-                    value={dllType}
-                    onValueChange={setDllType}
-                    size="sm"
-                  />
-                  <Input
-                    label={t("mods.dll_version") as string}
-                    value={dllVersion}
-                    onValueChange={setDllVersion}
-                    size="sm"
-                  />
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="light"
-                  onPress={() => {
-                    try {
-                      dllConfirmRef.current = null;
-                      dllResolveRef.current && dllResolveRef.current(false);
-                    } finally {
-                      onClose();
-                    }
-                  }}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={() => {
-                    const nm = dllName.trim();
-                    if (!nm) return;
-                    const tp = (dllType || "").trim() || "preload-native";
-                    const ver = (dllVersion || "").trim() || "0.0.0";
-                    dllConfirmRef.current = {
-                      name: nm,
-                      type: tp,
-                      version: ver,
-                    };
-                    try {
-                      dllResolveRef.current && dllResolveRef.current(true);
-                    } finally {
-                      onClose();
-                    }
-                  }}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-      <BaseModal
-        size="md"
+        <div className="flex flex-col gap-3">
+          <Input
+            label={t("mods.dll_name") as string}
+            value={dllName}
+            onValueChange={setDllName}
+            autoFocus
+            size="sm"
+          />
+          <Input
+            label={t("mods.dll_type") as string}
+            value={dllType}
+            onValueChange={setDllType}
+            size="sm"
+          />
+          <Input
+            label={t("mods.dll_version") as string}
+            value={dllVersion}
+            onValueChange={setDllVersion}
+            size="sm"
+          />
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
         isOpen={dupOpen}
         onOpenChange={dupOnOpenChange}
+        title={t("mods.overwrite_modal_title")}
+        type="warning"
         hideCloseButton
+        onConfirm={() => {
+          try {
+            dupResolveRef.current && dupResolveRef.current(true);
+          } finally {
+            dupOnClose();
+          }
+        }}
+        onCancel={() => {
+          try {
+            dupResolveRef.current && dupResolveRef.current(false);
+          } finally {
+            dupOnClose();
+          }
+        }}
+        showCancelButton
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-primary-600">
-                <div className="flex items-center gap-2">
-                  <FiAlertTriangle className="w-5 h-5" />
-                  <span>{t("mods.overwrite_modal_title")}</span>
-                </div>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-sm text-default-700">
-                  {t("mods.overwrite_modal_body")}
-                </div>
-                {dupNameRef.current ? (
-                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
-                    {dupNameRef.current}
-                  </div>
-                ) : null}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="light"
-                  onPress={() => {
-                    try {
-                      dupResolveRef.current && dupResolveRef.current(false);
-                    } finally {
-                      onClose();
-                    }
-                  }}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={() => {
-                    try {
-                      dupResolveRef.current && dupResolveRef.current(true);
-                    } finally {
-                      onClose();
-                    }
-                  }}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-sm text-default-700 dark:text-zinc-300">
+          {t("mods.overwrite_modal_body")}
+        </div>
+        {dupNameRef.current ? (
+          <div className="mt-2 rounded-md bg-default-100/60 dark:bg-zinc-800/60 border border-default-200 dark:border-zinc-700 px-3 py-2 text-default-800 dark:text-zinc-100 text-sm wrap-break-word whitespace-pre-wrap">
+            {dupNameRef.current}
+          </div>
+        ) : null}
+      </UnifiedModal>
+
       {/* Drag Overlay */}
       <AnimatePresence>
         {dragActive ? (
@@ -1395,7 +1187,7 @@ export const ModsPage: React.FC = () => {
           onValueChange={setOnlyEnabled}
           classNames={{
             base: "m-0",
-            label: "text-default-500",
+            label: "text-default-500 dark:text-zinc-400",
           }}
         >
           {t("mods.only_enabled") as string}
@@ -1403,7 +1195,7 @@ export const ModsPage: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="flex flex-row items-center px-5 py-2 text-sm text-default-500 font-semibold">
+        <div className="flex flex-row items-center px-5 py-2 text-sm text-default-500 dark:text-zinc-400 font-semibold">
           <div className="w-10 flex justify-center">
             <Checkbox
               size="sm"
@@ -1420,17 +1212,6 @@ export const ModsPage: React.FC = () => {
           </div>
           {selectedKeys.size > 0 ? (
             <div className="flex-1 flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-200">
-              {/* Update button hidden
-              <Button
-                size="sm"
-                color="success"
-                variant="flat"
-                className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold h-8 min-w-0 px-3"
-                startContent={<FaDownload />}
-              >
-                {t("common.update")}
-              </Button>
-              */}
               <Button
                 size="sm"
                 variant="flat"
@@ -1463,7 +1244,7 @@ export const ModsPage: React.FC = () => {
           ) : (
             <>
               <div
-                className="flex-1 cursor-pointer flex items-center gap-1 hover:text-default-700 transition-colors select-none"
+                className="flex-1 cursor-pointer flex items-center gap-1 hover:text-default-700 dark:hover:text-zinc-300 transition-colors select-none"
                 onClick={() => handleSort("name")}
               >
                 {t("mods.field_name")}{" "}
@@ -1477,19 +1258,13 @@ export const ModsPage: React.FC = () => {
               <div className="flex-[0.6]">{t("common.version")}</div>
               <div className="flex items-center gap-6 text-xs">
                 <button
-                  className="flex items-center gap-1.5 hover:text-default-700 transition-colors"
+                  className="flex items-center gap-1.5 hover:text-default-700 dark:hover:text-zinc-300 transition-colors"
                   onClick={() => refreshAll()}
                   disabled={loading}
                 >
                   <FaSync className={loading ? "animate-spin" : ""} />
                   {t("common.refresh")}
                 </button>
-                {/* Update All button hidden
-                <button className="flex items-center gap-1.5 text-emerald-500 hover:text-emerald-400 transition-colors">
-                  <FaDownload />
-                  {t("common.update_all")}
-                </button>
-                */}
               </div>
             </>
           )}
@@ -1529,24 +1304,24 @@ export const ModsPage: React.FC = () => {
                     />
                   </div>
 
-                  <div className="w-12 h-12 rounded-xl bg-default-100 dark:bg-zinc-900 flex items-center justify-center text-default-500 shrink-0">
+                  <div className="w-12 h-12 rounded-xl bg-default-100 dark:bg-zinc-900 flex items-center justify-center text-default-500 dark:text-zinc-400 shrink-0">
                     <FaPuzzlePiece className="w-6 h-6" />
                   </div>
 
                   <div className="flex-1 min-w-0 flex flex-col justify-center">
-                    <div className="font-bold text-default-900 truncate text-base">
+                    <div className="font-bold text-default-900 dark:text-zinc-100 truncate text-base">
                       {m.name}
                     </div>
-                    <div className="text-xs text-default-500 truncate">
+                    <div className="text-xs text-default-500 dark:text-zinc-400 truncate">
                       by {m.author || "Unknown"}
                     </div>
                   </div>
 
                   <div className="flex-[0.6] min-w-0 flex flex-col justify-center">
-                    <div className="text-default-700 truncate text-sm">
+                    <div className="text-default-700 dark:text-zinc-300 truncate text-sm">
                       {m.version || "-"}
                     </div>
-                    <div className="text-xs text-default-500 truncate font-mono opacity-70">
+                    <div className="text-xs text-default-500 dark:text-zinc-400 truncate font-mono opacity-70">
                       {m.entry || m.type}
                     </div>
                   </div>
@@ -1555,17 +1330,6 @@ export const ModsPage: React.FC = () => {
                     className="flex items-center gap-3 pr-2"
                     onClick={(e) => e.stopPropagation()}
                   >
-                    {/* Individual Update button hidden
-                    <Button
-                      isIconOnly
-                      size="sm"
-                      variant="light"
-                      className="text-default-400 hover:text-emerald-500 transition-opacity"
-                    >
-                      <FaDownload />
-                    </Button>
-                    */}
-
                     <Switch
                       size="sm"
                       color="success"
@@ -1651,187 +1415,133 @@ export const ModsPage: React.FC = () => {
         </div>
       </div>
 
-      <BaseModal
-        size="md"
+      <UnifiedModal
         isOpen={infoOpen}
         onOpenChange={infoOnOpenChange}
+        title={t("mods.details_title")}
+        type="primary"
+        icon={<FaPuzzlePiece className="w-6 h-6 text-primary-500" />}
         hideCloseButton
+        showConfirmButton={false}
+        showCancelButton
+        cancelText={t("common.close")}
+        onCancel={() => infoOnClose()}
+        footer={
+          <>
+            <Button variant="light" onPress={() => infoOnClose()}>
+              {t("common.cancel")}
+            </Button>
+            <Button color="danger" onPress={delCfmOnOpen}>
+              {t("common.delete")}
+            </Button>
+          </>
+        }
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="flex flex-row items-center gap-3 text-primary-600">
-                <FaPuzzlePiece className="w-6 h-6" />
-                <span className="text-xl font-bold">
-                  {t("mods.details_title")}
+        {activeMod ? (
+          <div className="space-y-2 text-sm dark:text-zinc-200">
+            <div>
+              <span className="text-default-500 dark:text-zinc-400">
+                {t("mods.field_name")}：
+              </span>
+              {activeMod.name}
+            </div>
+            <div>
+              <span className="text-default-500 dark:text-zinc-400">
+                {t("mods.field_version")}：
+              </span>
+              {activeMod.version || "-"}
+            </div>
+            <div>
+              <span className="text-default-500 dark:text-zinc-400">
+                {t("mods.field_type")}：
+              </span>
+              {activeMod.type || "-"}
+            </div>
+            <div>
+              <span className="text-default-500 dark:text-zinc-400">
+                {t("mods.field_entry")}：
+              </span>
+              {activeMod.entry || "-"}
+            </div>
+            {activeMod.author ? (
+              <div>
+                <span className="text-default-500 dark:text-zinc-400">
+                  {t("mods.field_author")}：
                 </span>
-              </BaseModalHeader>
-              <BaseModalBody>
-                {activeMod ? (
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <span className="text-default-500">
-                        {t("mods.field_name")}：
-                      </span>
-                      {activeMod.name}
-                    </div>
-                    <div>
-                      <span className="text-default-500">
-                        {t("mods.field_version")}：
-                      </span>
-                      {activeMod.version || "-"}
-                    </div>
-                    <div>
-                      <span className="text-default-500">
-                        {t("mods.field_type")}：
-                      </span>
-                      {activeMod.type || "-"}
-                    </div>
-                    <div>
-                      <span className="text-default-500">
-                        {t("mods.field_entry")}：
-                      </span>
-                      {activeMod.entry || "-"}
-                    </div>
-                    {activeMod.author ? (
-                      <div>
-                        <span className="text-default-500">
-                          {t("mods.field_author")}：
-                        </span>
-                        {activeMod.author}
-                      </div>
-                    ) : null}
-                    <div className="pt-2">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2">
-                          <span className="text-default-500">
-                            {t("mods.toggle_label")}
-                          </span>
-                          <Chip
-                            size="sm"
-                            variant="flat"
-                            color={
-                              enabledByName.get(activeMod.name)
-                                ? "success"
-                                : "warning"
-                            }
-                          >
-                            {enabledByName.get(activeMod.name)
-                              ? (t("mods.toggle_on") as string)
-                              : (t("mods.toggle_off") as string)}
-                          </Chip>
-                        </div>
-                        <Switch
-                          isSelected={!!enabledByName.get(activeMod.name)}
-                          onValueChange={async (val) => {
-                            const name =
-                              currentVersionName || readCurrentVersionName();
-                            if (!name) return;
-                            try {
-                              if (val) {
-                                const err = await (EnableMod as any)?.(
-                                  name,
-                                  activeMod.name,
-                                );
-                                if (err) return;
-                              } else {
-                                const err = await (DisableMod as any)?.(
-                                  name,
-                                  activeMod.name,
-                                );
-                                if (err) return;
-                              }
-                              const ok = await (IsModEnabled as any)?.(
-                                name,
-                                activeMod.name,
-                              );
-                              setEnabledByName((prev) => {
-                                const nm = new Map(prev);
-                                nm.set(activeMod.name, !!ok);
-                                return nm;
-                              });
-                            } catch {}
-                          }}
-                          aria-label={t("mods.toggle_label") as string}
-                        />
-                      </div>
-                      <div className="text-default-500 text-xs mt-1">
-                        {enabledByName.get(activeMod.name)
-                          ? (t("mods.toggle_desc_on") as string)
-                          : (t("mods.toggle_desc_off") as string)}
-                      </div>
-                    </div>
-                  </div>
-                ) : null}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="light"
-                  onPress={() => {
-                    onClose();
+                {activeMod.author}
+              </div>
+            ) : null}
+            <div className="pt-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <span className="text-default-500 dark:text-zinc-400">
+                    {t("mods.toggle_label")}
+                  </span>
+                  <Chip
+                    size="sm"
+                    variant="flat"
+                    color={
+                      enabledByName.get(activeMod.name) ? "success" : "warning"
+                    }
+                  >
+                    {enabledByName.get(activeMod.name)
+                      ? (t("mods.toggle_on") as string)
+                      : (t("mods.toggle_off") as string)}
+                  </Chip>
+                </div>
+                <Switch
+                  isSelected={!!enabledByName.get(activeMod.name)}
+                  onValueChange={async (val) => {
+                    const name = currentVersionName || readCurrentVersionName();
+                    if (!name) return;
+                    try {
+                      if (val) {
+                        const err = await (EnableMod as any)?.(
+                          name,
+                          activeMod.name,
+                        );
+                        if (err) return;
+                      } else {
+                        const err = await (DisableMod as any)?.(
+                          name,
+                          activeMod.name,
+                        );
+                        if (err) return;
+                      }
+                      const ok = await (IsModEnabled as any)?.(
+                        name,
+                        activeMod.name,
+                      );
+                      setEnabledByName((prev) => {
+                        const nm = new Map(prev);
+                        nm.set(activeMod.name, !!ok);
+                        return nm;
+                      });
+                    } catch {}
                   }}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button color="danger" onPress={delCfmOnOpen}>
-                  {t("common.delete")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-      <BaseModal
-        size="sm"
+                  aria-label={t("mods.toggle_label") as string}
+                />
+              </div>
+              <div className="text-default-500 dark:text-zinc-400 text-xs mt-1">
+                {enabledByName.get(activeMod.name)
+                  ? (t("mods.toggle_desc_on") as string)
+                  : (t("mods.toggle_desc_off") as string)}
+              </div>
+            </div>
+          </div>
+        ) : null}
+      </UnifiedModal>
+      <DeleteConfirmModal
         isOpen={delCfmOpen}
         onOpenChange={delCfmOnOpenChange}
-        hideCloseButton
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-danger">
-                <div className="flex items-center gap-2">
-                  <FiAlertTriangle className="w-5 h-5" />
-                  <span>{t("mods.confirm_delete_title")}</span>
-                </div>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-sm text-default-700 wrap-break-word whitespace-pre-wrap">
-                  {t("mods.confirm_delete_body", {
-                    type: t("moddedcard.title"),
-                  })}
-                </div>
-                {activeMod ? (
-                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
-                    {activeMod.name}
-                  </div>
-                ) : null}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="light"
-                  onPress={() => {
-                    onClose();
-                  }}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="danger"
-                  isLoading={deleting}
-                  onPress={async () => {
-                    await handleDeleteMod();
-                    onClose();
-                  }}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        onConfirm={handleDeleteMod}
+        title={t("mods.confirm_delete_title")}
+        description={t("mods.confirm_delete_body", {
+          type: t("moddedcard.title"),
+        })}
+        itemName={activeMod?.name}
+        isPending={deleting}
+      />
     </PageContainer>
   );
 };

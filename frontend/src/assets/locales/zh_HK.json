@@ -1,7 +1,6 @@
 {
   "app": {
-    "settings": "設定",
-    "lang": "語言"
+    "settings": "設定"
   },
   "nav": {
     "versions": "實例",
@@ -49,9 +48,7 @@
       },
       "confirm": {
         "title": "確認刪除",
-        "content": "您確定要刪除此實例嗎？此操作無法復原。",
-        "delete_button": "刪除",
-        "cancel_button": "取消"
+        "content": "您確定要刪除此實例嗎？此操作無法復原。"
       }
     },
     "launch": {
@@ -123,18 +120,6 @@
       "file_manager_pick": "檔案管理器支援多選並回傳路徑至 Mods 匯入。",
       "settings_base_root": "設定頁可修改內容儲存路徑，預設使用 %APPDATA% 下以目前可執行檔名命名的資料夾。",
       "directory_write_check": "僅可儲存至可寫入目錄；不可寫入目錄將被停用。"
-    },
-    "adminconfirm": {
-      "title": "需要權限",
-      "content": "此操作需要管理員權限。",
-      "confirm_button": "授權",
-      "cancel_button": "取消"
-    },
-    "admindeny": {
-      "title": "權限被拒絕",
-      "content": "您拒絕了權限請求。",
-      "confirm_button": "重試",
-      "cancel_button": "取消"
     },
     "edition": "Bedrock Edition"
   },
@@ -248,7 +233,6 @@
       "title": "確認刪除下載包",
       "body": "將刪除安裝包：",
       "warning": "此操作不可復原。",
-      "confirm": "刪除",
       "success_body": "已刪除安裝包："
     },
     "install": {
@@ -288,8 +272,6 @@
   },
   "settings": {
     "layout": {
-      "title": "側邊欄佈局",
-      "desc": "使用垂直側邊欄代替頂部導航欄",
       "title_navbar": "使用頂部導航欄",
       "desc_navbar": "開啟後使用頂部導航欄代替默認的垂直側邊欄"
     },
@@ -348,7 +330,22 @@
       "install_button": "安裝",
       "installing": "正在安裝 LIP...",
       "update_button": "更新至 {{version}}",
-      "installed_label": "已安裝"
+      "installed_label": "已安裝",
+      "status": {
+        "fetching_version": "正在獲取版本資訊...",
+        "downloading": "正在下載...",
+        "extracting": "正在解壓...",
+        "setting_path": "正在設定環境變數...",
+        "success": "安裝成功！",
+        "failed": "安裝失敗"
+      },
+      "error": {
+        "fetch_version_failed": "獲取版本資訊失敗",
+        "download_failed": "下載失敗",
+        "extract_failed": "解壓失敗",
+        "set_path_failed": "設定環境變數失敗",
+        "unknown": "發生未知錯誤"
+      }
     },
     "header": {
       "title": "設定",
@@ -473,23 +470,18 @@
     "load_failed": "載入失敗",
     "view_all": "檢視全部",
     "confirm_delete": "確認刪除",
-    "deleting": "正在刪除...",
     "no_results": "無搜尋結果",
     "edit": "編輯",
     "backup": "備份",
     "date": "日期",
-    "error_load": "載入失敗",
     "size": "大小",
-    "unknown": "未知",
     "version": "版本",
     "details": "詳情",
     "disable": "停用",
     "enable": "啟用",
     "open_folder": "開啟資料夾",
     "remove": "移除",
-    "update": "更新",
-    "update_all": "全部更新",
-    "updated": "已更新"
+    "update": "更新"
   },
   "useravatar": {
     "no_login_retry": "未偵測到 Xbox 登入（點擊以重試）",
@@ -557,7 +549,6 @@
   },
   "versions": {
     "info": {
-      "version": "遊戲版本",
       "name": "名稱"
     },
     "edit": {
@@ -569,6 +560,7 @@
         "loader": "載入器"
       },
       "title": "實例設定",
+      "mc_version": "遊戲版本",
       "new_name": "新名稱",
       "placeholder": "輸入新名稱",
       "hint": "僅修改資料夾名稱，不影響遊戲版本與類型。",
@@ -582,7 +574,6 @@
       "env_vars": "環境變數",
       "env_vars_placeholder": "環境變數 (KEY=VALUE)，每行一個",
       "env_vars_hint": "設定啟動時的環境變數。",
-      "danger_zone_title": "危險操作",
       "delete_hint": "點擊以開啟刪除確認，避免誤觸。",
       "unregister_button": "取消註冊",
       "unregister_hint": "此實例已註冊到系統，僅可取消註冊；取消後可重新命名或刪除。",
@@ -700,9 +691,6 @@
     "field_type": "類型",
     "field_entry": "入口",
     "field_author": "作者",
-    "delete_summary_title_done": "刪除完成",
-    "delete_summary_title_failed": "刪除失敗",
-    "summary_deleted": "已刪除",
     "confirm_delete_title": "確認刪除",
     "confirm_delete_body": "確定要刪除此{{type}}嗎？此操作不可復原。",
     "dll_modal_title": "匯入 DLL 模組",

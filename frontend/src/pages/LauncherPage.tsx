@@ -1,7 +1,6 @@
 import React, { useEffect, useRef, useState } from "react";
 import {
   useDisclosure,
-  ModalContent,
   Button,
   Card,
   CardHeader,
@@ -39,7 +38,9 @@ import {
   FaDesktop,
   FaCube,
   FaArrowRight,
+  FaDownload,
 } from "react-icons/fa";
+import { FiAlertTriangle, FiCheckCircle, FiUploadCloud } from "react-icons/fi";
 import { ModCard } from "@/components/ModdedCard";
 import { ContentDownloadCard } from "@/components/ContentDownloadCard";
 import { Events, Window, Browser } from "@wailsio/runtime";
@@ -48,12 +49,7 @@ import { useNavigate } from "react-router-dom";
 import { compareVersions } from "@/utils/version";
 import { saveCurrentVersionName } from "@/utils/currentVersion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { UnifiedModal, ModalType } from "@/components/UnifiedModal";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -71,9 +67,21 @@ export const LauncherPage = (args: any) => {
   const [localVersionMap, setLocalVersionMap] = React.useState<
     Map<string, any>
   >(new Map());
-  const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
-  const [modalState, setModalState] = React.useState(0);
-  const [overlayActive, setOverlayActive] = React.useState(false);
+
+  // Modal Disclosures
+  const launchFailedDisclosure = useDisclosure();
+  const gameInputInstallingDisclosure = useDisclosure();
+  const gameInputMissingDisclosure = useDisclosure();
+  const gamingServicesMissingDisclosure = useDisclosure();
+  const installConfirmDisclosure = useDisclosure();
+  const vcRuntimeCompletingDisclosure = useDisclosure();
+  const mcLaunchLoadingDisclosure = useDisclosure();
+  const shortcutSuccessDisclosure = useDisclosure();
+  const registerInstallingDisclosure = useDisclosure();
+  const registerSuccessDisclosure = useDisclosure();
+  const registerFailedDisclosure = useDisclosure();
+  const gdkMissingDisclosure = useDisclosure();
+
   const { t, i18n } = useTranslation();
   const hasBackend = minecraft !== undefined;
   const navigate = useNavigate();
@@ -117,12 +125,6 @@ export const LauncherPage = (args: any) => {
   const worldsLabel = t("content.count.worlds") as string;
   const resourceLabel = t("content.count.resource_packs") as string;
   const behaviorLabel = t("content.count.behavior_packs") as string;
-  const labelSizeClass = (s: string) => {
-    const len = s?.length || 0;
-    if (len <= 4) return "text-base";
-    if (len <= 10) return "text-small";
-    return "text-xs";
-  };
 
   useEffect(() => {
     try {
@@ -294,22 +296,18 @@ export const LauncherPage = (args: any) => {
             const s = String(err || "");
             if (s) {
               setLaunchErrorCode(s);
-              setModalState(1);
-              setOverlayActive(true);
-              onOpen();
+              launchFailedDisclosure.onOpen();
             }
           })
           .catch(() => {
             setLaunchErrorCode("ERR_LAUNCH_GAME");
-            setModalState(1);
-            setOverlayActive(true);
-            onOpen();
+            launchFailedDisclosure.onOpen();
           });
       }
     } else {
       navigate("/versions");
     }
-  }, [currentVersion, navigate]);
+  }, [currentVersion, navigate, launchFailedDisclosure]);
 
   const doForceLaunch = React.useCallback(() => {
     const name = currentVersion;
@@ -322,20 +320,16 @@ export const LauncherPage = (args: any) => {
             const s = String(err || "");
             if (s) {
               setLaunchErrorCode(s);
-              setModalState(1);
-              setOverlayActive(true);
-              onOpen();
+              launchFailedDisclosure.onOpen();
             }
           })
           .catch(() => {
             setLaunchErrorCode("ERR_LAUNCH_GAME");
-            setModalState(1);
-            setOverlayActive(true);
-            onOpen();
+            launchFailedDisclosure.onOpen();
           });
       }
     }
-  }, [currentVersion]);
+  }, [currentVersion, launchFailedDisclosure]);
 
   const doCreateShortcut = React.useCallback(() => {
     const name = currentVersion;
@@ -346,23 +340,17 @@ export const LauncherPage = (args: any) => {
           const s = String(err || "");
           if (s) {
             setLaunchErrorCode(s);
-            setModalState(1);
-            setOverlayActive(true);
-            onOpen();
+            launchFailedDisclosure.onOpen();
           } else {
-            setModalState(12);
-            setOverlayActive(true);
-            onOpen();
+            shortcutSuccessDisclosure.onOpen();
           }
         })
         .catch(() => {
           setLaunchErrorCode("ERR_SHORTCUT_CREATE_FAILED");
-          setModalState(1);
-          setOverlayActive(true);
-          onOpen();
+          launchFailedDisclosure.onOpen();
         });
     }
-  }, [currentVersion]);
+  }, [currentVersion, launchFailedDisclosure, shortcutSuccessDisclosure]);
 
   const doOpenFolder = React.useCallback(async () => {
     if (!currentVersion) return;
@@ -381,15 +369,11 @@ export const LauncherPage = (args: any) => {
     try {
       const ok = await IsGDKInstalled();
       if (!ok) {
-        setModalState(17);
-        setOverlayActive(true);
-        onOpen();
+        gdkMissingDisclosure.onOpen();
         return;
       }
     } catch {}
-    setModalState(13);
-    setOverlayActive(true);
-    onOpen();
+    registerInstallingDisclosure.onOpen();
     try {
       const isPreview = localVersionMap.get(currentVersion)?.isPreview || false;
       const result = await minecraft.RegisterVersionWithWdapp(
@@ -397,7 +381,8 @@ export const LauncherPage = (args: any) => {
         isPreview,
       );
       if (result === "success" || result === "") {
-        setModalState(15);
+        registerInstallingDisclosure.onClose();
+        registerSuccessDisclosure.onOpen();
         const fn = (minecraft as any)?.GetVersionMeta;
         if (typeof fn === "function") {
           fn(currentVersion).then((m: any) => {
@@ -415,16 +400,27 @@ export const LauncherPage = (args: any) => {
           });
         }
       } else if (result === "ERR_GDK_MISSING") {
-        setModalState(17);
+        registerInstallingDisclosure.onClose();
+        gdkMissingDisclosure.onOpen();
       } else {
+        registerInstallingDisclosure.onClose();
         setLaunchErrorCode(result);
-        setModalState(16);
+        registerFailedDisclosure.onOpen();
       }
     } catch (e) {
+      registerInstallingDisclosure.onClose();
       setLaunchErrorCode(String(e));
-      setModalState(16);
+      registerFailedDisclosure.onOpen();
     }
-  }, [currentVersion, localVersionMap, navigate, onOpen]);
+  }, [
+    currentVersion,
+    localVersionMap,
+    navigate,
+    gdkMissingDisclosure,
+    registerInstallingDisclosure,
+    registerSuccessDisclosure,
+    registerFailedDisclosure,
+  ]);
 
   useEffect(() => {
     if (!hasBackend) return;
@@ -434,9 +430,7 @@ export const LauncherPage = (args: any) => {
         try {
           minecraft?.IsGameInputInstalled?.().then((ok: boolean) => {
             if (!ok) {
-              setModalState(8);
-              setOverlayActive(true);
-              onOpen();
+              gameInputMissingDisclosure.onOpen();
             }
           });
         } catch {}
@@ -448,9 +442,7 @@ export const LauncherPage = (args: any) => {
           if (!ig) {
             minecraft?.IsGamingServicesInstalled?.().then((ok: boolean) => {
               if (!ok) {
-                setModalState(9);
-                setOverlayActive(true);
-                onOpen();
+                gamingServicesMissingDisclosure.onOpen();
               }
             });
           }
@@ -458,21 +450,17 @@ export const LauncherPage = (args: any) => {
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [hasBackend, onOpen]);
+  }, [hasBackend, gameInputMissingDisclosure, gamingServicesMissingDisclosure]);
 
   useEffect(() => {
     const ensureStart = () => {
       ensureOpsRef.current = (ensureOpsRef.current || 0) + 1;
-      setModalState(4);
-      setOverlayActive(true);
-      onOpen();
+      vcRuntimeCompletingDisclosure.onOpen();
     };
     const ensureDone = () => {
       ensureOpsRef.current = Math.max((ensureOpsRef.current || 0) - 1, 0);
       if (ensureOpsRef.current === 0) {
-        setModalState(0);
-        onClose();
-        setOverlayActive(false);
+        vcRuntimeCompletingDisclosure.onClose();
       }
     };
 
@@ -485,17 +473,13 @@ export const LauncherPage = (args: any) => {
 
     const unlistenGiStart = Events.On("gameinput.ensure.start", () => {
       if (pendingInstallCheck === "gi") return;
-      setModalState(7);
-      setOverlayActive(true);
-      onOpen();
+      gameInputInstallingDisclosure.onOpen();
     });
     const unlistenGiDlStart = Events.On("gameinput.download.start", (event) => {
       if (pendingInstallCheck === "gi") return;
       setGiTotal(Number(event?.data || 0));
       setGiDownloaded(0);
-      setModalState(7);
-      setOverlayActive(true);
-      onOpen();
+      gameInputInstallingDisclosure.onOpen();
     });
     const unlistenGiDlProgress = Events.On(
       "gameinput.download.progress",
@@ -509,9 +493,8 @@ export const LauncherPage = (args: any) => {
     const unlistenGiDlDone = Events.On("gameinput.download.done", () => {
       setGiDownloaded(giTotal);
       setPendingInstallCheck((prev) => prev ?? "gi");
-      setModalState(10);
-      setOverlayActive(true);
-      onOpen();
+      gameInputInstallingDisclosure.onClose();
+      installConfirmDisclosure.onOpen();
     });
     const unlistenGiDlError = Events.On(
       "gameinput.download.error",
@@ -519,17 +502,14 @@ export const LauncherPage = (args: any) => {
     );
     const unlistenGiDone = Events.On("gameinput.ensure.done", () => {
       setPendingInstallCheck((prev) => prev ?? "gi");
-      setModalState(10);
-      setOverlayActive(true);
-      onOpen();
+      gameInputInstallingDisclosure.onClose();
+      installConfirmDisclosure.onOpen();
     });
 
     const unlistenGsMissing = Events.On("gamingservices.missing", () => {
       const ig = String(localStorage.getItem(IGNORE_GS_KEY) || "") === "1";
       if (ig) return;
-      setModalState(9);
-      setOverlayActive(true);
-      onOpen();
+      gamingServicesMissingDisclosure.onOpen();
     });
 
     return () => {
@@ -677,31 +657,19 @@ export const LauncherPage = (args: any) => {
 
   useEffect(() => {
     const unlistenMcStart = Events.On("mc.launch.start", () => {
-      setModalState(5);
-      setOverlayActive(true);
-      onOpen();
+      mcLaunchLoadingDisclosure.onOpen();
     });
 
     const unlistenMcDone = Events.On("mc.launch.done", () => {
-      setOverlayActive(false);
-      setModalState((prev) => {
-        if (prev === 1) {
-          return prev;
-        }
-        try {
-          onClose();
-        } catch {}
-        return 0;
-      });
+      mcLaunchLoadingDisclosure.onClose();
     });
     const unlistenMcFailed = Events.On("mc.launch.failed", (data) => {
-      setOverlayActive(false);
+      mcLaunchLoadingDisclosure.onClose();
       const payload: any = (data as any)?.data ?? data;
       const first = Array.isArray(payload) ? payload[0] : payload;
       const code = String(first || "");
       setLaunchErrorCode(code || "ERR_LAUNCH_GAME");
-      setModalState(1);
-      onOpen();
+      launchFailedDisclosure.onOpen();
     });
 
     return () => {
@@ -826,598 +794,8 @@ export const LauncherPage = (args: any) => {
     }
   }, [args.count]);
 
-  const MODAL_VIEWS: Record<
-    number,
-    (onClose: ((e: PressEvent) => void) | undefined) => JSX.Element
-  > = {
-    1: (onClose) => (
-      <>
-        <BaseModalHeader>
-          <h2 className="text-2xl font-black tracking-tight text-danger-500">
-            {t("launcherpage.launch.failed.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody>
-          <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
-            <p className="font-medium text-center">
-              {(() => {
-                const key = `errors.${launchErrorCode}`;
-                const translated = t(key) as unknown as string;
-                if (launchErrorCode && translated && translated !== key)
-                  return translated;
-                return t(
-                  "launcherpage.launch.failed.content",
-                ) as unknown as string;
-              })()}
-            </p>
-          </div>
-        </BaseModalBody>
-        <BaseModalFooter>
-          {launchErrorCode === "ERR_GAME_ALREADY_RUNNING" && (
-            <Button
-              color="warning"
-              variant="flat"
-              radius="full"
-              onPress={(e) => {
-                onClose?.(e);
-                setOverlayActive(false);
-                setModalState(0);
-                doForceLaunch();
-              }}
-            >
-              {t("launcherpage.launch.force_run_button")}
-            </Button>
-          )}
-          <Button
-            color="danger"
-            variant="solid"
-            radius="full"
-            className="font-bold shadow-lg shadow-danger-500/20"
-            onPress={(e) => {
-              onClose?.(e);
-              setOverlayActive(false);
-              setModalState(0);
-            }}
-          >
-            {t("launcherpage.launch.failed.close_button")}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-    7: (onClose) => (
-      <>
-        <BaseModalHeader>
-          <h2 className="text-2xl font-black tracking-tight text-emerald-600">
-            {t("launcherpage.gameinput.installing.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody>
-          <p className="text-default-600 font-medium">
-            {t("launcherpage.gameinput.installing.body")}
-          </p>
-          <div className="mt-4">
-            {giTotal > 0 ? (
-              <div className="flex flex-col gap-2">
-                <div className="flex justify-between text-small font-bold text-default-500">
-                  <span>
-                    {Math.min(100, Math.floor((giDownloaded / giTotal) * 100))}%
-                  </span>
-                  <span className="font-mono">
-                    {(giDownloaded / 1024 / 1024).toFixed(1)} /{" "}
-                    {(giTotal / 1024 / 1024).toFixed(1)} MB
-                  </span>
-                </div>
-                <Progress
-                  aria-label="Downloading"
-                  value={(giDownloaded / giTotal) * 100}
-                  color="success"
-                  size="md"
-                  classNames={{
-                    indicator: "bg-emerald-600 hover:bg-emerald-500",
-                  }}
-                />
-              </div>
-            ) : (
-              <div className="flex items-center gap-3 text-default-500">
-                <Spinner size="sm" color="success" />
-                <span>{t("launcherpage.gameinput.installing.preparing")}</span>
-              </div>
-            )}
-          </div>
-        </BaseModalBody>
-      </>
-    ),
-    8: (onClose) => (
-      <>
-        <BaseModalHeader>
-          <h2 className="text-2xl font-black tracking-tight text-warning-500">
-            {t("launcherpage.gameinput.missing.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody>
-          <p className="text-default-600 font-medium">
-            {t("launcherpage.gameinput.missing.body")}
-          </p>
-        </BaseModalBody>
-        <BaseModalFooter>
-          <Button
-            color="danger"
-            variant="light"
-            radius="full"
-            onPress={() => {
-              Window.Close();
-            }}
-          >
-            {t("common.quit_launcher")}
-          </Button>
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={() => {
-              setPendingInstallCheck("gi");
-              EnsureGameInputInteractive();
-              setModalState(10);
-              setOverlayActive(true);
-            }}
-          >
-            {t("launcherpage.gameinput.missing.install_now")}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-    9: (onClose) => (
-      <>
-        <BaseModalHeader>
-          <h2 className="text-2xl font-black tracking-tight text-warning-500">
-            {t("launcherpage.gs.missing.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody>
-          <p className="text-default-600 font-medium">
-            {t("launcherpage.gs.missing.body")}
-          </p>
-        </BaseModalBody>
-        <BaseModalFooter>
-          <Button
-            color="danger"
-            variant="light"
-            radius="full"
-            onPress={() => {
-              Window.Close();
-            }}
-          >
-            {t("common.quit_launcher")}
-          </Button>
-          <Button
-            color="default"
-            variant="flat"
-            radius="full"
-            onPress={() => {
-              localStorage.setItem(IGNORE_GS_KEY, "1");
-              setOverlayActive(false);
-              setModalState(0);
-              onClose && onClose({} as any);
-            }}
-          >
-            {t("launcherpage.gs.missing.ignore_forever")}
-          </Button>
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={() => {
-              setPendingInstallCheck("gs");
-              Browser.OpenURL("ms-windows-store://pdp/?ProductId=9MWPM2CQNLHN");
-              setModalState(10);
-              setOverlayActive(true);
-            }}
-          >
-            {t("launcherpage.gs.missing.open_store")}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-    10: (onClose) => (
-      <>
-        <BaseModalHeader>
-          <h2 className="text-2xl font-black tracking-tight text-emerald-600">
-            {t("launcherpage.install_confirm.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody>
-          <p className="text-default-600 font-medium">
-            {t("launcherpage.install_confirm.body")}
-          </p>
-        </BaseModalBody>
-        <BaseModalFooter>
-          <Button
-            color="default"
-            variant="light"
-            radius="full"
-            onPress={() => {
-              if (pendingInstallCheck === "gi") setModalState(8);
-              else if (pendingInstallCheck === "gs") setModalState(9);
-            }}
-          >
-            {t("launcherpage.install_confirm.continue")}
-          </Button>
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={() => {
-              try {
-                if (pendingInstallCheck === "gi") {
-                  minecraft?.IsGameInputInstalled?.().then((ok: boolean) => {
-                    if (ok) {
-                      setPendingInstallCheck(null);
-                      setModalState(0);
-                      onOpenChange();
-                      setOverlayActive(false);
-                    } else {
-                      setModalState(8);
-                    }
-                  });
-                } else if (pendingInstallCheck === "gs") {
-                  minecraft
-                    ?.IsGamingServicesInstalled?.()
-                    .then((ok: boolean) => {
-                      if (ok) {
-                        setPendingInstallCheck(null);
-                        setModalState(0);
-                        onOpenChange();
-                        setOverlayActive(false);
-                      } else {
-                        setModalState(9);
-                      }
-                    });
-                }
-              } catch {}
-            }}
-          >
-            {t("launcherpage.install_confirm.done_and_check")}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-    4: () => (
-      <>
-        <BaseModalHeader>
-          <motion.h2
-            className="text-2xl font-black tracking-tight text-emerald-600"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            {t("launcherpage.vcruntime.completing.title")}
-          </motion.h2>
-        </BaseModalHeader>
-        <BaseModalBody>
-          <motion.p
-            className="text-default-600 font-medium"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            transition={{ duration: 0.25, delay: 0.1 }}
-          >
-            {t("launcherpage.vcruntime.completing.body")}
-          </motion.p>
-        </BaseModalBody>
-      </>
-    ),
-    5: () => (
-      <>
-        <BaseModalHeader>
-          <motion.h2
-            className="text-2xl font-black tracking-tight text-emerald-600"
-            initial={{ opacity: 0, y: -10 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.25 }}
-          >
-            {t("launcherpage.mclaunch.loading.title")}
-          </motion.h2>
-        </BaseModalHeader>
-        <BaseModalBody>
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <Spinner
-                size="lg"
-                color="success"
-                classNames={{
-                  circle1: "border-b-emerald-500",
-                  circle2: "border-b-teal-500",
-                }}
-              />
-              <div className="flex flex-col gap-1">
-                <motion.p
-                  className="text-default-600 font-medium"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                >
-                  {t("launcherpage.mclaunch.loading.body")}
-                </motion.p>
-                <div className="min-h-[24px] text-sm text-default-400">
-                  <AnimatePresence mode="wait">
-                    <motion.span
-                      key={`tip-${tipIndex}`}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {launchTips[tipIndex]}
-                    </motion.span>
-                  </AnimatePresence>
-                </div>
-              </div>
-            </div>
-            <Progress
-              size="sm"
-              isIndeterminate
-              aria-label="Loading"
-              classNames={{ indicator: "bg-emerald-600 hover:bg-emerald-500" }}
-            />
-          </div>
-        </BaseModalBody>
-        <BaseModalFooter>
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={(e) => {
-              onClose?.();
-              setOverlayActive(false);
-              setModalState(0);
-            }}
-          >
-            {t("common.close") as unknown as string}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-    2: (onClose) => (
-      <>
-        <BaseModalHeader>
-          <h2 className="text-2xl font-black tracking-tight text-warning-500">
-            {t("launcherpage.adminconfirm.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody>
-          <p className="text-default-600 font-medium">
-            {t("launcherpage.adminconfirm.content")}
-          </p>
-        </BaseModalBody>
-        <BaseModalFooter>
-          <Button
-            color="default"
-            variant="light"
-            radius="full"
-            onPress={onClose}
-          >
-            {t("launcherpage.adminconfirm.cancel_button")}
-          </Button>
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={(e) => {
-              onClose?.(e);
-            }}
-          >
-            {t("launcherpage.adminconfirm.confirm_button")}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-    3: (onClose) => (
-      <>
-        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-          <h2 className="text-2xl font-black tracking-tight text-danger-500">
-            {t("launcherpage.admindeny.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody className="px-8 py-4">
-          <p className="text-default-600 font-medium">
-            {t("launcherpage.admindeny.content")}
-          </p>
-        </BaseModalBody>
-        <BaseModalFooter className="px-8 pb-8 pt-4">
-          <Button
-            color="default"
-            variant="light"
-            radius="full"
-            onPress={onClose}
-          >
-            {t("launcherpage.admindeny.cancel_button")}
-          </Button>
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={(e) => {
-              onClose?.(e);
-            }}
-          >
-            {t("launcherpage.admindeny.confirm_button")}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-    12: (onClose) => (
-      <>
-        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-          <h2 className="text-2xl font-black tracking-tight text-success-500">
-            {t("launcherpage.shortcut.success.title") as unknown as string}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody className="px-8 py-4">
-          <p className="text-default-600 font-medium">
-            {t("launcherpage.shortcut.success.body") as unknown as string}
-          </p>
-        </BaseModalBody>
-        <BaseModalFooter className="px-8 pb-8 pt-4">
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={(e) => {
-              onClose?.(e);
-              setOverlayActive(false);
-              setModalState(0);
-            }}
-          >
-            {t("common.close") as unknown as string}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-    13: (onClose) => (
-      <>
-        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-          <h2 className="text-2xl font-black tracking-tight text-emerald-600">
-            {t("launcherpage.register.installing.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody className="px-8 py-4">
-          <p className="text-default-600 font-medium mb-4">
-            {t("launcherpage.register.installing.body")}
-          </p>
-          <Progress
-            size="sm"
-            isIndeterminate
-            aria-label="Registering"
-            classNames={{ indicator: "bg-emerald-600 hover:bg-emerald-500" }}
-          />
-        </BaseModalBody>
-      </>
-    ),
-    15: (onClose) => (
-      <>
-        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-          <h2 className="text-2xl font-black tracking-tight text-success-500">
-            {t("launcherpage.register.success.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody className="px-8 py-4">
-          <p className="text-default-600 font-medium">
-            {t("launcherpage.register.success.body")}
-          </p>
-        </BaseModalBody>
-        <BaseModalFooter className="px-8 pb-8 pt-4">
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={(e) => {
-              onClose?.(e);
-              setOverlayActive(false);
-              setModalState(0);
-            }}
-          >
-            {t("common.close") as unknown as string}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-    16: (onClose) => (
-      <>
-        <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-          <h2 className="text-2xl font-black tracking-tight text-danger-500">
-            {t("launcherpage.register.failed.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody className="px-8 py-4">
-          <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
-            <p className="font-medium text-center">
-              {(() => {
-                const key = `errors.${launchErrorCode}`;
-                const translated = t(key) as unknown as string;
-                if (launchErrorCode && translated && translated !== key)
-                  return translated;
-                return t(
-                  "launcherpage.register.failed.body",
-                ) as unknown as string;
-              })()}
-            </p>
-          </div>
-        </BaseModalBody>
-        <BaseModalFooter className="px-8 pb-8 pt-4">
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={(e) => {
-              onClose?.(e);
-              setOverlayActive(false);
-              setModalState(0);
-            }}
-          >
-            {t("common.close") as unknown as string}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-    17: (onClose) => (
-      <>
-        <BaseModalHeader>
-          <h2 className="text-2xl font-black tracking-tight text-warning-500">
-            {t("launcherpage.gdk_missing.title")}
-          </h2>
-        </BaseModalHeader>
-        <BaseModalBody>
-          <p className="text-default-600 font-medium">
-            {t("launcherpage.gdk_missing.body")}
-          </p>
-        </BaseModalBody>
-        <BaseModalFooter>
-          <Button
-            variant="light"
-            radius="full"
-            onPress={(e) => {
-              onClose?.(e);
-              setOverlayActive(false);
-              setModalState(0);
-            }}
-          >
-            {t("common.cancel") as unknown as string}
-          </Button>
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-            onPress={(e) => {
-              onClose?.(e);
-              setOverlayActive(false);
-              setModalState(0);
-              navigate("/settings");
-            }}
-          >
-            {t("launcherpage.gdk_missing.go_settings") as unknown as string}
-          </Button>
-        </BaseModalFooter>
-      </>
-    ),
-  };
-
-  const ModalUi = (onClose: ((e: PressEvent) => void) | undefined) => {
-    const render = MODAL_VIEWS[modalState];
-    return render ? render(onClose) : <></>;
-  };
-
   return (
     <>
-      <AnimatePresence>
-        {overlayActive && (
-          <motion.div
-            className="fixed inset-0 z-50 bg-black/40 backdrop-blur-sm"
-            initial={{ opacity: 0 }}
-            animate={{ opacity: 1 }}
-            exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }}
-          />
-        )}
-      </AnimatePresence>
       <PageContainer
         className={cn("relative", isAnimating ? "overflow-hidden" : "")}
         animate={false}
@@ -1700,7 +1078,7 @@ export const LauncherPage = (args: any) => {
                       className="h-14 px-8 text-lg font-bold text-white shadow-emerald-900/20 shadow-lg bg-emerald-600 hover:bg-emerald-500 rounded-2xl w-full sm:w-auto"
                       startContent={<FaRocket className="mb-0.5" />}
                       onPress={doLaunch}
-                      isLoading={modalState === 5}
+                      isLoading={mcLaunchLoadingDisclosure.isOpen}
                     >
                       {t("launcherpage.launch_button")}
                     </Button>
@@ -1718,7 +1096,7 @@ export const LauncherPage = (args: any) => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="text-sm text-default-500 font-medium truncate absolute inset-0"
+                      className="text-sm text-default-500 dark:text-zinc-400 font-medium truncate absolute inset-0"
                     >
                       {launchTips[tipIndex]}
                     </motion.div>
@@ -1842,36 +1220,472 @@ export const LauncherPage = (args: any) => {
           </motion.div>
         </div>
 
-        {/* Modal Render */}
-        <BaseModal
-          size="xl"
-          isOpen={isOpen}
-          hideCloseButton={true}
-          isDismissable={false}
-          onOpenChange={() => {
-            onOpenChange();
-            if (!isOpen) {
-              setModalState(0);
-              args.refresh();
-            }
-          }}
-        >
-          <ModalContent className="shadow-none">
-            {(onClose) => (
-              <AnimatePresence mode="wait">
-                <motion.div
-                  key={`modal-${modalState}`}
-                  initial={{ opacity: 0, y: 10, scale: 0.98 }}
-                  animate={{ opacity: 1, y: 0, scale: 1 }}
-                  exit={{ opacity: 0, y: 10, scale: 0.98 }}
-                  transition={{ duration: 0.22 }}
+        {/* --- Modals --- */}
+
+        {/* Launch Failed */}
+        <UnifiedModal
+          isOpen={launchFailedDisclosure.isOpen}
+          onOpenChange={launchFailedDisclosure.onOpenChange}
+          type="error"
+          title={t("launcherpage.launch.failed.title")}
+          footer={
+            <>
+              {launchErrorCode === "ERR_GAME_ALREADY_RUNNING" && (
+                <Button
+                  color="warning"
+                  radius="full"
+                  className="text-white font-bold"
+                  onPress={() => {
+                    launchFailedDisclosure.onClose();
+                    doForceLaunch();
+                  }}
                 >
-                  {ModalUi(onClose)}
-                </motion.div>
-              </AnimatePresence>
-            )}
-          </ModalContent>
-        </BaseModal>
+                  {t("launcherpage.launch.force_run_button")}
+                </Button>
+              )}
+              <Button
+                color="danger"
+                variant="solid"
+                radius="full"
+                className="font-bold shadow-lg shadow-danger-500/20"
+                onPress={launchFailedDisclosure.onClose}
+              >
+                {t("launcherpage.launch.failed.close_button")}
+              </Button>
+            </>
+          }
+        >
+          <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
+            <p className="font-medium text-center">
+              {(() => {
+                const key = `errors.${launchErrorCode}`;
+                const translated = t(key) as unknown as string;
+                if (launchErrorCode && translated && translated !== key)
+                  return translated;
+                return t(
+                  "launcherpage.launch.failed.content",
+                ) as unknown as string;
+              })()}
+            </p>
+          </div>
+        </UnifiedModal>
+
+        {/* GameInput Installing */}
+        <UnifiedModal
+          isOpen={gameInputInstallingDisclosure.isOpen}
+          onOpenChange={gameInputInstallingDisclosure.onOpenChange}
+          type="success"
+          title={t("launcherpage.gameinput.installing.title")}
+          hideCloseButton
+          icon={<FaDownload className="w-6 h-6 text-success-500" />}
+        >
+          <>
+            <p className="text-default-600 dark:text-zinc-300 font-medium">
+              {t("launcherpage.gameinput.installing.body")}
+            </p>
+            <div className="mt-4">
+              {giTotal > 0 ? (
+                <div className="flex flex-col gap-2">
+                  <div className="flex justify-between text-small font-bold text-default-500 dark:text-zinc-400">
+                    <span>
+                      {Math.min(
+                        100,
+                        Math.floor((giDownloaded / giTotal) * 100),
+                      )}
+                      %
+                    </span>
+                    <span className="font-mono">
+                      {(giDownloaded / 1024 / 1024).toFixed(1)} /{" "}
+                      {(giTotal / 1024 / 1024).toFixed(1)} MB
+                    </span>
+                  </div>
+                  <Progress
+                    aria-label="Downloading"
+                    value={(giDownloaded / giTotal) * 100}
+                    color="success"
+                    size="md"
+                    classNames={{
+                      indicator: "bg-emerald-600 hover:bg-emerald-500",
+                    }}
+                  />
+                </div>
+              ) : (
+                <div className="flex items-center gap-3 text-default-500 dark:text-zinc-400">
+                  <Spinner size="sm" color="success" />
+                  <span>
+                    {t("launcherpage.gameinput.installing.preparing")}
+                  </span>
+                </div>
+              )}
+            </div>
+          </>
+        </UnifiedModal>
+
+        {/* GameInput Missing */}
+        <UnifiedModal
+          isOpen={gameInputMissingDisclosure.isOpen}
+          onOpenChange={gameInputMissingDisclosure.onOpenChange}
+          type="warning"
+          title={t("launcherpage.gameinput.missing.title")}
+          footer={
+            <>
+              <Button
+                color="danger"
+                variant="light"
+                radius="full"
+                onPress={() => Window.Close()}
+              >
+                {t("common.quit_launcher")}
+              </Button>
+              <Button
+                color="warning"
+                radius="full"
+                className="text-white font-bold"
+                onPress={() => {
+                  setPendingInstallCheck("gi");
+                  EnsureGameInputInteractive();
+                  gameInputMissingDisclosure.onClose();
+                  installConfirmDisclosure.onOpen();
+                }}
+              >
+                {t("launcherpage.gameinput.missing.install_now")}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-default-600 dark:text-zinc-300 font-medium">
+            {t("launcherpage.gameinput.missing.body")}
+          </p>
+        </UnifiedModal>
+
+        {/* Gaming Services Missing */}
+        <UnifiedModal
+          isOpen={gamingServicesMissingDisclosure.isOpen}
+          onOpenChange={gamingServicesMissingDisclosure.onOpenChange}
+          type="warning"
+          title={t("launcherpage.gs.missing.title")}
+          icon={<FaWindows className="w-6 h-6 text-warning-500" />}
+          footer={
+            <>
+              <Button
+                color="danger"
+                variant="light"
+                radius="full"
+                onPress={() => Window.Close()}
+              >
+                {t("common.quit_launcher")}
+              </Button>
+              <Button
+                color="default"
+                variant="flat"
+                radius="full"
+                onPress={() => {
+                  localStorage.setItem(IGNORE_GS_KEY, "1");
+                  gamingServicesMissingDisclosure.onClose();
+                }}
+              >
+                {t("launcherpage.gs.missing.ignore_forever")}
+              </Button>
+              <Button
+                color="primary"
+                radius="full"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                onPress={() => {
+                  setPendingInstallCheck("gs");
+                  Browser.OpenURL(
+                    "ms-windows-store://pdp/?ProductId=9MWPM2CQNLHN",
+                  );
+                  gamingServicesMissingDisclosure.onClose();
+                  installConfirmDisclosure.onOpen();
+                }}
+              >
+                {t("launcherpage.gs.missing.open_store")}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-default-600 dark:text-zinc-300 font-medium">
+            {t("launcherpage.gs.missing.body")}
+          </p>
+        </UnifiedModal>
+
+        {/* Install Confirm (GameInput / GamingServices) */}
+        <UnifiedModal
+          isOpen={installConfirmDisclosure.isOpen}
+          onOpenChange={(open) => {
+            installConfirmDisclosure.onOpenChange(open);
+            if (!open) args.refresh();
+          }}
+          type="success"
+          title={t("launcherpage.install_confirm.title")}
+          icon={<FaDownload className="w-6 h-6 text-success-500" />}
+          footer={
+            <>
+              <Button
+                color="default"
+                variant="light"
+                radius="full"
+                onPress={() => {
+                  if (pendingInstallCheck === "gi")
+                    gameInputMissingDisclosure.onOpen();
+                  else if (pendingInstallCheck === "gs")
+                    gamingServicesMissingDisclosure.onOpen();
+                  installConfirmDisclosure.onClose();
+                }}
+              >
+                {t("launcherpage.install_confirm.continue")}
+              </Button>
+              <Button
+                color="primary"
+                radius="full"
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                onPress={() => {
+                  try {
+                    if (pendingInstallCheck === "gi") {
+                      minecraft
+                        ?.IsGameInputInstalled?.()
+                        .then((ok: boolean) => {
+                          if (ok) {
+                            setPendingInstallCheck(null);
+                            installConfirmDisclosure.onClose();
+                          } else {
+                            installConfirmDisclosure.onClose();
+                            gameInputMissingDisclosure.onOpen();
+                          }
+                        });
+                    } else if (pendingInstallCheck === "gs") {
+                      minecraft
+                        ?.IsGamingServicesInstalled?.()
+                        .then((ok: boolean) => {
+                          if (ok) {
+                            setPendingInstallCheck(null);
+                            installConfirmDisclosure.onClose();
+                          } else {
+                            installConfirmDisclosure.onClose();
+                            gamingServicesMissingDisclosure.onOpen();
+                          }
+                        });
+                    }
+                  } catch {}
+                }}
+              >
+                {t("launcherpage.install_confirm.done_and_check")}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-default-600 dark:text-zinc-300 font-medium">
+            {t("launcherpage.install_confirm.body")}
+          </p>
+        </UnifiedModal>
+
+        {/* VCRuntime Completing */}
+        <UnifiedModal
+          isOpen={vcRuntimeCompletingDisclosure.isOpen}
+          onOpenChange={vcRuntimeCompletingDisclosure.onOpenChange}
+          type="success"
+          title={t("launcherpage.vcruntime.completing.title")}
+          icon={<FaCogs className="w-6 h-6 text-success-500" />}
+        >
+          <p className="text-default-600 dark:text-zinc-300 font-medium">
+            {t("launcherpage.vcruntime.completing.body")}
+          </p>
+        </UnifiedModal>
+
+        {/* MC Launch Loading */}
+        <UnifiedModal
+          isOpen={mcLaunchLoadingDisclosure.isOpen}
+          onOpenChange={mcLaunchLoadingDisclosure.onOpenChange}
+          type="success"
+          title={t("launcherpage.mclaunch.loading.title")}
+          hideCloseButton
+          footer={
+            <Button
+              color="primary"
+              radius="full"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              onPress={mcLaunchLoadingDisclosure.onClose}
+            >
+              {t("common.close")}
+            </Button>
+          }
+        >
+          <div className="flex flex-col gap-6">
+            <div className="flex items-center gap-4">
+              <Spinner
+                size="lg"
+                color="success"
+                classNames={{
+                  circle1: "border-b-emerald-500",
+                  circle2: "border-b-teal-500",
+                }}
+              />
+              <div className="flex flex-col gap-1">
+                <motion.p
+                  className="text-default-600 dark:text-zinc-300 font-medium"
+                  initial={{ opacity: 0 }}
+                  animate={{ opacity: 1 }}
+                  transition={{ duration: 0.25, delay: 0.1 }}
+                >
+                  {t("launcherpage.mclaunch.loading.body")}
+                </motion.p>
+                <div className="min-h-[24px] text-sm text-default-400">
+                  <AnimatePresence mode="wait">
+                    <motion.span
+                      key={`tip-${tipIndex}`}
+                      initial={{ opacity: 0, y: 4 }}
+                      animate={{ opacity: 1, y: 0 }}
+                      exit={{ opacity: 0, y: -4 }}
+                      transition={{ duration: 0.2 }}
+                    >
+                      {launchTips[tipIndex]}
+                    </motion.span>
+                  </AnimatePresence>
+                </div>
+              </div>
+            </div>
+            <Progress
+              size="sm"
+              isIndeterminate
+              aria-label="Loading"
+              classNames={{ indicator: "bg-emerald-600 hover:bg-emerald-500" }}
+            />
+          </div>
+        </UnifiedModal>
+
+        {/* Shortcut Success */}
+        <UnifiedModal
+          isOpen={shortcutSuccessDisclosure.isOpen}
+          onOpenChange={shortcutSuccessDisclosure.onOpenChange}
+          type="success"
+          title={t("launcherpage.shortcut.success.title")}
+          footer={
+            <Button
+              color="primary"
+              radius="full"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              onPress={shortcutSuccessDisclosure.onClose}
+            >
+              {t("common.close")}
+            </Button>
+          }
+        >
+          <p className="text-default-600 dark:text-zinc-300 font-medium">
+            {t("launcherpage.shortcut.success.body")}
+          </p>
+        </UnifiedModal>
+
+        {/* Register Installing */}
+        <UnifiedModal
+          isOpen={registerInstallingDisclosure.isOpen}
+          onOpenChange={registerInstallingDisclosure.onOpenChange}
+          type="success"
+          title={t("launcherpage.register.installing.title")}
+          icon={<FaDownload className="w-6 h-6 text-success-500" />}
+        >
+          <>
+            <p className="text-default-600 dark:text-zinc-300 font-medium mb-4">
+              {t("launcherpage.register.installing.body")}
+            </p>
+            <Progress
+              size="sm"
+              isIndeterminate
+              aria-label="Registering"
+              classNames={{ indicator: "bg-emerald-600 hover:bg-emerald-500" }}
+            />
+          </>
+        </UnifiedModal>
+
+        {/* Register Success */}
+        <UnifiedModal
+          isOpen={registerSuccessDisclosure.isOpen}
+          onOpenChange={(open) => {
+            registerSuccessDisclosure.onOpenChange(open);
+            if (!open) args.refresh();
+          }}
+          type="success"
+          title={t("launcherpage.register.success.title")}
+          footer={
+            <Button
+              color="primary"
+              radius="full"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              onPress={registerSuccessDisclosure.onClose}
+            >
+              {t("common.close")}
+            </Button>
+          }
+        >
+          <p className="text-default-600 dark:text-zinc-300 font-medium">
+            {t("launcherpage.register.success.body")}
+          </p>
+        </UnifiedModal>
+
+        {/* Register Failed */}
+        <UnifiedModal
+          isOpen={registerFailedDisclosure.isOpen}
+          onOpenChange={registerFailedDisclosure.onOpenChange}
+          type="error"
+          title={t("launcherpage.register.failed.title")}
+          footer={
+            <Button
+              color="primary"
+              radius="full"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              onPress={registerFailedDisclosure.onClose}
+            >
+              {t("common.close")}
+            </Button>
+          }
+        >
+          <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
+            <p className="font-medium text-center">
+              {(() => {
+                const key = `errors.${launchErrorCode}`;
+                const translated = t(key) as unknown as string;
+                if (launchErrorCode && translated && translated !== key)
+                  return translated;
+                return t(
+                  "launcherpage.register.failed.body",
+                ) as unknown as string;
+              })()}
+            </p>
+          </div>
+        </UnifiedModal>
+
+        {/* GDK Missing */}
+        <UnifiedModal
+          isOpen={gdkMissingDisclosure.isOpen}
+          onOpenChange={gdkMissingDisclosure.onOpenChange}
+          type="warning"
+          title={t("launcherpage.gdk_missing.title")}
+          footer={
+            <>
+              <Button
+                variant="light"
+                radius="full"
+                onPress={gdkMissingDisclosure.onClose}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                color="warning"
+                radius="full"
+                className="text-white"
+                onPress={() => {
+                  gdkMissingDisclosure.onClose();
+                  navigate("/settings");
+                }}
+              >
+                {t("launcherpage.gdk_missing.go_settings")}
+              </Button>
+            </>
+          }
+        >
+          <p className="text-default-600 dark:text-zinc-300 font-medium">
+            {t("launcherpage.gdk_missing.body")}
+          </p>
+        </UnifiedModal>
       </PageContainer>
     </>
   );

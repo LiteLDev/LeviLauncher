@@ -564,7 +564,7 @@ export default function WorldLevelDatEditorPage() {
         >
           <div className="flex items-center justify-between mb-3">
             <div
-              className="text-sm font-semibold text-default-700 dark:text-default-300 truncate"
+              className="text-sm font-semibold text-default-700 dark:text-zinc-200 truncate"
               title={title}
             >
               {title}
@@ -628,7 +628,7 @@ export default function WorldLevelDatEditorPage() {
                       variant="flat"
                       onPress={load}
                       isLoading={loading}
-                      className="bg-default-100 dark:bg-default-50/20 text-default-600"
+                      className="bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-zinc-300"
                     >
                       <FaSync className={loading ? "animate-spin" : ""} />
                     </Button>
@@ -679,7 +679,7 @@ export default function WorldLevelDatEditorPage() {
                 >
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-1 h-6 rounded-full bg-linear-to-b from-emerald-500 to-teal-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
-                    <h3 className="text-lg font-bold text-default-700 dark:text-default-300">
+                    <h3 className="text-lg font-bold text-default-700 dark:text-zinc-200">
                       {t("contentpage.basic_info")}
                     </h3>
                   </div>
@@ -701,10 +701,10 @@ export default function WorldLevelDatEditorPage() {
                       }}
                     />
                     <div className="flex flex-col gap-2">
-                      <label className="text-sm text-default-600">
+                      <label className="text-sm text-default-600 dark:text-zinc-400">
                         {t("contentpage.version")}
                       </label>
-                      <div className="h-10 px-3 flex items-center rounded-lg bg-default-100 dark:bg-default-50/20 text-default-500 text-sm font-mono border border-transparent">
+                      <div className="h-10 px-3 flex items-center rounded-lg bg-default-100 dark:bg-zinc-800/50 text-default-500 dark:text-zinc-400 text-sm font-mono border border-transparent dark:border-zinc-700/50">
                         {typedVersion}
                       </div>
                     </div>
@@ -716,7 +716,7 @@ export default function WorldLevelDatEditorPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-1 h-6 rounded-full bg-linear-to-b from-emerald-500 to-teal-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
-                      <h3 className="text-lg font-bold text-default-700 dark:text-default-300">
+                      <h3 className="text-lg font-bold text-default-700 dark:text-zinc-200">
                         {t("contentpage.add_field")}
                       </h3>
                     </div>
@@ -724,7 +724,7 @@ export default function WorldLevelDatEditorPage() {
                       size="sm"
                       radius="full"
                       variant="flat"
-                      className="bg-default-100 dark:bg-default-50/20 text-default-600"
+                      className="bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-zinc-300"
                       onPress={() => setAddOpen((o) => !o)}
                       startContent={addOpen ? <FaTimes /> : <FaPlus />}
                     >
@@ -1142,7 +1142,7 @@ export default function WorldLevelDatEditorPage() {
                     out.push(
                       <div key={`c-${k}`} className="mt-3">
                         <div className="flex items-center justify-between">
-                          <div className="text-xs text-default-500">
+                          <div className="text-xs text-default-500 dark:text-zinc-400">
                             {String(k)}
                           </div>
                           <div className="flex items-center gap-2">
@@ -1150,7 +1150,7 @@ export default function WorldLevelDatEditorPage() {
                               size="sm"
                               radius="lg"
                               variant="flat"
-                              className="bg-default-100 dark:bg-default-50/20 text-default-600"
+                              className="bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-zinc-300"
                               onPress={() => {
                                 if (!compoundOpen[pathKey]) {
                                   const hasLocal =
@@ -1467,7 +1467,7 @@ export default function WorldLevelDatEditorPage() {
                                             size="sm"
                                             radius="lg"
                                             variant="flat"
-                                            className="bg-default-100 dark:bg-default-50/20 text-default-600"
+                                            className="bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-zinc-300"
                                             onPress={() => {
                                               const segs = pathKey.split("/");
                                               const nextPath = [

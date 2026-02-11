@@ -1,12 +1,8 @@
 import React from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Dialogs } from "@wailsio/runtime";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
@@ -27,8 +23,13 @@ import {
 } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { FaWindows } from "react-icons/fa";
-import { FiAlertTriangle } from "react-icons/fi";
+import { FaWindows, FaDownload, FaCogs, FaList } from "react-icons/fa";
+import {
+  FiAlertTriangle,
+  FiCheckCircle,
+  FiUploadCloud,
+  FiTrash2,
+} from "react-icons/fi";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { PageHeader } from "@/components/PageHeader";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
@@ -438,9 +439,9 @@ export default function VersionSettingsPage() {
                 title={t("versions.edit.title")}
                 titleClassName="text-left pb-1"
                 description={
-                  <div className="mt-1 text-xs text-default-500 truncate text-left">
-                    {t("versions.info.version")}:{" "}
-                    <span className="text-default-700 font-medium">
+                  <div className="mt-1 text-xs text-default-500 dark:text-zinc-400 truncate text-left">
+                    {t("versions.edit.mc_version")}:{" "}
+                    <span className="text-default-700 dark:text-zinc-200 font-medium">
                       {loading ? (
                         <span className="inline-block h-4 w-24 rounded bg-default-200 animate-pulse" />
                       ) : (
@@ -452,7 +453,7 @@ export default function VersionSettingsPage() {
                     </span>
                     <span className="mx-2 text-default-400">·</span>
                     {t("versions.info.name")}:{" "}
-                    <span className="text-default-700 font-medium">
+                    <span className="text-default-700 dark:text-zinc-200 font-medium">
                       {targetName || "-"}
                     </span>
                     <span className="mx-2 text-default-400">·</span>
@@ -461,7 +462,7 @@ export default function VersionSettingsPage() {
                         {t("common.preview")}
                       </Chip>
                     ) : versionType === "release" ? (
-                      <span className="text-default-700 dark:text-default-200">
+                      <span className="text-default-700 dark:text-zinc-300">
                         {t("common.release")}
                       </span>
                     ) : (
@@ -477,7 +478,7 @@ export default function VersionSettingsPage() {
                       variant="light"
                       radius="full"
                       onPress={() => navigate(returnToPath)}
-                      className="font-medium text-default-600"
+                      className="font-medium text-default-600 dark:text-zinc-300"
                     >
                       {t("common.cancel")}
                     </Button>
@@ -519,7 +520,7 @@ export default function VersionSettingsPage() {
               {selectedTab === "general" && (
                 <div className="flex flex-col gap-6">
                   <div>
-                    <label className="text-small font-medium text-default-700 dark:text-default-200 mb-2 block">
+                    <label className="text-small font-medium text-default-700 dark:text-zinc-200 mb-2 block">
                       {t("versions.edit.new_name")}
                     </label>
                     <Input
@@ -545,7 +546,7 @@ export default function VersionSettingsPage() {
                     </p>
                   </div>
                   <div className="flex flex-col gap-3">
-                    <div className="text-small font-medium text-default-700 dark:text-default-200">
+                    <div className="text-small font-medium text-default-700 dark:text-zinc-200">
                       {t("versions.logo.title")}
                     </div>
                     <div className="flex items-center gap-4">
@@ -691,7 +692,7 @@ export default function VersionSettingsPage() {
                     />
                   </div>
                   <div className="flex flex-col gap-3">
-                    <label className="text-small font-medium text-default-700 dark:text-default-200 block">
+                    <label className="text-small font-medium text-default-700 dark:text-zinc-200 block">
                       {t("versions.edit.launch_args")}
                     </label>
                     <Input
@@ -718,7 +719,7 @@ export default function VersionSettingsPage() {
                     </p>
                   </div>
                   <div className="flex flex-col gap-3">
-                    <label className="text-small font-medium text-default-700 dark:text-default-200 block">
+                    <label className="text-small font-medium text-default-700 dark:text-zinc-200 block">
                       {t("versions.edit.env_vars")}
                     </label>
                     <Textarea
@@ -761,7 +762,7 @@ export default function VersionSettingsPage() {
                         <div className="text-medium font-bold text-foreground">
                           LeviLamina
                         </div>
-                        <div className="text-small text-default-500">
+                        <div className="text-small text-default-500 dark:text-zinc-400">
                           {t("downloadpage.install.levilamina_desc")}
                         </div>
                       </div>
@@ -845,12 +846,12 @@ export default function VersionSettingsPage() {
               )}
               {selectedTab === "manage" && (
                 <div className="flex flex-col gap-1">
-                  <div className="text-medium font-bold text-default-900 dark:text-default-100">
+                  <div className="text-medium font-bold text-default-900 dark:text-zinc-100">
                     {isRegistered
                       ? t("versions.edit.unregister_button")
                       : t("common.delete")}
                   </div>
-                  <div className="text-small text-default-500 mb-4 max-w-lg">
+                  <div className="text-small text-default-500 dark:text-zinc-400 mb-4 max-w-lg">
                     {isRegistered
                       ? t("versions.edit.unregister_hint")
                       : t("versions.edit.delete_hint")}
@@ -913,511 +914,238 @@ export default function VersionSettingsPage() {
         </motion.div>
       </div>
 
-      <BaseModal
+      <UnifiedModal
         isOpen={unregisterOpen}
         onOpenChange={(open) => {
           if (!open) setUnregisterOpen(false);
         }}
         hideCloseButton
         isDismissable={false}
+        type="warning"
+        title={t("versions.edit.unregister_progress.title")}
+        icon={<FiAlertTriangle className="w-6 h-6 text-warning-500" />}
       >
-        <ModalContent className="shadow-none">
-          {
-            (/* onClose */) => (
-              <>
-                <BaseModalHeader>
-                  <motion.h2
-                    className="text-2xl font-black tracking-tight text-warning-500"
-                    initial={{ opacity: 0, y: -10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    {
-                      t(
-                        "versions.edit.unregister_progress.title",
-                      ) as unknown as string
-                    }
-                  </motion.h2>
-                </BaseModalHeader>
-                <BaseModalBody>
-                  <motion.div
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.25, delay: 0.1 }}
-                  >
-                    <div className="text-medium font-medium text-default-600 mb-4">
-                      {
-                        t(
-                          "versions.edit.unregister_progress.body",
-                        ) as unknown as string
-                      }
-                    </div>
-                    <Progress
-                      size="sm"
-                      isIndeterminate
-                      aria-label="Unregistering"
-                      classNames={{ indicator: "bg-warning-500" }}
-                    />
-                  </motion.div>
-                </BaseModalBody>
-              </>
-            )
-          }
-        </ModalContent>
-      </BaseModal>
+        <div className="text-medium font-medium text-default-600 dark:text-zinc-300 mb-4">
+          {t("versions.edit.unregister_progress.body")}
+        </div>
+        <Progress
+          size="sm"
+          isIndeterminate
+          aria-label="Unregistering"
+          classNames={{ indicator: "bg-warning-500" }}
+        />
+      </UnifiedModal>
 
-      <BaseModal
+      <UnifiedModal
         isOpen={unregisterSuccessOpen}
         onOpenChange={(open) => {
           if (!open) setUnregisterSuccessOpen(false);
         }}
         size="md"
+        type="success"
+        title={t("versions.edit.unregister_success.title")}
+        icon={<FiCheckCircle className="w-6 h-6 text-success-500" />}
+        onConfirm={() => {
+          setUnregisterSuccessOpen(false);
+        }}
+        confirmText={t("launcherpage.delete.complete.close_button")}
+        showCancelButton={false}
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader>
-                <motion.h2
-                  className="text-2xl font-black tracking-tight text-success-500"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {
-                    t(
-                      "versions.edit.unregister_success.title",
-                    ) as unknown as string
-                  }
-                </motion.h2>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <motion.div
-                  className="text-medium font-medium text-default-600"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                >
-                  {
-                    t(
-                      "versions.edit.unregister_success.body",
-                    ) as unknown as string
-                  }
-                </motion.div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  color="primary"
-                  radius="full"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                  onPress={() => {
-                    onClose?.();
-                    setUnregisterSuccessOpen(false);
-                  }}
-                >
-                  {
-                    t(
-                      "launcherpage.delete.complete.close_button",
-                    ) as unknown as string
-                  }
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
+          {t("versions.edit.unregister_success.body")}
+        </div>
+      </UnifiedModal>
 
-      <BaseModal
+      <UnifiedModal
         isOpen={gdkMissingOpen}
         onOpenChange={(open) => {
           if (!open) setGdkMissingOpen(false);
         }}
+        type="warning"
+        title={t("launcherpage.gdk_missing.title")}
+        icon={<FiAlertTriangle className="w-6 h-6 text-warning-500" />}
+        footer={
+          <>
+            <Button
+              variant="light"
+              radius="full"
+              onPress={() => {
+                setGdkMissingOpen(false);
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              color="primary"
+              radius="full"
+              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              onPress={() => {
+                setGdkMissingOpen(false);
+                navigate("/settings");
+              }}
+            >
+              {t("launcherpage.gdk_missing.go_settings")}
+            </Button>
+          </>
+        }
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader>
-                <motion.h2
-                  className="text-2xl font-black tracking-tight text-warning-500"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {t("launcherpage.gdk_missing.title") as unknown as string}
-                </motion.h2>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <motion.div
-                  className="text-medium font-medium text-default-600"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                >
-                  {t("launcherpage.gdk_missing.body") as unknown as string}
-                </motion.div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="light"
-                  radius="full"
-                  onPress={() => {
-                    onClose?.();
-                    setGdkMissingOpen(false);
-                  }}
-                >
-                  {t("common.cancel") as unknown as string}
-                </Button>
-                <Button
-                  color="primary"
-                  radius="full"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                  onPress={() => {
-                    onClose?.();
-                    setGdkMissingOpen(false);
-                    navigate("/settings");
-                  }}
-                >
-                  {
-                    t(
-                      "launcherpage.gdk_missing.go_settings",
-                    ) as unknown as string
-                  }
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-      <BaseModal
+        <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
+          {t("launcherpage.gdk_missing.body")}
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
         isOpen={errorOpen}
         onOpenChange={(open) => {
           if (!open) setErrorOpen(false);
         }}
         hideCloseButton
-        closeButton
-        aria-label="error-modal"
-        classNames={{
-          closeButton:
-            "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
+        type="error"
+        title={t("common.error")}
+        icon={<FiAlertTriangle className="w-6 h-6 text-danger-500" />}
+        onConfirm={() => {
+          setError("");
+          setErrorOpen(false);
         }}
+        confirmText={t("common.ok")}
+        showCancelButton={false}
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader>
-                <motion.h2
-                  className="text-2xl font-black tracking-tight text-danger-500"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {t("common.error")}
-                </motion.h2>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <motion.div
-                  className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400 font-medium"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                >
-                  <div className="text-medium wrap-break-word">
-                    {getErrorText(error)}
-                  </div>
-                </motion.div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="light"
-                  radius="full"
-                  onPress={() => {
-                    setError("");
-                    onClose();
-                  }}
-                >
-                  {t("common.ok")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400 font-medium">
+          <div className="text-medium wrap-break-word">
+            {getErrorText(error)}
+          </div>
+        </div>
+      </UnifiedModal>
 
-      <BaseModal
+      <UnifiedModal
         isOpen={shortcutSuccessOpen}
         onOpenChange={(open) => {
           if (!open) setShortcutSuccessOpen(false);
         }}
         size="md"
-        classNames={{
-          closeButton:
-            "absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500",
+        type="success"
+        title={t("launcherpage.shortcut.success.title")}
+        icon={<FiCheckCircle className="w-6 h-6 text-success-500" />}
+        onConfirm={() => {
+          setShortcutSuccessOpen(false);
         }}
+        confirmText={t("common.close")}
+        showCancelButton={false}
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader>
-                <motion.h2
-                  className="text-2xl font-black tracking-tight text-success-500"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {
-                    t(
-                      "launcherpage.shortcut.success.title",
-                    ) as unknown as string
-                  }
-                </motion.h2>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <motion.div
-                  className="text-medium font-medium text-default-600"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                >
-                  {t("launcherpage.shortcut.success.body") as unknown as string}
-                </motion.div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  color="primary"
-                  radius="full"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                  onPress={() => {
-                    onClose?.();
-                    setShortcutSuccessOpen(false);
-                  }}
-                >
-                  {t("common.close") as unknown as string}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
+          {t("launcherpage.shortcut.success.body")}
+        </div>
+      </UnifiedModal>
 
-      <BaseModal
+      <DeleteConfirmModal
         isOpen={deleteOpen}
-        onOpenChange={(open) => {
-          if (!open) setDeleteOpen(false);
-        }}
-        hideCloseButton
-        isDismissable={!deleting}
-        classNames={{}}
-      >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader>
-                <motion.h2
-                  className="text-2xl font-black tracking-tight text-danger-500"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  {t("launcherpage.delete.confirm.title")}
-                </motion.h2>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <motion.div
-                  className="flex flex-col gap-4"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                >
-                  <div className="text-medium font-medium text-default-600 wrap-break-word whitespace-pre-wrap">
-                    {t("launcherpage.delete.confirm.content")}
-                  </div>
-                  <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400 text-sm wrap-break-word whitespace-pre-wrap font-mono">
-                    {targetName}
-                  </div>
-                </motion.div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="light"
-                  radius="full"
-                  onPress={() => {
-                    onClose?.();
-                  }}
-                  isDisabled={deleting}
-                >
-                  {t("launcherpage.delete.confirm.cancel_button")}
-                </Button>
-                <Button
-                  color="danger"
-                  radius="full"
-                  className="bg-danger shadow-lg shadow-danger-500/20 font-bold"
-                  onPress={async () => {
-                    await onDeleteConfirm();
-                  }}
-                  isLoading={deleting}
-                >
-                  {t("launcherpage.delete.confirm.delete_button")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        onOpenChange={setDeleteOpen}
+        onConfirm={onDeleteConfirm}
+        title={t("launcherpage.delete.confirm.title")}
+        description={t("launcherpage.delete.confirm.content")}
+        itemName={targetName}
+        isPending={deleting}
+      />
 
-      <BaseModal
+      <UnifiedModal
         isOpen={deleteSuccessOpen}
         onOpenChange={(open) => {
           if (!open) setDeleteSuccessOpen(open);
         }}
         size="md"
+        type="success"
+        title={t("launcherpage.delete.complete.title")}
+        icon={<FiCheckCircle className="w-6 h-6 text-success-500" />}
+        onConfirm={() => {
+          setDeleteSuccessOpen(false);
+          navigate(returnToPath);
+        }}
+        confirmText={t("launcherpage.delete.complete.close_button")}
+        showCancelButton={false}
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader>
-                <motion.div
-                  className="flex items-center gap-3"
-                  initial={{ opacity: 0, y: -10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ duration: 0.25 }}
-                >
-                  <div className="w-8 h-8 rounded-full bg-emerald-500 flex items-center justify-center shadow-lg shadow-emerald-900/20">
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="16"
-                      height="16"
-                      className="text-white"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="3"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M20 6L9 17l-5-5" />
-                    </svg>
-                  </div>
-                  <h2 className="text-2xl font-black tracking-tight text-emerald-500">
-                    {t("launcherpage.delete.complete.title")}
-                  </h2>
-                </motion.div>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <motion.div
-                  className="text-medium font-medium text-default-600"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                >
-                  {t("launcherpage.delete.complete.content")}
-                  {deleteSuccessMsg ? (
-                    <span className="font-mono text-default-700 font-bold">
-                      {" "}
-                      {deleteSuccessMsg}
-                    </span>
-                  ) : null}
-                </motion.div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  color="primary"
-                  radius="full"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                  onPress={() => {
-                    onClose?.();
-                    setDeleteSuccessOpen(false);
-                    navigate(returnToPath);
-                  }}
-                >
-                  {t("launcherpage.delete.complete.close_button")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-      <BaseModal
+        <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
+          {t("launcherpage.delete.complete.content")}
+          {deleteSuccessMsg ? (
+            <span className="font-mono text-default-700 dark:text-zinc-200 font-bold">
+              {" "}
+              {deleteSuccessMsg}
+            </span>
+          ) : null}
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
         size="md"
         isOpen={unsavedOpen}
         onOpenChange={unsavedOnOpenChange}
         hideCloseButton
+        type="warning"
+        title={t("settings.unsaved.title")}
+        footer={
+          <>
+            <Button
+              variant="light"
+              onPress={unsavedOnOpenChange.bind(null, false)}
+            >
+              {t("settings.unsaved.cancel")}
+            </Button>
+            <Button
+              color="primary"
+              onPress={async () => {
+                const ok = await onSave(pendingNavPath);
+                if (ok) {
+                  unsavedOnOpenChange(false);
+                }
+              }}
+            >
+              {t("settings.unsaved.save")}
+            </Button>
+          </>
+        }
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-warning-600">
-                {t("settings.unsaved.title")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-default-700 text-sm">
-                  {t("versions.unsaved.body")}
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  {t("settings.unsaved.cancel")}
-                </Button>
-                <Button
-                  color="primary"
-                  onPress={async () => {
-                    const ok = await onSave(pendingNavPath);
-                    if (ok) {
-                      onClose();
-                    }
-                  }}
-                >
-                  {t("settings.unsaved.save")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-default-700 dark:text-zinc-300 text-sm">
+          {t("versions.unsaved.body")}
+        </div>
+      </UnifiedModal>
 
-      <BaseModal
+      <UnifiedModal
         size="md"
         isOpen={rcOpen}
         onOpenChange={rcOnOpenChange}
         hideCloseButton
+        type="warning"
+        title={t("mods.rc_warning.title")}
+        icon={<FiAlertTriangle className="w-6 h-6 text-warning-500" />}
+        footer={
+          <>
+            <Button variant="light" onPress={rcOnClose}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              color="warning"
+              className="text-white font-bold shadow-lg shadow-warning-500/20"
+              onPress={() => {
+                rcOnClose();
+                proceedInstallLeviLamina();
+              }}
+            >
+              {t("common.continue")}
+            </Button>
+          </>
+        }
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-warning-600">
-                <div className="flex items-center gap-2">
-                  <FiAlertTriangle className="w-5 h-5" />
-                  <span>{t("mods.rc_warning.title")}</span>
-                </div>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-sm text-default-700 space-y-2">
-                  <p>
-                    {t("mods.rc_warning.body_1", {
-                      version: rcVersion,
-                    })}
-                  </p>
-                  <p className="font-semibold text-warning-700">
-                    {t("mods.rc_warning.body_2")}
-                  </p>
-                  <p>{t("mods.rc_warning.body_3")}</p>
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="warning"
-                  onPress={() => {
-                    onClose();
-                    proceedInstallLeviLamina();
-                  }}
-                >
-                  {t("common.continue")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-sm text-default-700 dark:text-zinc-300 space-y-2">
+          <p>
+            {t("mods.rc_warning.body_1", {
+              version: rcVersion,
+            })}
+          </p>
+          <p className="font-semibold text-warning-700">
+            {t("mods.rc_warning.body_2")}
+          </p>
+          <p>{t("mods.rc_warning.body_3")}</p>
+        </div>
+      </UnifiedModal>
     </PageContainer>
   );
 }

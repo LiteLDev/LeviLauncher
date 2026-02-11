@@ -93,7 +93,7 @@ export default function AboutPage() {
                         {t("about.author")}
                       </Chip>
                     </div>
-                    <div className="text-small text-default-500">
+                    <div className="text-small text-default-500 dark:text-zinc-400">
                       {t("about.ll_authors")}
                     </div>
                   </div>
@@ -229,7 +229,7 @@ export default function AboutPage() {
                       {t("about.github_org")}
                     </Button>
                   </div>
-                  <p className="text-small text-default-500">
+                  <p className="text-small text-default-500 dark:text-zinc-400">
                     {t("about.license.tip")}
                   </p>
                 </div>
@@ -238,7 +238,7 @@ export default function AboutPage() {
                   <SectionHeader
                     className="mb-4"
                     icon={<FaGithub size={20} />}
-                    iconWrapperClassName="bg-default-500/10 text-default-600 dark:text-default-400"
+                    iconWrapperClassName="bg-default-500/10 text-default-600 dark:text-zinc-400"
                     title={t("about.contribute")}
                   />
                   <p className="text-default-600 dark:text-zinc-400 leading-relaxed mb-4">

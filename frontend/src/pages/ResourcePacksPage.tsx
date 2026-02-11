@@ -6,7 +6,6 @@ import {
   Image,
   Spinner,
   Tooltip,
-  ModalContent,
   useDisclosure,
   Input,
   Dropdown,
@@ -19,12 +18,7 @@ import {
   CardBody,
   addToast,
 } from "@heroui/react";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import {
@@ -597,18 +591,18 @@ export default function ResourcePacksPage() {
               </AnimatePresence>
             </div>
           </div>
-          <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
+          <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
             <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
               {currentVersionName || t("contentpage.none")}
             </span>
-            <span className="text-default-300">|</span>
+            <span className="text-default-300 dark:text-zinc-700">|</span>
             <span>{t("contentpage.isolation")}:</span>
             <span
               className={`font-medium px-2 py-0.5 rounded-md ${
                 roots.isIsolation
                   ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
-                  : "bg-default-100 text-default-700"
+                  : "bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
               }`}
             >
               {roots.isIsolation ? t("common.yes") : t("common.no")}
@@ -620,7 +614,9 @@ export default function ResourcePacksPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
-          <span className="text-default-500">{t("common.loading")}</span>
+          <span className="text-default-500 dark:text-zinc-400">
+            {t("common.loading")}
+          </span>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -741,7 +737,7 @@ export default function ResourcePacksPage() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-default-400">
+            <div className="flex flex-col items-center justify-center py-20 text-default-400 dark:text-zinc-500">
               <FaBox className="text-6xl mb-4 opacity-20" />
               <p>
                 {query
@@ -767,166 +763,81 @@ export default function ResourcePacksPage() {
         </div>
       )}
       {/* Single Delete Modal */}
-      <BaseModal
+      <DeleteConfirmModal
         isOpen={delCfmOpen}
-        onClose={delCfmOnOpenChange}
-        isDismissable={!deletingOne}
-        hideCloseButton={deletingOne}
+        onOpenChange={delCfmOnOpenChange}
         title={t("common.confirm_delete")}
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-danger">
-                {t("common.confirm_delete")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                {deletingOne ? (
-                  <div className="flex flex-col items-center justify-center py-6 gap-3">
-                    <Spinner size="lg" color="danger" />
-                    <p className="text-default-500 font-medium">
-                      {t("common.deleting")}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <p>
-                      {t("contentpage.delete_pack_confirm", {
-                        name: activePack?.name || activePack?.path,
-                      })}
-                    </p>
-                    <p className="text-xs text-danger">
-                      {t("contentpage.delete_warning")}
-                    </p>
-                  </div>
-                )}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="flat"
-                  onPress={onClose}
-                  isDisabled={deletingOne}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="danger"
-                  isDisabled={deletingOne}
-                  onPress={async () => {
-                    if (activePack) {
-                      setDeletingOne(true);
-                      try {
-                        await DeletePack(currentVersionName, activePack.path);
-                        addToast({
-                          title: t("contentpage.deleted_name", {
-                            name: activePack.name,
-                          }),
-                          color: "success",
-                        });
-                        setActivePack(null);
-                        refreshAll();
-                        delCfmOnOpenChange();
-                      } catch (e) {
-                        addToast({
-                          title: "Error",
-                          description: String(e),
-                          color: "danger",
-                        });
-                      } finally {
-                        setDeletingOne(false);
-                      }
-                    }
-                  }}
-                >
-                  {t("common.delete")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        description={t("contentpage.delete_pack_confirm", {
+          name: activePack?.name || activePack?.path,
+        })}
+        itemName={activePack?.name || activePack?.path}
+        warning={t("contentpage.delete_warning")}
+        isPending={deletingOne}
+        onConfirm={async () => {
+          if (activePack) {
+            setDeletingOne(true);
+            try {
+              await DeletePack(currentVersionName, activePack.path);
+              addToast({
+                title: t("contentpage.deleted_name", {
+                  name: activePack.name,
+                }),
+                color: "success",
+              });
+              setActivePack(null);
+              refreshAll();
+            } catch (e) {
+              addToast({
+                title: "Error",
+                description: String(e),
+                color: "danger",
+              });
+              throw e;
+            } finally {
+              setDeletingOne(false);
+            }
+          }
+        }}
+      />
 
       {/* Batch Delete Modal */}
-      <BaseModal
+      <DeleteConfirmModal
         isOpen={delManyCfmOpen}
-        onClose={delManyCfmOnOpenChange}
-        isDismissable={!deletingMany}
-        hideCloseButton={deletingMany}
+        onOpenChange={delManyCfmOnOpenChange}
         title={t("common.confirm_delete")}
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-danger">
-                {t("common.confirm_delete")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                {deletingMany ? (
-                  <div className="flex flex-col items-center justify-center py-6 gap-3">
-                    <Spinner size="lg" color="danger" />
-                    <p className="text-default-500 font-medium">
-                      {t("common.deleting")}
-                    </p>
-                  </div>
-                ) : (
-                  <div className="flex flex-col gap-2">
-                    <p>
-                      {t("contentpage.delete_selected_confirm", {
-                        count: Object.values(selected).filter(Boolean).length,
-                      })}
-                    </p>
-                    <p className="text-xs text-danger">
-                      {t("contentpage.delete_warning")}
-                    </p>
-                  </div>
-                )}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="flat"
-                  onPress={onClose}
-                  isDisabled={deletingMany}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="danger"
-                  isDisabled={deletingMany}
-                  onPress={async () => {
-                    const targets = Object.keys(selected).filter(
-                      (k) => selected[k],
-                    );
-                    if (targets.length === 0) return;
+        description={t("contentpage.delete_selected_confirm", {
+          count: Object.values(selected).filter(Boolean).length,
+        })}
+        warning={t("contentpage.delete_warning")}
+        isPending={deletingMany}
+        onConfirm={async () => {
+          const targets = Object.keys(selected).filter((k) => selected[k]);
+          if (targets.length === 0) return;
 
-                    setDeletingMany(true);
-                    let success = 0;
-                    for (const p of targets) {
-                      try {
-                        await DeletePack(currentVersionName, p);
-                        success++;
-                      } catch (e) {
-                        console.error(e);
-                      }
-                    }
-                    addToast({
-                      title: t("contentpage.deleted_count", {
-                        count: success,
-                      }),
-                      color: "success",
-                    });
-                    setSelected({});
-                    refreshAll();
-                    setDeletingMany(false);
-                    onClose();
-                  }}
-                >
-                  {t("common.delete")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+          setDeletingMany(true);
+          try {
+            let success = 0;
+            for (const p of targets) {
+              try {
+                await DeletePack(currentVersionName, p);
+                success++;
+              } catch (e) {
+                console.error(e);
+              }
+            }
+            addToast({
+              title: t("contentpage.deleted_count", {
+                count: success,
+              }),
+              color: "success",
+            });
+            setSelected({});
+            refreshAll();
+          } finally {
+            setDeletingMany(false);
+          }
+        }}
+      />
     </PageContainer>
   );
 }

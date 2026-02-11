@@ -15,6 +15,7 @@ export const BaseModal: React.FC<ModalProps> = (props) => {
 
   const finalClassNames = {
     ...classNames,
+    backdrop: `top-14 backdrop-blur-md bg-black/50 ${classNames?.backdrop || ""}`,
     base: `bg-white! dark:bg-zinc-950! border border-default-200 dark:border-zinc-800 shadow-2xl rounded-[2.5rem] ${
       classNames?.base || ""
     }`,

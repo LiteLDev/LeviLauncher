@@ -1,11 +1,7 @@
 "use client";
 import React, { useEffect, useMemo, useState, useRef } from "react";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import {
   Button,
   Chip,
@@ -21,7 +17,6 @@ import {
   TableBody,
   TableRow,
   TableCell,
-  ModalContent,
   Progress,
   Spinner,
   useDisclosure,
@@ -574,7 +569,7 @@ export const DownloadPage: React.FC = () => {
                       mainWrapper: "h-full",
                       input: "text-small",
                       inputWrapper:
-                        "h-full font-normal text-default-500 bg-default-400/20 dark:bg-default-500/20",
+                        "h-full font-normal text-default-500 dark:text-zinc-400 bg-default-400/20 dark:bg-zinc-500/20",
                     }}
                     placeholder={t("downloadpage.topcontent.input.placeholder")}
                     value={query}
@@ -769,7 +764,7 @@ export const DownloadPage: React.FC = () => {
                   base: "h-full overflow-y-auto custom-scrollbar",
                   table: "min-w-full",
                   thead: "rounded-none",
-                  th: "bg-transparent backdrop-blur-lg text-default-500 font-semibold border-b border-default-200 dark:border-white/10 h-12 rounded-none",
+                  th: "bg-transparent backdrop-blur-lg text-default-500 dark:text-zinc-400 font-semibold border-b border-default-200 dark:border-white/10 h-12 rounded-none",
                   td: "py-3 border-b border-default-100 dark:border-white/5 group-last:border-0",
                   tr: "group transition-colors hover:bg-default-50/50 dark:hover:bg-zinc-800/30 data-[selected=true]:bg-default-100",
                 }}
@@ -881,7 +876,9 @@ export const DownloadPage: React.FC = () => {
                               <span className="text-small">LeviLamina</span>
                             </div>
                           ) : (
-                            <span className="text-default-300 ml-2">-</span>
+                            <span className="text-default-300 dark:text-zinc-600 ml-2">
+                              -
+                            </span>
                           )}
                         </motion.div>
                       </TableCell>
@@ -1011,7 +1008,7 @@ export const DownloadPage: React.FC = () => {
 
               {/* Footer Pagination */}
               <div className="flex items-center justify-between px-4 py-3 border-t border-default-200 dark:border-white/10 bg-transparent shrink-0 z-10">
-                <div className="text-small text-default-500">
+                <div className="text-small text-default-500 dark:text-zinc-400">
                   {t("downloadpage.bottomcontent.total", {
                     count: filtered.length,
                   })}
@@ -1034,677 +1031,469 @@ export const DownloadPage: React.FC = () => {
           </Card>
         </motion.div>
 
-        <BaseModal
+        <UnifiedModal
           isOpen={isOpen}
           onOpenChange={onOpenChange}
           size="2xl"
           scrollBehavior="inside"
+          type="primary"
+          title={t("downloadpage.mirror.title")}
+          titleClass="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400"
+          icon={<FaCloudDownloadAlt size={24} className="text-emerald-500" />}
+          iconBgClass="bg-emerald-500/10 border-emerald-500/20"
+          hideScrollbar={true}
+          showConfirmButton={false}
+          showCancelButton={false}
+          footer={
+            <div className="flex w-full justify-end gap-2">
+              <Button
+                className="font-medium text-default-500 dark:text-zinc-400 hover:text-default-700 dark:hover:text-zinc-200"
+                variant="light"
+                onPress={() => onOpenChange(false)}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                variant="flat"
+                color="default"
+                className="bg-default-100 dark:bg-white/10"
+                startContent={
+                  <FaSync className={testing ? "animate-spin" : ""} />
+                }
+                onPress={() => {
+                  startMirrorTests(mirrorUrls || []);
+                }}
+              >
+                {t("downloadpage.mirror.retest")}
+              </Button>
+              <Button
+                className="font-bold text-white shadow-lg shadow-emerald-900/20 bg-emerald-600 hover:bg-emerald-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                radius="full"
+                size="lg"
+                isDisabled={!selectedUrl}
+                startContent={installMode ? null : <FaDownload />}
+                onPress={async (e) => {
+                  if (!selectedUrl) return;
+                  if (installMode) {
+                    navigate("/install", {
+                      state: {
+                        mirrorVersion,
+                        mirrorType,
+                        returnTo: "/download",
+                      },
+                    });
+                    onOpenChange(false);
+                  } else {
+                    if (hasBackend && minecraft?.StartMsixvcDownload) {
+                      const desired = `${
+                        mirrorType || "Release"
+                      } ${mirrorVersion}.msixvc`;
+                      const success = await startDownload(selectedUrl, desired);
+                      if (success) {
+                        triggerAnimation(e);
+                        onOpenChange(false);
+                      }
+                    } else {
+                      window.open(selectedUrl, "_blank");
+                      triggerAnimation(e);
+                      onOpenChange(false);
+                    }
+                  }
+                }}
+              >
+                {installMode
+                  ? t("downloadpage.mirror.install_selected")
+                  : t("downloadpage.mirror.download_selected")}
+              </Button>
+            </div>
+          }
         >
-          <ModalContent className="max-w-[820px] shadow-none">
-            {(onClose) => (
-              <>
-                <BaseModalHeader className="flex flex-col gap-1 px-8 pt-6 pb-2">
-                  <div className="flex flex-col gap-2">
-                    <motion.h2
-                      className="text-3xl font-black tracking-tight text-emerald-600"
-                      initial={{ opacity: 0, y: -10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      transition={{ duration: 0.3, ease: "easeOut" }}
-                    >
-                      {t("downloadpage.mirror.title")}
-                    </motion.h2>
-                    <motion.div
-                      className="flex items-center gap-2"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      transition={{ duration: 0.3, delay: 0.1 }}
-                    >
+          <div className="flex flex-col gap-6">
+            <div className="flex flex-col gap-4 p-4 bg-default-50 dark:bg-zinc-800/50 rounded-2xl border border-default-200/50 dark:border-white/5">
+              <div className="flex items-center gap-2">
+                <Chip
+                  size="sm"
+                  variant="flat"
+                  color={mirrorType === "Preview" ? "secondary" : "warning"}
+                  className="h-6"
+                >
+                  {mirrorType}
+                </Chip>
+                <span className="text-small font-mono text-default-600 dark:text-zinc-400">
+                  {mirrorVersion}
+                </span>
+              </div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                <div className="flex items-center gap-2 text-small font-bold text-default-700 dark:text-zinc-300 shrink-0">
+                  <div className="w-1 h-4 rounded-full bg-emerald-500"></div>
+                  {t("downloadpage.mirror.target")}
+                </div>
+                {(() => {
+                  const target =
+                    selectedUrl || (!testing ? bestMirror?.url : "");
+                  if (!target)
+                    return (
+                      <div className="text-small text-default-400 dark:text-zinc-500 italic">
+                        {testing
+                          ? t("downloadpage.mirror.testing")
+                          : t("downloadpage.mirror.unselected")}
+                      </div>
+                    );
+                  const domain = labelFromUrl(target);
+                  const fname = fileNameFromUrl(target);
+                  return (
+                    <div className="flex items-center gap-3 min-w-0 bg-white/50 dark:bg-black/20 rounded-xl px-3 py-1.5 border border-black/5 dark:border-white/5">
+                      <div className="text-small truncate max-w-[400px] text-default-700 dark:text-zinc-300">
+                        <span className="font-semibold text-emerald-600 dark:text-emerald-500">
+                          {domain}
+                        </span>
+                        <span className="mx-1.5 opacity-30">|</span>
+                        {fname}
+                      </div>
+                      <Button
+                        size="sm"
+                        variant="flat"
+                        className="h-7 min-w-20 bg-default-200/50 dark:bg-white/10"
+                        onPress={() => navigator.clipboard?.writeText(target)}
+                        startContent={<FaCopy size={12} />}
+                      >
+                        {t("downloadpage.mirror.copy_link")}
+                      </Button>
+                    </div>
+                  );
+                })()}
+              </div>
+            </div>
+
+            {mirrorUrls && mirrorUrls.length > 0 ? (
+              <div className="flex flex-col gap-4">
+                {/* Recommended Section */}
+                <div>
+                  <div className="flex items-center gap-3 mb-3 px-1">
+                    <span className="text-sm font-bold text-default-800 dark:text-zinc-300 uppercase tracking-wider">
+                      {t("downloadpage.mirror.recommended")}
+                    </span>
+                    {testing && (
                       <Chip
                         size="sm"
                         variant="flat"
-                        color={
-                          mirrorType === "Preview" ? "secondary" : "warning"
+                        color="success"
+                        startContent={
+                          <FaCircleNotch className="animate-spin" size={12} />
                         }
-                        className="h-6"
                       >
-                        {mirrorType}
+                        {t("downloadpage.mirror.auto_testing")}
                       </Chip>
-                      <span className="text-small font-mono text-default-600 dark:text-zinc-400">
-                        {mirrorVersion}
-                      </span>
-                    </motion.div>
+                    )}
                   </div>
 
-                  <motion.div
-                    className="mt-6 rounded-2xl bg-default-100/50 dark:bg-zinc-800 border border-default-200/50 dark:border-white/5 p-4"
-                    initial={{ opacity: 0, y: 5 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.2 }}
-                  >
-                    <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
-                      <div className="flex items-center gap-2 text-small font-bold text-default-700 dark:text-zinc-300 shrink-0">
-                        <div className="w-1 h-4 rounded-full bg-emerald-500"></div>
-                        {t("downloadpage.mirror.target")}
-                      </div>
-                      {(() => {
-                        const target =
-                          selectedUrl || (!testing ? bestMirror?.url : "");
-                        if (!target)
-                          return (
-                            <div className="text-small text-default-400 dark:text-zinc-500 italic">
-                              {testing
-                                ? t("downloadpage.mirror.testing")
-                                : t("downloadpage.mirror.unselected")}
-                            </div>
-                          );
-                        const domain = labelFromUrl(target);
-                        const fname = fileNameFromUrl(target);
-                        return (
-                          <div className="flex items-center gap-3 min-w-0 bg-white/50 dark:bg-black/20 rounded-xl px-3 py-1.5 border border-black/5 dark:border-white/5">
-                            <div className="text-small truncate max-w-[400px] text-default-700 dark:text-zinc-300">
-                              <span className="font-semibold text-emerald-600 dark:text-emerald-500">
-                                {domain}
-                              </span>
-                              <span className="mx-1.5 opacity-30">|</span>
-                              {fname}
-                            </div>
-                            <Button
-                              size="sm"
-                              variant="flat"
-                              className="h-7 min-w-20 bg-default-200/50 dark:bg-white/10"
-                              onPress={() =>
-                                navigator.clipboard?.writeText(target)
-                              }
-                              startContent={<FaCopy size={12} />}
-                            >
-                              {t("downloadpage.mirror.copy_link")}
-                            </Button>
+                  {bestMirror ? (
+                    <div
+                      className={`group relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl border-2 p-4 transition-all cursor-pointer ${
+                        selectedUrl === bestMirror.url
+                          ? "border-emerald-500 bg-emerald-500/5 shadow-xl shadow-emerald-500/10"
+                          : "border-transparent bg-default-50 dark:bg-zinc-800/50 hover:bg-default-100 dark:hover:bg-zinc-800"
+                      }`}
+                      onClick={() => setSelectedUrl(bestMirror.url)}
+                    >
+                      <div className="flex items-center gap-4 min-w-0 z-10">
+                        <div
+                          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
+                            selectedUrl === bestMirror.url
+                              ? "bg-emerald-500 text-white"
+                              : "bg-default-200 dark:bg-zinc-700 text-default-500 dark:text-zinc-400"
+                          }`}
+                        >
+                          <FaDownload size={16} />
+                        </div>
+                        <div className="flex flex-col gap-0.5 min-w-0">
+                          <div className="font-bold text-medium text-default-900 dark:text-white truncate">
+                            {bestMirror.label}
                           </div>
-                        );
-                      })()}
+                          <div className="text-tiny text-default-500 dark:text-zinc-400 truncate font-mono opacity-70">
+                            {bestMirror.url}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-3 shrink-0 z-10">
+                        <div className="flex flex-col items-end">
+                          <span className="text-tiny text-default-500 dark:text-zinc-400 font-medium">
+                            延迟
+                          </span>
+                          <span
+                            className={`text-medium font-bold ${bestMirror.ok ? "text-emerald-500" : "text-danger-500"}`}
+                          >
+                            {typeof bestMirror.latencyMs === "number"
+                              ? `${Math.round(bestMirror.latencyMs)}ms`
+                              : "-"}
+                          </span>
+                        </div>
+                        {selectedUrl === bestMirror.url && (
+                          <motion.div
+                            layoutId="selected-check"
+                            className="text-emerald-500"
+                          >
+                            <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                              <svg
+                                className="w-3.5 h-3.5 text-white"
+                                fill="none"
+                                viewBox="0 0 24 24"
+                                stroke="currentColor"
+                              >
+                                <path
+                                  strokeLinecap="round"
+                                  strokeLinejoin="round"
+                                  strokeWidth="3"
+                                  d="M5 13l4 4L19 7"
+                                />
+                              </svg>
+                            </div>
+                          </motion.div>
+                        )}
+                      </div>
                     </div>
-                  </motion.div>
-                </BaseModalHeader>
-                <BaseModalBody className="[&::-webkit-scrollbar]:hidden">
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.3, delay: 0.25 }}
-                  >
-                    {mirrorUrls && mirrorUrls.length > 0 ? (
-                      <div className="flex flex-col gap-4">
-                        {/* Recommended Section */}
-                        <div>
-                          <div className="flex items-center gap-3 mb-3 px-1">
-                            <span className="text-sm font-bold text-default-800 dark:text-zinc-300 uppercase tracking-wider">
-                              {t("downloadpage.mirror.recommended")}
+                  ) : (
+                    <div className="p-8 rounded-2xl border border-dashed border-default-300 dark:border-zinc-700 flex flex-col items-center justify-center text-default-500 dark:text-zinc-400 gap-2">
+                      <span>{t("downloadpage.mirror.no_recommended")}</span>
+                    </div>
+                  )}
+                </div>
+
+                {/* Others Section */}
+                <div className="flex flex-col gap-2">
+                  <div className="text-sm font-bold text-default-800 dark:text-zinc-300 uppercase tracking-wider px-1">
+                    {t("downloadpage.mirror.others")}
+                  </div>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                    {mirrorResults.map((m, i) => (
+                      <div
+                        key={`mirror-${i}`}
+                        className={`relative flex items-center justify-between gap-3 rounded-xl border p-2.5 transition-all cursor-pointer ${
+                          selectedUrl === m.url
+                            ? "border-emerald-500/50 bg-emerald-500/5"
+                            : "border-default-200/50 dark:border-zinc-600 bg-white/50 dark:bg-zinc-700/30 hover:bg-default-100 dark:hover:bg-zinc-700 hover:border-default-300"
+                        }`}
+                        onClick={() => setSelectedUrl(m.url)}
+                      >
+                        <div className="flex items-center gap-3 min-w-0 overflow-hidden">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-default-100 dark:bg-zinc-600 text-tiny font-bold text-default-600 dark:text-zinc-100 shrink-0">
+                            {String.fromCharCode(65 + i)}
+                          </div>
+                          <div className="flex flex-col min-w-0">
+                            <span className="text-small font-bold text-default-800 dark:text-zinc-100 truncate">
+                              {m.label}
                             </span>
-                            {testing && (
-                              <Chip
-                                size="sm"
-                                variant="flat"
-                                color="success"
-                                startContent={
-                                  <FaCircleNotch
-                                    className="animate-spin"
-                                    size={12}
-                                  />
-                                }
-                              >
-                                {t("downloadpage.mirror.auto_testing")}
-                              </Chip>
-                            )}
-                          </div>
-
-                          {bestMirror ? (
-                            <div
-                              className={`group relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl border-2 p-4 transition-all cursor-pointer ${
-                                selectedUrl === bestMirror.url
-                                  ? "border-emerald-500 bg-emerald-500/5 shadow-xl shadow-emerald-500/10"
-                                  : "border-transparent bg-default-50 dark:bg-zinc-800/50 hover:bg-default-100 dark:hover:bg-zinc-800"
-                              }`}
-                              onClick={() => setSelectedUrl(bestMirror.url)}
-                            >
-                              <div className="flex items-center gap-4 min-w-0 z-10">
-                                <div
-                                  className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                                    selectedUrl === bestMirror.url
-                                      ? "bg-emerald-500 text-white"
-                                      : "bg-default-200 text-default-500"
-                                  }`}
-                                >
-                                  <FaDownload size={16} />
-                                </div>
-                                <div className="flex flex-col gap-0.5 min-w-0">
-                                  <div className="font-bold text-medium text-default-900 dark:text-white truncate">
-                                    {bestMirror.label}
-                                  </div>
-                                  <div className="text-tiny text-default-500 dark:text-zinc-400 truncate font-mono opacity-70">
-                                    {bestMirror.url}
-                                  </div>
-                                </div>
-                              </div>
-                              <div className="flex items-center gap-3 shrink-0 z-10">
-                                <div className="flex flex-col items-end">
-                                  <span className="text-tiny text-default-500 font-medium">
-                                    延迟
-                                  </span>
-                                  <span
-                                    className={`text-medium font-bold ${bestMirror.ok ? "text-emerald-500" : "text-danger-500"}`}
-                                  >
-                                    {typeof bestMirror.latencyMs === "number"
-                                      ? `${Math.round(bestMirror.latencyMs)}ms`
-                                      : "-"}
-                                  </span>
-                                </div>
-                                {selectedUrl === bestMirror.url && (
-                                  <motion.div
-                                    layoutId="selected-check"
-                                    className="text-emerald-500"
-                                  >
-                                    <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
-                                      <svg
-                                        className="w-3.5 h-3.5 text-white"
-                                        fill="none"
-                                        viewBox="0 0 24 24"
-                                        stroke="currentColor"
-                                      >
-                                        <path
-                                          strokeLinecap="round"
-                                          strokeLinejoin="round"
-                                          strokeWidth="3"
-                                          d="M5 13l4 4L19 7"
-                                        />
-                                      </svg>
-                                    </div>
-                                  </motion.div>
-                                )}
-                              </div>
-                            </div>
-                          ) : (
-                            <div className="p-8 rounded-2xl border border-dashed border-default-300 flex flex-col items-center justify-center text-default-500 gap-2">
-                              <span>
-                                {t("downloadpage.mirror.no_recommended")}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-
-                        {/* Others Section */}
-                        <div className="flex flex-col gap-2">
-                          <div className="text-sm font-bold text-default-800 dark:text-zinc-300 uppercase tracking-wider px-1">
-                            {t("downloadpage.mirror.others")}
-                          </div>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                            {mirrorResults.map((m, i) => (
-                              <div
-                                key={`mirror-${i}`}
-                                className={`relative flex items-center justify-between gap-3 rounded-xl border p-2.5 transition-all cursor-pointer ${
-                                  selectedUrl === m.url
-                                    ? "border-emerald-500/50 bg-emerald-500/5"
-                                    : "border-default-200/50 dark:border-zinc-600 bg-white/50 dark:bg-zinc-700/30 hover:bg-default-100 dark:hover:bg-zinc-700 hover:border-default-300"
-                                }`}
-                                onClick={() => setSelectedUrl(m.url)}
-                              >
-                                <div className="flex items-center gap-3 min-w-0 overflow-hidden">
-                                  <div className="flex items-center justify-center w-6 h-6 rounded-full bg-default-100 dark:bg-zinc-600 text-tiny font-bold text-default-600 dark:text-zinc-100 shrink-0">
-                                    {String.fromCharCode(65 + i)}
-                                  </div>
-                                  <div className="flex flex-col min-w-0">
-                                    <span className="text-small font-bold text-default-800 dark:text-zinc-100 truncate">
-                                      {m.label}
-                                    </span>
-                                  </div>
-                                </div>
-                                <div className="flex items-center gap-2 shrink-0">
-                                  <span
-                                    className={`text-xs font-bold ${
-                                      typeof m.latencyMs === "number"
-                                        ? m.latencyMs < 100
-                                          ? "text-emerald-500"
-                                          : m.latencyMs < 300
-                                            ? "text-warning-500"
-                                            : "text-danger-500"
-                                        : "text-default-400"
-                                    }`}
-                                  >
-                                    {typeof m.latencyMs === "number"
-                                      ? `${Math.round(m.latencyMs)}ms`
-                                      : testing
-                                        ? "..."
-                                        : "-"}
-                                  </span>
-                                </div>
-                                {selectedUrl === m.url && (
-                                  <div className="absolute inset-0 border-2 border-emerald-500 rounded-xl pointer-events-none" />
-                                )}
-                              </div>
-                            ))}
                           </div>
                         </div>
+                        <div className="flex items-center gap-2 shrink-0">
+                          <span
+                            className={`text-xs font-bold ${
+                              typeof m.latencyMs === "number"
+                                ? m.latencyMs < 100
+                                  ? "text-emerald-500"
+                                  : m.latencyMs < 300
+                                    ? "text-warning-500"
+                                    : "text-danger-500"
+                                : "text-default-400"
+                            }`}
+                          >
+                            {typeof m.latencyMs === "number"
+                              ? `${Math.round(m.latencyMs)}ms`
+                              : testing
+                                ? "..."
+                                : "-"}
+                          </span>
+                        </div>
+                        {selectedUrl === m.url && (
+                          <div className="absolute inset-0 border-2 border-emerald-500 rounded-xl pointer-events-none" />
+                        )}
                       </div>
-                    ) : (
-                      <div className="flex flex-col items-center justify-center py-12 text-default-400 dark:text-zinc-500">
-                        <div className="w-16 h-16 rounded-full bg-default-100 flex items-center justify-center mb-4">
-                          <FaDownload size={24} className="opacity-50" />
-                        </div>
-                        <p>{t("downloadpage.mirror.no_mirrors")}</p>
-                      </div>
-                    )}
-                  </motion.div>
-                </BaseModalBody>
-                <BaseModalFooter>
-                  <Button
-                    className="font-medium text-default-500 hover:text-default-700"
-                    variant="light"
-                    onPress={onClose}
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                  <Button
-                    variant="flat"
-                    color="default"
-                    className="bg-default-100 dark:bg-white/10"
-                    startContent={
-                      <FaSync className={testing ? "animate-spin" : ""} />
-                    }
-                    onPress={() => {
-                      startMirrorTests(mirrorUrls || []);
-                    }}
-                  >
-                    {t("downloadpage.mirror.retest")}
-                  </Button>
-                  <Button
-                    className="font-bold text-white shadow-lg shadow-emerald-900/20 bg-emerald-600 hover:bg-emerald-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
-                    radius="full"
-                    size="lg"
-                    isDisabled={!selectedUrl}
-                    startContent={installMode ? null : <FaDownload />}
-                    onPress={async (e) => {
-                      if (!selectedUrl) return;
-                      if (installMode) {
-                        navigate("/install", {
-                          state: {
-                            mirrorVersion,
-                            mirrorType,
-                            returnTo: "/download",
-                          },
-                        });
-                        onClose?.();
-                      } else {
-                        if (hasBackend && minecraft?.StartMsixvcDownload) {
-                          const desired = `${
-                            mirrorType || "Release"
-                          } ${mirrorVersion}.msixvc`;
-                          const success = await startDownload(
-                            selectedUrl,
-                            desired,
-                          );
-                          if (success) {
-                            triggerAnimation(e);
-                            onClose?.();
-                          }
-                        } else {
-                          window.open(selectedUrl, "_blank");
-                          triggerAnimation(e);
-                          onClose?.();
-                        }
-                      }
-                    }}
-                  >
-                    {installMode
-                      ? t("downloadpage.mirror.install_selected")
-                      : t("downloadpage.mirror.download_selected")}
-                  </Button>
-                </BaseModalFooter>
-              </>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            ) : (
+              <div className="flex flex-col items-center justify-center py-12 text-default-400 dark:text-zinc-500">
+                <div className="w-16 h-16 rounded-full bg-default-100 flex items-center justify-center mb-4">
+                  <FaDownload size={24} className="opacity-50" />
+                </div>
+                <p>{t("downloadpage.mirror.no_mirrors")}</p>
+              </div>
             )}
-          </ModalContent>
-        </BaseModal>
+          </div>
+        </UnifiedModal>
 
         {/* Delete confirm modal */}
-        <BaseModal
+        <DeleteConfirmModal
           isOpen={deleteDisclosure.isOpen}
           onOpenChange={deleteDisclosure.onOpenChange}
-          size="md"
-        >
-          <ModalContent className="shadow-none">
-            {(onClose) => (
-              <>
-                <BaseModalHeader className="flex flex-row items-center gap-3 text-danger-600">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 20,
-                    }}
-                    className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="24"
-                      height="24"
-                      className="text-red-500"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M3 6h18" />
-                      <path d="M8 6v-2a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
-                      <path d="M19 6l-1 14a2 2 0 0 1-2 2H8a2 2 0 0 1-2-2L5 6" />
-                    </svg>
-                  </motion.div>
-                  <motion.h2
-                    className="text-xl font-bold text-default-900 dark:text-white"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    {t("downloadpage.delete.title")}
-                  </motion.h2>
-                </BaseModalHeader>
-                <BaseModalBody>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, delay: 0.1 }}
-                  >
-                    <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
-                      {t("downloadpage.delete.body")}
-                    </div>
-                    <div className="mt-2 p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50">
-                      <span className="font-mono text-default-800 dark:text-zinc-200 font-bold break-all text-small">
-                        {deleteItem?.fileName
-                          ?.toLowerCase()
-                          ?.endsWith(".msixvc")
-                          ? deleteItem?.fileName
-                          : `${deleteItem?.fileName || ""}.msixvc`}
-                      </span>
-                    </div>
-                    <div className="text-small text-danger-500 mt-3 font-bold flex items-center gap-2">
-                      <svg
-                        className="w-4 h-4"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                        stroke="currentColor"
-                      >
-                        <path
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                          strokeWidth="2"
-                          d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"
-                        />
-                      </svg>
-                      {t("downloadpage.delete.warning")}
-                    </div>
-                    {deleteError ? (
-                      <motion.div
-                        initial={{ opacity: 0, height: 0 }}
-                        animate={{ opacity: 1, height: "auto" }}
-                        className="text-small text-white bg-danger-500/90 px-3 py-2 rounded-lg mt-3"
-                      >
-                        {trErr(deleteError)}
-                      </motion.div>
-                    ) : null}
-                  </motion.div>
-                </BaseModalBody>
-                <BaseModalFooter>
-                  <Button
-                    variant="light"
-                    color="default"
-                    onPress={() => {
-                      onClose?.();
-                    }}
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                  <Button
-                    color="danger"
-                    className="bg-red-500 shadow-lg shadow-red-500/30 text-white font-bold"
-                    radius="full"
-                    isLoading={deleteLoading}
-                    onPress={async () => {
-                      if (!hasBackend) {
-                        setDeleteError("ERR_WRITE_TARGET");
-                        return;
-                      }
-                      setDeleteError("");
-                      setDeleteLoading(true);
-                      try {
-                        if (
-                          typeof minecraft?.DeleteDownloadedMsixvc !==
-                          "function"
-                        ) {
-                          setDeleteError("ERR_WRITE_TARGET");
-                          setDeleteLoading(false);
-                          return;
-                        }
-                        const msg: string =
-                          await minecraft.DeleteDownloadedMsixvc(
-                            `${String(deleteItem?.type)} ${String(
-                              deleteItem?.short,
-                            )}`,
-                            String(deleteItem?.type).toLowerCase(),
-                          );
-                        if (msg) {
-                          setDeleteError(msg);
-                          setDeleteLoading(false);
-                          return;
-                        }
-                        setDeleteLoading(false);
-                        try {
-                          onClose?.();
-                        } catch {}
-                        try {
-                          await refreshOne(
-                            String(deleteItem?.short || ""),
-                            String(deleteItem?.type || "release").toLowerCase(),
-                          );
-                        } catch {}
-                        try {
-                          const disp = deleteItem?.fileName
-                            ?.toLowerCase()
-                            ?.endsWith(".msixvc")
-                            ? deleteItem?.fileName
-                            : `${deleteItem?.fileName}.msixvc`;
-                          addToast({
-                            title:
-                              t("downloadpage.delete.success_body") +
-                              " " +
-                              (disp || ""),
-                            color: "success",
-                          });
-                        } catch {
-                          addToast({
-                            title:
-                              t("downloadpage.delete.success_body") +
-                              " " +
-                              String(deleteItem?.fileName || ""),
-                            color: "success",
-                          });
-                        }
-                      } catch (e: any) {
-                        setDeleteError(String(e || ""));
-                        setDeleteLoading(false);
-                      }
-                    }}
-                  >
-                    {t("downloadpage.delete.confirm")}
-                  </Button>
-                </BaseModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </BaseModal>
+          title={t("downloadpage.delete.title")}
+          description={t("downloadpage.delete.body")}
+          itemName={
+            deleteItem?.fileName?.toLowerCase()?.endsWith(".msixvc")
+              ? deleteItem?.fileName
+              : `${deleteItem?.fileName || ""}.msixvc`
+          }
+          warning={t("downloadpage.delete.warning")}
+          isPending={deleteLoading}
+          error={deleteError ? trErr(deleteError) : null}
+          onConfirm={async () => {
+            if (!hasBackend) {
+              setDeleteError("ERR_WRITE_TARGET");
+              throw new Error("No backend");
+            }
+            setDeleteError("");
+            setDeleteLoading(true);
+            try {
+              if (typeof minecraft?.DeleteDownloadedMsixvc !== "function") {
+                setDeleteError("ERR_WRITE_TARGET");
+                setDeleteLoading(false);
+                throw new Error("Function not found");
+              }
+              const msg: string = await minecraft.DeleteDownloadedMsixvc(
+                `${String(deleteItem?.type)} ${String(deleteItem?.short)}`,
+                String(deleteItem?.type).toLowerCase(),
+              );
+              if (msg) {
+                setDeleteError(msg);
+                setDeleteLoading(false);
+                throw new Error(msg);
+              }
+              setDeleteLoading(false);
+              try {
+                await refreshOne(
+                  String(deleteItem?.short || ""),
+                  String(deleteItem?.type || "release").toLowerCase(),
+                );
+              } catch {}
+              try {
+                const disp = deleteItem?.fileName
+                  ?.toLowerCase()
+                  ?.endsWith(".msixvc")
+                  ? deleteItem?.fileName
+                  : `${deleteItem?.fileName}.msixvc`;
+                addToast({
+                  title:
+                    t("downloadpage.delete.success_body") + " " + (disp || ""),
+                  color: "success",
+                });
+              } catch {
+                addToast({
+                  title:
+                    t("downloadpage.delete.success_body") +
+                    " " +
+                    String(deleteItem?.fileName || ""),
+                  color: "success",
+                });
+              }
+            } catch (e: any) {
+              setDeleteLoading(false);
+              if (
+                e.message !== "No backend" &&
+                e.message !== "Function not found" &&
+                e.message !== deleteError
+              ) {
+                if (!["No backend", "Function not found"].includes(e.message)) {
+                  setDeleteError(String(e.message || e));
+                }
+              }
+              throw e;
+            }
+          }}
+        />
 
         {/* Install error modal */}
-        <BaseModal
+        <UnifiedModal
           isOpen={installErrorDisclosure.isOpen}
           onOpenChange={installErrorDisclosure.onOpenChange}
-          size="md"
+          type="error"
+          title={t("downloadpage.progress.unknown_error")}
+          confirmText={t("common.close")}
+          onConfirm={() => installErrorDisclosure.onOpenChange(false)}
+          showCancelButton={false}
         >
-          <ModalContent className="shadow-none">
-            {(onClose) => (
-              <>
-                <BaseModalHeader className="flex flex-row items-center gap-4 text-danger-600">
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    animate={{ scale: 1 }}
-                    transition={{
-                      type: "spring",
-                      stiffness: 260,
-                      damping: 20,
-                    }}
-                    className="w-12 h-12 rounded-full bg-red-500/10 border border-red-500/20 flex items-center justify-center shrink-0"
-                  >
-                    <svg
-                      viewBox="0 0 24 24"
-                      width="24"
-                      height="24"
-                      className="text-red-500"
-                      fill="none"
-                      stroke="currentColor"
-                      strokeWidth="2.5"
-                      strokeLinecap="round"
-                      strokeLinejoin="round"
-                    >
-                      <path d="M12 9v4" />
-                      <path d="M12 17h.01" />
-                    </svg>
-                  </motion.div>
-                  <motion.h2
-                    className="text-xl font-bold text-default-900 dark:text-white"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    {t("downloadpage.progress.unknown_error")}
-                  </motion.h2>
-                </BaseModalHeader>
-                <BaseModalBody>
-                  <motion.div
-                    initial={{ opacity: 0, y: 10 }}
-                    animate={{ opacity: 1, y: 0 }}
-                    transition={{ duration: 0.25, delay: 0.1 }}
-                    className="text-medium text-default-700 dark:text-zinc-300 font-bold"
-                  >
-                    {trErr(installError)}
-                  </motion.div>
-                </BaseModalBody>
-                <BaseModalFooter>
-                  <Button
-                    className="bg-default-100 text-default-700 font-bold hover:bg-default-200"
-                    radius="full"
-                    onPress={() => {
-                      onClose?.();
-                    }}
-                  >
-                    {t("common.close")}
-                  </Button>
-                </BaseModalFooter>
-              </>
-            )}
-          </ModalContent>
-        </BaseModal>
+          <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
+            {trErr(installError)}
+          </div>
+        </UnifiedModal>
 
         {/* Install progress modal */}
-        <BaseModal
+        <UnifiedModal
           isOpen={installLoadingDisclosure.isOpen}
           onOpenChange={installLoadingDisclosure.onOpenChange}
-          size="md"
+          type="primary"
+          title={t("downloadpage.install.title")}
+          icon={<Spinner size="lg" color="primary" />}
           hideCloseButton
           isDismissable={false}
+          showConfirmButton={false}
+          showCancelButton={false}
         >
-          <ModalContent className="shadow-none">
-            {() => (
-              <>
-                <BaseModalHeader className="flex flex-row items-center gap-4 text-primary-600">
-                  <Spinner size="lg" color="primary" />
-                  <motion.h2
-                    className="text-xl font-bold text-default-900 dark:text-white"
-                    initial={{ opacity: 0, x: -10 }}
-                    animate={{ opacity: 1, x: 0 }}
-                    transition={{ duration: 0.25 }}
-                  >
-                    {t("downloadpage.install.title")}
-                  </motion.h2>
-                </BaseModalHeader>
-                <BaseModalBody>
-                  <div className="flex flex-col gap-6">
-                    <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
-                      {t("downloadpage.install.hint")}
-                    </div>
-                    <div className="flex items-center gap-3">
-                      <Progress
-                        aria-label="install-progress"
-                        isIndeterminate={!extractInfo?.totalBytes}
-                        value={
-                          extractInfo?.totalBytes
-                            ? (extractInfo.bytes / extractInfo.totalBytes) * 100
-                            : 0
-                        }
-                        size="md"
-                        showValueLabel={!!extractInfo?.totalBytes}
-                        formatOptions={{ style: "percent" }}
-                        classNames={{
-                          indicator:
-                            "bg-gradient-to-r from-emerald-500 to-teal-500",
-                          track: "bg-default-100",
-                        }}
-                        className="flex-1"
-                      />
-                    </div>
-                    {typeof extractInfo?.bytes === "number" &&
-                    extractInfo.bytes > 0 ? (
-                      <div className="flex justify-between text-small text-default-600 dark:text-zinc-400 font-medium">
-                        <span>
-                          {extractInfo.totalBytes
-                            ? t("downloadpage.install.progress")
-                            : t("downloadpage.install.estimated_size")}
-                          :{" "}
-                        </span>
-                        <span className="font-mono">
-                          {(() => {
-                            const formatSize = (n: number) => {
-                              const kb = 1024;
-                              const mb = kb * 1024;
-                              const gb = mb * 1024;
-                              if (n >= gb) return (n / gb).toFixed(2) + " GB";
-                              if (n >= mb) return (n / mb).toFixed(2) + " MB";
-                              if (n >= kb) return (n / kb).toFixed(2) + " KB";
-                              return n + " B";
-                            };
-                            const current = formatSize(extractInfo.bytes);
-                            if (extractInfo.totalBytes) {
-                              const percent = (
-                                (extractInfo.bytes / extractInfo.totalBytes) *
-                                100
-                              ).toFixed(1);
-                              return `${current} / ${formatSize(extractInfo.totalBytes)} (${percent}%)`;
-                            }
-                            return current;
-                          })()}
-                        </span>
-                      </div>
-                    ) : null}
-                    {installingTargetName ? (
-                      <div className="p-3 bg-default-100/50 rounded-xl border border-default-200/50 text-small text-default-600 dark:text-zinc-400 font-medium">
-                        {t("downloadpage.install.target")}:{" "}
-                        <span className="font-mono text-default-700 dark:text-zinc-200 font-bold">
-                          {installingTargetName}
-                        </span>
-                      </div>
-                    ) : null}
-                  </div>
-                </BaseModalBody>
-              </>
-            )}
-          </ModalContent>
-        </BaseModal>
+          <div className="flex flex-col gap-6">
+            <div className="text-medium text-default-700 dark:text-zinc-300 font-bold">
+              {t("downloadpage.install.hint")}
+            </div>
+            <div className="flex items-center gap-3">
+              <Progress
+                aria-label="install-progress"
+                isIndeterminate={!extractInfo?.totalBytes}
+                value={
+                  extractInfo?.totalBytes
+                    ? (extractInfo.bytes / extractInfo.totalBytes) * 100
+                    : 0
+                }
+                size="md"
+                showValueLabel={!!extractInfo?.totalBytes}
+                formatOptions={{ style: "percent" }}
+                classNames={{
+                  indicator: "bg-gradient-to-r from-emerald-500 to-teal-500",
+                  track: "bg-default-100",
+                }}
+                className="flex-1"
+              />
+            </div>
+            {typeof extractInfo?.bytes === "number" && extractInfo.bytes > 0 ? (
+              <div className="flex justify-between text-small text-default-600 dark:text-zinc-400 font-medium">
+                <span>
+                  {extractInfo.totalBytes
+                    ? t("downloadpage.install.progress")
+                    : t("downloadpage.install.estimated_size")}
+                  :{" "}
+                </span>
+                <span className="font-mono">
+                  {(() => {
+                    const formatSize = (n: number) => {
+                      const kb = 1024;
+                      const mb = kb * 1024;
+                      const gb = mb * 1024;
+                      if (n >= gb) return (n / gb).toFixed(2) + " GB";
+                      if (n >= mb) return (n / mb).toFixed(2) + " MB";
+                      if (n >= kb) return (n / kb).toFixed(2) + " KB";
+                      return n + " B";
+                    };
+                    const current = formatSize(extractInfo.bytes);
+                    if (extractInfo.totalBytes) {
+                      const percent = (
+                        (extractInfo.bytes / extractInfo.totalBytes) *
+                        100
+                      ).toFixed(1);
+                      return `${current} / ${formatSize(extractInfo.totalBytes)} (${percent}%)`;
+                    }
+                    return current;
+                  })()}
+                </span>
+              </div>
+            ) : null}
+            {installingTargetName ? (
+              <div className="p-3 bg-default-100/50 dark:bg-zinc-800/50 rounded-xl border border-default-200/50 dark:border-zinc-700/50 text-small text-default-600 dark:text-zinc-400 font-medium">
+                {t("downloadpage.install.target")}:{" "}
+                <span className="font-mono text-default-700 dark:text-zinc-200 font-bold">
+                  {installingTargetName}
+                </span>
+              </div>
+            ) : null}
+          </div>
+        </UnifiedModal>
 
         {createPortal(
           flyingItems.map((item) => (

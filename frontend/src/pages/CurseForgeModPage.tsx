@@ -27,12 +27,7 @@ import {
 } from "@/utils/content";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import {
   Button,
   Spinner,
@@ -57,6 +52,7 @@ import {
   Progress,
   Skeleton,
 } from "@heroui/react";
+import { FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
 import {
   LuDownload,
   LuCalendar,
@@ -66,6 +62,7 @@ import {
   LuBug,
   LuShare2,
   LuGamepad2,
+  LuUser,
 } from "react-icons/lu";
 
 const formatNumber = (num: number | undefined) => {
@@ -626,11 +623,11 @@ const CurseForgeModPage: React.FC = () => {
                 </div>
 
                 <div className="flex flex-col grow gap-3">
-                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-default-900 pb-1">
+                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-default-900 dark:text-zinc-100 pb-1">
                     {mod.name}
                   </h1>
 
-                  <div className="flex items-center gap-3 text-default-500 text-sm flex-wrap">
+                  <div className="flex items-center gap-3 text-default-500 dark:text-zinc-400 text-sm flex-wrap">
                     <span className="flex items-center gap-1">
                       {t("curseforge.by")}
                       {mod.authors?.map((author: any, idx: number) => (
@@ -687,7 +684,7 @@ const CurseForgeModPage: React.FC = () => {
                     </Chip>
                   </div>
 
-                  <p className="text-default-600 mt-2 text-sm leading-relaxed max-w-4xl">
+                  <p className="text-default-600 dark:text-zinc-300 mt-2 text-sm leading-relaxed max-w-4xl">
                     {mod.summary}
                   </p>
                 </div>
@@ -769,7 +766,7 @@ const CurseForgeModPage: React.FC = () => {
                       "gap-6 w-full relative rounded-none p-0 border-b border-default-200 mb-6",
                     cursor:
                       "w-full bg-linear-to-r from-emerald-500 to-teal-500 h-[3px]",
-                    tab: "max-w-fit px-0 h-12 text-base font-medium text-default-500",
+                    tab: "max-w-fit px-0 h-12 text-base font-medium text-default-500 dark:text-zinc-400",
                     tabContent:
                       "group-data-[selected=true]:text-emerald-600 dark:group-data-[selected=true]:text-emerald-500 font-bold",
                   }}
@@ -862,12 +859,12 @@ const CurseForgeModPage: React.FC = () => {
                                     </span>
                                   </TableCell>
                                   <TableCell>
-                                    <span className="text-default-500">
+                                    <span className="text-default-500 dark:text-zinc-400">
                                       {formatDate(file.fileDate)}
                                     </span>
                                   </TableCell>
                                   <TableCell>
-                                    <span className="text-default-500">
+                                    <span className="text-default-500 dark:text-zinc-400">
                                       {formatFileSize(file.fileLength)}
                                     </span>
                                   </TableCell>
@@ -875,7 +872,7 @@ const CurseForgeModPage: React.FC = () => {
                                     <div className="flex items-center gap-1">
                                       {sortedVersions.length > 0 ? (
                                         <>
-                                          <span className="text-default-600 bg-default-100 px-2 py-1 rounded text-xs">
+                                          <span className="text-default-600 dark:text-zinc-300 bg-default-100 dark:bg-zinc-800 px-2 py-1 rounded text-xs">
                                             {sortedVersions[0]}
                                           </span>
                                           {sortedVersions.length > 1 && (
@@ -887,7 +884,7 @@ const CurseForgeModPage: React.FC = () => {
                                                     .map((v) => (
                                                       <span
                                                         key={v}
-                                                        className="text-xs bg-default-50 text-default-500 px-1.5 py-0.5 rounded border border-default-100"
+                                                        className="text-xs bg-default-50 dark:bg-zinc-800 text-default-500 dark:text-zinc-400 px-1.5 py-0.5 rounded border border-default-100 dark:border-zinc-700"
                                                       >
                                                         {v}
                                                       </span>
@@ -909,7 +906,7 @@ const CurseForgeModPage: React.FC = () => {
                                     </div>
                                   </TableCell>
                                   <TableCell>
-                                    <span className="text-default-500">
+                                    <span className="text-default-500 dark:text-zinc-400">
                                       {formatNumber(file.downloadCount)}
                                     </span>
                                   </TableCell>
@@ -918,7 +915,7 @@ const CurseForgeModPage: React.FC = () => {
                                       isIconOnly
                                       variant="light"
                                       size="sm"
-                                      className="text-default-500 hover:text-primary"
+                                      className="text-default-500 dark:text-zinc-400 hover:text-primary"
                                       onPress={() => handleInstall(file)}
                                     >
                                       <LuDownload size={20} />
@@ -946,7 +943,7 @@ const CurseForgeModPage: React.FC = () => {
         </div>
       </ScrollShadow>
 
-      <BaseModal
+      <UnifiedModal
         isOpen={installModalOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -965,213 +962,225 @@ const CurseForgeModPage: React.FC = () => {
         classNames={{
           base: "bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
         }}
+        type={installStep === "error" ? "error" : "primary"}
+        iconBgClass={
+          installStep === "error"
+            ? undefined
+            : "bg-emerald-500/10 border-emerald-500/20"
+        }
+        titleClass={
+          installStep === "error"
+            ? undefined
+            : "bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 bg-clip-text text-transparent"
+        }
+        icon={
+          installStep === "downloading" ? (
+            <LuDownload size={24} className="text-emerald-500" />
+          ) : installStep === "version_select" ? (
+            <LuGamepad2 size={24} className="text-emerald-500" />
+          ) : installStep === "player_select" ? (
+            <LuUser size={24} className="text-emerald-500" />
+          ) : installStep === "importing" ? (
+            <LuFileDigit size={24} className="text-emerald-500" />
+          ) : installStep === "success" ? (
+            <FiCheckCircle size={24} className="text-emerald-500" />
+          ) : undefined
+        }
+        title={
+          <>
+            {installStep === "downloading" &&
+              t("curseforge.install.downloading_title")}
+            {installStep === "version_select" &&
+              t("curseforge.install.select_version_title")}
+            {installStep === "player_select" &&
+              t("curseforge.install.select_player_title")}
+            {installStep === "importing" &&
+              t("curseforge.install.importing_title")}
+            {installStep === "success" && t("curseforge.install.success_title")}
+            {installStep === "error" && t("curseforge.install.error_title")}
+          </>
+        }
+        footer={
+          <>
+            {installStep === "downloading" && (
+              <Button
+                color="danger"
+                variant="flat"
+                onPress={handleCancelDownload}
+              >
+                {t("common.cancel")}
+              </Button>
+            )}
+            {(installStep === "version_select" ||
+              installStep === "player_select") && (
+              <>
+                <Button
+                  variant="flat"
+                  onPress={() => setInstallModalOpen(false)}
+                >
+                  {t("common.cancel")}
+                </Button>
+                <Button
+                  color="primary"
+                  onPress={handleVersionSelectNext}
+                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                >
+                  {t("curseforge.install.next")}
+                </Button>
+              </>
+            )}
+            {(installStep === "success" || installStep === "error") && (
+              <Button
+                color="primary"
+                onPress={() => setInstallModalOpen(false)}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              >
+                {t("curseforge.install.close")}
+              </Button>
+            )}
+          </>
+        }
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="flex flex-col gap-1">
-                <span className="text-xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 bg-clip-text text-transparent">
-                  {installStep === "downloading" &&
-                    t("curseforge.install.downloading_title")}
-                  {installStep === "version_select" &&
-                    t("curseforge.install.select_version_title")}
-                  {installStep === "player_select" &&
-                    t("curseforge.install.select_player_title")}
-                  {installStep === "importing" &&
-                    t("curseforge.install.importing_title")}
-                  {installStep === "success" &&
-                    t("curseforge.install.success_title")}
-                  {installStep === "error" &&
-                    t("curseforge.install.error_title")}
-                </span>
-              </BaseModalHeader>
-              <BaseModalBody>
-                {installStep === "downloading" && (
-                  <div className="flex flex-col items-center gap-4 py-4 w-full">
-                    <p className="text-default-500">
-                      {t("curseforge.install.downloading_body")}
-                    </p>
-                    {downloadProgress ? (
-                      <Progress
-                        aria-label="Downloading..."
-                        value={
-                          (downloadProgress.downloaded /
-                            downloadProgress.total) *
-                          100
+        {installStep === "downloading" && (
+          <div className="flex flex-col items-center gap-4 py-4 w-full">
+            <p className="text-default-500 dark:text-zinc-400">
+              {t("curseforge.install.downloading_body")}
+            </p>
+            {downloadProgress ? (
+              <Progress
+                aria-label="Downloading..."
+                value={
+                  (downloadProgress.downloaded / downloadProgress.total) * 100
+                }
+                className="max-w-md w-full"
+                color="success"
+                classNames={{
+                  indicator: "bg-emerald-600 dark:bg-emerald-500",
+                }}
+                showValueLabel={true}
+              />
+            ) : (
+              <Spinner size="lg" color="success" />
+            )}
+            {downloadProgress && (
+              <p className="text-tiny text-default-400">
+                {formatFileSize(downloadProgress.downloaded)} /{" "}
+                {formatFileSize(downloadProgress.total)}
+              </p>
+            )}
+          </div>
+        )}
+
+        {installStep === "version_select" && (
+          <div className="flex flex-col gap-4">
+            <p className="text-small text-default-500 dark:text-zinc-400">
+              {t("curseforge.install.select_version_body")}
+            </p>
+            <Select
+              label={t("curseforge.install.local_installation")}
+              placeholder={t("curseforge.install.select_version_placeholder")}
+              selectedKeys={selectedVersion ? [selectedVersion] : []}
+              onChange={(e) => setSelectedVersion(e.target.value)}
+            >
+              {availableVersions.map((ver) => (
+                <SelectItem
+                  key={ver.name}
+                  value={ver.name}
+                  textValue={ver.name}
+                >
+                  <div className="flex gap-2 items-center">
+                    <div className="w-8 h-8 rounded bg-default-200 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={
+                          versionLogos[ver.name] ||
+                          "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
                         }
-                        className="max-w-md w-full"
-                        showValueLabel={true}
+                        alt="icon"
+                        className="w-full h-full object-cover"
+                        onError={(e) =>
+                          (e.currentTarget.style.display = "none")
+                        }
                       />
-                    ) : (
-                      <Spinner size="lg" />
-                    )}
-                    {downloadProgress && (
-                      <p className="text-tiny text-default-400">
-                        {formatFileSize(downloadProgress.downloaded)} /{" "}
-                        {formatFileSize(downloadProgress.total)}
-                      </p>
-                    )}
-                  </div>
-                )}
-
-                {installStep === "version_select" && (
-                  <div className="flex flex-col gap-4">
-                    <p className="text-small text-default-500">
-                      {t("curseforge.install.select_version_body")}
-                    </p>
-                    <Select
-                      label={t("curseforge.install.local_installation")}
-                      placeholder={t(
-                        "curseforge.install.select_version_placeholder",
-                      )}
-                      selectedKeys={selectedVersion ? [selectedVersion] : []}
-                      onChange={(e) => setSelectedVersion(e.target.value)}
-                    >
-                      {availableVersions.map((ver) => (
-                        <SelectItem
-                          key={ver.name}
-                          value={ver.name}
-                          textValue={ver.name}
-                        >
-                          <div className="flex gap-2 items-center">
-                            <div className="w-8 h-8 rounded bg-default-200 flex items-center justify-center overflow-hidden">
-                              <img
-                                src={
-                                  versionLogos[ver.name] ||
-                                  "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
-                                }
-                                alt="icon"
-                                className="w-full h-full object-cover"
-                                onError={(e) =>
-                                  (e.currentTarget.style.display = "none")
-                                }
-                              />
-                            </div>
-                            <div className="flex flex-col">
-                              <span className="text-small">{ver.name}</span>
-                              <span className="text-tiny text-default-400">
-                                {ver.gameVersion}
-                              </span>
-                            </div>
-                            {ver.registered && (
-                              <Chip
-                                size="sm"
-                                color="success"
-                                variant="flat"
-                                className="ml-auto"
-                              >
-                                {t("curseforge.install.registered")}
-                              </Chip>
-                            )}
-                          </div>
-                        </SelectItem>
-                      ))}
-                    </Select>
-                  </div>
-                )}
-
-                {installStep === "player_select" && (
-                  <div className="flex flex-col gap-4">
-                    <p className="text-small text-default-500">
-                      {t("curseforge.install.select_player_body")}
-                    </p>
-                    <Select
-                      label={t("curseforge.install.player_label")}
-                      placeholder={t(
-                        "curseforge.install.select_player_placeholder",
-                      )}
-                      selectedKeys={selectedPlayer ? [selectedPlayer] : []}
-                      onChange={(e) => setSelectedPlayer(e.target.value)}
-                    >
-                      {availablePlayers.map((player) => (
-                        <SelectItem key={player} value={player}>
-                          {resolvePlayerDisplayName(player, playerGamertagMap)}
-                        </SelectItem>
-                      ))}
-                    </Select>
-                  </div>
-                )}
-
-                {installStep === "importing" && (
-                  <div className="flex flex-col items-center gap-4 py-4">
-                    <Spinner size="lg" />
-                    <p className="text-default-500">
-                      {t("curseforge.install.importing_body")}
-                    </p>
-                  </div>
-                )}
-
-                {installStep === "success" && (
-                  <div className="flex flex-col items-center gap-4 py-4">
-                    <div className="w-12 h-12 rounded-full bg-success/20 flex items-center justify-center text-success">
-                      <LuDownload size={24} />
                     </div>
-                    <p className="text-lg font-semibold">
-                      {t("curseforge.install.success_msg")}
-                    </p>
-                    <p className="text-default-500 text-center">
-                      {t("curseforge.install.success_desc")}
-                    </p>
-                  </div>
-                )}
-
-                {installStep === "error" && (
-                  <div className="flex flex-col items-center gap-4 py-4">
-                    <div className="w-12 h-12 rounded-full bg-danger/20 flex items-center justify-center text-danger">
-                      <LuBug size={24} />
+                    <div className="flex flex-col">
+                      <span className="text-small">{ver.name}</span>
+                      <span className="text-tiny text-default-400">
+                        {ver.gameVersion}
+                      </span>
                     </div>
-                    <p className="text-lg font-semibold text-danger">
-                      {t("curseforge.install.failed_msg")}
-                    </p>
-                    <p className="text-default-500 text-center">
-                      {installError}
-                    </p>
+                    {ver.registered && (
+                      <Chip
+                        size="sm"
+                        color="success"
+                        variant="flat"
+                        className="ml-auto"
+                      >
+                        {t("curseforge.install.registered")}
+                      </Chip>
+                    )}
                   </div>
-                )}
-              </BaseModalBody>
-              <BaseModalFooter>
-                {installStep === "downloading" && (
-                  <Button
-                    color="danger"
-                    variant="flat"
-                    onPress={handleCancelDownload}
-                  >
-                    {t("common.cancel")}
-                  </Button>
-                )}
-                {(installStep === "version_select" ||
-                  installStep === "player_select") && (
-                  <>
-                    <Button
-                      variant="flat"
-                      onPress={() => setInstallModalOpen(false)}
-                    >
-                      {t("common.cancel")}
-                    </Button>
-                    <Button
-                      color="primary"
-                      onPress={handleVersionSelectNext}
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                    >
-                      {t("curseforge.install.next")}
-                    </Button>
-                  </>
-                )}
-                {(installStep === "success" || installStep === "error") && (
-                  <Button
-                    color="primary"
-                    onPress={onClose}
-                    className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                  >
-                    {t("curseforge.install.close")}
-                  </Button>
-                )}
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
-      <BaseModal
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
+        )}
+
+        {installStep === "player_select" && (
+          <div className="flex flex-col gap-4">
+            <p className="text-small text-default-500 dark:text-zinc-400">
+              {t("curseforge.install.select_player_body")}
+            </p>
+            <Select
+              label={t("curseforge.install.player_label")}
+              placeholder={t("curseforge.install.select_player_placeholder")}
+              selectedKeys={selectedPlayer ? [selectedPlayer] : []}
+              onChange={(e) => setSelectedPlayer(e.target.value)}
+            >
+              {availablePlayers.map((player) => (
+                <SelectItem key={player} value={player}>
+                  {resolvePlayerDisplayName(player, playerGamertagMap)}
+                </SelectItem>
+              ))}
+            </Select>
+          </div>
+        )}
+
+        {installStep === "importing" && (
+          <div className="flex flex-col items-center gap-4 py-4">
+            <Spinner size="lg" color="success" />
+            <p className="text-default-500 dark:text-zinc-400">
+              {t("curseforge.install.importing_body")}
+            </p>
+          </div>
+        )}
+
+        {installStep === "success" && (
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="text-center">
+              <p className="text-xl font-bold text-default-900 dark:text-white">
+                {t("curseforge.install.success_msg")}
+              </p>
+              <p className="text-default-500 dark:text-zinc-400 mt-1">
+                {t("curseforge.install.success_desc")}
+              </p>
+            </div>
+          </div>
+        )}
+
+        {installStep === "error" && (
+          <div className="flex flex-col items-center gap-4 py-4">
+            <div className="text-center w-full">
+              <p className="text-xl font-bold text-danger-600 dark:text-danger-500 mb-2">
+                {t("curseforge.install.failed_msg")}
+              </p>
+              <div className="text-default-500 dark:text-zinc-400 px-4 bg-default-100 dark:bg-zinc-800 rounded-lg py-3 font-mono text-xs break-all mx-auto max-w-[90%]">
+                {installError}
+              </div>
+            </div>
+          </div>
+        )}
+      </UnifiedModal>
+      <UnifiedModal
         size="md"
         isOpen={dupOpen}
         onOpenChange={(open) => {
@@ -1184,56 +1193,47 @@ const CurseForgeModPage: React.FC = () => {
         classNames={{
           base: "bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
         }}
+        type="warning"
+        title={t("mods.overwrite_modal_title")}
+        footer={
+          <>
+            <Button
+              variant="light"
+              onPress={() => {
+                try {
+                  if (dupResolveRef.current) dupResolveRef.current(false);
+                } finally {
+                  setDupOpen(false);
+                }
+              }}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              color="warning"
+              className="font-bold shadow-lg shadow-warning-500/20 text-white"
+              onPress={() => {
+                try {
+                  if (dupResolveRef.current) dupResolveRef.current(true);
+                } finally {
+                  setDupOpen(false);
+                }
+              }}
+            >
+              {t("common.confirm")}
+            </Button>
+          </>
+        }
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="">
-                <span className="text-xl font-bold bg-linear-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 bg-clip-text text-transparent">
-                  {t("mods.overwrite_modal_title")}
-                </span>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-sm text-default-700">
-                  {t("mods.overwrite_modal_body")}
-                </div>
-                {dupName ? (
-                  <div className="mt-1 rounded-md bg-default-100/60 border border-default-200 px-3 py-2 text-default-800 text-sm wrap-break-word whitespace-pre-wrap">
-                    {dupName}
-                  </div>
-                ) : null}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="light"
-                  onPress={() => {
-                    try {
-                      if (dupResolveRef.current) dupResolveRef.current(false);
-                    } finally {
-                      onClose();
-                    }
-                  }}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="primary"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
-                  onPress={() => {
-                    try {
-                      if (dupResolveRef.current) dupResolveRef.current(true);
-                    } finally {
-                      onClose();
-                    }
-                  }}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-sm text-default-700 dark:text-zinc-300">
+          {t("mods.overwrite_modal_body")}
+        </div>
+        {dupName ? (
+          <div className="mt-1 rounded-md bg-default-100/60 dark:bg-zinc-800/60 border border-default-200 dark:border-zinc-700 px-3 py-2 text-default-800 dark:text-zinc-100 text-sm wrap-break-word whitespace-pre-wrap">
+            {dupName}
+          </div>
+        ) : null}
+      </UnifiedModal>
     </div>
   );
 };

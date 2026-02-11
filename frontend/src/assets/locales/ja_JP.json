@@ -1,7 +1,6 @@
 {
   "app": {
-    "settings": "設定",
-    "lang": "言語"
+    "settings": "設定"
   },
   "nav": {
     "versions": "バージョン",
@@ -49,9 +48,7 @@
       },
       "confirm": {
         "title": "削除の確認",
-        "content": "本当にこのバージョンを削除しますか？この操作は取り消せません。",
-        "delete_button": "削除",
-        "cancel_button": "キャンセル"
+        "content": "本当にこのバージョンを削除しますか？この操作は取り消せません。"
       }
     },
     "launch": {
@@ -123,18 +120,6 @@
       "file_manager_pick": "ファイルマネージャーは複数選択に対応しており、Modのインポートパスとして返されます。",
       "settings_base_root": "設定でコンテンツの基本パスを変更できます。デフォルトは %APPDATA%\\<現在の実行ファイル名> です。",
       "directory_write_check": "書き込み可能なディレクトリにのみ保存してください。書き込み不可のディレクトリは無効化されています。"
-    },
-    "adminconfirm": {
-      "title": "権限が必要です",
-      "content": "この操作には管理者権限が必要です。",
-      "confirm_button": "許可",
-      "cancel_button": "キャンセル"
-    },
-    "admindeny": {
-      "title": "権限が拒否されました",
-      "content": "権限リクエストを拒否しました。",
-      "confirm_button": "再試行",
-      "cancel_button": "キャンセル"
     },
     "edition": "Bedrock Edition"
   },
@@ -248,7 +233,6 @@
       "title": "削除の確認",
       "body": "次のインストーラーを削除します: ",
       "warning": "この操作は取り消せません。",
-      "confirm": "削除",
       "success_body": "インストーラーを削除しました: "
     },
     "install": {
@@ -288,8 +272,6 @@
   },
   "settings": {
     "layout": {
-      "title": "サイドバーレイアウト",
-      "desc": "トップナビゲーションバーの代わりに垂直サイドバーを使用する",
       "title_navbar": "トップナビゲーションバーを使用",
       "desc_navbar": "有効にすると、デフォルトの垂直サイドバーの代わりにトップナビゲーションバーを使用します"
     },
@@ -348,7 +330,22 @@
       "install_button": "インストール",
       "installing": "LIPをインストール中...",
       "update_button": "{{version}} に更新",
-      "installed_label": "インストール済み"
+      "installed_label": "インストール済み",
+      "status": {
+        "fetching_version": "バージョン情報を取得中...",
+        "downloading": "ダウンロード中...",
+        "extracting": "解凍中...",
+        "setting_path": "環境変数を設定中...",
+        "success": "インストール成功！",
+        "failed": "インストール失敗"
+      },
+      "error": {
+        "fetch_version_failed": "バージョン情報の取得に失敗しました",
+        "download_failed": "ダウンロードに失敗しました",
+        "extract_failed": "解凍に失敗しました",
+        "set_path_failed": "環境変数の設定に失敗しました",
+        "unknown": "不明なエラーが発生しました"
+      }
     },
     "header": {
       "title": "設定",
@@ -472,24 +469,19 @@
     "load_failed": "読み込み失敗",
     "view_all": "すべて表示",
     "confirm_delete": "削除確認",
-    "deleting": "削除中...",
     "no_results": "結果が見つかりません",
     "hide": "非表示",
     "edit": "編集",
     "backup": "バックアップ",
     "date": "日付",
-    "error_load": "読み込みに失敗しました",
     "size": "サイズ",
-    "unknown": "不明",
     "version": "バージョン",
     "details": "詳細",
     "disable": "無効",
     "enable": "有効",
     "open_folder": "フォルダを開く",
     "remove": "削除",
-    "update": "更新",
-    "update_all": "すべて更新",
-    "updated": "更新済み"
+    "update": "更新"
   },
   "useravatar": {
     "no_login_retry": "Xbox ログインが検出されませんでした（クリックして再試行）",
@@ -557,7 +549,6 @@
   },
   "versions": {
     "info": {
-      "version": "ゲームバージョン",
       "name": "名前"
     },
     "edit": {
@@ -569,6 +560,7 @@
         "loader": "ローダー"
       },
       "title": "バージョン設定",
+      "mc_version": "ゲームバージョン",
       "new_name": "新しい名前",
       "placeholder": "新しい名前を入力",
       "hint": "フォルダ名のみ変更されます。ゲームバージョンとタイプには影響しません。",
@@ -582,7 +574,6 @@
       "env_vars": "環境変数",
       "env_vars_placeholder": "環境変数 (KEY=VALUE)、1行に1つ",
       "env_vars_hint": "起動時の環境変数を設定します。",
-      "danger_zone_title": "危険な操作",
       "delete_hint": "クリックして削除確認を開きます。誤操作を防止します。",
       "unregister_button": "登録解除",
       "unregister_hint": "このバージョンはシステムに登録されています。登録解除のみ可能です。解除後に名前の変更や削除が可能になります。",
@@ -700,9 +691,6 @@
     "field_type": "タイプ",
     "field_entry": "エントリ",
     "field_author": "作者",
-    "delete_summary_title_done": "削除完了",
-    "delete_summary_title_failed": "削除失敗",
-    "summary_deleted": "削除済み",
     "confirm_delete_title": "削除の確認",
     "confirm_delete_body": "本当にこの {{type}} を削除しますか？この操作は取り消せません。",
     "dll_modal_title": "DLLプラグインのインポート",

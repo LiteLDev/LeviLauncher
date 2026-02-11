@@ -214,7 +214,7 @@ const LIPPage: React.FC = () => {
             {loading ? (
               <div className="flex flex-col gap-3">{renderSkeletons()}</div>
             ) : packages.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-default-500">
+              <div className="flex items-center justify-center h-full text-default-500 dark:text-zinc-400">
                 <p>{t("common.no_results")}</p>
               </div>
             ) : (
@@ -250,12 +250,12 @@ const LIPPage: React.FC = () => {
                           <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
                             {pkg.name}
                           </h3>
-                          <span className="text-xs sm:text-sm text-default-500 truncate">
+                          <span className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 truncate">
                             | By {pkg.author}
                           </span>
                         </div>
 
-                        <p className="text-xs sm:text-sm text-default-500 line-clamp-2 w-full">
+                        <p className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 line-clamp-2 w-full">
                           {pkg.description || t("lip.no_description")}
                         </p>
 
@@ -283,7 +283,7 @@ const LIPPage: React.FC = () => {
                               size="sm"
                               variant="flat"
                               radius="sm"
-                              className="h-5 text-[10px] bg-default-100 text-default-500 group-hover:bg-default-200 transition-colors"
+                              className="h-5 text-[10px] bg-default-100 dark:bg-zinc-800 text-default-500 dark:text-zinc-400 group-hover:bg-default-200 dark:group-hover:bg-zinc-700 transition-colors"
                             >
                               {tag}
                             </Chip>

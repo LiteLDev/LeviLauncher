@@ -74,7 +74,9 @@ const LIPPackagePage: React.FC = () => {
   if (!pkg) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-xl text-default-500">Package not found</p>
+        <p className="text-xl text-default-500 dark:text-zinc-400">
+          Package not found
+        </p>
         <Button onPress={() => navigate(-1)} className="mt-4">
           Go Back
         </Button>
@@ -109,10 +111,10 @@ const LIPPackagePage: React.FC = () => {
               <div className="flex flex-col grow gap-6">
                 <PageHeader title={pkg.name} />
 
-                <div className="flex items-center gap-4 text-default-500 text-sm flex-wrap">
+                <div className="flex items-center gap-4 text-default-500 dark:text-zinc-400 text-sm flex-wrap">
                   <div className="flex items-center gap-1">
                     <LuUser />
-                    <span className="font-medium text-default-700">
+                    <span className="font-medium text-default-700 dark:text-zinc-200">
                       {pkg.author}
                     </span>
                   </div>
@@ -128,7 +130,7 @@ const LIPPackagePage: React.FC = () => {
                   </div>
                 </div>
 
-                <p className="text-default-600 text-lg leading-relaxed max-w-4xl">
+                <p className="text-default-600 dark:text-zinc-300 text-lg leading-relaxed max-w-4xl">
                   {pkg.description}
                 </p>
 

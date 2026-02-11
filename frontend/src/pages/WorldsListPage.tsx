@@ -13,7 +13,6 @@ import {
   Image,
   Spinner,
   Tooltip,
-  ModalContent,
   useDisclosure,
   Pagination,
   addToast,
@@ -50,12 +49,7 @@ import {
   OpenPathDir,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { readCurrentVersionName } from "@/utils/currentVersion";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import DefaultWorldPreview from "@/assets/images/world-preview-default.jpg";
@@ -697,18 +691,18 @@ export default function WorldsListPage() {
             </div>
           </div>
 
-          <div className="mt-2 text-default-500 text-sm flex flex-wrap items-center gap-2">
+          <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
             <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-default-700 bg-default-100 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
               {currentVersionName || t("contentpage.none")}
             </span>
-            <span className="text-default-300">|</span>
+            <span className="text-default-300 dark:text-zinc-600">|</span>
             <span>{t("contentpage.isolation")}:</span>
             <span
               className={`font-medium px-2 py-0.5 rounded-md ${
                 roots.isIsolation
                   ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
-                  : "bg-default-100 text-default-700"
+                  : "bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
               }`}
             >
               {roots.isIsolation ? t("common.yes") : t("common.no")}
@@ -720,7 +714,9 @@ export default function WorldsListPage() {
       {loading && worlds.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
-          <span className="text-default-500">{t("common.loading")}</span>
+          <span className="text-default-500 dark:text-zinc-400">
+            {t("common.loading")}
+          </span>
         </div>
       ) : filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-default-400">
@@ -882,105 +878,28 @@ export default function WorldsListPage() {
           )}
         </div>
       )}
-      <BaseModal
+      <DeleteConfirmModal
         isOpen={delOpen}
-        onClose={() => delOnOpenChange(false)}
-        isDismissable={!deletingOne}
-        hideCloseButton={deletingOne}
+        onOpenChange={delOnOpenChange}
         title={t("common.confirm_delete")}
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-danger">
-                {t("common.confirm_delete")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                {deletingOne ? (
-                  <div className="flex flex-col items-center justify-center py-6 gap-3">
-                    <Spinner size="lg" color="danger" />
-                    <p className="text-default-500 font-medium">
-                      {t("common.deleting")}
-                    </p>
-                  </div>
-                ) : (
-                  <p>
-                    {t("contentpage.delete_world_confirm", {
-                      name: activeWorld?.FolderName || "",
-                    })}
-                  </p>
-                )}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="flat"
-                  onPress={onClose}
-                  isDisabled={deletingOne}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="danger"
-                  onPress={handleDelete}
-                  isDisabled={deletingOne}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        description={t("contentpage.delete_world_confirm", {
+          name: activeWorld?.FolderName || "",
+        })}
+        itemName={activeWorld?.FolderName}
+        isPending={deletingOne}
+        onConfirm={handleDelete}
+      />
 
-      <BaseModal
+      <DeleteConfirmModal
         isOpen={delManyCfmOpen}
-        onClose={() => delManyCfmOnOpenChange(false)}
-        isDismissable={!deletingMany}
-        hideCloseButton={deletingMany}
+        onOpenChange={delManyCfmOnOpenChange}
         title={t("common.confirm_delete")}
-      >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="text-danger">
-                {t("common.confirm_delete")}
-              </BaseModalHeader>
-              <BaseModalBody>
-                {deletingMany ? (
-                  <div className="flex flex-col items-center justify-center py-6 gap-3">
-                    <Spinner size="lg" color="danger" />
-                    <p className="text-default-500 font-medium">
-                      {t("common.deleting")}
-                    </p>
-                  </div>
-                ) : (
-                  <p>
-                    {t("contentpage.delete_selected_confirm", {
-                      count: selectedCount,
-                    })}
-                  </p>
-                )}
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button
-                  variant="flat"
-                  onPress={onClose}
-                  isDisabled={deletingMany}
-                >
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="danger"
-                  onPress={handleBatchDelete}
-                  isDisabled={deletingMany}
-                >
-                  {t("common.confirm")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        description={t("contentpage.delete_selected_confirm", {
+          count: selectedCount,
+        })}
+        isPending={deletingMany}
+        onConfirm={handleBatchDelete}
+      />
     </PageContainer>
   );
 }

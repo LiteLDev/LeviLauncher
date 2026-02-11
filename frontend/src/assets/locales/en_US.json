@@ -1,7 +1,6 @@
 {
   "app": {
-    "settings": "Settings",
-    "lang": "Language"
+    "settings": "Settings"
   },
   "nav": {
     "versions": "Instances",
@@ -49,9 +48,7 @@
       },
       "confirm": {
         "title": "Confirm Delete",
-        "content": "Are you sure you want to delete this instance? This operation cannot be undone.",
-        "delete_button": "Delete",
-        "cancel_button": "Cancel"
+        "content": "Are you sure you want to delete this instance? This operation cannot be undone."
       }
     },
     "launch": {
@@ -123,18 +120,6 @@
       "file_manager_pick": "File Manager supports multi-select and returns paths to Mods import.",
       "settings_base_root": "Settings lets you change the content base path; default %APPDATA%\\<current executable name>.",
       "directory_write_check": "Save only to writable directories; non-writable directories are disabled."
-    },
-    "adminconfirm": {
-      "title": "Permission Required",
-      "content": "This action requires administrator privileges.",
-      "confirm_button": "Grant",
-      "cancel_button": "Cancel"
-    },
-    "admindeny": {
-      "title": "Permission Denied",
-      "content": "You denied the permission request.",
-      "confirm_button": "Retry",
-      "cancel_button": "Cancel"
     },
     "edition": "Bedrock Edition"
   },
@@ -248,7 +233,6 @@
       "title": "Confirm deletion",
       "body": "This will delete installer: ",
       "warning": "This action cannot be undone.",
-      "confirm": "Delete",
       "success_body": "Installer deleted: "
     },
     "install": {
@@ -300,8 +284,6 @@
   },
   "settings": {
     "layout": {
-      "title": "Sidebar Layout",
-      "desc": "Use vertical sidebar instead of top navigation bar",
       "title_navbar": "Use Top Navigation Bar",
       "desc_navbar": "Enable to use the top navigation bar instead of the default vertical sidebar"
     },
@@ -360,7 +342,20 @@
       "install_button": "Install",
       "installing": "Installing LIP...",
       "update_button": "Update to {{version}}",
-      "installed_label": "Installed"
+      "installed_label": "Installed",
+      "status": {
+        "checking_update": "Checking for updates...",
+        "downloading": "Downloading...",
+        "extracting": "Extracting...",
+        "done": "Installation complete"
+      },
+      "error": {
+        "fetch_release_failed": "Failed to fetch release info",
+        "create_temp": "Failed to create temp directory",
+        "download_failed": "Download failed",
+        "create_target_dir": "Failed to create target directory",
+        "unzip_failed": "Unzip failed"
+      }
     },
     "header": {
       "title": "Settings",
@@ -387,11 +382,6 @@
       "language": {
         "name": "Language",
         "button": "Change"
-      },
-      "appearance": {
-        "title": "Appearance",
-        "disable_animations": "Disable Animations",
-        "disable_animations_desc": "Disable interface transition animations for performance or reduced motion"
       }
     },
     "process": {
@@ -489,24 +479,19 @@
     "load_failed": "Load failed",
     "view_all": "View All",
     "confirm_delete": "Confirm Delete",
-    "deleting": "Deleting...",
     "no_results": "No results found",
     "hide": "Hide",
     "edit": "Edit",
     "backup": "Backup",
     "date": "Date",
-    "error_load": "Failed to load",
     "size": "Size",
-    "unknown": "Unknown",
     "version": "Version",
     "details": "Details",
     "disable": "Disable",
     "enable": "Enable",
     "open_folder": "Open Folder",
     "remove": "Remove",
-    "update": "Update",
-    "update_all": "Update All",
-    "updated": "Updated"
+    "update": "Update"
   },
   "useravatar": {
     "no_login_retry": "Xbox login not detected (click to retry)",
@@ -574,7 +559,6 @@
   },
   "versions": {
     "info": {
-      "version": "Game Version",
       "name": "Name"
     },
     "edit": {
@@ -586,6 +570,7 @@
         "loader": "Loader"
       },
       "title": "Instance Settings",
+      "mc_version": "Game Version",
       "new_name": "New Name",
       "placeholder": "Enter new name",
       "hint": "Only rename the folder. Game version and type are unaffected.",
@@ -599,7 +584,6 @@
       "env_vars": "Environment Variables",
       "env_vars_placeholder": "Environment Variables (KEY=VALUE), one per line",
       "env_vars_hint": "Set launch environment variables.",
-      "danger_zone_title": "Danger Zone",
       "delete_hint": "Permanently deletes this instance from your device, including worlds, configs, and installed content. This action cannot be undone.",
       "unregister_button": "Unregister",
       "unregister_hint": "Unregister this instance from the system so it no longer appears in the system app list. This will not delete any files.",
@@ -717,9 +701,6 @@
     "field_type": "Type",
     "field_entry": "Entry",
     "field_author": "Author",
-    "delete_summary_title_done": "Deletion Completed",
-    "delete_summary_title_failed": "Deletion Failed",
-    "summary_deleted": "Deleted",
     "confirm_delete_title": "Confirm Deletion",
     "confirm_delete_body": "Are you sure you want to delete this {{type}}? This action cannot be undone.",
     "dll_modal_title": "Import DLL Plugin",

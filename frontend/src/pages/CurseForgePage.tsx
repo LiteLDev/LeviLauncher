@@ -597,7 +597,7 @@ export const CurseForgePage: React.FC = () => {
             ) : loading || !hasSearched ? (
               <div className="flex flex-col gap-3">{renderSkeletons()}</div>
             ) : mods.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-default-500">
+              <div className="flex items-center justify-center h-full text-default-500 dark:text-zinc-400">
                 <p>{t("curseforge.no_results")}</p>
               </div>
             ) : (
@@ -630,7 +630,7 @@ export const CurseForgePage: React.FC = () => {
                           <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
                             {mod.name}
                           </h3>
-                          <span className="text-xs sm:text-sm text-default-500 truncate">
+                          <span className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 truncate">
                             |{" "}
                             {t("curseforge.by_author", {
                               author:
@@ -641,7 +641,7 @@ export const CurseForgePage: React.FC = () => {
                           </span>
                         </div>
 
-                        <p className="text-xs sm:text-sm text-default-500 line-clamp-2 w-full">
+                        <p className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 line-clamp-2 w-full">
                           {mod.summary || t("curseforge.no_description")}
                         </p>
 
@@ -717,7 +717,7 @@ export const CurseForgePage: React.FC = () => {
                                 size="sm"
                                 variant="flat"
                                 radius="sm"
-                                className="h-5 text-[10px] bg-default-100 text-default-500 group-hover:bg-default-200 transition-colors"
+                                className="h-5 text-[10px] bg-default-100 dark:bg-zinc-800 text-default-500 dark:text-zinc-400 group-hover:bg-default-200 dark:group-hover:bg-zinc-700 transition-colors"
                               >
                                 {cat.name}
                               </Chip>

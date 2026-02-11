@@ -13,7 +13,6 @@ import {
   Chip,
   Spinner,
   Progress,
-  ModalContent,
   useDisclosure,
 } from "@heroui/react";
 import { useLocation, useNavigate } from "react-router-dom";
@@ -25,12 +24,7 @@ import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { motion } from "framer-motion";
 import { Dialogs, Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -699,7 +693,7 @@ export default function InstallPage() {
                       <div className="text-small font-medium">
                         {t("downloadpage.install.custom_installer.label")}
                       </div>
-                      <div className="text-tiny text-default-500">
+                      <div className="text-tiny text-default-500 dark:text-zinc-400">
                         {customInstallerPath
                           ? customInstallerPath
                           : (t(
@@ -750,7 +744,7 @@ export default function InstallPage() {
                       <div className="text-small font-medium">
                         {t("downloadpage.install.levilamina_label")}
                       </div>
-                      <div className="text-tiny text-default-500">
+                      <div className="text-tiny text-default-500 dark:text-zinc-400">
                         {t("downloadpage.install.levilamina_desc")}
                       </div>
                     </div>
@@ -772,7 +766,7 @@ export default function InstallPage() {
                     <div className="text-small font-medium">
                       {t("downloadpage.install_folder.enable_isolation")}
                     </div>
-                    <div className="text-tiny text-default-500">
+                    <div className="text-tiny text-default-500 dark:text-zinc-400">
                       {t("downloadpage.install_folder.enable_isolation_desc")}
                     </div>
                   </div>
@@ -793,7 +787,7 @@ export default function InstallPage() {
                       <div className="text-small font-medium">
                         {t("downloadpage.install_folder.inherit_label")}
                       </div>
-                      <div className="text-tiny text-default-500">
+                      <div className="text-tiny text-default-500 dark:text-zinc-400">
                         {t("downloadpage.install_folder.inherit_hint")}
                       </div>
                     </div>
@@ -877,7 +871,7 @@ export default function InstallPage() {
                   <h2 className="text-xl font-bold text-default-900 dark:text-white">
                     {t("downloadmodal.installing.title")}
                   </h2>
-                  <p className="text-small text-default-500">
+                  <p className="text-small text-default-500 dark:text-zinc-400">
                     {t("downloadpage.install.hint")}
                   </p>
                 </div>
@@ -885,7 +879,7 @@ export default function InstallPage() {
                 <div className="w-full max-w-lg flex flex-col gap-2">
                   {installingVersion && (
                     <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-default-100/50 dark:bg-zinc-800/50">
-                      <span className="text-small font-medium text-default-500">
+                      <span className="text-small font-medium text-default-500 dark:text-zinc-400">
                         {t("downloadpage.install.version_label")}
                       </span>
                       <span className="text-small font-bold text-default-700 dark:text-zinc-300">
@@ -930,7 +924,7 @@ export default function InstallPage() {
 
                     {typeof extractInfo?.bytes === "number" &&
                     extractInfo.bytes > 0 ? (
-                      <div className="flex justify-between text-tiny text-default-500 font-medium">
+                      <div className="flex justify-between text-tiny text-default-500 dark:text-zinc-400 font-medium">
                         <span>
                           {extractInfo.totalBytes
                             ? (() => {
@@ -981,52 +975,33 @@ export default function InstallPage() {
           </CardBody>
         </Card>
       </div>
-      <BaseModal
+      <UnifiedModal
         size="md"
         isOpen={rcOpen}
         onOpenChange={rcOnOpenChange}
-        hideCloseButton
+        type="warning"
+        title={t("mods.rc_warning.title")}
+        cancelText={t("common.cancel")}
+        confirmText={t("common.continue")}
+        showCancelButton
+        onCancel={rcOnClose}
+        onConfirm={() => {
+          rcOnClose();
+          proceedInstall();
+        }}
       >
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="flex flex-row items-center gap-2 text-warning-600">
-                <FiAlertTriangle className="w-6 h-6" />
-                <span className="text-xl font-bold">
-                  {t("mods.rc_warning.title")}
-                </span>
-              </BaseModalHeader>
-              <BaseModalBody>
-                <div className="text-sm text-default-700 space-y-2">
-                  <p>
-                    {t("mods.rc_warning.body_1", {
-                      version: rcVersion,
-                    })}
-                  </p>
-                  <p className="font-semibold text-warning-700">
-                    {t("mods.rc_warning.body_2")}
-                  </p>
-                  <p>{t("mods.rc_warning.body_3")}</p>
-                </div>
-              </BaseModalBody>
-              <BaseModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  {t("common.cancel")}
-                </Button>
-                <Button
-                  color="warning"
-                  onPress={() => {
-                    onClose();
-                    proceedInstall();
-                  }}
-                >
-                  {t("common.continue")}
-                </Button>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </BaseModal>
+        <div className="text-sm text-default-700 dark:text-zinc-300 space-y-2">
+          <p>
+            {t("mods.rc_warning.body_1", {
+              version: rcVersion,
+            })}
+          </p>
+          <p className="font-semibold text-warning-700">
+            {t("mods.rc_warning.body_2")}
+          </p>
+          <p>{t("mods.rc_warning.body_3")}</p>
+        </div>
+      </UnifiedModal>
     </PageContainer>
   );
 }

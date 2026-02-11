@@ -203,7 +203,7 @@ export const UserAvatar = () => {
             }
             description={
               <div className="flex flex-col gap-1">
-                <span className="text-xs text-default-500">
+                <span className="text-xs text-default-500 dark:text-zinc-400">
                   {t("useravatar.xuid", {
                     xuid,
                   })}
@@ -233,7 +233,7 @@ export const UserAvatar = () => {
                     <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
                       {t("useravatar.stats.minutes_played")}
                     </span>
-                    <span className="text-xs font-bold text-default-700 dark:text-default-300">
+                    <span className="text-xs font-bold text-default-700 dark:text-zinc-200">
                       {formatPlayTime(stats.minutesPlayed)}
                     </span>
                   </div>
@@ -246,7 +246,7 @@ export const UserAvatar = () => {
                     <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
                       {t("useravatar.stats.blocks_broken")}
                     </span>
-                    <span className="text-xs font-bold text-default-700 dark:text-default-300">
+                    <span className="text-xs font-bold text-default-700 dark:text-zinc-200">
                       {stats.blockBroken?.toLocaleString()}
                     </span>
                   </div>
@@ -259,7 +259,7 @@ export const UserAvatar = () => {
                     <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
                       {t("useravatar.stats.mobs_defeated")}
                     </span>
-                    <span className="text-xs font-bold text-default-700 dark:text-default-300">
+                    <span className="text-xs font-bold text-default-700 dark:text-zinc-200">
                       {stats.mobKilled?.toLocaleString()}
                     </span>
                   </div>
@@ -272,7 +272,7 @@ export const UserAvatar = () => {
                     <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
                       {t("useravatar.stats.distance_travelled")}
                     </span>
-                    <span className="text-xs font-bold text-default-700 dark:text-default-300">
+                    <span className="text-xs font-bold text-default-700 dark:text-zinc-200">
                       {(stats.distanceTravelled / 1000).toFixed(1)} km
                     </span>
                   </div>

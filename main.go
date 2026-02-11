@@ -271,6 +271,7 @@ func main() {
 			BackdropType: application.Acrylic,
 		},
 		URL: initialURL,
+		EnableFileDrop: true,
 	})
 
 	if strings.TrimSpace(autoLaunchVersion) != "" {

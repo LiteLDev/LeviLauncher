@@ -1,13 +1,8 @@
 import "./polyfills/wails";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
 import React, { useEffect, useState } from "react";
-import {
-  BaseModal,
-  BaseModalHeader,
-  BaseModalBody,
-  BaseModalFooter,
-} from "@/components/BaseModal";
-import { Button, Tooltip, ModalContent, ToastProvider } from "@heroui/react";
+import { Button, Tooltip, ToastProvider } from "@heroui/react";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
@@ -605,197 +600,191 @@ function App() {
                       ))}
                   </motion.div>
 
-                  <BaseModal
+                  <UnifiedModal
                     size="lg"
                     isOpen={termsOpen}
+                    onOpenChange={() => {}}
+                    type="primary"
+                    title={t("terms.title")}
                     hideCloseButton
                     isDismissable={false}
+                    showConfirmButton={false}
+                    showCancelButton={false}
+                    footer={
+                      <div className="flex w-full justify-end gap-2">
+                        <Button
+                          variant="light"
+                          onPress={() => {
+                            Window.Close();
+                          }}
+                        >
+                          {t("terms.decline")}
+                        </Button>
+                        <Button
+                          color="primary"
+                          isDisabled={termsCountdown > 0}
+                          onPress={acceptTerms}
+                        >
+                          {termsCountdown > 0
+                            ? `${t("terms.agree")} (${termsCountdown}s)`
+                            : t("terms.agree")}
+                        </Button>
+                      </div>
+                    }
                   >
-                    <ModalContent>
-                      {() => (
-                        <>
-                          <BaseModalHeader className="text-primary-700 text-[18px] sm:text-[20px] font-bold antialiased">
-                            {t("terms.title")}
-                          </BaseModalHeader>
-                          <BaseModalBody>
-                            <div className="text-[15px] sm:text-[16px] leading-7 text-default-900 font-medium antialiased whitespace-pre-wrap wrap-break-word max-h-[56vh] overflow-y-auto pr-1">
-                              {t("terms.body")}
-                            </div>
-                          </BaseModalBody>
-                          <BaseModalFooter>
-                            <Button
-                              variant="light"
-                              onPress={() => {
-                                Window.Close();
-                              }}
-                            >
-                              {t("terms.decline")}
-                            </Button>
-                            <Button
-                              color="primary"
-                              isDisabled={termsCountdown > 0}
-                              onPress={acceptTerms}
-                            >
-                              {termsCountdown > 0
-                                ? `${t("terms.agree")} (${termsCountdown}s)`
-                                : t("terms.agree")}
-                            </Button>
-                          </BaseModalFooter>
-                        </>
-                      )}
-                    </ModalContent>
-                  </BaseModal>
+                    <div className="text-[15px] sm:text-[16px] leading-7 text-default-900 dark:text-zinc-100 font-medium antialiased whitespace-pre-wrap wrap-break-word max-h-[56vh] overflow-y-auto pr-1">
+                      {t("terms.body")}
+                    </div>
+                  </UnifiedModal>
 
-                  <BaseModal size="md" isOpen={updateOpen} hideCloseButton>
-                    <ModalContent>
-                      {(onClose) => (
-                        <>
-                          <BaseModalHeader className="flex-row items-center gap-2 text-primary-600 min-w-0">
-                            <FaRocket className="w-5 h-5" />
-                            <span className="truncate">
-                              {t("settings.body.version.hasnew")}
-                              {updateVersion}
-                            </span>
-                          </BaseModalHeader>
-                          <BaseModalBody>
-                            {updateBody ? (
-                              <div className="rounded-md bg-default-100/60 border border-default-200 px-3 py-2">
-                                <div className="text-small font-semibold mb-1">
-                                  {t("downloadpage.changelog.title")}
-                                </div>
-                                <div className="text-small wrap-break-word leading-6 max-h-[32vh] sm:max-h-[40vh] lg:max-h-[44vh] overflow-y-auto pr-1">
-                                  <ReactMarkdown
-                                    remarkPlugins={[remarkGfm]}
-                                    components={{
-                                      h1: ({ children }) => (
-                                        <h1 className="text-xl font-semibold mt-2 mb-2">
-                                          {children}
-                                        </h1>
-                                      ),
-                                      h2: ({ children }) => (
-                                        <h2 className="text-lg font-semibold mt-2 mb-2">
-                                          {children}
-                                        </h2>
-                                      ),
-                                      h3: ({ children }) => (
-                                        <h3 className="text-base font-semibold mt-2 mb-2">
-                                          {children}
-                                        </h3>
-                                      ),
-                                      p: ({ children }) => (
-                                        <p className="my-1">{children}</p>
-                                      ),
-                                      ul: ({ children }) => (
-                                        <ul className="list-disc pl-6 my-2">
-                                          {children}
-                                        </ul>
-                                      ),
-                                      ol: ({ children }) => (
-                                        <ol className="list-decimal pl-6 my-2">
-                                          {children}
-                                        </ol>
-                                      ),
-                                      li: ({ children }) => (
-                                        <li className="my-1">{children}</li>
-                                      ),
-                                      a: ({ href, children }) => {
-                                        const cleanUrl = (url: string) => {
-                                          const target = "https://github.com";
-                                          const idx = url.lastIndexOf(target);
-                                          return idx > 0
-                                            ? url.substring(idx)
-                                            : url;
-                                        };
+                  <UnifiedModal
+                    size="md"
+                    isOpen={updateOpen}
+                    onOpenChange={(open) => {
+                      if (!open) {
+                        setUpdateOpen(false);
+                        setNavLocked(Boolean((window as any).llNavLock));
+                      }
+                    }}
+                    type="primary"
+                    title={
+                      <span className="truncate">
+                        {t("settings.body.version.hasnew")}
+                        {updateVersion}
+                      </span>
+                    }
+                    icon={<FaRocket className="w-5 h-5 text-primary-500" />}
+                    hideCloseButton
+                    showConfirmButton={false}
+                    showCancelButton={false}
+                    footer={
+                      <div className="flex w-full justify-end gap-2">
+                        <Button
+                          variant="light"
+                          onPress={() => {
+                            setUpdateOpen(false);
+                            setNavLocked(Boolean((window as any).llNavLock));
+                          }}
+                        >
+                          {t("common.cancel")}
+                        </Button>
+                        <Button
+                          variant="flat"
+                          onPress={() => {
+                            try {
+                              localStorage.setItem(
+                                "ll.ignoreVersion",
+                                updateVersion || "",
+                              );
+                            } catch {}
+                            setUpdateOpen(false);
+                            setNavLocked(Boolean((window as any).llNavLock));
+                          }}
+                        >
+                          {t("settings.body.version.ignore")}
+                        </Button>
+                        <Button
+                          color="primary"
+                          isLoading={updateLoading}
+                          onPress={async () => {
+                            setUpdateLoading(true);
+                            try {
+                              setUpdateOpen(false);
+                              setNavLocked(true);
+                              navigate("/updating", { replace: true });
+                            } finally {
+                              setUpdateLoading(false);
+                            }
+                          }}
+                        >
+                          {t("settings.modal.2.footer.download_button")}
+                        </Button>
+                      </div>
+                    }
+                  >
+                    {updateBody ? (
+                      <div className="rounded-xl bg-default-100/60 dark:bg-zinc-800/60 border border-default-200 dark:border-zinc-700 px-3 py-2">
+                        <div className="text-small font-semibold mb-1 text-default-700 dark:text-zinc-200">
+                          {t("downloadpage.changelog.title")}
+                        </div>
+                        <div className="text-small text-default-600 dark:text-zinc-300 wrap-break-word leading-6 max-h-[32vh] sm:max-h-[40vh] lg:max-h-[44vh] overflow-y-auto pr-1">
+                          <ReactMarkdown
+                            remarkPlugins={[remarkGfm]}
+                            components={{
+                              h1: ({ children }) => (
+                                <h1 className="text-xl font-semibold mt-2 mb-2">
+                                  {children}
+                                </h1>
+                              ),
+                              h2: ({ children }) => (
+                                <h2 className="text-lg font-semibold mt-2 mb-2">
+                                  {children}
+                                </h2>
+                              ),
+                              h3: ({ children }) => (
+                                <h3 className="text-base font-semibold mt-2 mb-2">
+                                  {children}
+                                </h3>
+                              ),
+                              p: ({ children }) => (
+                                <p className="my-1">{children}</p>
+                              ),
+                              ul: ({ children }) => (
+                                <ul className="list-disc pl-6 my-2">
+                                  {children}
+                                </ul>
+                              ),
+                              ol: ({ children }) => (
+                                <ol className="list-decimal pl-6 my-2">
+                                  {children}
+                                </ol>
+                              ),
+                              li: ({ children }) => (
+                                <li className="my-1">{children}</li>
+                              ),
+                              a: ({ href, children }) => {
+                                const cleanUrl = (url: string) => {
+                                  const target = "https://github.com";
+                                  const idx = url.lastIndexOf(target);
+                                  return idx > 0 ? url.substring(idx) : url;
+                                };
 
-                                        return (
-                                          <a
-                                            href={href}
-                                            target="_blank"
-                                            rel="noreferrer"
-                                            className="text-primary underline cursor-pointer"
-                                            onClick={(e) => {
-                                              e.preventDefault();
-                                              if (href) {
-                                                Browser.OpenURL(cleanUrl(href));
-                                              }
-                                            }}
-                                          >
-                                            {Array.isArray(children)
-                                              ? children.map((child) =>
-                                                  typeof child === "string"
-                                                    ? cleanUrl(child)
-                                                    : child,
-                                                )
-                                              : typeof children === "string"
-                                                ? cleanUrl(children)
-                                                : children}
-                                          </a>
-                                        );
-                                      },
-                                      hr: () => (
-                                        <hr className="my-3 border-default-200" />
-                                      ),
+                                return (
+                                  <a
+                                    href={href}
+                                    target="_blank"
+                                    rel="noreferrer"
+                                    className="text-primary underline cursor-pointer"
+                                    onClick={(e) => {
+                                      e.preventDefault();
+                                      if (href) {
+                                        Browser.OpenURL(cleanUrl(href));
+                                      }
                                     }}
                                   >
-                                    {updateBody}
-                                  </ReactMarkdown>
-                                </div>
-                              </div>
-                            ) : null}
-                          </BaseModalBody>
-                          <BaseModalFooter>
-                            <Button
-                              variant="light"
-                              onPress={() => {
-                                setUpdateOpen(false);
-                                setNavLocked(
-                                  Boolean((window as any).llNavLock),
+                                    {Array.isArray(children)
+                                      ? children.map((child) =>
+                                          typeof child === "string"
+                                            ? cleanUrl(child)
+                                            : child,
+                                        )
+                                      : typeof children === "string"
+                                        ? cleanUrl(children)
+                                        : children}
+                                  </a>
                                 );
-                                onClose();
-                              }}
-                            >
-                              {t("common.cancel")}
-                            </Button>
-                            <Button
-                              variant="flat"
-                              onPress={() => {
-                                try {
-                                  localStorage.setItem(
-                                    "ll.ignoreVersion",
-                                    updateVersion || "",
-                                  );
-                                } catch {}
-                                setUpdateOpen(false);
-                                setNavLocked(
-                                  Boolean((window as any).llNavLock),
-                                );
-                                onClose();
-                              }}
-                            >
-                              {t("settings.body.version.ignore")}
-                            </Button>
-                            <Button
-                              color="primary"
-                              isLoading={updateLoading}
-                              onPress={async () => {
-                                setUpdateLoading(true);
-                                try {
-                                  setUpdateOpen(false);
-                                  setNavLocked(true);
-                                  onClose();
-                                  navigate("/updating", { replace: true });
-                                } finally {
-                                  setUpdateLoading(false);
-                                }
-                              }}
-                            >
-                              {t("settings.modal.2.footer.download_button")}
-                            </Button>
-                          </BaseModalFooter>
-                        </>
-                      )}
-                    </ModalContent>
-                  </BaseModal>
+                              },
+                              hr: () => (
+                                <hr className="my-3 border-default-200" />
+                              ),
+                            }}
+                          >
+                            {updateBody}
+                          </ReactMarkdown>
+                        </div>
+                      </div>
+                    ) : null}
+                  </UnifiedModal>
                 </div>
               </NavigationHistoryProvider>
             </CurseForgeProvider>

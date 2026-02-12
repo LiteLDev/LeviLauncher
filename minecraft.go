@@ -97,7 +97,7 @@ func (a *Minecraft) StartFileDownload(url string, filename string) string {
 	tempDir := filepath.Join(os.TempDir(), "LeviLauncher", "Downloads")
 	_ = os.MkdirAll(tempDir, 0755)
 	dest := filepath.Join(tempDir, filename)
-	return fileDownloader.Start(a.ctx, url, dest)
+	return fileDownloader.Start(a.ctx, url, dest, "")
 }
 
 func (a *Minecraft) CancelFileDownload() {
@@ -559,8 +559,8 @@ func (a *Minecraft) GetAggregatedUserStatistics(xuidStr string) UserStatistics {
 	}
 }
 
-func (a *Minecraft) StartMsixvcDownload(url string) string {
-	return mcservice.StartMsixvcDownload(a.ctx, url)
+func (a *Minecraft) StartMsixvcDownload(url string, md5sum string) string {
+	return mcservice.StartMsixvcDownload(a.ctx, url, md5sum)
 }
 func (a *Minecraft) ResumeMsixvcDownload() { mcservice.ResumeMsixvcDownload() }
 func (a *Minecraft) CancelMsixvcDownload() { mcservice.CancelMsixvcDownload() }

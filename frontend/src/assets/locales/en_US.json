@@ -844,15 +844,21 @@
   },
   "installpage": {
     "error": {
-      "decompress_failed": "Decompression failed",
-      "invalid_args": "Invalid arguments",
-      "file_invalid": "File invalid (MD5 mismatch?)",
-      "launcher_name_modified": "Please do not modify the launcher name",
       "dll_dependency_missing": "VC++ Runtime missing",
       "name_required": "Name is required",
       "msixvc_not_specified": "Installer package not specified",
       "lip_not_installed": "LIP is not installed",
-      "unknown": "Unknown error"
+      "unknown": "Unknown error",
+      "nh_err_unknown": "Unknown error",
+      "nh_err_exception": "Uncaught exception or unclassifiable error",
+      "nh_err_invalid_params": "Invalid parameters",
+      "nh_err_key_not_found": "Game installer package validation failed. Please delete the installer and retry.",
+      "nh_err_unauthorized_caller": "Unauthorized caller",
+      "nh_err_pipe_open_failed": "Progress pipe open failed",
+      "nh_err_input_not_found": "Input file not found",
+      "nh_err_output_dir_invalid": "Output directory invalid",
+      "nh_err_parse_failed": "Package parsing failed",
+      "nh_err_extract_failed": "Decompression failed"
     }
   }
 }

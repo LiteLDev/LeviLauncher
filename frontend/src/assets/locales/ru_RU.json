@@ -846,15 +846,21 @@
   },
   "installpage": {
     "error": {
-      "decompress_failed": "Ошибка распаковки",
-      "invalid_args": "Неверные аргументы",
-      "file_invalid": "Неверный файл (возможно, не совпадает MD5)",
-      "launcher_name_modified": "Пожалуйста, не изменяйте имя лаунчера",
       "dll_dependency_missing": "Отсутствует библиотека VC++",
       "name_required": "Требуется имя",
       "msixvc_not_specified": "Пакет установки не указан",
       "lip_not_installed": "LIP не установлен",
-      "unknown": "Неизвестная ошибка"
+      "unknown": "Неизвестная ошибка",
+      "nh_err_unknown": "Неизвестная ошибка",
+      "nh_err_exception": "Неперехваченное исключение или неизвестная ошибка",
+      "nh_err_invalid_params": "Неверные параметры",
+      "nh_err_key_not_found": "Ошибка проверки пакета установки. Пожалуйста, удалите установщик и попробуйте снова.",
+      "nh_err_unauthorized_caller": "Вызывающий не авторизован",
+      "nh_err_pipe_open_failed": "Не удалось открыть канал прогресса",
+      "nh_err_input_not_found": "Входной файл не найден",
+      "nh_err_output_dir_invalid": "Неверный выходной каталог",
+      "nh_err_parse_failed": "Ошибка разбора пакета",
+      "nh_err_extract_failed": "Ошибка распаковки"
     }
   }
 }

@@ -63,7 +63,7 @@ type DownloadError struct {
 	Dest  string
 }
 
-func StartDownload(ctx context.Context, rawurl string) string {
+func StartDownload(ctx context.Context, rawurl string, md5sum string) string {
 	dir, err := apppath.InstallersDir()
 	if err != nil {
 		application.Get().Event.Emit(EventDownloadError, err.Error())
@@ -71,7 +71,7 @@ func StartDownload(ctx context.Context, rawurl string) string {
 	}
 	fname := deriveFilename(rawurl)
 	dest := filepath.Join(dir, fname)
-	return msixMgr.Start(ctx, stripFilenameParam(rawurl), dest)
+	return msixMgr.Start(ctx, stripFilenameParam(rawurl), dest, md5sum)
 }
 
 func Pause() { msixMgr.Pause() }

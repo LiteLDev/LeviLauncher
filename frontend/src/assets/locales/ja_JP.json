@@ -846,15 +846,21 @@
   },
   "installpage": {
     "error": {
-      "decompress_failed": "解凍に失敗しました",
-      "invalid_args": "無効な引数",
-      "file_invalid": "ファイルが無効です (MD5不一致の可能性があります)",
-      "launcher_name_modified": "ランチャーの名前を変更しないでください",
       "dll_dependency_missing": "VC++ ランタイムが不足しています",
       "name_required": "名前は必須です",
       "msixvc_not_specified": "インストールパッケージが指定されていません",
       "lip_not_installed": "LIP がインストールされていません",
-      "unknown": "不明なエラー"
+      "unknown": "不明なエラー",
+      "nh_err_unknown": "不明なエラー",
+      "nh_err_exception": "キャッチされていない例外または不明なエラー",
+      "nh_err_invalid_params": "無効なパラメータ",
+      "nh_err_key_not_found": "ゲームインストーラーの検証に失敗しました。インストーラーを削除して再試行してください。",
+      "nh_err_unauthorized_caller": "呼び出し元が許可されていません",
+      "nh_err_pipe_open_failed": "進捗パイプを開けませんでした",
+      "nh_err_input_not_found": "入力ファイルが見つかりません",
+      "nh_err_output_dir_invalid": "出力ディレクトリが無効です",
+      "nh_err_parse_failed": "パッケージの解析に失敗しました",
+      "nh_err_extract_failed": "解凍に失敗しました"
     }
   }
 }

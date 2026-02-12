@@ -309,13 +309,23 @@ func Extract(msixvcPath string, outDir string) (int, string) {
 	case 0:
 		return 0, ""
 	case 1:
-		return 1, "ERR_DECOMPRESS_FAILED"
+		return 1, "NH_ERR_EXCEPTION"
 	case 2:
-		return 2, "ERR_INVALID_ARGS"
+		return 2, "NH_ERR_INVALID_PARAMS"
 	case 3:
-		return 3, "ERR_FILE_INVALID"
+		return 3, "NH_ERR_KEY_NOT_FOUND"
 	case 4:
-		return 4, "ERR_LAUNCHER_NAME_MODIFIED"
+		return 4, "NH_ERR_UNAUTHORIZED_CALLER"
+	case 5:
+		return 5, "NH_ERR_PIPE_OPEN_FAILED"
+	case 6:
+		return 6, "NH_ERR_INPUT_NOT_FOUND"
+	case 7:
+		return 7, "NH_ERR_OUTPUT_DIR_INVALID"
+	case 8:
+		return 8, "NH_ERR_PARSE_FAILED"
+	case 9:
+		return 9, "NH_ERR_EXTRACT_FAILED"
 	default:
 		return rc, "ERR_UNKNOWN"
 	}
@@ -350,13 +360,23 @@ func ExtractWithPipe(msixvcPath, outDir, pipeName string) (int, string) {
 	case 0:
 		return 0, ""
 	case 1:
-		return 1, "ERR_DECOMPRESS_FAILED"
+		return 1, "NH_ERR_EXCEPTION"
 	case 2:
-		return 2, "ERR_INVALID_ARGS"
+		return 2, "NH_ERR_INVALID_PARAMS"
 	case 3:
-		return 3, "ERR_FILE_INVALID"
+		return 3, "NH_ERR_KEY_NOT_FOUND"
 	case 4:
-		return 4, "ERR_LAUNCHER_NAME_MODIFIED"
+		return 4, "NH_ERR_UNAUTHORIZED_CALLER"
+	case 5:
+		return 5, "NH_ERR_PIPE_OPEN_FAILED"
+	case 6:
+		return 6, "NH_ERR_INPUT_NOT_FOUND"
+	case 7:
+		return 7, "NH_ERR_OUTPUT_DIR_INVALID"
+	case 8:
+		return 8, "NH_ERR_PARSE_FAILED"
+	case 9:
+		return 9, "NH_ERR_EXTRACT_FAILED"
 	default:
 		return rc, "ERR_UNKNOWN"
 	}

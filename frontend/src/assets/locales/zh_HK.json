@@ -846,15 +846,21 @@
   },
   "installpage": {
     "error": {
-      "decompress_failed": "解壓失敗",
-      "invalid_args": "參數錯誤",
-      "file_invalid": "檔案無效（可能是 MD5 不相符）",
-      "launcher_name_modified": "請不要修改啟動器名稱",
-      "dll_dependency_missing": "缺少 VC++ 執行庫",
+      "dll_dependency_missing": "缺少 VC++ 運行庫",
       "name_required": "名稱不能為空",
       "msixvc_not_specified": "未指定安裝包",
       "lip_not_installed": "LIP未安裝",
-      "unknown": "未知錯誤"
+      "unknown": "未知錯誤",
+      "nh_err_unknown": "未知錯誤",
+      "nh_err_exception": "未捕獲異常或未知錯誤",
+      "nh_err_invalid_params": "參數無效",
+      "nh_err_key_not_found": "遊戲安裝包校驗失敗，請刪除安裝包後重試",
+      "nh_err_unauthorized_caller": "調用者未授權",
+      "nh_err_pipe_open_failed": "進度管道打開失敗",
+      "nh_err_input_not_found": "輸入文件未找到",
+      "nh_err_output_dir_invalid": "輸出目錄無效",
+      "nh_err_parse_failed": "包解析失敗",
+      "nh_err_extract_failed": "解壓失敗"
     }
   }
 }

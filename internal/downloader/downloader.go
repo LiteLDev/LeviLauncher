@@ -2,6 +2,8 @@ package downloader
 
 import (
 	"context"
+	"crypto/md5"
+	"encoding/hex"
 	"fmt"
 	"io"
 	"net/http"
@@ -46,15 +48,17 @@ type Manager struct {
 }
 
 type state struct {
-	ctx        context.Context
-	url        string
-	dest       string
-	total      int64
-	downloaded int64
-	paused     bool
-	cancelled  bool
-	running    bool
-	cancelFn   context.CancelFunc
+	ctx         context.Context
+	url         string
+	dest        string
+	expectedMD5 string
+	retryCount  int
+	total       int64
+	downloaded  int64
+	paused      bool
+	cancelled   bool
+	running     bool
+	cancelFn    context.CancelFunc
 }
 
 func NewManager(events Events, opts Options) *Manager {
@@ -64,7 +68,7 @@ func NewManager(events Events, opts Options) *Manager {
 	return &Manager{events: events, opts: opts, tasks: map[string]*state{}}
 }
 
-func (m *Manager) Start(ctx context.Context, src string, dest string) string {
+func (m *Manager) Start(ctx context.Context, src string, dest string, md5sum string) string {
 	dir := filepath.Dir(dest)
 	if dir != "" {
 		_ = os.MkdirAll(dir, 0o755)
@@ -78,7 +82,7 @@ func (m *Manager) Start(ctx context.Context, src string, dest string) string {
 		m.emitStatus("started", dest)
 		return dest
 	}
-	local := &state{ctx: ctx, url: src, dest: dest}
+	local := &state{ctx: ctx, url: src, dest: dest, expectedMD5: md5sum}
 	m.tasks[dest] = local
 	m.mu.Unlock()
 	go m.run(local)
@@ -184,152 +188,207 @@ func (m *Manager) run(s *state) {
 		return
 	}
 	m.mu.Unlock()
-	var cur int64
-	downloadDest := local.dest + ".download"
-	if m.opts.Resume {
-		if fi, err := os.Stat(downloadDest); err == nil {
-			cur = fi.Size()
-		}
-	}
-	local.downloaded = cur
-	ctx, cancel := context.WithCancel(local.ctx)
-	m.mu.Lock()
-	local.cancelFn = cancel
-	local.running = true
-	m.tasks[local.dest] = local
-	m.mu.Unlock()
 
-	req, err := http.NewRequestWithContext(ctx, "GET", local.url, nil)
-	if err != nil {
-		m.emitError(err.Error(), local.dest)
-		m.finishRunning(local)
-		return
-	}
-	req.Header.Set("User-Agent", uarand.GetRandom())
-	if m.opts.Resume && cur > 0 {
-		req.Header.Set("Range", fmt.Sprintf("bytes=%d-", cur))
-	}
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		m.emitError(err.Error(), local.dest)
-		m.finishRunning(local)
-		return
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
-		m.emitError(fmt.Sprintf("HTTP %s", resp.Status), local.dest)
-		m.finishRunning(local)
-		return
-	}
-
-	if m.opts.Resume && cur > 0 && resp.StatusCode == http.StatusOK {
-		_ = os.Remove(downloadDest)
-		cur = 0
-		local.downloaded = 0
-	}
-
-	total := resp.ContentLength
-	if m.opts.Resume && total > 0 && cur > 0 {
-		if cr := resp.Header.Get("Content-Range"); cr != "" {
-			if idx := strings.LastIndex(cr, "/"); idx != -1 {
-				if all := cr[idx+1:]; all != "*" {
-					if v, e := parseInt64(all); e == nil {
-						total = v
-					}
-				}
+	for {
+		var cur int64
+		downloadDest := local.dest + ".download"
+		if m.opts.Resume {
+			if fi, err := os.Stat(downloadDest); err == nil {
+				cur = fi.Size()
 			}
-		} else {
-			total = cur + total
 		}
-	}
-	local.total = total
+		local.downloaded = cur
+		ctx, cancel := context.WithCancel(local.ctx)
+		m.mu.Lock()
+		local.cancelFn = cancel
+		local.running = true
+		m.tasks[local.dest] = local
+		m.mu.Unlock()
 
-	flags := os.O_CREATE | os.O_WRONLY
-	if cur == 0 {
-		flags |= os.O_TRUNC
-	}
-	f, err := os.OpenFile(downloadDest, flags, 0o644)
-	if err != nil {
-		m.emitError(err.Error(), local.dest)
-		m.finishRunning(local)
-		return
-	}
-	if m.opts.Resume && cur > 0 {
-		if _, err = f.Seek(cur, io.SeekStart); err != nil {
-			_ = f.Close()
+		req, err := http.NewRequestWithContext(ctx, "GET", local.url, nil)
+		if err != nil {
 			m.emitError(err.Error(), local.dest)
 			m.finishRunning(local)
 			return
 		}
-	}
-	{
-		payload := any(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
-		if m.events.ProgressFactory != nil {
-			payload = m.events.ProgressFactory(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
+		req.Header.Set("User-Agent", uarand.GetRandom())
+		if m.opts.Resume && cur > 0 {
+			req.Header.Set("Range", fmt.Sprintf("bytes=%d-", cur))
 		}
-		application.Get().Event.Emit(m.events.Progress, payload)
-	}
-	buf := make([]byte, 128*1024)
-	lastEmit := time.Now()
-	for {
-		if local.cancelled || local.paused {
-			_ = f.Close()
-			if local.cancelled && m.opts.RemoveOnCancel && downloadDest != "" {
-				_ = os.Remove(downloadDest)
-			}
+		resp, err := http.DefaultClient.Do(req)
+		if err != nil {
+			m.emitError(err.Error(), local.dest)
 			m.finishRunning(local)
-			if local.cancelled {
-				m.emitStatus("cancelled", local.dest)
-			}
 			return
 		}
-		n, er := resp.Body.Read(buf)
-		if n > 0 {
-			if _, werr := f.Write(buf[:n]); werr != nil {
+
+		if resp.StatusCode != http.StatusOK && resp.StatusCode != http.StatusPartialContent {
+			resp.Body.Close()
+			m.emitError(fmt.Sprintf("HTTP %s", resp.Status), local.dest)
+			m.finishRunning(local)
+			return
+		}
+
+		if m.opts.Resume && cur > 0 && resp.StatusCode == http.StatusOK {
+			_ = os.Remove(downloadDest)
+			cur = 0
+			local.downloaded = 0
+		}
+
+		total := resp.ContentLength
+		if m.opts.Resume && total > 0 && cur > 0 {
+			if cr := resp.Header.Get("Content-Range"); cr != "" {
+				if idx := strings.LastIndex(cr, "/"); idx != -1 {
+					if all := cr[idx+1:]; all != "*" {
+						if v, e := parseInt64(all); e == nil {
+							total = v
+						}
+					}
+				}
+			} else {
+				total = cur + total
+			}
+		}
+		local.total = total
+
+		flags := os.O_CREATE | os.O_WRONLY
+		if cur == 0 {
+			flags |= os.O_TRUNC
+		}
+		f, err := os.OpenFile(downloadDest, flags, 0o644)
+		if err != nil {
+			resp.Body.Close()
+			m.emitError(err.Error(), local.dest)
+			m.finishRunning(local)
+			return
+		}
+		if m.opts.Resume && cur > 0 {
+			if _, err = f.Seek(cur, io.SeekStart); err != nil {
 				_ = f.Close()
-				m.emitError(werr.Error(), local.dest)
+				resp.Body.Close()
+				m.emitError(err.Error(), local.dest)
 				m.finishRunning(local)
 				return
 			}
-			local.downloaded += int64(n)
-			if time.Since(lastEmit) >= m.opts.Throttle {
-				payload := any(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
-				if m.events.ProgressFactory != nil {
-					payload = m.events.ProgressFactory(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
-				}
-				application.Get().Event.Emit(m.events.Progress, payload)
-				lastEmit = time.Now()
-			}
 		}
-		if er != nil {
-			if er == io.EOF {
+		{
+			payload := any(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
+			if m.events.ProgressFactory != nil {
+				payload = m.events.ProgressFactory(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
+			}
+			application.Get().Event.Emit(m.events.Progress, payload)
+		}
+		buf := make([]byte, 128*1024)
+		lastEmit := time.Now()
+
+		var loopErr error
+		for {
+			if local.cancelled || local.paused {
 				_ = f.Close()
-				if err := os.Rename(downloadDest, local.dest); err != nil {
-					m.emitError(err.Error(), local.dest)
-				} else {
+				resp.Body.Close()
+				if local.cancelled && m.opts.RemoveOnCancel && downloadDest != "" {
+					_ = os.Remove(downloadDest)
+				}
+				m.finishRunning(local)
+				if local.cancelled {
+					m.emitStatus("cancelled", local.dest)
+				}
+				return
+			}
+			n, er := resp.Body.Read(buf)
+			if n > 0 {
+				if _, werr := f.Write(buf[:n]); werr != nil {
+					loopErr = werr
+					break
+				}
+				local.downloaded += int64(n)
+				if time.Since(lastEmit) >= m.opts.Throttle {
 					payload := any(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
 					if m.events.ProgressFactory != nil {
 						payload = m.events.ProgressFactory(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
 					}
 					application.Get().Event.Emit(m.events.Progress, payload)
-					m.emitDone(local.dest)
+					lastEmit = time.Now()
 				}
-			} else {
-				if ctx.Err() == context.Canceled || local.cancelled {
-					_ = f.Close()
-					if m.opts.RemoveOnCancel && downloadDest != "" {
-						_ = os.Remove(downloadDest)
-					}
-					m.emitStatus("cancelled", local.dest)
+			}
+			if er != nil {
+				if er == io.EOF {
+					loopErr = nil
 				} else {
-					_ = f.Close()
-					m.emitError(er.Error(), local.dest)
+					loopErr = er
 				}
+				break
+			}
+		}
+		_ = f.Close()
+		resp.Body.Close()
+
+		if loopErr != nil {
+			if ctx.Err() == context.Canceled || local.cancelled {
+				if m.opts.RemoveOnCancel && downloadDest != "" {
+					_ = os.Remove(downloadDest)
+				}
+				m.emitStatus("cancelled", local.dest)
+			} else {
+				m.emitError(loopErr.Error(), local.dest)
 			}
 			m.finishRunning(local)
 			return
 		}
+
+		// Download complete, verify MD5
+		if local.expectedMD5 != "" {
+			m.emitStatus("verifying", local.dest)
+			if hash, err := calculateMD5(downloadDest); err == nil {
+				if !strings.EqualFold(hash, local.expectedMD5) {
+					// Mismatch
+					_ = os.Remove(downloadDest)
+					local.retryCount++
+					if local.retryCount < 3 {
+						m.emitError(fmt.Sprintf("MD5 mismatch (attempt %d/3), retrying...", local.retryCount), local.dest)
+						m.emitStatus("started", local.dest)
+						time.Sleep(1 * time.Second)
+						continue
+					} else {
+						m.emitError("ERR_MD5_MISMATCH", local.dest)
+						m.finishRunning(local)
+						return
+					}
+				}
+			} else {
+				// Failed to calculate MD5, maybe treat as error?
+				m.emitError(fmt.Sprintf("MD5 calculation failed: %v", err), local.dest)
+				m.finishRunning(local)
+				return
+			}
+		}
+
+		if err := os.Rename(downloadDest, local.dest); err != nil {
+			m.emitError(err.Error(), local.dest)
+		} else {
+			payload := any(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
+			if m.events.ProgressFactory != nil {
+				payload = m.events.ProgressFactory(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
+			}
+			application.Get().Event.Emit(m.events.Progress, payload)
+			m.emitDone(local.dest)
+		}
+		m.finishRunning(local)
+		return
 	}
+}
+
+func calculateMD5(path string) (string, error) {
+	f, err := os.Open(path)
+	if err != nil {
+		return "", err
+	}
+	defer f.Close()
+	h := md5.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return hex.EncodeToString(h.Sum(nil)), nil
 }
 
 func (m *Manager) finishRunning(s *state) {

@@ -60,6 +60,7 @@ type VersionItem = {
   type: ItemType;
   short: string;
   timestamp?: number;
+  md5?: string;
 };
 
 export const DownloadPage: React.FC = () => {
@@ -345,6 +346,7 @@ export const DownloadPage: React.FC = () => {
             type: "Preview",
             short: String(v.version).replace(/^Preview\s*/, ""),
             timestamp: v.timestamp,
+            md5: v.md5,
           }),
         );
         const release: VersionItem[] = (data.releaseVersions || []).map(
@@ -354,6 +356,7 @@ export const DownloadPage: React.FC = () => {
             type: "Release",
             short: String(v.version).replace(/^Release\s*/, ""),
             timestamp: v.timestamp,
+            md5: v.md5,
           }),
         );
         const newItems = [...preview, ...release];
@@ -395,6 +398,7 @@ export const DownloadPage: React.FC = () => {
           type: "Preview",
           short: String(v.version).replace(/^Preview\s*/, ""),
           timestamp: v.timestamp,
+          md5: v.md5,
         }),
       );
       const release: VersionItem[] = (data.releaseVersions || []).map(
@@ -404,6 +408,7 @@ export const DownloadPage: React.FC = () => {
           type: "Release",
           short: String(v.version).replace(/^Release\s*/, ""),
           timestamp: v.timestamp,
+          md5: v.md5,
         }),
       );
       const newItems = [...preview, ...release];
@@ -1083,7 +1088,16 @@ export const DownloadPage: React.FC = () => {
                       const desired = `${
                         mirrorType || "Release"
                       } ${mirrorVersion}.msixvc`;
-                      const success = await startDownload(selectedUrl, desired);
+                      const item = items.find(
+                        (i) =>
+                          i.short === mirrorVersion && i.type === mirrorType,
+                      );
+                      const md5sum = item?.md5;
+                      const success = await startDownload(
+                        selectedUrl,
+                        desired,
+                        md5sum,
+                      );
                       if (success) {
                         triggerAnimation(e);
                         onClose();

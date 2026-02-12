@@ -61,7 +61,7 @@ func StartDownload(ctx context.Context, url string) string {
 	}
 	name := deriveFilename(url)
 	dest := filepath.Join(dir, name)
-	return gdkMgr.Start(ctx, stripFilenameParam(url), dest)
+	return gdkMgr.Start(ctx, stripFilenameParam(url), dest, "")
 }
 
 func downloadFile(ctx context.Context, src string, dest string) error {

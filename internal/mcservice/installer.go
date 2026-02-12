@@ -27,8 +27,8 @@ type VersionStatus struct {
 	Type         string `json:"type"`
 }
 
-func StartMsixvcDownload(ctx context.Context, url string) string {
-	return msixvc.StartDownload(ctx, url)
+func StartMsixvcDownload(ctx context.Context, url string, md5sum string) string {
+	return msixvc.StartDownload(ctx, url, md5sum)
 }
 func ResumeMsixvcDownload() { msixvc.Resume() }
 func CancelMsixvcDownload() { msixvc.Cancel() }

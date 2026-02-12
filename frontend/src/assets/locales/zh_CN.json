@@ -844,15 +844,21 @@
   },
   "installpage": {
     "error": {
-      "decompress_failed": "解压失败",
-      "invalid_args": "参数错误",
-      "file_invalid": "文件无效（可能是 MD5 不匹配）",
-      "launcher_name_modified": "请不要修改启动器名称",
       "dll_dependency_missing": "缺少 VC++ 运行库",
       "name_required": "名称不能为空",
       "msixvc_not_specified": "未指定安装包",
       "lip_not_installed": "LIP未安装",
-      "unknown": "未知错误"
+      "unknown": "未知错误",
+      "nh_err_unknown": "未知错误",
+      "nh_err_exception": "未捕获异常或未知错误",
+      "nh_err_invalid_params": "参数无效",
+      "nh_err_key_not_found": "游戏安装包校验失败，请删除安装包后重试",
+      "nh_err_unauthorized_caller": "调用者未授权",
+      "nh_err_pipe_open_failed": "进度管道打开失败",
+      "nh_err_input_not_found": "输入文件未找到",
+      "nh_err_output_dir_invalid": "输出目录无效",
+      "nh_err_parse_failed": "包解析失败",
+      "nh_err_extract_failed": "解压失败"
     }
   }
 }

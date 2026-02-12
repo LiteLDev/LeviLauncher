@@ -26,7 +26,11 @@ export interface DownloadItem {
 
 interface DownloadsContextType {
   downloads: DownloadItem[];
-  startDownload: (url: string, filename?: string) => Promise<boolean>;
+  startDownload: (
+    url: string,
+    filename?: string,
+    md5sum?: string,
+  ) => Promise<boolean>;
   cancelDownload: (dest?: string) => void;
   removeDownload: (dest: string) => void;
   clearError: (dest?: string) => void;
@@ -235,6 +239,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
   const startDownload = async (
     url: string,
     filename?: string,
+    md5sum?: string,
   ): Promise<boolean> => {
     if (typeof minecraft === "undefined") return false;
 
@@ -256,7 +261,8 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
           (dl.dest && getFileNameFromDest(dl.dest) === displayName)) &&
         (dl.status === "started" ||
           dl.status === "resumed" ||
-          dl.status === "starting"),
+          dl.status === "starting" ||
+          dl.status === "verifying"),
     );
 
     if (isAlreadyDownloading) {
@@ -279,7 +285,10 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
       }
     }
     try {
-      const dest = await minecraft.StartMsixvcDownload(urlWithFilename);
+      const dest = await minecraft.StartMsixvcDownload(
+        urlWithFilename,
+        md5sum || "",
+      );
       if (dest) cancelledRef.current.delete(dest);
 
       const key = dest || displayName || urlWithFilename;

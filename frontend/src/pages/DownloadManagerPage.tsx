@@ -70,7 +70,7 @@ export const DownloadManagerPage: React.FC = () => {
                   <div className="flex flex-col gap-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-lg shadow-emerald-500/20">
+                        <div className="p-3 rounded-2xl bg-gradient-to-br from-primary-500 to-teal-600 text-white shadow-lg shadow-primary-500/20">
                           <FaBoxOpen size={24} />
                         </div>
                         <div>
@@ -191,7 +191,7 @@ export const DownloadManagerPage: React.FC = () => {
                         }
                         classNames={{
                           indicator:
-                            "bg-gradient-to-r from-emerald-500 to-teal-500",
+                            "bg-gradient-to-r from-primary-500 to-teal-500",
                         }}
                         size="md"
                         isIndeterminate={

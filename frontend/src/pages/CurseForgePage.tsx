@@ -464,7 +464,7 @@ export const CurseForgePage: React.FC = () => {
                 onPress={handleSearch}
                 startContent={<LuSearch />}
                 size="sm"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               >
                 {t("curseforge.search")}
               </Button>
@@ -753,7 +753,7 @@ export const CurseForgePage: React.FC = () => {
                   radius="full"
                   classNames={{
                     cursor:
-                      "bg-emerald-600 hover:bg-emerald-500 shadow-lg shadow-emerald-900/20 font-bold",
+                      "bg-primary-600 hover:bg-primary-500 shadow-lg shadow-primary-900/20 font-bold",
                   }}
                 />
               </div>

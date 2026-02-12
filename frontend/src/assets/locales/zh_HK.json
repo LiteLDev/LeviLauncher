@@ -393,7 +393,11 @@
     },
     "appearance": {
       "disable_animations": "停用動畫",
-      "disable_animations_desc": "停用介面過渡動畫以提升效能或減少動態效果"
+      "disable_animations_desc": "停用介面過渡動畫以提升效能或減少動態效果",
+      "background_image": "背景圖片",
+      "background_image_desc": "設定自定義背景圖片",
+      "select_image": "選擇圖片",
+      "clear_image": "清除圖片"
     },
     "process": {
       "title": "進程管理",

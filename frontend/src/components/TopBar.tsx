@@ -9,6 +9,7 @@ import { LeviIcon } from "@/icons/LeviIcon";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
+import { LAYOUT } from "@/constants/layout";
 
 interface TopBarProps {
   navLocked: boolean;
@@ -45,7 +46,7 @@ export const TopBar: React.FC<TopBarProps> = ({
       <motion.div
         key="topbar"
         id="wails-draggable"
-        className="fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4 bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl"
+        className={`fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4 ${LAYOUT.NAVBAR_BG}`}
         initial={{ x: -80, opacity: 0 }}
         animate={{
           x: revealStarted ? 0 : -80,
@@ -108,7 +109,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               <span
                 className={`${
                   pathnames.length === 0
-                    ? "font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent"
+                    ? "font-bold text-lg bg-gradient-to-r from-primary-600 to-teal-600 bg-clip-text text-transparent"
                     : "text-default-500 dark:text-zinc-400"
                 }`}
               >
@@ -119,7 +120,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 to="/"
                 className={`transition-colors hover:opacity-80 ${
                   pathnames.length === 0
-                    ? "font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent"
+                    ? "font-bold text-lg bg-gradient-to-r from-primary-600 to-teal-600 bg-clip-text text-transparent"
                     : "text-default-500 dark:text-zinc-400 hover:text-default-900 dark:hover:text-zinc-200"
                 }`}
               >

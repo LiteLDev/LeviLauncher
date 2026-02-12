@@ -615,7 +615,7 @@ const CurseForgeModPage: React.FC = () => {
             <Button
               onPress={() => navigate(-1)}
               color="primary"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
             >
               {t("curseforge.go_back")}
             </Button>
@@ -716,7 +716,7 @@ const CurseForgeModPage: React.FC = () => {
                   {/* Actions */}
                   <div className="flex flex-col gap-3 min-w-[240px] md:border-l md:border-default-100 md:pl-8 justify-center">
                     <Button
-                      className="w-full font-semibold shadow-md shadow-emerald-900/20 text-white bg-emerald-600 hover:bg-emerald-500"
+                      className="w-full font-semibold shadow-md shadow-primary-900/20 text-white bg-primary-600 hover:bg-primary-500"
                       startContent={<LuDownload size={20} />}
                       size="lg"
                       onPress={() => {
@@ -798,15 +798,15 @@ const CurseForgeModPage: React.FC = () => {
                       tabList:
                         "gap-6 w-full relative rounded-none p-0 border-b border-default-200 mb-6",
                       cursor:
-                        "w-full bg-linear-to-r from-emerald-500 to-teal-500 h-[3px]",
+                        "w-full bg-linear-to-r from-primary-500 to-teal-500 h-[3px]",
                       tab: "max-w-fit px-0 h-12 text-base font-medium text-default-500 dark:text-zinc-400",
                       tabContent:
-                        "group-data-[selected=true]:text-emerald-600 dark:group-data-[selected=true]:text-emerald-500 font-bold",
+                        "group-data-[selected=true]:text-primary-600 dark:group-data-[selected=true]:text-primary-500 font-bold",
                     }}
                   >
                     <Tab key="description" title="Description">
                       <ScrollShadow className="max-h-[800px] w-full pr-4 pretty-scrollbar">
-                        <div className="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-emerald-600 dark:prose-a:text-emerald-500">
+                        <div className="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-primary-600 dark:prose-a:text-primary-500">
                           {description ? (
                             <div
                               dangerouslySetInnerHTML={{ __html: description }}
@@ -1030,24 +1030,24 @@ const CurseForgeModPage: React.FC = () => {
         iconBgClass={
           installStep === "error"
             ? undefined
-            : "bg-emerald-500/10 border-emerald-500/20"
+            : "bg-primary-500/10 border-primary-500/20"
         }
         titleClass={
           installStep === "error"
             ? undefined
-            : "bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 bg-clip-text text-transparent"
+            : "bg-gradient-to-r from-primary-600 to-teal-600 dark:from-primary-500 dark:to-teal-500 bg-clip-text text-transparent"
         }
         icon={
           installStep === "downloading" ? (
-            <LuDownload size={24} className="text-emerald-500" />
+            <LuDownload size={24} className="text-primary-500" />
           ) : installStep === "version_select" ? (
-            <LuGamepad2 size={24} className="text-emerald-500" />
+            <LuGamepad2 size={24} className="text-primary-500" />
           ) : installStep === "player_select" ? (
-            <LuUser size={24} className="text-emerald-500" />
+            <LuUser size={24} className="text-primary-500" />
           ) : installStep === "importing" ? (
-            <LuFileDigit size={24} className="text-emerald-500" />
+            <LuFileDigit size={24} className="text-primary-500" />
           ) : installStep === "success" ? (
-            <FiCheckCircle size={24} className="text-emerald-500" />
+            <FiCheckCircle size={24} className="text-primary-500" />
           ) : undefined
         }
         title={
@@ -1087,7 +1087,7 @@ const CurseForgeModPage: React.FC = () => {
                 <Button
                   color="primary"
                   onPress={handleVersionSelectNext}
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                  className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                 >
                   {t("curseforge.install.next")}
                 </Button>
@@ -1097,7 +1097,7 @@ const CurseForgeModPage: React.FC = () => {
               <Button
                 color="primary"
                 onPress={() => setInstallModalOpen(false)}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               >
                 {t("curseforge.install.close")}
               </Button>
@@ -1119,7 +1119,7 @@ const CurseForgeModPage: React.FC = () => {
                 className="max-w-md w-full"
                 color="success"
                 classNames={{
-                  indicator: "bg-emerald-600 dark:bg-emerald-500",
+                  indicator: "bg-primary-600 dark:bg-primary-500",
                 }}
                 showValueLabel={true}
               />

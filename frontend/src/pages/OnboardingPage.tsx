@@ -99,7 +99,7 @@ export default function OnboardingPage() {
         className="w-full max-w-2xl mx-auto flex flex-col justify-center py-6"
       >
         <div className="flex flex-row items-center justify-center gap-6 mb-6">
-          <div className="w-16 h-16 rounded-3xl bg-linear-to-br from-emerald-500 to-teal-600 shadow-xl shadow-emerald-500/20 flex items-center justify-center text-white shrink-0">
+          <div className="w-16 h-16 rounded-3xl bg-linear-to-br from-primary-500 to-teal-600 shadow-xl shadow-primary-500/20 flex items-center justify-center text-white shrink-0">
             <svg
               className="w-8 h-8"
               fill="none"
@@ -116,7 +116,7 @@ export default function OnboardingPage() {
             </svg>
           </div>
           <div className="flex flex-col items-start text-left">
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400 mb-1">
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-teal-600 dark:from-primary-400 dark:to-teal-400 mb-1">
               {t("onboarding.title")}
             </h1>
             <p className="text-default-500 dark:text-zinc-400 text-base max-w-md">
@@ -205,7 +205,7 @@ export default function OnboardingPage() {
                       size="sm"
                       color="primary"
                       radius="full"
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                      className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                       isDisabled={
                         !newBaseRoot ||
                         !baseRootWritable ||
@@ -333,7 +333,7 @@ export default function OnboardingPage() {
           <Button
             color="primary"
             radius="full"
-            className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20 px-8"
+            className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20 px-8"
             onPress={requestFinish}
           >
             {t("onboarding.finish")}

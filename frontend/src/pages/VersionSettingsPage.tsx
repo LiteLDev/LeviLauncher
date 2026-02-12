@@ -486,7 +486,7 @@ export default function VersionSettingsPage() {
                     <Button
                       color="primary"
                       radius="full"
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                      className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                       onPress={() => onSave()}
                     >
                       {t("common.ok")}
@@ -535,7 +535,7 @@ export default function VersionSettingsPage() {
                       radius="lg"
                       classNames={{
                         inputWrapper:
-                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-primary-500 focus-within:border-primary-500!",
                       }}
                       isDisabled={isRegistered || loading}
                       placeholder={
@@ -630,7 +630,7 @@ export default function VersionSettingsPage() {
                           variant="flat"
                           color="primary"
                           radius="full"
-                          className="justify-start px-4 font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                          className="justify-start px-4 font-medium bg-primary-500/10 text-primary-600 dark:text-primary-400"
                           onPress={async () => {
                             try {
                               const err: string =
@@ -674,7 +674,7 @@ export default function VersionSettingsPage() {
                       isSelected={enableIsolation}
                       onValueChange={setEnableIsolation}
                       classNames={{
-                        wrapper: "group-data-[selected=true]:bg-emerald-500",
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
                       }}
                     />
                   </div>
@@ -688,7 +688,7 @@ export default function VersionSettingsPage() {
                       isSelected={enableConsole}
                       onValueChange={setEnableConsole}
                       classNames={{
-                        wrapper: "group-data-[selected=true]:bg-emerald-500",
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
                       }}
                     />
                   </div>
@@ -712,7 +712,7 @@ export default function VersionSettingsPage() {
                       }
                       classNames={{
                         inputWrapper:
-                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-primary-500 focus-within:border-primary-500!",
                       }}
                     />
                     <p className="text-tiny text-default-400">
@@ -739,7 +739,7 @@ export default function VersionSettingsPage() {
                       }
                       classNames={{
                         inputWrapper:
-                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-primary-500 focus-within:border-primary-500!",
                       }}
                     />
                     <p className="text-tiny text-default-400">
@@ -784,7 +784,7 @@ export default function VersionSettingsPage() {
                           <Button
                             color="success"
                             variant="flat"
-                            className="bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-bold"
+                            className="bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold"
                             onPress={() => {
                               if (isLLInstalled) {
                                 addToast({
@@ -825,7 +825,7 @@ export default function VersionSettingsPage() {
                       isSelected={enableRenderDragon}
                       onValueChange={setEnableRenderDragon}
                       classNames={{
-                        wrapper: "group-data-[selected=true]:bg-emerald-500",
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
                       }}
                     />
                   </div>
@@ -839,7 +839,7 @@ export default function VersionSettingsPage() {
                       isSelected={enableEditorMode}
                       onValueChange={setEnableEditorMode}
                       classNames={{
-                        wrapper: "group-data-[selected=true]:bg-emerald-500",
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
                       }}
                     />
                   </div>
@@ -979,7 +979,7 @@ export default function VersionSettingsPage() {
             <Button
               color="primary"
               radius="full"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={() => {
                 setGdkMissingOpen(false);
                 navigate("/settings");

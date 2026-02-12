@@ -132,11 +132,10 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   const Icon = config.icon;
 
   const confirmBtnColor =
-    confirmButtonProps?.color ||
-    (type === "success" ? "primary" : config.buttonColor);
+    confirmButtonProps?.color || config.buttonColor;
   const confirmBtnClass =
     type === "success" && !confirmButtonProps?.className
-      ? "bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+      ? "bg-success-600 hover:bg-success-500 text-white font-bold shadow-lg shadow-success-900/20"
       : type === "warning" && !confirmButtonProps?.className
         ? "text-white! font-bold shadow-lg shadow-warning-500/20"
         : confirmButtonProps?.className || "font-bold shadow-lg";

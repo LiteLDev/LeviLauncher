@@ -618,7 +618,7 @@ export default function InstallPage() {
                         {t("common.cancel")}
                       </Button>
                       <Button
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                        className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                         radius="full"
                         onPress={handleInstall}
                       >
@@ -638,7 +638,7 @@ export default function InstallPage() {
                         {t("common.open_folder")}
                       </Button>
                       <Button
-                        className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                        className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                         radius="full"
                         onPress={() => navigate(returnTo)}
                       >
@@ -665,7 +665,7 @@ export default function InstallPage() {
                 <CardBody className="py-12">
                   <div className="flex flex-col items-center justify-center h-full gap-4">
                     <div className="relative flex items-center justify-center">
-                      <div className="absolute inset-0 bg-emerald-500/20 blur-xl rounded-full animate-pulse" />
+                      <div className="absolute inset-0 bg-primary-500/20 blur-xl rounded-full animate-pulse" />
                       <div className="w-16 h-16 rounded-full bg-default-50 dark:bg-zinc-800 border-4 border-default-100 dark:border-zinc-700 flex items-center justify-center relative z-10">
                         <Spinner
                           size="md"
@@ -711,7 +711,7 @@ export default function InstallPage() {
                         <div className="h-1.5 w-full rounded-full bg-default-200/50 dark:bg-zinc-700/50 overflow-hidden border border-default-100 dark:border-white/5 relative">
                           {extractInfo?.totalBytes ? (
                             <motion.div
-                              className="h-full bg-gradient-to-r from-emerald-500 to-teal-500 rounded-full"
+                              className="h-full bg-gradient-to-r from-primary-500 to-teal-500 rounded-full"
                               initial={{ width: 0 }}
                               animate={{
                                 width: `${Math.min(
@@ -809,7 +809,7 @@ export default function InstallPage() {
                           damping: 20,
                           delay: 0.1,
                         }}
-                        className="w-16 h-16 rounded-full bg-linear-to-br from-emerald-400 to-teal-600 flex items-center justify-center shadow-lg shadow-emerald-900/20"
+                        className="w-16 h-16 rounded-full bg-linear-to-br from-primary-400 to-teal-600 flex items-center justify-center shadow-lg shadow-primary-900/20"
                       >
                         <svg
                           viewBox="0 0 24 24"
@@ -833,7 +833,7 @@ export default function InstallPage() {
                     </div>
 
                     <div className="flex flex-col items-center gap-1 text-center">
-                      <h2 className="text-2xl font-black bg-linear-to-br from-emerald-600 to-teal-600 dark:from-emerald-500 dark:to-teal-500 bg-clip-text text-transparent">
+                      <h2 className="text-2xl font-black bg-linear-to-br from-primary-600 to-teal-600 dark:from-primary-500 dark:to-teal-500 bg-clip-text text-transparent">
                         {t("downloadpage.install.success_title")}
                       </h2>
                       {installingVersion && (

@@ -159,7 +159,7 @@ export const UserAvatar = () => {
             size="sm"
             isBordered
             color="success"
-            className="ring-2 ring-emerald-500/30"
+            className="ring-2 ring-primary-500/30"
           />
         </div>
       </PopoverTrigger>
@@ -167,11 +167,11 @@ export const UserAvatar = () => {
         <div className="px-4 py-3 w-64">
           <div className="flex items-center justify-between mb-3">
             <Chip
-              startContent={<FaXbox className="text-emerald-600" />}
+              startContent={<FaXbox className="text-primary-600" />}
               variant="flat"
               color="success"
               size="sm"
-              className="bg-emerald-100/70 dark:bg-emerald-900/25 text-emerald-700 dark:text-emerald-400"
+              className="bg-primary-100/70 dark:bg-primary-900/25 text-primary-700 dark:text-primary-400"
             >
               {t("useravatar.xbox_live")}
             </Chip>
@@ -197,7 +197,7 @@ export const UserAvatar = () => {
 
           <User
             name={
-              <span className="font-bold text-lg bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+              <span className="font-bold text-lg bg-gradient-to-r from-primary-600 to-teal-600 bg-clip-text text-transparent">
                 {gamertag}
               </span>
             }
@@ -214,7 +214,7 @@ export const UserAvatar = () => {
               src: avatar,
               size: "lg",
               isBordered: true,
-              className: "w-14 h-14 bg-transparent ring-2 ring-emerald-500",
+              className: "w-14 h-14 bg-transparent ring-2 ring-primary-500",
             }}
             classNames={{
               base: "justify-start gap-4",

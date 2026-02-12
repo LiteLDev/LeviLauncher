@@ -11,6 +11,7 @@ import {
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
+import { LAYOUT } from "@/constants/layout";
 
 interface SidebarProps {
   isBeta: boolean;
@@ -71,7 +72,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <AnimatePresence>
       <motion.div
         key="sidebar"
-        className="fixed left-0 top-14 bottom-0 z-50 flex flex-col w-14 bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl"
+        className={`fixed left-0 top-14 bottom-0 z-50 flex flex-col w-14 ${LAYOUT.NAVBAR_BG}`}
         initial={{ x: -80, opacity: 0 }}
         animate={{
           x: revealStarted ? 0 : -80,
@@ -85,7 +86,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <div className="absolute top-0 -right-[20px] w-[20px] h-[20px] overflow-hidden pointer-events-none">
           {/* Fill the corner gap */}
           <div
-            className="absolute top-0 left-0 w-full h-full bg-white/80 dark:bg-zinc-900/40 backdrop-blur-xl"
+            className={`absolute top-0 left-0 w-full h-full ${LAYOUT.NAVBAR_BG}`}
             style={{ clipPath: "path('M 0 20 Q 0 0 20 0 L 0 0 Z')" }}
           />
           {/* Border Stroke */}
@@ -120,7 +121,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   {isActive && (
                     <motion.div
                       layoutId="active-pill"
-                      className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-emerald-500 rounded-r-full"
+                      className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 rounded-r-full"
                       transition={{
                         type: "spring",
                         stiffness: 300,
@@ -140,7 +141,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }}
                     className={`w-12 h-12 rounded-xl transition-all duration-200 ${
                       isActive
-                        ? "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400"
+                        ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
                         : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-default-100 dark:hover:bg-zinc-800"
                     }`}
                   >

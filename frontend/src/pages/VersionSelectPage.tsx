@@ -352,7 +352,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     </Button>
                     <Button
                       color="primary"
-                      className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                      className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                       onPress={handleConfirm}
                     >
                       {t("common.ok")}
@@ -368,7 +368,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                   variant="solid"
                   classNames={{
                     tabList: "bg-default-100/50 rounded-xl px-1",
-                    cursor: "bg-emerald-600 hover:bg-emerald-500 shadow-md",
+                    cursor: "bg-primary-600 hover:bg-primary-500 shadow-md",
                     tabContent: "group-data-[selected=true]:text-white",
                   }}
                 >
@@ -384,7 +384,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     variant="bordered"
                     size="sm"
                     classNames={{
-                      inputWrapper: "focus-within:border-emerald-600!",
+                      inputWrapper: "focus-within:border-primary-600!",
                     }}
                   />
                 </div>
@@ -393,7 +393,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     <Select
                       size="sm"
                       classNames={{
-                        trigger: "data-[focus=true]:border-emerald-600",
+                        trigger: "data-[focus=true]:border-primary-600",
                       }}
                       label={t("versions.sort.label") as string}
                       selectedKeys={new Set([sortBy])}
@@ -468,7 +468,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                   LAYOUT.GLASS_CARD.BASE,
                   "border-2 border-solid",
                   selectedVersionName === it.name
-                    ? "border-emerald-600 dark:border-emerald-500 bg-emerald-500/5 dark:bg-emerald-500/10 shadow-emerald-500/20"
+                    ? "border-primary-600 dark:border-primary-500 bg-primary-500/5 dark:bg-primary-500/10 shadow-primary-500/20"
                     : "border-transparent hover:border-default-200 dark:hover:border-zinc-700",
                 )}
               >

@@ -299,6 +299,7 @@
     },
     "tabs": {
       "general": "Basic Settings",
+      "personalization": "Personalization",
       "components": "Third-party Components",
       "others": "Others",
       "updates": "Updates",
@@ -410,8 +411,22 @@
       }
     },
     "appearance": {
+      "theme_color": "Theme Color",
+      "theme_color_desc": "Choose the primary accent color for the application",
       "disable_animations": "Disable Animations",
-      "disable_animations_desc": "Disable interface transition animations for performance or reduced motion"
+      "disable_animations_desc": "Disable interface transition animations for performance or reduced motion",
+      "background_image": "Background Image",
+      "background_image_desc": "Set a custom background image",
+      "select_image": "Select Image",
+      "clear_image": "Clear Image",
+      "background_blur": "Background Blur",
+      "background_blur_desc": "Adjust the blur level of the background image",
+      "background_brightness": "Background Brightness",
+      "background_brightness_desc": "Adjust the brightness of the background image",
+      "background_opacity": "Background Opacity",
+      "background_opacity_desc": "Adjust the opacity of the background image",
+      "disable_ui_blur": "Disable UI Blur",
+      "disable_ui_blur_desc": "Disable the frosted glass blur effect on UI components"
     }
   },
   "downloadmodal": {

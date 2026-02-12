@@ -24,7 +24,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           {startContent}
           <div>
             <h1
-              className={`text-left text-3xl font-black tracking-tight text-emerald-600 dark:text-emerald-500 pb-1 ${titleClassName}`}
+              className={`text-left text-3xl font-black tracking-tight text-primary-600 dark:text-primary-500 pb-1 ${titleClassName}`}
             >
               {title}
             </h1>
@@ -58,7 +58,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   icon,
   action,
   className = "",
-  iconWrapperClassName = "bg-emerald-500/10 text-emerald-600 dark:text-emerald-500",
+  iconWrapperClassName = "bg-primary-500/10 text-primary-600 dark:text-primary-500",
 }) => {
   return (
     <div className={`flex flex-col gap-1 ${className}`}>

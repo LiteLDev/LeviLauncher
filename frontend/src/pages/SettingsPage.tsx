@@ -20,6 +20,7 @@ import {
   Switch,
   Tabs,
   Tab,
+  Slider,
 } from "@heroui/react";
 import { RxUpdate } from "react-icons/rx";
 import {
@@ -29,7 +30,6 @@ import {
   FaCogs,
   FaList,
 } from "react-icons/fa";
-import { FiAlertTriangle, FiCheckCircle, FiUploadCloud } from "react-icons/fi";
 import { LuHardDrive } from "react-icons/lu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -67,6 +67,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
+import { THEMES } from "@/constants/themes";
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -120,6 +121,50 @@ export const SettingsPage: React.FC = () => {
       return localStorage.getItem("app.disableAnimations") === "true";
     } catch {
       return false;
+    }
+  });
+
+  const [backgroundImage, setBackgroundImage] = useState<string>(() => {
+    try {
+      return localStorage.getItem("app.backgroundImage") || "";
+    } catch {
+      return "";
+    }
+  });
+
+  const [backgroundBlur, setBackgroundBlur] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem("app.backgroundBlur") || "0");
+    } catch {
+      return 0;
+    }
+  });
+
+  const [backgroundBrightness, setBackgroundBrightness] = useState<number>(
+    () => {
+      try {
+        const item = localStorage.getItem("app.backgroundBrightness");
+        return item !== null ? Number(item) : 100;
+      } catch {
+        return 100;
+      }
+    },
+  );
+
+  const [backgroundOpacity, setBackgroundOpacity] = useState<number>(() => {
+    try {
+      const item = localStorage.getItem("app.backgroundOpacity");
+      return item !== null ? Number(item) : 100;
+    } catch {
+      return 100;
+    }
+  });
+
+  const [themeColor, setThemeColor] = useState<string>(() => {
+    try {
+      return localStorage.getItem("app.themeColor") || "emerald";
+    } catch {
+      return "emerald";
     }
   });
 
@@ -446,6 +491,10 @@ export const SettingsPage: React.FC = () => {
                 }}
               >
                 <Tab key="general" title={t("settings.tabs.general")} />
+                <Tab
+                  key="personalization"
+                  title={t("settings.tabs.personalization")}
+                />
                 <Tab key="components" title={t("settings.tabs.components")} />
                 <Tab key="others" title={t("settings.tabs.others")} />
                 <Tab key="updates" title={t("settings.tabs.updates")} />
@@ -487,7 +536,7 @@ export const SettingsPage: React.FC = () => {
                           radius="full"
                           isDisabled={!newBaseRoot || !baseRootWritable}
                           isLoading={savingBaseRoot}
-                          className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                          className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                           onPress={async () => {
                             setSavingBaseRoot(true);
                             try {
@@ -523,7 +572,7 @@ export const SettingsPage: React.FC = () => {
                         variant="bordered"
                         classNames={{
                           inputWrapper:
-                            "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-emerald-500 focus-within:border-emerald-500!",
+                            "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-primary-500 focus-within:border-primary-500!",
                         }}
                         endContent={
                           <Button
@@ -677,6 +726,33 @@ export const SettingsPage: React.FC = () => {
 
                   <Divider className="bg-default-200/50" />
 
+                  {/* Discord RPC */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">
+                        {t("settings.discord_rpc.title")}
+                      </p>
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
+                        {t("settings.discord_rpc.desc")}
+                      </p>
+                    </div>
+                    <Switch
+                      size="sm"
+                      isSelected={discordRpcEnabled}
+                      onValueChange={(isSelected) => {
+                        setDiscordRpcEnabled(isSelected);
+                        SetDisableDiscordRPC(!isSelected);
+                      }}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
+                      }}
+                    />
+                  </div>
+                </div>
+              )}
+
+              {selectedTab === "personalization" && (
+                <div className="flex flex-col gap-6">
                   {/* Navigation Layout */}
                   <div className="flex flex-col gap-6">
                     <div className="flex items-center justify-between">
@@ -700,7 +776,7 @@ export const SettingsPage: React.FC = () => {
                           );
                         }}
                         classNames={{
-                          wrapper: "group-data-[selected=true]:bg-emerald-500",
+                          wrapper: "group-data-[selected=true]:bg-primary-500",
                         }}
                       />
                     </div>
@@ -731,34 +807,238 @@ export const SettingsPage: React.FC = () => {
                           );
                         }}
                         classNames={{
-                          wrapper: "group-data-[selected=true]:bg-emerald-500",
+                          wrapper: "group-data-[selected=true]:bg-primary-500",
                         }}
                       />
                     </div>
 
                     <Divider className="bg-default-200/50" />
 
-                    {/* Discord RPC */}
+                    {/* Theme Color */}
+                    <div className="flex flex-col gap-3">
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <p className="font-medium">
+                            {t("settings.appearance.theme_color")}
+                          </p>
+                          <p className="text-tiny text-default-500 dark:text-zinc-400">
+                            {t("settings.appearance.theme_color_desc")}
+                          </p>
+                        </div>
+                      </div>
+                      <div className="flex gap-3 flex-wrap">
+                        {Object.keys(THEMES).map((colorName) => (
+                          <div
+                            key={colorName}
+                            className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-transform hover:scale-110 ${
+                              themeColor === colorName
+                                ? "ring-2 ring-offset-2 ring-default-500"
+                                : ""
+                            }`}
+                            style={{ backgroundColor: THEMES[colorName][500] }}
+                            onClick={() => {
+                              setThemeColor(colorName);
+                              localStorage.setItem("app.themeColor", colorName);
+                              window.dispatchEvent(
+                                new CustomEvent("app-theme-changed"),
+                              );
+                            }}
+                          >
+                            {themeColor === colorName && (
+                              <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
+                            )}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    <Divider className="bg-default-200/50" />
+
+                    {/* Background Image */}
                     <div className="flex items-center justify-between">
-                      <div className="flex flex-col gap-1">
+                      <div className="flex flex-col">
                         <p className="font-medium">
-                          {t("settings.discord_rpc.title")}
+                          {t("settings.appearance.background_image")}
                         </p>
                         <p className="text-tiny text-default-500 dark:text-zinc-400">
-                          {t("settings.discord_rpc.desc")}
+                          {t("settings.appearance.background_image_desc")}
                         </p>
                       </div>
-                      <Switch
-                        size="sm"
-                        isSelected={discordRpcEnabled}
-                        onValueChange={(isSelected) => {
-                          setDiscordRpcEnabled(isSelected);
-                          SetDisableDiscordRPC(!isSelected);
-                        }}
-                        classNames={{
-                          wrapper: "group-data-[selected=true]:bg-emerald-500",
-                        }}
-                      />
+                      <div className="flex items-center gap-2">
+                        {backgroundImage && (
+                          <Button
+                            size="sm"
+                            color="danger"
+                            variant="light"
+                            onPress={() => {
+                              setBackgroundImage("");
+                              localStorage.removeItem("app.backgroundImage");
+                              window.dispatchEvent(
+                                new CustomEvent("app-background-changed"),
+                              );
+                            }}
+                          >
+                            {t("settings.appearance.clear_image")}
+                          </Button>
+                        )}
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          onPress={async () => {
+                            try {
+                              const result = await Dialogs.OpenFile({
+                                Title: t("settings.appearance.select_image"),
+                                Filters: [
+                                  {
+                                    DisplayName: "Images",
+                                    Pattern:
+                                      "*.png;*.jpg;*.jpeg;*.webp;*.gif;*.bmp",
+                                  },
+                                ],
+                              });
+                              let path = "";
+                              if (Array.isArray(result) && result.length > 0) {
+                                path = result[0];
+                              } else if (typeof result === "string" && result) {
+                                path = result;
+                              }
+
+                              if (path) {
+                                setBackgroundImage(path);
+                                localStorage.setItem(
+                                  "app.backgroundImage",
+                                  path,
+                                );
+                                window.dispatchEvent(
+                                  new CustomEvent("app-background-changed"),
+                                );
+                              }
+                            } catch {}
+                          }}
+                        >
+                          {t("settings.appearance.select_image")}
+                        </Button>
+                      </div>
+                    </div>
+
+                    <Divider className="bg-default-200/50" />
+
+                    <div className="flex flex-col gap-6">
+                      {/* Background Blur */}
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <p className="font-medium">
+                              {t("settings.appearance.background_blur")}
+                            </p>
+                            <p className="text-tiny text-default-500 dark:text-zinc-400">
+                              {t("settings.appearance.background_blur_desc")}
+                            </p>
+                          </div>
+                        </div>
+                        <Slider
+                          size="sm"
+                          step={1}
+                          maxValue={50}
+                          minValue={0}
+                          aria-label="Background Blur"
+                          value={backgroundBlur}
+                          className="max-w-md w-full"
+                          classNames={{
+                            filler: "bg-primary-500",
+                            thumb: "bg-primary-500",
+                          }}
+                          onChange={(v) => {
+                            const val = Number(v);
+                            setBackgroundBlur(val);
+                            localStorage.setItem(
+                              "app.backgroundBlur",
+                              String(val),
+                            );
+                            window.dispatchEvent(
+                              new CustomEvent("app-blur-changed"),
+                            );
+                          }}
+                        />
+                      </div>
+
+                      {/* Background Brightness */}
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <p className="font-medium">
+                              {t("settings.appearance.background_brightness")}
+                            </p>
+                            <p className="text-tiny text-default-500 dark:text-zinc-400">
+                              {t(
+                                "settings.appearance.background_brightness_desc",
+                              )}
+                            </p>
+                          </div>
+                        </div>
+                        <Slider
+                          size="sm"
+                          step={1}
+                          maxValue={100}
+                          minValue={20}
+                          aria-label="Background Brightness"
+                          value={backgroundBrightness}
+                          className="max-w-md w-full"
+                          classNames={{
+                            filler: "bg-primary-500",
+                            thumb: "bg-primary-500",
+                          }}
+                          onChange={(v) => {
+                            const val = Number(v);
+                            setBackgroundBrightness(val);
+                            localStorage.setItem(
+                              "app.backgroundBrightness",
+                              String(val),
+                            );
+                            window.dispatchEvent(
+                              new CustomEvent("app-brightness-changed"),
+                            );
+                          }}
+                        />
+                      </div>
+
+                      {/* Background Opacity */}
+                      <div className="flex flex-col gap-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex flex-col">
+                            <p className="font-medium">
+                              {t("settings.appearance.background_opacity")}
+                            </p>
+                            <p className="text-tiny text-default-500 dark:text-zinc-400">
+                              {t("settings.appearance.background_opacity_desc")}
+                            </p>
+                          </div>
+                        </div>
+                        <Slider
+                          size="sm"
+                          step={1}
+                          maxValue={100}
+                          minValue={0}
+                          aria-label="Background Opacity"
+                          value={backgroundOpacity}
+                          className="max-w-md w-full"
+                          classNames={{
+                            filler: "bg-primary-500",
+                            thumb: "bg-primary-500",
+                          }}
+                          onChange={(v) => {
+                            const val = Number(v);
+                            setBackgroundOpacity(val);
+                            localStorage.setItem(
+                              "app.backgroundOpacity",
+                              String(val),
+                            );
+                            window.dispatchEvent(
+                              new CustomEvent("app-opacity-changed"),
+                            );
+                          }}
+                        />
+                      </div>
                     </div>
                   </div>
                 </div>
@@ -903,7 +1183,7 @@ export const SettingsPage: React.FC = () => {
                         SetEnableBetaUpdates(isSelected);
                       }}
                       classNames={{
-                        wrapper: "group-data-[selected=true]:bg-emerald-500",
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
                       }}
                     />
                   </div>
@@ -942,7 +1222,7 @@ export const SettingsPage: React.FC = () => {
                       >
                         <div className="rounded-xl bg-default-100/50 dark:bg-zinc-800/30 p-4 border border-default-200/50 dark:border-white/5">
                           <div className="flex items-center justify-between mb-3">
-                            <p className="text-small font-bold text-emerald-600 dark:text-emerald-500">
+                            <p className="text-small font-bold text-primary-600 dark:text-primary-500">
                               {t("settings.body.version.hasnew")} {newVersion}
                             </p>
                             <Button
@@ -950,7 +1230,7 @@ export const SettingsPage: React.FC = () => {
                               radius="full"
                               onPress={onUpdate}
                               isDisabled={updating}
-                              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                               startContent={<RxUpdate />}
                             >
                               {updating
@@ -998,7 +1278,7 @@ export const SettingsPage: React.FC = () => {
                                         href={href}
                                         target="_blank"
                                         rel="noreferrer"
-                                        className="text-emerald-500 underline"
+                                        className="text-primary-500 underline"
                                         onClick={(e) => {
                                           e.preventDefault();
                                           if (href) {
@@ -1034,7 +1314,7 @@ export const SettingsPage: React.FC = () => {
                                 isIndeterminate={true}
                                 classNames={{
                                   indicator:
-                                    "bg-emerald-600 hover:bg-emerald-500",
+                                    "bg-primary-600 hover:bg-primary-500",
                                 }}
                               />
                             </div>

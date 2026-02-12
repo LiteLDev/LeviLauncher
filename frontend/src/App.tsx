@@ -43,6 +43,7 @@ import { useTheme } from "next-themes";
 import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
 import { FaRocket } from "react-icons/fa";
 import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
+import { THEMES, hexToRgb } from "@/constants/themes";
 
 const GlobalShortcuts = ({
   tryNavigate,
@@ -116,6 +117,134 @@ function App() {
       return false;
     }
   });
+
+  const [backgroundImage, setBackgroundImage] = useState<string>(() => {
+    try {
+      return localStorage.getItem("app.backgroundImage") || "";
+    } catch {
+      return "";
+    }
+  });
+  const [bgData, setBgData] = useState<string>("");
+  const [backgroundBlur, setBackgroundBlur] = useState<number>(() => {
+    try {
+      return Number(localStorage.getItem("app.backgroundBlur") || "0");
+    } catch {
+      return 0;
+    }
+  });
+  const [backgroundBrightness, setBackgroundBrightness] = useState<number>(
+    () => {
+      try {
+        const item = localStorage.getItem("app.backgroundBrightness");
+        return item !== null ? Number(item) : 100;
+      } catch {
+        return 100;
+      }
+    },
+  );
+  const [backgroundOpacity, setBackgroundOpacity] = useState<number>(() => {
+    try {
+      const item = localStorage.getItem("app.backgroundOpacity");
+      return item !== null ? Number(item) : 100;
+    } catch {
+      return 100;
+    }
+  });
+
+  const [themeColor, setThemeColor] = useState<string>(() => {
+    try {
+      return localStorage.getItem("app.themeColor") || "emerald";
+    } catch {
+      return "emerald";
+    }
+  });
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const val = Number(localStorage.getItem("app.backgroundBlur") || "0");
+        setBackgroundBlur(val);
+      } catch {}
+    };
+    window.addEventListener("app-blur-changed", handler);
+    return () => window.removeEventListener("app-blur-changed", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const item = localStorage.getItem("app.backgroundOpacity");
+        setBackgroundOpacity(item !== null ? Number(item) : 100);
+      } catch {}
+    };
+    window.addEventListener("app-opacity-changed", handler);
+    return () => window.removeEventListener("app-opacity-changed", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const item = localStorage.getItem("app.backgroundBrightness");
+        setBackgroundBrightness(item !== null ? Number(item) : 100);
+      } catch {}
+    };
+    window.addEventListener("app-brightness-changed", handler);
+    return () => window.removeEventListener("app-brightness-changed", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const img = localStorage.getItem("app.backgroundImage") || "";
+        setBackgroundImage(img);
+      } catch {}
+    };
+    window.addEventListener("app-background-changed", handler);
+    return () => window.removeEventListener("app-background-changed", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const val = localStorage.getItem("app.themeColor") || "emerald";
+        setThemeColor(val);
+      } catch {}
+    };
+    window.addEventListener("app-theme-changed", handler);
+    return () => window.removeEventListener("app-theme-changed", handler);
+  }, []);
+
+  useEffect(() => {
+    const theme = THEMES[themeColor] || THEMES.emerald;
+    const root = document.documentElement;
+
+    Object.keys(theme).forEach((key) => {
+      const k = Number(key);
+      root.style.setProperty(`--theme-${k}`, hexToRgb(theme[k]));
+    });
+  }, [themeColor]);
+
+  useEffect(() => {
+    if (!backgroundImage) {
+      setBgData("");
+      return;
+    }
+    if (
+      backgroundImage.startsWith("data:") ||
+      backgroundImage.startsWith("http")
+    ) {
+      setBgData(backgroundImage);
+      return;
+    }
+    // Fetch from backend
+    (minecraft as any)
+      .GetImageBase64?.(backgroundImage)
+      .then((res: string) => {
+        if (res) setBgData(res);
+      })
+      .catch(() => {});
+  }, [backgroundImage]);
 
   useEffect(() => {
     MotionGlobalConfig.skipAnimations = disableAnimations;
@@ -476,6 +605,7 @@ function App() {
                     {
                       "--content-pt":
                         layoutMode === "sidebar" ? "4.5rem" : "5rem",
+                      ...(bgData ? { backgroundColor: "transparent" } : {}),
                     } as React.CSSProperties
                   }
                   className={`w-full min-h-dvh flex ${
@@ -484,6 +614,20 @@ function App() {
                     updateOpen ? "overflow-y-hidden" : ""
                   }`}
                 >
+                  {bgData && (
+                    <div
+                      className="fixed inset-0 z-0"
+                      style={{
+                        backgroundImage: `url("${bgData}")`,
+                        backgroundSize: "cover",
+                        backgroundPosition: "center",
+                        backgroundRepeat: "no-repeat",
+                        filter: `blur(${backgroundBlur}px) brightness(${backgroundBrightness}%)`,
+                        opacity: backgroundOpacity / 100,
+                        transform: backgroundBlur > 0 ? "scale(1.1)" : "none",
+                      }}
+                    />
+                  )}
                   {layoutMode === "navbar" ? (
                     <>
                       <GlobalNavbar

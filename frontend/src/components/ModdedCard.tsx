@@ -16,6 +16,8 @@ import { FaPuzzlePiece, FaArrowRight } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
 
 export const ModCard = (args: {
   localVersionMap: Map<string, any>;
@@ -52,7 +54,7 @@ export const ModCard = (args: {
   }, [args.currentVersion, args.localVersionMap]);
 
   return (
-    <Card className="h-full border-none shadow-md bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group">
+    <Card className={cn("h-full transition-all group", LAYOUT.GLASS_CARD.BASE)}>
       <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">

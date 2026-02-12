@@ -81,7 +81,7 @@ export default function UpdatingPage() {
               title={t("updating.title")}
               description={t("updating.body")}
               startContent={
-                <div className="p-2 rounded-xl bg-emerald-500/10 text-emerald-600 dark:text-emerald-500">
+                <div className="p-2 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-500">
                   <FaRocket className="w-6 h-6" />
                 </div>
               }
@@ -117,7 +117,7 @@ export default function UpdatingPage() {
                     )}
                     classNames={{
                       indicator:
-                        "bg-gradient-to-r from-emerald-500 to-teal-500",
+                        "bg-gradient-to-r from-primary-500 to-teal-500",
                     }}
                   />
                 ) : (
@@ -130,7 +130,7 @@ export default function UpdatingPage() {
                     radius="sm"
                     classNames={{
                       indicator:
-                        "bg-gradient-to-r from-emerald-500 to-teal-500",
+                        "bg-gradient-to-r from-primary-500 to-teal-500",
                     }}
                   />
                 )}
@@ -160,7 +160,7 @@ export default function UpdatingPage() {
                     radius="sm"
                     classNames={{
                       indicator:
-                        "bg-gradient-to-r from-emerald-500 to-teal-500",
+                        "bg-gradient-to-r from-primary-500 to-teal-500",
                     }}
                   />
                 ) : (
@@ -173,7 +173,7 @@ export default function UpdatingPage() {
                     value={status === "installed" ? 100 : 0}
                     classNames={{
                       indicator:
-                        "bg-gradient-to-r from-emerald-500 to-teal-500",
+                        "bg-gradient-to-r from-primary-500 to-teal-500",
                     }}
                   />
                 )}

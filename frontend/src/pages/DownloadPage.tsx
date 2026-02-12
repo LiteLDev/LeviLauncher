@@ -715,7 +715,7 @@ export const DownloadPage: React.FC = () => {
                       color={isDownloading ? "success" : "default"}
                       className={`transition-all ${
                         isDownloading
-                          ? "bg-emerald-500 text-white"
+                          ? "bg-primary-500 text-white"
                           : "bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 hover:bg-default-200 dark:hover:bg-zinc-700"
                       }`}
                       onPress={() => navigate("/tasks")}
@@ -872,7 +872,7 @@ export const DownloadPage: React.FC = () => {
                           variants={rowVariants}
                         >
                           {isLLSupported(item.short) ? (
-                            <div className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 bg-emerald-100/50 dark:bg-emerald-900/20 px-2 py-1 rounded-lg w-fit">
+                            <div className="flex items-center gap-1.5 text-primary-600 dark:text-primary-400 bg-primary-100/50 dark:bg-primary-900/20 px-2 py-1 rounded-lg w-fit">
                               <span className="text-small">LeviLamina</span>
                             </div>
                           ) : (
@@ -1023,7 +1023,7 @@ export const DownloadPage: React.FC = () => {
                   variant="light"
                   classNames={{
                     cursor:
-                      "bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20",
+                      "bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20",
                   }}
                 />
               </div>
@@ -1038,9 +1038,9 @@ export const DownloadPage: React.FC = () => {
           scrollBehavior="inside"
           type="primary"
           title={t("downloadpage.mirror.title")}
-          titleClass="text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 dark:from-emerald-400 dark:to-teal-400"
-          icon={<FaCloudDownloadAlt size={24} className="text-emerald-500" />}
-          iconBgClass="bg-emerald-500/10 border-emerald-500/20"
+          titleClass="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-teal-600 dark:from-primary-400 dark:to-teal-400"
+          icon={<FaCloudDownloadAlt size={24} className="text-primary-500" />}
+          iconBgClass="bg-primary-500/10 border-primary-500/20"
           hideScrollbar={true}
           showConfirmButton={false}
           showCancelButton={false}
@@ -1067,7 +1067,7 @@ export const DownloadPage: React.FC = () => {
                 {t("downloadpage.mirror.retest")}
               </Button>
               <Button
-                className="font-bold text-white shadow-lg shadow-emerald-900/20 bg-emerald-600 hover:bg-emerald-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                className="font-bold text-white shadow-lg shadow-primary-900/20 bg-primary-600 hover:bg-primary-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
                 radius="full"
                 size="lg"
                 isDisabled={!selectedUrl}
@@ -1134,7 +1134,7 @@ export const DownloadPage: React.FC = () => {
               </div>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                 <div className="flex items-center gap-2 text-small font-bold text-default-700 dark:text-zinc-300 shrink-0">
-                  <div className="w-1 h-4 rounded-full bg-emerald-500"></div>
+                  <div className="w-1 h-4 rounded-full bg-primary-500"></div>
                   {t("downloadpage.mirror.target")}
                 </div>
                 {(() => {
@@ -1153,7 +1153,7 @@ export const DownloadPage: React.FC = () => {
                   return (
                     <div className="flex items-center gap-3 min-w-0 bg-white/50 dark:bg-black/20 rounded-xl px-3 py-1.5 border border-black/5 dark:border-white/5">
                       <div className="text-small truncate max-w-[400px] text-default-700 dark:text-zinc-300">
-                        <span className="font-semibold text-emerald-600 dark:text-emerald-500">
+                        <span className="font-semibold text-primary-600 dark:text-primary-500">
                           {domain}
                         </span>
                         <span className="mx-1.5 opacity-30">|</span>
@@ -1200,7 +1200,7 @@ export const DownloadPage: React.FC = () => {
                     <div
                       className={`group relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl border-2 p-4 transition-all cursor-pointer ${
                         selectedUrl === bestMirror.url
-                          ? "border-emerald-500 bg-emerald-500/5 shadow-xl shadow-emerald-500/10"
+                          ? "border-primary-500 bg-primary-500/5 shadow-xl shadow-primary-500/10"
                           : "border-transparent bg-default-50 dark:bg-zinc-800/50 hover:bg-default-100 dark:hover:bg-zinc-800"
                       }`}
                       onClick={() => setSelectedUrl(bestMirror.url)}
@@ -1209,7 +1209,7 @@ export const DownloadPage: React.FC = () => {
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                             selectedUrl === bestMirror.url
-                              ? "bg-emerald-500 text-white"
+                              ? "bg-primary-500 text-white"
                               : "bg-default-200 dark:bg-zinc-700 text-default-500 dark:text-zinc-400"
                           }`}
                         >
@@ -1230,7 +1230,7 @@ export const DownloadPage: React.FC = () => {
                             延迟
                           </span>
                           <span
-                            className={`text-medium font-bold ${bestMirror.ok ? "text-emerald-500" : "text-danger-500"}`}
+                            className={`text-medium font-bold ${bestMirror.ok ? "text-primary-500" : "text-danger-500"}`}
                           >
                             {typeof bestMirror.latencyMs === "number"
                               ? `${Math.round(bestMirror.latencyMs)}ms`
@@ -1240,9 +1240,9 @@ export const DownloadPage: React.FC = () => {
                         {selectedUrl === bestMirror.url && (
                           <motion.div
                             layoutId="selected-check"
-                            className="text-emerald-500"
+                            className="text-primary-500"
                           >
-                            <div className="w-6 h-6 rounded-full bg-emerald-500 flex items-center justify-center">
+                            <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center">
                               <svg
                                 className="w-3.5 h-3.5 text-white"
                                 fill="none"
@@ -1279,7 +1279,7 @@ export const DownloadPage: React.FC = () => {
                         key={`mirror-${i}`}
                         className={`relative flex items-center justify-between gap-3 rounded-xl border p-2.5 transition-all cursor-pointer ${
                           selectedUrl === m.url
-                            ? "border-emerald-500/50 bg-emerald-500/5"
+                            ? "border-primary-500/50 bg-primary-500/5"
                             : "border-default-200/50 dark:border-zinc-600 bg-white/50 dark:bg-zinc-700/30 hover:bg-default-100 dark:hover:bg-zinc-700 hover:border-default-300"
                         }`}
                         onClick={() => setSelectedUrl(m.url)}
@@ -1299,7 +1299,7 @@ export const DownloadPage: React.FC = () => {
                             className={`text-xs font-bold ${
                               typeof m.latencyMs === "number"
                                 ? m.latencyMs < 100
-                                  ? "text-emerald-500"
+                                  ? "text-primary-500"
                                   : m.latencyMs < 300
                                     ? "text-warning-500"
                                     : "text-danger-500"
@@ -1314,7 +1314,7 @@ export const DownloadPage: React.FC = () => {
                           </span>
                         </div>
                         {selectedUrl === m.url && (
-                          <div className="absolute inset-0 border-2 border-emerald-500 rounded-xl pointer-events-none" />
+                          <div className="absolute inset-0 border-2 border-primary-500 rounded-xl pointer-events-none" />
                         )}
                       </div>
                     ))}
@@ -1455,7 +1455,7 @@ export const DownloadPage: React.FC = () => {
                 showValueLabel={!!extractInfo?.totalBytes}
                 formatOptions={{ style: "percent" }}
                 classNames={{
-                  indicator: "bg-gradient-to-r from-emerald-500 to-teal-500",
+                  indicator: "bg-gradient-to-r from-primary-500 to-teal-500",
                   track: "bg-default-100",
                 }}
                 className="flex-1"
@@ -1534,7 +1534,7 @@ export const DownloadPage: React.FC = () => {
                 pointerEvents: "none",
               }}
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-teal-600 text-white flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-teal-600 text-white flex items-center justify-center">
                 <FaCloudDownloadAlt size={14} />
               </div>
             </motion.div>

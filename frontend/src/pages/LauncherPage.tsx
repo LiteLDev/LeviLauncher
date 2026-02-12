@@ -895,7 +895,7 @@ export const LauncherPage = (args: any) => {
                 <div className="flex flex-col gap-1 min-w-0">
                   <div className="flex items-center gap-3">
                     <motion.h1
-                      className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-emerald-600 to-teal-600 dark:bg-none dark:text-emerald-500 truncate pb-2"
+                      className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-teal-600 dark:bg-none dark:text-primary-500 truncate pb-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -918,9 +918,9 @@ export const LauncherPage = (args: any) => {
                           variant="flat"
                           color="success"
                           classNames={{
-                            base: "bg-emerald-500/10 border border-emerald-500/20 hidden sm:flex",
+                            base: "bg-primary-500/10 border border-primary-500/20 hidden sm:flex",
                             content:
-                              "font-semibold text-emerald-600 dark:text-emerald-500",
+                              "font-semibold text-primary-600 dark:text-primary-500",
                           }}
                         >
                           {t("launcherpage.registered_tip")}
@@ -1077,9 +1077,9 @@ export const LauncherPage = (args: any) => {
                                   variant="flat"
                                   color="success"
                                   classNames={{
-                                    base: "bg-emerald-500/10 border border-emerald-500/20 h-5 px-1",
+                                    base: "bg-primary-500/10 border border-primary-500/20 h-5 px-1",
                                     content:
-                                      "text-emerald-600 dark:text-emerald-500 font-bold text-[10px]",
+                                      "text-primary-600 dark:text-primary-500 font-bold text-[10px]",
                                   }}
                                 >
                                   {t("launcherpage.registered_tip")}
@@ -1154,7 +1154,7 @@ export const LauncherPage = (args: any) => {
                   >
                     <Button
                       size="lg"
-                      className="h-14 px-8 text-lg font-bold text-white shadow-emerald-900/20 shadow-lg bg-emerald-600 hover:bg-emerald-500 rounded-2xl w-full sm:w-auto"
+                      className="h-14 px-8 text-lg font-bold text-white shadow-primary-900/20 shadow-lg bg-primary-600 hover:bg-primary-500 rounded-2xl w-full sm:w-auto"
                       startContent={<FaRocket className="mb-0.5" />}
                       onPress={doLaunch}
                       isLoading={mcLaunchLoadingDisclosure.isOpen}
@@ -1384,7 +1384,7 @@ export const LauncherPage = (args: any) => {
                     color="success"
                     size="md"
                     classNames={{
-                      indicator: "bg-emerald-600 hover:bg-emerald-500",
+                      indicator: "bg-primary-600 hover:bg-primary-500",
                     }}
                   />
                 </div>
@@ -1472,7 +1472,7 @@ export const LauncherPage = (args: any) => {
                     color="success"
                     size="md"
                     classNames={{
-                      indicator: "bg-emerald-600 hover:bg-emerald-500",
+                      indicator: "bg-primary-600 hover:bg-primary-500",
                     }}
                   />
                 </div>
@@ -1556,7 +1556,7 @@ export const LauncherPage = (args: any) => {
               <Button
                 color="primary"
                 radius="full"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                 onPress={() => {
                   setPendingInstallCheck("gs");
                   Browser.OpenURL(
@@ -1611,7 +1611,7 @@ export const LauncherPage = (args: any) => {
               <Button
                 color="primary"
                 radius="full"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+                className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                 onPress={() => {
                   try {
                     if (pendingInstallCheck === "gi") {
@@ -1688,7 +1688,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={mcLaunchLoadingDisclosure.onClose}
             >
               {t("common.close")}
@@ -1701,7 +1701,7 @@ export const LauncherPage = (args: any) => {
                 size="lg"
                 color="success"
                 classNames={{
-                  circle1: "border-b-emerald-500",
+                  circle1: "border-b-primary-500",
                   circle2: "border-b-teal-500",
                 }}
               />
@@ -1733,7 +1733,7 @@ export const LauncherPage = (args: any) => {
               size="sm"
               isIndeterminate
               aria-label="Loading"
-              classNames={{ indicator: "bg-emerald-600 hover:bg-emerald-500" }}
+              classNames={{ indicator: "bg-primary-600 hover:bg-primary-500" }}
             />
           </div>
         </UnifiedModal>
@@ -1748,7 +1748,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={shortcutSuccessDisclosure.onClose}
             >
               {t("common.close")}
@@ -1776,7 +1776,7 @@ export const LauncherPage = (args: any) => {
               size="sm"
               isIndeterminate
               aria-label="Registering"
-              classNames={{ indicator: "bg-emerald-600 hover:bg-emerald-500" }}
+              classNames={{ indicator: "bg-primary-600 hover:bg-primary-500" }}
             />
           </>
         </UnifiedModal>
@@ -1795,7 +1795,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={registerSuccessDisclosure.onClose}
             >
               {t("common.close")}
@@ -1817,7 +1817,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-emerald-600 hover:bg-emerald-500 text-white font-bold shadow-lg shadow-emerald-900/20"
+              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={registerFailedDisclosure.onClose}
             >
               {t("common.close")}

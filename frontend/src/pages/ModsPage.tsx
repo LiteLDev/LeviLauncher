@@ -741,7 +741,7 @@ export const ModsPage: React.FC = () => {
                 <Button
                   color="primary"
                   variant="shadow"
-                  className="bg-emerald-600 hover:bg-emerald-500 text-white shadow-lg shadow-emerald-900/20"
+                  className="bg-primary-600 hover:bg-primary-500 text-white shadow-lg shadow-primary-900/20"
                   startContent={<FiUploadCloud />}
                   onPress={async () => {
                     try {
@@ -816,7 +816,7 @@ export const ModsPage: React.FC = () => {
           <div className="w-10 flex justify-center">
             <Checkbox
               size="sm"
-              classNames={{ wrapper: "after:bg-emerald-500" }}
+              classNames={{ wrapper: "after:bg-primary-500" }}
               isSelected={
                 sortedItems.length > 0 &&
                 selectedKeys.size === sortedItems.length
@@ -905,7 +905,7 @@ export const ModsPage: React.FC = () => {
                   key={`${m.name}-${m.version}-${idx}`}
                   className={`group flex flex-row items-center p-3 rounded-2xl bg-white/60 dark:bg-zinc-800/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 border transition-all gap-4 ${
                     selectedKeys.has(m.name)
-                      ? "border-emerald-500/50 dark:border-emerald-500/30 bg-emerald-50/50 dark:bg-emerald-900/10"
+                      ? "border-primary-500/50 dark:border-primary-500/30 bg-primary-50/50 dark:bg-primary-900/10"
                       : "border-white/40 dark:border-white/5"
                   }`}
                 >

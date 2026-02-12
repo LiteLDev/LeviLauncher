@@ -683,7 +683,7 @@ export default function ContentPage() {
                 <div className="flex items-center gap-2">
                   <Button
                     radius="full"
-                    className="bg-emerald-600 text-white font-medium shadow-sm"
+                    className="bg-primary-600 text-white font-medium shadow-sm"
                     startContent={<FiUploadCloud />}
                     onPress={async () => {
                       try {

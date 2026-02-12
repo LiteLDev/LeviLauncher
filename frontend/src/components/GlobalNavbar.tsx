@@ -24,6 +24,7 @@ import {
 import { IoArrowBack } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { LAYOUT } from "@/constants/layout";
 
 interface GlobalNavbarProps {
   isBeta: boolean;
@@ -126,7 +127,9 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
         exit={{ opacity: 0, y: -20 }}
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
-        <div className="pointer-events-auto w-full bg-white/80 dark:bg-zinc-900/40 backdrop-blur-2xl border border-white/40 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 rounded-2xl px-2 py-2 sm:px-4 flex items-center gap-4">
+        <div
+          className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} backdrop-blur-2xl border border-white/40 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 rounded-2xl px-2 py-2 sm:px-4 flex items-center gap-4`}
+        >
           <div className="flex items-center gap-3 shrink-0">
             <Button
               isIconOnly
@@ -143,7 +146,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
               <LeviIcon width={28} height={28} />
             </div>
             <div className="hidden sm:flex flex-col leading-none gap-0.5">
-              <p className="font-bold text-[16px] tracking-tight bg-gradient-to-r from-emerald-600 to-teal-600 bg-clip-text text-transparent">
+              <p className="font-bold text-[16px] tracking-tight bg-gradient-to-r from-primary-600 to-teal-600 bg-clip-text text-transparent">
                 LeviLauncher
               </p>
               {isBeta && (

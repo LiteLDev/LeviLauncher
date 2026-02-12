@@ -641,7 +641,7 @@ export default function WorldLevelDatEditorPage() {
                       onPress={saveAll}
                       isLoading={saving}
                       isDisabled={!hasBackend || loading}
-                      className="bg-linear-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-900/20"
+                      className="bg-linear-to-r from-primary-500 to-teal-500 text-white shadow-lg shadow-primary-900/20"
                     >
                       <FaSave className="w-4 h-4" />
                     </Button>
@@ -678,7 +678,7 @@ export default function WorldLevelDatEditorPage() {
                   className="p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 border border-default-200 dark:border-default-100/10 backdrop-blur-md shadow-sm"
                 >
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-1 h-6 rounded-full bg-linear-to-b from-emerald-500 to-teal-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+                    <div className="w-1 h-6 rounded-full bg-linear-to-b from-primary-500 to-teal-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
                     <h3 className="text-lg font-bold text-default-700 dark:text-zinc-200">
                       {t("contentpage.basic_info")}
                     </h3>
@@ -715,7 +715,7 @@ export default function WorldLevelDatEditorPage() {
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-1 h-6 rounded-full bg-linear-to-b from-emerald-500 to-teal-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+                      <div className="w-1 h-6 rounded-full bg-linear-to-b from-primary-500 to-teal-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
                       <h3 className="text-lg font-bold text-default-700 dark:text-zinc-200">
                         {t("contentpage.add_field")}
                       </h3>
@@ -831,7 +831,7 @@ export default function WorldLevelDatEditorPage() {
                             <Button
                               size="sm"
                               radius="lg"
-                              className="bg-linear-to-r from-emerald-500 to-teal-500 text-white shadow-lg shadow-emerald-900/20"
+                              className="bg-linear-to-r from-primary-500 to-teal-500 text-white shadow-lg shadow-primary-900/20"
                               onPress={() => {
                                 const nm = String(
                                   newUnifiedField.name || "",

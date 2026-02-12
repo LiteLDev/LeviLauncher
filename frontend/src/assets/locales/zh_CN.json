@@ -299,6 +299,7 @@
     },
     "tabs": {
       "general": "基础设置",
+      "personalization": "个性化",
       "components": "第三方组件",
       "others": "其他设置",
       "updates": "软件更新",
@@ -402,8 +403,22 @@
       }
     },
     "appearance": {
+      "theme_color": "主题色",
+      "theme_color_desc": "选择应用程序的主要强调色",
       "disable_animations": "禁用动画",
-      "disable_animations_desc": "禁用界面过渡动画以提高性能或减少动态效果"
+      "disable_animations_desc": "禁用界面过渡动画以提高性能或减少动态效果",
+      "background_image": "背景图片",
+      "background_image_desc": "设置自定义背景图片",
+      "select_image": "选择图片",
+      "clear_image": "清除图片",
+      "background_blur": "背景模糊度",
+      "background_blur_desc": "调整背景图片的模糊程度",
+      "background_brightness": "背景亮度",
+      "background_brightness_desc": "调整背景图片的亮度",
+      "background_opacity": "背景不透明度",
+      "background_opacity_desc": "调整背景图片的不透明度",
+      "disable_ui_blur": "禁用界面模糊",
+      "disable_ui_blur_desc": "禁用界面组件的毛玻璃模糊效果，使背景更清晰"
     },
     "process": {
       "title": "进程管理",

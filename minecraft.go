@@ -5,6 +5,7 @@ import (
 	"encoding/base64"
 	"encoding/json"
 	"log"
+	"net/http"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -268,6 +269,20 @@ func (a *Minecraft) SaveVersionLogoFromPath(name string, filePath string) string
 
 func (a *Minecraft) GetVersionLogoDataUrl(name string) string {
 	return mcservice.GetVersionLogoDataUrl(name)
+}
+
+func (a *Minecraft) GetImageBase64(path string) string {
+	p := strings.TrimSpace(path)
+	if p == "" {
+		return ""
+	}
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return ""
+	}
+	mime := http.DetectContentType(b)
+	enc := base64.StdEncoding.EncodeToString(b)
+	return "data:" + mime + ";base64," + enc
 }
 
 func (a *Minecraft) RemoveVersionLogo(name string) string { return mcservice.RemoveVersionLogo(name) }

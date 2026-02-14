@@ -395,7 +395,7 @@
     "appearance": {
       "global_config": "全域配置",
       "mode_config": "模式特定配置",
-      "edit_mode_desc": "個性化設置（圖片、顏色、透明度等）將按日間/夜間模式獨立保存。切換上方標籤頁以配置不同模式。",
+      "edit_mode_desc": "個性化設置（顏色、透明度等）將按日間/夜間模式獨立保存。切換右側標籤頁以配置不同模式。",
       "theme_mode": "外觀模式",
       "theme_mode_desc": "選擇應用的主題模式",
       "theme_system": "跟隨系統",

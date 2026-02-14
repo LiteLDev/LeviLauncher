@@ -405,7 +405,7 @@
     "appearance": {
       "global_config": "全局配置",
       "mode_config": "模式特定配置",
-      "edit_mode_desc": "个性化设置（图片、颜色、透明度等）将按日间/夜间模式独立保存。切换上方标签页以配置不同模式。",
+      "edit_mode_desc": "个性化设置（颜色、透明度等）将按日间/夜间模式独立保存。切换右侧标签页以配置不同模式。",
       "theme_mode": "外观模式",
       "theme_mode_desc": "选择应用的主题模式",
       "theme_system": "跟随系统",

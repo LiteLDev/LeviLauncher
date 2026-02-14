@@ -413,7 +413,7 @@
     "appearance": {
       "global_config": "Global Configuration",
       "mode_config": "Mode-Specific Configuration",
-      "edit_mode_desc": "Personalization settings (image, colors, opacity, etc.) are saved independently for Light and Dark modes. Switch tabs above to configure each mode.",
+      "edit_mode_desc": "Personalization settings (colors, opacity, etc.) are saved independently for Light and Dark modes. Switch tabs on the right to configure each mode.",
       "theme_mode": "Theme Mode",
       "theme_mode_desc": "Choose the application theme",
       "theme_system": "Follow System",

@@ -963,9 +963,9 @@ export const SettingsPage: React.FC = () => {
                 <div className="flex flex-col gap-8">
                   {/* Global Settings Group */}
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-1 h-4 bg-primary-500 rounded-full" />
-                      <p className="text-sm font-bold text-default-600 uppercase tracking-wider">
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="w-1.5 h-5 bg-primary-500 rounded-full" />
+                      <p className="text-base font-bold text-default-700 uppercase tracking-wider">
                         {t("settings.appearance.global_config")}
                       </p>
                     </div>
@@ -1261,7 +1261,7 @@ export const SettingsPage: React.FC = () => {
                       </div>
 
                       {/* Animation */}
-                      <div className="py-4 flex items-center justify-between">
+                      <div className="py-4 border-b border-default-200/50 flex items-center justify-between">
                         <div className="flex flex-col gap-1">
                           <p className="font-medium text-default-700 dark:text-zinc-200">
                             {t("settings.appearance.disable_animations")}
@@ -1290,10 +1290,8 @@ export const SettingsPage: React.FC = () => {
                         />
                       </div>
 
-                      <Divider className="bg-default-200/50" />
-
-                      {/* Background Image Section (Global) */}
-                      <div className="flex flex-col gap-4 pt-4">
+                      {/* Background Image Card */}
+                      <div className="flex flex-col gap-4 p-5 mt-6 rounded-3xl bg-default-200/10 border border-default-200/50">
                         <div className="flex items-center gap-2">
                           <LuImage className="text-primary-500" size={18} />
                           <div className="flex flex-col gap-0.5">
@@ -1318,156 +1316,7 @@ export const SettingsPage: React.FC = () => {
                           </div>
                         </div>
 
-                        <div className="flex flex-col gap-6 mt-2">
-                          {/* Fit Mode and Play Order */}
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                            <div className="flex flex-col gap-2">
-                              <p className="text-tiny font-medium text-default-700">
-                                {t("settings.appearance.background_fit_mode")}
-                              </p>
-                              <Select
-                                size="sm"
-                                aria-label="Fit Mode"
-                                disallowEmptySelection
-                                classNames={COMPONENT_STYLES.select}
-                                selectedKeys={new Set([backgroundFitMode])}
-                                onSelectionChange={(keys) => {
-                                  const val = Array.from(keys)[0] as string;
-                                  if (!val) return; // Prevent empty selection
-                                  setBackgroundFitMode(val);
-                                  localStorage.setItem(
-                                    "app.backgroundFitMode",
-                                    val,
-                                  );
-                                  window.dispatchEvent(
-                                    new CustomEvent(
-                                      "app-background-settings-changed",
-                                    ),
-                                  );
-                                }}
-                              >
-                                <SelectItem
-                                  key="smart"
-                                  textValue={t(
-                                    "settings.appearance.background_fit_smart",
-                                  )}
-                                >
-                                  {t(
-                                    "settings.appearance.background_fit_smart",
-                                  )}
-                                </SelectItem>
-                                <SelectItem
-                                  key="center"
-                                  textValue={t(
-                                    "settings.appearance.background_fit_center",
-                                  )}
-                                >
-                                  {t(
-                                    "settings.appearance.background_fit_center",
-                                  )}
-                                </SelectItem>
-                                <SelectItem
-                                  key="fit"
-                                  textValue={t(
-                                    "settings.appearance.background_fit_fit",
-                                  )}
-                                >
-                                  {t("settings.appearance.background_fit_fit")}
-                                </SelectItem>
-                                <SelectItem
-                                  key="stretch"
-                                  textValue={t(
-                                    "settings.appearance.background_fit_stretch",
-                                  )}
-                                >
-                                  {t(
-                                    "settings.appearance.background_fit_stretch",
-                                  )}
-                                </SelectItem>
-                                <SelectItem
-                                  key="tile"
-                                  textValue={t(
-                                    "settings.appearance.background_fit_tile",
-                                  )}
-                                >
-                                  {t("settings.appearance.background_fit_tile")}
-                                </SelectItem>
-                                <SelectItem
-                                  key="top_left"
-                                  textValue={t(
-                                    "settings.appearance.background_fit_top_left",
-                                  )}
-                                >
-                                  {t(
-                                    "settings.appearance.background_fit_top_left",
-                                  )}
-                                </SelectItem>
-                                <SelectItem
-                                  key="top_right"
-                                  textValue={t(
-                                    "settings.appearance.background_fit_top_right",
-                                  )}
-                                >
-                                  {t(
-                                    "settings.appearance.background_fit_top_right",
-                                  )}
-                                </SelectItem>
-                              </Select>
-                            </div>
-
-                            <div className="flex flex-col gap-2">
-                              <p className="text-tiny font-medium text-default-700">
-                                {t("settings.appearance.background_play_order")}
-                              </p>
-                              <Select
-                                size="sm"
-                                aria-label="Play Order"
-                                disallowEmptySelection
-                                classNames={COMPONENT_STYLES.select}
-                                selectedKeys={new Set([backgroundPlayOrder])}
-                                onSelectionChange={(keys) => {
-                                  const val = Array.from(keys)[0] as
-                                    | "random"
-                                    | "sequential";
-                                  if (!val) return; // Prevent empty selection
-                                  setBackgroundPlayOrder(val);
-                                  localStorage.setItem(
-                                    "app.backgroundPlayOrder",
-                                    val,
-                                  );
-                                  window.dispatchEvent(
-                                    new CustomEvent(
-                                      "app-background-settings-changed",
-                                    ),
-                                  );
-                                }}
-                              >
-                                <SelectItem
-                                  key="random"
-                                  textValue={t(
-                                    "settings.appearance.background_play_random",
-                                  )}
-                                >
-                                  {t(
-                                    "settings.appearance.background_play_random",
-                                  )}
-                                </SelectItem>
-                                <SelectItem
-                                  key="sequential"
-                                  textValue={t(
-                                    "settings.appearance.background_play_sequential",
-                                  )}
-                                >
-                                  {t(
-                                    "settings.appearance.background_play_sequential",
-                                  )}
-                                </SelectItem>
-                              </Select>
-                            </div>
-                          </div>
-
-                          <Divider className="bg-default-200/50" />
-
+                        <div className="flex flex-col gap-6">
                           {/* Image Picker Row */}
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-3 overflow-hidden">
@@ -1481,7 +1330,7 @@ export const SettingsPage: React.FC = () => {
                                     }
                                   />
                                 ) : (
-                                  <LuPalette
+                                  <LuImage
                                     className="text-default-400"
                                     size={20}
                                   />
@@ -1581,26 +1430,215 @@ export const SettingsPage: React.FC = () => {
                             </div>
                           </div>
 
-                          <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                            {/* Blur */}
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center justify-between">
-                                <p className="text-tiny font-medium text-default-600">
-                                  {t("settings.appearance.background_blur")}
-                                </p>
-                                <div className="flex items-center">
-                                  <input
-                                    type="number"
-                                    className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield]"
-                                    value={backgroundBlur}
-                                    onChange={(e) => {
-                                      const val = Math.min(
-                                        50,
-                                        Math.max(
-                                          0,
-                                          parseInt(e.target.value) || 0,
+                          {backgroundImage && (
+                            <>
+                              <Divider className="bg-default-200/50" />
+
+                              {/* Fit Mode and Play Order */}
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                <div className="flex flex-col gap-2">
+                                  <p className="text-tiny font-medium text-default-700">
+                                    {t(
+                                      "settings.appearance.background_fit_mode",
+                                    )}
+                                  </p>
+                                  <Select
+                                    size="sm"
+                                    aria-label="Fit Mode"
+                                    disallowEmptySelection
+                                    classNames={COMPONENT_STYLES.select}
+                                    selectedKeys={new Set([backgroundFitMode])}
+                                    onSelectionChange={(keys) => {
+                                      const val = Array.from(keys)[0] as string;
+                                      if (!val) return; // Prevent empty selection
+                                      setBackgroundFitMode(val);
+                                      localStorage.setItem(
+                                        "app.backgroundFitMode",
+                                        val,
+                                      );
+                                      window.dispatchEvent(
+                                        new CustomEvent(
+                                          "app-background-settings-changed",
                                         ),
                                       );
+                                    }}
+                                  >
+                                    <SelectItem
+                                      key="smart"
+                                      textValue={t(
+                                        "settings.appearance.background_fit_smart",
+                                      )}
+                                    >
+                                      {t(
+                                        "settings.appearance.background_fit_smart",
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      key="center"
+                                      textValue={t(
+                                        "settings.appearance.background_fit_center",
+                                      )}
+                                    >
+                                      {t(
+                                        "settings.appearance.background_fit_center",
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      key="fit"
+                                      textValue={t(
+                                        "settings.appearance.background_fit_fit",
+                                      )}
+                                    >
+                                      {t(
+                                        "settings.appearance.background_fit_fit",
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      key="stretch"
+                                      textValue={t(
+                                        "settings.appearance.background_fit_stretch",
+                                      )}
+                                    >
+                                      {t(
+                                        "settings.appearance.background_fit_stretch",
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      key="tile"
+                                      textValue={t(
+                                        "settings.appearance.background_fit_tile",
+                                      )}
+                                    >
+                                      {t(
+                                        "settings.appearance.background_fit_tile",
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      key="top_left"
+                                      textValue={t(
+                                        "settings.appearance.background_fit_top_left",
+                                      )}
+                                    >
+                                      {t(
+                                        "settings.appearance.background_fit_top_left",
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      key="top_right"
+                                      textValue={t(
+                                        "settings.appearance.background_fit_top_right",
+                                      )}
+                                    >
+                                      {t(
+                                        "settings.appearance.background_fit_top_right",
+                                      )}
+                                    </SelectItem>
+                                  </Select>
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                  <p className="text-tiny font-medium text-default-700">
+                                    {t(
+                                      "settings.appearance.background_play_order",
+                                    )}
+                                  </p>
+                                  <Select
+                                    size="sm"
+                                    aria-label="Play Order"
+                                    disallowEmptySelection
+                                    classNames={COMPONENT_STYLES.select}
+                                    selectedKeys={
+                                      new Set([backgroundPlayOrder])
+                                    }
+                                    onSelectionChange={(keys) => {
+                                      const val = Array.from(keys)[0] as
+                                        | "random"
+                                        | "sequential";
+                                      if (!val) return; // Prevent empty selection
+                                      setBackgroundPlayOrder(val);
+                                      localStorage.setItem(
+                                        "app.backgroundPlayOrder",
+                                        val,
+                                      );
+                                      window.dispatchEvent(
+                                        new CustomEvent(
+                                          "app-background-settings-changed",
+                                        ),
+                                      );
+                                    }}
+                                  >
+                                    <SelectItem
+                                      key="random"
+                                      textValue={t(
+                                        "settings.appearance.background_play_random",
+                                      )}
+                                    >
+                                      {t(
+                                        "settings.appearance.background_play_random",
+                                      )}
+                                    </SelectItem>
+                                    <SelectItem
+                                      key="sequential"
+                                      textValue={t(
+                                        "settings.appearance.background_play_sequential",
+                                      )}
+                                    >
+                                      {t(
+                                        "settings.appearance.background_play_sequential",
+                                      )}
+                                    </SelectItem>
+                                  </Select>
+                                </div>
+                              </div>
+
+                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                {/* Blur */}
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-tiny font-medium text-default-600">
+                                      {t("settings.appearance.background_blur")}
+                                    </p>
+                                    <div className="flex items-center">
+                                      <input
+                                        type="number"
+                                        className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield]"
+                                        value={backgroundBlur}
+                                        onChange={(e) => {
+                                          const val = Math.min(
+                                            50,
+                                            Math.max(
+                                              0,
+                                              parseInt(e.target.value) || 0,
+                                            ),
+                                          );
+                                          setBackgroundBlur(val);
+                                          localStorage.setItem(
+                                            "app.backgroundBlur",
+                                            String(val),
+                                          );
+                                          window.dispatchEvent(
+                                            new CustomEvent("app-blur-changed"),
+                                          );
+                                        }}
+                                      />
+                                      <span className="text-tiny font-mono text-primary-500 ml-0.5">
+                                        px
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Slider
+                                    size="sm"
+                                    step={1}
+                                    maxValue={50}
+                                    minValue={0}
+                                    aria-label="Blur"
+                                    value={backgroundBlur}
+                                    classNames={{
+                                      filler: "bg-primary-500",
+                                      thumb: "bg-primary-500",
+                                    }}
+                                    onChange={(v) => {
+                                      const val = Number(v);
                                       setBackgroundBlur(val);
                                       localStorage.setItem(
                                         "app.backgroundBlur",
@@ -1611,57 +1649,59 @@ export const SettingsPage: React.FC = () => {
                                       );
                                     }}
                                   />
-                                  <span className="text-tiny font-mono text-primary-500 ml-0.5">
-                                    px
-                                  </span>
                                 </div>
-                              </div>
-                              <Slider
-                                size="sm"
-                                step={1}
-                                maxValue={50}
-                                minValue={0}
-                                aria-label="Blur"
-                                value={backgroundBlur}
-                                classNames={{
-                                  filler: "bg-primary-500",
-                                  thumb: "bg-primary-500",
-                                }}
-                                onChange={(v) => {
-                                  const val = Number(v);
-                                  setBackgroundBlur(val);
-                                  localStorage.setItem(
-                                    "app.backgroundBlur",
-                                    String(val),
-                                  );
-                                  window.dispatchEvent(
-                                    new CustomEvent("app-blur-changed"),
-                                  );
-                                }}
-                              />
-                            </div>
 
-                            {/* Brightness */}
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center justify-between">
-                                <p className="text-tiny font-medium text-default-600">
-                                  {t(
-                                    "settings.appearance.background_brightness",
-                                  )}
-                                </p>
-                                <div className="flex items-center">
-                                  <input
-                                    type="number"
-                                    className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield]"
+                                {/* Brightness */}
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-tiny font-medium text-default-600">
+                                      {t(
+                                        "settings.appearance.background_brightness",
+                                      )}
+                                    </p>
+                                    <div className="flex items-center">
+                                      <input
+                                        type="number"
+                                        className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield]"
+                                        value={backgroundBrightness}
+                                        onChange={(e) => {
+                                          const val = Math.min(
+                                            100,
+                                            Math.max(
+                                              20,
+                                              parseInt(e.target.value) || 0,
+                                            ),
+                                          );
+                                          setBackgroundBrightness(val);
+                                          localStorage.setItem(
+                                            "app.backgroundBrightness",
+                                            String(val),
+                                          );
+                                          window.dispatchEvent(
+                                            new CustomEvent(
+                                              "app-brightness-changed",
+                                            ),
+                                          );
+                                        }}
+                                      />
+                                      <span className="text-tiny font-mono text-primary-500 ml-0.5">
+                                        %
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Slider
+                                    size="sm"
+                                    step={1}
+                                    maxValue={100}
+                                    minValue={20}
+                                    aria-label="Brightness"
                                     value={backgroundBrightness}
-                                    onChange={(e) => {
-                                      const val = Math.min(
-                                        100,
-                                        Math.max(
-                                          20,
-                                          parseInt(e.target.value) || 0,
-                                        ),
-                                      );
+                                    classNames={{
+                                      filler: "bg-primary-500",
+                                      thumb: "bg-primary-500",
+                                    }}
+                                    onChange={(v) => {
+                                      const val = Number(v);
                                       setBackgroundBrightness(val);
                                       localStorage.setItem(
                                         "app.backgroundBrightness",
@@ -1674,55 +1714,59 @@ export const SettingsPage: React.FC = () => {
                                       );
                                     }}
                                   />
-                                  <span className="text-tiny font-mono text-primary-500 ml-0.5">
-                                    %
-                                  </span>
                                 </div>
-                              </div>
-                              <Slider
-                                size="sm"
-                                step={1}
-                                maxValue={100}
-                                minValue={20}
-                                aria-label="Brightness"
-                                value={backgroundBrightness}
-                                classNames={{
-                                  filler: "bg-primary-500",
-                                  thumb: "bg-primary-500",
-                                }}
-                                onChange={(v) => {
-                                  const val = Number(v);
-                                  setBackgroundBrightness(val);
-                                  localStorage.setItem(
-                                    "app.backgroundBrightness",
-                                    String(val),
-                                  );
-                                  window.dispatchEvent(
-                                    new CustomEvent("app-brightness-changed"),
-                                  );
-                                }}
-                              />
-                            </div>
 
-                            {/* Opacity */}
-                            <div className="flex flex-col gap-2">
-                              <div className="flex items-center justify-between">
-                                <p className="text-tiny font-medium text-default-600">
-                                  {t("settings.appearance.background_opacity")}
-                                </p>
-                                <div className="flex items-center">
-                                  <input
-                                    type="number"
-                                    className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield]"
+                                {/* Opacity */}
+                                <div className="flex flex-col gap-2">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-tiny font-medium text-default-600">
+                                      {t(
+                                        "settings.appearance.background_opacity",
+                                      )}
+                                    </p>
+                                    <div className="flex items-center">
+                                      <input
+                                        type="number"
+                                        className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield]"
+                                        value={backgroundOpacity}
+                                        onChange={(e) => {
+                                          const val = Math.min(
+                                            100,
+                                            Math.max(
+                                              0,
+                                              parseInt(e.target.value) || 0,
+                                            ),
+                                          );
+                                          setBackgroundOpacity(val);
+                                          localStorage.setItem(
+                                            "app.backgroundOpacity",
+                                            String(val),
+                                          );
+                                          window.dispatchEvent(
+                                            new CustomEvent(
+                                              "app-opacity-changed",
+                                            ),
+                                          );
+                                        }}
+                                      />
+                                      <span className="text-tiny font-mono text-primary-500 ml-0.5">
+                                        %
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Slider
+                                    size="sm"
+                                    step={1}
+                                    maxValue={100}
+                                    minValue={0}
+                                    aria-label="Opacity"
                                     value={backgroundOpacity}
-                                    onChange={(e) => {
-                                      const val = Math.min(
-                                        100,
-                                        Math.max(
-                                          0,
-                                          parseInt(e.target.value) || 0,
-                                        ),
-                                      );
+                                    classNames={{
+                                      filler: "bg-primary-500",
+                                      thumb: "bg-primary-500",
+                                    }}
+                                    onChange={(v) => {
+                                      const val = Number(v);
                                       setBackgroundOpacity(val);
                                       localStorage.setItem(
                                         "app.backgroundOpacity",
@@ -1733,36 +1777,10 @@ export const SettingsPage: React.FC = () => {
                                       );
                                     }}
                                   />
-                                  <span className="text-tiny font-mono text-primary-500 ml-0.5">
-                                    %
-                                  </span>
                                 </div>
                               </div>
-                              <Slider
-                                size="sm"
-                                step={1}
-                                maxValue={100}
-                                minValue={0}
-                                aria-label="Opacity"
-                                value={backgroundOpacity}
-                                classNames={{
-                                  filler: "bg-primary-500",
-                                  thumb: "bg-primary-500",
-                                }}
-                                onChange={(v) => {
-                                  const val = Number(v);
-                                  setBackgroundOpacity(val);
-                                  localStorage.setItem(
-                                    "app.backgroundOpacity",
-                                    String(val),
-                                  );
-                                  window.dispatchEvent(
-                                    new CustomEvent("app-opacity-changed"),
-                                  );
-                                }}
-                              />
-                            </div>
-                          </div>
+                            </>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -1770,9 +1788,9 @@ export const SettingsPage: React.FC = () => {
 
                   {/* Mode-Specific Settings Card */}
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2 mb-1">
-                      <div className="w-1 h-4 bg-primary-500 rounded-full" />
-                      <p className="text-sm font-bold text-default-600 uppercase tracking-wider">
+                    <div className="flex items-center gap-2.5 mb-2">
+                      <div className="w-1.5 h-5 bg-primary-500 rounded-full" />
+                      <p className="text-base font-bold text-default-700 uppercase tracking-wider">
                         {t("settings.appearance.mode_config")}
                       </p>
                     </div>

@@ -43,7 +43,7 @@ import { useTheme } from "next-themes";
 import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
 import { FaRocket } from "react-icons/fa";
 import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
-import { THEMES, hexToRgb } from "@/constants/themes";
+import { THEMES, hexToRgb, generateTheme } from "@/constants/themes";
 
 const GlobalShortcuts = ({
   tryNavigate,
@@ -152,11 +152,29 @@ function App() {
     }
   });
 
+  const [backgroundUseTheme, setBackgroundUseTheme] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("app.backgroundUseTheme") === "true";
+    } catch {
+      return false;
+    }
+  });
+
   const [themeColor, setThemeColor] = useState<string>(() => {
     try {
-      return localStorage.getItem("app.themeColor") || "emerald";
+      const saved = localStorage.getItem("app.themeColor");
+      if (saved === "rose") return "pink";
+      return saved || "emerald";
     } catch {
       return "emerald";
+    }
+  });
+
+  const [customThemeColor, setCustomThemeColor] = useState<string>(() => {
+    try {
+      return localStorage.getItem("app.customThemeColor") || "#10b981";
+    } catch {
+      return "#10b981";
     }
   });
 
@@ -185,6 +203,17 @@ function App() {
   useEffect(() => {
     const handler = () => {
       try {
+        const val = localStorage.getItem("app.backgroundUseTheme") === "true";
+        setBackgroundUseTheme(val);
+      } catch {}
+    };
+    window.addEventListener("app-bg-theme-changed", handler);
+    return () => window.removeEventListener("app-bg-theme-changed", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      try {
         const item = localStorage.getItem("app.backgroundBrightness");
         setBackgroundBrightness(item !== null ? Number(item) : 100);
       } catch {}
@@ -205,10 +234,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const handler = () => {
+    const handler = (e: any) => {
       try {
         const val = localStorage.getItem("app.themeColor") || "emerald";
         setThemeColor(val);
+        const custom =
+          e?.detail?.customThemeColor ||
+          localStorage.getItem("app.customThemeColor") ||
+          "#10b981";
+        setCustomThemeColor(custom);
       } catch {}
     };
     window.addEventListener("app-theme-changed", handler);
@@ -216,14 +250,19 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const theme = THEMES[themeColor] || THEMES.emerald;
+    let theme = THEMES[themeColor];
+    if (themeColor === "custom") {
+      theme = generateTheme(customThemeColor);
+    }
+    if (!theme) theme = THEMES.emerald;
+
     const root = document.documentElement;
 
     Object.keys(theme).forEach((key) => {
       const k = Number(key);
       root.style.setProperty(`--theme-${k}`, hexToRgb(theme[k]));
     });
-  }, [themeColor]);
+  }, [themeColor, customThemeColor]);
 
   useEffect(() => {
     if (!backgroundImage) {
@@ -605,7 +644,17 @@ function App() {
                     {
                       "--content-pt":
                         layoutMode === "sidebar" ? "4.5rem" : "5rem",
-                      ...(bgData ? { backgroundColor: "transparent" } : {}),
+                      ...(bgData
+                        ? {
+                            backgroundColor: backgroundUseTheme
+                              ? (themeColor === "custom"
+                                  ? generateTheme(customThemeColor)
+                                  : THEMES[themeColor])?.[
+                                  resolvedTheme === "dark" ? 950 : 50
+                                ] || "transparent"
+                              : "transparent",
+                          }
+                        : {}),
                     } as React.CSSProperties
                   }
                   className={`w-full min-h-dvh flex ${

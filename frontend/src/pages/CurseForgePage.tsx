@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import {
   GetCurseForgeGameVersions,
@@ -454,10 +455,7 @@ export const CurseForgePage: React.FC = () => {
                 startContent={<LuSearch />}
                 className="flex-1"
                 size="sm"
-                classNames={{
-                  inputWrapper:
-                    "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
-                }}
+                classNames={COMPONENT_STYLES.input}
               />
               <Button
                 color="primary"
@@ -481,10 +479,7 @@ export const CurseForgePage: React.FC = () => {
                   setCurrentPage(1);
                 }}
                 size="sm"
-                classNames={{
-                  trigger:
-                    "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
-                }}
+                classNames={COMPONENT_STYLES.select}
                 items={[
                   { key: "", label: t("curseforge.all_versions") },
                   ...gameVersions.map((v) => ({ key: v.name, label: v.name })),
@@ -506,10 +501,7 @@ export const CurseForgePage: React.FC = () => {
                   setCurrentPage(1);
                 }}
                 size="sm"
-                classNames={{
-                  trigger:
-                    "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
-                }}
+                classNames={COMPONENT_STYLES.select}
                 items={[
                   { name: t("curseforge.all_classes"), id: 0 },
                   ...classes,
@@ -534,10 +526,7 @@ export const CurseForgePage: React.FC = () => {
                   setCurrentPage(1);
                 }}
                 size="sm"
-                classNames={{
-                  trigger:
-                    "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
-                }}
+                classNames={COMPONENT_STYLES.select}
               >
                 {categories.map((cat) => (
                   <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>
@@ -554,10 +543,7 @@ export const CurseForgePage: React.FC = () => {
                   setCurrentPage(1);
                 }}
                 size="sm"
-                classNames={{
-                  trigger:
-                    "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
-                }}
+                classNames={COMPONENT_STYLES.select}
                 items={sortOptions}
               >
                 {(opt) => (

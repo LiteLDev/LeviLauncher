@@ -2,6 +2,7 @@ import React from "react";
 import { getPlayerGamertagMap } from "@/utils/content";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import { PageHeader } from "@/components/PageHeader";
 import {
@@ -16,12 +17,17 @@ import {
   Select,
   SelectItem,
   useDisclosure,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
 } from "@heroui/react";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { compareVersions } from "@/utils/version";
+import { FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
 import {
   readCurrentVersionName,
   saveCurrentVersionName,
@@ -47,6 +53,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
   const [sortBy, setSortBy] = React.useState<"version" | "name">("version");
   const [sortAsc, setSortAsc] = React.useState<boolean>(false);
   const [logoMap, setLogoMap] = React.useState<Map<string, string>>(new Map());
+  const [isAnimating, setIsAnimating] = React.useState(true);
   const navigate = useNavigate();
   const { t } = useTranslation();
   const hasBackend = minecraft !== undefined;
@@ -327,11 +334,15 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
 
   return (
     <>
-      <PageContainer className="relative" animate={false}>
+      <PageContainer
+        className={cn("relative", isAnimating && "overflow-hidden")}
+        animate={false}
+      >
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
+          onAnimationComplete={() => setIsAnimating(false)}
         >
           <Card className={cn("w-full", LAYOUT.GLASS_CARD.BASE)}>
             <CardHeader className="flex flex-col gap-6 p-6">
@@ -367,9 +378,12 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                   onSelectionChange={(k) => setActiveTab(k as any)}
                   variant="solid"
                   classNames={{
-                    tabList: "bg-default-100/50 rounded-xl px-1",
-                    cursor: "bg-primary-600 hover:bg-primary-500 shadow-md",
-                    tabContent: "group-data-[selected=true]:text-white",
+                    tabList:
+                      "bg-default-100/50 dark:bg-zinc-800/50 rounded-xl px-1",
+                    cursor:
+                      "bg-primary-600 dark:bg-primary-900 hover:bg-primary-500 shadow-md",
+                    tabContent:
+                      "group-data-[selected=true]:text-white font-medium",
                   }}
                 >
                   <Tab key="all" title={t("versions.tab.all")} />
@@ -383,50 +397,72 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                     placeholder={t("common.search") as string}
                     variant="bordered"
                     size="sm"
-                    classNames={{
-                      inputWrapper: "focus-within:border-primary-600!",
-                    }}
+                    classNames={COMPONENT_STYLES.input}
                   />
                 </div>
                 <div className="flex items-center gap-2">
-                  <div className="min-w-[200px]">
-                    <Select
-                      size="sm"
-                      classNames={{
-                        trigger: "data-[focus=true]:border-primary-600",
-                      }}
-                      label={t("versions.sort.label") as string}
-                      selectedKeys={new Set([sortBy])}
-                      onSelectionChange={(keys) => {
-                        const v = Array.from(keys as Set<string>)[0] as any;
-                        if (v === "version" || v === "name") setSortBy(v);
-                      }}
-                    >
-                      <SelectItem key="version">
-                        {sortAsc
-                          ? t("versions.sort.version_old_new")
-                          : t("versions.sort.version")}
-                      </SelectItem>
-                      <SelectItem key="name">
-                        {sortAsc
-                          ? t("versions.sort.name_za")
-                          : t("versions.sort.name")}
-                      </SelectItem>
-                    </Select>
+                  <div className="min-w-[140px]">
+                    <Dropdown classNames={COMPONENT_STYLES.dropdown}>
+                      <DropdownTrigger>
+                        <Button
+                          variant="flat"
+                          size="sm"
+                          startContent={
+                            sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
+                          }
+                          className={cn(
+                            COMPONENT_STYLES.dropdownTriggerButton,
+                            "w-full justify-between",
+                          )}
+                        >
+                          {sortBy === "name"
+                            ? sortAsc
+                              ? t("versions.sort.name")
+                              : t("versions.sort.name_za")
+                            : sortAsc
+                              ? t("versions.sort.version_old_new")
+                              : t("versions.sort.version")}
+                        </Button>
+                      </DropdownTrigger>
+                      <DropdownMenu
+                        selectionMode="single"
+                        selectedKeys={
+                          new Set([`${sortBy}-${sortAsc ? "asc" : "desc"}`])
+                        }
+                        onSelectionChange={(keys) => {
+                          const val = Array.from(keys)[0] as string;
+                          const [k, order] = val.split("-");
+                          setSortBy(k as "version" | "name");
+                          setSortAsc(order === "asc");
+                        }}
+                      >
+                        <DropdownItem
+                          key="version-desc"
+                          startContent={<FaSortAmountUp />}
+                        >
+                          {t("versions.sort.version")}
+                        </DropdownItem>
+                        <DropdownItem
+                          key="version-asc"
+                          startContent={<FaSortAmountDown />}
+                        >
+                          {t("versions.sort.version_old_new")}
+                        </DropdownItem>
+                        <DropdownItem
+                          key="name-asc"
+                          startContent={<FaSortAmountDown />}
+                        >
+                          {t("versions.sort.name")}
+                        </DropdownItem>
+                        <DropdownItem
+                          key="name-desc"
+                          startContent={<FaSortAmountUp />}
+                        >
+                          {t("versions.sort.name_za")}
+                        </DropdownItem>
+                      </DropdownMenu>
+                    </Dropdown>
                   </div>
-                  <Button
-                    size="sm"
-                    variant="flat"
-                    onPress={() => setSortAsc((v) => !v)}
-                    className="min-w-0 px-2 sm:px-3"
-                    aria-label={
-                      (sortAsc
-                        ? t("versions.sort.order_asc")
-                        : t("versions.sort.order_desc")) as string
-                    }
-                  >
-                    {sortAsc ? "↑" : "↓"}
-                  </Button>
                 </div>
                 <Chip variant="flat" color="default">
                   {flatItems.length}
@@ -442,6 +478,8 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
           variants={listVariants}
           initial="hidden"
           animate="show"
+          onLayoutAnimationStart={() => setIsAnimating(true)}
+          onLayoutAnimationComplete={() => setIsAnimating(false)}
           transition={{
             layout: { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] },
           }}

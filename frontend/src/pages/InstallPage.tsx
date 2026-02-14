@@ -28,6 +28,7 @@ import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 
 type ItemType = "Preview" | "Release";
@@ -711,7 +712,7 @@ export default function InstallPage() {
                         <div className="h-1.5 w-full rounded-full bg-default-200/50 dark:bg-zinc-700/50 overflow-hidden border border-default-100 dark:border-white/5 relative">
                           {extractInfo?.totalBytes ? (
                             <motion.div
-                              className="h-full bg-gradient-to-r from-primary-500 to-teal-500 rounded-full"
+                              className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full"
                               initial={{ width: 0 }}
                               animate={{
                                 width: `${Math.min(
@@ -809,7 +810,7 @@ export default function InstallPage() {
                           damping: 20,
                           delay: 0.1,
                         }}
-                        className="w-16 h-16 rounded-full bg-linear-to-br from-primary-400 to-teal-600 flex items-center justify-center shadow-lg shadow-primary-900/20"
+                        className="w-16 h-16 rounded-full bg-linear-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-900/20"
                       >
                         <svg
                           viewBox="0 0 24 24"
@@ -833,7 +834,7 @@ export default function InstallPage() {
                     </div>
 
                     <div className="flex flex-col items-center gap-1 text-center">
-                      <h2 className="text-2xl font-black bg-linear-to-br from-primary-600 to-teal-600 dark:from-primary-500 dark:to-teal-500 bg-clip-text text-transparent">
+                      <h2 className="text-2xl font-black bg-linear-to-br from-primary-600 to-primary-400 dark:from-primary-500 dark:to-primary-300 bg-clip-text text-transparent">
                         {t("downloadpage.install.success_title")}
                       </h2>
                       {installingVersion && (
@@ -906,6 +907,7 @@ export default function InstallPage() {
                     }
                     variant="bordered"
                     size="sm"
+                    classNames={COMPONENT_STYLES.input}
                   />
                 </CardBody>
               </Card>
@@ -1011,7 +1013,10 @@ export default function InstallPage() {
                         </div>
                       </div>
                       <div className="shrink-0 min-w-[240px]">
-                        <Dropdown closeOnSelect>
+                        <Dropdown
+                          closeOnSelect
+                          classNames={COMPONENT_STYLES.dropdown}
+                        >
                           <DropdownTrigger>
                             <Button
                               variant="flat"

@@ -35,7 +35,6 @@ import {
   FaList,
   FaWindows,
   FaFolderOpen,
-  FaCheckCircle,
   FaDesktop,
   FaCube,
   FaArrowRight,
@@ -54,6 +53,7 @@ import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
 let __didCheckGameInput = false;
 let __didCheckGamingServices = false;
@@ -895,7 +895,7 @@ export const LauncherPage = (args: any) => {
                 <div className="flex flex-col gap-1 min-w-0">
                   <div className="flex items-center gap-3">
                     <motion.h1
-                      className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-teal-600 dark:bg-none dark:text-primary-500 truncate pb-2"
+                      className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-400 dark:to-primary-600 truncate pb-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -914,7 +914,6 @@ export const LauncherPage = (args: any) => {
                         }}
                       >
                         <Chip
-                          startContent={<FaCheckCircle size={14} />}
                           variant="flat"
                           color="success"
                           classNames={{
@@ -939,11 +938,14 @@ export const LauncherPage = (args: any) => {
                 <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
                   {/* Version Selector */}
                   <div className="flex items-center gap-3 p-1.5 rounded-2xl">
-                    <Dropdown placement="bottom-end">
+                    <Dropdown
+                      placement="bottom-end"
+                      classNames={COMPONENT_STYLES.dropdown}
+                    >
                       <DropdownTrigger>
                         <Button
                           variant="light"
-                          className="h-12 px-3 bg-transparent data-[hover=true]:bg-default-200/50 dark:data-[hover=true]:bg-white/5"
+                          className="h-12 px-3 rounded-xl data-[hover=true]:bg-default-200/50 dark:data-[hover=true]:bg-white/5"
                         >
                           <div className="flex items-center gap-3 text-left">
                             <div className="w-8 h-8 rounded-lg bg-default-200/50 dark:bg-white/10 flex items-center justify-center overflow-hidden shadow-sm">
@@ -1004,10 +1006,7 @@ export const LauncherPage = (args: any) => {
                               startContent={
                                 <FaList className="text-default-400" />
                               }
-                              classNames={{
-                                inputWrapper:
-                                  "bg-default-100 dark:bg-default-50/20",
-                              }}
+                              classNames={COMPONENT_STYLES.input}
                             />
                             <Button
                               fullWidth
@@ -1091,7 +1090,7 @@ export const LauncherPage = (args: any) => {
                       </DropdownMenu>
                     </Dropdown>
 
-                    <Dropdown>
+                    <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                       <DropdownTrigger>
                         <Button
                           isIconOnly
@@ -1146,7 +1145,6 @@ export const LauncherPage = (args: any) => {
                       </DropdownMenu>
                     </Dropdown>
                   </div>
-
                   {/* Launch Button */}
                   <motion.div
                     whileHover={{ scale: 1.02 }}
@@ -1210,7 +1208,7 @@ export const LauncherPage = (args: any) => {
           >
             <Card
               className={cn(
-                "h-full transition-all hover:bg-white/80 dark:hover:bg-zinc-900/80 group",
+                "h-full transition-all group",
                 LAYOUT.GLASS_CARD.BASE,
               )}
             >
@@ -1356,7 +1354,7 @@ export const LauncherPage = (args: any) => {
           type="success"
           title={t("launcherpage.gameinput.installing.title")}
           hideCloseButton
-          icon={<FaDownload className="w-6 h-6 text-success-500" />}
+          icon={<FaDownload className="w-6 h-6 text-primary-500" />}
         >
           <>
             <p className="text-default-600 dark:text-zinc-300 font-medium">
@@ -1444,7 +1442,7 @@ export const LauncherPage = (args: any) => {
           type="success"
           title={t("launcherpage.vcruntime.installing.title")}
           hideCloseButton
-          icon={<FaDownload className="w-6 h-6 text-success-500" />}
+          icon={<FaDownload className="w-6 h-6 text-primary-500" />}
         >
           <>
             <p className="text-default-600 dark:text-zinc-300 font-medium">
@@ -1589,7 +1587,7 @@ export const LauncherPage = (args: any) => {
           }}
           type="success"
           title={t("launcherpage.install_confirm.title")}
-          icon={<FaDownload className="w-6 h-6 text-success-500" />}
+          icon={<FaDownload className="w-6 h-6 text-primary-500" />}
           footer={
             <>
               <Button
@@ -1670,7 +1668,7 @@ export const LauncherPage = (args: any) => {
           onOpenChange={vcRuntimeCompletingDisclosure.onOpenChange}
           type="success"
           title={t("launcherpage.vcruntime.completing.title")}
-          icon={<FaCogs className="w-6 h-6 text-success-500" />}
+          icon={<FaCogs className="w-6 h-6 text-primary-500" />}
         >
           <p className="text-default-600 dark:text-zinc-300 font-medium">
             {t("launcherpage.vcruntime.completing.body")}
@@ -1766,7 +1764,7 @@ export const LauncherPage = (args: any) => {
           onOpenChange={registerInstallingDisclosure.onOpenChange}
           type="success"
           title={t("launcherpage.register.installing.title")}
-          icon={<FaDownload className="w-6 h-6 text-success-500" />}
+          icon={<FaDownload className="w-6 h-6 text-primary-500" />}
         >
           <>
             <p className="text-default-600 dark:text-zinc-300 font-medium mb-4">

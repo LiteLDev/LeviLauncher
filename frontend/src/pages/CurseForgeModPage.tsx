@@ -67,6 +67,7 @@ import {
   LuGamepad2,
   LuUser,
 } from "react-icons/lu";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
 const formatNumber = (num: number | undefined) => {
   if (num === undefined) return "0";
@@ -798,7 +799,7 @@ const CurseForgeModPage: React.FC = () => {
                       tabList:
                         "gap-6 w-full relative rounded-none p-0 border-b border-default-200 mb-6",
                       cursor:
-                        "w-full bg-linear-to-r from-primary-500 to-teal-500 h-[3px]",
+                        "w-full bg-linear-to-r from-primary-500 to-primary-400 h-[3px]",
                       tab: "max-w-fit px-0 h-12 text-base font-medium text-default-500 dark:text-zinc-400",
                       tabContent:
                         "group-data-[selected=true]:text-primary-600 dark:group-data-[selected=true]:text-primary-500 font-bold",
@@ -833,6 +834,7 @@ const CurseForgeModPage: React.FC = () => {
                               onChange={(e) =>
                                 setSelectedGameVersion(e.target.value || "all")
                               }
+                              classNames={COMPONENT_STYLES.select}
                               items={[
                                 {
                                   key: "all",
@@ -1023,20 +1025,7 @@ const CurseForgeModPage: React.FC = () => {
             },
           },
         }}
-        classNames={{
-          base: "bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
-        }}
         type={installStep === "error" ? "error" : "primary"}
-        iconBgClass={
-          installStep === "error"
-            ? undefined
-            : "bg-primary-500/10 border-primary-500/20"
-        }
-        titleClass={
-          installStep === "error"
-            ? undefined
-            : "bg-gradient-to-r from-primary-600 to-teal-600 dark:from-primary-500 dark:to-teal-500 bg-clip-text text-transparent"
-        }
         icon={
           installStep === "downloading" ? (
             <LuDownload size={24} className="text-primary-500" />
@@ -1145,6 +1134,7 @@ const CurseForgeModPage: React.FC = () => {
               placeholder={t("curseforge.install.select_version_placeholder")}
               selectedKeys={selectedVersion ? [selectedVersion] : []}
               onChange={(e) => setSelectedVersion(e.target.value)}
+              classNames={COMPONENT_STYLES.select}
               items={availableVersions}
             >
               {(ver) => (
@@ -1196,6 +1186,7 @@ const CurseForgeModPage: React.FC = () => {
               placeholder={t("curseforge.install.select_player_placeholder")}
               selectedKeys={selectedPlayer ? [selectedPlayer] : []}
               onChange={(e) => setSelectedPlayer(e.target.value)}
+              classNames={COMPONENT_STYLES.select}
             >
               {availablePlayers.map((player) => (
                 <SelectItem key={player}>
@@ -1269,9 +1260,6 @@ const CurseForgeModPage: React.FC = () => {
               },
             },
           },
-        }}
-        classNames={{
-          base: "bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
         }}
         type="warning"
         title={t("mods.overwrite_modal_title")}

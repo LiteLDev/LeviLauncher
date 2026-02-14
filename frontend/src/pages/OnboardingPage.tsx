@@ -16,6 +16,7 @@ import {
 } from "@heroui/react";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader, SectionHeader } from "@/components/PageHeader";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   GetLanguageNames,
@@ -99,7 +100,7 @@ export default function OnboardingPage() {
         className="w-full max-w-2xl mx-auto flex flex-col justify-center py-6"
       >
         <div className="flex flex-row items-center justify-center gap-6 mb-6">
-          <div className="w-16 h-16 rounded-3xl bg-linear-to-br from-primary-500 to-teal-600 shadow-xl shadow-primary-500/20 flex items-center justify-center text-white shrink-0">
+          <div className="w-16 h-16 rounded-3xl bg-linear-to-br from-primary-500 to-primary-700 shadow-xl shadow-primary-500/20 flex items-center justify-center text-white shrink-0">
             <svg
               className="w-8 h-8"
               fill="none"
@@ -116,7 +117,7 @@ export default function OnboardingPage() {
             </svg>
           </div>
           <div className="flex flex-col items-start text-left">
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-teal-600 dark:from-primary-400 dark:to-teal-400 mb-1">
+            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-400 dark:to-primary-200 mb-1">
               {t("onboarding.title")}
             </h1>
             <p className="text-default-500 dark:text-zinc-400 text-base max-w-md">
@@ -148,10 +149,7 @@ export default function OnboardingPage() {
                   value={newBaseRoot}
                   onValueChange={setNewBaseRoot}
                   variant="bordered"
-                  classNames={{
-                    inputWrapper:
-                      "bg-default-50/50 dark:bg-black/20 border-default-200 dark:border-white/10 shadow-none",
-                  }}
+                  classNames={COMPONENT_STYLES.input}
                   description={
                     newBaseRoot && newBaseRoot !== baseRoot ? (
                       <span
@@ -276,7 +274,7 @@ export default function OnboardingPage() {
                   selectedLang
                 }
                 action={
-                  <Dropdown>
+                  <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                     <DropdownTrigger>
                       <Button
                         radius="full"

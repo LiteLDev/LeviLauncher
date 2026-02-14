@@ -417,6 +417,8 @@
       "background_brightness_desc": "调整背景图片的亮度",
       "background_opacity": "背景不透明度",
       "background_opacity_desc": "调整背景图片的不透明度",
+      "background_use_theme": "应用主题色",
+      "background_use_theme_desc": "将主题色应用于背景图片的底色，而不是使用默认的黑色或白色",
       "disable_ui_blur": "禁用界面模糊",
       "disable_ui_blur_desc": "禁用界面组件的毛玻璃模糊效果，使背景更清晰"
     },

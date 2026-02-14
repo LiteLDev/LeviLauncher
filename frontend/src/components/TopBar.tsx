@@ -109,7 +109,7 @@ export const TopBar: React.FC<TopBarProps> = ({
               <span
                 className={`${
                   pathnames.length === 0
-                    ? "font-bold text-lg bg-gradient-to-r from-primary-600 to-teal-600 bg-clip-text text-transparent"
+                    ? "font-bold text-lg bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent"
                     : "text-default-500 dark:text-zinc-400"
                 }`}
               >
@@ -120,7 +120,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 to="/"
                 className={`transition-colors hover:opacity-80 ${
                   pathnames.length === 0
-                    ? "font-bold text-lg bg-gradient-to-r from-primary-600 to-teal-600 bg-clip-text text-transparent"
+                    ? "font-bold text-lg bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent"
                     : "text-default-500 dark:text-zinc-400 hover:text-default-900 dark:hover:text-zinc-200"
                 }`}
               >

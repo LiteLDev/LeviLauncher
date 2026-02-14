@@ -30,7 +30,7 @@ import {
   FaCogs,
   FaList,
 } from "react-icons/fa";
-import { LuHardDrive } from "react-icons/lu";
+import { LuHardDrive, LuPalette } from "react-icons/lu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import {
@@ -68,6 +68,7 @@ import { normalizeLanguage } from "@/utils/i18nUtils";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { THEMES } from "@/constants/themes";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -160,11 +161,27 @@ export const SettingsPage: React.FC = () => {
     }
   });
 
+  const [backgroundUseTheme, setBackgroundUseTheme] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("app.backgroundUseTheme") === "true";
+    } catch {
+      return false;
+    }
+  });
+
   const [themeColor, setThemeColor] = useState<string>(() => {
     try {
       return localStorage.getItem("app.themeColor") || "emerald";
     } catch {
       return "emerald";
+    }
+  });
+
+  const [customThemeColor, setCustomThemeColor] = useState<string>(() => {
+    try {
+      return localStorage.getItem("app.customThemeColor") || "#10b981";
+    } catch {
+      return "#10b981";
     }
   });
 
@@ -488,6 +505,12 @@ export const SettingsPage: React.FC = () => {
                 onSelectionChange={(k) => setSelectedTab(k as string)}
                 classNames={{
                   base: "mt-4",
+                  tabList:
+                    "bg-default-100/50 dark:bg-zinc-800/50 rounded-xl px-1",
+                  cursor:
+                    "bg-primary-600 dark:bg-primary-900 hover:bg-primary-500 shadow-md",
+                  tabContent:
+                    "group-data-[selected=true]:text-white font-medium",
                 }}
               >
                 <Tab key="general" title={t("settings.tabs.general")} />
@@ -570,10 +593,7 @@ export const SettingsPage: React.FC = () => {
                         onValueChange={setNewBaseRoot}
                         radius="lg"
                         variant="bordered"
-                        classNames={{
-                          inputWrapper:
-                            "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-primary-500 focus-within:border-primary-500!",
-                        }}
+                        classNames={COMPONENT_STYLES.input}
                         endContent={
                           <Button
                             size="sm"
@@ -681,7 +701,7 @@ export const SettingsPage: React.FC = () => {
                         </div>
                       )}
                     </div>
-                    <Dropdown>
+                    <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                       <DropdownTrigger>
                         <Button radius="full" variant="bordered">
                           {t("settings.body.language.button")}
@@ -849,7 +869,74 @@ export const SettingsPage: React.FC = () => {
                             )}
                           </div>
                         ))}
+                        <div
+                          className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-transform hover:scale-110 relative overflow-hidden ${
+                            themeColor === "custom"
+                              ? "ring-2 ring-offset-2 ring-default-500"
+                              : ""
+                          }`}
+                          onClick={() => {
+                            setThemeColor("custom");
+                            localStorage.setItem("app.themeColor", "custom");
+                            window.dispatchEvent(
+                              new CustomEvent("app-theme-changed", {
+                                detail: { customThemeColor },
+                              }),
+                            );
+                          }}
+                        >
+                          <div className="absolute inset-0 bg-gradient-to-br from-red-500 via-green-500 to-blue-500 opacity-80" />
+                          <LuPalette className="text-white relative z-10 w-4 h-4 drop-shadow-md" />
+                          {themeColor === "custom" && (
+                            <div className="absolute inset-0 bg-black/20 z-0" />
+                          )}
+                          {themeColor === "custom" && (
+                            <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm z-20 absolute" />
+                          )}
+                        </div>
                       </div>
+                      {themeColor === "custom" && (
+                        <div className="flex items-center gap-3 mt-2 bg-default-100/50 p-3 rounded-xl border border-default-200/50">
+                          <p className="text-small font-medium">
+                            {t("settings.appearance.custom_color") ||
+                              "Custom Color"}
+                            :
+                          </p>
+                          <div className="relative flex items-center gap-2">
+                            <input
+                              type="color"
+                              value={customThemeColor}
+                              onInput={(e) => {
+                                const color = (e.target as HTMLInputElement)
+                                  .value;
+                                setCustomThemeColor(color);
+                                window.dispatchEvent(
+                                  new CustomEvent("app-theme-changed", {
+                                    detail: { customThemeColor: color },
+                                  }),
+                                );
+                              }}
+                              onChange={(e) => {
+                                const color = e.target.value;
+                                setCustomThemeColor(color);
+                                localStorage.setItem(
+                                  "app.customThemeColor",
+                                  color,
+                                );
+                                window.dispatchEvent(
+                                  new CustomEvent("app-theme-changed", {
+                                    detail: { customThemeColor: color },
+                                  }),
+                                );
+                              }}
+                              className="w-8 h-8 p-0 border-0 rounded-full overflow-hidden cursor-pointer bg-transparent"
+                            />
+                            <span className="text-small font-mono uppercase">
+                              {customThemeColor}
+                            </span>
+                          </div>
+                        </div>
+                      )}
                     </div>
 
                     <Divider className="bg-default-200/50" />
@@ -1036,6 +1123,36 @@ export const SettingsPage: React.FC = () => {
                             window.dispatchEvent(
                               new CustomEvent("app-opacity-changed"),
                             );
+                          }}
+                        />
+                      </div>
+
+                      {/* Background Use Theme */}
+                      <div className="flex items-center justify-between">
+                        <div className="flex flex-col">
+                          <p className="font-medium">
+                            {t("settings.appearance.background_use_theme")}
+                          </p>
+                          <p className="text-tiny text-default-500 dark:text-zinc-400">
+                            {t("settings.appearance.background_use_theme_desc")}
+                          </p>
+                        </div>
+                        <Switch
+                          size="sm"
+                          isSelected={backgroundUseTheme}
+                          onValueChange={(isSelected) => {
+                            setBackgroundUseTheme(isSelected);
+                            localStorage.setItem(
+                              "app.backgroundUseTheme",
+                              String(isSelected),
+                            );
+                            window.dispatchEvent(
+                              new CustomEvent("app-bg-theme-changed"),
+                            );
+                          }}
+                          classNames={{
+                            wrapper:
+                              "group-data-[selected=true]:bg-primary-500",
                           }}
                         />
                       </div>

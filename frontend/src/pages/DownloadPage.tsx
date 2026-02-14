@@ -50,6 +50,7 @@ import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft"
 import { useDownloads } from "@/utils/DownloadsContext";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 
 type ItemType = "Preview" | "Release";
@@ -568,8 +569,7 @@ export const DownloadPage: React.FC = () => {
                       base: "max-w-full sm:max-w-[20rem] h-10",
                       mainWrapper: "h-full",
                       input: "text-small",
-                      inputWrapper:
-                        "h-full font-normal text-default-500 dark:text-zinc-400 bg-default-400/20 dark:bg-zinc-500/20",
+                      ...COMPONENT_STYLES.input,
                     }}
                     placeholder={t("downloadpage.topcontent.input.placeholder")}
                     value={query}
@@ -584,7 +584,7 @@ export const DownloadPage: React.FC = () => {
                   <Button
                     radius="full"
                     variant="flat"
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
+                    className="bg-default-100/50 dark:bg-zinc-800/50 text-default-600 dark:text-zinc-200 font-medium hover:bg-default-200/50 dark:hover:bg-zinc-700/50 transition-colors"
                     startContent={
                       <FaSync
                         className={refreshing ? "animate-spin" : ""}
@@ -602,7 +602,7 @@ export const DownloadPage: React.FC = () => {
                   <Button
                     radius="full"
                     variant="flat"
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
+                    className="bg-default-100/50 dark:bg-zinc-800/50 text-default-600 dark:text-zinc-200 font-medium hover:bg-default-200/50 dark:hover:bg-zinc-700/50 transition-colors"
                     onPress={() =>
                       navigate("/install", {
                         state: {
@@ -615,12 +615,12 @@ export const DownloadPage: React.FC = () => {
                   >
                     {t("downloadpage.customappx.button")}
                   </Button>
-                  <Dropdown>
+                  <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                     <DropdownTrigger>
                       <Button
                         radius="full"
                         variant="flat"
-                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
+                        className="bg-default-100/50 dark:bg-zinc-800/50 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200/50 dark:hover:bg-zinc-700/50 transition-colors"
                       >
                         {t("downloadpage.topcontent.types")}
                       </Button>
@@ -645,12 +645,12 @@ export const DownloadPage: React.FC = () => {
                       </DropdownItem>
                     </DropdownMenu>
                   </Dropdown>
-                  <Dropdown>
+                  <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                     <DropdownTrigger>
                       <Button
                         radius="full"
                         variant="flat"
-                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
+                        className="bg-default-100/50 dark:bg-zinc-800/50 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200/50 dark:hover:bg-zinc-700/50 transition-colors"
                       >
                         {t("downloadpage.topcontent.status")}
                       </Button>
@@ -678,12 +678,12 @@ export const DownloadPage: React.FC = () => {
                       </DropdownItem>
                     </DropdownMenu>
                   </Dropdown>
-                  <Dropdown>
+                  <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                     <DropdownTrigger>
                       <Button
                         radius="full"
                         variant="flat"
-                        className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200 dark:hover:bg-zinc-700 transition-colors"
+                        className="bg-default-100/50 dark:bg-zinc-800/50 text-default-600 dark:text-zinc-200 font-medium shrink-0 hover:bg-default-200/50 dark:hover:bg-zinc-700/50 transition-colors"
                       >
                         {t("downloadpage.topcontent.loader")}
                       </Button>
@@ -716,7 +716,7 @@ export const DownloadPage: React.FC = () => {
                       className={`transition-all ${
                         isDownloading
                           ? "bg-primary-500 text-white"
-                          : "bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 hover:bg-default-200 dark:hover:bg-zinc-700"
+                          : "bg-default-100/50 dark:bg-zinc-800/50 text-default-600 dark:text-zinc-200 hover:bg-default-200/50 dark:hover:bg-zinc-700/50"
                       }`}
                       onPress={() => navigate("/tasks")}
                     >
@@ -915,7 +915,7 @@ export const DownloadPage: React.FC = () => {
                               >
                                 {t("downloadpage.mirror.install_button")}
                               </Button>
-                              <Dropdown>
+                              <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                                 <DropdownTrigger>
                                   <Button
                                     isIconOnly
@@ -1038,9 +1038,7 @@ export const DownloadPage: React.FC = () => {
           scrollBehavior="inside"
           type="primary"
           title={t("downloadpage.mirror.title")}
-          titleClass="text-transparent bg-clip-text bg-gradient-to-r from-primary-600 to-teal-600 dark:from-primary-400 dark:to-teal-400"
           icon={<FaCloudDownloadAlt size={24} className="text-primary-500" />}
-          iconBgClass="bg-primary-500/10 border-primary-500/20"
           hideScrollbar={true}
           showConfirmButton={false}
           showCancelButton={false}
@@ -1455,7 +1453,7 @@ export const DownloadPage: React.FC = () => {
                 showValueLabel={!!extractInfo?.totalBytes}
                 formatOptions={{ style: "percent" }}
                 classNames={{
-                  indicator: "bg-gradient-to-r from-primary-500 to-teal-500",
+                  indicator: "bg-gradient-to-r from-primary-500 to-primary-400",
                   track: "bg-default-100",
                 }}
                 className="flex-1"
@@ -1534,7 +1532,7 @@ export const DownloadPage: React.FC = () => {
                 pointerEvents: "none",
               }}
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-teal-600 text-white flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center">
                 <FaCloudDownloadAlt size={14} />
               </div>
             </motion.div>

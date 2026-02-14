@@ -197,7 +197,7 @@ export const UserAvatar = () => {
 
           <User
             name={
-              <span className="font-bold text-lg bg-gradient-to-r from-primary-600 to-teal-600 bg-clip-text text-transparent">
+              <span className="font-bold text-lg bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
                 {gamertag}
               </span>
             }

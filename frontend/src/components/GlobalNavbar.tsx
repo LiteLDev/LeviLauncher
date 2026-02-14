@@ -25,6 +25,7 @@ import { IoArrowBack } from "react-icons/io5";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { LAYOUT } from "@/constants/layout";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
 interface GlobalNavbarProps {
   isBeta: boolean;
@@ -146,7 +147,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
               <LeviIcon width={28} height={28} />
             </div>
             <div className="hidden sm:flex flex-col leading-none gap-0.5">
-              <p className="font-bold text-[16px] tracking-tight bg-gradient-to-r from-primary-600 to-teal-600 bg-clip-text text-transparent">
+              <p className="font-bold text-[16px] tracking-tight bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
                 LeviLauncher
               </p>
               {isBeta && (
@@ -198,7 +199,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             })}
 
             <div className="lg:hidden">
-              <Dropdown>
+              <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                 <DropdownTrigger>
                   <Button
                     variant="light"

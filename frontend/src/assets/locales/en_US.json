@@ -425,6 +425,8 @@
       "background_brightness_desc": "Adjust the brightness of the background image",
       "background_opacity": "Background Opacity",
       "background_opacity_desc": "Adjust the opacity of the background image",
+      "background_use_theme": "Apply Theme Color",
+      "background_use_theme_desc": "Apply the theme color to the background image base instead of the default black or white",
       "disable_ui_blur": "Disable UI Blur",
       "disable_ui_blur_desc": "Disable the frosted glass blur effect on UI components"
     }

@@ -15,6 +15,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import { SearchLIPPackages } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as liptypes from "bindings/github.com/liteldev/LeviLauncher/internal/lip/client/types";
@@ -165,10 +166,7 @@ const LIPPage: React.FC = () => {
               startContent={<LuSearch />}
               className="flex-1"
               size="sm"
-              classNames={{
-                inputWrapper:
-                  "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
-              }}
+              classNames={COMPONENT_STYLES.input}
             />
             <Button
               color="primary"
@@ -185,16 +183,14 @@ const LIPPage: React.FC = () => {
             <Select
               label={t("lip.sort_by")}
               placeholder={t("lip.select_sort")}
+              className="max-w-xs"
               selectedKeys={[sort]}
               onChange={(e) => {
                 setSort(e.target.value);
                 setPage(1);
               }}
               size="sm"
-              classNames={{
-                trigger:
-                  "bg-default-100/50 dark:bg-default-50/20 backdrop-blur-md",
-              }}
+              classNames={COMPONENT_STYLES.select}
             >
               <SelectItem key="hotness">Hotness</SelectItem>
               <SelectItem key="updated">Updated</SelectItem>

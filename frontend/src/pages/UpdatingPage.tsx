@@ -117,7 +117,7 @@ export default function UpdatingPage() {
                     )}
                     classNames={{
                       indicator:
-                        "bg-gradient-to-r from-primary-500 to-teal-500",
+                        "bg-gradient-to-r from-primary-500 to-primary-400",
                     }}
                   />
                 ) : (
@@ -130,7 +130,7 @@ export default function UpdatingPage() {
                     radius="sm"
                     classNames={{
                       indicator:
-                        "bg-gradient-to-r from-primary-500 to-teal-500",
+                        "bg-gradient-to-r from-primary-500 to-primary-400",
                     }}
                   />
                 )}
@@ -160,7 +160,7 @@ export default function UpdatingPage() {
                     radius="sm"
                     classNames={{
                       indicator:
-                        "bg-gradient-to-r from-primary-500 to-teal-500",
+                        "bg-gradient-to-r from-primary-500 to-primary-400",
                     }}
                   />
                 ) : (
@@ -173,7 +173,7 @@ export default function UpdatingPage() {
                     value={status === "installed" ? 100 : 0}
                     classNames={{
                       indicator:
-                        "bg-gradient-to-r from-primary-500 to-teal-500",
+                        "bg-gradient-to-r from-primary-500 to-primary-400",
                     }}
                   />
                 )}

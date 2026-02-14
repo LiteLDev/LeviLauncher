@@ -55,6 +55,7 @@ import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
 const readCurrentVersionName = (): string => {
   try {
@@ -667,18 +668,21 @@ export const ModsPage: React.FC = () => {
             onValueChange={setDllName}
             autoFocus
             size="sm"
+            classNames={COMPONENT_STYLES.input}
           />
           <Input
             label={t("mods.dll_type") as string}
             value={dllType}
             onValueChange={setDllType}
             size="sm"
+            classNames={COMPONENT_STYLES.input}
           />
           <Input
             label={t("mods.dll_version") as string}
             value={dllVersion}
             onValueChange={setDllVersion}
             size="sm"
+            classNames={COMPONENT_STYLES.input}
           />
         </div>
       </UnifiedModal>
@@ -792,10 +796,7 @@ export const ModsPage: React.FC = () => {
           radius="full"
           variant="flat"
           className="w-full sm:max-w-xs"
-          classNames={{
-            inputWrapper:
-              "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
-          }}
+          classNames={COMPONENT_STYLES.input}
         />
         <div className="w-px h-6 bg-default-200 dark:bg-white/10 hidden sm:block" />
         <Checkbox
@@ -903,7 +904,7 @@ export const ModsPage: React.FC = () => {
               return (
                 <div
                   key={`${m.name}-${m.version}-${idx}`}
-                  className={`group flex flex-row items-center p-3 rounded-2xl bg-white/60 dark:bg-zinc-800/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 border transition-all gap-4 ${
+                  className={`flex flex-row items-center p-3 rounded-2xl bg-white/60 dark:bg-zinc-800/40 hover:bg-white/80 dark:hover:bg-zinc-800/80 border transition-all gap-4 ${
                     selectedKeys.has(m.name)
                       ? "border-primary-500/50 dark:border-primary-500/30 bg-primary-50/50 dark:bg-primary-900/10"
                       : "border-white/40 dark:border-white/5"
@@ -949,8 +950,10 @@ export const ModsPage: React.FC = () => {
                   >
                     <Switch
                       size="sm"
-                      color="success"
                       isSelected={!!enabledByName.get(m.name)}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
+                      }}
                       onValueChange={async (val) => {
                         const name =
                           currentVersionName || readCurrentVersionName();
@@ -996,7 +999,7 @@ export const ModsPage: React.FC = () => {
                       <FaTrash />
                     </Button>
 
-                    <Dropdown>
+                    <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                       <DropdownTrigger>
                         <Button
                           isIconOnly
@@ -1108,6 +1111,9 @@ export const ModsPage: React.FC = () => {
                 </div>
                 <Switch
                   isSelected={!!enabledByName.get(activeMod.name)}
+                  classNames={{
+                    wrapper: "group-data-[selected=true]:bg-primary-500",
+                  }}
                   onValueChange={async (val) => {
                     const name = currentVersionName || readCurrentVersionName();
                     if (!name) return;

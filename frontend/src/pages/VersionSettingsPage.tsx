@@ -6,6 +6,7 @@ import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import {
   Button,
   Card,
@@ -498,7 +499,16 @@ export default function VersionSettingsPage() {
                 aria-label="Version Settings Tabs"
                 selectedKey={selectedTab}
                 onSelectionChange={(k) => setSelectedTab(k as string)}
-                classNames={{ base: "mt-4" }}
+                variant="solid"
+                classNames={{
+                  base: "mt-4",
+                  tabList:
+                    "bg-default-100/50 dark:bg-zinc-800/50 rounded-xl px-1",
+                  cursor:
+                    "bg-primary-600 dark:bg-primary-900 hover:bg-primary-500 shadow-md",
+                  tabContent:
+                    "group-data-[selected=true]:text-white font-medium",
+                }}
               >
                 <Tab key="general" title={t("versions.edit.tabs.general")} />
                 <Tab key="launch" title={t("versions.edit.tabs.launch")} />
@@ -533,10 +543,7 @@ export default function VersionSettingsPage() {
                       size="md"
                       variant="bordered"
                       radius="lg"
-                      classNames={{
-                        inputWrapper:
-                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-primary-500 focus-within:border-primary-500!",
-                      }}
+                      classNames={COMPONENT_STYLES.input}
                       isDisabled={isRegistered || loading}
                       placeholder={
                         t("versions.edit.placeholder") as unknown as string
@@ -703,17 +710,13 @@ export default function VersionSettingsPage() {
                         if (error) setError("");
                       }}
                       size="md"
-                      variant="bordered"
                       radius="lg"
                       placeholder={
                         t(
                           "versions.edit.launch_args_placeholder",
                         ) as unknown as string
                       }
-                      classNames={{
-                        inputWrapper:
-                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-primary-500 focus-within:border-primary-500!",
-                      }}
+                      classNames={COMPONENT_STYLES.input}
                     />
                     <p className="text-tiny text-default-400">
                       {t("versions.edit.launch_args_hint")}
@@ -737,10 +740,7 @@ export default function VersionSettingsPage() {
                           "versions.edit.env_vars_placeholder",
                         ) as unknown as string
                       }
-                      classNames={{
-                        inputWrapper:
-                          "bg-default-100/50 dark:bg-default-100/20 border-default-200 dark:border-default-700 hover:border-primary-500 focus-within:border-primary-500!",
-                      }}
+                      classNames={COMPONENT_STYLES.input}
                     />
                     <p className="text-tiny text-default-400">
                       {t("versions.edit.env_vars_hint")}

@@ -48,6 +48,7 @@ import { FileDropOverlay } from "@/components/FileDropOverlay";
 import { useFileDrag } from "@/hooks/useFileDrag";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
 export default function ContentPage() {
   const { t } = useTranslation();
@@ -627,12 +628,14 @@ export default function ContentPage() {
                       |
                     </span>
                     <span>{t("contentpage.select_player")}:</span>
-                    <Dropdown>
+                    <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                       <DropdownTrigger>
                         <Button
                           size="sm"
-                          variant="light"
-                          className="h-6 min-w-0 px-2 text-small font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 rounded-md"
+                          className={cn(
+                            COMPONENT_STYLES.dropdownTriggerButton,
+                            "h-6 min-w-0 px-2 text-small font-medium text-default-700 dark:text-zinc-200",
+                          )}
                         >
                           {selectedPlayer
                             ? resolvePlayerDisplayName(

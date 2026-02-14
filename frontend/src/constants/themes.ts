@@ -51,18 +51,18 @@ export const THEMES: Record<string, Record<number, string>> = {
     900: "#78350f",
     950: "#451a03",
   },
-  rose: {
-    50: "#fff1f2",
-    100: "#ffe4e6",
-    200: "#fecdd3",
-    300: "#fda4af",
-    400: "#fb7185",
-    500: "#f43f5e",
-    600: "#e11d48",
-    700: "#be123c",
-    800: "#9f1239",
-    900: "#881337",
-    950: "#4c0519",
+  pink: {
+    50: "#fff2f5",
+    100: "#ffe6ea",
+    200: "#ffcdd6",
+    300: "#ffaec0",
+    400: "#ff8fa8",
+    500: "#ff6b8b",
+    600: "#e64a6f",
+    700: "#c23355",
+    800: "#a32e4a",
+    900: "#8a2a41",
+    950: "#4d1020",
   },
   cyan: {
     50: "#ecfeff",
@@ -80,8 +80,52 @@ export const THEMES: Record<string, Record<number, string>> = {
 };
 
 export const hexToRgb = (hex: string): string => {
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return "0 0 0";
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
   return `${r} ${g} ${b}`;
+};
+
+const rgbToHex = (r: number, g: number, b: number): string => {
+  const toHex = (n: number) => {
+    const hex = Math.max(0, Math.min(255, Math.round(n))).toString(16);
+    return hex.length === 1 ? "0" + hex : hex;
+  };
+  return `#${toHex(r)}${toHex(g)}${toHex(b)}`;
+};
+
+const parseHex = (hex: string) => {
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return { r: 0, g: 0, b: 0 };
+  const r = parseInt(hex.slice(1, 3), 16);
+  const g = parseInt(hex.slice(3, 5), 16);
+  const b = parseInt(hex.slice(5, 7), 16);
+  return { r, g, b };
+};
+
+const mix = (color1: string, color2: string, weight: number) => {
+  const c1 = parseHex(color1);
+  const c2 = parseHex(color2);
+  const r = c1.r * (1 - weight) + c2.r * weight;
+  const g = c1.g * (1 - weight) + c2.g * weight;
+  const b = c1.b * (1 - weight) + c2.b * weight;
+  return rgbToHex(r, g, b);
+};
+
+export const generateTheme = (baseColor: string): Record<number, string> => {
+  const safeColor =
+    baseColor && /^#[0-9A-Fa-f]{6}$/.test(baseColor) ? baseColor : "#10b981";
+  return {
+    50: mix(safeColor, "#ffffff", 0.9),
+    100: mix(safeColor, "#ffffff", 0.8),
+    200: mix(safeColor, "#ffffff", 0.7),
+    300: mix(safeColor, "#ffffff", 0.5),
+    400: mix(safeColor, "#ffffff", 0.3),
+    500: safeColor,
+    600: mix(safeColor, "#000000", 0.1),
+    700: mix(safeColor, "#000000", 0.25),
+    800: mix(safeColor, "#000000", 0.4),
+    900: mix(safeColor, "#000000", 0.55),
+    950: mix(safeColor, "#000000", 0.7),
+  };
 };

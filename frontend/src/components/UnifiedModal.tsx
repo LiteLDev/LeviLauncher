@@ -67,10 +67,10 @@ const TYPE_CONFIG: Record<
 > = {
   success: {
     icon: FiCheckCircle,
-    colorClass: "text-success-500",
-    bgClass: "bg-success-50 dark:bg-success-500/10",
-    borderClass: "border-success-100 dark:border-success-500/20",
-    buttonColor: "success",
+    colorClass: "text-primary-500",
+    bgClass: "bg-primary-50 dark:bg-primary-500/10",
+    borderClass: "border-primary-100 dark:border-primary-500/20",
+    buttonColor: "primary",
   },
   warning: {
     icon: FiAlertTriangle,
@@ -131,14 +131,11 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   const config = TYPE_CONFIG[type];
   const Icon = config.icon;
 
-  const confirmBtnColor =
-    confirmButtonProps?.color || config.buttonColor;
+  const confirmBtnColor = confirmButtonProps?.color || config.buttonColor;
   const confirmBtnClass =
-    type === "success" && !confirmButtonProps?.className
-      ? "bg-success-600 hover:bg-success-500 text-white font-bold shadow-lg shadow-success-900/20"
-      : type === "warning" && !confirmButtonProps?.className
-        ? "text-white! font-bold shadow-lg shadow-warning-500/20"
-        : confirmButtonProps?.className || "font-bold shadow-lg";
+    type === "warning" && !confirmButtonProps?.className
+      ? "text-white! font-bold shadow-lg shadow-warning-500/20"
+      : confirmButtonProps?.className || "font-bold shadow-lg";
 
   return (
     <BaseModal
@@ -148,7 +145,10 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
       hideCloseButton={true}
       isDismissable={isDismissable}
       scrollBehavior={scrollBehavior}
-      classNames={classNames}
+      classNames={{
+        base: "bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
+        ...classNames,
+      }}
       motionProps={motionProps}
     >
       <ModalContent className="shadow-none">

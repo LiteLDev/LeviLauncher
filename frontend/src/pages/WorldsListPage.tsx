@@ -63,6 +63,7 @@ import {
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
 interface WorldInfo {
   Path: string;
@@ -477,12 +478,15 @@ export default function WorldsListPage() {
             title={t("contentpage.worlds_list")}
             endContent={
               <div className="flex items-center gap-2">
-                <Dropdown>
+                <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                   <DropdownTrigger>
                     <Button
                       radius="full"
                       variant="flat"
-                      className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium w-full sm:w-auto sm:min-w-[200px]"
+                      className={cn(
+                        COMPONENT_STYLES.dropdownTriggerButton,
+                        "w-full sm:w-auto sm:min-w-[200px]",
+                      )}
                       isDisabled={!players.length}
                       startContent={<FaUser />}
                     >
@@ -574,10 +578,7 @@ export default function WorldsListPage() {
               radius="full"
               variant="flat"
               className="w-full md:max-w-xs"
-              classNames={{
-                inputWrapper:
-                  "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
-              }}
+              classNames={COMPONENT_STYLES.input}
             />
 
             <div className="flex items-center gap-3">
@@ -612,15 +613,16 @@ export default function WorldsListPage() {
                 </Checkbox>
               )}
 
-              <Dropdown>
+              <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                 <DropdownTrigger>
                   <Button
-                    variant="flat"
-                    radius="full"
+                    className={cn(
+                      COMPONENT_STYLES.dropdownTriggerButton,
+                      "min-w-[120px]",
+                    )}
                     startContent={
                       sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
                     }
-                    className="min-w-[120px]"
                   >
                     {sortKey === "name"
                       ? (t("filemanager.sort.name") as string)
@@ -740,11 +742,13 @@ export default function WorldsListPage() {
                 transition={{ duration: 0.2 }}
               >
                 <div
-                  className={`w-full p-4 bg-white dark:bg-zinc-900/50 hover:bg-default-50 dark:hover:bg-zinc-800 transition-all rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border ${
+                  className={cn(
+                    COMPONENT_STYLES.listItem,
+                    "w-full p-4 flex gap-4 group cursor-pointer relative overflow-hidden",
                     isSelectMode && selected[w.Path]
-                      ? "border-primary bg-primary/10"
-                      : "border-default-200 dark:border-zinc-700/50 hover:border-default-400 dark:hover:border-zinc-600"
-                  }`}
+                      ? "border-primary bg-primary/10 dark:bg-primary/10"
+                      : "",
+                  )}
                   onClick={() => {
                     if (isSelectMode) toggleSelect(w.Path);
                   }}

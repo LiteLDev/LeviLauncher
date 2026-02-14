@@ -49,6 +49,7 @@ import { McText } from "@/utils/mcformat";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
 interface Server {
   index: string;
@@ -105,7 +106,12 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
   }, [info]);
 
   return (
-    <div className="w-full p-4 bg-white dark:bg-zinc-900/50 hover:bg-default-50 dark:hover:bg-zinc-800 transition-all rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-default-200 dark:border-zinc-700/50 hover:border-default-400 dark:hover:border-zinc-600">
+    <div
+      className={cn(
+        COMPONENT_STYLES.listItem,
+        "w-full p-4 flex gap-4 group cursor-pointer relative overflow-hidden",
+      )}
+    >
       <div className="relative shrink-0">
         <div className="h-20 sm:h-24 aspect-video rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
           <FaServer className="w-10 h-10 text-blue-500" />
@@ -282,12 +288,13 @@ export default function ServersPage() {
             title={t("contentpage.servers")}
             endContent={
               <div className="flex items-center gap-2">
-                <Dropdown>
+                <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                   <DropdownTrigger>
                     <Button
-                      radius="full"
-                      variant="flat"
-                      className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium w-full sm:w-auto sm:min-w-[200px]"
+                      className={cn(
+                        COMPONENT_STYLES.dropdownTriggerButton,
+                        "w-full sm:w-auto sm:min-w-[200px] text-default-600 dark:text-zinc-200 font-medium",
+                      )}
                       isDisabled={!players.length}
                       startContent={<FaUser />}
                     >
@@ -373,22 +380,20 @@ export default function ServersPage() {
               radius="full"
               variant="flat"
               className="w-full md:max-w-xs"
-              classNames={{
-                inputWrapper:
-                  "bg-default-100 dark:bg-default-50/50 hover:bg-default-200/70 transition-colors group-data-[focus=true]:bg-white dark:group-data-[focus=true]:bg-zinc-900 shadow-sm",
-              }}
+              classNames={COMPONENT_STYLES.input}
             />
 
             <div className="flex items-center gap-3">
-              <Dropdown>
+              <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                 <DropdownTrigger>
                   <Button
-                    variant="flat"
-                    radius="full"
+                    className={cn(
+                      COMPONENT_STYLES.dropdownTriggerButton,
+                      "min-w-[120px]",
+                    )}
                     startContent={
                       sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
                     }
-                    className="min-w-[120px]"
                   >
                     {sortKey === "name"
                       ? t("filemanager.sort.name")

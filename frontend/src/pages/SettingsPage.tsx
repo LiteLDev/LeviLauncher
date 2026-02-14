@@ -320,13 +320,6 @@ export const SettingsPage: React.FC = () => {
     },
   );
 
-  const [themeSettingMode, setThemeSettingMode] = useState<"light" | "dark">(
-    () => {
-      const currentTheme = theme || "light";
-      return currentTheme === "dark" ? "dark" : "light";
-    },
-  );
-
   const {
     themeMode,
     setThemeMode,
@@ -336,7 +329,21 @@ export const SettingsPage: React.FC = () => {
     setScheduleEnd,
     sunTimes,
     fetchSunTimes,
+    resolvedTheme,
   } = useThemeManager();
+
+  const [themeSettingMode, setThemeSettingMode] = useState<"light" | "dark">(
+    () => {
+      const currentTheme = resolvedTheme || theme || "light";
+      return currentTheme === "dark" ? "dark" : "light";
+    },
+  );
+
+  useEffect(() => {
+    if (resolvedTheme === "dark" || resolvedTheme === "light") {
+      setThemeSettingMode(resolvedTheme);
+    }
+  }, [resolvedTheme]);
 
   const [backgroundImageError, setBackgroundImageError] = useState(false);
   const [previewBgData, setPreviewBgData] = useState<string>("");
@@ -1023,7 +1030,10 @@ export const SettingsPage: React.FC = () => {
                                 key="dark"
                                 title={
                                   <div className="flex items-center gap-2">
-                                    <LuMoon size={14} />
+                                    <LuMoon
+                                      size={14}
+                                      className="dark:text-primary-400/80"
+                                    />
                                     <span>
                                       {t("settings.appearance.theme_dark")}
                                     </span>
@@ -1202,7 +1212,7 @@ export const SettingsPage: React.FC = () => {
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-2">
-                                        <div className="p-1.5 rounded-lg bg-primary-100/50 text-primary-600">
+                                        <div className="p-1.5 rounded-lg bg-primary-100/50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400/90">
                                           <LuMoon size={14} />
                                         </div>
                                         <div className="flex flex-col">
@@ -1340,7 +1350,7 @@ export const SettingsPage: React.FC = () => {
                                 <LuSun className="text-warning-500" size={18} />
                               ) : (
                                 <LuMoon
-                                  className="text-primary-400"
+                                  className="text-primary-400 dark:text-primary-500/80"
                                   size={18}
                                 />
                               )}
@@ -2261,7 +2271,7 @@ export const SettingsPage: React.FC = () => {
                       </p>
                     </div>
                     {checkingUpdate ? (
-                      <Spinner size="sm" color="success" />
+                      <Spinner size="sm" color="primary" />
                     ) : (
                       <Button
                         radius="full"

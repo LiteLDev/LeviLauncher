@@ -991,7 +991,7 @@ export const LauncherPage = (args: any) => {
                         bottomContent={
                           isLoadingVersions ? (
                             <div className="p-2 flex justify-center items-center gap-2 text-default-400 text-xs border-t border-default-100 dark:border-white/5">
-                              <Spinner size="sm" color="success" />
+                              <Spinner size="sm" color="primary" />
                               <span>{t("common.loading")}</span>
                             </div>
                           ) : null
@@ -1379,7 +1379,7 @@ export const LauncherPage = (args: any) => {
                   <Progress
                     aria-label="Downloading"
                     value={(giDownloaded / giTotal) * 100}
-                    color="success"
+                    color="primary"
                     size="md"
                     classNames={{
                       indicator: "bg-primary-600 hover:bg-primary-500",
@@ -1388,7 +1388,7 @@ export const LauncherPage = (args: any) => {
                 </div>
               ) : (
                 <div className="flex items-center gap-3 text-default-500 dark:text-zinc-400">
-                  <Spinner size="sm" color="success" />
+                  <Spinner size="sm" color="primary" />
                   <span>
                     {t("launcherpage.gameinput.installing.preparing")}
                   </span>
@@ -1467,7 +1467,7 @@ export const LauncherPage = (args: any) => {
                   <Progress
                     aria-label="Downloading"
                     value={(vcDownloaded / vcTotal) * 100}
-                    color="success"
+                    color="primary"
                     size="md"
                     classNames={{
                       indicator: "bg-primary-600 hover:bg-primary-500",
@@ -1476,7 +1476,7 @@ export const LauncherPage = (args: any) => {
                 </div>
               ) : (
                 <div className="flex items-center gap-3 text-default-500 dark:text-zinc-400">
-                  <Spinner size="sm" color="success" />
+                  <Spinner size="sm" color="primary" />
                   <span>
                     {t("launcherpage.vcruntime.installing.preparing")}
                   </span>

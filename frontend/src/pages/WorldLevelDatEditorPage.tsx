@@ -661,7 +661,7 @@ export default function WorldLevelDatEditorPage() {
           >
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64 gap-4">
-                <Spinner size="lg" color="success" />
+                <Spinner size="lg" color="primary" />
                 <div className="text-default-400 animate-pulse">
                   {t("common.loading")}
                 </div>

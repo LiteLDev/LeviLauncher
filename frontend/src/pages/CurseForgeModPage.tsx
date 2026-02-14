@@ -815,7 +815,7 @@ const CurseForgeModPage: React.FC = () => {
                             />
                           ) : (
                             <div className="flex flex-col items-center justify-center py-12 text-default-400 gap-3">
-                              <Spinner color="success" />
+                              <Spinner color="primary" />
                               <p>Loading description...</p>
                             </div>
                           )}
@@ -1106,14 +1106,14 @@ const CurseForgeModPage: React.FC = () => {
                   (downloadProgress.downloaded / downloadProgress.total) * 100
                 }
                 className="max-w-md w-full"
-                color="success"
+                color="primary"
                 classNames={{
                   indicator: "bg-primary-600 dark:bg-primary-500",
                 }}
                 showValueLabel={true}
               />
             ) : (
-              <Spinner size="lg" color="success" />
+              <Spinner size="lg" color="primary" />
             )}
             {downloadProgress && (
               <p className="text-tiny text-default-400">
@@ -1199,7 +1199,7 @@ const CurseForgeModPage: React.FC = () => {
 
         {installStep === "importing" && (
           <div className="flex flex-col items-center gap-4 py-4">
-            <Spinner size="lg" color="success" />
+            <Spinner size="lg" color="primary" />
             <p className="text-default-500 dark:text-zinc-400">
               {t("curseforge.install.importing_body")}
             </p>

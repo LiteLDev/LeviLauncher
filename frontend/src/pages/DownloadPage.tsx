@@ -1184,7 +1184,7 @@ export const DownloadPage: React.FC = () => {
                       <Chip
                         size="sm"
                         variant="flat"
-                        color="success"
+                        color="primary"
                         startContent={
                           <FaCircleNotch className="animate-spin" size={12} />
                         }

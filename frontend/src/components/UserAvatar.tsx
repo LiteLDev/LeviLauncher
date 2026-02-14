@@ -158,7 +158,7 @@ export const UserAvatar = () => {
             name={gamertag}
             size="sm"
             isBordered
-            color="success"
+            color="primary"
             className="ring-2 ring-primary-500/30"
           />
         </div>
@@ -169,7 +169,7 @@ export const UserAvatar = () => {
             <Chip
               startContent={<FaXbox className="text-primary-600" />}
               variant="flat"
-              color="success"
+              color="primary"
               size="sm"
               className="bg-primary-100/70 dark:bg-primary-900/25 text-primary-700 dark:text-primary-400"
             >

@@ -670,7 +670,7 @@ export default function InstallPage() {
                       <div className="w-16 h-16 rounded-full bg-default-50 dark:bg-zinc-800 border-4 border-default-100 dark:border-zinc-700 flex items-center justify-center relative z-10">
                         <Spinner
                           size="md"
-                          color="success"
+                          color="primary"
                           classNames={{ wrapper: "w-8 h-8" }}
                         />
                       </div>
@@ -840,7 +840,7 @@ export default function InstallPage() {
                       {installingVersion && (
                         <Chip
                           variant="flat"
-                          color="success"
+                          color="primary"
                           size="sm"
                           classNames={{ content: "font-bold" }}
                         >

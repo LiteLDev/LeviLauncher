@@ -4,8 +4,8 @@ set -e
 # Build configuration
 APP_NAME="LeviLauncher"
 BUNDLE_ID="org.levimc.launcher"
-VERSION="0.2.0"
-BUILD_NUMBER="0.2.0"
+VERSION="0.3.0"
+BUILD_NUMBER="0.3.0"
 BUILD_DIR="build/ios"
 TARGET="simulator"
 

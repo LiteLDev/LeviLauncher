@@ -22,10 +22,11 @@ def remove_keys(data, keys_to_remove, prefix=''):
 
 # The list of unused keys from previous run
 unused_keys = [
-    'versionselect.unsaved.body',
-    'versionselect.unsaved.discard',
-    'versionselect.unsaved.save_and_leave',
-    'versionselect.unsaved.title',
+    "settings.appearance.background_base_color_desc",
+    "settings.appearance.background_use_theme",
+    "settings.appearance.background_use_theme_desc",
+    "settings.appearance.brightness",
+    "settings.appearance.saturation",
 ]
 
 locales_dir = r'd:\a\LiteLDev\LeviLauncher\frontend\src\assets\locales'

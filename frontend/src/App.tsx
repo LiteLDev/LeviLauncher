@@ -187,17 +187,62 @@ function App() {
 
   const { themeMode } = useThemeManager();
 
-  const [lightBackgroundImage, setLightBackgroundImage] = useState<string>("");
-  const [darkBackgroundImage, setDarkBackgroundImage] = useState<string>("");
-  const [lightBackgroundFitMode, setLightBackgroundFitMode] = useState<string>(
-    () => localStorage.getItem("app.lightBackgroundFitMode") || "smart",
+  const [backgroundImagePath, setBackgroundImagePath] = useState<string>(
+    () => localStorage.getItem("app.backgroundImage") || "",
   );
-  const [darkBackgroundFitMode, setDarkBackgroundFitMode] = useState<string>(
-    () => localStorage.getItem("app.darkBackgroundFitMode") || "smart",
+  const [backgroundFitMode, setBackgroundFitMode] = useState<string>(
+    () => localStorage.getItem("app.backgroundFitMode") || "smart",
   );
   const [bgData, setBgData] = useState<string>("");
 
-  const pickNextImage = async (folderPath: string, mode: "light" | "dark") => {
+  const [backgroundBlur, setBackgroundBlur] = useState<number>(() =>
+    Number(localStorage.getItem("app.backgroundBlur") || "0"),
+  );
+
+  const [backgroundBrightness, setBackgroundBrightness] = useState<number>(
+    () => {
+      const item = localStorage.getItem("app.backgroundBrightness");
+      return item !== null ? Number(item) : 100;
+    },
+  );
+
+  const [backgroundOpacity, setBackgroundOpacity] = useState<number>(() => {
+    const item = localStorage.getItem("app.backgroundOpacity");
+    return item !== null ? Number(item) : 100;
+  });
+
+  const [lightBackgroundBaseMode, setLightBackgroundBaseMode] =
+    useState<string>(
+      () => localStorage.getItem("app.lightBackgroundBaseMode") || "none",
+    );
+
+  const [darkBackgroundBaseMode, setDarkBackgroundBaseMode] = useState<string>(
+    () => localStorage.getItem("app.darkBackgroundBaseMode") || "none",
+  );
+
+  const [lightBackgroundBaseColor, setLightBackgroundBaseColor] =
+    useState<string>(
+      () => localStorage.getItem("app.lightBackgroundBaseColor") || "#ffffff",
+    );
+
+  const [darkBackgroundBaseColor, setDarkBackgroundBaseColor] =
+    useState<string>(
+      () => localStorage.getItem("app.darkBackgroundBaseColor") || "#18181b",
+    );
+
+  const [lightBackgroundBaseOpacity, setLightBackgroundBaseOpacity] =
+    useState<number>(() => {
+      const item = localStorage.getItem("app.lightBackgroundBaseOpacity");
+      return item !== null ? Number(item) : 50;
+    });
+
+  const [darkBackgroundBaseOpacity, setDarkBackgroundBaseOpacity] =
+    useState<number>(() => {
+      const item = localStorage.getItem("app.darkBackgroundBaseOpacity");
+      return item !== null ? Number(item) : 50;
+    });
+
+  const pickNextImage = async (folderPath: string) => {
     if (!folderPath) return "";
     try {
       const entries = await (minecraft as any).ListDir(folderPath);
@@ -217,10 +262,10 @@ function App() {
       if (images.length === 0) return "";
 
       const playOrder =
-        localStorage.getItem(`app.${mode}BackgroundPlayOrder`) || "random";
+        localStorage.getItem("app.backgroundPlayOrder") || "random";
 
       if (playOrder === "sequential") {
-        const lastIdxKey = `app.${mode}BackgroundLastIndex`;
+        const lastIdxKey = "app.backgroundLastIndex";
         let lastIdx = parseInt(localStorage.getItem(lastIdxKey) || "-1");
         let nextIdx = lastIdx + 1;
         if (nextIdx >= images.length) {
@@ -241,138 +286,15 @@ function App() {
   useEffect(() => {
     const initBackgrounds = async () => {
       try {
-        const lightFolder =
-          localStorage.getItem("app.lightBackgroundImage") ||
-          localStorage.getItem("app.backgroundImage") ||
-          "";
-        const darkFolder =
-          localStorage.getItem("app.darkBackgroundImage") ||
-          localStorage.getItem("app.backgroundImage") ||
-          "";
+        const folder = localStorage.getItem("app.backgroundImage") || "";
+        const img = await pickNextImage(folder);
 
-        const [lightImg, darkImg] = await Promise.all([
-          pickNextImage(lightFolder, "light"),
-          pickNextImage(darkFolder, "dark"),
-        ]);
-
-        setLightBackgroundImage(lightImg);
-        setDarkBackgroundImage(darkImg);
+        setBackgroundImagePath(img);
+        localStorage.setItem("app.currentBackgroundImage", img);
       } catch {}
     };
     initBackgrounds();
   }, []);
-
-  const [lightBackgroundBlur, setLightBackgroundBlur] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem("app.lightBackgroundBlur");
-      if (saved !== null) return Number(saved);
-      return Number(localStorage.getItem("app.backgroundBlur") || "0");
-    } catch {
-      return 0;
-    }
-  });
-  const [darkBackgroundBlur, setDarkBackgroundBlur] = useState<number>(() => {
-    try {
-      const saved = localStorage.getItem("app.darkBackgroundBlur");
-      if (saved !== null) return Number(saved);
-      return Number(localStorage.getItem("app.backgroundBlur") || "0");
-    } catch {
-      return 0;
-    }
-  });
-
-  const [lightBackgroundBrightness, setLightBackgroundBrightness] =
-    useState<number>(() => {
-      try {
-        const item =
-          localStorage.getItem("app.lightBackgroundBrightness") ||
-          localStorage.getItem("app.backgroundBrightness");
-        return item !== null ? Number(item) : 100;
-      } catch {
-        return 100;
-      }
-    });
-  const [darkBackgroundBrightness, setDarkBackgroundBrightness] =
-    useState<number>(() => {
-      try {
-        const item =
-          localStorage.getItem("app.darkBackgroundBrightness") ||
-          localStorage.getItem("app.backgroundBrightness");
-        return item !== null ? Number(item) : 100;
-      } catch {
-        return 100;
-      }
-    });
-
-  const [lightBackgroundOpacity, setLightBackgroundOpacity] = useState<number>(
-    () => {
-      try {
-        const item =
-          localStorage.getItem("app.lightBackgroundOpacity") ||
-          localStorage.getItem("app.backgroundOpacity");
-        return item !== null ? Number(item) : 100;
-      } catch {
-        return 100;
-      }
-    },
-  );
-  const [darkBackgroundOpacity, setDarkBackgroundOpacity] = useState<number>(
-    () => {
-      try {
-        const item =
-          localStorage.getItem("app.darkBackgroundOpacity") ||
-          localStorage.getItem("app.backgroundOpacity");
-        return item !== null ? Number(item) : 100;
-      } catch {
-        return 100;
-      }
-    },
-  );
-
-  const [lightBackgroundBaseOpacity, setLightBackgroundBaseOpacity] =
-    useState<number>(() => {
-      try {
-        const item =
-          localStorage.getItem("app.lightBackgroundBaseOpacity") ||
-          localStorage.getItem("app.backgroundBaseOpacity");
-        return item !== null ? Number(item) : 100;
-      } catch {
-        return 100;
-      }
-    });
-  const [darkBackgroundBaseOpacity, setDarkBackgroundBaseOpacity] =
-    useState<number>(() => {
-      try {
-        const item =
-          localStorage.getItem("app.darkBackgroundBaseOpacity") ||
-          localStorage.getItem("app.backgroundBaseOpacity");
-        return item !== null ? Number(item) : 100;
-      } catch {
-        return 100;
-      }
-    });
-
-  const [lightBackgroundUseTheme, setLightBackgroundUseTheme] =
-    useState<boolean>(() => {
-      try {
-        const saved = localStorage.getItem("app.lightBackgroundUseTheme");
-        if (saved !== null) return saved === "true";
-        return localStorage.getItem("app.backgroundUseTheme") === "true";
-      } catch {
-        return false;
-      }
-    });
-  const [darkBackgroundUseTheme, setDarkBackgroundUseTheme] = useState<boolean>(
-    () => {
-      try {
-        const saved = localStorage.getItem("app.darkBackgroundUseTheme");
-        if (saved !== null) return saved === "true";
-        return localStorage.getItem("app.backgroundUseTheme") === "true";
-      } catch {
-        return false;
-      }
-    },
-  );
 
   const [lightThemeColor, setLightThemeColor] = useState<string>(() => {
     try {
@@ -429,18 +351,8 @@ function App() {
   useEffect(() => {
     const handler = () => {
       try {
-        const lightVal = Number(
-          localStorage.getItem("app.lightBackgroundBlur") ||
-            localStorage.getItem("app.backgroundBlur") ||
-            "0",
-        );
-        setLightBackgroundBlur(lightVal);
-        const darkVal = Number(
-          localStorage.getItem("app.darkBackgroundBlur") ||
-            localStorage.getItem("app.backgroundBlur") ||
-            "0",
-        );
-        setDarkBackgroundBlur(darkVal);
+        const val = Number(localStorage.getItem("app.backgroundBlur") || "0");
+        setBackgroundBlur(val);
       } catch {}
     };
     window.addEventListener("app-blur-changed", handler);
@@ -450,14 +362,8 @@ function App() {
   useEffect(() => {
     const handler = () => {
       try {
-        const lightItem =
-          localStorage.getItem("app.lightBackgroundOpacity") ||
-          localStorage.getItem("app.backgroundOpacity");
-        setLightBackgroundOpacity(lightItem !== null ? Number(lightItem) : 100);
-        const darkItem =
-          localStorage.getItem("app.darkBackgroundOpacity") ||
-          localStorage.getItem("app.backgroundOpacity");
-        setDarkBackgroundOpacity(darkItem !== null ? Number(darkItem) : 100);
+        const item = localStorage.getItem("app.backgroundOpacity");
+        setBackgroundOpacity(item !== null ? Number(item) : 100);
       } catch {}
     };
     window.addEventListener("app-opacity-changed", handler);
@@ -467,57 +373,8 @@ function App() {
   useEffect(() => {
     const handler = () => {
       try {
-        const lightItem =
-          localStorage.getItem("app.lightBackgroundBaseOpacity") ||
-          localStorage.getItem("app.backgroundBaseOpacity");
-        setLightBackgroundBaseOpacity(
-          lightItem !== null ? Number(lightItem) : 100,
-        );
-        const darkItem =
-          localStorage.getItem("app.darkBackgroundBaseOpacity") ||
-          localStorage.getItem("app.backgroundBaseOpacity");
-        setDarkBackgroundBaseOpacity(
-          darkItem !== null ? Number(darkItem) : 100,
-        );
-      } catch {}
-    };
-    window.addEventListener("app-base-opacity-changed", handler);
-    return () =>
-      window.removeEventListener("app-base-opacity-changed", handler);
-  }, []);
-
-  useEffect(() => {
-    const handler = () => {
-      try {
-        const lightVal =
-          localStorage.getItem("app.lightBackgroundUseTheme") === "true" ||
-          (localStorage.getItem("app.lightBackgroundUseTheme") === null &&
-            localStorage.getItem("app.backgroundUseTheme") === "true");
-        setLightBackgroundUseTheme(lightVal);
-        const darkVal =
-          localStorage.getItem("app.darkBackgroundUseTheme") === "true" ||
-          (localStorage.getItem("app.darkBackgroundUseTheme") === null &&
-            localStorage.getItem("app.backgroundUseTheme") === "true");
-        setDarkBackgroundUseTheme(darkVal);
-      } catch {}
-    };
-    window.addEventListener("app-bg-theme-changed", handler);
-    return () => window.removeEventListener("app-bg-theme-changed", handler);
-  }, []);
-
-  useEffect(() => {
-    const handler = () => {
-      try {
-        const lightItem =
-          localStorage.getItem("app.lightBackgroundBrightness") ||
-          localStorage.getItem("app.backgroundBrightness");
-        setLightBackgroundBrightness(
-          lightItem !== null ? Number(lightItem) : 100,
-        );
-        const darkItem =
-          localStorage.getItem("app.darkBackgroundBrightness") ||
-          localStorage.getItem("app.backgroundBrightness");
-        setDarkBackgroundBrightness(darkItem !== null ? Number(darkItem) : 100);
+        const item = localStorage.getItem("app.backgroundBrightness");
+        setBackgroundBrightness(item !== null ? Number(item) : 100);
       } catch {}
     };
     window.addEventListener("app-brightness-changed", handler);
@@ -527,33 +384,56 @@ function App() {
   useEffect(() => {
     const handler = async () => {
       try {
-        const lightFolder =
-          localStorage.getItem("app.lightBackgroundImage") ||
-          localStorage.getItem("app.backgroundImage") ||
-          "";
-        const darkFolder =
-          localStorage.getItem("app.darkBackgroundImage") ||
-          localStorage.getItem("app.backgroundImage") ||
-          "";
+        const folder = localStorage.getItem("app.backgroundImage") || "";
+        const img = await pickNextImage(folder);
 
-        const [lightImg, darkImg] = await Promise.all([
-          pickNextImage(lightFolder, "light"),
-          pickNextImage(darkFolder, "dark"),
-        ]);
-
-        setLightBackgroundImage(lightImg);
-        setDarkBackgroundImage(darkImg);
-
-        setLightBackgroundFitMode(
-          localStorage.getItem("app.lightBackgroundFitMode") || "smart",
-        );
-        setDarkBackgroundFitMode(
-          localStorage.getItem("app.darkBackgroundFitMode") || "smart",
-        );
+        setBackgroundImagePath(img);
+        localStorage.setItem("app.currentBackgroundImage", img);
       } catch {}
     };
     window.addEventListener("app-background-changed", handler);
     return () => window.removeEventListener("app-background-changed", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        setBackgroundFitMode(
+          localStorage.getItem("app.backgroundFitMode") || "smart",
+        );
+
+        setLightBackgroundBaseMode(
+          localStorage.getItem("app.lightBackgroundBaseMode") || "none",
+        );
+        setDarkBackgroundBaseMode(
+          localStorage.getItem("app.darkBackgroundBaseMode") || "none",
+        );
+
+        setLightBackgroundBaseColor(
+          localStorage.getItem("app.lightBackgroundBaseColor") || "#ffffff",
+        );
+        setDarkBackgroundBaseColor(
+          localStorage.getItem("app.darkBackgroundBaseColor") || "#18181b",
+        );
+
+        const lightOpacity = localStorage.getItem(
+          "app.lightBackgroundBaseOpacity",
+        );
+        setLightBackgroundBaseOpacity(
+          lightOpacity !== null ? Number(lightOpacity) : 50,
+        );
+
+        const darkOpacity = localStorage.getItem(
+          "app.darkBackgroundBaseOpacity",
+        );
+        setDarkBackgroundBaseOpacity(
+          darkOpacity !== null ? Number(darkOpacity) : 50,
+        );
+      } catch {}
+    };
+    window.addEventListener("app-background-settings-changed", handler);
+    return () =>
+      window.removeEventListener("app-background-settings-changed", handler);
   }, []);
 
   useEffect(() => {
@@ -614,8 +494,7 @@ function App() {
   ]);
 
   useEffect(() => {
-    const isDark = resolvedTheme === "dark";
-    const currentImg = isDark ? darkBackgroundImage : lightBackgroundImage;
+    const currentImg = backgroundImagePath;
 
     if (!currentImg) {
       setBgData("");
@@ -632,7 +511,7 @@ function App() {
         if (res) setBgData(res);
       })
       .catch(() => {});
-  }, [lightBackgroundImage, darkBackgroundImage, resolvedTheme]);
+  }, [backgroundImagePath]);
 
   useEffect(() => {
     MotionGlobalConfig.skipAnimations = disableAnimations;
@@ -863,54 +742,6 @@ function App() {
     } catch {}
   }, [hasBackend]);
 
-  const getFitStyles = (mode: string) => {
-    switch (mode) {
-      case "center":
-        return {
-          backgroundSize: "auto",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        };
-      case "fit":
-        return {
-          backgroundSize: "contain",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        };
-      case "stretch":
-        return {
-          backgroundSize: "100% 100%",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        };
-      case "tile":
-        return {
-          backgroundSize: "auto",
-          backgroundPosition: "top left",
-          backgroundRepeat: "repeat",
-        };
-      case "top_left":
-        return {
-          backgroundSize: "auto",
-          backgroundPosition: "top left",
-          backgroundRepeat: "no-repeat",
-        };
-      case "top_right":
-        return {
-          backgroundSize: "auto",
-          backgroundPosition: "top right",
-          backgroundRepeat: "no-repeat",
-        };
-      case "smart":
-      default:
-        return {
-          backgroundSize: "cover",
-          backgroundPosition: "center",
-          backgroundRepeat: "no-repeat",
-        };
-    }
-  };
-
   const tryNavigate = (path: string | number) => {
     if (navLocked || isUpdatingMode || isOnboardingMode) return;
     if (
@@ -1036,68 +867,60 @@ function App() {
                   )}
                 </AnimatePresence>
 
+                {(resolvedTheme === "light"
+                  ? lightBackgroundBaseMode
+                  : darkBackgroundBaseMode) !== "none" && (
+                  <div
+                    className="fixed inset-0 z-[-2] pointer-events-none"
+                    style={{
+                      backgroundColor:
+                        (resolvedTheme === "light"
+                          ? lightBackgroundBaseMode
+                          : darkBackgroundBaseMode) === "theme"
+                          ? resolvedTheme === "light"
+                            ? "rgb(var(--theme-50))"
+                            : "rgb(var(--theme-900))"
+                          : resolvedTheme === "light"
+                            ? lightBackgroundBaseColor
+                            : darkBackgroundBaseColor,
+                      opacity:
+                        (resolvedTheme === "light"
+                          ? lightBackgroundBaseOpacity
+                          : darkBackgroundBaseOpacity) / 100,
+                    }}
+                  />
+                )}
+                {bgData && (
+                  <div
+                    className="fixed inset-0 z-[-1]"
+                    style={{
+                      backgroundImage: `url("${bgData}")`,
+                      ...getFitStyles(backgroundFitMode),
+                      filter: `blur(${backgroundBlur}px) brightness(${backgroundBrightness}%)`,
+                      opacity: backgroundOpacity / 100,
+                      transform: backgroundBlur > 0 ? "scale(1.1)" : "none",
+                    }}
+                  />
+                )}
+
                 <div
                   style={
                     {
                       "--content-pt":
                         layoutMode === "sidebar" ? "4.5rem" : "5rem",
-                      backgroundColor: (
-                        resolvedTheme === "dark"
-                          ? darkBackgroundUseTheme
-                          : lightBackgroundUseTheme
-                      )
-                        ? `rgba(${hexToRgb(
-                            ((resolvedTheme === "dark"
-                              ? darkThemeColor === "custom"
-                                ? generateTheme(darkCustomThemeColor)
-                                : THEMES[darkThemeColor]
-                              : lightThemeColor === "custom"
-                                ? generateTheme(lightCustomThemeColor)
-                                : THEMES[lightThemeColor]) || THEMES.emerald)[
-                              resolvedTheme === "dark" ? 950 : 50
-                            ],
-                          )}, ${(resolvedTheme === "dark" ? darkBackgroundBaseOpacity : lightBackgroundBaseOpacity) / 100})`
-                        : "transparent",
                     } as React.CSSProperties
                   }
                   className={`w-full min-h-dvh flex ${
                     layoutMode === "sidebar" ? "flex-row" : "flex-col"
-                  } overflow-x-hidden bg-background text-foreground ${
-                    updateOpen ? "overflow-y-hidden" : ""
-                  }`}
+                  } overflow-x-hidden ${
+                    bgData ||
+                    (resolvedTheme === "light"
+                      ? lightBackgroundBaseMode
+                      : darkBackgroundBaseMode) !== "none"
+                      ? "bg-transparent"
+                      : "bg-background"
+                  } text-foreground ${updateOpen ? "overflow-y-hidden" : ""}`}
                 >
-                  {bgData && (
-                    <div
-                      className="fixed inset-0 z-0"
-                      style={{
-                        backgroundImage: `url("${bgData}")`,
-                        ...getFitStyles(
-                          resolvedTheme === "dark"
-                            ? darkBackgroundFitMode
-                            : lightBackgroundFitMode,
-                        ),
-                        filter: `blur(${
-                          resolvedTheme === "dark"
-                            ? darkBackgroundBlur
-                            : lightBackgroundBlur
-                        }px) brightness(${
-                          resolvedTheme === "dark"
-                            ? darkBackgroundBrightness
-                            : lightBackgroundBrightness
-                        }%)`,
-                        opacity:
-                          (resolvedTheme === "dark"
-                            ? darkBackgroundOpacity
-                            : lightBackgroundOpacity) / 100,
-                        transform:
-                          (resolvedTheme === "dark"
-                            ? darkBackgroundBlur
-                            : lightBackgroundBlur) > 0
-                            ? "scale(1.1)"
-                            : "none",
-                      }}
-                    />
-                  )}
                   {layoutMode === "navbar" ? (
                     <>
                       <GlobalNavbar

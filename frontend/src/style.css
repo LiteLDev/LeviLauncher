@@ -4,7 +4,7 @@
 
 @font-face {
   font-family: "MiSans";
-  src: local("MiSans"), url("./assets/fonts/MiSans-Medium.woff2");
+  src: url("./assets/fonts/MiSans-Medium.woff2") format("woff2");
 }
 
 /* Note: You may need to change the path to fit your project structure */
@@ -217,7 +217,7 @@
 
 body,
 html {
-  font-family: "MiSans";
+  font-family: var(--font-sans);
 
   -webkit-user-select: none;
   /* Chrome, Safari, Opera */

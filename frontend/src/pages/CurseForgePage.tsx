@@ -587,7 +587,7 @@ export const CurseForgePage: React.FC = () => {
                       }
                     }}
                   >
-                    {t("retry")}
+                    {t("common.retry")}
                   </Button>
                 </div>
               ) : loading || !hasSearched ? (

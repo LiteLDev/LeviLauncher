@@ -377,14 +377,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                   selectedKey={activeTab}
                   onSelectionChange={(k) => setActiveTab(k as any)}
                   variant="solid"
-                  classNames={{
-                    tabList:
-                      "bg-default-100/50 dark:bg-zinc-800/50 rounded-xl px-1",
-                    cursor:
-                      "bg-primary-600 dark:bg-primary-900 hover:bg-primary-500 shadow-md",
-                    tabContent:
-                      "group-data-[selected=true]:text-white font-medium",
-                  }}
+                  classNames={COMPONENT_STYLES.tabs}
                 >
                   <Tab key="all" title={t("versions.tab.all")} />
                   <Tab key="release" title={t("versions.tab.release")} />

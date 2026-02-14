@@ -30,6 +30,7 @@ import { COMPONENT_STYLES } from "@/constants/componentStyles";
 interface GlobalNavbarProps {
   isBeta: boolean;
   navLocked: boolean;
+  themeMode: string;
   revealStarted: boolean;
   isUpdatingMode: boolean;
   isOnboardingMode: boolean;
@@ -40,6 +41,7 @@ interface GlobalNavbarProps {
 export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   isBeta,
   navLocked,
+  themeMode,
   revealStarted,
   isUpdatingMode,
   isOnboardingMode,
@@ -237,7 +239,9 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
           <div className="flex items-center gap-3 shrink-0 justify-end">
             <div className="h-8 w-px bg-default-200 dark:bg-zinc-700 mx-1 hidden sm:block" />
 
-            <ThemeSwitcher />
+            {themeMode !== "auto" &&
+              themeMode !== "schedule" &&
+              themeMode !== "system" && <ThemeSwitcher />}
             <div className="hidden sm:block">
               <UserAvatar />
             </div>

@@ -110,6 +110,7 @@ func CheckUpdate(version string) types.CheckUpdate {
 		"https://edgeone.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
 		"https://gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
 		"https://hk.gh-proxy.org/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
+		"https://ghproxy.vip/https://api.github.com/repos/LiteLDev/LeviLauncher/releases",
 	}
 	useReverse := isChinaUser()
 	var releases []struct {

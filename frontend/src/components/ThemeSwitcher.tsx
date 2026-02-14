@@ -3,6 +3,7 @@ import React, { useEffect, useState } from "react";
 import { Button } from "@heroui/react";
 import { MoonIcon } from "@/icons/MoonIcon";
 import { SunIcon } from "@/icons/SunIcon";
+import { useThemeManager } from "@/utils/useThemeManager";
 
 export interface ThemeSwitcherProps {
   className?: string;
@@ -13,7 +14,7 @@ export function ThemeSwitcher({
   className,
   iconSize = 20,
 }: ThemeSwitcherProps) {
-  const { theme, setTheme } = useTheme();
+  const { toggleTheme, resolvedTheme } = useThemeManager();
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
@@ -22,7 +23,7 @@ export function ThemeSwitcher({
 
   if (!mounted) return <div className={className || "w-8 h-8"} />;
 
-  const isDark = theme === "dark";
+  const isDark = resolvedTheme === "dark";
 
   return (
     <Button
@@ -30,7 +31,7 @@ export function ThemeSwitcher({
       variant="light"
       size="sm"
       radius="lg"
-      onPress={() => setTheme(isDark ? "light" : "dark")}
+      onPress={toggleTheme}
       aria-label="Toggle theme"
       className={
         className ||

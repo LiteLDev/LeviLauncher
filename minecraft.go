@@ -1235,6 +1235,10 @@ func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }
 
 func (a *Minecraft) CanWriteToDir(path string) bool { return mcservice.CanWriteToDir(path) }
 
+func (a *Minecraft) GetSunTimes() mcservice.SunTimes {
+	return mcservice.GetSunTimes()
+}
+
 func (a *Minecraft) ListMinecraftProcesses() []types.ProcessInfo {
 	return mcservice.ListMinecraftProcesses()
 }

@@ -17,4 +17,9 @@ export const COMPONENT_STYLES = {
     inputWrapper:
       "bg-default-100/50 dark:bg-zinc-800/50 hover:bg-default-200/50 dark:hover:bg-zinc-700/50 group-data-[hover=true]:!border-primary-500 hover:!border-primary-500 focus-within:bg-default-100 dark:focus-within:bg-zinc-800 border-default-200/50 dark:border-white/10 focus-within:!border-primary-500 shadow-sm rounded-xl transition-all",
   },
+  tabs: {
+    tabList: "bg-default-100/50 dark:bg-zinc-800/50 rounded-xl px-1",
+    cursor: "bg-primary-600 dark:bg-primary-900 hover:bg-primary-500 shadow-md",
+    tabContent: "group-data-[selected=true]:text-white font-medium",
+  },
 };

@@ -46,7 +46,7 @@ const router = createHashRouter(
 
 root.render(
   <HeroUIProvider>
-    <NextThemesProvider attribute="class" defaultTheme="light">
+    <NextThemesProvider attribute="class" defaultTheme="light" enableSystem>
       <I18nextProvider i18n={i18n}>
         <React.StrictMode>
           <RouterProvider router={router} />

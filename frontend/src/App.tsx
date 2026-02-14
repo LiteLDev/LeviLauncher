@@ -44,6 +44,7 @@ import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
 import { FaRocket } from "react-icons/fa";
 import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
 import { THEMES, hexToRgb, generateTheme } from "@/constants/themes";
+import { useThemeManager } from "@/utils/useThemeManager";
 
 const GlobalShortcuts = ({
   tryNavigate,
@@ -73,7 +74,7 @@ const GlobalShortcuts = ({
 };
 
 function App() {
-  const { theme, resolvedTheme } = useTheme();
+  const { theme, resolvedTheme, setTheme } = useTheme();
   const [splashVisible, setSplashVisible] = useState(true);
   const [revealStarted, setRevealStarted] = useState(false);
   const [isFirstLoad, setIsFirstLoad] = useState(false);
@@ -118,71 +119,209 @@ function App() {
     }
   });
 
-  const [backgroundImage, setBackgroundImage] = useState<string>(() => {
+  const { themeMode } = useThemeManager();
+
+  const [lightBackgroundImage, setLightBackgroundImage] = useState<string>(
+    () => {
+      try {
+        const saved = localStorage.getItem("app.lightBackgroundImage");
+        if (saved !== null) return saved;
+        return localStorage.getItem("app.backgroundImage") || "";
+      } catch {
+        return "";
+      }
+    },
+  );
+  const [darkBackgroundImage, setDarkBackgroundImage] = useState<string>(() => {
     try {
+      const saved = localStorage.getItem("app.darkBackgroundImage");
+      if (saved !== null) return saved;
       return localStorage.getItem("app.backgroundImage") || "";
     } catch {
       return "";
     }
   });
   const [bgData, setBgData] = useState<string>("");
-  const [backgroundBlur, setBackgroundBlur] = useState<number>(() => {
+
+  const [lightBackgroundBlur, setLightBackgroundBlur] = useState<number>(() => {
     try {
+      const saved = localStorage.getItem("app.lightBackgroundBlur");
+      if (saved !== null) return Number(saved);
       return Number(localStorage.getItem("app.backgroundBlur") || "0");
     } catch {
       return 0;
     }
   });
-  const [backgroundBrightness, setBackgroundBrightness] = useState<number>(
+  const [darkBackgroundBlur, setDarkBackgroundBlur] = useState<number>(() => {
+    try {
+      const saved = localStorage.getItem("app.darkBackgroundBlur");
+      if (saved !== null) return Number(saved);
+      return Number(localStorage.getItem("app.backgroundBlur") || "0");
+    } catch {
+      return 0;
+    }
+  });
+
+  const [lightBackgroundBrightness, setLightBackgroundBrightness] =
+    useState<number>(() => {
+      try {
+        const item =
+          localStorage.getItem("app.lightBackgroundBrightness") ||
+          localStorage.getItem("app.backgroundBrightness");
+        return item !== null ? Number(item) : 100;
+      } catch {
+        return 100;
+      }
+    });
+  const [darkBackgroundBrightness, setDarkBackgroundBrightness] =
+    useState<number>(() => {
+      try {
+        const item =
+          localStorage.getItem("app.darkBackgroundBrightness") ||
+          localStorage.getItem("app.backgroundBrightness");
+        return item !== null ? Number(item) : 100;
+      } catch {
+        return 100;
+      }
+    });
+
+  const [lightBackgroundOpacity, setLightBackgroundOpacity] = useState<number>(
     () => {
       try {
-        const item = localStorage.getItem("app.backgroundBrightness");
+        const item =
+          localStorage.getItem("app.lightBackgroundOpacity") ||
+          localStorage.getItem("app.backgroundOpacity");
         return item !== null ? Number(item) : 100;
       } catch {
         return 100;
       }
     },
   );
-  const [backgroundOpacity, setBackgroundOpacity] = useState<number>(() => {
-    try {
-      const item = localStorage.getItem("app.backgroundOpacity");
-      return item !== null ? Number(item) : 100;
-    } catch {
-      return 100;
-    }
-  });
+  const [darkBackgroundOpacity, setDarkBackgroundOpacity] = useState<number>(
+    () => {
+      try {
+        const item =
+          localStorage.getItem("app.darkBackgroundOpacity") ||
+          localStorage.getItem("app.backgroundOpacity");
+        return item !== null ? Number(item) : 100;
+      } catch {
+        return 100;
+      }
+    },
+  );
 
-  const [backgroundUseTheme, setBackgroundUseTheme] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("app.backgroundUseTheme") === "true";
-    } catch {
-      return false;
-    }
-  });
+  const [lightBackgroundBaseOpacity, setLightBackgroundBaseOpacity] =
+    useState<number>(() => {
+      try {
+        const item =
+          localStorage.getItem("app.lightBackgroundBaseOpacity") ||
+          localStorage.getItem("app.backgroundBaseOpacity");
+        return item !== null ? Number(item) : 100;
+      } catch {
+        return 100;
+      }
+    });
+  const [darkBackgroundBaseOpacity, setDarkBackgroundBaseOpacity] =
+    useState<number>(() => {
+      try {
+        const item =
+          localStorage.getItem("app.darkBackgroundBaseOpacity") ||
+          localStorage.getItem("app.backgroundBaseOpacity");
+        return item !== null ? Number(item) : 100;
+      } catch {
+        return 100;
+      }
+    });
 
-  const [themeColor, setThemeColor] = useState<string>(() => {
+  const [lightBackgroundUseTheme, setLightBackgroundUseTheme] =
+    useState<boolean>(() => {
+      try {
+        const saved = localStorage.getItem("app.lightBackgroundUseTheme");
+        if (saved !== null) return saved === "true";
+        return localStorage.getItem("app.backgroundUseTheme") === "true";
+      } catch {
+        return false;
+      }
+    });
+  const [darkBackgroundUseTheme, setDarkBackgroundUseTheme] = useState<boolean>(
+    () => {
+      try {
+        const saved = localStorage.getItem("app.darkBackgroundUseTheme");
+        if (saved !== null) return saved === "true";
+        return localStorage.getItem("app.backgroundUseTheme") === "true";
+      } catch {
+        return false;
+      }
+    },
+  );
+
+  const [lightThemeColor, setLightThemeColor] = useState<string>(() => {
     try {
-      const saved = localStorage.getItem("app.themeColor");
-      if (saved === "rose") return "pink";
-      return saved || "emerald";
+      const saved = localStorage.getItem("app.lightThemeColor");
+      if (saved) return saved;
+      const old = localStorage.getItem("app.themeColor");
+      if (old === "rose") return "pink";
+      return old || "emerald";
     } catch {
       return "emerald";
     }
   });
 
-  const [customThemeColor, setCustomThemeColor] = useState<string>(() => {
+  const [lightCustomThemeColor, setLightCustomThemeColor] = useState<string>(
+    () => {
+      try {
+        return (
+          localStorage.getItem("app.lightCustomThemeColor") ||
+          localStorage.getItem("app.customThemeColor") ||
+          "#10b981"
+        );
+      } catch {
+        return "#10b981";
+      }
+    },
+  );
+
+  const [darkThemeColor, setDarkThemeColor] = useState<string>(() => {
     try {
-      return localStorage.getItem("app.customThemeColor") || "#10b981";
+      const saved = localStorage.getItem("app.darkThemeColor");
+      if (saved) return saved;
+      const old = localStorage.getItem("app.themeColor");
+      if (old === "rose") return "pink";
+      return old || "emerald";
     } catch {
-      return "#10b981";
+      return "emerald";
     }
   });
+
+  const [darkCustomThemeColor, setDarkCustomThemeColor] = useState<string>(
+    () => {
+      try {
+        return (
+          localStorage.getItem("app.darkCustomThemeColor") ||
+          localStorage.getItem("app.customThemeColor") ||
+          "#10b981"
+        );
+      } catch {
+        return "#10b981";
+      }
+    },
+  );
 
   useEffect(() => {
     const handler = () => {
       try {
-        const val = Number(localStorage.getItem("app.backgroundBlur") || "0");
-        setBackgroundBlur(val);
+        const lightVal = Number(
+          localStorage.getItem("app.lightBackgroundBlur") ||
+            localStorage.getItem("app.backgroundBlur") ||
+            "0",
+        );
+        setLightBackgroundBlur(lightVal);
+        const darkVal = Number(
+          localStorage.getItem("app.darkBackgroundBlur") ||
+            localStorage.getItem("app.backgroundBlur") ||
+            "0",
+        );
+        setDarkBackgroundBlur(darkVal);
       } catch {}
     };
     window.addEventListener("app-blur-changed", handler);
@@ -192,8 +331,14 @@ function App() {
   useEffect(() => {
     const handler = () => {
       try {
-        const item = localStorage.getItem("app.backgroundOpacity");
-        setBackgroundOpacity(item !== null ? Number(item) : 100);
+        const lightItem =
+          localStorage.getItem("app.lightBackgroundOpacity") ||
+          localStorage.getItem("app.backgroundOpacity");
+        setLightBackgroundOpacity(lightItem !== null ? Number(lightItem) : 100);
+        const darkItem =
+          localStorage.getItem("app.darkBackgroundOpacity") ||
+          localStorage.getItem("app.backgroundOpacity");
+        setDarkBackgroundOpacity(darkItem !== null ? Number(darkItem) : 100);
       } catch {}
     };
     window.addEventListener("app-opacity-changed", handler);
@@ -203,8 +348,38 @@ function App() {
   useEffect(() => {
     const handler = () => {
       try {
-        const val = localStorage.getItem("app.backgroundUseTheme") === "true";
-        setBackgroundUseTheme(val);
+        const lightItem =
+          localStorage.getItem("app.lightBackgroundBaseOpacity") ||
+          localStorage.getItem("app.backgroundBaseOpacity");
+        setLightBackgroundBaseOpacity(
+          lightItem !== null ? Number(lightItem) : 100,
+        );
+        const darkItem =
+          localStorage.getItem("app.darkBackgroundBaseOpacity") ||
+          localStorage.getItem("app.backgroundBaseOpacity");
+        setDarkBackgroundBaseOpacity(
+          darkItem !== null ? Number(darkItem) : 100,
+        );
+      } catch {}
+    };
+    window.addEventListener("app-base-opacity-changed", handler);
+    return () =>
+      window.removeEventListener("app-base-opacity-changed", handler);
+  }, []);
+
+  useEffect(() => {
+    const handler = () => {
+      try {
+        const lightVal =
+          localStorage.getItem("app.lightBackgroundUseTheme") === "true" ||
+          (localStorage.getItem("app.lightBackgroundUseTheme") === null &&
+            localStorage.getItem("app.backgroundUseTheme") === "true");
+        setLightBackgroundUseTheme(lightVal);
+        const darkVal =
+          localStorage.getItem("app.darkBackgroundUseTheme") === "true" ||
+          (localStorage.getItem("app.darkBackgroundUseTheme") === null &&
+            localStorage.getItem("app.backgroundUseTheme") === "true");
+        setDarkBackgroundUseTheme(darkVal);
       } catch {}
     };
     window.addEventListener("app-bg-theme-changed", handler);
@@ -214,8 +389,16 @@ function App() {
   useEffect(() => {
     const handler = () => {
       try {
-        const item = localStorage.getItem("app.backgroundBrightness");
-        setBackgroundBrightness(item !== null ? Number(item) : 100);
+        const lightItem =
+          localStorage.getItem("app.lightBackgroundBrightness") ||
+          localStorage.getItem("app.backgroundBrightness");
+        setLightBackgroundBrightness(
+          lightItem !== null ? Number(lightItem) : 100,
+        );
+        const darkItem =
+          localStorage.getItem("app.darkBackgroundBrightness") ||
+          localStorage.getItem("app.backgroundBrightness");
+        setDarkBackgroundBrightness(darkItem !== null ? Number(darkItem) : 100);
       } catch {}
     };
     window.addEventListener("app-brightness-changed", handler);
@@ -225,8 +408,16 @@ function App() {
   useEffect(() => {
     const handler = () => {
       try {
-        const img = localStorage.getItem("app.backgroundImage") || "";
-        setBackgroundImage(img);
+        const lightImg =
+          localStorage.getItem("app.lightBackgroundImage") ||
+          localStorage.getItem("app.backgroundImage") ||
+          "";
+        setLightBackgroundImage(lightImg);
+        const darkImg =
+          localStorage.getItem("app.darkBackgroundImage") ||
+          localStorage.getItem("app.backgroundImage") ||
+          "";
+        setDarkBackgroundImage(darkImg);
       } catch {}
     };
     window.addEventListener("app-background-changed", handler);
@@ -236,13 +427,27 @@ function App() {
   useEffect(() => {
     const handler = (e: any) => {
       try {
-        const val = localStorage.getItem("app.themeColor") || "emerald";
-        setThemeColor(val);
-        const custom =
-          e?.detail?.customThemeColor ||
+        const lightColor =
+          localStorage.getItem("app.lightThemeColor") ||
+          localStorage.getItem("app.themeColor") ||
+          "emerald";
+        setLightThemeColor(lightColor);
+        const lightCustom =
+          localStorage.getItem("app.lightCustomThemeColor") ||
           localStorage.getItem("app.customThemeColor") ||
           "#10b981";
-        setCustomThemeColor(custom);
+        setLightCustomThemeColor(lightCustom);
+
+        const darkColor =
+          localStorage.getItem("app.darkThemeColor") ||
+          localStorage.getItem("app.themeColor") ||
+          "emerald";
+        setDarkThemeColor(darkColor);
+        const darkCustom =
+          localStorage.getItem("app.darkCustomThemeColor") ||
+          localStorage.getItem("app.customThemeColor") ||
+          "#10b981";
+        setDarkCustomThemeColor(darkCustom);
       } catch {}
     };
     window.addEventListener("app-theme-changed", handler);
@@ -250,9 +455,15 @@ function App() {
   }, []);
 
   useEffect(() => {
-    let theme = THEMES[themeColor];
-    if (themeColor === "custom") {
-      theme = generateTheme(customThemeColor);
+    const isDark = resolvedTheme === "dark";
+    const currentColor = isDark ? darkThemeColor : lightThemeColor;
+    const currentCustomColor = isDark
+      ? darkCustomThemeColor
+      : lightCustomThemeColor;
+
+    let theme = THEMES[currentColor];
+    if (currentColor === "custom") {
+      theme = generateTheme(currentCustomColor);
     }
     if (!theme) theme = THEMES.emerald;
 
@@ -262,28 +473,34 @@ function App() {
       const k = Number(key);
       root.style.setProperty(`--theme-${k}`, hexToRgb(theme[k]));
     });
-  }, [themeColor, customThemeColor]);
+  }, [
+    resolvedTheme,
+    lightThemeColor,
+    lightCustomThemeColor,
+    darkThemeColor,
+    darkCustomThemeColor,
+  ]);
 
   useEffect(() => {
-    if (!backgroundImage) {
+    const isDark = resolvedTheme === "dark";
+    const currentImg = isDark ? darkBackgroundImage : lightBackgroundImage;
+
+    if (!currentImg) {
       setBgData("");
       return;
     }
-    if (
-      backgroundImage.startsWith("data:") ||
-      backgroundImage.startsWith("http")
-    ) {
-      setBgData(backgroundImage);
+    if (currentImg.startsWith("data:") || currentImg.startsWith("http")) {
+      setBgData(currentImg);
       return;
     }
     // Fetch from backend
     (minecraft as any)
-      .GetImageBase64?.(backgroundImage)
+      .GetImageBase64?.(currentImg)
       .then((res: string) => {
         if (res) setBgData(res);
       })
       .catch(() => {});
-  }, [backgroundImage]);
+  }, [lightBackgroundImage, darkBackgroundImage, resolvedTheme]);
 
   useEffect(() => {
     MotionGlobalConfig.skipAnimations = disableAnimations;
@@ -646,12 +863,23 @@ function App() {
                         layoutMode === "sidebar" ? "4.5rem" : "5rem",
                       ...(bgData
                         ? {
-                            backgroundColor: backgroundUseTheme
-                              ? (themeColor === "custom"
-                                  ? generateTheme(customThemeColor)
-                                  : THEMES[themeColor])?.[
-                                  resolvedTheme === "dark" ? 950 : 50
-                                ] || "transparent"
+                            backgroundColor: (
+                              resolvedTheme === "dark"
+                                ? darkBackgroundUseTheme
+                                : lightBackgroundUseTheme
+                            )
+                              ? `rgb(${hexToRgb(
+                                  ((resolvedTheme === "dark"
+                                    ? darkThemeColor === "custom"
+                                      ? generateTheme(darkCustomThemeColor)
+                                      : THEMES[darkThemeColor]
+                                    : lightThemeColor === "custom"
+                                      ? generateTheme(lightCustomThemeColor)
+                                      : THEMES[lightThemeColor]) ||
+                                    THEMES.emerald)[
+                                    resolvedTheme === "dark" ? 950 : 50
+                                  ],
+                                )} / ${(resolvedTheme === "dark" ? darkBackgroundBaseOpacity : lightBackgroundBaseOpacity) / 100})`
                               : "transparent",
                           }
                         : {}),
@@ -671,9 +899,25 @@ function App() {
                         backgroundSize: "cover",
                         backgroundPosition: "center",
                         backgroundRepeat: "no-repeat",
-                        filter: `blur(${backgroundBlur}px) brightness(${backgroundBrightness}%)`,
-                        opacity: backgroundOpacity / 100,
-                        transform: backgroundBlur > 0 ? "scale(1.1)" : "none",
+                        filter: `blur(${
+                          resolvedTheme === "dark"
+                            ? darkBackgroundBlur
+                            : lightBackgroundBlur
+                        }px) brightness(${
+                          resolvedTheme === "dark"
+                            ? darkBackgroundBrightness
+                            : lightBackgroundBrightness
+                        }%)`,
+                        opacity:
+                          (resolvedTheme === "dark"
+                            ? darkBackgroundOpacity
+                            : lightBackgroundOpacity) / 100,
+                        transform:
+                          (resolvedTheme === "dark"
+                            ? darkBackgroundBlur
+                            : lightBackgroundBlur) > 0
+                            ? "scale(1.1)"
+                            : "none",
                       }}
                     />
                   )}
@@ -682,6 +926,7 @@ function App() {
                       <GlobalNavbar
                         isBeta={isBeta}
                         navLocked={navLocked}
+                        themeMode={themeMode}
                         revealStarted={revealStarted}
                         isUpdatingMode={isUpdatingMode}
                         isOnboardingMode={isOnboardingMode}
@@ -694,6 +939,7 @@ function App() {
                       <Sidebar
                         isBeta={isBeta}
                         navLocked={navLocked}
+                        themeMode={themeMode}
                         revealStarted={revealStarted}
                         isUpdatingMode={isUpdatingMode}
                         isOnboardingMode={isOnboardingMode}

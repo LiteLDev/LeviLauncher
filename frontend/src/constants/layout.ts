@@ -9,9 +9,9 @@ export const LAYOUT = {
     },
   },
   GLASS_CARD: {
-    BASE: "border-none shadow-sm bg-white/50 dark:bg-zinc-950/40 rounded-4xl",
+    BASE: "border border-black/5 dark:border-white/10 shadow-sm bg-white/60 dark:bg-zinc-950/60 rounded-4xl ",
     HEADER: "p-6 block border-b border-default-200 dark:border-white/10",
     BODY: "flex flex-col gap-4 p-4",
   },
-  NAVBAR_BG: "bg-white/50 dark:bg-zinc-950/40 backdrop-blur-md",
+  NAVBAR_BG: "bg-white/60 dark:bg-zinc-950/60 backdrop-blur-sm",
 };

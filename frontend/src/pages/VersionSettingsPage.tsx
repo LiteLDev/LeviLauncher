@@ -501,13 +501,8 @@ export default function VersionSettingsPage() {
                 onSelectionChange={(k) => setSelectedTab(k as string)}
                 variant="solid"
                 classNames={{
+                  ...COMPONENT_STYLES.tabs,
                   base: "mt-4",
-                  tabList:
-                    "bg-default-100/50 dark:bg-zinc-800/50 rounded-xl px-1",
-                  cursor:
-                    "bg-primary-600 dark:bg-primary-900 hover:bg-primary-500 shadow-md",
-                  tabContent:
-                    "group-data-[selected=true]:text-white font-medium",
                 }}
               >
                 <Tab key="general" title={t("versions.edit.tabs.general")} />
@@ -982,7 +977,7 @@ export default function VersionSettingsPage() {
               className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={() => {
                 setGdkMissingOpen(false);
-                navigate("/settings");
+                navigate("/settings", { state: { tab: "components" } });
               }}
             >
               {t("launcherpage.gdk_missing.go_settings")}

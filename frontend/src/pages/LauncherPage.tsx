@@ -1858,7 +1858,7 @@ export const LauncherPage = (args: any) => {
                 className="text-white"
                 onPress={() => {
                   gdkMissingDisclosure.onClose();
-                  navigate("/settings");
+                  navigate("/settings", { state: { tab: "components" } });
                 }}
               >
                 {t("launcherpage.gdk_missing.go_settings")}

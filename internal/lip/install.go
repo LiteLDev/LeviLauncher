@@ -60,6 +60,10 @@ func GetLatestVersion() (string, error) {
 	apis := []string{
 		"https://api.github.com/repos/futrime/lip/releases/latest",
 		"https://cdn.gh-proxy.org/https://api.github.com/repos/futrime/lip/releases/latest",
+		"https://edgeone.gh-proxy.org/https://api.github.com/repos/futrime/lip/releases/latest",
+		"https://gh-proxy.org/https://api.github.com/repos/futrime/lip/releases/latest",
+		"https://hk.gh-proxy.org/https://api.github.com/repos/futrime/lip/releases/latest",
+		"https://ghproxy.vip/https://api.github.com/repos/futrime/lip/releases/latest",
 	}
 
 	var payload struct {
@@ -109,9 +113,23 @@ func Install() string {
 
 	application.Get().Event.Emit(EventLipInstallStatus, "downloading")
 
+	proxies := []string{
+		"https://gh-proxy.org/",
+		"https://cdn.gh-proxy.org/",
+		"https://edgeone.gh-proxy.org/",
+		"https://hk.gh-proxy.org/",
+	}
+
 	if err := downloadFile(downloadUrl, zipPath); err != nil {
-		proxyUrl := "https://gh-proxy.org/" + downloadUrl
-		if err := downloadFile(proxyUrl, zipPath); err != nil {
+		success := false
+		for _, proxy := range proxies {
+			proxyUrl := proxy + downloadUrl
+			if err := downloadFile(proxyUrl, zipPath); err == nil {
+				success = true
+				break
+			}
+		}
+		if !success {
 			return "ERR_DOWNLOAD_FAILED"
 		}
 	}

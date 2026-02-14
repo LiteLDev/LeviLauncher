@@ -16,6 +16,7 @@ import { LAYOUT } from "@/constants/layout";
 interface SidebarProps {
   isBeta: boolean;
   navLocked: boolean;
+  themeMode: string;
   revealStarted: boolean;
   isUpdatingMode: boolean;
   isOnboardingMode: boolean;
@@ -26,6 +27,7 @@ interface SidebarProps {
 export const Sidebar: React.FC<SidebarProps> = ({
   isBeta,
   navLocked,
+  themeMode,
   revealStarted,
   isUpdatingMode,
   isOnboardingMode,
@@ -154,19 +156,23 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         <div className="flex flex-col items-center gap-4 pb-6 w-full px-2">
-          <Tooltip
-            content={t("theme.toggle")}
-            placement="right"
-            delay={0}
-            closeDelay={0}
-          >
-            <div>
-              <ThemeSwitcher
-                className="w-12 h-12 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-default-100 dark:hover:bg-zinc-800 transition-all duration-200"
-                iconSize={20}
-              />
-            </div>
-          </Tooltip>
+          {themeMode !== "auto" &&
+            themeMode !== "schedule" &&
+            themeMode !== "system" && (
+              <Tooltip
+                content={t("theme.toggle")}
+                placement="right"
+                delay={0}
+                closeDelay={0}
+              >
+                <div>
+                  <ThemeSwitcher
+                    className="w-12 h-12 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-default-100 dark:hover:bg-zinc-800 transition-all duration-200"
+                    iconSize={20}
+                  />
+                </div>
+              </Tooltip>
+            )}
         </div>
       </motion.div>
     </AnimatePresence>

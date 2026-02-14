@@ -413,6 +413,17 @@
       "background_brightness": "Яркость фона",
       "background_opacity": "Непрозрачность фона",
       "background_base_opacity": "Непрозрачность основы",
+      "background_fit_mode": "Режим заполнения",
+      "background_fit_smart": "Умное заполнение",
+      "background_fit_center": "По центру",
+      "background_fit_fit": "Вписать",
+      "background_fit_stretch": "Растянуть",
+      "background_fit_tile": "Замостить",
+      "background_fit_top_left": "Сверху слева",
+      "background_fit_top_right": "Сверху справа",
+      "background_play_order": "Порядок воспроизведения",
+      "background_play_sequential": "Последовательно",
+      "background_play_random": "Случайно",
       "background_use_theme": "Использовать цвет темы как основу",
       "background_use_theme_desc": "Если включено, текущий цвет темы используется в качестве заливки фона; в противном случае используется черный/белый",
       "disable_animations": "Отключить анимацию",
@@ -766,14 +777,6 @@
       "body_1": "Версия LeviLamina ({{version}}), которую вы собираетесь установить, является релиз-кандидатом (RC).",
       "body_2": "Это экспериментальная версия, которая может быть нестабильной. Рекомендуется только для разработчиков или опытных пользователей.",
       "body_3": "Вы хотите продолжить установку?"
-    }
-  },
-  "versionselect": {
-    "unsaved": {
-      "title": "Есть несохранённые изменения",
-      "body": "Вы сменили выбранную версию, но ещё не сохранили. Сохранить и выйти?",
-      "discard": "Отменить и выйти",
-      "save_and_leave": "Сохранить и выйти"
     }
   },
   "terms": {

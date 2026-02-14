@@ -14,15 +14,12 @@ import {
   Tab,
   Input,
   Chip,
-  Select,
-  SelectItem,
-  useDisclosure,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
   DropdownItem,
+  addToast,
 } from "@heroui/react";
-import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -57,41 +54,6 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
   const navigate = useNavigate();
   const { t } = useTranslation();
   const hasBackend = minecraft !== undefined;
-  const guardBypassRef = React.useRef<boolean>(false);
-  const userChangedRef = React.useRef<boolean>(false);
-  const unsavedDisclosure = useDisclosure();
-  const navAttemptRef = React.useRef<{
-    type: "push" | "replace" | "";
-    args: any[];
-    push?: typeof window.history.pushState;
-    replace?: typeof window.history.replaceState;
-  } | null>(null);
-
-  const commitNavAttempt = React.useCallback(() => {
-    const a = navAttemptRef.current;
-    if (!a) return;
-    try {
-      const raw = String((a.args && a.args[2]) || "");
-      let target = "";
-      if (raw) {
-        try {
-          const u = new URL(raw, window.location.href);
-          target = u.hash ? u.hash.slice(1) : u.pathname || raw;
-        } catch {
-          target = raw.startsWith("#") ? raw.slice(1) : raw;
-        }
-      }
-
-      if (!target) target = "/";
-
-      const state = a.args[0]?.usr;
-
-      guardBypassRef.current = true;
-      navigate(target, { replace: a.type === "replace", state });
-    } finally {
-      navAttemptRef.current = null;
-    }
-  }, [navigate]);
 
   React.useEffect(() => {
     if (hasBackend) {
@@ -216,17 +178,20 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
     [],
   );
 
-  const handleConfirm = () => {
-    const name = selectedVersionName;
+  const handleSelectVersion = (name: string) => {
     if (name) {
       saveCurrentVersionName(name);
+      setSelectedVersionName(name);
+      setPersistedName(name);
+      addToast({
+        title: t("common.success"),
+        description: t("launcherpage.currentVersion") + ": " + name,
+        color: "primary",
+      });
     }
     try {
       props.refresh && props.refresh();
     } catch {}
-    setPersistedName(name || persistedName);
-    guardBypassRef.current = true;
-    navigate("/");
   };
 
   const openEditFor = React.useCallback(
@@ -235,102 +200,6 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
     },
     [navigate],
   );
-
-  const selectVersionByUser = (name: string) => {
-    userChangedRef.current = true;
-    setSelectedVersionName(name);
-  };
-
-  const guardActive = React.useMemo(() => {
-    if (guardBypassRef.current) return false;
-    return (
-      userChangedRef.current &&
-      !!persistedName &&
-      selectedVersionName !== persistedName
-    );
-  }, [persistedName, selectedVersionName]);
-
-  React.useEffect(() => {
-    const originalPush = window.history.pushState.bind(window.history);
-    const originalReplace = window.history.replaceState.bind(window.history);
-    if (!navAttemptRef.current)
-      navAttemptRef.current = {
-        type: "",
-        args: [],
-        push: originalPush,
-        replace: originalReplace,
-      };
-    else {
-      navAttemptRef.current.push = originalPush;
-      navAttemptRef.current.replace = originalReplace;
-    }
-
-    const openModalWithAttempt = (type: "push" | "replace", args: any[]) => {
-      if (!navAttemptRef.current)
-        navAttemptRef.current = {
-          type,
-          args,
-          push: originalPush,
-          replace: originalReplace,
-        };
-      else {
-        navAttemptRef.current.type = type;
-        navAttemptRef.current.args = args;
-      }
-      try {
-        unsavedDisclosure.onOpen();
-      } catch {}
-    };
-
-    const interceptPush: typeof window.history.pushState = function (
-      ...args: any[]
-    ) {
-      if (!guardActive || guardBypassRef.current)
-        return originalPush.apply(
-          window.history,
-          args as [any, string, (string | URL | null)?],
-        );
-      openModalWithAttempt("push", args);
-      return;
-    } as any;
-
-    const interceptReplace: typeof window.history.replaceState = function (
-      ...args: any[]
-    ) {
-      if (!guardActive || guardBypassRef.current)
-        return originalPush.apply(
-          window.history,
-          args as [any, string, (string | URL | null)?],
-        );
-      openModalWithAttempt("replace", args);
-      return;
-    } as any;
-
-    if (guardActive) {
-      (window.history as any).pushState = interceptPush as any;
-      (window.history as any).replaceState = interceptReplace as any;
-    }
-
-    return () => {
-      (window.history as any).pushState = originalPush as any;
-      (window.history as any).replaceState = originalReplace as any;
-    };
-  }, [guardActive, unsavedDisclosure]);
-
-  React.useEffect(() => {
-    const handler = (e: BeforeUnloadEvent) => {
-      if (
-        userChangedRef.current &&
-        !!persistedName &&
-        selectedVersionName !== persistedName
-      ) {
-        e.preventDefault();
-        e.returnValue = "";
-      }
-    };
-    window.addEventListener("beforeunload", handler);
-    return () => window.removeEventListener("beforeunload", handler);
-  }, [persistedName, selectedVersionName]);
 
   return (
     <>
@@ -350,26 +219,6 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                 className="w-full"
                 title={t("launcherpage.version_select.title")}
                 titleClassName="text-left pb-1"
-                endContent={
-                  <div className="flex items-center gap-2">
-                    <Button
-                      variant="light"
-                      onPress={() => {
-                        guardBypassRef.current = true;
-                        navigate("/");
-                      }}
-                    >
-                      {t("common.cancel")}
-                    </Button>
-                    <Button
-                      color="primary"
-                      className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
-                      onPress={handleConfirm}
-                    >
-                      {t("common.ok")}
-                    </Button>
-                  </div>
-                }
               />
               <div className="flex w-full flex-wrap items-center gap-3">
                 <Tabs
@@ -493,7 +342,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
             >
               <Card
                 isPressable
-                onPress={() => selectVersionByUser(it.name)}
+                onPress={() => handleSelectVersion(it.name)}
                 className={cn(
                   "w-full h-full transition-all",
                   LAYOUT.GLASS_CARD.BASE,
@@ -572,61 +421,6 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
           ))}
         </motion.div>
       </PageContainer>
-
-      <UnifiedModal
-        isOpen={unsavedDisclosure.isOpen}
-        onOpenChange={unsavedDisclosure.onOpenChange}
-        type="warning"
-        title={t("versionselect.unsaved.title")}
-        showConfirmButton={false}
-        showCancelButton={false}
-        footer={
-          <div className="flex w-full justify-end gap-2">
-            <Button
-              variant="light"
-              onPress={() => {
-                unsavedDisclosure.onClose();
-                if (navAttemptRef.current) navAttemptRef.current = null;
-              }}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              color="danger"
-              variant="light"
-              onPress={() => {
-                unsavedDisclosure.onClose();
-                commitNavAttempt();
-              }}
-            >
-              {t("versionselect.unsaved.discard")}
-            </Button>
-            <Button
-              color="primary"
-              onPress={() => {
-                const name = selectedVersionName;
-                if (name) {
-                  try {
-                    localStorage.setItem("ll.currentVersionName", name);
-                  } catch {}
-                }
-                try {
-                  props.refresh && props.refresh();
-                } catch {}
-                setPersistedName(name || persistedName);
-                unsavedDisclosure.onClose();
-                commitNavAttempt();
-              }}
-            >
-              {t("versionselect.unsaved.save_and_leave")}
-            </Button>
-          </div>
-        }
-      >
-        <div className="text-small text-default-600 dark:text-zinc-300">
-          {t("versionselect.unsaved.body")}
-        </div>
-      </UnifiedModal>
     </>
   );
 };

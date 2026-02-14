@@ -1,9 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { motion } from "framer-motion";
 import {
   Card,
-  CardHeader,
   CardBody,
   Button,
   Input,
@@ -16,6 +14,7 @@ import {
 } from "@heroui/react";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader, SectionHeader } from "@/components/PageHeader";
+import { PageContainer } from "@/components/PageContainer";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { LAYOUT } from "@/constants/layout";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -31,6 +30,7 @@ import {
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { Dialogs } from "@wailsio/runtime";
+import { LuHardDrive, LuLanguages } from "react-icons/lu";
 
 export default function OnboardingPage() {
   const { t, i18n } = useTranslation();
@@ -93,123 +93,94 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="relative w-full h-full flex flex-col pt-[var(--content-pt)] px-4 pb-8 overflow-y-auto custom-scrollbar bg-transparent">
-      <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-        className="w-full max-w-2xl mx-auto flex flex-col py-4"
-      >
-        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-10 text-center sm:text-left">
-          <motion.div
-            initial={{ scale: 0.8, rotate: -10 }}
-            animate={{ scale: 1, rotate: 0 }}
-            transition={{ duration: 0.5, delay: 0.2 }}
-            className="w-20 h-20 rounded-[2.5rem] bg-linear-to-br from-primary-500 to-primary-700 shadow-2xl shadow-primary-500/30 flex items-center justify-center text-white shrink-0"
-          >
-            <svg
-              className="w-10 h-10"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-              xmlns="http://www.w3.org/2000/svg"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2.5}
-                d="M13 10V3L4 14h7v7l9-11h-7z"
-              />
-            </svg>
-          </motion.div>
-          <div className="flex flex-col">
-            <h1 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-400 dark:to-primary-200 mb-2">
-              {t("onboarding.title")}
-            </h1>
-            <p className="text-default-500 dark:text-zinc-400 text-lg font-medium max-w-md">
-              {t("onboarding.subtitle")}
-            </p>
-          </div>
-        </div>
+    <PageContainer>
+      <div className="flex flex-col gap-6">
+        {/* Header Card */}
+        <Card className={LAYOUT.GLASS_CARD.BASE}>
+          <CardBody className="p-6">
+            <PageHeader
+              title={t("onboarding.title")}
+              description={t("onboarding.subtitle")}
+              startContent={
+                <div className="w-16 h-16 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-600 dark:text-primary-500 shrink-0">
+                  <svg
+                    className="w-10 h-10"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                    xmlns="http://www.w3.org/2000/svg"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2.5}
+                      d="M13 10V3L4 14h7v7l9-11h-7z"
+                    />
+                  </svg>
+                </div>
+              }
+              endContent={
+                <div className="flex items-center gap-3">
+                  <Button
+                    variant="light"
+                    radius="full"
+                    onPress={requestFinish}
+                    className="font-bold text-default-500 px-6"
+                  >
+                    {t("onboarding.skip")}
+                  </Button>
+                  <Button
+                    color="primary"
+                    radius="full"
+                    className="font-black px-10 h-12 text-lg shadow-lg shadow-primary-500/20"
+                    onPress={requestFinish}
+                  >
+                    {t("onboarding.finish")}
+                  </Button>
+                </div>
+              }
+            />
+          </CardBody>
+        </Card>
 
-        <Card className={LAYOUT.GLASS_CARD.BASE + " p-2"}>
-          <CardBody className="p-4 space-y-6">
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.3 }}
-              className="bg-default-100/30 dark:bg-white/5 border border-default-200/50 dark:border-white/5 rounded-3xl p-5"
-            >
-              <div className="mb-3">
-                <SectionHeader
-                  title={t("settings.body.paths.title")}
-                  description={t("settings.body.paths.subtitle")}
-                />
-              </div>
-
-              <div className="space-y-3">
-                <Input
-                  labelPlacement="outside"
-                  label={t("settings.body.paths.base_root")}
-                  placeholder={t("settings.body.paths.base_root")}
-                  value={newBaseRoot}
-                  onValueChange={setNewBaseRoot}
-                  variant="bordered"
-                  classNames={COMPONENT_STYLES.input}
-                  description={
-                    newBaseRoot && newBaseRoot !== baseRoot ? (
-                      <span
-                        className={
-                          baseRootWritable
-                            ? "text-warning-500 font-medium"
-                            : "text-danger-500 font-medium"
-                        }
-                      >
-                        {baseRootWritable
-                          ? t("settings.body.paths.unsaved")
-                          : t("settings.body.paths.not_writable")}
-                      </span>
-                    ) : null
-                  }
-                  endContent={
+        {/* Content Card */}
+        <Card className={LAYOUT.GLASS_CARD.BASE}>
+          <CardBody className="p-6 space-y-8">
+            <div className="space-y-4">
+              <SectionHeader
+                title={t("settings.body.paths.title")}
+                description={t("settings.body.paths.subtitle")}
+                icon={<LuHardDrive className="w-5 h-5" />}
+                action={
+                  <div className="flex items-center gap-2">
                     <Button
-                      size="sm"
-                      variant="flat"
-                      className="bg-default-200/50 dark:bg-white/10 font-medium"
+                      size="md"
+                      variant="light"
+                      radius="full"
+                      className="font-bold px-4"
                       onPress={async () => {
                         try {
-                          const options: any = {
-                            Title: t("settings.body.paths.title"),
-                            CanChooseDirectories: true,
-                            CanChooseFiles: false,
-                            PromptForSingleSelection: true,
-                          };
-                          if (baseRoot) {
-                            options.Directory = baseRoot;
+                          const err = await ResetBaseRoot();
+                          if (!err) {
+                            const br = await GetBaseRoot();
+                            setBaseRoot(String(br || ""));
+                            setNewBaseRoot(String(br || ""));
+                            const id = await GetInstallerDir();
+                            setInstallerDir(String(id || ""));
+                            const vd = await GetVersionsDir();
+                            setVersionsDir(String(vd || ""));
+                            setBaseRootWritable(true);
                           }
-                          const result = await Dialogs.OpenFile(options);
-                          if (Array.isArray(result) && result.length > 0) {
-                            setNewBaseRoot(result[0]);
-                          } else if (typeof result === "string" && result) {
-                            setNewBaseRoot(result);
-                          }
-                        } catch (e) {
-                          console.error(e);
-                        }
+                        } catch {}
                       }}
                     >
-                      {t("common.browse")}
+                      {t("settings.body.paths.reset")}
                     </Button>
-                  }
-                />
-
-                <div className="flex items-center justify-between pt-2">
-                  <div className="flex gap-3">
                     <Button
                       size="md"
                       color="primary"
                       radius="full"
-                      className="bg-primary-600 hover:bg-primary-500 text-white font-black shadow-lg shadow-primary-900/20 px-6"
+                      className="font-bold px-6"
                       isDisabled={
                         !newBaseRoot ||
                         !baseRootWritable ||
@@ -239,46 +210,79 @@ export default function OnboardingPage() {
                     >
                       {t("settings.body.paths.apply")}
                     </Button>
+                  </div>
+                }
+              />
+
+              <div className="space-y-4">
+                <Input
+                  label={t("settings.body.paths.base_root") as string}
+                  placeholder={t("settings.body.paths.base_root")}
+                  value={newBaseRoot}
+                  onValueChange={setNewBaseRoot}
+                  variant="bordered"
+                  radius="lg"
+                  classNames={COMPONENT_STYLES.input}
+                  description={
+                    newBaseRoot && newBaseRoot !== baseRoot ? (
+                      <span
+                        className={
+                          baseRootWritable
+                            ? "text-warning-500 font-medium"
+                            : "text-danger-500 font-medium"
+                        }
+                      >
+                        {baseRootWritable
+                          ? t("settings.body.paths.unsaved")
+                          : t("settings.body.paths.not_writable")}
+                      </span>
+                    ) : null
+                  }
+                  endContent={
                     <Button
-                      size="md"
-                      variant="light"
+                      size="sm"
+                      variant="flat"
                       radius="full"
-                      className="text-default-500 dark:text-zinc-400 hover:bg-default-200/50 dark:hover:bg-white/5 font-bold px-6"
+                      className="bg-default-200/50 dark:bg-white/10 font-medium"
                       onPress={async () => {
                         try {
-                          const err = await ResetBaseRoot();
-                          if (!err) {
-                            const br = await GetBaseRoot();
-                            setBaseRoot(String(br || ""));
-                            setNewBaseRoot(String(br || ""));
-                            const id = await GetInstallerDir();
-                            setInstallerDir(String(id || ""));
-                            const vd = await GetVersionsDir();
-                            setVersionsDir(String(vd || ""));
-                            setBaseRootWritable(true);
+                          const options: any = {
+                            Title: t("settings.body.paths.title"),
+                            CanChooseDirectories: true,
+                            CanChooseFiles: false,
+                            PromptForSingleSelection: true,
+                          };
+                          if (baseRoot) {
+                            options.Directory = baseRoot;
                           }
-                        } catch {}
+                          const result = await Dialogs.OpenFile(options);
+                          if (Array.isArray(result) && result.length > 0) {
+                            setNewBaseRoot(result[0]);
+                          } else if (typeof result === "string" && result) {
+                            setNewBaseRoot(result);
+                          }
+                        } catch (e) {
+                          console.error(e);
+                        }
                       }}
                     >
-                      {t("settings.body.paths.reset")}
+                      {t("common.browse")}
                     </Button>
-                  </div>
-                </div>
+                  }
+                />
               </div>
-            </motion.div>
+            </div>
 
-            <motion.div
-              initial={{ opacity: 0, x: -20 }}
-              animate={{ opacity: 1, x: 0 }}
-              transition={{ duration: 0.4, delay: 0.4 }}
-              className="bg-default-100/30 dark:bg-white/5 border border-default-200/50 dark:border-white/5 rounded-3xl p-5"
-            >
+            <Divider className="opacity-50" />
+
+            <div className="space-y-4">
               <SectionHeader
                 title={t("settings.body.language.name")}
                 description={
                   langNames.find((l) => l.code === selectedLang)?.language ||
                   selectedLang
                 }
+                icon={<LuLanguages className="w-5 h-5" />}
                 action={
                   <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                     <DropdownTrigger>
@@ -321,34 +325,10 @@ export default function OnboardingPage() {
                   </Dropdown>
                 }
               />
-            </motion.div>
+            </div>
           </CardBody>
         </Card>
-
-        <motion.div
-          initial={{ opacity: 0, y: 10 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ duration: 0.4, delay: 0.5 }}
-          className="flex items-center justify-end gap-4 mt-8 w-full px-2"
-        >
-          <Button
-            variant="light"
-            radius="full"
-            onPress={requestFinish}
-            className="font-bold text-default-500 dark:text-zinc-400 hover:bg-default-100 dark:hover:bg-white/5 px-6"
-          >
-            {t("onboarding.skip")}
-          </Button>
-          <Button
-            color="primary"
-            radius="full"
-            className="bg-primary-600 hover:bg-primary-500 text-white font-black shadow-xl shadow-primary-900/30 px-10 h-12 text-lg"
-            onPress={requestFinish}
-          >
-            {t("onboarding.finish")}
-          </Button>
-        </motion.div>
-      </motion.div>
+      </div>
 
       <UnifiedModal
         size="md"
@@ -398,6 +378,6 @@ export default function OnboardingPage() {
           )}
         </div>
       </UnifiedModal>
-    </div>
+    </PageContainer>
   );
 }

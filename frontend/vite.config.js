@@ -22,4 +22,18 @@ export default defineConfig({
       bindings: resolve(__dirname, "./bindings"),
     },
   },
+  build: {
+    rollupOptions: {
+      output: {
+        manualChunks: {
+          "vendor-react": ["react", "react-dom", "react-router-dom"],
+          "vendor-heroui": ["@heroui/react"],
+          "vendor-framer": ["framer-motion"],
+          "vendor-icons": ["react-icons"],
+          "vendor-utils": ["i18next", "react-i18next", "uuid"],
+        },
+      },
+    },
+    chunkSizeWarningLimit: 1500,
+  },
 });

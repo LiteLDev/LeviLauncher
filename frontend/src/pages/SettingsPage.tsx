@@ -5,6 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Card,
   CardBody,
+  CardHeader,
   Button,
   Chip,
   Input,
@@ -15,12 +16,13 @@ import {
   DropdownItem,
   Spinner,
   Progress,
-  ModalContent,
   useDisclosure,
   Switch,
   Tabs,
   Tab,
   Slider,
+  Select,
+  SelectItem,
 } from "@heroui/react";
 
 import { useTheme } from "next-themes";
@@ -38,6 +40,7 @@ import {
   LuSun,
   LuMoon,
   LuMonitor,
+  LuImage,
 } from "react-icons/lu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -322,6 +325,54 @@ export const SettingsPage: React.FC = () => {
     },
   );
 
+  const [lightBackgroundPlayOrder, setLightBackgroundPlayOrder] = useState<
+    "random" | "sequential"
+  >(() => {
+    try {
+      return (
+        (localStorage.getItem("app.lightBackgroundPlayOrder") as
+          | "random"
+          | "sequential") || "random"
+      );
+    } catch {
+      return "random";
+    }
+  });
+
+  const [darkBackgroundPlayOrder, setDarkBackgroundPlayOrder] = useState<
+    "random" | "sequential"
+  >(() => {
+    try {
+      return (
+        (localStorage.getItem("app.darkBackgroundPlayOrder") as
+          | "random"
+          | "sequential") || "random"
+      );
+    } catch {
+      return "random";
+    }
+  });
+
+  const [lightBackgroundFitMode, setLightBackgroundFitMode] = useState<string>(
+    () => {
+      try {
+        return localStorage.getItem("app.lightBackgroundFitMode") || "smart";
+      } catch {
+        return "smart";
+      }
+    },
+  );
+
+  const [darkBackgroundFitMode, setDarkBackgroundFitMode] = useState<string>(
+    () => {
+      try {
+        return localStorage.getItem("app.darkBackgroundFitMode") || "smart";
+      } catch {
+        return "smart";
+      }
+    },
+  );
+
   const {
     themeMode,
     setThemeMode,
@@ -348,6 +399,7 @@ export const SettingsPage: React.FC = () => {
   }, [resolvedTheme]);
 
   const [backgroundImageError, setBackgroundImageError] = useState(false);
+  const [backgroundImageCount, setBackgroundImageCount] = useState<number>(0);
   const [previewBgData, setPreviewBgData] = useState<string>("");
 
   const [lipInstalled, setLipInstalled] = useState<boolean>(false);
@@ -504,32 +556,55 @@ export const SettingsPage: React.FC = () => {
   }, [lightBackgroundImage, darkBackgroundImage, themeSettingMode]);
 
   useEffect(() => {
-    const currentImg =
+    const folderPath =
       themeSettingMode === "light" ? lightBackgroundImage : darkBackgroundImage;
 
-    if (!currentImg) {
+    if (!folderPath) {
       setPreviewBgData("");
+      setBackgroundImageCount(0);
       return;
     }
 
-    if (currentImg.startsWith("data:") || currentImg.startsWith("http")) {
-      setPreviewBgData(currentImg);
-      return;
-    }
-
-    (minecraft as any)
-      .GetImageBase64?.(currentImg)
-      .then((res: string) => {
+    const loadPreview = async () => {
+      try {
+        const entries = await (minecraft as any).ListDir(folderPath);
+        if (!entries || entries.length === 0) {
+          setPreviewBgData("");
+          setBackgroundImageCount(0);
+          return;
+        }
+        const images = entries.filter((e: any) => {
+          const name = e.name.toLowerCase();
+          return (
+            !e.isDir &&
+            (name.endsWith(".png") ||
+              name.endsWith(".jpg") ||
+              name.endsWith(".jpeg") ||
+              name.endsWith(".webp") ||
+              name.endsWith(".gif") ||
+              name.endsWith(".bmp"))
+          );
+        });
+        setBackgroundImageCount(images.length);
+        if (images.length === 0) {
+          setPreviewBgData("");
+          return;
+        }
+        // Use the first image for preview in settings
+        const previewPath = images[0].path;
+        const res = await (minecraft as any).GetImageBase64?.(previewPath);
         if (res) {
           setPreviewBgData(res);
           setBackgroundImageError(false);
         } else {
           setBackgroundImageError(true);
         }
-      })
-      .catch(() => {
+      } catch {
         setBackgroundImageError(true);
-      });
+      }
+    };
+
+    loadPreview();
   }, [lightBackgroundImage, darkBackgroundImage, themeSettingMode]);
 
   useEffect(() => {
@@ -1630,49 +1705,96 @@ export const SettingsPage: React.FC = () => {
                               />
                             </div>
 
-                            <Divider className="bg-default-200/50" />
+                            {(themeSettingMode === "light"
+                              ? lightBackgroundUseTheme
+                              : darkBackgroundUseTheme) && (
+                              <>
+                                <Divider className="bg-default-200/50" />
 
-                            {/* Base Opacity */}
-                            <div className="flex flex-col gap-3">
-                              <div className="flex items-center justify-between">
-                                <p className="text-tiny font-medium text-default-600">
-                                  {t(
-                                    "settings.appearance.background_base_opacity",
-                                  ) || "Base Opacity"}
-                                </p>
-                                <div className="flex items-center">
-                                  <input
-                                    type="number"
-                                    className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                    onFocus={(e) => e.target.select()}
+                                {/* Base Opacity */}
+                                <div className="flex flex-col gap-3">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-tiny font-medium text-default-600">
+                                      {t(
+                                        "settings.appearance.background_base_opacity",
+                                      ) || "Base Opacity"}
+                                    </p>
+                                    <div className="flex items-center">
+                                      <input
+                                        type="number"
+                                        className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                        onFocus={(e) => e.target.select()}
+                                        value={
+                                          themeSettingMode === "light"
+                                            ? lightBackgroundBaseOpacity
+                                            : darkBackgroundBaseOpacity
+                                        }
+                                        min={0}
+                                        max={100}
+                                        onChange={(e) => {
+                                          const val =
+                                            parseInt(e.target.value) || 0;
+                                          const clampedVal = Math.min(
+                                            100,
+                                            Math.max(0, val),
+                                          );
+                                          if (themeSettingMode === "light") {
+                                            setLightBackgroundBaseOpacity(
+                                              clampedVal,
+                                            );
+                                            localStorage.setItem(
+                                              "app.lightBackgroundBaseOpacity",
+                                              String(clampedVal),
+                                            );
+                                          } else {
+                                            setDarkBackgroundBaseOpacity(
+                                              clampedVal,
+                                            );
+                                            localStorage.setItem(
+                                              "app.darkBackgroundBaseOpacity",
+                                              String(clampedVal),
+                                            );
+                                          }
+                                          window.dispatchEvent(
+                                            new CustomEvent(
+                                              "app-base-opacity-changed",
+                                            ),
+                                          );
+                                        }}
+                                      />
+                                      <span className="text-tiny font-mono text-primary-500 ml-0.5">
+                                        %
+                                      </span>
+                                    </div>
+                                  </div>
+                                  <Slider
+                                    size="sm"
+                                    step={1}
+                                    maxValue={100}
+                                    minValue={0}
+                                    aria-label="Base Opacity"
                                     value={
                                       themeSettingMode === "light"
                                         ? lightBackgroundBaseOpacity
                                         : darkBackgroundBaseOpacity
                                     }
-                                    min={0}
-                                    max={100}
-                                    onChange={(e) => {
-                                      const val = parseInt(e.target.value) || 0;
-                                      const clampedVal = Math.min(
-                                        100,
-                                        Math.max(0, val),
-                                      );
+                                    classNames={{
+                                      filler: "bg-primary-500",
+                                      thumb: "bg-primary-500",
+                                    }}
+                                    onChange={(v) => {
+                                      const val = Number(v);
                                       if (themeSettingMode === "light") {
-                                        setLightBackgroundBaseOpacity(
-                                          clampedVal,
-                                        );
+                                        setLightBackgroundBaseOpacity(val);
                                         localStorage.setItem(
                                           "app.lightBackgroundBaseOpacity",
-                                          String(clampedVal),
+                                          String(val),
                                         );
                                       } else {
-                                        setDarkBackgroundBaseOpacity(
-                                          clampedVal,
-                                        );
+                                        setDarkBackgroundBaseOpacity(val);
                                         localStorage.setItem(
                                           "app.darkBackgroundBaseOpacity",
-                                          String(clampedVal),
+                                          String(val),
                                         );
                                       }
                                       window.dispatchEvent(
@@ -1682,122 +1804,89 @@ export const SettingsPage: React.FC = () => {
                                       );
                                     }}
                                   />
-                                  <span className="text-tiny font-mono text-primary-500 ml-0.5">
-                                    %
-                                  </span>
                                 </div>
-                              </div>
-                              <Slider
-                                size="sm"
-                                step={1}
-                                maxValue={100}
-                                minValue={0}
-                                aria-label="Base Opacity"
-                                value={
-                                  themeSettingMode === "light"
-                                    ? lightBackgroundBaseOpacity
-                                    : darkBackgroundBaseOpacity
-                                }
-                                classNames={{
-                                  filler: "bg-primary-500",
-                                  thumb: "bg-primary-500",
-                                }}
-                                onChange={(v) => {
-                                  const val = Number(v);
-                                  if (themeSettingMode === "light") {
-                                    setLightBackgroundBaseOpacity(val);
-                                    localStorage.setItem(
-                                      "app.lightBackgroundBaseOpacity",
-                                      String(val),
-                                    );
-                                  } else {
-                                    setDarkBackgroundBaseOpacity(val);
-                                    localStorage.setItem(
-                                      "app.darkBackgroundBaseOpacity",
-                                      String(val),
-                                    );
-                                  }
-                                  window.dispatchEvent(
-                                    new CustomEvent("app-base-opacity-changed"),
-                                  );
-                                }}
-                              />
-                            </div>
+                              </>
+                            )}
                           </div>
 
-                          {/* Background Section */}
-                          <div className="flex flex-col gap-6">
-                            <div className="flex items-center gap-2">
-                              <LuSun className="text-primary-500" size={18} />
-                              <div className="flex flex-col gap-0.5">
-                                <p className="text-small font-bold text-default-700">
-                                  {t("settings.appearance.background_image")}
-                                </p>
-                                <p className="text-tiny text-default-400">
-                                  {t(
-                                    "settings.appearance.background_image_desc",
-                                  )}
-                                </p>
-                              </div>
-                            </div>
-
-                            <div className="flex flex-col gap-6 p-5 rounded-2xl bg-default-200/20 border border-default-200/50">
-                              {/* Image Picker Row */}
-                              <div className="flex items-center justify-between">
-                                <div className="flex items-center gap-3 overflow-hidden">
-                                  <div className="w-12 h-12 rounded-lg bg-default-300/30 flex items-center justify-center flex-shrink-0 border border-default-300/50 overflow-hidden">
-                                    {previewBgData && !backgroundImageError ? (
-                                      <img
-                                        src={previewBgData}
-                                        className="w-full h-full object-cover"
-                                        onError={() =>
-                                          setBackgroundImageError(true)
-                                        }
-                                      />
-                                    ) : (
-                                      <LuPalette
-                                        className="text-default-400"
-                                        size={20}
-                                      />
+                          {/* Background Group */}
+                          <div className="flex flex-col gap-4 p-5 rounded-3xl bg-default-200/10 border border-default-200/50">
+                            {/* Background Section */}
+                            <div className="flex flex-col gap-4">
+                              <div className="flex items-center gap-2">
+                                <LuImage
+                                  className="text-primary-500"
+                                  size={18}
+                                />
+                                <div className="flex flex-col gap-0.5">
+                                  <div className="flex items-center gap-2">
+                                    <p className="text-small font-bold text-default-700">
+                                      {t(
+                                        "settings.appearance.background_image",
+                                      )}
+                                    </p>
+                                    {backgroundImageCount > 0 && (
+                                      <Chip
+                                        size="sm"
+                                        variant="flat"
+                                        color="primary"
+                                        className="h-5 px-1.5 text-[10px] min-w-0"
+                                      >
+                                        {backgroundImageCount}
+                                      </Chip>
                                     )}
                                   </div>
-                                  <div className="flex flex-col min-w-0">
-                                    <p className="text-tiny font-medium truncate text-default-600">
-                                      {(themeSettingMode === "light"
-                                        ? lightBackgroundImage
-                                        : darkBackgroundImage) ||
-                                        t(
-                                          "settings.appearance.no_image_selected",
-                                        )}
-                                    </p>
-                                  </div>
+                                  <p className="text-tiny text-default-400">
+                                    {t(
+                                      "settings.appearance.background_image_desc",
+                                    )}
+                                  </p>
                                 </div>
-                                <div className="flex items-center gap-2">
-                                  {(themeSettingMode === "light"
-                                    ? lightBackgroundImage
-                                    : darkBackgroundImage) && (
-                                    <Button
+                              </div>
+
+                              {/* Content area directly under header */}
+                              <div className="flex flex-col gap-6 mt-2">
+                                {/* Fit Mode and Play Order */}
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                  <div className="flex flex-col gap-2">
+                                    <p className="text-tiny font-medium text-default-600">
+                                      {t(
+                                        "settings.appearance.background_fit_mode",
+                                      )}
+                                    </p>
+                                    <Select
                                       size="sm"
-                                      color="danger"
-                                      variant="flat"
-                                      className="h-8"
-                                      onPress={() => {
+                                      aria-label="Fit Mode"
+                                      className="max-w-full"
+                                      classNames={{
+                                        trigger:
+                                          "h-8 bg-default-100 min-h-unit-8",
+                                        value: "text-tiny",
+                                      }}
+                                      selectedKeys={
+                                        new Set([
+                                          themeSettingMode === "light"
+                                            ? lightBackgroundFitMode
+                                            : darkBackgroundFitMode,
+                                        ])
+                                      }
+                                      onSelectionChange={(keys) => {
+                                        const val = Array.from(
+                                          keys,
+                                        )[0] as string;
                                         if (themeSettingMode === "light") {
-                                          setLightBackgroundImage("");
+                                          setLightBackgroundFitMode(val);
                                           localStorage.setItem(
-                                            "app.lightBackgroundImage",
-                                            "",
+                                            "app.lightBackgroundFitMode",
+                                            val,
                                           );
                                         } else {
-                                          setDarkBackgroundImage("");
+                                          setDarkBackgroundFitMode(val);
                                           localStorage.setItem(
-                                            "app.darkBackgroundImage",
-                                            "",
+                                            "app.darkBackgroundFitMode",
+                                            val,
                                           );
                                         }
-                                        localStorage.removeItem(
-                                          "app.backgroundImage",
-                                        );
                                         window.dispatchEvent(
                                           new CustomEvent(
                                             "app-background-changed",
@@ -1805,340 +1894,555 @@ export const SettingsPage: React.FC = () => {
                                         );
                                       }}
                                     >
-                                      {t("settings.appearance.clear_image")}
-                                    </Button>
-                                  )}
-                                  <Button
-                                    size="sm"
-                                    variant="solid"
-                                    color="primary"
-                                    className="h-8 shadow-sm"
-                                    onPress={async () => {
-                                      try {
-                                        const result = await Dialogs.OpenFile({
-                                          Title: t(
-                                            "settings.appearance.select_image",
-                                          ),
-                                          Filters: [
-                                            {
-                                              DisplayName: "Images",
-                                              Pattern:
-                                                "*.png;*.jpg;*.jpeg;*.webp;*.gif;*.bmp",
-                                            },
-                                          ],
-                                        });
-                                        let path = "";
-                                        if (
-                                          Array.isArray(result) &&
-                                          result.length > 0
-                                        )
-                                          path = result[0];
-                                        else if (
-                                          typeof result === "string" &&
-                                          result
-                                        )
-                                          path = result;
+                                      <SelectItem
+                                        key="smart"
+                                        textValue={t(
+                                          "settings.appearance.background_fit_smart",
+                                        )}
+                                      >
+                                        {t(
+                                          "settings.appearance.background_fit_smart",
+                                        )}
+                                      </SelectItem>
+                                      <SelectItem
+                                        key="center"
+                                        textValue={t(
+                                          "settings.appearance.background_fit_center",
+                                        )}
+                                      >
+                                        {t(
+                                          "settings.appearance.background_fit_center",
+                                        )}
+                                      </SelectItem>
+                                      <SelectItem
+                                        key="fit"
+                                        textValue={t(
+                                          "settings.appearance.background_fit_fit",
+                                        )}
+                                      >
+                                        {t(
+                                          "settings.appearance.background_fit_fit",
+                                        )}
+                                      </SelectItem>
+                                      <SelectItem
+                                        key="stretch"
+                                        textValue={t(
+                                          "settings.appearance.background_fit_stretch",
+                                        )}
+                                      >
+                                        {t(
+                                          "settings.appearance.background_fit_stretch",
+                                        )}
+                                      </SelectItem>
+                                      <SelectItem
+                                        key="tile"
+                                        textValue={t(
+                                          "settings.appearance.background_fit_tile",
+                                        )}
+                                      >
+                                        {t(
+                                          "settings.appearance.background_fit_tile",
+                                        )}
+                                      </SelectItem>
+                                      <SelectItem
+                                        key="top_left"
+                                        textValue={t(
+                                          "settings.appearance.background_fit_top_left",
+                                        )}
+                                      >
+                                        {t(
+                                          "settings.appearance.background_fit_top_left",
+                                        )}
+                                      </SelectItem>
+                                      <SelectItem
+                                        key="top_right"
+                                        textValue={t(
+                                          "settings.appearance.background_fit_top_right",
+                                        )}
+                                      >
+                                        {t(
+                                          "settings.appearance.background_fit_top_right",
+                                        )}
+                                      </SelectItem>
+                                    </Select>
+                                  </div>
 
-                                        if (path) {
+                                  <div className="flex flex-col gap-2">
+                                    <p className="text-tiny font-medium text-default-600">
+                                      {t(
+                                        "settings.appearance.background_play_order",
+                                      )}
+                                    </p>
+                                    <Select
+                                      size="sm"
+                                      aria-label="Play Order"
+                                      className="max-w-full"
+                                      classNames={{
+                                        trigger:
+                                          "h-8 bg-default-100 min-h-unit-8",
+                                        value: "text-tiny",
+                                      }}
+                                      selectedKeys={
+                                        new Set([
+                                          themeSettingMode === "light"
+                                            ? lightBackgroundPlayOrder
+                                            : darkBackgroundPlayOrder,
+                                        ])
+                                      }
+                                      onSelectionChange={(keys) => {
+                                        const val = Array.from(keys)[0] as
+                                          | "random"
+                                          | "sequential";
+                                        if (themeSettingMode === "light") {
+                                          setLightBackgroundPlayOrder(val);
+                                          localStorage.setItem(
+                                            "app.lightBackgroundPlayOrder",
+                                            val,
+                                          );
+                                        } else {
+                                          setDarkBackgroundPlayOrder(val);
+                                          localStorage.setItem(
+                                            "app.darkBackgroundPlayOrder",
+                                            val,
+                                          );
+                                        }
+                                        window.dispatchEvent(
+                                          new CustomEvent(
+                                            "app-background-changed",
+                                          ),
+                                        );
+                                      }}
+                                    >
+                                      <SelectItem
+                                        key="random"
+                                        textValue={t(
+                                          "settings.appearance.background_play_random",
+                                        )}
+                                      >
+                                        {t(
+                                          "settings.appearance.background_play_random",
+                                        )}
+                                      </SelectItem>
+                                      <SelectItem
+                                        key="sequential"
+                                        textValue={t(
+                                          "settings.appearance.background_play_sequential",
+                                        )}
+                                      >
+                                        {t(
+                                          "settings.appearance.background_play_sequential",
+                                        )}
+                                      </SelectItem>
+                                    </Select>
+                                  </div>
+                                </div>
+
+                                <Divider className="bg-default-200/50" />
+
+                                {/* Image Picker Row */}
+                                <div className="flex items-center justify-between">
+                                  <div className="flex items-center gap-3 overflow-hidden">
+                                    <div className="w-12 h-12 rounded-lg bg-default-300/30 flex items-center justify-center flex-shrink-0 border border-default-300/50 overflow-hidden">
+                                      {previewBgData &&
+                                      !backgroundImageError ? (
+                                        <img
+                                          src={previewBgData}
+                                          className="w-full h-full object-cover"
+                                          onError={() =>
+                                            setBackgroundImageError(true)
+                                          }
+                                        />
+                                      ) : (
+                                        <LuPalette
+                                          className="text-default-400"
+                                          size={20}
+                                        />
+                                      )}
+                                    </div>
+                                    <div className="flex flex-col min-w-0">
+                                      <p className="text-tiny font-medium truncate text-default-600">
+                                        {(themeSettingMode === "light"
+                                          ? lightBackgroundImage
+                                          : darkBackgroundImage) ||
+                                          t(
+                                            "settings.appearance.no_image_selected",
+                                          )}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex items-center gap-2">
+                                    {(themeSettingMode === "light"
+                                      ? lightBackgroundImage
+                                      : darkBackgroundImage) && (
+                                      <Button
+                                        size="sm"
+                                        color="danger"
+                                        variant="flat"
+                                        className="h-8"
+                                        onPress={() => {
                                           if (themeSettingMode === "light") {
-                                            setLightBackgroundImage(path);
+                                            setLightBackgroundImage("");
                                             localStorage.setItem(
                                               "app.lightBackgroundImage",
-                                              path,
+                                              "",
                                             );
                                           } else {
-                                            setDarkBackgroundImage(path);
+                                            setDarkBackgroundImage("");
                                             localStorage.setItem(
                                               "app.darkBackgroundImage",
-                                              path,
+                                              "",
                                             );
                                           }
+                                          localStorage.removeItem(
+                                            "app.backgroundImage",
+                                          );
                                           window.dispatchEvent(
                                             new CustomEvent(
                                               "app-background-changed",
                                             ),
                                           );
-                                        }
-                                      } catch {}
-                                    }}
-                                  >
-                                    {t("settings.appearance.select_image")}
-                                  </Button>
-                                </div>
-                              </div>
-
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                {/* Background Blur */}
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-tiny font-medium text-default-600">
-                                      {t("settings.appearance.background_blur")}
-                                    </p>
-                                    <div className="flex items-center">
-                                      <input
-                                        type="number"
-                                        className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                        onFocus={(e) => e.target.select()}
-                                        value={
-                                          themeSettingMode === "light"
-                                            ? lightBackgroundBlur
-                                            : darkBackgroundBlur
-                                        }
-                                        min={0}
-                                        max={50}
-                                        onChange={(e) => {
-                                          const val =
-                                            parseInt(e.target.value) || 0;
-                                          const clampedVal = Math.min(
-                                            50,
-                                            Math.max(0, val),
+                                        }}
+                                      >
+                                        {t("settings.appearance.clear_image")}
+                                      </Button>
+                                    )}
+                                    <Button
+                                      size="sm"
+                                      variant="solid"
+                                      color="primary"
+                                      className="h-8 shadow-sm"
+                                      onPress={async () => {
+                                        try {
+                                          const result = await Dialogs.OpenFile(
+                                            {
+                                              Title: t(
+                                                "settings.appearance.select_image",
+                                              ),
+                                              CanChooseDirectories: true,
+                                              CanChooseFiles: false,
+                                            },
                                           );
-                                          if (themeSettingMode === "light") {
-                                            setLightBackgroundBlur(clampedVal);
-                                            localStorage.setItem(
-                                              "app.lightBackgroundBlur",
-                                              String(clampedVal),
-                                            );
-                                          } else {
-                                            setDarkBackgroundBlur(clampedVal);
-                                            localStorage.setItem(
-                                              "app.darkBackgroundBlur",
-                                              String(clampedVal),
+                                          let path = "";
+                                          if (
+                                            Array.isArray(result) &&
+                                            result.length > 0
+                                          )
+                                            path = result[0];
+                                          else if (
+                                            typeof result === "string" &&
+                                            result
+                                          )
+                                            path = result;
+
+                                          if (path) {
+                                            if (themeSettingMode === "light") {
+                                              setLightBackgroundImage(path);
+                                              localStorage.setItem(
+                                                "app.lightBackgroundImage",
+                                                path,
+                                              );
+                                            } else {
+                                              setDarkBackgroundImage(path);
+                                              localStorage.setItem(
+                                                "app.darkBackgroundImage",
+                                                path,
+                                              );
+                                            }
+                                            window.dispatchEvent(
+                                              new CustomEvent(
+                                                "app-background-changed",
+                                              ),
                                             );
                                           }
-                                          window.dispatchEvent(
-                                            new CustomEvent("app-blur-changed"),
-                                          );
-                                        }}
-                                      />
-                                      <span className="text-tiny font-mono text-primary-500 ml-0.5">
-                                        px
-                                      </span>
-                                    </div>
+                                        } catch {}
+                                      }}
+                                    >
+                                      {t("settings.appearance.select_image")}
+                                    </Button>
                                   </div>
-                                  <Slider
-                                    size="sm"
-                                    step={1}
-                                    maxValue={50}
-                                    minValue={0}
-                                    aria-label="Blur"
-                                    value={
-                                      themeSettingMode === "light"
-                                        ? lightBackgroundBlur
-                                        : darkBackgroundBlur
-                                    }
-                                    classNames={{
-                                      filler: "bg-primary-500",
-                                      thumb: "bg-primary-500",
-                                    }}
-                                    onChange={(v) => {
-                                      const val = Number(v);
-                                      if (themeSettingMode === "light") {
-                                        setLightBackgroundBlur(val);
-                                        localStorage.setItem(
-                                          "app.lightBackgroundBlur",
-                                          String(val),
-                                        );
-                                      } else {
-                                        setDarkBackgroundBlur(val);
-                                        localStorage.setItem(
-                                          "app.darkBackgroundBlur",
-                                          String(val),
-                                        );
-                                      }
-                                      window.dispatchEvent(
-                                        new CustomEvent("app-blur-changed"),
-                                      );
-                                    }}
-                                  />
                                 </div>
 
-                                {/* Background Brightness */}
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-tiny font-medium text-default-600">
-                                      {t(
-                                        "settings.appearance.background_brightness",
-                                      )}
-                                    </p>
-                                    <div className="flex items-center">
-                                      <input
-                                        type="number"
-                                        className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                        onFocus={(e) => e.target.select()}
-                                        value={
-                                          themeSettingMode === "light"
-                                            ? lightBackgroundBrightness
-                                            : darkBackgroundBrightness
-                                        }
-                                        min={20}
-                                        max={100}
-                                        onChange={(e) => {
-                                          const val =
-                                            parseInt(e.target.value) || 0;
-                                          const clampedVal = Math.min(
-                                            100,
-                                            Math.max(20, val),
-                                          );
-                                          if (themeSettingMode === "light") {
-                                            setLightBackgroundBrightness(
-                                              clampedVal,
-                                            );
-                                            localStorage.setItem(
-                                              "app.lightBackgroundBrightness",
-                                              String(clampedVal),
-                                            );
-                                          } else {
-                                            setDarkBackgroundBrightness(
-                                              clampedVal,
-                                            );
-                                            localStorage.setItem(
-                                              "app.darkBackgroundBrightness",
-                                              String(clampedVal),
-                                            );
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                                  {/* Background Blur */}
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-tiny font-medium text-default-600">
+                                        {t(
+                                          "settings.appearance.background_blur",
+                                        )}
+                                      </p>
+                                      <div className="flex items-center">
+                                        <input
+                                          type="number"
+                                          className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                          onFocus={(e) => e.target.select()}
+                                          value={
+                                            themeSettingMode === "light"
+                                              ? lightBackgroundBlur
+                                              : darkBackgroundBlur
                                           }
-                                          window.dispatchEvent(
-                                            new CustomEvent(
-                                              "app-brightness-changed",
-                                            ),
-                                          );
-                                        }}
-                                      />
-                                      <span className="text-tiny font-mono text-primary-500 ml-0.5">
-                                        %
-                                      </span>
+                                          min={0}
+                                          max={50}
+                                          onChange={(e) => {
+                                            const val =
+                                              parseInt(e.target.value) || 0;
+                                            const clampedVal = Math.min(
+                                              50,
+                                              Math.max(0, val),
+                                            );
+                                            if (themeSettingMode === "light") {
+                                              setLightBackgroundBlur(
+                                                clampedVal,
+                                              );
+                                              localStorage.setItem(
+                                                "app.lightBackgroundBlur",
+                                                String(clampedVal),
+                                              );
+                                            } else {
+                                              setDarkBackgroundBlur(clampedVal);
+                                              localStorage.setItem(
+                                                "app.darkBackgroundBlur",
+                                                String(clampedVal),
+                                              );
+                                            }
+                                            window.dispatchEvent(
+                                              new CustomEvent(
+                                                "app-blur-changed",
+                                              ),
+                                            );
+                                          }}
+                                        />
+                                        <span className="text-tiny font-mono text-primary-500 ml-0.5">
+                                          px
+                                        </span>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <Slider
-                                    size="sm"
-                                    step={1}
-                                    maxValue={100}
-                                    minValue={20}
-                                    aria-label="Brightness"
-                                    value={
-                                      themeSettingMode === "light"
-                                        ? lightBackgroundBrightness
-                                        : darkBackgroundBrightness
-                                    }
-                                    classNames={{
-                                      filler: "bg-primary-500",
-                                      thumb: "bg-primary-500",
-                                    }}
-                                    onChange={(v) => {
-                                      const val = Number(v);
-                                      if (themeSettingMode === "light") {
-                                        setLightBackgroundBrightness(val);
-                                        localStorage.setItem(
-                                          "app.lightBackgroundBrightness",
-                                          String(val),
-                                        );
-                                      } else {
-                                        setDarkBackgroundBrightness(val);
-                                        localStorage.setItem(
-                                          "app.darkBackgroundBrightness",
-                                          String(val),
-                                        );
+                                    <Slider
+                                      size="sm"
+                                      step={1}
+                                      maxValue={50}
+                                      minValue={0}
+                                      aria-label="Blur"
+                                      value={
+                                        themeSettingMode === "light"
+                                          ? lightBackgroundBlur
+                                          : darkBackgroundBlur
                                       }
-                                      window.dispatchEvent(
-                                        new CustomEvent(
-                                          "app-brightness-changed",
-                                        ),
-                                      );
-                                    }}
-                                  />
-                                </div>
+                                      classNames={{
+                                        filler: "bg-primary-500",
+                                        thumb: "bg-primary-500",
+                                      }}
+                                      onChange={(v) => {
+                                        const val = Number(v);
+                                        if (themeSettingMode === "light") {
+                                          setLightBackgroundBlur(val);
+                                          localStorage.setItem(
+                                            "app.lightBackgroundBlur",
+                                            String(val),
+                                          );
+                                        } else {
+                                          setDarkBackgroundBlur(val);
+                                          localStorage.setItem(
+                                            "app.darkBackgroundBlur",
+                                            String(val),
+                                          );
+                                        }
+                                        window.dispatchEvent(
+                                          new CustomEvent("app-blur-changed"),
+                                        );
+                                      }}
+                                    />
+                                  </div>
 
-                                {/* Background Opacity */}
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-tiny font-medium text-default-600">
-                                      {t(
-                                        "settings.appearance.background_opacity",
-                                      )}
-                                    </p>
-                                    <div className="flex items-center">
-                                      <input
-                                        type="number"
-                                        className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                        onFocus={(e) => e.target.select()}
-                                        value={
-                                          themeSettingMode === "light"
-                                            ? lightBackgroundOpacity
-                                            : darkBackgroundOpacity
-                                        }
-                                        min={0}
-                                        max={100}
-                                        onChange={(e) => {
-                                          const val =
-                                            parseInt(e.target.value) || 0;
-                                          const clampedVal = Math.min(
-                                            100,
-                                            Math.max(0, val),
-                                          );
-                                          if (themeSettingMode === "light") {
-                                            setLightBackgroundOpacity(
-                                              clampedVal,
-                                            );
-                                            localStorage.setItem(
-                                              "app.lightBackgroundOpacity",
-                                              String(clampedVal),
-                                            );
-                                          } else {
-                                            setDarkBackgroundOpacity(
-                                              clampedVal,
-                                            );
-                                            localStorage.setItem(
-                                              "app.darkBackgroundOpacity",
-                                              String(clampedVal),
-                                            );
+                                  {/* Background Brightness */}
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-tiny font-medium text-default-600">
+                                        {t(
+                                          "settings.appearance.background_brightness",
+                                        )}
+                                      </p>
+                                      <div className="flex items-center">
+                                        <input
+                                          type="number"
+                                          className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                          onFocus={(e) => e.target.select()}
+                                          value={
+                                            themeSettingMode === "light"
+                                              ? lightBackgroundBrightness
+                                              : darkBackgroundBrightness
                                           }
-                                          window.dispatchEvent(
-                                            new CustomEvent(
-                                              "app-opacity-changed",
-                                            ),
-                                          );
-                                        }}
-                                      />
-                                      <span className="text-tiny font-mono text-primary-500 ml-0.5">
-                                        %
-                                      </span>
+                                          min={20}
+                                          max={100}
+                                          onChange={(e) => {
+                                            const val =
+                                              parseInt(e.target.value) || 0;
+                                            const clampedVal = Math.min(
+                                              100,
+                                              Math.max(20, val),
+                                            );
+                                            if (themeSettingMode === "light") {
+                                              setLightBackgroundBrightness(
+                                                clampedVal,
+                                              );
+                                              localStorage.setItem(
+                                                "app.lightBackgroundBrightness",
+                                                String(clampedVal),
+                                              );
+                                            } else {
+                                              setDarkBackgroundBrightness(
+                                                clampedVal,
+                                              );
+                                              localStorage.setItem(
+                                                "app.darkBackgroundBrightness",
+                                                String(clampedVal),
+                                              );
+                                            }
+                                            window.dispatchEvent(
+                                              new CustomEvent(
+                                                "app-brightness-changed",
+                                              ),
+                                            );
+                                          }}
+                                        />
+                                        <span className="text-tiny font-mono text-primary-500 ml-0.5">
+                                          %
+                                        </span>
+                                      </div>
                                     </div>
-                                  </div>
-                                  <Slider
-                                    size="sm"
-                                    step={1}
-                                    maxValue={100}
-                                    minValue={0}
-                                    aria-label="Opacity"
-                                    value={
-                                      themeSettingMode === "light"
-                                        ? lightBackgroundOpacity
-                                        : darkBackgroundOpacity
-                                    }
-                                    classNames={{
-                                      filler: "bg-primary-500",
-                                      thumb: "bg-primary-500",
-                                    }}
-                                    onChange={(v) => {
-                                      const val = Number(v);
-                                      if (themeSettingMode === "light") {
-                                        setLightBackgroundOpacity(val);
-                                        localStorage.setItem(
-                                          "app.lightBackgroundOpacity",
-                                          String(val),
-                                        );
-                                      } else {
-                                        setDarkBackgroundOpacity(val);
-                                        localStorage.setItem(
-                                          "app.darkBackgroundOpacity",
-                                          String(val),
-                                        );
+                                    <Slider
+                                      size="sm"
+                                      step={1}
+                                      maxValue={100}
+                                      minValue={20}
+                                      aria-label="Brightness"
+                                      value={
+                                        themeSettingMode === "light"
+                                          ? lightBackgroundBrightness
+                                          : darkBackgroundBrightness
                                       }
-                                      window.dispatchEvent(
-                                        new CustomEvent("app-opacity-changed"),
-                                      );
-                                    }}
-                                  />
+                                      classNames={{
+                                        filler: "bg-primary-500",
+                                        thumb: "bg-primary-500",
+                                      }}
+                                      onChange={(v) => {
+                                        const val = Number(v);
+                                        if (themeSettingMode === "light") {
+                                          setLightBackgroundBrightness(val);
+                                          localStorage.setItem(
+                                            "app.lightBackgroundBrightness",
+                                            String(val),
+                                          );
+                                        } else {
+                                          setDarkBackgroundBrightness(val);
+                                          localStorage.setItem(
+                                            "app.darkBackgroundBrightness",
+                                            String(val),
+                                          );
+                                        }
+                                        window.dispatchEvent(
+                                          new CustomEvent(
+                                            "app-brightness-changed",
+                                          ),
+                                        );
+                                      }}
+                                    />
+                                  </div>
+
+                                  {/* Background Opacity */}
+                                  <div className="flex flex-col gap-2">
+                                    <div className="flex items-center justify-between">
+                                      <p className="text-tiny font-medium text-default-600">
+                                        {t(
+                                          "settings.appearance.background_opacity",
+                                        )}
+                                      </p>
+                                      <div className="flex items-center">
+                                        <input
+                                          type="number"
+                                          className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                          onFocus={(e) => e.target.select()}
+                                          value={
+                                            themeSettingMode === "light"
+                                              ? lightBackgroundOpacity
+                                              : darkBackgroundOpacity
+                                          }
+                                          min={0}
+                                          max={100}
+                                          onChange={(e) => {
+                                            const val =
+                                              parseInt(e.target.value) || 0;
+                                            const clampedVal = Math.min(
+                                              100,
+                                              Math.max(0, val),
+                                            );
+                                            if (themeSettingMode === "light") {
+                                              setLightBackgroundOpacity(
+                                                clampedVal,
+                                              );
+                                              localStorage.setItem(
+                                                "app.lightBackgroundOpacity",
+                                                String(clampedVal),
+                                              );
+                                            } else {
+                                              setDarkBackgroundOpacity(
+                                                clampedVal,
+                                              );
+                                              localStorage.setItem(
+                                                "app.darkBackgroundOpacity",
+                                                String(clampedVal),
+                                              );
+                                            }
+                                            window.dispatchEvent(
+                                              new CustomEvent(
+                                                "app-opacity-changed",
+                                              ),
+                                            );
+                                          }}
+                                        />
+                                        <span className="text-tiny font-mono text-primary-500 ml-0.5">
+                                          %
+                                        </span>
+                                      </div>
+                                    </div>
+                                    <Slider
+                                      size="sm"
+                                      step={1}
+                                      maxValue={100}
+                                      minValue={0}
+                                      aria-label="Opacity"
+                                      value={
+                                        themeSettingMode === "light"
+                                          ? lightBackgroundOpacity
+                                          : darkBackgroundOpacity
+                                      }
+                                      classNames={{
+                                        filler: "bg-primary-500",
+                                        thumb: "bg-primary-500",
+                                      }}
+                                      onChange={(v) => {
+                                        const val = Number(v);
+                                        if (themeSettingMode === "light") {
+                                          setLightBackgroundOpacity(val);
+                                          localStorage.setItem(
+                                            "app.lightBackgroundOpacity",
+                                            String(val),
+                                          );
+                                        } else {
+                                          setDarkBackgroundOpacity(val);
+                                          localStorage.setItem(
+                                            "app.darkBackgroundOpacity",
+                                            String(val),
+                                          );
+                                        }
+                                        window.dispatchEvent(
+                                          new CustomEvent(
+                                            "app-opacity-changed",
+                                          ),
+                                        );
+                                      }}
+                                    />
+                                  </div>
                                 </div>
                               </div>
                             </div>
@@ -2148,6 +2452,10 @@ export const SettingsPage: React.FC = () => {
                     </Card>
                   </div>
                 </div>
+              )}
+
+              {selectedTab === "general" && (
+                <div className="flex flex-col gap-6"></div>
               )}
 
               {selectedTab === "components" && (
@@ -2792,49 +3100,42 @@ export const SettingsPage: React.FC = () => {
         size="md"
         isOpen={unsavedOpen}
         onOpenChange={unsavedOnOpenChange}
-        hideCloseButton
         type="warning"
         title={t("settings.unsaved.title")}
-        footer={
-          <>
-            <Button variant="light" onPress={unsavedOnClose}>
-              {t("settings.unsaved.cancel")}
-            </Button>
-            <Button
-              color="primary"
-              isLoading={savingBaseRoot}
-              isDisabled={!newBaseRoot || !baseRootWritable}
-              onPress={async () => {
-                setSavingBaseRoot(true);
-                try {
-                  const ok = await CanWriteToDir(newBaseRoot);
-                  if (!ok) {
-                    setBaseRootWritable(false);
-                  } else {
-                    const err = await SetBaseRoot(newBaseRoot);
-                    if (!err) {
-                      const br = await GetBaseRoot();
-                      setBaseRoot(String(br || ""));
-                      const id = await GetInstallerDir();
-                      setInstallerDir(String(id || ""));
-                      const vd = await GetVersionsDir();
-                      setVersionsDir(String(vd || ""));
-                      unsavedOnClose();
-                      if (pendingNavPath === "-1") {
-                        navigate(-1);
-                      } else if (pendingNavPath) {
-                        navigate(pendingNavPath);
-                      }
-                    }
-                  }
-                } catch {}
-                setSavingBaseRoot(false);
-              }}
-            >
-              {t("settings.unsaved.save")}
-            </Button>
-          </>
-        }
+        cancelText={t("settings.unsaved.cancel")}
+        confirmText={t("settings.unsaved.save")}
+        showCancelButton
+        confirmButtonProps={{
+          isLoading: savingBaseRoot,
+          isDisabled: !newBaseRoot || !baseRootWritable,
+        }}
+        onCancel={() => unsavedOnClose()}
+        onConfirm={async () => {
+          setSavingBaseRoot(true);
+          try {
+            const ok = await CanWriteToDir(newBaseRoot);
+            if (!ok) {
+              setBaseRootWritable(false);
+            } else {
+              const err = await SetBaseRoot(newBaseRoot);
+              if (!err) {
+                const br = await GetBaseRoot();
+                setBaseRoot(String(br || ""));
+                const id = await GetInstallerDir();
+                setInstallerDir(String(id || ""));
+                const vd = await GetVersionsDir();
+                setVersionsDir(String(vd || ""));
+                unsavedOnClose();
+                if (pendingNavPath === "-1") {
+                  navigate(-1);
+                } else if (pendingNavPath) {
+                  navigate(pendingNavPath);
+                }
+              }
+            }
+          } catch {}
+          setSavingBaseRoot(false);
+        }}
       >
         <div className="text-default-700 dark:text-zinc-300 text-sm">
           {t("settings.unsaved.body")}
@@ -2850,36 +3151,27 @@ export const SettingsPage: React.FC = () => {
         size="sm"
         isOpen={resetOpen}
         onOpenChange={resetOnOpenChange}
-        hideCloseButton
         type="error"
         title={t("settings.reset.confirm.title")}
-        footer={
-          <>
-            <Button variant="light" onPress={resetOnClose}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              color="danger"
-              onPress={async () => {
-                try {
-                  const err = await ResetBaseRoot();
-                  if (!err) {
-                    const br = await GetBaseRoot();
-                    setBaseRoot(String(br || ""));
-                    setNewBaseRoot(String(br || ""));
-                    const id = await GetInstallerDir();
-                    setInstallerDir(String(id || ""));
-                    const vd = await GetVersionsDir();
-                    setVersionsDir(String(vd || ""));
-                  }
-                } catch {}
-                resetOnClose();
-              }}
-            >
-              {t("common.confirm")}
-            </Button>
-          </>
-        }
+        cancelText={t("common.cancel")}
+        confirmText={t("common.confirm")}
+        showCancelButton
+        onCancel={() => resetOnClose()}
+        onConfirm={async () => {
+          try {
+            const err = await ResetBaseRoot();
+            if (!err) {
+              const br = await GetBaseRoot();
+              setBaseRoot(String(br || ""));
+              setNewBaseRoot(String(br || ""));
+              const id = await GetInstallerDir();
+              setInstallerDir(String(id || ""));
+              const vd = await GetVersionsDir();
+              setVersionsDir(String(vd || ""));
+            }
+          } catch {}
+          resetOnClose();
+        }}
       >
         <div className="text-default-700 dark:text-zinc-300 text-sm">
           {t("settings.reset.confirm.body")}

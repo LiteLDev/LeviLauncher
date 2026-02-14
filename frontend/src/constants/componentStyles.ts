@@ -4,10 +4,12 @@ export const COMPONENT_STYLES = {
       "bg-default-100/50 dark:bg-zinc-800/50 data-[hover=true]:bg-default-200/50 dark:data-[hover=true]:bg-zinc-700/50 data-[focus=true]:border-primary-600 rounded-xl",
     popoverContent:
       "bg-white dark:bg-zinc-900 backdrop-blur-sm backdrop-saturate-150 border border-black/5 dark:border-white/10 shadow-lg rounded-xl transform-gpu",
+    listbox:
+      "[&_li[data-focus=true]]:!ring-0 [&_li[data-focus=true]]:!outline-none [&_li[data-focus=true]]:!border-transparent",
   },
   dropdown: {
     content:
-      "bg-white dark:bg-zinc-900 backdrop-blur-sm backdrop-saturate-150 border border-black/5 dark:border-white/10 shadow-lg rounded-xl transform-gpu",
+      "bg-white dark:bg-zinc-900 backdrop-blur-sm backdrop-saturate-150 border border-black/5 dark:border-white/10 shadow-lg rounded-xl transform-gpu [&_li[data-focus=true]]:!ring-0 [&_li[data-focus=true]]:!outline-none [&_li[data-focus=true]]:!border-transparent",
   },
   dropdownTriggerButton:
     "bg-default-100/50 dark:bg-zinc-800/50 data-[hover=true]:bg-default-200/50 dark:data-[hover=true]:bg-zinc-700/50 data-[focus=true]:border-primary-600 rounded-xl",

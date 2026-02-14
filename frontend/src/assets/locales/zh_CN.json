@@ -425,10 +425,21 @@
       "hue": "色相",
       "custom_color": "自定义颜色",
       "background_image": "背景图片",
-      "background_image_desc": "为当前模式设置个性化背景",
-      "no_image_selected": "未选择图片",
-      "select_image": "选择图片",
-      "clear_image": "清除图片",
+      "background_image_desc": "选择一个文件夹，从中挑选图片作为背景",
+      "background_play_order": "播放顺序",
+      "background_play_random": "随机",
+      "background_play_sequential": "顺序",
+      "background_fit_mode": "自适应方式",
+      "background_fit_smart": "智能",
+      "background_fit_center": "居中",
+      "background_fit_fit": "适应",
+      "background_fit_stretch": "拉伸",
+      "background_fit_tile": "平铺",
+      "background_fit_top_left": "居于左上",
+      "background_fit_top_right": "居于右上",
+      "no_image_selected": "未选择文件夹",
+      "select_image": "选择文件夹",
+      "clear_image": "清除文件夹",
       "background_blur": "背景模糊",
       "background_brightness": "背景亮度",
       "background_opacity": "背景不透明度",
@@ -776,14 +787,6 @@
       "body_1": "检测到您即将安装的 LeviLamina 版本 ({{version}}) 为候选发布版 (RC)。",
       "body_2": "这是一个实验性版本，可能存在不稳定因素，仅建议开发者或高级用户使用。",
       "body_3": "是否继续安装？"
-    }
-  },
-  "versionselect": {
-    "unsaved": {
-      "title": "未保存修改",
-      "body": "您更改了选择的版本，但尚未保存。是否保存后离开？",
-      "discard": "不保存离开",
-      "save_and_leave": "保存并离开"
     }
   },
   "terms": {

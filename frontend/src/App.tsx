@@ -1,50 +1,116 @@
 import "./polyfills/wails";
 import { Route, Routes, useLocation, useNavigate } from "react-router-dom";
-import React, { useEffect, useState } from "react";
-import { Button, ToastProvider } from "@heroui/react";
+import React, { useEffect, useState, Suspense, lazy } from "react";
+import { Button, ToastProvider, Spinner } from "@heroui/react";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
-import { LauncherPage } from "@/pages/LauncherPage";
-import { DownloadManagerPage } from "@/pages/DownloadManagerPage";
-import { DownloadsProvider } from "@/utils/DownloadsContext";
-import { DownloadPage } from "@/pages/DownloadPage";
-import { SplashScreen } from "@/pages/SplashScreen";
 import { motion, AnimatePresence, MotionGlobalConfig } from "framer-motion";
 import { Events, Browser, Window } from "@wailsio/runtime";
-import { SettingsPage } from "@/pages/SettingsPage";
-import { VersionSelectPage } from "@/pages/VersionSelectPage";
-import VersionSettingsPage from "@/pages/VersionSettingsPage";
-import ModsPage from "@/pages/ModsPage";
-import UpdatingPage from "@/pages/UpdatingPage";
-import ContentPage from "@/pages/ContentPage";
-import WorldsListPage from "@/pages/WorldsListPage";
-import WorldLevelDatEditorPage from "@/pages/WorldLevelDatEditorPage";
-import ResourcePacksPage from "@/pages/ResourcePacksPage";
-import BehaviorPacksPage from "@/pages/BehaviorPacksPage";
-import SkinPacksPage from "@/pages/SkinPacksPage";
 import { useTranslation } from "react-i18next";
 import { VersionStatusProvider } from "@/utils/VersionStatusContext";
 import { CurseForgeProvider } from "@/utils/CurseForgeContext";
 import { LeviLaminaProvider } from "@/utils/LeviLaminaContext";
-import InstallPage from "@/pages/InstallPage";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import AboutPage from "@/pages/AboutPage";
-import OnboardingPage from "@/pages/OnboardingPage";
-import CurseForgePage from "@/pages/CurseForgePage";
-import CurseForgeModPage from "@/pages/CurseForgeModPage";
-import LIPPage from "@/pages/LIPPage";
-import LIPPackagePage from "@/pages/LIPPackagePage";
-import ServersPage from "@/pages/ServersPage";
 import { useTheme } from "next-themes";
 import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
 import { FaRocket } from "react-icons/fa";
 import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
 import { THEMES, hexToRgb, generateTheme } from "@/constants/themes";
 import { useThemeManager } from "@/utils/useThemeManager";
+import { SplashScreen } from "@/pages/SplashScreen";
+import { DownloadsProvider } from "@/utils/DownloadsContext";
+
+// Lazy load pages
+const LauncherPage = lazy(() =>
+  import("@/pages/LauncherPage").then((m) => ({ default: m.LauncherPage })),
+);
+const DownloadManagerPage = lazy(() =>
+  import("@/pages/DownloadManagerPage").then((m) => ({
+    default: m.DownloadManagerPage,
+  })),
+);
+const DownloadPage = lazy(() =>
+  import("@/pages/DownloadPage").then((m) => ({ default: m.DownloadPage })),
+);
+const SettingsPage = lazy(() =>
+  import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
+);
+const VersionSelectPage = lazy(() =>
+  import("@/pages/VersionSelectPage").then((m) => ({
+    default: m.VersionSelectPage,
+  })),
+);
+const VersionSettingsPage = lazy(() => import("@/pages/VersionSettingsPage"));
+const ModsPage = lazy(() => import("@/pages/ModsPage"));
+const UpdatingPage = lazy(() => import("@/pages/UpdatingPage"));
+const ContentPage = lazy(() => import("@/pages/ContentPage"));
+const WorldsListPage = lazy(() => import("@/pages/WorldsListPage"));
+const WorldLevelDatEditorPage = lazy(
+  () => import("@/pages/WorldLevelDatEditorPage"),
+);
+const ResourcePacksPage = lazy(() => import("@/pages/ResourcePacksPage"));
+const BehaviorPacksPage = lazy(() => import("@/pages/BehaviorPacksPage"));
+const SkinPacksPage = lazy(() => import("@/pages/SkinPacksPage"));
+const InstallPage = lazy(() => import("@/pages/InstallPage"));
+const AboutPage = lazy(() => import("@/pages/AboutPage"));
+const OnboardingPage = lazy(() => import("@/pages/OnboardingPage"));
+const CurseForgePage = lazy(() => import("@/pages/CurseForgePage"));
+const CurseForgeModPage = lazy(() => import("@/pages/CurseForgeModPage"));
+const LIPPage = lazy(() => import("@/pages/LIPPage"));
+const LIPPackagePage = lazy(() => import("@/pages/LIPPackagePage"));
+const ServersPage = lazy(() => import("@/pages/ServersPage"));
+
+const getFitStyles = (mode: string) => {
+  switch (mode) {
+    case "center":
+      return {
+        backgroundSize: "auto",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      };
+    case "fit":
+      return {
+        backgroundSize: "contain",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      };
+    case "stretch":
+      return {
+        backgroundSize: "100% 100%",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      };
+    case "tile":
+      return {
+        backgroundSize: "auto",
+        backgroundPosition: "top left",
+        backgroundRepeat: "repeat",
+      };
+    case "top_left":
+      return {
+        backgroundSize: "auto",
+        backgroundPosition: "top left",
+        backgroundRepeat: "no-repeat",
+      };
+    case "top_right":
+      return {
+        backgroundSize: "auto",
+        backgroundPosition: "top right",
+        backgroundRepeat: "no-repeat",
+      };
+    case "smart":
+    default:
+      return {
+        backgroundSize: "cover",
+        backgroundPosition: "center",
+        backgroundRepeat: "no-repeat",
+      };
+  }
+};
 
 const GlobalShortcuts = ({
   tryNavigate,
@@ -121,27 +187,80 @@ function App() {
 
   const { themeMode } = useThemeManager();
 
-  const [lightBackgroundImage, setLightBackgroundImage] = useState<string>(
-    () => {
-      try {
-        const saved = localStorage.getItem("app.lightBackgroundImage");
-        if (saved !== null) return saved;
-        return localStorage.getItem("app.backgroundImage") || "";
-      } catch {
-        return "";
-      }
-    },
+  const [lightBackgroundImage, setLightBackgroundImage] = useState<string>("");
+  const [darkBackgroundImage, setDarkBackgroundImage] = useState<string>("");
+  const [lightBackgroundFitMode, setLightBackgroundFitMode] = useState<string>(
+    () => localStorage.getItem("app.lightBackgroundFitMode") || "smart",
   );
-  const [darkBackgroundImage, setDarkBackgroundImage] = useState<string>(() => {
+  const [darkBackgroundFitMode, setDarkBackgroundFitMode] = useState<string>(
+    () => localStorage.getItem("app.darkBackgroundFitMode") || "smart",
+  );
+  const [bgData, setBgData] = useState<string>("");
+
+  const pickNextImage = async (folderPath: string, mode: "light" | "dark") => {
+    if (!folderPath) return "";
     try {
-      const saved = localStorage.getItem("app.darkBackgroundImage");
-      if (saved !== null) return saved;
-      return localStorage.getItem("app.backgroundImage") || "";
-    } catch {
+      const entries = await (minecraft as any).ListDir(folderPath);
+      if (!entries || entries.length === 0) return "";
+      const images = entries.filter((e: any) => {
+        const name = e.name.toLowerCase();
+        return (
+          !e.isDir &&
+          (name.endsWith(".png") ||
+            name.endsWith(".jpg") ||
+            name.endsWith(".jpeg") ||
+            name.endsWith(".webp") ||
+            name.endsWith(".gif") ||
+            name.endsWith(".bmp"))
+        );
+      });
+      if (images.length === 0) return "";
+
+      const playOrder =
+        localStorage.getItem(`app.${mode}BackgroundPlayOrder`) || "random";
+
+      if (playOrder === "sequential") {
+        const lastIdxKey = `app.${mode}BackgroundLastIndex`;
+        let lastIdx = parseInt(localStorage.getItem(lastIdxKey) || "-1");
+        let nextIdx = lastIdx + 1;
+        if (nextIdx >= images.length) {
+          nextIdx = 0;
+        }
+        localStorage.setItem(lastIdxKey, String(nextIdx));
+        return images[nextIdx].path;
+      } else {
+        const randomIdx = Math.floor(Math.random() * images.length);
+        return images[randomIdx].path;
+      }
+    } catch (err) {
+      console.error("Failed to pick next image:", err);
       return "";
     }
-  });
-  const [bgData, setBgData] = useState<string>("");
+  };
+
+  useEffect(() => {
+    const initBackgrounds = async () => {
+      try {
+        const lightFolder =
+          localStorage.getItem("app.lightBackgroundImage") ||
+          localStorage.getItem("app.backgroundImage") ||
+          "";
+        const darkFolder =
+          localStorage.getItem("app.darkBackgroundImage") ||
+          localStorage.getItem("app.backgroundImage") ||
+          "";
+
+        const [lightImg, darkImg] = await Promise.all([
+          pickNextImage(lightFolder, "light"),
+          pickNextImage(darkFolder, "dark"),
+        ]);
+
+        setLightBackgroundImage(lightImg);
+        setDarkBackgroundImage(darkImg);
+      } catch {}
+    };
+    initBackgrounds();
+  }, []);
 
   const [lightBackgroundBlur, setLightBackgroundBlur] = useState<number>(() => {
     try {
@@ -406,18 +525,31 @@ function App() {
   }, []);
 
   useEffect(() => {
-    const handler = () => {
+    const handler = async () => {
       try {
-        const lightImg =
+        const lightFolder =
           localStorage.getItem("app.lightBackgroundImage") ||
           localStorage.getItem("app.backgroundImage") ||
           "";
-        setLightBackgroundImage(lightImg);
-        const darkImg =
+        const darkFolder =
           localStorage.getItem("app.darkBackgroundImage") ||
           localStorage.getItem("app.backgroundImage") ||
           "";
+
+        const [lightImg, darkImg] = await Promise.all([
+          pickNextImage(lightFolder, "light"),
+          pickNextImage(darkFolder, "dark"),
+        ]);
+
+        setLightBackgroundImage(lightImg);
         setDarkBackgroundImage(darkImg);
+
+        setLightBackgroundFitMode(
+          localStorage.getItem("app.lightBackgroundFitMode") || "smart",
+        );
+        setDarkBackgroundFitMode(
+          localStorage.getItem("app.darkBackgroundFitMode") || "smart",
+        );
       } catch {}
     };
     window.addEventListener("app-background-changed", handler);
@@ -493,7 +625,7 @@ function App() {
       setBgData(currentImg);
       return;
     }
-    // Fetch from backend
+
     (minecraft as any)
       .GetImageBase64?.(currentImg)
       .then((res: string) => {
@@ -731,6 +863,54 @@ function App() {
     } catch {}
   }, [hasBackend]);
 
+  const getFitStyles = (mode: string) => {
+    switch (mode) {
+      case "center":
+        return {
+          backgroundSize: "auto",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        };
+      case "fit":
+        return {
+          backgroundSize: "contain",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        };
+      case "stretch":
+        return {
+          backgroundSize: "100% 100%",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        };
+      case "tile":
+        return {
+          backgroundSize: "auto",
+          backgroundPosition: "top left",
+          backgroundRepeat: "repeat",
+        };
+      case "top_left":
+        return {
+          backgroundSize: "auto",
+          backgroundPosition: "top left",
+          backgroundRepeat: "no-repeat",
+        };
+      case "top_right":
+        return {
+          backgroundSize: "auto",
+          backgroundPosition: "top right",
+          backgroundRepeat: "no-repeat",
+        };
+      case "smart":
+      default:
+        return {
+          backgroundSize: "cover",
+          backgroundPosition: "center",
+          backgroundRepeat: "no-repeat",
+        };
+    }
+  };
+
   const tryNavigate = (path: string | number) => {
     if (navLocked || isUpdatingMode || isOnboardingMode) return;
     if (
@@ -891,9 +1071,11 @@ function App() {
                       className="fixed inset-0 z-0"
                       style={{
                         backgroundImage: `url("${bgData}")`,
-                        backgroundSize: "cover",
-                        backgroundPosition: "center",
-                        backgroundRepeat: "no-repeat",
+                        ...getFitStyles(
+                          resolvedTheme === "dark"
+                            ? darkBackgroundFitMode
+                            : lightBackgroundFitMode,
+                        ),
                         filter: `blur(${
                           resolvedTheme === "dark"
                             ? darkBackgroundBlur
@@ -949,8 +1131,9 @@ function App() {
                         navLocked={
                           navLocked || isUpdatingMode || isOnboardingMode
                         }
-                        isOnboardingMode={isOnboardingMode}
                         revealStarted={revealStarted}
+                        isOnboardingMode={isOnboardingMode}
+                        tryNavigate={tryNavigate}
                       />
                     </>
                   )}
@@ -968,74 +1151,91 @@ function App() {
                       (isFirstLoad ? (
                         <></>
                       ) : (
-                        <Routes>
-                          <Route
-                            path="/"
-                            element={
-                              <LauncherPage refresh={refresh} count={count} />
-                            }
-                          />
-                          <Route path="/download" element={<DownloadPage />} />
-                          <Route
-                            path="/tasks"
-                            element={<DownloadManagerPage />}
-                          />
-                          <Route path="/install" element={<InstallPage />} />
-                          <Route path="/settings" element={<SettingsPage />} />
-                          <Route
-                            path="/versions"
-                            element={<VersionSelectPage refresh={refresh} />}
-                          />
-                          <Route
-                            path="/versionSettings"
-                            element={<VersionSettingsPage />}
-                          />
-                          <Route path="/mods" element={<ModsPage />} />
-                          <Route
-                            path="/curseforge"
-                            element={<CurseForgePage />}
-                          />
-                          <Route
-                            path="/curseforge/mod/:id"
-                            element={<CurseForgeModPage />}
-                          />
-                          <Route path="/lip" element={<LIPPage />} />
-                          <Route
-                            path="/lip/package/:id"
-                            element={<LIPPackagePage />}
-                          />
-                          <Route path="/updating" element={<UpdatingPage />} />
-                          <Route
-                            path="/onboarding"
-                            element={<OnboardingPage />}
-                          />
-                          <Route path="/content" element={<ContentPage />} />
-                          <Route
-                            path="/content/worlds"
-                            element={<WorldsListPage />}
-                          />
-                          <Route
-                            path="/content/worlds/worldEdit"
-                            element={<WorldLevelDatEditorPage />}
-                          />
-                          <Route
-                            path="/content/resourcePacks"
-                            element={<ResourcePacksPage />}
-                          />
-                          <Route
-                            path="/content/behaviorPacks"
-                            element={<BehaviorPacksPage />}
-                          />
-                          <Route
-                            path="/content/skinPacks"
-                            element={<SkinPacksPage />}
-                          />
-                          <Route
-                            path="/content/servers"
-                            element={<ServersPage />}
-                          />
-                          <Route path="/about" element={<AboutPage />} />
-                        </Routes>
+                        <Suspense
+                          fallback={
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Spinner size="lg" />
+                            </div>
+                          }
+                        >
+                          <Routes>
+                            <Route
+                              path="/"
+                              element={
+                                <LauncherPage refresh={refresh} count={count} />
+                              }
+                            />
+                            <Route
+                              path="/download"
+                              element={<DownloadPage />}
+                            />
+                            <Route
+                              path="/tasks"
+                              element={<DownloadManagerPage />}
+                            />
+                            <Route path="/install" element={<InstallPage />} />
+                            <Route
+                              path="/settings"
+                              element={<SettingsPage />}
+                            />
+                            <Route
+                              path="/versions"
+                              element={<VersionSelectPage refresh={refresh} />}
+                            />
+                            <Route
+                              path="/versionSettings"
+                              element={<VersionSettingsPage />}
+                            />
+                            <Route path="/mods" element={<ModsPage />} />
+                            <Route
+                              path="/curseforge"
+                              element={<CurseForgePage />}
+                            />
+                            <Route
+                              path="/curseforge/mod/:id"
+                              element={<CurseForgeModPage />}
+                            />
+                            <Route path="/lip" element={<LIPPage />} />
+                            <Route
+                              path="/lip/package/:id"
+                              element={<LIPPackagePage />}
+                            />
+                            <Route
+                              path="/updating"
+                              element={<UpdatingPage />}
+                            />
+                            <Route
+                              path="/onboarding"
+                              element={<OnboardingPage />}
+                            />
+                            <Route path="/content" element={<ContentPage />} />
+                            <Route
+                              path="/content/worlds"
+                              element={<WorldsListPage />}
+                            />
+                            <Route
+                              path="/content/worlds/worldEdit"
+                              element={<WorldLevelDatEditorPage />}
+                            />
+                            <Route
+                              path="/content/resourcePacks"
+                              element={<ResourcePacksPage />}
+                            />
+                            <Route
+                              path="/content/behaviorPacks"
+                              element={<BehaviorPacksPage />}
+                            />
+                            <Route
+                              path="/content/skinPacks"
+                              element={<SkinPacksPage />}
+                            />
+                            <Route
+                              path="/content/servers"
+                              element={<ServersPage />}
+                            />
+                            <Route path="/about" element={<AboutPage />} />
+                          </Routes>
+                        </Suspense>
                       ))}
                   </motion.div>
 

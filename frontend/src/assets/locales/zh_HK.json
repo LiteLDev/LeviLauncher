@@ -423,6 +423,17 @@
       "background_brightness": "背景亮度",
       "background_opacity": "背景不透明度",
       "background_base_opacity": "底色不透明度",
+      "background_fit_mode": "適應方式",
+      "background_fit_smart": "智能",
+      "background_fit_center": "居中",
+      "background_fit_fit": "適應",
+      "background_fit_stretch": "拉伸",
+      "background_fit_tile": "平鋪",
+      "background_fit_top_left": "左上",
+      "background_fit_top_right": "右上",
+      "background_play_order": "播放順序",
+      "background_play_sequential": "順序",
+      "background_play_random": "亂序",
       "background_use_theme": "使用主題色作為底色",
       "background_use_theme_desc": "開啟後將使用當前主題色作為背景填充，關閉則使用黑/白底色",
       "disable_animations": "停用動畫",
@@ -766,14 +777,6 @@
       "body_1": "檢測到您即將安裝的 LeviLamina 版本 ({{version}}) 為候選發布版 (RC)。",
       "body_2": "這是一個實驗性版本，可能存在不穩定因素，僅建議開發者或高級用戶使用。",
       "body_3": "是否繼續安裝？"
-    }
-  },
-  "versionselect": {
-    "unsaved": {
-      "title": "未儲存修改",
-      "body": "您更改了選擇的版本，但尚未儲存。是否儲存後離開？",
-      "discard": "不儲存離開",
-      "save_and_leave": "儲存並離開"
     }
   },
   "terms": {

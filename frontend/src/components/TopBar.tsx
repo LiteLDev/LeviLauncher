@@ -15,12 +15,14 @@ interface TopBarProps {
   navLocked: boolean;
   isOnboardingMode: boolean;
   revealStarted: boolean;
+  tryNavigate: (path: string | number) => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
   navLocked,
   isOnboardingMode,
   revealStarted,
+  tryNavigate,
 }) => {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -73,7 +75,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 variant="light"
                 size="sm"
                 radius="lg"
-                onPress={() => navigate(-1)}
+                onPress={() => tryNavigate(-1)}
                 isDisabled={navLocked || !canGoBack}
                 className="wails-no-drag text-default-500 dark:text-zinc-400"
                 aria-label="Go back"
@@ -92,7 +94,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 variant="light"
                 size="sm"
                 radius="lg"
-                onPress={() => navigate(1)}
+                onPress={() => tryNavigate(1)}
                 isDisabled={navLocked || !canGoForward}
                 className="wails-no-drag text-default-500 dark:text-zinc-400"
                 aria-label="Go forward"
@@ -118,6 +120,10 @@ export const TopBar: React.FC<TopBarProps> = ({
             ) : (
               <Link
                 to="/"
+                onClick={(e) => {
+                  e.preventDefault();
+                  tryNavigate("/");
+                }}
                 className={`transition-colors hover:opacity-80 ${
                   pathnames.length === 0
                     ? "font-bold text-lg bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent"
@@ -149,6 +155,10 @@ export const TopBar: React.FC<TopBarProps> = ({
                   ) : (
                     <Link
                       to={to}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        tryNavigate(to);
+                      }}
                       className="text-default-500 dark:text-zinc-400 hover:text-default-900 dark:hover:text-zinc-200 transition-colors truncate"
                     >
                       {name}

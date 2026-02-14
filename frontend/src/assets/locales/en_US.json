@@ -433,10 +433,21 @@
       "hue": "Hue",
       "custom_color": "Custom Color",
       "background_image": "Background Image",
-      "background_image_desc": "Set a personalized background for the current mode",
-      "no_image_selected": "No image selected",
-      "select_image": "Select Image",
-      "clear_image": "Clear Image",
+      "background_image_desc": "Select a folder to pick images from as background",
+      "background_play_order": "Play Order",
+      "background_play_random": "Random",
+      "background_play_sequential": "Sequential",
+      "background_fit_mode": "Fit Mode",
+      "background_fit_smart": "Smart",
+      "background_fit_center": "Center",
+      "background_fit_fit": "Fit",
+      "background_fit_stretch": "Stretch",
+      "background_fit_tile": "Tile",
+      "background_fit_top_left": "Top Left",
+      "background_fit_top_right": "Top Right",
+      "no_image_selected": "No folder selected",
+      "select_image": "Select Folder",
+      "clear_image": "Clear Folder",
       "background_blur": "Background Blur",
       "background_brightness": "Background Brightness",
       "background_opacity": "Background Opacity",
@@ -776,14 +787,6 @@
       "body_1": "The LeviLamina version ({{version}}) you are about to install is a Release Candidate (RC).",
       "body_2": "This is an experimental version that may be unstable. It is recommended for developers or advanced users only.",
       "body_3": "Do you want to continue?"
-    }
-  },
-  "versionselect": {
-    "unsaved": {
-      "title": "Unsaved Changes",
-      "body": "You changed the selected version but haven't saved yet. Save and leave?",
-      "discard": "Discard and Leave",
-      "save_and_leave": "Save and Leave"
     }
   },
   "terms": {

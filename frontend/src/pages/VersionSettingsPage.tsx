@@ -14,7 +14,6 @@ import {
   Input,
   Switch,
   Chip,
-  ModalContent,
   Progress,
   useDisclosure,
   Textarea,
@@ -1074,27 +1073,18 @@ export default function VersionSettingsPage() {
         size="md"
         isOpen={unsavedOpen}
         onOpenChange={unsavedOnOpenChange}
-        hideCloseButton
         type="warning"
         title={t("settings.unsaved.title")}
-        footer={
-          <>
-            <Button variant="light" onPress={unsavedOnClose}>
-              {t("settings.unsaved.cancel")}
-            </Button>
-            <Button
-              color="primary"
-              onPress={async () => {
-                const ok = await onSave(pendingNavPath);
-                if (ok) {
-                  unsavedOnClose();
-                }
-              }}
-            >
-              {t("settings.unsaved.save")}
-            </Button>
-          </>
-        }
+        cancelText={t("settings.unsaved.cancel")}
+        confirmText={t("settings.unsaved.save")}
+        showCancelButton
+        onCancel={() => unsavedOnClose()}
+        onConfirm={async () => {
+          const ok = await onSave(pendingNavPath);
+          if (ok) {
+            unsavedOnClose();
+          }
+        }}
       >
         <div className="text-default-700 dark:text-zinc-300 text-sm">
           {t("versions.unsaved.body")}
@@ -1105,27 +1095,17 @@ export default function VersionSettingsPage() {
         size="md"
         isOpen={rcOpen}
         onOpenChange={rcOnOpenChange}
-        hideCloseButton
         type="warning"
         title={t("mods.rc_warning.title")}
         icon={<FiAlertTriangle className="w-6 h-6 text-warning-500" />}
-        footer={
-          <>
-            <Button variant="light" onPress={rcOnClose}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              color="warning"
-              className="text-white font-bold shadow-lg shadow-warning-500/20"
-              onPress={() => {
-                rcOnClose();
-                proceedInstallLeviLamina();
-              }}
-            >
-              {t("common.continue")}
-            </Button>
-          </>
-        }
+        cancelText={t("common.cancel")}
+        confirmText={t("common.continue")}
+        showCancelButton
+        onCancel={() => rcOnClose()}
+        onConfirm={() => {
+          rcOnClose();
+          proceedInstallLeviLamina();
+        }}
       >
         <div className="text-sm text-default-700 dark:text-zinc-300 space-y-2">
           <p>

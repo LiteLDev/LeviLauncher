@@ -413,6 +413,17 @@
       "background_brightness": "背景の明るさ",
       "background_opacity": "背景の不透明度",
       "background_base_opacity": "底色の不透明度",
+      "background_fit_mode": "フィッティングモード",
+      "background_fit_smart": "スマート",
+      "background_fit_center": "中央",
+      "background_fit_fit": "フィット",
+      "background_fit_stretch": "引き伸ばし",
+      "background_fit_tile": "並べる",
+      "background_fit_top_left": "左上",
+      "background_fit_top_right": "右上",
+      "background_play_order": "再生順序",
+      "background_play_sequential": "順次",
+      "background_play_random": "ランダム",
       "background_use_theme": "テーマカラーを底色として使用",
       "background_use_theme_desc": "有効にすると、現在のテーマカラーが背景の塗りつぶしとして使用されます。無効にすると、黒または白が使用されます",
       "disable_animations": "アニメーションを無効化",
@@ -766,14 +777,6 @@
       "body_1": "インストールしようとしている LeviLamina バージョン ({{version}}) はリリース候補版 (RC) です。",
       "body_2": "これは実験的なバージョンであり、不安定な可能性があります。開発者または上級ユーザーのみに推奨されます。",
       "body_3": "インストールを続行しますか？"
-    }
-  },
-  "versionselect": {
-    "unsaved": {
-      "title": "保存されていない変更",
-      "body": "選択したバージョンを変更しましたが、保存されていません。保存して移動しますか？",
-      "discard": "破棄して移動",
-      "save_and_leave": "保存して移動"
     }
   },
   "terms": {

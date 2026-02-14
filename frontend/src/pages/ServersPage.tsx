@@ -109,77 +109,95 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
     <div
       className={cn(
         COMPONENT_STYLES.listItem,
-        "w-full p-4 flex gap-4 group cursor-pointer relative overflow-hidden",
+        "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
       )}
     >
       <div className="relative shrink-0">
-        <div className="h-20 sm:h-24 aspect-video rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
-          <FaServer className="w-10 h-10 text-blue-500" />
+        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-default-100/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+          <FaServer className="text-4xl text-blue-500/80" />
         </div>
       </div>
-      <div className="flex flex-col flex-1 min-w-0 gap-1">
-        <div className="flex items-baseline gap-2 truncate">
-          <h3
-            className="text-base sm:text-lg font-bold text-default-900 dark:text-white truncate"
-            title={server.name}
-          >
-            {server.name}
-          </h3>
-          {info?.status === "online" && (
-            <Chip size="sm" color="success" className="ml-2">
-              {t("server.online")}
-            </Chip>
-          )}
-          {info?.status !== "online" && !loading && (
-            <Chip size="sm" color="danger" className="ml-2">
-              {t("server.offline")}
-            </Chip>
-          )}
+      <div className="flex flex-col flex-1 min-w-0">
+        <div className="flex justify-between items-start gap-2 mb-1">
+          <div className="flex items-center gap-2 truncate">
+            <h3
+              className="text-lg font-bold text-default-900 dark:text-white truncate"
+              title={server.name}
+            >
+              {server.name}
+            </h3>
+            {info?.status === "online" && (
+              <Chip
+                size="sm"
+                variant="flat"
+                color="success"
+                className="bg-success-50 dark:bg-success-900/20"
+              >
+                {t("server.online")}
+              </Chip>
+            )}
+            {info?.status !== "online" && !loading && (
+              <Chip
+                size="sm"
+                variant="flat"
+                color="danger"
+                className="bg-danger-50 dark:bg-danger-900/20"
+              >
+                {t("server.offline")}
+              </Chip>
+            )}
+          </div>
         </div>
+
         {info?.motd && (
-          <div className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-1 w-full font-mono">
+          <div className="text-sm text-default-500 dark:text-zinc-400 line-clamp-1 w-full font-mono mb-1">
             <McText text={info.motd} />
           </div>
         )}
-        <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2 w-full">
+
+        <p className="text-sm text-default-400 dark:text-zinc-500 mb-3">
           {server.ip}:{server.port}
         </p>
-        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
+
+        <div className="flex flex-wrap items-center gap-4 text-xs text-default-400 dark:text-zinc-500 mt-auto">
           {info?.status === "online" && (
             <>
               <div
-                className="flex items-center gap-1"
+                className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
                 title={t("server.version")}
               >
-                <FaTag />
+                <FaTag className="text-default-400" />
                 <span>
                   <McText text={info.version} />
                 </span>
               </div>
               <div
-                className="flex items-center gap-1"
+                className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
                 title={t("server.players")}
               >
-                <FaGamepad />
+                <FaGamepad className="text-default-400" />
                 <span>
                   {info.online}/{info.max}
                 </span>
               </div>
               <div
-                className={`flex items-center gap-1`}
+                className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
                 title={t("server.delay")}
               >
                 <FaSignal className={`text-${delayColor}-500`} />
                 <span
-                  className={`text-${delayColor}-600 dark:text-${delayColor}-400`}
+                  className={`text-${delayColor}-600 dark:text-${delayColor}-400 font-medium`}
                 >
                   {info.delay}ms
                 </span>
               </div>
             </>
           )}
-          <div className="flex items-center gap-1" title={t("common.date")}>
-            <FaClock />
+          <div
+            className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
+            title={t("common.date")}
+          >
+            <FaClock className="text-default-400" />
             <span>{new Date(server.timestamp * 1000).toLocaleString()}</span>
           </div>
         </div>

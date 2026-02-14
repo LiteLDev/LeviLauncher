@@ -984,7 +984,7 @@ export const SettingsPage: React.FC = () => {
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-1 h-4 bg-primary-500 rounded-full" />
                       <p className="text-sm font-bold text-default-600 uppercase tracking-wider">
-                        {t("settings.appearance.global_config") || "全局配置"}
+                        {t("settings.appearance.global_config")}
                       </p>
                     </div>
                     <div className="flex flex-col gap-0">
@@ -993,12 +993,10 @@ export const SettingsPage: React.FC = () => {
                         <div className="flex flex-col gap-4">
                           <div className="flex flex-col gap-1">
                             <p className="font-medium text-default-700 dark:text-zinc-200">
-                              {t("settings.appearance.theme_mode") ||
-                                "外观模式"}
+                              {t("settings.appearance.theme_mode")}
                             </p>
                             <p className="text-tiny text-default-500 dark:text-zinc-400">
-                              {t("settings.appearance.theme_mode_desc") ||
-                                "选择应用的主题模式"}
+                              {t("settings.appearance.theme_mode_desc")}
                             </p>
                           </div>
                           <div className="w-full overflow-x-auto scrollbar-hide">
@@ -1030,10 +1028,7 @@ export const SettingsPage: React.FC = () => {
                                 key="dark"
                                 title={
                                   <div className="flex items-center gap-2">
-                                    <LuMoon
-                                      size={14}
-                                      className="dark:text-primary-400/80"
-                                    />
+                                    <LuMoon size={14} />
                                     <span>
                                       {t("settings.appearance.theme_dark")}
                                     </span>
@@ -1046,9 +1041,7 @@ export const SettingsPage: React.FC = () => {
                                   <div className="flex items-center gap-2">
                                     <LuHardDrive size={14} />
                                     <span>
-                                      {t(
-                                        "settings.appearance.theme_schedule",
-                                      ) || "手动设置时间"}
+                                      {t("settings.appearance.theme_schedule")}
                                     </span>
                                   </div>
                                 }
@@ -1059,8 +1052,7 @@ export const SettingsPage: React.FC = () => {
                                   <div className="flex items-center gap-2">
                                     <RxDesktop size={14} />
                                     <span>
-                                      {t("settings.appearance.theme_auto") ||
-                                        "日出日落"}
+                                      {t("settings.appearance.theme_auto")}
                                     </span>
                                   </div>
                                 }
@@ -1071,8 +1063,7 @@ export const SettingsPage: React.FC = () => {
                                   <div className="flex items-center gap-2">
                                     <LuMonitor size={14} />
                                     <span>
-                                      {t("settings.appearance.theme_system") ||
-                                        "跟随系统"}
+                                      {t("settings.appearance.theme_system")}
                                     </span>
                                   </div>
                                 }
@@ -1094,9 +1085,7 @@ export const SettingsPage: React.FC = () => {
                               <div className="flex flex-col gap-4 p-4 mt-2 rounded-2xl bg-default-100/50 border border-default-200/50">
                                 <div className="flex flex-col gap-1">
                                   <p className="text-tiny font-bold text-default-600 uppercase tracking-wider">
-                                    {t(
-                                      "settings.appearance.theme_system_desc",
-                                    ) || "跟随 Windows 系统设置"}
+                                    {t("settings.appearance.theme_system_desc")}
                                   </p>
                                 </div>
                               </div>
@@ -1189,8 +1178,7 @@ export const SettingsPage: React.FC = () => {
                                   <div className="flex items-center gap-2 py-2">
                                     <Spinner size="sm" color="primary" />
                                     <p className="text-tiny text-default-400">
-                                      {t("settings.appearance.calculating") ||
-                                        "正在计算..."}
+                                      {t("settings.appearance.calculating")}
                                     </p>
                                   </div>
                                 ) : sunTimes ? (
@@ -1204,7 +1192,7 @@ export const SettingsPage: React.FC = () => {
                                           <p className="text-[10px] text-default-400 uppercase font-bold">
                                             {t(
                                               "settings.appearance.sunrise_time",
-                                            ) || "日出"}
+                                            )}
                                           </p>
                                           <p className="text-sm font-mono font-bold text-default-700">
                                             {sunTimes.sunrise}
@@ -1212,7 +1200,7 @@ export const SettingsPage: React.FC = () => {
                                         </div>
                                       </div>
                                       <div className="flex items-center gap-2">
-                                        <div className="p-1.5 rounded-lg bg-primary-100/50 dark:bg-primary-500/10 text-primary-600 dark:text-primary-400/90">
+                                        <div className="p-1.5 rounded-lg bg-primary-100/50 dark:bg-primary-500/10 text-amber-400">
                                           <LuMoon size={14} />
                                         </div>
                                         <div className="flex flex-col">
@@ -1227,14 +1215,7 @@ export const SettingsPage: React.FC = () => {
                                         </div>
                                       </div>
                                     </div>
-                                    {sunTimes.ip && (
-                                      <p className="text-[10px] text-default-400 flex items-center gap-1">
-                                        <span className="w-1 h-1 rounded-full bg-success-500" />
-                                        {t("settings.appearance.location_ip") ||
-                                          "基于 IP 定位"}
-                                        : {sunTimes.ip}
-                                      </p>
-                                    )}
+
                                     <Button
                                       size="sm"
                                       variant="flat"
@@ -1243,7 +1224,7 @@ export const SettingsPage: React.FC = () => {
                                       className="h-7 text-tiny self-start bg-default-200/50 hover:bg-default-300/50"
                                       onClick={refreshSunTimes}
                                     >
-                                      {t("common.refresh") || "刷新"}
+                                      {t("common.refresh")}
                                     </Button>
                                   </div>
                                 ) : (
@@ -1251,7 +1232,7 @@ export const SettingsPage: React.FC = () => {
                                     <p className="text-tiny text-danger-500">
                                       {t(
                                         "settings.appearance.sun_fetch_failed",
-                                      ) || "获取日出日落时间失败"}
+                                      )}
                                     </p>
                                     <Button
                                       size="sm"
@@ -1261,7 +1242,7 @@ export const SettingsPage: React.FC = () => {
                                       className="h-7 text-tiny self-start bg-default-200/50"
                                       onClick={refreshSunTimes}
                                     >
-                                      {t("common.retry") || "重试"}
+                                      {t("common.retry")}
                                     </Button>
                                   </div>
                                 )}
@@ -1336,7 +1317,7 @@ export const SettingsPage: React.FC = () => {
                     <div className="flex items-center gap-2 mb-1">
                       <div className="w-1 h-4 bg-primary-500 rounded-full" />
                       <p className="text-sm font-bold text-default-600 uppercase tracking-wider">
-                        {t("settings.appearance.mode_config") || "模式特定配置"}
+                        {t("settings.appearance.mode_config")}
                       </p>
                     </div>
 
@@ -1349,19 +1330,11 @@ export const SettingsPage: React.FC = () => {
                               {themeSettingMode === "light" ? (
                                 <LuSun className="text-warning-500" size={18} />
                               ) : (
-                                <LuMoon
-                                  className="text-primary-400 dark:text-primary-500/80"
-                                  size={18}
-                                />
+                                <LuMoon className="text-amber-400" size={18} />
                               )}
                               {themeSettingMode === "light"
                                 ? t("settings.appearance.theme_light")
                                 : t("settings.appearance.theme_dark")}
-                              <span className="text-tiny font-normal text-default-400">
-                                (
-                                {t("settings.appearance.editing") || "正在编辑"}
-                                )
-                              </span>
                             </p>
                             <p className="text-tiny text-default-500">
                               {t("settings.appearance.edit_mode_desc")}
@@ -1388,165 +1361,308 @@ export const SettingsPage: React.FC = () => {
 
                         {/* Content Area */}
                         <div className="py-6 flex flex-col gap-8">
-                          {/* Theme Color Section */}
-                          <div className="flex flex-col gap-4">
-                            <div className="flex items-center gap-2">
-                              <LuPalette
-                                className="text-primary-500"
-                                size={18}
-                              />
+                          {/* Theme Color Group */}
+                          <div className="flex flex-col gap-4 p-5 rounded-3xl bg-default-200/10 border border-default-200/50">
+                            {/* Theme Color Section */}
+                            <div className="flex flex-col gap-4">
+                              <div className="flex items-center gap-2">
+                                <LuPalette
+                                  className="text-primary-500"
+                                  size={18}
+                                />
+                                <div className="flex flex-col gap-0.5">
+                                  <p className="text-small font-bold text-default-700">
+                                    {t("settings.appearance.theme_color")}
+                                  </p>
+                                  <p className="text-tiny text-default-400">
+                                    {t("settings.appearance.theme_color_desc")}
+                                  </p>
+                                </div>
+                              </div>
+                              <div className="flex gap-3 flex-wrap p-4 rounded-2xl bg-default-200/20 border border-default-200/50">
+                                {Object.keys(THEMES).map((colorName) => {
+                                  const isSelected =
+                                    themeSettingMode === "light"
+                                      ? lightThemeColor === colorName
+                                      : darkThemeColor === colorName;
+                                  return (
+                                    <div
+                                      key={colorName}
+                                      className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
+                                        isSelected
+                                          ? "ring-2 ring-offset-2 ring-primary-500 shadow-lg"
+                                          : ""
+                                      }`}
+                                      style={{
+                                        backgroundColor: THEMES[colorName][500],
+                                      }}
+                                      onClick={() => {
+                                        if (themeSettingMode === "light") {
+                                          setLightThemeColor(colorName);
+                                          localStorage.setItem(
+                                            "app.lightThemeColor",
+                                            colorName,
+                                          );
+                                        } else {
+                                          setDarkThemeColor(colorName);
+                                          localStorage.setItem(
+                                            "app.darkThemeColor",
+                                            colorName,
+                                          );
+                                        }
+                                        window.dispatchEvent(
+                                          new CustomEvent("app-theme-changed"),
+                                        );
+                                      }}
+                                    >
+                                      {isSelected && (
+                                        <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
+                                      )}
+                                    </div>
+                                  );
+                                })}
+                                <div
+                                  className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative overflow-hidden ${
+                                    (
+                                      themeSettingMode === "light"
+                                        ? lightThemeColor === "custom"
+                                        : darkThemeColor === "custom"
+                                    )
+                                      ? "ring-2 ring-offset-2 ring-primary-500 shadow-lg"
+                                      : ""
+                                  }`}
+                                  onClick={() => {
+                                    if (themeSettingMode === "light") {
+                                      setLightThemeColor("custom");
+                                      localStorage.setItem(
+                                        "app.lightThemeColor",
+                                        "custom",
+                                      );
+                                    } else {
+                                      setDarkThemeColor("custom");
+                                      localStorage.setItem(
+                                        "app.darkThemeColor",
+                                        "custom",
+                                      );
+                                    }
+                                    window.dispatchEvent(
+                                      new CustomEvent("app-theme-changed"),
+                                    );
+                                  }}
+                                >
+                                  <div className="absolute inset-0 bg-gradient-to-br from-red-500 via-green-500 to-blue-500 opacity-80" />
+                                  <LuPalette className="text-white relative z-10 w-4 h-4 drop-shadow-md" />
+                                  {(themeSettingMode === "light"
+                                    ? lightThemeColor === "custom"
+                                    : darkThemeColor === "custom") && (
+                                    <>
+                                      <div className="absolute inset-0 bg-black/20 z-0" />
+                                      <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm z-20 absolute" />
+                                    </>
+                                  )}
+                                </div>
+                              </div>
+
+                              {(themeSettingMode === "light"
+                                ? lightThemeColor === "custom"
+                                : darkThemeColor === "custom") && (
+                                <div className="flex items-center gap-3 bg-default-200/30 p-3 rounded-xl border border-default-200/50 self-start">
+                                  <p className="text-tiny font-medium text-default-600">
+                                    {t("settings.appearance.custom_color") ||
+                                      "Custom"}
+                                    :
+                                  </p>
+                                  <div className="relative flex items-center gap-2">
+                                    <input
+                                      type="color"
+                                      value={
+                                        themeSettingMode === "light"
+                                          ? lightCustomThemeColor
+                                          : darkCustomThemeColor
+                                      }
+                                      onInput={(e) => {
+                                        const color = (
+                                          e.target as HTMLInputElement
+                                        ).value;
+                                        if (themeSettingMode === "light") {
+                                          setLightCustomThemeColor(color);
+                                        } else {
+                                          setDarkCustomThemeColor(color);
+                                        }
+                                      }}
+                                      onChange={(e) => {
+                                        const color = e.target.value;
+                                        if (themeSettingMode === "light") {
+                                          setLightCustomThemeColor(color);
+                                          localStorage.setItem(
+                                            "app.lightCustomThemeColor",
+                                            color,
+                                          );
+                                        } else {
+                                          setDarkCustomThemeColor(color);
+                                          localStorage.setItem(
+                                            "app.darkCustomThemeColor",
+                                            color,
+                                          );
+                                        }
+                                        window.dispatchEvent(
+                                          new CustomEvent("app-theme-changed"),
+                                        );
+                                      }}
+                                      className="w-6 h-6 p-0 border-0 rounded-full overflow-hidden cursor-pointer bg-transparent shadow-sm"
+                                    />
+                                    <span className="text-tiny font-mono uppercase text-default-500">
+                                      {themeSettingMode === "light"
+                                        ? lightCustomThemeColor
+                                        : darkCustomThemeColor}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+
+                            <Divider className="bg-default-200/50" />
+
+                            {/* Background Use Theme */}
+                            <div className="flex items-center justify-between">
                               <div className="flex flex-col gap-0.5">
                                 <p className="text-small font-bold text-default-700">
-                                  {t("settings.appearance.theme_color")}
+                                  {t(
+                                    "settings.appearance.background_use_theme",
+                                  )}
                                 </p>
                                 <p className="text-tiny text-default-400">
-                                  {t("settings.appearance.theme_color_desc")}
+                                  {t(
+                                    "settings.appearance.background_use_theme_desc",
+                                  )}
                                 </p>
                               </div>
-                            </div>
-                            <div className="flex gap-3 flex-wrap p-4 rounded-2xl bg-default-200/20 border border-default-200/50">
-                              {Object.keys(THEMES).map((colorName) => {
-                                const isSelected =
+                              <Switch
+                                size="sm"
+                                isSelected={
                                   themeSettingMode === "light"
-                                    ? lightThemeColor === colorName
-                                    : darkThemeColor === colorName;
-                                return (
-                                  <div
-                                    key={colorName}
-                                    className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
-                                      isSelected
-                                        ? "ring-2 ring-offset-2 ring-primary-500 shadow-lg"
-                                        : ""
-                                    }`}
-                                    style={{
-                                      backgroundColor: THEMES[colorName][500],
-                                    }}
-                                    onClick={() => {
-                                      if (themeSettingMode === "light") {
-                                        setLightThemeColor(colorName);
-                                        localStorage.setItem(
-                                          "app.lightThemeColor",
-                                          colorName,
-                                        );
-                                      } else {
-                                        setDarkThemeColor(colorName);
-                                        localStorage.setItem(
-                                          "app.darkThemeColor",
-                                          colorName,
-                                        );
-                                      }
-                                      window.dispatchEvent(
-                                        new CustomEvent("app-theme-changed"),
-                                      );
-                                    }}
-                                  >
-                                    {isSelected && (
-                                      <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
-                                    )}
-                                  </div>
-                                );
-                              })}
-                              <div
-                                className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative overflow-hidden ${
-                                  (
-                                    themeSettingMode === "light"
-                                      ? lightThemeColor === "custom"
-                                      : darkThemeColor === "custom"
-                                  )
-                                    ? "ring-2 ring-offset-2 ring-primary-500 shadow-lg"
-                                    : ""
-                                }`}
-                                onClick={() => {
+                                    ? lightBackgroundUseTheme
+                                    : darkBackgroundUseTheme
+                                }
+                                onValueChange={(isSelected) => {
                                   if (themeSettingMode === "light") {
-                                    setLightThemeColor("custom");
+                                    setLightBackgroundUseTheme(isSelected);
                                     localStorage.setItem(
-                                      "app.lightThemeColor",
-                                      "custom",
+                                      "app.lightBackgroundUseTheme",
+                                      String(isSelected),
                                     );
                                   } else {
-                                    setDarkThemeColor("custom");
+                                    setDarkBackgroundUseTheme(isSelected);
                                     localStorage.setItem(
-                                      "app.darkThemeColor",
-                                      "custom",
+                                      "app.darkBackgroundUseTheme",
+                                      String(isSelected),
                                     );
                                   }
                                   window.dispatchEvent(
-                                    new CustomEvent("app-theme-changed"),
+                                    new CustomEvent("app-bg-theme-changed"),
                                   );
                                 }}
-                              >
-                                <div className="absolute inset-0 bg-gradient-to-br from-red-500 via-green-500 to-blue-500 opacity-80" />
-                                <LuPalette className="text-white relative z-10 w-4 h-4 drop-shadow-md" />
-                                {(themeSettingMode === "light"
-                                  ? lightThemeColor === "custom"
-                                  : darkThemeColor === "custom") && (
-                                  <>
-                                    <div className="absolute inset-0 bg-black/20 z-0" />
-                                    <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm z-20 absolute" />
-                                  </>
-                                )}
-                              </div>
+                                classNames={{
+                                  wrapper:
+                                    "group-data-[selected=true]:bg-primary-500",
+                                }}
+                              />
                             </div>
 
-                            {(themeSettingMode === "light"
-                              ? lightThemeColor === "custom"
-                              : darkThemeColor === "custom") && (
-                              <div className="flex items-center gap-3 bg-default-200/30 p-3 rounded-xl border border-default-200/50 self-start">
+                            <Divider className="bg-default-200/50" />
+
+                            {/* Base Opacity */}
+                            <div className="flex flex-col gap-3">
+                              <div className="flex items-center justify-between">
                                 <p className="text-tiny font-medium text-default-600">
-                                  {t("settings.appearance.custom_color") ||
-                                    "Custom"}
-                                  :
+                                  {t(
+                                    "settings.appearance.background_base_opacity",
+                                  ) || "Base Opacity"}
                                 </p>
-                                <div className="relative flex items-center gap-2">
+                                <div className="flex items-center">
                                   <input
-                                    type="color"
+                                    type="number"
+                                    className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
+                                    onFocus={(e) => e.target.select()}
                                     value={
                                       themeSettingMode === "light"
-                                        ? lightCustomThemeColor
-                                        : darkCustomThemeColor
+                                        ? lightBackgroundBaseOpacity
+                                        : darkBackgroundBaseOpacity
                                     }
-                                    onInput={(e) => {
-                                      const color = (
-                                        e.target as HTMLInputElement
-                                      ).value;
-                                      if (themeSettingMode === "light") {
-                                        setLightCustomThemeColor(color);
-                                      } else {
-                                        setDarkCustomThemeColor(color);
-                                      }
-                                    }}
+                                    min={0}
+                                    max={100}
                                     onChange={(e) => {
-                                      const color = e.target.value;
+                                      const val = parseInt(e.target.value) || 0;
+                                      const clampedVal = Math.min(
+                                        100,
+                                        Math.max(0, val),
+                                      );
                                       if (themeSettingMode === "light") {
-                                        setLightCustomThemeColor(color);
+                                        setLightBackgroundBaseOpacity(
+                                          clampedVal,
+                                        );
                                         localStorage.setItem(
-                                          "app.lightCustomThemeColor",
-                                          color,
+                                          "app.lightBackgroundBaseOpacity",
+                                          String(clampedVal),
                                         );
                                       } else {
-                                        setDarkCustomThemeColor(color);
+                                        setDarkBackgroundBaseOpacity(
+                                          clampedVal,
+                                        );
                                         localStorage.setItem(
-                                          "app.darkCustomThemeColor",
-                                          color,
+                                          "app.darkBackgroundBaseOpacity",
+                                          String(clampedVal),
                                         );
                                       }
                                       window.dispatchEvent(
-                                        new CustomEvent("app-theme-changed"),
+                                        new CustomEvent(
+                                          "app-base-opacity-changed",
+                                        ),
                                       );
                                     }}
-                                    className="w-6 h-6 p-0 border-0 rounded-full overflow-hidden cursor-pointer bg-transparent shadow-sm"
                                   />
-                                  <span className="text-tiny font-mono uppercase text-default-500">
-                                    {themeSettingMode === "light"
-                                      ? lightCustomThemeColor
-                                      : darkCustomThemeColor}
+                                  <span className="text-tiny font-mono text-primary-500 ml-0.5">
+                                    %
                                   </span>
                                 </div>
                               </div>
-                            )}
+                              <Slider
+                                size="sm"
+                                step={1}
+                                maxValue={100}
+                                minValue={0}
+                                aria-label="Base Opacity"
+                                value={
+                                  themeSettingMode === "light"
+                                    ? lightBackgroundBaseOpacity
+                                    : darkBackgroundBaseOpacity
+                                }
+                                classNames={{
+                                  filler: "bg-primary-500",
+                                  thumb: "bg-primary-500",
+                                }}
+                                onChange={(v) => {
+                                  const val = Number(v);
+                                  if (themeSettingMode === "light") {
+                                    setLightBackgroundBaseOpacity(val);
+                                    localStorage.setItem(
+                                      "app.lightBackgroundBaseOpacity",
+                                      String(val),
+                                    );
+                                  } else {
+                                    setDarkBackgroundBaseOpacity(val);
+                                    localStorage.setItem(
+                                      "app.darkBackgroundBaseOpacity",
+                                      String(val),
+                                    );
+                                  }
+                                  window.dispatchEvent(
+                                    new CustomEvent("app-base-opacity-changed"),
+                                  );
+                                }}
+                              />
+                            </div>
                           </div>
-
-                          <Divider className="bg-default-200/50" />
 
                           {/* Background Section */}
                           <div className="flex flex-col gap-6">
@@ -1591,8 +1707,7 @@ export const SettingsPage: React.FC = () => {
                                         : darkBackgroundImage) ||
                                         t(
                                           "settings.appearance.no_image_selected",
-                                        ) ||
-                                        "未选择图片"}
+                                        )}
                                     </p>
                                   </div>
                                 </div>
@@ -1964,147 +2079,6 @@ export const SettingsPage: React.FC = () => {
                                     }}
                                   />
                                 </div>
-
-                                {/* Background Base Opacity */}
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-tiny font-medium text-default-600">
-                                      {t(
-                                        "settings.appearance.background_base_opacity",
-                                      )}
-                                    </p>
-                                    <div className="flex items-center">
-                                      <input
-                                        type="number"
-                                        className="w-10 bg-transparent text-tiny font-mono text-primary-500 text-right outline-none border-none p-0 [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
-                                        onFocus={(e) => e.target.select()}
-                                        value={
-                                          themeSettingMode === "light"
-                                            ? lightBackgroundBaseOpacity
-                                            : darkBackgroundBaseOpacity
-                                        }
-                                        min={0}
-                                        max={100}
-                                        onChange={(e) => {
-                                          const val =
-                                            parseInt(e.target.value) || 0;
-                                          const clampedVal = Math.min(
-                                            100,
-                                            Math.max(0, val),
-                                          );
-                                          if (themeSettingMode === "light") {
-                                            setLightBackgroundBaseOpacity(
-                                              clampedVal,
-                                            );
-                                            localStorage.setItem(
-                                              "app.lightBackgroundBaseOpacity",
-                                              String(clampedVal),
-                                            );
-                                          } else {
-                                            setDarkBackgroundBaseOpacity(
-                                              clampedVal,
-                                            );
-                                            localStorage.setItem(
-                                              "app.darkBackgroundBaseOpacity",
-                                              String(clampedVal),
-                                            );
-                                          }
-                                          window.dispatchEvent(
-                                            new CustomEvent(
-                                              "app-base-opacity-changed",
-                                            ),
-                                          );
-                                        }}
-                                      />
-                                      <span className="text-tiny font-mono text-primary-500 ml-0.5">
-                                        %
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <Slider
-                                    size="sm"
-                                    step={1}
-                                    maxValue={100}
-                                    minValue={0}
-                                    aria-label="Base Opacity"
-                                    value={
-                                      themeSettingMode === "light"
-                                        ? lightBackgroundBaseOpacity
-                                        : darkBackgroundBaseOpacity
-                                    }
-                                    classNames={{
-                                      filler: "bg-primary-500",
-                                      thumb: "bg-primary-500",
-                                    }}
-                                    onChange={(v) => {
-                                      const val = Number(v);
-                                      if (themeSettingMode === "light") {
-                                        setLightBackgroundBaseOpacity(val);
-                                        localStorage.setItem(
-                                          "app.lightBackgroundBaseOpacity",
-                                          String(val),
-                                        );
-                                      } else {
-                                        setDarkBackgroundBaseOpacity(val);
-                                        localStorage.setItem(
-                                          "app.darkBackgroundBaseOpacity",
-                                          String(val),
-                                        );
-                                      }
-                                      window.dispatchEvent(
-                                        new CustomEvent(
-                                          "app-base-opacity-changed",
-                                        ),
-                                      );
-                                    }}
-                                  />
-                                </div>
-                              </div>
-
-                              {/* Background Use Theme */}
-                              <div className="flex items-center justify-between pt-2 border-t border-default-200/50">
-                                <div className="flex flex-col gap-0.5">
-                                  <p className="text-tiny font-medium text-default-600">
-                                    {t(
-                                      "settings.appearance.background_use_theme",
-                                    )}
-                                  </p>
-                                  <p className="text-[10px] text-default-400">
-                                    {t(
-                                      "settings.appearance.background_use_theme_desc",
-                                    )}
-                                  </p>
-                                </div>
-                                <Switch
-                                  size="sm"
-                                  isSelected={
-                                    themeSettingMode === "light"
-                                      ? lightBackgroundUseTheme
-                                      : darkBackgroundUseTheme
-                                  }
-                                  onValueChange={(isSelected) => {
-                                    if (themeSettingMode === "light") {
-                                      setLightBackgroundUseTheme(isSelected);
-                                      localStorage.setItem(
-                                        "app.lightBackgroundUseTheme",
-                                        String(isSelected),
-                                      );
-                                    } else {
-                                      setDarkBackgroundUseTheme(isSelected);
-                                      localStorage.setItem(
-                                        "app.darkBackgroundUseTheme",
-                                        String(isSelected),
-                                      );
-                                    }
-                                    window.dispatchEvent(
-                                      new CustomEvent("app-bg-theme-changed"),
-                                    );
-                                  }}
-                                  classNames={{
-                                    wrapper:
-                                      "group-data-[selected=true]:bg-primary-500",
-                                  }}
-                                />
                               </div>
                             </div>
                           </div>

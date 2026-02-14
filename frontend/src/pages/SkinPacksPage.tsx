@@ -784,9 +784,9 @@ export default function SkinPacksPage() {
                     <div
                       className={cn(
                         COMPONENT_STYLES.listItem,
-                        "w-full p-4 flex gap-4 group cursor-pointer relative overflow-hidden",
+                        "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
                         isSelectMode && selected[p.path]
-                          ? "border-primary bg-primary/10 dark:bg-primary/10"
+                          ? "ring-2 ring-primary bg-primary/5"
                           : "",
                       )}
                       onClick={() => {
@@ -794,7 +794,7 @@ export default function SkinPacksPage() {
                       }}
                     >
                       <div className="relative shrink-0">
-                        <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-default-100/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
                           {p.iconDataUrl ? (
                             <Image
                               src={p.iconDataUrl}
@@ -803,25 +803,32 @@ export default function SkinPacksPage() {
                               radius="none"
                             />
                           ) : (
-                            <FaFolderOpen className="text-3xl text-default-300" />
+                            <div className="flex flex-col items-center gap-2">
+                              <FaFolderOpen className="text-4xl text-default-300" />
+                              <span className="text-[10px] text-default-400 font-medium uppercase tracking-wider">
+                                No Icon
+                              </span>
+                            </div>
                           )}
                         </div>
                         {isSelectMode && (
-                          <Checkbox
-                            isSelected={!!selected[p.path]}
-                            onValueChange={() => toggleSelect(p.path)}
-                            className="absolute -top-2 -left-2 z-20"
-                            classNames={{
-                              wrapper: "bg-white dark:bg-zinc-900 shadow-md",
-                            }}
-                          />
+                          <div className="absolute -top-2 -left-2 z-20">
+                            <Checkbox
+                              isSelected={!!selected[p.path]}
+                              onValueChange={() => toggleSelect(p.path)}
+                              classNames={{
+                                wrapper:
+                                  "bg-white dark:bg-zinc-900 shadow-lg scale-110",
+                              }}
+                            />
+                          </div>
                         )}
                       </div>
 
-                      <div className="flex flex-col flex-1 min-w-0 gap-1">
-                        <div className="flex items-baseline gap-2 truncate">
+                      <div className="flex flex-col flex-1 min-w-0">
+                        <div className="flex justify-between items-start gap-2 mb-1">
                           <h3
-                            className="text-base sm:text-lg font-bold text-default-900 dark:text-white truncate"
+                            className="text-lg font-bold text-default-900 dark:text-white truncate"
                             title={p.name}
                           >
                             {renderMcText(p.name || p.path.split("\\").pop())}
@@ -829,61 +836,64 @@ export default function SkinPacksPage() {
                         </div>
 
                         <p
-                          className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2 w-full"
+                          className="text-sm text-default-500 dark:text-zinc-400 line-clamp-2 w-full mb-3"
                           title={p.description}
                         >
                           {renderMcText(p.description || "")}
                         </p>
 
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                          <div
-                            className="flex items-center gap-1"
-                            title={t("common.size")}
-                          >
-                            <FaHdd />
-                            <span>{formatBytes(p.size)}</span>
-                          </div>
-                          <div
-                            className="flex items-center gap-1"
-                            title={t("common.date")}
-                          >
-                            <FaClock />
-                            <span>{formatDate(p.modTime)}</span>
-                          </div>
-                          {p.version && (
-                            <div
-                              className="flex items-center gap-1"
-                              title={t("common.version")}
-                            >
-                              <FaTag />
-                              <span>v{p.version}</span>
+                        <div className="flex items-end justify-between mt-auto">
+                          <div className="flex flex-wrap items-center gap-4 text-xs text-default-400 dark:text-zinc-500">
+                            <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                              <FaHdd className="text-default-400" />
+                              <span>{formatBytes(p.size)}</span>
                             </div>
-                          )}
-                        </div>
+                            <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                              <FaClock className="text-default-400" />
+                              <span>{formatDate(p.modTime)}</span>
+                            </div>
+                            {p.version && (
+                              <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                                <FaTag className="text-default-400" />
+                                <span>v{p.version}</span>
+                              </div>
+                            )}
+                          </div>
 
-                        <div className="flex flex-1 items-end justify-end gap-2 mt-2">
-                          <Button
-                            size="sm"
-                            variant="flat"
-                            radius="full"
-                            onPress={() => OpenPathDir(p.path)}
-                            className="h-8 min-w-0 px-3 bg-default-100 text-default-600 dark:bg-zinc-700 dark:text-zinc-200"
-                          >
-                            {t("common.open")}
-                          </Button>
-                          <Button
-                            size="sm"
-                            color="danger"
-                            variant="flat"
-                            radius="full"
-                            onPress={() => {
-                              setActivePack(p);
-                              delCfmOnOpen();
-                            }}
-                            className="h-8 min-w-0 px-3"
-                          >
-                            {t("common.delete")}
-                          </Button>
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+                            <Tooltip content={t("common.open")}>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="flat"
+                                radius="lg"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  OpenPathDir(p.path);
+                                }}
+                                className="bg-default-100 hover:bg-default-200 text-default-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200"
+                              >
+                                <FaFolderOpen size={14} />
+                              </Button>
+                            </Tooltip>
+                            <Tooltip content={t("common.delete")}>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                color="danger"
+                                variant="flat"
+                                radius="lg"
+                                onClick={(e) => {
+                                  e.stopPropagation();
+                                  setActivePack(p);
+                                  delCfmOnOpen();
+                                }}
+                                className="bg-danger-50 hover:bg-danger-100 text-danger-500 dark:bg-danger-900/20 dark:hover:bg-danger-900/30"
+                              >
+                                <FaTrash size={14} />
+                              </Button>
+                            </Tooltip>
+                          </div>
                         </div>
                       </div>
                     </div>

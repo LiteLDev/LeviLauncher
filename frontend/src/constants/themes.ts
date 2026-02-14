@@ -80,11 +80,11 @@ export const THEMES: Record<string, Record<number, string>> = {
 };
 
 export const hexToRgb = (hex: string): string => {
-  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return "0 0 0";
+  if (!hex || !/^#[0-9A-Fa-f]{6}$/.test(hex)) return "0, 0, 0";
   const r = parseInt(hex.slice(1, 3), 16);
   const g = parseInt(hex.slice(3, 5), 16);
   const b = parseInt(hex.slice(5, 7), 16);
-  return `${r} ${g} ${b}`;
+  return `${r}, ${g}, ${b}`;
 };
 
 const rgbToHex = (r: number, g: number, b: number): string => {

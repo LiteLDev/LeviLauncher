@@ -861,28 +861,23 @@ function App() {
                     {
                       "--content-pt":
                         layoutMode === "sidebar" ? "4.5rem" : "5rem",
-                      ...(bgData
-                        ? {
-                            backgroundColor: (
-                              resolvedTheme === "dark"
-                                ? darkBackgroundUseTheme
-                                : lightBackgroundUseTheme
-                            )
-                              ? `rgb(${hexToRgb(
-                                  ((resolvedTheme === "dark"
-                                    ? darkThemeColor === "custom"
-                                      ? generateTheme(darkCustomThemeColor)
-                                      : THEMES[darkThemeColor]
-                                    : lightThemeColor === "custom"
-                                      ? generateTheme(lightCustomThemeColor)
-                                      : THEMES[lightThemeColor]) ||
-                                    THEMES.emerald)[
-                                    resolvedTheme === "dark" ? 950 : 50
-                                  ],
-                                )} / ${(resolvedTheme === "dark" ? darkBackgroundBaseOpacity : lightBackgroundBaseOpacity) / 100})`
-                              : "transparent",
-                          }
-                        : {}),
+                      backgroundColor: (
+                        resolvedTheme === "dark"
+                          ? darkBackgroundUseTheme
+                          : lightBackgroundUseTheme
+                      )
+                        ? `rgba(${hexToRgb(
+                            ((resolvedTheme === "dark"
+                              ? darkThemeColor === "custom"
+                                ? generateTheme(darkCustomThemeColor)
+                                : THEMES[darkThemeColor]
+                              : lightThemeColor === "custom"
+                                ? generateTheme(lightCustomThemeColor)
+                                : THEMES[lightThemeColor]) || THEMES.emerald)[
+                              resolvedTheme === "dark" ? 950 : 50
+                            ],
+                          )}, ${(resolvedTheme === "dark" ? darkBackgroundBaseOpacity : lightBackgroundBaseOpacity) / 100})`
+                        : "transparent",
                     } as React.CSSProperties
                   }
                   className={`w-full min-h-dvh flex ${

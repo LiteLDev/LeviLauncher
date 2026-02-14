@@ -744,9 +744,9 @@ export default function WorldsListPage() {
                 <div
                   className={cn(
                     COMPONENT_STYLES.listItem,
-                    "w-full p-4 flex gap-4 group cursor-pointer relative overflow-hidden",
+                    "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
                     isSelectMode && selected[w.Path]
-                      ? "border-primary bg-primary/10 dark:bg-primary/10"
+                      ? "ring-2 ring-primary bg-primary/5"
                       : "",
                   )}
                   onClick={() => {
@@ -754,7 +754,7 @@ export default function WorldsListPage() {
                   }}
                 >
                   <div className="relative shrink-0">
-                    <div className="h-20 sm:h-24 aspect-video rounded-lg bg-default-100 flex items-center justify-center overflow-hidden shadow-inner">
+                    <div className="h-24 sm:h-28 aspect-video rounded-2xl bg-default-100/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
                       <Image
                         src={w.IconBase64 || DefaultWorldPreview}
                         alt={w.FolderName}
@@ -767,106 +767,111 @@ export default function WorldsListPage() {
                       />
                     </div>
                     {isSelectMode && (
-                      <Checkbox
-                        isSelected={!!selected[w.Path]}
-                        onValueChange={() => toggleSelect(w.Path)}
-                        className="absolute -top-2 -left-2 z-20"
-                        classNames={{
-                          wrapper: "bg-white dark:bg-zinc-900 shadow-md",
-                        }}
-                      />
+                      <div className="absolute -top-2 -left-2 z-20">
+                        <Checkbox
+                          isSelected={!!selected[w.Path]}
+                          onValueChange={() => toggleSelect(w.Path)}
+                          classNames={{
+                            wrapper:
+                              "bg-white dark:bg-zinc-900 shadow-lg scale-110",
+                          }}
+                        />
+                      </div>
                     )}
                   </div>
 
-                  <div className="flex flex-col flex-1 min-w-0 gap-1">
-                    <div className="flex items-baseline gap-2 truncate">
+                  <div className="flex flex-col flex-1 min-w-0">
+                    <div className="flex justify-between items-start gap-2 mb-1">
                       <h3
-                        className="text-base sm:text-lg font-bold text-default-900 dark:text-white truncate"
+                        className="text-lg font-bold text-default-900 dark:text-white truncate"
                         title={w.FolderName}
                       >
                         {w.FolderName}
                       </h3>
                     </div>
 
-                    <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-300 line-clamp-2 w-full"></p>
-
-                    <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-zinc-500 dark:text-zinc-400 mt-1">
-                      <div
-                        className="flex items-center gap-1"
-                        title={t("common.size")}
-                      >
-                        <FaHdd />
-                        <span>{formatBytes(w.Size)}</span>
+                    <div className="flex items-end justify-between mt-auto">
+                      <div className="flex flex-wrap items-center gap-4 text-xs text-default-400 dark:text-zinc-500">
+                        <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                          <FaHdd className="text-default-400" />
+                          <span>{formatBytes(w.Size)}</span>
+                        </div>
+                        <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                          <FaClock className="text-default-400" />
+                          <span>
+                            {new Date(w.LastModified * 1000).toLocaleString()}
+                          </span>
+                        </div>
                       </div>
-                      <div
-                        className="flex items-center gap-1"
-                        title={t("common.date")}
-                      >
-                        <FaClock />
-                        <span>
-                          {new Date(w.LastModified * 1000).toLocaleString()}
-                        </span>
-                      </div>
-                    </div>
 
-                    <div className="flex flex-1 items-end justify-between mt-2">
-                      <div className="flex gap-1"></div>
-                      <div className="flex gap-2">
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          radius="full"
-                          isIconOnly
-                          onPress={() => OpenPathDir(w.Path)}
-                          className="h-8 w-8 min-w-0"
-                          title={t("common.open")}
-                        >
-                          <FaFolderOpen className="text-xs" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          radius="full"
-                          isIconOnly
-                          onPress={() => handleBackup(w)}
-                          isLoading={backingUp === w.Path}
-                          className="h-8 w-8 min-w-0"
-                          title={t("common.backup")}
-                        >
-                          <FaArchive className="text-xs" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          radius="full"
-                          isIconOnly
-                          onPress={() =>
-                            navigate(
-                              `/content/worlds/worldEdit?path=${encodeURIComponent(
-                                w.Path,
-                              )}`,
-                            )
-                          }
-                          className="h-8 w-8 min-w-0"
-                          title={t("common.edit")}
-                        >
-                          <FaEdit className="text-xs" />
-                        </Button>
-                        <Button
-                          size="sm"
-                          color="danger"
-                          variant="flat"
-                          radius="full"
-                          isIconOnly
-                          onPress={() => {
-                            setActiveWorld(w);
-                            delOnOpen();
-                          }}
-                          className="h-8 w-8 min-w-0"
-                          title={t("common.delete")}
-                        >
-                          <FaTrash className="text-xs" />
-                        </Button>
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+                        <Tooltip content={t("common.open")}>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="flat"
+                            radius="lg"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              OpenPathDir(w.Path);
+                            }}
+                            className="bg-default-100 hover:bg-default-200 text-default-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200"
+                          >
+                            <FaFolderOpen size={14} />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content={t("common.backup")}>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="flat"
+                            radius="lg"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              handleBackup(w);
+                            }}
+                            isLoading={backingUp === w.Path}
+                            className="bg-default-100 hover:bg-default-200 text-default-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200"
+                          >
+                            <FaArchive size={14} />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content={t("common.edit")}>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="flat"
+                            radius="lg"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              navigate(
+                                `/content/worlds/worldEdit?path=${encodeURIComponent(
+                                  w.Path,
+                                )}`,
+                              );
+                            }}
+                            className="bg-default-100 hover:bg-default-200 text-default-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200"
+                          >
+                            <FaEdit size={14} />
+                          </Button>
+                        </Tooltip>
+                        <Tooltip content={t("common.delete")}>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            color="danger"
+                            variant="flat"
+                            radius="lg"
+                            onClick={(e) => {
+                              e.stopPropagation();
+                              setActiveWorld(w);
+                              delOnOpen();
+                            }}
+                            className="bg-danger-50 hover:bg-danger-100 text-danger-500 dark:bg-danger-900/20 dark:hover:bg-danger-900/30"
+                          >
+                            <FaTrash size={14} />
+                          </Button>
+                        </Tooltip>
                       </div>
                     </div>
                   </div>

@@ -40,14 +40,14 @@ export const FileDropOverlay: React.FC<FileDropOverlayProps> = ({
               transition={{ type: "spring", damping: 25, stiffness: 300 }}
               className={cn(
                 LAYOUT.GLASS_CARD.BASE,
-                "p-10 flex flex-col items-center gap-6 text-center max-w-md mx-4 border border-white/20 dark:border-white/10",
+                "p-8 flex flex-col items-center gap-4 text-center max-w-sm mx-4 border border-white/20 dark:border-white/10",
               )}
             >
-              <div className="p-5 rounded-full bg-primary-500/10 text-primary-500 ring-1 ring-primary-500/20">
-                <FiUploadCloud className="w-12 h-12" />
+              <div className="p-4 rounded-full bg-primary-500/10 text-primary-500 ring-1 ring-primary-500/20">
+                <FiUploadCloud className="w-10 h-10" />
               </div>
               <div className="space-y-2">
-                <div className="text-2xl font-bold text-default-900 dark:text-white">
+                <div className="text-xl font-bold text-default-900 dark:text-white">
                   {text}
                 </div>
               </div>

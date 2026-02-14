@@ -403,10 +403,8 @@
       }
     },
     "appearance": {
-      "title": "外观设置",
       "global_config": "全局配置",
       "mode_config": "模式特定配置",
-      "editing": "正在编辑",
       "edit_mode_desc": "个性化设置（图片、颜色、透明度等）将按日间/夜间模式独立保存。切换上方标签页以配置不同模式。",
       "theme_mode": "外观模式",
       "theme_mode_desc": "选择应用的主题模式",
@@ -422,6 +420,9 @@
       "theme_system_desc": "跟随 Windows 系统设置",
       "theme_color": "主题色",
       "theme_color_desc": "应用的主要强调颜色",
+      "theme_standard": "预设颜色",
+      "theme_generated": "更多颜色",
+      "hue": "色相",
       "custom_color": "自定义颜色",
       "background_image": "背景图片",
       "background_image_desc": "为当前模式设置个性化背景",
@@ -436,12 +437,9 @@
       "background_use_theme_desc": "开启后将使用当前主题色作为背景填充，关闭则使用黑/白底色",
       "disable_animations": "禁用动画",
       "disable_animations_desc": "关闭界面过渡动画以提升性能",
-      "disable_ui_blur": "禁用界面模糊",
-      "disable_ui_blur_desc": "禁用界面组件的毛玻璃模糊效果，使背景更清晰",
       "calculating": "正在计算...",
       "sunrise_time": "今日日出",
       "sunset_time": "今日日落",
-      "location_ip": "基于 IP 定位",
       "sun_fetch_failed": "获取日出日落时间失败"
     },
     "process": {
@@ -533,7 +531,6 @@
     "edit": "编辑",
     "backup": "备份",
     "date": "日期",
-    "size": "大小",
     "version": "版本",
     "details": "详情",
     "disable": "禁用",
@@ -655,11 +652,8 @@
       "body": "您更改了实例设置但尚未保存。是否保存后离开？"
     },
     "sort": {
-      "label": "排序方式",
       "name": "名称 (A-Z)",
       "name_za": "名称 (Z-A)",
-      "order_asc": "升序",
-      "order_desc": "降序",
       "version": "版本 (新到旧)",
       "version_old_new": "版本 (旧到新)"
     },

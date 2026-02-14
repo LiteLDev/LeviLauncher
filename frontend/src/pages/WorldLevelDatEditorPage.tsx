@@ -985,7 +985,7 @@ export default function WorldLevelDatEditorPage() {
                                 size="sm"
                                 color="success"
                                 isSelected={isOn}
-                                onValueChange={(c) => {
+                                onValueChange={(c: boolean) => {
                                   setTypedFieldValueByName(String(k), {
                                     valueString: c ? "1" : "0",
                                   });
@@ -1334,7 +1334,7 @@ export default function WorldLevelDatEditorPage() {
                                           size="sm"
                                           color="success"
                                           isSelected={isOn}
-                                          onValueChange={(c) => {
+                                          onValueChange={(c: boolean) => {
                                             setCompoundFieldValue(pathKey, si, {
                                               valueString: c ? "1" : "0",
                                             });

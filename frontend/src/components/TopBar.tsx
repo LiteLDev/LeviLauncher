@@ -161,7 +161,9 @@ export const TopBar: React.FC<TopBarProps> = ({
         </div>
 
         <div className="flex items-center gap-2 shrink-0">
-          <div className="hidden sm:block">
+          <div
+            className={`hidden sm:block ${navLocked ? "pointer-events-none opacity-50" : ""}`}
+          >
             <UserAvatar />
           </div>
 

@@ -411,10 +411,8 @@
       }
     },
     "appearance": {
-      "title": "Appearance",
       "global_config": "Global Configuration",
       "mode_config": "Mode-Specific Configuration",
-      "editing": "Editing",
       "edit_mode_desc": "Personalization settings (image, colors, opacity, etc.) are saved independently for Light and Dark modes. Switch tabs above to configure each mode.",
       "theme_mode": "Theme Mode",
       "theme_mode_desc": "Choose the application theme",
@@ -430,6 +428,9 @@
       "theme_system_desc": "Follow Windows system settings",
       "theme_color": "Theme Color",
       "theme_color_desc": "The primary accent color of the application",
+      "theme_standard": "Preset Colors",
+      "theme_generated": "More Colors",
+      "hue": "Hue",
       "custom_color": "Custom Color",
       "background_image": "Background Image",
       "background_image_desc": "Set a personalized background for the current mode",
@@ -444,12 +445,9 @@
       "background_use_theme_desc": "When enabled, the current theme color is used as the background fill; otherwise, black/white is used",
       "disable_animations": "Disable Animations",
       "disable_animations_desc": "Turn off interface transition animations to improve performance",
-      "disable_ui_blur": "Disable UI Blur",
-      "disable_ui_blur_desc": "Disable the frosted glass blur effect on interface components to make the background clearer",
       "calculating": "Calculating...",
       "sunrise_time": "Sunrise Today",
       "sunset_time": "Sunset Today",
-      "location_ip": "Based on IP Location",
       "sun_fetch_failed": "Failed to fetch sunrise/sunset times"
     }
   },
@@ -533,7 +531,6 @@
     "edit": "Edit",
     "backup": "Backup",
     "date": "Date",
-    "size": "Size",
     "version": "Version",
     "details": "Details",
     "disable": "Disable",
@@ -655,11 +652,8 @@
       "body": "You have unsaved changes to instance settings. Do you want to save before leaving?"
     },
     "sort": {
-      "label": "Sort by",
       "name": "Name (A-Z)",
       "name_za": "Name (Z-A)",
-      "order_asc": "Ascending",
-      "order_desc": "Descending",
       "version": "Version (Newest)",
       "version_old_new": "Version (Oldest)"
     },

@@ -393,10 +393,8 @@
       }
     },
     "appearance": {
-      "title": "外觀設置",
       "global_config": "全域配置",
       "mode_config": "模式特定配置",
-      "editing": "正在編輯",
       "edit_mode_desc": "個性化設置（圖片、顏色、透明度等）將按日間/夜間模式獨立保存。切換上方標籤頁以配置不同模式。",
       "theme_mode": "外觀模式",
       "theme_mode_desc": "選擇應用的主題模式",
@@ -412,6 +410,9 @@
       "theme_system_desc": "跟隨 Windows 系統設置",
       "theme_color": "主題色",
       "theme_color_desc": "應用的主要強調顏色",
+      "theme_standard": "預设顏色",
+      "theme_generated": "更多顏色",
+      "hue": "色相",
       "custom_color": "自定義顏色",
       "background_image": "背景圖片",
       "background_image_desc": "為當前模式設置個性化背景",
@@ -429,7 +430,6 @@
       "calculating": "正在計算...",
       "sunrise_time": "今日日出",
       "sunset_time": "今日日落",
-      "location_ip": "基於 IP 定位",
       "sun_fetch_failed": "獲取日出日落時間失敗"
     },
     "process": {
@@ -521,7 +521,6 @@
     "edit": "編輯",
     "backup": "備份",
     "date": "日期",
-    "size": "大小",
     "version": "版本",
     "details": "詳情",
     "disable": "停用",
@@ -643,11 +642,8 @@
       "body": "您更改了實例設定但尚未儲存。是否儲存後離開？"
     },
     "sort": {
-      "label": "排序方式",
       "name": "名稱 (A-Z)",
       "name_za": "名稱 (Z-A)",
-      "order_asc": "升序",
-      "order_desc": "降序",
       "version": "版本 (新到舊)",
       "version_old_new": "版本 (舊到新)"
     },

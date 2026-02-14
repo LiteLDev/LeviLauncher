@@ -17,6 +17,7 @@ import {
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
+import { LAYOUT } from "@/constants/layout";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
   GetLanguageNames,
@@ -92,17 +93,22 @@ export default function OnboardingPage() {
   };
 
   return (
-    <div className="relative w-full h-full flex items-center justify-center px-4 pb-4 overflow-hidden bg-default-50 dark:bg-black">
+    <div className="relative w-full h-full flex flex-col pt-[var(--content-pt)] px-4 pb-8 overflow-y-auto custom-scrollbar bg-transparent">
       <motion.div
-        initial={{ opacity: 0, scale: 0.95 }}
-        animate={{ opacity: 1, scale: 1 }}
-        transition={{ duration: 0.4, ease: "easeOut" }}
-        className="w-full max-w-2xl mx-auto flex flex-col justify-center py-6"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.5, ease: "easeOut" }}
+        className="w-full max-w-2xl mx-auto flex flex-col py-4"
       >
-        <div className="flex flex-row items-center justify-center gap-6 mb-6">
-          <div className="w-16 h-16 rounded-3xl bg-linear-to-br from-primary-500 to-primary-700 shadow-xl shadow-primary-500/20 flex items-center justify-center text-white shrink-0">
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-4 sm:gap-8 mb-10 text-center sm:text-left">
+          <motion.div
+            initial={{ scale: 0.8, rotate: -10 }}
+            animate={{ scale: 1, rotate: 0 }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+            className="w-20 h-20 rounded-[2.5rem] bg-linear-to-br from-primary-500 to-primary-700 shadow-2xl shadow-primary-500/30 flex items-center justify-center text-white shrink-0"
+          >
             <svg
-              className="w-8 h-8"
+              className="w-10 h-10"
               fill="none"
               stroke="currentColor"
               viewBox="0 0 24 24"
@@ -111,28 +117,28 @@ export default function OnboardingPage() {
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"
-                strokeWidth={2}
+                strokeWidth={2.5}
                 d="M13 10V3L4 14h7v7l9-11h-7z"
               />
             </svg>
-          </div>
-          <div className="flex flex-col items-start text-left">
-            <h1 className="text-3xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-400 dark:to-primary-200 mb-1">
+          </motion.div>
+          <div className="flex flex-col">
+            <h1 className="text-4xl font-black tracking-tight bg-clip-text text-transparent bg-gradient-to-r from-primary-600 to-primary-400 dark:from-primary-400 dark:to-primary-200 mb-2">
               {t("onboarding.title")}
             </h1>
-            <p className="text-default-500 dark:text-zinc-400 text-base max-w-md">
+            <p className="text-default-500 dark:text-zinc-400 text-lg font-medium max-w-md">
               {t("onboarding.subtitle")}
             </p>
           </div>
         </div>
 
-        <Card className="w-full border-none shadow-xl bg-white/60 dark:bg-zinc-900/60 backdrop-blur-xl rounded-[2rem] p-2">
-          <CardBody className="p-4 space-y-4">
+        <Card className={LAYOUT.GLASS_CARD.BASE + " p-2"}>
+          <CardBody className="p-4 space-y-6">
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.1 }}
-              className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-4"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.3 }}
+              className="bg-default-100/30 dark:bg-white/5 border border-default-200/50 dark:border-white/5 rounded-3xl p-5"
             >
               <div className="mb-3">
                 <SectionHeader
@@ -197,13 +203,13 @@ export default function OnboardingPage() {
                   }
                 />
 
-                <div className="flex items-center justify-between">
-                  <div className="flex gap-2">
+                <div className="flex items-center justify-between pt-2">
+                  <div className="flex gap-3">
                     <Button
-                      size="sm"
+                      size="md"
                       color="primary"
                       radius="full"
-                      className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                      className="bg-primary-600 hover:bg-primary-500 text-white font-black shadow-lg shadow-primary-900/20 px-6"
                       isDisabled={
                         !newBaseRoot ||
                         !baseRootWritable ||
@@ -234,10 +240,10 @@ export default function OnboardingPage() {
                       {t("settings.body.paths.apply")}
                     </Button>
                     <Button
-                      size="sm"
+                      size="md"
                       variant="light"
                       radius="full"
-                      className="text-default-500 dark:text-zinc-400 hover:text-default-700 dark:hover:text-zinc-200"
+                      className="text-default-500 dark:text-zinc-400 hover:bg-default-200/50 dark:hover:bg-white/5 font-bold px-6"
                       onPress={async () => {
                         try {
                           const err = await ResetBaseRoot();
@@ -262,10 +268,10 @@ export default function OnboardingPage() {
             </motion.div>
 
             <motion.div
-              initial={{ opacity: 0, y: 20 }}
-              animate={{ opacity: 1, y: 0 }}
-              transition={{ duration: 0.4, delay: 0.2 }}
-              className="bg-default-50/50 dark:bg-zinc-800/30 border border-default-100 dark:border-white/5 rounded-3xl p-4"
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4, delay: 0.4 }}
+              className="bg-default-100/30 dark:bg-white/5 border border-default-200/50 dark:border-white/5 rounded-3xl p-5"
             >
               <SectionHeader
                 title={t("settings.body.language.name")}
@@ -279,7 +285,7 @@ export default function OnboardingPage() {
                       <Button
                         radius="full"
                         variant="flat"
-                        className="bg-default-100 dark:bg-white/10 font-medium"
+                        className="bg-default-200/50 dark:bg-white/10 font-bold"
                       >
                         {t("settings.body.language.button")}
                       </Button>
@@ -289,7 +295,7 @@ export default function OnboardingPage() {
                       variant="flat"
                       disallowEmptySelection
                       selectionMode="single"
-                      className="max-h-60 overflow-y-auto"
+                      className="max-h-60 overflow-y-auto custom-scrollbar"
                       selectedKeys={new Set([selectedLang])}
                       onSelectionChange={(keys) => {
                         const arr = Array.from(keys as unknown as Set<string>);
@@ -319,24 +325,29 @@ export default function OnboardingPage() {
           </CardBody>
         </Card>
 
-        <div className="flex items-center justify-end gap-3 mt-4 w-full">
+        <motion.div
+          initial={{ opacity: 0, y: 10 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.4, delay: 0.5 }}
+          className="flex items-center justify-end gap-4 mt-8 w-full px-2"
+        >
           <Button
             variant="light"
             radius="full"
             onPress={requestFinish}
-            className="font-medium text-default-500 dark:text-zinc-400"
+            className="font-bold text-default-500 dark:text-zinc-400 hover:bg-default-100 dark:hover:bg-white/5 px-6"
           >
             {t("onboarding.skip")}
           </Button>
           <Button
             color="primary"
             radius="full"
-            className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20 px-8"
+            className="bg-primary-600 hover:bg-primary-500 text-white font-black shadow-xl shadow-primary-900/30 px-10 h-12 text-lg"
             onPress={requestFinish}
           >
             {t("onboarding.finish")}
           </Button>
-        </div>
+        </motion.div>
       </motion.div>
 
       <UnifiedModal

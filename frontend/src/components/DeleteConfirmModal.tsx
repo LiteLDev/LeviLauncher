@@ -13,7 +13,7 @@ export interface DeleteConfirmModalProps {
   itemName?: string;
   isPending?: boolean;
   error?: string | null;
-  warning?: string; // Additional warning text like "Cannot be undone"
+  warning?: string;
 }
 
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
@@ -48,10 +48,10 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       showCancelButton={!isPending}
       confirmButtonProps={{
         isLoading: isPending,
-        className: "font-bold shadow-lg shadow-danger-500/20"
+        className: "font-bold shadow-lg shadow-danger-500/20",
       }}
       cancelButtonProps={{
-        isDisabled: isPending
+        isDisabled: isPending,
       }}
     >
       <div className="flex flex-col gap-3">
@@ -60,7 +60,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             {description}
           </div>
         )}
-        
+
         {itemName && (
           <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50">
             <span className="font-mono text-default-800 dark:text-zinc-200 font-bold break-all text-small">

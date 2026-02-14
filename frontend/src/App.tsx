@@ -732,7 +732,7 @@ function App() {
   }, [hasBackend]);
 
   const tryNavigate = (path: string | number) => {
-    if (navLocked) return;
+    if (navLocked || isUpdatingMode || isOnboardingMode) return;
     if (
       location.pathname === "/settings" ||
       location.pathname === "/versionSettings"
@@ -920,7 +920,9 @@ function App() {
                     <>
                       <GlobalNavbar
                         isBeta={isBeta}
-                        navLocked={navLocked}
+                        navLocked={
+                          navLocked || isUpdatingMode || isOnboardingMode
+                        }
                         themeMode={themeMode}
                         revealStarted={revealStarted}
                         isUpdatingMode={isUpdatingMode}
@@ -933,7 +935,9 @@ function App() {
                     <>
                       <Sidebar
                         isBeta={isBeta}
-                        navLocked={navLocked}
+                        navLocked={
+                          navLocked || isUpdatingMode || isOnboardingMode
+                        }
                         themeMode={themeMode}
                         revealStarted={revealStarted}
                         isUpdatingMode={isUpdatingMode}
@@ -942,7 +946,9 @@ function App() {
                         tryNavigate={tryNavigate}
                       />
                       <TopBar
-                        navLocked={navLocked}
+                        navLocked={
+                          navLocked || isUpdatingMode || isOnboardingMode
+                        }
                         isOnboardingMode={isOnboardingMode}
                         revealStarted={revealStarted}
                       />
@@ -1065,7 +1071,7 @@ function App() {
                       </div>
                     }
                   >
-                    <div className="text-[15px] sm:text-[16px] leading-7 text-default-900 dark:text-zinc-100 font-medium antialiased whitespace-pre-wrap wrap-break-word max-h-[56vh] overflow-y-auto pr-1">
+                    <div className="text-[15px] sm:text-[16px] leading-7 text-default-900 dark:text-zinc-100 font-medium antialiased whitespace-pre-wrap wrap-break-word max-h-[56vh] overflow-y-auto pr-2 custom-scrollbar">
                       {t("terms.body")}
                     </div>
                   </UnifiedModal>

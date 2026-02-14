@@ -167,6 +167,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               >
                 <div>
                   <ThemeSwitcher
+                    isDisabled={navLocked}
                     className="w-12 h-12 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-default-100 dark:hover:bg-zinc-800 transition-all duration-200"
                     iconSize={20}
                   />

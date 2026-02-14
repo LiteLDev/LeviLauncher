@@ -241,8 +241,12 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
 
             {themeMode !== "auto" &&
               themeMode !== "schedule" &&
-              themeMode !== "system" && <ThemeSwitcher />}
-            <div className="hidden sm:block">
+              themeMode !== "system" && (
+                <ThemeSwitcher isDisabled={navLocked} />
+              )}
+            <div
+              className={`hidden sm:block ${navLocked ? "pointer-events-none opacity-50" : ""}`}
+            >
               <UserAvatar />
             </div>
 

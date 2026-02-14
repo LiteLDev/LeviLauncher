@@ -473,7 +473,7 @@ export const ModsPage: React.FC = () => {
     if (!name) return;
     for (const modName of selectedKeys) {
       try {
-        if (modName === "LeviLamina") continue; // Skip LL
+        if (modName === "LeviLamina") continue;
         await (DeleteMod as any)?.(name, modName);
       } catch {}
     }
@@ -954,7 +954,7 @@ export const ModsPage: React.FC = () => {
                       classNames={{
                         wrapper: "group-data-[selected=true]:bg-primary-500",
                       }}
-                      onValueChange={async (val) => {
+                      onValueChange={async (val: boolean) => {
                         const name =
                           currentVersionName || readCurrentVersionName();
                         if (!name) return;
@@ -1114,7 +1114,7 @@ export const ModsPage: React.FC = () => {
                   classNames={{
                     wrapper: "group-data-[selected=true]:bg-primary-500",
                   }}
-                  onValueChange={async (val) => {
+                  onValueChange={async (val: boolean) => {
                     const name = currentVersionName || readCurrentVersionName();
                     if (!name) return;
                     try {

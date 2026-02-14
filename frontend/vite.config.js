@@ -3,7 +3,7 @@ import react from "@vitejs/plugin-react";
 import wails from "@wailsio/runtime/plugins/vite";
 import tailwindcss from "@tailwindcss/vite";
 import checker from "vite-plugin-checker";
-import { resolve } from 'path';
+import { resolve } from "path";
 
 // https://vitejs.dev/config/
 export default defineConfig({
@@ -18,8 +18,8 @@ export default defineConfig({
   base: "./",
   resolve: {
     alias: {
-      '@': resolve(__dirname, './src'),
-      'bindings': resolve(__dirname, './bindings'),
+      "@": resolve(__dirname, "./src"),
+      bindings: resolve(__dirname, "./bindings"),
     },
   },
 });

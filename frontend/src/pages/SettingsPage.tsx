@@ -22,6 +22,7 @@ import {
   Tab,
   Slider,
 } from "@heroui/react";
+
 import { useTheme } from "next-themes";
 import { RxUpdate, RxDesktop } from "react-icons/rx";
 import {
@@ -74,8 +75,9 @@ import { PageHeader } from "@/components/PageHeader";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
-import { THEMES } from "@/constants/themes";
+import { THEMES, THEME_GROUPS } from "@/constants/themes";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
+import { CustomColorPicker } from "@/components/CustomColorPicker";
 import { useThemeManager, ThemeMode } from "@/utils/useThemeManager";
 
 export const SettingsPage: React.FC = () => {
@@ -515,7 +517,6 @@ export const SettingsPage: React.FC = () => {
       return;
     }
 
-    // Fetch from backend
     (minecraft as any)
       .GetImageBase64?.(currentImg)
       .then((res: string) => {
@@ -965,7 +966,7 @@ export const SettingsPage: React.FC = () => {
                     <Switch
                       size="sm"
                       isSelected={discordRpcEnabled}
-                      onValueChange={(isSelected) => {
+                      onValueChange={(isSelected: boolean) => {
                         setDiscordRpcEnabled(isSelected);
                         SetDisableDiscordRPC(!isSelected);
                       }}
@@ -1265,7 +1266,7 @@ export const SettingsPage: React.FC = () => {
                         <Switch
                           size="sm"
                           isSelected={layoutMode === "navbar"}
-                          onValueChange={(isSelected) => {
+                          onValueChange={(isSelected: boolean) => {
                             const mode = isSelected ? "navbar" : "sidebar";
                             setLayoutMode(mode);
                             localStorage.setItem("app.layoutMode", mode);
@@ -1293,7 +1294,7 @@ export const SettingsPage: React.FC = () => {
                         <Switch
                           size="sm"
                           isSelected={disableAnimations}
-                          onValueChange={(isSelected) => {
+                          onValueChange={(isSelected: boolean) => {
                             setDisableAnimations(isSelected);
                             localStorage.setItem(
                               "app.disableAnimations",
@@ -1379,35 +1380,136 @@ export const SettingsPage: React.FC = () => {
                                   </p>
                                 </div>
                               </div>
-                              <div className="flex gap-3 flex-wrap p-4 rounded-2xl bg-default-200/20 border border-default-200/50">
-                                {Object.keys(THEMES).map((colorName) => {
-                                  const isSelected =
-                                    themeSettingMode === "light"
-                                      ? lightThemeColor === colorName
-                                      : darkThemeColor === colorName;
-                                  return (
+                              <div className="flex flex-col gap-6">
+                                {/* Preset Colors Group (Manual 50-950) */}
+                                <div className="flex flex-col gap-3">
+                                  <div className="flex items-center justify-between px-1">
+                                    <span className="text-tiny font-bold text-default-400 uppercase tracking-wider">
+                                      {t("settings.appearance.theme_standard")}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-3 flex-wrap p-4 rounded-2xl bg-default-200/20 border border-default-200/50">
+                                    {THEME_GROUPS.preset.map((colorName) => {
+                                      const isSelected =
+                                        themeSettingMode === "light"
+                                          ? lightThemeColor === colorName
+                                          : darkThemeColor === colorName;
+                                      return (
+                                        <div
+                                          key={colorName}
+                                          className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
+                                            isSelected
+                                              ? "ring-2 ring-offset-2 ring-primary-500 shadow-lg"
+                                              : ""
+                                          }`}
+                                          style={{
+                                            backgroundColor:
+                                              THEMES[colorName][500],
+                                          }}
+                                          onClick={() => {
+                                            if (themeSettingMode === "light") {
+                                              setLightThemeColor(colorName);
+                                              localStorage.setItem(
+                                                "app.lightThemeColor",
+                                                colorName,
+                                              );
+                                            } else {
+                                              setDarkThemeColor(colorName);
+                                              localStorage.setItem(
+                                                "app.darkThemeColor",
+                                                colorName,
+                                              );
+                                            }
+                                            window.dispatchEvent(
+                                              new CustomEvent(
+                                                "app-theme-changed",
+                                              ),
+                                            );
+                                          }}
+                                        >
+                                          {isSelected && (
+                                            <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
+                                          )}
+                                        </div>
+                                      );
+                                    })}
+                                  </div>
+                                </div>
+
+                                {/* Generated Colors Group (Automatic) */}
+                                <div className="flex flex-col gap-3">
+                                  <div className="flex items-center justify-between px-1">
+                                    <span className="text-tiny font-bold text-default-400 uppercase tracking-wider">
+                                      {t("settings.appearance.theme_generated")}
+                                    </span>
+                                  </div>
+                                  <div className="flex gap-3 flex-wrap p-4 rounded-2xl bg-default-200/20 border border-default-200/50">
+                                    {THEME_GROUPS.generated.map((colorName) => {
+                                      const isSelected =
+                                        themeSettingMode === "light"
+                                          ? lightThemeColor === colorName
+                                          : darkThemeColor === colorName;
+                                      return (
+                                        <div
+                                          key={colorName}
+                                          className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
+                                            isSelected
+                                              ? "ring-2 ring-offset-2 ring-primary-500 shadow-lg"
+                                              : ""
+                                          }`}
+                                          style={{
+                                            backgroundColor:
+                                              THEMES[colorName][500],
+                                          }}
+                                          onClick={() => {
+                                            if (themeSettingMode === "light") {
+                                              setLightThemeColor(colorName);
+                                              localStorage.setItem(
+                                                "app.lightThemeColor",
+                                                colorName,
+                                              );
+                                            } else {
+                                              setDarkThemeColor(colorName);
+                                              localStorage.setItem(
+                                                "app.darkThemeColor",
+                                                colorName,
+                                              );
+                                            }
+                                            window.dispatchEvent(
+                                              new CustomEvent(
+                                                "app-theme-changed",
+                                              ),
+                                            );
+                                          }}
+                                        >
+                                          {isSelected && (
+                                            <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
+                                          )}
+                                        </div>
+                                      );
+                                    })}
                                     <div
-                                      key={colorName}
-                                      className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
-                                        isSelected
+                                      className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative overflow-hidden group ${
+                                        (
+                                          themeSettingMode === "light"
+                                            ? lightThemeColor === "custom"
+                                            : darkThemeColor === "custom"
+                                        )
                                           ? "ring-2 ring-offset-2 ring-primary-500 shadow-lg"
-                                          : ""
+                                          : "hover:shadow-md"
                                       }`}
-                                      style={{
-                                        backgroundColor: THEMES[colorName][500],
-                                      }}
                                       onClick={() => {
                                         if (themeSettingMode === "light") {
-                                          setLightThemeColor(colorName);
+                                          setLightThemeColor("custom");
                                           localStorage.setItem(
                                             "app.lightThemeColor",
-                                            colorName,
+                                            "custom",
                                           );
                                         } else {
-                                          setDarkThemeColor(colorName);
+                                          setDarkThemeColor("custom");
                                           localStorage.setItem(
                                             "app.darkThemeColor",
-                                            colorName,
+                                            "custom",
                                           );
                                         }
                                         window.dispatchEvent(
@@ -1415,108 +1517,67 @@ export const SettingsPage: React.FC = () => {
                                         );
                                       }}
                                     >
-                                      {isSelected && (
-                                        <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
+                                      {/* Modern Mesh Gradient Background */}
+                                      <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 via-purple-500 to-pink-500 group-hover:scale-125 transition-transform duration-500" />
+                                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-from)_0%,_transparent_50%)] from-yellow-400/40" />
+
+                                      <LuPalette className="text-white relative z-10 w-4 h-4 drop-shadow-sm" />
+
+                                      {(themeSettingMode === "light"
+                                        ? lightThemeColor === "custom"
+                                        : darkThemeColor === "custom") && (
+                                        <div className="absolute inset-0 bg-black/10 z-0 flex items-center justify-center">
+                                          <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm z-20" />
+                                        </div>
                                       )}
                                     </div>
-                                  );
-                                })}
-                                <div
-                                  className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative overflow-hidden ${
-                                    (
-                                      themeSettingMode === "light"
-                                        ? lightThemeColor === "custom"
-                                        : darkThemeColor === "custom"
-                                    )
-                                      ? "ring-2 ring-offset-2 ring-primary-500 shadow-lg"
-                                      : ""
-                                  }`}
-                                  onClick={() => {
-                                    if (themeSettingMode === "light") {
-                                      setLightThemeColor("custom");
-                                      localStorage.setItem(
-                                        "app.lightThemeColor",
-                                        "custom",
-                                      );
-                                    } else {
-                                      setDarkThemeColor("custom");
-                                      localStorage.setItem(
-                                        "app.darkThemeColor",
-                                        "custom",
-                                      );
-                                    }
-                                    window.dispatchEvent(
-                                      new CustomEvent("app-theme-changed"),
-                                    );
-                                  }}
-                                >
-                                  <div className="absolute inset-0 bg-gradient-to-br from-red-500 via-green-500 to-blue-500 opacity-80" />
-                                  <LuPalette className="text-white relative z-10 w-4 h-4 drop-shadow-md" />
-                                  {(themeSettingMode === "light"
-                                    ? lightThemeColor === "custom"
-                                    : darkThemeColor === "custom") && (
-                                    <>
-                                      <div className="absolute inset-0 bg-black/20 z-0" />
-                                      <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm z-20 absolute" />
-                                    </>
-                                  )}
+                                  </div>
                                 </div>
                               </div>
 
                               {(themeSettingMode === "light"
                                 ? lightThemeColor === "custom"
                                 : darkThemeColor === "custom") && (
-                                <div className="flex items-center gap-3 bg-default-200/30 p-3 rounded-xl border border-default-200/50 self-start">
-                                  <p className="text-tiny font-medium text-default-600">
-                                    {t("settings.appearance.custom_color") ||
-                                      "Custom"}
-                                    :
-                                  </p>
-                                  <div className="relative flex items-center gap-2">
-                                    <input
-                                      type="color"
-                                      value={
-                                        themeSettingMode === "light"
+                                <div className="flex flex-col gap-4 bg-default-200/20 p-6 rounded-2xl border border-default-200/50">
+                                  <div className="flex items-center justify-between">
+                                    <p className="text-small font-bold text-default-700">
+                                      {t("settings.appearance.custom_color") ||
+                                        "Custom Color"}
+                                    </p>
+                                    <div className="px-3 py-1 bg-default-200/50 rounded-lg">
+                                      <span className="text-tiny font-mono uppercase text-primary-500 font-bold">
+                                        {themeSettingMode === "light"
                                           ? lightCustomThemeColor
-                                          : darkCustomThemeColor
-                                      }
-                                      onInput={(e) => {
-                                        const color = (
-                                          e.target as HTMLInputElement
-                                        ).value;
-                                        if (themeSettingMode === "light") {
-                                          setLightCustomThemeColor(color);
-                                        } else {
-                                          setDarkCustomThemeColor(color);
-                                        }
-                                      }}
-                                      onChange={(e) => {
-                                        const color = e.target.value;
-                                        if (themeSettingMode === "light") {
-                                          setLightCustomThemeColor(color);
-                                          localStorage.setItem(
-                                            "app.lightCustomThemeColor",
-                                            color,
-                                          );
-                                        } else {
-                                          setDarkCustomThemeColor(color);
-                                          localStorage.setItem(
-                                            "app.darkCustomThemeColor",
-                                            color,
-                                          );
-                                        }
-                                        window.dispatchEvent(
-                                          new CustomEvent("app-theme-changed"),
-                                        );
-                                      }}
-                                      className="w-6 h-6 p-0 border-0 rounded-full overflow-hidden cursor-pointer bg-transparent shadow-sm"
-                                    />
-                                    <span className="text-tiny font-mono uppercase text-default-500">
-                                      {themeSettingMode === "light"
-                                        ? lightCustomThemeColor
-                                        : darkCustomThemeColor}
-                                    </span>
+                                          : darkCustomThemeColor}
+                                      </span>
+                                    </div>
                                   </div>
+
+                                  <CustomColorPicker
+                                    color={
+                                      themeSettingMode === "light"
+                                        ? lightCustomThemeColor
+                                        : darkCustomThemeColor
+                                    }
+                                    onChange={(hex) => {
+                                      if (themeSettingMode === "light") {
+                                        setLightCustomThemeColor(hex);
+                                        localStorage.setItem(
+                                          "app.lightCustomThemeColor",
+                                          hex,
+                                        );
+                                      } else {
+                                        setDarkCustomThemeColor(hex);
+                                        localStorage.setItem(
+                                          "app.darkCustomThemeColor",
+                                          hex,
+                                        );
+                                      }
+                                      window.dispatchEvent(
+                                        new CustomEvent("app-theme-changed"),
+                                      );
+                                    }}
+                                  />
                                 </div>
                               )}
                             </div>
@@ -1544,7 +1605,7 @@ export const SettingsPage: React.FC = () => {
                                     ? lightBackgroundUseTheme
                                     : darkBackgroundUseTheme
                                 }
-                                onValueChange={(isSelected) => {
+                                onValueChange={(isSelected: boolean) => {
                                   if (themeSettingMode === "light") {
                                     setLightBackgroundUseTheme(isSelected);
                                     localStorage.setItem(
@@ -2223,7 +2284,7 @@ export const SettingsPage: React.FC = () => {
                     <Switch
                       size="sm"
                       isSelected={enableBetaUpdates}
-                      onValueChange={(isSelected) => {
+                      onValueChange={(isSelected: boolean) => {
                         setEnableBetaUpdates(isSelected);
                         SetEnableBetaUpdates(isSelected);
                       }}

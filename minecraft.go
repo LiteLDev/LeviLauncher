@@ -16,6 +16,8 @@ import (
 
 	"unsafe"
 
+	_ "embed"
+
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/content"
@@ -45,6 +47,9 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/sys/windows"
 )
+
+//go:embed assets/curseforge.key
+var curseForgeApiKey []byte
 
 const (
 	EventGameInputEnsureStart      = "gameinput.ensure.start"
@@ -307,8 +312,20 @@ type Minecraft struct {
 }
 
 func NewMinecraft() *Minecraft {
+	apiKey := os.Getenv("CURSEFORGE_API_KEY")
+	if apiKey == "" {
+		deobfuscated := make([]byte, len(curseForgeApiKey))
+		for i, b := range curseForgeApiKey {
+			deobfuscated[i] = b ^ 0xAF
+		}
+		
+		decoded, err := base64.StdEncoding.DecodeString(string(deobfuscated))
+		if err == nil {
+			apiKey = string(decoded)
+		}
+	}
 	return &Minecraft{
-		curseClient: client.NewCurseClient(os.Getenv("CURSEFORGE_API_KEY")),
+		curseClient: client.NewCurseClient(apiKey),
 		lipClient:   lipclient.NewClient(),
 		packManager: packages.NewPackManager(),
 	}

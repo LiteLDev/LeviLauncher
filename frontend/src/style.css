@@ -287,13 +287,79 @@ body::-webkit-scrollbar,
   );
 }
 
+/* Global Scrollbar overrides to match .pretty-scrollbar style */
+::-webkit-scrollbar {
+  width: 10px;
+  height: 10px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background-clip: padding-box;
+  background-color: rgba(113, 113, 122, 0.35); /* neutral-500/35 */
+  border: 3px solid transparent;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(113, 113, 122, 0.55);
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: rgba(161, 161, 170, 0.25); /* zinc-400/25 */
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: rgba(161, 161, 170, 0.45);
+}
+
+::-webkit-scrollbar-corner {
+  background: transparent;
+}
+
+/* Custom scrollbar utility class (slimmer version) */
+.custom-scrollbar {
+  scrollbar-width: thin;
+  scrollbar-color: rgba(113, 113, 122, 0.35) transparent;
+}
+
+.custom-scrollbar::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+.custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(113, 113, 122, 0.35);
+  border: 1.5px solid transparent;
+  background-clip: padding-box;
+  border-radius: 9999px;
+}
+
+.dark .custom-scrollbar {
+  scrollbar-color: rgba(161, 161, 170, 0.25) transparent;
+}
+
+.dark .custom-scrollbar::-webkit-scrollbar-thumb {
+  background-color: rgba(161, 161, 170, 0.25);
+}
+
 /* Hide scrollbars but keep scrolling (for scrollable panes like version lists) */
-.no-scrollbar {
+.no-scrollbar,
+.scrollbar-hide {
   -ms-overflow-style: none; /* IE and Edge */
   scrollbar-width: none; /* Firefox */
 }
-.no-scrollbar::-webkit-scrollbar {
+.no-scrollbar::-webkit-scrollbar,
+.scrollbar-hide::-webkit-scrollbar {
   display: none; /* Chrome, Safari */
+}
+
+/* Scrollbar thin utility */
+.scrollbar-thin {
+  scrollbar-width: thin;
 }
 
 /* Reserve stable space for the scrollbar so it won't be visually clipped */

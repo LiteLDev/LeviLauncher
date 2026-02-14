@@ -27,12 +27,12 @@ export const PageContainer = forwardRef<HTMLDivElement, PageContainerProps>(
         initial={LAYOUT.PAGE.ANIMATION.initial}
         animate={LAYOUT.PAGE.ANIMATION.animate}
         transition={LAYOUT.PAGE.ANIMATION.transition}
-        {...props as any}
+        {...(props as any)}
       >
         {children}
       </motion.div>
     );
-  }
+  },
 );
 
 PageContainer.displayName = "PageContainer";

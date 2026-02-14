@@ -8,11 +8,13 @@ import { useThemeManager } from "@/utils/useThemeManager";
 export interface ThemeSwitcherProps {
   className?: string;
   iconSize?: number;
+  isDisabled?: boolean;
 }
 
 export function ThemeSwitcher({
   className,
   iconSize = 20,
+  isDisabled,
 }: ThemeSwitcherProps) {
   const { toggleTheme, resolvedTheme } = useThemeManager();
   const [mounted, setMounted] = useState(false);
@@ -32,6 +34,7 @@ export function ThemeSwitcher({
       size="sm"
       radius="lg"
       onPress={toggleTheme}
+      isDisabled={isDisabled}
       aria-label="Toggle theme"
       className={
         className ||

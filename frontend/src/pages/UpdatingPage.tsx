@@ -80,14 +80,16 @@ export default function UpdatingPage() {
             <PageHeader
               title={t("updating.title")}
               description={t("updating.body")}
+              titleClassName="text-2xl"
+              descriptionClassName="text-sm sm:text-base"
               startContent={
                 <div className="p-2 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-500">
-                  <FaRocket className="w-6 h-6" />
+                  <FaRocket className="w-5 h-5" />
                 </div>
               }
             />
 
-            <div className="mt-8 space-y-8 w-full pb-4">
+            <div className="mt-8 space-y-6 w-full pb-4">
               {/* Download Progress */}
               <div className="space-y-2">
                 <div className="flex justify-between items-end">
@@ -109,8 +111,8 @@ export default function UpdatingPage() {
                     aria-label="download"
                     className="w-full"
                     color="success"
-                    size="lg"
-                    radius="sm"
+                    size="md"
+                    radius="md"
                     value={Math.max(
                       0,
                       Math.min(100, Math.round((downloaded / total) * 100)),
@@ -126,8 +128,8 @@ export default function UpdatingPage() {
                     aria-label="download"
                     className="w-full"
                     color="success"
-                    size="lg"
-                    radius="sm"
+                    size="md"
+                    radius="md"
                     classNames={{
                       indicator:
                         "bg-gradient-to-r from-primary-500 to-primary-400",
@@ -156,8 +158,8 @@ export default function UpdatingPage() {
                     aria-label="install"
                     className="w-full"
                     color="success"
-                    size="lg"
-                    radius="sm"
+                    size="md"
+                    radius="md"
                     classNames={{
                       indicator:
                         "bg-gradient-to-r from-primary-500 to-primary-400",
@@ -168,8 +170,8 @@ export default function UpdatingPage() {
                     aria-label="install"
                     className="w-full"
                     color="success"
-                    size="lg"
-                    radius="sm"
+                    size="md"
+                    radius="md"
                     value={status === "installed" ? 100 : 0}
                     classNames={{
                       indicator:

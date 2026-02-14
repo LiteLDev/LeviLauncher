@@ -26,7 +26,13 @@ for lf in locale_files:
 
 used_keys = set()
 # Always keep errors group and some other potentially dynamic groups
-keep_prefixes = ['errors.', 'file.types.', 'curseforge.sort.']
+keep_prefixes = [
+    'errors.',
+    'file.types.',
+    'curseforge.sort.',
+    'settings.lip.status.',
+    'settings.lip.error.'
+]
 for k in all_keys:
     for prefix in keep_prefixes:
         if k.startswith(prefix):

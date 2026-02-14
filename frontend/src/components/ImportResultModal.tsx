@@ -26,7 +26,6 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
   const hasSuccess = success.length > 0;
   const isPartial = hasSuccess && hasFailed;
 
-  // Determine modal type and title
   let type: ModalType = "success";
   let title = t("mods.summary_title_done");
 
@@ -34,7 +33,7 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
     type = "warning";
     title = t("mods.summary_title_partial");
   } else if (hasFailed) {
-    type = "error"; // Changed from warning to error as requested
+    type = "error";
     title = t("mods.summary_failed");
   }
 

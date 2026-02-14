@@ -1184,7 +1184,6 @@ export const LauncherPage = (args: any) => {
           </Card>
         </motion.div>
 
-        {/* Content Grid - Responsive (1 col on mobile, 3 cols on md+) */}
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 items-stretch">
           {/* Mod Card */}
           <motion.div

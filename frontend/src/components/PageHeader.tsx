@@ -5,6 +5,7 @@ interface PageHeaderProps {
   description?: React.ReactNode;
   className?: string;
   titleClassName?: string;
+  descriptionClassName?: string;
   startContent?: React.ReactNode;
   endContent?: React.ReactNode;
 }
@@ -14,6 +15,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   description,
   className = "",
   titleClassName = "",
+  descriptionClassName = "",
   startContent,
   endContent,
 }) => {
@@ -29,7 +31,9 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
               {title}
             </h1>
             {description && (
-              <div className="mt-1 text-base sm:text-lg font-medium text-default-500 dark:text-zinc-400">
+              <div
+                className={`mt-1 text-base sm:text-lg font-medium text-default-500 dark:text-zinc-400 ${descriptionClassName}`}
+              >
                 {description}
               </div>
             )}

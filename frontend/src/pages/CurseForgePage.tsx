@@ -18,6 +18,12 @@ import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import {
+  formatNumber,
+  formatDateStr,
+  formatFileSize,
+  sortGameVersions,
+} from "@/utils/formatting";
+import {
   GetCurseForgeGameVersions,
   SearchCurseForgeMods,
   GetCurseForgeCategories,
@@ -37,31 +43,6 @@ import { motion } from "framer-motion";
 
 const CURSEFORGE_GAME_ID = "78022";
 
-const formatNumber = (num: number | undefined) => {
-  if (num === undefined) return "0";
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + "M";
-  }
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + "K";
-  }
-  return num.toString();
-};
-
-const formatDate = (dateStr: string | undefined) => {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString();
-};
-
-const formatSize = (bytes: number | undefined) => {
-  if (bytes === undefined) return "-";
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-};
-
 const getLatestSupportedVersion = (mod: ModData) => {
   const versions = new Set<string>();
 
@@ -79,18 +60,7 @@ const getLatestSupportedVersion = (mod: ModData) => {
 
   if (versions.size === 0) return "-";
 
-  const sorted = Array.from(versions).sort((a, b) => {
-    const partsA = a.split(".").map((p) => parseInt(p) || 0);
-    const partsB = b.split(".").map((p) => parseInt(p) || 0);
-
-    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
-      const valA = partsA[i] || 0;
-      const valB = partsB[i] || 0;
-      if (valA !== valB) return valB - valA;
-    }
-    return 0;
-  });
-
+  const sorted = sortGameVersions(Array.from(versions));
   return sorted[0];
 };
 
@@ -651,14 +621,14 @@ export const CurseForgePage: React.FC = () => {
                               title={t("curseforge.updated")}
                             >
                               <LuClock />
-                              <span>{formatDate(mod.dateModified)}</span>
+                              <span>{formatDateStr(mod.dateModified)}</span>
                             </div>
                             <div
                               className="flex items-center gap-1"
                               title={t("curseforge.created")}
                             >
                               <LuCalendar />
-                              <span>{formatDate(mod.dateCreated)}</span>
+                              <span>{formatDateStr(mod.dateCreated)}</span>
                             </div>
                             <div
                               className="flex items-center gap-1"
@@ -666,7 +636,7 @@ export const CurseForgePage: React.FC = () => {
                             >
                               <LuFileDigit />
                               <span>
-                                {formatSize(mod.latestFiles?.[0]?.fileLength)}
+                                {formatFileSize(mod.latestFiles?.[0]?.fileLength)}
                               </span>
                             </div>
                             <div

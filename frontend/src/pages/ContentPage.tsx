@@ -11,18 +11,11 @@ import {
   Spinner,
   Tooltip,
   Progress,
-  useDisclosure,
 } from "@heroui/react";
-import { Dialogs, Events } from "@wailsio/runtime";
+import { Dialogs } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { ImportResultModal } from "@/components/ImportResultModal";
 import { AnimatePresence, motion } from "framer-motion";
-import { useLocation, useNavigate } from "react-router-dom";
-import {
-  GetContentRoots,
-  GetVersionMeta,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
   FaCogs,
   FaFolderOpen,
@@ -32,20 +25,14 @@ import {
   FaUserTag,
   FaServer,
 } from "react-icons/fa";
-import { readCurrentVersionName } from "@/utils/currentVersion";
-import { compareVersions } from "@/utils/version";
-import { countDirectories } from "@/utils/fs";
-import {
-  getPlayerGamertagMap,
-  listPlayers,
-  resolvePlayerDisplayName,
-} from "@/utils/content";
+import { resolvePlayerDisplayName } from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { FiUploadCloud } from "react-icons/fi";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { FileDropOverlay } from "@/components/FileDropOverlay";
 import { useFileDrag } from "@/hooks/useFileDrag";
+import { useContentPage } from "@/hooks/useContentPage";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -54,526 +41,7 @@ export default function ContentPage() {
   const { t } = useTranslation();
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const isDragActive = useFileDrag(scrollRef as React.RefObject<HTMLElement>);
-  const navigate = useNavigate();
-  const location = useLocation() as any;
-  const hasBackend = minecraft !== undefined;
-  const [loading, setLoading] = React.useState<boolean>(true);
-  const [error, setError] = React.useState<string>("");
-  const [currentVersionName, setCurrentVersionName] =
-    React.useState<string>("");
-  const [roots, setRoots] = React.useState<types.ContentRoots>({
-    base: "",
-    usersRoot: "",
-    resourcePacks: "",
-    behaviorPacks: "",
-    isIsolation: false,
-    isPreview: false,
-  });
-  const [players, setPlayers] = React.useState<string[]>([]);
-  const [selectedPlayer, setSelectedPlayer] = React.useState<string>("");
-  const [isSharedMode, setIsSharedMode] = React.useState<boolean>(false);
-  const [playerGamertagMap, setPlayerGamertagMap] = React.useState<
-    Record<string, string>
-  >({});
-  const [worldsCount, setWorldsCount] = React.useState<number>(0);
-  const [resCount, setResCount] = React.useState<number>(0);
-  const [bpCount, setBpCount] = React.useState<number>(0);
-  const [skinCount, setSkinCount] = React.useState<number>(0);
-  const [serversCount, setServersCount] = React.useState<number>(0);
-  const [importing, setImporting] = React.useState(false);
-  const [errorMsg, setErrorMsg] = React.useState("");
-  const [currentFile, setCurrentFile] = React.useState("");
-  const [resultSuccess, setResultSuccess] = React.useState<string[]>([]);
-  const [resultFailed, setResultFailed] = React.useState<
-    Array<{ name: string; err: string }>
-  >([]);
-  const dupResolveRef = React.useRef<((overwrite: boolean) => void) | null>(
-    null,
-  );
-  const dupNameRef = React.useRef<string>("");
-  const {
-    isOpen: errOpen,
-    onOpen: errOnOpen,
-    onClose: errOnClose,
-    onOpenChange: errOnOpenChange,
-  } = useDisclosure();
-  const {
-    isOpen: dupOpen,
-    onOpen: dupOnOpen,
-    onClose: dupOnClose,
-    onOpenChange: dupOnOpenChange,
-  } = useDisclosure();
-  const {
-    isOpen: playerSelectOpen,
-    onOpen: playerSelectOnOpen,
-    onClose: playerSelectOnClose,
-    onOpenChange: playerSelectOnOpenChange,
-  } = useDisclosure();
-  const playerSelectResolveRef = React.useRef<
-    ((player: string) => void) | null
-  >(null);
-  const pendingImportPathsRef = React.useRef<string[]>([]);
-
-  const refreshAll = async (playerToRefresh?: string) => {
-    setLoading(true);
-    setError("");
-    const name = readCurrentVersionName();
-    setCurrentVersionName(name);
-    try {
-      if (!hasBackend || !name) {
-        setRoots({
-          base: "",
-          usersRoot: "",
-          resourcePacks: "",
-          behaviorPacks: "",
-          isIsolation: false,
-          isPreview: false,
-        });
-        setPlayers([]);
-        setSelectedPlayer("");
-        setPlayerGamertagMap({});
-        setWorldsCount(0);
-        setResCount(0);
-        setBpCount(0);
-      } else {
-        const r = await GetContentRoots(name);
-        const safe = r || {
-          base: "",
-          usersRoot: "",
-          resourcePacks: "",
-          behaviorPacks: "",
-          isIsolation: false,
-          isPreview: false,
-        };
-        setRoots(safe);
-
-        let isShared = false;
-        try {
-          const meta: any = await GetVersionMeta(name);
-          isShared =
-            meta.gameVersion && compareVersions(meta.gameVersion, "1.26.0") > 0;
-        } catch {}
-        setIsSharedMode(isShared);
-
-        if (safe.usersRoot) {
-          const names = await listPlayers(safe.usersRoot);
-          setPlayers(names);
-
-          let nextPlayer = names[0] || "";
-          const currentPlayer =
-            playerToRefresh !== undefined ? playerToRefresh : selectedPlayer;
-
-          if (names.includes(currentPlayer)) {
-            nextPlayer = currentPlayer;
-          }
-
-          if (playerToRefresh !== undefined) {
-            setSelectedPlayer(playerToRefresh);
-          } else if (!names.includes(currentPlayer)) {
-            setSelectedPlayer(nextPlayer);
-          }
-
-          const loadCounts = async (player: string) => {
-            if (player) {
-              const wp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
-              setWorldsCount(await countDirectories(wp));
-              if (isShared) {
-                if (safe.resourcePacks) {
-                  const dir = safe.resourcePacks.replace(
-                    /[\\/]resource_packs[\\/]?$/,
-                    "",
-                  );
-                  const sep = safe.resourcePacks.includes("/") ? "/" : "\\";
-                  const sp = `${dir}${sep}skin_packs`;
-                  setSkinCount(await countDirectories(sp));
-                } else {
-                  setSkinCount(0);
-                }
-              } else {
-                const sp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
-                setSkinCount(await countDirectories(sp));
-              }
-              const srvs = await (minecraft as any)?.ListServers?.(
-                name,
-                player,
-              );
-              setServersCount(srvs?.length || 0);
-            } else {
-              setWorldsCount(0);
-              setSkinCount(0);
-              setServersCount(0);
-            }
-          };
-
-          await loadCounts(
-            names.includes(currentPlayer) ? currentPlayer : nextPlayer,
-          );
-
-          (async () => {
-            try {
-              const map = await getPlayerGamertagMap(safe.usersRoot);
-              setPlayerGamertagMap(map);
-
-              if (
-                playerToRefresh === undefined &&
-                !names.includes(currentPlayer)
-              ) {
-                const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
-                if (tag) {
-                  let matched = "";
-                  for (const p of names) {
-                    if (map[p] === tag) {
-                      matched = p;
-                      break;
-                    }
-                  }
-                  if (matched && matched !== nextPlayer) {
-                    setSelectedPlayer(matched);
-                    await loadCounts(matched);
-                  }
-                }
-              }
-            } catch {}
-          })();
-        } else {
-          setPlayers([]);
-          setSelectedPlayer("");
-          setPlayerGamertagMap({});
-          setWorldsCount(0);
-          setSkinCount(0);
-          setServersCount(0);
-        }
-        setResCount(await countDirectories(safe.resourcePacks));
-        setBpCount(await countDirectories(safe.behaviorPacks));
-      }
-    } catch (e) {
-      setError(t("contentpage.error_resolve_paths") as string);
-    } finally {
-      setLoading(false);
-    }
-  };
-
-  React.useEffect(() => {
-    let passedPlayer = location?.state?.player;
-    if (!passedPlayer) {
-      passedPlayer = localStorage.getItem("content.selectedPlayer") || "";
-    }
-
-    if (passedPlayer) {
-      refreshAll(passedPlayer);
-      if (location?.state?.player) {
-        navigate(location.pathname, {
-          replace: true,
-          state: { ...(location.state || {}), player: undefined },
-        });
-      }
-    } else {
-      refreshAll();
-    }
-  }, []);
-
-  React.useEffect(() => {
-    if (selectedPlayer) {
-      localStorage.setItem("content.selectedPlayer", selectedPlayer);
-    }
-  }, [selectedPlayer]);
-
-  const onChangePlayer = async (player: string) => {
-    setLoading(true);
-    setSelectedPlayer(player);
-    try {
-      if (!hasBackend || !roots.usersRoot || !player) {
-        setWorldsCount(0);
-        setSkinCount(0);
-        setServersCount(0);
-        return;
-      }
-      const wp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
-      setWorldsCount(await countDirectories(wp));
-      if (isSharedMode) {
-        if (roots.resourcePacks) {
-          const dir = roots.resourcePacks.replace(
-            /[\\/]resource_packs[\\/]?$/,
-            "",
-          );
-          const sep = roots.resourcePacks.includes("/") ? "/" : "\\";
-          const sp = `${dir}${sep}skin_packs`;
-          setSkinCount(await countDirectories(sp));
-        } else {
-          setSkinCount(0);
-        }
-      } else {
-        const sp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
-        setSkinCount(await countDirectories(sp));
-      }
-      const srvs = await (minecraft as any)?.ListServers?.(
-        currentVersionName || readCurrentVersionName(),
-        player,
-      );
-      setServersCount(srvs?.length || 0);
-    } finally {
-      setLoading(false);
-    }
-  };
-  const doImportFromPaths = async (paths: string[]) => {
-    try {
-      if (!paths?.length) return;
-      const name = currentVersionName || readCurrentVersionName();
-      if (!name) {
-        setErrorMsg(t("launcherpage.currentVersion_none") as string);
-        return;
-      }
-      const hasWorld = paths.some((p) => p?.toLowerCase().endsWith(".mcworld"));
-      let hasSkin = false;
-      if (paths.length > 0) {
-        setImporting(true);
-        const firstBase =
-          paths[0].replace(/\\/g, "/").split("/").pop() || paths[0];
-        setCurrentFile(firstBase);
-      }
-      for (const p of paths) {
-        if (p?.toLowerCase().endsWith(".mcpack")) {
-          const isSkin = await (minecraft as any)?.IsMcpackSkinPackPath?.(p);
-          if (isSkin) {
-            hasSkin = true;
-            break;
-          }
-        }
-      }
-      let chosenPlayer = "";
-
-      const needsPlayer = hasWorld || (hasSkin && !isSharedMode);
-
-      if (needsPlayer) {
-        pendingImportPathsRef.current = paths;
-        playerSelectOnOpen();
-        chosenPlayer = await new Promise<string>((resolve) => {
-          playerSelectResolveRef.current = resolve;
-        });
-        if (!chosenPlayer) {
-          pendingImportPathsRef.current = [];
-          return;
-        }
-        setSelectedPlayer(chosenPlayer);
-        await onChangePlayer(chosenPlayer);
-      }
-      let started = false;
-      const succFiles: string[] = [];
-      const errPairs: Array<{ name: string; err: string }> = [];
-      const pathsToImport =
-        pendingImportPathsRef.current.length > 0
-          ? pendingImportPathsRef.current
-          : paths;
-      pendingImportPathsRef.current = [];
-      const playerToUse = chosenPlayer || selectedPlayer || "";
-      for (const p of pathsToImport) {
-        const lower = p.toLowerCase();
-        if (lower.endsWith(".mcpack")) {
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          const base = p.replace(/\\/g, "/").split("/").pop() || p;
-          setCurrentFile(base);
-
-          let err = "";
-          const isSkin = await (minecraft as any)?.IsMcpackSkinPackPath?.(p);
-          const effectivePlayer = isSkin && isSharedMode ? "" : playerToUse;
-
-          if (
-            effectivePlayer &&
-            typeof (minecraft as any)?.ImportMcpackPathWithPlayer === "function"
-          ) {
-            err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
-              name,
-              effectivePlayer,
-              p,
-              false,
-            );
-          } else {
-            err = await (minecraft as any)?.ImportMcpackPath?.(name, p, false);
-          }
-          if (err) {
-            if (
-              String(err) === "ERR_DUPLICATE_FOLDER" ||
-              String(err) === "ERR_DUPLICATE_UUID"
-            ) {
-              dupNameRef.current = base;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                if (
-                  effectivePlayer &&
-                  typeof (minecraft as any)?.ImportMcpackPathWithPlayer ===
-                    "function"
-                ) {
-                  err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
-                    name,
-                    effectivePlayer,
-                    p,
-                    true,
-                  );
-                } else {
-                  err = await (minecraft as any)?.ImportMcpackPath?.(
-                    name,
-                    p,
-                    true,
-                  );
-                }
-                if (!err) {
-                  succFiles.push(base);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: base, err });
-            continue;
-          }
-          succFiles.push(base);
-        } else if (lower.endsWith(".mcaddon")) {
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          const base = p.replace(/\\/g, "/").split("/").pop() || p;
-          setCurrentFile(base);
-          let err = "";
-          if (
-            playerToUse &&
-            typeof (minecraft as any)?.ImportMcaddonPathWithPlayer ===
-              "function"
-          ) {
-            err = await (minecraft as any)?.ImportMcaddonPathWithPlayer?.(
-              name,
-              playerToUse,
-              p,
-              false,
-            );
-          } else {
-            err = await (minecraft as any)?.ImportMcaddonPath?.(name, p, false);
-          }
-          if (err) {
-            if (
-              String(err) === "ERR_DUPLICATE_FOLDER" ||
-              String(err) === "ERR_DUPLICATE_UUID"
-            ) {
-              dupNameRef.current = base;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                if (
-                  playerToUse &&
-                  typeof (minecraft as any)?.ImportMcaddonPathWithPlayer ===
-                    "function"
-                ) {
-                  err = await (minecraft as any)?.ImportMcaddonPathWithPlayer?.(
-                    name,
-                    playerToUse,
-                    p,
-                    true,
-                  );
-                } else {
-                  err = await (minecraft as any)?.ImportMcaddonPath?.(
-                    name,
-                    p,
-                    true,
-                  );
-                }
-                if (!err) {
-                  succFiles.push(base);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: base, err });
-            continue;
-          }
-          succFiles.push(base);
-        } else if (lower.endsWith(".mcworld")) {
-          const base = p.replace(/\\/g, "/").split("/").pop() || p;
-          if (!playerToUse) {
-            errPairs.push({ name: base, err: "ERR_NO_PLAYER" });
-            continue;
-          }
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          setCurrentFile(base);
-          let err = await (minecraft as any)?.ImportMcworldPath?.(
-            name,
-            playerToUse,
-            p,
-            false,
-          );
-          if (err) {
-            if (
-              String(err) === "ERR_DUPLICATE_FOLDER" ||
-              String(err) === "ERR_DUPLICATE_UUID"
-            ) {
-              dupNameRef.current = base;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                err = await (minecraft as any)?.ImportMcworldPath?.(
-                  name,
-                  playerToUse,
-                  p,
-                  true,
-                );
-                if (!err) {
-                  succFiles.push(base);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: base, err });
-            continue;
-          }
-          succFiles.push(base);
-        }
-      }
-      if (succFiles.length > 0 || errPairs.length > 0) {
-        await refreshAll(playerToUse);
-        setResultSuccess(succFiles);
-        setResultFailed(errPairs);
-        errOnOpen();
-      }
-    } catch (e: any) {
-      setErrorMsg(String(e?.message || e || "IMPORT_ERROR"));
-    } finally {
-      setImporting(false);
-      setCurrentFile("");
-    }
-  };
-
-  const doImportRef = React.useRef(doImportFromPaths);
-  doImportRef.current = doImportFromPaths;
-
-  React.useEffect(() => {
-    return Events.On("files-dropped", (event) => {
-      const data = (event.data as { files: string[] }) || {};
-      // Ignore target check to ensure stability, as we are inside the component
-      if (data.files && data.files.length > 0) {
-        void doImportRef.current(data.files);
-      }
-    });
-  }, []);
+  const cp = useContentPage(t as any);
 
   return (
     <PageContainer
@@ -609,7 +77,7 @@ export default function ContentPage() {
                   <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
                     <span>{t("contentpage.current_version")}:</span>
                     <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
-                      {currentVersionName || t("contentpage.none")}
+                      {cp.currentVersionName || t("contentpage.none")}
                     </span>
                     <span className="text-default-300 dark:text-zinc-600">
                       |
@@ -617,12 +85,12 @@ export default function ContentPage() {
                     <span>{t("contentpage.isolation")}:</span>
                     <span
                       className={`font-medium px-2 py-0.5 rounded-md ${
-                        roots.isIsolation
+                        cp.roots.isIsolation
                           ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
                           : "bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
                       }`}
                     >
-                      {roots.isIsolation ? t("common.yes") : t("common.no")}
+                      {cp.roots.isIsolation ? t("common.yes") : t("common.no")}
                     </span>
                     <span className="text-default-300 dark:text-zinc-600">
                       |
@@ -637,10 +105,10 @@ export default function ContentPage() {
                             "h-6 min-w-0 px-2 text-small font-medium text-default-700 dark:text-zinc-200",
                           )}
                         >
-                          {selectedPlayer
+                          {cp.selectedPlayer
                             ? resolvePlayerDisplayName(
-                                selectedPlayer,
-                                playerGamertagMap,
+                                cp.selectedPlayer,
+                                cp.playerGamertagMap,
                               )
                             : t("contentpage.no_players")}
                         </Button>
@@ -648,25 +116,25 @@ export default function ContentPage() {
                       <DropdownMenu
                         aria-label="Players"
                         selectionMode="single"
-                        selectedKeys={new Set([selectedPlayer])}
+                        selectedKeys={new Set([cp.selectedPlayer])}
                         onSelectionChange={(keys) => {
                           const arr = Array.from(
                             keys as unknown as Set<string>,
                           );
                           const next = arr[0] || "";
-                          if (typeof next === "string") onChangePlayer(next);
+                          if (typeof next === "string") cp.onChangePlayer(next);
                         }}
                       >
-                        {players.length ? (
-                          players.map((p) => (
+                        {cp.players.length ? (
+                          cp.players.map((p) => (
                             <DropdownItem
                               key={p}
                               textValue={resolvePlayerDisplayName(
                                 p,
-                                playerGamertagMap,
+                                cp.playerGamertagMap,
                               )}
                             >
-                              {resolvePlayerDisplayName(p, playerGamertagMap)}
+                              {resolvePlayerDisplayName(p, cp.playerGamertagMap)}
                             </DropdownItem>
                           ))
                         ) : (
@@ -676,7 +144,7 @@ export default function ContentPage() {
                         )}
                       </DropdownMenu>
                     </Dropdown>
-                    {!selectedPlayer && (
+                    {!cp.selectedPlayer && (
                       <span className="text-danger-500 text-xs">
                         ({t("contentpage.require_player_for_world_import")})
                       </span>
@@ -701,13 +169,13 @@ export default function ContentPage() {
                           AllowsMultipleSelection: true,
                         });
                         if (paths && Array.isArray(paths) && paths.length > 0) {
-                          doImportFromPaths(paths);
+                          cp.doImportFromPaths(paths);
                         }
                       } catch (e) {
                         console.error(e);
                       }
                     }}
-                    isDisabled={importing}
+                    isDisabled={cp.importing}
                   >
                     {t("contentpage.import_button")}
                   </Button>
@@ -721,11 +189,11 @@ export default function ContentPage() {
                       variant="flat"
                       startContent={<FaFolderOpen />}
                       onPress={() => {
-                        if (roots.usersRoot) {
-                          (minecraft as any)?.OpenPathDir(roots.usersRoot);
+                        if (cp.roots.usersRoot) {
+                          (minecraft as any)?.OpenPathDir(cp.roots.usersRoot);
                         }
                       }}
-                      isDisabled={!hasBackend || !roots.usersRoot}
+                      isDisabled={!cp.hasBackend || !cp.roots.usersRoot}
                       className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
                     >
                       {t("common.open")}
@@ -736,19 +204,19 @@ export default function ContentPage() {
                       isIconOnly
                       radius="full"
                       variant="light"
-                      onPress={() => refreshAll()}
-                      isDisabled={loading}
+                      onPress={() => cp.refreshAll()}
+                      isDisabled={cp.loading}
                     >
                       <FaSync
-                        className={loading ? "animate-spin" : ""}
+                        className={cp.loading ? "animate-spin" : ""}
                         size={18}
                       />
                     </Button>
                   </Tooltip>
                 </div>
               </div>
-              {!!error && (
-                <div className="text-danger-500 text-sm">{error}</div>
+              {!!cp.error && (
+                <div className="text-danger-500 text-sm">{cp.error}</div>
               )}
             </div>
           </CardBody>
@@ -765,8 +233,8 @@ export default function ContentPage() {
         <Card
           isPressable
           onPress={() =>
-            navigate("/content/worlds", {
-              state: { player: selectedPlayer },
+            cp.navigate("/content/worlds", {
+              state: { player: cp.selectedPlayer },
             })
           }
           className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}
@@ -782,7 +250,7 @@ export default function ContentPage() {
                 </span>
               </div>
               <AnimatePresence mode="wait">
-                {loading ? (
+                {cp.loading ? (
                   <motion.div
                     key="spinner"
                     initial={{ opacity: 0 }}
@@ -801,7 +269,7 @@ export default function ContentPage() {
                     transition={{ duration: 0.2 }}
                     className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
-                    {worldsCount}
+                    {cp.worldsCount}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -811,7 +279,7 @@ export default function ContentPage() {
 
         <Card
           isPressable
-          onPress={() => navigate("/content/resourcePacks")}
+          onPress={() => cp.navigate("/content/resourcePacks")}
           className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}
         >
           <CardBody className="p-6">
@@ -825,7 +293,7 @@ export default function ContentPage() {
                 </span>
               </div>
               <AnimatePresence mode="wait">
-                {loading ? (
+                {cp.loading ? (
                   <motion.div
                     key="spinner"
                     initial={{ opacity: 0 }}
@@ -844,7 +312,7 @@ export default function ContentPage() {
                     transition={{ duration: 0.2 }}
                     className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
-                    {resCount}
+                    {cp.resCount}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -854,7 +322,7 @@ export default function ContentPage() {
 
         <Card
           isPressable
-          onPress={() => navigate("/content/behaviorPacks")}
+          onPress={() => cp.navigate("/content/behaviorPacks")}
           className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}
         >
           <CardBody className="p-6">
@@ -868,7 +336,7 @@ export default function ContentPage() {
                 </span>
               </div>
               <AnimatePresence mode="wait">
-                {loading ? (
+                {cp.loading ? (
                   <motion.div
                     key="spinner"
                     initial={{ opacity: 0 }}
@@ -887,7 +355,7 @@ export default function ContentPage() {
                     transition={{ duration: 0.2 }}
                     className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
-                    {bpCount}
+                    {cp.bpCount}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -898,8 +366,8 @@ export default function ContentPage() {
         <Card
           isPressable
           onPress={() =>
-            navigate("/content/skinPacks", {
-              state: { player: selectedPlayer },
+            cp.navigate("/content/skinPacks", {
+              state: { player: cp.selectedPlayer },
             })
           }
           className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}
@@ -915,7 +383,7 @@ export default function ContentPage() {
                 </span>
               </div>
               <AnimatePresence mode="wait">
-                {loading ? (
+                {cp.loading ? (
                   <motion.div
                     key="spinner"
                     initial={{ opacity: 0 }}
@@ -934,7 +402,7 @@ export default function ContentPage() {
                     transition={{ duration: 0.2 }}
                     className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
-                    {skinCount}
+                    {cp.skinCount}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -945,8 +413,8 @@ export default function ContentPage() {
         <Card
           isPressable
           onPress={() =>
-            navigate("/content/servers", {
-              state: { player: selectedPlayer },
+            cp.navigate("/content/servers", {
+              state: { player: cp.selectedPlayer },
             })
           }
           className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}
@@ -962,7 +430,7 @@ export default function ContentPage() {
                 </span>
               </div>
               <AnimatePresence mode="wait">
-                {loading ? (
+                {cp.loading ? (
                   <motion.div
                     key="spinner"
                     initial={{ opacity: 0 }}
@@ -981,7 +449,7 @@ export default function ContentPage() {
                     transition={{ duration: 0.2 }}
                     className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
-                    {serversCount}
+                    {cp.serversCount}
                   </motion.span>
                 )}
               </AnimatePresence>
@@ -991,7 +459,7 @@ export default function ContentPage() {
       </motion.div>
 
       <UnifiedModal
-        isOpen={importing}
+        isOpen={cp.importing}
         onOpenChange={() => {}}
         type="primary"
         title={t("mods.importing_title")}
@@ -1012,29 +480,29 @@ export default function ContentPage() {
           <div className="text-default-600 dark:text-zinc-300 text-sm">
             {t("mods.importing_body")}
           </div>
-          {currentFile ? (
+          {cp.currentFile ? (
             <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
-              {currentFile}
+              {cp.currentFile}
             </div>
           ) : null}
         </div>
       </UnifiedModal>
       <ImportResultModal
-        isOpen={errOpen}
-        onOpenChange={errOnOpenChange}
-        results={{ success: resultSuccess, failed: resultFailed }}
+        isOpen={cp.errOpen}
+        onOpenChange={cp.errOnOpenChange}
+        results={{ success: cp.resultSuccess, failed: cp.resultFailed }}
         onConfirm={() => {
-          setErrorMsg("");
-          setResultSuccess([]);
-          setResultFailed([]);
+          cp.setErrorMsg("");
+          cp.setResultSuccess([]);
+          cp.setResultFailed([]);
         }}
       />
       <UnifiedModal
-        isOpen={dupOpen}
+        isOpen={cp.dupOpen}
         onOpenChange={(open) => {
           if (!open) {
-            dupOnClose();
-            dupResolveRef.current?.(false);
+            cp.dupOnClose();
+            cp.dupResolveRef.current?.(false);
           }
         }}
         type="warning"
@@ -1043,31 +511,31 @@ export default function ContentPage() {
         cancelText={t("common.cancel")}
         showCancelButton
         onConfirm={() => {
-          dupResolveRef.current?.(true);
-          dupOnClose();
+          cp.dupResolveRef.current?.(true);
+          cp.dupOnClose();
         }}
         onCancel={() => {
-          dupResolveRef.current?.(false);
-          dupOnClose();
+          cp.dupResolveRef.current?.(false);
+          cp.dupOnClose();
         }}
       >
         <div className="flex flex-col gap-4">
           <div className="text-sm text-default-700 dark:text-zinc-300">
             {t("mods.overwrite_modal_body")}
           </div>
-          {dupNameRef.current ? (
+          {cp.dupNameRef.current ? (
             <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
-              {dupNameRef.current}
+              {cp.dupNameRef.current}
             </div>
           ) : null}
         </div>
       </UnifiedModal>
       <UnifiedModal
-        isOpen={playerSelectOpen}
+        isOpen={cp.playerSelectOpen}
         onOpenChange={(open) => {
           if (!open) {
-            playerSelectOnClose();
-            playerSelectResolveRef.current?.("");
+            cp.playerSelectOnClose();
+            cp.playerSelectResolveRef.current?.("");
           }
         }}
         type="primary"
@@ -1076,8 +544,8 @@ export default function ContentPage() {
         showCancelButton
         showConfirmButton={false}
         onCancel={() => {
-          playerSelectResolveRef.current?.("");
-          playerSelectOnClose();
+          cp.playerSelectResolveRef.current?.("");
+          cp.playerSelectOnClose();
         }}
       >
         <div className="flex flex-col gap-4">
@@ -1085,18 +553,18 @@ export default function ContentPage() {
             {t("contentpage.select_player_for_import")}
           </div>
           <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar p-1">
-            {players.length ? (
-              players.map((p) => (
+            {cp.players.length ? (
+              cp.players.map((p) => (
                 <Button
                   key={p}
                   variant="flat"
                   className="w-full justify-start bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
                   onPress={() => {
-                    playerSelectResolveRef.current?.(p);
-                    playerSelectOnClose();
+                    cp.playerSelectResolveRef.current?.(p);
+                    cp.playerSelectOnClose();
                   }}
                 >
-                  {resolvePlayerDisplayName(p, playerGamertagMap)}
+                  {resolvePlayerDisplayName(p, cp.playerGamertagMap)}
                 </Button>
               ))
             ) : (

@@ -7,6 +7,7 @@ import { motion } from "framer-motion";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
+import { formatBytes, formatSpeed } from "@/utils/formatting";
 import {
   FaDownload,
   FaTimes,
@@ -21,19 +22,6 @@ export const DownloadManagerPage: React.FC = () => {
   const { t } = useTranslation();
   const { downloads, cancelDownload, removeDownload, startDownload } =
     useDownloads();
-
-  // Formatting helpers
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
-  const formatSpeed = (bytesPerSec: number) => {
-    return formatBytes(bytesPerSec) + "/s";
-  };
 
   return (
     <PageContainer>

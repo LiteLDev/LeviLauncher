@@ -68,54 +68,12 @@ import {
   LuUser,
 } from "react-icons/lu";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
-
-const formatNumber = (num: number | undefined) => {
-  if (num === undefined) return "0";
-  if (num >= 1000000) {
-    return (num / 1000000).toFixed(1) + "M";
-  }
-  if (num >= 1000) {
-    return (num / 1000).toFixed(1) + "K";
-  }
-  return num.toString();
-};
-
-const formatDate = (dateStr: string | undefined) => {
-  if (!dateStr) return "-";
-  return new Date(dateStr).toLocaleDateString();
-};
-
-const formatFileSize = (bytes: number | undefined) => {
-  if (bytes === undefined) return "-";
-  if (bytes === 0) return "0 B";
-  const k = 1024;
-  const sizes = ["B", "KB", "MB", "GB", "TB"];
-  const i = Math.floor(Math.log(bytes) / Math.log(k));
-  return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-};
-
-const sortGameVersions = (versions: string[] | undefined) => {
-  if (!versions) return [];
-  const sorted = [...versions].sort((a, b) => {
-    const aIsVer = /^\d/.test(a);
-    const bIsVer = /^\d/.test(b);
-
-    if (aIsVer && !bIsVer) return -1;
-    if (!aIsVer && bIsVer) return 1;
-    if (!aIsVer && !bIsVer) return a.localeCompare(b);
-
-    const partsA = a.split(".").map((p) => parseInt(p) || 0);
-    const partsB = b.split(".").map((p) => parseInt(p) || 0);
-
-    for (let i = 0; i < Math.max(partsA.length, partsB.length); i++) {
-      const valA = partsA[i] || 0;
-      const valB = partsB[i] || 0;
-      if (valA !== valB) return valB - valA;
-    }
-    return 0;
-  });
-  return sorted;
-};
+import {
+  formatNumber,
+  formatDateStr,
+  formatFileSize,
+  sortGameVersions,
+} from "@/utils/formatting";
 
 const CurseForgeModPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -672,7 +630,7 @@ const CurseForgeModPage: React.FC = () => {
                       <span className="flex items-center gap-1">
                         <LuCalendar size={14} />
                         {t("curseforge.updated_date", {
-                          date: formatDate(mod.dateModified),
+                          date: formatDateStr(mod.dateModified),
                         })}
                       </span>
                       <span className="w-1 h-1 rounded-full bg-default-300"></span>
@@ -902,7 +860,7 @@ const CurseForgeModPage: React.FC = () => {
                                     </TableCell>
                                     <TableCell>
                                       <span className="text-default-500 dark:text-zinc-400">
-                                        {formatDate(file.fileDate)}
+                                        {formatDateStr(file.fileDate)}
                                       </span>
                                     </TableCell>
                                     <TableCell>

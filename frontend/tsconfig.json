@@ -13,10 +13,9 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-      "bindings/*": ["bindings/*"]
+      "@/*": ["./src/*"],
+      "bindings/*": ["./bindings/*"]
     }
   },
   "include": ["./src/**/*", "src", "bindings"],

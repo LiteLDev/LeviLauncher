@@ -38,3 +38,5 @@ bin
 .kiro
 
 .env
+
+build-test.bat

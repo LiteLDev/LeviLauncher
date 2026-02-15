@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
 import {
   Button,
@@ -18,13 +18,11 @@ import {
   addToast,
 } from "@heroui/react";
 import {
-  FaSearch,
   FaSortAmountDown,
   FaSortAmountUp,
   FaTrash,
   FaFolderOpen,
   FaSync,
-  FaArrowLeft,
   FaBox,
   FaArchive,
   FaFilter,
@@ -64,6 +62,10 @@ import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
+import { useScrollManager } from "@/hooks/useScrollManager";
+import { useSelectionMode } from "@/hooks/useSelectionMode";
+import { useContentSort } from "@/hooks/useContentSort";
+import { formatBytes } from "@/utils/formatting";
 
 interface WorldInfo {
   Path: string;
@@ -90,35 +92,9 @@ export default function WorldsListPage() {
   const [worlds, setWorlds] = useState<WorldInfo[]>([]);
   const [loading, setLoading] = useState(false);
   const [roots, setRoots] = useState<any>({});
-  const [search, setSearch] = useState("");
-  const [sortKey, setSortKey] = useState<"name" | "time">(() => {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem("content.worlds.sort") || "{}",
-      );
-      const k = saved?.sortKey;
-      if (k === "name" || k === "time") return k;
-    } catch {}
-    return "name";
-  });
-  const [sortAsc, setSortAsc] = useState<boolean>(() => {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem("content.worlds.sort") || "{}",
-      );
-      const a = saved?.sortAsc;
-      if (typeof a === "boolean") return a;
-    } catch {}
-    const legacy = localStorage.getItem("worlds_sort") as "asc" | "desc" | null;
-    if (legacy === "desc") return false;
-    return true;
-  });
-  const [selected, setSelected] = useState<Record<string, boolean>>({});
-  const [isSelectMode, setIsSelectMode] = useState<boolean>(false);
+
   const [deletingOne, setDeletingOne] = useState<boolean>(false);
   const [deletingMany, setDeletingMany] = useState<boolean>(false);
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const pageSize = 20;
 
   const [backingUp, setBackingUp] = useState("");
   const [activeWorld, setActiveWorld] = useState<WorldInfo | null>(null);
@@ -140,35 +116,14 @@ export default function WorldsListPage() {
   const [currentWorldsPath, setCurrentWorldsPath] = useState("");
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
-  const lastScrollTopRef = React.useRef<number>(0);
-  const restorePendingRef = React.useRef<boolean>(false);
-  const collectScrollTargets = React.useCallback(() => {
-    const seen = new Set<unknown>();
-    const targets: Array<Window | HTMLElement> = [];
-
-    const add = (target: Window | HTMLElement | null | undefined) => {
-      if (!target) return;
-      if (seen.has(target)) return;
-      seen.add(target);
-      targets.push(target);
-    };
-
-    add(window);
-    add((document.scrollingElement as HTMLElement) || document.documentElement);
-    add(document.body);
-
-    const walk = (seed: HTMLElement | null) => {
-      let el: HTMLElement | null = seed;
-      while (el) {
-        add(el);
-        el = el.parentElement;
-      }
-    };
-
-    walk(scrollRef.current);
-
-    return targets;
-  }, []);
+  const sort = useContentSort(
+    "content.worlds.sort",
+    worlds,
+    (w: WorldInfo) => w.FolderName,
+    (w: WorldInfo) => Number(w.LastModified || 0),
+  );
+  useScrollManager(scrollRef, [worlds], [sort.currentPage]);
+  const selection = useSelectionMode(sort.filtered, (w: WorldInfo) => w.Path);
 
   useEffect(() => {
     const fetchPlayers = async () => {
@@ -287,64 +242,6 @@ export default function WorldsListPage() {
     }
   }, [selectedPlayer, refreshAll]);
 
-  const persistSort = useCallback((key: "name" | "time", asc: boolean) => {
-    localStorage.setItem(
-      "content.worlds.sort",
-      JSON.stringify({ sortKey: key, sortAsc: asc }),
-    );
-  }, []);
-
-  const filtered = useMemo(() => {
-    let list = [...worlds];
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      list = list.filter((w) => w.FolderName.toLowerCase().includes(q));
-    }
-    list.sort((a, b) => {
-      if (sortKey === "name") {
-        const nameA = a.FolderName.toLowerCase();
-        const nameB = b.FolderName.toLowerCase();
-        const res = nameA.localeCompare(nameB);
-        return sortAsc ? res : -res;
-      }
-      const ta = Number(a.LastModified || 0);
-      const tb = Number(b.LastModified || 0);
-      const res = ta - tb;
-      return sortAsc ? res : -res;
-    });
-    return list;
-  }, [worlds, search, sortKey, sortAsc]);
-
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [search, sortKey, sortAsc]);
-
-  const paginatedItems = useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, currentPage]);
-
-  const totalPages = Math.ceil(filtered.length / pageSize);
-
-  const toggleSelect = (path: string) => {
-    setSelected((prev) => ({
-      ...prev,
-      [path]: !prev[path],
-    }));
-  };
-
-  const selectAll = (val: boolean) => {
-    if (val) {
-      const next: Record<string, boolean> = {};
-      filtered.forEach((w) => (next[w.Path] = true));
-      setSelected(next);
-    } else {
-      setSelected({});
-    }
-  };
-
-  const selectedCount = Object.keys(selected).filter((k) => selected[k]).length;
-
   const handleDelete = async () => {
     if (!activeWorld) return;
     setDeletingOne(true);
@@ -361,7 +258,7 @@ export default function WorldsListPage() {
   };
 
   const handleBatchDelete = async () => {
-    const paths = Object.keys(selected).filter((k) => selected[k]);
+    const paths = selection.getSelectedKeys();
     if (paths.length === 0) return;
 
     setDeletingMany(true);
@@ -379,7 +276,7 @@ export default function WorldsListPage() {
         title: t("contentpage.deleted_count", { count: successCount }),
         color: "success",
       });
-      setSelected({});
+      selection.clearSelection();
       refreshAll();
       delManyCfmOnClose();
     } finally {
@@ -417,58 +314,6 @@ export default function WorldsListPage() {
       setBackingUp("");
     }
   };
-
-  const formatBytes = (bytes: number) => {
-    if (bytes === 0) return "0 B";
-    const k = 1024;
-    const sizes = ["B", "KB", "MB", "GB", "TB"];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i];
-  };
-
-  React.useEffect(() => {
-    const resetScroll = () => {
-      try {
-        const active = document.activeElement as HTMLElement | null;
-        if (active && scrollRef.current && scrollRef.current.contains(active)) {
-          active.blur();
-        }
-      } catch {}
-
-      for (const target of collectScrollTargets()) {
-        if (target === window) {
-          window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-          continue;
-        }
-        if (target instanceof HTMLElement) {
-          target.scrollTop = 0;
-          target.scrollLeft = 0;
-        }
-      }
-    };
-
-    resetScroll();
-    const raf = requestAnimationFrame(resetScroll);
-    const t0 = window.setTimeout(resetScroll, 0);
-    const t1 = window.setTimeout(resetScroll, 120);
-    return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(t0);
-      clearTimeout(t1);
-    };
-  }, [currentPage, collectScrollTargets]);
-
-  React.useLayoutEffect(() => {
-    if (!restorePendingRef.current) return;
-    requestAnimationFrame(() => {
-      try {
-        if (scrollRef.current)
-          scrollRef.current.scrollTop = lastScrollTopRef.current;
-        else window.scrollTo({ top: lastScrollTopRef.current });
-      } catch {}
-    });
-    restorePendingRef.current = false;
-  }, [worlds]);
 
   return (
     <PageContainer ref={scrollRef}>
@@ -565,12 +410,12 @@ export default function WorldsListPage() {
           <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
             <Input
               placeholder={t("common.search_placeholder") as string}
-              value={search}
-              onValueChange={setSearch}
+              value={sort.query}
+              onValueChange={sort.setQuery}
               startContent={<FaFilter className="text-default-400" />}
               endContent={
-                search && (
-                  <button onClick={() => setSearch("")}>
+                sort.query && (
+                  <button onClick={() => sort.setQuery("")}>
                     <FaTimes className="text-default-400 hover:text-default-600" />
                   </button>
                 )
@@ -586,23 +431,21 @@ export default function WorldsListPage() {
                 <Button
                   isIconOnly
                   radius="full"
-                  variant={isSelectMode ? "solid" : "flat"}
-                  color={isSelectMode ? "primary" : "default"}
-                  onPress={() => {
-                    setIsSelectMode(!isSelectMode);
-                    if (isSelectMode) setSelected({});
-                  }}
+                  variant={selection.isSelectMode ? "solid" : "flat"}
+                  color={selection.isSelectMode ? "primary" : "default"}
+                  onPress={selection.toggleSelectMode}
                 >
                   <FaCheckSquare />
                 </Button>
               </Tooltip>
 
-              {isSelectMode && (
+              {selection.isSelectMode && (
                 <Checkbox
                   isSelected={
-                    filtered.length > 0 && selectedCount === filtered.length
+                    sort.filtered.length > 0 &&
+                    selection.selectedCount === sort.filtered.length
                   }
-                  onValueChange={selectAll}
+                  onValueChange={selection.selectAll}
                   radius="full"
                   size="lg"
                   classNames={{ wrapper: "after:bg-primary" }}
@@ -621,14 +464,14 @@ export default function WorldsListPage() {
                       "min-w-[120px]",
                     )}
                     startContent={
-                      sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
+                      sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
                     }
                   >
-                    {sortKey === "name"
+                    {sort.sortKey === "name"
                       ? (t("filemanager.sort.name") as string)
                       : (t("contentpage.sort_time") as string)}
                     {" / "}
-                    {sortAsc
+                    {sort.sortAsc
                       ? t("contentpage.sort_asc")
                       : t("contentpage.sort_desc")}
                   </Button>
@@ -636,16 +479,16 @@ export default function WorldsListPage() {
                 <DropdownMenu
                   selectionMode="single"
                   selectedKeys={
-                    new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])
+                    new Set([
+                      `${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`,
+                    ])
                   }
                   onSelectionChange={(keys) => {
                     const val = Array.from(keys)[0] as string;
                     const [k, order] = val.split("-");
                     const nextKey = (k as "name" | "time") || "name";
                     const nextAsc = order === "asc";
-                    setSortKey(nextKey);
-                    setSortAsc(nextAsc);
-                    persistSort(nextKey, nextAsc);
+                    sort.setSort(nextKey, nextAsc);
                   }}
                 >
                   <DropdownItem
@@ -676,7 +519,7 @@ export default function WorldsListPage() {
               </Dropdown>
 
               <AnimatePresence>
-                {selectedCount > 0 && (
+                {selection.selectedCount > 0 && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -690,7 +533,7 @@ export default function WorldsListPage() {
                       onPress={delManyCfmOnOpen}
                     >
                       {t("common.delete_selected", {
-                        count: selectedCount,
+                        count: selection.selectedCount,
                       })}
                     </Button>
                   </motion.div>
@@ -726,15 +569,19 @@ export default function WorldsListPage() {
             {t("common.loading")}
           </span>
         </div>
-      ) : filtered.length === 0 ? (
+      ) : sort.filtered.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-default-400">
           <FaBox className="text-6xl mb-4 opacity-20" />
-          <p>{search ? t("common.no_results") : t("contentpage.no_items")}</p>
+          <p>
+            {sort.query
+              ? t("common.no_results")
+              : t("contentpage.no_items")}
+          </p>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           <div className="flex flex-col gap-3">
-            {paginatedItems.map((w, idx) => (
+            {sort.paginatedItems.map((w, idx) => (
               <motion.div
                 key={`${w.Path}-${idx}`}
                 initial={{ opacity: 0 }}
@@ -745,12 +592,12 @@ export default function WorldsListPage() {
                   className={cn(
                     COMPONENT_STYLES.listItem,
                     "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
-                    isSelectMode && selected[w.Path]
+                    selection.isSelectMode && selection.selected[w.Path]
                       ? "ring-2 ring-primary bg-primary/5"
                       : "",
                   )}
                   onClick={() => {
-                    if (isSelectMode) toggleSelect(w.Path);
+                    if (selection.isSelectMode) selection.toggleSelect(w.Path);
                   }}
                 >
                   <div className="relative shrink-0">
@@ -766,11 +613,13 @@ export default function WorldsListPage() {
                         fallbackSrc={DefaultWorldPreview}
                       />
                     </div>
-                    {isSelectMode && (
+                    {selection.isSelectMode && (
                       <div className="absolute -top-2 -left-2 z-20">
                         <Checkbox
-                          isSelected={!!selected[w.Path]}
-                          onValueChange={() => toggleSelect(w.Path)}
+                          isSelected={!!selection.selected[w.Path]}
+                          onValueChange={() =>
+                            selection.toggleSelect(w.Path)
+                          }
                           classNames={{
                             wrapper:
                               "bg-white dark:bg-zinc-900 shadow-lg scale-110",
@@ -880,12 +729,12 @@ export default function WorldsListPage() {
             ))}
           </div>
 
-          {totalPages > 1 && (
+          {sort.totalPages > 1 && (
             <div className="flex justify-center pb-4">
               <Pagination
-                total={totalPages}
-                page={currentPage}
-                onChange={setCurrentPage}
+                total={sort.totalPages}
+                page={sort.currentPage}
+                onChange={sort.setCurrentPage}
                 showControls
                 size="sm"
               />
@@ -910,7 +759,7 @@ export default function WorldsListPage() {
         onOpenChange={delManyCfmOnOpenChange}
         title={t("common.confirm_delete")}
         description={t("contentpage.delete_selected_confirm", {
-          count: selectedCount,
+          count: selection.selectedCount,
         })}
         isPending={deletingMany}
         onConfirm={handleBatchDelete}

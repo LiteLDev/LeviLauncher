@@ -52,6 +52,14 @@ import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
+import { useScrollManager } from "@/hooks/useScrollManager";
+import { useSelectionMode } from "@/hooks/useSelectionMode";
+import { useContentSort } from "@/hooks/useContentSort";
+import { formatBytes, formatDate } from "@/utils/formatting";
+
+const getNameFn = (p: any) =>
+  String(p.name || p.path?.split("\\").pop() || "");
+const getTimeFn = (p: any) => Number(p.modTime || 0);
 
 export default function ResourcePacksPage() {
   const { t } = useTranslation();
@@ -88,29 +96,6 @@ export default function ResourcePacksPage() {
     onOpen: delCfmOnOpen,
     onOpenChange: delCfmOnOpenChange,
   } = useDisclosure();
-  const [query, setQuery] = React.useState<string>("");
-  const [sortKey, setSortKey] = React.useState<"name" | "time">(() => {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem("content.resource.sort") || "{}",
-      );
-      const k = saved?.sortKey;
-      if (k === "name" || k === "time") return k;
-    } catch {}
-    return "name";
-  });
-  const [sortAsc, setSortAsc] = React.useState<boolean>(() => {
-    try {
-      const saved = JSON.parse(
-        localStorage.getItem("content.resource.sort") || "{}",
-      );
-      const a = saved?.sortAsc;
-      if (typeof a === "boolean") return a;
-    } catch {}
-    return true;
-  });
-  const [selected, setSelected] = React.useState<Record<string, boolean>>({});
-  const [isSelectMode, setIsSelectMode] = React.useState<boolean>(false);
   const {
     isOpen: delManyCfmOpen,
     onOpen: delManyCfmOnOpen,
@@ -118,98 +103,11 @@ export default function ResourcePacksPage() {
   } = useDisclosure();
   const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
-  const [currentPage, setCurrentPage] = React.useState(1);
-  const pageSize = 20;
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
-  const lastScrollTopRef = React.useRef<number>(0);
-  const restorePendingRef = React.useRef<boolean>(false);
-  const collectScrollTargets = React.useCallback(() => {
-    const seen = new Set<unknown>();
-    const targets: Array<Window | HTMLElement> = [];
-
-    const add = (target: Window | HTMLElement | null | undefined) => {
-      if (!target) return;
-      if (seen.has(target)) return;
-      seen.add(target);
-      targets.push(target);
-    };
-
-    add(window);
-    add((document.scrollingElement as HTMLElement) || document.documentElement);
-    add(document.body);
-
-    const walk = (seed: HTMLElement | null) => {
-      let el: HTMLElement | null = seed;
-      while (el) {
-        add(el);
-        el = el.parentElement;
-      }
-    };
-
-    walk(scrollRef.current);
-
-    return targets;
-  }, []);
-
-  const filtered = React.useMemo(() => {
-    const q = query.trim().toLowerCase();
-    const f = packs.filter((p) => {
-      const nm = String(
-        p.name || p.path?.split("\\").pop() || "",
-      ).toLowerCase();
-      return q ? nm.includes(q) : true;
-    });
-    return f.sort((a: any, b: any) => {
-      if (sortKey === "name") {
-        const an = String(
-          a.name || a.path?.split("\\").pop() || "",
-        ).toLowerCase();
-        const bn = String(
-          b.name || b.path?.split("\\").pop() || "",
-        ).toLowerCase();
-        const res = an.localeCompare(bn);
-        return sortAsc ? res : -res;
-      } else {
-        const at = Number(a.modTime || 0);
-        const bt = Number(b.modTime || 0);
-        const res = at - bt;
-        return sortAsc ? res : -res;
-      }
-    });
-  }, [packs, query, sortKey, sortAsc]);
-
-  React.useEffect(() => {
-    setCurrentPage(1);
-  }, [query, sortKey, sortAsc]);
-
-  const paginatedItems = React.useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, currentPage]);
-
-  const totalPages = Math.ceil(filtered.length / pageSize);
-
-  const selectedCount = Object.keys(selected).filter((k) => selected[k]).length;
-
-  const toggleSelect = (path: string) => {
-    setSelected((prev) => ({
-      ...prev,
-      [path]: !prev[path],
-    }));
-  };
-
-  const selectAll = (val: boolean) => {
-    if (val) {
-      const newSel: Record<string, boolean> = {};
-      filtered.forEach((p) => {
-        newSel[p.path] = true;
-      });
-      setSelected(newSel);
-    } else {
-      setSelected({});
-    }
-  };
+  const sort = useContentSort("content.resource.sort", packs, getNameFn, getTimeFn);
+  const { lastScrollTopRef, restorePendingRef } = useScrollManager(scrollRef, [packs], [sort.currentPage]);
+  const selection = useSelectionMode(sort.filtered);
 
   const refreshAll = React.useCallback(
     async (silent?: boolean) => {
@@ -351,78 +249,6 @@ export default function ResourcePacksPage() {
   React.useEffect(() => {
     refreshAll();
   }, []);
-  React.useEffect(() => {
-    try {
-      localStorage.setItem(
-        "content.resource.sort",
-        JSON.stringify({ sortKey, sortAsc }),
-      );
-    } catch {}
-  }, [sortKey, sortAsc]);
-  React.useEffect(() => {
-    const resetScroll = () => {
-      try {
-        const active = document.activeElement as HTMLElement | null;
-        if (active && scrollRef.current && scrollRef.current.contains(active)) {
-          active.blur();
-        }
-      } catch {}
-
-      for (const target of collectScrollTargets()) {
-        if (target === window) {
-          window.scrollTo({ top: 0, left: 0, behavior: "auto" });
-          continue;
-        }
-        if (target instanceof HTMLElement) {
-          target.scrollTop = 0;
-          target.scrollLeft = 0;
-        }
-      }
-    };
-
-    resetScroll();
-    const raf = requestAnimationFrame(resetScroll);
-    const t0 = window.setTimeout(resetScroll, 0);
-    const t1 = window.setTimeout(resetScroll, 120);
-    return () => {
-      cancelAnimationFrame(raf);
-      clearTimeout(t0);
-      clearTimeout(t1);
-    };
-  }, [currentPage, collectScrollTargets]);
-
-  React.useLayoutEffect(() => {
-    if (!restorePendingRef.current) return;
-    requestAnimationFrame(() => {
-      try {
-        if (scrollRef.current)
-          scrollRef.current.scrollTop = lastScrollTopRef.current;
-        else window.scrollTo({ top: lastScrollTopRef.current });
-      } catch {}
-    });
-    restorePendingRef.current = false;
-  }, [packs]);
-
-  const formatBytes = (n?: number) => {
-    const v = typeof n === "number" ? n : 0;
-    if (v < 1024) return `${v} B`;
-    const k = 1024;
-    const sizes = ["KB", "MB", "GB", "TB"];
-    let i = -1;
-    let val = v;
-    do {
-      val /= k;
-      i++;
-    } while (val >= k && i < sizes.length - 1);
-    return `${val.toFixed(val >= 100 ? 0 : val >= 10 ? 1 : 2)} ${sizes[i]}`;
-  };
-
-  const formatDate = (ts?: number) => {
-    const v = typeof ts === "number" ? ts : 0;
-    if (!v) return "";
-    const d = new Date(v * 1000);
-    return d.toLocaleString();
-  };
 
   return (
     <PageContainer ref={scrollRef}>
@@ -462,12 +288,12 @@ export default function ResourcePacksPage() {
           <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
             <Input
               placeholder={t("common.search_placeholder")}
-              value={query}
-              onValueChange={setQuery}
+              value={sort.query}
+              onValueChange={sort.setQuery}
               startContent={<FaFilter className="text-default-400" />}
               endContent={
-                query && (
-                  <button onClick={() => setQuery("")}>
+                sort.query && (
+                  <button onClick={() => sort.setQuery("")}>
                     <FaTimes className="text-default-400 hover:text-default-600" />
                   </button>
                 )
@@ -483,23 +309,20 @@ export default function ResourcePacksPage() {
                 <Button
                   isIconOnly
                   radius="full"
-                  variant={isSelectMode ? "solid" : "flat"}
-                  color={isSelectMode ? "primary" : "default"}
-                  onPress={() => {
-                    setIsSelectMode(!isSelectMode);
-                    if (isSelectMode) setSelected({});
-                  }}
+                  variant={selection.isSelectMode ? "solid" : "flat"}
+                  color={selection.isSelectMode ? "primary" : "default"}
+                  onPress={selection.toggleSelectMode}
                 >
                   <FaCheckSquare />
                 </Button>
               </Tooltip>
 
-              {isSelectMode && (
+              {selection.isSelectMode && (
                 <Checkbox
                   isSelected={
-                    filtered.length > 0 && selectedCount === filtered.length
+                    sort.filtered.length > 0 && selection.selectedCount === sort.filtered.length
                   }
-                  onValueChange={selectAll}
+                  onValueChange={selection.selectAll}
                   radius="full"
                   size="lg"
                   classNames={{ wrapper: "after:bg-primary" }}
@@ -516,18 +339,18 @@ export default function ResourcePacksPage() {
                     variant="flat"
                     radius="full"
                     startContent={
-                      sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
+                      sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
                     }
                     className={cn(
                       COMPONENT_STYLES.dropdownTriggerButton,
                       "min-w-[120px]",
                     )}
                   >
-                    {sortKey === "name"
+                    {sort.sortKey === "name"
                       ? (t("filemanager.sort.name") as string)
                       : (t("contentpage.sort_time") as string)}
                     {" / "}
-                    {sortAsc
+                    {sort.sortAsc
                       ? t("contentpage.sort_asc")
                       : t("contentpage.sort_desc")}
                   </Button>
@@ -535,13 +358,13 @@ export default function ResourcePacksPage() {
                 <DropdownMenu
                   selectionMode="single"
                   selectedKeys={
-                    new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])
+                    new Set([`${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`])
                   }
                   onSelectionChange={(keys) => {
                     const val = Array.from(keys)[0] as string;
                     const [k, order] = val.split("-");
-                    setSortKey(k as "name" | "time");
-                    setSortAsc(order === "asc");
+                    sort.setSortKey(k as "name" | "time");
+                    sort.setSortAsc(order === "asc");
                   }}
                 >
                   <DropdownItem
@@ -572,7 +395,7 @@ export default function ResourcePacksPage() {
               </Dropdown>
 
               <AnimatePresence>
-                {selectedCount > 0 && (
+                {selection.selectedCount > 0 && (
                   <motion.div
                     initial={{ opacity: 0, scale: 0.9 }}
                     animate={{ opacity: 1, scale: 1 }}
@@ -586,7 +409,7 @@ export default function ResourcePacksPage() {
                       onPress={delManyCfmOnOpen}
                     >
                       {t("common.delete_selected", {
-                        count: selectedCount,
+                        count: selection.selectedCount,
                       })}
                     </Button>
                   </motion.div>
@@ -623,9 +446,9 @@ export default function ResourcePacksPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          {filtered.length ? (
+          {sort.filtered.length ? (
             <div className="flex flex-col gap-3">
-              {paginatedItems.map((p, idx) => (
+              {sort.paginatedItems.map((p: any, idx: number) => (
                 <motion.div
                   key={`${p.path}-${idx}`}
                   initial={{ opacity: 0 }}
@@ -636,12 +459,12 @@ export default function ResourcePacksPage() {
                     className={cn(
                       COMPONENT_STYLES.listItem,
                       "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
-                      isSelectMode && selected[p.path]
+                      selection.isSelectMode && selection.selected[p.path]
                         ? "ring-2 ring-primary bg-primary/5"
                         : "",
                     )}
                     onClick={() => {
-                      if (isSelectMode) toggleSelect(p.path);
+                      if (selection.isSelectMode) selection.toggleSelect(p.path);
                     }}
                   >
                     <div className="relative shrink-0">
@@ -662,11 +485,11 @@ export default function ResourcePacksPage() {
                           </div>
                         )}
                       </div>
-                      {isSelectMode && (
+                      {selection.isSelectMode && (
                         <div className="absolute -top-2 -left-2 z-20">
                           <Checkbox
-                            isSelected={!!selected[p.path]}
-                            onValueChange={() => toggleSelect(p.path)}
+                            isSelected={!!selection.selected[p.path]}
+                            onValueChange={() => selection.toggleSelect(p.path)}
                             classNames={{
                               wrapper:
                                 "bg-white dark:bg-zinc-900 shadow-lg scale-110",
@@ -755,20 +578,20 @@ export default function ResourcePacksPage() {
             <div className="flex flex-col items-center justify-center py-20 text-default-400 dark:text-zinc-500">
               <FaBox className="text-6xl mb-4 opacity-20" />
               <p>
-                {query
+                {sort.query
                   ? t("common.no_results")
                   : t("contentpage.no_resource_packs")}
               </p>
             </div>
           )}
 
-          {totalPages > 1 && (
+          {sort.totalPages > 1 && (
             <div className="relative h-12">
               <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-full flex justify-center">
                 <Pagination
-                  total={totalPages}
-                  page={currentPage}
-                  onChange={setCurrentPage}
+                  total={sort.totalPages}
+                  page={sort.currentPage}
+                  onChange={sort.setCurrentPage}
                   showControls
                   size="sm"
                 />
@@ -821,12 +644,12 @@ export default function ResourcePacksPage() {
         onOpenChange={delManyCfmOnOpenChange}
         title={t("common.confirm_delete")}
         description={t("contentpage.delete_selected_confirm", {
-          count: Object.values(selected).filter(Boolean).length,
+          count: Object.values(selection.selected).filter(Boolean).length,
         })}
         warning={t("contentpage.delete_warning")}
         isPending={deletingMany}
         onConfirm={async () => {
-          const targets = Object.keys(selected).filter((k) => selected[k]);
+          const targets = selection.getSelectedKeys();
           if (targets.length === 0) return;
 
           setDeletingMany(true);
@@ -846,7 +669,7 @@ export default function ResourcePacksPage() {
               }),
               color: "success",
             });
-            setSelected({});
+            selection.clearSelection();
             refreshAll();
           } finally {
             setDeletingMany(false);

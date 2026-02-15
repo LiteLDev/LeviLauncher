@@ -318,7 +318,7 @@ func NewMinecraft() *Minecraft {
 		for i, b := range curseForgeApiKey {
 			deobfuscated[i] = b ^ 0xAF
 		}
-		
+
 		decoded, err := base64.StdEncoding.DecodeString(string(deobfuscated))
 		if err == nil {
 			apiKey = string(decoded)

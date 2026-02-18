@@ -42,7 +42,14 @@ const DownloadsContext = createContext<DownloadsContextType | null>(null);
 export const useDownloads = () => {
   const context = useContext(DownloadsContext);
   if (!context) {
-    throw new Error("useDownloads must be used within a DownloadsProvider");
+    return {
+      downloads: [],
+      startDownload: () => Promise.resolve(false),
+      cancelDownload: () => {},
+      removeDownload: () => {},
+      clearError: () => {},
+      isDownloading: false,
+    };
   }
   return context;
 };

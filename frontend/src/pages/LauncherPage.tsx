@@ -432,7 +432,7 @@ export const LauncherPage = (args: any) => {
           </Card>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-6 items-stretch">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-4 items-stretch">
           {/* Mod Card */}
           <motion.div
             initial={{ opacity: 0, y: 20 }}
@@ -457,6 +457,7 @@ export const LauncherPage = (args: any) => {
               className={cn(
                 "h-full transition-all group",
                 LAYOUT.GLASS_CARD.BASE,
+                "rounded-3xl",
               )}
             >
               <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">

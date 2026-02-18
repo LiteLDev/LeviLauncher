@@ -143,17 +143,41 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
         typeof raw === "string"
           ? String(raw)
           : String(raw?.Dest || raw?.Dest || "");
+      const base = d ? d.split(/[/\\]/).pop() || "" : "";
+
       const inferShort = () => {
+        const match = base.match(
+          /^Minecraft-(?:Preview|Release)-(.+)\.msixvc$/i,
+        );
+        if (match) {
+          return match[1];
+        }
+
         if (downloadingShortRef.current)
           return String(downloadingShortRef.current);
-        const base = d ? d.split(/[/\\]/).pop() || "" : "";
+
         return String(base)
-          .replace(/^\s*(preview|release)\s+/i, "")
+          .replace(/^Minecraft-/i, "")
+          .replace(/^\s*(preview|release)\s*[-_]?/i, "")
           .replace(/\.msixvc$/i, "")
           .trim();
       };
+
+      const inferType = () => {
+        const match = base.match(/^Minecraft-(Preview|Release)-/i);
+        if (match) {
+          return match[1].toLowerCase();
+        }
+
+        if (downloadingTypeRef.current)
+          return String(downloadingTypeRef.current).toLowerCase();
+
+        if (/preview/i.test(base)) return "preview";
+        return "release";
+      };
+
       const short = inferShort();
-      const type = (downloadingTypeRef.current || "release").toLowerCase();
+      const type = inferType();
       if (!short) return;
       setMap((prev) => {
         const m = new Map(prev);
@@ -166,7 +190,23 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
         } as any);
         return m;
       });
-      refreshOne(short, type);
+
+      // Instead of calling refreshOne directly which might return stale isDownloaded state,
+      // we manually fetch and enforce isDownloaded=true because we just finished downloading.
+      (async () => {
+        try {
+          const s = await GetVersionStatus(short, type.toLowerCase());
+          setMap((prev) => {
+            const m = new Map(prev);
+            // Force isDownloaded to true since we received the completion event
+            m.set(short, { ...s, isDownloaded: true });
+            return m;
+          });
+        } catch (err) {
+          console.error("refreshOne in msixvc_download_done failed:", err);
+        }
+      })();
+
       downloadingShortRef.current = null;
       downloadingTypeRef.current = null;
     });

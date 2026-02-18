@@ -580,7 +580,7 @@ export default function InstallPage() {
 
   return (
     <PageContainer>
-      <div className="flex flex-col gap-6 w-full">
+      <div className="flex flex-col gap-4 w-full">
         {/* Header Card */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -871,7 +871,7 @@ export default function InstallPage() {
           ) : (
             <motion.div
               key="input"
-              className="flex flex-col gap-6"
+              className="flex flex-col gap-4"
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}

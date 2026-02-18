@@ -542,7 +542,9 @@
     "enable": "有効",
     "open_folder": "フォルダを開く",
     "remove": "削除",
-    "update": "更新"
+    "update": "更新",
+    "tip": "ヒント",
+    "feature_unavailable": "この機能は一時的に利用できません"
   },
   "useravatar": {
     "no_login_retry": "Xbox ログインが検出されませんでした（クリックして再試行）",

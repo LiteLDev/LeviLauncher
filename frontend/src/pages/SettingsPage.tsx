@@ -201,7 +201,7 @@ export const SettingsPage: React.FC = () => {
 
   return (
     <PageContainer className="relative" animate={false}>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         {/* Header Card */}
         <motion.div
           initial={{ opacity: 0, y: -20 }}

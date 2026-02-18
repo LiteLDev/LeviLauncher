@@ -20,10 +20,7 @@ import {
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { FaWindows } from "react-icons/fa";
-import {
-  FiAlertTriangle,
-  FiCheckCircle,
-} from "react-icons/fi";
+import { FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { PageHeader } from "@/components/PageHeader";
 import LeviLaminaIcon from "@/assets/images/LeviLamina.png";
@@ -35,7 +32,7 @@ export default function VersionSettingsPage() {
 
   return (
     <PageContainer className="relative" animate={false}>
-      <div className="flex flex-col gap-6">
+      <div className="flex flex-col gap-4">
         <motion.div
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
@@ -184,17 +181,21 @@ export default function VersionSettingsPage() {
                               const saver = minecraft?.SaveVersionLogoFromPath;
                               const getter = minecraft?.GetVersionLogoDataUrl;
                               if (typeof saver === "function") {
-                                saver(vs.targetName, path).then((err: string) => {
-                                  if (err) {
-                                    vs.setError(String(err || "ERR_ICON_DECODE"));
-                                    return;
-                                  }
-                                  if (typeof getter === "function") {
-                                    getter(vs.targetName).then((u: string) =>
-                                      vs.setLogoDataUrl(String(u || "")),
-                                    );
-                                  }
-                                });
+                                saver(vs.targetName, path).then(
+                                  (err: string) => {
+                                    if (err) {
+                                      vs.setError(
+                                        String(err || "ERR_ICON_DECODE"),
+                                      );
+                                      return;
+                                    }
+                                    if (typeof getter === "function") {
+                                      getter(vs.targetName).then((u: string) =>
+                                        vs.setLogoDataUrl(String(u || "")),
+                                      );
+                                    }
+                                  },
+                                );
                               }
                             }
                           } catch (e) {
@@ -389,8 +390,8 @@ export default function VersionSettingsPage() {
                             onPress={() => {
                               if (vs.isLLInstalled) {
                                 addToast({
-                                  title: "\u63D0\u793A",
-                                  description: "\u8BE5\u529F\u80FD\u6682\u65F6\u4E0D\u53EF\u7528",
+                                  title: t("common.tip"),
+                                  description: t("common.feature_unavailable"),
                                   color: "warning",
                                 });
                                 return;

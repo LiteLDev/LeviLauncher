@@ -56,7 +56,7 @@ export default function AboutPage() {
         </Card>
       </motion.div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Authors Section */}
         <motion.div
           custom={0}
@@ -203,7 +203,7 @@ export default function AboutPage() {
         >
           <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
             <CardBody className="p-6">
-              <div className="flex flex-col md:flex-row md:items-start justify-between gap-6">
+              <div className="flex flex-col md:flex-row md:items-start justify-between gap-4">
                 <div className="flex-1">
                   <SectionHeader
                     className="mb-4"

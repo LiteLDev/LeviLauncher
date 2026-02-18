@@ -552,7 +552,9 @@
     "enable": "Enable",
     "open_folder": "Open Folder",
     "remove": "Remove",
-    "update": "Update"
+    "update": "Update",
+    "tip": "Tip",
+    "feature_unavailable": "This feature is temporarily unavailable"
   },
   "useravatar": {
     "no_login_retry": "Xbox login not detected (click to retry)",

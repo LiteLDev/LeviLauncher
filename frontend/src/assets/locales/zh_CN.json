@@ -552,7 +552,9 @@
     "enable": "启用",
     "open_folder": "打开文件夹",
     "remove": "移除",
-    "update": "更新"
+    "update": "更新",
+    "tip": "提示",
+    "feature_unavailable": "该功能暂时不可用"
   },
   "useravatar": {
     "no_login_retry": "未检测到 Xbox 登录（点击重试）",

@@ -1,7 +1,7 @@
 export const LAYOUT = {
   PAGE: {
     CONTAINER:
-      "w-full max-w-full mx-auto px-4 pb-4 pt-[var(--content-pt)] h-full flex flex-col gap-6 overflow-y-auto overflow-x-hidden",
+      "w-full max-w-full mx-auto px-4 pb-4 pt-[var(--content-pt)] h-full flex flex-col gap-4 overflow-y-auto overflow-x-hidden",
     ANIMATION: {
       initial: { opacity: 0, y: 8 },
       animate: { opacity: 1, y: 0 },

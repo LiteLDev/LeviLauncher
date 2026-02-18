@@ -54,7 +54,13 @@ export const ModCard = (args: {
   }, [args.currentVersion, args.localVersionMap]);
 
   return (
-    <Card className={cn("h-full transition-all group", LAYOUT.GLASS_CARD.BASE)}>
+    <Card
+      className={cn(
+        "h-full transition-all group",
+        LAYOUT.GLASS_CARD.BASE,
+        "rounded-3xl",
+      )}
+    >
       <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
@@ -101,7 +107,7 @@ export const ModCard = (args: {
           )}
         </ScrollShadow>
 
-        <div className="absolute bottom-0 left-0 right-0 p-3 bg-linear-to-t from-white/90 via-white/50 to-transparent dark:from-zinc-900/90 dark:via-zinc-900/50 pt-6 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
+        <div className="absolute bottom-0 left-0 right-0 p-3 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
           <Button
             size="sm"
             color="primary"

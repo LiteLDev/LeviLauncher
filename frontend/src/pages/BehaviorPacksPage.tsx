@@ -56,8 +56,7 @@ import { useSelectionMode } from "@/hooks/useSelectionMode";
 import { useContentSort } from "@/hooks/useContentSort";
 import { formatBytes } from "@/utils/formatting";
 
-const getNameFn = (p: any) =>
-  String(p.name || p.path?.split("\\").pop() || "");
+const getNameFn = (p: any) => String(p.name || p.path?.split("\\").pop() || "");
 const getTimeFn = (p: any) => Number(p.modTime || 0);
 
 export default function BehaviorPacksPage() {
@@ -97,8 +96,17 @@ export default function BehaviorPacksPage() {
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
-  const sort = useContentSort("content.behavior.sort", packs, getNameFn, getTimeFn);
-  const { lastScrollTopRef, restorePendingRef } = useScrollManager(scrollRef, [packs], [sort.currentPage]);
+  const sort = useContentSort(
+    "content.behavior.sort",
+    packs,
+    getNameFn,
+    getTimeFn,
+  );
+  const { lastScrollTopRef, restorePendingRef } = useScrollManager(
+    scrollRef,
+    [packs],
+    [sort.currentPage],
+  );
   const selection = useSelectionMode(sort.filtered);
 
   const refreshAll = React.useCallback(
@@ -357,7 +365,8 @@ export default function BehaviorPacksPage() {
               {selection.isSelectMode && (
                 <Checkbox
                   isSelected={
-                    sort.filtered.length > 0 && selection.selectedCount === sort.filtered.length
+                    sort.filtered.length > 0 &&
+                    selection.selectedCount === sort.filtered.length
                   }
                   onValueChange={selection.selectAll}
                   radius="full"
@@ -393,7 +402,9 @@ export default function BehaviorPacksPage() {
                 <DropdownMenu
                   selectionMode="single"
                   selectedKeys={
-                    new Set([`${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`])
+                    new Set([
+                      `${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`,
+                    ])
                   }
                   onSelectionChange={(keys) => {
                     const val = Array.from(keys)[0] as string;
@@ -500,7 +511,8 @@ export default function BehaviorPacksPage() {
                         : "",
                     )}
                     onClick={() => {
-                      if (selection.isSelectMode) selection.toggleSelect(p.path);
+                      if (selection.isSelectMode)
+                        selection.toggleSelect(p.path);
                     }}
                   >
                     <div className="relative shrink-0">

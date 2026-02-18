@@ -23,6 +23,7 @@ func FetchHistoricalVersions(preferCN bool) map[string]interface{} {
 	const githubURL = "https://raw.githubusercontent.com/LiteLDev/minecraft-windows-gdk-version-db/refs/heads/main/historical_versions.json"
 	const proxyURL = "https://github.bibk.top/LiteLDev/minecraft-windows-gdk-version-db/raw/refs/heads/main/historical_versions.json"
 	const gitcodeURL = "https://raw.gitcode.com/dreamguxiang/minecraft-windows-gdk-version-db/raw/main/historical_versions.json"
+	const maxAttemptsPerURL = 2
 
 	urls := []string{githubURL, proxyURL, gitcodeURL}
 	if preferCN {
@@ -32,37 +33,40 @@ func FetchHistoricalVersions(preferCN bool) map[string]interface{} {
 	client := &http.Client{Timeout: 5 * time.Second}
 	var lastErr error
 	for _, u := range urls {
-		req, err := http.NewRequest(http.MethodGet, u, nil)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		req.Header.Set("Accept", "application/json")
-		req.Header.Set("Cache-Control", "no-cache")
-		req.Header.Set("User-Agent", uarand.GetRandom())
+		for attempt := 1; attempt <= maxAttemptsPerURL; attempt++ {
+			req, err := http.NewRequest(http.MethodGet, u, nil)
+			if err != nil {
+				lastErr = fmt.Errorf("build request for %s failed: %w", u, err)
+				break
+			}
+			req.Header.Set("Accept", "application/json")
+			req.Header.Set("Cache-Control", "no-cache")
+			req.Header.Set("User-Agent", uarand.GetRandom())
 
-		resp, err := client.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
+			resp, err := client.Do(req)
+			if err != nil {
+				lastErr = fmt.Errorf("request %s attempt %d failed: %w", u, attempt, err)
+				continue
+			}
 
-		var obj map[string]interface{}
-		func() {
-			defer resp.Body.Close()
+			var obj map[string]interface{}
 			if resp.StatusCode != http.StatusOK {
-				lastErr = fmt.Errorf("status %d", resp.StatusCode)
-				return
+				lastErr = fmt.Errorf("request %s attempt %d returned status %d", u, attempt, resp.StatusCode)
+				_ = resp.Body.Close()
+				continue
 			}
 			if derr := json.NewDecoder(resp.Body).Decode(&obj); derr != nil {
-				lastErr = derr
-				return
+				lastErr = fmt.Errorf("decode %s attempt %d failed: %w", u, attempt, derr)
+				_ = resp.Body.Close()
+				continue
 			}
-		}()
+			_ = resp.Body.Close()
 
-		if lastErr == nil && obj != nil {
-			obj["_source"] = u
-			return obj
+			if obj != nil {
+				obj["_source"] = u
+				return obj
+			}
+			lastErr = fmt.Errorf("request %s attempt %d returned empty payload", u, attempt)
 		}
 	}
 	if lastErr != nil {

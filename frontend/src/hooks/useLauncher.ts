@@ -11,6 +11,7 @@ import {
   GetContentRoots,
   IsGDKInstalled,
   ListDir,
+  CheckResourcePackMaterialCompatibility,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 
@@ -51,6 +52,8 @@ export const useLauncher = (args: any) => {
     resourcePacks: number;
     behaviorPacks: number;
   }>({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
+  const [incompatibleShaderCount, setIncompatibleShaderCount] =
+    React.useState<number>(0);
   const [giTotal, setGiTotal] = React.useState<number>(0);
   const [giDownloaded, setGiDownloaded] = React.useState<number>(0);
   const [vcTotal, setVcTotal] = React.useState<number>(0);
@@ -617,10 +620,30 @@ export const useLauncher = (args: any) => {
 
       let res = 0;
       let bp = 0;
+      let incompatibleCount = 0;
       try {
-        res = await countDir(safe.resourcePacks);
+        const resEntries = await ListDir(safe.resourcePacks);
+        const resDirs = (resEntries || []).filter((e: any) => e.isDir);
+        res = resDirs.length;
+
+        const promises = resDirs.map(async (dir: any) => {
+          try {
+            const compat = await CheckResourcePackMaterialCompatibility(
+              name,
+              dir.path,
+            );
+            if (compat.hasMaterialBin && !compat.compatible) {
+              return 1;
+            }
+          } catch {}
+          return 0;
+        });
+        const results = await Promise.all(promises);
+        incompatibleCount = results.reduce((a: number, b) => a + b, 0);
+
         bp = await countDir(safe.behaviorPacks);
       } catch {}
+      setIncompatibleShaderCount(incompatibleCount);
 
       if (safe.usersRoot) {
         try {
@@ -872,8 +895,7 @@ export const useLauncher = (args: any) => {
     if (pendingInstallCheck === "gi") gameInputMissingDisclosure.onOpen();
     else if (pendingInstallCheck === "gs")
       gamingServicesMissingDisclosure.onOpen();
-    else if (pendingInstallCheck === "vc")
-      vcRuntimeMissingDisclosure.onOpen();
+    else if (pendingInstallCheck === "vc") vcRuntimeMissingDisclosure.onOpen();
     installConfirmDisclosure.onClose();
   }, [
     pendingInstallCheck,
@@ -886,41 +908,35 @@ export const useLauncher = (args: any) => {
   const handleInstallConfirmCheck = React.useCallback(() => {
     try {
       if (pendingInstallCheck === "gi") {
-        minecraft
-          ?.IsGameInputInstalled?.()
-          .then((ok: boolean) => {
-            if (ok) {
-              setPendingInstallCheck(null);
-              installConfirmDisclosure.onClose();
-            } else {
-              installConfirmDisclosure.onClose();
-              gameInputMissingDisclosure.onOpen();
-            }
-          });
+        minecraft?.IsGameInputInstalled?.().then((ok: boolean) => {
+          if (ok) {
+            setPendingInstallCheck(null);
+            installConfirmDisclosure.onClose();
+          } else {
+            installConfirmDisclosure.onClose();
+            gameInputMissingDisclosure.onOpen();
+          }
+        });
       } else if (pendingInstallCheck === "gs") {
-        minecraft
-          ?.IsGamingServicesInstalled?.()
-          .then((ok: boolean) => {
-            if (ok) {
-              setPendingInstallCheck(null);
-              installConfirmDisclosure.onClose();
-            } else {
-              installConfirmDisclosure.onClose();
-              gamingServicesMissingDisclosure.onOpen();
-            }
-          });
+        minecraft?.IsGamingServicesInstalled?.().then((ok: boolean) => {
+          if (ok) {
+            setPendingInstallCheck(null);
+            installConfirmDisclosure.onClose();
+          } else {
+            installConfirmDisclosure.onClose();
+            gamingServicesMissingDisclosure.onOpen();
+          }
+        });
       } else if (pendingInstallCheck === "vc") {
-        (minecraft as any)
-          ?.IsVcRuntimeInstalled?.()
-          .then((ok: boolean) => {
-            if (ok) {
-              setPendingInstallCheck(null);
-              installConfirmDisclosure.onClose();
-            } else {
-              installConfirmDisclosure.onClose();
-              vcRuntimeMissingDisclosure.onOpen();
-            }
-          });
+        (minecraft as any)?.IsVcRuntimeInstalled?.().then((ok: boolean) => {
+          if (ok) {
+            setPendingInstallCheck(null);
+            installConfirmDisclosure.onClose();
+          } else {
+            installConfirmDisclosure.onClose();
+            vcRuntimeMissingDisclosure.onOpen();
+          }
+        });
       }
     } catch {}
   }, [
@@ -972,6 +988,7 @@ export const useLauncher = (args: any) => {
     localVersionMap,
     launchErrorCode,
     contentCounts,
+    incompatibleShaderCount,
     giTotal,
     giDownloaded,
     vcTotal,

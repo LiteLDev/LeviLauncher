@@ -606,7 +606,20 @@
     "deleted_count": "Удалено элементов: {{count}}",
     "delete_world_confirm": "Вы уверены, что хотите удалить мир {{name}}?",
     "basic_info": "Основная информация",
-    "level_name": "Название мира"
+    "level_name": "Название мира",
+    "shader_chip": "Шейдеры",
+    "only_show_updates": "Несовместимые шейдеры",
+    "update_material_bin": "Обновить .material.bin",
+    "update_material_bin_desc": "Требуется обновление для совместимости",
+    "update_material_bin_modal_title": "Обновить .material.bin",
+    "update_material_bin_modal_content": "Это действие обновит заголовок .material.bin в пакете шейдеров, чтобы Minecraft мог загрузить его корректно.",
+    "update_material_bin_risk_title": "Предупреждение о рисках:",
+    "update_material_bin_risk_content": "Обновленный пакет ресурсов может работать некорректно в старых версиях Minecraft. Рекомендуется сначала создать резервную копию ваших миров или экспортировать пакет ресурсов.",
+    "update_material_bin_success": "Обновление материалов завершено",
+    "update_material_bin_failed": "Ошибка обновления материалов",
+    "update_material_bin_stat_updated": "Обновлено: {{count}}",
+    "update_material_bin_stat_failed": "Ошибка: {{count}}",
+    "update_material_bin_stat_skipped": "Пропущено: {{count}}"
   },
   "versions": {
     "info": {

@@ -606,7 +606,20 @@
     "deleted_count": "{{count}} 個の項目を削除しました",
     "delete_world_confirm": "本当にワールド {{name}} を削除しますか？",
     "basic_info": "基本情報",
-    "level_name": "ワールド名"
+    "level_name": "ワールド名",
+    "shader_chip": "シェーダー",
+    "only_show_updates": "互換性のないシェーダー",
+    "update_material_bin": ".material.bin を更新",
+    "update_material_bin_desc": "現在のバージョンとの互換性のために更新が必要です",
+    "update_material_bin_modal_title": ".material.bin を更新",
+    "update_material_bin_modal_content": "この操作は、Minecraft が正しく読み込めるようにシェーダーパック内の .material.bin ヘッダーを更新します。",
+    "update_material_bin_risk_title": "リスク警告：",
+    "update_material_bin_risk_content": "更新されたリソースパックは、古いバージョンのMinecraftで正しく動作しない可能性があります。ワールドをバックアップするか、リソースパックをエクスポートすることをお勧めします。",
+    "update_material_bin_success": "マテリアル更新完了",
+    "update_material_bin_failed": "マテリアル更新失敗",
+    "update_material_bin_stat_updated": "更新済み: {{count}}",
+    "update_material_bin_stat_failed": "失敗: {{count}}",
+    "update_material_bin_stat_skipped": "スキップ: {{count}}"
   },
   "versions": {
     "info": {

@@ -29,6 +29,7 @@ import {
   FaCube,
   FaArrowRight,
   FaDownload,
+  FaExclamationTriangle,
 } from "react-icons/fa";
 import { ModCard } from "@/components/ModdedCard";
 import { ContentDownloadCard } from "@/components/ContentDownloadCard";
@@ -53,6 +54,7 @@ export const LauncherPage = (args: any) => {
     localVersionMap,
     launchErrorCode,
     contentCounts,
+    incompatibleShaderCount,
     giTotal,
     giDownloaded,
     vcTotal,
@@ -477,6 +479,26 @@ export const LauncherPage = (args: any) => {
                 </Button>
               </CardHeader>
               <CardBody className="p-3 gap-2 relative">
+                {incompatibleShaderCount > 0 && (
+                  <div
+                    className="group/hint flex items-center justify-between p-2 rounded-xl bg-warning-500/10 hover:bg-warning-500/20 text-warning-600 dark:text-warning-400 cursor-pointer transition-colors"
+                    onClick={() =>
+                      navigate("/content/resourcePacks", {
+                        state: { showIncompatible: true },
+                      })
+                    }
+                  >
+                    <div className="flex items-center gap-3">
+                      <FaExclamationTriangle size={16} />
+                      <span className="font-medium text-sm">
+                        {t("contentpage.only_show_updates")}
+                      </span>
+                    </div>
+                    <span className="font-bold text-sm">
+                      {incompatibleShaderCount}
+                    </span>
+                  </div>
+                )}
                 {[
                   {
                     label: worldsLabel,

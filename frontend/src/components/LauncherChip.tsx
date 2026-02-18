@@ -1,5 +1,6 @@
 import React from "react";
 import { Chip } from "@heroui/react";
+import { useTranslation } from "react-i18next";
 
 export function ModdedChip() {
   return (
@@ -11,6 +12,21 @@ export function ModdedChip() {
       }}
     >
       Modded
+    </Chip>
+  );
+}
+
+export function ShaderChip() {
+  const { t } = useTranslation();
+  return (
+    <Chip
+      variant="shadow"
+      classNames={{
+        base: "bg-linear-to-br from-teal-400 to-emerald-500 border-small border-white/50 shadow-emerald-500/30",
+        content: "drop-shadow shadow-black text-white",
+      }}
+    >
+      {t("contentpage.shader_chip")}
     </Chip>
   );
 }

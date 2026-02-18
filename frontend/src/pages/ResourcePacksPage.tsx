@@ -18,9 +18,17 @@ import {
   CardBody,
   addToast,
 } from "@heroui/react";
+import {
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+} from "@heroui/react";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, useLocation } from "react-router-dom";
 import {
   FaArrowLeft,
   FaSync,
@@ -35,6 +43,7 @@ import {
   FaClock,
   FaHdd,
   FaTag,
+  FaMagic,
 } from "react-icons/fa";
 import {
   GetContentRoots,
@@ -56,14 +65,15 @@ import { useScrollManager } from "@/hooks/useScrollManager";
 import { useSelectionMode } from "@/hooks/useSelectionMode";
 import { useContentSort } from "@/hooks/useContentSort";
 import { formatBytes, formatDate } from "@/utils/formatting";
+import { Call as WailsCall } from "@wailsio/runtime";
 
-const getNameFn = (p: any) =>
-  String(p.name || p.path?.split("\\").pop() || "");
+const getNameFn = (p: any) => String(p.name || p.path?.split("\\").pop() || "");
 const getTimeFn = (p: any) => Number(p.modTime || 0);
 
 export default function ResourcePacksPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const location = useLocation();
   const hasBackend = minecraft !== undefined;
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string>("");
@@ -101,12 +111,53 @@ export default function ResourcePacksPage() {
     onOpen: delManyCfmOnOpen,
     onOpenChange: delManyCfmOnOpenChange,
   } = useDisclosure();
+  const {
+    isOpen: updateCfmOpen,
+    onOpen: updateCfmOnOpen,
+    onOpenChange: updateCfmOnOpenChange,
+  } = useDisclosure();
   const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
+  const [packToUpdate, setPackToUpdate] = React.useState<any | null>(null);
+  const [updatingMaterialByPath, setUpdatingMaterialByPath] = React.useState<
+    Record<string, boolean>
+  >({});
+  const [onlyShowUpdates, setOnlyShowUpdates] = React.useState<boolean>(
+    location.state?.showIncompatible || false,
+  );
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
-  const sort = useContentSort("content.resource.sort", packs, getNameFn, getTimeFn);
-  const { lastScrollTopRef, restorePendingRef } = useScrollManager(scrollRef, [packs], [sort.currentPage]);
+
+  const hasIncompatibleShaders = React.useMemo(() => {
+    return packs.some(
+      (p) => p.materialCompat?.hasMaterialBin && p.materialCompat?.needsUpdate,
+    );
+  }, [packs]);
+
+  const displayedPacks = React.useMemo(() => {
+    if (!onlyShowUpdates) return packs;
+    return packs.filter(
+      (p) => p.materialCompat?.hasMaterialBin && p.materialCompat?.needsUpdate,
+    );
+  }, [packs, onlyShowUpdates]);
+
+  React.useEffect(() => {
+    if (!loading && !hasIncompatibleShaders && onlyShowUpdates) {
+      setOnlyShowUpdates(false);
+    }
+  }, [loading, hasIncompatibleShaders, onlyShowUpdates]);
+
+  const sort = useContentSort(
+    "content.resource.sort",
+    displayedPacks,
+    getNameFn,
+    getTimeFn,
+  );
+  const { lastScrollTopRef, restorePendingRef } = useScrollManager(
+    scrollRef,
+    [displayedPacks],
+    [sort.currentPage],
+  );
   const selection = useSelectionMode(sort.filtered);
 
   const refreshAll = React.useCallback(
@@ -181,6 +232,10 @@ export default function ResourcePacksPage() {
           setPacks(withTime);
           Promise.resolve()
             .then(async () => {
+              const compatMethodNames = [
+                "main.Minecraft.CheckResourcePackMaterialCompatibility",
+                "github.com/liteldev/LeviLauncher.Minecraft.CheckResourcePackMaterialCompatibility",
+              ];
               const readCache = () => {
                 try {
                   return JSON.parse(
@@ -234,6 +289,39 @@ export default function ResourcePacksPage() {
                 );
                 writeCache(cache);
               }
+
+              for (let i = 0; i < items.length; i += limit) {
+                const chunk = items.slice(i, i + limit);
+                await Promise.all(
+                  chunk.map(async (p: any) => {
+                    const key = p.path;
+                    let materialCompat: any = null;
+                    try {
+                      const backendFn = (minecraft as any)
+                        ?.CheckResourcePackMaterialCompatibility;
+                      if (typeof backendFn === "function") {
+                        materialCompat = await backendFn(name, key);
+                      } else {
+                        for (const methodName of compatMethodNames) {
+                          try {
+                            materialCompat = await WailsCall.ByName(
+                              methodName,
+                              name,
+                              key,
+                            );
+                            break;
+                          } catch {}
+                        }
+                      }
+                    } catch {}
+                    setPacks((prev) =>
+                      prev.map((it: any) =>
+                        it.path === key ? { ...it, materialCompat } : it,
+                      ),
+                    );
+                  }),
+                );
+              }
             })
             .catch(() => {});
         }
@@ -249,6 +337,72 @@ export default function ResourcePacksPage() {
   React.useEffect(() => {
     refreshAll();
   }, []);
+
+  const updateMaterialBinsForPack = React.useCallback(
+    async (packPath: string) => {
+      const p = String(packPath || "").trim();
+      if (!p || !currentVersionName) return;
+      if (updatingMaterialByPath[p]) return;
+      setUpdatingMaterialByPath((prev) => ({ ...prev, [p]: true }));
+      try {
+        let result: any = null;
+        const backendFn = (minecraft as any)?.UpdateResourcePackMaterialBins;
+        if (typeof backendFn === "function") {
+          result = await backendFn(currentVersionName, p);
+        } else {
+          const methodNames = [
+            "main.Minecraft.UpdateResourcePackMaterialBins",
+            "github.com/liteldev/LeviLauncher.Minecraft.UpdateResourcePackMaterialBins",
+          ];
+          for (const methodName of methodNames) {
+            try {
+              result = await WailsCall.ByName(
+                methodName,
+                currentVersionName,
+                p,
+              );
+              break;
+            } catch {}
+          }
+        }
+        if (!result) {
+          addToast({
+            title: t("contentpage.update_material_bin_failed") as string,
+            color: "danger",
+          });
+          return;
+        }
+        if (result.error) {
+          addToast({
+            title: t("contentpage.update_material_bin_failed") as string,
+            description: String(result.error),
+            color: "danger",
+          });
+          return;
+        }
+        const updated = Number(result.updatedCount || 0);
+        const failed = Number(result.failedCount || 0);
+        addToast({
+          title: t("contentpage.update_material_bin_success") as string,
+          description:
+            t("contentpage.update_material_bin_stat_updated", {
+              count: updated,
+            }) +
+            (failed > 0
+              ? ", " +
+                t("contentpage.update_material_bin_stat_failed", {
+                  count: failed,
+                })
+              : ""),
+          color: failed > 0 ? "warning" : "success",
+        });
+        await refreshAll(true);
+      } finally {
+        setUpdatingMaterialByPath((prev) => ({ ...prev, [p]: false }));
+      }
+    },
+    [currentVersionName, refreshAll, updatingMaterialByPath],
+  );
 
   return (
     <PageContainer ref={scrollRef}>
@@ -305,6 +459,20 @@ export default function ResourcePacksPage() {
             />
 
             <div className="flex items-center gap-3">
+              {hasIncompatibleShaders && (
+                <Checkbox
+                  isSelected={onlyShowUpdates}
+                  onValueChange={setOnlyShowUpdates}
+                  radius="full"
+                  size="lg"
+                  classNames={{ wrapper: "after:bg-warning" }}
+                >
+                  <span className="text-sm text-default-600">
+                    {t("contentpage.only_show_updates")}
+                  </span>
+                </Checkbox>
+              )}
+
               <Tooltip content={t("common.select_mode")}>
                 <Button
                   isIconOnly
@@ -320,7 +488,8 @@ export default function ResourcePacksPage() {
               {selection.isSelectMode && (
                 <Checkbox
                   isSelected={
-                    sort.filtered.length > 0 && selection.selectedCount === sort.filtered.length
+                    sort.filtered.length > 0 &&
+                    selection.selectedCount === sort.filtered.length
                   }
                   onValueChange={selection.selectAll}
                   radius="full"
@@ -358,7 +527,9 @@ export default function ResourcePacksPage() {
                 <DropdownMenu
                   selectionMode="single"
                   selectedKeys={
-                    new Set([`${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`])
+                    new Set([
+                      `${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`,
+                    ])
                   }
                   onSelectionChange={(keys) => {
                     const val = Array.from(keys)[0] as string;
@@ -464,7 +635,8 @@ export default function ResourcePacksPage() {
                         : "",
                     )}
                     onClick={() => {
-                      if (selection.isSelectMode) selection.toggleSelect(p.path);
+                      if (selection.isSelectMode)
+                        selection.toggleSelect(p.path);
                     }}
                   >
                     <div className="relative shrink-0">
@@ -515,7 +687,43 @@ export default function ResourcePacksPage() {
                       >
                         {renderMcText(p.description || "")}
                       </p>
-
+                      {p.materialCompat?.hasMaterialBin &&
+                        p.materialCompat?.needsUpdate && (
+                          <div
+                            className="mb-3 rounded-xl border border-warning-200/50 bg-warning-50/50 p-3 dark:border-warning-900/30 dark:bg-warning-900/10 backdrop-blur-md"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                              <div className="flex items-center gap-2 text-warning-600 dark:text-warning-400">
+                                <FaSync
+                                  className={
+                                    updatingMaterialByPath[p.path]
+                                      ? "animate-spin"
+                                      : ""
+                                  }
+                                />
+                                <span className="text-sm font-medium">
+                                  {t("contentpage.update_material_bin_desc")}
+                                </span>
+                              </div>
+                              <Button
+                                size="sm"
+                                color="warning"
+                                variant="shadow"
+                                radius="full"
+                                isLoading={!!updatingMaterialByPath[p.path]}
+                                onPress={(e) => {
+                                  // e.stopPropagation() is handled by parent div onClick
+                                  setPackToUpdate(p);
+                                  updateCfmOnOpen();
+                                }}
+                                className="font-medium text-white shadow-warning-500/20 shrink-0"
+                              >
+                                {t("contentpage.update_material_bin")}
+                              </Button>
+                            </div>
+                          </div>
+                        )}
                       <div className="flex items-end justify-between mt-auto">
                         <div className="flex flex-wrap items-center gap-4 text-xs text-default-400 dark:text-zinc-500">
                           <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
@@ -530,6 +738,12 @@ export default function ResourcePacksPage() {
                             <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
                               <FaTag className="text-default-400" />
                               <span>v{p.version}</span>
+                            </div>
+                          )}
+                          {p.materialCompat?.hasMaterialBin && (
+                            <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                              <FaMagic className="text-default-400" />
+                              <span>{t("contentpage.shader_chip")}</span>
                             </div>
                           )}
                         </div>
@@ -676,6 +890,33 @@ export default function ResourcePacksPage() {
           }
         }}
       />
+
+      {/* Update Confirmation Modal */}
+      <UnifiedModal
+        isOpen={updateCfmOpen}
+        onOpenChange={updateCfmOnOpenChange}
+        type="warning"
+        title={t("contentpage.update_material_bin_modal_title")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+        showCancelButton
+        onConfirm={() => {
+          if (packToUpdate) {
+            void updateMaterialBinsForPack(packToUpdate.path);
+          }
+          updateCfmOnOpenChange();
+        }}
+      >
+        <p>{t("contentpage.update_material_bin_modal_content")}</p>
+        <div className="mt-4 p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg">
+          <p className="text-warning-600 dark:text-warning-500 text-sm font-medium">
+            {t("contentpage.update_material_bin_risk_title")}
+          </p>
+          <p className="text-warning-600 dark:text-warning-500 text-sm mt-1">
+            {t("contentpage.update_material_bin_risk_content")}
+          </p>
+        </div>
+      </UnifiedModal>
     </PageContainer>
   );
 }

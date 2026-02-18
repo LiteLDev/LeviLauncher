@@ -1,6 +1,7 @@
 package main
 
 import (
+	"bytes"
 	"context"
 	"encoding/base64"
 	"encoding/json"
@@ -33,6 +34,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	lipclient "github.com/liteldev/LeviLauncher/internal/lip/client"
 	liptypes "github.com/liteldev/LeviLauncher/internal/lip/client/types"
+	"github.com/liteldev/LeviLauncher/internal/materialbin"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/packages"
@@ -151,6 +153,26 @@ type ContentCounts struct {
 	Worlds        int `json:"worlds"`
 	ResourcePacks int `json:"resourcePacks"`
 	BehaviorPacks int `json:"behaviorPacks"`
+}
+
+type ResourcePackMaterialCompatResult struct {
+	HasMaterialBin      bool   `json:"hasMaterialBin"`
+	Compatible          bool   `json:"compatible"`
+	NeedsUpdate         bool   `json:"needsUpdate"`
+	PackMaterialPath    string `json:"packMaterialPath"`
+	PackMaterialVersion uint64 `json:"packMaterialVersion"`
+	GameMaterialPath    string `json:"gameMaterialPath"`
+	GameMaterialVersion uint64 `json:"gameMaterialVersion"`
+	Error               string `json:"error"`
+}
+
+type ResourcePackMaterialUpdateResult struct {
+	HasMaterialBin bool   `json:"hasMaterialBin"`
+	TotalCount     int    `json:"totalCount"`
+	UpdatedCount   int    `json:"updatedCount"`
+	SkippedCount   int    `json:"skippedCount"`
+	FailedCount    int    `json:"failedCount"`
+	Error          string `json:"error"`
 }
 
 func (a *Minecraft) GetContentRoots(name string) types.ContentRoots {
@@ -928,6 +950,230 @@ func (a *Minecraft) ImportMcworldPath(name string, player string, path string, o
 
 func (a *Minecraft) GetPackInfo(dir string) types.PackInfo {
 	return content.ReadPackInfoFromDir(dir)
+}
+
+func readMaterialBinVersion(path string) (uint64, error) {
+	p := strings.TrimSpace(path)
+	if p == "" {
+		return 0, os.ErrNotExist
+	}
+	b, err := os.ReadFile(p)
+	if err != nil {
+		return 0, err
+	}
+	def, _, err := materialbin.ParseAuto(b)
+	if err != nil {
+		return 0, err
+	}
+	return def.Version, nil
+}
+
+func listPackMaterialBinFiles(packPath string) ([]string, error) {
+	base := strings.TrimSpace(packPath)
+	if base == "" {
+		return nil, os.ErrNotExist
+	}
+	materialsDirs := []string{
+		filepath.Join(base, "renderer", "materials"),
+	}
+
+	subpacksRoot := filepath.Join(base, "subpacks")
+	if subEntries, err := os.ReadDir(subpacksRoot); err == nil {
+		for _, e := range subEntries {
+			if !e.IsDir() {
+				continue
+			}
+			subpackName := strings.TrimSpace(e.Name())
+			if subpackName == "" {
+				continue
+			}
+			materialsDirs = append(
+				materialsDirs,
+				filepath.Join(subpacksRoot, subpackName, "renderer", "materials"),
+			)
+		}
+	}
+
+	out := make([]string, 0, 16)
+	for _, materialsDir := range materialsDirs {
+		entries, err := os.ReadDir(materialsDir)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() {
+				continue
+			}
+			name := strings.TrimSpace(e.Name())
+			if name == "" {
+				continue
+			}
+			if !strings.HasSuffix(strings.ToLower(name), ".material.bin") {
+				continue
+			}
+			out = append(out, filepath.Join(materialsDir, name))
+		}
+	}
+	if len(out) == 0 {
+		return nil, os.ErrNotExist
+	}
+	return out, nil
+}
+
+func isChildOfPath(path string, root string) bool {
+	p, err1 := filepath.Abs(strings.TrimSpace(path))
+	r, err2 := filepath.Abs(strings.TrimSpace(root))
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	p = strings.ToLower(filepath.Clean(p))
+	r = strings.ToLower(filepath.Clean(r))
+	return p != r && strings.HasPrefix(p, r+string(os.PathSeparator))
+}
+
+func (a *Minecraft) UpdateResourcePackMaterialBins(versionName string, packPath string) ResourcePackMaterialUpdateResult {
+	result := ResourcePackMaterialUpdateResult{}
+	verName := strings.TrimSpace(versionName)
+	packDir := strings.TrimSpace(packPath)
+	if verName == "" || packDir == "" {
+		result.Error = "invalid input"
+		return result
+	}
+	fi, err := os.Stat(packDir)
+	if err != nil || !fi.IsDir() {
+		result.Error = "ERR_INVALID_PATH"
+		return result
+	}
+
+	roots := a.GetContentRoots(verName)
+	if strings.TrimSpace(roots.ResourcePacks) == "" {
+		result.Error = "ERR_ACCESS_VERSIONS_DIR"
+		return result
+	}
+	if !isChildOfPath(packDir, roots.ResourcePacks) {
+		result.Error = "ERR_INVALID_PACKAGE"
+		return result
+	}
+
+	files, err := listPackMaterialBinFiles(packDir)
+	if err != nil || len(files) == 0 {
+		return result
+	}
+	result.HasMaterialBin = true
+	result.TotalCount = len(files)
+
+	vdir, err := apppath.VersionsDir()
+	if err != nil || strings.TrimSpace(vdir) == "" {
+		result.Error = "ERR_ACCESS_VERSIONS_DIR"
+		return result
+	}
+	gameMaterialPath := filepath.Join(vdir, verName, "data", "renderer", "materials", "RenderChunk.material.bin")
+	gameBuf, err := os.ReadFile(gameMaterialPath)
+	if err != nil {
+		result.Error = "ERR_READ_GAME_RENDERCHUNK"
+		return result
+	}
+	_, targetVersion, err := materialbin.ParseAuto(gameBuf)
+	if err != nil {
+		result.Error = "ERR_READ_GAME_RENDERCHUNK"
+		return result
+	}
+
+	for _, p := range files {
+		raw, err := os.ReadFile(p)
+		if err != nil {
+			result.FailedCount++
+			continue
+		}
+		def, _, err := materialbin.ParseAuto(raw)
+		if err != nil {
+			result.FailedCount++
+			continue
+		}
+		rebuilt, err := def.MarshalBinary(targetVersion)
+		if err != nil {
+			result.FailedCount++
+			continue
+		}
+		if bytes.Equal(raw, rebuilt) {
+			result.SkippedCount++
+			continue
+		}
+		mode := os.FileMode(0644)
+		if st, err := os.Stat(p); err == nil {
+			mode = st.Mode().Perm()
+		}
+		tmp := p + ".tmp"
+		if err := os.WriteFile(tmp, rebuilt, mode); err != nil {
+			_ = os.Remove(tmp)
+			result.FailedCount++
+			continue
+		}
+		if err := os.Rename(tmp, p); err != nil {
+			_ = os.Remove(tmp)
+			result.FailedCount++
+			continue
+		}
+		result.UpdatedCount++
+	}
+	return result
+}
+
+func (a *Minecraft) CheckResourcePackMaterialCompatibility(versionName string, packPath string) ResourcePackMaterialCompatResult {
+	result := ResourcePackMaterialCompatResult{
+		Compatible: true,
+	}
+	verName := strings.TrimSpace(versionName)
+	packDir := strings.TrimSpace(packPath)
+	if verName == "" || packDir == "" {
+		result.Error = "invalid input"
+		return result
+	}
+	files, err := listPackMaterialBinFiles(packDir)
+	if err != nil || len(files) == 0 {
+		// If pack has no renderer/materials/*.material.bin (including subpacks), show nothing.
+		return result
+	}
+	result.HasMaterialBin = true
+
+	vdir, err := apppath.VersionsDir()
+	if err != nil || strings.TrimSpace(vdir) == "" {
+		result.Error = "ERR_ACCESS_VERSIONS_DIR"
+		return result
+	}
+	gameMaterialPath := filepath.Join(vdir, verName, "data", "renderer", "materials", "RenderChunk.material.bin")
+	result.GameMaterialPath = gameMaterialPath
+
+	gameVersion, err := readMaterialBinVersion(gameMaterialPath)
+	if err != nil {
+		result.Error = "ERR_READ_GAME_RENDERCHUNK"
+		return result
+	}
+	result.GameMaterialVersion = gameVersion
+
+	parsedAny := false
+	for _, p := range files {
+		packVersion, err := readMaterialBinVersion(p)
+		if err != nil {
+			continue
+		}
+		if !parsedAny {
+			result.PackMaterialPath = p
+			result.PackMaterialVersion = packVersion
+			parsedAny = true
+		}
+		if packVersion != gameVersion {
+			result.Compatible = false
+			result.NeedsUpdate = true
+			result.PackMaterialPath = p
+			result.PackMaterialVersion = packVersion
+			return result
+		}
+	}
+	if !parsedAny {
+		result.Error = "ERR_READ_PACK_MATERIALBIN"
+	}
+	return result
 }
 
 func (a *Minecraft) DeletePack(name string, path string) string {

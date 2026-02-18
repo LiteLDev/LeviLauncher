@@ -283,8 +283,7 @@ function App() {
                 <div
                   style={
                     {
-                      "--content-pt":
-                        layoutMode === "sidebar" ? "4.5rem" : "5rem",
+                      "--content-pt": "4.5rem",
                     } as React.CSSProperties
                   }
                   className={`w-full min-h-dvh flex ${

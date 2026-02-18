@@ -121,7 +121,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
       <motion.div
         key="navbar"
         id="wails-draggable"
-        className="fixed top-0 left-0 right-0 z-50 px-4 pt-2 flex justify-center pointer-events-none"
+        className="fixed top-0 left-0 right-0 z-50 flex justify-center "
         initial={{ opacity: 0, y: -20 }}
         animate={{
           opacity: revealStarted ? 1 : 0,
@@ -131,7 +131,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
         transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
       >
         <div
-          className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} backdrop-blur-2xl border border-white/40 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 rounded-2xl px-2 py-2 sm:px-4 flex items-center gap-4`}
+          className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG}  border-b border-default-200/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 px-4 py-2 flex items-center gap-4`}
         >
           <div className="flex items-center gap-3 shrink-0">
             <Button

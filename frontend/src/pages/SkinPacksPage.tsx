@@ -40,12 +40,16 @@ import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import {
+  OpenPathDir,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { GetVersionMeta } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
+import {
   GetContentRoots,
   ListPacksForVersion,
-  OpenPathDir,
   DeletePack,
-  GetVersionMeta,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+  GetPackInfo,
+} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
@@ -191,9 +195,7 @@ export default function SkinPacksPage() {
 
                 if (forcePlayer === undefined) {
                   try {
-                    const tag = await (
-                      minecraft as any
-                    )?.GetLocalUserGamertag?.();
+                    const tag = await GetLocalUserGamertag();
                     if (tag) {
                       for (const p of names) {
                         if (map[p] === tag) {
@@ -221,7 +223,7 @@ export default function SkinPacksPage() {
           const basic = await Promise.all(
             filtered.map(async (p) => {
               try {
-                const info = await (minecraft as any)?.GetPackInfo?.(p.path);
+                const info = await GetPackInfo(p.path);
                 return { ...info, path: p.path };
               } catch {
                 return {

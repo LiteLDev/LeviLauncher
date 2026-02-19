@@ -46,11 +46,16 @@ import {
   FaMagic,
 } from "react-icons/fa";
 import {
-  GetContentRoots,
   OpenPathDir,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetContentRoots,
   ListPacksForVersion,
   DeletePack,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+  GetPackInfo,
+  CheckResourcePackMaterialCompatibility,
+  UpdateResourcePackMaterialBins,
+} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as packages from "bindings/github.com/liteldev/LeviLauncher/internal/packages/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
@@ -65,7 +70,6 @@ import { useScrollManager } from "@/hooks/useScrollManager";
 import { useSelectionMode } from "@/hooks/useSelectionMode";
 import { useContentSort } from "@/hooks/useContentSort";
 import { formatBytes, formatDate } from "@/utils/formatting";
-import { Call as WailsCall } from "@wailsio/runtime";
 
 const getNameFn = (p: any) => String(p.name || p.path?.split("\\").pop() || "");
 const getTimeFn = (p: any) => Number(p.modTime || 0);
@@ -201,7 +205,7 @@ export default function ResourcePacksPage() {
           const basic = await Promise.all(
             filtered.map(async (p) => {
               try {
-                const info = await (minecraft as any)?.GetPackInfo?.(p.path);
+                const info = await GetPackInfo(p.path);
                 return { ...info, path: p.path };
               } catch {
                 return {
@@ -232,10 +236,6 @@ export default function ResourcePacksPage() {
           setPacks(withTime);
           Promise.resolve()
             .then(async () => {
-              const compatMethodNames = [
-                "main.Minecraft.CheckResourcePackMaterialCompatibility",
-                "github.com/liteldev/LeviLauncher.Minecraft.CheckResourcePackMaterialCompatibility",
-              ];
               const readCache = () => {
                 try {
                   return JSON.parse(
@@ -297,22 +297,8 @@ export default function ResourcePacksPage() {
                     const key = p.path;
                     let materialCompat: any = null;
                     try {
-                      const backendFn = (minecraft as any)
-                        ?.CheckResourcePackMaterialCompatibility;
-                      if (typeof backendFn === "function") {
-                        materialCompat = await backendFn(name, key);
-                      } else {
-                        for (const methodName of compatMethodNames) {
-                          try {
-                            materialCompat = await WailsCall.ByName(
-                              methodName,
-                              name,
-                              key,
-                            );
-                            break;
-                          } catch {}
-                        }
-                      }
+                      materialCompat =
+                        await CheckResourcePackMaterialCompatibility(name, key);
                     } catch {}
                     setPacks((prev) =>
                       prev.map((it: any) =>
@@ -346,25 +332,9 @@ export default function ResourcePacksPage() {
       setUpdatingMaterialByPath((prev) => ({ ...prev, [p]: true }));
       try {
         let result: any = null;
-        const backendFn = (minecraft as any)?.UpdateResourcePackMaterialBins;
-        if (typeof backendFn === "function") {
-          result = await backendFn(currentVersionName, p);
-        } else {
-          const methodNames = [
-            "main.Minecraft.UpdateResourcePackMaterialBins",
-            "github.com/liteldev/LeviLauncher.Minecraft.UpdateResourcePackMaterialBins",
-          ];
-          for (const methodName of methodNames) {
-            try {
-              result = await WailsCall.ByName(
-                methodName,
-                currentVersionName,
-                p,
-              );
-              break;
-            } catch {}
-          }
-        }
+        try {
+          result = await UpdateResourcePackMaterialBins(currentVersionName, p);
+        } catch {}
         if (!result) {
           addToast({
             title: t("contentpage.update_material_bin_failed") as string,

@@ -19,7 +19,7 @@ import {
   FaSkull,
   FaRoad,
 } from "react-icons/fa";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as userService from "bindings/github.com/liteldev/LeviLauncher/userservice";
 
 export const UserAvatar = () => {
   const { t, i18n } = useTranslation();
@@ -35,12 +35,12 @@ export const UserAvatar = () => {
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        if (!minecraft.GetLocalUserId) {
+        if (!userService.GetLocalUserId) {
           setLoading(false);
           return;
         }
 
-        const id = await minecraft.GetLocalUserId();
+        const id = await userService.GetLocalUserId();
         if (!id) {
           setGamertag("");
           setXuid("");
@@ -49,7 +49,7 @@ export const UserAvatar = () => {
         }
 
         setXuid(id);
-        const tag = await minecraft.GetLocalUserGamertag();
+        const tag = await userService.GetLocalUserGamertag();
         if (!tag) {
           setGamertag("");
           return;
@@ -57,7 +57,7 @@ export const UserAvatar = () => {
         setGamertag(tag);
 
         try {
-          const getStats = (minecraft as any)?.GetAggregatedUserStatistics;
+          const getStats = (userService as any)?.GetAggregatedUserStatistics;
           if (typeof getStats === "function") {
             getStats(id).then((s: any) => {
               if (s) setStats(s);
@@ -65,8 +65,7 @@ export const UserAvatar = () => {
           }
         } catch {}
 
-        void minecraft
-          .GetLocalUserGamerPicture(1)
+        void userService.GetLocalUserGamerPicture(1)
           .then((pic: any) => {
             if (pic) setAvatar(`data:image/png;base64,${pic}`);
           })
@@ -132,14 +131,14 @@ export const UserAvatar = () => {
         setOpen(nextOpen);
         if (!nextOpen) return;
         try {
-          const getState = (minecraft as any)?.XUserGetState;
+          const getState = (userService as any)?.XUserGetState;
           if (typeof getState === "function") {
             const state = await getState();
             console.log("[UserAvatar] XUserGetState =>", state);
             if (typeof state === "number" && state !== 0) {
               setRefreshing(true);
               try {
-                const reset = (minecraft as any)?.ResetSession;
+                const reset = (userService as any)?.ResetSession;
                 if (typeof reset === "function") await reset();
               } catch {}
               setReloadNonce((v) => v + 1);
@@ -184,7 +183,7 @@ export const UserAvatar = () => {
               onPress={async () => {
                 setRefreshing(true);
                 try {
-                  const reset = (minecraft as any)?.ResetSession;
+                  const reset = (userService as any)?.ResetSession;
                   if (typeof reset === "function") await reset();
                 } catch {}
                 setReloadNonce((v) => v + 1);
@@ -287,3 +286,4 @@ export const UserAvatar = () => {
     </Popover>
   );
 };
+

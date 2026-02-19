@@ -30,6 +30,10 @@ import {
   saveCurrentVersionName,
 } from "@/utils/currentVersion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetVersionLogoDataUrl,
+  ListVersionMetas,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 
 export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
   props,
@@ -57,7 +61,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
 
   React.useEffect(() => {
     if (hasBackend) {
-      const listFn = minecraft?.ListVersionMetas;
+      const listFn = ListVersionMetas as any;
       if (typeof listFn === "function") {
         listFn().then((metas: any[]) => {
           const newLocalVersionMap = new Map();
@@ -99,7 +103,7 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
           setSelectedVersionName(useName);
           setPersistedName(saved || "");
           try {
-            const getter = minecraft?.GetVersionLogoDataUrl;
+            const getter = GetVersionLogoDataUrl as any;
             if (typeof getter === "function") {
               const names = Array.from(newLocalVersionMap.keys());
               Promise.all(

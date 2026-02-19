@@ -37,11 +37,14 @@ import {
   FaTag,
 } from "react-icons/fa";
 import {
-  GetContentRoots,
   OpenPathDir,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetContentRoots,
   ListPacksForVersion,
   DeletePack,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+  GetPackInfo,
+} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -148,7 +151,7 @@ export default function BehaviorPacksPage() {
           const basic = await Promise.all(
             filtered.map(async (p) => {
               try {
-                const info = await (minecraft as any)?.GetPackInfo?.(p.path);
+                const info = await GetPackInfo(p.path);
                 return { ...info, path: p.path };
               } catch {
                 return {

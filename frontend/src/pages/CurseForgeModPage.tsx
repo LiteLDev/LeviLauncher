@@ -5,7 +5,10 @@ import {
   GetCurseForgeModsByIDs,
   GetCurseForgeModDescription,
   GetCurseForgeModFiles,
-  ListVersionMetasWithRegistered,
+  StartFileDownload,
+  CancelFileDownload,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
   GetContentRoots,
   ImportMcpackPath,
   ImportMcpackPathWithPlayer,
@@ -13,11 +16,12 @@ import {
   ImportMcaddonPathWithPlayer,
   ImportMcworldPath,
   IsMcpackSkinPackPath,
-  StartFileDownload,
-  CancelFileDownload,
+} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+import {
+  ListVersionMetasWithRegistered,
   GetVersionLogoDataUrl,
-  GetLocalUserGamertag,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
 import { Events, Browser } from "@wailsio/runtime";
 import { VersionMeta } from "bindings/github.com/liteldev/LeviLauncher/internal/versions/models";
 import { File as ModFile } from "bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";

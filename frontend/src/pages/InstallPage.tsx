@@ -24,6 +24,17 @@ import { resolveInstallError } from "@/utils/installError";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialogs, Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  CopyVersionDataFromGDK,
+  CopyVersionDataFromVersion,
+  DeleteVersionFolder,
+  GetInstallerDir,
+  GetVersionsDir,
+  ListInheritableVersionNames,
+  ListVersionMetas,
+  SaveVersionMeta,
+  ValidateVersionFolderName,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
@@ -157,7 +168,7 @@ export default function InstallPage() {
     let cancelled = false;
     const timer = setTimeout(async () => {
       try {
-        const validate = minecraft?.ValidateVersionFolderName;
+        const validate = ValidateVersionFolderName as any;
         if (typeof validate === "function") {
           const msg: string = await validate(name);
           if (!cancelled) setInstallError(msg || "");
@@ -181,7 +192,7 @@ export default function InstallPage() {
       return;
     }
     try {
-      const list = minecraft?.ListVersionMetas;
+      const list = ListVersionMetas as any;
       if (typeof list === "function") {
         (async () => {
           try {
@@ -203,7 +214,7 @@ export default function InstallPage() {
       return;
     }
     try {
-      const listInh = minecraft?.ListInheritableVersionNames;
+      const listInh = ListInheritableVersionNames as any;
       if (typeof listInh === "function") {
         (async () => {
           try {
@@ -269,7 +280,7 @@ export default function InstallPage() {
 
   useEffect(() => {
     try {
-      const getDir = minecraft?.GetInstallerDir;
+      const getDir = GetInstallerDir as any;
       if (typeof getDir === "function") {
         (async () => {
           try {
@@ -336,7 +347,7 @@ export default function InstallPage() {
     const rollback = async () => {
       if (!installationCreated) return;
       try {
-        const del = (minecraft as any)?.DeleteVersionFolder;
+        const del = DeleteVersionFolder as any;
         if (typeof del === "function") {
           await del(name);
         }
@@ -348,7 +359,7 @@ export default function InstallPage() {
       return;
     }
     try {
-      const validate = minecraft?.ValidateVersionFolderName;
+      const validate = ValidateVersionFolderName as any;
       if (typeof validate === "function") {
         const msg: string = await validate(name);
         if (msg) {
@@ -360,9 +371,9 @@ export default function InstallPage() {
 
     try {
       const install = minecraft?.InstallExtractMsixvc;
-      const saveMeta = minecraft?.SaveVersionMeta;
-      const copyFromGDK = minecraft?.CopyVersionDataFromGDK;
-      const copyFromVersion = minecraft?.CopyVersionDataFromVersion;
+      const saveMeta = SaveVersionMeta as any;
+      const copyFromGDK = CopyVersionDataFromGDK as any;
+      const copyFromVersion = CopyVersionDataFromVersion as any;
       const resolver = minecraft?.ResolveDownloadedMsixvc;
       const isPrev = (mirrorType || "Release") === "Preview";
       let fname = "";
@@ -569,7 +580,7 @@ export default function InstallPage() {
   const handleOpenFolder = async () => {
     if (!installedFolderName) return;
     try {
-      const vdir = await minecraft.GetVersionsDir();
+      const vdir = await GetVersionsDir();
       const sep = vdir.includes("\\") ? "\\" : "/";
       const path = `${vdir}${sep}${installedFolderName}`;
       await minecraft.OpenPathDir(path);

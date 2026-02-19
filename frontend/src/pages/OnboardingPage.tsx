@@ -23,10 +23,12 @@ import {
   GetBaseRoot,
   SetBaseRoot,
   ResetBaseRoot,
-  GetInstallerDir,
-  GetVersionsDir,
   CanWriteToDir,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetInstallerDir,
+  GetVersionsDir,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { Dialogs } from "@wailsio/runtime";

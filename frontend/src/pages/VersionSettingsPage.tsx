@@ -22,6 +22,13 @@ import { motion } from "framer-motion";
 import { FaWindows } from "react-icons/fa";
 import { FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  CreateDesktopShortcut,
+  GetVersionLogoDataUrl,
+  RemoveVersionLogo,
+  SaveVersionLogoFromPath,
+  UnregisterVersionByName,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import { PageHeader } from "@/components/PageHeader";
 import LeviLaminaIcon from "@/assets/images/LeviLamina.png";
 import { useVersionSettings } from "@/hooks/useVersionSettings";
@@ -178,8 +185,8 @@ export default function VersionSettingsPage() {
                             }
 
                             if (path) {
-                              const saver = minecraft?.SaveVersionLogoFromPath;
-                              const getter = minecraft?.GetVersionLogoDataUrl;
+                              const saver = SaveVersionLogoFromPath as any;
+                              const getter = GetVersionLogoDataUrl as any;
                               if (typeof saver === "function") {
                                 saver(vs.targetName, path).then(
                                   (err: string) => {
@@ -224,7 +231,7 @@ export default function VersionSettingsPage() {
                           className="px-4 font-medium"
                           onPress={async () => {
                             try {
-                              const rm = minecraft?.RemoveVersionLogo;
+                              const rm = RemoveVersionLogo as any;
                               if (typeof rm === "function") {
                                 await rm(vs.targetName);
                               }
@@ -242,10 +249,9 @@ export default function VersionSettingsPage() {
                           className="justify-start px-4 font-medium bg-primary-500/10 text-primary-600 dark:text-primary-400"
                           onPress={async () => {
                             try {
-                              const err: string =
-                                await minecraft?.CreateDesktopShortcut(
-                                  vs.targetName,
-                                );
+                              const err: string = await CreateDesktopShortcut(
+                                vs.targetName,
+                              );
                               if (err) {
                                 vs.setError(String(err));
                               } else {
@@ -477,8 +483,7 @@ export default function VersionSettingsPage() {
                               vs.setGdkMissingOpen(true);
                               return;
                             }
-                            const fn = (minecraft as any)
-                              ?.UnregisterVersionByName;
+                            const fn = UnregisterVersionByName as any;
                             if (typeof fn === "function") {
                               vs.setUnregisterOpen(true);
                               const err: string = await fn(vs.targetName);

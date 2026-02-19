@@ -6,8 +6,6 @@ import {
   CheckUpdate,
   GetLanguageNames,
   GetBaseRoot,
-  GetInstallerDir,
-  GetVersionsDir,
   IsGDKInstalled,
   InstallGDKFromZip,
   GetDisableDiscordRPC,
@@ -19,6 +17,10 @@ import {
   KillProcess,
   KillAllMinecraftProcesses,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetInstallerDir,
+  GetVersionsDir,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import { Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";

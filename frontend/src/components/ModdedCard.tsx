@@ -10,7 +10,7 @@ import {
 import {
   GetMods,
   IsModEnabled,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { FaPuzzlePiece, FaArrowRight } from "react-icons/fa";
 import { useTranslation } from "react-i18next";

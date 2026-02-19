@@ -1,5 +1,5 @@
 import { listDirectories } from "./fs";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { GetUserGamertagMap } from "bindings/github.com/liteldev/LeviLauncher/userservice";
 
 export async function listPlayers(usersRoot: string): Promise<string[]> {
   if (!usersRoot) return [];
@@ -24,7 +24,7 @@ export async function getPlayerGamertagMap(
   cachedMap = {};
   cachedPromise = (async () => {
     try {
-      const fn = (minecraft as any)?.GetUserGamertagMap;
+      const fn = GetUserGamertagMap as any;
       if (typeof fn !== "function") return {};
       const res = await fn(root);
       if (res && typeof res === "object") {

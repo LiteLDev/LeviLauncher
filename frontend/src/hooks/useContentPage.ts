@@ -2,10 +2,11 @@ import React from "react";
 import { useDisclosure } from "@heroui/react";
 import { Events } from "@wailsio/runtime";
 import { useLocation, useNavigate } from "react-router-dom";
+import { GetVersionMeta } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
 import {
   GetContentRoots,
-  GetVersionMeta,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
@@ -15,13 +16,14 @@ import {
   listPlayers,
 } from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as contentService from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 
 type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 
 export const useContentPage = (t: TFunc) => {
   const navigate = useNavigate();
   const location = useLocation() as any;
-  const hasBackend = minecraft !== undefined;
+  const hasBackend = minecraft !== undefined && contentService !== undefined;
 
   // --- State ---
   const [loading, setLoading] = React.useState<boolean>(true);
@@ -190,7 +192,7 @@ export const useContentPage = (t: TFunc) => {
                 playerToRefresh === undefined &&
                 !names.includes(currentPlayer)
               ) {
-                const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+                const tag = await GetLocalUserGamertag();
                 if (tag) {
                   let matched = "";
                   for (const p of names) {
@@ -281,7 +283,7 @@ export const useContentPage = (t: TFunc) => {
       }
       for (const p of paths) {
         if (p?.toLowerCase().endsWith(".mcpack")) {
-          const isSkin = await (minecraft as any)?.IsMcpackSkinPackPath?.(p);
+          const isSkin = await (contentService as any)?.IsMcpackSkinPackPath?.(p);
           if (isSkin) {
             hasSkin = true;
             break;
@@ -325,21 +327,21 @@ export const useContentPage = (t: TFunc) => {
           setCurrentFile(base);
 
           let err = "";
-          const isSkin = await (minecraft as any)?.IsMcpackSkinPackPath?.(p);
+          const isSkin = await (contentService as any)?.IsMcpackSkinPackPath?.(p);
           const effectivePlayer = isSkin && isSharedMode ? "" : playerToUse;
 
           if (
             effectivePlayer &&
-            typeof (minecraft as any)?.ImportMcpackPathWithPlayer === "function"
+            typeof (contentService as any)?.ImportMcpackPathWithPlayer === "function"
           ) {
-            err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
+            err = await (contentService as any)?.ImportMcpackPathWithPlayer?.(
               name,
               effectivePlayer,
               p,
               false,
             );
           } else {
-            err = await (minecraft as any)?.ImportMcpackPath?.(name, p, false);
+            err = await (contentService as any)?.ImportMcpackPath?.(name, p, false);
           }
           if (err) {
             if (
@@ -355,17 +357,17 @@ export const useContentPage = (t: TFunc) => {
               if (ok) {
                 if (
                   effectivePlayer &&
-                  typeof (minecraft as any)?.ImportMcpackPathWithPlayer ===
+                  typeof (contentService as any)?.ImportMcpackPathWithPlayer ===
                     "function"
                 ) {
-                  err = await (minecraft as any)?.ImportMcpackPathWithPlayer?.(
+                  err = await (contentService as any)?.ImportMcpackPathWithPlayer?.(
                     name,
                     effectivePlayer,
                     p,
                     true,
                   );
                 } else {
-                  err = await (minecraft as any)?.ImportMcpackPath?.(
+                  err = await (contentService as any)?.ImportMcpackPath?.(
                     name,
                     p,
                     true,
@@ -393,17 +395,17 @@ export const useContentPage = (t: TFunc) => {
           let err = "";
           if (
             playerToUse &&
-            typeof (minecraft as any)?.ImportMcaddonPathWithPlayer ===
+            typeof (contentService as any)?.ImportMcaddonPathWithPlayer ===
               "function"
           ) {
-            err = await (minecraft as any)?.ImportMcaddonPathWithPlayer?.(
+            err = await (contentService as any)?.ImportMcaddonPathWithPlayer?.(
               name,
               playerToUse,
               p,
               false,
             );
           } else {
-            err = await (minecraft as any)?.ImportMcaddonPath?.(name, p, false);
+            err = await (contentService as any)?.ImportMcaddonPath?.(name, p, false);
           }
           if (err) {
             if (
@@ -419,17 +421,17 @@ export const useContentPage = (t: TFunc) => {
               if (ok) {
                 if (
                   playerToUse &&
-                  typeof (minecraft as any)?.ImportMcaddonPathWithPlayer ===
+                  typeof (contentService as any)?.ImportMcaddonPathWithPlayer ===
                     "function"
                 ) {
-                  err = await (minecraft as any)?.ImportMcaddonPathWithPlayer?.(
+                  err = await (contentService as any)?.ImportMcaddonPathWithPlayer?.(
                     name,
                     playerToUse,
                     p,
                     true,
                   );
                 } else {
-                  err = await (minecraft as any)?.ImportMcaddonPath?.(
+                  err = await (contentService as any)?.ImportMcaddonPath?.(
                     name,
                     p,
                     true,
@@ -458,7 +460,7 @@ export const useContentPage = (t: TFunc) => {
             started = true;
           }
           setCurrentFile(base);
-          let err = await (minecraft as any)?.ImportMcworldPath?.(
+          let err = await (contentService as any)?.ImportMcworldPath?.(
             name,
             playerToUse,
             p,
@@ -476,7 +478,7 @@ export const useContentPage = (t: TFunc) => {
                 dupResolveRef.current = resolve;
               });
               if (ok) {
-                err = await (minecraft as any)?.ImportMcworldPath?.(
+                err = await (contentService as any)?.ImportMcworldPath?.(
                   name,
                   playerToUse,
                   p,
@@ -603,3 +605,4 @@ export const useContentPage = (t: TFunc) => {
     navigate,
   };
 };
+

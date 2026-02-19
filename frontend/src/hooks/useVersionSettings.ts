@@ -2,6 +2,16 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDisclosure, addToast } from "@heroui/react";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
+import {
+  DeleteVersionFolder,
+  GetVersionLogoDataUrl,
+  GetVersionMeta,
+  RenameVersionFolder,
+  SaveVersionLogoDataUrl,
+  SaveVersionMeta,
+  ValidateVersionFolderName,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 
 export const useVersionSettings = () => {
@@ -83,8 +93,7 @@ export const useVersionSettings = () => {
   // Load LL install status
   React.useEffect(() => {
     if (selectedTab === "loader" && targetName) {
-      (minecraft as any)
-        ?.GetMods?.(targetName)
+      GetMods(targetName)
         .then((mods: any[]) => {
           if (mods) {
             const installed = mods.some((m: any) => m.name === "LeviLamina");
@@ -100,7 +109,7 @@ export const useVersionSettings = () => {
     if (!hasBackend || !targetName) return;
     (async () => {
       try {
-        const getMeta = (minecraft as any)?.GetVersionMeta;
+        const getMeta = GetVersionMeta as any;
         if (typeof getMeta === "function") {
           const meta: any = await getMeta(targetName);
           if (meta) {
@@ -125,7 +134,7 @@ export const useVersionSettings = () => {
         }
       } catch {}
       try {
-        const getter = minecraft?.GetVersionLogoDataUrl;
+        const getter = GetVersionLogoDataUrl as any;
         if (typeof getter === "function") {
           const u = await getter(targetName);
           setLogoDataUrl(String(u || ""));
@@ -206,10 +215,10 @@ export const useVersionSettings = () => {
         navigate(-1);
         return false;
       }
-      const validate = minecraft?.ValidateVersionFolderName;
-      const rename = minecraft?.RenameVersionFolder;
-      const save = minecraft?.SaveVersionMeta;
-      const saver = minecraft?.SaveVersionLogoDataUrl;
+      const validate = ValidateVersionFolderName as any;
+      const rename = RenameVersionFolder as any;
+      const save = SaveVersionMeta as any;
+      const saver = SaveVersionLogoDataUrl as any;
 
       const nn = (newName || "").trim();
       if (!nn) {
@@ -297,7 +306,7 @@ export const useVersionSettings = () => {
     }
     setDeleting(true);
     try {
-      const del = minecraft?.DeleteVersionFolder;
+      const del = DeleteVersionFolder as any;
       if (typeof del === "function") {
         const err: string = await del(targetName);
         if (err) {

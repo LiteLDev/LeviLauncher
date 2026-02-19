@@ -3,16 +3,25 @@ import { useDisclosure } from "@heroui/react";
 import { useLocation, useNavigate, useBlocker } from "react-router-dom";
 import { Events } from "@wailsio/runtime";
 import {
+  ListDir,
+  OpenPathDir,
+  UninstallLeviLamina,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetVersionMeta,
+  GetVersionsDir,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+import {
   OpenModsExplorer,
   GetMods,
   DeleteMod,
   EnableMod,
   DisableMod,
   IsModEnabled,
-  UninstallLeviLamina,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+  ImportModZipPath,
+  ImportModDllPath,
+} from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 
 const readCurrentVersionName = (): string => {
   try {
@@ -132,11 +141,9 @@ export const useModsPage = (
     const fetchVersion = async () => {
       if (!currentVersionName) return;
       try {
-        const meta = await (minecraft as any)?.GetVersionMeta(
-          currentVersionName,
-        );
-        if (meta && meta.GameVersion) {
-          setGameVersion(meta.GameVersion);
+        const meta = await GetVersionMeta(currentVersionName);
+        if (meta && meta.gameVersion) {
+          setGameVersion(meta.gameVersion);
         } else {
           setGameVersion(currentVersionName);
         }
@@ -211,7 +218,7 @@ export const useModsPage = (
           }
           const base = p.replace(/\\/g, "/").split("/").pop() || p;
           setCurrentFile(base);
-          let err = await minecraft?.ImportModZipPath?.(name, p, false);
+          let err = await ImportModZipPath(name, p, false);
           if (err) {
             if (String(err) === "ERR_DUPLICATE_FOLDER") {
               dupNameRef.current = base;
@@ -221,7 +228,7 @@ export const useModsPage = (
                 dupResolveRef.current = resolve;
               });
               if (ok) {
-                err = await minecraft?.ImportModZipPath?.(name, p, true);
+                err = await ImportModZipPath(name, p, true);
                 if (!err) {
                   succFiles.push(base);
                   continue;
@@ -259,7 +266,7 @@ export const useModsPage = (
             version: dllVersion,
           };
           dllConfirmRef.current = null;
-          let err = await minecraft?.ImportModDllPath?.(
+          let err = await ImportModDllPath(
             name,
             p,
             vals.name,
@@ -276,7 +283,7 @@ export const useModsPage = (
                 dupResolveRef.current = resolve;
               });
               if (ok) {
-                err = await minecraft?.ImportModDllPath?.(
+                err = await ImportModDllPath(
                   name,
                   p,
                   vals.name,
@@ -527,13 +534,13 @@ export const useModsPage = (
     if (!name) return;
 
     try {
-      const versionsDir = await (minecraft as any).GetVersionsDir();
+      const versionsDir = await GetVersionsDir();
       const sep = versionsDir.includes("\\") ? "\\" : "/";
       const modPath = `${versionsDir}${sep}${name}${sep}mods${sep}${mod.name}`;
 
       try {
-        await (minecraft as any).ListDir(modPath);
-        await (minecraft as any).OpenPathDir(modPath);
+        await ListDir(modPath);
+        await OpenPathDir(modPath);
       } catch {
         OpenModsExplorer(name);
       }

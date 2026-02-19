@@ -35,9 +35,9 @@ import {
 import { useNavigate, useLocation } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
-  GetContentRoots,
   OpenPathDir,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { motion } from "framer-motion";
 import {

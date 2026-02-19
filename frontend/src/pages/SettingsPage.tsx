@@ -47,8 +47,6 @@ import remarkGfm from "remark-gfm";
 import {
   GetBaseRoot,
   SetBaseRoot,
-  GetInstallerDir,
-  GetVersionsDir,
   CanWriteToDir,
   StartGDKDownload,
   CancelGDKDownload,
@@ -57,6 +55,10 @@ import {
   ResetBaseRoot,
   InstallLip,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetInstallerDir,
+  GetVersionsDir,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import { Browser, Dialogs } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { UnifiedModal } from "@/components/UnifiedModal";

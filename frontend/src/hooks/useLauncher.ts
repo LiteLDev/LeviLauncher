@@ -8,11 +8,15 @@ import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft"
 import {
   EnsureGameInputInteractive,
   EnsureVcRuntimeInteractive,
-  GetContentRoots,
   IsGDKInstalled,
   ListDir,
-  CheckResourcePackMaterialCompatibility,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetContentRoots,
+  CheckResourcePackMaterialCompatibility,
+} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+import * as versionService from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+import * as userService from "bindings/github.com/liteldev/LeviLauncher/userservice";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 
 let __didCheckGameInput = false;
@@ -69,7 +73,6 @@ export const useLauncher = (args: any) => {
   const [isLoadingVersions, setIsLoadingVersions] =
     React.useState<boolean>(false);
   const fetchingLogos = React.useRef<Set<string>>(new Set());
-  const ensureOpsRef = React.useRef<number>(0);
   const [tipIndex, setTipIndex] = React.useState<number>(0);
   const tipTimerRef = React.useRef<number | null>(null);
 
@@ -79,7 +82,7 @@ export const useLauncher = (args: any) => {
       if (!saved) return;
       setCurrentVersion(saved);
       setDisplayName(saved);
-      const fn = (minecraft as any)?.GetVersionMeta;
+      const fn = (versionService as any)?.GetVersionMeta;
       if (typeof fn === "function") {
         fn(saved)
           .then((m: any) => {
@@ -97,7 +100,7 @@ export const useLauncher = (args: any) => {
               });
               return map;
             });
-            const getter = (minecraft as any)?.GetVersionLogoDataUrl;
+            const getter = (versionService as any)?.GetVersionLogoDataUrl;
             if (typeof getter === "function") {
               getter(saved).then((u: string) =>
                 setLogoDataUrl(String(u || "")),
@@ -111,7 +114,7 @@ export const useLauncher = (args: any) => {
 
   useEffect(() => {
     try {
-      minecraft.ReconcileRegisteredFlags();
+      versionService.ReconcileRegisteredFlags();
     } catch {}
   }, []);
 
@@ -201,7 +204,7 @@ export const useLauncher = (args: any) => {
         return;
       fetchingLogos.current.add(name);
       try {
-        const getter = minecraft?.GetVersionLogoDataUrl;
+        const getter = versionService?.GetVersionLogoDataUrl;
         if (typeof getter === "function") {
           getter(name)
             .then((u: string) => {
@@ -240,7 +243,7 @@ export const useLauncher = (args: any) => {
     const name = currentVersion;
     if (name) {
       saveCurrentVersionName(name);
-      const launch = minecraft?.LaunchVersionByName;
+      const launch = versionService?.LaunchVersionByName;
       if (typeof launch === "function") {
         launch(name)
           .then((err: string) => {
@@ -264,7 +267,7 @@ export const useLauncher = (args: any) => {
     const name = currentVersion;
     if (name) {
       saveCurrentVersionName(name);
-      const launchForce = minecraft?.LaunchVersionByNameForce;
+      const launchForce = versionService?.LaunchVersionByNameForce;
       if (typeof launchForce === "function") {
         launchForce(name)
           .then((err: string) => {
@@ -285,7 +288,7 @@ export const useLauncher = (args: any) => {
   const doCreateShortcut = React.useCallback(() => {
     const name = currentVersion;
     if (name) {
-      minecraft
+      versionService
         ?.CreateDesktopShortcut(name)
         .then((err: string) => {
           const s = String(err || "");
@@ -306,7 +309,7 @@ export const useLauncher = (args: any) => {
   const doOpenFolder = React.useCallback(async () => {
     if (!currentVersion) return;
     try {
-      const vdir = await minecraft.GetVersionsDir();
+      const vdir = await versionService.GetVersionsDir();
       if (!vdir) return;
       const path = vdir + "\\" + currentVersion;
       await minecraft.OpenPathDir(path);
@@ -327,14 +330,14 @@ export const useLauncher = (args: any) => {
     registerInstallingDisclosure.onOpen();
     try {
       const isPreview = localVersionMap.get(currentVersion)?.isPreview || false;
-      const result = await minecraft.RegisterVersionWithWdapp(
+      const result = await versionService.RegisterVersionWithWdapp(
         currentVersion,
         isPreview,
       );
       if (result === "success" || result === "") {
         registerInstallingDisclosure.onClose();
         registerSuccessDisclosure.onOpen();
-        const fn = (minecraft as any)?.GetVersionMeta;
+        const fn = (versionService as any)?.GetVersionMeta;
         if (typeof fn === "function") {
           fn(currentVersion).then((m: any) => {
             setLocalVersionMap((prev) => {
@@ -414,24 +417,6 @@ export const useLauncher = (args: any) => {
   }, [hasBackend, gameInputMissingDisclosure, gamingServicesMissingDisclosure]);
 
   useEffect(() => {
-    const ensureStart = () => {
-      ensureOpsRef.current = (ensureOpsRef.current || 0) + 1;
-      vcRuntimeCompletingDisclosure.onOpen();
-    };
-    const ensureDone = () => {
-      ensureOpsRef.current = Math.max((ensureOpsRef.current || 0) - 1, 0);
-      if (ensureOpsRef.current === 0) {
-        vcRuntimeCompletingDisclosure.onClose();
-      }
-    };
-
-    const unlistenStart = () => {};
-    const unlistenDone = () => {};
-    const unlistenPreStart = () => {};
-    const unlistenPreDone = () => {};
-    const unlistenPeStart = () => {};
-    const unlistenPeDone = () => {};
-
     const unlistenGiStart = Events.On("gameinput.ensure.start", () => {
       if (pendingInstallCheck === "gi") return;
       gameInputInstallingDisclosure.onOpen();
@@ -521,24 +506,6 @@ export const useLauncher = (args: any) => {
     });
 
     return () => {
-      try {
-        unlistenStart && (unlistenStart as any)();
-      } catch {}
-      try {
-        unlistenDone && (unlistenDone as any)();
-      } catch {}
-      try {
-        unlistenPreStart && (unlistenPreStart as any)();
-      } catch {}
-      try {
-        unlistenPreDone && (unlistenPreDone as any)();
-      } catch {}
-      try {
-        unlistenPeStart && (unlistenPeStart as any)();
-      } catch {}
-      try {
-        unlistenPeDone && (unlistenPeDone as any)();
-      } catch {}
       try {
         unlistenGiStart && (unlistenGiStart as any)();
       } catch {}
@@ -668,7 +635,7 @@ export const useLauncher = (args: any) => {
 
           (async () => {
             try {
-              const tag = await (minecraft as any)?.GetLocalUserGamertag?.();
+              const tag = await (userService as any)?.GetLocalUserGamertag?.();
               if (tag) {
                 const map = await getPlayerGamertagMap(safe.usersRoot);
 
@@ -782,7 +749,7 @@ export const useLauncher = (args: any) => {
         setDisplayVersion(ver || "None");
         setDisplayName(useName || "");
         try {
-          const getter = minecraft?.GetVersionLogoDataUrl;
+          const getter = versionService?.GetVersionLogoDataUrl;
           if (typeof getter === "function" && useName) {
             getter(useName).then((u: string) =>
               setLogoDataUrl(String(u || "")),
@@ -795,8 +762,8 @@ export const useLauncher = (args: any) => {
         }
       };
 
-      const fastFn = (minecraft as any)?.ListVersionMetas;
-      const slowFn = (minecraft as any)?.ListVersionMetasWithRegistered;
+      const fastFn = (versionService as any)?.ListVersionMetas;
+      const slowFn = (versionService as any)?.ListVersionMetasWithRegistered;
 
       if (typeof fastFn === "function") {
         fastFn()
@@ -850,7 +817,7 @@ export const useLauncher = (args: any) => {
         setDisplayVersion(ver || "None");
         try {
           localStorage.setItem("ll.currentVersionName", selected);
-          const getter = minecraft?.GetVersionLogoDataUrl;
+          const getter = versionService?.GetVersionLogoDataUrl;
           if (typeof getter === "function") {
             getter(selected).then((u: string) =>
               setLogoDataUrl(String(u || "")),
@@ -1048,3 +1015,5 @@ export const useLauncher = (args: any) => {
     handleGdkMissingGoSettings,
   };
 };
+
+

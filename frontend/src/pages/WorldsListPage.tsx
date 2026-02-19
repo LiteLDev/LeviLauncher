@@ -35,18 +35,20 @@ import {
 } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
-  GetContentRoots,
   ListDir,
   GetWorldLevelName,
   GetWorldIconDataUrl,
   GetPathSize,
   GetPathModTime,
-  DeleteWorld,
   BackupWorld,
   BackupWorldWithVersion,
   OpenPathDir,
-  GetLocalUserGamertag,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetContentRoots,
+  DeleteWorld,
+} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";

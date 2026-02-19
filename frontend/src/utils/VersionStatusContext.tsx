@@ -10,7 +10,7 @@ import { Events } from "@wailsio/runtime";
 import {
   GetAllVersionsStatus,
   GetVersionStatus,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import * as main from "bindings/github.com/liteldev/LeviLauncher/models";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 type ItemType = "Preview" | "Release";

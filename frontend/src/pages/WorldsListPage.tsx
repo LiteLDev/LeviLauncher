@@ -77,6 +77,8 @@ interface WorldInfo {
   LastModified: number;
 }
 
+import { SelectionBar } from "@/components/SelectionBar";
+
 export default function WorldsListPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
@@ -391,6 +393,17 @@ export default function WorldsListPage() {
                 >
                   {t("common.open")}
                 </Button>
+                <Tooltip content={t("common.select_mode")}>
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    variant={selection.isSelectMode ? "solid" : "flat"}
+                    color={selection.isSelectMode ? "primary" : "default"}
+                    onPress={selection.toggleSelectMode}
+                  >
+                    <FaCheckSquare />
+                  </Button>
+                </Tooltip>
                 <Tooltip content={t("common.refresh") as unknown as string}>
                   <Button
                     isIconOnly
@@ -429,35 +442,6 @@ export default function WorldsListPage() {
             />
 
             <div className="flex items-center gap-3">
-              <Tooltip content={t("common.select_mode")}>
-                <Button
-                  isIconOnly
-                  radius="full"
-                  variant={selection.isSelectMode ? "solid" : "flat"}
-                  color={selection.isSelectMode ? "primary" : "default"}
-                  onPress={selection.toggleSelectMode}
-                >
-                  <FaCheckSquare />
-                </Button>
-              </Tooltip>
-
-              {selection.isSelectMode && (
-                <Checkbox
-                  isSelected={
-                    sort.filtered.length > 0 &&
-                    selection.selectedCount === sort.filtered.length
-                  }
-                  onValueChange={selection.selectAll}
-                  radius="full"
-                  size="lg"
-                  classNames={{ wrapper: "after:bg-primary" }}
-                >
-                  <span className="text-sm text-default-600">
-                    {t("common.select_all")}
-                  </span>
-                </Checkbox>
-              )}
-
               <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                 <DropdownTrigger>
                   <Button
@@ -519,28 +503,6 @@ export default function WorldsListPage() {
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
-
-              <AnimatePresence>
-                {selection.selectedCount > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                  >
-                    <Button
-                      color="danger"
-                      variant="flat"
-                      radius="full"
-                      startContent={<FaTrash />}
-                      onPress={delManyCfmOnOpen}
-                    >
-                      {t("common.delete_selected", {
-                        count: selection.selectedCount,
-                      })}
-                    </Button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
 
@@ -564,6 +526,14 @@ export default function WorldsListPage() {
         </CardBody>
       </Card>
 
+      <SelectionBar
+        selectedCount={selection.selectedCount}
+        totalCount={sort.filtered.length}
+        onSelectAll={selection.selectAll}
+        onDelete={delManyCfmOnOpen}
+        isSelectMode={selection.isSelectMode}
+      />
+
       {loading && worlds.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
@@ -575,9 +545,7 @@ export default function WorldsListPage() {
         <div className="flex flex-col items-center justify-center py-20 text-default-400">
           <FaBox className="text-6xl mb-4 opacity-20" />
           <p>
-            {sort.query
-              ? t("common.no_results")
-              : t("contentpage.no_items")}
+            {sort.query ? t("common.no_results") : t("contentpage.no_items")}
           </p>
         </div>
       ) : (
@@ -619,9 +587,7 @@ export default function WorldsListPage() {
                       <div className="absolute -top-2 -left-2 z-20">
                         <Checkbox
                           isSelected={!!selection.selected[w.Path]}
-                          onValueChange={() =>
-                            selection.toggleSelect(w.Path)
-                          }
+                          onValueChange={() => selection.toggleSelect(w.Path)}
                           classNames={{
                             wrapper:
                               "bg-white dark:bg-zinc-900 shadow-lg scale-110",

@@ -39,9 +39,7 @@ import {
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import {
-  OpenPathDir,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { GetVersionMeta } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
 import {
@@ -69,9 +67,10 @@ import { useSelectionMode } from "@/hooks/useSelectionMode";
 import { useContentSort } from "@/hooks/useContentSort";
 import { formatBytes, formatDate } from "@/utils/formatting";
 
-const getNameFn = (p: any) =>
-  String(p.name || p.path?.split("\\").pop() || "");
+const getNameFn = (p: any) => String(p.name || p.path?.split("\\").pop() || "");
 const getTimeFn = (p: any) => Number(p.modTime || 0);
+
+import { SelectionBar } from "@/components/SelectionBar";
 
 export default function SkinPacksPage() {
   const { t } = useTranslation();
@@ -122,7 +121,11 @@ export default function SkinPacksPage() {
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const sort = useContentSort("content.skin.sort", packs, getNameFn, getTimeFn);
-  const { lastScrollTopRef, restorePendingRef } = useScrollManager(scrollRef, [packs], [sort.currentPage]);
+  const { lastScrollTopRef, restorePendingRef } = useScrollManager(
+    scrollRef,
+    [packs],
+    [sort.currentPage],
+  );
   const selection = useSelectionMode(sort.filtered);
 
   const refreshAll = React.useCallback(
@@ -419,6 +422,17 @@ export default function SkinPacksPage() {
                   >
                     {t("common.open")}
                   </Button>
+                  <Tooltip content={t("common.select_mode")}>
+                    <Button
+                      isIconOnly
+                      radius="full"
+                      variant={selection.isSelectMode ? "solid" : "flat"}
+                      color={selection.isSelectMode ? "primary" : "default"}
+                      onPress={selection.toggleSelectMode}
+                    >
+                      <FaCheckSquare />
+                    </Button>
+                  </Tooltip>
                   <Tooltip content={t("common.refresh") as unknown as string}>
                     <Button
                       isIconOnly
@@ -457,34 +471,6 @@ export default function SkinPacksPage() {
               />
 
               <div className="flex items-center gap-3">
-                <Tooltip content={t("common.select_mode")}>
-                  <Button
-                    isIconOnly
-                    radius="full"
-                    variant={selection.isSelectMode ? "solid" : "flat"}
-                    color={selection.isSelectMode ? "primary" : "default"}
-                    onPress={selection.toggleSelectMode}
-                  >
-                    <FaCheckSquare />
-                  </Button>
-                </Tooltip>
-
-                {selection.isSelectMode && (
-                  <Checkbox
-                    isSelected={
-                      sort.filtered.length > 0 && selection.selectedCount === sort.filtered.length
-                    }
-                    onValueChange={selection.selectAll}
-                    radius="full"
-                    size="lg"
-                    classNames={{ wrapper: "after:bg-primary" }}
-                  >
-                    <span className="text-sm text-default-600">
-                      {t("common.select_all")}
-                    </span>
-                  </Checkbox>
-                )}
-
                 <Dropdown>
                   <DropdownTrigger>
                     <Button
@@ -507,7 +493,9 @@ export default function SkinPacksPage() {
                   <DropdownMenu
                     selectionMode="single"
                     selectedKeys={
-                      new Set([`${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`])
+                      new Set([
+                        `${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`,
+                      ])
                     }
                     onSelectionChange={(keys) => {
                       const val = Array.from(keys)[0] as string;
@@ -542,28 +530,6 @@ export default function SkinPacksPage() {
                     </DropdownItem>
                   </DropdownMenu>
                 </Dropdown>
-
-                <AnimatePresence>
-                  {selection.selectedCount > 0 && (
-                    <motion.div
-                      initial={{ opacity: 0, scale: 0.9 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.9 }}
-                    >
-                      <Button
-                        color="danger"
-                        variant="flat"
-                        radius="full"
-                        startContent={<FaTrash />}
-                        onPress={delManyCfmOnOpen}
-                      >
-                        {t("common.delete_selected", {
-                          count: selection.selectedCount,
-                        })}
-                      </Button>
-                    </motion.div>
-                  )}
-                </AnimatePresence>
               </div>
             </div>
             <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
@@ -585,6 +551,14 @@ export default function SkinPacksPage() {
             </div>
           </CardBody>
         </Card>
+
+        <SelectionBar
+          selectedCount={selection.selectedCount}
+          totalCount={sort.filtered.length}
+          onSelectAll={selection.selectAll}
+          onDelete={delManyCfmOnOpen}
+          isSelectMode={selection.isSelectMode}
+        />
 
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
@@ -613,7 +587,8 @@ export default function SkinPacksPage() {
                           : "",
                       )}
                       onClick={() => {
-                        if (selection.isSelectMode) selection.toggleSelect(p.path);
+                        if (selection.isSelectMode)
+                          selection.toggleSelect(p.path);
                       }}
                     >
                       <div className="relative shrink-0">
@@ -638,7 +613,9 @@ export default function SkinPacksPage() {
                           <div className="absolute -top-2 -left-2 z-20">
                             <Checkbox
                               isSelected={!!selection.selected[p.path]}
-                              onValueChange={() => selection.toggleSelect(p.path)}
+                              onValueChange={() =>
+                                selection.toggleSelect(p.path)
+                              }
                               classNames={{
                                 wrapper:
                                   "bg-white dark:bg-zinc-900 shadow-lg scale-110",

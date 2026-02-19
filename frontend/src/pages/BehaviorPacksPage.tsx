@@ -36,9 +36,7 @@ import {
   FaHdd,
   FaTag,
 } from "react-icons/fa";
-import {
-  OpenPathDir,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   GetContentRoots,
   ListPacksForVersion,
@@ -61,6 +59,8 @@ import { formatBytes } from "@/utils/formatting";
 
 const getNameFn = (p: any) => String(p.name || p.path?.split("\\").pop() || "");
 const getTimeFn = (p: any) => Number(p.modTime || 0);
+
+import { SelectionBar } from "@/components/SelectionBar";
 
 export default function BehaviorPacksPage() {
   const { t } = useTranslation();
@@ -315,6 +315,17 @@ export default function BehaviorPacksPage() {
                 >
                   {t("common.open")}
                 </Button>
+                <Tooltip content={t("common.select_mode")}>
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    variant={selection.isSelectMode ? "solid" : "flat"}
+                    color={selection.isSelectMode ? "primary" : "default"}
+                    onPress={selection.toggleSelectMode}
+                  >
+                    <FaCheckSquare />
+                  </Button>
+                </Tooltip>
                 <Tooltip content={t("common.refresh") as unknown as string}>
                   <Button
                     isIconOnly
@@ -353,35 +364,6 @@ export default function BehaviorPacksPage() {
             />
 
             <div className="flex items-center gap-3">
-              <Tooltip content={t("common.select_mode")}>
-                <Button
-                  isIconOnly
-                  radius="full"
-                  variant={selection.isSelectMode ? "solid" : "flat"}
-                  color={selection.isSelectMode ? "primary" : "default"}
-                  onPress={selection.toggleSelectMode}
-                >
-                  <FaCheckSquare />
-                </Button>
-              </Tooltip>
-
-              {selection.isSelectMode && (
-                <Checkbox
-                  isSelected={
-                    sort.filtered.length > 0 &&
-                    selection.selectedCount === sort.filtered.length
-                  }
-                  onValueChange={selection.selectAll}
-                  radius="full"
-                  size="lg"
-                  classNames={{ wrapper: "after:bg-primary" }}
-                >
-                  <span className="text-sm text-default-600">
-                    {t("common.select_all")}
-                  </span>
-                </Checkbox>
-              )}
-
               <Dropdown classNames={COMPONENT_STYLES.dropdown}>
                 <DropdownTrigger>
                   <Button
@@ -442,28 +424,6 @@ export default function BehaviorPacksPage() {
                   </DropdownItem>
                 </DropdownMenu>
               </Dropdown>
-
-              <AnimatePresence>
-                {selection.selectedCount > 0 && (
-                  <motion.div
-                    initial={{ opacity: 0, scale: 0.9 }}
-                    animate={{ opacity: 1, scale: 1 }}
-                    exit={{ opacity: 0, scale: 0.9 }}
-                  >
-                    <Button
-                      color="danger"
-                      variant="flat"
-                      radius="full"
-                      startContent={<FaTrash />}
-                      onPress={delManyCfmOnOpen}
-                    >
-                      {t("common.delete_selected", {
-                        count: selection.selectedCount,
-                      })}
-                    </Button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
             </div>
           </div>
 
@@ -486,6 +446,14 @@ export default function BehaviorPacksPage() {
           </div>
         </CardBody>
       </Card>
+
+      <SelectionBar
+        selectedCount={selection.selectedCount}
+        totalCount={sort.filtered.length}
+        onSelectAll={selection.selectAll}
+        onDelete={delManyCfmOnOpen}
+        isSelectMode={selection.isSelectMode}
+      />
 
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">

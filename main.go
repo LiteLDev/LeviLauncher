@@ -94,7 +94,7 @@ func sendLaunchToExistingInstance(version string) bool {
 	return false
 }
 
-func startSingleInstanceServer(mc *Minecraft) {
+func startSingleInstanceServer(versionService *VersionService) {
 	ln, err := npipe.Listen(singleInstancePipe)
 	if err != nil {
 		return
@@ -121,7 +121,7 @@ func startSingleInstanceServer(mc *Minecraft) {
 					payload := strings.TrimSpace(parts[1])
 					if cmd == "launch" && payload != "" {
 						go func(v string) {
-							_ = mc.LaunchVersionByNameForce(v)
+							_ = versionService.LaunchVersionByNameForce(v)
 						}(payload)
 					}
 				}
@@ -197,7 +197,6 @@ func init() {
 	application.RegisterEvent[types.FilesDroppedEvent]("files-dropped")
 }
 
-
 func main() {
 	_ = godotenv.Load()
 	initialURL, autoLaunchVersion := parseArgs()
@@ -212,7 +211,11 @@ func main() {
 		discord.Init()
 	}
 	mc := NewMinecraft()
-	startSingleInstanceServer(mc)
+	contentService := NewContentService(mc)
+	modsService := NewModsService(mc)
+	userService := NewUserService(mc)
+	versionService := NewVersionService(mc)
+	startSingleInstanceServer(versionService)
 
 	assets, err := fs.Sub(assets, "frontend/dist")
 	if err != nil {
@@ -224,6 +227,10 @@ func main() {
 		Description: "A Minecraft Launcher",
 		Services: []application.Service{
 			application.NewService(mc),
+			application.NewService(contentService),
+			application.NewService(modsService),
+			application.NewService(userService),
+			application.NewService(versionService),
 		},
 		Assets: application.AssetOptions{
 			Handler: application.AssetFileServerFS(assets),
@@ -232,7 +239,7 @@ func main() {
 	mc.startup()
 
 	if strings.TrimSpace(autoLaunchVersion) != "" && initialURL == "/" {
-		_ = mc.LaunchVersionByName(autoLaunchVersion)
+		_ = versionService.LaunchVersionByName(autoLaunchVersion)
 		return
 	}
 
@@ -274,13 +281,13 @@ func main() {
 		Windows: application.WindowsWindow{
 			BackdropType: application.Acrylic,
 		},
-		URL: initialURL,
+		URL:            initialURL,
 		EnableFileDrop: true,
 	})
 
 	if strings.TrimSpace(autoLaunchVersion) != "" {
 		go func() {
-			_ = mc.LaunchVersionByName(autoLaunchVersion)
+			_ = versionService.LaunchVersionByName(autoLaunchVersion)
 		}()
 	}
 

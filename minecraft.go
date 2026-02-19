@@ -1,53 +1,37 @@
 package main
 
 import (
-	"bytes"
 	"context"
 	"encoding/base64"
-	"encoding/json"
 	"log"
 	"net/http"
 	"os"
-	"os/exec"
 	"path/filepath"
 	"strconv"
 	"strings"
-	"syscall"
 	"time"
-
-	"unsafe"
 
 	_ "embed"
 
-	"github.com/liteldev/LeviLauncher/internal/apppath"
-	"github.com/liteldev/LeviLauncher/internal/config"
-	"github.com/liteldev/LeviLauncher/internal/content"
+	"github.com/liteldev/LeviLauncher/internal/contentmgr"
 	"github.com/liteldev/LeviLauncher/internal/curseforge/client"
 	cursetypes "github.com/liteldev/LeviLauncher/internal/curseforge/client/types"
-	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/downloader"
 	"github.com/liteldev/LeviLauncher/internal/gameinput"
 	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/lang"
 	"github.com/liteldev/LeviLauncher/internal/launch"
-	"github.com/liteldev/LeviLauncher/internal/launchercore"
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	lipclient "github.com/liteldev/LeviLauncher/internal/lip/client"
 	liptypes "github.com/liteldev/LeviLauncher/internal/lip/client/types"
-	"github.com/liteldev/LeviLauncher/internal/materialbin"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
-	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/packages"
-	"github.com/liteldev/LeviLauncher/internal/peeditor"
-	"github.com/liteldev/LeviLauncher/internal/preloader"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
-	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
-	"github.com/liteldev/LeviLauncher/internal/versions"
+	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
 	"github.com/wailsapp/wails/v3/pkg/application"
-	"golang.org/x/sys/windows"
 )
 
 //go:embed assets/curseforge.key
@@ -175,47 +159,6 @@ type ResourcePackMaterialUpdateResult struct {
 	Error          string `json:"error"`
 }
 
-func (a *Minecraft) GetContentRoots(name string) types.ContentRoots {
-	return mcservice.GetContentRoots(name)
-}
-
-func (a *Minecraft) GetContentCounts(name string) ContentCounts {
-	c := mcservice.GetContentCounts(name)
-	return ContentCounts{Worlds: c.Worlds, ResourcePacks: c.ResourcePacks, BehaviorPacks: c.BehaviorPacks}
-}
-
-func (a *Minecraft) ListPacksForVersion(versionName string, player string) []packages.Pack {
-	roots := a.GetContentRoots(versionName)
-	if roots.ResourcePacks == "" && roots.BehaviorPacks == "" {
-		return []packages.Pack{}
-	}
-	var skinPacksDirs []string
-
-	if roots.ResourcePacks != "" {
-		sharedSkins := filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
-		if utils.DirExists(sharedSkins) {
-			skinPacksDirs = append(skinPacksDirs, sharedSkins)
-		}
-	}
-
-	if player != "" && roots.UsersRoot != "" {
-		userSkins := filepath.Join(roots.UsersRoot, player, "games", "com.mojang", "skin_packs")
-		if utils.DirExists(userSkins) {
-			skinPacksDirs = append(skinPacksDirs, userSkins)
-		}
-		userSkinsSimple := filepath.Join(roots.UsersRoot, player, "skin_packs")
-		if utils.DirExists(userSkinsSimple) {
-			skinPacksDirs = append(skinPacksDirs, userSkinsSimple)
-		}
-	}
-
-	packs, err := a.packManager.LoadPacksForVersion(versionName, roots.ResourcePacks, roots.BehaviorPacks, skinPacksDirs...)
-	if err != nil {
-		return []packages.Pack{}
-	}
-	return packs
-}
-
 func (a *Minecraft) ListServers(versionName string, player string) []types.Server {
 	servers, _ := mcservice.ListServers(versionName, player)
 	return servers
@@ -224,78 +167,6 @@ func (a *Minecraft) ListServers(versionName string, player string) []types.Serve
 func (a *Minecraft) PingServer(host string) *mcservice.MotdBEInfo {
 	info, _ := mcservice.MotdBE(host)
 	return info
-}
-
-func (a *Minecraft) LaunchVersionByName(name string) string {
-	return a.launchVersionInternal(name, true)
-}
-
-func (a *Minecraft) LaunchVersionByNameForce(name string) string {
-	return a.launchVersionInternal(name, false)
-}
-
-func (a *Minecraft) CreateDesktopShortcut(name string) string {
-	return mcservice.CreateDesktopShortcut(name)
-}
-
-func (a *Minecraft) SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, enableRenderDragon bool, launchArgs string, envVars string) string {
-	return mcservice.SaveVersionMeta(name, gameVersion, typeStr, enableIsolation, enableConsole, enableEditorMode, enableRenderDragon, launchArgs, envVars)
-}
-
-func (a *Minecraft) ListVersionMetas() []versions.VersionMeta { return mcservice.ListVersionMetas() }
-func (a *Minecraft) ListVersionMetasWithRegistered() []versions.VersionMeta {
-	metas := mcservice.ListVersionMetas()
-	vdir, err := apppath.VersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return metas
-	}
-	var releaseLoc, previewLoc string
-	if info, e := registry.GetAppxInfo("MICROSOFT.MINECRAFTUWP"); e == nil && info != nil {
-		releaseLoc = strings.ToLower(filepath.Clean(strings.TrimSpace(info.InstallLocation)))
-	}
-	if info, e := registry.GetAppxInfo("Microsoft.MinecraftWindowsBeta"); e == nil && info != nil {
-		previewLoc = strings.ToLower(filepath.Clean(strings.TrimSpace(info.InstallLocation)))
-	}
-	for i := range metas {
-		m := &metas[i]
-		isPreview := strings.EqualFold(strings.TrimSpace(m.Type), "preview")
-		dir := filepath.Join(vdir, strings.TrimSpace(m.Name))
-		norm := strings.ToLower(filepath.Clean(strings.TrimSpace(dir)))
-		if isPreview {
-			m.Registered = previewLoc != "" && norm == strings.ToLower(filepath.Clean(previewLoc))
-		} else {
-			m.Registered = releaseLoc != "" && norm == strings.ToLower(filepath.Clean(releaseLoc))
-		}
-	}
-	return metas
-}
-
-func (a *Minecraft) GetVersionMeta(name string) versions.VersionMeta {
-	return mcservice.GetVersionMeta(name)
-}
-
-func (a *Minecraft) ListInheritableVersionNames(versionType string) []string {
-	return mcservice.ListInheritableVersionNames(versionType)
-}
-
-func (a *Minecraft) CopyVersionDataFromVersion(sourceName string, targetName string) string {
-	return mcservice.CopyVersionDataFromVersion(sourceName, targetName)
-}
-
-func (a *Minecraft) CopyVersionDataFromGDK(isPreview bool, targetName string) string {
-	return mcservice.CopyVersionDataFromGDK(isPreview, targetName)
-}
-
-func (a *Minecraft) SaveVersionLogoDataUrl(name string, dataUrl string) string {
-	return mcservice.SaveVersionLogoDataUrl(name, dataUrl)
-}
-
-func (a *Minecraft) SaveVersionLogoFromPath(name string, filePath string) string {
-	return mcservice.SaveVersionLogoFromPath(name, filePath)
-}
-
-func (a *Minecraft) GetVersionLogoDataUrl(name string) string {
-	return mcservice.GetVersionLogoDataUrl(name)
 }
 
 func (a *Minecraft) GetImageBase64(path string) string {
@@ -312,28 +183,97 @@ func (a *Minecraft) GetImageBase64(path string) string {
 	return "data:" + mime + ";base64," + enc
 }
 
-func (a *Minecraft) RemoveVersionLogo(name string) string { return mcservice.RemoveVersionLogo(name) }
-
-func (a *Minecraft) ValidateVersionFolderName(name string) string {
-	return mcservice.ValidateVersionFolderName(name)
-}
-
-func (a *Minecraft) RenameVersionFolder(oldName string, newName string) string {
-	return mcservice.RenameVersionFolder(oldName, newName)
-}
-
-func (a *Minecraft) DeleteVersionFolder(name string) string {
-	return mcservice.DeleteVersionFolder(name)
-}
-
 type Minecraft struct {
-	ctx         context.Context
-	curseClient client.CurseClient
-	lipClient   *lipclient.Client
-	packManager *packages.PackManager
+	ctx            context.Context
+	curseClient    client.CurseClient
+	lipClient      lipService
+	launcher       launchService
+	contentManager contentService
+}
+
+type lipService interface {
+	SearchPackages(q string, perPage int, page int, sort string, order string) (*liptypes.SearchPackagesResponse, error)
+	GetPackage(identifier string) (*liptypes.GetPackageResponse, error)
+}
+
+type packLoader interface {
+	LoadPacksForVersion(versionName string, resourcePacksDir string, behaviorPacksDir string, skinPacksDirs ...string) ([]packages.Pack, error)
+}
+
+type launchService interface {
+	Launch(ctx context.Context, versionName string, checkRunning bool) string
+}
+
+type contentService interface {
+	ListPacksForVersion(versionName string, player string) []packages.Pack
+	ImportMcpack(name string, data []byte, overwrite bool) string
+	ImportMcpackPath(name string, path string, overwrite bool) string
+	ImportMcaddon(name string, data []byte, overwrite bool) string
+	ImportMcaddonPath(name string, path string, overwrite bool) string
+	ImportMcaddonWithPlayer(name string, player string, data []byte, overwrite bool) string
+	ImportMcaddonPathWithPlayer(name string, player string, path string, overwrite bool) string
+	ImportMcpackWithPlayer(name string, player string, fileName string, data []byte, overwrite bool) string
+	ImportMcpackPathWithPlayer(name string, player string, path string, overwrite bool) string
+	IsMcpackSkinPackPath(path string) bool
+	IsMcpackSkinPack(data []byte) bool
+	ImportMcworld(name string, player string, fileName string, data []byte, overwrite bool) string
+	ImportMcworldPath(name string, player string, path string, overwrite bool) string
+	GetPackInfo(dir string) types.PackInfo
+	UpdateResourcePackMaterialBins(versionName string, packPath string) contentmgr.MaterialUpdateResult
+	CheckResourcePackMaterialCompatibility(versionName string, packPath string) contentmgr.MaterialCompatResult
+	DeletePack(name string, path string) string
+	DeleteWorld(name string, path string) string
+}
+
+type MinecraftDeps struct {
+	CurseClient    client.CurseClient
+	LIPClient      lipService
+	PackManager    packLoader
+	Launcher       launchService
+	ContentManager contentService
 }
 
 func NewMinecraft() *Minecraft {
+	return NewMinecraftWithDeps(MinecraftDeps{})
+}
+
+func NewMinecraftWithDeps(deps MinecraftDeps) *Minecraft {
+	curseClient := deps.CurseClient
+	if curseClient == nil {
+		curseClient = client.NewCurseClient(resolveCurseForgeAPIKey())
+	}
+	lipClient := deps.LIPClient
+	if lipClient == nil {
+		lipClient = lipclient.NewClient()
+	}
+	packManager := deps.PackManager
+	if packManager == nil {
+		packManager = packages.NewPackManager()
+	}
+	launcher := deps.Launcher
+	if launcher == nil {
+		launcher = versionlaunch.New(isPreloader)
+	}
+	contentManager := deps.ContentManager
+	if contentManager == nil {
+		contentManager = contentmgr.New(contentmgr.Deps{
+			PackLoader:      packManager,
+			GetContentRoots: mcservice.GetContentRoots,
+			GetVersionGameInfo: func(name string) string {
+				return mcservice.GetVersionMeta(name).GameVersion
+			},
+			ListDir: mcservice.ListDir,
+		})
+	}
+	return &Minecraft{
+		curseClient:    curseClient,
+		lipClient:      lipClient,
+		launcher:       launcher,
+		contentManager: contentManager,
+	}
+}
+
+func resolveCurseForgeAPIKey() string {
 	apiKey := os.Getenv("CURSEFORGE_API_KEY")
 	if apiKey == "" {
 		deobfuscated := make([]byte, len(curseForgeApiKey))
@@ -346,11 +286,7 @@ func NewMinecraft() *Minecraft {
 			apiKey = string(decoded)
 		}
 	}
-	return &Minecraft{
-		curseClient: client.NewCurseClient(apiKey),
-		lipClient:   lipclient.NewClient(),
-		packManager: packages.NewPackManager(),
-	}
+	return apiKey
 }
 
 func (a *Minecraft) SearchLIPPackages(q string, perPage int, page int, sort string, order string) (*liptypes.SearchPackagesResponse, error) {
@@ -402,217 +338,6 @@ func (a *Minecraft) IsGamingServicesInstalled() bool {
 	return false
 }
 
-func parseCommandLineArgs(input string) []string {
-	var args []string
-	var current strings.Builder
-	inQuote := false
-
-	for _, r := range input {
-		switch r {
-		case '"':
-			inQuote = !inQuote
-		case ' ', '\t', '\n', '\r':
-			if inQuote {
-				current.WriteRune(r)
-			} else if current.Len() > 0 {
-				args = append(args, current.String())
-				current.Reset()
-			}
-		default:
-			current.WriteRune(r)
-		}
-	}
-	if current.Len() > 0 {
-		args = append(args, current.String())
-	}
-	return args
-}
-
-func (a *Minecraft) GetGamertagByXuid(xuidStr string) string {
-	xuid, err := strconv.ParseUint(xuidStr, 10, 64)
-	if err != nil {
-		return ""
-	}
-	s, err := launchercore.GetGamertagByXuid(xuid)
-	if err != nil {
-		return ""
-	}
-	return s
-}
-
-func (a *Minecraft) GetLocalUserId() string {
-	id, err := launchercore.GetLocalUserId()
-	if err != nil {
-		return ""
-	}
-	return strconv.FormatUint(id, 10)
-}
-
-func (a *Minecraft) GetLocalUserGamertag() string {
-	s, err := launchercore.GetLocalUserGamertag()
-	if err != nil {
-		return ""
-	}
-	return s
-}
-
-func (a *Minecraft) GetLocalUserGamerPicture(size int) string {
-	b, err := launchercore.GetLocalUserGamerPicture(size)
-	if err != nil {
-		return ""
-	}
-	return base64.StdEncoding.EncodeToString(b)
-}
-
-func (a *Minecraft) GetUserGamertagMap(usersRoot string) map[string]string {
-	usersRoot = strings.TrimSpace(usersRoot)
-	if usersRoot == "" {
-		return map[string]string{}
-	}
-
-	cachePath := filepath.Join(config.ConfigDir(), "user_gamertag_map.json")
-	out := map[string]string{}
-	loadMap := func(p string) {
-		b, err := os.ReadFile(p)
-		if err != nil || len(b) == 0 {
-			return
-		}
-		m := map[string]string{}
-		if err := json.Unmarshal(b, &m); err != nil {
-			return
-		}
-		for k, v := range m {
-			kk := strings.TrimSpace(k)
-			vv := strings.TrimSpace(v)
-			if kk == "" || vv == "" {
-				continue
-			}
-			if strings.TrimSpace(out[kk]) == "" {
-				out[kk] = vv
-			}
-		}
-	}
-
-	loadMap(cachePath)
-
-	entries, err := os.ReadDir(usersRoot)
-	if err != nil {
-		return out
-	}
-
-	changed := false
-	for _, e := range entries {
-		if !e.IsDir() {
-			continue
-		}
-		obf := strings.TrimSpace(e.Name())
-		if obf == "" || strings.EqualFold(obf, "shared") || obf == "9556213259376595538" {
-			continue
-		}
-		if v := strings.TrimSpace(out[obf]); v != "" {
-			continue
-		}
-
-		ss := filepath.Join(usersRoot, obf, "games", "com.mojang", "Screenshots")
-		xuidDirs, err := os.ReadDir(ss)
-		if err != nil {
-			continue
-		}
-
-		var xuidStr string
-		for _, xd := range xuidDirs {
-			if xd.IsDir() {
-				xuidStr = strings.TrimSpace(xd.Name())
-				if xuidStr != "" {
-					break
-				}
-			}
-		}
-		if xuidStr == "" {
-			continue
-		}
-
-		xuid, err := strconv.ParseUint(xuidStr, 10, 64)
-		if err != nil {
-			continue
-		}
-
-		raw, err := launchercore.GetGamertagByXuid(xuid)
-		if err != nil {
-			continue
-		}
-		raw = strings.TrimSpace(raw)
-		if raw == "" {
-			continue
-		}
-
-		parts := strings.SplitN(raw, "|", 2)
-		gamertag := strings.TrimSpace(parts[0])
-		if gamertag == "" {
-			continue
-		}
-
-		key := obf
-		if len(parts) == 2 {
-			if k := strings.TrimSpace(parts[1]); k != "" {
-				key = k
-			}
-		}
-
-		if strings.TrimSpace(out[key]) != gamertag {
-			out[key] = gamertag
-			changed = true
-		}
-	}
-
-	if changed {
-		if b, err := json.Marshal(out); err == nil {
-			_ = os.WriteFile(cachePath, b, 0644)
-		}
-	}
-
-	return out
-}
-
-func (a *Minecraft) ResetSession() string {
-	if err := launchercore.ResetSession(); err != nil {
-		return err.Error()
-	}
-	return ""
-}
-
-func (a *Minecraft) XUserGetState() int {
-	state, err := launchercore.XUserGetState()
-	if err != nil {
-		return 1
-	}
-	return int(state)
-}
-
-type UserStatistics struct {
-	MinutesPlayed     int64   `json:"minutesPlayed"`
-	BlockBroken       int64   `json:"blockBroken"`
-	MobKilled         int64   `json:"mobKilled"`
-	DistanceTravelled float64 `json:"distanceTravelled"`
-}
-
-func (a *Minecraft) GetAggregatedUserStatistics(xuidStr string) UserStatistics {
-	xuid, err := strconv.ParseUint(xuidStr, 10, 64)
-	if err != nil {
-		return UserStatistics{}
-	}
-	mp, bb, mk, dt, err := launchercore.GetAggregatedUserStatisticsByXuid(xuid)
-	if err != nil {
-		return UserStatistics{}
-	}
-	return UserStatistics{
-		MinutesPlayed:     mp,
-		BlockBroken:       bb,
-		MobKilled:         mk,
-		DistanceTravelled: dt,
-	}
-}
-
 func (a *Minecraft) StartMsixvcDownload(url string, md5sum string) string {
 	return mcservice.StartMsixvcDownload(a.ctx, url, md5sum)
 }
@@ -645,85 +370,6 @@ func (a *Minecraft) InstallGDKFromZip(zipPath string) string {
 	return gdk.InstallFromZip(a.ctx, zipPath)
 }
 
-func (a *Minecraft) RegisterVersionWithWdapp(name string, isPreview bool) string {
-	vdir, err := apppath.VersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	folder := filepath.Join(vdir, strings.TrimSpace(name))
-	if e := gdk.UnregisterIfExists(isPreview); e != "" {
-	}
-	msg := gdk.RegisterVersionFolder(folder)
-	if msg != "" {
-		return msg
-	}
-	pkg := "MICROSOFT.MINECRAFTUWP"
-	if isPreview {
-		pkg = "Microsoft.MinecraftWindowsBeta"
-	}
-	if info, e := registry.GetAppxInfo(pkg); e == nil && info != nil {
-		normalize := func(p string) string {
-			s := strings.ToLower(filepath.Clean(strings.TrimSpace(p)))
-			s = strings.TrimPrefix(s, `\\?\`)
-			s = strings.TrimPrefix(s, `\??\`)
-			return strings.TrimSuffix(s, string(os.PathSeparator))
-		}
-		expected := normalize(filepath.Join(vdir, strings.TrimSpace(name)))
-		loc := normalize(info.InstallLocation)
-		flag := loc != "" && loc == expected
-		if m, er := versions.ReadMeta(folder); er == nil {
-			m.Registered = flag
-			_ = versions.WriteMeta(folder, m)
-		}
-	}
-	mcservice.ReconcileRegisteredFlags()
-	return msg
-}
-
-func (a *Minecraft) UnregisterVersionByName(name string) string {
-	vdir, err := apppath.VersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	folder := filepath.Join(vdir, strings.TrimSpace(name))
-	msg := gdk.UnregisterVersionFolder(folder)
-	if msg != "" {
-		return msg
-	}
-	if m, er := versions.ReadMeta(folder); er == nil {
-		m.Registered = false
-		_ = versions.WriteMeta(folder, m)
-	}
-	mcservice.ReconcileRegisteredFlags()
-	return ""
-}
-
-type VersionStatus struct {
-	Version      string `json:"version"`
-	IsInstalled  bool   `json:"isInstalled"`
-	IsDownloaded bool   `json:"isDownloaded"`
-	Type         string `json:"type"`
-}
-
-func (a *Minecraft) GetInstallerDir() string { return mcservice.GetInstallerDir() }
-
-func (a *Minecraft) GetVersionsDir() string { return mcservice.GetVersionsDir() }
-
-func (a *Minecraft) GetVersionStatus(version string, versionType string) VersionStatus {
-	s := mcservice.GetVersionStatus(version, versionType)
-	return VersionStatus{Version: s.Version, Type: s.Type, IsInstalled: s.IsInstalled, IsDownloaded: s.IsDownloaded}
-}
-
-func (a *Minecraft) GetAllVersionsStatus(versions []map[string]interface{}) []VersionStatus {
-	var results []VersionStatus
-	for _, s := range mcservice.GetAllVersionsStatus(versions) {
-		results = append(results, VersionStatus{Version: s.Version, Type: s.Type, IsInstalled: s.IsInstalled, IsDownloaded: s.IsDownloaded})
-	}
-	return results
-}
-
-func (a *Minecraft) OpenModsExplorer(name string) { mcservice.OpenModsExplorer(name) }
-
 func (a *Minecraft) OpenWorldsExplorer(name string, isPreview bool) {
 	mcservice.OpenWorldsExplorer(name, isPreview)
 }
@@ -731,548 +377,6 @@ func (a *Minecraft) OpenWorldsExplorer(name string, isPreview bool) {
 func (a *Minecraft) OpenPathDir(dir string) { mcservice.OpenPathDir(dir) }
 
 func (a *Minecraft) OpenGameDataExplorer(isPreview bool) { mcservice.OpenGameDataExplorer(isPreview) }
-
-func (a *Minecraft) GetMods(name string) []types.ModInfo {
-	return mods.GetMods(name)
-}
-
-func (a *Minecraft) ImportModZip(name string, data []byte, overwrite bool) string {
-	return mods.ImportZipToMods(name, data, overwrite)
-}
-
-func (a *Minecraft) DeleteMod(name string, modName string) string {
-	return mods.DeleteMod(name, modName)
-}
-
-func (a *Minecraft) ImportModDll(name string, fileName string, data []byte, modName string, modType string, version string, overwrite bool) string {
-	return mods.ImportDllToMods(name, fileName, data, modName, modType, version, overwrite)
-}
-
-func (a *Minecraft) DisableMod(name string, modName string) string {
-	return mods.DisableMod(name, modName)
-}
-
-func (a *Minecraft) EnableMod(name string, modName string) string {
-	return mods.EnableMod(name, modName)
-}
-
-func (a *Minecraft) IsModEnabled(name string, modName string) bool {
-	return mods.IsModEnabled(name, modName)
-}
-
-func compareVersions(v1, v2 string) int {
-	parts1 := strings.Split(v1, ".")
-	parts2 := strings.Split(v2, ".")
-	maxLen := len(parts1)
-	if len(parts2) > maxLen {
-		maxLen = len(parts2)
-	}
-	for i := 0; i < maxLen; i++ {
-		var s1, s2 string
-		if i < len(parts1) {
-			s1 = parts1[i]
-		}
-		if i < len(parts2) {
-			s2 = parts2[i]
-		}
-
-		n1, err1 := strconv.Atoi(s1)
-		n2, err2 := strconv.Atoi(s2)
-
-		if err1 == nil && err2 == nil {
-			if n1 != n2 {
-				if n1 > n2 {
-					return 1
-				}
-				return -1
-			}
-		} else {
-			if s1 != s2 {
-				if s1 > s2 {
-					return 1
-				}
-				return -1
-			}
-		}
-	}
-	return 0
-}
-
-func (a *Minecraft) ImportMcpack(name string, data []byte, overwrite bool) string {
-	roots := a.GetContentRoots(name)
-	skinDir := ""
-	meta := a.GetVersionMeta(name)
-	if compareVersions(meta.GameVersion, "1.26.0.0") > 0 {
-		skinDir = filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
-	}
-	return content.ImportMcpackToDirs2(data, "", roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-}
-
-func (a *Minecraft) ImportMcpackPath(name string, path string, overwrite bool) string {
-	if strings.TrimSpace(path) == "" {
-		return "ERR_OPEN_ZIP"
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return "ERR_OPEN_ZIP"
-	}
-	roots := a.GetContentRoots(name)
-	skinDir := ""
-	meta := a.GetVersionMeta(name)
-	if compareVersions(meta.GameVersion, "1.26.0.0") > 0 {
-		skinDir = filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
-	}
-	return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-}
-
-func (a *Minecraft) ImportMcaddon(name string, data []byte, overwrite bool) string {
-	roots := a.GetContentRoots(name)
-	skinDir := ""
-	meta := a.GetVersionMeta(name)
-	if compareVersions(meta.GameVersion, "1.26.0.0") > 0 {
-		skinDir = filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
-	}
-	return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-}
-
-func (a *Minecraft) ImportMcaddonPath(name string, path string, overwrite bool) string {
-	if strings.TrimSpace(path) == "" {
-		return "ERR_OPEN_ZIP"
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return "ERR_OPEN_ZIP"
-	}
-	roots := a.GetContentRoots(name)
-	skinDir := ""
-	meta := a.GetVersionMeta(name)
-	if compareVersions(meta.GameVersion, "1.26.0.0") > 0 {
-		skinDir = filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
-	}
-	return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-}
-
-func (a *Minecraft) ImportMcaddonWithPlayer(name string, player string, data []byte, overwrite bool) string {
-	roots := a.GetContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	skinDir := ""
-	if users != "" && strings.TrimSpace(player) != "" {
-		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-	}
-	return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-}
-
-func (a *Minecraft) ImportMcaddonPathWithPlayer(name string, player string, path string, overwrite bool) string {
-	if strings.TrimSpace(path) == "" {
-		return "ERR_OPEN_ZIP"
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return "ERR_OPEN_ZIP"
-	}
-	roots := a.GetContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	skinDir := ""
-	if users != "" && strings.TrimSpace(player) != "" {
-		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-	}
-	return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-}
-
-func (a *Minecraft) ImportMcpackWithPlayer(name string, player string, fileName string, data []byte, overwrite bool) string {
-	roots := a.GetContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	skinDir := ""
-	if users != "" && strings.TrimSpace(player) != "" {
-		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-	}
-	return content.ImportMcpackToDirs2(data, fileName, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-}
-
-func (a *Minecraft) ImportMcpackPathWithPlayer(name string, player string, path string, overwrite bool) string {
-	if strings.TrimSpace(path) == "" {
-		return "ERR_OPEN_ZIP"
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return "ERR_OPEN_ZIP"
-	}
-	roots := a.GetContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	skinDir := ""
-	if users != "" && strings.TrimSpace(player) != "" {
-		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-	}
-	return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
-}
-
-func (a *Minecraft) IsMcpackSkinPackPath(path string) bool {
-	if strings.TrimSpace(path) == "" {
-		return false
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return false
-	}
-	return content.IsMcpackSkinPack(b)
-}
-
-func (a *Minecraft) IsMcpackSkinPack(data []byte) bool {
-	return content.IsMcpackSkinPack(data)
-}
-
-func (a *Minecraft) ImportMcworld(name string, player string, fileName string, data []byte, overwrite bool) string {
-	roots := a.GetContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	if users == "" || strings.TrimSpace(player) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	wp := filepath.Join(users, player, "games", "com.mojang", "minecraftWorlds")
-	return content.ImportMcworldToDir(data, fileName, wp, overwrite)
-}
-
-func (a *Minecraft) ImportMcworldPath(name string, player string, path string, overwrite bool) string {
-	if strings.TrimSpace(path) == "" {
-		return "ERR_OPEN_ZIP"
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return "ERR_OPEN_ZIP"
-	}
-	roots := a.GetContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	if users == "" || strings.TrimSpace(player) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	wp := filepath.Join(users, player, "games", "com.mojang", "minecraftWorlds")
-	return content.ImportMcworldToDir(b, filepath.Base(path), wp, overwrite)
-}
-
-func (a *Minecraft) GetPackInfo(dir string) types.PackInfo {
-	return content.ReadPackInfoFromDir(dir)
-}
-
-func readMaterialBinVersion(path string) (uint64, error) {
-	p := strings.TrimSpace(path)
-	if p == "" {
-		return 0, os.ErrNotExist
-	}
-	b, err := os.ReadFile(p)
-	if err != nil {
-		return 0, err
-	}
-	def, _, err := materialbin.ParseAuto(b)
-	if err != nil {
-		return 0, err
-	}
-	return def.Version, nil
-}
-
-func listPackMaterialBinFiles(packPath string) ([]string, error) {
-	base := strings.TrimSpace(packPath)
-	if base == "" {
-		return nil, os.ErrNotExist
-	}
-	materialsDirs := []string{
-		filepath.Join(base, "renderer", "materials"),
-	}
-
-	subpacksRoot := filepath.Join(base, "subpacks")
-	if subEntries, err := os.ReadDir(subpacksRoot); err == nil {
-		for _, e := range subEntries {
-			if !e.IsDir() {
-				continue
-			}
-			subpackName := strings.TrimSpace(e.Name())
-			if subpackName == "" {
-				continue
-			}
-			materialsDirs = append(
-				materialsDirs,
-				filepath.Join(subpacksRoot, subpackName, "renderer", "materials"),
-			)
-		}
-	}
-
-	out := make([]string, 0, 16)
-	for _, materialsDir := range materialsDirs {
-		entries, err := os.ReadDir(materialsDir)
-		if err != nil {
-			continue
-		}
-		for _, e := range entries {
-			if e.IsDir() {
-				continue
-			}
-			name := strings.TrimSpace(e.Name())
-			if name == "" {
-				continue
-			}
-			if !strings.HasSuffix(strings.ToLower(name), ".material.bin") {
-				continue
-			}
-			out = append(out, filepath.Join(materialsDir, name))
-		}
-	}
-	if len(out) == 0 {
-		return nil, os.ErrNotExist
-	}
-	return out, nil
-}
-
-func isChildOfPath(path string, root string) bool {
-	p, err1 := filepath.Abs(strings.TrimSpace(path))
-	r, err2 := filepath.Abs(strings.TrimSpace(root))
-	if err1 != nil || err2 != nil {
-		return false
-	}
-	p = strings.ToLower(filepath.Clean(p))
-	r = strings.ToLower(filepath.Clean(r))
-	return p != r && strings.HasPrefix(p, r+string(os.PathSeparator))
-}
-
-func (a *Minecraft) UpdateResourcePackMaterialBins(versionName string, packPath string) ResourcePackMaterialUpdateResult {
-	result := ResourcePackMaterialUpdateResult{}
-	verName := strings.TrimSpace(versionName)
-	packDir := strings.TrimSpace(packPath)
-	if verName == "" || packDir == "" {
-		result.Error = "invalid input"
-		return result
-	}
-	fi, err := os.Stat(packDir)
-	if err != nil || !fi.IsDir() {
-		result.Error = "ERR_INVALID_PATH"
-		return result
-	}
-
-	roots := a.GetContentRoots(verName)
-	if strings.TrimSpace(roots.ResourcePacks) == "" {
-		result.Error = "ERR_ACCESS_VERSIONS_DIR"
-		return result
-	}
-	if !isChildOfPath(packDir, roots.ResourcePacks) {
-		result.Error = "ERR_INVALID_PACKAGE"
-		return result
-	}
-
-	files, err := listPackMaterialBinFiles(packDir)
-	if err != nil || len(files) == 0 {
-		return result
-	}
-	result.HasMaterialBin = true
-	result.TotalCount = len(files)
-
-	vdir, err := apppath.VersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		result.Error = "ERR_ACCESS_VERSIONS_DIR"
-		return result
-	}
-	gameMaterialPath := filepath.Join(vdir, verName, "data", "renderer", "materials", "RenderChunk.material.bin")
-	gameBuf, err := os.ReadFile(gameMaterialPath)
-	if err != nil {
-		result.Error = "ERR_READ_GAME_RENDERCHUNK"
-		return result
-	}
-	_, targetVersion, err := materialbin.ParseAuto(gameBuf)
-	if err != nil {
-		result.Error = "ERR_READ_GAME_RENDERCHUNK"
-		return result
-	}
-
-	for _, p := range files {
-		raw, err := os.ReadFile(p)
-		if err != nil {
-			result.FailedCount++
-			continue
-		}
-		def, _, err := materialbin.ParseAuto(raw)
-		if err != nil {
-			result.FailedCount++
-			continue
-		}
-		rebuilt, err := def.MarshalBinary(targetVersion)
-		if err != nil {
-			result.FailedCount++
-			continue
-		}
-		if bytes.Equal(raw, rebuilt) {
-			result.SkippedCount++
-			continue
-		}
-		mode := os.FileMode(0644)
-		if st, err := os.Stat(p); err == nil {
-			mode = st.Mode().Perm()
-		}
-		tmp := p + ".tmp"
-		if err := os.WriteFile(tmp, rebuilt, mode); err != nil {
-			_ = os.Remove(tmp)
-			result.FailedCount++
-			continue
-		}
-		if err := os.Rename(tmp, p); err != nil {
-			_ = os.Remove(tmp)
-			result.FailedCount++
-			continue
-		}
-		result.UpdatedCount++
-	}
-	return result
-}
-
-func (a *Minecraft) CheckResourcePackMaterialCompatibility(versionName string, packPath string) ResourcePackMaterialCompatResult {
-	result := ResourcePackMaterialCompatResult{
-		Compatible: true,
-	}
-	verName := strings.TrimSpace(versionName)
-	packDir := strings.TrimSpace(packPath)
-	if verName == "" || packDir == "" {
-		result.Error = "invalid input"
-		return result
-	}
-	files, err := listPackMaterialBinFiles(packDir)
-	if err != nil || len(files) == 0 {
-		// If pack has no renderer/materials/*.material.bin (including subpacks), show nothing.
-		return result
-	}
-	result.HasMaterialBin = true
-
-	vdir, err := apppath.VersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		result.Error = "ERR_ACCESS_VERSIONS_DIR"
-		return result
-	}
-	gameMaterialPath := filepath.Join(vdir, verName, "data", "renderer", "materials", "RenderChunk.material.bin")
-	result.GameMaterialPath = gameMaterialPath
-
-	gameVersion, err := readMaterialBinVersion(gameMaterialPath)
-	if err != nil {
-		result.Error = "ERR_READ_GAME_RENDERCHUNK"
-		return result
-	}
-	result.GameMaterialVersion = gameVersion
-
-	parsedAny := false
-	for _, p := range files {
-		packVersion, err := readMaterialBinVersion(p)
-		if err != nil {
-			continue
-		}
-		if !parsedAny {
-			result.PackMaterialPath = p
-			result.PackMaterialVersion = packVersion
-			parsedAny = true
-		}
-		if packVersion != gameVersion {
-			result.Compatible = false
-			result.NeedsUpdate = true
-			result.PackMaterialPath = p
-			result.PackMaterialVersion = packVersion
-			return result
-		}
-	}
-	if !parsedAny {
-		result.Error = "ERR_READ_PACK_MATERIALBIN"
-	}
-	return result
-}
-
-func (a *Minecraft) DeletePack(name string, path string) string {
-	p := strings.TrimSpace(path)
-	if p == "" {
-		return "ERR_INVALID_PATH"
-	}
-	fi, err := os.Stat(p)
-	if err != nil || !fi.IsDir() {
-		return "ERR_INVALID_PATH"
-	}
-	roots := a.GetContentRoots(name)
-	allowed := []string{strings.TrimSpace(roots.ResourcePacks), strings.TrimSpace(roots.BehaviorPacks)}
-	usersRoot := strings.TrimSpace(roots.UsersRoot)
-	if usersRoot != "" {
-		ents := a.ListDir(usersRoot)
-		for _, e := range ents {
-			if !e.IsDir {
-				continue
-			}
-			nm := strings.TrimSpace(e.Name)
-			if nm == "" || strings.EqualFold(nm, "Shared") {
-				continue
-			}
-			sp := filepath.Join(usersRoot, nm, "games", "com.mojang", "skin_packs")
-			allowed = append(allowed, sp)
-		}
-	}
-	absTarget, _ := filepath.Abs(p)
-	lowT := strings.ToLower(absTarget)
-	ok := false
-	for _, r := range allowed {
-		if strings.TrimSpace(r) == "" {
-			continue
-		}
-		absRoot, _ := filepath.Abs(r)
-		lowR := strings.ToLower(absRoot)
-		if lowT != lowR && strings.HasPrefix(lowT, lowR+string(os.PathSeparator)) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return "ERR_INVALID_PACKAGE"
-	}
-	if err := os.RemoveAll(absTarget); err != nil {
-		return "ERR_WRITE_FILE"
-	}
-	return ""
-}
-
-func (a *Minecraft) DeleteWorld(name string, path string) string {
-	p := strings.TrimSpace(path)
-	if p == "" {
-		return "ERR_INVALID_PATH"
-	}
-	fi, err := os.Stat(p)
-	if err != nil || !fi.IsDir() {
-		return "ERR_INVALID_PATH"
-	}
-	roots := a.GetContentRoots(name)
-	usersRoot := strings.TrimSpace(roots.UsersRoot)
-	allowed := []string{}
-	if usersRoot != "" {
-		ents := a.ListDir(usersRoot)
-		for _, e := range ents {
-			if !e.IsDir {
-				continue
-			}
-			nm := strings.TrimSpace(e.Name)
-			if nm == "" || strings.EqualFold(nm, "Shared") {
-				continue
-			}
-			wp := filepath.Join(usersRoot, nm, "games", "com.mojang", "minecraftWorlds")
-			allowed = append(allowed, wp)
-		}
-	}
-	absTarget, _ := filepath.Abs(p)
-	lowT := strings.ToLower(absTarget)
-	ok := false
-	for _, r := range allowed {
-		if strings.TrimSpace(r) == "" {
-			continue
-		}
-		absRoot, _ := filepath.Abs(r)
-		lowR := strings.ToLower(absRoot)
-		if lowT != lowR && strings.HasPrefix(lowT, lowR+string(os.PathSeparator)) {
-			ok = true
-			break
-		}
-	}
-	if !ok {
-		return "ERR_INVALID_PATH"
-	}
-	if err := os.RemoveAll(absTarget); err != nil {
-		return "ERR_WRITE_FILE"
-	}
-	return ""
-}
 
 func (a *Minecraft) ListDrives() []string { return mcservice.ListDrives() }
 
@@ -1334,28 +438,6 @@ func (a *Minecraft) RemoveTempFile(path string) string {
 	return ""
 }
 
-func (a *Minecraft) ImportModZipPath(name string, path string, overwrite bool) string {
-	if strings.TrimSpace(path) == "" {
-		return "ERR_OPEN_ZIP"
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return "ERR_OPEN_ZIP"
-	}
-	return mods.ImportZipToMods(name, b, overwrite)
-}
-
-func (a *Minecraft) ImportModDllPath(name string, path string, modName string, modType string, version string, overwrite bool) string {
-	if strings.TrimSpace(path) == "" {
-		return "ERR_WRITE_FILE"
-	}
-	b, err := os.ReadFile(path)
-	if err != nil {
-		return "ERR_WRITE_FILE"
-	}
-	return mods.ImportDllToMods(name, filepath.Base(path), b, modName, modType, version, overwrite)
-}
-
 func (a *Minecraft) CreateFolder(parent string, name string) string {
 	return mcservice.CreateFolder(parent, name)
 }
@@ -1384,98 +466,6 @@ func (a *Minecraft) Update() bool {
 
 func (a *Minecraft) TestMirrorLatencies(urls []string, timeoutMs int) []map[string]interface{} {
 	return mcservice.TestMirrorLatencies(urls, timeoutMs)
-}
-
-func (a *Minecraft) launchVersionInternal(name string, checkRunning bool) string {
-	vdir, err := apppath.VersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	dir := filepath.Join(vdir, strings.TrimSpace(name))
-	exe := filepath.Join(dir, "Minecraft.Windows.exe")
-	if !utils.FileExists(exe) {
-		return "ERR_NOT_FOUND_EXE"
-	}
-	application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
-	_ = vcruntime.EnsureForVersion(a.ctx, dir)
-	if isPreloader {
-		_ = preloader.EnsureForVersion(a.ctx, dir)
-		_ = peeditor.EnsureForVersion(a.ctx, dir)
-		_ = peeditor.RunForVersion(a.ctx, dir)
-	}
-	var args []string
-	var envs []string
-	toRun := exe
-	var gameVer string
-	var enableConsole bool
-	if m, err := versions.ReadMeta(dir); err == nil {
-		if m.EnvVars != "" {
-			for _, l := range strings.Split(m.EnvVars, "\n") {
-				if t := strings.TrimSpace(l); t != "" {
-					envs = append(envs, t)
-				}
-			}
-		}
-		if m.LaunchArgs != "" {
-			args = append(args, parseCommandLineArgs(m.LaunchArgs)...)
-		}
-		enableConsole = m.EnableConsole
-		p, err := peeditor.PrepareExecutableForLaunch(a.ctx, dir, m.EnableConsole)
-		if err != nil {
-			log.Printf("Failed to prepare executable: %v", err)
-		} else if strings.TrimSpace(p) != "" {
-			toRun = p
-		}
-		if m.Registered {
-			isPreview := strings.EqualFold(strings.TrimSpace(m.Type), "preview")
-			protocol := "minecraft://"
-			if isPreview {
-				protocol = "minecraft-preview://"
-			}
-			url := protocol
-			if m.EnableEditorMode {
-				url = protocol + "creator/?Editor=true"
-			}
-
-			c := exec.Command("cmd", "/c", "start", "", url)
-			if len(envs) > 0 {
-				c.Env = append(os.Environ(), envs...)
-			}
-			if err := c.Start(); err != nil {
-				return "ERR_LAUNCH_GAME"
-			}
-			gameVer = strings.TrimSpace(m.GameVersion)
-			discord.SetPlayingVersion(gameVer)
-			go launch.MonitorGameProcess(a.ctx, dir)
-			return ""
-		}
-		if m.EnableEditorMode {
-			args = []string{"-Editor", "true"}
-		}
-		gameVer = strings.TrimSpace(m.GameVersion)
-	}
-	if checkRunning {
-		if isProcessRunningAtPath(toRun) {
-			return "ERR_GAME_ALREADY_RUNNING"
-		}
-	}
-	cmd := exec.Command(toRun, args...)
-	if len(envs) > 0 {
-		cmd.Env = append(os.Environ(), envs...)
-	}
-	cmd.Dir = filepath.Dir(toRun)
-	if enableConsole {
-		cmd.SysProcAttr = &syscall.SysProcAttr{
-			HideWindow:       false,
-			NoInheritHandles: true,
-		}
-	}
-	if err := cmd.Start(); err != nil {
-		return "ERR_LAUNCH_GAME"
-	}
-	discord.SetPlayingVersion(gameVer)
-	go launch.MonitorGameProcess(a.ctx, dir)
-	return ""
 }
 
 func (a *Minecraft) GetBaseRoot() string { return mcservice.GetBaseRoot() }
@@ -1521,8 +511,6 @@ func (a *Minecraft) KillAllMinecraftProcesses() string {
 	}
 	return ""
 }
-
-func (a *Minecraft) ReconcileRegisteredFlags() { mcservice.ReconcileRegisteredFlags() }
 
 func (a *Minecraft) GetCurseForgeGameVersions(gameID string) ([]cursetypes.GameVersion, error) {
 	resp, err := a.curseClient.GetGameVersions(a.ctx, gameID)
@@ -1607,45 +595,4 @@ func (a *Minecraft) GetCurseForgeModDescription(modID int64) (*cursetypes.String
 
 func (a *Minecraft) GetCurseForgeModFiles(modID int64) (*cursetypes.GetModFilesResponse, error) {
 	return a.curseClient.GetModFiles(a.ctx, modID)
-}
-
-func isProcessRunningAtPath(exePath string) bool {
-	p := strings.ToLower(filepath.Clean(strings.TrimSpace(exePath)))
-	if p == "" {
-		return false
-	}
-	snap, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
-	if err != nil {
-		return false
-	}
-	defer windows.CloseHandle(snap)
-	var pe windows.ProcessEntry32
-	pe.Size = uint32(unsafe.Sizeof(pe))
-	if err := windows.Process32First(snap, &pe); err != nil {
-		return false
-	}
-	for {
-		pid := pe.ProcessID
-		h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
-		if err == nil {
-			buf := make([]uint16, 1024)
-			size := uint32(len(buf))
-			if e := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); e == nil && size > 0 {
-				path := windows.UTF16ToString(buf[:size])
-				_ = windows.CloseHandle(h)
-				norm := strings.ToLower(filepath.Clean(strings.TrimSpace(path)))
-				norm = strings.TrimPrefix(norm, `\\?\`)
-				norm = strings.TrimPrefix(norm, `\??\`)
-				if norm == p {
-					return true
-				}
-			} else {
-				_ = windows.CloseHandle(h)
-			}
-		}
-		if err := windows.Process32Next(snap, &pe); err != nil {
-			break
-		}
-	}
-	return false
 }

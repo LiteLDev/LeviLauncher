@@ -885,14 +885,7 @@ export const LauncherPage = (args: any) => {
         >
           <div className="flex flex-col gap-6">
             <div className="flex items-center gap-4">
-              <Spinner
-                size="lg"
-                color="success"
-                classNames={{
-                  circle1: "border-b-primary-500",
-                  circle2: "border-b-teal-500",
-                }}
-              />
+              <Spinner size="lg" color="primary" />
               <div className="flex flex-col gap-1">
                 <motion.p
                   className="text-default-600 dark:text-zinc-300 font-medium"

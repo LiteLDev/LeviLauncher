@@ -49,6 +49,7 @@ export const useContentPage = (t: TFunc) => {
   const [bpCount, setBpCount] = React.useState<number>(0);
   const [skinCount, setSkinCount] = React.useState<number>(0);
   const [serversCount, setServersCount] = React.useState<number>(0);
+  const [screenshotsCount, setScreenshotsCount] = React.useState<number>(0);
   const [importing, setImporting] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState("");
   const [currentFile, setCurrentFile] = React.useState("");
@@ -109,6 +110,7 @@ export const useContentPage = (t: TFunc) => {
         setWorldsCount(0);
         setResCount(0);
         setBpCount(0);
+        setScreenshotsCount(0);
       } else {
         const r = await GetContentRoots(name);
         const safe = r || {
@@ -172,10 +174,20 @@ export const useContentPage = (t: TFunc) => {
                 player,
               );
               setServersCount(srvs?.length || 0);
+              try {
+                const shots = await (contentService as any)?.ListScreenshots?.(
+                  name,
+                  player,
+                );
+                setScreenshotsCount(Array.isArray(shots) ? shots.length : 0);
+              } catch {
+                setScreenshotsCount(0);
+              }
             } else {
               setWorldsCount(0);
               setSkinCount(0);
               setServersCount(0);
+              setScreenshotsCount(0);
             }
           };
 
@@ -216,6 +228,7 @@ export const useContentPage = (t: TFunc) => {
           setWorldsCount(0);
           setSkinCount(0);
           setServersCount(0);
+          setScreenshotsCount(0);
         }
         setResCount(await countDirectories(safe.resourcePacks));
         setBpCount(await countDirectories(safe.behaviorPacks));
@@ -235,6 +248,7 @@ export const useContentPage = (t: TFunc) => {
         setWorldsCount(0);
         setSkinCount(0);
         setServersCount(0);
+        setScreenshotsCount(0);
         return;
       }
       const wp = `${roots.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
@@ -260,6 +274,15 @@ export const useContentPage = (t: TFunc) => {
         player,
       );
       setServersCount(srvs?.length || 0);
+      try {
+        const shots = await (contentService as any)?.ListScreenshots?.(
+          currentVersionName || readCurrentVersionName(),
+          player,
+        );
+        setScreenshotsCount(Array.isArray(shots) ? shots.length : 0);
+      } catch {
+        setScreenshotsCount(0);
+      }
     } finally {
       setLoading(false);
     }
@@ -565,6 +588,7 @@ export const useContentPage = (t: TFunc) => {
     bpCount,
     skinCount,
     serversCount,
+    screenshotsCount,
     importing,
     errorMsg,
     currentFile,

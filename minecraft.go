@@ -159,6 +159,13 @@ type ResourcePackMaterialUpdateResult struct {
 	Error          string `json:"error"`
 }
 
+type ScreenshotInfo struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Dir         string `json:"dir"`
+	CaptureTime int64  `json:"captureTime"`
+}
+
 func (a *Minecraft) ListServers(versionName string, player string) []types.Server {
 	servers, _ := mcservice.ListServers(versionName, player)
 	return servers
@@ -223,6 +230,8 @@ type contentService interface {
 	CheckResourcePackMaterialCompatibility(versionName string, packPath string) contentmgr.MaterialCompatResult
 	DeletePack(name string, path string) string
 	DeleteWorld(name string, path string) string
+	ListScreenshots(versionName string, player string) []contentmgr.ScreenshotInfo
+	DeleteScreenshot(versionName string, player string, path string) string
 }
 
 type MinecraftDeps struct {

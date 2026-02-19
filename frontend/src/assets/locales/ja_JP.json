@@ -510,6 +510,7 @@
     "open": "開く",
     "select_mode": "モード選択",
     "select_all": "すべて選択",
+    "selected_count": "{{count}} 項目を選択中",
     "preview": "プレビュー",
     "release": "リリース",
     "back": "戻る",
@@ -621,7 +622,10 @@
     "update_material_bin_failed": "マテリアル更新失敗",
     "update_material_bin_stat_updated": "更新済み: {{count}}",
     "update_material_bin_stat_failed": "失敗: {{count}}",
-    "update_material_bin_stat_skipped": "スキップ: {{count}}"
+    "update_material_bin_stat_skipped": "スキップ: {{count}}",
+    "screenshots": "スクリーンショット",
+    "no_screenshots": "スクリーンショットがありません",
+    "delete_screenshot_confirm": "スクリーンショット {{name}} を削除しますか？"
   },
   "versions": {
     "info": {

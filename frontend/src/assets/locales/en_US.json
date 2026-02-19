@@ -520,6 +520,7 @@
     "open": "Open",
     "select_mode": "Select mode",
     "select_all": "Select all",
+    "selected_count": "{{count}} selected",
     "preview": "Preview",
     "release": "Release",
     "back": "Back",
@@ -631,7 +632,10 @@
     "deleted_count": "Deleted {{count}} items",
     "delete_world_confirm": "Are you sure you want to delete world {{name}}?",
     "basic_info": "Basic Info",
-    "level_name": "Level Name"
+    "level_name": "Level Name",
+    "screenshots": "Screenshots",
+    "no_screenshots": "No screenshots",
+    "delete_screenshot_confirm": "Are you sure you want to delete screenshot {{name}}?"
   },
   "versions": {
     "info": {

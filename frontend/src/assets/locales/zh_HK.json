@@ -503,6 +503,7 @@
     "open": "開啟",
     "select_mode": "選擇模式",
     "select_all": "全選",
+    "selected_count": "已選 {{count}} 項",
     "preview": "預覽版",
     "release": "正式版",
     "back": "返回",
@@ -621,7 +622,10 @@
     "deleted_count": "已刪除 {{count}} 個項目",
     "delete_world_confirm": "確定要刪除存檔 {{name}} 嗎？",
     "basic_info": "基本資訊",
-    "level_name": "存檔名稱"
+    "level_name": "存檔名稱",
+    "screenshots": "螢幕截圖",
+    "no_screenshots": "暫無截圖",
+    "delete_screenshot_confirm": "確定要刪除截圖 {{name}} 嗎？"
   },
   "versions": {
     "info": {

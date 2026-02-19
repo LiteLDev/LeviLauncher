@@ -24,6 +24,7 @@ import {
   FaSync,
   FaUserTag,
   FaServer,
+  FaCamera,
 } from "react-icons/fa";
 import { resolvePlayerDisplayName } from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -450,6 +451,53 @@ export default function ContentPage() {
                     className="text-2xl font-bold text-default-900 dark:text-zinc-100"
                   >
                     {cp.serversCount}
+                  </motion.span>
+                )}
+              </AnimatePresence>
+            </div>
+          </CardBody>
+        </Card>
+
+        <Card
+          isPressable
+          onPress={() =>
+            cp.navigate("/content/screenshots", {
+              state: { player: cp.selectedPlayer },
+            })
+          }
+          className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}
+        >
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between w-full">
+              <div className="flex items-center gap-3">
+                <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-500">
+                  <FaCamera className="w-6 h-6" />
+                </div>
+                <span className="text-lg font-medium text-default-700 dark:text-zinc-200">
+                  {t("contentpage.screenshots")}
+                </span>
+              </div>
+              <AnimatePresence mode="wait">
+                {cp.loading ? (
+                  <motion.div
+                    key="spinner"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                  >
+                    <Spinner size="sm" />
+                  </motion.div>
+                ) : (
+                  <motion.span
+                    key="count"
+                    initial={{ opacity: 0 }}
+                    animate={{ opacity: 1 }}
+                    exit={{ opacity: 0 }}
+                    transition={{ duration: 0.2 }}
+                    className="text-2xl font-bold text-default-900 dark:text-zinc-100"
+                  >
+                    {cp.screenshotsCount}
                   </motion.span>
                 )}
               </AnimatePresence>

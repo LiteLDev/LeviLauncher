@@ -57,6 +57,7 @@ const WorldLevelDatEditorPage = lazy(
 const ResourcePacksPage = lazy(() => import("@/pages/ResourcePacksPage"));
 const BehaviorPacksPage = lazy(() => import("@/pages/BehaviorPacksPage"));
 const SkinPacksPage = lazy(() => import("@/pages/SkinPacksPage"));
+const ScreenshotsPage = lazy(() => import("@/pages/ScreenshotsPage"));
 const InstallPage = lazy(() => import("@/pages/InstallPage"));
 const AboutPage = lazy(() => import("@/pages/AboutPage"));
 const OnboardingPage = lazy(() => import("@/pages/OnboardingPage"));
@@ -421,6 +422,10 @@ function App() {
                             <Route
                               path="/content/skinPacks"
                               element={<SkinPacksPage />}
+                            />
+                            <Route
+                              path="/content/screenshots"
+                              element={<ScreenshotsPage />}
                             />
                             <Route
                               path="/content/servers"

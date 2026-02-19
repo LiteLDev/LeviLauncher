@@ -510,6 +510,7 @@
     "open": "Открыть",
     "select_mode": "Режим выбора",
     "select_all": "Выбрать все",
+    "selected_count": "Выбрано: {{count}}",
     "preview": "Предрелиз",
     "release": "Релиз",
     "back": "Назад",
@@ -621,7 +622,10 @@
     "update_material_bin_failed": "Ошибка обновления материалов",
     "update_material_bin_stat_updated": "Обновлено: {{count}}",
     "update_material_bin_stat_failed": "Ошибка: {{count}}",
-    "update_material_bin_stat_skipped": "Пропущено: {{count}}"
+    "update_material_bin_stat_skipped": "Пропущено: {{count}}",
+    "screenshots": "Скриншоты",
+    "no_screenshots": "Нет скриншотов",
+    "delete_screenshot_confirm": "Вы уверены, что хотите удалить скриншот {{name}}?"
   },
   "versions": {
     "info": {

@@ -180,6 +180,30 @@ func (s *ContentService) DeleteWorld(name string, path string) string {
 	return s.manager.DeleteWorld(name, path)
 }
 
+func (s *ContentService) ListScreenshots(versionName string, player string) []ScreenshotInfo {
+	if s.manager == nil {
+		return []ScreenshotInfo{}
+	}
+	mgr := s.manager.ListScreenshots(versionName, player)
+	out := make([]ScreenshotInfo, len(mgr))
+	for i, v := range mgr {
+		out[i] = ScreenshotInfo{
+			Name:        v.Name,
+			Path:        v.Path,
+			Dir:         v.Dir,
+			CaptureTime: v.CaptureTime,
+		}
+	}
+	return out
+}
+
+func (s *ContentService) DeleteScreenshot(versionName string, player string, path string) string {
+	if s.manager == nil {
+		return "ERR_INVALID_PATH"
+	}
+	return s.manager.DeleteScreenshot(versionName, player, path)
+}
+
 type ModsService struct{}
 
 func NewModsService(_ *Minecraft) *ModsService {

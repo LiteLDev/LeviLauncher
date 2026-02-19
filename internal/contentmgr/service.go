@@ -2,6 +2,7 @@ package contentmgr
 
 import (
 	"bytes"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -607,6 +608,98 @@ func (m *Manager) DeleteWorld(name string, path string) string {
 	}
 	if err := os.RemoveAll(absTarget); err != nil {
 		return "ERR_WRITE_FILE"
+	}
+	return ""
+}
+
+type ScreenshotInfo struct {
+	Name        string `json:"name"`
+	Path        string `json:"path"`
+	Dir         string `json:"dir"`
+	CaptureTime int64  `json:"captureTime"`
+}
+
+type screenshotMeta struct {
+	CaptureTime int64 `json:"captureTime"`
+}
+
+func (m *Manager) ListScreenshots(versionName string, player string) []ScreenshotInfo {
+	roots := m.getContentRoots(versionName)
+	usersRoot := strings.TrimSpace(roots.UsersRoot)
+	p := strings.TrimSpace(player)
+	if usersRoot == "" || p == "" {
+		return []ScreenshotInfo{}
+	}
+	screenshotsRoot := filepath.Join(usersRoot, p, "games", "com.mojang", "Screenshots")
+	if !utils.DirExists(screenshotsRoot) {
+		return []ScreenshotInfo{}
+	}
+	var result []ScreenshotInfo
+	subDirs, err := os.ReadDir(screenshotsRoot)
+	if err != nil {
+		return []ScreenshotInfo{}
+	}
+	for _, sub := range subDirs {
+		if !sub.IsDir() {
+			continue
+		}
+		subPath := filepath.Join(screenshotsRoot, sub.Name())
+		entries, err := os.ReadDir(subPath)
+		if err != nil {
+			continue
+		}
+		for _, e := range entries {
+			if e.IsDir() {
+				continue
+			}
+			name := e.Name()
+			lower := strings.ToLower(name)
+			if !strings.HasSuffix(lower, ".jpeg") && !strings.HasSuffix(lower, ".jpg") && !strings.HasSuffix(lower, ".png") {
+				continue
+			}
+			baseName := strings.TrimSuffix(name, filepath.Ext(name))
+			imgPath := filepath.Join(subPath, name)
+			jsonPath := filepath.Join(subPath, baseName+".json")
+			var captureTime int64
+			if jsonData, err := os.ReadFile(jsonPath); err == nil {
+				var meta screenshotMeta
+				if json.Unmarshal(jsonData, &meta) == nil {
+					captureTime = meta.CaptureTime
+				}
+			}
+			result = append(result, ScreenshotInfo{
+				Name:        baseName,
+				Path:        imgPath,
+				Dir:         subPath,
+				CaptureTime: captureTime,
+			})
+		}
+	}
+	if result == nil {
+		return []ScreenshotInfo{}
+	}
+	return result
+}
+
+func (m *Manager) DeleteScreenshot(versionName string, player string, path string) string {
+	p := strings.TrimSpace(path)
+	if p == "" {
+		return "ERR_INVALID_PATH"
+	}
+	roots := m.getContentRoots(versionName)
+	usersRoot := strings.TrimSpace(roots.UsersRoot)
+	pl := strings.TrimSpace(player)
+	if usersRoot == "" || pl == "" {
+		return "ERR_INVALID_PATH"
+	}
+	screenshotsRoot := filepath.Join(usersRoot, pl, "games", "com.mojang", "Screenshots")
+	if !isChildOfPath(p, screenshotsRoot) {
+		return "ERR_INVALID_PATH"
+	}
+	baseName := strings.TrimSuffix(p, filepath.Ext(p))
+	exts := []string{filepath.Ext(p), ".json", ".mc"}
+	for _, ext := range exts {
+		_ = os.Remove(baseName + ext)
 	}
 	return ""
 }

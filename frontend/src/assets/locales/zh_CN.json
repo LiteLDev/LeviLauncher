@@ -513,6 +513,7 @@
     "open": "打开",
     "select_mode": "选择模式",
     "select_all": "全选",
+    "selected_count": "已选 {{count}} 项",
     "preview": "预览版",
     "release": "正式版",
     "back": "返回",
@@ -631,7 +632,10 @@
     "deleted_count": "已删除 {{count}} 个项目",
     "delete_world_confirm": "确定要删除存档 {{name}} 吗？",
     "basic_info": "基本信息",
-    "level_name": "存档名称"
+    "level_name": "存档名称",
+    "screenshots": "屏幕截图",
+    "no_screenshots": "暂无截图",
+    "delete_screenshot_confirm": "确定要删除截图 {{name}} 吗？"
   },
   "versions": {
     "info": {

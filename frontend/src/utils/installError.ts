@@ -1,18 +1,66 @@
 import { TFunction } from "i18next";
 
+const trimString = (value: unknown): string => String(value ?? "").trim();
+
+const pickMessageLikeField = (value: unknown): string => {
+  if (!value || typeof value !== "object") return "";
+  const obj = value as Record<string, unknown>;
+  const keys = ["message", "error", "err", "code", "reason", "detail"];
+  for (const key of keys) {
+    const v = obj[key];
+    if (typeof v === "string" && v.trim()) return v.trim();
+  }
+  return "";
+};
+
+const normalizeErrorText = (raw: string): string => {
+  let text = trimString(raw);
+  if (!text) return "";
+
+  for (let i = 0; i < 3; i += 1) {
+    const noPrefix = text.replace(/^error\s*:\s*/i, "").trim();
+    if (noPrefix) text = noPrefix;
+
+    if (!text.startsWith("{") && !text.startsWith("\"{")) break;
+
+    try {
+      const parsed = JSON.parse(text);
+      if (typeof parsed === "string") {
+        const next = trimString(parsed);
+        if (!next || next === text) break;
+        text = next;
+        continue;
+      }
+      const fromObject = pickMessageLikeField(parsed);
+      if (!fromObject || fromObject === text) break;
+      text = fromObject;
+    } catch {
+      break;
+    }
+  }
+
+  return text;
+};
+
 export const resolveInstallError = (
   err: string,
   t: TFunction,
   typeLabel?: string,
 ): string => {
-  let code = String(err || "").trim();
-  let rest = "";
+  const normalized = normalizeErrorText(err);
+  const exactCodeMatch = normalized.match(
+    /^((?:ERR|NH_ERR)_[A-Z0-9_]+)(?::\s*(.+))?$/i,
+  );
+  const embeddedCodeMatch = normalized.match(
+    /((?:ERR|NH_ERR)_[A-Z0-9_]+)(?::\s*(.+))?/i,
+  );
 
-  if (code.includes(":")) {
-    const parts = code.split(":");
-    code = parts[0].trim();
-    rest = parts.slice(1).join(":").trim();
-  }
+  const code = trimString(
+    exactCodeMatch?.[1] || embeddedCodeMatch?.[1] || normalized,
+  ).toUpperCase();
+  const rest = trimString(exactCodeMatch?.[2] || embeddedCodeMatch?.[2] || "");
+
+  if (!code) return t("installpage.error.unknown");
 
   let resolved = "";
   switch (code) {
@@ -67,10 +115,10 @@ export const resolveInstallError = (
       if (translated && translated !== key) {
         resolved = translated;
       } else {
-        if (code.startsWith("ERR_")) {
+        if (code.startsWith("ERR_") || code.startsWith("NH_ERR_")) {
           resolved = t("installpage.error.unknown");
         } else {
-          resolved = code;
+          resolved = normalizeErrorText(err) || code;
         }
       }
   }

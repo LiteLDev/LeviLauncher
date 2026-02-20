@@ -2,6 +2,7 @@ package main
 
 import (
 	"bufio"
+	"context"
 	"embed"
 	"io/fs"
 	"log"
@@ -24,6 +25,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/preloader"
+	"github.com/liteldev/LeviLauncher/internal/resourcerules"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
@@ -207,6 +209,7 @@ func main() {
 	c, _ := config.Load()
 	extractor.Init()
 	update.Init()
+	go resourcerules.EnsureLatest(context.Background())
 	if !config.GetDiscordRPCDisabled() {
 		discord.Init()
 	}

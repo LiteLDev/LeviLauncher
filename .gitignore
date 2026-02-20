@@ -25,6 +25,8 @@ build/bin
 build/versions
 logs
 bin
+native
+nda
 
 .idea
 .task

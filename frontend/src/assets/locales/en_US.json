@@ -657,6 +657,7 @@
       "enable_isolation": "Enable Isolation",
       "enable_console": "Enable Console",
       "enable_render_dragon": "Load RenderDragon Shaders",
+      "enable_ctrl_r_reload_resources": "Ctrl+R Hot Reload Resources",
       "enable_editor_mode": "Enable Editor Mode",
       "launch_args": "Launch Arguments",
       "launch_args_placeholder": "Launch arguments (e.g. -Editor true)",
@@ -892,6 +893,8 @@
     "search_placeholder": "Search packages...",
     "sort_by": "Sort by",
     "select_sort": "Select sort",
+    "order_by": "Order",
+    "select_order": "Select order",
     "no_description": "No description available"
   },
   "server": {

@@ -439,6 +439,20 @@ export default function VersionSettingsPage() {
                   </div>
                   <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
                     <div className="text-medium font-medium">
+                      {t("versions.edit.enable_ctrl_r_reload_resources")}
+                    </div>
+                    <Switch
+                      size="md"
+                      color="success"
+                      isSelected={vs.enableCtrlRReloadResources}
+                      onValueChange={vs.setEnableCtrlRReloadResources}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
+                      }}
+                    />
+                  </div>
+                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
+                    <div className="text-medium font-medium">
                       {t("versions.edit.enable_editor_mode")}
                     </div>
                     <Switch

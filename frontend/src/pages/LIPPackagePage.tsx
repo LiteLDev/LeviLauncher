@@ -1,8 +1,6 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import { GetLIPPackage } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as liptypes from "bindings/github.com/liteldev/LeviLauncher/internal/lip/client/types";
 import {
   Button,
   Card,
@@ -11,12 +9,6 @@ import {
   Skeleton,
   Image,
   Link,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
 } from "@heroui/react";
 import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import {
@@ -28,32 +20,56 @@ import {
   LuFlame,
   LuTag,
 } from "react-icons/lu";
-import { motion } from "framer-motion";
+import { fetchLIPPackagesIndex, type LIPPackageBasicInfo } from "@/utils/content";
+
+const formatUpdatedText = (value: string) => {
+  if (!value) return "-";
+  const ts = Date.parse(value);
+  if (!Number.isFinite(ts)) return value;
+  return new Date(ts).toLocaleDateString();
+};
 
 const LIPPackagePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [pkg, setPkg] = useState<liptypes.GetPackageResponse | null>(null);
+  const [pkg, setPkg] = useState<LIPPackageBasicInfo | null>(null);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState("");
 
-  useEffect(() => {
-    if (id) {
-      loadPackage(id);
+  const identifier = useMemo(() => {
+    const raw = String(id || "");
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
     }
   }, [id]);
 
-  const loadPackage = async (identifier: string) => {
+  const loadPackage = async (targetIdentifier: string, forceRefresh = false) => {
     setLoading(true);
+    setError("");
     try {
-      const res = await GetLIPPackage(identifier);
-      setPkg(res);
+      const list = await fetchLIPPackagesIndex({ forceRefresh });
+      const found = list.find((item) => item.identifier === targetIdentifier) || null;
+      setPkg(found);
     } catch (err) {
       console.error(err);
+      setError(t("common.load_failed"));
+      setPkg(null);
     } finally {
       setLoading(false);
     }
   };
+
+  useEffect(() => {
+    if (!identifier) {
+      setPkg(null);
+      setLoading(false);
+      return;
+    }
+    void loadPackage(identifier);
+  }, [identifier]);
 
   if (loading) {
     return (
@@ -71,14 +87,36 @@ const LIPPackagePage: React.FC = () => {
     );
   }
 
+  if (error) {
+    return (
+      <div className="p-6 max-w-7xl mx-auto space-y-4">
+        <Button
+          variant="light"
+          startContent={<LuArrowLeft />}
+          onPress={() => navigate(-1)}
+        >
+          {t("common.back")}
+        </Button>
+        <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md border-none shadow-md">
+          <CardBody className="p-6 flex flex-col gap-4">
+            <p className="text-danger-500">{error}</p>
+            <div className="flex gap-2">
+              <Button color="primary" onPress={() => void loadPackage(identifier, true)}>
+                {t("common.retry")}
+              </Button>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
   if (!pkg) {
     return (
       <div className="flex flex-col items-center justify-center h-full">
-        <p className="text-xl text-default-500 dark:text-zinc-400">
-          Package not found
-        </p>
+        <p className="text-xl text-default-500 dark:text-zinc-400">Package not found</p>
         <Button onPress={() => navigate(-1)} className="mt-4">
-          Go Back
+          {t("common.back")}
         </Button>
       </div>
     );
@@ -100,12 +138,17 @@ const LIPPackagePage: React.FC = () => {
           <CardBody className="p-6">
             <div className="flex flex-col md:flex-row gap-6">
               <div className="shrink-0">
-                <Image
-                  src={pkg.avatarUrl}
-                  alt={pkg.name}
-                  className="w-32 h-32 object-cover rounded-2xl shadow-lg bg-content2"
-                  fallbackSrc="https://via.placeholder.com/128"
-                />
+                {pkg.avatarUrl ? (
+                  <Image
+                    src={pkg.avatarUrl}
+                    alt={pkg.name}
+                    className="w-32 h-32 object-cover rounded-2xl shadow-lg bg-content2"
+                  />
+                ) : (
+                  <div className="w-32 h-32 rounded-2xl bg-content2 shadow-lg flex items-center justify-center text-default-300">
+                    <LuDownload size={36} />
+                  </div>
+                )}
               </div>
 
               <div className="flex flex-col grow gap-6">
@@ -115,7 +158,7 @@ const LIPPackagePage: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <LuUser />
                     <span className="font-medium text-default-700 dark:text-zinc-200">
-                      {pkg.author}
+                      {pkg.author || t("common.unknown")}
                     </span>
                   </div>
                   <div className="flex items-center gap-1">
@@ -125,14 +168,16 @@ const LIPPackagePage: React.FC = () => {
                   <div className="flex items-center gap-1">
                     <LuClock />
                     <span>
-                      Updated {new Date(pkg.updated).toLocaleDateString()}
+                      Updated {formatUpdatedText(pkg.updated)}
                     </span>
                   </div>
                 </div>
 
                 <p className="text-default-600 dark:text-zinc-300 text-lg leading-relaxed max-w-4xl">
-                  {pkg.description}
+                  {pkg.description || t("lip.no_description")}
                 </p>
+
+                <div className="text-xs text-default-400 font-mono">{pkg.identifier}</div>
 
                 <div className="flex flex-wrap gap-2 mt-2">
                   {pkg.tags.map((tag) => (
@@ -175,45 +220,19 @@ const LIPPackagePage: React.FC = () => {
                   className="mb-4"
                   icon={<LuDownload size={20} />}
                 />
-                <Table
-                  aria-label="Versions table"
-                  removeWrapper
-                  color="default"
-                >
-                  <TableHeader>
-                    <TableColumn>VERSION</TableColumn>
-                    <TableColumn>RELEASED</TableColumn>
-                    <TableColumn>REQUIREMENT</TableColumn>
-                    <TableColumn>ACTION</TableColumn>
-                  </TableHeader>
-                  <TableBody>
-                    {pkg.versions.map((ver) => (
-                      <TableRow key={ver.version}>
-                        <TableCell className="font-medium">
-                          {ver.version}
-                        </TableCell>
-                        <TableCell>
-                          {new Date(ver.releasedAt).toLocaleDateString()}
-                        </TableCell>
-                        <TableCell>{ver.platformVersionRequirement}</TableCell>
-                        <TableCell>
-                          <Button
-                            size="sm"
-                            color="primary"
-                            variant="flat"
-                            startContent={<LuDownload />}
-                            isDisabled={!ver.source}
-                            onPress={() => {
-                              window.open(ver.source, "_blank");
-                            }}
-                          >
-                            Download
-                          </Button>
-                        </TableCell>
-                      </TableRow>
+                {pkg.versions.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {pkg.versions.map((version) => (
+                      <Chip key={version} variant="flat" size="sm" className="font-mono">
+                        {version}
+                      </Chip>
                     ))}
-                  </TableBody>
-                </Table>
+                  </div>
+                ) : (
+                  <div className="text-sm text-default-500 dark:text-zinc-400">
+                    {t("common.empty")}
+                  </div>
+                )}
               </CardBody>
             </Card>
           </div>
@@ -227,20 +246,15 @@ const LIPPackagePage: React.FC = () => {
                   icon={<LuUser size={20} />}
                 />
                 <div className="flex flex-col gap-3">
-                  {pkg.contributors.map((contrib) => (
-                    <div
-                      key={contrib.username}
-                      className="flex justify-between items-center"
-                    >
-                      <div className="flex items-center gap-2">
-                        <LuUser className="text-default-400" />
-                        <span>{contrib.username}</span>
-                      </div>
-                      <Chip size="sm" variant="flat">
-                        {contrib.contributions} commits
-                      </Chip>
+                  <div className="flex justify-between items-center">
+                    <div className="flex items-center gap-2">
+                      <LuUser className="text-default-400" />
+                      <span>{pkg.author || t("common.unknown")}</span>
                     </div>
-                  ))}
+                    <Chip size="sm" variant="flat">
+                      author
+                    </Chip>
+                  </div>
                 </div>
               </CardBody>
             </Card>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Input,
@@ -17,24 +17,51 @@ import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
-import { SearchLIPPackages } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as liptypes from "bindings/github.com/liteldev/LeviLauncher/internal/lip/client/types";
+import { fetchLIPPackagesIndex, type LIPPackageBasicInfo } from "@/utils/content";
 import { LuSearch, LuDownload, LuClock, LuFlame } from "react-icons/lu";
 import { motion } from "framer-motion";
+
+const PAGE_SIZE = 20;
+const ALL_TAG = "__all__";
+
+type LIPSortKey = "hotness" | "updated" | "name";
+type LIPOrderKey = "asc" | "desc";
+
+const parseUpdatedTime = (value: string): number => {
+  const timestamp = Date.parse(value);
+  return Number.isFinite(timestamp) ? timestamp : 0;
+};
+
+const sortPackages = (
+  list: LIPPackageBasicInfo[],
+  sort: LIPSortKey,
+  order: LIPOrderKey,
+) => {
+  const sorted = [...list].sort((a, b) => {
+    if (sort === "hotness") return a.hotness - b.hotness;
+    if (sort === "updated") return parseUpdatedTime(a.updated) - parseUpdatedTime(b.updated);
+    return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
+  });
+
+  if (order === "desc") {
+    sorted.reverse();
+  }
+
+  return sorted;
+};
 
 const LIPPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
-  const [packages, setPackages] = useState<liptypes.PackageItem[]>([]);
-  const [totalPages, setTotalPages] = useState(1);
+  const [allPackages, setAllPackages] = useState<LIPPackageBasicInfo[]>([]);
   const [loading, setLoading] = useState(false);
-  const [sort, setSort] = useState("hotness");
-  const [order, setOrder] = useState("desc");
-  const [hasSearched, setHasSearched] = useState(false);
-  const [totalCount, setTotalCount] = useState(0);
-  const [searchToken, setSearchToken] = useState(0);
+  const [sort, setSort] = useState<LIPSortKey>("hotness");
+  const [order, setOrder] = useState<LIPOrderKey>("desc");
+  const [selectedTag, setSelectedTag] = useState<string>(ALL_TAG);
+  const [error, setError] = useState("");
 
   const pageRootRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -93,19 +120,16 @@ const LIPPage: React.FC = () => {
     };
   };
 
-  const loadPackages = async () => {
+  const loadPackages = async (forceRefresh = false) => {
     setLoading(true);
+    setError("");
     scheduleScrollReset();
     try {
-      const res = await SearchLIPPackages(query, 20, page, sort, order);
-      if (res) {
-        setPackages(res.items || []);
-        setTotalPages(res.totalPages || 1);
-        setTotalCount(res.totalPages * 20);
-      }
-      setHasSearched(true);
+      const list = await fetchLIPPackagesIndex({ forceRefresh });
+      setAllPackages(list);
     } catch (err) {
       console.error(err);
+      setError(t("common.load_failed"));
     } finally {
       setLoading(false);
       scheduleScrollReset();
@@ -113,17 +137,83 @@ const LIPPage: React.FC = () => {
   };
 
   useEffect(() => {
-    loadPackages();
-  }, [page, sort, order, searchToken]);
+    void loadPackages();
+  }, []);
+
+  const availableTags = useMemo(() => {
+    const unique = new Set<string>();
+    for (const pkg of allPackages) {
+      for (const tag of pkg.tags) {
+        const normalized = String(tag || "").trim();
+        if (normalized) unique.add(normalized);
+      }
+    }
+    return Array.from(unique).sort((a, b) =>
+      a.localeCompare(b, undefined, { sensitivity: "base" }),
+    );
+  }, [allPackages]);
+
+  useEffect(() => {
+    if (selectedTag !== ALL_TAG && !availableTags.includes(selectedTag)) {
+      setSelectedTag(ALL_TAG);
+    }
+  }, [availableTags, selectedTag]);
+
+  const filteredPackages = useMemo(() => {
+    const keyword = query.trim().toLowerCase();
+
+    return allPackages.filter((pkg) => {
+      if (selectedTag !== ALL_TAG && !pkg.tags.includes(selectedTag)) {
+        return false;
+      }
+
+      if (!keyword) {
+        return true;
+      }
+
+      const haystacks = [pkg.identifier, pkg.name, pkg.description, pkg.author, ...pkg.tags].map(
+        (part) => String(part || "").toLowerCase(),
+      );
+      return haystacks.some((part) => part.includes(keyword));
+    });
+  }, [allPackages, query, selectedTag]);
+
+  const sortedPackages = useMemo(
+    () => sortPackages(filteredPackages, sort, order),
+    [filteredPackages, sort, order],
+  );
+
+  const totalPages = Math.max(1, Math.ceil(sortedPackages.length / PAGE_SIZE));
+
+  useEffect(() => {
+    if (page > totalPages) {
+      setPage(totalPages);
+    }
+  }, [page, totalPages]);
+
+  const currentPageItems = useMemo(() => {
+    const start = (page - 1) * PAGE_SIZE;
+    return sortedPackages.slice(start, start + PAGE_SIZE);
+  }, [sortedPackages, page]);
 
   const handleSearch = () => {
+    setQuery(queryInput.trim());
     setPage(1);
-    setSearchToken((v) => v + 1);
   };
 
   const handleKeyDown = (e: React.KeyboardEvent) => {
     if (e.key === "Enter") {
       handleSearch();
+    }
+  };
+
+  const handleSortChange = (value: LIPSortKey) => {
+    setSort(value);
+    setPage(1);
+    if (value === "name") {
+      setOrder("asc");
+    } else {
+      setOrder("desc");
     }
   };
 
@@ -148,6 +238,7 @@ const LIPPage: React.FC = () => {
   };
 
   const formatDate = (dateStr: string) => {
+    if (!dateStr) return "-";
     return new Date(dateStr).toLocaleDateString();
   };
 
@@ -160,8 +251,8 @@ const LIPPage: React.FC = () => {
           <div className="flex flex-col sm:flex-row gap-3">
             <Input
               placeholder={t("lip.search_placeholder")}
-              value={query}
-              onValueChange={setQuery}
+              value={queryInput}
+              onValueChange={setQueryInput}
               onKeyDown={handleKeyDown}
               startContent={<LuSearch />}
               className="flex-1"
@@ -177,25 +268,80 @@ const LIPPage: React.FC = () => {
             >
               {t("common.search")}
             </Button>
+            <Button
+              variant="flat"
+              size="sm"
+              onPress={() => {
+                setPage(1);
+                void loadPackages(true);
+              }}
+              isDisabled={loading}
+            >
+              {t("common.refresh")}
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <Select
+              label={t("common.all")}
+              placeholder={t("common.all")}
+              className="max-w-xs"
+              selectedKeys={[selectedTag]}
+              onSelectionChange={(keys) => {
+                const value = Array.from(keys)[0] as string;
+                setSelectedTag(value || ALL_TAG);
+                setPage(1);
+              }}
+              size="sm"
+              classNames={COMPONENT_STYLES.select}
+              items={[
+                { key: ALL_TAG, label: t("common.all") },
+                ...availableTags.map((tag) => ({ key: tag, label: tag })),
+              ]}
+            >
+              {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
+            </Select>
+
             <Select
               label={t("lip.sort_by")}
               placeholder={t("lip.select_sort")}
               className="max-w-xs"
               selectedKeys={[sort]}
-              onChange={(e) => {
-                setSort(e.target.value);
-                setPage(1);
-              }}
+              onChange={(e) => handleSortChange(e.target.value as LIPSortKey)}
               size="sm"
               classNames={COMPONENT_STYLES.select}
             >
               <SelectItem key="hotness">Hotness</SelectItem>
               <SelectItem key="updated">Updated</SelectItem>
+              <SelectItem key="name">Name</SelectItem>
+            </Select>
+
+            <Select
+              label={t("lip.order_by")}
+              placeholder={t("lip.select_order")}
+              className="max-w-xs"
+              selectedKeys={[order]}
+              onChange={(e) => {
+                setOrder(e.target.value as LIPOrderKey);
+                setPage(1);
+              }}
+              size="sm"
+              classNames={COMPONENT_STYLES.select}
+            >
+              <SelectItem key="desc">Desc</SelectItem>
+              <SelectItem key="asc">Asc</SelectItem>
             </Select>
           </div>
+
+          <div className="text-sm text-default-500 dark:text-zinc-400">
+            {t("common.all")}: {sortedPackages.length}
+          </div>
+
+          {error ? (
+            <div className="text-sm text-danger-500" role="alert">
+              {error}
+            </div>
+          ) : null}
         </CardBody>
       </Card>
 
@@ -207,13 +353,13 @@ const LIPPage: React.FC = () => {
           >
             {loading ? (
               <div className="flex flex-col gap-3">{renderSkeletons()}</div>
-            ) : packages.length === 0 ? (
+            ) : currentPageItems.length === 0 ? (
               <div className="flex items-center justify-center h-full text-default-500 dark:text-zinc-400">
                 <p>{t("common.no_results")}</p>
               </div>
             ) : (
               <div className="flex flex-col gap-3">
-                {packages.map((pkg) => (
+                {currentPageItems.map((pkg) => (
                   <motion.div
                     key={pkg.identifier}
                     initial={{ opacity: 0 }}
@@ -222,7 +368,9 @@ const LIPPage: React.FC = () => {
                   >
                     <div
                       className="w-full p-4 bg-default-50/50 dark:bg-white/5 hover:bg-default-100/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-default-100 dark:border-white/5"
-                      onClick={() => navigate(`/lip/package/${pkg.identifier}`)}
+                      onClick={() =>
+                        navigate(`/lip/package/${encodeURIComponent(pkg.identifier)}`)
+                      }
                     >
                       <div className="shrink-0">
                         {pkg.avatarUrl ? (
@@ -245,7 +393,7 @@ const LIPPage: React.FC = () => {
                             {pkg.name}
                           </h3>
                           <span className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 truncate">
-                            | By {pkg.author}
+                            | By {pkg.author || t("common.unknown")}
                           </span>
                         </div>
 
@@ -254,17 +402,11 @@ const LIPPage: React.FC = () => {
                         </p>
 
                         <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-default-400 mt-1">
-                          <div
-                            className="flex items-center gap-1"
-                            title="Hotness"
-                          >
+                          <div className="flex items-center gap-1" title="Hotness">
                             <LuFlame className="text-orange-500" />
                             <span>{pkg.hotness}</span>
                           </div>
-                          <div
-                            className="flex items-center gap-1"
-                            title="Updated"
-                          >
+                          <div className="flex items-center gap-1" title="Updated">
                             <LuClock />
                             <span>{formatDate(pkg.updated)}</span>
                           </div>

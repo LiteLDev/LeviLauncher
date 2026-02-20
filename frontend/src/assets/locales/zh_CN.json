@@ -657,6 +657,7 @@
       "enable_isolation": "启用实例隔离",
       "enable_console": "启用控制台",
       "enable_render_dragon": "启用渲染龙光影加载",
+      "enable_ctrl_r_reload_resources": "Ctrl+R热重载资源",
       "enable_editor_mode": "启用编辑器模式",
       "launch_args": "启动参数",
       "launch_args_placeholder": "启动参数 (例如: -Editor true)",
@@ -892,6 +893,8 @@
     "search_placeholder": "搜索包...",
     "sort_by": "排序",
     "select_sort": "选择排序",
+    "order_by": "顺序",
+    "select_order": "选择顺序",
     "no_description": "暂无简介"
   },
   "server": {

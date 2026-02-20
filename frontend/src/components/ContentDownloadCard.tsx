@@ -12,7 +12,13 @@ export const ContentDownloadCard = () => {
   const navigate = useNavigate();
 
   return (
-    <Card className={cn("h-full transition-all group", LAYOUT.GLASS_CARD.BASE, "rounded-3xl")}>
+    <Card
+      className={cn(
+        "h-full transition-all group",
+        LAYOUT.GLASS_CARD.BASE,
+        "rounded-3xl",
+      )}
+    >
       <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
@@ -40,6 +46,7 @@ export const ContentDownloadCard = () => {
         <div
           className="flex items-center justify-between p-3 rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-default-200/50 dark:hover:border-white/10"
           onClick={() => {
+            // navigate("/lip");
             addToast({
               description: t("lip.maintenance"),
               icon: "🚧",

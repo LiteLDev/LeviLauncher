@@ -647,6 +647,7 @@
       "enable_isolation": "隔離 (Isolation) を有効化",
       "enable_console": "コンソールを有効化",
       "enable_render_dragon": "RenderDragon シェーダーを読み込む",
+      "enable_ctrl_r_reload_resources": "Ctrl+R でリソース再読み込み",
       "enable_editor_mode": "エディターモードを有効化",
       "launch_args": "起動引数",
       "launch_args_placeholder": "起動引数 (例: -Editor true)",
@@ -894,6 +895,8 @@
     "search_placeholder": "パッケージを検索...",
     "sort_by": "並び替え",
     "select_sort": "並び替えを選択",
+    "order_by": "順序",
+    "select_order": "順序を選択",
     "no_description": "説明なし"
   },
   "server": {

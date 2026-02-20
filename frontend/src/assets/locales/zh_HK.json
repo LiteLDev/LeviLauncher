@@ -647,6 +647,7 @@
       "enable_isolation": "啟用實例隔離",
       "enable_console": "啟用主控台",
       "enable_render_dragon": "啟用 Render Dragon 光影載入",
+      "enable_ctrl_r_reload_resources": "Ctrl+R 熱重載資源",
       "enable_editor_mode": "啟用編輯器模式",
       "launch_args": "啟動參數",
       "launch_args_placeholder": "啟動參數 (例如: -Editor true)",
@@ -894,6 +895,8 @@
     "search_placeholder": "搜尋套件...",
     "sort_by": "排序",
     "select_sort": "選擇排序",
+    "order_by": "順序",
+    "select_order": "選擇順序",
     "no_description": "暫無簡介"
   },
   "server": {

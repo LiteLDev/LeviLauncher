@@ -358,6 +358,21 @@
         "unknown": "發生未知錯誤"
       }
     },
+    "resource_rules": {
+      "title": "啟動器執行資料",
+      "check_button": "檢查更新",
+      "update_button": "更新",
+      "latest_label": "最新",
+      "outdated_label": "需更新",
+      "missing_label": "未安裝",
+      "status": {
+        "checking": "正在校驗 SHA256...",
+        "up_to_date": "SHA256 與遠端一致",
+        "outdated": "SHA256 與遠端不一致",
+        "missing": "未找到本地檔案",
+        "check_failed": "檢查失敗：{{error}}"
+      }
+    },
     "header": {
       "title": "設定",
       "content": "設定啟動器常用選項"

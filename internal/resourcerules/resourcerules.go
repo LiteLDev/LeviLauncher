@@ -34,6 +34,16 @@ type releaseResponse struct {
 	Digest string         `json:"digest"`
 }
 
+type Status struct {
+	Path       string `json:"path"`
+	Installed  bool   `json:"installed"`
+	UpToDate   bool   `json:"upToDate"`
+	LocalSHA   string `json:"localSHA256"`
+	RemoteSHA  string `json:"remoteSHA256"`
+	CanCompare bool   `json:"canCompare"`
+	Error      string `json:"error"`
+}
+
 func binDir() string {
 	return filepath.Join(apppath.AppData(), "levilauncher.exe", "bin")
 }
@@ -148,19 +158,24 @@ func downloadFile(ctx context.Context, url, dest string) error {
 }
 
 func EnsureLatest(ctx context.Context) {
+	if err := EnsureLatestWithError(ctx); err != nil {
+		log.Printf("resourcerules: %v", err)
+	}
+}
+
+func EnsureLatestWithError(ctx context.Context) error {
 	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
 	defer cancel()
 
 	dlURL, remoteSHA, err := fetchRelease(ctx)
 	if err != nil {
-		log.Printf("resourcerules: fetch release: %v", err)
-		return
+		return fmt.Errorf("fetch release: %w", err)
 	}
 
 	if remoteSHA != "" {
 		localSHA, err := fileSHA256Hex(localBinPath())
 		if err == nil && strings.EqualFold(localSHA, remoteSHA) {
-			return
+			return nil
 		}
 	}
 
@@ -168,9 +183,53 @@ func EnsureLatest(ctx context.Context) {
 	_ = os.MkdirAll(dir, 0o755)
 
 	if err := downloadFile(ctx, dlURL, localBinPath()); err != nil {
-		log.Printf("resourcerules: download: %v", err)
-		return
+		return fmt.Errorf("download: %w", err)
 	}
 
 	log.Printf("resourcerules: updated %s", binName)
+	return nil
+}
+
+func CheckStatus(ctx context.Context) Status {
+	out := Status{
+		Path: localBinPath(),
+	}
+
+	localSHA, err := fileSHA256Hex(localBinPath())
+	if err == nil {
+		out.Installed = true
+		out.LocalSHA = strings.ToLower(localSHA)
+	} else if !os.IsNotExist(err) {
+		out.Error = fmt.Sprintf("local sha256: %v", err)
+	}
+
+	ctx, cancel := context.WithTimeout(ctx, 30*time.Second)
+	defer cancel()
+
+	_, remoteSHA, err := fetchRelease(ctx)
+	if err != nil {
+		if out.Error == "" {
+			out.Error = fmt.Sprintf("fetch release: %v", err)
+		} else {
+			out.Error += "; " + fmt.Sprintf("fetch release: %v", err)
+		}
+		return out
+	}
+
+	remoteSHA = strings.ToLower(strings.TrimSpace(remoteSHA))
+	if remoteSHA == "" {
+		if out.Error == "" {
+			out.Error = "remote sha256 is empty"
+		} else {
+			out.Error += "; remote sha256 is empty"
+		}
+		return out
+	}
+
+	out.RemoteSHA = remoteSHA
+	out.CanCompare = true
+	if out.Installed {
+		out.UpToDate = strings.EqualFold(out.LocalSHA, out.RemoteSHA)
+	}
+	return out
 }

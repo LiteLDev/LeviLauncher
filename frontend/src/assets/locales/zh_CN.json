@@ -368,6 +368,21 @@
         "unzip_failed": "解压失败"
       }
     },
+    "resource_rules": {
+      "title": "启动器运行数据",
+      "check_button": "检查更新",
+      "update_button": "更新",
+      "latest_label": "最新",
+      "outdated_label": "需更新",
+      "missing_label": "未安装",
+      "status": {
+        "checking": "正在校验 SHA256...",
+        "up_to_date": "SHA256 与远端一致",
+        "outdated": "SHA256 与远端不一致",
+        "missing": "未找到本地文件",
+        "check_failed": "检查失败：{{error}}"
+      }
+    },
     "header": {
       "title": "设置",
       "content": "配置启动器常用选项"

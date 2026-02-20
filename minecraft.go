@@ -27,6 +27,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/resourcerules"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
@@ -320,6 +321,26 @@ func (a *Minecraft) IsLipInstalled() bool {
 
 func (a *Minecraft) GetLatestLipVersion() (string, error) {
 	return lip.GetLatestVersion()
+}
+
+func (a *Minecraft) GetResourceRulesStatus() map[string]interface{} {
+	st := resourcerules.CheckStatus(context.Background())
+	return map[string]interface{}{
+		"path":       st.Path,
+		"installed":  st.Installed,
+		"upToDate":   st.UpToDate,
+		"localSha":   st.LocalSHA,
+		"remoteSha":  st.RemoteSHA,
+		"canCompare": st.CanCompare,
+		"error":      st.Error,
+	}
+}
+
+func (a *Minecraft) UpdateResourceRules() string {
+	if err := resourcerules.EnsureLatestWithError(context.Background()); err != nil {
+		return err.Error()
+	}
+	return ""
 }
 
 func (a *Minecraft) startup() {

@@ -358,6 +358,21 @@
         "unknown": "不明なエラーが発生しました"
       }
     },
+    "resource_rules": {
+      "title": "ランチャー実行データ",
+      "check_button": "更新を確認",
+      "update_button": "更新",
+      "latest_label": "最新",
+      "outdated_label": "要更新",
+      "missing_label": "未インストール",
+      "status": {
+        "checking": "SHA256 を確認中...",
+        "up_to_date": "SHA256 はリモートと一致しています",
+        "outdated": "SHA256 がリモートと一致しません",
+        "missing": "ローカルファイルが見つかりません",
+        "check_failed": "確認に失敗しました: {{error}}"
+      }
+    },
     "header": {
       "title": "設定",
       "content": "ランチャーの一般的なオプション設定"

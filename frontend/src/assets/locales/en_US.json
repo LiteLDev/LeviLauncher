@@ -368,6 +368,21 @@
         "unzip_failed": "Unzip failed"
       }
     },
+    "resource_rules": {
+      "title": "Launcher Runtime Data",
+      "check_button": "Check Update",
+      "update_button": "Update",
+      "latest_label": "Latest",
+      "outdated_label": "Outdated",
+      "missing_label": "Missing",
+      "status": {
+        "checking": "Checking SHA256...",
+        "up_to_date": "SHA256 matches remote release",
+        "outdated": "SHA256 differs from remote release",
+        "missing": "Local file not found",
+        "check_failed": "Check failed: {{error}}"
+      }
+    },
     "header": {
       "title": "Settings",
       "content": "Configure common launcher options"

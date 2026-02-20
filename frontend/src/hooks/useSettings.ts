@@ -13,6 +13,8 @@ import {
   GetLipVersion,
   IsLipInstalled,
   GetLatestLipVersion,
+  GetResourceRulesStatus,
+  UpdateResourceRules,
   ListMinecraftProcesses,
   KillProcess,
   KillAllMinecraftProcesses,
@@ -262,6 +264,21 @@ export const useSettings = (i18n: { language: string }) => {
   const [lipError, setLipError] = useState<string>("");
   const lipProgressDisclosure = useDisclosure();
 
+  // resource_pack_rules.bin
+  const [resourceRulesInstalled, setResourceRulesInstalled] =
+    useState<boolean>(false);
+  const [resourceRulesUpToDate, setResourceRulesUpToDate] =
+    useState<boolean>(false);
+  const [resourceRulesLocalSha, setResourceRulesLocalSha] =
+    useState<string>("");
+  const [resourceRulesRemoteSha, setResourceRulesRemoteSha] =
+    useState<string>("");
+  const [resourceRulesError, setResourceRulesError] = useState<string>("");
+  const [resourceRulesChecking, setResourceRulesChecking] =
+    useState<boolean>(false);
+  const [resourceRulesUpdating, setResourceRulesUpdating] =
+    useState<boolean>(false);
+
   // Process management
   const [processModalOpen, setProcessModalOpen] = useState(false);
   const [processes, setProcesses] = useState<types.ProcessInfo[]>([]);
@@ -338,6 +355,38 @@ export const useSettings = (i18n: { language: string }) => {
       navigate("/updating", { replace: true });
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const refreshResourceRulesStatus = async () => {
+    setResourceRulesChecking(true);
+    try {
+      const s = (await GetResourceRulesStatus()) as any;
+      setResourceRulesInstalled(Boolean(s?.installed));
+      setResourceRulesUpToDate(Boolean(s?.upToDate));
+      setResourceRulesLocalSha(String(s?.localSha || ""));
+      setResourceRulesRemoteSha(String(s?.remoteSha || ""));
+      setResourceRulesError(String(s?.error || ""));
+    } catch (e: any) {
+      setResourceRulesError(String(e?.message || e || "check failed"));
+      setResourceRulesUpToDate(false);
+    } finally {
+      setResourceRulesChecking(false);
+    }
+  };
+
+  const onUpdateResourceRules = async () => {
+    setResourceRulesUpdating(true);
+    try {
+      const err = await UpdateResourceRules();
+      if (err) {
+        setResourceRulesError(String(err));
+      }
+      await refreshResourceRulesStatus();
+    } catch (e: any) {
+      setResourceRulesError(String(e?.message || e || "update failed"));
+    } finally {
+      setResourceRulesUpdating(false);
     }
   };
 
@@ -653,6 +702,11 @@ export const useSettings = (i18n: { language: string }) => {
     return () => offs.forEach((off) => off());
   }, [hasBackend]);
 
+  useEffect(() => {
+    if (!hasBackend) return;
+    refreshResourceRulesStatus();
+  }, [hasBackend]);
+
   return {
     // Computed
     hasBackend,
@@ -792,6 +846,17 @@ export const useSettings = (i18n: { language: string }) => {
     lipError,
     setLipError,
     lipProgressDisclosure,
+
+    // Resource rules
+    resourceRulesInstalled,
+    resourceRulesUpToDate,
+    resourceRulesLocalSha,
+    resourceRulesRemoteSha,
+    resourceRulesError,
+    resourceRulesChecking,
+    resourceRulesUpdating,
+    refreshResourceRulesStatus,
+    onUpdateResourceRules,
 
     // Process management
     processModalOpen,

@@ -184,6 +184,15 @@ export const SettingsPage: React.FC = () => {
     lipError,
     setLipError,
     lipProgressDisclosure,
+    resourceRulesInstalled,
+    resourceRulesUpToDate,
+    resourceRulesLocalSha,
+    resourceRulesRemoteSha,
+    resourceRulesError,
+    resourceRulesChecking,
+    resourceRulesUpdating,
+    refreshResourceRulesStatus,
+    onUpdateResourceRules,
     processModalOpen,
     setProcessModalOpen,
     processes,
@@ -1908,6 +1917,78 @@ export const SettingsPage: React.FC = () => {
                           : t("settings.lip.install_button")}
                       </Button>
                     )}
+                  </div>
+
+                  <Divider className="bg-default-200/50" />
+
+                  {/* resource_pack_rules.bin */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col gap-1 min-w-0">
+                      <p className="font-medium">
+                        {t("settings.resource_rules.title")}
+                      </p>
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
+                        {resourceRulesChecking
+                          ? t("settings.resource_rules.status.checking")
+                          : resourceRulesError
+                            ? t("settings.resource_rules.status.check_failed", {
+                                error: resourceRulesError,
+                              })
+                            : resourceRulesInstalled
+                              ? resourceRulesUpToDate
+                                ? t("settings.resource_rules.status.up_to_date")
+                                : t("settings.resource_rules.status.outdated")
+                              : t("settings.resource_rules.status.missing")}
+                      </p>
+                      {resourceRulesLocalSha || resourceRulesRemoteSha ? (
+                        <p
+                          className="text-tiny font-mono text-default-400 dark:text-zinc-500 truncate"
+                          title={`local: ${resourceRulesLocalSha || "-"} | remote: ${resourceRulesRemoteSha || "-"}`}
+                        >
+                          {`local: ${resourceRulesLocalSha ? `${resourceRulesLocalSha.slice(0, 12)}...` : "-"} | remote: ${resourceRulesRemoteSha ? `${resourceRulesRemoteSha.slice(0, 12)}...` : "-"}`}
+                        </p>
+                      ) : null}
+                    </div>
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Chip
+                        color={
+                          resourceRulesUpToDate
+                            ? "success"
+                            : resourceRulesInstalled
+                              ? "warning"
+                              : "default"
+                        }
+                        variant="flat"
+                      >
+                        {resourceRulesUpToDate
+                          ? t("settings.resource_rules.latest_label")
+                          : resourceRulesInstalled
+                            ? t("settings.resource_rules.outdated_label")
+                            : t("settings.resource_rules.missing_label")}
+                      </Chip>
+                      <Button
+                        radius="full"
+                        variant="bordered"
+                        size="sm"
+                        isLoading={resourceRulesChecking}
+                        isDisabled={resourceRulesUpdating}
+                        onPress={refreshResourceRulesStatus}
+                      >
+                        {t("settings.resource_rules.check_button")}
+                      </Button>
+                      {!resourceRulesUpToDate && (
+                        <Button
+                          radius="full"
+                          variant="bordered"
+                          size="sm"
+                          isLoading={resourceRulesUpdating}
+                          isDisabled={resourceRulesChecking}
+                          onPress={onUpdateResourceRules}
+                        >
+                          {t("settings.resource_rules.update_button")}
+                        </Button>
+                      )}
+                    </div>
                   </div>
                 </div>
               )}

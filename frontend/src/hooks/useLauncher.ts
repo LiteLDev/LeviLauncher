@@ -75,6 +75,7 @@ export const useLauncher = (args: any) => {
   const fetchingLogos = React.useRef<Set<string>>(new Set());
   const [tipIndex, setTipIndex] = React.useState<number>(0);
   const tipTimerRef = React.useRef<number | null>(null);
+  const launchRequestActiveRef = React.useRef<boolean>(false);
 
   useEffect(() => {
     try {
@@ -243,47 +244,67 @@ export const useLauncher = (args: any) => {
     const name = currentVersion;
     if (name) {
       saveCurrentVersionName(name);
+      launchRequestActiveRef.current = true;
       const launch = versionService?.LaunchVersionByName;
       if (typeof launch === "function") {
         launch(name)
           .then((err: string) => {
             const s = String(err || "");
             if (s) {
+              launchRequestActiveRef.current = false;
+              mcLaunchLoadingDisclosure.onClose();
               setLaunchErrorCode(s);
               launchFailedDisclosure.onOpen();
             }
           })
           .catch(() => {
+            launchRequestActiveRef.current = false;
+            mcLaunchLoadingDisclosure.onClose();
             setLaunchErrorCode("ERR_LAUNCH_GAME");
             launchFailedDisclosure.onOpen();
           });
+      } else {
+        launchRequestActiveRef.current = false;
       }
     } else {
+      launchRequestActiveRef.current = false;
       navigate("/versions");
     }
-  }, [currentVersion, navigate, launchFailedDisclosure]);
+  }, [
+    currentVersion,
+    navigate,
+    launchFailedDisclosure,
+    mcLaunchLoadingDisclosure,
+  ]);
 
   const doForceLaunch = React.useCallback(() => {
     const name = currentVersion;
     if (name) {
       saveCurrentVersionName(name);
+      launchRequestActiveRef.current = true;
       const launchForce = versionService?.LaunchVersionByNameForce;
       if (typeof launchForce === "function") {
         launchForce(name)
           .then((err: string) => {
             const s = String(err || "");
             if (s) {
+              launchRequestActiveRef.current = false;
+              mcLaunchLoadingDisclosure.onClose();
               setLaunchErrorCode(s);
               launchFailedDisclosure.onOpen();
             }
           })
           .catch(() => {
+            launchRequestActiveRef.current = false;
+            mcLaunchLoadingDisclosure.onClose();
             setLaunchErrorCode("ERR_LAUNCH_GAME");
             launchFailedDisclosure.onOpen();
           });
+      } else {
+        launchRequestActiveRef.current = false;
       }
     }
-  }, [currentVersion, launchFailedDisclosure]);
+  }, [currentVersion, launchFailedDisclosure, mcLaunchLoadingDisclosure]);
 
   const doCreateShortcut = React.useCallback(() => {
     const name = currentVersion;
@@ -670,13 +691,16 @@ export const useLauncher = (args: any) => {
 
   useEffect(() => {
     const unlistenMcStart = Events.On("mc.launch.start", () => {
+      if (!launchRequestActiveRef.current) return;
       mcLaunchLoadingDisclosure.onOpen();
     });
 
     const unlistenMcDone = Events.On("mc.launch.done", () => {
+      launchRequestActiveRef.current = false;
       mcLaunchLoadingDisclosure.onClose();
     });
     const unlistenMcFailed = Events.On("mc.launch.failed", (data) => {
+      launchRequestActiveRef.current = false;
       mcLaunchLoadingDisclosure.onClose();
       const payload: any = (data as any)?.data ?? data;
       const first = Array.isArray(payload) ? payload[0] : payload;

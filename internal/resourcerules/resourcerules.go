@@ -14,8 +14,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/corpix/uarand"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 )
 
 const (
@@ -89,7 +89,7 @@ func fetchRelease(ctx context.Context) (downloadURL, remoteSHA256 string, err er
 		if err != nil {
 			continue
 		}
-		req.Header.Set("User-Agent", uarand.GetRandom())
+		httpx.ApplyDefaultHeaders(req)
 		req.Header.Set("Accept", "application/vnd.github+json")
 
 		resp, err := http.DefaultClient.Do(req)
@@ -126,7 +126,7 @@ func downloadFile(ctx context.Context, url, dest string) error {
 	if err != nil {
 		return err
 	}
-	req.Header.Set("User-Agent", uarand.GetRandom())
+	httpx.ApplyDefaultHeaders(req)
 
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {

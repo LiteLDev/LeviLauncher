@@ -13,7 +13,7 @@ import (
 	"sync"
 	"time"
 
-	"github.com/corpix/uarand"
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -211,7 +211,7 @@ func (m *Manager) run(s *state) {
 			m.finishRunning(local)
 			return
 		}
-		req.Header.Set("User-Agent", uarand.GetRandom())
+		httpx.ApplyDefaultHeaders(req)
 		if m.opts.Resume && cur > 0 {
 			req.Header.Set("Range", fmt.Sprintf("bytes=%d-", cur))
 		}

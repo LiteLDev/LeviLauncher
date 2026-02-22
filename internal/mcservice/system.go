@@ -11,7 +11,7 @@ import (
 
 	json "github.com/goccy/go-json"
 
-	"github.com/corpix/uarand"
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 )
 
 type KnownFolder struct {
@@ -41,7 +41,7 @@ func FetchHistoricalVersions(preferCN bool) map[string]interface{} {
 			}
 			req.Header.Set("Accept", "application/json")
 			req.Header.Set("Cache-Control", "no-cache")
-			req.Header.Set("User-Agent", uarand.GetRandom())
+			httpx.ApplyDefaultHeaders(req)
 
 			resp, err := client.Do(req)
 			if err != nil {
@@ -108,7 +108,7 @@ func TestMirrorLatencies(urls []string, timeoutMs int) []map[string]interface{} 
 		ok := false
 		req, err := http.NewRequest("HEAD", strings.TrimSpace(u), nil)
 		if err == nil {
-			req.Header.Set("User-Agent", uarand.GetRandom())
+			httpx.ApplyDefaultHeaders(req)
 			if resp, er := client.Do(req); er == nil {
 				_ = resp.Body.Close()
 				if resp.StatusCode >= 200 && resp.StatusCode < 400 {

@@ -2,8 +2,6 @@ package launch
 
 import (
 	"context"
-	"encoding/csv"
-	"os/exec"
 	"path/filepath"
 	"strings"
 	"syscall"
@@ -14,6 +12,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"golang.org/x/sys/windows"
 )
 
 const (
@@ -52,39 +51,51 @@ func EnsureGamingServicesInstalled(ctx context.Context) bool {
 	return true
 }
 
+func normalizeProcessPath(p string) string {
+	s := strings.ToLower(filepath.Clean(strings.TrimSpace(p)))
+	s = strings.TrimPrefix(s, `\\?\`)
+	s = strings.TrimPrefix(s, `\??\`)
+	return s
+}
+
 func isGameRunning(versionDir string) bool {
 	if versionDir == "" {
 		return false
 	}
-	cmd := exec.Command("powershell", "-NoProfile", "-Command", "Get-CimInstance Win32_Process -Filter \"Name='Minecraft.Windows.exe'\" | Select-Object ExecutablePath | ConvertTo-Csv -NoTypeInformation")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, err := cmd.Output()
+
+	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
 		return false
 	}
-	reader := csv.NewReader(strings.NewReader(string(out)))
-	records, err := reader.ReadAll()
-	if err != nil || len(records) < 2 {
+	defer windows.CloseHandle(snapshot)
+
+	cleanVerDir := normalizeProcessPath(versionDir)
+
+	var entry windows.ProcessEntry32
+	entry.Size = uint32(unsafe.Sizeof(entry))
+	if err := windows.Process32First(snapshot, &entry); err != nil {
 		return false
 	}
-	idx := -1
-	for i, col := range records[0] {
-		if strings.EqualFold(col, "ExecutablePath") {
-			idx = i
+
+	for {
+		if strings.EqualFold(windows.UTF16ToString(entry.ExeFile[:]), "Minecraft.Windows.exe") {
+			h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, entry.ProcessID)
+			if err == nil {
+				buf := make([]uint16, 1024)
+				size := uint32(len(buf))
+				if err := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); err == nil && size > 0 {
+					p := normalizeProcessPath(windows.UTF16ToString(buf[:size]))
+					_ = windows.CloseHandle(h)
+					if strings.HasPrefix(p, cleanVerDir) {
+						return true
+					}
+				} else {
+					_ = windows.CloseHandle(h)
+				}
+			}
+		}
+		if err := windows.Process32Next(snapshot, &entry); err != nil {
 			break
-		}
-	}
-	if idx == -1 {
-		return false
-	}
-	cleanVerDir := strings.ToLower(filepath.Clean(versionDir))
-	for _, row := range records[1:] {
-		if len(row) <= idx {
-			continue
-		}
-		path := strings.ToLower(filepath.Clean(row[idx]))
-		if strings.HasPrefix(path, cleanVerDir) {
-			return true
 		}
 	}
 	return false
@@ -192,7 +203,7 @@ func MonitorGameProcess(ctx context.Context, versionDir string) {
 				// 似乎会出现Bug，后续修复
 				//w := application.Get().Window.Current()
 				//if w != nil {
-					//w.Restore()
+				//w.Restore()
 				//}
 				return
 			}

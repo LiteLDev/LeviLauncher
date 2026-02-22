@@ -1,10 +1,16 @@
 package registry
 
 import (
-	"os/exec"
 	"syscall"
+	"time"
+	"unsafe"
 
 	"golang.org/x/sys/windows/registry"
+)
+
+var (
+	shell32DevMode           = syscall.NewLazyDLL("shell32.dll")
+	procShellExecuteWDevMode = shell32DevMode.NewProc("ShellExecuteW")
 )
 
 func IsDevModeEnabled() bool {
@@ -22,11 +28,35 @@ func IsDevModeEnabled() bool {
 }
 
 func TryEnableDevMode() bool {
-	psCommand := `Start-Process -FilePath "reg" -ArgumentList 'add', 'HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock', '/v', 'AllowDevelopmentWithoutDevLicense', '/t', 'REG_DWORD', '/d', '1', '/f' -Verb RunAs -Wait`
+	verb, err := syscall.UTF16PtrFromString("runas")
+	if err != nil {
+		return false
+	}
+	file, err := syscall.UTF16PtrFromString("reg.exe")
+	if err != nil {
+		return false
+	}
+	args, err := syscall.UTF16PtrFromString(`add HKLM\SOFTWARE\Microsoft\Windows\CurrentVersion\AppModelUnlock /v AllowDevelopmentWithoutDevLicense /t REG_DWORD /d 1 /f`)
+	if err != nil {
+		return false
+	}
+	ret, _, _ := procShellExecuteWDevMode.Call(
+		0,
+		uintptr(unsafe.Pointer(verb)),
+		uintptr(unsafe.Pointer(file)),
+		uintptr(unsafe.Pointer(args)),
+		0,
+		1,
+	)
+	if ret <= 32 {
+		return false
+	}
 
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", psCommand)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	_ = cmd.Run()
-
+	for i := 0; i < 25; i++ {
+		if IsDevModeEnabled() {
+			return true
+		}
+		time.Sleep(200 * time.Millisecond)
+	}
 	return IsDevModeEnabled()
 }

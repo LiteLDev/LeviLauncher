@@ -18,7 +18,7 @@ type AppxInfo struct {
 
 func GetAppxInfo(packageName string) (*AppxInfo, error) {
 	ps := "Get-AppxPackage -Name '" + packageName + "' | Select-Object PackageFullName, PackageFamilyName, Version, InstallLocation | ConvertTo-Json"
-	cmd := exec.Command("powershell", "-Command", ps)
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", ps)
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	output, err := cmd.CombinedOutput()
 	if err != nil {

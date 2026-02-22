@@ -44,7 +44,7 @@ func UnregisterIfExists(isPreview bool) string {
 	if info, err := registry.GetAppxInfo(pkg); err == nil && info != nil {
 		pf := strings.TrimSpace(info.PackageFullName)
 		if pf != "" {
-			cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "Remove-AppxPackage -Package '"+pf+"' -PreserveRoamableApplicationData")
+			cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "Remove-AppxPackage -Package '"+pf+"' -PreserveRoamableApplicationData")
 			cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 			if er := cmd.Run(); er != nil {
 				return "ERR_UNREGISTER_FAILED"
@@ -77,7 +77,7 @@ func UnregisterVersionFolder(folder string) string {
 	if pf == "" {
 		return "ERR_NOT_REGISTERED_THIS_VERSION"
 	}
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-ExecutionPolicy", "Bypass", "-Command", "Remove-AppxPackage -Package '"+pf+"' -PreserveRoamableApplicationData")
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "Remove-AppxPackage -Package '"+pf+"' -PreserveRoamableApplicationData")
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
 	if er := cmd.Run(); er != nil {
 		return "ERR_UNREGISTER_FAILED"

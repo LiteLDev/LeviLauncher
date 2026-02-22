@@ -16,11 +16,12 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/corpix/uarand"
 	"github.com/google/go-github/v30/github"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	winreg "golang.org/x/sys/windows/registry"
 )
 
 const (
@@ -63,25 +64,43 @@ func fileSHA256(p string) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-func IsInstalled() bool {
-	psCmd := `Get-ItemProperty HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall\*, HKLM:\SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall\* | Where-Object { $_.DisplayName -like "*Visual C++*" } | Select-Object -ExpandProperty DisplayName`
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", psCmd)
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	out, err := cmd.Output()
+func hasVCMinimumRuntime(path string) bool {
+	key, err := winreg.OpenKey(winreg.LOCAL_MACHINE, path, winreg.READ)
 	if err != nil {
 		return false
 	}
-	output := string(out)
-	lines := strings.Split(output, "\n")
-	for _, line := range lines {
-		l := strings.TrimSpace(line)
-		if strings.Contains(l, "Visual C++") && strings.Contains(l, "X64") || strings.Contains(l, "x64"){
-			if strings.Contains(l, "2022") && strings.Contains(l, "Minimum Runtime") {		
-				return true
-			}
+	defer key.Close()
+
+	names, err := key.ReadSubKeyNames(-1)
+	if err != nil {
+		return false
+	}
+
+	for _, name := range names {
+		sub, err := winreg.OpenKey(key, name, winreg.QUERY_VALUE)
+		if err != nil {
+			continue
+		}
+		displayName, _, err := sub.GetStringValue("DisplayName")
+		_ = sub.Close()
+		if err != nil {
+			continue
+		}
+
+		l := strings.ToLower(strings.TrimSpace(displayName))
+		if strings.Contains(l, "visual c++") &&
+			strings.Contains(l, "x64") &&
+			strings.Contains(l, "2022") &&
+			strings.Contains(l, "minimum runtime") {
+			return true
 		}
 	}
 	return false
+}
+
+func IsInstalled() bool {
+	return hasVCMinimumRuntime(`SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall`) ||
+		hasVCMinimumRuntime(`SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall`)
 }
 
 func EnsureInteractive(ctx context.Context) {
@@ -120,7 +139,7 @@ func EnsureInteractive(ctx context.Context) {
 		application.Get().Event.Emit(EventEnsureDone, false)
 		return
 	}
-	req.Header.Set("User-Agent", uarand.GetRandom())
+	httpx.ApplyDefaultHeaders(req)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		application.Get().Event.Emit(EventDownloadError, err.Error())
@@ -171,7 +190,7 @@ func EnsureInteractive(ctx context.Context) {
 	f.Close()
 
 	if err := os.Rename(tmpPath, dlPath); err != nil {
-		_ = os.Remove(dlPath) 
+		_ = os.Remove(dlPath)
 		if err := os.Rename(tmpPath, dlPath); err != nil {
 			application.Get().Event.Emit(EventDownloadError, err.Error())
 			application.Get().Event.Emit(EventEnsureDone, false)
@@ -294,7 +313,7 @@ func EnsureLatest(ctx context.Context, contentDir string) {
 		application.Get().Event.Emit(EventEnsureDone, false)
 		return
 	}
-	req.Header.Set("User-Agent", uarand.GetRandom())
+	httpx.ApplyDefaultHeaders(req)
 	resp, err := http.DefaultClient.Do(req)
 	if err != nil {
 		log.Printf("vcruntime.EnsureLatest: 请求失败: %v", err)

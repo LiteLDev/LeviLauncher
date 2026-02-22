@@ -24,7 +24,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
-	"github.com/liteldev/LeviLauncher/internal/preloader"
 	"github.com/liteldev/LeviLauncher/internal/resourcerules"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
@@ -182,9 +181,6 @@ func init() {
 	application.RegisterEvent[string](gdk.EventInstallStart)
 	application.RegisterEvent[string](gdk.EventInstallDone)
 	application.RegisterEvent[string](gdk.EventInstallError)
-	//preloader
-	application.RegisterEvent[struct{}](preloader.EventEnsureStart)
-	application.RegisterEvent[bool](preloader.EventEnsureDone)
 	// peeditor
 	application.RegisterEvent[struct{}](peeditor.EventEnsureStart)
 	application.RegisterEvent[bool](peeditor.EventEnsureDone)

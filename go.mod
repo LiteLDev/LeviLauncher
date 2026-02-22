@@ -6,7 +6,6 @@ require (
 	github.com/Masterminds/semver/v3 v3.4.0
 	github.com/Microsoft/go-winio v0.6.2
 	github.com/axrona/go-discordrpc v1.1.0-1
-	github.com/corpix/uarand v0.2.0
 	github.com/goccy/go-json v0.10.5
 	github.com/google/go-github/v30 v30.1.0
 	github.com/joho/godotenv v1.5.1

@@ -14,7 +14,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
-	"github.com/liteldev/LeviLauncher/internal/preloader"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/liteldev/LeviLauncher/internal/versions"
@@ -23,11 +22,10 @@ import (
 )
 
 type Launcher struct {
-	enablePreloader bool
 }
 
 func New(enablePreloader bool) *Launcher {
-	return &Launcher{enablePreloader: enablePreloader}
+	return &Launcher{}
 }
 
 func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) string {
@@ -42,11 +40,6 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	}
 	application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
 	_ = vcruntime.EnsureForVersion(ctx, dir)
-	if l.enablePreloader {
-		_ = preloader.EnsureForVersion(ctx, dir)
-		_ = peeditor.EnsureForVersion(ctx, dir)
-		_ = peeditor.RunForVersion(ctx, dir)
-	}
 
 	var args []string
 	var envs []string

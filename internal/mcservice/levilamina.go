@@ -11,9 +11,9 @@ import (
 	"syscall"
 	"time"
 
-	"github.com/corpix/uarand"
 	json "github.com/goccy/go-json"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
@@ -39,7 +39,7 @@ func FetchLeviLaminaVersionDB() (map[string][]string, error) {
 			lastErr = err
 			continue
 		}
-		req.Header.Set("User-Agent", uarand.GetRandom())
+		httpx.ApplyDefaultHeaders(req)
 
 		resp, err := client.Do(req)
 		if err != nil {

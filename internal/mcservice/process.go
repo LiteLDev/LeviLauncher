@@ -1,107 +1,109 @@
 package mcservice
 
 import (
-	"encoding/csv"
-	"os/exec"
+	"fmt"
 	"path/filepath"
-	"strconv"
 	"strings"
-	"syscall"
+	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/types"
+	"golang.org/x/sys/windows"
 )
 
+func normalizeProcPath(p string) string {
+	s := strings.ToLower(filepath.Clean(strings.TrimSpace(p)))
+	s = strings.TrimPrefix(s, `\\?\`)
+	s = strings.TrimPrefix(s, `\??\`)
+	return s
+}
+
 func ListMinecraftProcesses() []types.ProcessInfo {
-	cmd := exec.Command("powershell", "-NoProfile", "-Command", "Get-CimInstance Win32_Process -Filter \"Name='Minecraft.Windows.exe'\" | Select-Object ProcessId,ExecutablePath | ConvertTo-Csv -NoTypeInformation")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-
-	out, err := cmd.Output()
+	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
 		return []types.ProcessInfo{}
 	}
+	defer windows.CloseHandle(snapshot)
 
-	reader := csv.NewReader(strings.NewReader(string(out)))
-	records, err := reader.ReadAll()
-	if err != nil {
-		return []types.ProcessInfo{}
-	}
-
-	if len(records) < 2 {
-		return []types.ProcessInfo{}
-	}
-
-	exeIdx := -1
-	pidIdx := -1
-	for i, col := range records[0] {
-		if strings.EqualFold(col, "ExecutablePath") {
-			exeIdx = i
-		} else if strings.EqualFold(col, "ProcessId") {
-			pidIdx = i
-		}
-	}
-
-	if exeIdx == -1 || pidIdx == -1 {
+	var entry windows.ProcessEntry32
+	entry.Size = uint32(unsafe.Sizeof(entry))
+	if err := windows.Process32First(snapshot, &entry); err != nil {
 		return []types.ProcessInfo{}
 	}
 
 	versionsDir, _ := apppath.VersionsDir()
 	if versionsDir != "" {
-		versionsDir = strings.ToLower(filepath.Clean(versionsDir))
+		versionsDir = normalizeProcPath(versionsDir)
 	}
 
 	var processes []types.ProcessInfo
-	for _, record := range records[1:] {
-		if len(record) <= exeIdx || len(record) <= pidIdx {
-			continue
-		}
-
-		pidStr := record[pidIdx]
-		exePath := record[exeIdx]
-
-		if strings.TrimSpace(pidStr) == "" {
-			continue
-		}
-
-		pid, err := strconv.Atoi(pidStr)
-		if err != nil {
-			continue
-		}
-
-		cleanPath := strings.ToLower(filepath.Clean(exePath))
-		isLauncher := false
-		versionName := ""
-
-		if versionsDir != "" && strings.HasPrefix(cleanPath, versionsDir) {
-			isLauncher = true
-			rel, err := filepath.Rel(versionsDir, cleanPath)
+	for {
+		if strings.EqualFold(windows.UTF16ToString(entry.ExeFile[:]), "Minecraft.Windows.exe") {
+			h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, entry.ProcessID)
 			if err == nil {
-				parts := strings.Split(rel, string(filepath.Separator))
-				if len(parts) > 0 {
-					versionName = parts[0]
+				buf := make([]uint16, 1024)
+				size := uint32(len(buf))
+				if err := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); err == nil && size > 0 {
+					exePath := windows.UTF16ToString(buf[:size])
+					cleanPath := normalizeProcPath(exePath)
+
+					isLauncher := false
+					versionName := ""
+					if versionsDir != "" && strings.HasPrefix(cleanPath, versionsDir) {
+						isLauncher = true
+						rel, err := filepath.Rel(versionsDir, cleanPath)
+						if err == nil {
+							parts := strings.Split(rel, string(filepath.Separator))
+							if len(parts) > 0 {
+								versionName = parts[0]
+							}
+						}
+					}
+
+					processes = append(processes, types.ProcessInfo{
+						Pid:         int(entry.ProcessID),
+						ExePath:     exePath,
+						IsLauncher:  isLauncher,
+						VersionName: versionName,
+					})
 				}
+				_ = windows.CloseHandle(h)
 			}
 		}
-
-		processes = append(processes, types.ProcessInfo{
-			Pid:         pid,
-			ExePath:     exePath,
-			IsLauncher:  isLauncher,
-			VersionName: versionName,
-		})
+		if err := windows.Process32Next(snapshot, &entry); err != nil {
+			break
+		}
 	}
 
 	return processes
 }
 
 func KillProcess(pid int) error {
-	cmd := exec.Command("taskkill", "/PID", strconv.Itoa(pid), "/F")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	return cmd.Run()
+	if pid <= 0 {
+		return fmt.Errorf("invalid pid")
+	}
+	h, err := windows.OpenProcess(windows.PROCESS_TERMINATE, false, uint32(pid))
+	if err != nil {
+		return err
+	}
+	defer windows.CloseHandle(h)
+	return windows.TerminateProcess(h, 1)
 }
 
 func KillAllMinecraftProcesses() error {
-	cmd := exec.Command("taskkill", "/IM", "Minecraft.Windows.exe", "/F")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	return cmd.Run()
+	var firstErr error
+	found := false
+	for _, p := range ListMinecraftProcesses() {
+		found = true
+		if err := KillProcess(p.Pid); err != nil && firstErr == nil {
+			firstErr = err
+		}
+	}
+	if firstErr != nil {
+		return firstErr
+	}
+	if !found {
+		return fmt.Errorf("no Minecraft process found")
+	}
+	return nil
 }

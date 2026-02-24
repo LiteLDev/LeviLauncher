@@ -432,7 +432,7 @@ export const CurseForgePage: React.FC = () => {
                 onPress={handleSearch}
                 startContent={<LuSearch />}
                 size="sm"
-                className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               >
                 {t("curseforge.search")}
               </Button>
@@ -636,7 +636,9 @@ export const CurseForgePage: React.FC = () => {
                             >
                               <LuFileDigit />
                               <span>
-                                {formatFileSize(mod.latestFiles?.[0]?.fileLength)}
+                                {formatFileSize(
+                                  mod.latestFiles?.[0]?.fileLength,
+                                )}
                               </span>
                             </div>
                             <div
@@ -709,7 +711,7 @@ export const CurseForgePage: React.FC = () => {
                   radius="full"
                   classNames={{
                     cursor:
-                      "bg-primary-600 hover:bg-primary-500 shadow-lg shadow-primary-900/20 font-bold",
+                      "bg-primary-500 hover:bg-primary-500 shadow-lg shadow-primary-900/20 font-bold",
                   }}
                 />
               </div>

@@ -573,7 +573,7 @@ const CurseForgeModPage: React.FC = () => {
             <Button
               onPress={() => navigate(-1)}
               color="primary"
-              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
             >
               {t("curseforge.go_back")}
             </Button>
@@ -672,7 +672,7 @@ const CurseForgeModPage: React.FC = () => {
               {/* Actions */}
               <div className="flex flex-col gap-3 min-w-[240px] md:border-l md:border-default-100 md:pl-8 justify-center">
                 <Button
-                  className="w-full font-semibold shadow-md shadow-primary-900/20 text-white bg-primary-600 hover:bg-primary-500"
+                  className="w-full font-semibold shadow-md shadow-primary-900/20 text-white bg-primary-500 hover:bg-primary-500"
                   startContent={<LuDownload size={20} />}
                   size="lg"
                   onPress={() => {
@@ -1019,7 +1019,7 @@ const CurseForgeModPage: React.FC = () => {
                 <Button
                   color="primary"
                   onPress={handleVersionSelectNext}
-                  className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                  className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                 >
                   {t("curseforge.install.next")}
                 </Button>
@@ -1029,7 +1029,7 @@ const CurseForgeModPage: React.FC = () => {
               <Button
                 color="primary"
                 onPress={() => setInstallModalOpen(false)}
-                className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               >
                 {t("curseforge.install.close")}
               </Button>
@@ -1051,7 +1051,7 @@ const CurseForgeModPage: React.FC = () => {
                 className="max-w-md w-full"
                 color="primary"
                 classNames={{
-                  indicator: "bg-primary-600 dark:bg-primary-500",
+                  indicator: "bg-primary-500 dark:bg-primary-500",
                 }}
                 showValueLabel={true}
               />

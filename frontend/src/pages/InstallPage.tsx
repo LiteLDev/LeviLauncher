@@ -631,7 +631,7 @@ export default function InstallPage() {
                         {t("common.cancel")}
                       </Button>
                       <Button
-                        className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                        className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                         radius="full"
                         onPress={handleInstall}
                       >
@@ -651,7 +651,7 @@ export default function InstallPage() {
                         {t("common.open_folder")}
                       </Button>
                       <Button
-                        className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                        className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                         radius="full"
                         onPress={() => navigate(returnTo)}
                       >

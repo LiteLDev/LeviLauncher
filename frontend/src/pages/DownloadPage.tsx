@@ -1023,7 +1023,7 @@ export const DownloadPage: React.FC = () => {
                   variant="light"
                   classNames={{
                     cursor:
-                      "bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20",
+                      "bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20",
                   }}
                 />
               </div>
@@ -1065,7 +1065,7 @@ export const DownloadPage: React.FC = () => {
                 {t("downloadpage.mirror.retest")}
               </Button>
               <Button
-                className="font-bold text-white shadow-lg shadow-primary-900/20 bg-primary-600 hover:bg-primary-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                className="font-bold text-white shadow-lg shadow-primary-900/20 bg-primary-500 hover:bg-primary-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
                 radius="full"
                 size="lg"
                 isDisabled={!selectedUrl}

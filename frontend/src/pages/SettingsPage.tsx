@@ -70,6 +70,25 @@ import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { CustomColorPicker } from "@/components/CustomColorPicker";
 import { useSettings, ThemeMode } from "@/hooks/useSettings";
 
+const normalizeHexColor = (
+  value: string | undefined,
+  fallback: string = "#10b981",
+) => {
+  if (!value) return fallback;
+  const trimmed = value.trim();
+  if (/^#[0-9A-Fa-f]{6}$/.test(trimmed)) return trimmed;
+  if (/^[0-9A-Fa-f]{6}$/.test(trimmed)) return `#${trimmed}`;
+  return fallback;
+};
+
+const getColorLuminance = (hexColor: string) => {
+  const color = normalizeHexColor(hexColor, "#000000");
+  const r = parseInt(color.slice(1, 3), 16);
+  const g = parseInt(color.slice(3, 5), 16);
+  const b = parseInt(color.slice(5, 7), 16);
+  return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+};
+
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
   const { theme, setTheme } = useTheme();
@@ -210,6 +229,12 @@ export const SettingsPage: React.FC = () => {
     resetOnClose,
   } = settings;
 
+  const activeCustomThemeColor = normalizeHexColor(
+    themeSettingMode === "light" ? lightCustomThemeColor : darkCustomThemeColor,
+  );
+  const customThemeIconColor =
+    getColorLuminance(activeCustomThemeColor) > 0.6 ? "#111827" : "#ffffff";
+
   return (
     <PageContainer className="relative" animate={false}>
       <div className="flex flex-col gap-4">
@@ -280,7 +305,7 @@ export const SettingsPage: React.FC = () => {
                           radius="full"
                           isDisabled={!newBaseRoot || !baseRootWritable}
                           isLoading={savingBaseRoot}
-                          className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                          className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                           onPress={async () => {
                             setSavingBaseRoot(true);
                             try {
@@ -1522,12 +1547,15 @@ export const SettingsPage: React.FC = () => {
                                           new CustomEvent("app-theme-changed"),
                                         );
                                       }}
+                                      style={{
+                                        backgroundColor: activeCustomThemeColor,
+                                      }}
                                     >
-                                      {/* Modern Mesh Gradient Background */}
-                                      <div className="absolute inset-0 bg-gradient-to-tr from-blue-500 via-purple-500 to-pink-500 group-hover:scale-125 transition-transform duration-500" />
-                                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_bottom_left,_var(--tw-gradient-from)_0%,_transparent_50%)] from-yellow-400/40" />
-
-                                      <LuPalette className="text-white relative z-10 w-4 h-4 drop-shadow-sm" />
+                                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,_rgba(255,255,255,0.35),_transparent_55%)]" />
+                                      <LuPalette
+                                        className="relative z-10 w-4 h-4 drop-shadow-sm"
+                                        style={{ color: customThemeIconColor }}
+                                      />
 
                                       {(themeSettingMode === "light"
                                         ? lightThemeColor === "custom"
@@ -1772,19 +1800,13 @@ export const SettingsPage: React.FC = () => {
                                     </p>
                                     <div className="px-3 py-1 bg-default-200/50 rounded-lg">
                                       <span className="text-tiny font-mono uppercase text-primary-500 font-bold">
-                                        {themeSettingMode === "light"
-                                          ? lightCustomThemeColor
-                                          : darkCustomThemeColor}
+                                        {activeCustomThemeColor}
                                       </span>
                                     </div>
                                   </div>
 
                                   <CustomColorPicker
-                                    color={
-                                      themeSettingMode === "light"
-                                        ? lightCustomThemeColor
-                                        : darkCustomThemeColor
-                                    }
+                                    color={activeCustomThemeColor}
                                     onChange={(hex) => {
                                       if (themeSettingMode === "light") {
                                         setLightCustomThemeColor(hex);
@@ -2077,7 +2099,7 @@ export const SettingsPage: React.FC = () => {
                               radius="full"
                               onPress={onUpdate}
                               isDisabled={updating}
-                              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                               startContent={<RxUpdate />}
                             >
                               {updating
@@ -2161,7 +2183,7 @@ export const SettingsPage: React.FC = () => {
                                 isIndeterminate={true}
                                 classNames={{
                                   indicator:
-                                    "bg-primary-600 hover:bg-primary-500",
+                                    "bg-primary-500 hover:bg-primary-500",
                                 }}
                               />
                             </div>

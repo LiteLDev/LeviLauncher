@@ -228,7 +228,7 @@ export const ModsPage: React.FC = () => {
                 <Button
                   color="primary"
                   variant="shadow"
-                  className="bg-primary-600 hover:bg-primary-500 text-white shadow-lg shadow-primary-900/20"
+                  className="bg-primary-500 hover:bg-primary-500 text-white shadow-lg shadow-primary-900/20"
                   startContent={<FiUploadCloud />}
                   onPress={async () => {
                     try {
@@ -306,7 +306,8 @@ export const ModsPage: React.FC = () => {
                 mp.selectedKeys.size === mp.sortedItems.length
               }
               isIndeterminate={
-                mp.selectedKeys.size > 0 && mp.selectedKeys.size < mp.sortedItems.length
+                mp.selectedKeys.size > 0 &&
+                mp.selectedKeys.size < mp.sortedItems.length
               }
               onValueChange={mp.onSelectAll}
             />
@@ -437,7 +438,9 @@ export const ModsPage: React.FC = () => {
                       classNames={{
                         wrapper: "group-data-[selected=true]:bg-primary-500",
                       }}
-                      onValueChange={(val: boolean) => mp.toggleModEnabled(m.name, val)}
+                      onValueChange={(val: boolean) =>
+                        mp.toggleModEnabled(m.name, val)
+                      }
                       aria-label={t("mods.toggle_label") as string}
                     />
 
@@ -556,7 +559,9 @@ export const ModsPage: React.FC = () => {
                     size="sm"
                     variant="flat"
                     color={
-                      mp.enabledByName.get(mp.activeMod.name) ? "success" : "warning"
+                      mp.enabledByName.get(mp.activeMod.name)
+                        ? "success"
+                        : "warning"
                     }
                   >
                     {mp.enabledByName.get(mp.activeMod.name)
@@ -569,7 +574,9 @@ export const ModsPage: React.FC = () => {
                   classNames={{
                     wrapper: "group-data-[selected=true]:bg-primary-500",
                   }}
-                  onValueChange={(val: boolean) => mp.toggleModEnabled(mp.activeMod!.name, val)}
+                  onValueChange={(val: boolean) =>
+                    mp.toggleModEnabled(mp.activeMod!.name, val)
+                  }
                   aria-label={t("mods.toggle_label") as string}
                 />
               </div>

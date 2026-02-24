@@ -97,7 +97,7 @@ export default function VersionSettingsPage() {
                     <Button
                       color="primary"
                       radius="full"
-                      className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                      className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                       onPress={() => vs.onSave()}
                     >
                       {t("common.ok")}
@@ -358,7 +358,7 @@ export default function VersionSettingsPage() {
               )}
               {vs.selectedTab === "loader" && (
                 <div className="flex flex-col gap-6">
-                  <div className="flex items-center justify-between p-4 rounded-xl border border-default-200 dark:border-default-100/10 bg-default-50 dark:bg-default-100/10">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
                       <div className="w-12 h-12 rounded-xl overflow-hidden">
                         <img
@@ -600,7 +600,7 @@ export default function VersionSettingsPage() {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={() => {
                 vs.setGdkMissingOpen(false);
                 vs.navigate("/settings", { state: { tab: "components" } });

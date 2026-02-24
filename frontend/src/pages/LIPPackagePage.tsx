@@ -19,6 +19,7 @@ import {
 } from "@heroui/react";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import {
   LuDownload,
@@ -580,7 +581,11 @@ const LIPPackagePage: React.FC = () => {
                       </div>
 
                       {pkg.versions.length > 0 ? (
-                        <Table aria-label="Package files table" removeWrapper>
+                        <Table
+                          aria-label="Package files table"
+                          removeWrapper
+                          classNames={COMPONENT_STYLES.table}
+                        >
                           <TableHeader>
                             <TableColumn>Version</TableColumn>
                             <TableColumn>Actions</TableColumn>

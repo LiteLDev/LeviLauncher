@@ -26,4 +26,12 @@ export const COMPONENT_STYLES = {
     cursor: "bg-primary-500 dark:bg-primary-900 hover:bg-primary-500 shadow-md",
     tabContent: "group-data-[selected=true]:text-white font-medium",
   },
+  table: {
+    thead: "rounded-none after:hidden",
+    th: "bg-default-100/55 dark:bg-zinc-900/55 text-default-500 dark:text-zinc-400 font-semibold border-b border-default-200/80 dark:border-white/10 h-12 first:rounded-s-none last:rounded-e-none",
+  },
+  tableSticky: {
+    thead: "rounded-none after:hidden [&>tr]:first:!shadow-none",
+    th: "bg-default-100/60 dark:bg-zinc-900/60 text-default-500 dark:text-zinc-400 font-semibold border-b border-default-200/80 dark:border-white/10 h-12 first:rounded-s-none last:rounded-e-none backdrop-blur-none",
+  },
 };

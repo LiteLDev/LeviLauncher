@@ -804,7 +804,11 @@ const CurseForgeModPage: React.FC = () => {
                     </div>
 
                     {filteredFiles.length > 0 ? (
-                      <Table aria-label="Mod files table" removeWrapper>
+                      <Table
+                        aria-label="Mod files table"
+                        removeWrapper
+                        classNames={COMPONENT_STYLES.table}
+                      >
                         <TableHeader>
                           <TableColumn>Type</TableColumn>
                           <TableColumn>Name</TableColumn>

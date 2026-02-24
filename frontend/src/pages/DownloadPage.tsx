@@ -763,8 +763,7 @@ export const DownloadPage: React.FC = () => {
                 classNames={{
                   base: "h-full overflow-y-auto custom-scrollbar",
                   table: "min-w-full",
-                  thead: "rounded-none",
-                  th: "bg-transparent backdrop-blur-lg text-default-500 dark:text-zinc-400 font-semibold border-b border-default-200 dark:border-white/10 h-12 rounded-none",
+                  ...COMPONENT_STYLES.tableSticky,
                   td: "py-3 border-b border-default-100 dark:border-white/5 group-last:border-0",
                   tr: "group transition-colors hover:bg-default-50/50 dark:hover:bg-zinc-800/30 data-[selected=true]:bg-default-100",
                 }}

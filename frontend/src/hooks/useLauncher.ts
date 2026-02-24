@@ -17,6 +17,7 @@ import {
 } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import * as versionService from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/userservice";
+import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 
 let __didCheckGameInput = false;
@@ -73,6 +74,7 @@ export const useLauncher = (args: any) => {
   const [isLoadingVersions, setIsLoadingVersions] =
     React.useState<boolean>(false);
   const fetchingLogos = React.useRef<Set<string>>(new Set());
+  const fetchingLeviLaminaStatuses = React.useRef<Set<string>>(new Set());
   const [tipIndex, setTipIndex] = React.useState<number>(0);
   const tipTimerRef = React.useRef<number | null>(null);
   const launchRequestActiveRef = React.useRef<boolean>(false);
@@ -91,6 +93,11 @@ export const useLauncher = (args: any) => {
             setDisplayVersion(ver || "");
             setLocalVersionMap((prev) => {
               const map = new Map(prev);
+              const prevInfo = map.get(saved);
+              const knownLeviLaminaStatus =
+                typeof prevInfo?.isLeviLaminaInstalled === "boolean"
+                  ? prevInfo.isLeviLaminaInstalled
+                  : undefined;
               map.set(saved, {
                 name: saved,
                 version: ver,
@@ -98,6 +105,7 @@ export const useLauncher = (args: any) => {
                 isRegistered: Boolean(m?.registered),
                 isLaunched: false,
                 isPreLoader: false,
+                isLeviLaminaInstalled: knownLeviLaminaStatus,
               });
               return map;
             });
@@ -192,6 +200,9 @@ export const useLauncher = (args: any) => {
         name,
         version: String(localVersionMap.get(name)?.version || ""),
         isRegistered: Boolean(localVersionMap.get(name)?.isRegistered),
+        isLeviLaminaInstalled: Boolean(
+          localVersionMap.get(name)?.isLeviLaminaInstalled,
+        ),
         isDisabled: false,
         logo: logoByName.get(name),
       }));
@@ -231,14 +242,53 @@ export const useLauncher = (args: any) => {
     [logoByName],
   );
 
+  const ensureLeviLaminaStatus = React.useCallback(
+    (name: string) => {
+      if (!name || fetchingLeviLaminaStatuses.current.has(name)) return;
+
+      const known = localVersionMap.get(name)?.isLeviLaminaInstalled;
+      if (typeof known === "boolean") return;
+
+      fetchingLeviLaminaStatuses.current.add(name);
+
+      (async () => {
+        let installed = false;
+        try {
+          const mods = ((await (GetMods as any)?.(name)) || []) as any[];
+          installed = mods.some(
+            (m: any) =>
+              String(m?.name || "").toLowerCase() === "levilamina",
+          );
+        } catch {}
+
+        setLocalVersionMap((prev) => {
+          const next = new Map(prev);
+          const old = next.get(name);
+          if (!old) return prev;
+          next.set(name, {
+            ...old,
+            isLeviLaminaInstalled: installed,
+          });
+          return next;
+        });
+
+        fetchingLeviLaminaStatuses.current.delete(name);
+      })();
+    },
+    [localVersionMap],
+  );
+
   useEffect(() => {
     try {
       const items = buildVersionMenuItems("");
       items.forEach((it: any) => {
-        if (!it?.isDisabled) ensureLogo(it.name);
+        if (!it?.isDisabled) {
+          ensureLogo(it.name);
+          ensureLeviLaminaStatus(it.name);
+        }
       });
     } catch {}
-  }, [buildVersionMenuItems, ensureLogo]);
+  }, [buildVersionMenuItems, ensureLogo, ensureLeviLaminaStatus]);
 
   const doLaunch = React.useCallback(() => {
     const name = currentVersion;
@@ -339,6 +389,78 @@ export const useLauncher = (args: any) => {
     }
   }, [currentVersion]);
 
+  const syncRegisteredFlags = React.useCallback(async (): Promise<boolean> => {
+    const listFn = (versionService as any)?.ListVersionMetasWithRegistered;
+    if (typeof listFn !== "function") return false;
+    try {
+      const metas = ((await listFn()) || []) as any[];
+      if (!Array.isArray(metas)) return false;
+      setLocalVersionMap((prev) => {
+        const next = new Map(prev);
+        let changed = false;
+        metas.forEach((m: any) => {
+          const name = String(m?.name || "");
+          if (!name) return;
+          const version = String(m?.gameVersion || "");
+          const isPreview =
+            String(m?.type || "release").toLowerCase() === "preview";
+          const isRegistered = Boolean(m?.registered);
+          const existing = next.get(name);
+          if (!existing) {
+            next.set(name, {
+              name,
+              version,
+              isPreview,
+              isRegistered,
+              isLaunched: false,
+              isPreLoader: false,
+              isLeviLaminaInstalled: undefined,
+            });
+            changed = true;
+            return;
+          }
+          if (
+            String(existing?.version || "") !== version ||
+            Boolean(existing?.isPreview) !== isPreview ||
+            Boolean(existing?.isRegistered) !== isRegistered
+          ) {
+            next.set(name, {
+              ...existing,
+              version,
+              isPreview,
+              isRegistered,
+            });
+            changed = true;
+          }
+        });
+        return changed ? next : prev;
+      });
+      return true;
+    } catch {
+      return false;
+    }
+  }, []);
+
+  const applyOptimisticRegisterState = React.useCallback((name: string) => {
+    if (!name) return;
+    setLocalVersionMap((prev) => {
+      const target = prev.get(name);
+      if (!target) return prev;
+      const targetIsPreview = Boolean(target?.isPreview);
+      const next = new Map(prev);
+      let changed = false;
+      next.forEach((info, key) => {
+        if (Boolean(info?.isPreview) !== targetIsPreview) return;
+        const shouldRegistered = key === name;
+        if (Boolean(info?.isRegistered) !== shouldRegistered) {
+          next.set(key, { ...info, isRegistered: shouldRegistered });
+          changed = true;
+        }
+      });
+      return changed ? next : prev;
+    });
+  }, []);
+
   const doRegister = React.useCallback(async () => {
     if (!currentVersion) return;
     try {
@@ -358,22 +480,29 @@ export const useLauncher = (args: any) => {
       if (result === "success" || result === "") {
         registerInstallingDisclosure.onClose();
         registerSuccessDisclosure.onOpen();
-        const fn = (versionService as any)?.GetVersionMeta;
-        if (typeof fn === "function") {
-          fn(currentVersion).then((m: any) => {
-            setLocalVersionMap((prev) => {
-              const map = new Map(prev);
-              const existing = map.get(currentVersion);
-              if (existing) {
-                map.set(currentVersion, {
-                  ...existing,
-                  isRegistered: Boolean(m?.registered),
-                });
-              }
-              return map;
+        applyOptimisticRegisterState(currentVersion);
+        const synced = await syncRegisteredFlags();
+        if (!synced) {
+          const fn = (versionService as any)?.GetVersionMeta;
+          if (typeof fn === "function") {
+            fn(currentVersion).then((m: any) => {
+              setLocalVersionMap((prev) => {
+                const map = new Map(prev);
+                const existing = map.get(currentVersion);
+                if (existing) {
+                  map.set(currentVersion, {
+                    ...existing,
+                    isRegistered: Boolean(m?.registered),
+                  });
+                }
+                return map;
+              });
             });
-          });
+          }
         }
+        window.setTimeout(() => {
+          void syncRegisteredFlags();
+        }, 1200);
       } else if (result === "ERR_GDK_MISSING") {
         registerInstallingDisclosure.onClose();
         gdkMissingDisclosure.onOpen();
@@ -391,10 +520,12 @@ export const useLauncher = (args: any) => {
     currentVersion,
     localVersionMap,
     navigate,
+    applyOptimisticRegisterState,
     gdkMissingDisclosure,
     registerInstallingDisclosure,
     registerSuccessDisclosure,
     registerFailedDisclosure,
+    syncRegisteredFlags,
   ]);
 
   useEffect(() => {
@@ -741,6 +872,7 @@ export const useLauncher = (args: any) => {
             isRegistered: Boolean(m?.registered),
             isLaunched: false,
             isPreLoader: false,
+            isLeviLaminaInstalled: undefined,
           };
           if (name) newLocalVersionMap.set(name, lv);
           if (gameVersion) {
@@ -750,7 +882,18 @@ export const useLauncher = (args: any) => {
               newLocalVersionsMap.get(gameVersion)?.push(name);
           }
         });
-        setLocalVersionMap(newLocalVersionMap);
+        setLocalVersionMap((prev) => {
+          const merged = new Map();
+          newLocalVersionMap.forEach((info: any, name: string) => {
+            const known = prev.get(name)?.isLeviLaminaInstalled;
+            merged.set(name, {
+              ...info,
+              isLeviLaminaInstalled:
+                typeof known === "boolean" ? known : undefined,
+            });
+          });
+          return merged;
+        });
 
         const saved = (() => {
           try {
@@ -954,9 +1097,12 @@ export const useLauncher = (args: any) => {
     (open: boolean) => {
       if (open) registerSuccessDisclosure.onOpen();
       else registerSuccessDisclosure.onClose();
-      if (!open) args.refresh();
+      if (!open) {
+        void syncRegisteredFlags();
+        args.refresh();
+      }
     },
-    [registerSuccessDisclosure, args],
+    [registerSuccessDisclosure, args, syncRegisteredFlags],
   );
 
   const handleLaunchFailedForceRun = React.useCallback(() => {

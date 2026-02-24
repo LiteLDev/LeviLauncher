@@ -141,6 +141,9 @@ export const LauncherPage = (args: any) => {
     () => buildVersionMenuItems(t("common.empty") as string),
     [buildVersionMenuItems, t],
   );
+  const currentVersionHasLeviLamina = Boolean(
+    localVersionMap.get(currentVersion)?.isLeviLaminaInstalled,
+  );
 
   return (
     <>
@@ -184,7 +187,7 @@ export const LauncherPage = (args: any) => {
                       >
                         <Chip
                           variant="flat"
-                          color="success"
+                          color="primary"
                           classNames={{
                             base: "bg-primary-500/10 border border-primary-500/20 hidden sm:flex",
                             content:
@@ -192,6 +195,30 @@ export const LauncherPage = (args: any) => {
                           }}
                         >
                           {t("launcherpage.registered_tip")}
+                        </Chip>
+                      </motion.div>
+                    )}
+                    {currentVersionHasLeviLamina && (
+                      <motion.div
+                        initial={{ opacity: 0, scale: 0.8, x: -10 }}
+                        animate={{ opacity: 1, scale: 1, x: 0 }}
+                        transition={{
+                          delay: 0.75,
+                          type: "spring",
+                          stiffness: 500,
+                          damping: 30,
+                        }}
+                      >
+                        <Chip
+                          variant="flat"
+                          color="primary"
+                          classNames={{
+                            base: "bg-primary-500/10 border border-primary-500/20 hidden sm:flex",
+                            content:
+                              "font-semibold text-primary-600 dark:text-primary-500",
+                          }}
+                        >
+                          LeviLamina
                         </Chip>
                       </motion.div>
                     )}
@@ -318,20 +345,36 @@ export const LauncherPage = (args: any) => {
                           >
                             <div className="flex justify-between items-center gap-2">
                               <span className="font-semibold">{item.name}</span>
-                              {item.isRegistered && (
-                                <Chip
-                                  size="sm"
-                                  variant="flat"
-                                  color="success"
-                                  classNames={{
-                                    base: "bg-primary-500/10 border border-primary-500/20 h-5 px-1",
-                                    content:
-                                      "text-primary-600 dark:text-primary-500 font-bold text-[10px]",
-                                  }}
-                                >
-                                  {t("launcherpage.registered_tip")}
-                                </Chip>
-                              )}
+                              <div className="flex items-center gap-1">
+                                {item.isLeviLaminaInstalled && (
+                                  <Chip
+                                    size="sm"
+                                    variant="flat"
+                                    color="primary"
+                                    classNames={{
+                                      base: "bg-primary-500/10 border border-primary-500/20 h-5 px-1",
+                                      content:
+                                        "text-primary-600 dark:text-primary-500 font-bold text-[10px]",
+                                    }}
+                                  >
+                                    LeviLamina
+                                  </Chip>
+                                )}
+                                {item.isRegistered && (
+                                  <Chip
+                                    size="sm"
+                                    variant="flat"
+                                    color="primary"
+                                    classNames={{
+                                      base: "bg-primary-500/10 border border-primary-500/20 h-5 px-1",
+                                      content:
+                                        "text-primary-600 dark:text-primary-500 font-bold text-[10px]",
+                                    }}
+                                  >
+                                    {t("launcherpage.registered_tip")}
+                                  </Chip>
+                                )}
+                              </div>
                             </div>
                           </DropdownItem>
                         )}
@@ -400,7 +443,7 @@ export const LauncherPage = (args: any) => {
                   >
                     <Button
                       size="lg"
-                      className="h-14 px-8 text-lg font-bold text-white shadow-primary-900/20 shadow-lg bg-primary-600 hover:bg-primary-500 rounded-2xl w-full sm:w-auto"
+                      className="h-14 px-8 text-lg font-bold text-white shadow-primary-900/20 shadow-lg bg-primary-500 hover:bg-primary-500 rounded-2xl w-full sm:w-auto"
                       startContent={<FaRocket className="mb-0.5" />}
                       onPress={doLaunch}
                       isLoading={mcLaunchLoadingDisclosure.isOpen}
@@ -647,7 +690,7 @@ export const LauncherPage = (args: any) => {
                     color="primary"
                     size="md"
                     classNames={{
-                      indicator: "bg-primary-600 hover:bg-primary-500",
+                      indicator: "bg-primary-500 hover:bg-primary-500",
                     }}
                   />
                 </div>
@@ -730,7 +773,7 @@ export const LauncherPage = (args: any) => {
                     color="primary"
                     size="md"
                     classNames={{
-                      indicator: "bg-primary-600 hover:bg-primary-500",
+                      indicator: "bg-primary-500 hover:bg-primary-500",
                     }}
                   />
                 </div>
@@ -806,7 +849,7 @@ export const LauncherPage = (args: any) => {
               <Button
                 color="primary"
                 radius="full"
-                className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                 onPress={() => handleGamingServicesInstall(Browser.OpenURL)}
               >
                 {t("launcherpage.gs.missing.open_store")}
@@ -839,7 +882,7 @@ export const LauncherPage = (args: any) => {
               <Button
                 color="primary"
                 radius="full"
-                className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                 onPress={handleInstallConfirmCheck}
               >
                 {t("launcherpage.install_confirm.done_and_check")}
@@ -876,7 +919,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={mcLaunchLoadingDisclosure.onClose}
             >
               {t("common.close")}
@@ -914,7 +957,7 @@ export const LauncherPage = (args: any) => {
               size="sm"
               isIndeterminate
               aria-label="Loading"
-              classNames={{ indicator: "bg-primary-600 hover:bg-primary-500" }}
+              classNames={{ indicator: "bg-primary-500 hover:bg-primary-500" }}
             />
           </div>
         </UnifiedModal>
@@ -929,7 +972,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={shortcutSuccessDisclosure.onClose}
             >
               {t("common.close")}
@@ -957,7 +1000,7 @@ export const LauncherPage = (args: any) => {
               size="sm"
               isIndeterminate
               aria-label="Registering"
-              classNames={{ indicator: "bg-primary-600 hover:bg-primary-500" }}
+              classNames={{ indicator: "bg-primary-500 hover:bg-primary-500" }}
             />
           </>
         </UnifiedModal>
@@ -972,7 +1015,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={registerSuccessDisclosure.onClose}
             >
               {t("common.close")}
@@ -994,7 +1037,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={registerFailedDisclosure.onClose}
             >
               {t("common.close")}

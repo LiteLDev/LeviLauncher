@@ -86,6 +86,31 @@ const toStringArray = (value: unknown): string[] => {
     .filter(Boolean);
 };
 
+const hasClientMarker = (value: unknown): boolean =>
+  Array.isArray(value) &&
+  value.some(
+    (item) =>
+      typeof item === "string" && item.trim().toLowerCase() === "client",
+  );
+
+const parseClientVersions = (
+  value: unknown,
+): { versions: string[]; hasClientPackage: boolean } => {
+  if (!isRecord(value)) {
+    return { versions: [], hasClientPackage: false };
+  }
+
+  const versions: string[] = [];
+  for (const [version, markers] of Object.entries(value)) {
+    const normalizedVersion = String(version || "").trim();
+    if (!normalizedVersion) continue;
+    if (!hasClientMarker(markers)) continue;
+    versions.push(normalizedVersion);
+  }
+
+  return { versions, hasClientPackage: versions.length > 0 };
+};
+
 const normalizeHttpUrl = (value: string): string => {
   const raw = value.trim();
   if (!raw) return "";
@@ -118,31 +143,39 @@ const inferProjectUrlFromIdentifier = (identifier: string): string => {
   return candidate;
 };
 
-const parseLIPPackage = (value: unknown): LIPPackageBasicInfo | null => {
+const parseLIPPackage = (
+  value: unknown,
+  identifier: string,
+): LIPPackageBasicInfo | null => {
   if (!isRecord(value)) return null;
 
-  const identifier = toSafeString(value["tooth"]).trim();
-  if (!identifier) return null;
+  const normalizedIdentifier = toSafeString(identifier).trim();
+  if (!normalizedIdentifier) return null;
 
   const info = isRecord(value["info"]) ? value["info"] : {};
 
-  const name = toSafeString(info["name"]).trim() || identifier;
+  const name = toSafeString(info["name"]).trim() || normalizedIdentifier;
   const description = toSafeString(info["description"]).trim();
   const tags = toStringArray(info["tags"]);
   const avatarUrl = normalizeHttpUrl(toSafeString(info["avatar_url"]));
-  const updated = toSafeString(value["updated"]).trim();
+  const updated = toSafeString(value["updated_at"]).trim();
+  const parsedVersions = parseClientVersions(value["versions"]);
+
+  if (!parsedVersions.hasClientPackage) {
+    return null;
+  }
 
   return {
-    identifier,
+    identifier: normalizedIdentifier,
     name,
     description,
-    author: inferAuthorFromIdentifier(identifier),
+    author: inferAuthorFromIdentifier(normalizedIdentifier),
     tags,
     avatarUrl,
-    projectUrl: inferProjectUrlFromIdentifier(identifier),
+    projectUrl: inferProjectUrlFromIdentifier(normalizedIdentifier),
     hotness: toSafeNumber(value["stars"]),
     updated,
-    versions: toStringArray(value["versions"]),
+    versions: parsedVersions.versions,
   };
 };
 
@@ -180,13 +213,15 @@ export async function fetchLIPPackagesIndex(options?: {
       return cachedLIPPackages;
     }
 
-    const rawPackages = Array.isArray(json["packages"]) ? json["packages"] : [];
     const deduplicated = new Map<string, LIPPackageBasicInfo>();
 
-    for (const item of rawPackages) {
-      const parsed = parseLIPPackage(item);
-      if (!parsed || deduplicated.has(parsed.identifier)) continue;
-      deduplicated.set(parsed.identifier, parsed);
+    const packagesValue = json["packages"];
+    if (isRecord(packagesValue)) {
+      for (const [identifier, item] of Object.entries(packagesValue)) {
+        const parsed = parseLIPPackage(item, identifier);
+        if (!parsed || deduplicated.has(parsed.identifier)) continue;
+        deduplicated.set(parsed.identifier, parsed);
+      }
     }
 
     cachedLIPPackages = Array.from(deduplicated.values());

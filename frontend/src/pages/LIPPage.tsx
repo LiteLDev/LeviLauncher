@@ -17,12 +17,20 @@ import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
-import { fetchLIPPackagesIndex, type LIPPackageBasicInfo } from "@/utils/content";
+import {
+  fetchLIPPackagesIndex,
+  type LIPPackageBasicInfo,
+} from "@/utils/content";
 import { LuSearch, LuDownload, LuClock, LuFlame } from "react-icons/lu";
 import { motion } from "framer-motion";
 
 const PAGE_SIZE = 20;
 const ALL_TAG = "__all__";
+const HIDDEN_LIP_PACKAGES = new Set([
+  "levilamina",
+  "levilamina-loc",
+  "crashlogger",
+]);
 
 type LIPSortKey = "hotness" | "updated" | "name";
 type LIPOrderKey = "asc" | "desc";
@@ -39,7 +47,8 @@ const sortPackages = (
 ) => {
   const sorted = [...list].sort((a, b) => {
     if (sort === "hotness") return a.hotness - b.hotness;
-    if (sort === "updated") return parseUpdatedTime(a.updated) - parseUpdatedTime(b.updated);
+    if (sort === "updated")
+      return parseUpdatedTime(a.updated) - parseUpdatedTime(b.updated);
     return a.name.localeCompare(b.name, undefined, { sensitivity: "base" });
   });
 
@@ -48,6 +57,22 @@ const sortPackages = (
   }
 
   return sorted;
+};
+
+const shouldHidePackage = (pkg: LIPPackageBasicInfo): boolean => {
+  const name = String(pkg.name || "")
+    .trim()
+    .toLowerCase();
+  const identifier = String(pkg.identifier || "")
+    .trim()
+    .toLowerCase();
+  const identifierLastSegment =
+    identifier.split("/").filter(Boolean).pop() || "";
+  return (
+    HIDDEN_LIP_PACKAGES.has(name) ||
+    HIDDEN_LIP_PACKAGES.has(identifier) ||
+    HIDDEN_LIP_PACKAGES.has(identifierLastSegment)
+  );
 };
 
 const LIPPage: React.FC = () => {
@@ -126,7 +151,7 @@ const LIPPage: React.FC = () => {
     scheduleScrollReset();
     try {
       const list = await fetchLIPPackagesIndex({ forceRefresh });
-      setAllPackages(list);
+      setAllPackages(list.filter((pkg) => !shouldHidePackage(pkg)));
     } catch (err) {
       console.error(err);
       setError(t("common.load_failed"));
@@ -171,9 +196,13 @@ const LIPPage: React.FC = () => {
         return true;
       }
 
-      const haystacks = [pkg.identifier, pkg.name, pkg.description, pkg.author, ...pkg.tags].map(
-        (part) => String(part || "").toLowerCase(),
-      );
+      const haystacks = [
+        pkg.identifier,
+        pkg.name,
+        pkg.description,
+        pkg.author,
+        ...pkg.tags,
+      ].map((part) => String(part || "").toLowerCase());
       return haystacks.some((part) => part.includes(keyword));
     });
   }, [allPackages, query, selectedTag]);
@@ -244,217 +273,238 @@ const LIPPage: React.FC = () => {
 
   return (
     <PageContainer ref={pageRootRef} className="min-h-0" animate={false}>
-      <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
-        <CardBody className="p-6 flex flex-col gap-6">
-          <PageHeader title="LIP Content" />
+      <motion.div
+        initial={{ opacity: 0, y: -20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4 }}
+      >
+        <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
+          <CardBody className="p-6 flex flex-col gap-6">
+            <PageHeader title="LIP Content" />
 
-          <div className="flex flex-col sm:flex-row gap-3">
-            <Input
-              placeholder={t("lip.search_placeholder")}
-              value={queryInput}
-              onValueChange={setQueryInput}
-              onKeyDown={handleKeyDown}
-              startContent={<LuSearch />}
-              className="flex-1"
-              size="sm"
-              classNames={COMPONENT_STYLES.input}
-            />
-            <Button
-              color="primary"
-              onPress={handleSearch}
-              startContent={<LuSearch />}
-              size="sm"
-              className="bg-primary-600 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
-            >
-              {t("common.search")}
-            </Button>
-            <Button
-              variant="flat"
-              size="sm"
-              onPress={() => {
-                setPage(1);
-                void loadPackages(true);
-              }}
-              isDisabled={loading}
-            >
-              {t("common.refresh")}
-            </Button>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-            <Select
-              label={t("common.all")}
-              placeholder={t("common.all")}
-              className="max-w-xs"
-              selectedKeys={[selectedTag]}
-              onSelectionChange={(keys) => {
-                const value = Array.from(keys)[0] as string;
-                setSelectedTag(value || ALL_TAG);
-                setPage(1);
-              }}
-              size="sm"
-              classNames={COMPONENT_STYLES.select}
-              items={[
-                { key: ALL_TAG, label: t("common.all") },
-                ...availableTags.map((tag) => ({ key: tag, label: tag })),
-              ]}
-            >
-              {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
-            </Select>
-
-            <Select
-              label={t("lip.sort_by")}
-              placeholder={t("lip.select_sort")}
-              className="max-w-xs"
-              selectedKeys={[sort]}
-              onChange={(e) => handleSortChange(e.target.value as LIPSortKey)}
-              size="sm"
-              classNames={COMPONENT_STYLES.select}
-            >
-              <SelectItem key="hotness">Hotness</SelectItem>
-              <SelectItem key="updated">Updated</SelectItem>
-              <SelectItem key="name">Name</SelectItem>
-            </Select>
-
-            <Select
-              label={t("lip.order_by")}
-              placeholder={t("lip.select_order")}
-              className="max-w-xs"
-              selectedKeys={[order]}
-              onChange={(e) => {
-                setOrder(e.target.value as LIPOrderKey);
-                setPage(1);
-              }}
-              size="sm"
-              classNames={COMPONENT_STYLES.select}
-            >
-              <SelectItem key="desc">Desc</SelectItem>
-              <SelectItem key="asc">Asc</SelectItem>
-            </Select>
-          </div>
-
-          <div className="text-sm text-default-500 dark:text-zinc-400">
-            {t("common.all")}: {sortedPackages.length}
-          </div>
-
-          {error ? (
-            <div className="text-sm text-danger-500" role="alert">
-              {error}
+            <div className="flex flex-col sm:flex-row gap-3">
+              <Input
+                placeholder={t("lip.search_placeholder")}
+                value={queryInput}
+                onValueChange={setQueryInput}
+                onKeyDown={handleKeyDown}
+                startContent={<LuSearch />}
+                className="flex-1"
+                size="sm"
+                classNames={COMPONENT_STYLES.input}
+              />
+              <Button
+                color="primary"
+                onPress={handleSearch}
+                startContent={<LuSearch />}
+                size="sm"
+                className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              >
+                {t("common.search")}
+              </Button>
+              <Button
+                variant="flat"
+                size="sm"
+                onPress={() => {
+                  setPage(1);
+                  void loadPackages(true);
+                }}
+                isDisabled={loading}
+              >
+                {t("common.refresh")}
+              </Button>
             </div>
-          ) : null}
-        </CardBody>
-      </Card>
 
-      <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
-        <CardBody className="p-0 overflow-hidden flex flex-col">
-          <div
-            ref={scrollContainerRef}
-            className="flex-1 overflow-y-auto p-4 relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
-          >
-            {loading ? (
-              <div className="flex flex-col gap-3">{renderSkeletons()}</div>
-            ) : currentPageItems.length === 0 ? (
-              <div className="flex items-center justify-center h-full text-default-500 dark:text-zinc-400">
-                <p>{t("common.no_results")}</p>
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+              <Select
+                label={t("common.all")}
+                placeholder={t("common.all")}
+                className="max-w-xs"
+                selectedKeys={[selectedTag]}
+                onSelectionChange={(keys) => {
+                  const value = Array.from(keys)[0] as string;
+                  setSelectedTag(value || ALL_TAG);
+                  setPage(1);
+                }}
+                size="sm"
+                classNames={COMPONENT_STYLES.select}
+                items={[
+                  { key: ALL_TAG, label: t("common.all") },
+                  ...availableTags.map((tag) => ({ key: tag, label: tag })),
+                ]}
+              >
+                {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
+              </Select>
+
+              <Select
+                label={t("lip.sort_by")}
+                placeholder={t("lip.select_sort")}
+                className="max-w-xs"
+                selectedKeys={[sort]}
+                onChange={(e) => handleSortChange(e.target.value as LIPSortKey)}
+                size="sm"
+                classNames={COMPONENT_STYLES.select}
+              >
+                <SelectItem key="hotness">Hotness</SelectItem>
+                <SelectItem key="updated">Updated</SelectItem>
+                <SelectItem key="name">Name</SelectItem>
+              </Select>
+
+              <Select
+                label={t("lip.order_by")}
+                placeholder={t("lip.select_order")}
+                className="max-w-xs"
+                selectedKeys={[order]}
+                onChange={(e) => {
+                  setOrder(e.target.value as LIPOrderKey);
+                  setPage(1);
+                }}
+                size="sm"
+                classNames={COMPONENT_STYLES.select}
+              >
+                <SelectItem key="desc">Desc</SelectItem>
+                <SelectItem key="asc">Asc</SelectItem>
+              </Select>
+            </div>
+
+            <div className="text-sm text-default-500 dark:text-zinc-400">
+              {t("common.all")}: {sortedPackages.length}
+            </div>
+
+            {error ? (
+              <div className="text-sm text-danger-500" role="alert">
+                {error}
               </div>
-            ) : (
-              <div className="flex flex-col gap-3">
-                {currentPageItems.map((pkg) => (
-                  <motion.div
-                    key={pkg.identifier}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: 1 }}
-                    transition={{ duration: 0.2 }}
-                  >
-                    <div
-                      className="w-full p-4 bg-default-50/50 dark:bg-white/5 hover:bg-default-100/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-default-100 dark:border-white/5"
-                      onClick={() =>
-                        navigate(`/lip/package/${encodeURIComponent(pkg.identifier)}`)
-                      }
+            ) : null}
+          </CardBody>
+        </Card>
+      </motion.div>
+
+      <motion.div
+        className="flex-1 min-h-0 flex flex-col"
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ duration: 0.4, delay: 0.1 }}
+      >
+        <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
+          <CardBody className="p-0 overflow-hidden flex flex-col">
+            <div
+              ref={scrollContainerRef}
+              className="flex-1 overflow-y-auto p-4 relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+            >
+              {loading ? (
+                <div className="flex flex-col gap-3">{renderSkeletons()}</div>
+              ) : currentPageItems.length === 0 ? (
+                <div className="flex items-center justify-center h-full text-default-500 dark:text-zinc-400">
+                  <p>{t("common.no_results")}</p>
+                </div>
+              ) : (
+                <div className="flex flex-col gap-3">
+                  {currentPageItems.map((pkg) => (
+                    <motion.div
+                      key={pkg.identifier}
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.2 }}
                     >
-                      <div className="shrink-0">
-                        {pkg.avatarUrl ? (
-                          <img
-                            src={pkg.avatarUrl}
-                            alt={pkg.name}
-                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-content3 shadow-sm"
-                            loading="lazy"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-content3 shadow-sm flex items-center justify-center text-default-300">
-                            <LuDownload size={24} />
-                          </div>
-                        )}
-                      </div>
-
-                      <div className="flex flex-col flex-1 min-w-0 gap-1">
-                        <div className="flex items-baseline gap-2 truncate">
-                          <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
-                            {pkg.name}
-                          </h3>
-                          <span className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 truncate">
-                            | By {pkg.author || t("common.unknown")}
-                          </span>
+                      <div
+                        className="w-full p-4 bg-default-50/50 dark:bg-white/5 hover:bg-default-100/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-default-100 dark:border-white/5"
+                        onClick={() =>
+                          navigate(
+                            `/lip/package/${encodeURIComponent(pkg.identifier)}`,
+                          )
+                        }
+                      >
+                        <div className="shrink-0">
+                          {pkg.avatarUrl ? (
+                            <img
+                              src={pkg.avatarUrl}
+                              alt={pkg.name}
+                              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-content3 shadow-sm"
+                              loading="lazy"
+                            />
+                          ) : (
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-content3 shadow-sm flex items-center justify-center text-default-300">
+                              <LuDownload size={24} />
+                            </div>
+                          )}
                         </div>
 
-                        <p className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 line-clamp-2 w-full">
-                          {pkg.description || t("lip.no_description")}
-                        </p>
-
-                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-default-400 mt-1">
-                          <div className="flex items-center gap-1" title="Hotness">
-                            <LuFlame className="text-orange-500" />
-                            <span>{pkg.hotness}</span>
+                        <div className="flex flex-col flex-1 min-w-0 gap-1">
+                          <div className="flex items-baseline gap-2 truncate">
+                            <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
+                              {pkg.name}
+                            </h3>
+                            <span className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 truncate">
+                              | By {pkg.author || t("common.unknown")}
+                            </span>
                           </div>
-                          <div className="flex items-center gap-1" title="Updated">
-                            <LuClock />
-                            <span>{formatDate(pkg.updated)}</span>
-                          </div>
-                        </div>
 
-                        <div className="flex flex-wrap gap-1 mt-2">
-                          {pkg.tags.slice(0, 5).map((tag) => (
-                            <Chip
-                              key={tag}
-                              size="sm"
-                              variant="flat"
-                              radius="sm"
-                              className="h-5 text-[10px] bg-default-100 dark:bg-zinc-800 text-default-500 dark:text-zinc-400 group-hover:bg-default-200 dark:group-hover:bg-zinc-700 transition-colors"
+                          <p className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 line-clamp-2 w-full">
+                            {pkg.description || t("lip.no_description")}
+                          </p>
+
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-default-400 mt-1">
+                            <div
+                              className="flex items-center gap-1"
+                              title="Hotness"
                             >
-                              {tag}
-                            </Chip>
-                          ))}
+                              <LuFlame className="text-orange-500" />
+                              <span>{pkg.hotness}</span>
+                            </div>
+                            <div
+                              className="flex items-center gap-1"
+                              title="Updated"
+                            >
+                              <LuClock />
+                              <span>{formatDate(pkg.updated)}</span>
+                            </div>
+                          </div>
+
+                          <div className="flex flex-wrap gap-1 mt-2">
+                            {pkg.tags.slice(0, 5).map((tag) => (
+                              <Chip
+                                key={tag}
+                                size="sm"
+                                variant="flat"
+                                radius="sm"
+                                className="h-5 text-[10px] bg-default-100 dark:bg-zinc-800 text-default-500 dark:text-zinc-400 group-hover:bg-default-200 dark:group-hover:bg-zinc-700 transition-colors"
+                              >
+                                {tag}
+                              </Chip>
+                            ))}
+                          </div>
                         </div>
                       </div>
-                    </div>
-                  </motion.div>
-                ))}
+                    </motion.div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {totalPages > 1 && (
+              <div className="flex justify-center p-4 border-t border-default-100 dark:border-white/5 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shrink-0">
+                <Pagination
+                  total={totalPages}
+                  page={page}
+                  onChange={(p) => {
+                    scheduleScrollReset();
+                    setPage(p);
+                  }}
+                  showControls
+                  color="primary"
+                  className="gap-2"
+                  radius="full"
+                  classNames={{
+                    cursor:
+                      "bg-primary-500 hover:bg-primary-500 shadow-lg shadow-primary-900/20 font-bold",
+                  }}
+                />
               </div>
             )}
-          </div>
-
-          {totalPages > 1 && (
-            <div className="flex justify-center p-4 border-t border-default-100 dark:border-white/5 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shrink-0">
-              <Pagination
-                total={totalPages}
-                page={page}
-                onChange={(p) => {
-                  scheduleScrollReset();
-                  setPage(p);
-                }}
-                showControls
-                color="primary"
-                className="gap-2"
-                radius="full"
-                classNames={{
-                  cursor:
-                    "bg-primary-600 hover:bg-primary-500 shadow-lg shadow-primary-900/20 font-bold",
-                }}
-              />
-            </div>
-          )}
-        </CardBody>
-      </Card>
+          </CardBody>
+        </Card>
+      </motion.div>
     </PageContainer>
   );
 };

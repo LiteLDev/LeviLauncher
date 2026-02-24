@@ -256,7 +256,7 @@ export default function ScreenshotsPage() {
                   animate={{ opacity: 1 }}
                   transition={{ duration: 0.2 }}
                   className={cn(
-                    COMPONENT_STYLES.listItem,
+                    COMPONENT_STYLES.contentListItem,
                     "relative group cursor-pointer overflow-hidden rounded-2xl",
                     selection.isSelectMode && selection.selected[s.path]
                       ? "ring-2 ring-primary"

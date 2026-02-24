@@ -4,6 +4,8 @@ import {
   Button,
   Card,
   CardBody,
+  Select,
+  SelectItem,
   Dropdown,
   DropdownItem,
   DropdownMenu,
@@ -25,6 +27,7 @@ import {
   FaUserTag,
   FaServer,
   FaCamera,
+  FaExchangeAlt,
 } from "react-icons/fa";
 import { resolvePlayerDisplayName } from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -135,7 +138,10 @@ export default function ContentPage() {
                                 cp.playerGamertagMap,
                               )}
                             >
-                              {resolvePlayerDisplayName(p, cp.playerGamertagMap)}
+                              {resolvePlayerDisplayName(
+                                p,
+                                cp.playerGamertagMap,
+                              )}
                             </DropdownItem>
                           ))
                         ) : (
@@ -155,7 +161,7 @@ export default function ContentPage() {
                 <div className="flex items-center gap-2">
                   <Button
                     radius="full"
-                    className="bg-primary-600 text-white font-medium shadow-sm"
+                    className="bg-primary-500 text-white font-medium shadow-sm"
                     startContent={<FiUploadCloud />}
                     onPress={async () => {
                       try {
@@ -179,6 +185,16 @@ export default function ContentPage() {
                     isDisabled={cp.importing}
                   >
                     {t("contentpage.import_button")}
+                  </Button>
+                  <Button
+                    radius="full"
+                    variant="flat"
+                    className="bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200 font-medium"
+                    startContent={<FaExchangeAlt />}
+                    onPress={() => cp.openResourceTransferModal()}
+                    isDisabled={!cp.hasBackend || cp.importing}
+                  >
+                    {t("contentpage.transfer_resources_button")}
                   </Button>
                   <Tooltip
                     content={
@@ -510,7 +526,11 @@ export default function ContentPage() {
         isOpen={cp.importing}
         onOpenChange={() => {}}
         type="primary"
-        title={t("mods.importing_title")}
+        title={
+          cp.transferring
+            ? t("contentpage.transfer_progress_title")
+            : t("mods.importing_title")
+        }
         icon={<FiUploadCloud className="w-6 h-6 text-primary-500" />}
         hideCloseButton
         isDismissable={false}
@@ -526,13 +546,84 @@ export default function ContentPage() {
             color="primary"
           />
           <div className="text-default-600 dark:text-zinc-300 text-sm">
-            {t("mods.importing_body")}
+            {cp.transferring
+              ? t("contentpage.transfer_progress_body")
+              : t("mods.importing_body")}
           </div>
           {cp.currentFile ? (
             <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
               {cp.currentFile}
             </div>
           ) : null}
+        </div>
+      </UnifiedModal>
+      <UnifiedModal
+        isOpen={cp.transferTargetOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            cp.transferTargetOnClose();
+          }
+        }}
+        type="primary"
+        title={t("contentpage.transfer_resources_title")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+        showCancelButton
+        onConfirm={() => cp.transferResourcesToTargets()}
+        onCancel={() => cp.transferTargetOnClose()}
+        confirmButtonProps={{
+          isDisabled: cp.selectedTransferTargets.length === 0 || cp.importing,
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="text-sm text-default-700 dark:text-zinc-300">
+            {t("contentpage.transfer_resources_body_overview")}
+          </div>
+
+          {cp.transferTargets.length > 0 ? (
+            <Select
+              items={cp.transferTargets}
+              label={t("mirror.target") || "Target Instance"}
+              placeholder={t("contentpage.transfer_target_placeholder")}
+              selectedKeys={new Set(cp.selectedTransferTargets)}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys).map(String);
+                cp.setSelectedTransferTargets(selected);
+              }}
+              classNames={COMPONENT_STYLES.select}
+            >
+              {(item) => (
+                <SelectItem key={item.name} textValue={item.name}>
+                  <div className="flex gap-2 items-center">
+                    <div className="w-8 h-8 rounded bg-default-200 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={
+                          item.icon ||
+                          "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                        }
+                        alt="icon"
+                        className="w-full h-full object-cover"
+                        onError={(e) =>
+                          (e.currentTarget.style.display = "none")
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-small">{item.name}</span>
+                      <span className="text-tiny text-default-400">
+                        {item.gameVersion}
+                      </span>
+                    </div>
+                  </div>
+                </SelectItem>
+              )}
+            </Select>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-default-400 dark:text-zinc-500">
+              <FaExchangeAlt className="text-4xl mb-3 opacity-20" />
+              <p className="text-sm">{t("contentpage.transfer_no_targets")}</p>
+            </div>
+          )}
         </div>
       </UnifiedModal>
       <ImportResultModal

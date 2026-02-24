@@ -1,7 +1,7 @@
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { Button, Checkbox, Card, CardBody } from "@heroui/react";
-import { FaTrash } from "react-icons/fa";
+import { FaExchangeAlt, FaTrash } from "react-icons/fa";
 import { motion, AnimatePresence } from "framer-motion";
 
 import { LAYOUT } from "@/constants/layout";
@@ -12,6 +12,9 @@ interface SelectionBarProps {
   onSelectAll: (isSelected: boolean) => void;
   onDelete: () => void;
   isSelectMode: boolean;
+  onTransfer?: () => void;
+  transferLabel?: string;
+  isTransferDisabled?: boolean;
 }
 
 export const SelectionBar: React.FC<SelectionBarProps> = ({
@@ -20,6 +23,9 @@ export const SelectionBar: React.FC<SelectionBarProps> = ({
   onSelectAll,
   onDelete,
   isSelectMode,
+  onTransfer,
+  transferLabel,
+  isTransferDisabled,
 }) => {
   const { t } = useTranslation();
 
@@ -51,6 +57,19 @@ export const SelectionBar: React.FC<SelectionBarProps> = ({
               </span>
 
               <div className="flex-1" />
+
+              {onTransfer && (
+                <Button
+                  size="sm"
+                  color="primary"
+                  variant="flat"
+                  startContent={<FaExchangeAlt />}
+                  onPress={onTransfer}
+                  isDisabled={isTransferDisabled ?? selectedCount === 0}
+                >
+                  {transferLabel || t("contentpage.transfer_resources_button")}
+                </Button>
+              )}
 
               <Button
                 size="sm"

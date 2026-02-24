@@ -2,23 +2,28 @@ import React from "react";
 import { useDisclosure } from "@heroui/react";
 import { Events } from "@wailsio/runtime";
 import { useLocation, useNavigate } from "react-router-dom";
-import { GetVersionMeta } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
 import {
-  GetContentRoots,
-} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+  GetVersionMeta,
+  ListVersionMetas,
+  GetVersionLogoDataUrl,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
+import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
 import { countDirectories } from "@/utils/fs";
-import {
-  getPlayerGamertagMap,
-  listPlayers,
-} from "@/utils/content";
+import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as contentService from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 
 type TFunc = (key: string, opts?: Record<string, unknown>) => string;
+type TransferTargetVersion = {
+  name: string;
+  gameVersion: string;
+  type: string;
+  icon?: string;
+};
 
 export const useContentPage = (t: TFunc) => {
   const navigate = useNavigate();
@@ -57,6 +62,13 @@ export const useContentPage = (t: TFunc) => {
   const [resultFailed, setResultFailed] = React.useState<
     Array<{ name: string; err: string }>
   >([]);
+  const [transferring, setTransferring] = React.useState(false);
+  const [transferTargets, setTransferTargets] = React.useState<
+    TransferTargetVersion[]
+  >([]);
+  const [selectedTransferTargets, setSelectedTransferTargets] = React.useState<
+    string[]
+  >([]);
 
   // --- Refs ---
   const dupResolveRef = React.useRef<((overwrite: boolean) => void) | null>(
@@ -86,6 +98,12 @@ export const useContentPage = (t: TFunc) => {
     onOpen: playerSelectOnOpen,
     onClose: playerSelectOnClose,
     onOpenChange: playerSelectOnOpenChange,
+  } = useDisclosure();
+  const {
+    isOpen: transferTargetOpen,
+    onOpen: transferTargetOnOpen,
+    onClose: transferTargetOnClose,
+    onOpenChange: transferTargetOnOpenChange,
   } = useDisclosure();
 
   // --- Handlers ---
@@ -306,7 +324,9 @@ export const useContentPage = (t: TFunc) => {
       }
       for (const p of paths) {
         if (p?.toLowerCase().endsWith(".mcpack")) {
-          const isSkin = await (contentService as any)?.IsMcpackSkinPackPath?.(p);
+          const isSkin = await (contentService as any)?.IsMcpackSkinPackPath?.(
+            p,
+          );
           if (isSkin) {
             hasSkin = true;
             break;
@@ -350,12 +370,15 @@ export const useContentPage = (t: TFunc) => {
           setCurrentFile(base);
 
           let err = "";
-          const isSkin = await (contentService as any)?.IsMcpackSkinPackPath?.(p);
+          const isSkin = await (contentService as any)?.IsMcpackSkinPackPath?.(
+            p,
+          );
           const effectivePlayer = isSkin && isSharedMode ? "" : playerToUse;
 
           if (
             effectivePlayer &&
-            typeof (contentService as any)?.ImportMcpackPathWithPlayer === "function"
+            typeof (contentService as any)?.ImportMcpackPathWithPlayer ===
+              "function"
           ) {
             err = await (contentService as any)?.ImportMcpackPathWithPlayer?.(
               name,
@@ -364,7 +387,11 @@ export const useContentPage = (t: TFunc) => {
               false,
             );
           } else {
-            err = await (contentService as any)?.ImportMcpackPath?.(name, p, false);
+            err = await (contentService as any)?.ImportMcpackPath?.(
+              name,
+              p,
+              false,
+            );
           }
           if (err) {
             if (
@@ -383,7 +410,9 @@ export const useContentPage = (t: TFunc) => {
                   typeof (contentService as any)?.ImportMcpackPathWithPlayer ===
                     "function"
                 ) {
-                  err = await (contentService as any)?.ImportMcpackPathWithPlayer?.(
+                  err = await (
+                    contentService as any
+                  )?.ImportMcpackPathWithPlayer?.(
                     name,
                     effectivePlayer,
                     p,
@@ -428,7 +457,11 @@ export const useContentPage = (t: TFunc) => {
               false,
             );
           } else {
-            err = await (contentService as any)?.ImportMcaddonPath?.(name, p, false);
+            err = await (contentService as any)?.ImportMcaddonPath?.(
+              name,
+              p,
+              false,
+            );
           }
           if (err) {
             if (
@@ -444,15 +477,12 @@ export const useContentPage = (t: TFunc) => {
               if (ok) {
                 if (
                   playerToUse &&
-                  typeof (contentService as any)?.ImportMcaddonPathWithPlayer ===
-                    "function"
+                  typeof (contentService as any)
+                    ?.ImportMcaddonPathWithPlayer === "function"
                 ) {
-                  err = await (contentService as any)?.ImportMcaddonPathWithPlayer?.(
-                    name,
-                    playerToUse,
-                    p,
-                    true,
-                  );
+                  err = await (
+                    contentService as any
+                  )?.ImportMcaddonPathWithPlayer?.(name, playerToUse, p, true);
                 } else {
                   err = await (contentService as any)?.ImportMcaddonPath?.(
                     name,
@@ -535,6 +565,183 @@ export const useContentPage = (t: TFunc) => {
     }
   };
 
+  const openResourceTransferModal = async () => {
+    if (importing) return;
+    const name = currentVersionName || readCurrentVersionName();
+    if (!name) {
+      setErrorMsg(t("launcherpage.currentVersion_none") as string);
+      return;
+    }
+    try {
+      const list = await (ListVersionMetas as any)?.();
+      const metas = Array.isArray(list) ? list : [];
+      const targets: TransferTargetVersion[] = metas
+        .filter(
+          (m: any) =>
+            m &&
+            typeof m.name === "string" &&
+            m.name &&
+            m.enableIsolation &&
+            m.name !== name,
+        )
+        .sort((a: any, b: any) => {
+          const byVersion = compareVersions(
+            String(b.gameVersion || "0"),
+            String(a.gameVersion || "0"),
+          );
+          if (byVersion !== 0) return byVersion;
+          return String(a.name || "").localeCompare(String(b.name || ""));
+        })
+        .map((m: any) => ({
+          name: String(m.name || ""),
+          gameVersion: String(m.gameVersion || ""),
+          type: String(m.type || ""),
+        }));
+
+      // Fetch icons for targets
+      await Promise.all(
+        targets.map(async (t) => {
+          try {
+            const getter = GetVersionLogoDataUrl as any;
+            if (typeof getter === "function") {
+              const url = await getter(t.name);
+              if (url) {
+                t.icon = url;
+              }
+            }
+          } catch (e) {
+            console.warn("Failed to fetch logo for", t.name, e);
+          }
+        }),
+      );
+
+      setTransferTargets(targets);
+      setSelectedTransferTargets(targets.length > 0 ? [targets[0].name] : []);
+      transferTargetOnOpen();
+    } catch (e: any) {
+      setErrorMsg(String(e?.message || e || "LOAD_TARGETS_FAILED"));
+    }
+  };
+
+  const transferResourcesToTargets = async () => {
+    const sourceVersionName = currentVersionName || readCurrentVersionName();
+    if (!sourceVersionName) {
+      setErrorMsg(t("launcherpage.currentVersion_none") as string);
+      return;
+    }
+    const targetNames = selectedTransferTargets.filter(Boolean);
+    if (targetNames.length === 0) return;
+
+    transferTargetOnClose();
+
+    const transferFn = (contentService as any)?.TransferPackToVersion;
+    if (typeof transferFn !== "function") {
+      setResultSuccess([]);
+      setResultFailed([
+        {
+          name: t("contentpage.resource_packs"),
+          err: t("common.feature_unavailable"),
+        },
+      ]);
+      errOnOpen();
+      return;
+    }
+
+    try {
+      setTransferring(true);
+      setImporting(true);
+      setCurrentFile("");
+
+      const allPacks = await (contentService as any)?.ListPacksForVersion?.(
+        sourceVersionName,
+        "",
+      );
+      const packs = (Array.isArray(allPacks) ? allPacks : []).filter(
+        (p: any) => {
+          const packType = Number(p?.manifest?.pack_type || 0);
+          const path = String(p?.path || "").trim();
+          return path && (packType === 6 || packType === 4);
+        },
+      );
+
+      if (packs.length === 0) {
+        setResultSuccess([]);
+        setResultFailed([
+          {
+            name: sourceVersionName,
+            err: t("contentpage.no_resource_packs"),
+          },
+        ]);
+        errOnOpen();
+        return;
+      }
+
+      const succFiles: string[] = [];
+      const errPairs: Array<{ name: string; err: string }> = [];
+
+      for (const targetName of targetNames) {
+        for (const pack of packs) {
+          const packPath = String(pack?.path || "").trim();
+          if (!packPath) continue;
+          const fallbackName =
+            packPath.replace(/\\/g, "/").split("/").pop() || packPath;
+          const packName = String(pack?.manifest?.name || fallbackName);
+          const itemLabel = `${packName} -> ${targetName}`;
+          setCurrentFile(itemLabel);
+
+          let err = await transferFn(
+            sourceVersionName,
+            packPath,
+            targetName,
+            false,
+          );
+          if (err) {
+            if (
+              String(err) === "ERR_DUPLICATE_FOLDER" ||
+              String(err) === "ERR_DUPLICATE_UUID"
+            ) {
+              dupNameRef.current = itemLabel;
+              await new Promise<void>((r) => setTimeout(r, 0));
+              dupOnOpen();
+              const ok = await new Promise<boolean>((resolve) => {
+                dupResolveRef.current = resolve;
+              });
+              if (ok) {
+                err = await transferFn(
+                  sourceVersionName,
+                  packPath,
+                  targetName,
+                  true,
+                );
+                if (!err) {
+                  succFiles.push(itemLabel);
+                  continue;
+                }
+              } else {
+                continue;
+              }
+            }
+            errPairs.push({ name: itemLabel, err: String(err) });
+            continue;
+          }
+          succFiles.push(itemLabel);
+        }
+      }
+
+      if (succFiles.length > 0 || errPairs.length > 0) {
+        setResultSuccess(succFiles);
+        setResultFailed(errPairs);
+        errOnOpen();
+      }
+    } catch (e: any) {
+      setErrorMsg(String(e?.message || e || "TRANSFER_ERROR"));
+    } finally {
+      setTransferring(false);
+      setImporting(false);
+      setCurrentFile("");
+    }
+  };
+
   // --- Effects ---
   const doImportRef = React.useRef(doImportFromPaths);
   doImportRef.current = doImportFromPaths;
@@ -590,16 +797,20 @@ export const useContentPage = (t: TFunc) => {
     serversCount,
     screenshotsCount,
     importing,
+    transferring,
     errorMsg,
     currentFile,
     resultSuccess,
     resultFailed,
+    transferTargets,
+    selectedTransferTargets,
     hasBackend,
 
     // setters needed by JSX callbacks
     setErrorMsg,
     setResultSuccess,
     setResultFailed,
+    setSelectedTransferTargets,
 
     // refs (for modal JSX)
     dupResolveRef,
@@ -619,14 +830,19 @@ export const useContentPage = (t: TFunc) => {
     playerSelectOnOpen,
     playerSelectOnClose,
     playerSelectOnOpenChange,
+    transferTargetOpen,
+    transferTargetOnOpen,
+    transferTargetOnClose,
+    transferTargetOnOpenChange,
 
     // handlers
     refreshAll,
     onChangePlayer,
     doImportFromPaths,
+    openResourceTransferModal,
+    transferResourcesToTargets,
 
     // navigation
     navigate,
   };
 };
-

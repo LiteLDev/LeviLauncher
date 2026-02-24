@@ -16,6 +16,9 @@ import {
   useDisclosure,
   Pagination,
   addToast,
+  Select,
+  SelectItem,
+  Progress,
 } from "@heroui/react";
 import {
   FaSortAmountDown,
@@ -32,6 +35,7 @@ import {
   FaCheckSquare,
   FaTimes,
   FaHdd,
+  FaExchangeAlt,
 } from "react-icons/fa";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -47,11 +51,18 @@ import {
 import {
   GetContentRoots,
   DeleteWorld,
+  TransferWorldToVersion,
 } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+import {
+  GetVersionLogoDataUrl,
+  ListVersionMetas,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
+import { ImportResultModal } from "@/components/ImportResultModal";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 import DefaultWorldPreview from "@/assets/images/world-preview-default.jpg";
@@ -68,6 +79,7 @@ import { useScrollManager } from "@/hooks/useScrollManager";
 import { useSelectionMode } from "@/hooks/useSelectionMode";
 import { useContentSort } from "@/hooks/useContentSort";
 import { formatBytes } from "@/utils/formatting";
+import { compareVersions } from "@/utils/version";
 
 interface WorldInfo {
   Path: string;
@@ -76,6 +88,13 @@ interface WorldInfo {
   Size: number;
   LastModified: number;
 }
+
+type TransferTargetVersion = {
+  name: string;
+  gameVersion: string;
+  type: string;
+  icon?: string;
+};
 
 import { SelectionBar } from "@/components/SelectionBar";
 
@@ -116,8 +135,33 @@ export default function WorldsListPage() {
     onClose: delManyCfmOnClose,
     onOpenChange: delManyCfmOnOpenChange,
   } = useDisclosure();
+  const {
+    isOpen: transferTargetOpen,
+    onOpen: transferTargetOnOpen,
+    onClose: transferTargetOnClose,
+    onOpenChange: transferTargetOnOpenChange,
+  } = useDisclosure();
+  const {
+    isOpen: transferResultOpen,
+    onOpen: transferResultOnOpen,
+    onOpenChange: transferResultOnOpenChange,
+  } = useDisclosure();
 
   const [currentWorldsPath, setCurrentWorldsPath] = useState("");
+  const [transferring, setTransferring] = useState<boolean>(false);
+  const [currentTransferItem, setCurrentTransferItem] = useState<string>("");
+  const [transferTargets, setTransferTargets] = useState<
+    TransferTargetVersion[]
+  >([]);
+  const [selectedTransferTargets, setSelectedTransferTargets] = useState<
+    string[]
+  >([]);
+  const [transferResultSuccess, setTransferResultSuccess] = useState<string[]>(
+    [],
+  );
+  const [transferResultFailed, setTransferResultFailed] = useState<
+    Array<{ name: string; err: string }>
+  >([]);
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
   const sort = useContentSort(
@@ -318,6 +362,165 @@ export default function WorldsListPage() {
       setBackingUp("");
     }
   };
+
+  const openTransferTargetModal = useCallback(async () => {
+    if (transferring || selection.selectedCount === 0) return;
+
+    const sourceVersionName = currentVersionName || readCurrentVersionName();
+    if (!sourceVersionName) {
+      addToast({
+        title: t("launcherpage.currentVersion_none") as string,
+        color: "danger",
+      });
+      return;
+    }
+    if (!selectedPlayer) {
+      addToast({
+        title: t("contentpage.require_player_for_world_import") as string,
+        color: "danger",
+      });
+      return;
+    }
+
+    try {
+      const list = await (ListVersionMetas as any)?.();
+      const metas = Array.isArray(list) ? list : [];
+      const targets: TransferTargetVersion[] = metas
+        .filter(
+          (m: any) =>
+            m &&
+            typeof m.name === "string" &&
+            m.name &&
+            m.enableIsolation &&
+            m.name !== sourceVersionName,
+        )
+        .sort((a: any, b: any) => {
+          const byVersion = compareVersions(
+            String(b.gameVersion || "0"),
+            String(a.gameVersion || "0"),
+          );
+          if (byVersion !== 0) return byVersion;
+          return String(a.name || "").localeCompare(String(b.name || ""));
+        })
+        .map((m: any) => ({
+          name: String(m.name || ""),
+          gameVersion: String(m.gameVersion || ""),
+          type: String(m.type || ""),
+        }));
+
+      await Promise.all(
+        targets.map(async (target) => {
+          try {
+            const icon = await (GetVersionLogoDataUrl as any)?.(target.name);
+            if (icon) target.icon = icon;
+          } catch {}
+        }),
+      );
+
+      setTransferTargets(targets);
+      setSelectedTransferTargets(targets.length > 0 ? [targets[0].name] : []);
+      transferTargetOnOpen();
+    } catch (e) {
+      addToast({
+        title: "Error",
+        description: String(e),
+        color: "danger",
+      });
+    }
+  }, [
+    transferring,
+    selection.selectedCount,
+    currentVersionName,
+    selectedPlayer,
+    t,
+    transferTargetOnOpen,
+  ]);
+
+  const transferSelectedWorldsToTargets = useCallback(async () => {
+    if (transferring) return;
+
+    const sourceVersionName = currentVersionName || readCurrentVersionName();
+    if (!sourceVersionName || !selectedPlayer) {
+      addToast({
+        title: t("contentpage.require_player_for_world_import") as string,
+        color: "danger",
+      });
+      return;
+    }
+
+    const selectedWorldPaths = selection.getSelectedKeys().filter(Boolean);
+    const targetNames = selectedTransferTargets.filter(Boolean);
+    if (selectedWorldPaths.length === 0 || targetNames.length === 0) return;
+
+    transferTargetOnClose();
+
+    const worldNameMap = new Map<string, string>(
+      worlds.map((w) => [
+        w.Path,
+        w.FolderName || w.Path.split("\\").pop() || w.Path,
+      ]),
+    );
+
+    const succFiles: string[] = [];
+    const errPairs: Array<{ name: string; err: string }> = [];
+
+    try {
+      setTransferring(true);
+      setCurrentTransferItem("");
+
+      for (const targetName of targetNames) {
+        for (const worldPath of selectedWorldPaths) {
+          const worldName =
+            worldNameMap.get(worldPath) ||
+            worldPath.split("\\").pop() ||
+            worldPath;
+          const itemLabel = `${worldName} -> ${targetName}`;
+          setCurrentTransferItem(itemLabel);
+
+          const err = await TransferWorldToVersion(
+            sourceVersionName,
+            selectedPlayer,
+            worldPath,
+            targetName,
+            selectedPlayer,
+          );
+          if (err) {
+            errPairs.push({ name: itemLabel, err: String(err) });
+            continue;
+          }
+          succFiles.push(itemLabel);
+        }
+      }
+
+      if (succFiles.length > 0 || errPairs.length > 0) {
+        setTransferResultSuccess(succFiles);
+        setTransferResultFailed(errPairs);
+        transferResultOnOpen();
+      }
+      if (succFiles.length > 0) {
+        selection.clearSelection();
+      }
+    } catch (e) {
+      addToast({
+        title: "Error",
+        description: String(e),
+        color: "danger",
+      });
+    } finally {
+      setTransferring(false);
+      setCurrentTransferItem("");
+    }
+  }, [
+    transferring,
+    currentVersionName,
+    selectedPlayer,
+    t,
+    selection,
+    selectedTransferTargets,
+    transferTargetOnClose,
+    worlds,
+    transferResultOnOpen,
+  ]);
 
   return (
     <PageContainer ref={scrollRef}>
@@ -532,6 +735,10 @@ export default function WorldsListPage() {
         onSelectAll={selection.selectAll}
         onDelete={delManyCfmOnOpen}
         isSelectMode={selection.isSelectMode}
+        onTransfer={openTransferTargetModal}
+        isTransferDisabled={
+          !selectedPlayer || selection.selectedCount === 0 || transferring
+        }
       />
 
       {loading && worlds.length === 0 ? (
@@ -560,7 +767,7 @@ export default function WorldsListPage() {
               >
                 <div
                   className={cn(
-                    COMPONENT_STYLES.listItem,
+                    COMPONENT_STYLES.contentListItem,
                     "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
                     selection.isSelectMode && selection.selected[w.Path]
                       ? "ring-2 ring-primary bg-primary/5"
@@ -710,6 +917,121 @@ export default function WorldsListPage() {
           )}
         </div>
       )}
+
+      <UnifiedModal
+        isOpen={transferring}
+        onOpenChange={() => {}}
+        type="primary"
+        title={t("contentpage.transfer_progress_title")}
+        icon={<FaExchangeAlt className="w-6 h-6 text-primary-500" />}
+        hideCloseButton
+        isDismissable={false}
+        showConfirmButton={false}
+        showCancelButton={false}
+      >
+        <div className="flex flex-col gap-4">
+          <Progress
+            isIndeterminate
+            aria-label="transferring"
+            className="w-full"
+            size="sm"
+            color="primary"
+          />
+          <div className="text-default-600 dark:text-zinc-300 text-sm">
+            {t("contentpage.transfer_progress_body")}
+          </div>
+          {currentTransferItem ? (
+            <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
+              {currentTransferItem}
+            </div>
+          ) : null}
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
+        isOpen={transferTargetOpen}
+        onOpenChange={(open) => {
+          if (!open) transferTargetOnClose();
+        }}
+        type="primary"
+        title={t("contentpage.transfer_resources_title")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+        showCancelButton
+        onConfirm={() => void transferSelectedWorldsToTargets()}
+        onCancel={() => transferTargetOnClose()}
+        confirmButtonProps={{
+          isDisabled:
+            selectedTransferTargets.length === 0 ||
+            selection.selectedCount === 0 ||
+            transferring,
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="text-sm text-default-700 dark:text-zinc-300">
+            {t("contentpage.transfer_resources_body_simple")}
+          </div>
+
+          {transferTargets.length > 0 ? (
+            <Select
+              items={transferTargets}
+              label={t("mirror.target") || "Target Instance"}
+              placeholder={t("contentpage.transfer_target_placeholder")}
+              selectedKeys={new Set(selectedTransferTargets)}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys).map(String);
+                setSelectedTransferTargets(selected);
+              }}
+              classNames={COMPONENT_STYLES.select}
+            >
+              {(item) => (
+                <SelectItem key={item.name} textValue={item.name}>
+                  <div className="flex gap-2 items-center">
+                    <div className="w-8 h-8 rounded bg-default-200 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={
+                          item.icon ||
+                          "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                        }
+                        alt="icon"
+                        className="w-full h-full object-cover"
+                        onError={(e) =>
+                          (e.currentTarget.style.display = "none")
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-small">{item.name}</span>
+                      <span className="text-tiny text-default-400">
+                        {item.gameVersion}
+                      </span>
+                    </div>
+                  </div>
+                </SelectItem>
+              )}
+            </Select>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-default-400 dark:text-zinc-500">
+              <FaExchangeAlt className="text-4xl mb-3 opacity-20" />
+              <p className="text-sm">{t("contentpage.transfer_no_targets")}</p>
+            </div>
+          )}
+        </div>
+      </UnifiedModal>
+
+      <ImportResultModal
+        isOpen={transferResultOpen}
+        onOpenChange={transferResultOnOpenChange}
+        results={{
+          success: transferResultSuccess,
+          failed: transferResultFailed,
+        }}
+        onConfirm={() => {
+          setTransferResultSuccess([]);
+          setTransferResultFailed([]);
+        }}
+      />
+
       <DeleteConfirmModal
         isOpen={delOpen}
         onOpenChange={delOnOpenChange}

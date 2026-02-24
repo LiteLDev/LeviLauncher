@@ -560,7 +560,9 @@
     "remove": "Удалить",
     "update": "Обновить",
     "tip": "Подсказка",
-    "feature_unavailable": "Эта функция временно недоступна"
+    "feature_unavailable": "Эта функция временно недоступна",
+    "all": "Все",
+    "unknown": "Неизвестно"
   },
   "useravatar": {
     "no_login_retry": "Вход Xbox не обнаружен (нажмите, чтобы повторить)",
@@ -640,7 +642,19 @@
     "update_material_bin_stat_skipped": "Пропущено: {{count}}",
     "screenshots": "Скриншоты",
     "no_screenshots": "Нет скриншотов",
-    "delete_screenshot_confirm": "Вы уверены, что хотите удалить скриншот {{name}}?"
+    "delete_screenshot_confirm": "Вы уверены, что хотите удалить скриншот {{name}}?",
+    "transfer_resources_button": "Перенос ресурсов",
+    "transfer_resources_title": "Перенос ресурсов в изолированные экземпляры",
+    "transfer_resources_body": "Выберите целевые экземпляры с включённой изоляцией.",
+    "transfer_resources_body_overview": "Будут перенесены все пакеты ресурсов, пакеты поведения, пакеты скинов и миры из текущего экземпляра в целевой экземпляр. Выберите целевой экземпляр.",
+    "transfer_resources_body_simple": "Выберите целевой экземпляр для переноса.",
+    "transfer_no_targets": "Нет доступных изолированных экземпляров",
+    "transfer_target_placeholder": "Выберите целевой экземпляр",
+    "transfer_progress_title": "Перенос ресурсов...",
+    "transfer_progress_body": "Пожалуйста, подождите, пока ресурсы переносятся в выбранные экземпляры."
+  },
+  "mirror": {
+    "target": "Целевой экземпляр"
   },
   "versions": {
     "info": {

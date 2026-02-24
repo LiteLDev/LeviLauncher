@@ -570,7 +570,9 @@
     "remove": "移除",
     "update": "更新",
     "tip": "提示",
-    "feature_unavailable": "该功能暂时不可用"
+    "feature_unavailable": "该功能暂时不可用",
+    "all": "全部",
+    "unknown": "未知"
   },
   "useravatar": {
     "no_login_retry": "未检测到 Xbox 登录（点击重试）",
@@ -630,6 +632,15 @@
     "sort_desc": "从下到上",
     "drop_hint": "拖入 .mcworld/.mcpack/.mcaddon 以导入",
     "import_button": "导入",
+    "transfer_resources_button": "资源转移",
+    "transfer_resources_title": "转移资源到隔离实例",
+    "transfer_resources_body": "请选择要转移到的目标实例（仅显示开启实例隔离的实例）。",
+    "transfer_resources_body_overview": "将转移当前实例中的全部资源包、行为包、皮肤包和世界到目标实例。请选择目标实例。",
+    "transfer_resources_body_simple": "请选择要转移到的目标实例。",
+    "transfer_no_targets": "暂无可用的隔离实例",
+    "transfer_target_placeholder": "请选择目标实例",
+    "transfer_progress_title": "正在转移资源...",
+    "transfer_progress_body": "正在将资源转移到选中的实例，请稍候。",
     "require_player_for_world_import": "导入世界 (.mcworld) 前请先选择玩家",
     "no_player_selected": "未选择玩家",
     "world_leveldat_editor": "世界 level.dat 编辑",
@@ -712,6 +723,9 @@
       "preview": "预览版",
       "release": "正式版"
     }
+  },
+  "mirror": {
+    "target": "目标实例"
   },
   "errors": {
     "ERR_GAME_ALREADY_RUNNING": "检测到当前实例 Minecraft 已在运行，请先关闭再启动或者切换其他实例",

@@ -560,7 +560,9 @@
     "remove": "削除",
     "update": "更新",
     "tip": "ヒント",
-    "feature_unavailable": "この機能は一時的に利用できません"
+    "feature_unavailable": "この機能は一時的に利用できません",
+    "all": "すべて",
+    "unknown": "不明"
   },
   "useravatar": {
     "no_login_retry": "Xbox ログインが検出されませんでした（クリックして再試行）",
@@ -640,7 +642,19 @@
     "update_material_bin_stat_skipped": "スキップ: {{count}}",
     "screenshots": "スクリーンショット",
     "no_screenshots": "スクリーンショットがありません",
-    "delete_screenshot_confirm": "スクリーンショット {{name}} を削除しますか？"
+    "delete_screenshot_confirm": "スクリーンショット {{name}} を削除しますか？",
+    "transfer_resources_button": "リソース転送",
+    "transfer_resources_title": "隔離されたインスタンスへのリソース転送",
+    "transfer_resources_body": "隔離が有効になっているターゲットインスタンスを選択してください。",
+    "transfer_resources_body_overview": "現在のインスタンス内のすべてのリソースパック、ビヘイビアパック、スキンパック、ワールドを対象インスタンスへ転送します。対象インスタンスを選択してください。",
+    "transfer_resources_body_simple": "転送先のインスタンスを選択してください。",
+    "transfer_no_targets": "利用可能な隔離インスタンスがありません",
+    "transfer_target_placeholder": "ターゲットインスタンスを選択",
+    "transfer_progress_title": "リソース転送中...",
+    "transfer_progress_body": "選択されたインスタンスにリソースを転送しています。お待ちください。"
+  },
+  "mirror": {
+    "target": "ターゲットインスタンス"
   },
   "versions": {
     "info": {

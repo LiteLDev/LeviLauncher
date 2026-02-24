@@ -108,7 +108,7 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
   return (
     <div
       className={cn(
-        COMPONENT_STYLES.listItem,
+        COMPONENT_STYLES.contentListItem,
         "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
       )}
     >

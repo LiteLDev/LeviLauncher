@@ -570,7 +570,9 @@
     "remove": "Remove",
     "update": "Update",
     "tip": "Tip",
-    "feature_unavailable": "This feature is temporarily unavailable"
+    "feature_unavailable": "This feature is temporarily unavailable",
+    "all": "All",
+    "unknown": "Unknown"
   },
   "useravatar": {
     "no_login_retry": "Xbox login not detected (click to retry)",
@@ -630,6 +632,15 @@
     "sort_desc": "Descending",
     "drop_hint": "Drag .mcworld/.mcpack/.mcaddon to import",
     "import_button": "Import",
+    "transfer_resources_button": "Transfer Resources",
+    "transfer_resources_title": "Transfer Resources to Isolated Instances",
+    "transfer_resources_body": "Select target instances with isolation enabled.",
+    "transfer_resources_body_overview": "This will transfer all resource packs, behavior packs, skin packs, and worlds from the current instance to the target instance. Please select a target instance.",
+    "transfer_resources_body_simple": "Please select a target instance to transfer to.",
+    "transfer_no_targets": "No other isolated instances available",
+    "transfer_target_placeholder": "Select target instance",
+    "transfer_progress_title": "Transferring Resources...",
+    "transfer_progress_body": "Please wait while resources are transferred to selected instances.",
     "require_player_for_world_import": "Select a player before importing a world (.mcworld)",
     "no_player_selected": "No player selected",
     "world_leveldat_editor": "World level.dat editor",
@@ -712,6 +723,9 @@
       "preview": "Preview",
       "release": "Release"
     }
+  },
+  "mirror": {
+    "target": "Target Instance"
   },
   "errors": {
     "ERR_GAME_ALREADY_RUNNING": "Detected the current instance of Minecraft is already running. Please close it before launching or switch to another instance.",

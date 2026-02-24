@@ -17,6 +17,9 @@ import {
   Card,
   CardBody,
   addToast,
+  Select,
+  SelectItem,
+  Progress,
 } from "@heroui/react";
 import {
   Modal,
@@ -44,6 +47,7 @@ import {
   FaHdd,
   FaTag,
   FaMagic,
+  FaExchangeAlt,
 } from "react-icons/fa";
 import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
@@ -53,9 +57,14 @@ import {
   GetPackInfo,
   CheckResourcePackMaterialCompatibility,
   UpdateResourcePackMaterialBins,
+  TransferPackToVersion,
 } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as packages from "bindings/github.com/liteldev/LeviLauncher/internal/packages/models";
+import {
+  GetVersionLogoDataUrl,
+  ListVersionMetas,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { renderMcText } from "@/utils/mcformat";
@@ -68,9 +77,17 @@ import { useScrollManager } from "@/hooks/useScrollManager";
 import { useSelectionMode } from "@/hooks/useSelectionMode";
 import { useContentSort } from "@/hooks/useContentSort";
 import { formatBytes, formatDate } from "@/utils/formatting";
+import { compareVersions } from "@/utils/version";
+import { ImportResultModal } from "@/components/ImportResultModal";
 
 const getNameFn = (p: any) => String(p.name || p.path?.split("\\").pop() || "");
 const getTimeFn = (p: any) => Number(p.modTime || 0);
+type TransferTargetVersion = {
+  name: string;
+  gameVersion: string;
+  type: string;
+  icon?: string;
+};
 
 import { SelectionBar } from "@/components/SelectionBar";
 
@@ -95,10 +112,6 @@ export default function ResourcePacksPage() {
     { name: string; path: string }[]
   >([]);
   const [packs, setPacks] = React.useState<any[]>([]);
-  const [resultSuccess, setResultSuccess] = React.useState<string[]>([]);
-  const [resultFailed, setResultFailed] = React.useState<
-    Array<{ name: string; err: string }>
-  >([]);
   const [activePack, setActivePack] = React.useState<any | null>(null);
   const {
     isOpen: delOpen,
@@ -120,9 +133,45 @@ export default function ResourcePacksPage() {
     onOpen: updateCfmOnOpen,
     onOpenChange: updateCfmOnOpenChange,
   } = useDisclosure();
+  const {
+    isOpen: transferTargetOpen,
+    onOpen: transferTargetOnOpen,
+    onClose: transferTargetOnClose,
+    onOpenChange: transferTargetOnOpenChange,
+  } = useDisclosure();
+  const {
+    isOpen: transferResultOpen,
+    onOpen: transferResultOnOpen,
+    onOpenChange: transferResultOnOpenChange,
+  } = useDisclosure();
+  const {
+    isOpen: dupOpen,
+    onOpen: dupOnOpen,
+    onClose: dupOnClose,
+    onOpenChange: dupOnOpenChange,
+  } = useDisclosure();
   const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
   const [packToUpdate, setPackToUpdate] = React.useState<any | null>(null);
+  const [transferring, setTransferring] = React.useState<boolean>(false);
+  const [currentTransferItem, setCurrentTransferItem] =
+    React.useState<string>("");
+  const [transferTargets, setTransferTargets] = React.useState<
+    TransferTargetVersion[]
+  >([]);
+  const [selectedTransferTargets, setSelectedTransferTargets] = React.useState<
+    string[]
+  >([]);
+  const [transferResultSuccess, setTransferResultSuccess] = React.useState<
+    string[]
+  >([]);
+  const [transferResultFailed, setTransferResultFailed] = React.useState<
+    Array<{ name: string; err: string }>
+  >([]);
+  const dupResolveRef = React.useRef<((overwrite: boolean) => void) | null>(
+    null,
+  );
+  const dupNameRef = React.useRef<string>("");
   const [updatingMaterialByPath, setUpdatingMaterialByPath] = React.useState<
     Record<string, boolean>
   >({});
@@ -374,6 +423,184 @@ export default function ResourcePacksPage() {
     [currentVersionName, refreshAll, updatingMaterialByPath],
   );
 
+  const openTransferTargetModal = React.useCallback(async () => {
+    if (transferring || selection.selectedCount === 0) return;
+
+    const sourceVersionName = currentVersionName || readCurrentVersionName();
+    if (!sourceVersionName) {
+      addToast({
+        title: t("launcherpage.currentVersion_none") as string,
+        color: "danger",
+      });
+      return;
+    }
+
+    try {
+      const list = await (ListVersionMetas as any)?.();
+      const metas = Array.isArray(list) ? list : [];
+      const targets: TransferTargetVersion[] = metas
+        .filter(
+          (m: any) =>
+            m &&
+            typeof m.name === "string" &&
+            m.name &&
+            m.enableIsolation &&
+            m.name !== sourceVersionName,
+        )
+        .sort((a: any, b: any) => {
+          const byVersion = compareVersions(
+            String(b.gameVersion || "0"),
+            String(a.gameVersion || "0"),
+          );
+          if (byVersion !== 0) return byVersion;
+          return String(a.name || "").localeCompare(String(b.name || ""));
+        })
+        .map((m: any) => ({
+          name: String(m.name || ""),
+          gameVersion: String(m.gameVersion || ""),
+          type: String(m.type || ""),
+        }));
+
+      await Promise.all(
+        targets.map(async (target) => {
+          try {
+            const icon = await (GetVersionLogoDataUrl as any)?.(target.name);
+            if (icon) target.icon = icon;
+          } catch {}
+        }),
+      );
+
+      setTransferTargets(targets);
+      setSelectedTransferTargets(targets.length > 0 ? [targets[0].name] : []);
+      transferTargetOnOpen();
+    } catch (e) {
+      addToast({
+        title: "Error",
+        description: String(e),
+        color: "danger",
+      });
+    }
+  }, [
+    currentVersionName,
+    selection.selectedCount,
+    t,
+    transferring,
+    transferTargetOnOpen,
+  ]);
+
+  const transferSelectedPacksToTargets = React.useCallback(async () => {
+    if (transferring) return;
+
+    const sourceVersionName = currentVersionName || readCurrentVersionName();
+    if (!sourceVersionName) {
+      addToast({
+        title: t("launcherpage.currentVersion_none") as string,
+        color: "danger",
+      });
+      return;
+    }
+
+    const selectedPaths = selection.getSelectedKeys().filter(Boolean);
+    const targetNames = selectedTransferTargets.filter(Boolean);
+    if (selectedPaths.length === 0 || targetNames.length === 0) return;
+
+    transferTargetOnClose();
+
+    const packNameMap = new Map<string, string>(
+      packs.map((pack: any) => {
+        const path = String(pack?.path || "");
+        const fallbackName = path.replace(/\\/g, "/").split("/").pop() || path;
+        const displayName = String(pack?.name || fallbackName);
+        return [path, displayName];
+      }),
+    );
+
+    const succFiles: string[] = [];
+    const errPairs: Array<{ name: string; err: string }> = [];
+
+    try {
+      setTransferring(true);
+      setCurrentTransferItem("");
+
+      for (const targetName of targetNames) {
+        for (const packPath of selectedPaths) {
+          const fallbackName =
+            packPath.replace(/\\/g, "/").split("/").pop() || packPath;
+          const packName = packNameMap.get(packPath) || fallbackName;
+          const itemLabel = `${packName} -> ${targetName}`;
+          setCurrentTransferItem(itemLabel);
+
+          let err = await TransferPackToVersion(
+            sourceVersionName,
+            packPath,
+            targetName,
+            false,
+          );
+          if (err) {
+            if (
+              String(err) === "ERR_DUPLICATE_FOLDER" ||
+              String(err) === "ERR_DUPLICATE_UUID"
+            ) {
+              dupNameRef.current = itemLabel;
+              await new Promise<void>((resolve) => setTimeout(resolve, 0));
+              dupOnOpen();
+              const ok = await new Promise<boolean>((resolve) => {
+                dupResolveRef.current = resolve;
+              });
+              if (ok) {
+                err = await TransferPackToVersion(
+                  sourceVersionName,
+                  packPath,
+                  targetName,
+                  true,
+                );
+                if (!err) {
+                  succFiles.push(itemLabel);
+                  continue;
+                }
+              } else {
+                continue;
+              }
+            }
+            errPairs.push({ name: itemLabel, err: String(err) });
+            continue;
+          }
+          succFiles.push(itemLabel);
+        }
+      }
+
+      if (succFiles.length > 0 || errPairs.length > 0) {
+        setTransferResultSuccess(succFiles);
+        setTransferResultFailed(errPairs);
+        transferResultOnOpen();
+      }
+      if (succFiles.length > 0) {
+        selection.clearSelection();
+        await refreshAll(true);
+      }
+    } catch (e) {
+      addToast({
+        title: "Error",
+        description: String(e),
+        color: "danger",
+      });
+    } finally {
+      setTransferring(false);
+      setCurrentTransferItem("");
+    }
+  }, [
+    currentVersionName,
+    selectedTransferTargets,
+    selection,
+    packs,
+    t,
+    transferring,
+    refreshAll,
+    transferTargetOnClose,
+    transferResultOnOpen,
+    dupOnOpen,
+  ]);
+
   return (
     <PageContainer ref={scrollRef}>
       <Card className={LAYOUT.GLASS_CARD.BASE}>
@@ -544,6 +771,10 @@ export default function ResourcePacksPage() {
         onSelectAll={selection.selectAll}
         onDelete={delManyCfmOnOpen}
         isSelectMode={selection.isSelectMode}
+        onTransfer={openTransferTargetModal}
+        isTransferDisabled={
+          !hasBackend || selection.selectedCount === 0 || transferring
+        }
       />
 
       {loading ? (
@@ -566,7 +797,7 @@ export default function ResourcePacksPage() {
                 >
                   <div
                     className={cn(
-                      COMPONENT_STYLES.listItem,
+                      COMPONENT_STYLES.contentListItem,
                       "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
                       selection.isSelectMode && selection.selected[p.path]
                         ? "ring-2 ring-primary bg-primary/5"
@@ -828,6 +1059,154 @@ export default function ResourcePacksPage() {
           }
         }}
       />
+
+      <UnifiedModal
+        isOpen={transferring}
+        onOpenChange={() => {}}
+        type="primary"
+        title={t("contentpage.transfer_progress_title")}
+        icon={<FaExchangeAlt className="w-6 h-6 text-primary-500" />}
+        hideCloseButton
+        isDismissable={false}
+        showConfirmButton={false}
+        showCancelButton={false}
+      >
+        <div className="flex flex-col gap-4">
+          <Progress
+            isIndeterminate
+            aria-label="transferring"
+            className="w-full"
+            size="sm"
+            color="primary"
+          />
+          <div className="text-default-600 dark:text-zinc-300 text-sm">
+            {t("contentpage.transfer_progress_body")}
+          </div>
+          {currentTransferItem ? (
+            <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
+              {currentTransferItem}
+            </div>
+          ) : null}
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
+        isOpen={transferTargetOpen}
+        onOpenChange={(open) => {
+          if (!open) transferTargetOnClose();
+        }}
+        type="primary"
+        title={t("contentpage.transfer_resources_title")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+        showCancelButton
+        onConfirm={() => void transferSelectedPacksToTargets()}
+        onCancel={() => transferTargetOnClose()}
+        confirmButtonProps={{
+          isDisabled:
+            selectedTransferTargets.length === 0 ||
+            selection.selectedCount === 0 ||
+            transferring,
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="text-sm text-default-700 dark:text-zinc-300">
+            {t("contentpage.transfer_resources_body_simple")}
+          </div>
+
+          {transferTargets.length > 0 ? (
+            <Select
+              items={transferTargets}
+              label={t("mirror.target") || "Target Instance"}
+              placeholder={t("contentpage.transfer_target_placeholder")}
+              selectedKeys={new Set(selectedTransferTargets)}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys).map(String);
+                setSelectedTransferTargets(selected);
+              }}
+              classNames={COMPONENT_STYLES.select}
+            >
+              {(item) => (
+                <SelectItem key={item.name} textValue={item.name}>
+                  <div className="flex gap-2 items-center">
+                    <div className="w-8 h-8 rounded bg-default-200 flex items-center justify-center overflow-hidden">
+                      <img
+                        src={
+                          item.icon ||
+                          "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                        }
+                        alt="icon"
+                        className="w-full h-full object-cover"
+                        onError={(e) =>
+                          (e.currentTarget.style.display = "none")
+                        }
+                      />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-small">{item.name}</span>
+                      <span className="text-tiny text-default-400">
+                        {item.gameVersion}
+                      </span>
+                    </div>
+                  </div>
+                </SelectItem>
+              )}
+            </Select>
+          ) : (
+            <div className="flex flex-col items-center justify-center py-8 text-default-400 dark:text-zinc-500">
+              <FaExchangeAlt className="text-4xl mb-3 opacity-20" />
+              <p className="text-sm">{t("contentpage.transfer_no_targets")}</p>
+            </div>
+          )}
+        </div>
+      </UnifiedModal>
+
+      <ImportResultModal
+        isOpen={transferResultOpen}
+        onOpenChange={transferResultOnOpenChange}
+        results={{
+          success: transferResultSuccess,
+          failed: transferResultFailed,
+        }}
+        onConfirm={() => {
+          setTransferResultSuccess([]);
+          setTransferResultFailed([]);
+        }}
+      />
+
+      <UnifiedModal
+        isOpen={dupOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            dupOnClose();
+            dupResolveRef.current?.(false);
+          }
+        }}
+        type="warning"
+        title={t("mods.overwrite_modal_title")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+        showCancelButton
+        onConfirm={() => {
+          dupResolveRef.current?.(true);
+          dupOnClose();
+        }}
+        onCancel={() => {
+          dupResolveRef.current?.(false);
+          dupOnClose();
+        }}
+      >
+        <div className="flex flex-col gap-4">
+          <div className="text-sm text-default-700 dark:text-zinc-300">
+            {t("mods.overwrite_modal_body")}
+          </div>
+          {dupNameRef.current ? (
+            <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
+              {dupNameRef.current}
+            </div>
+          ) : null}
+        </div>
+      </UnifiedModal>
 
       {/* Update Confirmation Modal */}
       <UnifiedModal

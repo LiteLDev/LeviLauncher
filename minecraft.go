@@ -226,6 +226,8 @@ type contentService interface {
 	IsMcpackSkinPack(data []byte) bool
 	ImportMcworld(name string, player string, fileName string, data []byte, overwrite bool) string
 	ImportMcworldPath(name string, player string, path string, overwrite bool) string
+	TransferPackToVersion(sourceVersionName string, sourcePackPath string, targetVersionName string, overwrite bool) string
+	TransferWorldToVersion(sourceVersionName string, sourcePlayer string, sourceWorldPath string, targetVersionName string, targetPlayer string) string
 	GetPackInfo(dir string) types.PackInfo
 	UpdateResourcePackMaterialBins(versionName string, packPath string) contentmgr.MaterialUpdateResult
 	CheckResourcePackMaterialCompatibility(versionName string, packPath string) contentmgr.MaterialCompatResult

@@ -1,12 +1,16 @@
 package contentmgr
 
 import (
+	"archive/zip"
 	"bytes"
 	"encoding/json"
+	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/content"
@@ -150,6 +154,123 @@ func (m *Manager) versionSkinDir(versionName string, roots types.ContentRoots) s
 		return filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
 	}
 	return ""
+}
+
+func zipDirToBytes(srcDir string) ([]byte, error) {
+	src := filepath.Clean(strings.TrimSpace(srcDir))
+	if src == "" {
+		return nil, os.ErrInvalid
+	}
+	fi, err := os.Stat(src)
+	if err != nil {
+		return nil, err
+	}
+	if !fi.IsDir() {
+		return nil, os.ErrInvalid
+	}
+
+	var buf bytes.Buffer
+	zw := zip.NewWriter(&buf)
+	err = filepath.Walk(src, func(path string, info os.FileInfo, walkErr error) error {
+		if walkErr != nil {
+			return walkErr
+		}
+		rel, err := filepath.Rel(src, path)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		if info.IsDir() || !info.Mode().IsRegular() {
+			return nil
+		}
+
+		header, err := zip.FileInfoHeader(info)
+		if err != nil {
+			return err
+		}
+		header.Name = filepath.ToSlash(rel)
+		header.Method = zip.Deflate
+
+		writer, err := zw.CreateHeader(header)
+		if err != nil {
+			return err
+		}
+		in, err := os.Open(path)
+		if err != nil {
+			return err
+		}
+		_, err = io.Copy(writer, in)
+		_ = in.Close()
+		return err
+	})
+	if err != nil {
+		_ = zw.Close()
+		return nil, err
+	}
+	if err := zw.Close(); err != nil {
+		return nil, err
+	}
+	return buf.Bytes(), nil
+}
+
+func (m *Manager) TransferPackToVersion(sourceVersionName string, sourcePackPath string, targetVersionName string, overwrite bool) string {
+	srcVer := strings.TrimSpace(sourceVersionName)
+	dstVer := strings.TrimSpace(targetVersionName)
+	srcPackPath := filepath.Clean(strings.TrimSpace(sourcePackPath))
+	if srcVer == "" || dstVer == "" || srcPackPath == "" {
+		return "ERR_INVALID_PATH"
+	}
+
+	fi, err := os.Stat(srcPackPath)
+	if err != nil || !fi.IsDir() {
+		return "ERR_INVALID_PATH"
+	}
+
+	srcRoots := m.getContentRoots(srcVer)
+	dstRoots := m.getContentRoots(dstVer)
+	if strings.TrimSpace(dstRoots.ResourcePacks) == "" && strings.TrimSpace(dstRoots.BehaviorPacks) == "" {
+		return "ERR_ACCESS_VERSIONS_DIR"
+	}
+
+	allowedSourceRoots := []string{
+		strings.TrimSpace(srcRoots.ResourcePacks),
+		strings.TrimSpace(srcRoots.BehaviorPacks),
+	}
+	if strings.TrimSpace(srcRoots.ResourcePacks) != "" {
+		allowedSourceRoots = append(
+			allowedSourceRoots,
+			filepath.Join(filepath.Dir(srcRoots.ResourcePacks), "skin_packs"),
+		)
+	}
+	allowed := false
+	for _, root := range allowedSourceRoots {
+		if strings.TrimSpace(root) == "" {
+			continue
+		}
+		if isChildOfPath(srcPackPath, root) {
+			allowed = true
+			break
+		}
+	}
+	if !allowed {
+		return "ERR_INVALID_PACKAGE"
+	}
+
+	data, err := zipDirToBytes(srcPackPath)
+	if err != nil || len(data) == 0 {
+		return "ERR_OPEN_ZIP"
+	}
+	skinDir := m.versionSkinDir(dstVer, dstRoots)
+	return content.ImportMcpackToDirs2(
+		data,
+		filepath.Base(srcPackPath),
+		dstRoots.ResourcePacks,
+		dstRoots.BehaviorPacks,
+		skinDir,
+		overwrite,
+	)
 }
 
 func (m *Manager) ImportMcpack(name string, data []byte, overwrite bool) string {
@@ -367,6 +488,37 @@ func isChildOfPath(path string, root string) bool {
 	p = strings.ToLower(filepath.Clean(p))
 	r = strings.ToLower(filepath.Clean(r))
 	return p != r && strings.HasPrefix(p, r+string(os.PathSeparator))
+}
+
+func nextAvailableFolderName(rootDir string, desired string) string {
+	base := strings.TrimSpace(desired)
+	base = filepath.Clean(base)
+	base = filepath.Base(base)
+	base = strings.TrimSpace(base)
+	if base == "" || base == "." || base == string(os.PathSeparator) {
+		base = "world"
+	}
+	seen := map[string]struct{}{}
+	if entries, err := os.ReadDir(rootDir); err == nil {
+		for _, e := range entries {
+			if !e.IsDir() {
+				continue
+			}
+			seen[strings.ToLower(strings.TrimSpace(e.Name()))] = struct{}{}
+		}
+	}
+
+	candidate := base
+	if _, ok := seen[strings.ToLower(candidate)]; !ok {
+		return candidate
+	}
+	for i := 1; i < 100000; i++ {
+		next := fmt.Sprintf("%s_%d", base, i)
+		if _, ok := seen[strings.ToLower(next)]; !ok {
+			return next
+		}
+	}
+	return fmt.Sprintf("%s_%d", base, time.Now().Unix())
 }
 
 func (m *Manager) UpdateResourcePackMaterialBins(versionName string, packPath string) MaterialUpdateResult {
@@ -607,6 +759,48 @@ func (m *Manager) DeleteWorld(name string, path string) string {
 		return "ERR_INVALID_PATH"
 	}
 	if err := os.RemoveAll(absTarget); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
+}
+
+func (m *Manager) TransferWorldToVersion(sourceVersionName string, sourcePlayer string, sourceWorldPath string, targetVersionName string, targetPlayer string) string {
+	srcVer := strings.TrimSpace(sourceVersionName)
+	dstVer := strings.TrimSpace(targetVersionName)
+	srcPlayer := strings.TrimSpace(sourcePlayer)
+	dstPlayer := strings.TrimSpace(targetPlayer)
+	srcWorld := filepath.Clean(strings.TrimSpace(sourceWorldPath))
+	if srcVer == "" || dstVer == "" || srcPlayer == "" || dstPlayer == "" || srcWorld == "" {
+		return "ERR_INVALID_PATH"
+	}
+
+	fi, err := os.Stat(srcWorld)
+	if err != nil || !fi.IsDir() {
+		return "ERR_INVALID_PATH"
+	}
+
+	srcRoots := m.getContentRoots(srcVer)
+	dstRoots := m.getContentRoots(dstVer)
+	srcUsersRoot := strings.TrimSpace(srcRoots.UsersRoot)
+	dstUsersRoot := strings.TrimSpace(dstRoots.UsersRoot)
+	if srcUsersRoot == "" || dstUsersRoot == "" {
+		return "ERR_ACCESS_VERSIONS_DIR"
+	}
+
+	sourceWorldsRoot := filepath.Join(srcUsersRoot, srcPlayer, "games", "com.mojang", "minecraftWorlds")
+	if !isChildOfPath(srcWorld, sourceWorldsRoot) {
+		return "ERR_INVALID_PATH"
+	}
+
+	targetWorldsRoot := filepath.Join(dstUsersRoot, dstPlayer, "games", "com.mojang", "minecraftWorlds")
+	if err := os.MkdirAll(targetWorldsRoot, 0755); err != nil {
+		return "ERR_CREATE_TARGET_DIR"
+	}
+
+	targetFolderName := nextAvailableFolderName(targetWorldsRoot, filepath.Base(srcWorld))
+	targetPath := filepath.Join(targetWorldsRoot, targetFolderName)
+
+	if err := utils.CopyDir(srcWorld, targetPath); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""

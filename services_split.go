@@ -127,6 +127,20 @@ func (s *ContentService) ImportMcworldPath(name string, player string, path stri
 	return s.manager.ImportMcworldPath(name, player, path, overwrite)
 }
 
+func (s *ContentService) TransferPackToVersion(sourceVersionName string, sourcePackPath string, targetVersionName string, overwrite bool) string {
+	if s.manager == nil {
+		return "ERR_ACCESS_VERSIONS_DIR"
+	}
+	return s.manager.TransferPackToVersion(sourceVersionName, sourcePackPath, targetVersionName, overwrite)
+}
+
+func (s *ContentService) TransferWorldToVersion(sourceVersionName string, sourcePlayer string, sourceWorldPath string, targetVersionName string, targetPlayer string) string {
+	if s.manager == nil {
+		return "ERR_ACCESS_VERSIONS_DIR"
+	}
+	return s.manager.TransferWorldToVersion(sourceVersionName, sourcePlayer, sourceWorldPath, targetVersionName, targetPlayer)
+}
+
 func (s *ContentService) GetPackInfo(dir string) types.PackInfo {
 	if s.manager == nil {
 		return types.PackInfo{}

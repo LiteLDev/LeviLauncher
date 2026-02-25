@@ -88,11 +88,7 @@ export default function ContentPage() {
                     </span>
                     <span>{t("contentpage.isolation")}:</span>
                     <span
-                      className={`font-medium px-2 py-0.5 rounded-md ${
-                        cp.roots.isIsolation
-                          ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
-                          : "bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
-                      }`}
+                      className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md"
                     >
                       {cp.roots.isIsolation ? t("common.yes") : t("common.no")}
                     </span>

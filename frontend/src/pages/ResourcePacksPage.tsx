@@ -622,8 +622,8 @@ export default function ResourcePacksPage() {
                   <Button
                     isIconOnly
                     radius="full"
-                    variant={selection.isSelectMode ? "solid" : "flat"}
-                    color={selection.isSelectMode ? "primary" : "default"}
+                    variant="flat"
+                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200"
                     onPress={selection.toggleSelectMode}
                   >
                     <FaCheckSquare />
@@ -633,7 +633,8 @@ export default function ResourcePacksPage() {
                   <Button
                     isIconOnly
                     radius="full"
-                    variant="light"
+                    variant="flat"
+                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200"
                     onPress={() => refreshAll()}
                     isDisabled={loading}
                   >
@@ -681,18 +682,15 @@ export default function ResourcePacksPage() {
                 </Checkbox>
               )}
 
-              <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                <DropdownTrigger>
-                  <Button
-                    variant="flat"
-                    radius="full"
+                <Dropdown classNames={COMPONENT_STYLES.dropdown}>
+                  <DropdownTrigger>
+                    <Button
+                      variant="flat"
+                      radius="full"
                     startContent={
                       sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
                     }
-                    className={cn(
-                      COMPONENT_STYLES.dropdownTriggerButton,
-                      "min-w-[120px]",
-                    )}
+                    className="min-w-[120px] bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
                   >
                     {sort.sortKey === "name"
                       ? (t("filemanager.sort.name") as string)
@@ -753,11 +751,7 @@ export default function ResourcePacksPage() {
             <span className="text-default-300 dark:text-zinc-700">|</span>
             <span>{t("contentpage.isolation")}:</span>
             <span
-              className={`font-medium px-2 py-0.5 rounded-md ${
-                roots.isIsolation
-                  ? "bg-success-50 text-success-600 dark:bg-success-900/20 dark:text-success-400"
-                  : "bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-200"
-              }`}
+              className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md"
             >
               {roots.isIsolation ? t("common.yes") : t("common.no")}
             </span>

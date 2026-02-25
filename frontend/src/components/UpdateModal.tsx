@@ -30,7 +30,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
 
   return (
     <UnifiedModal
-      size="md"
+      size="lg"
       isOpen={isOpen}
       onOpenChange={(open) => {
         if (!open) {
@@ -38,6 +38,9 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
         }
       }}
       type="primary"
+      classNames={{
+        body: "!overflow-hidden",
+      }}
       title={
         <span className="truncate">
           {t("settings.body.version.hasnew")}
@@ -49,7 +52,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
       showConfirmButton={false}
       showCancelButton={false}
       footer={
-        <div className="flex w-full justify-end gap-2">
+        <div className="flex w-full flex-wrap justify-end gap-2">
           <Button variant="light" onPress={onDismiss}>
             {t("common.cancel")}
           </Button>
@@ -63,11 +66,16 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
       }
     >
       {body ? (
-        <div className="rounded-xl bg-default-100/60 dark:bg-zinc-800/60 border border-default-200 dark:border-zinc-700 px-3 py-2">
-          <div className="text-small font-semibold mb-1 text-default-700 dark:text-zinc-200">
-            {t("downloadpage.changelog.title")}
+        <div className="rounded-2xl bg-default-100/60 dark:bg-zinc-800/60 border border-default-200 dark:border-zinc-700 overflow-hidden">
+          <div className="px-4 py-3 border-b border-default-200/80 dark:border-zinc-700/80">
+            <div className="text-small font-semibold text-default-700 dark:text-zinc-200">
+              {t("downloadpage.changelog.title")}
+            </div>
+            <div className="text-tiny text-default-500 dark:text-zinc-400 mt-0.5">
+              {version}
+            </div>
           </div>
-          <div className="text-small text-default-600 dark:text-zinc-300 wrap-break-word leading-6 max-h-[32vh] sm:max-h-[40vh] lg:max-h-[44vh] overflow-y-auto pr-1">
+          <div className="text-small text-default-600 dark:text-zinc-300 wrap-break-word leading-6 max-h-[50vh] overflow-y-auto px-4 py-3 pr-3 custom-scrollbar">
             <ReactMarkdown
               remarkPlugins={[remarkGfm]}
               components={{

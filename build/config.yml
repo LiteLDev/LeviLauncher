@@ -11,8 +11,8 @@ info:
   description: "A Minecraft Launcher" # The application description
   copyright: "(c) 2024-2026, LeviMC" # Copyright text
   comments: "Some Product Comments" # Comments
-  version: "0.3.5" # The application version
-  beta: "true" # Whether the application is in beta or not
+  version: "0.3.6" # The application version
+  beta: "false" # Whether the application is in beta or not
 
 # Dev mode configuration
 dev_mode:

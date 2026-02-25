@@ -13,6 +13,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/Masterminds/semver/v3"
 	json "github.com/goccy/go-json"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
@@ -25,6 +26,7 @@ const (
 	EventLipInstallProgress = "lip_install_progress"
 	EventLipInstallDone     = "lip_install_done"
 	EventLipInstallError    = "lip_install_error"
+	MaxLipVersionTag        = "v0.32.0"
 )
 
 func LipDir() string {
@@ -86,11 +88,34 @@ func GetLatestVersion() (string, error) {
 		}
 		if err := json.NewDecoder(resp.Body).Decode(&payload); err == nil {
 			resp.Body.Close()
-			return payload.TagName, nil
+			return clampLipVersionTag(payload.TagName), nil
 		}
 		resp.Body.Close()
 	}
 	return "", fmt.Errorf("failed to fetch latest version")
+}
+
+func clampLipVersionTag(tagName string) string {
+	tag := strings.TrimSpace(tagName)
+	if tag == "" {
+		return MaxLipVersionTag
+	}
+
+	upper, err := semver.NewVersion(strings.TrimPrefix(MaxLipVersionTag, "v"))
+	if err != nil {
+		return MaxLipVersionTag
+	}
+
+	got, err := semver.NewVersion(strings.TrimPrefix(tag, "v"))
+	if err != nil {
+		return MaxLipVersionTag
+	}
+
+	if got.GreaterThan(upper) {
+		return MaxLipVersionTag
+	}
+
+	return "v" + got.String()
 }
 
 func Install() string {

@@ -17,6 +17,30 @@ const container = document.getElementById("root");
 
 const root = createRoot(container);
 
+const coarsePointerMedia = window.matchMedia?.("(pointer: coarse)");
+const isTouchDevice =
+  navigator.maxTouchPoints > 0 || Boolean(coarsePointerMedia?.matches);
+
+if (isTouchDevice) {
+  window.addEventListener(
+    "wheel",
+    (e) => {
+      if (e.ctrlKey) {
+        e.preventDefault();
+      }
+    },
+    { passive: false },
+  );
+
+  const preventGestureZoom = (e) => {
+    e.preventDefault();
+  };
+
+  window.addEventListener("gesturestart", preventGestureZoom);
+  window.addEventListener("gesturechange", preventGestureZoom);
+  window.addEventListener("gestureend", preventGestureZoom);
+}
+
 window.addEventListener("contextmenu", (e) => {
   if (import.meta.env.DEV) return;
   const target = e.target;

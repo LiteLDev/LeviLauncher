@@ -218,6 +218,7 @@
 body,
 html {
   font-family: var(--font-sans);
+  touch-action: pan-x pan-y;
 
   -webkit-user-select: none;
   /* Chrome, Safari, Opera */

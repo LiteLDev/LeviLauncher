@@ -276,7 +276,6 @@ function App() {
                       ...getFitStyles(backgroundFitMode),
                       filter: `blur(${backgroundBlur}px) brightness(${backgroundBrightness}%)`,
                       opacity: backgroundOpacity / 100,
-                      transform: backgroundBlur > 0 ? "scale(1.1)" : "none",
                     }}
                   />
                 )}

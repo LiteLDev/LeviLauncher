@@ -41,7 +41,11 @@ var singleInstanceGuard win.Handle
 const singleInstancePipe = `\\.\pipe\LeviLauncher_SingleInstance_Pipe`
 
 const (
-	SW_RESTORE = 9
+	SW_RESTORE          = 9
+	minWindowWidth      = 960
+	minWindowHeight     = 600
+	defaultWindowWidth  = 1024
+	defaultWindowHeight = 640
 )
 
 var (
@@ -242,18 +246,18 @@ func main() {
 		return
 	}
 
-	w := 1024
-	h := 640
+	w := defaultWindowWidth
+	h := defaultWindowHeight
 	if c.WindowWidth > 0 {
-		if c.WindowWidth < 960 {
-			w = 960
+		if c.WindowWidth < minWindowWidth {
+			w = minWindowWidth
 		} else {
 			w = c.WindowWidth
 		}
 	}
 	if c.WindowHeight > 0 {
-		if c.WindowHeight < 600 {
-			h = 600
+		if c.WindowHeight < minWindowHeight {
+			h = minWindowHeight
 		} else {
 			h = c.WindowHeight
 		}
@@ -267,8 +271,8 @@ func main() {
 		Title:     "LeviLauncher",
 		Width:     w,
 		Height:    h,
-		MinWidth:  960,
-		MinHeight: 600,
+		MinWidth:  minWindowWidth,
+		MinHeight: minWindowHeight,
 		Mac:       application.MacWindow{},
 		Frameless: true,
 		BackgroundColour: application.RGBA{
@@ -283,6 +287,22 @@ func main() {
 		URL:            initialURL,
 		EnableFileDrop: true,
 	})
+	reapplyWindowMinConstraints := func() {
+		windows.SetMinSize(minWindowWidth, minWindowHeight)
+		currentW := windows.Width()
+		currentH := windows.Height()
+		targetW := currentW
+		targetH := currentH
+		if targetW > 0 && targetW < minWindowWidth {
+			targetW = minWindowWidth
+		}
+		if targetH > 0 && targetH < minWindowHeight {
+			targetH = minWindowHeight
+		}
+		if targetW != currentW || targetH != currentH {
+			windows.SetSize(targetW, targetH)
+		}
+	}
 
 	if strings.TrimSpace(autoLaunchVersion) != "" {
 		go func() {
@@ -300,12 +320,21 @@ func main() {
 			})
 		}
 	})
+	windows.OnWindowEvent(events.Common.WindowRestore, func(_ *application.WindowEvent) {
+		reapplyWindowMinConstraints()
+	})
 	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		w := windows.Width()
 		h := windows.Height()
 
 		c, _ := config.Load()
 		if w > 0 && h > 0 {
+			if w < minWindowWidth {
+				w = minWindowWidth
+			}
+			if h < minWindowHeight {
+				h = minWindowHeight
+			}
 			c.WindowWidth = w
 			c.WindowHeight = h
 			_ = config.Save(c)

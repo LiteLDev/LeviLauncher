@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useCallback, useEffect, useState } from "react";
 import { Button } from "@heroui/react";
 import {
   IoRemoveOutline,
@@ -6,7 +6,7 @@ import {
   IoCopyOutline,
   IoCloseOutline,
 } from "react-icons/io5";
-import { Window } from "@wailsio/runtime";
+import { Events, Window } from "@wailsio/runtime";
 
 interface WindowControlsProps {
   navLocked: boolean;
@@ -23,10 +23,57 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
 }) => {
   const [isMaximized, setIsMaximized] = useState(false);
 
+  const syncMaximizedState = useCallback(async () => {
+    try {
+      const maximized = await Window.IsMaximised();
+      setIsMaximized(maximized);
+    } catch {
+      // ignore runtime sync errors
+    }
+  }, []);
+
+  useEffect(() => {
+    let disposed = false;
+    const safeSync = async () => {
+      if (disposed) return;
+      try {
+        const maximized = await Window.IsMaximised();
+        if (!disposed) {
+          setIsMaximized(maximized);
+        }
+      } catch {
+        // ignore runtime sync errors
+      }
+    };
+
+    void safeSync();
+
+    const windowStateEvents = [
+      "common:WindowMaximise",
+      "common:WindowUnMaximise",
+      "common:WindowRestore",
+      "windows:WindowMaximise",
+      "windows:WindowUnMaximise",
+      "windows:WindowRestore",
+    ];
+    const offFns = windowStateEvents.map((eventName) =>
+      Events.On(eventName, () => {
+        void safeSync();
+      }),
+    );
+
+    return () => {
+      disposed = true;
+      offFns.forEach((off) => off());
+    };
+  }, []);
+
   const handleToggleMaximize = () => {
     if (navLocked && !isOnboardingMode) return;
-    Window.ToggleMaximise();
-    setIsMaximized(!isMaximized);
+    void (async () => {
+      await Window.ToggleMaximise();
+      await syncMaximizedState();
+    })();
   };
 
   return (

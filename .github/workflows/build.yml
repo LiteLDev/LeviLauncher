@@ -100,6 +100,56 @@ jobs:
             echo "Detected beta: $BETA, setting prerelease to false"
           fi
 
+      - name: Extract Release Notes From CHANGELOG
+        id: changelog
+        run: |
+          set -euo pipefail
+
+          TAG="${{ github.ref_name }}"
+          CHANGELOG_FILE="CHANGELOG.md"
+          RELEASE_NOTES_FILE="release-notes.md"
+
+          if [ ! -f "$CHANGELOG_FILE" ]; then
+            echo "CHANGELOG.md not found at repository root."
+            exit 1
+          fi
+
+          awk -v tag="$TAG" '
+            BEGIN {
+              in_section = 0
+              found = 0
+            }
+            {
+              if ($0 ~ "^## \\[" tag "\\]" || $0 ~ "^## " tag "([[:space:]]|$)") {
+                in_section = 1
+                found = 1
+              } else if (in_section && $0 ~ "^## ") {
+                exit
+              }
+
+              if (in_section) {
+                print
+              }
+            }
+            END {
+              if (!found) {
+                exit 2
+              }
+            }
+          ' "$CHANGELOG_FILE" > "$RELEASE_NOTES_FILE" || {
+            echo "No changelog section found for tag: $TAG"
+            echo "Available sections:"
+            grep '^## ' "$CHANGELOG_FILE" || true
+            exit 1
+          }
+
+          if ! grep -q '[^[:space:]]' "$RELEASE_NOTES_FILE"; then
+            echo "Extracted release notes are empty for tag: $TAG"
+            exit 1
+          fi
+
+          echo "Release notes extracted to $RELEASE_NOTES_FILE"
+
       - name: Create Release
         id: create_release
         uses: softprops/action-gh-release@v1
@@ -110,7 +160,7 @@ jobs:
           release_name: Release ${{ github.ref_name }}
           draft: false
           prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
-          generate_release_notes: true
+          body_path: release-notes.md
 
       - name: Upload Release Assets
         env:

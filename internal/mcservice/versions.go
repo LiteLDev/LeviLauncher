@@ -27,6 +27,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"golang.org/x/sys/windows"
+	winreg "golang.org/x/sys/windows/registry"
 )
 
 type ContentCounts struct {
@@ -730,29 +731,68 @@ func CreateDesktopShortcut(name string) string {
 
 	findDesktopDir := func() string {
 		candidates := []string{}
-		home, _ := os.UserHomeDir()
-		home = strings.TrimSpace(home)
-		if home == "" {
-			home = strings.TrimSpace(os.Getenv("USERPROFILE"))
+		addCandidate := func(p string) {
+			p = strings.TrimSpace(p)
+			if p == "" {
+				return
+			}
+			candidates = append(candidates, filepath.Clean(p))
 		}
-		if home != "" {
-			candidates = append(candidates, filepath.Join(home, "Desktop"))
-			candidates = append(candidates, filepath.Join(home, "OneDrive", "Desktop"))
+		readDesktopFromUserShellFolders := func() string {
+			k, err := winreg.OpenKey(
+				winreg.CURRENT_USER,
+				`Software\Microsoft\Windows\CurrentVersion\Explorer\User Shell Folders`,
+				winreg.QUERY_VALUE,
+			)
+			if err != nil {
+				return ""
+			}
+			defer k.Close()
+
+			raw, typ, err := k.GetStringValue("Desktop")
+			if err != nil {
+				return ""
+			}
+			raw = strings.TrimSpace(raw)
+			if raw == "" {
+				return ""
+			}
+			if typ == winreg.EXPAND_SZ || strings.Contains(raw, "%") {
+				if expanded, err := winreg.ExpandString(raw); err == nil {
+					raw = strings.TrimSpace(expanded)
+				} else {
+					raw = strings.TrimSpace(os.ExpandEnv(raw))
+				}
+			}
+			return raw
+		}
+
+		addCandidate(readDesktopFromUserShellFolders())
+		userProfile := strings.TrimSpace(os.Getenv("USERPROFILE"))
+		if userProfile != "" {
+			addCandidate(filepath.Join(userProfile, "Desktop"))
+			addCandidate(filepath.Join(userProfile, "OneDrive", "Desktop"))
 		}
 		for _, k := range []string{"OneDrive", "OneDriveConsumer", "OneDriveCommercial"} {
 			v := strings.TrimSpace(os.Getenv(k))
 			if v != "" {
-				candidates = append(candidates, filepath.Join(v, "Desktop"))
+				addCandidate(filepath.Join(v, "Desktop"))
 			}
 		}
 		pub := strings.TrimSpace(os.Getenv("PUBLIC"))
 		if pub != "" {
-			candidates = append(candidates, filepath.Join(pub, "Desktop"))
+			addCandidate(filepath.Join(pub, "Desktop"))
 		}
+		seen := map[string]struct{}{}
 		for _, p := range candidates {
-			if strings.TrimSpace(p) == "" {
+			if p == "" {
 				continue
 			}
+			norm := strings.ToLower(p)
+			if _, ok := seen[norm]; ok {
+				continue
+			}
+			seen[norm] = struct{}{}
 			if fi, err := os.Stat(p); err == nil && fi.IsDir() {
 				return p
 			}

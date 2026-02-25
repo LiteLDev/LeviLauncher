@@ -73,6 +73,9 @@ export const useLauncher = (args: any) => {
   );
   const [isLoadingVersions, setIsLoadingVersions] =
     React.useState<boolean>(false);
+  const [registerAction, setRegisterAction] = React.useState<
+    "register" | "unregister"
+  >("register");
   const fetchingLogos = React.useRef<Set<string>>(new Set());
   const fetchingLeviLaminaStatuses = React.useRef<Set<string>>(new Set());
   const [tipIndex, setTipIndex] = React.useState<number>(0);
@@ -461,8 +464,22 @@ export const useLauncher = (args: any) => {
     });
   }, []);
 
+  const applyOptimisticUnregisterState = React.useCallback((name: string) => {
+    if (!name) return;
+    setLocalVersionMap((prev) => {
+      const target = prev.get(name);
+      if (!target || !target.isRegistered) return prev;
+      const next = new Map(prev);
+      next.set(name, { ...target, isRegistered: false });
+      return next;
+    });
+  }, []);
+
   const doRegister = React.useCallback(async () => {
     if (!currentVersion) return;
+    const isCurrentlyRegistered = Boolean(
+      localVersionMap.get(currentVersion)?.isRegistered,
+    );
     try {
       const ok = await IsGDKInstalled();
       if (!ok) {
@@ -470,6 +487,45 @@ export const useLauncher = (args: any) => {
         return;
       }
     } catch {}
+    if (isCurrentlyRegistered) {
+      setRegisterAction("unregister");
+      registerInstallingDisclosure.onOpen();
+      try {
+        const fn = (versionService as any)?.UnregisterVersionByName;
+        if (typeof fn !== "function") {
+          registerInstallingDisclosure.onClose();
+          setLaunchErrorCode("ERR_UNREGISTER_FAILED");
+          registerFailedDisclosure.onOpen();
+          return;
+        }
+        const result = await fn(currentVersion);
+        registerInstallingDisclosure.onClose();
+        if (result === "") {
+          applyOptimisticUnregisterState(currentVersion);
+          const synced = await syncRegisteredFlags();
+          if (!synced) {
+            applyOptimisticUnregisterState(currentVersion);
+          }
+          window.setTimeout(() => {
+            void syncRegisteredFlags();
+          }, 1200);
+          args.refresh();
+          return;
+        }
+        if (result === "ERR_GDK_MISSING") {
+          gdkMissingDisclosure.onOpen();
+        } else {
+          setLaunchErrorCode(result);
+          registerFailedDisclosure.onOpen();
+        }
+      } catch {
+        registerInstallingDisclosure.onClose();
+        setLaunchErrorCode("ERR_UNREGISTER_FAILED");
+        registerFailedDisclosure.onOpen();
+      }
+      return;
+    }
+    setRegisterAction("register");
     registerInstallingDisclosure.onOpen();
     try {
       const isPreview = localVersionMap.get(currentVersion)?.isPreview || false;
@@ -517,10 +573,12 @@ export const useLauncher = (args: any) => {
       registerFailedDisclosure.onOpen();
     }
   }, [
+    args,
     currentVersion,
     localVersionMap,
     navigate,
     applyOptimisticRegisterState,
+    applyOptimisticUnregisterState,
     gdkMissingDisclosure,
     registerInstallingDisclosure,
     registerSuccessDisclosure,
@@ -1136,6 +1194,7 @@ export const useLauncher = (args: any) => {
     setVersionQuery,
     logoByName,
     isLoadingVersions,
+    registerAction,
     tipIndex,
     hasBackend,
 

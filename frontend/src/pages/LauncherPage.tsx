@@ -64,6 +64,7 @@ export const LauncherPage = (args: any) => {
     setVersionQuery,
     logoByName,
     isLoadingVersions,
+    registerAction,
     tipIndex,
 
     // Disclosures
@@ -141,6 +142,9 @@ export const LauncherPage = (args: any) => {
     () => buildVersionMenuItems(t("common.empty") as string),
     [buildVersionMenuItems, t],
   );
+  const isCurrentVersionRegistered = Boolean(
+    localVersionMap.get(currentVersion)?.isRegistered,
+  );
   const currentVersionHasLeviLamina = Boolean(
     localVersionMap.get(currentVersion)?.isLeviLaminaInstalled,
   );
@@ -174,7 +178,7 @@ export const LauncherPage = (args: any) => {
                     >
                       Minecraft
                     </motion.h1>
-                    {localVersionMap.get(currentVersion)?.isRegistered && (
+                    {isCurrentVersionRegistered && (
                       <motion.div
                         initial={{ opacity: 0, scale: 0.8, x: -10 }}
                         animate={{ opacity: 1, scale: 1, x: 0 }}
@@ -431,7 +435,9 @@ export const LauncherPage = (args: any) => {
                           startContent={<FaWindows />}
                           onPress={doRegister}
                         >
-                          {t("launcherpage.register_system_button")}
+                          {isCurrentVersionRegistered
+                            ? t("versions.edit.unregister_button")
+                            : t("launcherpage.register_system_button")}
                         </DropdownItem>
                       </DropdownMenu>
                     </Dropdown>
@@ -988,19 +994,40 @@ export const LauncherPage = (args: any) => {
         <UnifiedModal
           isOpen={registerInstallingDisclosure.isOpen}
           onOpenChange={registerInstallingDisclosure.onOpenChange}
-          type="success"
-          title={t("launcherpage.register.installing.title")}
-          icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+          type={registerAction === "unregister" ? "warning" : "success"}
+          title={
+            registerAction === "unregister"
+              ? t("versions.edit.unregister_progress.title")
+              : t("launcherpage.register.installing.title")
+          }
+          icon={
+            registerAction === "unregister" ? (
+              <FaExclamationTriangle className="w-6 h-6 text-warning-500" />
+            ) : (
+              <FaDownload className="w-6 h-6 text-primary-500" />
+            )
+          }
         >
           <>
             <p className="text-default-600 dark:text-zinc-300 font-medium mb-4">
-              {t("launcherpage.register.installing.body")}
+              {registerAction === "unregister"
+                ? t("versions.edit.unregister_progress.body")
+                : t("launcherpage.register.installing.body")}
             </p>
             <Progress
               size="sm"
               isIndeterminate
-              aria-label="Registering"
-              classNames={{ indicator: "bg-primary-500 hover:bg-primary-500" }}
+              aria-label={
+                registerAction === "unregister"
+                  ? "Unregistering"
+                  : "Registering"
+              }
+              classNames={{
+                indicator:
+                  registerAction === "unregister"
+                    ? "bg-warning-500 hover:bg-warning-500"
+                    : "bg-primary-500 hover:bg-primary-500",
+              }}
             />
           </>
         </UnifiedModal>

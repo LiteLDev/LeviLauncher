@@ -279,7 +279,7 @@ export default function VersionSettingsPage() {
               )}
               {vs.selectedTab === "launch" && (
                 <div className="flex flex-col gap-6">
-                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
+                  <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-medium font-medium">
                       {t("versions.edit.enable_isolation")}
                     </div>
@@ -293,7 +293,7 @@ export default function VersionSettingsPage() {
                       }}
                     />
                   </div>
-                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
+                  <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-medium font-medium">
                       {t("versions.edit.enable_console")}
                     </div>
@@ -423,7 +423,7 @@ export default function VersionSettingsPage() {
               )}
               {vs.selectedTab === "features" && (
                 <div className="flex flex-col gap-5">
-                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
+                  <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-medium font-medium">
                       {t("versions.edit.enable_render_dragon")}
                     </div>
@@ -437,7 +437,7 @@ export default function VersionSettingsPage() {
                       }}
                     />
                   </div>
-                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
+                  <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-medium font-medium">
                       {t("versions.edit.enable_ctrl_r_reload_resources")}
                     </div>
@@ -451,7 +451,7 @@ export default function VersionSettingsPage() {
                       }}
                     />
                   </div>
-                  <div className="flex items-center justify-between p-2 rounded-xl hover:bg-default-100/50 transition-colors">
+                  <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-medium font-medium">
                       {t("versions.edit.enable_editor_mode")}
                     </div>

@@ -140,8 +140,7 @@ export const LauncherPage = (args: any) => {
       t("launcherpage.tip.follow_github") as unknown as string,
       t("launcherpage.tip.check_updates") as unknown as string,
       t("launcherpage.tip.backup_worlds") as unknown as string,
-      t("launcherpage.tip.customize_launcher") as unknown as string,
-      t("launcherpage.tip.learn_more") as unknown as string,  // 屎山这一块
+      t("launcherpage.tip.customize_launcher") as unknown as string,// 屎山这一块
     ],
     [t],
   );

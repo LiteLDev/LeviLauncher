@@ -147,8 +147,7 @@
       "follow_github": "关注我们的 GitHub 仓库，获取最新更新",
       "check_updates": "定期检查更新，获取最新功能和修复。",
       "backup_worlds": "建议定期备份重要世界数据，避免意外丢失。",
-      "customize_launcher": "在设置中自定义启动器外观和行为，打造专属于你的启动器！",
-      "learn_more": "访问我们的官网了解更多信息：https://www.levilauncher.com"
+      "customize_launcher": "在设置中自定义启动器外观和行为，打造专属于你的启动器！"
     },
     "edition": "Bedrock Edition"
   },

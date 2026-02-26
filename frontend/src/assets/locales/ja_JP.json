@@ -147,8 +147,7 @@
       "follow_github": "最新の更新情報を入手するには、GitHubリポジトリをフォローしてください。",
       "check_updates": "最新の機能と修正を入手するために、定期的に更新を確認してください。",
       "backup_worlds": "重要なワールドデータは定期的にバックアップすることをお勧めします。予期しない損失を避けるためです。",
-      "customize_launcher": "設定でランチャーの外観と動作をカスタマイズして、自分だけのランチャーを作成しましょう！",
-      "learn_more": "詳細情報は公式ウェブサイトをご覧ください：https://www.levilauncher.com"
+      "customize_launcher": "設定でランチャーの外観と動作をカスタマイズして、自分だけのランチャーを作成しましょう！"
     },
     "edition": "Bedrock Edition"
   },

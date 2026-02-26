@@ -147,8 +147,7 @@
       "follow_github": "Follow our GitHub repository for the latest updates.",
       "check_updates": "Regularly check for updates to get the latest features and fixes.",
       "backup_worlds": "It is recommended to regularly backup important world data to avoid accidental loss.",
-      "customize_launcher": "Customize launcher appearance and behavior in settings to create your own launcher!",
-      "learn_more": "Visit our official website for more information: https://www.levilauncher.com"
+      "customize_launcher": "Customize launcher appearance and behavior in settings to create your own launcher!"
     },
     "edition": "Bedrock Edition"
   },

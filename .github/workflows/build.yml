@@ -64,6 +64,23 @@ jobs:
 
           Write-Host "Using Inno Setup compiler: $isccPath"
 
+          $innoDir = Split-Path -Path $isccPath -Parent
+          $langDir = Join-Path $innoDir "Languages"
+          $chineseSimplifiedPath = Join-Path $langDir "ChineseSimplified.isl"
+          $chineseSimplifiedUrl = "https://raw.githubusercontent.com/jrsoftware/issrc/refs/heads/main/Files/Languages/Unofficial/ChineseSimplified.isl"
+
+          if (-not (Test-Path $langDir)) {
+            New-Item -ItemType Directory -Path $langDir -Force | Out-Null
+          }
+
+          if (-not (Test-Path $chineseSimplifiedPath)) {
+            Write-Host "ChineseSimplified.isl not found. Downloading from: $chineseSimplifiedUrl"
+            Invoke-WebRequest -Uri $chineseSimplifiedUrl -OutFile $chineseSimplifiedPath -ErrorAction Stop
+            Write-Host "Downloaded language file to: $chineseSimplifiedPath"
+          } else {
+            Write-Host "Language file already exists: $chineseSimplifiedPath"
+          }
+
       - uses: ToQuery/wails3-build-action@v3-alpha.14
         with:
           go-archs: ${{ matrix.build.archs }}

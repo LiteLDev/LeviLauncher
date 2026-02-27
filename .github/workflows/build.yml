@@ -29,6 +29,41 @@ jobs:
         with:
           submodules: recursive
 
+      - name: Install Inno Setup
+        shell: pwsh
+        run: |
+          choco install innosetup --yes --no-progress
+
+          $isccPath = $null
+          $candidateDirs = @(
+            "${env:ProgramFiles(x86)}\Inno Setup 7",
+            "${env:ProgramFiles(x86)}\Inno Setup 6",
+            "$env:ProgramFiles\Inno Setup 7",
+            "$env:ProgramFiles\Inno Setup 6"
+          )
+
+          foreach ($dir in $candidateDirs) {
+            $candidate = Join-Path $dir "ISCC.exe"
+            if (Test-Path $candidate) {
+              $dir | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+              $isccPath = $candidate
+              break
+            }
+          }
+
+          if (-not $isccPath) {
+            $command = Get-Command iscc.exe -ErrorAction SilentlyContinue
+            if ($command) {
+              $isccPath = $command.Source
+            }
+          }
+
+          if (-not $isccPath) {
+            throw "iscc.exe was not found after installing Inno Setup."
+          }
+
+          Write-Host "Using Inno Setup compiler: $isccPath"
+
       - uses: ToQuery/wails3-build-action@v3-alpha.14
         with:
           go-archs: ${{ matrix.build.archs }}
@@ -221,7 +256,9 @@ jobs:
   upload-to-target-repo:
     name: Upload EXE to Target Repository
     needs: build
-    if: startsWith(github.ref, 'refs/tags/')
+    # Temporarily disabled: no longer uploading to dreamguxiang/LeviLauncher
+    # if: startsWith(github.ref, 'refs/tags/')
+    if: false
     runs-on: ubuntu-latest
 
     steps:
@@ -315,7 +352,9 @@ jobs:
     name: Prime GoProxy caches
     needs:
       - upload-to-target-repo
-    if: startsWith(github.ref, 'refs/tags/')
+    # Temporarily disabled: depends on dreamguxiang/LeviLauncher upload flow
+    # if: startsWith(github.ref, 'refs/tags/')
+    if: false
     runs-on: ubuntu-latest
 
     steps:

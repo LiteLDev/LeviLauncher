@@ -970,15 +970,6 @@ export const DownloadPage: React.FC = () => {
                               className="px-0 h-8 font-medium bg-default-100 dark:bg-zinc-700/50 text-default-700 dark:text-zinc-200 hover:bg-default-200 dark:hover:bg-zinc-600 transition-all w-[120px]"
                               isDisabled={!hasStatus(item) && refreshing}
                               onPress={() => {
-                                if (isDownloading) {
-                                  addToast({
-                                    title: t(
-                                      "downloadpage.error.already_downloading",
-                                    ),
-                                    color: "danger",
-                                  });
-                                  return;
-                                }
                                 const urls = item.urls || [];
                                 setMirrorUrls(urls);
                                 setMirrorVersion(item.short);

@@ -84,7 +84,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 			}
 			gameVer = strings.TrimSpace(m.GameVersion)
 			discord.SetPlayingVersion(gameVer)
-			go launch.MonitorGameProcess(ctx, dir)
+			go launch.MonitorGameProcess(ctx, dir, 0)
 			return ""
 		}
 		if m.EnableEditorMode {
@@ -113,7 +113,11 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		return "ERR_LAUNCH_GAME"
 	}
 	discord.SetPlayingVersion(gameVer)
-	go launch.MonitorGameProcess(ctx, dir)
+	launchPID := 0
+	if cmd.Process != nil {
+		launchPID = cmd.Process.Pid
+	}
+	go launch.MonitorGameProcess(ctx, dir, launchPID)
 	return ""
 }
 

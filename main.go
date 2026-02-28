@@ -169,7 +169,7 @@ func init() {
 	// launch
 	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
 	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)
-	application.RegisterEvent[struct{}](launch.EventMcLaunchFailed)
+	application.RegisterEvent[string](launch.EventMcLaunchFailed)
 	application.RegisterEvent[struct{}](launch.EventGamingServicesMissing)
 	//msixvc
 	application.RegisterEvent[msixvc.DownloadStatus](msixvc.EventDownloadStatus)

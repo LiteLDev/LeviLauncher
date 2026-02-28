@@ -105,23 +105,46 @@ func isGameWindowVisible() bool {
 	return FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview")
 }
 
-func waitForGameProcess(ctx context.Context, versionDir string, timeout time.Duration) (bool, bool) {
-	if isGameRunning(versionDir) {
-		return true, false
+func isProcessAlive(pid uint32) bool {
+	if pid == 0 {
+		return false
 	}
-	ticker := time.NewTicker(1 * time.Second)
+
+	h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, pid)
+	if err != nil {
+		return false
+	}
+	defer windows.CloseHandle(h)
+
+	var exitCode uint32
+	if err := windows.GetExitCodeProcess(h, &exitCode); err != nil {
+		return false
+	}
+
+	const stillActive = 259
+	return exitCode == stillActive
+}
+
+func waitForGameProcess(ctx context.Context, versionDir string, launchPID uint32, timeout time.Duration) (bool, bool, bool) {
+	if isGameRunning(versionDir) {
+		return true, false, false
+	}
+	ticker := time.NewTicker(300 * time.Millisecond)
 	defer ticker.Stop()
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
 	for {
 		select {
 		case <-ctx.Done():
-			return false, true
+			return false, false, true
 		case <-timer.C:
-			return false, false
+			return false, false, false
 		case <-ticker.C:
 			if isGameRunning(versionDir) {
-				return true, false
+				return true, false, false
+			}
+			if launchPID != 0 && !isProcessAlive(launchPID) {
+				return false, true, false
 			}
 		}
 	}
@@ -159,14 +182,23 @@ func waitForGameWindow(ctx context.Context, versionDir string, timeout time.Dura
 	}
 }
 
-func MonitorGameProcess(ctx context.Context, versionDir string) {
-	found, canceled := waitForGameProcess(ctx, versionDir, 120*time.Second)
+func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
+	var pid uint32
+	if launchPID > 0 {
+		pid = uint32(launchPID)
+	}
+
+	found, launchExited, canceled := waitForGameProcess(ctx, versionDir, pid, 120*time.Second)
 	if canceled {
 		return
 	}
 
 	if !found {
-		application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
+		if launchExited {
+			application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
+		} else {
+			application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
+		}
 		discord.SetLauncherIdle()
 		return
 	}
@@ -176,12 +208,13 @@ func MonitorGameProcess(ctx context.Context, versionDir string) {
 		return
 	}
 
-	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
-
 	if !found {
+		application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
 		discord.SetLauncherIdle()
 		return
 	}
+
+	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
 
 	if visible {
 		w := application.Get().Window.Current()

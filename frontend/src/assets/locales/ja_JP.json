@@ -54,7 +54,7 @@
     "launch": {
       "failed": {
         "title": "起動エラー",
-        "content": "バージョンが選択されていません。ダウンロードページからダウンロードしてください！",
+        "content": "インスタンスファイルと依存環境を確認し、互換性のない Mod・アドオン・リソースパックがないことを確認してから再試行してください。",
         "close_button": "閉じる"
       },
       "force_run_button": "強制起動"
@@ -724,7 +724,7 @@
     "ERR_NOT_FOUND_GAME_DIR": "ゲームコンテンツディレクトリが見つかりません",
     "ERR_NOT_FOUND_EXE": "実行ファイルが見つかりません",
     "ERR_WRITE_TARGET": "ターゲット設定の書き込みに失敗しました",
-    "ERR_LAUNCH_GAME": "ゲームの起動に失敗しました",
+    "ERR_LAUNCH_GAME": "ゲームを正常に起動できませんでした",
     "ERR_GAME_CRASH_DURING_LAUNCH": "起動中にゲームがクラッシュしました",
     "ERR_WAIT_KERNEL_TIMEOUT": "カーネル準備がタイムアウトしました",
     "ERR_COPY_WALK": "ファイルの走査に失敗しました",
@@ -946,7 +946,7 @@
       "nh_err_exception": "キャッチされていない例外または不明なエラー",
       "nh_err_invalid_params": "無効なパラメータ",
       "nh_err_key_not_found": "ゲームインストーラーの検証に失敗しました。インストーラーを削除して再試行してください。",
-      "nh_err_unauthorized_caller": "呼び出し元が許可されていません",
+      "nh_err_unauthorized_caller": "ランチャーの exe 名が変更されていないことを確認してください（LeviLauncher.exe）",
       "nh_err_pipe_open_failed": "進捗パイプを開けませんでした",
       "nh_err_input_not_found": "入力ファイルが見つかりません",
       "nh_err_output_dir_invalid": "出力ディレクトリが無効です",

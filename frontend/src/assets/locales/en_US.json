@@ -54,7 +54,7 @@
     "launch": {
       "failed": {
         "title": "Launch Error",
-        "content": "You did not select any instance, please go to the download page to download it!",
+        "content": "Check instance files and required runtimes, and make sure there are no incompatible mods/add-ons/resource packs before trying again.",
         "close_button": "Close"
       },
       "force_run_button": "Force Launch"
@@ -734,7 +734,7 @@
     "ERR_NOT_FOUND_GAME_DIR": "Game content directory not found",
     "ERR_NOT_FOUND_EXE": "Executable not found",
     "ERR_WRITE_TARGET": "Failed to write target config",
-    "ERR_LAUNCH_GAME": "Failed to launch game",
+    "ERR_LAUNCH_GAME": "Game failed to start properly",
     "ERR_GAME_CRASH_DURING_LAUNCH": "Game crashed during launch",
     "ERR_WAIT_KERNEL_TIMEOUT": "Kernel preparation timed out",
     "ERR_COPY_WALK": "Failed to traverse files",
@@ -944,7 +944,7 @@
       "nh_err_exception": "Uncaught exception or unclassifiable error",
       "nh_err_invalid_params": "Invalid parameters",
       "nh_err_key_not_found": "Game installer package validation failed. Please delete the installer and retry.",
-      "nh_err_unauthorized_caller": "Unauthorized caller",
+      "nh_err_unauthorized_caller": "Please make sure the launcher exe name has not been changed (LeviLauncher.exe)",
       "nh_err_pipe_open_failed": "Progress pipe open failed",
       "nh_err_input_not_found": "Input file not found",
       "nh_err_output_dir_invalid": "Output directory invalid",

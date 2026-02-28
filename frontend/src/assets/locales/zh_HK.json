@@ -54,7 +54,7 @@
     "launch": {
       "failed": {
         "title": "啟動錯誤",
-        "content": "您未選擇任何實例，請前往下載頁面進行下載！",
+        "content": "請檢查實例檔案與依賴環境是否完整，並確認沒有安裝不相容的模組、資源包或行為包後重試。",
         "close_button": "關閉"
       },
       "force_run_button": "強制啟動"
@@ -724,7 +724,7 @@
     "ERR_NOT_FOUND_GAME_DIR": "未找到遊戲目錄",
     "ERR_NOT_FOUND_EXE": "未找到可執行檔",
     "ERR_WRITE_TARGET": "寫入目標設定失敗",
-    "ERR_LAUNCH_GAME": "啟動遊戲失敗",
+    "ERR_LAUNCH_GAME": "遊戲未能正常啟動",
     "ERR_GAME_CRASH_DURING_LAUNCH": "啟動過程中遊戲崩潰",
     "ERR_WAIT_KERNEL_TIMEOUT": "等待核心準備逾時",
     "ERR_COPY_WALK": "遍歷檔案失敗",
@@ -946,7 +946,7 @@
       "nh_err_exception": "未捕獲異常或未知錯誤",
       "nh_err_invalid_params": "參數無效",
       "nh_err_key_not_found": "遊戲安裝包校驗失敗，請刪除安裝包後重試",
-      "nh_err_unauthorized_caller": "調用者未授權",
+      "nh_err_unauthorized_caller": "請確保啟動器 exe 名稱未被修改（LeviLauncher.exe）",
       "nh_err_pipe_open_failed": "進度管道打開失敗",
       "nh_err_input_not_found": "輸入文件未找到",
       "nh_err_output_dir_invalid": "輸出目錄無效",

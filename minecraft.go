@@ -113,8 +113,8 @@ func (a *Minecraft) FetchLeviLaminaVersionDB() map[string][]string {
 	return res
 }
 
-func (a *Minecraft) InstallLeviLamina(mcVersion string, targetName string) string {
-	return mcservice.InstallLeviLamina(a.ctx, mcVersion, targetName)
+func (a *Minecraft) InstallLeviLamina(mcVersion string, targetName string, llVersion string) string {
+	return mcservice.InstallLeviLamina(a.ctx, mcVersion, targetName, llVersion)
 }
 
 func (a *Minecraft) UninstallLeviLamina(targetName string) string {
@@ -325,6 +325,19 @@ func (a *Minecraft) GetLatestLipVersion() (string, error) {
 	return lip.GetLatestVersion()
 }
 
+func (a *Minecraft) GetLipStatus() map[string]interface{} {
+	st := lip.CheckStatus()
+	return map[string]interface{}{
+		"path":        st.Path,
+		"installed":   st.Installed,
+		"upToDate":    st.UpToDate,
+		"localSha":    st.LocalSHA,
+		"embeddedSha": st.EmbeddedSHA,
+		"canCompare":  st.CanCompare,
+		"error":       st.Error,
+	}
+}
+
 func (a *Minecraft) GetResourceRulesStatus() map[string]interface{} {
 	st := resourcerules.CheckStatus(context.Background())
 	return map[string]interface{}{
@@ -351,6 +364,11 @@ func (a *Minecraft) startup() {
 	exePath, _ := os.Executable()
 	exeDir := filepath.Dir(exePath)
 	os.Chdir(exeDir)
+	go func() {
+		if err := lip.EnsureLatestWithError(a.ctx); err != nil {
+			log.Printf("lip: ensure latest failed: %v", err)
+		}
+	}()
 	launch.EnsureGamingServicesInstalled(a.ctx)
 	mcservice.ReconcileRegisteredFlags()
 }

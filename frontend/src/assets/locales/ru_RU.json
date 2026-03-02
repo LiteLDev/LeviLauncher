@@ -724,7 +724,10 @@
         "ll_select_version": "Версия LeviLamina",
         "ll_select_placeholder": "Выберите версию LeviLamina",
         "ll_upgrade_only_hint": "В настройках инстанса доступны только обновления до более новой версии.",
-        "ll_only_latest_when_current_unknown": "Текущую версию не удалось распознать; можно обновиться только до последней версии."
+        "ll_only_latest_when_current_unknown": "Текущую версию не удалось распознать; можно обновиться только до последней версии.",
+        "ll_remove_confirm_title": "Подтвердите удаление LeviLamina",
+        "ll_remove_confirm_body": "LeviLamina будет удалена из этого инстанса.",
+        "ll_remove_confirm_warning": "Это действие нельзя отменить."
       }
     },
     "logo": {

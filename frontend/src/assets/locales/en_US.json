@@ -742,7 +742,10 @@
         "ll_select_version": "LeviLamina Version",
         "ll_select_placeholder": "Select a LeviLamina version",
         "ll_upgrade_only_hint": "Only upgrades are allowed in instance settings.",
-        "ll_only_latest_when_current_unknown": "Current version cannot be parsed. Only the latest version can be updated."
+        "ll_only_latest_when_current_unknown": "Current version cannot be parsed. Only the latest version can be updated.",
+        "ll_remove_confirm_title": "Confirm Remove LeviLamina",
+        "ll_remove_confirm_body": "LeviLamina will be removed from this instance.",
+        "ll_remove_confirm_warning": "This action cannot be undone."
       }
     },
     "logo": {

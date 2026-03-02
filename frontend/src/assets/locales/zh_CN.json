@@ -742,7 +742,10 @@
         "ll_select_version": "LeviLamina 版本",
         "ll_select_placeholder": "请选择 LeviLamina 版本",
         "ll_upgrade_only_hint": "实例设置仅允许升级到更高版本。",
-        "ll_only_latest_when_current_unknown": "当前版本无法解析，仅允许更新到最新版本。"
+        "ll_only_latest_when_current_unknown": "当前版本无法解析，仅允许更新到最新版本。",
+        "ll_remove_confirm_title": "确认移除 LeviLamina",
+        "ll_remove_confirm_body": "将从当前实例中移除 LeviLamina。",
+        "ll_remove_confirm_warning": "此操作不可撤销。"
       }
     },
     "logo": {

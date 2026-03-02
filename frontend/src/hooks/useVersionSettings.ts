@@ -100,6 +100,11 @@ export const useVersionSettings = () => {
     onClose: llVersionSelectOnClose,
   } = useDisclosure();
   const {
+    isOpen: llUninstallConfirmOpen,
+    onOpen: llUninstallConfirmOnOpen,
+    onClose: llUninstallConfirmOnClose,
+  } = useDisclosure();
+  const {
     isOpen: rcOpen,
     onOpen: rcOnOpen,
     onOpenChange: rcOnOpenChange,
@@ -618,8 +623,17 @@ export const useVersionSettings = () => {
     await handleInstallLeviLamina();
   }, [llVersionSelectOnClose, handleInstallLeviLamina]);
 
-  const handleUninstallLL = React.useCallback(async () => {
-    if (!targetName) return;
+  const openLLUninstallConfirm = React.useCallback(() => {
+    llUninstallConfirmOnOpen();
+  }, [llUninstallConfirmOnOpen]);
+
+  const closeLLUninstallConfirm = React.useCallback(() => {
+    if (uninstallingLL) return;
+    llUninstallConfirmOnClose();
+  }, [llUninstallConfirmOnClose, uninstallingLL]);
+
+  const confirmUninstallLL = React.useCallback(async (): Promise<boolean> => {
+    if (!targetName) return false;
     setUninstallingLL(true);
     try {
       const err = await (minecraft as any)?.UninstallLeviLamina?.(targetName);
@@ -628,13 +642,16 @@ export const useVersionSettings = () => {
           description: resolveToastText(String(err)),
           color: "danger",
         });
+        return false;
       } else {
         setIsLLInstalled(false);
         setCurrentLLVersion("");
         addToast({ title: t("common.success") as string, color: "success" });
+        return true;
       }
     } catch (e) {
       addToast({ description: resolveToastText(String(e)), color: "danger" });
+      return false;
     } finally {
       setUninstallingLL(false);
     }
@@ -713,6 +730,7 @@ export const useVersionSettings = () => {
     llOnlyLatestSelectable,
     installingLL,
     uninstallingLL,
+    llUninstallConfirmOpen,
     llVersionSelectOpen,
     llVersionSelectOnOpenChange,
     llVersionSelectOnClose,
@@ -731,7 +749,9 @@ export const useVersionSettings = () => {
     proceedInstallLeviLamina,
     openLeviLaminaVersionSelect,
     confirmLeviLaminaVersionSelect,
+    openLLUninstallConfirm,
+    closeLLUninstallConfirm,
+    confirmUninstallLL,
     handleInstallLeviLamina,
-    handleUninstallLL,
   };
 };

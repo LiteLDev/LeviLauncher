@@ -375,11 +375,11 @@ export default function VersionSettingsPage() {
                         <div className="text-small text-default-500 dark:text-zinc-400">
                           {t("downloadpage.install.levilamina_desc")}
                         </div>
-                        <div className="mt-1 text-small font-mono">
-                          <span className="text-default-500 dark:text-zinc-400">
+                        <div className="mt-1 text-small font-mono leading-6">
+                          <span className="font-medium text-default-700 dark:text-zinc-300">
                             {t("versions.edit.loader.ll_current_version")}:
                           </span>{" "}
-                          <span className="font-semibold text-default-700 dark:text-zinc-200">
+                          <span className="font-bold text-default-900 dark:text-zinc-100">
                             {vs.currentLLVersion ||
                               (t(
                                 "versions.edit.loader.ll_not_installed",
@@ -395,7 +395,7 @@ export default function VersionSettingsPage() {
                             <Button
                               color="danger"
                               variant="flat"
-                              onPress={vs.handleUninstallLL}
+                              onPress={vs.openLLUninstallConfirm}
                               isDisabled={vs.installingLL || vs.uninstallingLL}
                               isLoading={vs.uninstallingLL}
                             >
@@ -728,6 +728,49 @@ export default function VersionSettingsPage() {
 
       <UnifiedModal
         size="md"
+        isOpen={vs.llUninstallConfirmOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            vs.openLLUninstallConfirm();
+            return;
+          }
+          vs.closeLLUninstallConfirm();
+        }}
+        type="error"
+        title={t("versions.edit.loader.ll_remove_confirm_title")}
+        cancelText={t("common.cancel")}
+        confirmText={t("common.remove")}
+        showCancelButton
+        isDismissable={!vs.uninstallingLL}
+        onCancel={() => vs.closeLLUninstallConfirm()}
+        onConfirm={async () => {
+          const ok = await vs.confirmUninstallLL();
+          if (ok) {
+            vs.closeLLUninstallConfirm();
+          }
+        }}
+        confirmButtonProps={{
+          color: "danger",
+          isLoading: vs.uninstallingLL,
+          isDisabled: vs.uninstallingLL,
+          className: "font-bold shadow-lg shadow-danger-500/20",
+        }}
+        cancelButtonProps={{
+          isDisabled: vs.uninstallingLL,
+        }}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-default-700 dark:text-zinc-300">
+            {t("versions.edit.loader.ll_remove_confirm_body")}
+          </p>
+          <p className="text-tiny text-danger-500 dark:text-danger-400 font-semibold">
+            {t("versions.edit.loader.ll_remove_confirm_warning")}
+          </p>
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
+        size="md"
         isOpen={vs.llVersionSelectOpen}
         onOpenChange={vs.llVersionSelectOnOpenChange}
         type="primary"
@@ -751,11 +794,11 @@ export default function VersionSettingsPage() {
         }}
       >
         <div className="space-y-3">
-          <div className="text-small font-mono">
-            <span className="text-default-500 dark:text-zinc-400">
+          <div className="text-small font-mono leading-6">
+            <span className="font-medium text-default-700 dark:text-zinc-300">
               {t("versions.edit.loader.ll_current_version")}:
             </span>{" "}
-            <span className="font-semibold text-default-700 dark:text-zinc-200">
+            <span className="font-bold text-default-900 dark:text-zinc-100">
               {vs.currentLLVersion ||
                 (t(
                   "versions.edit.loader.ll_not_installed",
@@ -773,7 +816,9 @@ export default function VersionSettingsPage() {
             }
             classNames={COMPONENT_STYLES.select}
             selectedKeys={
-              vs.selectedLLVersion ? new Set([vs.selectedLLVersion]) : new Set([])
+              vs.selectedLLVersion
+                ? new Set([vs.selectedLLVersion])
+                : new Set([])
             }
             onSelectionChange={(keys) => {
               const selected = Array.from(keys as unknown as Set<string>)[0];

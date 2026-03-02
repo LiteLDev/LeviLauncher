@@ -724,7 +724,10 @@
         "ll_select_version": "LeviLamina バージョン",
         "ll_select_placeholder": "LeviLamina バージョンを選択",
         "ll_upgrade_only_hint": "インスタンス設定ではアップグレードのみ可能です。",
-        "ll_only_latest_when_current_unknown": "現在のバージョンを解析できないため、最新バージョンへの更新のみ可能です。"
+        "ll_only_latest_when_current_unknown": "現在のバージョンを解析できないため、最新バージョンへの更新のみ可能です。",
+        "ll_remove_confirm_title": "LeviLamina の削除確認",
+        "ll_remove_confirm_body": "このインスタンスから LeviLamina を削除します。",
+        "ll_remove_confirm_warning": "この操作は元に戻せません。"
       }
     },
     "logo": {

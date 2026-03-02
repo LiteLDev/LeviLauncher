@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDisclosure } from "@heroui/react";
 import {
@@ -12,7 +12,6 @@ import {
   GetEnableBetaUpdates,
   GetLipVersion,
   IsLipInstalled,
-  GetLatestLipVersion,
   GetResourceRulesStatus,
   UpdateResourceRules,
   ListMinecraftProcesses,
@@ -60,6 +59,13 @@ export const useSettings = (i18n: { language: string }) => {
   // Discord RPC / Beta updates
   const [discordRpcEnabled, setDiscordRpcEnabled] = useState<boolean>(true);
   const [enableBetaUpdates, setEnableBetaUpdatesState] = useState<boolean>(false);
+  const [clarityEnabled, setClarityEnabledState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("ll.clarity.enabled") === "true";
+    } catch {
+      return false;
+    }
+  });
 
   // GDK
   const [gdkInstalled, setGdkInstalled] = useState<boolean>(false);
@@ -253,7 +259,11 @@ export const useSettings = (i18n: { language: string }) => {
   // Lip
   const [lipInstalled, setLipInstalled] = useState<boolean>(false);
   const [lipVersion, setLipVersion] = useState<string>("");
-  const [lipLatestVersion, setLipLatestVersion] = useState<string>("");
+  const [lipPath, setLipPath] = useState<string>("");
+  const [lipUpToDate, setLipUpToDate] = useState<boolean>(false);
+  const [lipLocalSha, setLipLocalSha] = useState<string>("");
+  const [lipEmbeddedSha, setLipEmbeddedSha] = useState<string>("");
+  const [lipStatusError, setLipStatusError] = useState<string>("");
   const [installingLip, setInstallingLip] = useState<boolean>(false);
   const [lipStatus, setLipStatus] = useState<string>("");
   const [lipProgress, setLipProgress] = useState<{
@@ -303,6 +313,16 @@ export const useSettings = (i18n: { language: string }) => {
   } = useDisclosure();
 
   // --- Handlers ---
+  const setClarityEnabled = (enabled: boolean) => {
+    setClarityEnabledState(enabled);
+    try {
+      localStorage.setItem("ll.clarity.enabled", enabled ? "true" : "false");
+      localStorage.setItem("ll.clarity.choiceMade", "1");
+      window.dispatchEvent(
+        new CustomEvent("ll-clarity-consent-changed", { detail: { enabled } }),
+      );
+    } catch {}
+  };
 
   const refreshSunTimes = async () => {
     setLoadingSunTimes(true);
@@ -358,6 +378,35 @@ export const useSettings = (i18n: { language: string }) => {
     }
   };
 
+  const refreshLipStatus = async () => {
+    try {
+      const getter = (minecraft as any)?.GetLipStatus;
+      const s = typeof getter === "function" ? ((await getter()) as any) : null;
+      setLipPath(String(s?.path || ""));
+      setLipInstalled(Boolean(s?.installed));
+      setLipUpToDate(Boolean(s?.upToDate));
+      setLipLocalSha(String(s?.localSha || ""));
+      setLipEmbeddedSha(String(s?.embeddedSha || ""));
+      setLipStatusError(String(s?.error || ""));
+    } catch (e: any) {
+      setLipStatusError(String(e?.message || e || "check failed"));
+      setLipUpToDate(false);
+    }
+
+    try {
+      const ok = await IsLipInstalled();
+      setLipInstalled(Boolean(ok));
+      if (ok) {
+        const v = await GetLipVersion();
+        setLipVersion(String(v || ""));
+      } else {
+        setLipVersion("");
+      }
+    } catch {
+      setLipVersion("");
+    }
+  };
+
   const refreshResourceRulesStatus = async () => {
     setResourceRulesChecking(true);
     try {
@@ -389,13 +438,6 @@ export const useSettings = (i18n: { language: string }) => {
       setResourceRulesUpdating(false);
     }
   };
-
-  // --- Computed ---
-
-  const hasLipUpdate = useMemo(() => {
-    if (!lipInstalled || !lipLatestVersion || !lipVersion) return false;
-    return lipLatestVersion.replace(/^v/, "") !== lipVersion.replace(/^v/, "");
-  }, [lipInstalled, lipLatestVersion, lipVersion]);
 
   // --- Effects ---
 
@@ -656,15 +698,10 @@ export const useSettings = (i18n: { language: string }) => {
   // Lip install events
   useEffect(() => {
     if (!hasBackend) return;
-    IsLipInstalled().then((ok) => {
-      setLipInstalled(Boolean(ok));
-      if (ok) {
-        GetLipVersion().then((v) => setLipVersion(String(v || "")));
-      }
-    });
-    GetLatestLipVersion()
-      .then((v) => setLipLatestVersion(String(v || "")))
-      .catch(() => {});
+    void refreshLipStatus();
+    const timer = setTimeout(() => {
+      void refreshLipStatus();
+    }, 1500);
 
     const offs: (() => void)[] = [];
     offs.push(
@@ -687,9 +724,9 @@ export const useSettings = (i18n: { language: string }) => {
         setInstallingLip(false);
         setLipStatus("done");
         setLipProgress({ percentage: 100, current: 0, total: 0 });
-        setLipInstalled(true);
         setLipVersion(String(e?.data || ""));
         setLipError("");
+        void refreshLipStatus();
       }),
     );
     offs.push(
@@ -697,9 +734,13 @@ export const useSettings = (i18n: { language: string }) => {
         setInstallingLip(false);
         setLipStatus("");
         setLipError(String(e?.data || ""));
+        void refreshLipStatus();
       }),
     );
-    return () => offs.forEach((off) => off());
+    return () => {
+      clearTimeout(timer);
+      offs.forEach((off) => off());
+    };
   }, [hasBackend]);
 
   useEffect(() => {
@@ -710,7 +751,6 @@ export const useSettings = (i18n: { language: string }) => {
   return {
     // Computed
     hasBackend,
-    hasLipUpdate,
 
     // Navigation
     navigate,
@@ -752,6 +792,8 @@ export const useSettings = (i18n: { language: string }) => {
     setDiscordRpcEnabled,
     enableBetaUpdates,
     setEnableBetaUpdates: setEnableBetaUpdatesState,
+    clarityEnabled,
+    setClarityEnabled,
 
     // GDK
     gdkInstalled,
@@ -838,7 +880,11 @@ export const useSettings = (i18n: { language: string }) => {
     // Lip
     lipInstalled,
     lipVersion,
-    lipLatestVersion,
+    lipPath,
+    lipUpToDate,
+    lipLocalSha,
+    lipEmbeddedSha,
+    lipStatusError,
     installingLip,
     setInstallingLip,
     lipStatus,
@@ -846,6 +892,7 @@ export const useSettings = (i18n: { language: string }) => {
     lipError,
     setLipError,
     lipProgressDisclosure,
+    refreshLipStatus,
 
     // Resource rules
     resourceRulesInstalled,

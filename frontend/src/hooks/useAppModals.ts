@@ -8,6 +8,10 @@ interface UseAppModalsOptions {
   setNavLocked: (v: boolean) => void;
 }
 
+const CLARITY_ENABLED_KEY = "ll.clarity.enabled";
+const CLARITY_CHOICE_KEY = "ll.clarity.choiceMade3";
+const CLARITY_EVENT_NAME = "ll-clarity-consent-changed";
+
 export const useAppModals = ({
   hasBackend,
   revealStarted,
@@ -16,30 +20,14 @@ export const useAppModals = ({
 }: UseAppModalsOptions) => {
   const [termsOpen, setTermsOpen] = useState<boolean>(false);
   const [termsCountdown, setTermsCountdown] = useState<number>(0);
+  const [clarityPromptOpen, setClarityPromptOpen] = useState<boolean>(false);
   const [updateOpen, setUpdateOpen] = useState<boolean>(false);
   const [updateVersion, setUpdateVersion] = useState<string>("");
   const [updateBody, setUpdateBody] = useState<string>("");
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
 
-  const acceptTerms = useCallback(() => {
+  const checkUpdate = useCallback(() => {
     try {
-      localStorage.setItem("ll.termsAccepted", "1");
-    } catch {}
-    setTermsOpen(false);
-    setNavLocked(Boolean((window as any).llNavLock));
-  }, [setNavLocked]);
-
-  useEffect(() => {
-    if (!hasBackend) return;
-    if (!revealStarted) return;
-    if (isUpdatingMode) return;
-    try {
-      const accepted = localStorage.getItem("ll.termsAccepted");
-      if (!accepted) {
-        setTermsOpen(true);
-        setNavLocked(true);
-        return;
-      }
       const ignored = localStorage.getItem("ll.ignoreVersion") || "";
       minecraft
         ?.CheckUpdate?.()
@@ -52,11 +40,87 @@ export const useAppModals = ({
             setUpdateBody(body);
             setUpdateOpen(true);
             setNavLocked(true);
+            return;
           }
+          setNavLocked(Boolean((window as any).llNavLock));
         })
-        .catch(() => {});
+        .catch(() => {
+          setNavLocked(Boolean((window as any).llNavLock));
+        });
     } catch {}
-  }, [hasBackend, revealStarted, isUpdatingMode, setNavLocked]);
+  }, [setNavLocked]);
+
+  const runPostTermsFlow = useCallback(() => {
+    try {
+      const onboarded = localStorage.getItem("ll.onboarded");
+      if (!onboarded) {
+        setNavLocked(Boolean((window as any).llNavLock));
+        return;
+      }
+      const clarityChoiceMade = localStorage.getItem(CLARITY_CHOICE_KEY);
+      if (!clarityChoiceMade) {
+        setClarityPromptOpen(true);
+        setNavLocked(true);
+        return;
+      }
+      checkUpdate();
+    } catch {}
+  }, [checkUpdate, setNavLocked]);
+
+  const acceptTerms = useCallback(() => {
+    try {
+      localStorage.setItem("ll.termsAccepted", "1");
+    } catch {}
+    setTermsOpen(false);
+    setNavLocked(Boolean((window as any).llNavLock));
+    runPostTermsFlow();
+  }, [runPostTermsFlow, setNavLocked]);
+
+  const applyClarityChoice = useCallback(
+    (enabled: boolean) => {
+      try {
+        localStorage.setItem(CLARITY_ENABLED_KEY, enabled ? "true" : "false");
+        localStorage.setItem(CLARITY_CHOICE_KEY, "1");
+        window.dispatchEvent(
+          new CustomEvent(CLARITY_EVENT_NAME, { detail: { enabled } }),
+        );
+      } catch {}
+
+      setClarityPromptOpen(false);
+      setNavLocked(Boolean((window as any).llNavLock));
+      checkUpdate();
+    },
+    [checkUpdate, setNavLocked],
+  );
+
+  const acceptClarity = useCallback(() => {
+    applyClarityChoice(true);
+  }, [applyClarityChoice]);
+
+  const declineClarity = useCallback(() => {
+    applyClarityChoice(false);
+  }, [applyClarityChoice]);
+
+  useEffect(() => {
+    if (!hasBackend) return;
+    if (!revealStarted) return;
+    if (isUpdatingMode) return;
+    try {
+      const accepted = localStorage.getItem("ll.termsAccepted");
+      if (!accepted) {
+        setTermsOpen(true);
+        setNavLocked(true);
+        return;
+      }
+      runPostTermsFlow();
+    } catch {}
+  }, [
+    hasBackend,
+    revealStarted,
+    isUpdatingMode,
+    setNavLocked,
+    runPostTermsFlow,
+  ]);
 
   useEffect(() => {
     if (!termsOpen) return;
@@ -95,6 +159,9 @@ export const useAppModals = ({
     termsOpen,
     termsCountdown,
     acceptTerms,
+    clarityPromptOpen,
+    acceptClarity,
+    declineClarity,
     updateOpen,
     updateVersion,
     updateBody,

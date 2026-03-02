@@ -12,6 +12,7 @@
   },
   "dependencies": {
     "@heroui/react": "^2.8.8",
+    "@microsoft/clarity": "^1.0.2",
     "@react-stately/utils": "^3.11.0",
     "@tailwindcss/postcss": "^4.1.18",
     "@tailwindcss/vite": "^4.1.18",

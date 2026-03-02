@@ -41,6 +41,7 @@ import {
   LuImage,
   LuFolderOpen,
   LuLayers,
+  LuShield,
 } from "react-icons/lu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -95,7 +96,6 @@ export const SettingsPage: React.FC = () => {
   const settings = useSettings(i18n);
   const {
     hasBackend,
-    hasLipUpdate,
     navigate,
     location,
     appVersion,
@@ -127,6 +127,8 @@ export const SettingsPage: React.FC = () => {
     setDiscordRpcEnabled,
     enableBetaUpdates,
     setEnableBetaUpdates,
+    clarityEnabled,
+    setClarityEnabled,
     gdkInstalled,
     gdkDlProgress,
     gdkDlSpeed,
@@ -195,7 +197,11 @@ export const SettingsPage: React.FC = () => {
     refreshSunTimes,
     lipInstalled,
     lipVersion,
-    lipLatestVersion,
+    lipPath,
+    lipUpToDate,
+    lipLocalSha,
+    lipEmbeddedSha,
+    lipStatusError,
     installingLip,
     setInstallingLip,
     lipStatus,
@@ -203,6 +209,7 @@ export const SettingsPage: React.FC = () => {
     lipError,
     setLipError,
     lipProgressDisclosure,
+    refreshLipStatus,
     resourceRulesInstalled,
     resourceRulesUpToDate,
     resourceRulesLocalSha,
@@ -266,6 +273,7 @@ export const SettingsPage: React.FC = () => {
                 />
                 <Tab key="components" title={t("settings.tabs.components")} />
                 <Tab key="others" title={t("settings.tabs.others")} />
+                <Tab key="privacy" title={t("settings.tabs.privacy")} />
                 <Tab key="updates" title={t("settings.tabs.updates")} />
                 <Tab key="about" title={t("settings.tabs.about")} />
               </Tabs>
@@ -1875,8 +1883,8 @@ export const SettingsPage: React.FC = () => {
                   <Divider className="bg-default-200/50" />
 
                   {/* LIP */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col gap-1 min-w-0">
                       <p className="font-medium">{t("settings.lip.title")}</p>
                       <p className="text-tiny text-default-500 dark:text-zinc-400">
                         {lipInstalled
@@ -1885,37 +1893,51 @@ export const SettingsPage: React.FC = () => {
                             })
                           : t("settings.lip.description")}
                       </p>
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
+                        {lipStatusError
+                          ? t("settings.lip.status.check_failed", {
+                              error: lipStatusError,
+                            })
+                          : lipInstalled
+                            ? lipUpToDate
+                              ? t("settings.lip.status.up_to_date")
+                              : t("settings.lip.status.outdated")
+                            : t("settings.lip.status.missing")}
+                      </p>
+                      {lipLocalSha || lipEmbeddedSha ? (
+                        <p
+                          className="text-tiny font-mono text-default-400 dark:text-zinc-500 truncate"
+                          title={`local: ${lipLocalSha || "-"} | embedded: ${lipEmbeddedSha || "-"}`}
+                        >
+                          {`local: ${lipLocalSha ? `${lipLocalSha.slice(0, 12)}...` : "-"} | embedded: ${lipEmbeddedSha ? `${lipEmbeddedSha.slice(0, 12)}...` : "-"}`}
+                        </p>
+                      ) : null}
+                      {lipPath ? (
+                        <p
+                          className="text-tiny font-mono text-default-400 dark:text-zinc-500 truncate"
+                          title={lipPath}
+                        >
+                          {t("settings.lip.path_label", { path: lipPath })}
+                        </p>
+                      ) : null}
                     </div>
-                    {lipInstalled ? (
-                      <div className="flex items-center gap-2">
-                        <Chip color="success" variant="flat">
-                          {t("settings.lip.installed_label")}
-                        </Chip>
-                        {hasLipUpdate && (
-                          <Button
-                            variant="bordered"
-                            radius="full"
-                            isLoading={installingLip}
-                            isDisabled={installingLip}
-                            onPress={() => {
-                              setInstallingLip(true);
-                              setLipError("");
-                              lipProgressDisclosure.onOpen();
-                              InstallLip().then((err) => {
-                                if (err) {
-                                  setInstallingLip(false);
-                                  setLipError(err);
-                                }
-                              });
-                            }}
-                          >
-                            {t("settings.lip.update_button", {
-                              version: lipLatestVersion,
-                            })}
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Chip
+                        color={
+                          lipUpToDate
+                            ? "success"
+                            : lipInstalled
+                              ? "warning"
+                              : "default"
+                        }
+                        variant="flat"
+                      >
+                        {lipUpToDate
+                          ? t("settings.lip.latest_label")
+                          : lipInstalled
+                            ? t("settings.lip.outdated_label")
+                            : t("settings.lip.missing_label")}
+                      </Chip>
                       <Button
                         radius="full"
                         variant="bordered"
@@ -1930,15 +1952,23 @@ export const SettingsPage: React.FC = () => {
                             if (err) {
                               setInstallingLip(false);
                               setLipError(err);
+                            } else {
+                              refreshLipStatus().finally(() => {
+                                setInstallingLip(false);
+                              });
                             }
                           });
                         }}
                       >
                         {installingLip
                           ? t("settings.lip.installing")
-                          : t("settings.lip.install_button")}
+                          : lipInstalled
+                            ? lipUpToDate
+                              ? t("settings.lip.check_button")
+                              : t("settings.lip.repair_button")
+                            : t("settings.lip.install_button")}
                       </Button>
-                    )}
+                    </div>
                   </div>
 
                   <Divider className="bg-default-200/50" />
@@ -2030,6 +2060,59 @@ export const SettingsPage: React.FC = () => {
                   >
                     {t("settings.process.scan")}
                   </Button>
+                </div>
+              )}
+
+              {selectedTab === "privacy" && (
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-600 dark:text-primary-500 shrink-0">
+                        <LuShield className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">
+                          {t("settings.privacy.analytics.title")}
+                        </p>
+                        <p className="text-tiny text-default-500 dark:text-zinc-400 max-w-2xl">
+                          {t("settings.privacy.analytics.desc")}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      size="sm"
+                      isSelected={clarityEnabled}
+                      onValueChange={setClarityEnabled}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
+                      }}
+                    />
+                  </div>
+
+                  <Divider className="bg-default-200/50" />
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      radius="full"
+                      variant="bordered"
+                      onPress={() =>
+                        Browser.OpenURL("https://clarity.microsoft.com/terms")
+                      }
+                    >
+                      {t("settings.privacy.links.clarity_terms")}
+                    </Button>
+                    <Button
+                      radius="full"
+                      variant="light"
+                      onPress={() =>
+                        Browser.OpenURL(
+                          "https://privacy.microsoft.com/privacystatement",
+                        )
+                      }
+                    >
+                      {t("settings.privacy.links.microsoft_privacy")}
+                    </Button>
+                  </div>
                 </div>
               )}
 

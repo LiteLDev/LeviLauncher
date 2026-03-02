@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { TermsModal } from "@/components/TermsModal";
 import { UpdateModal } from "@/components/UpdateModal";
+import { ClarityConsentModal } from "@/components/ClarityConsentModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { VersionStatusProvider } from "@/utils/VersionStatusContext";
@@ -135,6 +136,9 @@ function App() {
     termsOpen,
     termsCountdown,
     acceptTerms,
+    clarityPromptOpen,
+    acceptClarity,
+    declineClarity,
     updateOpen,
     updateVersion,
     updateBody,
@@ -440,6 +444,12 @@ function App() {
                     isOpen={termsOpen}
                     countdown={termsCountdown}
                     onAccept={acceptTerms}
+                  />
+
+                  <ClarityConsentModal
+                    isOpen={clarityPromptOpen}
+                    onEnable={acceptClarity}
+                    onKeepDisabled={declineClarity}
                   />
 
                   <UpdateModal

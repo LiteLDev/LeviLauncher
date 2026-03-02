@@ -5,6 +5,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { HeroUIProvider } from "@heroui/react";
+import Clarity from "@microsoft/clarity";
 import App from "./App";
 import {
   createHashRouter,
@@ -67,6 +68,44 @@ window.addEventListener("contextmenu", (e) => {
 const router = createHashRouter(
   createRoutesFromElements(<Route path="/*" element={<App />} />),
 );
+
+const CLARITY_PROJECT_ID = "voq9l7h41c";
+const CLARITY_ENABLED_KEY = "ll.clarity.enabled";
+let clarityInitialized = false;
+
+const applyClarityConsent = (enabled) => {
+  try {
+    if (enabled) {
+      if (!clarityInitialized) {
+        Clarity.init(CLARITY_PROJECT_ID);
+        clarityInitialized = true;
+      }
+      Clarity.consent(true);
+      return;
+    }
+
+    if (clarityInitialized) {
+      Clarity.consent(false);
+    }
+  } catch (error) {
+    console.error("Failed to apply Clarity consent", error);
+  }
+};
+
+const clarityEnabledOnStart = (() => {
+  try {
+    return localStorage.getItem(CLARITY_ENABLED_KEY) === "true";
+  } catch {
+    return false;
+  }
+})();
+
+applyClarityConsent(clarityEnabledOnStart);
+
+window.addEventListener("ll-clarity-consent-changed", (event) => {
+  const enabled = Boolean(event?.detail?.enabled);
+  applyClarityConsent(enabled);
+});
 
 root.render(
   <HeroUIProvider>

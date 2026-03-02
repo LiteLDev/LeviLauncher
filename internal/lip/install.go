@@ -1,22 +1,20 @@
 package lip
 
 import (
-	"archive/zip"
+	"context"
+	"crypto/sha256"
+	_ "embed"
+	"encoding/hex"
 	"fmt"
 	"io"
-	"net/http"
+	"log"
 	"os"
 	"os/exec"
 	"path/filepath"
-	"runtime"
 	"strings"
 	"syscall"
-	"time"
 
-	"github.com/Masterminds/semver/v3"
-	json "github.com/goccy/go-json"
-	"github.com/liteldev/LeviLauncher/internal/config"
-	"github.com/liteldev/LeviLauncher/internal/httpx"
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
@@ -26,19 +24,37 @@ const (
 	EventLipInstallProgress = "lip_install_progress"
 	EventLipInstallDone     = "lip_install_done"
 	EventLipInstallError    = "lip_install_error"
-	MaxLipVersionTag        = "v0.32.0"
 )
 
-func LipDir() string {
-	return filepath.Join(config.ConfigDir(), "lip")
+//go:embed lipd.exe
+var embeddedLipd []byte
+
+type Status struct {
+	Path        string `json:"path"`
+	Installed   bool   `json:"installed"`
+	UpToDate    bool   `json:"upToDate"`
+	LocalSHA    string `json:"localSHA256"`
+	EmbeddedSHA string `json:"embeddedSHA256"`
+	CanCompare  bool   `json:"canCompare"`
+	Error       string `json:"error"`
+}
+
+func appExeName() string {
+	exeName := "levilauncher.exe"
+	if exe, err := os.Executable(); err == nil {
+		if b := strings.TrimSpace(filepath.Base(exe)); b != "" {
+			exeName = strings.ToLower(b)
+		}
+	}
+	return exeName
+}
+
+func binDir() string {
+	return filepath.Join(apppath.AppData(), appExeName(), "bin")
 }
 
 func LipExePath() string {
-	exe := "lip"
-	if runtime.GOOS == "windows" {
-		exe += ".exe"
-	}
-	return filepath.Join(LipDir(), exe)
+	return filepath.Join(binDir(), "lipd.exe")
 }
 
 func IsInstalled() bool {
@@ -59,218 +75,181 @@ func GetVersion() string {
 }
 
 func GetLatestVersion() (string, error) {
-	apis := []string{
-		"https://api.github.com/repos/futrime/lip/releases/latest",
-		"https://cdn.gh-proxy.org/https://api.github.com/repos/futrime/lip/releases/latest",
-		"https://edgeone.gh-proxy.org/https://api.github.com/repos/futrime/lip/releases/latest",
-		"https://gh-proxy.org/https://api.github.com/repos/futrime/lip/releases/latest",
-		"https://hk.gh-proxy.org/https://api.github.com/repos/futrime/lip/releases/latest",
-		"https://ghproxy.vip/https://api.github.com/repos/futrime/lip/releases/latest",
-	}
-
-	var payload struct {
-		TagName string `json:"tag_name"`
-	}
-
-	for _, api := range apis {
-		req, err := http.NewRequest("GET", api, nil)
-		if err != nil {
-			continue
-		}
-		httpx.ApplyDefaultHeaders(req)
-		resp, err := http.DefaultClient.Do(req)
-		if err != nil {
-			continue
-		}
-		if resp.StatusCode != http.StatusOK {
-			resp.Body.Close()
-			continue
-		}
-		if err := json.NewDecoder(resp.Body).Decode(&payload); err == nil {
-			resp.Body.Close()
-			return clampLipVersionTag(payload.TagName), nil
-		}
-		resp.Body.Close()
-	}
-	return "", fmt.Errorf("failed to fetch latest version")
+	// Compatibility method: no network lookup anymore.
+	return strings.TrimSpace(GetVersion()), nil
 }
 
-func clampLipVersionTag(tagName string) string {
-	tag := strings.TrimSpace(tagName)
-	if tag == "" {
-		return MaxLipVersionTag
-	}
-
-	upper, err := semver.NewVersion(strings.TrimPrefix(MaxLipVersionTag, "v"))
+func fileSHA256Hex(path string) (string, error) {
+	f, err := os.Open(path)
 	if err != nil {
-		return MaxLipVersionTag
+		return "", err
+	}
+	defer f.Close()
+	h := sha256.New()
+	if _, err := io.Copy(h, f); err != nil {
+		return "", err
+	}
+	return strings.ToLower(hex.EncodeToString(h.Sum(nil))), nil
+}
+
+func bytesSHA256Hex(data []byte) string {
+	if len(data) == 0 {
+		return ""
+	}
+	sum := sha256.Sum256(data)
+	return strings.ToLower(hex.EncodeToString(sum[:]))
+}
+
+func extractErrCode(err error) string {
+	if err == nil {
+		return ""
+	}
+	msg := strings.TrimSpace(err.Error())
+	if msg == "" {
+		return "ERR_LIP_INSTALL_FAILED"
+	}
+	if idx := strings.Index(msg, ":"); idx > 0 {
+		head := strings.TrimSpace(msg[:idx])
+		if strings.HasPrefix(head, "ERR_") {
+			return head
+		}
+	}
+	if strings.HasPrefix(msg, "ERR_") {
+		return msg
+	}
+	return "ERR_LIP_INSTALL_FAILED"
+}
+
+func emit(event string, data any) {
+	app := application.Get()
+	if app == nil {
+		return
+	}
+	app.Event.Emit(event, data)
+}
+
+func EnsureLatestWithError(ctx context.Context) error {
+	_ = ctx
+
+	if len(embeddedLipd) == 0 {
+		return fmt.Errorf("ERR_LIP_EMBEDDED_MISSING")
 	}
 
-	got, err := semver.NewVersion(strings.TrimPrefix(tag, "v"))
+	target := LipExePath()
+	if err := os.MkdirAll(filepath.Dir(target), 0o755); err != nil {
+		return fmt.Errorf("ERR_LIP_CREATE_TARGET_DIR: %w", err)
+	}
+
+	embeddedSHA := bytesSHA256Hex(embeddedLipd)
+	localSHA, err := fileSHA256Hex(target)
+	if err == nil && strings.EqualFold(localSHA, embeddedSHA) {
+		return nil
+	}
+	if err != nil && !os.IsNotExist(err) {
+		return fmt.Errorf("ERR_LIP_READ_LOCAL_HASH: %w", err)
+	}
+
+	tmp := target + ".tmp"
+	if err := os.WriteFile(tmp, embeddedLipd, 0o755); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("ERR_LIP_WRITE_FILE: %w", err)
+	}
+	_ = os.Remove(target)
+	if err := os.Rename(tmp, target); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("ERR_LIP_REPLACE_FILE: %w", err)
+	}
+
+	verifySHA, err := fileSHA256Hex(target)
 	if err != nil {
-		return MaxLipVersionTag
+		return fmt.Errorf("ERR_LIP_READ_LOCAL_HASH: %w", err)
+	}
+	if !strings.EqualFold(verifySHA, embeddedSHA) {
+		return fmt.Errorf("ERR_LIP_VERIFY_HASH")
 	}
 
-	if got.GreaterThan(upper) {
-		return MaxLipVersionTag
+	return nil
+}
+
+func EnsureLatest(ctx context.Context) {
+	if err := EnsureLatestWithError(ctx); err != nil {
+		log.Printf("lip: ensure latest failed: %v", err)
+	}
+}
+
+func CheckStatus() Status {
+	out := Status{
+		Path:        LipExePath(),
+		EmbeddedSHA: bytesSHA256Hex(embeddedLipd),
+	}
+	if out.EmbeddedSHA != "" {
+		out.CanCompare = true
 	}
 
-	return "v" + got.String()
+	localSHA, err := fileSHA256Hex(out.Path)
+	if err == nil {
+		out.Installed = true
+		out.LocalSHA = strings.ToLower(localSHA)
+	} else if !os.IsNotExist(err) {
+		out.Error = fmt.Sprintf("local sha256: %v", err)
+	}
+
+	if out.CanCompare && out.Installed {
+		out.UpToDate = strings.EqualFold(out.LocalSHA, out.EmbeddedSHA)
+	}
+
+	return out
 }
 
 func Install() string {
-	application.Get().Event.Emit(EventLipInstallStatus, "checking_update")
-	tagName, err := GetLatestVersion()
-	if err != nil {
-		return "ERR_FETCH_RELEASE_FAILED"
+	emit(EventLipInstallStatus, "checking")
+	emit(EventLipInstallProgress, map[string]interface{}{
+		"percentage": 5.0,
+		"current":    0,
+		"total":      0,
+	})
+	st := CheckStatus()
+
+	if !st.Installed || !st.UpToDate {
+		emit(EventLipInstallStatus, "preparing")
+		emit(EventLipInstallProgress, map[string]interface{}{
+			"percentage": 20.0,
+			"current":    0,
+			"total":      0,
+		})
+		emit(EventLipInstallStatus, "writing")
+		emit(EventLipInstallProgress, map[string]interface{}{
+			"percentage": 60.0,
+			"current":    0,
+			"total":      0,
+		})
 	}
 
-	filename := "lip-cli-win-x64-self-contained.zip"
-	downloadUrl := fmt.Sprintf("https://github.com/futrime/lip/releases/download/%s/%s", tagName, filename)
-
-	tmpDir, err := os.MkdirTemp("", "lip_install_")
-	if err != nil {
-		return "ERR_CREATE_TEMP"
-	}
-	defer os.RemoveAll(tmpDir)
-
-	zipPath := filepath.Join(tmpDir, filename)
-
-	application.Get().Event.Emit(EventLipInstallStatus, "downloading")
-
-	proxies := []string{
-		"https://gh-proxy.org/",
-		"https://cdn.gh-proxy.org/",
-		"https://edgeone.gh-proxy.org/",
-		"https://hk.gh-proxy.org/",
+	if err := EnsureLatestWithError(context.Background()); err != nil {
+		code := extractErrCode(err)
+		emit(EventLipInstallError, code)
+		return code
 	}
 
-	if err := downloadFile(downloadUrl, zipPath); err != nil {
-		success := false
-		for _, proxy := range proxies {
-			proxyUrl := proxy + downloadUrl
-			if err := downloadFile(proxyUrl, zipPath); err == nil {
-				success = true
-				break
-			}
-		}
-		if !success {
-			return "ERR_DOWNLOAD_FAILED"
-		}
+	emit(EventLipInstallStatus, "verifying")
+	emit(EventLipInstallProgress, map[string]interface{}{
+		"percentage": 85.0,
+		"current":    0,
+		"total":      0,
+	})
+	verifyStatus := CheckStatus()
+	if !verifyStatus.Installed || (verifyStatus.CanCompare && !verifyStatus.UpToDate) {
+		code := "ERR_LIP_VERIFY_HASH"
+		emit(EventLipInstallError, code)
+		return code
 	}
 
-	application.Get().Event.Emit(EventLipInstallStatus, "extracting")
-	targetDir := LipDir()
-
-	os.RemoveAll(targetDir)
-
-	if err := os.MkdirAll(targetDir, 0755); err != nil {
-		return "ERR_CREATE_TARGET_DIR"
-	}
-
-	if err := unzip(zipPath, targetDir); err != nil {
-		return "ERR_UNZIP_FAILED"
-	}
-
-	application.Get().Event.Emit(EventLipInstallDone, strings.TrimPrefix(tagName, "v"))
+	emit(EventLipInstallStatus, "done")
+	emit(EventLipInstallProgress, map[string]interface{}{
+		"percentage": 100.0,
+		"current":    0,
+		"total":      0,
+	})
+	emit(EventLipInstallDone, GetVersion())
 	return ""
-}
-
-func downloadFile(url string, dest string) error {
-	req, err := http.NewRequest("GET", url, nil)
-	if err != nil {
-		return err
-	}
-	httpx.ApplyDefaultHeaders(req)
-	resp, err := http.DefaultClient.Do(req)
-	if err != nil {
-		return err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return fmt.Errorf("status %d", resp.StatusCode)
-	}
-
-	out, err := os.Create(dest)
-	if err != nil {
-		return err
-	}
-	defer out.Close()
-
-	total := resp.ContentLength
-	counter := &progressWriter{
-		total: float64(total),
-		onProgress: func(p float64, current float64, total float64) {
-			application.Get().Event.Emit(EventLipInstallProgress, map[string]interface{}{
-				"percentage": p,
-				"current":    current,
-				"total":      total,
-			})
-		},
-	}
-	_, err = io.Copy(out, io.TeeReader(resp.Body, counter))
-	return err
-}
-
-type progressWriter struct {
-	total      float64
-	current    float64
-	onProgress func(float64, float64, float64)
-	lastUpdate int64
-}
-
-func (pw *progressWriter) Write(p []byte) (int, error) {
-	n := len(p)
-	pw.current += float64(n)
-	now := time.Now().UnixMilli()
-	if now-pw.lastUpdate > 100 {
-		if pw.total > 0 {
-			pw.onProgress((pw.current/pw.total)*100, pw.current, pw.total)
-		}
-		pw.lastUpdate = now
-	}
-	return n, nil
-}
-
-func unzip(src string, dest string) error {
-	r, err := zip.OpenReader(src)
-	if err != nil {
-		return err
-	}
-	defer r.Close()
-
-	for _, f := range r.File {
-		fpath := filepath.Join(dest, f.Name)
-		if !strings.HasPrefix(fpath, filepath.Clean(dest)+string(os.PathSeparator)) {
-			continue
-		}
-
-		if f.FileInfo().IsDir() {
-			os.MkdirAll(fpath, os.ModePerm)
-			continue
-		}
-
-		if err = os.MkdirAll(filepath.Dir(fpath), os.ModePerm); err != nil {
-			return err
-		}
-
-		outFile, err := os.OpenFile(fpath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, f.Mode())
-		if err != nil {
-			return err
-		}
-
-		rc, err := f.Open()
-		if err != nil {
-			outFile.Close()
-			return err
-		}
-
-		_, err = io.Copy(outFile, rc)
-		outFile.Close()
-		rc.Close()
-		if err != nil {
-			return err
-		}
-	}
-	return nil
 }

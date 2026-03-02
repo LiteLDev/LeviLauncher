@@ -249,6 +249,8 @@
       "levilamina_label": "安裝 LeviLamina",
       "levilamina_desc": "自動安裝 LeviLamina 載入器",
       "version_label": "版本",
+      "ll_version_label": "LeviLamina 版本",
+      "ll_version_placeholder": "請選擇 LeviLamina 版本",
       "hint": "請稍候，此過程可能需要較長時間…",
       "estimated_size": "已寫入大小（估算）",
       "target": "安裝目標",
@@ -291,7 +293,8 @@
       "components": "第三方元件",
       "others": "其他設定",
       "updates": "軟體更新",
-      "about": "關於"
+      "about": "關於",
+      "privacy": "私隱"
     },
     "unsaved": {
       "title": "未儲存修改",
@@ -336,26 +339,36 @@
     },
     "lip": {
       "title": "LIP",
-      "description": "安裝 LIP 以管理套件與相依性",
+      "description": "使用內建 lipd 守護行程管理套件與相依性",
       "installed": "已安裝 v{{version}}",
-      "install_button": "安裝",
+      "path_label": "路徑：{{path}}",
+      "install_button": "安裝 / 修復",
+      "repair_button": "修復",
+      "check_button": "校驗",
       "installing": "正在安裝 LIP...",
-      "update_button": "更新至 {{version}}",
       "installed_label": "已安裝",
+      "latest_label": "最新",
+      "outdated_label": "需修復",
+      "missing_label": "缺失",
       "status": {
-        "fetching_version": "正在獲取版本資訊...",
-        "downloading": "正在下載...",
-        "extracting": "正在解壓...",
-        "setting_path": "正在設定環境變數...",
-        "success": "安裝成功！",
-        "failed": "安裝失敗"
+        "checking": "正在檢查本機狀態...",
+        "preparing": "正在準備檔案...",
+        "writing": "正在寫入 lipd.exe...",
+        "verifying": "正在校驗 SHA256...",
+        "up_to_date": "本機 SHA256 與內建二進位一致",
+        "outdated": "本機 SHA256 與內建二進位不一致",
+        "missing": "找不到本機 lipd.exe",
+        "check_failed": "狀態檢查失敗：{{error}}",
+        "done": "安裝完成"
       },
       "error": {
-        "fetch_version_failed": "獲取版本資訊失敗",
-        "download_failed": "下載失敗",
-        "extract_failed": "解壓失敗",
-        "set_path_failed": "設定環境變數失敗",
-        "unknown": "發生未知錯誤"
+        "lip_embedded_missing": "內建 lipd 二進位缺失",
+        "lip_create_target_dir": "建立目標目錄失敗",
+        "lip_read_local_hash": "讀取本機 SHA256 失敗",
+        "lip_write_file": "寫入 lipd.exe 失敗",
+        "lip_replace_file": "替換 lipd.exe 失敗",
+        "lip_verify_hash": "SHA256 校驗失敗",
+        "lip_install_failed": "確保 lipd.exe 失敗"
       }
     },
     "resource_rules": {
@@ -469,6 +482,16 @@
       "kill_all": "結束所有進程",
       "kill": "結束",
       "no_process": "未發現執行中的 Minecraft 進程"
+    },
+    "privacy": {
+      "analytics": {
+        "title": "匿名使用分析（Microsoft Clarity）",
+        "desc": "啟用後可幫助我們持續優化功能與介面。你可隨時在此關閉。"
+      },
+      "links": {
+        "clarity_terms": "Clarity 服務條款",
+        "microsoft_privacy": "Microsoft 私隱聲明"
+      }
     }
   },
   "downloadmodal": {
@@ -694,6 +717,14 @@
       "unregister_success": {
         "title": "取消註冊成功",
         "body": "已成功取消註冊，現在可以刪除此實例了。"
+      },
+      "loader": {
+        "ll_current_version": "目前 LeviLamina 版本",
+        "ll_not_installed": "未安裝",
+        "ll_select_version": "LeviLamina 版本",
+        "ll_select_placeholder": "請選擇 LeviLamina 版本",
+        "ll_upgrade_only_hint": "實例設定僅允許升級到更高版本。",
+        "ll_only_latest_when_current_unknown": "目前版本無法解析，僅允許更新到最新版本。"
       }
     },
     "logo": {
@@ -740,6 +771,7 @@
     "ERR_ACCESS_VERSIONS_DIR": "無法存取版本目錄",
     "ERR_ACCESS_INSTALLERS_DIR": "無法存取安裝包目錄",
     "ERR_READ_VERSIONS_DIR": "無法讀取版本目錄",
+    "ERR_LL_VERSION_UNSUPPORTED": "所選 LeviLamina 版本不受目前遊戲版本支援",
     "ERR_NAME_EXISTS": "名稱已存在",
     "ERR_INVALID_NAME": "無效的名稱",
     "ERR_NOT_FOUND_OLD": "未找到原目錄",
@@ -848,6 +880,15 @@
       "body": "您更改了內容路徑但尚未儲存。是否儲存後完成引導？",
       "cancel": "取消",
       "save": "儲存並完成"
+    },
+    "privacy": {
+      "title": "私隱與使用資料",
+      "subtitle": "請選擇是否啟用匿名分析",
+      "desc": "啟用後，LeviLauncher 會透過 Microsoft Clarity 收集匿名操作資料（例如點擊、頁面停留）以改善易用性。不會收集帳號資料、遊戲資訊、磁碟內容，僅適用於前端頁面。",
+      "links": {
+        "clarity_terms": "Clarity 服務條款",
+        "microsoft_privacy": "Microsoft 私隱聲明"
+      }
     }
   },
   "contentdownload": {
@@ -952,6 +993,16 @@
       "nh_err_output_dir_invalid": "輸出目錄無效",
       "nh_err_parse_failed": "包解析失敗",
       "nh_err_extract_failed": "解壓失敗"
+    }
+  },
+  "clarity": {
+    "prompt": {
+      "title": "願意幫助我們改進 LeviLauncher 嗎？",
+      "body": "若你同意，我們會透過 Microsoft Clarity 收集匿名操作資料，用於優化功能與介面體驗。不會收集帳號資料、遊戲資訊、磁碟內容，僅適用於前端頁面。你可隨時在「設定 > 私隱」中關閉。",
+      "enable": "同意並啟用",
+      "disable": "暫不啟用",
+      "clarity_terms": "Clarity 服務條款",
+      "microsoft_privacy": "Microsoft 私隱聲明"
     }
   }
 }

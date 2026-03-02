@@ -249,6 +249,8 @@
       "levilamina_label": "LeviLamina をインストール",
       "levilamina_desc": "LeviLamina ローダーを自動的にインストールします",
       "version_label": "バージョン",
+      "ll_version_label": "LeviLamina バージョン",
+      "ll_version_placeholder": "LeviLamina バージョンを選択",
       "hint": "この処理には時間がかかる場合があります。お待ちください…",
       "estimated_size": "書き込みサイズ (推定)",
       "target": "インストール先",
@@ -291,7 +293,8 @@
       "components": "サードパーティ製コンポーネント",
       "others": "その他",
       "updates": "アップデート",
-      "about": "情報"
+      "about": "情報",
+      "privacy": "Privacy"
     },
     "unsaved": {
       "title": "保存されていない変更",
@@ -336,26 +339,36 @@
     },
     "lip": {
       "title": "lip",
-      "description": "パッケージと依存関係を管理するためにlipをインストールしてください",
+      "description": "Use built-in lipd daemon to manage packages and dependencies",
       "installed": "v{{version}} をインストール済み",
-      "install_button": "インストール",
+      "path_label": "Path: {{path}}",
+      "install_button": "Install / Repair",
+      "repair_button": "Repair",
+      "check_button": "Check",
       "installing": "LIPをインストール中...",
-      "update_button": "{{version}} に更新",
       "installed_label": "インストール済み",
+      "latest_label": "Latest",
+      "outdated_label": "Outdated",
+      "missing_label": "Missing",
       "status": {
-        "fetching_version": "バージョン情報を取得中...",
-        "downloading": "ダウンロード中...",
-        "extracting": "解凍中...",
-        "setting_path": "環境変数を設定中...",
-        "success": "インストール成功！",
-        "failed": "インストール失敗"
+        "checking": "Checking local status...",
+        "preparing": "Preparing files...",
+        "writing": "Writing lipd.exe...",
+        "verifying": "Verifying SHA256...",
+        "up_to_date": "Local SHA256 matches embedded binary",
+        "outdated": "Local SHA256 differs from embedded binary",
+        "missing": "Local lipd.exe not found",
+        "check_failed": "Status check failed: {{error}}",
+        "done": "Installation complete"
       },
       "error": {
-        "fetch_version_failed": "バージョン情報の取得に失敗しました",
-        "download_failed": "ダウンロードに失敗しました",
-        "extract_failed": "解凍に失敗しました",
-        "set_path_failed": "環境変数の設定に失敗しました",
-        "unknown": "不明なエラーが発生しました"
+        "lip_embedded_missing": "Embedded lipd binary is missing",
+        "lip_create_target_dir": "Failed to create target directory",
+        "lip_read_local_hash": "Failed to read local SHA256",
+        "lip_write_file": "Failed to write lipd.exe",
+        "lip_replace_file": "Failed to replace lipd.exe",
+        "lip_verify_hash": "SHA256 verification failed",
+        "lip_install_failed": "Failed to ensure lipd.exe"
       }
     },
     "resource_rules": {
@@ -469,6 +482,16 @@
       "kill_all": "すべてのプロセスを終了",
       "kill": "終了",
       "no_process": "実行中の Minecraft プロセスが見つかりません"
+    },
+    "privacy": {
+      "analytics": {
+        "title": "Anonymous Usage Analytics (Microsoft Clarity)",
+        "desc": "When enabled, this helps us improve features and UI. You can turn it off at any time."
+      },
+      "links": {
+        "clarity_terms": "Clarity Terms",
+        "microsoft_privacy": "Microsoft Privacy Statement"
+      }
     }
   },
   "downloadmodal": {
@@ -694,6 +717,14 @@
       "unregister_success": {
         "title": "登録解除成功",
         "body": "登録解除に成功しました。これでバージョンを削除できます。"
+      },
+      "loader": {
+        "ll_current_version": "現在の LeviLamina バージョン",
+        "ll_not_installed": "未インストール",
+        "ll_select_version": "LeviLamina バージョン",
+        "ll_select_placeholder": "LeviLamina バージョンを選択",
+        "ll_upgrade_only_hint": "インスタンス設定ではアップグレードのみ可能です。",
+        "ll_only_latest_when_current_unknown": "現在のバージョンを解析できないため、最新バージョンへの更新のみ可能です。"
       }
     },
     "logo": {
@@ -738,6 +769,7 @@
     "ERR_ACCESS_VERSIONS_DIR": "versions ディレクトリにアクセスできません",
     "ERR_ACCESS_INSTALLERS_DIR": "installers ディレクトリにアクセスできません",
     "ERR_READ_VERSIONS_DIR": "versions ディレクトリの読み取りに失敗しました",
+    "ERR_LL_VERSION_UNSUPPORTED": "選択した LeviLamina バージョンはこのゲームバージョンではサポートされていません",
     "ERR_NAME_EXISTS": "その名前は既に存在します",
     "ERR_INVALID_NAME": "無効な名前です",
     "ERR_ICON_DECODE": "アイコンのデコードに失敗しました",
@@ -848,6 +880,15 @@
       "body": "コンテンツパスに未保存の変更があります。保存して終了しますか？",
       "cancel": "キャンセル",
       "save": "保存して完了"
+    },
+    "privacy": {
+      "title": "Privacy & Usage Data",
+      "subtitle": "Choose whether to enable anonymous analytics",
+      "desc": "If enabled, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data (such as clicks and page flow) to improve usability. It does not collect account information, game information, or disk content, and only applies to frontend pages.",
+      "links": {
+        "clarity_terms": "Clarity Terms",
+        "microsoft_privacy": "Microsoft Privacy Statement"
+      }
     }
   },
   "contentdownload": {
@@ -952,6 +993,16 @@
       "nh_err_output_dir_invalid": "出力ディレクトリが無効です",
       "nh_err_parse_failed": "パッケージの解析に失敗しました",
       "nh_err_extract_failed": "解凍に失敗しました"
+    }
+  },
+  "clarity": {
+    "prompt": {
+      "title": "Help improve LeviLauncher?",
+      "body": "With your permission, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data to improve features and UI. It does not collect account information, game information, or disk content, and only applies to frontend pages. You can change this anytime in Settings > Privacy.",
+      "enable": "Allow and Enable",
+      "disable": "Not Now",
+      "clarity_terms": "Clarity Terms",
+      "microsoft_privacy": "Microsoft Privacy Statement"
     }
   }
 }

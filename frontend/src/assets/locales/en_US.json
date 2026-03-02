@@ -249,6 +249,8 @@
       "levilamina_label": "Install LeviLamina",
       "levilamina_desc": "Automatically install LeviLamina loader",
       "version_label": "Version",
+      "ll_version_label": "LeviLamina Version",
+      "ll_version_placeholder": "Select a LeviLamina version",
       "hint": "Please wait, this process may take a while…",
       "estimated_size": "Written size (estimated)",
       "target": "Install Target",
@@ -290,6 +292,15 @@
       "body": "You have unsaved changes to the content path. Do you want to save before finishing?",
       "cancel": "Cancel",
       "save": "Save and Finish"
+    },
+    "privacy": {
+      "title": "Privacy & Usage Data",
+      "subtitle": "Choose whether to enable anonymous analytics",
+      "desc": "If enabled, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data (such as clicks and page flow) to improve usability. It does not collect account information, game information, or disk content, and only applies to frontend pages.",
+      "links": {
+        "clarity_terms": "Clarity Terms",
+        "microsoft_privacy": "Microsoft Privacy Statement"
+      }
     }
   },
   "settings": {
@@ -303,7 +314,8 @@
       "components": "Third-party Components",
       "others": "Others",
       "updates": "Updates",
-      "about": "About"
+      "about": "About",
+      "privacy": "Privacy"
     },
     "unsaved": {
       "title": "Unsaved Changes",
@@ -348,24 +360,36 @@
     },
     "lip": {
       "title": "lip",
-      "description": "Install lip to manage packages and dependencies",
+      "description": "Use built-in lipd daemon to manage packages and dependencies",
       "installed": "Installed v{{version}}",
-      "install_button": "Install",
+      "path_label": "Path: {{path}}",
+      "install_button": "Install / Repair",
+      "repair_button": "Repair",
+      "check_button": "Check",
       "installing": "Installing LIP...",
-      "update_button": "Update to {{version}}",
       "installed_label": "Installed",
+      "latest_label": "Latest",
+      "outdated_label": "Outdated",
+      "missing_label": "Missing",
       "status": {
-        "checking_update": "Checking for updates...",
-        "downloading": "Downloading...",
-        "extracting": "Extracting...",
+        "checking": "Checking local status...",
+        "preparing": "Preparing files...",
+        "writing": "Writing lipd.exe...",
+        "verifying": "Verifying SHA256...",
+        "up_to_date": "Local SHA256 matches embedded binary",
+        "outdated": "Local SHA256 differs from embedded binary",
+        "missing": "Local lipd.exe not found",
+        "check_failed": "Status check failed: {{error}}",
         "done": "Installation complete"
       },
       "error": {
-        "fetch_release_failed": "Failed to fetch release info",
-        "create_temp": "Failed to create temp directory",
-        "download_failed": "Download failed",
-        "create_target_dir": "Failed to create target directory",
-        "unzip_failed": "Unzip failed"
+        "lip_embedded_missing": "Embedded lipd binary is missing",
+        "lip_create_target_dir": "Failed to create target directory",
+        "lip_read_local_hash": "Failed to read local SHA256",
+        "lip_write_file": "Failed to write lipd.exe",
+        "lip_replace_file": "Failed to replace lipd.exe",
+        "lip_verify_hash": "SHA256 verification failed",
+        "lip_install_failed": "Failed to ensure lipd.exe"
       }
     },
     "resource_rules": {
@@ -479,6 +503,16 @@
       "sunrise_time": "Sunrise Today",
       "sunset_time": "Sunset Today",
       "sun_fetch_failed": "Failed to fetch sunrise/sunset times"
+    },
+    "privacy": {
+      "analytics": {
+        "title": "Anonymous Usage Analytics (Microsoft Clarity)",
+        "desc": "When enabled, this helps us improve features and UI. You can turn it off at any time."
+      },
+      "links": {
+        "clarity_terms": "Clarity Terms",
+        "microsoft_privacy": "Microsoft Privacy Statement"
+      }
     }
   },
   "downloadmodal": {
@@ -701,6 +735,14 @@
       "unregister_success": {
         "title": "Unregister Successful",
         "body": "Successfully unregistered. You can now delete this version."
+      },
+      "loader": {
+        "ll_current_version": "Current LeviLamina Version",
+        "ll_not_installed": "Not installed",
+        "ll_select_version": "LeviLamina Version",
+        "ll_select_placeholder": "Select a LeviLamina version",
+        "ll_upgrade_only_hint": "Only upgrades are allowed in instance settings.",
+        "ll_only_latest_when_current_unknown": "Current version cannot be parsed. Only the latest version can be updated."
       }
     },
     "logo": {
@@ -748,6 +790,7 @@
     "ERR_ACCESS_VERSIONS_DIR": "Cannot access versions directory",
     "ERR_ACCESS_INSTALLERS_DIR": "Cannot access installers directory",
     "ERR_READ_VERSIONS_DIR": "Failed to read versions directory",
+    "ERR_LL_VERSION_UNSUPPORTED": "Selected LeviLamina version is not supported for this game version",
     "ERR_NAME_EXISTS": "Name already exists",
     "ERR_INVALID_NAME": "Invalid name",
     "ERR_ICON_DECODE": "Icon decode failed",
@@ -950,6 +993,16 @@
       "nh_err_output_dir_invalid": "Output directory invalid",
       "nh_err_parse_failed": "Package parsing failed",
       "nh_err_extract_failed": "Decompression failed"
+    }
+  },
+  "clarity": {
+    "prompt": {
+      "title": "Help improve LeviLauncher?",
+      "body": "With your permission, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data to improve features and UI. It does not collect account information, game information, or disk content, and only applies to frontend pages. You can change this anytime in Settings > Privacy.",
+      "enable": "Allow and Enable",
+      "disable": "Not Now",
+      "clarity_terms": "Clarity Terms",
+      "microsoft_privacy": "Microsoft Privacy Statement"
     }
   }
 }

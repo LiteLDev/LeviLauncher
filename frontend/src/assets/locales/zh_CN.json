@@ -249,6 +249,8 @@
       "levilamina_label": "安装 LeviLamina",
       "levilamina_desc": "自动安装 LeviLamina 加载器",
       "version_label": "版本",
+      "ll_version_label": "LeviLamina 版本",
+      "ll_version_placeholder": "请选择 LeviLamina 版本",
       "hint": "请稍候，此过程可能需要较长时间…",
       "estimated_size": "已写入大小（估算）",
       "target": "安装目标",
@@ -290,6 +292,15 @@
       "body": "您更改了内容路径但尚未保存。是否保存后完成引导？",
       "cancel": "取消",
       "save": "保存并完成"
+    },
+    "privacy": {
+      "title": "隐私与使用数据",
+      "subtitle": "请选择是否开启匿名分析",
+      "desc": "开启后，LeviLauncher 会通过 Microsoft Clarity 收集匿名操作数据（如点击、页面停留）来改进易用性。不会收集账号信息、游戏信息、磁盘内容，仅应用于前端页面。",
+      "links": {
+        "clarity_terms": "Clarity 条款",
+        "microsoft_privacy": "Microsoft 隐私声明"
+      }
     }
   },
   "settings": {
@@ -303,7 +314,8 @@
       "components": "第三方组件",
       "others": "其他设置",
       "updates": "软件更新",
-      "about": "关于"
+      "about": "关于",
+      "privacy": "隐私"
     },
     "unsaved": {
       "title": "未保存修改",
@@ -348,24 +360,36 @@
     },
     "lip": {
       "title": "lip",
-      "description": "安装 lip 以管理包和依赖项",
+      "description": "使用内置 lipd 守护进程管理包和依赖",
       "installed": "已安装 v{{version}}",
-      "install_button": "安装",
+      "path_label": "路径：{{path}}",
+      "install_button": "安装 / 修复",
+      "repair_button": "修复",
+      "check_button": "校验",
       "installing": "正在安装 LIP...",
-      "update_button": "更新至 {{version}}",
       "installed_label": "已安装",
+      "latest_label": "最新",
+      "outdated_label": "需修复",
+      "missing_label": "缺失",
       "status": {
-        "checking_update": "正在检查更新...",
-        "downloading": "正在下载...",
-        "extracting": "正在解压...",
+        "checking": "正在检查本地状态...",
+        "preparing": "正在准备文件...",
+        "writing": "正在写入 lipd.exe...",
+        "verifying": "正在校验 SHA256...",
+        "up_to_date": "本地 SHA256 与内置二进制一致",
+        "outdated": "本地 SHA256 与内置二进制不一致",
+        "missing": "未找到本地 lipd.exe",
+        "check_failed": "状态检查失败：{{error}}",
         "done": "安装完成"
       },
       "error": {
-        "fetch_release_failed": "获取版本信息失败",
-        "create_temp": "创建临时目录失败",
-        "download_failed": "下载失败",
-        "create_target_dir": "创建目标目录失败",
-        "unzip_failed": "解压失败"
+        "lip_embedded_missing": "内置 lipd 二进制缺失",
+        "lip_create_target_dir": "创建目标目录失败",
+        "lip_read_local_hash": "读取本地 SHA256 失败",
+        "lip_write_file": "写入 lipd.exe 失败",
+        "lip_replace_file": "替换 lipd.exe 失败",
+        "lip_verify_hash": "SHA256 校验失败",
+        "lip_install_failed": "确保 lipd.exe 失败"
       }
     },
     "resource_rules": {
@@ -479,6 +503,16 @@
       "kill_all": "结束所有进程",
       "kill": "结束",
       "no_process": "未发现运行中的 Minecraft 进程"
+    },
+    "privacy": {
+      "analytics": {
+        "title": "匿名使用分析（Microsoft Clarity）",
+        "desc": "开启后可帮助我们持续优化功能和界面。你可以随时在这里关闭。"
+      },
+      "links": {
+        "clarity_terms": "Clarity 条款",
+        "microsoft_privacy": "Microsoft 隐私声明"
+      }
     }
   },
   "downloadmodal": {
@@ -701,6 +735,14 @@
       "unregister_success": {
         "title": "取消注册成功",
         "body": "已成功取消注册，现在可以删除该实例了。"
+      },
+      "loader": {
+        "ll_current_version": "当前 LeviLamina 版本",
+        "ll_not_installed": "未安装",
+        "ll_select_version": "LeviLamina 版本",
+        "ll_select_placeholder": "请选择 LeviLamina 版本",
+        "ll_upgrade_only_hint": "实例设置仅允许升级到更高版本。",
+        "ll_only_latest_when_current_unknown": "当前版本无法解析，仅允许更新到最新版本。"
       }
     },
     "logo": {
@@ -750,6 +792,7 @@
     "ERR_ACCESS_VERSIONS_DIR": "无法访问版本目录",
     "ERR_ACCESS_INSTALLERS_DIR": "无法访问安装包目录",
     "ERR_READ_VERSIONS_DIR": "无法读取版本目录",
+    "ERR_LL_VERSION_UNSUPPORTED": "所选 LeviLamina 版本不受当前游戏版本支持",
     "ERR_NAME_EXISTS": "名称已存在",
     "ERR_INVALID_NAME": "无效的名称",
     "ERR_NOT_FOUND_OLD": "未找到原目录",
@@ -950,6 +993,16 @@
       "nh_err_output_dir_invalid": "输出目录无效",
       "nh_err_parse_failed": "包解析失败",
       "nh_err_extract_failed": "解压失败"
+    }
+  },
+  "clarity": {
+    "prompt": {
+      "title": "愿意帮助我们改进 LeviLauncher 吗？",
+      "body": "如果你同意，我们会通过 Microsoft Clarity 收集匿名操作数据，用于优化功能和界面体验。不会收集账号信息、游戏信息、磁盘内容，仅应用于前端页面。你可随时在“设置 > 隐私”中关闭。",
+      "enable": "同意并开启",
+      "disable": "暂不开启",
+      "clarity_terms": "Clarity 服务条款",
+      "microsoft_privacy": "Microsoft 隐私声明"
     }
   }
 }

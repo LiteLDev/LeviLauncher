@@ -249,6 +249,8 @@
       "levilamina_label": "Установить LeviLamina",
       "levilamina_desc": "Автоматически установить загрузчик LeviLamina",
       "version_label": "Версия",
+      "ll_version_label": "Версия LeviLamina",
+      "ll_version_placeholder": "Выберите версию LeviLamina",
       "hint": "Пожалуйста, подождите, процесс может занять некоторое время…",
       "estimated_size": "Записываемый объём (приблизительно)",
       "target": "Цель установки",
@@ -291,7 +293,8 @@
       "components": "Сторонние компоненты",
       "others": "Другие",
       "updates": "Обновления",
-      "about": "О программе"
+      "about": "О программе",
+      "privacy": "Privacy"
     },
     "unsaved": {
       "title": "Есть несохранённые изменения",
@@ -336,26 +339,36 @@
     },
     "lip": {
       "title": "lip",
-      "description": "Установите lip для управления пакетами и зависимостями",
+      "description": "Use built-in lipd daemon to manage packages and dependencies",
       "installed": "Установлен v{{version}}",
-      "install_button": "Установить",
+      "path_label": "Path: {{path}}",
+      "install_button": "Install / Repair",
+      "repair_button": "Repair",
+      "check_button": "Check",
       "installing": "Установка",
-      "update_button": "Обновить до {{version}}",
       "installed_label": "Установлен",
+      "latest_label": "Latest",
+      "outdated_label": "Outdated",
+      "missing_label": "Missing",
       "status": {
-        "fetching_version": "Получение информации о версии...",
-        "downloading": "Загрузка...",
-        "extracting": "Распаковка...",
-        "setting_path": "Настройка переменных окружения...",
-        "success": "Установка завершена успешно!",
-        "failed": "Ошибка установки"
+        "checking": "Checking local status...",
+        "preparing": "Preparing files...",
+        "writing": "Writing lipd.exe...",
+        "verifying": "Verifying SHA256...",
+        "up_to_date": "Local SHA256 matches embedded binary",
+        "outdated": "Local SHA256 differs from embedded binary",
+        "missing": "Local lipd.exe not found",
+        "check_failed": "Status check failed: {{error}}",
+        "done": "Installation complete"
       },
       "error": {
-        "fetch_version_failed": "Не удалось получить информацию о версии",
-        "download_failed": "Ошибка загрузки",
-        "extract_failed": "Ошибка распаковки",
-        "set_path_failed": "Не удалось настроить переменные окружения",
-        "unknown": "Произошла неизвестная ошибка"
+        "lip_embedded_missing": "Embedded lipd binary is missing",
+        "lip_create_target_dir": "Failed to create target directory",
+        "lip_read_local_hash": "Failed to read local SHA256",
+        "lip_write_file": "Failed to write lipd.exe",
+        "lip_replace_file": "Failed to replace lipd.exe",
+        "lip_verify_hash": "SHA256 verification failed",
+        "lip_install_failed": "Failed to ensure lipd.exe"
       }
     },
     "resource_rules": {
@@ -469,6 +482,16 @@
       "kill_all": "Завершить все процессы",
       "kill": "Завершить",
       "no_process": "Запущенные процессы Minecraft не найдены"
+    },
+    "privacy": {
+      "analytics": {
+        "title": "Anonymous Usage Analytics (Microsoft Clarity)",
+        "desc": "When enabled, this helps us improve features and UI. You can turn it off at any time."
+      },
+      "links": {
+        "clarity_terms": "Clarity Terms",
+        "microsoft_privacy": "Microsoft Privacy Statement"
+      }
     }
   },
   "downloadmodal": {
@@ -694,6 +717,14 @@
       "unregister_success": {
         "title": "Отмена регистрации выполнена",
         "body": "Успешно отменена регистрация. Теперь можно удалить эту версию."
+      },
+      "loader": {
+        "ll_current_version": "Текущая версия LeviLamina",
+        "ll_not_installed": "Не установлено",
+        "ll_select_version": "Версия LeviLamina",
+        "ll_select_placeholder": "Выберите версию LeviLamina",
+        "ll_upgrade_only_hint": "В настройках инстанса доступны только обновления до более новой версии.",
+        "ll_only_latest_when_current_unknown": "Текущую версию не удалось распознать; можно обновиться только до последней версии."
       }
     },
     "logo": {
@@ -738,6 +769,7 @@
     "ERR_ACCESS_VERSIONS_DIR": "Нет доступа к папке versions",
     "ERR_ACCESS_INSTALLERS_DIR": "Нет доступа к папке installers",
     "ERR_READ_VERSIONS_DIR": "Не удалось прочитать папку versions",
+    "ERR_LL_VERSION_UNSUPPORTED": "Выбранная версия LeviLamina не поддерживается для этой версии игры",
     "ERR_NAME_EXISTS": "Имя уже существует",
     "ERR_INVALID_NAME": "Недопустимое имя",
     "ERR_ICON_DECODE": "Ошибка декодирования иконки",
@@ -848,6 +880,15 @@
       "body": "У вас есть несохранённые изменения пути к контенту. Сохранить перед завершением?",
       "cancel": "Отмена",
       "save": "Сохранить и завершить"
+    },
+    "privacy": {
+      "title": "Privacy & Usage Data",
+      "subtitle": "Choose whether to enable anonymous analytics",
+      "desc": "If enabled, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data (such as clicks and page flow) to improve usability. It does not collect account information, game information, or disk content, and only applies to frontend pages.",
+      "links": {
+        "clarity_terms": "Clarity Terms",
+        "microsoft_privacy": "Microsoft Privacy Statement"
+      }
     }
   },
   "contentdownload": {
@@ -952,6 +993,16 @@
       "nh_err_output_dir_invalid": "Неверный выходной каталог",
       "nh_err_parse_failed": "Ошибка разбора пакета",
       "nh_err_extract_failed": "Ошибка распаковки"
+    }
+  },
+  "clarity": {
+    "prompt": {
+      "title": "Help improve LeviLauncher?",
+      "body": "With your permission, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data to improve features and UI. It does not collect account information, game information, or disk content, and only applies to frontend pages. You can change this anytime in Settings > Privacy.",
+      "enable": "Allow and Enable",
+      "disable": "Not Now",
+      "clarity_terms": "Clarity Terms",
+      "microsoft_privacy": "Microsoft Privacy Statement"
     }
   }
 }

@@ -8,6 +8,7 @@
 *.dylib
 
 !/internal/peeditor/PeEditor.exe
+!/internal/lip/lipd.exe
 
 # Test binary, built with `go test -c`
 *.test

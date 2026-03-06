@@ -742,7 +742,7 @@ const CurseForgeModPage: React.FC = () => {
           <CardBody className="p-6">
             <div ref={tabsRef} className="flex w-full flex-col scroll-mt-24">
               <Tabs
-                aria-label="Mod Details"
+                aria-label={t("curseforge.mod_details_aria_label")}
                 variant="underlined"
                 color="primary"
                 selectedKey={selectedTab}
@@ -757,7 +757,7 @@ const CurseForgeModPage: React.FC = () => {
                     "group-data-[selected=true]:text-primary-600 dark:group-data-[selected=true]:text-primary-500 font-bold",
                 }}
               >
-                <Tab key="description" title="Description">
+                <Tab key="description" title={t("curseforge.mod_tabs.description")}>
                   <div className="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-primary-600 dark:prose-a:text-primary-500">
                     {description ? (
                       <div
@@ -767,15 +767,17 @@ const CurseForgeModPage: React.FC = () => {
                     ) : (
                       <div className="flex flex-col items-center justify-center py-12 text-default-400 gap-3">
                         <Spinner color="primary" />
-                        <p>Loading description...</p>
+                        <p>{t("curseforge.loading_description")}</p>
                       </div>
                     )}
                   </div>
                 </Tab>
-                <Tab key="files" title="Files">
+                <Tab key="files" title={t("curseforge.mod_tabs.files")}>
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-lg font-semibold">All Files</h3>
+                      <h3 className="text-lg font-semibold">
+                        {t("curseforge.mod_files.title")}
+                      </h3>
                       <div className="w-48">
                         <Select
                           label={t("curseforge.minecraft_version")}
@@ -805,20 +807,32 @@ const CurseForgeModPage: React.FC = () => {
 
                     {filteredFiles.length > 0 ? (
                       <Table
-                        aria-label="Mod files table"
+                        aria-label={t("curseforge.mod_files.table_aria_label")}
                         removeWrapper
                         classNames={COMPONENT_STYLES.table}
                       >
                         <TableHeader>
-                          <TableColumn>Type</TableColumn>
-                          <TableColumn>Name</TableColumn>
-                          <TableColumn>Uploaded</TableColumn>
-                          <TableColumn>Size</TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.type")}
+                          </TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.name")}
+                          </TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.uploaded")}
+                          </TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.size")}
+                          </TableColumn>
                           <TableColumn>
                             {t("curseforge.minecraft_version")}
                           </TableColumn>
-                          <TableColumn>Downloads</TableColumn>
-                          <TableColumn>Actions</TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.downloads")}
+                          </TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.actions")}
+                          </TableColumn>
                         </TableHeader>
                         <TableBody>
                           {filteredFiles.map((file) => {

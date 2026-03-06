@@ -113,6 +113,26 @@ func isLipInstallAlreadyInstalledError(err error) bool {
 		(strings.Contains(msg, "cannot install package") && strings.Contains(msg, "already installed"))
 }
 
+func isLipInstallAlreadyInstalledErrorForPackage(err error, packageRef string) bool {
+	if !isLipInstallAlreadyInstalledError(err) {
+		return false
+	}
+
+	target := strings.ToLower(strings.TrimSpace(packageRef))
+	if target == "" {
+		return true
+	}
+
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	if strings.Contains(msg, target) {
+		return true
+	}
+	if hash := strings.Index(target, "#"); hash > 0 {
+		return strings.Contains(msg, target[:hash])
+	}
+	return false
+}
+
 func FetchLeviLaminaVersionDB() (map[string][]string, error) {
 	urls := []string{
 		"https://cdn.jsdelivr.net/gh/LiteLDev/levilamina-client-version-db@main/version-db.json",
@@ -211,6 +231,9 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 	if explicitInstalled {
 		log.Printf("Updating LeviLamina %s for %s using LIP", llVersion, targetName)
 		if err := lip.UpdatePackagesViaDaemon(ctx, targetDir, []string{pkg}); err != nil {
+			if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
+				return code
+			}
 			log.Printf("InstallLeviLamina: lipd update failed: %v", err)
 			return "ERR_LIP_INSTALL_FAILED"
 		}
@@ -219,12 +242,18 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 
 	log.Printf("Installing LeviLamina %s for %s using LIP", llVersion, targetName)
 	if err := lip.InstallPackagesViaDaemon(ctx, targetDir, []string{pkg}); err != nil {
-		if !isLipInstallAlreadyInstalledError(err) {
+		if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
+			return code
+		}
+		if !isLipInstallAlreadyInstalledErrorForPackage(err, basePkg) {
 			log.Printf("InstallLeviLamina: lipd install failed: %v", err)
 			return "ERR_LIP_INSTALL_FAILED"
 		}
 		log.Printf("InstallLeviLamina: package already installed, switching to update: %v", err)
 		if updateErr := lip.UpdatePackagesViaDaemon(ctx, targetDir, []string{pkg}); updateErr != nil {
+			if code := lip.ErrorCode(updateErr); code == "ERR_LIP_NOT_INSTALLED" {
+				return code
+			}
 			log.Printf("InstallLeviLamina: lipd update failed: %v", updateErr)
 			return "ERR_LIP_INSTALL_FAILED"
 		}
@@ -251,7 +280,10 @@ func UninstallLeviLamina(ctx context.Context, targetName string) string {
 
 	// Uninstall the top-level package only; dependency cleanup is resolved by LIP.
 	pkgs := []string{"github.com/LiteLDev/LeviLamina#client"}
-	if err := lip.UninstallPackagesViaDaemon(ctx, targetDir, pkgs); err != nil {
+	if err := lip.UninstallPackagesViaDaemon(ctx, targetDir, pkgs, true); err != nil {
+		if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
+			return code
+		}
 		log.Printf("UninstallLeviLamina: lipd uninstall failed: %v", err)
 		return "ERR_LIP_UNINSTALL_FAILED"
 	}

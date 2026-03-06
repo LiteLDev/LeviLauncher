@@ -121,6 +121,18 @@ func (a *Minecraft) UninstallLeviLamina(targetName string) string {
 	return mcservice.UninstallLeviLamina(a.ctx, targetName)
 }
 
+func (a *Minecraft) InstallLIPPackage(targetName string, identifier string, version string) string {
+	return mcservice.InstallLIPPackage(a.ctx, targetName, identifier, version)
+}
+
+func (a *Minecraft) UninstallLIPPackage(targetName string, identifier string) string {
+	return mcservice.UninstallLIPPackage(a.ctx, targetName, identifier)
+}
+
+func (a *Minecraft) GetLIPPackageInstallState(targetName string, identifier string) types.LIPPackageInstallState {
+	return mcservice.GetLIPPackageInstallState(a.ctx, targetName, identifier)
+}
+
 type KnownFolder struct {
 	Name string `json:"name"`
 	Path string `json:"path"`
@@ -309,6 +321,10 @@ func (a *Minecraft) GetLIPPackage(identifier string) (*liptypes.GetPackageRespon
 	return a.lipClient.GetPackage(identifier)
 }
 
+func (a *Minecraft) GetLIPPackageReadme(projectURL string) (string, error) {
+	return lip.FetchPackageReadme(projectURL)
+}
+
 func (a *Minecraft) InstallLip() string {
 	return lip.Install()
 }
@@ -328,13 +344,12 @@ func (a *Minecraft) GetLatestLipVersion() (string, error) {
 func (a *Minecraft) GetLipStatus() map[string]interface{} {
 	st := lip.CheckStatus()
 	return map[string]interface{}{
-		"path":        st.Path,
-		"installed":   st.Installed,
-		"upToDate":    st.UpToDate,
-		"localSha":    st.LocalSHA,
-		"embeddedSha": st.EmbeddedSHA,
-		"canCompare":  st.CanCompare,
-		"error":       st.Error,
+		"path":           st.Path,
+		"installed":      st.Installed,
+		"upToDate":       st.UpToDate,
+		"currentVersion": st.CurrentVersion,
+		"latestVersion":  st.LatestVersion,
+		"error":          st.Error,
 	}
 }
 
@@ -364,11 +379,6 @@ func (a *Minecraft) startup() {
 	exePath, _ := os.Executable()
 	exeDir := filepath.Dir(exePath)
 	os.Chdir(exeDir)
-	go func() {
-		if err := lip.EnsureLatestWithError(a.ctx); err != nil {
-			log.Printf("lip: ensure latest failed: %v", err)
-		}
-	}()
 	launch.EnsureGamingServicesInstalled(a.ctx)
 	mcservice.ReconcileRegisteredFlags()
 }

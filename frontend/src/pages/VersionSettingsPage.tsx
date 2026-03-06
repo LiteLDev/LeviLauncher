@@ -375,7 +375,7 @@ export default function VersionSettingsPage() {
                         <div className="text-small text-default-500 dark:text-zinc-400">
                           {t("downloadpage.install.levilamina_desc")}
                         </div>
-                        <div className="mt-1 text-small font-mono leading-6">
+                        <div className="mt-1 text-small leading-6">
                           <span className="font-medium text-default-700 dark:text-zinc-300">
                             {t("versions.edit.loader.ll_current_version")}:
                           </span>{" "}
@@ -794,7 +794,7 @@ export default function VersionSettingsPage() {
         }}
       >
         <div className="space-y-3">
-          <div className="text-small font-mono leading-6">
+          <div className="text-small leading-6">
             <span className="font-medium text-default-700 dark:text-zinc-300">
               {t("versions.edit.loader.ll_current_version")}:
             </span>{" "}

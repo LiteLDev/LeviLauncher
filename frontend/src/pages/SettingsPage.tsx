@@ -197,10 +197,9 @@ export const SettingsPage: React.FC = () => {
     refreshSunTimes,
     lipInstalled,
     lipVersion,
+    lipLatestVersion,
     lipPath,
     lipUpToDate,
-    lipLocalSha,
-    lipEmbeddedSha,
     lipStatusError,
     installingLip,
     setInstallingLip,
@@ -239,6 +238,16 @@ export const SettingsPage: React.FC = () => {
   const activeCustomThemeColor = normalizeHexColor(
     themeSettingMode === "light" ? lightCustomThemeColor : darkCustomThemeColor,
   );
+  const lipSummaryText = React.useMemo(() => {
+    if (!lipInstalled) {
+      return t("settings.lip.status.missing");
+    }
+    return t("settings.lip.version_label", {
+      currentVersion: lipVersion || t("settings.lip.unknown_version"),
+      latestVersion: lipLatestVersion || t("settings.lip.unknown_version"),
+    });
+  }, [lipInstalled, lipLatestVersion, lipVersion, t]);
+
   const customThemeIconColor =
     getColorLuminance(activeCustomThemeColor) > 0.6 ? "#111827" : "#ffffff";
 
@@ -1886,40 +1895,12 @@ export const SettingsPage: React.FC = () => {
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col gap-1 min-w-0">
                       <p className="font-medium">{t("settings.lip.title")}</p>
-                      <p className="text-tiny text-default-500 dark:text-zinc-400">
-                        {lipInstalled
-                          ? t("settings.lip.installed", {
-                              version: lipVersion,
-                            })
-                          : t("settings.lip.description")}
+                      <p
+                        className="text-tiny text-default-500 dark:text-zinc-400 truncate"
+                        title={lipSummaryText}
+                      >
+                        {lipSummaryText}
                       </p>
-                      <p className="text-tiny text-default-500 dark:text-zinc-400">
-                        {lipStatusError
-                          ? t("settings.lip.status.check_failed", {
-                              error: lipStatusError,
-                            })
-                          : lipInstalled
-                            ? lipUpToDate
-                              ? t("settings.lip.status.up_to_date")
-                              : t("settings.lip.status.outdated")
-                            : t("settings.lip.status.missing")}
-                      </p>
-                      {lipLocalSha || lipEmbeddedSha ? (
-                        <p
-                          className="text-tiny font-mono text-default-400 dark:text-zinc-500 truncate"
-                          title={`local: ${lipLocalSha || "-"} | embedded: ${lipEmbeddedSha || "-"}`}
-                        >
-                          {`local: ${lipLocalSha ? `${lipLocalSha.slice(0, 12)}...` : "-"} | embedded: ${lipEmbeddedSha ? `${lipEmbeddedSha.slice(0, 12)}...` : "-"}`}
-                        </p>
-                      ) : null}
-                      {lipPath ? (
-                        <p
-                          className="text-tiny font-mono text-default-400 dark:text-zinc-500 truncate"
-                          title={lipPath}
-                        >
-                          {t("settings.lip.path_label", { path: lipPath })}
-                        </p>
-                      ) : null}
                     </div>
                     <div className="flex items-center gap-2 shrink-0">
                       <Chip
@@ -1945,6 +1926,11 @@ export const SettingsPage: React.FC = () => {
                         isLoading={installingLip}
                         isDisabled={installingLip}
                         onPress={() => {
+                          if (lipInstalled && lipUpToDate) {
+                            setLipError("");
+                            void refreshLipStatus();
+                            return;
+                          }
                           setInstallingLip(true);
                           setLipError("");
                           lipProgressDisclosure.onOpen();
@@ -1965,7 +1951,7 @@ export const SettingsPage: React.FC = () => {
                           : lipInstalled
                             ? lipUpToDate
                               ? t("settings.lip.check_button")
-                              : t("settings.lip.repair_button")
+                              : t("settings.lip.update_button")
                             : t("settings.lip.install_button")}
                       </Button>
                     </div>

@@ -21,6 +21,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
@@ -196,6 +197,11 @@ func init() {
 	application.RegisterEvent[string](update.EventAppUpdateStatus)
 	application.RegisterEvent[update.AppUpdateProgress](update.EventAppUpdateProgress)
 	application.RegisterEvent[string](update.EventAppUpdateError)
+	// lip daemon task stream
+	application.RegisterEvent[lip.LipTaskStartedEvent](lip.EventLipTaskStarted)
+	application.RegisterEvent[lip.LipTaskLogEvent](lip.EventLipTaskLog)
+	application.RegisterEvent[lip.LipTaskProgressEvent](lip.EventLipTaskProgress)
+	application.RegisterEvent[lip.LipTaskFinishedEvent](lip.EventLipTaskFinished)
 	application.RegisterEvent[types.FilesDroppedEvent]("files-dropped")
 }
 

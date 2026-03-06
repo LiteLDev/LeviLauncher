@@ -55,6 +55,7 @@ func GetMods(mcname string) (result []types.ModInfo) {
 		modinfo.Version = ManifestJson.Version
 		modinfo.Type = ManifestJson.Type
 		modinfo.Author = ManifestJson.Author
+		modinfo.Folder = modDir
 		result = append(result, modinfo)
 	}
 	return result

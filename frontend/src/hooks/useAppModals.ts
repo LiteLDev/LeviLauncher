@@ -11,6 +11,12 @@ interface UseAppModalsOptions {
 const CLARITY_ENABLED_KEY = "ll.clarity.enabled";
 const CLARITY_CHOICE_KEY = "ll.clarity.choiceMade3";
 const CLARITY_EVENT_NAME = "ll-clarity-consent-changed";
+const LIP_IGNORE_VERSION_KEY = "ll.ignoreLipVersion";
+
+const normalizeVersion = (value: unknown): string =>
+  String(value || "")
+    .trim()
+    .replace(/^v/i, "");
 
 export const useAppModals = ({
   hasBackend,
@@ -25,6 +31,48 @@ export const useAppModals = ({
   const [updateVersion, setUpdateVersion] = useState<string>("");
   const [updateBody, setUpdateBody] = useState<string>("");
   const [updateLoading, setUpdateLoading] = useState<boolean>(false);
+  const [lipUpdateOpen, setLipUpdateOpen] = useState<boolean>(false);
+  const [lipCurrentVersion, setLipCurrentVersion] = useState<string>("");
+  const [lipLatestVersion, setLipLatestVersion] = useState<string>("");
+
+  const checkLipUpdate = useCallback(() => {
+    try {
+      const ignored = normalizeVersion(
+        localStorage.getItem(LIP_IGNORE_VERSION_KEY) || "",
+      );
+      const getter = (minecraft as any)?.GetLipStatus;
+      if (typeof getter !== "function") {
+        setNavLocked(Boolean((window as any).llNavLock));
+        return;
+      }
+      getter()
+        .then((res: any) => {
+          const installed = Boolean(res?.installed);
+          const upToDate = Boolean(res?.upToDate);
+          const currentVersion = normalizeVersion(res?.currentVersion);
+          const latestVersion = normalizeVersion(res?.latestVersion);
+          if (
+            installed &&
+            !upToDate &&
+            currentVersion &&
+            latestVersion &&
+            latestVersion !== ignored
+          ) {
+            setLipCurrentVersion(currentVersion);
+            setLipLatestVersion(latestVersion);
+            setLipUpdateOpen(true);
+            setNavLocked(true);
+            return;
+          }
+          setNavLocked(Boolean((window as any).llNavLock));
+        })
+        .catch(() => {
+          setNavLocked(Boolean((window as any).llNavLock));
+        });
+    } catch {
+      setNavLocked(Boolean((window as any).llNavLock));
+    }
+  }, [setNavLocked]);
 
   const checkUpdate = useCallback(() => {
     try {
@@ -42,13 +90,13 @@ export const useAppModals = ({
             setNavLocked(true);
             return;
           }
-          setNavLocked(Boolean((window as any).llNavLock));
+          checkLipUpdate();
         })
         .catch(() => {
-          setNavLocked(Boolean((window as any).llNavLock));
+          checkLipUpdate();
         });
     } catch {}
-  }, [setNavLocked]);
+  }, [checkLipUpdate, setNavLocked]);
 
   const runPostTermsFlow = useCallback(() => {
     try {
@@ -166,7 +214,11 @@ export const useAppModals = ({
     updateVersion,
     updateBody,
     updateLoading,
+    lipUpdateOpen,
+    lipCurrentVersion,
+    lipLatestVersion,
     setUpdateOpen,
     setUpdateLoading,
+    setLipUpdateOpen,
   };
 };

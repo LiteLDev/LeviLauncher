@@ -2,7 +2,6 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDisclosure, addToast } from "@heroui/react";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import {
   DeleteVersionFolder,
   GetVersionLogoDataUrl,
@@ -13,16 +12,27 @@ import {
   ValidateVersionFolderName,
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
+import {
+  clearCurrentVersionName,
+  readCurrentVersionName,
+} from "@/utils/currentVersion";
+import { useModIntelligence } from "@/utils/ModIntelligenceContext";
+import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { useTranslation } from "react-i18next";
 
 export const useVersionSettings = () => {
   const { t } = useTranslation();
+  const { runWithLipTask } = useLipTaskConsole();
+  const {
+    ensureInstanceHydrated,
+    getInstanceSnapshot,
+    refreshInstance,
+    snapshotRevision,
+  } = useModIntelligence();
   const navigate = useNavigate();
   const location = useLocation() as any;
   const initialName: string = String(location?.state?.name || "");
-  const returnToPath: string = String(
-    location?.state?.returnTo || "/versions",
-  );
+  const returnToPath: string = String(location?.state?.returnTo || "/versions");
   const hasBackend = minecraft !== undefined;
 
   // Form state
@@ -199,24 +209,39 @@ export const useVersionSettings = () => {
 
   // Load LL install status
   React.useEffect(() => {
-    if (selectedTab === "loader" && targetName) {
-      GetMods(targetName)
-        .then((mods: any[]) => {
-          if (mods) {
-            const llMod = mods.find((m: any) => m?.name === "LeviLamina");
-            setIsLLInstalled(Boolean(llMod));
-            setCurrentLLVersion(String(llMod?.version || "").trim());
-            return;
-          }
-          setIsLLInstalled(false);
-          setCurrentLLVersion("");
-        })
-        .catch(() => {
-          setIsLLInstalled(false);
-          setCurrentLLVersion("");
+    if (selectedTab !== "loader" || !targetName) return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        await ensureInstanceHydrated(targetName, {
+          background: true,
+          reason: "version-settings-loader-state",
         });
-    }
-  }, [selectedTab, targetName, installingLL, uninstallingLL]);
+        if (cancelled) return;
+        const snapshot = getInstanceSnapshot(targetName);
+        setIsLLInstalled(Boolean(snapshot?.llState?.installed));
+        setCurrentLLVersion(
+          String(snapshot?.llState?.installedVersion || "").trim(),
+        );
+      } catch {
+        if (cancelled) return;
+        setIsLLInstalled(false);
+        setCurrentLLVersion("");
+      }
+    };
+    void run();
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    ensureInstanceHydrated,
+    getInstanceSnapshot,
+    selectedTab,
+    snapshotRevision,
+    targetName,
+    installingLL,
+    uninstallingLL,
+  ]);
 
   React.useEffect(() => {
     setLLSupportedVersions(getSupportedLLVersions(gameVersion));
@@ -270,9 +295,7 @@ export const useVersionSettings = () => {
             setEnableRenderDragon(!!meta?.enableRenderDragon);
             setOriginalRenderDragon(!!meta?.enableRenderDragon);
             setEnableCtrlRReloadResources(!!meta?.enableCtrlRReloadResources);
-            setOriginalCtrlRReloadResources(
-              !!meta?.enableCtrlRReloadResources,
-            );
+            setOriginalCtrlRReloadResources(!!meta?.enableCtrlRReloadResources);
             setEnvVars(String(meta?.envVars || ""));
             setOriginalEnvVars(String(meta?.envVars || ""));
             setLaunchArgs(String(meta?.launchArgs || ""));
@@ -500,9 +523,10 @@ export const useVersionSettings = () => {
         setDeleteOpen(false);
         setDeleteSuccessMsg(targetName);
         try {
-          const cur = localStorage.getItem("ll.currentVersionName") || "";
-          if (cur === targetName)
-            localStorage.removeItem("ll.currentVersionName");
+          const cur = readCurrentVersionName();
+          if (cur === targetName) {
+            clearCurrentVersionName("version-settings.delete");
+          }
         } catch {}
         setDeleteSuccessOpen(true);
       }
@@ -514,43 +538,51 @@ export const useVersionSettings = () => {
   }, [hasBackend, targetName]);
 
   // LeviLamina install handlers
-  const proceedInstallLeviLamina = React.useCallback(async (forcedVersion?: string) => {
-    if (!hasBackend || !targetName || !gameVersion) return;
-    const installVersion = String(
-      forcedVersion || selectedLLVersion || latestLLVersion || "",
-    ).trim();
-    if (!installVersion) {
-      addToast({
-        description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
-        color: "danger",
-      });
-      return;
-    }
-    setInstallingLL(true);
-    try {
-      const isLip = await (minecraft as any)?.IsLipInstalled();
-      if (!isLip) {
+  const proceedInstallLeviLamina = React.useCallback(
+    async (forcedVersion?: string) => {
+      if (!hasBackend || !targetName || !gameVersion) return;
+      const installVersion = String(
+        forcedVersion || selectedLLVersion || latestLLVersion || "",
+      ).trim();
+      if (!installVersion) {
         addToast({
-          description: resolveToastText("mods.err_lip_not_installed"),
+          description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
           color: "danger",
         });
-        setInstallingLL(false);
         return;
       }
-      const installLL = (minecraft as any)?.InstallLeviLamina;
-      if (typeof installLL === "function") {
-        const err: string = await installLL(
-          gameVersion,
-          targetName,
-          installVersion,
-        );
-        if (err) {
-          let msg = err;
-          if (err.includes("ERR_LIP_INSTALL_FAILED")) {
-            msg = "mods.err_lip_install_failed_suggestion";
-          }
-          addToast({ description: resolveToastText(msg), color: "danger" });
-        } else {
+      setInstallingLL(true);
+      try {
+        const isLip = await (minecraft as any)?.IsLipInstalled();
+        if (!isLip) {
+          addToast({
+            description: resolveToastText("mods.err_lip_not_installed"),
+            color: "danger",
+          });
+          setInstallingLL(false);
+          return;
+        }
+        const installLL = (minecraft as any)?.InstallLeviLamina;
+        if (typeof installLL === "function") {
+          await runWithLipTask(
+            {
+              action: isLLInstalled ? "update" : "install",
+              target: targetName,
+              methods: ["Install", "Update"],
+              feedbackMode: "on_error",
+            },
+            async ({ addLog }) => {
+              const err: string = await installLL(
+                gameVersion,
+                targetName,
+                installVersion,
+              );
+              if (err) {
+                throw new Error(String(err));
+              }
+            },
+          );
+          await refreshInstance(targetName, "version-settings-install-ll");
           setIsLLInstalled(true);
           setCurrentLLVersion(installVersion);
           addToast({
@@ -558,24 +590,33 @@ export const useVersionSettings = () => {
             color: "success",
           });
         }
+      } catch (e: any) {
+        const rawError = String(e?.message || e || "");
+        let toastKeyOrMsg = rawError;
+        if (rawError.includes("ERR_LIP_INSTALL_FAILED")) {
+          toastKeyOrMsg = "mods.err_lip_install_failed_suggestion";
+        }
+        addToast({
+          description: resolveToastText(toastKeyOrMsg),
+          color: "danger",
+        });
+      } finally {
+        setInstallingLL(false);
       }
-    } catch (e: any) {
-      addToast({
-        description: resolveToastText(String(e?.message || e)),
-        color: "danger",
-      });
-    } finally {
-      setInstallingLL(false);
-    }
-  }, [
-    hasBackend,
-    targetName,
-    gameVersion,
-    selectedLLVersion,
-    latestLLVersion,
-    resolveToastText,
-    t,
-  ]);
+    },
+    [
+      gameVersion,
+      hasBackend,
+      isLLInstalled,
+      latestLLVersion,
+      resolveToastText,
+      runWithLipTask,
+      refreshInstance,
+      selectedLLVersion,
+      t,
+      targetName,
+    ],
+  );
 
   const handleInstallLeviLamina = React.useCallback(async () => {
     if (!hasBackend || !targetName || !gameVersion) return;
@@ -636,26 +677,38 @@ export const useVersionSettings = () => {
     if (!targetName) return false;
     setUninstallingLL(true);
     try {
-      const err = await (minecraft as any)?.UninstallLeviLamina?.(targetName);
-      if (err) {
-        addToast({
-          description: resolveToastText(String(err)),
-          color: "danger",
-        });
-        return false;
-      } else {
-        setIsLLInstalled(false);
-        setCurrentLLVersion("");
-        addToast({ title: t("common.success") as string, color: "success" });
-        return true;
-      }
+      await runWithLipTask(
+        {
+          action: "uninstall",
+          target: targetName,
+          methods: ["Uninstall"],
+          feedbackMode: "on_error",
+        },
+        async ({ addLog }) => {
+          addLog("info", t("mods.action_uninstall"));
+          const err = await (minecraft as any)?.UninstallLeviLamina?.(
+            targetName,
+          );
+          if (err) {
+            throw new Error(String(err));
+          }
+        },
+      );
+      await refreshInstance(targetName, "version-settings-uninstall-ll");
+      setIsLLInstalled(false);
+      setCurrentLLVersion("");
+      addToast({ title: t("common.success") as string, color: "success" });
+      return true;
     } catch (e) {
-      addToast({ description: resolveToastText(String(e)), color: "danger" });
+      addToast({
+        description: resolveToastText(String((e as any)?.message || e)),
+        color: "danger",
+      });
       return false;
     } finally {
       setUninstallingLL(false);
     }
-  }, [targetName, resolveToastText, t]);
+  }, [refreshInstance, resolveToastText, runWithLipTask, t, targetName]);
 
   return {
     // Navigation

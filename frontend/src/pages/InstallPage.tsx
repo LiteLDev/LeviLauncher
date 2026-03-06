@@ -22,6 +22,7 @@ import { useTranslation } from "react-i18next";
 import { FaChevronDown } from "react-icons/fa";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
+import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { resolveInstallError } from "@/utils/installError";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialogs, Events } from "@wailsio/runtime";
@@ -48,6 +49,7 @@ type ItemType = "Preview" | "Release";
 
 export default function InstallPage() {
   const { t } = useTranslation();
+  const { runWithLipTask } = useLipTaskConsole();
   const navigate = useNavigate();
   const location = useLocation() as any;
   const { refreshAll } = useVersionStatus();
@@ -509,21 +511,24 @@ export default function InstallPage() {
           }
           const installLL = (minecraft as any)?.InstallLeviLamina;
           if (typeof installLL === "function") {
-            const llErr: string = await installLL(
-              mirrorVersion || installName || "",
-              name,
-              installVersion,
+            await runWithLipTask(
+              {
+                action: "install",
+                target: name,
+                methods: ["Install", "Update"],
+                feedbackMode: "on_error",
+              },
+              async ({ addLog }) => {
+                const llErr: string = await installLL(
+                  mirrorVersion || installName || "",
+                  name,
+                  installVersion,
+                );
+                if (llErr) {
+                  throw new Error(String(llErr));
+                }
+              },
             );
-            if (llErr) {
-              addToast({
-                title: t("common.error"),
-                description: resolveInstallError(llErr, t),
-                color: "danger",
-              });
-              setInstalling(false);
-              await rollback();
-              return;
-            }
           }
         } catch (e: any) {
           addToast({

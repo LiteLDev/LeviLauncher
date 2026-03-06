@@ -47,6 +47,7 @@ type ModInfo struct {
 	Version string `json:"version"`
 	Type    string `json:"type"`
 	Author  string `json:"author,omitempty"`
+	Folder  string `json:"folder"`
 }
 
 type LanguageJson struct {
@@ -132,4 +133,13 @@ type Server struct {
 type FilesDroppedEvent struct {
 	Files  []string `json:"files"`
 	Target string   `json:"target"`
+}
+
+type LIPPackageInstallState struct {
+	Identifier        string `json:"identifier"`
+	PackageRef        string `json:"packageRef"`
+	Installed         bool   `json:"installed"`
+	ExplicitInstalled bool   `json:"explicitInstalled"`
+	InstalledVersion  string `json:"installedVersion"`
+	Error             string `json:"error"`
 }

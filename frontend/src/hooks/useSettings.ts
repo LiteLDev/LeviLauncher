@@ -10,8 +10,6 @@ import {
   InstallGDKFromZip,
   GetDisableDiscordRPC,
   GetEnableBetaUpdates,
-  GetLipVersion,
-  IsLipInstalled,
   GetResourceRulesStatus,
   UpdateResourceRules,
   ListMinecraftProcesses,
@@ -259,10 +257,9 @@ export const useSettings = (i18n: { language: string }) => {
   // Lip
   const [lipInstalled, setLipInstalled] = useState<boolean>(false);
   const [lipVersion, setLipVersion] = useState<string>("");
+  const [lipLatestVersion, setLipLatestVersion] = useState<string>("");
   const [lipPath, setLipPath] = useState<string>("");
   const [lipUpToDate, setLipUpToDate] = useState<boolean>(false);
-  const [lipLocalSha, setLipLocalSha] = useState<string>("");
-  const [lipEmbeddedSha, setLipEmbeddedSha] = useState<string>("");
   const [lipStatusError, setLipStatusError] = useState<string>("");
   const [installingLip, setInstallingLip] = useState<boolean>(false);
   const [lipStatus, setLipStatus] = useState<string>("");
@@ -385,25 +382,13 @@ export const useSettings = (i18n: { language: string }) => {
       setLipPath(String(s?.path || ""));
       setLipInstalled(Boolean(s?.installed));
       setLipUpToDate(Boolean(s?.upToDate));
-      setLipLocalSha(String(s?.localSha || ""));
-      setLipEmbeddedSha(String(s?.embeddedSha || ""));
+      setLipVersion(String(s?.currentVersion || ""));
+      setLipLatestVersion(String(s?.latestVersion || ""));
       setLipStatusError(String(s?.error || ""));
     } catch (e: any) {
       setLipStatusError(String(e?.message || e || "check failed"));
       setLipUpToDate(false);
-    }
-
-    try {
-      const ok = await IsLipInstalled();
-      setLipInstalled(Boolean(ok));
-      if (ok) {
-        const v = await GetLipVersion();
-        setLipVersion(String(v || ""));
-      } else {
-        setLipVersion("");
-      }
-    } catch {
-      setLipVersion("");
+      setLipLatestVersion("");
     }
   };
 
@@ -880,10 +865,9 @@ export const useSettings = (i18n: { language: string }) => {
     // Lip
     lipInstalled,
     lipVersion,
+    lipLatestVersion,
     lipPath,
     lipUpToDate,
-    lipLocalSha,
-    lipEmbeddedSha,
     lipStatusError,
     installingLip,
     setInstallingLip,

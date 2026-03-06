@@ -7,6 +7,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { TermsModal } from "@/components/TermsModal";
 import { UpdateModal } from "@/components/UpdateModal";
+import { LipUpdateModal } from "@/components/LipUpdateModal";
 import { ClarityConsentModal } from "@/components/ClarityConsentModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
@@ -20,6 +21,9 @@ import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
 import { useThemeManager } from "@/utils/useThemeManager";
 import { SplashScreen } from "@/pages/SplashScreen";
 import { DownloadsProvider } from "@/utils/DownloadsContext";
+import { LipTaskConsoleProvider } from "@/utils/LipTaskConsoleContext";
+import { CurrentVersionProvider } from "@/utils/CurrentVersionContext";
+import { ModIntelligenceProvider } from "@/utils/ModIntelligenceContext";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
 import { useAnimations } from "@/hooks/useAnimations";
 import { useBackgroundImage, getFitStyles } from "@/hooks/useBackgroundImage";
@@ -143,8 +147,12 @@ function App() {
     updateVersion,
     updateBody,
     updateLoading,
+    lipUpdateOpen,
+    lipCurrentVersion,
+    lipLatestVersion,
     setUpdateOpen,
     setUpdateLoading,
+    setLipUpdateOpen,
   } = useAppModals({
     hasBackend,
     revealStarted,
@@ -223,84 +231,87 @@ function App() {
 
   return (
     <KeybindingProvider>
-      <GlobalShortcuts tryNavigate={tryNavigate} />
-      <VersionStatusProvider>
-        <DownloadsProvider>
-          <LeviLaminaProvider>
-            <CurseForgeProvider>
-              <NavigationHistoryProvider>
-                <ToastProvider
-                  placement="top-center"
-                  toastOffset={80}
-                  toastProps={{ timeout: 2000 }}
-                />
-                <AnimatePresence>
-                  {splashVisible && (
-                    <motion.div
-                      key="splash-overlay"
-                      className="fixed inset-0 z-[9999]"
-                      initial={{ opacity: 1 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.6, ease: "easeOut" }}
-                    >
-                      <SplashScreen />
-                    </motion.div>
+      <CurrentVersionProvider>
+        <ModIntelligenceProvider>
+          <GlobalShortcuts tryNavigate={tryNavigate} />
+          <VersionStatusProvider>
+            <DownloadsProvider>
+              <LeviLaminaProvider>
+                <CurseForgeProvider>
+                  <NavigationHistoryProvider>
+                    <LipTaskConsoleProvider>
+                  <ToastProvider
+                    placement="top-center"
+                    toastOffset={80}
+                    toastProps={{ timeout: 2000 }}
+                  />
+                  <AnimatePresence>
+                    {splashVisible && (
+                      <motion.div
+                        key="splash-overlay"
+                        className="fixed inset-0 z-[9999]"
+                        initial={{ opacity: 1 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.6, ease: "easeOut" }}
+                      >
+                        <SplashScreen />
+                      </motion.div>
+                    )}
+                  </AnimatePresence>
+
+                  {(resolvedTheme === "light"
+                    ? lightBackgroundBaseMode
+                    : darkBackgroundBaseMode) !== "none" && (
+                    <div
+                      className="fixed inset-0 z-[-2] pointer-events-none"
+                      style={{
+                        backgroundColor:
+                          (resolvedTheme === "light"
+                            ? lightBackgroundBaseMode
+                            : darkBackgroundBaseMode) === "theme"
+                            ? resolvedTheme === "light"
+                              ? "rgb(var(--theme-50))"
+                              : "rgb(var(--theme-900))"
+                            : resolvedTheme === "light"
+                              ? lightBackgroundBaseColor
+                              : darkBackgroundBaseColor,
+                        opacity:
+                          (resolvedTheme === "light"
+                            ? lightBackgroundBaseOpacity
+                            : darkBackgroundBaseOpacity) / 100,
+                      }}
+                    />
                   )}
-                </AnimatePresence>
+                  {bgData && (
+                    <div
+                      className="fixed inset-0 z-[-1]"
+                      style={{
+                        backgroundImage: `url("${bgData}")`,
+                        ...getFitStyles(backgroundFitMode),
+                        filter: `blur(${backgroundBlur}px) brightness(${backgroundBrightness}%)`,
+                        opacity: backgroundOpacity / 100,
+                      }}
+                    />
+                  )}
 
-                {(resolvedTheme === "light"
-                  ? lightBackgroundBaseMode
-                  : darkBackgroundBaseMode) !== "none" && (
                   <div
-                    className="fixed inset-0 z-[-2] pointer-events-none"
-                    style={{
-                      backgroundColor:
-                        (resolvedTheme === "light"
-                          ? lightBackgroundBaseMode
-                          : darkBackgroundBaseMode) === "theme"
-                          ? resolvedTheme === "light"
-                            ? "rgb(var(--theme-50))"
-                            : "rgb(var(--theme-900))"
-                          : resolvedTheme === "light"
-                            ? lightBackgroundBaseColor
-                            : darkBackgroundBaseColor,
-                      opacity:
-                        (resolvedTheme === "light"
-                          ? lightBackgroundBaseOpacity
-                          : darkBackgroundBaseOpacity) / 100,
-                    }}
-                  />
-                )}
-                {bgData && (
-                  <div
-                    className="fixed inset-0 z-[-1]"
-                    style={{
-                      backgroundImage: `url("${bgData}")`,
-                      ...getFitStyles(backgroundFitMode),
-                      filter: `blur(${backgroundBlur}px) brightness(${backgroundBrightness}%)`,
-                      opacity: backgroundOpacity / 100,
-                    }}
-                  />
-                )}
-
-                <div
-                  style={
-                    {
-                      "--content-pt": "4.5rem",
-                    } as React.CSSProperties
-                  }
-                  className={`w-full min-h-dvh flex ${
-                    layoutMode === "sidebar" ? "flex-row" : "flex-col"
-                  } overflow-x-hidden ${
-                    bgData ||
-                    (resolvedTheme === "light"
-                      ? lightBackgroundBaseMode
-                      : darkBackgroundBaseMode) !== "none"
-                      ? "bg-transparent"
-                      : "bg-background"
-                  } text-foreground ${updateOpen ? "overflow-y-hidden" : ""}`}
-                >
+                    style={
+                      {
+                        "--content-pt": "4.5rem",
+                      } as React.CSSProperties
+                    }
+                    className={`w-full min-h-dvh flex ${
+                      layoutMode === "sidebar" ? "flex-row" : "flex-col"
+                    } overflow-x-hidden ${
+                      bgData ||
+                      (resolvedTheme === "light"
+                        ? lightBackgroundBaseMode
+                        : darkBackgroundBaseMode) !== "none"
+                        ? "bg-transparent"
+                        : "bg-background"
+                    } text-foreground ${updateOpen ? "overflow-y-hidden" : ""}`}
+                  >
                   {layoutMode === "navbar" ? (
                     <>
                       <GlobalNavbar
@@ -482,12 +493,40 @@ function App() {
                       }
                     }}
                   />
-                </div>
-              </NavigationHistoryProvider>
-            </CurseForgeProvider>
-          </LeviLaminaProvider>
-        </DownloadsProvider>
-      </VersionStatusProvider>
+
+                  <LipUpdateModal
+                    isOpen={lipUpdateOpen}
+                    currentVersion={lipCurrentVersion}
+                    latestVersion={lipLatestVersion}
+                    onDismiss={() => {
+                      setLipUpdateOpen(false);
+                      setNavLocked(Boolean((window as any).llNavLock));
+                    }}
+                    onIgnore={() => {
+                      try {
+                        localStorage.setItem(
+                          "ll.ignoreLipVersion",
+                          lipLatestVersion || "",
+                        );
+                      } catch {}
+                      setLipUpdateOpen(false);
+                      setNavLocked(Boolean((window as any).llNavLock));
+                    }}
+                    onOpenSettings={() => {
+                      setLipUpdateOpen(false);
+                      setNavLocked(Boolean((window as any).llNavLock));
+                      navigate("/settings", { state: { tab: "components" } });
+                    }}
+                  />
+                  </div>
+                    </LipTaskConsoleProvider>
+                  </NavigationHistoryProvider>
+                </CurseForgeProvider>
+              </LeviLaminaProvider>
+            </DownloadsProvider>
+          </VersionStatusProvider>
+        </ModIntelligenceProvider>
+      </CurrentVersionProvider>
     </KeybindingProvider>
   );
 }

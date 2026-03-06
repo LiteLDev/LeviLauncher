@@ -23,7 +23,19 @@ export const resolveImportError = (err: string, t: TFunction): string => {
       return t("mods.err_read_zip_entry");
     case "ERR_WRITE_FILE":
       return t("mods.err_write_file");
+    case "ERR_LL_MANAGED_IN_VERSION_SETTINGS":
+      return t("mods.err_ll_managed_in_version_settings");
+    case "ERR_NO_UPDATE_SOURCE":
+      return t("mods.no_update_source");
+    case "ERR_ALREADY_LATEST":
+      return t("mods.update_latest");
     default:
+      if (code) {
+        const translated = t(`errors.${code}`);
+        if (translated !== `errors.${code}`) {
+          return translated;
+        }
+      }
       return code || t("mods.err_unknown");
   }
 };

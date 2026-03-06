@@ -1,52 +1,127 @@
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  addToast,
   Button,
   Card,
   CardBody,
   Chip,
-  Skeleton,
   Image,
-  Tabs,
+  Select,
+  SelectItem,
+  Skeleton,
   Tab,
   Table,
-  TableHeader,
-  TableColumn,
   TableBody,
-  TableRow,
   TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+  Tabs,
+  Tooltip,
 } from "@heroui/react";
-import { PageContainer } from "@/components/PageContainer";
-import { LAYOUT } from "@/constants/layout";
-import { COMPONENT_STYLES } from "@/constants/componentStyles";
-import { cn } from "@/utils/cn";
-import {
-  LuDownload,
-  LuGlobe,
-  LuUser,
-  LuClock,
-  LuFlame,
-  LuTag,
-  LuGamepad2,
-  LuShare2,
-  LuFileDigit,
-} from "react-icons/lu";
+import { Call, Browser } from "@wailsio/runtime";
+import { motion } from "framer-motion";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { motion } from "framer-motion";
 import {
-  fetchLIPPackagesIndex,
-  type LIPPackageBasicInfo,
-} from "@/utils/content";
+  LuClock,
+  LuDownload,
+  LuFileDigit,
+  LuFlame,
+  LuGamepad2,
+  LuGlobe,
+  LuShare2,
+  LuTag,
+  LuUser,
+} from "react-icons/lu";
+import {
+  GetVersionLogoDataUrl,
+  ListVersionMetas,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+import { PageContainer } from "@/components/PageContainer";
+import { UnifiedModal } from "@/components/UnifiedModal";
+import { COMPONENT_STYLES } from "@/constants/componentStyles";
+import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
+import { readCurrentVersionName } from "@/utils/currentVersion";
+import { useCurrentVersion } from "@/utils/CurrentVersionContext";
+import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { formatDateStr } from "@/utils/formatting";
-import { Browser } from "@wailsio/runtime";
+import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
+import { compareVersions } from "@/utils/version";
+import type { LIPPackageInstallState } from "@/utils/modIntelligenceResolver";
+import {
+  fetchLIPLeviLaminaClientMapping,
+  fetchLIPPackageDetail,
+  isLeviLaminaVersionCompatible,
+  resolveSupportedGameVersionsByLLRanges,
+  type LIPPackageDetail,
+  type LIPPackageFileInfo,
+} from "@/utils/content";
 
 type GithubRepoRef = {
   owner: string;
   repo: string;
 };
+
 type HeadingTag = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
+
+type FileGameVersionState = {
+  file: LIPPackageFileInfo;
+  supportedGameVersions: string[];
+  hasLLRequirement: boolean;
+};
+
+type InstanceLLState = {
+  installed: boolean;
+  explicitInstalled: boolean;
+  installedVersion: string;
+  error: string;
+  loading: boolean;
+};
+
+type InstancePackageState = InstanceLLState;
+type InstallDialogActionKind =
+  | "install"
+  | "upgrade"
+  | "downgrade"
+  | "reinstall";
+
+const EMPTY_INSTANCE_LL_STATE: InstanceLLState = {
+  installed: false,
+  explicitInstalled: false,
+  installedVersion: "",
+  error: "",
+  loading: false,
+};
+
+const INSTALL_DIALOG_ACTION_LABEL_KEYS: Record<
+  InstallDialogActionKind,
+  string
+> = {
+  install: "lip.files.install",
+  upgrade: "lip.files.upgrade",
+  downgrade: "lip.files.downgrade",
+  reinstall: "lip.files.reinstall",
+};
+
+const INSTALL_DIALOG_ACTION_SUCCESS_KEYS: Record<
+  InstallDialogActionKind,
+  string
+> = {
+  install: "lip.files.install_success",
+  upgrade: "lip.files.upgrade_success",
+  downgrade: "lip.files.downgrade_success",
+  reinstall: "lip.files.reinstall_success",
+};
 
 const hasUrlScheme = (value: string): boolean =>
   /^[a-zA-Z][a-zA-Z\d+.-]*:/.test(value);
@@ -79,11 +154,13 @@ const isBadgeImage = (src: string): boolean =>
   /(?:^|\/\/)img\.shields\.io\//i.test(src);
 
 const collectNodeText = (node: React.ReactNode): string => {
-  if (node === null || node === undefined || typeof node === "boolean")
+  if (node === null || node === undefined || typeof node === "boolean") {
     return "";
+  }
   if (typeof node === "string" || typeof node === "number") return String(node);
-  if (Array.isArray(node))
+  if (Array.isArray(node)) {
     return node.map((item) => collectNodeText(item)).join("");
+  }
   if (React.isValidElement(node)) {
     return collectNodeText(
       (node.props as { children?: React.ReactNode }).children,
@@ -135,16 +212,83 @@ const isOpenableExternalUrl = (href: string): boolean => {
   }
 };
 
+const getErrorCode = (value: unknown): string => {
+  const source =
+    typeof value === "string"
+      ? value
+      : value instanceof Error
+        ? value.message
+        : String(value || "");
+  const raw = source.trim();
+  if (!raw) return "";
+  const match = raw.match(/ERR_[A-Z0-9_]+/);
+  return match ? match[0] : raw;
+};
+
+const normalizeGameVersion = (value: string): string => {
+  const normalized = String(value || "")
+    .trim()
+    .replace(/^v/i, "");
+  if (!normalized) return "";
+  const match = normalized.match(/(\d+\.\d+\.\d+)/);
+  return match ? match[1] : normalized;
+};
+
 const LIPPackagePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const [pkg, setPkg] = useState<LIPPackageBasicInfo | null>(null);
+  const { runWithLipTask } = useLipTaskConsole();
+  const { currentVersionName } = useCurrentVersion();
+  const {
+    ensureInstanceHydrated,
+    getInstanceSnapshot,
+    ensurePackageInstallState,
+    refreshInstance,
+    snapshotRevision,
+  } = useModIntelligence();
+
+  const [pkg, setPkg] = useState<LIPPackageDetail | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [selectedTab, setSelectedTab] = useState<string>("description");
   const [readmeContent, setReadmeContent] = useState<string>("");
+  const [instanceOptions, setInstanceOptions] = useState<string[]>([]);
+  const [selectedInstance, setSelectedInstance] = useState<string>("");
+  const [instanceGameVersions, setInstanceGameVersions] = useState<
+    Record<string, string>
+  >({});
+  const [instanceLogos, setInstanceLogos] = useState<Record<string, string>>(
+    {},
+  );
+  const [instanceLLStates, setInstanceLLStates] = useState<
+    Record<string, InstanceLLState>
+  >({});
+  const [instancePackageStates, setInstancePackageStates] = useState<
+    Record<string, InstancePackageState>
+  >({});
+  const [installDialogSelectedInstance, setInstallDialogSelectedInstance] =
+    useState<string>("");
+  const [gameToLLVersions, setGameToLLVersions] = useState<
+    Record<string, string[]>
+  >({});
+  const [mappingUnavailable, setMappingUnavailable] = useState<boolean>(false);
+  const [installDialogOpen, setInstallDialogOpen] = useState<boolean>(false);
+  const [installDialogTriggerVersion, setInstallDialogTriggerVersion] =
+    useState<string>("");
+  const [actionRunning, setActionRunning] = useState<boolean>(false);
+
   const tabsRef = useRef<HTMLDivElement>(null);
+
+  const identifier = useMemo(() => {
+    const raw = String(id || "");
+    try {
+      return decodeURIComponent(raw);
+    } catch {
+      return raw;
+    }
+  }, [id]);
+
   const githubRepoRef = useMemo<GithubRepoRef | null>(() => {
     if (!pkg?.projectUrl) return null;
     try {
@@ -159,13 +303,13 @@ const LIPPackagePage: React.FC = () => {
   }, [pkg?.projectUrl]);
 
   const markdownComponents = useMemo<Components>(() => {
-    const nextHeadingId = createHeadingSlugger();
+    const nextHeadingID = createHeadingSlugger();
     const createHeading =
       (tag: HeadingTag) =>
       ({
         children,
         className,
-        id,
+        id: headingID,
         ...props
       }: React.HTMLAttributes<HTMLHeadingElement> & {
         children?: React.ReactNode;
@@ -175,9 +319,9 @@ const LIPPackagePage: React.FC = () => {
           {
             ...props,
             id:
-              typeof id === "string" && id.trim()
-                ? id
-                : nextHeadingId(collectNodeText(children)),
+              typeof headingID === "string" && headingID.trim()
+                ? headingID
+                : nextHeadingID(collectNodeText(children)),
             className,
           },
           children,
@@ -219,6 +363,7 @@ const LIPPackagePage: React.FC = () => {
                 event.preventDefault();
                 const anchor = decodeHash(resolvedHref);
                 if (!anchor) return;
+
                 const candidates = [
                   anchor,
                   anchor.toLowerCase(),
@@ -235,6 +380,7 @@ const LIPPackagePage: React.FC = () => {
                 }
                 return;
               }
+
               if (!isOpenableExternalUrl(resolvedHref)) return;
               event.preventDefault();
               Browser.OpenURL(resolvedHref);
@@ -253,68 +399,135 @@ const LIPPackagePage: React.FC = () => {
     };
   }, [githubRepoRef]);
 
-  useEffect(() => {
-    if (!pkg?.projectUrl) {
-      setReadmeContent("");
-      return;
-    }
+  const resolveErrorText = useCallback(
+    (value: unknown) => {
+      const code = getErrorCode(value);
+      if (!code) return t("common.error");
 
-    const fetchReadme = async () => {
-      try {
-        const url = new URL(pkg.projectUrl);
-        if (url.hostname === "github.com") {
-          const parts = url.pathname.split("/").filter(Boolean);
-          if (parts.length >= 2) {
-            const owner = parts[0];
-            const repo = parts[1];
-            const apiUrl = `https://api.github.com/repos/${owner}/${repo}/readme`;
-            const response = await fetch(apiUrl, {
-              headers: { Accept: "application/vnd.github.raw+json" },
-            });
-            if (response.ok) {
-              const text = await response.text();
-              setReadmeContent(text);
-              return;
-            }
-          }
-        }
-      } catch (e) {
-        console.warn("Failed to fetch README", e);
+      const translatedByErrorCode = t(`errors.${code}`);
+      if (translatedByErrorCode !== `errors.${code}`) {
+        return translatedByErrorCode;
       }
-      setReadmeContent("");
-    };
 
-    fetchReadme();
-  }, [pkg]);
+      const translatedByKey = t(code);
+      if (translatedByKey !== code) {
+        return translatedByKey;
+      }
 
-  const identifier = useMemo(() => {
-    const raw = String(id || "");
-    try {
-      return decodeURIComponent(raw);
-    } catch {
-      return raw;
-    }
-  }, [id]);
+      return code;
+    },
+    [t],
+  );
 
-  const loadPackage = async (
-    targetIdentifier: string,
-    forceRefresh = false,
-  ) => {
-    setLoading(true);
-    setError("");
-    try {
-      const list = await fetchLIPPackagesIndex({ forceRefresh });
-      const found =
-        list.find((item) => item.identifier === targetIdentifier) || null;
-      setPkg(found);
-    } catch (err) {
-      console.error(err);
-      setError(t("common.load_failed"));
-      setPkg(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+  const toInstanceState = useCallback(
+    (
+      value: LIPPackageInstallState | null | undefined,
+      loading = false,
+    ): InstanceLLState => ({
+      installed: Boolean(value?.installed),
+      explicitInstalled: Boolean(value?.explicitInstalled),
+      installedVersion: String(value?.installedVersion || "").trim(),
+      error: String(value?.error || "").trim(),
+      loading,
+    }),
+    [],
+  );
+
+  const callMinecraftByName = useCallback(
+    async <T,>(method: string, ...args: unknown[]): Promise<T> =>
+      (await Call.ByName(`main.Minecraft.${method}`, ...args)) as T,
+    [],
+  );
+
+  const queryInstanceLLState = useCallback(
+    async (instanceName: string): Promise<InstanceLLState> => {
+      const normalizedName = String(instanceName || "").trim();
+      if (!normalizedName) {
+        return {
+          ...EMPTY_INSTANCE_LL_STATE,
+          error: "ERR_TARGET_NOT_FOUND",
+        };
+      }
+
+      try {
+        await ensureInstanceHydrated(normalizedName, {
+          background: true,
+          reason: "lip-package-query-ll",
+        });
+        const snapshot = getInstanceSnapshot(normalizedName);
+        if (snapshot?.llState) {
+          return toInstanceState(snapshot.llState);
+        }
+        return {
+          ...EMPTY_INSTANCE_LL_STATE,
+          error: "ERR_LIP_PACKAGE_QUERY_FAILED",
+        };
+      } catch (queryError) {
+        return {
+          ...EMPTY_INSTANCE_LL_STATE,
+          error: getErrorCode(queryError) || "ERR_LIP_PACKAGE_QUERY_FAILED",
+        };
+      }
+    },
+    [ensureInstanceHydrated, getInstanceSnapshot, toInstanceState],
+  );
+
+  const queryInstancePackageState = useCallback(
+    async (
+      instanceName: string,
+      packageIdentifier: string,
+    ): Promise<InstancePackageState> => {
+      const normalizedName = String(instanceName || "").trim();
+      const normalizedIdentifier = String(packageIdentifier || "").trim();
+      if (!normalizedName) {
+        return {
+          ...EMPTY_INSTANCE_LL_STATE,
+          error: "ERR_TARGET_NOT_FOUND",
+        };
+      }
+      if (!normalizedIdentifier) {
+        return {
+          ...EMPTY_INSTANCE_LL_STATE,
+          error: "ERR_LIP_PACKAGE_INVALID_IDENTIFIER",
+        };
+      }
+
+      try {
+        const state = await ensurePackageInstallState(
+          normalizedName,
+          normalizedIdentifier,
+        );
+        return toInstanceState(state);
+      } catch (queryError) {
+        return {
+          ...EMPTY_INSTANCE_LL_STATE,
+          error: getErrorCode(queryError) || "ERR_LIP_PACKAGE_QUERY_FAILED",
+        };
+      }
+    },
+    [ensurePackageInstallState, toInstanceState],
+  );
+
+  const loadPackage = useCallback(
+    async (targetIdentifier: string, forceRefresh = false) => {
+      setLoading(true);
+      setError("");
+
+      try {
+        const detail = await fetchLIPPackageDetail(targetIdentifier, {
+          forceRefresh,
+        });
+        setPkg(detail);
+      } catch (err) {
+        console.error(err);
+        setPkg(null);
+        setError(t("common.load_failed"));
+      } finally {
+        setLoading(false);
+      }
+    },
+    [t],
+  );
 
   useEffect(() => {
     if (!identifier) {
@@ -323,16 +536,580 @@ const LIPPackagePage: React.FC = () => {
       return;
     }
     void loadPackage(identifier);
-  }, [identifier]);
+  }, [identifier, loadPackage]);
 
-  const handleInstall = (version: string) => {
-    // TODO: Implement LIP package installation
-    console.log("Install version:", version);
-  };
+  useEffect(() => {
+    if (!pkg?.projectUrl) {
+      setReadmeContent("");
+      return;
+    }
+
+    const fetchReadme = async () => {
+      try {
+        const text = await callMinecraftByName<string>(
+          "GetLIPPackageReadme",
+          pkg.projectUrl,
+        );
+        setReadmeContent(String(text || ""));
+        return;
+      } catch (readmeError) {
+        console.warn("Failed to fetch README", readmeError);
+      }
+      setReadmeContent("");
+    };
+
+    void fetchReadme();
+  }, [callMinecraftByName, pkg?.projectUrl]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadInstances = async () => {
+      try {
+        const metas = await ListVersionMetas();
+        const names: string[] = [];
+        const gameVersionMap: Record<string, string> = {};
+        if (Array.isArray(metas)) {
+          for (const meta of metas as any[]) {
+            const name = String(meta?.name || "").trim();
+            if (!name) continue;
+            names.push(name);
+            gameVersionMap[name] = String(meta?.gameVersion || "").trim();
+          }
+        }
+
+        if (cancelled) return;
+        setInstanceOptions(names);
+        setInstanceGameVersions(gameVersionMap);
+        const logoMap: Record<string, string> = {};
+        await Promise.all(
+          names.map(async (name) => {
+            try {
+              const logoUrl = await GetVersionLogoDataUrl(name);
+              if (logoUrl) {
+                logoMap[name] = logoUrl;
+              }
+            } catch (logoError) {
+              console.warn("Failed to fetch logo for", name, logoError);
+            }
+          }),
+        );
+        if (!cancelled) {
+          setInstanceLogos(logoMap);
+        }
+        setSelectedInstance((prev) => {
+          if (prev && names.includes(prev)) {
+            return prev;
+          }
+          const current = (
+            String(currentVersionName || "").trim() ||
+            readCurrentVersionName().trim()
+          ).trim();
+          if (current && names.includes(current)) {
+            return current;
+          }
+          return names[0] || "";
+        });
+
+        if (names.length === 0) {
+          setInstanceLLStates({});
+          return;
+        }
+
+        setInstanceLLStates((prev) => {
+          const next = { ...prev };
+          for (const name of names) {
+            next[name] = {
+              ...(next[name] || EMPTY_INSTANCE_LL_STATE),
+              loading: true,
+              error: "",
+            };
+          }
+          return next;
+        });
+
+        const llEntries = await Promise.all(
+          names.map(
+            async (name) => [name, await queryInstanceLLState(name)] as const,
+          ),
+        );
+        if (cancelled) return;
+        setInstanceLLStates((prev) => {
+          const next = { ...prev };
+          for (const [name, llState] of llEntries) {
+            next[name] = llState;
+          }
+          return next;
+        });
+      } catch {
+        if (cancelled) return;
+        setInstanceOptions([]);
+        setInstanceGameVersions({});
+        setInstanceLogos({});
+        setInstanceLLStates({});
+        setSelectedInstance("");
+      }
+    };
+
+    void loadInstances();
+    return () => {
+      cancelled = true;
+    };
+  }, [currentVersionName, queryInstanceLLState]);
+
+  useEffect(() => {
+    if (instanceOptions.length === 0) return;
+
+    setInstanceLLStates((prev) => {
+      let changed = false;
+      const next = { ...prev };
+      for (const name of instanceOptions) {
+        const snapshot = getInstanceSnapshot(name);
+        if (!snapshot?.llState) continue;
+        const incoming = toInstanceState(snapshot.llState);
+        const existing = next[name];
+        if (
+          existing &&
+          existing.installed === incoming.installed &&
+          existing.explicitInstalled === incoming.explicitInstalled &&
+          existing.installedVersion === incoming.installedVersion &&
+          existing.error === incoming.error &&
+          existing.loading === incoming.loading
+        ) {
+          continue;
+        }
+        next[name] = incoming;
+        changed = true;
+      }
+      return changed ? next : prev;
+    });
+  }, [getInstanceSnapshot, instanceOptions, snapshotRevision, toInstanceState]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const loadLeviLaminaMapping = async () => {
+      try {
+        const mapping = await fetchLIPLeviLaminaClientMapping();
+        if (cancelled) return;
+        setGameToLLVersions(mapping.gameToLLVersions || {});
+        setMappingUnavailable(false);
+      } catch (mappingError) {
+        console.warn("Failed to load LeviLamina game mapping", mappingError);
+        if (cancelled) return;
+        setGameToLLVersions({});
+        setMappingUnavailable(true);
+      }
+    };
+
+    void loadLeviLaminaMapping();
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const filesWithGameVersionState = useMemo<FileGameVersionState[]>(
+    () =>
+      (pkg?.files || []).map((file) => {
+        const hasLLRequirement = file.llDependencyRanges.length > 0;
+        const supportedGameVersions = hasLLRequirement
+          ? resolveSupportedGameVersionsByLLRanges(
+              file.llDependencyRanges,
+              gameToLLVersions,
+            )
+          : [];
+
+        return {
+          file,
+          supportedGameVersions,
+          hasLLRequirement,
+        };
+      }),
+    [pkg?.files, gameToLLVersions],
+  );
+
+  const installDialogFileState = useMemo<FileGameVersionState | null>(() => {
+    if (!installDialogTriggerVersion) return null;
+    return (
+      filesWithGameVersionState.find(
+        (state) => state.file.version === installDialogTriggerVersion,
+      ) || null
+    );
+  }, [filesWithGameVersionState, installDialogTriggerVersion]);
+
+  const installDialogInstanceGameVersion = useMemo<string>(() => {
+    const raw = instanceGameVersions[installDialogSelectedInstance] || "";
+    return normalizeGameVersion(raw);
+  }, [instanceGameVersions, installDialogSelectedInstance]);
+
+  const dialogRequiresLL = Boolean(installDialogFileState?.hasLLRequirement);
+
+  const dialogInstancePackageState =
+    useMemo<InstancePackageState | null>(() => {
+      const instanceName = String(installDialogSelectedInstance || "").trim();
+      if (!instanceName) return null;
+      return instancePackageStates[instanceName] || null;
+    }, [installDialogSelectedInstance, instancePackageStates]);
+
+  const dialogInstalledPackageVersion = useMemo<string>(() => {
+    const installedVersion = String(
+      dialogInstancePackageState?.installedVersion || "",
+    ).trim();
+    if (!dialogInstancePackageState?.installed || !installedVersion) return "";
+    return installedVersion;
+  }, [dialogInstancePackageState]);
+
+  const dialogPackageStateLoading = Boolean(dialogInstancePackageState?.loading);
+
+  const installDialogActionKind = useMemo<InstallDialogActionKind>(() => {
+    if (!installDialogTriggerVersion || dialogPackageStateLoading) {
+      return "install";
+    }
+    if (!dialogInstancePackageState?.installed) {
+      return "install";
+    }
+    if (!dialogInstalledPackageVersion) {
+      return "reinstall";
+    }
+
+    const versionCompare = compareVersions(
+      installDialogTriggerVersion,
+      dialogInstalledPackageVersion,
+    );
+    if (versionCompare > 0) return "upgrade";
+    if (versionCompare < 0) return "downgrade";
+    return "reinstall";
+  }, [
+    dialogInstalledPackageVersion,
+    dialogInstancePackageState?.installed,
+    dialogPackageStateLoading,
+    installDialogTriggerVersion,
+  ]);
+
+  const installDialogActionLabelKey =
+    INSTALL_DIALOG_ACTION_LABEL_KEYS[installDialogActionKind];
+  const installDialogSuccessKey =
+    INSTALL_DIALOG_ACTION_SUCCESS_KEYS[installDialogActionKind];
+
+  const dialogInstanceLLState = useMemo<InstanceLLState | null>(() => {
+    const instanceName = String(installDialogSelectedInstance || "").trim();
+    if (!instanceName) return null;
+    return instanceLLStates[instanceName] || null;
+  }, [instanceLLStates, installDialogSelectedInstance]);
+
+  const dialogLLStateLoading =
+    dialogRequiresLL &&
+    (!dialogInstanceLLState || dialogInstanceLLState.loading);
+  const dialogLLInstalled = Boolean(dialogInstanceLLState?.installed);
+  const dialogLLVersion = String(
+    dialogInstanceLLState?.installedVersion || "",
+  ).trim();
+
+  const dialogGameLLCandidates = useMemo<string[]>(() => {
+    if (!dialogRequiresLL) return [];
+    if (!installDialogInstanceGameVersion) return [];
+    return Array.isArray(gameToLLVersions[installDialogInstanceGameVersion])
+      ? gameToLLVersions[installDialogInstanceGameVersion]
+      : [];
+  }, [dialogRequiresLL, installDialogInstanceGameVersion, gameToLLVersions]);
+
+  const dialogCompatibleLLCandidates = useMemo<string[]>(() => {
+    if (!dialogRequiresLL || !installDialogFileState) return [];
+    const llRanges = installDialogFileState.file.llDependencyRanges;
+    return dialogGameLLCandidates.filter((version) =>
+      isLeviLaminaVersionCompatible(String(version || "").trim(), llRanges),
+    );
+  }, [dialogRequiresLL, installDialogFileState, dialogGameLLCandidates]);
+
+  const dialogAutoInstallLLVersion = useMemo<string>(
+    () => String(dialogCompatibleLLCandidates[0] || "").trim(),
+    [dialogCompatibleLLCandidates],
+  );
+
+  const dialogInstalledLLCompatible = useMemo<boolean>(() => {
+    if (!dialogRequiresLL) return true;
+    if (!dialogLLInstalled || !dialogLLVersion || !installDialogFileState) {
+      return false;
+    }
+    return isLeviLaminaVersionCompatible(
+      dialogLLVersion,
+      installDialogFileState.file.llDependencyRanges,
+    );
+  }, [
+    dialogRequiresLL,
+    dialogLLInstalled,
+    dialogLLVersion,
+    installDialogFileState,
+  ]);
+
+  useEffect(() => {
+    const instanceName = String(installDialogSelectedInstance || "").trim();
+    if (!instanceName) return;
+    const existingState = instanceLLStates[instanceName];
+    if (existingState && !existingState.loading) return;
+
+    let cancelled = false;
+    setInstanceLLStates((prev) => ({
+      ...prev,
+      [instanceName]: {
+        ...EMPTY_INSTANCE_LL_STATE,
+        loading: true,
+      },
+    }));
+
+    const run = async () => {
+      const llState = await queryInstanceLLState(instanceName);
+      if (cancelled) return;
+      setInstanceLLStates((prev) => ({
+        ...prev,
+        [instanceName]: llState,
+      }));
+    };
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [installDialogSelectedInstance, queryInstanceLLState]);
+
+  useEffect(() => {
+    setInstancePackageStates({});
+  }, [pkg?.identifier]);
+
+  useEffect(() => {
+    const instanceName = String(installDialogSelectedInstance || "").trim();
+    const packageIdentifier = String(pkg?.identifier || "").trim();
+    if (!installDialogOpen || !instanceName || !packageIdentifier) return;
+    const existingState = instancePackageStates[instanceName];
+    if (existingState && !existingState.loading) return;
+
+    let cancelled = false;
+    setInstancePackageStates((prev) => ({
+      ...prev,
+      [instanceName]: {
+        ...EMPTY_INSTANCE_LL_STATE,
+        loading: true,
+      },
+    }));
+
+    const run = async () => {
+      const state = await queryInstancePackageState(
+        instanceName,
+        packageIdentifier,
+      );
+      if (cancelled) return;
+      setInstancePackageStates((prev) => ({
+        ...prev,
+        [instanceName]: state,
+      }));
+    };
+    void run();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    installDialogOpen,
+    installDialogSelectedInstance,
+    pkg?.identifier,
+    queryInstancePackageState,
+  ]);
+
+  const installDialogGameVersionCompatible = useMemo<boolean>(() => {
+    if (!installDialogFileState) return false;
+    if (!installDialogFileState.hasLLRequirement) return true;
+    if (mappingUnavailable) return true;
+    if (!installDialogInstanceGameVersion) return false;
+
+    const supported = new Set(
+      installDialogFileState.supportedGameVersions.map((version) =>
+        normalizeGameVersion(version),
+      ),
+    );
+    return supported.has(installDialogInstanceGameVersion);
+  }, [
+    installDialogFileState,
+    installDialogInstanceGameVersion,
+    mappingUnavailable,
+  ]);
+
+  const installDialogVersionInstallable = useMemo<boolean>(() => {
+    if (!installDialogFileState) return false;
+    if (!installDialogGameVersionCompatible) return false;
+    if (!dialogRequiresLL) return true;
+    if (dialogLLStateLoading) return false;
+
+    if (dialogLLInstalled) {
+      return dialogInstalledLLCompatible;
+    }
+
+    if (mappingUnavailable) return false;
+    if (!dialogAutoInstallLLVersion) return false;
+    return true;
+  }, [
+    installDialogFileState,
+    installDialogGameVersionCompatible,
+    dialogRequiresLL,
+    dialogLLStateLoading,
+    dialogLLInstalled,
+    dialogInstalledLLCompatible,
+    mappingUnavailable,
+    dialogAutoInstallLLVersion,
+  ]);
+
+  const openInstallDialog = useCallback(
+    (version: string) => {
+      const normalized = String(version || "").trim();
+      if (!normalized) return;
+
+      setInstallDialogTriggerVersion(normalized);
+      setInstallDialogSelectedInstance((prev) => {
+        if (prev && instanceOptions.includes(prev)) {
+          return prev;
+        }
+        if (selectedInstance && instanceOptions.includes(selectedInstance)) {
+          return selectedInstance;
+        }
+        return instanceOptions[0] || "";
+      });
+      setInstallDialogOpen(true);
+    },
+    [instanceOptions, selectedInstance],
+  );
+
+  const closeInstallDialog = useCallback(() => {
+    if (actionRunning) return;
+    setInstallDialogOpen(false);
+    setInstallDialogTriggerVersion("");
+  }, [actionRunning]);
+
+  const handleConfirmInstall = useCallback(async () => {
+    if (
+      !pkg ||
+      !installDialogSelectedInstance ||
+      !installDialogTriggerVersion ||
+      dialogPackageStateLoading
+    ) {
+      return;
+    }
+
+    setActionRunning(true);
+    try {
+      await runWithLipTask(
+        {
+          action: installDialogActionKind,
+          target: installDialogSelectedInstance,
+          methods: ["Install", "Update"],
+          feedbackMode: "on_error",
+        },
+        async ({ addLog }) => {
+          addLog(
+            "info",
+            `${t(installDialogActionLabelKey)} ${pkg.identifier}@${installDialogTriggerVersion}`,
+          );
+
+          if (dialogRequiresLL && !dialogLLInstalled) {
+            if (mappingUnavailable) {
+              throw new Error("ERR_LL_NOT_SUPPORTED");
+            }
+            if (!dialogAutoInstallLLVersion) {
+              throw new Error("ERR_LL_VERSION_UNSUPPORTED");
+            }
+
+            const llErr = await callMinecraftByName<string>(
+              "InstallLeviLamina",
+              installDialogInstanceGameVersion,
+              installDialogSelectedInstance,
+              dialogAutoInstallLLVersion,
+            );
+            if (String(llErr || "").trim()) {
+              throw new Error(String(llErr));
+            }
+
+            setInstanceLLStates((prev) => ({
+              ...prev,
+              [installDialogSelectedInstance]: {
+                installed: true,
+                explicitInstalled: true,
+                installedVersion: dialogAutoInstallLLVersion,
+                error: "",
+                loading: false,
+              },
+            }));
+          }
+
+          const err = await callMinecraftByName<string>(
+            "InstallLIPPackage",
+            installDialogSelectedInstance,
+            pkg.identifier,
+            installDialogTriggerVersion,
+          );
+          if (String(err || "").trim()) {
+            throw new Error(String(err));
+          }
+        },
+      );
+
+      addToast({
+        color: "success",
+        title: t("common.success"),
+        description: t(installDialogSuccessKey),
+      });
+      await refreshInstance(installDialogSelectedInstance, "lip-package-install");
+      const latestSnapshot = getInstanceSnapshot(installDialogSelectedInstance);
+      if (latestSnapshot?.llState) {
+        setInstanceLLStates((prev) => ({
+          ...prev,
+          [installDialogSelectedInstance]: toInstanceState(latestSnapshot.llState),
+        }));
+      }
+      const packageState = await ensurePackageInstallState(
+        installDialogSelectedInstance,
+        pkg.identifier,
+      );
+      setInstancePackageStates((prev) => ({
+        ...prev,
+        [installDialogSelectedInstance]: toInstanceState(packageState),
+      }));
+      setInstallDialogOpen(false);
+      setInstallDialogTriggerVersion("");
+    } catch (actionError) {
+      addToast({
+        color: "danger",
+        title: t("common.error"),
+        description: t("lip.files.action_failed", {
+          error: resolveErrorText(actionError),
+        }),
+      });
+    } finally {
+      setActionRunning(false);
+    }
+  }, [
+    callMinecraftByName,
+    dialogAutoInstallLLVersion,
+    dialogLLInstalled,
+    dialogPackageStateLoading,
+    dialogRequiresLL,
+    installDialogActionKind,
+    installDialogActionLabelKey,
+    installDialogSelectedInstance,
+    installDialogInstanceGameVersion,
+    mappingUnavailable,
+    pkg,
+    resolveErrorText,
+    runWithLipTask,
+    ensurePackageInstallState,
+    getInstanceSnapshot,
+    installDialogSuccessKey,
+    installDialogTriggerVersion,
+    refreshInstance,
+    t,
+    toInstanceState,
+  ]);
 
   if (loading) {
     return (
-      <PageContainer animate={false} className="min-h-0">
+      <PageContainer animate={false} className="min-h-0 no-scrollbar">
         <Card className={LAYOUT.GLASS_CARD.BASE}>
           <CardBody className="p-6">
             <div className="flex flex-col md:flex-row gap-6">
@@ -406,7 +1183,7 @@ const LIPPackagePage: React.FC = () => {
       <div className="w-full h-full min-h-0 flex flex-col p-4 sm:p-6 gap-4 items-center justify-center">
         <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl p-8">
           <CardBody className="flex flex-col items-center gap-4">
-            <p className="text-xl font-bold">Package not found</p>
+            <p className="text-xl font-bold">{t("common.empty")}</p>
             <Button
               onPress={() => navigate(-1)}
               color="primary"
@@ -421,7 +1198,7 @@ const LIPPackagePage: React.FC = () => {
   }
 
   return (
-    <PageContainer animate={false} className="min-h-0">
+    <PageContainer animate={false} className="min-h-0 no-scrollbar">
       <div className="max-w-7xl mx-auto w-full">
         <motion.div
           initial={{ opacity: 0, y: -20 }}
@@ -494,7 +1271,6 @@ const LIPPackagePage: React.FC = () => {
                   </p>
                 </div>
 
-                {/* Actions */}
                 <div className="flex flex-col gap-3 min-w-[240px] md:border-l md:border-default-100 md:pl-8 justify-center">
                   <Button
                     className="w-full font-semibold shadow-md shadow-primary-900/20 text-white bg-primary-500 hover:bg-primary-500"
@@ -510,7 +1286,7 @@ const LIPPackagePage: React.FC = () => {
                       }, 100);
                     }}
                   >
-                    Install
+                    {t("lip.files.install")}
                   </Button>
                   <div className="flex gap-2 justify-center">
                     {pkg.projectUrl && (
@@ -523,7 +1299,6 @@ const LIPPackagePage: React.FC = () => {
                         <LuGlobe size={20} />
                       </Button>
                     )}
-                    {/* Placeholder buttons for consistency if needed, but only show if applicable */}
                     <Button isIconOnly variant="flat" aria-label="Share">
                       <LuShare2 size={20} />
                     </Button>
@@ -540,10 +1315,10 @@ const LIPPackagePage: React.FC = () => {
           transition={{ duration: 0.4, delay: 0.1 }}
         >
           <Card className={cn(LAYOUT.GLASS_CARD.BASE, "min-h-[500px]")}>
-            <CardBody className="p-6">
+            <CardBody className="p-6 overflow-hidden">
               <div ref={tabsRef} className="flex w-full flex-col scroll-mt-24">
                 <Tabs
-                  aria-label="Package Details"
+                  aria-label={t("lip.package_details_aria_label")}
                   variant="underlined"
                   color="primary"
                   selectedKey={selectedTab}
@@ -558,7 +1333,7 @@ const LIPPackagePage: React.FC = () => {
                       "group-data-[selected=true]:text-primary-600 dark:group-data-[selected=true]:text-primary-500 font-bold",
                   }}
                 >
-                  <Tab key="description" title="Description">
+                  <Tab key="description" title={t("common.details")}>
                     <div className="prose dark:prose-invert max-w-none">
                       {readmeContent ? (
                         <ReactMarkdown
@@ -574,54 +1349,163 @@ const LIPPackagePage: React.FC = () => {
                       )}
                     </div>
                   </Tab>
-                  <Tab key="files" title="Files">
-                    <div className="flex flex-col gap-4">
-                      <div className="flex justify-between items-center mb-2">
-                        <h3 className="text-lg font-semibold">All Files</h3>
-                      </div>
 
-                      {pkg.versions.length > 0 ? (
+                  <Tab key="files" title={t("lip.files.tab_label")}>
+                    <div className="flex flex-col gap-4">
+                      {filesWithGameVersionState.length > 0 ? (
                         <Table
-                          aria-label="Package files table"
+                          aria-label={t("lip.files.table_aria_label")}
                           removeWrapper
                           classNames={COMPONENT_STYLES.table}
                         >
                           <TableHeader>
-                            <TableColumn>Version</TableColumn>
-                            <TableColumn>Actions</TableColumn>
+                            <TableColumn>{t("common.version")}</TableColumn>
+                            <TableColumn>
+                              {t("lip.files.ll_requirement")}
+                            </TableColumn>
+                            <TableColumn>
+                              {t("lip.files.dependencies")}
+                            </TableColumn>
+                            <TableColumn>
+                              {t("lip.files.game_versions_label")}
+                            </TableColumn>
+                            <TableColumn>{t("lip.files.action")}</TableColumn>
                           </TableHeader>
                           <TableBody>
-                            {pkg.versions.map((version) => (
-                              <TableRow key={version}>
-                                <TableCell>
-                                  <Chip
-                                    size="sm"
-                                    variant="flat"
-                                    className="font-mono"
-                                  >
-                                    {version}
-                                  </Chip>
-                                </TableCell>
-                                <TableCell>
-                                  <Button
-                                    isIconOnly
-                                    variant="light"
-                                    size="sm"
-                                    className="text-default-500 dark:text-zinc-400 hover:text-primary"
-                                    onPress={() => handleInstall(version)}
-                                  >
-                                    <LuDownload size={20} />
-                                  </Button>
-                                </TableCell>
-                              </TableRow>
-                            ))}
+                            {filesWithGameVersionState.map((fileState) => {
+                              const { file } = fileState;
+                              const dependencyEntries = Object.entries(
+                                file.otherDependencies,
+                              );
+
+                              return (
+                                <TableRow key={file.version}>
+                                  <TableCell>
+                                    <Chip
+                                      size="sm"
+                                      variant="flat"
+                                      className="font-mono"
+                                    >
+                                      {file.version}
+                                    </Chip>
+                                  </TableCell>
+                                  <TableCell>
+                                    {file.llDependencyRanges.length > 0 ? (
+                                      <div className="text-xs text-default-700 dark:text-zinc-300 break-all">
+                                        {file.llDependencyRanges.join(", ")}
+                                      </div>
+                                    ) : (
+                                      <span className="text-default-400">
+                                        -
+                                      </span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {dependencyEntries.length > 0 ? (
+                                      <Tooltip
+                                        content={
+                                          <div className="max-w-sm p-2 space-y-1">
+                                            {dependencyEntries.map(
+                                              ([key, value]) => (
+                                                <div
+                                                  key={key}
+                                                  className="text-xs break-all"
+                                                >
+                                                  <span className="font-semibold">
+                                                    {key}
+                                                  </span>
+                                                  : {value}
+                                                </div>
+                                              ),
+                                            )}
+                                          </div>
+                                        }
+                                      >
+                                        <span className="cursor-help text-xs text-default-700 dark:text-zinc-300">
+                                          {t("lip.files.dependencies_count", {
+                                            count: dependencyEntries.length,
+                                          })}
+                                        </span>
+                                      </Tooltip>
+                                    ) : (
+                                      <span className="text-default-400">
+                                        -
+                                      </span>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    {!fileState.hasLLRequirement ? (
+                                      <Chip
+                                        size="sm"
+                                        variant="flat"
+                                        color="default"
+                                      >
+                                        {t(
+                                          "lip.files.game_versions_unrestricted",
+                                        )}
+                                      </Chip>
+                                    ) : mappingUnavailable ? (
+                                      <Chip
+                                        size="sm"
+                                        variant="flat"
+                                        color="warning"
+                                      >
+                                        {t(
+                                          "lip.files.game_versions_unavailable",
+                                        )}
+                                      </Chip>
+                                    ) : fileState.supportedGameVersions.length >
+                                      0 ? (
+                                      <div className="flex flex-wrap gap-1">
+                                        {fileState.supportedGameVersions.map(
+                                          (gameVersion) => (
+                                            <Chip
+                                              key={`${file.version}-${gameVersion}`}
+                                              size="sm"
+                                              variant="flat"
+                                              color="default"
+                                            >
+                                              {gameVersion}
+                                            </Chip>
+                                          ),
+                                        )}
+                                      </div>
+                                    ) : (
+                                      <Chip
+                                        size="sm"
+                                        variant="flat"
+                                        color="danger"
+                                      >
+                                        {t("contentpage.none")}
+                                      </Chip>
+                                    )}
+                                  </TableCell>
+                                  <TableCell>
+                                    <Button
+                                      size="sm"
+                                      color="primary"
+                                      variant="flat"
+                                      onPress={() =>
+                                        openInstallDialog(file.version)
+                                      }
+                                      isDisabled={
+                                        instanceOptions.length === 0 ||
+                                        actionRunning
+                                      }
+                                    >
+                                      {t("lip.files.install")}
+                                    </Button>
+                                  </TableCell>
+                                </TableRow>
+                              );
+                            })}
                           </TableBody>
                         </Table>
                       ) : (
                         <div className="flex flex-col items-center justify-center py-12 text-default-400 border border-dashed border-default-200 rounded-xl">
                           <LuFileDigit size={48} className="mb-4 opacity-50" />
                           <p className="text-lg font-medium">
-                            {t("common.empty")}
+                            {t("common.no_results")}
                           </p>
                         </div>
                       )}
@@ -633,6 +1517,167 @@ const LIPPackagePage: React.FC = () => {
           </Card>
         </motion.div>
       </div>
+
+      <UnifiedModal
+        size="md"
+        isOpen={installDialogOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            setInstallDialogOpen(true);
+            return;
+          }
+          closeInstallDialog();
+        }}
+        type="primary"
+        icon={<LuGamepad2 size={24} className="text-primary-500" />}
+        title={t("lip.files.select_instance_title")}
+        isDismissable={!actionRunning}
+        footer={
+          <>
+            <Button
+              variant="light"
+              onPress={() => closeInstallDialog()}
+              isDisabled={actionRunning}
+            >
+              {t("common.cancel")}
+            </Button>
+            <Button
+              color="primary"
+              onPress={() => void handleConfirmInstall()}
+              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              isLoading={actionRunning}
+              isDisabled={
+                !installDialogSelectedInstance ||
+                !installDialogTriggerVersion ||
+                dialogPackageStateLoading ||
+                !installDialogVersionInstallable ||
+                actionRunning
+              }
+            >
+              {t(installDialogActionLabelKey)}
+            </Button>
+          </>
+        }
+      >
+        <div className="space-y-4">
+          <p className="text-small text-default-500 dark:text-zinc-400">
+            {t("curseforge.install.select_version_body")}
+          </p>
+          <Select
+            label={t("curseforge.install.local_installation")}
+            placeholder={t("curseforge.install.select_version_placeholder")}
+            selectedKeys={
+              installDialogSelectedInstance
+                ? [installDialogSelectedInstance]
+                : []
+            }
+            onChange={(e) => setInstallDialogSelectedInstance(e.target.value)}
+            size="sm"
+            classNames={COMPONENT_STYLES.select}
+            isDisabled={actionRunning || instanceOptions.length === 0}
+          >
+            {instanceOptions.map((instanceName) => (
+              <SelectItem key={instanceName} textValue={instanceName}>
+                <div className="flex gap-2 items-center">
+                  <div className="w-8 h-8 rounded bg-default-200 flex items-center justify-center overflow-hidden">
+                    <img
+                      src={
+                        instanceLogos[instanceName] ||
+                        "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                      }
+                      alt="icon"
+                      className="w-full h-full object-cover"
+                      onError={(e) => (e.currentTarget.style.display = "none")}
+                    />
+                  </div>
+                  <div className="flex flex-col">
+                    <span className="text-small">{instanceName}</span>
+                    <span className="text-tiny text-default-400">
+                      {normalizeGameVersion(
+                        instanceGameVersions[instanceName],
+                      ) || t("contentpage.none")}
+                    </span>
+                  </div>
+                </div>
+              </SelectItem>
+            ))}
+          </Select>
+          <div className="text-small text-default-700 dark:text-zinc-300 flex items-center gap-2">
+            <span>{t("lip.files.installing_version_label")}:</span>
+            <Chip size="sm" variant="flat" className="font-mono">
+              {installDialogTriggerVersion || t("contentpage.none")}
+            </Chip>
+          </div>
+          <div className="text-small text-default-600 dark:text-zinc-300">
+            {dialogInstancePackageState?.loading
+              ? t("lip.files.checking_current_installed_version")
+              : t("lip.files.current_installed_version", {
+                  version:
+                    dialogInstalledPackageVersion || t("contentpage.none"),
+                })}
+          </div>
+          <div className="text-small text-default-600 dark:text-zinc-300">
+            {t("lip.files.instance_game_version", {
+              version:
+                installDialogInstanceGameVersion || t("contentpage.none"),
+            })}
+          </div>
+          {dialogRequiresLL && dialogLLStateLoading ? (
+            <div className="text-xs text-default-500 dark:text-zinc-400">
+              {t("lip.files.checking_ll_state")}
+            </div>
+          ) : null}
+          {dialogRequiresLL &&
+          !dialogLLStateLoading &&
+          !dialogLLInstalled &&
+          !mappingUnavailable &&
+          dialogAutoInstallLLVersion ? (
+            <div className="text-xs text-warning-600 dark:text-warning-400">
+              {t("lip.files.ll_missing_auto_install_hint", {
+                version: dialogAutoInstallLLVersion,
+              })}
+            </div>
+          ) : null}
+          {dialogRequiresLL &&
+          !dialogLLStateLoading &&
+          !dialogLLInstalled &&
+          mappingUnavailable ? (
+            <div className="text-xs text-danger-500">
+              {t("lip.files.ll_missing_mapping_block_hint")}
+            </div>
+          ) : null}
+          {dialogRequiresLL &&
+          !dialogLLStateLoading &&
+          !dialogLLInstalled &&
+          !mappingUnavailable &&
+          !dialogAutoInstallLLVersion ? (
+            <div className="text-xs text-danger-500">
+              {t("lip.files.ll_missing_no_compatible_hint")}
+            </div>
+          ) : null}
+          {dialogRequiresLL &&
+          !dialogLLStateLoading &&
+          dialogLLInstalled &&
+          !dialogInstalledLLCompatible ? (
+            <div className="text-xs text-danger-500">
+              {t("lip.files.ll_installed_incompatible_hint", {
+                installedVersion: dialogLLVersion || t("contentpage.none"),
+              })}
+            </div>
+          ) : null}
+          {installDialogFileState?.hasLLRequirement &&
+          !mappingUnavailable &&
+          !installDialogGameVersionCompatible ? (
+            <div className="text-xs text-danger-500">
+              {t("lip.files.select_version_incompatible_hint", {
+                version: installDialogTriggerVersion || t("contentpage.none"),
+                gameVersion:
+                  installDialogInstanceGameVersion || t("contentpage.none"),
+              })}
+            </div>
+          ) : null}
+        </div>
+      </UnifiedModal>
     </PageContainer>
   );
 };

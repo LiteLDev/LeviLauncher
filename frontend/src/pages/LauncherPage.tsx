@@ -43,33 +43,21 @@ import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { useLauncher } from "@/hooks/useLauncher";
 
 const LAUNCH_TIP_KEYS = [
-  "choose_version_dropdown",
-  "open_version_settings_gear",
-  "mods_import_button",
-  "file_manager_pick",
-  "download_versions",
+  "version_selector",
+  "version_search",
+  "manage_versions",
+  "quick_actions_menu",
+  "launch_dependencies",
+  "gdk_required",
+  "mods_card",
   "content_counts_card",
-  "settings_base_root",
-  "directory_write_check",
-  "general",
-  "bug_report",
-  "world_backup",
-  "performance_optimization",
-  "network_settings",
-  "mod_compatibility",
-  "levilamina_tip",
-  "star_project",
-  "update_notifications",
-  "install_addon",
-  "feature_request",
-  "join_discord",
-  "join_qq_group",
-  "contribution",
+  "incompatible_resource_packs",
+  "content_download_sources",
+  "settings_personalize",
+  "settings_storage_path",
+  "download_mirror",
   "open_source",
-  "follow_github",
-  "check_updates",
   "backup_worlds",
-  "customize_launcher",
 ] as const;
 
 export const LauncherPage = (args: any) => {
@@ -143,8 +131,7 @@ export const LauncherPage = (args: any) => {
   } = useLauncher(args);
 
   const launchTips = useMemo(
-    () =>
-      LAUNCH_TIP_KEYS.map((key) => String(t(`launcherpage.tip.${key}`))),
+    () => LAUNCH_TIP_KEYS.map((key) => String(t(`launcherpage.tip.${key}`))),
     [t],
   );
   const currentLaunchTip = launchTips[tipIndex] ?? launchTips[0] ?? "";

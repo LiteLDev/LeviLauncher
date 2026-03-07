@@ -15,6 +15,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/launchercore"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 )
 
@@ -253,12 +254,18 @@ func (s *VersionService) LaunchVersionByName(name string) string {
 	if s.launcher == nil {
 		return "ERR_LAUNCH_GAME"
 	}
+	if errCode := versionlaunch.ValidateLaunchName(name); errCode != "" {
+		return errCode
+	}
 	return s.launcher.Launch(s.launchContext(), name, true)
 }
 
 func (s *VersionService) LaunchVersionByNameForce(name string) string {
 	if s.launcher == nil {
 		return "ERR_LAUNCH_GAME"
+	}
+	if errCode := versionlaunch.ValidateLaunchName(name); errCode != "" {
+		return errCode
 	}
 	return s.launcher.Launch(s.launchContext(), name, false)
 }

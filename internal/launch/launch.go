@@ -197,7 +197,7 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 		if launchExited {
 			application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
 		} else {
-			application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
+			application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_TIMEOUT")
 		}
 		discord.SetLauncherIdle()
 		return

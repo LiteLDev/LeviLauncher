@@ -422,6 +422,10 @@ func (a *Minecraft) DeleteDownloadedMsixvc(version string, versionType string) s
 // GDK helpers
 func (a *Minecraft) IsGDKInstalled() bool { return gdk.IsInstalled() }
 
+func (a *Minecraft) GetDefaultGDKDownloadURL() string {
+	return gdk.GetDefaultDownloadURL()
+}
+
 func (a *Minecraft) StartGDKDownload(url string) string { return gdk.StartDownload(a.ctx, url) }
 
 func (a *Minecraft) CancelGDKDownload() { gdk.CancelDownload() }

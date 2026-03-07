@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 
@@ -18,6 +19,8 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/downloader"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
+
+const defaultDownloadURL = "https://github.bibk.top/microsoft/GDK/releases/download/October-2025-Update-2-v2510.2.6247/GDK_2510.2.6247.zip"
 
 const (
 	EventDownloadStatus   = "gdk_download_status"
@@ -48,12 +51,26 @@ var gdkMgr = downloader.NewManager(
 	downloader.Options{Throttle: 250 * time.Millisecond, Resume: false, RemoveOnCancel: true},
 )
 
+var downloadedZipPaths sync.Map
+
+func GetDefaultDownloadURL() string {
+	if v := strings.TrimSpace(os.Getenv("LEVI_GDK_DOWNLOAD_URL")); v != "" {
+		return v
+	}
+	return defaultDownloadURL
+}
+
 func IsInstalled() bool {
 	p := `C:\\Program Files (x86)\\Microsoft GDK\\bin\\wdapp.exe`
 	return utils.FileExists(p)
 }
 
 func StartDownload(ctx context.Context, url string) string {
+	url = strings.TrimSpace(url)
+	if url == "" {
+		application.Get().Event.Emit(EventDownloadError, "ERR_GDK_DOWNLOAD_URL_MISSING")
+		return ""
+	}
 	dir, err := apppath.InstallersDir()
 	if err != nil {
 		application.Get().Event.Emit(EventDownloadError, err.Error())
@@ -61,7 +78,11 @@ func StartDownload(ctx context.Context, url string) string {
 	}
 	name := deriveFilename(url)
 	dest := filepath.Join(dir, name)
-	return gdkMgr.Start(ctx, stripFilenameParam(url), dest, "")
+	started := gdkMgr.Start(ctx, stripFilenameParam(url), dest, "")
+	if strings.TrimSpace(started) != "" {
+		downloadedZipPaths.Store(filepath.Clean(started), struct{}{})
+	}
+	return started
 }
 
 func downloadFile(ctx context.Context, src string, dest string) error {
@@ -72,8 +93,13 @@ func CancelDownload() { gdkMgr.Cancel() }
 
 func InstallFromZip(ctx context.Context, zipPath string) string {
 	defer func() {
-		if strings.TrimSpace(zipPath) != "" {
-			_ = os.Remove(zipPath)
+		cleaned := filepath.Clean(strings.TrimSpace(zipPath))
+		if cleaned == "" {
+			return
+		}
+		if _, ok := downloadedZipPaths.Load(cleaned); ok {
+			downloadedZipPaths.Delete(cleaned)
+			_ = os.Remove(cleaned)
 		}
 	}()
 	if strings.TrimSpace(zipPath) == "" || !utils.FileExists(zipPath) {
@@ -120,22 +146,33 @@ func unzip(src string, dest string) error {
 		return err
 	}
 	defer r.Close()
+	safeRoot, err := filepath.Abs(dest)
+	if err != nil {
+		return err
+	}
 	for _, f := range r.File {
 		fp := filepath.Join(dest, f.Name)
+		safeTarget, err := filepath.Abs(fp)
+		if err != nil {
+			return err
+		}
+		if !strings.HasPrefix(strings.ToLower(safeTarget), strings.ToLower(safeRoot+string(os.PathSeparator))) && strings.ToLower(safeTarget) != strings.ToLower(safeRoot) {
+			return fmt.Errorf("zip entry escapes target directory: %s", f.Name)
+		}
 		if f.FileInfo().IsDir() {
-			if err := os.MkdirAll(fp, 0o755); err != nil {
+			if err := os.MkdirAll(safeTarget, 0o755); err != nil {
 				return err
 			}
 			continue
 		}
-		if err := os.MkdirAll(filepath.Dir(fp), 0o755); err != nil {
+		if err := os.MkdirAll(filepath.Dir(safeTarget), 0o755); err != nil {
 			return err
 		}
 		rc, err := f.Open()
 		if err != nil {
 			return err
 		}
-		out, err := os.OpenFile(fp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, f.Mode())
+		out, err := os.OpenFile(safeTarget, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, f.Mode())
 		if err != nil {
 			_ = rc.Close()
 			return err

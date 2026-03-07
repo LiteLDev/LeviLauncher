@@ -1,6 +1,8 @@
 package config
 
 import (
+	"fmt"
+	"log"
 	"os"
 	"strings"
 	"sync"
@@ -42,15 +44,28 @@ func Reload() (AppConfig, error) {
 	var c AppConfig
 	p := apppath.ConfigPath()
 	if b, err := os.ReadFile(p); err == nil {
-		_ = json.Unmarshal(b, &c)
+		if err := json.Unmarshal(b, &c); err != nil {
+			log.Printf("config.Reload: invalid config at %s: %v", p, err)
+			return AppConfig{}, fmt.Errorf("ERR_CONFIG_CORRUPTED: %w", err)
+		}
 		cachedConfig = c
 		isLoaded = true
 		apppath.SetBaseRootOverride(c.BaseRoot)
 		return c, nil
+	} else if !os.IsNotExist(err) {
+		log.Printf("config.Reload: read config failed at %s: %v", p, err)
+		return AppConfig{}, fmt.Errorf("ERR_CONFIG_READ_FAILED: %w", err)
 	}
 
-	db, _ := json.MarshalIndent(c, "", "  ")
-	_ = os.WriteFile(p, db, 0o644)
+	db, err := json.MarshalIndent(c, "", "  ")
+	if err != nil {
+		log.Printf("config.Reload: marshal default config failed: %v", err)
+		return AppConfig{}, err
+	}
+	if err := os.WriteFile(p, db, 0o644); err != nil {
+		log.Printf("config.Reload: write default config failed at %s: %v", p, err)
+		return c, fmt.Errorf("ERR_CONFIG_WRITE_FAILED: %w", err)
+	}
 	cachedConfig = c
 	isLoaded = true
 	apppath.SetBaseRootOverride(c.BaseRoot)

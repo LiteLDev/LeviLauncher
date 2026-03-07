@@ -12,7 +12,7 @@ info:
   copyright: "(c) 2024-2026, LeviMC" # Copyright text
   comments: "Some Product Comments" # Comments
   version: "0.3.7" # The application version
-  beta: "false" # Whether the application is in beta or not
+  beta: "true" # Whether the application is in beta or not
 
 # Dev mode configuration
 dev_mode:

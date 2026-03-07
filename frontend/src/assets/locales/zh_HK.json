@@ -129,7 +129,25 @@
       "content_counts_card": "主頁「內容管理」顯示世界、資源包、行為包數量。",
       "file_manager_pick": "檔案管理器支援多選並回傳路徑至 Mods 匯入。",
       "settings_base_root": "設定頁可修改內容儲存路徑，預設使用 %APPDATA% 下以目前可執行檔名命名的資料夾。",
-      "directory_write_check": "僅可儲存至可寫入目錄；不可寫入目錄將被停用。"
+      "directory_write_check": "僅可儲存至可寫入目錄；不可寫入目錄將被停用。",
+      "bug_report": "遇到問題？歡迎提交 Issue到Github：https://github.com/LiteLDev/LeviLauncher/issues！",
+      "world_backup": "定期備份重要世界，可在世界列表頁面使用備份功能。",
+      "performance_optimization": "遊戲卡頓時可嘗試關閉後台程式，或在設定中調整渲染距離等圖形選項。",
+      "network_settings": "下載緩慢時可嘗試在設定中更換下載鏡像，或檢查網路連接。",
+      "mod_compatibility": "安裝模組前請確認其相容性，不相容的模組可能導致遊戲崩潰或確定失敗。",
+      "levilamina_tip": "可在安裝遊戲時選擇安裝Levilamina，讓你的遊戲之旅更加愉快！",
+      "star_project": "如果你喜歡 LeviLauncher，歡迎在 GitHub 上 Star 支持我們！",
+      "update_notifications": "關注更新通知，新版啟動器可能修復已知問題並添加新功能。",
+      "install_addon": "可以在內容選擇/CurseForge 中安裝附加包，也可以在內容管理中安裝自己下載的附加包。",
+      "feature_request": "有想要的功能？歡迎提交功能請求到 GitHub！",
+      "join_discord": "加入我們的 Discord 伺服器，獲取最新消息：https://discord.gg/v5R5P4vRZk",
+      "join_qq_group": "加入我們的 QQ 群，獲取最新消息：458083875",
+      "contribution": "歡迎透過 Issue 與 Pull Request 參與貢獻。",
+      "open_source": "LeviLauncher 是開源軟體，你可以在 GitHub 上找到原始碼：https://github.com/LiteLDev/LeviLauncher",
+      "follow_github": "關注我們的 GitHub 倉庫，獲取最新更新",
+      "check_updates": "定期檢查更新，獲取最新功能和修復。",
+      "backup_worlds": "建議定期備份重要世界資料，避免意外丟失。",
+      "customize_launcher": "在設定中自訂啟動器外觀和行為，打造專屬於你的啟動器！"
     },
     "edition": "Bedrock Edition"
   },
@@ -357,14 +375,9 @@
     },
     "lip": {
       "title": "lip",
-      "description": "在這裡手動安裝或更新 lip。啟動時只會檢查更新並提示，不會自動下載或覆蓋。",
-      "installed": "已安裝 v{{version}}",
-      "path_label": "路徑：{{path}}",
       "install_button": "安裝",
-      "repair_button": "更新",
       "check_button": "檢查",
       "installing": "正在安裝 lip...",
-      "installed_label": "已安裝",
       "latest_label": "最新",
       "outdated_label": "可更新",
       "missing_label": "缺失",
@@ -402,7 +415,6 @@
         "current_version": "目前版本：{{currentVersion}}",
         "latest_version": "最新版本：{{latestVersion}}"
       },
-      "installed_without_version": "已安裝，但暫時無法讀取版本",
       "unknown_version": "未知",
       "update_button": "更新"
     },
@@ -588,7 +600,6 @@
     "confirm": "確定",
     "success": "操作成功",
     "delete": "刪除",
-    "delete_selected": "刪除選中",
     "search": "搜尋",
     "search_placeholder": "搜尋...",
     "empty": "暫無資料",
@@ -619,7 +630,6 @@
     "update": "更新",
     "tip": "提示",
     "feature_unavailable": "該功能暫時不可用",
-    "all": "全部",
     "unknown": "未知"
   },
   "useravatar": {
@@ -670,7 +680,6 @@
     "update_material_bin_failed": "材質更新失敗",
     "update_material_bin_stat_updated": "已更新: {{count}}",
     "update_material_bin_stat_failed": "失敗: {{count}}",
-    "update_material_bin_stat_skipped": "已跳過: {{count}}",
     "servers": "伺服器",
     "error_resolve_paths": "無法解析內容路徑。",
     "open_users_dir": "開啟儲存目錄",
@@ -703,7 +712,6 @@
     "delete_screenshot_confirm": "確定要刪除截圖 {{name}} 嗎？",
     "transfer_resources_button": "資源轉移",
     "transfer_resources_title": "轉移資源到隔離實例",
-    "transfer_resources_body": "請選擇要轉移到的目標實例（僅顯示開啟實例隔離的實例）。",
     "transfer_resources_body_overview": "將轉移目前實例中的全部資源包、行為包、皮膚包與世界到目標實例。請選擇目標實例。",
     "transfer_resources_body_simple": "請選擇要轉移到的目標實例。",
     "transfer_no_targets": "暫無可用的隔離實例",
@@ -754,7 +762,6 @@
         "body": "已成功取消註冊，現在可以刪除此實例了。"
       },
       "loader": {
-        "ll_current_version": "目前 LeviLamina 版本",
         "ll_not_installed": "未安裝",
         "ll_select_version": "LeviLamina 版本",
         "ll_select_placeholder": "請選擇 LeviLamina 版本",
@@ -882,7 +889,6 @@
     "field_type": "類型",
     "field_entry": "入口",
     "field_author": "作者",
-    "confirm_delete_title": "確認刪除",
     "confirm_delete_body": "確定要刪除此{{type}}嗎？此操作不可復原。",
     "dll_modal_title": "匯入 DLL 模組",
     "dll_name": "模組名稱",
@@ -1052,7 +1058,6 @@
     }
   },
   "lip": {
-    "maintenance": "維護中，暫不開放",
     "search_placeholder": "搜尋套件...",
     "sort_by": "排序",
     "select_sort": "選擇排序",
@@ -1071,7 +1076,6 @@
       "status_success": "成功",
       "status_failed": "失敗",
       "target_label": "目標實例",
-      "method_label": "方法",
       "progress_label": "進度",
       "log_title": "日誌輸出",
       "no_output": "暫無輸出",
@@ -1080,7 +1084,6 @@
       "copy_logs": "複製日誌",
       "copy_success": "日誌已複製",
       "close": "關閉",
-      "stage_install_ll": "先安裝 LeviLamina",
       "stage_install_pkg": "安裝目標套件",
       "stage_fallback_delete": "套件管理卸載不可用，回退為目錄刪除"
     },
@@ -1088,7 +1091,6 @@
     "files": {
       "action": "操作",
       "action_failed": "操作失敗：{{error}}",
-      "action_success": "操作成功",
       "checking_ll_state": "正在檢查 LeviLamina 狀態...",
       "dependencies": "依賴",
       "dependencies_count": "{{count}} 個依賴",
@@ -1115,29 +1117,7 @@
       "reinstall_success": "重裝成功",
       "current_installed_version": "目前已安裝版本：{{version}}",
       "checking_current_installed_version": "正在檢查目前已安裝版本...",
-      "target_instance_label": "Target instance",
-      "fixed_target_instance_label": "Target instance",
-      "only_compatible": "Only show compatible versions",
-      "compatibility_label": "Compatibility",
-      "compatibility": {
-        "compatible": "Compatible",
-        "incompatible": "Incompatible",
-        "requires_ll": "Requires LeviLamina",
-        "no_ll_requirement": "No LL requirement"
-      },
-      "update": "Update",
-      "reinstall": "重裝",
-      "uninstall": "Uninstall",
-      "installed_version": "Installed version: {{version}}",
-      "instance_ll_version": "LeviLamina version: {{version}}",
-      "select_instance_placeholder": "Select an instance",
-      "select_version_title": "Select Package Version",
-      "select_version_placeholder": "Select a package version",
-      "mapping_unavailable_hint": "Game version mapping is unavailable. Compatibility restrictions are temporarily skipped.",
-      "confirm_install_title": "Confirm Installation",
-      "confirm_install_body": "Install {{package}} {{version}} to {{instance}} as {{action}}?",
-      "confirm_uninstall_title": "Confirm Uninstall",
-      "confirm_uninstall_body": "Uninstall {{package}} from {{instance}}?"
+      "reinstall": "重裝"
     },
     "game_all_versions": "所有遊戲版本",
     "game_version_label": "遊戲版本",
@@ -1156,7 +1136,6 @@
       "updated": "最近更新"
     },
     "title": "lip 內容",
-    "ll_filter_context": "Current instance: {{instance}} | Installed LeviLamina: {{version}}",
     "package": {
       "confirm_install_title": "確認安裝",
       "confirm_install_body": "確定要為實例 {{instance}} {{action}} {{package}} {{version}} 嗎？"

@@ -29,7 +29,7 @@ Yes, but mod workflows are an advanced area. Start with a clean isolated version
 ## Community links
 
 - **Official Discord:** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
-- **Personal Discord:** [discord.gg/XhH4BBaxEy](https://discord.gg/XhH4BBaxEy)
+- **Personal Discord:** [discord.gg/VqQaC8vWz8](https://discord.gg/VqQaC8vWz8)
 - **QQ Group:** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## Download links

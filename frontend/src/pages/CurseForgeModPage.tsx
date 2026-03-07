@@ -1045,9 +1045,13 @@ const CurseForgeModPage: React.FC = () => {
             )}
             {(installStep === "success" || installStep === "error") && (
               <Button
-                color="primary"
+                color={installStep === "error" ? "danger" : "primary"}
                 onPress={() => setInstallModalOpen(false)}
-                className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                className={
+                  installStep === "error"
+                    ? "font-bold shadow-lg shadow-danger-500/20"
+                    : "bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                }
               >
                 {t("curseforge.install.close")}
               </Button>

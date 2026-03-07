@@ -1075,16 +1075,8 @@ export const LauncherPage = (args: any) => {
           onOpenChange={registerFailedDisclosure.onOpenChange}
           type="error"
           title={t("launcherpage.register.failed.title")}
-          footer={
-            <Button
-              color="primary"
-              radius="full"
-              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
-              onPress={registerFailedDisclosure.onClose}
-            >
-              {t("common.close")}
-            </Button>
-          }
+          confirmText={t("common.close")}
+          onConfirm={registerFailedDisclosure.onClose}
         >
           <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
             <p className="font-medium text-center">

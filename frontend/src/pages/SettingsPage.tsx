@@ -2475,32 +2475,36 @@ export const SettingsPage: React.FC = () => {
         onOpenChange={gdkProgressDisclosure.onOpenChange}
         hideCloseButton
         isDismissable={false}
-        type="info"
-        title={t("settings.gdk.download.title")}
-        icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+        type={gdkDlError ? "error" : "info"}
+        title={gdkDlError ? t("common.error") : t("settings.gdk.download.title")}
+        icon={gdkDlError ? undefined : <FaDownload className="w-6 h-6 text-primary-500" />}
+        confirmText={gdkDlError ? t("common.close") : undefined}
+        onConfirm={gdkDlError ? () => gdkProgressDisclosure.onClose() : undefined}
         footer={
-          <>
-            <Button
-              color="danger"
-              variant="light"
-              isDisabled={gdkDlStatus === "done"}
-              onPress={() => {
-                try {
-                  CancelGDKDownload();
-                } catch {}
-                gdkProgressDisclosure.onClose();
-              }}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              color="primary"
-              isDisabled={gdkDlStatus !== "done"}
-              onPress={() => gdkProgressDisclosure.onClose()}
-            >
-              {t("common.ok")}
-            </Button>
-          </>
+          gdkDlError ? undefined : (
+            <>
+              <Button
+                color="danger"
+                variant="light"
+                isDisabled={gdkDlStatus === "done"}
+                onPress={() => {
+                  try {
+                    CancelGDKDownload();
+                  } catch {}
+                  gdkProgressDisclosure.onClose();
+                }}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                color="primary"
+                isDisabled={gdkDlStatus !== "done"}
+                onPress={() => gdkProgressDisclosure.onClose()}
+              >
+                {t("common.ok")}
+              </Button>
+            </>
+          )
         }
       >
         {gdkDlError ? (
@@ -2567,27 +2571,31 @@ export const SettingsPage: React.FC = () => {
         onOpenChange={lipProgressDisclosure.onOpenChange}
         hideCloseButton
         isDismissable={false}
-        type="info"
-        title={t("settings.lip.installing")}
-        icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+        type={lipError ? "error" : "info"}
+        title={lipError ? t("common.error") : t("settings.lip.installing")}
+        icon={lipError ? undefined : <FaDownload className="w-6 h-6 text-primary-500" />}
+        confirmText={lipError ? t("common.close") : undefined}
+        onConfirm={lipError ? () => lipProgressDisclosure.onClose() : undefined}
         footer={
-          <>
-            <Button
-              color="danger"
-              variant="light"
-              onPress={lipProgressDisclosure.onClose}
-              isDisabled={!installingLip}
-            >
-              {t("common.hide")}
-            </Button>
-            <Button
-              color="primary"
-              onPress={lipProgressDisclosure.onClose}
-              isDisabled={installingLip && !lipError}
-            >
-              {lipError ? t("common.close") : t("common.ok")}
-            </Button>
-          </>
+          lipError ? undefined : (
+            <>
+              <Button
+                color="danger"
+                variant="light"
+                onPress={lipProgressDisclosure.onClose}
+                isDisabled={!installingLip}
+              >
+                {t("common.hide")}
+              </Button>
+              <Button
+                color="primary"
+                onPress={lipProgressDisclosure.onClose}
+                isDisabled={installingLip && !lipError}
+              >
+                {t("common.ok")}
+              </Button>
+            </>
+          )
         }
       >
         {lipError ? (

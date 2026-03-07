@@ -396,14 +396,9 @@
     },
     "lip": {
       "title": "lip",
-      "description": "在这里手动安装或更新 lip。启动时只检查更新并提示，不会自动下载或覆盖。",
-      "installed": "已安装 v{{version}}",
-      "path_label": "路径：{{path}}",
       "install_button": "安装",
-      "repair_button": "更新",
       "check_button": "检查",
       "installing": "正在安装 lip...",
-      "installed_label": "已安装",
       "latest_label": "最新",
       "outdated_label": "可更新",
       "missing_label": "缺失",
@@ -441,7 +436,6 @@
         "current_version": "当前版本：{{currentVersion}}",
         "latest_version": "最新版本：{{latestVersion}}"
       },
-      "installed_without_version": "已安装，但暂时无法读取版本",
       "unknown_version": "未知",
       "update_button": "更新"
     },
@@ -627,7 +621,6 @@
     "confirm": "确定",
     "success": "操作成功",
     "delete": "删除",
-    "delete_selected": "删除选中",
     "search": "搜索",
     "search_placeholder": "搜索...",
     "empty": "暂无数据",
@@ -658,7 +651,6 @@
     "update": "更新",
     "tip": "提示",
     "feature_unavailable": "该功能暂时不可用",
-    "all": "全部",
     "unknown": "未知"
   },
   "useravatar": {
@@ -709,7 +701,6 @@
     "update_material_bin_failed": "材质更新失败",
     "update_material_bin_stat_updated": "已更新: {{count}}",
     "update_material_bin_stat_failed": "失败: {{count}}",
-    "update_material_bin_stat_skipped": "已跳过: {{count}}",
     "servers": "服务器",
     "error_resolve_paths": "无法解析内容路径。",
     "open_users_dir": "打开存储目录",
@@ -721,7 +712,6 @@
     "import_button": "导入",
     "transfer_resources_button": "资源转移",
     "transfer_resources_title": "转移资源到隔离实例",
-    "transfer_resources_body": "请选择要转移到的目标实例（仅显示开启实例隔离的实例）。",
     "transfer_resources_body_overview": "将转移当前实例中的全部资源包、行为包、皮肤包和世界到目标实例。请选择目标实例。",
     "transfer_resources_body_simple": "请选择要转移到的目标实例。",
     "transfer_no_targets": "暂无可用的隔离实例",
@@ -790,7 +780,6 @@
         "body": "已成功取消注册，现在可以删除该实例了。"
       },
       "loader": {
-        "ll_current_version": "当前 LeviLamina 版本",
         "ll_not_installed": "未安装",
         "ll_select_version": "LeviLamina 版本",
         "ll_select_placeholder": "请选择 LeviLamina 版本",
@@ -921,7 +910,6 @@
     "field_type": "类型",
     "field_entry": "入口",
     "field_author": "作者",
-    "confirm_delete_title": "确认删除",
     "confirm_delete_body": "确定要删除此{{type}}吗？此操作不可撤销。",
     "dll_modal_title": "导入 DLL 模组",
     "dll_name": "模组名称",
@@ -1070,7 +1058,6 @@
     }
   },
   "lip": {
-    "maintenance": "维护中，暂不开放",
     "search_placeholder": "搜索包...",
     "sort_by": "排序",
     "select_sort": "选择排序",
@@ -1089,7 +1076,6 @@
       "status_success": "成功",
       "status_failed": "失败",
       "target_label": "目标实例",
-      "method_label": "方法",
       "progress_label": "进度",
       "log_title": "日志输出",
       "no_output": "暂无输出",
@@ -1098,7 +1084,6 @@
       "copy_logs": "复制日志",
       "copy_success": "日志已复制",
       "close": "关闭",
-      "stage_install_ll": "先安装 LeviLamina",
       "stage_install_pkg": "安装目标包",
       "stage_fallback_delete": "包管理卸载不可用，回退为目录删除"
     },
@@ -1106,7 +1091,6 @@
     "files": {
       "action": "操作",
       "action_failed": "操作失败：{{error}}",
-      "action_success": "操作成功",
       "checking_ll_state": "正在检查 LeviLamina 状态...",
       "dependencies": "依赖",
       "dependencies_count": "{{count}} 个依赖",
@@ -1133,29 +1117,7 @@
       "reinstall_success": "重装成功",
       "current_installed_version": "当前已安装版本：{{version}}",
       "checking_current_installed_version": "正在检查当前已安装版本...",
-      "target_instance_label": "Target instance",
-      "fixed_target_instance_label": "Target instance",
-      "only_compatible": "Only show compatible versions",
-      "compatibility_label": "Compatibility",
-      "compatibility": {
-        "compatible": "Compatible",
-        "incompatible": "Incompatible",
-        "requires_ll": "Requires LeviLamina",
-        "no_ll_requirement": "No LL requirement"
-      },
-      "update": "Update",
-      "reinstall": "重装",
-      "uninstall": "Uninstall",
-      "installed_version": "Installed version: {{version}}",
-      "instance_ll_version": "LeviLamina version: {{version}}",
-      "select_instance_placeholder": "Select an instance",
-      "select_version_title": "Select Package Version",
-      "select_version_placeholder": "Select a package version",
-      "mapping_unavailable_hint": "Game version mapping is unavailable. Compatibility restrictions are temporarily skipped.",
-      "confirm_install_title": "Confirm Installation",
-      "confirm_install_body": "Install {{package}} {{version}} to {{instance}} as {{action}}?",
-      "confirm_uninstall_title": "Confirm Uninstall",
-      "confirm_uninstall_body": "Uninstall {{package}} from {{instance}}?"
+      "reinstall": "重装"
     },
     "game_all_versions": "所有游戏版本",
     "game_version_label": "游戏版本",
@@ -1174,7 +1136,6 @@
       "updated": "最近更新"
     },
     "title": "lip 内容",
-    "ll_filter_context": "Current instance: {{instance}} | Installed LeviLamina: {{version}}",
     "package": {
       "confirm_install_title": "确认安装",
       "confirm_install_body": "确定要为实例 {{instance}} {{action}} {{package}} {{version}} 吗？"

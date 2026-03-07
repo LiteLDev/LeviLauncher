@@ -44,3 +44,6 @@ nda
 
 build-test.bat
 AGENTS.md
+node_modules/
+docs/.vitepress/cache/
+docs/.vitepress/dist/

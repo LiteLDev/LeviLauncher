@@ -1,0 +1,71 @@
+:root {
+  --vp-c-brand-1: #16a34a;
+  --vp-c-brand-2: #22c55e;
+  --vp-c-brand-3: #4ade80;
+  --vp-c-brand-soft: rgba(34, 197, 94, 0.16);
+  --vp-home-hero-name-color: transparent;
+  --vp-home-hero-name-background: linear-gradient(120deg, #16a34a 10%, #22c55e 55%, #86efac 100%);
+  --vp-home-hero-image-background-image:
+    radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.35), transparent 42%),
+    radial-gradient(circle at 70% 40%, rgba(52, 211, 153, 0.28), transparent 38%),
+    linear-gradient(145deg, rgba(15, 23, 42, 0.04), rgba(34, 197, 94, 0.12));
+  --vp-home-hero-image-filter: drop-shadow(0 18px 48px rgba(22, 163, 74, 0.32));
+}
+
+.dark {
+  --vp-c-bg-soft: rgba(255, 255, 255, 0.04);
+  --vp-home-hero-image-background-image:
+    radial-gradient(circle at 30% 30%, rgba(34, 197, 94, 0.4), transparent 40%),
+    radial-gradient(circle at 70% 40%, rgba(16, 185, 129, 0.28), transparent 42%),
+    linear-gradient(150deg, rgba(20, 83, 45, 0.55), rgba(3, 7, 18, 0.9));
+  --vp-home-hero-image-filter: drop-shadow(0 22px 58px rgba(34, 197, 94, 0.28));
+}
+
+.VPNavBar .title {
+  font-weight: 700;
+}
+
+.VPHero .image-src,
+.VPHomeHero .image-src {
+  border-radius: 28px;
+  padding: 18px;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.92), rgba(220, 252, 231, 0.75));
+  border: 1px solid rgba(22, 163, 74, 0.16);
+  backdrop-filter: blur(14px);
+}
+
+.dark .VPHero .image-src,
+.dark .VPHomeHero .image-src {
+  background: linear-gradient(145deg, rgba(9, 14, 23, 0.86), rgba(20, 83, 45, 0.3));
+  border-color: rgba(74, 222, 128, 0.18);
+}
+
+.VPFeature {
+  border-radius: 24px;
+  border: 1px solid rgba(15, 23, 42, 0.06);
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.92), rgba(248, 250, 252, 0.76));
+  box-shadow: 0 16px 40px rgba(15, 23, 42, 0.06);
+}
+
+.dark .VPFeature {
+  border-color: rgba(255, 255, 255, 0.08);
+  background: linear-gradient(180deg, rgba(24, 24, 27, 0.92), rgba(12, 14, 20, 0.82));
+  box-shadow: 0 18px 42px rgba(0, 0, 0, 0.28);
+}
+
+.VPFeature .title {
+  font-weight: 700;
+}
+
+.VPButton.brand {
+  box-shadow: 0 14px 30px rgba(22, 163, 74, 0.22);
+}
+
+.vp-doc table {
+  display: table;
+  width: 100%;
+}
+
+.vp-doc a {
+  text-underline-offset: 2px;
+}

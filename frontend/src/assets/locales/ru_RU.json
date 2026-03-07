@@ -54,7 +54,7 @@
     "launch": {
       "failed": {
         "title": "Ошибка запуска",
-        "content": "Вы не выбрали экземпляр для запуска, пожалуйста, установите экземпляр для начала",
+        "content": "Проверьте файлы экземпляра и необходимые зависимости, а также убедитесь, что нет несовместимых модов/аддонов/ресурс-паков, затем попробуйте снова.",
         "close_button": "Закрыть"
       },
       "force_run_button": "Принудительный запуск"
@@ -175,6 +175,22 @@
     "phase": {
       "download": "Загрузка пакета обновления",
       "install": "Установка обновления"
+    },
+    "status": {
+      "checking": "Проверка обновлений",
+      "verifying": "Проверка целостности пакета",
+      "elevating": "Запрос прав администратора",
+      "restarting": "Перезапуск лаунчера"
+    },
+    "errors": {
+      "generic": "Во время обновления произошла неизвестная ошибка. Повторите попытку позже.",
+      "update_admin_required": "Для продолжения обновления нужны права администратора.",
+      "update_asset_missing": "Необходимый пакет обновления отсутствует или назван неверно.",
+      "update_release_unavailable": "Метаданные обновления сейчас недоступны.",
+      "update_verify_failed": "Не удалось проверить пакет обновления.",
+      "update_download_failed": "Не удалось загрузить пакет обновления.",
+      "update_install_failed": "Не удалось установить пакет обновления.",
+      "update_restart_failed": "Не удалось автоматически перезапустить лаунчер после обновления."
     }
   },
   "downloadpage": {
@@ -267,6 +283,8 @@
       "levilamina_label": "Установить LeviLamina",
       "levilamina_desc": "Автоматически установить загрузчик LeviLamina",
       "version_label": "Версия",
+      "ll_version_label": "Версия LeviLamina",
+      "ll_version_placeholder": "Выберите версию LeviLamina",
       "hint": "Пожалуйста, подождите, процесс может занять некоторое время…",
       "estimated_size": "Записываемый объём (приблизительно)",
       "target": "Цель установки",
@@ -309,7 +327,8 @@
       "components": "Сторонние компоненты",
       "others": "Другие",
       "updates": "Обновления",
-      "about": "О программе"
+      "about": "О программе",
+      "privacy": "Privacy"
     },
     "unsaved": {
       "title": "Есть несохранённые изменения",
@@ -342,7 +361,8 @@
       "license": {
         "title": "Лицензионное соглашение",
         "body": "Для продолжения необходимо принять условия лицензионного соглашения Microsoft Public Game Development Kit.",
-        "accept": "Я принимаю условия лицензионного соглашения."
+        "accept": "Я принимаю условия лицензионного соглашения.",
+        "link_text": "Лицензионное соглашение Microsoft Public Game Development Kit"
       },
       "download": {
         "title": "Загрузка GDK"
@@ -350,31 +370,59 @@
       "install": {
         "title": "Установка GDK",
         "body": "Пожалуйста, подождите, пока установщик работает…"
-      }
+      },
+      "download_unavailable": "Сейчас не удаётся получить ссылку для загрузки GDK."
     },
     "lip": {
       "title": "lip",
-      "description": "Установите lip для управления пакетами и зависимостями",
+      "description": "Устанавливайте и обновляйте lip вручную здесь. При запуске выполняется только проверка и уведомление, без автообновления.",
       "installed": "Установлен v{{version}}",
+      "path_label": "Path: {{path}}",
       "install_button": "Установить",
-      "installing": "Установка",
-      "update_button": "Обновить до {{version}}",
+      "repair_button": "Обновить",
+      "check_button": "Проверить",
+      "installing": "Установка lip...",
       "installed_label": "Установлен",
+      "latest_label": "Актуально",
+      "outdated_label": "Доступно обновление",
+      "missing_label": "Не установлен",
       "status": {
-        "fetching_version": "Получение информации о версии...",
-        "downloading": "Загрузка...",
-        "extracting": "Распаковка...",
-        "setting_path": "Настройка переменных окружения...",
-        "success": "Установка завершена успешно!",
-        "failed": "Ошибка установки"
+        "checking": "Проверка состояния lip...",
+        "preparing": "Подготовка загрузки...",
+        "downloading": "Загрузка архива lip...",
+        "extracting": "Распаковка lipd.exe...",
+        "writing": "Запись lipd.exe...",
+        "verifying": "Проверка установки...",
+        "up_to_date": "Установлена последняя версия",
+        "outdated": "Доступна новая версия",
+        "missing": "lip не установлен",
+        "check_failed": "Не удалось проверить состояние lip: {{error}}",
+        "done": "Установка lip завершена"
       },
       "error": {
-        "fetch_version_failed": "Не удалось получить информацию о версии",
-        "download_failed": "Ошибка загрузки",
-        "extract_failed": "Ошибка распаковки",
-        "set_path_failed": "Не удалось настроить переменные окружения",
-        "unknown": "Произошла неизвестная ошибка"
-      }
+        "lip_fetch_release": "Не удалось получить сведения о последнем релизе lip",
+        "lip_release_asset_not_found": "В последнем релизе не найден пакет lip для Windows x64",
+        "lip_download_archive": "Не удалось загрузить архив lip",
+        "lip_open_archive": "Не удалось открыть архив lip",
+        "lip_extract_binary": "Не удалось распаковать lipd.exe",
+        "lip_create_target_dir": "Не удалось создать каталог установки lip",
+        "lip_replace_file": "Не удалось заменить lipd.exe",
+        "lip_verify_install": "Не удалось проверить установленную версию lip",
+        "lip_install_failed": "Не удалось установить lip"
+      },
+      "version_label": "Текущая: {{currentVersion}} / Последняя: {{latestVersion}}",
+      "startup_prompt": {
+        "title": "Доступно обновление lip",
+        "description": "Доступна новая версия lip ({{currentVersion}} -> {{latestVersion}}). LeviLauncher не обновляет её автоматически. Откройте «Настройки > Компоненты» и обновите вручную.",
+        "later_button": "Позже",
+        "ignore_button": "Игнорировать эту версию",
+        "open_settings_button": "Открыть настройки",
+        "current_version": "Текущая версия: {{currentVersion}}",
+        "latest_version": "Последняя версия: {{latestVersion}}"
+      },
+      "installed_without_version": "Установлен, но версию пока не удалось определить",
+      "unknown_version": "Неизвестно",
+      "update_button": "Обновить"
     },
     "resource_rules": {
       "title": "Данные работы лаунчера",
@@ -487,6 +535,16 @@
       "kill_all": "Завершить все процессы",
       "kill": "Завершить",
       "no_process": "Запущенные процессы Minecraft не найдены"
+    },
+    "privacy": {
+      "analytics": {
+        "title": "Anonymous Usage Analytics (Microsoft Clarity)",
+        "desc": "When enabled, this helps us improve features and UI. You can turn it off at any time."
+      },
+      "links": {
+        "clarity_terms": "Clarity Terms",
+        "microsoft_privacy": "Microsoft Privacy Statement"
+      }
     }
   },
   "downloadmodal": {
@@ -712,6 +770,18 @@
       "unregister_success": {
         "title": "Отмена регистрации выполнена",
         "body": "Успешно отменена регистрация. Теперь можно удалить эту версию."
+      },
+      "loader": {
+        "ll_current_version": "Текущая версия LeviLamina",
+        "ll_not_installed": "Не установлено",
+        "ll_select_version": "Версия LeviLamina",
+        "ll_select_placeholder": "Выберите версию LeviLamina",
+        "ll_select_guidance": "Выберите версию LeviLamina, которую нужно установить или обновить.",
+        "ll_upgrade_only_hint": "В настройках инстанса доступны только обновления до более новой версии.",
+        "ll_only_latest_when_current_unknown": "Текущую версию не удалось распознать; можно обновиться только до последней версии.",
+        "ll_remove_confirm_title": "Подтвердите удаление LeviLamina",
+        "ll_remove_confirm_body": "LeviLamina будет удалена из этого инстанса.",
+        "ll_remove_confirm_warning": "Это действие нельзя отменить."
       }
     },
     "logo": {
@@ -742,7 +812,7 @@
     "ERR_NOT_FOUND_GAME_DIR": "Папка с контентом игры не найдена",
     "ERR_NOT_FOUND_EXE": "Исполняемый файл не найден",
     "ERR_WRITE_TARGET": "Не удалось записать конфигурацию",
-    "ERR_LAUNCH_GAME": "Не удалось запустить игру",
+    "ERR_LAUNCH_GAME": "Не удалось корректно запустить игру",
     "ERR_GAME_CRASH_DURING_LAUNCH": "Игра крашнулась во время запуска",
     "ERR_WAIT_KERNEL_TIMEOUT": "Тайм-аут подготовки ядра",
     "ERR_COPY_WALK": "Ошибка обхода файлов",
@@ -756,6 +826,7 @@
     "ERR_ACCESS_VERSIONS_DIR": "Нет доступа к папке versions",
     "ERR_ACCESS_INSTALLERS_DIR": "Нет доступа к папке installers",
     "ERR_READ_VERSIONS_DIR": "Не удалось прочитать папку versions",
+    "ERR_LL_VERSION_UNSUPPORTED": "Выбранная версия LeviLamina не поддерживается для этой версии игры",
     "ERR_NAME_EXISTS": "Имя уже существует",
     "ERR_INVALID_NAME": "Недопустимое имя",
     "ERR_ICON_DECODE": "Ошибка декодирования иконки",
@@ -777,7 +848,20 @@
     "ERR_SHORTCUT_CREATE_FAILED": "Не удалось создать ярлык на рабочем столе",
     "ERR_UNREGISTER_FAILED": "Не удалось отменить регистрацию",
     "ERR_NOT_REGISTERED_THIS_VERSION": "Эта версия не зарегистрирована в системе",
-    "ERR_DEV_MODE_REQUIRED": "Режим разработчика не включен, и автоматическое включение не удалось. Пожалуйста, включите режим разработчика вручную и повторите попытку."
+    "ERR_DEV_MODE_REQUIRED": "Режим разработчика не включен, и автоматическое включение не удалось. Пожалуйста, включите режим разработчика вручную и повторите попытку.",
+    "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "Этот пакет требуется другим установленным mod и сейчас не может быть удален",
+    "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "Этот пакет по-прежнему требуется другим установленным mod, поэтому полностью удалить его нельзя; он автоматически переведен в режим установки как зависимость.",
+    "ERR_LIP_NOT_INSTALLED": "lip не установлен. Откройте «Настройки > Компоненты», чтобы установить или обновить его вручную.",
+    "ERR_LL_NOT_SUPPORTED": "LeviLamina is not supported for this game version",
+    "ERR_FETCH_LL_DB": "Failed to fetch LeviLamina version database",
+    "ERR_INVALID_VERSION_FORMAT": "Invalid game version format",
+    "ERR_LIP_INSTALL_FAILED": "Failed to install LeviLamina via lip",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Invalid lip package identifier",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "lip package version is required",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
   },
   "filemanager": {
     "sort": {
@@ -841,14 +925,35 @@
     "toggle_desc_off": "Мод выключен и не будет загружаться при запуске игры.",
     "only_enabled": "Показывать только включённые моды",
     "drop_hint": "Перетащите .zip или .dll для импорта модов/плагинов",
-    "err_lip_not_installed": "LIP не установлен",
+    "err_lip_not_installed": "lip не установлен. Откройте «Настройки > Компоненты», чтобы установить или обновить его вручную.",
     "err_lip_install_failed_suggestion": "Установка не удалась, попробуйте переустановить Minecraft",
     "rc_warning": {
       "title": "Предупреждение об экспериментальной версии",
       "body_1": "Версия LeviLamina ({{version}}), которую вы собираетесь установить, является релиз-кандидатом (RC).",
       "body_2": "Это экспериментальная версия, которая может быть нестабильной. Рекомендуется только для разработчиков или опытных пользователей.",
       "body_3": "Вы хотите продолжить установку?"
-    }
+    },
+    "tab_all": "Все",
+    "tab_normal": "Обычные моды",
+    "tab_lip": "lip моды",
+    "lip_children_summary": "Содержит: {{children}} (+{{count}})",
+    "lip_open_package": "Открыть пакет",
+    "action_promote_install": "Сделать явной установкой",
+    "action_promote_install_success": "{{name}} переведен в явную установку",
+    "action_promote_install_failed_no_version": "Не найдена установленная версия этого пакета",
+    "action_update": "Update",
+    "action_uninstall": "Uninstall",
+    "batch_update_title": "Batch Update Mods",
+    "batch_update_body": "Selected {{selected}} mods. {{updatable}} mod(s) can be updated from lip. Continue?",
+    "batch_uninstall_title": "Batch Uninstall Mods",
+    "batch_uninstall_body": "You are about to uninstall {{count}} mod(s). Continue?",
+    "update_available": "Update to {{version}}",
+    "update_latest": "Already latest",
+    "no_update_source": "No lip update source",
+    "err_ll_managed_in_version_settings": "LeviLamina can only be managed in Version Settings",
+    "action_result_title_done": "Operation Completed",
+    "action_result_title_partial": "Operation Completed (Partial Failures)",
+    "action_result_title_failed": "Operation Failed"
   },
   "terms": {
     "title": "Лицензионное соглашение LeviLauncher",
@@ -866,6 +971,15 @@
       "body": "У вас есть несохранённые изменения пути к контенту. Сохранить перед завершением?",
       "cancel": "Отмена",
       "save": "Сохранить и завершить"
+    },
+    "privacy": {
+      "title": "Privacy & Usage Data",
+      "subtitle": "Choose whether to enable anonymous analytics",
+      "desc": "If enabled, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data (such as clicks and page flow) to improve usability. It does not collect account information, game information, or disk content, and only applies to frontend pages.",
+      "links": {
+        "clarity_terms": "Clarity Terms",
+        "microsoft_privacy": "Microsoft Privacy Statement"
+      }
     }
   },
   "contentdownload": {
@@ -935,6 +1049,24 @@
       "failed_msg": "Ошибка импорта",
       "next": "Далее",
       "close": "Закрыть"
+    },
+    "mod_details_aria_label": "Mod Details",
+    "loading_description": "Loading description...",
+    "mod_tabs": {
+      "description": "Description",
+      "files": "Files"
+    },
+    "mod_files": {
+      "title": "All Files",
+      "table_aria_label": "Mod files table",
+      "columns": {
+        "type": "Type",
+        "name": "Name",
+        "uploaded": "Uploaded",
+        "size": "Size",
+        "downloads": "Downloads",
+        "actions": "Actions"
+      }
     }
   },
   "lip": {
@@ -944,7 +1076,109 @@
     "select_sort": "Выберите сортировку",
     "order_by": "Порядок",
     "select_order": "Выберите порядок",
-    "no_description": "Нет описания"
+    "no_description": "Нет описания",
+    "ll_version_label": "LeviLamina version",
+    "ll_version_placeholder": "Select LeviLamina version",
+    "ll_all_versions": "All LeviLamina versions",
+    "ll_filter_context": "Current instance: {{instance}} | Installed LeviLamina: {{version}}",
+    "game_version_label": "Game version",
+    "game_version_placeholder": "Select game version",
+    "game_all_versions": "All game versions",
+    "files": {
+      "target_instance_label": "Target instance",
+      "fixed_target_instance_label": "Target instance",
+      "only_compatible": "Only show compatible versions",
+      "compatibility_label": "Compatibility",
+      "game_versions_label": "Game Versions",
+      "game_versions_unrestricted": "No game version restriction",
+      "game_versions_unavailable": "Game version mapping unavailable",
+      "ll_requirement": "LL Requirement",
+      "dependencies": "Dependencies",
+      "action": "Action",
+      "compatibility": {
+        "compatible": "Compatible",
+        "incompatible": "Incompatible",
+        "requires_ll": "Requires LeviLamina",
+        "no_ll_requirement": "No LL requirement"
+      },
+      "dependencies_count": "{{count}} dependencies",
+      "install": "Install",
+      "upgrade": "Обновить",
+      "downgrade": "Понизить версию",
+      "update": "Update",
+      "reinstall": "Переустановить",
+      "uninstall": "Uninstall",
+      "installed_version": "Installed version: {{version}}",
+      "instance_game_version": "Game version: {{version}}",
+      "instance_ll_version": "LeviLamina version: {{version}}",
+      "select_instance_title": "Select Target Instance",
+      "select_instance_placeholder": "Select an instance",
+      "installing_version_label": "Installing package version",
+      "select_version_title": "Select Package Version",
+      "select_version_placeholder": "Select a package version",
+      "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
+      "mapping_unavailable_hint": "Game version mapping is unavailable. Compatibility restrictions are temporarily skipped.",
+      "checking_ll_state": "Checking LeviLamina status...",
+      "ll_missing_auto_install_hint": "LeviLamina is not installed. Clicking Install will first install LeviLamina {{version}}, then install this package.",
+      "ll_missing_mapping_block_hint": "Game version mapping is unavailable, so LeviLamina cannot be auto-installed. Please install LeviLamina manually first.",
+      "ll_missing_no_compatible_hint": "No LeviLamina version matches this package's dependency range for the selected game version.",
+      "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",
+      "confirm_install_title": "Confirm Installation",
+      "confirm_install_body": "Install {{package}} {{version}} to {{instance}} as {{action}}?",
+      "confirm_uninstall_title": "Confirm Uninstall",
+      "confirm_uninstall_body": "Uninstall {{package}} from {{instance}}?",
+      "action_success": "Operation completed successfully",
+      "action_failed": "Operation failed: {{error}}",
+      "tab_label": "Files",
+      "table_aria_label": "Package files table",
+      "install_success": "Installation completed successfully",
+      "upgrade_success": "Обновление выполнено успешно",
+      "downgrade_success": "Понижение версии выполнено успешно",
+      "reinstall_success": "Переустановка выполнена успешно",
+      "current_installed_version": "Current installed version: {{version}}",
+      "checking_current_installed_version": "Checking currently installed version..."
+    },
+    "title": "lip Content",
+    "sort_options": {
+      "hotness": "Hotness",
+      "updated": "Updated",
+      "name": "Name"
+    },
+    "order_options": {
+      "desc": "Desc",
+      "asc": "Asc"
+    },
+    "by_author_inline": "| By {{author}}",
+    "package_details_aria_label": "Package Details",
+    "task_console": {
+      "title_install": "Installing",
+      "title_upgrade": "Обновление",
+      "title_downgrade": "Понижение версии",
+      "title_reinstall": "Переустановка",
+      "title_update": "Updating",
+      "title_uninstall": "Uninstalling",
+      "title_generic": "lip Task",
+      "status_running": "Running",
+      "status_success": "Success",
+      "status_failed": "Failed",
+      "target_label": "Target",
+      "method_label": "Method",
+      "progress_label": "Progress",
+      "log_title": "Log Output",
+      "no_output": "No output yet",
+      "waiting_start": "Waiting for lipd output...",
+      "stderr_title": "stderr",
+      "copy_logs": "Copy Logs",
+      "copy_success": "Logs copied",
+      "close": "Close",
+      "stage_install_ll": "Installing LeviLamina first",
+      "stage_install_pkg": "Installing target package",
+      "stage_fallback_delete": "Package uninstall unavailable, fallback to directory delete"
+    },
+    "package": {
+      "confirm_install_title": "Подтвердите установку",
+      "confirm_install_body": "Вы уверены, что хотите {{action}} {{package}} {{version}} для {{instance}}?"
+    }
   },
   "server": {
     "offline": "Офлайн / Нет соединения",
@@ -958,18 +1192,28 @@
       "dll_dependency_missing": "Отсутствует библиотека VC++",
       "name_required": "Требуется имя",
       "msixvc_not_specified": "Пакет установки не указан",
-      "lip_not_installed": "LIP не установлен",
+      "lip_not_installed": "lip не установлен. Откройте «Настройки > Компоненты», чтобы установить или обновить его вручную.",
       "unknown": "Неизвестная ошибка",
       "nh_err_unknown": "Неизвестная ошибка",
       "nh_err_exception": "Неперехваченное исключение или неизвестная ошибка",
       "nh_err_invalid_params": "Неверные параметры",
       "nh_err_key_not_found": "Ошибка проверки пакета установки. Пожалуйста, удалите установщик и попробуйте снова.",
-      "nh_err_unauthorized_caller": "Вызывающий не авторизован",
+      "nh_err_unauthorized_caller": "Убедитесь, что имя exe-файла лаунчера не было изменено (LeviLauncher.exe)",
       "nh_err_pipe_open_failed": "Не удалось открыть канал прогресса",
       "nh_err_input_not_found": "Входной файл не найден",
       "nh_err_output_dir_invalid": "Неверный выходной каталог",
       "nh_err_parse_failed": "Ошибка разбора пакета",
       "nh_err_extract_failed": "Ошибка распаковки"
+    }
+  },
+  "clarity": {
+    "prompt": {
+      "title": "Help improve LeviLauncher?",
+      "body": "With your permission, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data to improve features and UI. It does not collect account information, game information, or disk content, and only applies to frontend pages. You can change this anytime in Settings > Privacy.",
+      "enable": "Allow and Enable",
+      "disable": "Not Now",
+      "clarity_terms": "Clarity Terms",
+      "microsoft_privacy": "Microsoft Privacy Statement"
     }
   }
 }

@@ -41,6 +41,7 @@ import {
   LuImage,
   LuFolderOpen,
   LuLayers,
+  LuShield,
 } from "react-icons/lu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -48,7 +49,6 @@ import {
   GetBaseRoot,
   SetBaseRoot,
   CanWriteToDir,
-  StartGDKDownload,
   CancelGDKDownload,
   SetDisableDiscordRPC,
   SetEnableBetaUpdates,
@@ -95,7 +95,6 @@ export const SettingsPage: React.FC = () => {
   const settings = useSettings(i18n);
   const {
     hasBackend,
-    hasLipUpdate,
     navigate,
     location,
     appVersion,
@@ -127,18 +126,19 @@ export const SettingsPage: React.FC = () => {
     setDiscordRpcEnabled,
     enableBetaUpdates,
     setEnableBetaUpdates,
+    clarityEnabled,
+    setClarityEnabled,
     gdkInstalled,
     gdkDlProgress,
     gdkDlSpeed,
     gdkDlStatus,
     gdkDlError,
-    setGdkDlError,
-    setGdkDlProgress,
     gdkProgressDisclosure,
     gdkLicenseDisclosure,
     gdkInstallDisclosure,
     gdkLicenseAccepted,
     setGdkLicenseAccepted,
+    startDefaultGdkDownload,
     selectedTab,
     setSelectedTab,
     layoutMode,
@@ -196,6 +196,9 @@ export const SettingsPage: React.FC = () => {
     lipInstalled,
     lipVersion,
     lipLatestVersion,
+    lipPath,
+    lipUpToDate,
+    lipStatusError,
     installingLip,
     setInstallingLip,
     lipStatus,
@@ -203,6 +206,7 @@ export const SettingsPage: React.FC = () => {
     lipError,
     setLipError,
     lipProgressDisclosure,
+    refreshLipStatus,
     resourceRulesInstalled,
     resourceRulesUpToDate,
     resourceRulesLocalSha,
@@ -229,9 +233,31 @@ export const SettingsPage: React.FC = () => {
     resetOnClose,
   } = settings;
 
+  const getGdkErrorText = React.useCallback(
+    (code: string) => {
+      switch (String(code || "").trim()) {
+        case "ERR_GDK_DOWNLOAD_URL_MISSING":
+          return t("settings.gdk.download_unavailable");
+        default:
+          return code;
+      }
+    },
+    [t],
+  );
+
   const activeCustomThemeColor = normalizeHexColor(
     themeSettingMode === "light" ? lightCustomThemeColor : darkCustomThemeColor,
   );
+  const lipSummaryText = React.useMemo(() => {
+    if (!lipInstalled) {
+      return t("settings.lip.status.missing");
+    }
+    return t("settings.lip.version_label", {
+      currentVersion: lipVersion || t("settings.lip.unknown_version"),
+      latestVersion: lipLatestVersion || t("settings.lip.unknown_version"),
+    });
+  }, [lipInstalled, lipLatestVersion, lipVersion, t]);
+
   const customThemeIconColor =
     getColorLuminance(activeCustomThemeColor) > 0.6 ? "#111827" : "#ffffff";
 
@@ -251,7 +277,7 @@ export const SettingsPage: React.FC = () => {
                 description={t("settings.header.content")}
               />
               <Tabs
-                aria-label="Settings Tabs"
+                  aria-label={t("settings.header.title")}
                 selectedKey={selectedTab}
                 onSelectionChange={(k) => setSelectedTab(k as string)}
                 classNames={{
@@ -266,6 +292,7 @@ export const SettingsPage: React.FC = () => {
                 />
                 <Tab key="components" title={t("settings.tabs.components")} />
                 <Tab key="others" title={t("settings.tabs.others")} />
+                <Tab key="privacy" title={t("settings.tabs.privacy")} />
                 <Tab key="updates" title={t("settings.tabs.updates")} />
                 <Tab key="about" title={t("settings.tabs.about")} />
               </Tabs>
@@ -454,7 +481,7 @@ export const SettingsPage: React.FC = () => {
                         </Button>
                       </DropdownTrigger>
                       <DropdownMenu
-                        aria-label="Language selection"
+                            aria-label={t("settings.body.language.button")}
                         variant="flat"
                         disallowEmptySelection
                         selectionMode="single"
@@ -1002,7 +1029,7 @@ export const SettingsPage: React.FC = () => {
                                   </p>
                                   <Select
                                     size="sm"
-                                    aria-label="Fit Mode"
+                              aria-label={t("settings.appearance.background_fit_mode")}
                                     disallowEmptySelection
                                     classNames={COMPONENT_STYLES.select}
                                     selectedKeys={new Set([backgroundFitMode])}
@@ -1102,7 +1129,7 @@ export const SettingsPage: React.FC = () => {
                                   </p>
                                   <Select
                                     size="sm"
-                                    aria-label="Play Order"
+                              aria-label={t("settings.appearance.background_play_order")}
                                     disallowEmptySelection
                                     classNames={COMPONENT_STYLES.select}
                                     selectedKeys={
@@ -1189,7 +1216,7 @@ export const SettingsPage: React.FC = () => {
                                     step={1}
                                     maxValue={50}
                                     minValue={0}
-                                    aria-label="Blur"
+                            aria-label={t("settings.appearance.background_blur")}
                                     value={backgroundBlur}
                                     classNames={{
                                       filler: "bg-primary-500",
@@ -1252,7 +1279,7 @@ export const SettingsPage: React.FC = () => {
                                     step={1}
                                     maxValue={100}
                                     minValue={20}
-                                    aria-label="Brightness"
+                            aria-label={t("settings.appearance.background_brightness")}
                                     value={backgroundBrightness}
                                     classNames={{
                                       filler: "bg-primary-500",
@@ -1317,7 +1344,7 @@ export const SettingsPage: React.FC = () => {
                                     step={1}
                                     maxValue={100}
                                     minValue={0}
-                                    aria-label="Opacity"
+                            aria-label={t("settings.appearance.background_opacity")}
                                     value={backgroundOpacity}
                                     classNames={{
                                       filler: "bg-primary-500",
@@ -1742,7 +1769,7 @@ export const SettingsPage: React.FC = () => {
                                                 step={1}
                                                 maxValue={100}
                                                 minValue={0}
-                                                aria-label="Base Opacity"
+                                aria-label={t("settings.appearance.background_base_opacity")}
                                                 value={
                                                   themeSettingMode === "light"
                                                     ? lightBackgroundBaseOpacity
@@ -1875,47 +1902,33 @@ export const SettingsPage: React.FC = () => {
                   <Divider className="bg-default-200/50" />
 
                   {/* LIP */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col gap-1 min-w-0">
                       <p className="font-medium">{t("settings.lip.title")}</p>
-                      <p className="text-tiny text-default-500 dark:text-zinc-400">
-                        {lipInstalled
-                          ? t("settings.lip.installed", {
-                              version: lipVersion,
-                            })
-                          : t("settings.lip.description")}
+                      <p
+                        className="text-tiny text-default-500 dark:text-zinc-400 truncate"
+                        title={lipSummaryText}
+                      >
+                        {lipSummaryText}
                       </p>
                     </div>
-                    {lipInstalled ? (
-                      <div className="flex items-center gap-2">
-                        <Chip color="success" variant="flat">
-                          {t("settings.lip.installed_label")}
-                        </Chip>
-                        {hasLipUpdate && (
-                          <Button
-                            variant="bordered"
-                            radius="full"
-                            isLoading={installingLip}
-                            isDisabled={installingLip}
-                            onPress={() => {
-                              setInstallingLip(true);
-                              setLipError("");
-                              lipProgressDisclosure.onOpen();
-                              InstallLip().then((err) => {
-                                if (err) {
-                                  setInstallingLip(false);
-                                  setLipError(err);
-                                }
-                              });
-                            }}
-                          >
-                            {t("settings.lip.update_button", {
-                              version: lipLatestVersion,
-                            })}
-                          </Button>
-                        )}
-                      </div>
-                    ) : (
+                    <div className="flex items-center gap-2 shrink-0">
+                      <Chip
+                        color={
+                          lipUpToDate
+                            ? "success"
+                            : lipInstalled
+                              ? "warning"
+                              : "default"
+                        }
+                        variant="flat"
+                      >
+                        {lipUpToDate
+                          ? t("settings.lip.latest_label")
+                          : lipInstalled
+                            ? t("settings.lip.outdated_label")
+                            : t("settings.lip.missing_label")}
+                      </Chip>
                       <Button
                         radius="full"
                         variant="bordered"
@@ -1923,6 +1936,11 @@ export const SettingsPage: React.FC = () => {
                         isLoading={installingLip}
                         isDisabled={installingLip}
                         onPress={() => {
+                          if (lipInstalled && lipUpToDate) {
+                            setLipError("");
+                            void refreshLipStatus();
+                            return;
+                          }
                           setInstallingLip(true);
                           setLipError("");
                           lipProgressDisclosure.onOpen();
@@ -1930,15 +1948,23 @@ export const SettingsPage: React.FC = () => {
                             if (err) {
                               setInstallingLip(false);
                               setLipError(err);
+                            } else {
+                              refreshLipStatus().finally(() => {
+                                setInstallingLip(false);
+                              });
                             }
                           });
                         }}
                       >
                         {installingLip
                           ? t("settings.lip.installing")
-                          : t("settings.lip.install_button")}
+                          : lipInstalled
+                            ? lipUpToDate
+                              ? t("settings.lip.check_button")
+                              : t("settings.lip.update_button")
+                            : t("settings.lip.install_button")}
                       </Button>
-                    )}
+                    </div>
                   </div>
 
                   <Divider className="bg-default-200/50" />
@@ -2030,6 +2056,59 @@ export const SettingsPage: React.FC = () => {
                   >
                     {t("settings.process.scan")}
                   </Button>
+                </div>
+              )}
+
+              {selectedTab === "privacy" && (
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex items-start gap-3">
+                      <div className="w-9 h-9 rounded-xl bg-primary-500/10 flex items-center justify-center text-primary-600 dark:text-primary-500 shrink-0">
+                        <LuShield className="w-5 h-5" />
+                      </div>
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">
+                          {t("settings.privacy.analytics.title")}
+                        </p>
+                        <p className="text-tiny text-default-500 dark:text-zinc-400 max-w-2xl">
+                          {t("settings.privacy.analytics.desc")}
+                        </p>
+                      </div>
+                    </div>
+                    <Switch
+                      size="sm"
+                      isSelected={clarityEnabled}
+                      onValueChange={setClarityEnabled}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
+                      }}
+                    />
+                  </div>
+
+                  <Divider className="bg-default-200/50" />
+
+                  <div className="flex flex-wrap gap-2">
+                    <Button
+                      radius="full"
+                      variant="bordered"
+                      onPress={() =>
+                        Browser.OpenURL("https://clarity.microsoft.com/terms")
+                      }
+                    >
+                      {t("settings.privacy.links.clarity_terms")}
+                    </Button>
+                    <Button
+                      radius="full"
+                      variant="light"
+                      onPress={() =>
+                        Browser.OpenURL(
+                          "https://privacy.microsoft.com/privacystatement",
+                        )
+                      }
+                    >
+                      {t("settings.privacy.links.microsoft_privacy")}
+                    </Button>
+                  </div>
                 </div>
               )}
 
@@ -2264,12 +2343,7 @@ export const SettingsPage: React.FC = () => {
               onPress={() => {
                 gdkLicenseDisclosure.onClose();
                 try {
-                  setGdkDlError("");
-                  setGdkDlProgress(null);
-                  gdkProgressDisclosure.onOpen();
-                  StartGDKDownload(
-                    "https://github.bibk.top/microsoft/GDK/releases/download/October-2025-Update-1-v2510.1.6224/GDK_2510.1.6224.zip",
-                  );
+                  void startDefaultGdkDownload();
                 } catch {}
               }}
             >
@@ -2286,7 +2360,7 @@ export const SettingsPage: React.FC = () => {
             target="_blank"
             rel="noreferrer"
           >
-            Microsoft Public Game Development Kit License Agreement
+            {t("settings.gdk.license.link_text")}
           </a>
         </div>
         <div className="flex items-center gap-2 mt-3">
@@ -2406,36 +2480,40 @@ export const SettingsPage: React.FC = () => {
         onOpenChange={gdkProgressDisclosure.onOpenChange}
         hideCloseButton
         isDismissable={false}
-        type="info"
-        title={t("settings.gdk.download.title")}
-        icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+        type={gdkDlError ? "error" : "info"}
+        title={gdkDlError ? t("common.error") : t("settings.gdk.download.title")}
+        icon={gdkDlError ? undefined : <FaDownload className="w-6 h-6 text-primary-500" />}
+        confirmText={gdkDlError ? t("common.close") : undefined}
+        onConfirm={gdkDlError ? () => gdkProgressDisclosure.onClose() : undefined}
         footer={
-          <>
-            <Button
-              color="danger"
-              variant="light"
-              isDisabled={gdkDlStatus === "done"}
-              onPress={() => {
-                try {
-                  CancelGDKDownload();
-                } catch {}
-                gdkProgressDisclosure.onClose();
-              }}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              color="primary"
-              isDisabled={gdkDlStatus !== "done"}
-              onPress={() => gdkProgressDisclosure.onClose()}
-            >
-              {t("common.ok")}
-            </Button>
-          </>
+          gdkDlError ? undefined : (
+            <>
+              <Button
+                color="danger"
+                variant="light"
+                isDisabled={gdkDlStatus === "done"}
+                onPress={() => {
+                  try {
+                    CancelGDKDownload();
+                  } catch {}
+                  gdkProgressDisclosure.onClose();
+                }}
+              >
+                {t("common.cancel")}
+              </Button>
+              <Button
+                color="primary"
+                isDisabled={gdkDlStatus !== "done"}
+                onPress={() => gdkProgressDisclosure.onClose()}
+              >
+                {t("common.ok")}
+              </Button>
+            </>
+          )
         }
       >
         {gdkDlError ? (
-          <div className="text-danger">{gdkDlError}</div>
+          <div className="text-danger">{getGdkErrorText(gdkDlError)}</div>
         ) : (
           <div className="flex flex-col gap-3">
             <div className="h-2 w-full rounded bg-default-200 overflow-hidden">
@@ -2498,27 +2576,31 @@ export const SettingsPage: React.FC = () => {
         onOpenChange={lipProgressDisclosure.onOpenChange}
         hideCloseButton
         isDismissable={false}
-        type="info"
-        title={t("settings.lip.installing")}
-        icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+        type={lipError ? "error" : "info"}
+        title={lipError ? t("common.error") : t("settings.lip.installing")}
+        icon={lipError ? undefined : <FaDownload className="w-6 h-6 text-primary-500" />}
+        confirmText={lipError ? t("common.close") : undefined}
+        onConfirm={lipError ? () => lipProgressDisclosure.onClose() : undefined}
         footer={
-          <>
-            <Button
-              color="danger"
-              variant="light"
-              onPress={lipProgressDisclosure.onClose}
-              isDisabled={!installingLip}
-            >
-              {t("common.hide")}
-            </Button>
-            <Button
-              color="primary"
-              onPress={lipProgressDisclosure.onClose}
-              isDisabled={installingLip && !lipError}
-            >
-              {lipError ? t("common.close") : t("common.ok")}
-            </Button>
-          </>
+          lipError ? undefined : (
+            <>
+              <Button
+                color="danger"
+                variant="light"
+                onPress={lipProgressDisclosure.onClose}
+                isDisabled={!installingLip}
+              >
+                {t("common.hide")}
+              </Button>
+              <Button
+                color="primary"
+                onPress={lipProgressDisclosure.onClose}
+                isDisabled={installingLip && !lipError}
+              >
+                {t("common.ok")}
+              </Button>
+            </>
+          )
         }
       >
         {lipError ? (

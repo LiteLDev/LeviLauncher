@@ -89,6 +89,7 @@ const CurseForgeModPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedGameVersion, setSelectedGameVersion] = useState<string>("all");
   const [selectedTab, setSelectedTab] = useState<string>("description");
+  const [isEntering, setIsEntering] = useState(true);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   const [installModalOpen, setInstallModalOpen] = useState(false);
@@ -125,6 +126,7 @@ const CurseForgeModPage: React.FC = () => {
   const cleanupRef = useRef<() => void>(() => {});
 
   React.useLayoutEffect(() => {
+    setIsEntering(true);
     const reset = () => {
       try {
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -148,10 +150,12 @@ const CurseForgeModPage: React.FC = () => {
     const raf = requestAnimationFrame(reset);
     const t0 = window.setTimeout(reset, 0);
     const t1 = window.setTimeout(reset, 120);
+    const t2 = window.setTimeout(() => setIsEntering(false), 550);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(t0);
       clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [id]);
 
@@ -584,11 +588,11 @@ const CurseForgeModPage: React.FC = () => {
   }
 
   return (
-    <PageContainer animate={false}>
+    <PageContainer animate={false} className={isEntering ? "overflow-y-hidden" : undefined}>
       {/* Header Card */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
         <Card className={LAYOUT.GLASS_CARD.BASE}>
@@ -734,15 +738,15 @@ const CurseForgeModPage: React.FC = () => {
 
       {/* Content Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
         <Card className={`${LAYOUT.GLASS_CARD.BASE} min-h-[500px]`}>
           <CardBody className="p-6">
             <div ref={tabsRef} className="flex w-full flex-col scroll-mt-24">
               <Tabs
-                aria-label="Mod Details"
+                aria-label={t("curseforge.mod_details_aria_label")}
                 variant="underlined"
                 color="primary"
                 selectedKey={selectedTab}
@@ -757,7 +761,7 @@ const CurseForgeModPage: React.FC = () => {
                     "group-data-[selected=true]:text-primary-600 dark:group-data-[selected=true]:text-primary-500 font-bold",
                 }}
               >
-                <Tab key="description" title="Description">
+                <Tab key="description" title={t("curseforge.mod_tabs.description")}>
                   <div className="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-primary-600 dark:prose-a:text-primary-500">
                     {description ? (
                       <div
@@ -767,15 +771,17 @@ const CurseForgeModPage: React.FC = () => {
                     ) : (
                       <div className="flex flex-col items-center justify-center py-12 text-default-400 gap-3">
                         <Spinner color="primary" />
-                        <p>Loading description...</p>
+                        <p>{t("curseforge.loading_description")}</p>
                       </div>
                     )}
                   </div>
                 </Tab>
-                <Tab key="files" title="Files">
+                <Tab key="files" title={t("curseforge.mod_tabs.files")}>
                   <div className="flex flex-col gap-4">
                     <div className="flex justify-between items-center mb-2">
-                      <h3 className="text-lg font-semibold">All Files</h3>
+                      <h3 className="text-lg font-semibold">
+                        {t("curseforge.mod_files.title")}
+                      </h3>
                       <div className="w-48">
                         <Select
                           label={t("curseforge.minecraft_version")}
@@ -805,20 +811,32 @@ const CurseForgeModPage: React.FC = () => {
 
                     {filteredFiles.length > 0 ? (
                       <Table
-                        aria-label="Mod files table"
+                        aria-label={t("curseforge.mod_files.table_aria_label")}
                         removeWrapper
                         classNames={COMPONENT_STYLES.table}
                       >
                         <TableHeader>
-                          <TableColumn>Type</TableColumn>
-                          <TableColumn>Name</TableColumn>
-                          <TableColumn>Uploaded</TableColumn>
-                          <TableColumn>Size</TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.type")}
+                          </TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.name")}
+                          </TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.uploaded")}
+                          </TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.size")}
+                          </TableColumn>
                           <TableColumn>
                             {t("curseforge.minecraft_version")}
                           </TableColumn>
-                          <TableColumn>Downloads</TableColumn>
-                          <TableColumn>Actions</TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.downloads")}
+                          </TableColumn>
+                          <TableColumn>
+                            {t("curseforge.mod_files.columns.actions")}
+                          </TableColumn>
                         </TableHeader>
                         <TableBody>
                           {filteredFiles.map((file) => {
@@ -1031,9 +1049,13 @@ const CurseForgeModPage: React.FC = () => {
             )}
             {(installStep === "success" || installStep === "error") && (
               <Button
-                color="primary"
+                color={installStep === "error" ? "danger" : "primary"}
                 onPress={() => setInstallModalOpen(false)}
-                className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                className={
+                  installStep === "error"
+                    ? "font-bold shadow-lg shadow-danger-500/20"
+                    : "bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                }
               >
                 {t("curseforge.install.close")}
               </Button>

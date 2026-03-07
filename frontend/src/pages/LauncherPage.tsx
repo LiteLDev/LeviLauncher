@@ -155,6 +155,16 @@ export const LauncherPage = (args: any) => {
   const worldsLabel = t("content.count.worlds") as string;
   const resourceLabel = t("content.count.resource_packs") as string;
   const behaviorLabel = t("content.count.behavior_packs") as string;
+  const launchErrorMessage = useMemo(() => {
+    const key = `errors.${launchErrorCode}`;
+    const translated = t(key) as unknown as string;
+    if (launchErrorCode && translated && translated !== key) return translated;
+
+    const fallback = t("errors.ERR_LAUNCH_GAME") as unknown as string;
+    if (fallback && fallback !== "errors.ERR_LAUNCH_GAME") return fallback;
+
+    return "Launch failed";
+  }, [launchErrorCode, t]);
 
   const versionMenuItems = useMemo(
     () => buildVersionMenuItems(t("common.empty") as string),
@@ -664,18 +674,23 @@ export const LauncherPage = (args: any) => {
             </>
           }
         >
-          <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
-            <p className="font-medium text-center">
-              {(() => {
-                const key = `errors.${launchErrorCode}`;
-                const translated = t(key) as unknown as string;
-                if (launchErrorCode && translated && translated !== key)
-                  return translated;
-                return t(
-                  "launcherpage.launch.failed.content",
-                ) as unknown as string;
-              })()}
+          <div className="flex flex-col items-center gap-3 text-center px-2">
+            <p className="text-lg font-semibold text-default-800 dark:text-zinc-100">
+              {launchErrorMessage}
             </p>
+            <p className="text-sm leading-6 text-default-500 dark:text-zinc-400 max-w-[520px]">
+              {t("launcherpage.launch.failed.content") as unknown as string}
+            </p>
+            {launchErrorCode && (
+              <Chip
+                size="sm"
+                variant="flat"
+                color="default"
+                className="font-mono tracking-wide"
+              >
+                {launchErrorCode}
+              </Chip>
+            )}
           </div>
         </UnifiedModal>
 
@@ -1078,16 +1093,8 @@ export const LauncherPage = (args: any) => {
           onOpenChange={registerFailedDisclosure.onOpenChange}
           type="error"
           title={t("launcherpage.register.failed.title")}
-          footer={
-            <Button
-              color="primary"
-              radius="full"
-              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
-              onPress={registerFailedDisclosure.onClose}
-            >
-              {t("common.close")}
-            </Button>
-          }
+          confirmText={t("common.close")}
+          onConfirm={registerFailedDisclosure.onClose}
         >
           <div className="p-4 rounded-2xl bg-danger-50 dark:bg-danger-500/10 border border-danger-100 dark:border-danger-500/20 text-danger-600 dark:text-danger-400">
             <p className="font-medium text-center">

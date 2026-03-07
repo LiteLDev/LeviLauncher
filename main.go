@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -21,6 +22,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
@@ -28,6 +30,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
+	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -64,12 +67,16 @@ func focusExistingWindow() {
 	}
 }
 
-func parseArgs() (initialURL string, autoLaunchVersion string) {
+func parseArgs() (initialURL string, autoLaunchVersion string, postUpdateRestart bool) {
 	initialURL = "/"
 	for _, arg := range os.Args[1:] {
 		if strings.HasPrefix(arg, "--self-update=") {
 			initialURL = "/#/updating"
 			break
+		}
+		if arg == "--post-update-restart" {
+			postUpdateRestart = true
+			continue
 		}
 		if strings.HasPrefix(arg, "--launch=") {
 			v := strings.TrimSpace(strings.TrimPrefix(arg, "--launch="))
@@ -77,7 +84,7 @@ func parseArgs() (initialURL string, autoLaunchVersion string) {
 			autoLaunchVersion = v
 		}
 	}
-	return initialURL, autoLaunchVersion
+	return initialURL, autoLaunchVersion, postUpdateRestart
 }
 
 func sendLaunchToExistingInstance(version string) bool {
@@ -125,6 +132,10 @@ func startSingleInstanceServer(versionService *VersionService) {
 					cmd := strings.TrimSpace(parts[0])
 					payload := strings.TrimSpace(parts[1])
 					if cmd == "launch" && payload != "" {
+						if errCode := versionlaunch.ValidateLaunchName(payload); errCode != "" {
+							log.Printf("Rejected single-instance launch payload %q: %s", payload, errCode)
+							continue
+						}
 						go func(v string) {
 							_ = versionService.LaunchVersionByNameForce(v)
 						}(payload)
@@ -135,13 +146,38 @@ func startSingleInstanceServer(versionService *VersionService) {
 	}()
 }
 
-func ensureSingleInstance(autoLaunchVersion string) bool {
+func ensureSingleInstance(autoLaunchVersion string, postUpdateRestart bool) bool {
 	name, err := win.UTF16PtrFromString("Global\\LeviLauncher_SingleInstance")
 	if err != nil {
 		return true
 	}
-	h, err := win.CreateMutex(nil, true, name)
+	tryAcquire := func() (win.Handle, error) {
+		return win.CreateMutex(nil, true, name)
+	}
+	h, err := tryAcquire()
 	if err == win.ERROR_ALREADY_EXISTS {
+		if h != 0 {
+			_ = win.CloseHandle(h)
+		}
+		if postUpdateRestart {
+			for i := 0; i < 12; i++ {
+				time.Sleep(250 * time.Millisecond)
+				h, err = tryAcquire()
+				if err == nil {
+					singleInstanceGuard = h
+					return true
+				}
+				if err != win.ERROR_ALREADY_EXISTS {
+					if h != 0 {
+						_ = win.CloseHandle(h)
+					}
+					return true
+				}
+				if h != 0 {
+					_ = win.CloseHandle(h)
+				}
+			}
+		}
 		if !sendLaunchToExistingInstance(autoLaunchVersion) {
 			focusExistingWindow()
 		}
@@ -169,7 +205,7 @@ func init() {
 	// launch
 	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
 	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)
-	application.RegisterEvent[struct{}](launch.EventMcLaunchFailed)
+	application.RegisterEvent[string](launch.EventMcLaunchFailed)
 	application.RegisterEvent[struct{}](launch.EventGamingServicesMissing)
 	//msixvc
 	application.RegisterEvent[msixvc.DownloadStatus](msixvc.EventDownloadStatus)
@@ -196,17 +232,25 @@ func init() {
 	application.RegisterEvent[string](update.EventAppUpdateStatus)
 	application.RegisterEvent[update.AppUpdateProgress](update.EventAppUpdateProgress)
 	application.RegisterEvent[string](update.EventAppUpdateError)
+	// lip daemon task stream
+	application.RegisterEvent[lip.LipTaskStartedEvent](lip.EventLipTaskStarted)
+	application.RegisterEvent[lip.LipTaskLogEvent](lip.EventLipTaskLog)
+	application.RegisterEvent[lip.LipTaskProgressEvent](lip.EventLipTaskProgress)
+	application.RegisterEvent[lip.LipTaskFinishedEvent](lip.EventLipTaskFinished)
 	application.RegisterEvent[types.FilesDroppedEvent]("files-dropped")
 }
 
 func main() {
 	_ = godotenv.Load()
-	initialURL, autoLaunchVersion := parseArgs()
+	initialURL, autoLaunchVersion, postUpdateRestart := parseArgs()
 
-	if !ensureSingleInstance(autoLaunchVersion) {
+	if !ensureSingleInstance(autoLaunchVersion, postUpdateRestart) {
 		return
 	}
-	c, _ := config.Load()
+	c, err := config.Load()
+	if err != nil {
+		log.Printf("config.Load failed: %v", err)
+	}
 	extractor.Init()
 	update.Init()
 	go resourcerules.EnsureLatest(context.Background())
@@ -218,7 +262,6 @@ func main() {
 	modsService := NewModsService(mc)
 	userService := NewUserService(mc)
 	versionService := NewVersionService(mc)
-	startSingleInstanceServer(versionService)
 
 	assets, err := fs.Sub(assets, "frontend/dist")
 	if err != nil {
@@ -240,6 +283,7 @@ func main() {
 		},
 	})
 	mc.startup()
+	startSingleInstanceServer(versionService)
 
 	if strings.TrimSpace(autoLaunchVersion) != "" && initialURL == "/" {
 		_ = versionService.LaunchVersionByName(autoLaunchVersion)
@@ -303,6 +347,13 @@ func main() {
 			windows.SetSize(targetW, targetH)
 		}
 	}
+	syncWindowResizeHandles := func() {
+		isMaximised := windows.IsMaximised()
+		windows.ExecJS(`if (window._wails && typeof window._wails.setResizable === "function") { window._wails.setResizable(` + strconv.FormatBool(!isMaximised) + `); }`)
+		if !isMaximised {
+			reapplyWindowMinConstraints()
+		}
+	}
 
 	if strings.TrimSpace(autoLaunchVersion) != "" {
 		go func() {
@@ -320,14 +371,24 @@ func main() {
 			})
 		}
 	})
-	windows.OnWindowEvent(events.Common.WindowRestore, func(_ *application.WindowEvent) {
-		reapplyWindowMinConstraints()
+	windows.OnWindowEvent(events.Common.WindowMaximise, func(_ *application.WindowEvent) {
+		syncWindowResizeHandles()
 	})
+	windows.OnWindowEvent(events.Common.WindowUnMaximise, func(_ *application.WindowEvent) {
+		syncWindowResizeHandles()
+	})
+	windows.OnWindowEvent(events.Common.WindowRestore, func(_ *application.WindowEvent) {
+		syncWindowResizeHandles()
+	})
+	syncWindowResizeHandles()
 	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		w := windows.Width()
 		h := windows.Height()
 
-		c, _ := config.Load()
+		c, err := config.Load()
+		if err != nil {
+			log.Printf("config.Load failed during window close: %v", err)
+		}
 		if w > 0 && h > 0 {
 			if w < minWindowWidth {
 				w = minWindowWidth

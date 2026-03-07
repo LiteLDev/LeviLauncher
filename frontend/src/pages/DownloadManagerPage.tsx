@@ -53,7 +53,7 @@ export const DownloadManagerPage: React.FC = () => {
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className="bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm">
+              <Card className="rounded-4xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm overflow-hidden">
                 <CardBody className="p-4 sm:p-6">
                   <div className="flex flex-col gap-4">
                     <div className="flex items-start justify-between">
@@ -190,7 +190,7 @@ export const DownloadManagerPage: React.FC = () => {
                     </div>
 
                     {task.error && (
-                      <div className="text-small text-danger-500 bg-danger-50 dark:bg-danger-900/20 p-3 rounded-lg">
+                      <div className="text-small text-danger-500 bg-danger-50 dark:bg-danger-900/20 p-3 rounded-2xl">
                         {task.error}
                       </div>
                     )}

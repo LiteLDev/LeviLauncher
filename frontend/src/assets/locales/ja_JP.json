@@ -54,7 +54,7 @@
     "launch": {
       "failed": {
         "title": "起動エラー",
-        "content": "バージョンが選択されていません。ダウンロードページからダウンロードしてください！",
+        "content": "インスタンスファイルと依存環境を確認し、互換性のない Mod・アドオン・リソースパックがないことを確認してから再試行してください。",
         "close_button": "閉じる"
       },
       "force_run_button": "強制起動"
@@ -175,6 +175,22 @@
     "phase": {
       "download": "更新パッケージをダウンロード中",
       "install": "更新をインストール中"
+    },
+    "status": {
+      "checking": "更新を確認しています",
+      "verifying": "パッケージの整合性を検証しています",
+      "elevating": "管理者権限を要求しています",
+      "restarting": "ランチャーを再起動しています"
+    },
+    "errors": {
+      "generic": "更新中に不明なエラーが発生しました。しばらくしてからもう一度お試しください。",
+      "update_admin_required": "更新を続行するには管理者権限が必要です。",
+      "update_asset_missing": "必要な更新パッケージが見つからないか、名前が正しくありません。",
+      "update_release_unavailable": "現在、更新メタデータを取得できません。",
+      "update_verify_failed": "更新パッケージの検証に失敗しました。",
+      "update_download_failed": "更新パッケージのダウンロードに失敗しました。",
+      "update_install_failed": "更新パッケージのインストールに失敗しました。",
+      "update_restart_failed": "更新後にランチャーを自動で再起動できませんでした。"
     }
   },
   "downloadpage": {
@@ -267,6 +283,8 @@
       "levilamina_label": "LeviLamina をインストール",
       "levilamina_desc": "LeviLamina ローダーを自動的にインストールします",
       "version_label": "バージョン",
+      "ll_version_label": "LeviLamina バージョン",
+      "ll_version_placeholder": "LeviLamina バージョンを選択",
       "hint": "この処理には時間がかかる場合があります。お待ちください…",
       "estimated_size": "書き込みサイズ (推定)",
       "target": "インストール先",
@@ -309,7 +327,8 @@
       "components": "サードパーティ製コンポーネント",
       "others": "その他",
       "updates": "アップデート",
-      "about": "情報"
+      "about": "情報",
+      "privacy": "Privacy"
     },
     "unsaved": {
       "title": "保存されていない変更",
@@ -342,7 +361,8 @@
       "license": {
         "title": "使用許諾契約",
         "body": "続行するには、Microsoft Public Game Development Kit 使用許諾契約の条項に同意する必要があります。",
-        "accept": "使用許諾契約の条項に同意します。"
+        "accept": "使用許諾契約の条項に同意します。",
+        "link_text": "Microsoft Public Game Development Kit 使用許諾契約"
       },
       "download": {
         "title": "GDKをダウンロード中"
@@ -350,31 +370,59 @@
       "install": {
         "title": "GDKをインストール中",
         "body": "インストーラーを実行しています。お待ちください…"
-      }
+      },
+      "download_unavailable": "現在、GDK のダウンロード URL を取得できません。"
     },
     "lip": {
       "title": "lip",
-      "description": "パッケージと依存関係を管理するためにlipをインストールしてください",
+      "description": "ここで lip を手動でインストールまたは更新します。起動時は更新確認と通知のみで、自動更新は行いません。",
       "installed": "v{{version}} をインストール済み",
+      "path_label": "Path: {{path}}",
       "install_button": "インストール",
-      "installing": "LIPをインストール中...",
-      "update_button": "{{version}} に更新",
+      "repair_button": "更新",
+      "check_button": "確認",
+      "installing": "lip をインストールしています...",
       "installed_label": "インストール済み",
+      "latest_label": "最新",
+      "outdated_label": "更新あり",
+      "missing_label": "未インストール",
       "status": {
-        "fetching_version": "バージョン情報を取得中...",
-        "downloading": "ダウンロード中...",
-        "extracting": "解凍中...",
-        "setting_path": "環境変数を設定中...",
-        "success": "インストール成功！",
-        "failed": "インストール失敗"
+        "checking": "lip の状態を確認しています...",
+        "preparing": "ダウンロードを準備しています...",
+        "downloading": "lip アーカイブをダウンロードしています...",
+        "extracting": "lipd.exe を展開しています...",
+        "writing": "lipd.exe を書き込んでいます...",
+        "verifying": "インストールを確認しています...",
+        "up_to_date": "現在のバージョンは最新です",
+        "outdated": "新しいバージョンがあります",
+        "missing": "lip はインストールされていません",
+        "check_failed": "lip の状態確認に失敗しました：{{error}}",
+        "done": "lip のインストールが完了しました"
       },
       "error": {
-        "fetch_version_failed": "バージョン情報の取得に失敗しました",
-        "download_failed": "ダウンロードに失敗しました",
-        "extract_failed": "解凍に失敗しました",
-        "set_path_failed": "環境変数の設定に失敗しました",
-        "unknown": "不明なエラーが発生しました"
-      }
+        "lip_fetch_release": "最新の lip リリース取得に失敗しました",
+        "lip_release_asset_not_found": "最新リリースに Windows x64 向けの lip パッケージが見つかりません",
+        "lip_download_archive": "lip アーカイブのダウンロードに失敗しました",
+        "lip_open_archive": "lip アーカイブを開けませんでした",
+        "lip_extract_binary": "lipd.exe の展開に失敗しました",
+        "lip_create_target_dir": "lip のインストール先ディレクトリを作成できませんでした",
+        "lip_replace_file": "lipd.exe の置き換えに失敗しました",
+        "lip_verify_install": "インストール済み lip バージョンの確認に失敗しました",
+        "lip_install_failed": "lip のインストールに失敗しました"
+      },
+      "version_label": "現在：{{currentVersion}} / 最新：{{latestVersion}}",
+      "startup_prompt": {
+        "title": "lip の更新があります",
+        "description": "新しい lip バージョンがあります（{{currentVersion}} -> {{latestVersion}}）。LeviLauncher は自動更新しません。「設定 > コンポーネント」から手動で更新してください。",
+        "later_button": "後で",
+        "ignore_button": "このバージョンを無視",
+        "open_settings_button": "設定を開く",
+        "current_version": "現在のバージョン：{{currentVersion}}",
+        "latest_version": "最新バージョン：{{latestVersion}}"
+      },
+      "installed_without_version": "インストール済みですが、バージョンを取得できません",
+      "unknown_version": "不明",
+      "update_button": "更新"
     },
     "resource_rules": {
       "title": "ランチャー実行データ",
@@ -487,6 +535,16 @@
       "kill_all": "すべてのプロセスを終了",
       "kill": "終了",
       "no_process": "実行中の Minecraft プロセスが見つかりません"
+    },
+    "privacy": {
+      "analytics": {
+        "title": "Anonymous Usage Analytics (Microsoft Clarity)",
+        "desc": "When enabled, this helps us improve features and UI. You can turn it off at any time."
+      },
+      "links": {
+        "clarity_terms": "Clarity Terms",
+        "microsoft_privacy": "Microsoft Privacy Statement"
+      }
     }
   },
   "downloadmodal": {
@@ -712,6 +770,18 @@
       "unregister_success": {
         "title": "登録解除成功",
         "body": "登録解除に成功しました。これでバージョンを削除できます。"
+      },
+      "loader": {
+        "ll_current_version": "現在の LeviLamina バージョン",
+        "ll_not_installed": "未インストール",
+        "ll_select_version": "LeviLamina バージョン",
+        "ll_select_placeholder": "LeviLamina バージョンを選択",
+        "ll_select_guidance": "インストールまたは更新する LeviLamina バージョンを選択してください。",
+        "ll_upgrade_only_hint": "インスタンス設定ではアップグレードのみ可能です。",
+        "ll_only_latest_when_current_unknown": "現在のバージョンを解析できないため、最新バージョンへの更新のみ可能です。",
+        "ll_remove_confirm_title": "LeviLamina の削除確認",
+        "ll_remove_confirm_body": "このインスタンスから LeviLamina を削除します。",
+        "ll_remove_confirm_warning": "この操作は元に戻せません。"
       }
     },
     "logo": {
@@ -742,7 +812,7 @@
     "ERR_NOT_FOUND_GAME_DIR": "ゲームコンテンツディレクトリが見つかりません",
     "ERR_NOT_FOUND_EXE": "実行ファイルが見つかりません",
     "ERR_WRITE_TARGET": "ターゲット設定の書き込みに失敗しました",
-    "ERR_LAUNCH_GAME": "ゲームの起動に失敗しました",
+    "ERR_LAUNCH_GAME": "ゲームを正常に起動できませんでした",
     "ERR_GAME_CRASH_DURING_LAUNCH": "起動中にゲームがクラッシュしました",
     "ERR_WAIT_KERNEL_TIMEOUT": "カーネル準備がタイムアウトしました",
     "ERR_COPY_WALK": "ファイルの走査に失敗しました",
@@ -756,6 +826,7 @@
     "ERR_ACCESS_VERSIONS_DIR": "versions ディレクトリにアクセスできません",
     "ERR_ACCESS_INSTALLERS_DIR": "installers ディレクトリにアクセスできません",
     "ERR_READ_VERSIONS_DIR": "versions ディレクトリの読み取りに失敗しました",
+    "ERR_LL_VERSION_UNSUPPORTED": "選択した LeviLamina バージョンはこのゲームバージョンではサポートされていません",
     "ERR_NAME_EXISTS": "その名前は既に存在します",
     "ERR_INVALID_NAME": "無効な名前です",
     "ERR_ICON_DECODE": "アイコンのデコードに失敗しました",
@@ -777,7 +848,20 @@
     "ERR_SHORTCUT_CREATE_FAILED": "デスクトップショートカットの作成に失敗しました",
     "ERR_UNREGISTER_FAILED": "登録解除に失敗しました",
     "ERR_NOT_REGISTERED_THIS_VERSION": "このバージョンは登録されていません",
-    "ERR_DEV_MODE_REQUIRED": "開発者モードが有効になっておらず、自動有効化に失敗しました。手動で開発者モードを有効にして再試行してください。"
+    "ERR_DEV_MODE_REQUIRED": "開発者モードが有効になっておらず、自動有効化に失敗しました。手動で開発者モードを有効にして再試行してください。",
+    "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "このパッケージは他のインストール済み mod に依存されているため、現在はアンインストールできません",
+    "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "このパッケージは他のインストール済み mod に依存されているため完全にアンインストールできず、依存インストールに自動で切り替えられました。",
+    "ERR_LIP_NOT_INSTALLED": "lip はインストールされていません。「設定 > コンポーネント」から手動でインストールまたは更新してください。",
+    "ERR_LL_NOT_SUPPORTED": "LeviLamina is not supported for this game version",
+    "ERR_FETCH_LL_DB": "Failed to fetch LeviLamina version database",
+    "ERR_INVALID_VERSION_FORMAT": "Invalid game version format",
+    "ERR_LIP_INSTALL_FAILED": "Failed to install LeviLamina via lip",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Invalid lip package identifier",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "lip package version is required",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
   },
   "filemanager": {
     "sort": {
@@ -841,14 +925,35 @@
     "toggle_desc_off": "Modは無効になっており、ゲーム開始時に読み込まれません。",
     "only_enabled": "有効なModのみ表示",
     "drop_hint": ".zip または .dll をドロップして Mod/プラグインをインポート",
-    "err_lip_not_installed": "LIP がインストールされていません",
+    "err_lip_not_installed": "lip はインストールされていません。「設定 > コンポーネント」から手動でインストールまたは更新してください。",
     "err_lip_install_failed_suggestion": "インストールに失敗しました。Minecraft を再インストールすることをお勧めします",
     "rc_warning": {
       "title": "実験的バージョン警告",
       "body_1": "インストールしようとしている LeviLamina バージョン ({{version}}) はリリース候補版 (RC) です。",
       "body_2": "これは実験的なバージョンであり、不安定な可能性があります。開発者または上級ユーザーのみに推奨されます。",
       "body_3": "インストールを続行しますか？"
-    }
+    },
+    "tab_all": "すべて",
+    "tab_normal": "通常Mod",
+    "tab_lip": "lip Mod",
+    "lip_children_summary": "含む: {{children}} (+{{count}})",
+    "lip_open_package": "パッケージを開く",
+    "action_promote_install": "明示的インストールに昇格",
+    "action_promote_install_success": "{{name}} を明示的インストールに昇格しました",
+    "action_promote_install_failed_no_version": "このパッケージのインストール済みバージョンが見つかりません",
+    "action_update": "Update",
+    "action_uninstall": "Uninstall",
+    "batch_update_title": "Batch Update Mods",
+    "batch_update_body": "Selected {{selected}} mods. {{updatable}} mod(s) can be updated from lip. Continue?",
+    "batch_uninstall_title": "Batch Uninstall Mods",
+    "batch_uninstall_body": "You are about to uninstall {{count}} mod(s). Continue?",
+    "update_available": "Update to {{version}}",
+    "update_latest": "Already latest",
+    "no_update_source": "No lip update source",
+    "err_ll_managed_in_version_settings": "LeviLamina can only be managed in Version Settings",
+    "action_result_title_done": "Operation Completed",
+    "action_result_title_partial": "Operation Completed (Partial Failures)",
+    "action_result_title_failed": "Operation Failed"
   },
   "terms": {
     "title": "LeviLauncher 使用許諾契約",
@@ -866,6 +971,15 @@
       "body": "コンテンツパスに未保存の変更があります。保存して終了しますか？",
       "cancel": "キャンセル",
       "save": "保存して完了"
+    },
+    "privacy": {
+      "title": "Privacy & Usage Data",
+      "subtitle": "Choose whether to enable anonymous analytics",
+      "desc": "If enabled, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data (such as clicks and page flow) to improve usability. It does not collect account information, game information, or disk content, and only applies to frontend pages.",
+      "links": {
+        "clarity_terms": "Clarity Terms",
+        "microsoft_privacy": "Microsoft Privacy Statement"
+      }
     }
   },
   "contentdownload": {
@@ -935,6 +1049,24 @@
       "failed_msg": "インポート失敗",
       "next": "次へ",
       "close": "閉じる"
+    },
+    "mod_details_aria_label": "Mod Details",
+    "loading_description": "Loading description...",
+    "mod_tabs": {
+      "description": "Description",
+      "files": "Files"
+    },
+    "mod_files": {
+      "title": "All Files",
+      "table_aria_label": "Mod files table",
+      "columns": {
+        "type": "Type",
+        "name": "Name",
+        "uploaded": "Uploaded",
+        "size": "Size",
+        "downloads": "Downloads",
+        "actions": "Actions"
+      }
     }
   },
   "lip": {
@@ -944,7 +1076,109 @@
     "select_sort": "並び替えを選択",
     "order_by": "順序",
     "select_order": "順序を選択",
-    "no_description": "説明なし"
+    "no_description": "説明なし",
+    "ll_version_label": "LeviLamina version",
+    "ll_version_placeholder": "Select LeviLamina version",
+    "ll_all_versions": "All LeviLamina versions",
+    "ll_filter_context": "Current instance: {{instance}} | Installed LeviLamina: {{version}}",
+    "game_version_label": "Game version",
+    "game_version_placeholder": "Select game version",
+    "game_all_versions": "All game versions",
+    "files": {
+      "target_instance_label": "Target instance",
+      "fixed_target_instance_label": "Target instance",
+      "only_compatible": "Only show compatible versions",
+      "compatibility_label": "Compatibility",
+      "game_versions_label": "Game Versions",
+      "game_versions_unrestricted": "No game version restriction",
+      "game_versions_unavailable": "Game version mapping unavailable",
+      "ll_requirement": "LL Requirement",
+      "dependencies": "Dependencies",
+      "action": "Action",
+      "compatibility": {
+        "compatible": "Compatible",
+        "incompatible": "Incompatible",
+        "requires_ll": "Requires LeviLamina",
+        "no_ll_requirement": "No LL requirement"
+      },
+      "dependencies_count": "{{count}} dependencies",
+      "install": "Install",
+      "upgrade": "アップグレード",
+      "downgrade": "ダウングレード",
+      "update": "Update",
+      "reinstall": "再インストール",
+      "uninstall": "Uninstall",
+      "installed_version": "Installed version: {{version}}",
+      "instance_game_version": "Game version: {{version}}",
+      "instance_ll_version": "LeviLamina version: {{version}}",
+      "select_instance_title": "Select Target Instance",
+      "select_instance_placeholder": "Select an instance",
+      "installing_version_label": "Installing package version",
+      "select_version_title": "Select Package Version",
+      "select_version_placeholder": "Select a package version",
+      "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
+      "mapping_unavailable_hint": "Game version mapping is unavailable. Compatibility restrictions are temporarily skipped.",
+      "checking_ll_state": "Checking LeviLamina status...",
+      "ll_missing_auto_install_hint": "LeviLamina is not installed. Clicking Install will first install LeviLamina {{version}}, then install this package.",
+      "ll_missing_mapping_block_hint": "Game version mapping is unavailable, so LeviLamina cannot be auto-installed. Please install LeviLamina manually first.",
+      "ll_missing_no_compatible_hint": "No LeviLamina version matches this package's dependency range for the selected game version.",
+      "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",
+      "confirm_install_title": "Confirm Installation",
+      "confirm_install_body": "Install {{package}} {{version}} to {{instance}} as {{action}}?",
+      "confirm_uninstall_title": "Confirm Uninstall",
+      "confirm_uninstall_body": "Uninstall {{package}} from {{instance}}?",
+      "action_success": "Operation completed successfully",
+      "action_failed": "Operation failed: {{error}}",
+      "tab_label": "Files",
+      "table_aria_label": "Package files table",
+      "install_success": "Installation completed successfully",
+      "upgrade_success": "アップグレードが完了しました",
+      "downgrade_success": "ダウングレードが完了しました",
+      "reinstall_success": "再インストールが完了しました",
+      "current_installed_version": "Current installed version: {{version}}",
+      "checking_current_installed_version": "Checking currently installed version..."
+    },
+    "title": "lip Content",
+    "sort_options": {
+      "hotness": "Hotness",
+      "updated": "Updated",
+      "name": "Name"
+    },
+    "order_options": {
+      "desc": "Desc",
+      "asc": "Asc"
+    },
+    "by_author_inline": "| By {{author}}",
+    "package_details_aria_label": "Package Details",
+    "task_console": {
+      "title_install": "Installing",
+      "title_upgrade": "アップグレード中",
+      "title_downgrade": "ダウングレード中",
+      "title_reinstall": "再インストール中",
+      "title_update": "Updating",
+      "title_uninstall": "Uninstalling",
+      "title_generic": "lip Task",
+      "status_running": "Running",
+      "status_success": "Success",
+      "status_failed": "Failed",
+      "target_label": "Target",
+      "method_label": "Method",
+      "progress_label": "Progress",
+      "log_title": "Log Output",
+      "no_output": "No output yet",
+      "waiting_start": "Waiting for lipd output...",
+      "stderr_title": "stderr",
+      "copy_logs": "Copy Logs",
+      "copy_success": "Logs copied",
+      "close": "Close",
+      "stage_install_ll": "Installing LeviLamina first",
+      "stage_install_pkg": "Installing target package",
+      "stage_fallback_delete": "Package uninstall unavailable, fallback to directory delete"
+    },
+    "package": {
+      "confirm_install_title": "インストールの確認",
+      "confirm_install_body": "{{instance}} に {{package}} {{version}} を {{action}} しますか？"
+    }
   },
   "server": {
     "offline": "オフライン / 接続不可",
@@ -958,18 +1192,28 @@
       "dll_dependency_missing": "VC++ ランタイムが不足しています",
       "name_required": "名前は必須です",
       "msixvc_not_specified": "インストールパッケージが指定されていません",
-      "lip_not_installed": "LIP がインストールされていません",
+      "lip_not_installed": "lip はインストールされていません。「設定 > コンポーネント」から手動でインストールまたは更新してください。",
       "unknown": "不明なエラー",
       "nh_err_unknown": "不明なエラー",
       "nh_err_exception": "キャッチされていない例外または不明なエラー",
       "nh_err_invalid_params": "無効なパラメータ",
       "nh_err_key_not_found": "ゲームインストーラーの検証に失敗しました。インストーラーを削除して再試行してください。",
-      "nh_err_unauthorized_caller": "呼び出し元が許可されていません",
+      "nh_err_unauthorized_caller": "ランチャーの exe 名が変更されていないことを確認してください（LeviLauncher.exe）",
       "nh_err_pipe_open_failed": "進捗パイプを開けませんでした",
       "nh_err_input_not_found": "入力ファイルが見つかりません",
       "nh_err_output_dir_invalid": "出力ディレクトリが無効です",
       "nh_err_parse_failed": "パッケージの解析に失敗しました",
       "nh_err_extract_failed": "解凍に失敗しました"
+    }
+  },
+  "clarity": {
+    "prompt": {
+      "title": "Help improve LeviLauncher?",
+      "body": "With your permission, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data to improve features and UI. It does not collect account information, game information, or disk content, and only applies to frontend pages. You can change this anytime in Settings > Privacy.",
+      "enable": "Allow and Enable",
+      "disable": "Not Now",
+      "clarity_terms": "Clarity Terms",
+      "microsoft_privacy": "Microsoft Privacy Statement"
     }
   }
 }

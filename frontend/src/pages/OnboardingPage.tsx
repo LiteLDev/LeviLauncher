@@ -10,6 +10,7 @@ import {
   DropdownMenu,
   DropdownItem,
   Divider,
+  Switch,
   useDisclosure,
 } from "@heroui/react";
 import { UnifiedModal } from "@/components/UnifiedModal";
@@ -17,7 +18,7 @@ import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { LAYOUT } from "@/constants/layout";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   GetLanguageNames,
   GetBaseRoot,
@@ -31,13 +32,13 @@ import {
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { normalizeLanguage } from "@/utils/i18nUtils";
-import { Dialogs } from "@wailsio/runtime";
-import { LuHardDrive, LuLanguages } from "react-icons/lu";
+import { persistClarityChoice } from "@/utils/clarityConsent";
+import { Browser, Dialogs } from "@wailsio/runtime";
+import { LuHardDrive, LuLanguages, LuShield } from "react-icons/lu";
 
 export default function OnboardingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const location = useLocation();
   const hasBackend = minecraft !== undefined;
   const [langNames, setLangNames] = React.useState<
     Array<{ language: string; code: string }>
@@ -49,6 +50,13 @@ export default function OnboardingPage() {
   const [versionsDir, setVersionsDir] = React.useState<string>("");
   const [baseRootWritable, setBaseRootWritable] = React.useState<boolean>(true);
   const [savingBaseRoot, setSavingBaseRoot] = React.useState<boolean>(false);
+  const [clarityEnabled, setClarityEnabled] = React.useState<boolean>(() => {
+    try {
+      return localStorage.getItem("ll.clarity.enabled") === "true";
+    } catch {
+      return false;
+    }
+  });
   const {
     isOpen: unsavedOpen,
     onOpen: unsavedOnOpen,
@@ -79,8 +87,13 @@ export default function OnboardingPage() {
     setBaseRootWritable(true);
   }, [newBaseRoot]);
 
+  const persistClaritySelection = React.useCallback((enabled: boolean) => {
+    persistClarityChoice(enabled);
+  }, []);
+
   const proceedHome = () => {
     try {
+      persistClaritySelection(clarityEnabled);
       localStorage.setItem("ll.onboarded", "1");
     } catch {}
     navigate("/", { replace: true });
@@ -327,6 +340,55 @@ export default function OnboardingPage() {
                   </Dropdown>
                 }
               />
+            </div>
+
+            <Divider className="opacity-50" />
+
+            <div className="space-y-4">
+              <SectionHeader
+                title={t("onboarding.privacy.title")}
+                description={t("onboarding.privacy.subtitle")}
+                icon={<LuShield className="w-5 h-5" />}
+                action={
+                  <Switch
+                    size="sm"
+                    isSelected={clarityEnabled}
+                    onValueChange={setClarityEnabled}
+                    classNames={{
+                      wrapper: "group-data-[selected=true]:bg-primary-500",
+                    }}
+                  />
+                }
+              />
+              <div className="text-sm text-default-600 dark:text-zinc-300 leading-6">
+                {t("onboarding.privacy.desc")}
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <Button
+                  size="sm"
+                  radius="full"
+                  variant="flat"
+                  className="bg-default-200/50 dark:bg-white/10 font-bold"
+                  onPress={() =>
+                    Browser.OpenURL("https://clarity.microsoft.com/terms")
+                  }
+                >
+                  {t("onboarding.privacy.links.clarity_terms")}
+                </Button>
+                <Button
+                  size="sm"
+                  radius="full"
+                  variant="light"
+                  className="font-bold"
+                  onPress={() =>
+                    Browser.OpenURL(
+                      "https://privacy.microsoft.com/privacystatement",
+                    )
+                  }
+                >
+                  {t("onboarding.privacy.links.microsoft_privacy")}
+                </Button>
+              </div>
             </div>
           </CardBody>
         </Card>

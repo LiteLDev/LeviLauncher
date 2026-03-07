@@ -5,6 +5,7 @@ import React from "react";
 import { createRoot } from "react-dom/client";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { HeroUIProvider } from "@heroui/react";
+import Clarity from "@microsoft/clarity";
 import App from "./App";
 import {
   createHashRouter,
@@ -12,6 +13,10 @@ import {
   createRoutesFromElements,
   Route,
 } from "react-router-dom";
+import {
+  CLARITY_ENABLED_KEY,
+  CLARITY_EVENT_NAME,
+} from "./utils/clarityConsent";
 
 const container = document.getElementById("root");
 
@@ -41,32 +46,46 @@ if (isTouchDevice) {
   window.addEventListener("gestureend", preventGestureZoom);
 }
 
-window.addEventListener("contextmenu", (e) => {
-  if (import.meta.env.DEV) return;
-  const target = e.target;
-  const tagName = target.tagName;
-  const isInput =
-    tagName === "INPUT" || tagName === "TEXTAREA" || target.isContentEditable;
-
-  if (isInput) {
-    const type = target.getAttribute("type")?.toLowerCase();
-    if (
-      !type ||
-      ["text", "password", "email", "number", "search", "url", "tel"].includes(
-        type,
-      ) ||
-      tagName === "TEXTAREA"
-    ) {
-      return;
-    }
-  }
-
-  e.preventDefault();
-});
-
 const router = createHashRouter(
   createRoutesFromElements(<Route path="/*" element={<App />} />),
 );
+
+const CLARITY_PROJECT_ID = "voq9l7h41c";
+let clarityInitialized = false;
+
+const applyClarityConsent = (enabled) => {
+  try {
+    if (enabled) {
+      if (!clarityInitialized) {
+        Clarity.init(CLARITY_PROJECT_ID);
+        clarityInitialized = true;
+      }
+      Clarity.consent(true);
+      return;
+    }
+
+    if (clarityInitialized) {
+      Clarity.consent(false);
+    }
+  } catch (error) {
+    console.error("Failed to apply Clarity consent", error);
+  }
+};
+
+const clarityEnabledOnStart = (() => {
+  try {
+    return localStorage.getItem(CLARITY_ENABLED_KEY) === "true";
+  } catch {
+    return false;
+  }
+})();
+
+applyClarityConsent(clarityEnabledOnStart);
+
+window.addEventListener(CLARITY_EVENT_NAME, (event) => {
+  const enabled = Boolean(event?.detail?.enabled);
+  applyClarityConsent(enabled);
+});
 
 root.render(
   <HeroUIProvider>

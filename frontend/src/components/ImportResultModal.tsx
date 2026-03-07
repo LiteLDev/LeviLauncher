@@ -12,6 +12,11 @@ export interface ImportResultModalProps {
     failed: Array<{ name: string; err: string }>;
   };
   onConfirm?: () => void;
+  titleDone?: string;
+  titlePartial?: string;
+  titleFailed?: string;
+  successLabel?: string;
+  failedLabel?: string;
 }
 
 export const ImportResultModal: React.FC<ImportResultModalProps> = ({
@@ -19,6 +24,11 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
   onOpenChange,
   results,
   onConfirm,
+  titleDone,
+  titlePartial,
+  titleFailed,
+  successLabel,
+  failedLabel,
 }) => {
   const { t } = useTranslation();
   const { success, failed } = results;
@@ -26,15 +36,21 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
   const hasSuccess = success.length > 0;
   const isPartial = hasSuccess && hasFailed;
 
+  const resolvedDoneTitle = titleDone || t("mods.summary_title_done");
+  const resolvedPartialTitle = titlePartial || t("mods.summary_title_partial");
+  const resolvedFailedTitle = titleFailed || t("mods.summary_failed");
+  const resolvedSuccessLabel = successLabel || t("mods.summary_success");
+  const resolvedFailedLabel = failedLabel || t("mods.summary_failed");
+
   let type: ModalType = "success";
-  let title = t("mods.summary_title_done");
+  let title = resolvedDoneTitle;
 
   if (isPartial) {
     type = "warning";
-    title = t("mods.summary_title_partial");
+    title = resolvedPartialTitle;
   } else if (hasFailed) {
     type = "error";
-    title = t("mods.summary_failed");
+    title = resolvedFailedTitle;
   }
 
   return (
@@ -55,7 +71,7 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
         {success.length > 0 && (
           <div className="flex flex-col gap-2">
             <div className="text-medium text-default-700 dark:text-zinc-300 font-bold flex items-center gap-2">
-              {t("mods.summary_success")} ({success.length})
+              {resolvedSuccessLabel} ({success.length})
             </div>
             <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 max-h-[150px] overflow-y-auto custom-scrollbar">
               <div className="text-small font-bold font-mono text-default-800 dark:text-zinc-200 whitespace-pre-wrap break-all">
@@ -69,7 +85,7 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
           <div className="flex flex-col gap-2">
             <div className="text-small font-bold text-danger-600 dark:text-danger-500 flex items-center gap-2">
               <FiAlertTriangle className="w-4 h-4" />
-              {t("mods.summary_failed")} ({failed.length})
+              {resolvedFailedLabel} ({failed.length})
             </div>
             <div className="p-3 bg-danger-50/50 dark:bg-danger-500/10 rounded-xl border border-danger-100 dark:border-danger-500/20 max-h-[150px] overflow-y-auto custom-scrollbar">
               <div className="text-xs font-mono text-danger-700 dark:text-danger-400 whitespace-pre-wrap break-all flex flex-col gap-1">

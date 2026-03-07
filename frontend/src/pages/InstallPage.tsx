@@ -12,6 +12,8 @@ import {
   CardHeader,
   Chip,
   Spinner,
+  Select,
+  SelectItem,
   useDisclosure,
   addToast,
 } from "@heroui/react";
@@ -20,7 +22,9 @@ import { useTranslation } from "react-i18next";
 import { FaChevronDown } from "react-icons/fa";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
+import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { resolveInstallError } from "@/utils/installError";
+import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialogs, Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -46,6 +50,7 @@ type ItemType = "Preview" | "Release";
 
 export default function InstallPage() {
   const { t } = useTranslation();
+  const { runWithLipTask } = useLipTaskConsole();
   const navigate = useNavigate();
   const location = useLocation() as any;
   const { refreshAll } = useVersionStatus();
@@ -75,7 +80,7 @@ export default function InstallPage() {
   const [customInstallerPath, setCustomInstallerPath] = useState<string>("");
   const [installerDir, setInstallerDir] = useState<string>("");
   const [downloadResolved, setDownloadResolved] = useState<boolean>(false);
-  const { llMap } = useLeviLamina();
+  const { getSupportedLLVersions, getLatestLLVersion } = useLeviLamina();
   const {
     isOpen: rcOpen,
     onOpen: rcOnOpen,
@@ -83,6 +88,8 @@ export default function InstallPage() {
     onClose: rcOnClose,
   } = useDisclosure();
   const [rcVersion, setRcVersion] = useState("");
+  const [llSupportedVersions, setLLSupportedVersions] = useState<string[]>([]);
+  const [selectedLLVersion, setSelectedLLVersion] = useState<string>("");
   const [extractInfo, setExtractInfo] = useState<{
     files: number;
     bytes: number;
@@ -127,14 +134,7 @@ export default function InstallPage() {
 
   useEffect(() => {
     const guardActive = installing && !resultMsg;
-    try {
-      (window as any).llNavLock = guardActive;
-      window.dispatchEvent(
-        new CustomEvent("ll-nav-lock-changed", {
-          detail: { lock: guardActive },
-        }),
-      );
-    } catch {}
+    setNavLockReason("install-flow", guardActive);
     const originalPush = window.history.pushState.bind(window.history);
     const originalReplace = window.history.replaceState.bind(window.history);
 
@@ -150,12 +150,9 @@ export default function InstallPage() {
     return () => {
       (window.history as any).pushState = originalPush as any;
       (window.history as any).replaceState = originalReplace as any;
-      try {
-        (window as any).llNavLock = false;
-        window.dispatchEvent(
-          new CustomEvent("ll-nav-lock-changed", { detail: { lock: false } }),
-        );
-      } catch {}
+      if (guardActive) {
+        setNavLockReason("install-flow", false);
+      }
     };
   }, [installing, resultMsg]);
 
@@ -315,6 +312,20 @@ export default function InstallPage() {
     };
     checkResolved();
   }, [mirrorVersion, mirrorType]);
+
+  useEffect(() => {
+    if (!installLeviLamina) {
+      setLLSupportedVersions([]);
+      setSelectedLLVersion("");
+      return;
+    }
+    const versions = getSupportedLLVersions(mirrorVersion);
+    setLLSupportedVersions(versions);
+    setSelectedLLVersion((prev) => {
+      if (prev && versions.includes(prev)) return prev;
+      return versions[0] || "";
+    });
+  }, [installLeviLamina, mirrorVersion, getSupportedLLVersions]);
 
   const headerTitle = useMemo(() => {
     if (installing)
@@ -476,22 +487,39 @@ export default function InstallPage() {
 
       if (installLeviLamina) {
         try {
+          const installVersion = String(
+            selectedLLVersion || getLatestLLVersion(mirrorVersion),
+          ).trim();
+          if (!installVersion) {
+            addToast({
+              title: t("common.error"),
+              description: resolveInstallError("ERR_LL_VERSION_UNSUPPORTED", t),
+              color: "danger",
+            });
+            setInstalling(false);
+            await rollback();
+            return;
+          }
           const installLL = (minecraft as any)?.InstallLeviLamina;
           if (typeof installLL === "function") {
-            const llErr: string = await installLL(
-              mirrorVersion || installName || "",
-              name,
+            await runWithLipTask(
+              {
+                action: "install",
+                target: name,
+                methods: ["Install", "Update"],
+                feedbackMode: "on_error",
+              },
+              async ({ addLog }) => {
+                const llErr: string = await installLL(
+                  mirrorVersion || installName || "",
+                  name,
+                  installVersion,
+                );
+                if (llErr) {
+                  throw new Error(String(llErr));
+                }
+              },
             );
-            if (llErr) {
-              addToast({
-                title: t("common.error"),
-                description: resolveInstallError(llErr, t),
-                color: "danger",
-              });
-              setInstalling(false);
-              await rollback();
-              return;
-            }
           }
         } catch (e: any) {
           addToast({
@@ -555,18 +583,16 @@ export default function InstallPage() {
 
   const handleInstall = async () => {
     if (installLeviLamina && mirrorVersion) {
-      let targetLLVersion = "";
-      if (llMap && llMap.size > 0) {
-        let versions = llMap.get(mirrorVersion);
-        if (!versions && mirrorVersion.split(".").length >= 3) {
-          const parts = mirrorVersion.split(".");
-          const key = `${parts[0]}.${parts[1]}.${parts[2]}`;
-          versions = llMap.get(key);
-        }
-
-        if (versions && Array.isArray(versions) && versions.length > 0) {
-          targetLLVersion = versions[versions.length - 1];
-        }
+      const targetLLVersion = String(
+        selectedLLVersion || getLatestLLVersion(mirrorVersion),
+      ).trim();
+      if (!targetLLVersion) {
+        addToast({
+          title: t("common.error"),
+          description: resolveInstallError("ERR_LL_VERSION_UNSUPPORTED", t),
+          color: "danger",
+        });
+        return;
       }
 
       if (targetLLVersion && targetLLVersion.includes("rc")) {
@@ -995,6 +1021,40 @@ export default function InstallPage() {
                         onValueChange={setInstallLeviLamina}
                         color="success"
                       />
+                    </div>
+                  )}
+                  {isLeviLaminaSupported && installLeviLamina && (
+                    <div className="p-3 rounded-2xl bg-default-50/50 dark:bg-default-100/10 border border-default-100 dark:border-white/5">
+                      <Select
+                        label={
+                          t(
+                            "downloadpage.install.ll_version_label",
+                          ) as unknown as string
+                        }
+                        placeholder={
+                          t(
+                            "downloadpage.install.ll_version_placeholder",
+                          ) as unknown as string
+                        }
+                        classNames={COMPONENT_STYLES.select}
+                        selectedKeys={
+                          selectedLLVersion
+                            ? new Set([selectedLLVersion])
+                            : new Set([])
+                        }
+                        onSelectionChange={(keys) => {
+                          const selected = Array.from(
+                            keys as unknown as Set<string>,
+                          )[0];
+                          setSelectedLLVersion(String(selected || ""));
+                        }}
+                      >
+                        {llSupportedVersions.map((version) => (
+                          <SelectItem key={version} textValue={version}>
+                            {version}
+                          </SelectItem>
+                        ))}
+                      </Select>
                     </div>
                   )}
 

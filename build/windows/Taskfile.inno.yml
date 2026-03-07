@@ -1,0 +1,37 @@
+version: "3"
+
+vars:
+  APP_NAME: '{{.APP_NAME | default "LeviLauncher"}}'
+  APP_COMPANY: '{{.APP_COMPANY | default "LeviMC"}}'
+  BIN_DIR: '{{.BIN_DIR | default "bin"}}'
+
+tasks:
+  package:
+    summary: Packages an existing executable with Inno Setup without rebuilding
+    cmds:
+      - task: create:inno:installer
+        vars:
+          ARCH:
+            ref: .ARCH
+          EXE_PATH:
+            ref: .EXE_PATH
+    vars:
+      ARCH: "{{.ARCH | default ARCH}}"
+      EXE_PATH: '{{.EXE_PATH | default ""}}'
+
+  create:inno:installer:
+    summary: Creates an Inno Setup installer from an existing executable
+    dir: "{{.TASKFILE_DIR}}/inno"
+    cmds:
+      - wails3 generate webview2bootstrapper -dir "{{.TASKFILE_DIR}}/inno"
+      - |
+        {{if eq OS "windows"}}
+        iscc /DAppName="{{.APP_NAME}}" /DAppPublisher="{{.APP_COMPANY}}" /DAppArch="{{.ARCH}}" /DAppBinaryPath="{{.EXE_PATH_WINDOWS}}" project.iss
+        {{else}}
+        iscc /DAppName="{{.APP_NAME}}" /DAppPublisher="{{.APP_COMPANY}}" /DAppArch="{{.ARCH}}" /DAppBinaryPath="{{.EXE_PATH_UNIX}}" project.iss
+        {{end}}
+    vars:
+      ARCH: "{{.ARCH | default ARCH}}"
+      EXE_PATH: '{{.EXE_PATH | default ""}}'
+      EXE_PATH_WINDOWS: '{{if .EXE_PATH}}{{.EXE_PATH}}{{else}}{{.TASKFILE_DIR}}\..\..\{{.BIN_DIR}}\{{.APP_NAME}}.exe{{end}}'
+      EXE_PATH_UNIX: '{{if .EXE_PATH}}{{.EXE_PATH}}{{else}}{{.TASKFILE_DIR}}/../../{{.BIN_DIR}}/{{.APP_NAME}}.exe{{end}}'

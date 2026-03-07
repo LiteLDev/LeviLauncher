@@ -1,4 +1,4 @@
-import { useEffect, useState, useMemo } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 import { useDisclosure } from "@heroui/react";
 import {
@@ -10,9 +10,6 @@ import {
   InstallGDKFromZip,
   GetDisableDiscordRPC,
   GetEnableBetaUpdates,
-  GetLipVersion,
-  IsLipInstalled,
-  GetLatestLipVersion,
   GetResourceRulesStatus,
   UpdateResourceRules,
   ListMinecraftProcesses,
@@ -23,9 +20,10 @@ import {
   GetInstallerDir,
   GetVersionsDir,
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { Events } from "@wailsio/runtime";
+import { Call, Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { persistClarityChoice } from "@/utils/clarityConsent";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { useThemeManager, ThemeMode } from "@/utils/useThemeManager";
 
@@ -60,6 +58,13 @@ export const useSettings = (i18n: { language: string }) => {
   // Discord RPC / Beta updates
   const [discordRpcEnabled, setDiscordRpcEnabled] = useState<boolean>(true);
   const [enableBetaUpdates, setEnableBetaUpdatesState] = useState<boolean>(false);
+  const [clarityEnabled, setClarityEnabledState] = useState<boolean>(() => {
+    try {
+      return localStorage.getItem("ll.clarity.enabled") === "true";
+    } catch {
+      return false;
+    }
+  });
 
   // GDK
   const [gdkInstalled, setGdkInstalled] = useState<boolean>(false);
@@ -71,6 +76,7 @@ export const useSettings = (i18n: { language: string }) => {
   const [gdkDlSpeed, setGdkDlSpeed] = useState<number>(0);
   const [gdkDlStatus, setGdkDlStatus] = useState<string>("");
   const [gdkDlError, setGdkDlError] = useState<string>("");
+  const [defaultGdkDownloadURL, setDefaultGdkDownloadURL] = useState<string>("");
   const gdkProgressDisclosure = useDisclosure();
   const gdkLicenseDisclosure = useDisclosure();
   const gdkInstallDisclosure = useDisclosure();
@@ -254,6 +260,9 @@ export const useSettings = (i18n: { language: string }) => {
   const [lipInstalled, setLipInstalled] = useState<boolean>(false);
   const [lipVersion, setLipVersion] = useState<string>("");
   const [lipLatestVersion, setLipLatestVersion] = useState<string>("");
+  const [lipPath, setLipPath] = useState<string>("");
+  const [lipUpToDate, setLipUpToDate] = useState<boolean>(false);
+  const [lipStatusError, setLipStatusError] = useState<string>("");
   const [installingLip, setInstallingLip] = useState<boolean>(false);
   const [lipStatus, setLipStatus] = useState<string>("");
   const [lipProgress, setLipProgress] = useState<{
@@ -303,6 +312,38 @@ export const useSettings = (i18n: { language: string }) => {
   } = useDisclosure();
 
   // --- Handlers ---
+  const setClarityEnabled = (enabled: boolean) => {
+    setClarityEnabledState(enabled);
+    persistClarityChoice(enabled);
+  };
+
+  const callMinecraftByName = async <T,>(
+    method: string,
+    ...args: unknown[]
+  ): Promise<T> => {
+    return (await Call.ByName(`main.Minecraft.${method}`, ...args)) as T;
+  };
+
+  const startDefaultGdkDownload = async () => {
+    let url = defaultGdkDownloadURL.trim();
+    if (!url) {
+      try {
+        url = String(
+          (await callMinecraftByName<string>("GetDefaultGDKDownloadURL")) || "",
+        ).trim();
+        setDefaultGdkDownloadURL(url);
+      } catch {}
+    }
+    setGdkDlError("");
+    setGdkDlProgress(null);
+    if (!url) {
+      setGdkDlError("ERR_GDK_DOWNLOAD_URL_MISSING");
+      gdkProgressDisclosure.onOpen();
+      return "ERR_GDK_DOWNLOAD_URL_MISSING";
+    }
+    gdkProgressDisclosure.onOpen();
+    return minecraft.StartGDKDownload(url);
+  };
 
   const refreshSunTimes = async () => {
     setLoadingSunTimes(true);
@@ -358,6 +399,23 @@ export const useSettings = (i18n: { language: string }) => {
     }
   };
 
+  const refreshLipStatus = async () => {
+    try {
+      const getter = (minecraft as any)?.GetLipStatus;
+      const s = typeof getter === "function" ? ((await getter()) as any) : null;
+      setLipPath(String(s?.path || ""));
+      setLipInstalled(Boolean(s?.installed));
+      setLipUpToDate(Boolean(s?.upToDate));
+      setLipVersion(String(s?.currentVersion || ""));
+      setLipLatestVersion(String(s?.latestVersion || ""));
+      setLipStatusError(String(s?.error || ""));
+    } catch (e: any) {
+      setLipStatusError(String(e?.message || e || "check failed"));
+      setLipUpToDate(false);
+      setLipLatestVersion("");
+    }
+  };
+
   const refreshResourceRulesStatus = async () => {
     setResourceRulesChecking(true);
     try {
@@ -389,13 +447,6 @@ export const useSettings = (i18n: { language: string }) => {
       setResourceRulesUpdating(false);
     }
   };
-
-  // --- Computed ---
-
-  const hasLipUpdate = useMemo(() => {
-    if (!lipInstalled || !lipLatestVersion || !lipVersion) return false;
-    return lipLatestVersion.replace(/^v/, "") !== lipVersion.replace(/^v/, "");
-  }, [lipInstalled, lipLatestVersion, lipVersion]);
 
   // --- Effects ---
 
@@ -469,6 +520,13 @@ export const useSettings = (i18n: { language: string }) => {
             try {
               const ok = await IsGDKInstalled();
               setGdkInstalled(Boolean(ok));
+            } catch {}
+            try {
+              const url = String(
+                (await callMinecraftByName<string>("GetDefaultGDKDownloadURL")) ||
+                  "",
+              ).trim();
+              setDefaultGdkDownloadURL(url);
             } catch {}
           }
         } catch {}
@@ -622,8 +680,18 @@ export const useSettings = (i18n: { language: string }) => {
           gdkProgressDisclosure.onClose();
           try {
             gdkInstallDisclosure.onOpen();
-            await InstallGDKFromZip(dest);
-          } catch {}
+            const installErr = await InstallGDKFromZip(dest);
+            if (installErr) {
+              gdkInstallDisclosure.onClose();
+              setGdkDlError(String(installErr));
+              gdkProgressDisclosure.onOpen();
+            }
+          } catch (error) {
+            console.error("InstallGDKFromZip failed", error);
+            gdkInstallDisclosure.onClose();
+            setGdkDlError("ERR_GDK_INSTALL_FAILED");
+            gdkProgressDisclosure.onOpen();
+          }
         }),
       );
       offs.push(
@@ -656,15 +724,10 @@ export const useSettings = (i18n: { language: string }) => {
   // Lip install events
   useEffect(() => {
     if (!hasBackend) return;
-    IsLipInstalled().then((ok) => {
-      setLipInstalled(Boolean(ok));
-      if (ok) {
-        GetLipVersion().then((v) => setLipVersion(String(v || "")));
-      }
-    });
-    GetLatestLipVersion()
-      .then((v) => setLipLatestVersion(String(v || "")))
-      .catch(() => {});
+    void refreshLipStatus();
+    const timer = setTimeout(() => {
+      void refreshLipStatus();
+    }, 1500);
 
     const offs: (() => void)[] = [];
     offs.push(
@@ -687,9 +750,9 @@ export const useSettings = (i18n: { language: string }) => {
         setInstallingLip(false);
         setLipStatus("done");
         setLipProgress({ percentage: 100, current: 0, total: 0 });
-        setLipInstalled(true);
         setLipVersion(String(e?.data || ""));
         setLipError("");
+        void refreshLipStatus();
       }),
     );
     offs.push(
@@ -697,9 +760,13 @@ export const useSettings = (i18n: { language: string }) => {
         setInstallingLip(false);
         setLipStatus("");
         setLipError(String(e?.data || ""));
+        void refreshLipStatus();
       }),
     );
-    return () => offs.forEach((off) => off());
+    return () => {
+      clearTimeout(timer);
+      offs.forEach((off) => off());
+    };
   }, [hasBackend]);
 
   useEffect(() => {
@@ -710,7 +777,6 @@ export const useSettings = (i18n: { language: string }) => {
   return {
     // Computed
     hasBackend,
-    hasLipUpdate,
 
     // Navigation
     navigate,
@@ -752,6 +818,8 @@ export const useSettings = (i18n: { language: string }) => {
     setDiscordRpcEnabled,
     enableBetaUpdates,
     setEnableBetaUpdates: setEnableBetaUpdatesState,
+    clarityEnabled,
+    setClarityEnabled,
 
     // GDK
     gdkInstalled,
@@ -766,6 +834,7 @@ export const useSettings = (i18n: { language: string }) => {
     gdkInstallDisclosure,
     gdkLicenseAccepted,
     setGdkLicenseAccepted,
+    startDefaultGdkDownload,
 
     // Tabs
     selectedTab,
@@ -839,6 +908,9 @@ export const useSettings = (i18n: { language: string }) => {
     lipInstalled,
     lipVersion,
     lipLatestVersion,
+    lipPath,
+    lipUpToDate,
+    lipStatusError,
     installingLip,
     setInstallingLip,
     lipStatus,
@@ -846,6 +918,7 @@ export const useSettings = (i18n: { language: string }) => {
     lipError,
     setLipError,
     lipProgressDisclosure,
+    refreshLipStatus,
 
     // Resource rules
     resourceRulesInstalled,

@@ -12,6 +12,7 @@ export interface DeleteConfirmModalProps {
   description?: React.ReactNode;
   itemName?: string;
   isPending?: boolean;
+  confirmDisabled?: boolean;
   error?: string | null;
   warning?: string;
 }
@@ -24,6 +25,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   description,
   itemName,
   isPending = false,
+  confirmDisabled = false,
   error,
   warning,
 }) => {
@@ -48,6 +50,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       showCancelButton={!isPending}
       confirmButtonProps={{
         isLoading: isPending,
+        isDisabled: isPending || confirmDisabled,
         className: "font-bold shadow-lg shadow-danger-500/20",
       }}
       cancelButtonProps={{

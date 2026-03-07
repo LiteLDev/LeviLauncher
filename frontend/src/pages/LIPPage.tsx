@@ -1,4 +1,4 @@
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Button,
   Input,
@@ -19,13 +19,24 @@ import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import {
   fetchLIPPackagesIndex,
+  fetchLIPLeviLaminaClientMapping,
+  isLeviLaminaRangesCompatibleWithAnyVersion,
+  isLeviLaminaVersionCompatible,
   type LIPPackageBasicInfo,
 } from "@/utils/content";
 import { LuSearch, LuDownload, LuClock, LuFlame } from "react-icons/lu";
 import { motion } from "framer-motion";
+import { readCurrentVersionName } from "@/utils/currentVersion";
+import { useCurrentVersion } from "@/utils/CurrentVersionContext";
+import { useModIntelligence } from "@/utils/ModIntelligenceContext";
+import {
+  GetVersionMeta,
+  ListVersionMetas,
+} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 
 const PAGE_SIZE = 20;
-const ALL_TAG = "__all__";
+const ALL_GAME_VERSION = "__all_game__";
+const ALL_LL_VERSION = "__all_ll__";
 const HIDDEN_LIP_PACKAGES = new Set([
   "levilamina",
   "levilamina-loc",
@@ -34,6 +45,121 @@ const HIDDEN_LIP_PACKAGES = new Set([
 
 type LIPSortKey = "hotness" | "updated" | "name";
 type LIPOrderKey = "asc" | "desc";
+
+type ParsedSemver = {
+  major: number;
+  minor: number;
+  patch: number;
+  pre: string[];
+};
+
+const normalizeSemverInput = (value: string): string =>
+  String(value || "")
+    .trim()
+    .replace(/^v/i, "");
+
+const parseSemver = (input: string): ParsedSemver | null => {
+  const normalized = normalizeSemverInput(input);
+  if (!normalized) return null;
+  const match = normalized.match(
+    /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/,
+  );
+  if (!match) return null;
+  return {
+    major: Number(match[1]),
+    minor: Number(match[2]),
+    patch: Number(match[3]),
+    pre: match[4] ? match[4].split(".") : [],
+  };
+};
+
+const compareSemver = (a: ParsedSemver, b: ParsedSemver): number => {
+  if (a.major !== b.major) return a.major > b.major ? 1 : -1;
+  if (a.minor !== b.minor) return a.minor > b.minor ? 1 : -1;
+  if (a.patch !== b.patch) return a.patch > b.patch ? 1 : -1;
+
+  const aRelease = a.pre.length === 0;
+  const bRelease = b.pre.length === 0;
+  if (aRelease && bRelease) return 0;
+  if (aRelease) return 1;
+  if (bRelease) return -1;
+
+  const length = Math.max(a.pre.length, b.pre.length);
+  for (let i = 0; i < length; i += 1) {
+    const aPart = a.pre[i];
+    const bPart = b.pre[i];
+    if (aPart === undefined) return -1;
+    if (bPart === undefined) return 1;
+
+    const aNumeric = /^[0-9]+$/.test(aPart);
+    const bNumeric = /^[0-9]+$/.test(bPart);
+    if (aNumeric && bNumeric) {
+      const aNum = Number(aPart);
+      const bNum = Number(bPart);
+      if (aNum !== bNum) return aNum > bNum ? 1 : -1;
+      continue;
+    }
+    if (aNumeric && !bNumeric) return -1;
+    if (!aNumeric && bNumeric) return 1;
+    if (aPart !== bPart) return aPart > bPart ? 1 : -1;
+  }
+  return 0;
+};
+
+const compareSemverLike = (a: string, b: string): number => {
+  const parsedA = parseSemver(a);
+  const parsedB = parseSemver(b);
+  if (parsedA && parsedB) return compareSemver(parsedA, parsedB);
+  if (parsedA) return 1;
+  if (parsedB) return -1;
+  return normalizeSemverInput(a).localeCompare(normalizeSemverInput(b));
+};
+
+const sortVersionValuesDesc = (values: string[]): string[] => {
+  const unique = Array.from(
+    new Set(values.map((value) => String(value || "").trim()).filter(Boolean)),
+  );
+  unique.sort((a, b) => compareSemverLike(b, a));
+  return unique;
+};
+
+const normalizeGameVersionForFilter = (value: string): string => {
+  const raw = String(value || "").trim();
+  if (!raw) return "";
+  const match = raw.match(/(\d+\.\d+\.\d+)/);
+  return match ? match[1] : raw;
+};
+
+const normalizeLLVersionForFilter = (value: string): string =>
+  (() => {
+    const normalized = normalizeSemverInput(String(value || "").trim());
+    if (!normalized) return "";
+    const match = normalized.match(
+      /(\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?)/,
+    );
+    return match ? match[1] : normalized;
+  })();
+
+const resolveCurrentInstanceName = async (
+  preferredName?: string,
+): Promise<string> => {
+  const preferred = String(preferredName || "").trim();
+  const saved = preferred || readCurrentVersionName().trim();
+  try {
+    const metas = await ListVersionMetas();
+    const names = Array.isArray(metas)
+      ? metas
+          .map((meta: any) => String(meta?.name || "").trim())
+          .filter(Boolean)
+      : [];
+    if (saved && names.includes(saved)) {
+      return saved;
+    }
+    return names[0] || saved || preferred;
+  } catch {
+    return saved || preferred;
+  }
+};
 
 const parseUpdatedTime = (value: string): number => {
   const timestamp = Date.parse(value);
@@ -78,6 +204,9 @@ const shouldHidePackage = (pkg: LIPPackageBasicInfo): boolean => {
 const LIPPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { currentVersionName } = useCurrentVersion();
+  const { ensureInstanceHydrated, getInstanceSnapshot, snapshotRevision } =
+    useModIntelligence();
   const [queryInput, setQueryInput] = useState("");
   const [query, setQuery] = useState("");
   const [page, setPage] = useState(1);
@@ -85,11 +214,24 @@ const LIPPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [sort, setSort] = useState<LIPSortKey>("hotness");
   const [order, setOrder] = useState<LIPOrderKey>("desc");
-  const [selectedTag, setSelectedTag] = useState<string>(ALL_TAG);
+  const [selectedGameVersion, setSelectedGameVersion] =
+    useState<string>(ALL_GAME_VERSION);
+  const [selectedLLVersion, setSelectedLLVersion] =
+    useState<string>(ALL_LL_VERSION);
+  const [gameVersionOptions, setGameVersionOptions] = useState<string[]>([]);
+  const [llVersionOptions, setLLVersionOptions] = useState<string[]>([]);
+  const [gameToLLVersions, setGameToLLVersions] = useState<
+    Record<string, string[]>
+  >({});
+  const [currentInstalledLLVersion, setCurrentInstalledLLVersion] =
+    useState("");
   const [error, setError] = useState("");
+  const [filterContextReady, setFilterContextReady] = useState(false);
 
   const pageRootRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
+  const gameFilterInitializedRef = useRef(false);
+  const llFilterInitializedRef = useRef(false);
 
   const collectScrollTargets = () => {
     const seen = new Set<unknown>();
@@ -165,31 +307,210 @@ const LIPPage: React.FC = () => {
     void loadPackages();
   }, []);
 
-  const availableTags = useMemo(() => {
-    const unique = new Set<string>();
-    for (const pkg of allPackages) {
-      for (const tag of pkg.tags) {
-        const normalized = String(tag || "").trim();
-        if (normalized) unique.add(normalized);
+  const loadFilterContext = useCallback(async () => {
+    const instanceName = await resolveCurrentInstanceName(currentVersionName);
+
+    let currentGameVersion = "";
+    let installedLLVersion = "";
+    let mappingGameToLLVersions: Record<string, string[]> = {};
+
+    try {
+      const mapping = await fetchLIPLeviLaminaClientMapping();
+      mappingGameToLLVersions = mapping.gameToLLVersions || {};
+    } catch (err) {
+      console.warn("Failed to load LeviLamina game mapping", err);
+    }
+
+    if (instanceName) {
+      try {
+        const meta: any = await GetVersionMeta(instanceName);
+        currentGameVersion = normalizeGameVersionForFilter(
+          String(meta?.gameVersion || "").trim(),
+        );
+      } catch {}
+
+      try {
+        await ensureInstanceHydrated(instanceName, {
+          background: true,
+          reason: "lip-page-filter-context",
+        });
+        const snapshot = getInstanceSnapshot(instanceName);
+        installedLLVersion = normalizeLLVersionForFilter(
+          String(snapshot?.llState?.installedVersion || "").trim(),
+        );
+      } catch {}
+    }
+
+    const normalizedGameToLL = Object.fromEntries(
+      Object.entries(mappingGameToLLVersions).map(([gameVersion, llVersions]) => [
+        normalizeGameVersionForFilter(String(gameVersion || "").trim()),
+        sortVersionValuesDesc(
+          Array.isArray(llVersions)
+            ? llVersions.map((version) =>
+                normalizeLLVersionForFilter(String(version || "").trim()),
+              )
+            : [],
+        ),
+      ]),
+    ) as Record<string, string[]>;
+
+    const gameOptions = sortVersionValuesDesc(
+      Object.keys(normalizedGameToLL).filter(Boolean),
+    );
+    if (currentGameVersion && !gameOptions.includes(currentGameVersion)) {
+      gameOptions.unshift(currentGameVersion);
+      if (!Array.isArray(normalizedGameToLL[currentGameVersion])) {
+        normalizedGameToLL[currentGameVersion] = [];
       }
     }
-    return Array.from(unique).sort((a, b) =>
-      a.localeCompare(b, undefined, { sensitivity: "base" }),
-    );
-  }, [allPackages]);
+    const currentGameHasMappedLLVersions =
+      Boolean(currentGameVersion) &&
+      Array.isArray(normalizedGameToLL[currentGameVersion]) &&
+      normalizedGameToLL[currentGameVersion].length > 0;
+
+    setGameToLLVersions(normalizedGameToLL);
+    setGameVersionOptions(gameOptions);
+    setCurrentInstalledLLVersion(installedLLVersion);
+    setSelectedGameVersion((prev) => {
+      if (!gameFilterInitializedRef.current) {
+        gameFilterInitializedRef.current = true;
+        if (
+          currentGameVersion &&
+          gameOptions.includes(currentGameVersion) &&
+          currentGameHasMappedLLVersions
+        ) {
+          return currentGameVersion;
+        }
+        return ALL_GAME_VERSION;
+      }
+      if (
+        prev === ALL_GAME_VERSION &&
+        currentGameVersion &&
+        gameOptions.includes(currentGameVersion) &&
+        currentGameHasMappedLLVersions
+      ) {
+        return currentGameVersion;
+      }
+      if (prev === currentGameVersion && !currentGameHasMappedLLVersions) {
+        return ALL_GAME_VERSION;
+      }
+      if (gameOptions.includes(prev)) {
+        return prev;
+      }
+      return ALL_GAME_VERSION;
+    });
+    setFilterContextReady(true);
+  }, [
+    currentVersionName,
+    ensureInstanceHydrated,
+    getInstanceSnapshot,
+    snapshotRevision,
+  ]);
 
   useEffect(() => {
-    if (selectedTag !== ALL_TAG && !availableTags.includes(selectedTag)) {
-      setSelectedTag(ALL_TAG);
+    void loadFilterContext();
+  }, [loadFilterContext]);
+
+  useEffect(() => {
+    if (!filterContextReady) return;
+
+    const allMappedLLVersions = sortVersionValuesDesc(
+      Object.values(gameToLLVersions).flatMap((versions) => versions),
+    );
+    let nextOptions =
+      selectedGameVersion === ALL_GAME_VERSION
+        ? allMappedLLVersions
+        : sortVersionValuesDesc(gameToLLVersions[selectedGameVersion] || []);
+
+    if (
+      currentInstalledLLVersion &&
+      !nextOptions.includes(currentInstalledLLVersion) &&
+      selectedGameVersion === ALL_GAME_VERSION
+    ) {
+      nextOptions = [currentInstalledLLVersion, ...nextOptions];
     }
-  }, [availableTags, selectedTag]);
+
+    setLLVersionOptions(nextOptions);
+    setSelectedLLVersion((prev) => {
+      if (!llFilterInitializedRef.current) {
+        llFilterInitializedRef.current = true;
+        if (
+          currentInstalledLLVersion &&
+          nextOptions.includes(currentInstalledLLVersion)
+        ) {
+          return currentInstalledLLVersion;
+        }
+        return ALL_LL_VERSION;
+      }
+      if (
+        prev === ALL_LL_VERSION &&
+        currentInstalledLLVersion &&
+        nextOptions.includes(currentInstalledLLVersion)
+      ) {
+        return currentInstalledLLVersion;
+      }
+      if (nextOptions.includes(prev)) {
+        return prev;
+      }
+      return ALL_LL_VERSION;
+    });
+  }, [
+    filterContextReady,
+    selectedGameVersion,
+    gameToLLVersions,
+    currentInstalledLLVersion,
+  ]);
+
+  const llCandidatesByGame = useMemo(() => {
+    if (selectedGameVersion === ALL_GAME_VERSION) return [];
+    return gameToLLVersions[selectedGameVersion] || [];
+  }, [selectedGameVersion, gameToLLVersions]);
 
   const filteredPackages = useMemo(() => {
     const keyword = query.trim().toLowerCase();
 
     return allPackages.filter((pkg) => {
-      if (selectedTag !== ALL_TAG && !pkg.tags.includes(selectedTag)) {
+      const gameFilterActive = selectedGameVersion !== ALL_GAME_VERSION;
+      const llFilterActive = selectedLLVersion !== ALL_LL_VERSION;
+
+      if (gameFilterActive && !pkg.llDependencyRanges?.length) {
         return false;
+      }
+
+      if (gameFilterActive && !llFilterActive) {
+        if (
+          !isLeviLaminaRangesCompatibleWithAnyVersion(
+            pkg.llDependencyRanges,
+            llCandidatesByGame,
+          )
+        ) {
+          return false;
+        }
+      } else if (gameFilterActive && llFilterActive) {
+        if (
+          llCandidatesByGame.length > 0 &&
+          !llCandidatesByGame.includes(selectedLLVersion)
+        ) {
+          return false;
+        }
+        if (
+          !isLeviLaminaVersionCompatible(
+            selectedLLVersion,
+            pkg.llDependencyRanges,
+          )
+        ) {
+          return false;
+        }
+      } else if (llFilterActive) {
+        if (
+          !pkg.llDependencyRanges?.length ||
+          !isLeviLaminaVersionCompatible(
+            selectedLLVersion,
+            pkg.llDependencyRanges,
+          )
+        ) {
+          return false;
+        }
       }
 
       if (!keyword) {
@@ -205,7 +526,13 @@ const LIPPage: React.FC = () => {
       ].map((part) => String(part || "").toLowerCase());
       return haystacks.some((part) => part.includes(keyword));
     });
-  }, [allPackages, query, selectedTag]);
+  }, [
+    allPackages,
+    query,
+    selectedGameVersion,
+    selectedLLVersion,
+    llCandidatesByGame,
+  ]);
 
   const sortedPackages = useMemo(
     () => sortPackages(filteredPackages, sort, order),
@@ -272,7 +599,11 @@ const LIPPage: React.FC = () => {
   };
 
   return (
-    <PageContainer ref={pageRootRef} className="min-h-0" animate={false}>
+    <PageContainer
+      ref={pageRootRef}
+      className="min-h-0 !overflow-hidden"
+      animate={false}
+    >
       <motion.div
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
@@ -280,7 +611,7 @@ const LIPPage: React.FC = () => {
       >
         <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
           <CardBody className="p-6 flex flex-col gap-6">
-            <PageHeader title="LIP Content" />
+            <PageHeader title={t("lip.title")} />
 
             <div className="flex flex-col sm:flex-row gap-3">
               <Input
@@ -315,22 +646,46 @@ const LIPPage: React.FC = () => {
               </Button>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <Select
-                label={t("common.all")}
-                placeholder={t("common.all")}
-                className="max-w-xs"
-                selectedKeys={[selectedTag]}
+                label={t("lip.game_version_label")}
+                placeholder={t("lip.game_version_placeholder")}
+                selectedKeys={[selectedGameVersion]}
                 onSelectionChange={(keys) => {
                   const value = Array.from(keys)[0] as string;
-                  setSelectedTag(value || ALL_TAG);
+                  setSelectedGameVersion(value || ALL_GAME_VERSION);
                   setPage(1);
                 }}
                 size="sm"
                 classNames={COMPONENT_STYLES.select}
                 items={[
-                  { key: ALL_TAG, label: t("common.all") },
-                  ...availableTags.map((tag) => ({ key: tag, label: tag })),
+                  { key: ALL_GAME_VERSION, label: t("lip.game_all_versions") },
+                  ...gameVersionOptions.map((version) => ({
+                    key: version,
+                    label: version,
+                  })),
+                ]}
+              >
+                {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
+              </Select>
+
+              <Select
+                label={t("lip.ll_version_label")}
+                placeholder={t("lip.ll_version_placeholder")}
+                selectedKeys={[selectedLLVersion]}
+                onSelectionChange={(keys) => {
+                  const value = Array.from(keys)[0] as string;
+                  setSelectedLLVersion(value || ALL_LL_VERSION);
+                  setPage(1);
+                }}
+                size="sm"
+                classNames={COMPONENT_STYLES.select}
+                items={[
+                  { key: ALL_LL_VERSION, label: t("lip.ll_all_versions") },
+                  ...llVersionOptions.map((version) => ({
+                    key: version,
+                    label: version,
+                  })),
                 ]}
               >
                 {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
@@ -339,21 +694,23 @@ const LIPPage: React.FC = () => {
               <Select
                 label={t("lip.sort_by")}
                 placeholder={t("lip.select_sort")}
-                className="max-w-xs"
                 selectedKeys={[sort]}
                 onChange={(e) => handleSortChange(e.target.value as LIPSortKey)}
                 size="sm"
                 classNames={COMPONENT_STYLES.select}
               >
-                <SelectItem key="hotness">Hotness</SelectItem>
-                <SelectItem key="updated">Updated</SelectItem>
-                <SelectItem key="name">Name</SelectItem>
+                <SelectItem key="hotness">
+                  {t("lip.sort_options.hotness")}
+                </SelectItem>
+                <SelectItem key="updated">
+                  {t("lip.sort_options.updated")}
+                </SelectItem>
+                <SelectItem key="name">{t("lip.sort_options.name")}</SelectItem>
               </Select>
 
               <Select
                 label={t("lip.order_by")}
                 placeholder={t("lip.select_order")}
-                className="max-w-xs"
                 selectedKeys={[order]}
                 onChange={(e) => {
                   setOrder(e.target.value as LIPOrderKey);
@@ -362,13 +719,9 @@ const LIPPage: React.FC = () => {
                 size="sm"
                 classNames={COMPONENT_STYLES.select}
               >
-                <SelectItem key="desc">Desc</SelectItem>
-                <SelectItem key="asc">Asc</SelectItem>
+                <SelectItem key="desc">{t("lip.order_options.desc")}</SelectItem>
+                <SelectItem key="asc">{t("lip.order_options.asc")}</SelectItem>
               </Select>
-            </div>
-
-            <div className="text-sm text-default-500 dark:text-zinc-400">
-              {t("common.all")}: {sortedPackages.length}
             </div>
 
             {error ? (
@@ -436,7 +789,9 @@ const LIPPage: React.FC = () => {
                               {pkg.name}
                             </h3>
                             <span className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 truncate">
-                              | By {pkg.author || t("common.unknown")}
+                              {t("lip.by_author_inline", {
+                                author: pkg.author || t("common.unknown"),
+                              })}
                             </span>
                           </div>
 
@@ -447,14 +802,14 @@ const LIPPage: React.FC = () => {
                           <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-default-400 mt-1">
                             <div
                               className="flex items-center gap-1"
-                              title="Hotness"
+                              title={t("lip.sort_options.hotness")}
                             >
                               <LuFlame className="text-orange-500" />
                               <span>{pkg.hotness}</span>
                             </div>
                             <div
                               className="flex items-center gap-1"
-                              title="Updated"
+                              title={t("lip.sort_options.updated")}
                             >
                               <LuClock />
                               <span>{formatDate(pkg.updated)}</span>

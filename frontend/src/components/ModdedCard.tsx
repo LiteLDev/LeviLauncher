@@ -7,10 +7,6 @@ import {
   Chip,
   CardHeader,
 } from "@heroui/react";
-import {
-  GetMods,
-  IsModEnabled,
-} from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { FaPuzzlePiece, FaArrowRight } from "react-icons/fa";
 import { useTranslation } from "react-i18next";
@@ -18,40 +14,41 @@ import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
+import { useModIntelligence } from "@/utils/ModIntelligenceContext";
+import { resolveModFolder } from "@/utils/modIntelligenceResolver";
 
 export const ModCard = (args: {
   localVersionMap: Map<string, any>;
   currentVersion: string;
 }) => {
   const { t } = useTranslation();
-  const [modsInfo, setModsInfo] = React.useState<Array<types.ModInfo>>([]);
+  const { ensureInstanceHydrated, getInstanceSnapshot, snapshotRevision } =
+    useModIntelligence();
+  const currentVersionName = String(args.currentVersion || "").trim();
+  const snapshot = React.useMemo(
+    () =>
+      currentVersionName ? getInstanceSnapshot(currentVersionName) : null,
+    [currentVersionName, getInstanceSnapshot, snapshotRevision],
+  );
+  const modsInfo = React.useMemo<Array<types.ModInfo>>(() => {
+    if (!snapshot) return [];
+    const enabledMap =
+      snapshot.enabledByFolder instanceof Map
+        ? snapshot.enabledByFolder
+        : new Map<string, boolean>();
+    return (snapshot.modsInfo || []).filter((mod) =>
+      Boolean(enabledMap.get(resolveModFolder(mod))),
+    );
+  }, [snapshot]);
   const navigate = useNavigate();
 
   useEffect(() => {
-    const name = String(args.currentVersion || "");
-    if (name) {
-      (async () => {
-        try {
-          const data = (await GetMods(name)) || [];
-          const statusList = await Promise.all(
-            data.map(async (m) => {
-              try {
-                return await (IsModEnabled as any)?.(name, m.name);
-              } catch {
-                return false;
-              }
-            }),
-          );
-          const filtered = data.filter((_, i) => statusList[i]);
-          setModsInfo(filtered);
-        } catch {
-          setModsInfo([]);
-        }
-      })();
-    } else {
-      setModsInfo([]);
-    }
-  }, [args.currentVersion, args.localVersionMap]);
+    if (!currentVersionName) return;
+    void ensureInstanceHydrated(currentVersionName, {
+      background: true,
+      reason: "launcher-modded-card",
+    });
+  }, [args.localVersionMap, currentVersionName, ensureInstanceHydrated]);
 
   return (
     <Card

@@ -2,6 +2,47 @@ import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 
+type NavLockListener = (locked: boolean) => void;
+
+const navLockReasons = new Set<string>();
+const navLockListeners = new Set<NavLockListener>();
+
+const emitNavLockChange = () => {
+  const locked = navLockReasons.size > 0;
+  navLockListeners.forEach((listener) => {
+    try {
+      listener(locked);
+    } catch {}
+  });
+};
+
+export const getNavLockState = (): boolean => navLockReasons.size > 0;
+
+export const subscribeNavLock = (listener: NavLockListener) => {
+  navLockListeners.add(listener);
+  return () => {
+    navLockListeners.delete(listener);
+  };
+};
+
+export const setNavLockReason = (reason: string, locked: boolean) => {
+  const key = String(reason || "app").trim() || "app";
+  const hadKey = navLockReasons.has(key);
+  if (locked) {
+    if (hadKey) return;
+    navLockReasons.add(key);
+    emitNavLockChange();
+    return;
+  }
+  if (!hadKey) return;
+  navLockReasons.delete(key);
+  emitNavLockChange();
+};
+
+export const setAppNavLock = (locked: boolean) => {
+  setNavLockReason("app", locked);
+};
+
 export const useAppNavigation = () => {
   const hasBackend = minecraft !== undefined;
   const location = useLocation();
@@ -12,19 +53,7 @@ export const useAppNavigation = () => {
   const [isFirstLoad, setIsFirstLoad] = useState(false);
   const [isBeta, setIsBeta] = useState(false);
   const [hasEnteredLauncher, setHasEnteredLauncher] = useState(false);
-  const [navLocked, setNavLocked] = useState<boolean>(() => {
-    try {
-      const h =
-        typeof window !== "undefined" ? String(window.location.hash || "") : "";
-      const initLock =
-        h.startsWith("#/updating") ||
-        h.startsWith("#/onboarding") ||
-        Boolean((window as any).llNavLock);
-      return initLock;
-    } catch {
-      return false;
-    }
-  });
+  const [navLocked, setNavLockedState] = useState<boolean>(() => getNavLockState());
 
   const isUpdatingMode = (() => {
     const p = String(location?.pathname || "");
@@ -73,9 +102,26 @@ export const useAppNavigation = () => {
   }, [location.pathname, revealStarted]);
 
   useEffect(() => {
-    if (isUpdatingMode || isOnboardingMode) setNavLocked(true);
-    else setNavLocked(Boolean((window as any).llNavLock));
-  }, [isUpdatingMode, isOnboardingMode]);
+    return subscribeNavLock(setNavLockedState);
+  }, []);
+
+  useEffect(() => {
+    setNavLockReason("updating-route", isUpdatingMode);
+    return () => {
+      if (isUpdatingMode) {
+        setNavLockReason("updating-route", false);
+      }
+    };
+  }, [isUpdatingMode]);
+
+  useEffect(() => {
+    setNavLockReason("onboarding-route", isOnboardingMode);
+    return () => {
+      if (isOnboardingMode) {
+        setNavLockReason("onboarding-route", false);
+      }
+    };
+  }, [isOnboardingMode]);
 
   useEffect(() => {
     if (isUpdatingMode) {
@@ -104,26 +150,11 @@ export const useAppNavigation = () => {
     try {
       const onboarded = localStorage.getItem("ll.onboarded");
       if (!onboarded && location.pathname !== "/onboarding") {
-        setNavLocked(true);
+        setNavLockReason("onboarding-route", true);
         navigate("/onboarding", { replace: true });
       }
     } catch {}
-  }, [revealStarted, isUpdatingMode, location?.pathname]);
-
-  useEffect(() => {
-    try {
-      setNavLocked(Boolean((window as any).llNavLock));
-    } catch {}
-    const handler = (e: any) => {
-      try {
-        if (isUpdatingMode) return;
-        setNavLocked(Boolean(e?.detail?.lock ?? (window as any).llNavLock));
-      } catch {}
-    };
-    window.addEventListener("ll-nav-lock-changed", handler as any);
-    return () =>
-      window.removeEventListener("ll-nav-lock-changed", handler as any);
-  }, [isUpdatingMode]);
+  }, [revealStarted, isUpdatingMode, location?.pathname, navigate]);
 
   useEffect(() => {
     if (!hasBackend) return;
@@ -137,7 +168,7 @@ export const useAppNavigation = () => {
 
   return {
     navLocked,
-    setNavLocked,
+    setNavLocked: setAppNavLock,
     splashVisible,
     revealStarted,
     isFirstLoad,

@@ -7,6 +7,7 @@ import {
   IoCloseOutline,
 } from "react-icons/io5";
 import { Events, Window } from "@wailsio/runtime";
+import { useTranslation } from "react-i18next";
 
 interface WindowControlsProps {
   navLocked: boolean;
@@ -21,6 +22,7 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
   hideSeparator,
   className,
 }) => {
+  const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
 
   const syncMaximizedState = useCallback(async () => {
@@ -87,7 +89,7 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
         variant="light"
         size="sm"
         radius="lg"
-        aria-label="Minimize"
+        aria-label={t("common.collapse")}
         isDisabled={navLocked && !isOnboardingMode}
         onPress={() => {
           if (navLocked && !isOnboardingMode) return;
@@ -106,7 +108,7 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
         variant="light"
         size="sm"
         radius="lg"
-        aria-label="Maximize"
+        aria-label={isMaximized ? t("common.collapse") : t("common.expand")}
         isDisabled={navLocked && !isOnboardingMode}
         onPress={handleToggleMaximize}
         className="wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
@@ -123,7 +125,7 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
         variant="light"
         size="sm"
         radius="lg"
-        aria-label="Close"
+        aria-label={t("common.close")}
         isDisabled={navLocked && !isOnboardingMode}
         onPress={() => {
           if (navLocked && !isOnboardingMode) return;

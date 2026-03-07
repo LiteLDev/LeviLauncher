@@ -54,7 +54,7 @@
     "launch": {
       "failed": {
         "title": "启动错误",
-        "content": "您没有选择任何实例，请前往下载页面进行下载！",
+        "content": "请检查实例文件与依赖环境是否完整，并确认没有安装不兼容的模组、资源包或行为包后重试。",
         "close_button": "关闭"
       },
       "force_run_button": "强制启动"
@@ -158,6 +158,22 @@
     "phase": {
       "download": "下载更新包",
       "install": "安装更新"
+    },
+    "status": {
+      "checking": "正在检查更新",
+      "verifying": "正在校验安装包完整性",
+      "elevating": "正在请求管理员权限",
+      "restarting": "正在重新启动启动器"
+    },
+    "errors": {
+      "generic": "更新时发生未知错误，请稍后重试。",
+      "update_admin_required": "继续更新需要管理员权限。",
+      "update_asset_missing": "所需的更新包缺失或命名不符合要求。",
+      "update_release_unavailable": "暂时无法获取更新元数据。",
+      "update_verify_failed": "更新包校验失败。",
+      "update_download_failed": "下载更新包失败。",
+      "update_install_failed": "安装更新包失败。",
+      "update_restart_failed": "更新完成后未能自动重新启动启动器。"
     }
   },
   "moddedcard": {
@@ -267,6 +283,8 @@
       "levilamina_label": "安装 LeviLamina",
       "levilamina_desc": "自动安装 LeviLamina 加载器",
       "version_label": "版本",
+      "ll_version_label": "LeviLamina 版本",
+      "ll_version_placeholder": "请选择 LeviLamina 版本",
       "hint": "请稍候，此过程可能需要较长时间…",
       "estimated_size": "已写入大小（估算）",
       "target": "安装目标",
@@ -308,6 +326,15 @@
       "body": "您更改了内容路径但尚未保存。是否保存后完成引导？",
       "cancel": "取消",
       "save": "保存并完成"
+    },
+    "privacy": {
+      "title": "隐私与使用数据",
+      "subtitle": "请选择是否开启匿名分析",
+      "desc": "开启后，LeviLauncher 会通过 Microsoft Clarity 收集匿名操作数据（如点击、页面停留）来改进易用性。不会收集账号信息、游戏信息、磁盘内容，仅应用于前端页面。",
+      "links": {
+        "clarity_terms": "Clarity 条款",
+        "microsoft_privacy": "Microsoft 隐私声明"
+      }
     }
   },
   "settings": {
@@ -321,7 +348,8 @@
       "components": "第三方组件",
       "others": "其他设置",
       "updates": "软件更新",
-      "about": "关于"
+      "about": "关于",
+      "privacy": "隐私"
     },
     "unsaved": {
       "title": "未保存修改",
@@ -354,7 +382,8 @@
       "license": {
         "title": "许可协议",
         "body": "继续前必须接受 Microsoft GDK 公共开发套件许可协议。",
-        "accept": "我接受许可协议中的条款"
+        "accept": "我接受许可协议中的条款",
+        "link_text": "Microsoft 公共游戏开发工具包许可协议"
       },
       "download": {
         "title": "下载 GDK"
@@ -362,29 +391,59 @@
       "install": {
         "title": "正在安装 GDK",
         "body": "稍候，正在运行安装程序…"
-      }
+      },
+      "download_unavailable": "当前无法获取 GDK 下载地址。"
     },
     "lip": {
       "title": "lip",
-      "description": "安装 lip 以管理包和依赖项",
+      "description": "在这里手动安装或更新 lip。启动时只检查更新并提示，不会自动下载或覆盖。",
       "installed": "已安装 v{{version}}",
+      "path_label": "路径：{{path}}",
       "install_button": "安装",
-      "installing": "正在安装 LIP...",
-      "update_button": "更新至 {{version}}",
+      "repair_button": "更新",
+      "check_button": "检查",
+      "installing": "正在安装 lip...",
       "installed_label": "已安装",
+      "latest_label": "最新",
+      "outdated_label": "可更新",
+      "missing_label": "缺失",
       "status": {
-        "checking_update": "正在检查更新...",
-        "downloading": "正在下载...",
-        "extracting": "正在解压...",
-        "done": "安装完成"
+        "checking": "正在检查 lip 状态...",
+        "preparing": "正在准备下载...",
+        "downloading": "正在下载 lip 压缩包...",
+        "extracting": "正在解压 lipd.exe...",
+        "writing": "正在写入 lipd.exe...",
+        "verifying": "正在验证安装...",
+        "up_to_date": "当前版本已是最新",
+        "outdated": "发现新版本，可前往设置更新",
+        "missing": "尚未安装 lip",
+        "check_failed": "检查 lip 状态失败：{{error}}",
+        "done": "lip 安装完成"
       },
       "error": {
-        "fetch_release_failed": "获取版本信息失败",
-        "create_temp": "创建临时目录失败",
-        "download_failed": "下载失败",
-        "create_target_dir": "创建目标目录失败",
-        "unzip_failed": "解压失败"
-      }
+        "lip_fetch_release": "获取最新 lip 发布信息失败",
+        "lip_release_asset_not_found": "最新发布中未找到 Windows x64 的 lip 安装包",
+        "lip_download_archive": "下载 lip 压缩包失败",
+        "lip_open_archive": "打开 lip 压缩包失败",
+        "lip_extract_binary": "解压 lipd.exe 失败",
+        "lip_create_target_dir": "创建 lip 安装目录失败",
+        "lip_replace_file": "替换 lipd.exe 失败",
+        "lip_verify_install": "验证已安装的 lip 版本失败",
+        "lip_install_failed": "安装 lip 失败"
+      },
+      "version_label": "当前版本：{{currentVersion}} / 最新版本：{{latestVersion}}",
+      "startup_prompt": {
+        "title": "发现 lip 更新",
+        "description": "检测到 lip 有新版本（{{currentVersion}} -> {{latestVersion}}）。LeviLauncher 不会自动更新，请前往“设置 > 组件”手动更新。",
+        "later_button": "稍后",
+        "ignore_button": "忽略此版本",
+        "open_settings_button": "前往设置",
+        "current_version": "当前版本：{{currentVersion}}",
+        "latest_version": "最新版本：{{latestVersion}}"
+      },
+      "installed_without_version": "已安装，但暂时无法读取版本",
+      "unknown_version": "未知",
+      "update_button": "更新"
     },
     "resource_rules": {
       "title": "启动器运行数据",
@@ -497,6 +556,16 @@
       "kill_all": "结束所有进程",
       "kill": "结束",
       "no_process": "未发现运行中的 Minecraft 进程"
+    },
+    "privacy": {
+      "analytics": {
+        "title": "匿名使用分析（Microsoft Clarity）",
+        "desc": "开启后可帮助我们持续优化功能和界面。你可以随时在这里关闭。"
+      },
+      "links": {
+        "clarity_terms": "Clarity 条款",
+        "microsoft_privacy": "Microsoft 隐私声明"
+      }
     }
   },
   "downloadmodal": {
@@ -719,6 +788,18 @@
       "unregister_success": {
         "title": "取消注册成功",
         "body": "已成功取消注册，现在可以删除该实例了。"
+      },
+      "loader": {
+        "ll_current_version": "当前 LeviLamina 版本",
+        "ll_not_installed": "未安装",
+        "ll_select_version": "LeviLamina 版本",
+        "ll_select_placeholder": "请选择 LeviLamina 版本",
+        "ll_select_guidance": "请选择你要安装或更新的 LeviLamina 版本。",
+        "ll_upgrade_only_hint": "实例设置仅允许升级到更高版本。",
+        "ll_only_latest_when_current_unknown": "当前版本无法解析，仅允许更新到最新版本。",
+        "ll_remove_confirm_title": "确认移除 LeviLamina",
+        "ll_remove_confirm_body": "将从当前实例中移除 LeviLamina。",
+        "ll_remove_confirm_warning": "此操作不可撤销。"
       }
     },
     "logo": {
@@ -752,7 +833,7 @@
     "ERR_NOT_FOUND_GAME_DIR": "未找到游戏目录",
     "ERR_NOT_FOUND_EXE": "未找到可执行文件",
     "ERR_WRITE_TARGET": "写入目标配置失败",
-    "ERR_LAUNCH_GAME": "启动游戏失败",
+    "ERR_LAUNCH_GAME": "游戏未能正常启动",
     "ERR_GAME_CRASH_DURING_LAUNCH": "启动过程中游戏崩溃",
     "ERR_WAIT_KERNEL_TIMEOUT": "等待内核准备超时",
     "ERR_COPY_WALK": "遍历文件失败",
@@ -768,6 +849,7 @@
     "ERR_ACCESS_VERSIONS_DIR": "无法访问版本目录",
     "ERR_ACCESS_INSTALLERS_DIR": "无法访问安装包目录",
     "ERR_READ_VERSIONS_DIR": "无法读取版本目录",
+    "ERR_LL_VERSION_UNSUPPORTED": "所选 LeviLamina 版本不受当前游戏版本支持",
     "ERR_NAME_EXISTS": "名称已存在",
     "ERR_INVALID_NAME": "无效的名称",
     "ERR_NOT_FOUND_OLD": "未找到原目录",
@@ -787,7 +869,20 @@
     "ERR_SHORTCUT_CREATE_FAILED": "创建桌面快捷方式失败",
     "ERR_UNREGISTER_FAILED": "取消注册失败",
     "ERR_NOT_REGISTERED_THIS_VERSION": "该版本未注册到系统",
-    "ERR_DEV_MODE_REQUIRED": "系统未开启开发者模式，且自动开启失败。请手动开启开发者模式后重试。"
+    "ERR_DEV_MODE_REQUIRED": "系统未开启开发者模式，且自动开启失败。请手动开启开发者模式后重试。",
+    "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "此包被其他已安装 mod 依赖，当前无法卸载",
+    "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "该包仍被其他已安装 mod 依赖，无法完全卸载；已自动转为依赖安装模式。",
+    "ERR_LIP_NOT_INSTALLED": "lip 未安装，请前往“设置 > 组件”手动安装或更新。",
+    "ERR_LL_NOT_SUPPORTED": "LeviLamina is not supported for this game version",
+    "ERR_FETCH_LL_DB": "Failed to fetch LeviLamina version database",
+    "ERR_INVALID_VERSION_FORMAT": "Invalid game version format",
+    "ERR_LIP_INSTALL_FAILED": "Failed to install LeviLamina via lip",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Invalid lip package identifier",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "lip package version is required",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
   },
   "filemanager": {
     "sort": {
@@ -851,14 +946,35 @@
     "toggle_desc_off": "模组已关闭，启动游戏时不会加载。",
     "only_enabled": "仅显示已启用的模组",
     "drop_hint": "拖入 .zip 或 .dll 以导入模组",
-    "err_lip_not_installed": "LIP未安装",
+    "err_lip_not_installed": "lip 未安装，请前往“设置 > 组件”手动安装或更新。",
     "err_lip_install_failed_suggestion": "安装失败，建议重新安装Minecraft",
     "rc_warning": {
       "title": "实验性版本警告",
       "body_1": "检测到您即将安装的 LeviLamina 版本 ({{version}}) 为候选发布版 (RC)。",
       "body_2": "这是一个实验性版本，可能存在不稳定因素，仅建议开发者或高级用户使用。",
       "body_3": "是否继续安装？"
-    }
+    },
+    "action_uninstall": "卸载",
+    "action_update": "更新",
+    "batch_uninstall_body": "你将要卸载 {{count}} 个模组，是否继续？",
+    "batch_uninstall_title": "批量卸载模组",
+    "batch_update_body": "已选择 {{selected}} 个模组，其中 {{updatable}} 个可从 lip 更新，是否继续？",
+    "batch_update_title": "批量更新模组",
+    "err_ll_managed_in_version_settings": "LeviLamina 只能在版本设置中管理",
+    "no_update_source": "无 lip 更新源",
+    "update_available": "更新到 {{version}}",
+    "update_latest": "已是最新",
+    "action_result_title_done": "操作完成",
+    "action_result_title_partial": "操作完成（部分失败）",
+    "action_result_title_failed": "操作失败",
+    "tab_all": "全部",
+    "tab_normal": "普通模组",
+    "tab_lip": "lip 模组",
+    "lip_children_summary": "包含：{{children}}（+{{count}}）",
+    "lip_open_package": "打开包详情",
+    "action_promote_install": "转为主动安装",
+    "action_promote_install_success": "{{name}} 已转为主动安装",
+    "action_promote_install_failed_no_version": "未找到该包的已安装版本"
   },
   "terms": {
     "title": "LeviLauncher 用户协议",
@@ -933,6 +1049,24 @@
       "failed_msg": "导入失败",
       "next": "下一步",
       "close": "关闭"
+    },
+    "loading_description": "正在加载描述...",
+    "mod_details_aria_label": "模组详情",
+    "mod_files": {
+      "columns": {
+        "actions": "操作",
+        "downloads": "下载量",
+        "name": "名称",
+        "size": "大小",
+        "type": "类型",
+        "uploaded": "上传时间"
+      },
+      "table_aria_label": "模组文件表格",
+      "title": "全部文件"
+    },
+    "mod_tabs": {
+      "description": "描述",
+      "files": "文件"
     }
   },
   "lip": {
@@ -942,7 +1076,109 @@
     "select_sort": "选择排序",
     "order_by": "顺序",
     "select_order": "选择顺序",
-    "no_description": "暂无简介"
+    "no_description": "暂无简介",
+    "task_console": {
+      "title_install": "安装中",
+      "title_upgrade": "升级中",
+      "title_downgrade": "降级中",
+      "title_reinstall": "重装中",
+      "title_update": "更新中",
+      "title_uninstall": "卸载中",
+      "title_generic": "lip 任务",
+      "status_running": "运行中",
+      "status_success": "成功",
+      "status_failed": "失败",
+      "target_label": "目标实例",
+      "method_label": "方法",
+      "progress_label": "进度",
+      "log_title": "日志输出",
+      "no_output": "暂无输出",
+      "waiting_start": "等待 lipd 输出...",
+      "stderr_title": "stderr",
+      "copy_logs": "复制日志",
+      "copy_success": "日志已复制",
+      "close": "关闭",
+      "stage_install_ll": "先安装 LeviLamina",
+      "stage_install_pkg": "安装目标包",
+      "stage_fallback_delete": "包管理卸载不可用，回退为目录删除"
+    },
+    "by_author_inline": "| 作者 {{author}}",
+    "files": {
+      "action": "操作",
+      "action_failed": "操作失败：{{error}}",
+      "action_success": "操作成功",
+      "checking_ll_state": "正在检查 LeviLamina 状态...",
+      "dependencies": "依赖",
+      "dependencies_count": "{{count}} 个依赖",
+      "game_versions_label": "游戏版本",
+      "game_versions_unavailable": "游戏版本映射不可用",
+      "game_versions_unrestricted": "无游戏版本限制",
+      "install": "安装",
+      "upgrade": "升级",
+      "downgrade": "降级",
+      "installing_version_label": "安装包版本",
+      "instance_game_version": "游戏版本：{{version}}",
+      "ll_installed_incompatible_hint": "已安装的 LeviLamina 版本 {{installedVersion}} 与此包不兼容，请先手动调整 LeviLamina。",
+      "ll_missing_auto_install_hint": "未安装 LeviLamina。点击安装后将先安装 LeviLamina {{version}}，再安装此包。",
+      "ll_missing_mapping_block_hint": "游戏版本映射不可用，无法自动安装 LeviLamina。请先手动安装 LeviLamina。",
+      "ll_missing_no_compatible_hint": "当前游戏版本下没有满足此包依赖范围的 LeviLamina 版本。",
+      "ll_requirement": "LL 依赖",
+      "select_instance_title": "选择目标实例",
+      "select_version_incompatible_hint": "版本 {{version}} 与游戏版本 {{gameVersion}} 不兼容。",
+      "tab_label": "文件",
+      "table_aria_label": "包文件表格",
+      "install_success": "安装成功",
+      "upgrade_success": "升级成功",
+      "downgrade_success": "降级成功",
+      "reinstall_success": "重装成功",
+      "current_installed_version": "当前已安装版本：{{version}}",
+      "checking_current_installed_version": "正在检查当前已安装版本...",
+      "target_instance_label": "Target instance",
+      "fixed_target_instance_label": "Target instance",
+      "only_compatible": "Only show compatible versions",
+      "compatibility_label": "Compatibility",
+      "compatibility": {
+        "compatible": "Compatible",
+        "incompatible": "Incompatible",
+        "requires_ll": "Requires LeviLamina",
+        "no_ll_requirement": "No LL requirement"
+      },
+      "update": "Update",
+      "reinstall": "重装",
+      "uninstall": "Uninstall",
+      "installed_version": "Installed version: {{version}}",
+      "instance_ll_version": "LeviLamina version: {{version}}",
+      "select_instance_placeholder": "Select an instance",
+      "select_version_title": "Select Package Version",
+      "select_version_placeholder": "Select a package version",
+      "mapping_unavailable_hint": "Game version mapping is unavailable. Compatibility restrictions are temporarily skipped.",
+      "confirm_install_title": "Confirm Installation",
+      "confirm_install_body": "Install {{package}} {{version}} to {{instance}} as {{action}}?",
+      "confirm_uninstall_title": "Confirm Uninstall",
+      "confirm_uninstall_body": "Uninstall {{package}} from {{instance}}?"
+    },
+    "game_all_versions": "所有游戏版本",
+    "game_version_label": "游戏版本",
+    "game_version_placeholder": "选择游戏版本",
+    "ll_all_versions": "所有 LeviLamina 版本",
+    "ll_version_label": "LeviLamina 版本",
+    "ll_version_placeholder": "选择 LeviLamina 版本",
+    "order_options": {
+      "asc": "递增",
+      "desc": "递减"
+    },
+    "package_details_aria_label": "包详情",
+    "sort_options": {
+      "hotness": "热门",
+      "name": "名称",
+      "updated": "最近更新"
+    },
+    "title": "lip 内容",
+    "ll_filter_context": "Current instance: {{instance}} | Installed LeviLamina: {{version}}",
+    "package": {
+      "confirm_install_title": "确认安装",
+      "confirm_install_body": "确定要为实例 {{instance}} {{action}} {{package}} {{version}} 吗？"
+    }
   },
   "server": {
     "offline": "离线 / 无法连接",
@@ -956,18 +1192,28 @@
       "dll_dependency_missing": "缺少 VC++ 运行库",
       "name_required": "名称不能为空",
       "msixvc_not_specified": "未指定安装包",
-      "lip_not_installed": "LIP未安装",
+      "lip_not_installed": "lip 未安装，请前往“设置 > 组件”手动安装或更新。",
       "unknown": "未知错误",
       "nh_err_unknown": "未知错误",
       "nh_err_exception": "未捕获异常或未知错误",
       "nh_err_invalid_params": "参数无效",
       "nh_err_key_not_found": "游戏安装包校验失败，请删除安装包后重试",
-      "nh_err_unauthorized_caller": "调用者未授权",
+      "nh_err_unauthorized_caller": "请确保启动器 exe 名称未被修改（LeviLauncher.exe）",
       "nh_err_pipe_open_failed": "进度管道打开失败",
       "nh_err_input_not_found": "输入文件未找到",
       "nh_err_output_dir_invalid": "输出目录无效",
       "nh_err_parse_failed": "包解析失败",
       "nh_err_extract_failed": "解压失败"
+    }
+  },
+  "clarity": {
+    "prompt": {
+      "title": "愿意帮助我们改进 LeviLauncher 吗？",
+      "body": "如果你同意，我们会通过 Microsoft Clarity 收集匿名操作数据，用于优化功能和界面体验。不会收集账号信息、游戏信息、磁盘内容，仅应用于前端页面。你可随时在“设置 > 隐私”中关闭。",
+      "enable": "同意并开启",
+      "disable": "暂不开启",
+      "clarity_terms": "Clarity 服务条款",
+      "microsoft_privacy": "Microsoft 隐私声明"
     }
   }
 }

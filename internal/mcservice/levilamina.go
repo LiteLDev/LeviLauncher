@@ -5,12 +5,12 @@ import (
 	"fmt"
 	"log"
 	"net/http"
-	"os/exec"
 	"path/filepath"
+	"sort"
 	"strings"
-	"syscall"
 	"time"
 
+	semver "github.com/Masterminds/semver/v3"
 	json "github.com/goccy/go-json"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
@@ -21,6 +21,116 @@ import (
 type LeviLaminaVersionDB struct {
 	FormatVersion int                 `json:"format_version"`
 	Versions      map[string][]string `json:"versions"`
+}
+
+func resolveSupportedLeviLaminaVersions(db map[string][]string, mcVersion string) []string {
+	v := strings.TrimSpace(mcVersion)
+	if v == "" {
+		return nil
+	}
+	if exact, ok := db[v]; ok && len(exact) > 0 {
+		return exact
+	}
+	parts := strings.Split(v, ".")
+	if len(parts) < 3 {
+		return nil
+	}
+	key := fmt.Sprintf("%s.%s.%s", parts[0], parts[1], parts[2])
+	if byMajorMinorPatch, ok := db[key]; ok && len(byMajorMinorPatch) > 0 {
+		return byMajorMinorPatch
+	}
+	return nil
+}
+
+func pickPreferredLeviLaminaVersion(versions []string) string {
+	sorted := sortLeviLaminaVersions(versions)
+	if len(sorted) > 0 {
+		return sorted[0]
+	}
+	return ""
+}
+
+func compareLeviLaminaVersion(a string, b string) int {
+	parse := func(v string) (*semver.Version, error) {
+		return semver.NewVersion(strings.TrimPrefix(strings.TrimSpace(v), "v"))
+	}
+	av, aErr := parse(a)
+	bv, bErr := parse(b)
+	if aErr == nil && bErr == nil {
+		return av.Compare(bv)
+	}
+	if aErr == nil {
+		return 1
+	}
+	if bErr == nil {
+		return -1
+	}
+	return strings.Compare(strings.TrimSpace(a), strings.TrimSpace(b))
+}
+
+func sortLeviLaminaVersions(versions []string) []string {
+	seen := make(map[string]struct{}, len(versions))
+	normalized := make([]string, 0, len(versions))
+	for _, version := range versions {
+		trimmed := strings.TrimSpace(version)
+		if trimmed == "" {
+			continue
+		}
+		if _, ok := seen[trimmed]; ok {
+			continue
+		}
+		seen[trimmed] = struct{}{}
+		normalized = append(normalized, trimmed)
+	}
+	sort.SliceStable(normalized, func(i, j int) bool {
+		return compareLeviLaminaVersion(normalized[i], normalized[j]) > 0
+	})
+	return normalized
+}
+
+func findRequestedLeviLaminaVersion(requested string, supported []string) (string, bool) {
+	want := strings.TrimSpace(requested)
+	if want == "" {
+		return "", false
+	}
+	for _, version := range supported {
+		if strings.EqualFold(strings.TrimSpace(version), want) {
+			return strings.TrimSpace(version), true
+		}
+	}
+	return "", false
+}
+
+func isLipInstallAlreadyInstalledError(err error) bool {
+	if err == nil {
+		return false
+	}
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	if msg == "" {
+		return false
+	}
+	return strings.Contains(msg, "already explicitly installed") ||
+		(strings.Contains(msg, "cannot install package") && strings.Contains(msg, "already installed"))
+}
+
+func isLipInstallAlreadyInstalledErrorForPackage(err error, packageRef string) bool {
+	if !isLipInstallAlreadyInstalledError(err) {
+		return false
+	}
+
+	target := strings.ToLower(strings.TrimSpace(packageRef))
+	if target == "" {
+		return true
+	}
+
+	msg := strings.ToLower(strings.TrimSpace(err.Error()))
+	if strings.Contains(msg, target) {
+		return true
+	}
+	if hash := strings.Index(target, "#"); hash > 0 {
+		return strings.Contains(msg, target[:hash])
+	}
+	return false
 }
 
 func FetchLeviLaminaVersionDB() (map[string][]string, error) {
@@ -69,7 +179,7 @@ func FetchLeviLaminaVersionDB() (map[string][]string, error) {
 	return nil, lastErr
 }
 
-func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string) string {
+func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string, llVersion string) string {
 	if !lip.IsInstalled() {
 		return "ERR_LIP_NOT_INSTALLED"
 	}
@@ -80,18 +190,27 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string)
 		return "ERR_FETCH_LL_DB"
 	}
 
-	parts := strings.Split(mcVersion, ".")
+	parts := strings.Split(strings.TrimSpace(mcVersion), ".")
 	if len(parts) < 3 {
 		return "ERR_INVALID_VERSION_FORMAT"
 	}
-	key := fmt.Sprintf("%s.%s.%s", parts[0], parts[1], parts[2])
-
-	versions, ok := db[key]
-	if !ok || len(versions) == 0 {
+	versions := sortLeviLaminaVersions(resolveSupportedLeviLaminaVersions(db, mcVersion))
+	if len(versions) == 0 {
 		return "ERR_LL_NOT_SUPPORTED"
 	}
-
-	llVersion := versions[len(versions)-1]
+	requested := strings.TrimSpace(llVersion)
+	if requested == "" {
+		llVersion = pickPreferredLeviLaminaVersion(versions)
+	} else {
+		matched, ok := findRequestedLeviLaminaVersion(requested, versions)
+		if !ok {
+			return "ERR_LL_VERSION_UNSUPPORTED"
+		}
+		llVersion = matched
+	}
+	if strings.TrimSpace(llVersion) == "" {
+		return "ERR_LL_NOT_SUPPORTED"
+	}
 
 	vdir, err := apppath.VersionsDir()
 	if err != nil {
@@ -102,18 +221,42 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string)
 		return "ERR_TARGET_NOT_FOUND"
 	}
 
+	basePkg := "github.com/LiteLDev/LeviLamina#client"
+	pkg := fmt.Sprintf("%s@%s", basePkg, llVersion)
+	explicitInstalled, listErr := lip.IsPackageExplicitlyInstalledViaDaemon(ctx, targetDir, basePkg)
+	if listErr != nil {
+		log.Printf("InstallLeviLamina: lipd list failed, fallback to install-first strategy: %v", listErr)
+	}
+
+	if explicitInstalled {
+		log.Printf("Updating LeviLamina %s for %s using LIP", llVersion, targetName)
+		if err := lip.UpdatePackagesViaDaemon(ctx, targetDir, []string{pkg}); err != nil {
+			if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
+				return code
+			}
+			log.Printf("InstallLeviLamina: lipd update failed: %v", err)
+			return "ERR_LIP_INSTALL_FAILED"
+		}
+		return ""
+	}
+
 	log.Printf("Installing LeviLamina %s for %s using LIP", llVersion, targetName)
-
-	lipExe := lip.LipExePath()
-	pkg := fmt.Sprintf("github.com/LiteLDev/LeviLamina#client@%s", llVersion)
-
-	cmd := exec.CommandContext(ctx, lipExe, "install", pkg, "-y")
-	cmd.Dir = targetDir
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-
-	if out, err := cmd.CombinedOutput(); err != nil {
-		log.Printf("InstallLeviLamina: lip install failed: %v, output: %s", err, string(out))
-		return "ERR_LIP_INSTALL_FAILED"
+	if err := lip.InstallPackagesViaDaemon(ctx, targetDir, []string{pkg}); err != nil {
+		if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
+			return code
+		}
+		if !isLipInstallAlreadyInstalledErrorForPackage(err, basePkg) {
+			log.Printf("InstallLeviLamina: lipd install failed: %v", err)
+			return "ERR_LIP_INSTALL_FAILED"
+		}
+		log.Printf("InstallLeviLamina: package already installed, switching to update: %v", err)
+		if updateErr := lip.UpdatePackagesViaDaemon(ctx, targetDir, []string{pkg}); updateErr != nil {
+			if code := lip.ErrorCode(updateErr); code == "ERR_LIP_NOT_INSTALLED" {
+				return code
+			}
+			log.Printf("InstallLeviLamina: lipd update failed: %v", updateErr)
+			return "ERR_LIP_INSTALL_FAILED"
+		}
 	}
 
 	return ""
@@ -135,18 +278,13 @@ func UninstallLeviLamina(ctx context.Context, targetName string) string {
 
 	log.Printf("Uninstalling LeviLamina for %s using LIP", targetName)
 
-	lipExe := lip.LipExePath()
-	pkgs := []string{"github.com/LiteLDev/LeviLamina#client", "github.com/LiteLDev/bedrock-runtime-data"}
-
-	args := append([]string{"uninstall"}, pkgs...)
-	args = append(args, "-y")
-
-	cmd := exec.CommandContext(ctx, lipExe, args...)
-	cmd.Dir = targetDir
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-
-	if out, err := cmd.CombinedOutput(); err != nil {
-		log.Printf("UninstallLeviLamina: lip uninstall failed: %v, output: %s", err, string(out))
+	// Uninstall the top-level package only; dependency cleanup is resolved by LIP.
+	pkgs := []string{"github.com/LiteLDev/LeviLamina#client"}
+	if err := lip.UninstallPackagesViaDaemon(ctx, targetDir, pkgs, true); err != nil {
+		if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
+			return code
+		}
+		log.Printf("UninstallLeviLamina: lipd uninstall failed: %v", err)
 		return "ERR_LIP_UNINSTALL_FAILED"
 	}
 

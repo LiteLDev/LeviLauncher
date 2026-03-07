@@ -3,7 +3,7 @@ import { useDisclosure } from "@heroui/react";
 import { Events } from "@wailsio/runtime";
 import { useNavigate } from "react-router-dom";
 import { compareVersions } from "@/utils/version";
-import { saveCurrentVersionName } from "@/utils/currentVersion";
+import { readCurrentVersionName, saveCurrentVersionName } from "@/utils/currentVersion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   EnsureGameInputInteractive,
@@ -84,7 +84,7 @@ export const useLauncher = (args: any) => {
 
   useEffect(() => {
     try {
-      const saved = localStorage.getItem("ll.currentVersionName") || "";
+      const saved = readCurrentVersionName();
       if (!saved) return;
       setCurrentVersion(saved);
       setDisplayName(saved);
@@ -763,13 +763,6 @@ export const useLauncher = (args: any) => {
       setContentCounts({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
       return;
     }
-    const readCurrentVersionName = (): string => {
-      try {
-        return localStorage.getItem("ll.currentVersionName") || "";
-      } catch {
-        return "";
-      }
-    };
     const countDir = async (path: string): Promise<number> => {
       try {
         const entries = await ListDir(path);
@@ -954,11 +947,7 @@ export const useLauncher = (args: any) => {
         });
 
         const saved = (() => {
-          try {
-            return localStorage.getItem("ll.currentVersionName") || "";
-          } catch {
-            return "";
-          }
+          return readCurrentVersionName();
         })();
         const useName =
           saved && newLocalVersionMap.has(saved)
@@ -966,7 +955,7 @@ export const useLauncher = (args: any) => {
             : Array.from(newLocalVersionMap.keys())[0] || "";
         setCurrentVersion(useName);
         try {
-          saveCurrentVersionName(useName);
+          saveCurrentVersionName(useName, "launcher.refresh-versions");
         } catch {}
         const ver = useName
           ? newLocalVersionMap.get(useName)?.version || ""
@@ -1041,7 +1030,7 @@ export const useLauncher = (args: any) => {
         const ver = localVersionMap.get(selected)?.version || "";
         setDisplayVersion(ver || "None");
         try {
-          localStorage.setItem("ll.currentVersionName", selected);
+          saveCurrentVersionName(selected, "launcher.select");
           const getter = versionService?.GetVersionLogoDataUrl;
           if (typeof getter === "function") {
             getter(selected).then((u: string) =>

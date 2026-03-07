@@ -113,12 +113,24 @@ func (a *Minecraft) FetchLeviLaminaVersionDB() map[string][]string {
 	return res
 }
 
-func (a *Minecraft) InstallLeviLamina(mcVersion string, targetName string) string {
-	return mcservice.InstallLeviLamina(a.ctx, mcVersion, targetName)
+func (a *Minecraft) InstallLeviLamina(mcVersion string, targetName string, llVersion string) string {
+	return mcservice.InstallLeviLamina(a.ctx, mcVersion, targetName, llVersion)
 }
 
 func (a *Minecraft) UninstallLeviLamina(targetName string) string {
 	return mcservice.UninstallLeviLamina(a.ctx, targetName)
+}
+
+func (a *Minecraft) InstallLIPPackage(targetName string, identifier string, version string) string {
+	return mcservice.InstallLIPPackage(a.ctx, targetName, identifier, version)
+}
+
+func (a *Minecraft) UninstallLIPPackage(targetName string, identifier string) string {
+	return mcservice.UninstallLIPPackage(a.ctx, targetName, identifier)
+}
+
+func (a *Minecraft) GetLIPPackageInstallState(targetName string, identifier string) types.LIPPackageInstallState {
+	return mcservice.GetLIPPackageInstallState(a.ctx, targetName, identifier)
 }
 
 type KnownFolder struct {
@@ -309,6 +321,10 @@ func (a *Minecraft) GetLIPPackage(identifier string) (*liptypes.GetPackageRespon
 	return a.lipClient.GetPackage(identifier)
 }
 
+func (a *Minecraft) GetLIPPackageReadme(projectURL string) (string, error) {
+	return lip.FetchPackageReadme(projectURL)
+}
+
 func (a *Minecraft) InstallLip() string {
 	return lip.Install()
 }
@@ -323,6 +339,18 @@ func (a *Minecraft) IsLipInstalled() bool {
 
 func (a *Minecraft) GetLatestLipVersion() (string, error) {
 	return lip.GetLatestVersion()
+}
+
+func (a *Minecraft) GetLipStatus() map[string]interface{} {
+	st := lip.CheckStatus()
+	return map[string]interface{}{
+		"path":           st.Path,
+		"installed":      st.Installed,
+		"upToDate":       st.UpToDate,
+		"currentVersion": st.CurrentVersion,
+		"latestVersion":  st.LatestVersion,
+		"error":          st.Error,
+	}
 }
 
 func (a *Minecraft) GetResourceRulesStatus() map[string]interface{} {
@@ -393,6 +421,10 @@ func (a *Minecraft) DeleteDownloadedMsixvc(version string, versionType string) s
 
 // GDK helpers
 func (a *Minecraft) IsGDKInstalled() bool { return gdk.IsInstalled() }
+
+func (a *Minecraft) GetDefaultGDKDownloadURL() string {
+	return gdk.GetDefaultDownloadURL()
+}
 
 func (a *Minecraft) StartGDKDownload(url string) string { return gdk.StartDownload(a.ctx, url) }
 

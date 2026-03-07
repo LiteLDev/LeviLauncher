@@ -9,13 +9,14 @@ import {
   Card,
   CardBody,
   Input,
+  Select,
+  SelectItem,
   Switch,
   Chip,
   Progress,
   Textarea,
   Tabs,
   Tab,
-  addToast,
 } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
@@ -36,6 +37,9 @@ import { useVersionSettings } from "@/hooks/useVersionSettings";
 export default function VersionSettingsPage() {
   const { t } = useTranslation();
   const vs = useVersionSettings();
+  const currentLLVersionText =
+    vs.currentLLVersion ||
+    (t("versions.edit.loader.ll_not_installed") as unknown as string);
 
   return (
     <PageContainer className="relative" animate={false}>
@@ -368,8 +372,19 @@ export default function VersionSettingsPage() {
                         />
                       </div>
                       <div>
-                        <div className="text-medium font-bold text-foreground">
-                          LeviLamina
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                          <div className="text-medium font-bold text-foreground">
+                            LeviLamina
+                          </div>
+                          <span
+                            className={
+                              vs.currentLLVersion
+                                ? "text-small font-semibold text-default-500 dark:text-zinc-400"
+                                : "text-small font-medium text-default-400 dark:text-zinc-500"
+                            }
+                          >
+                            {currentLLVersionText}
+                          </span>
                         </div>
                         <div className="text-small text-default-500 dark:text-zinc-400">
                           {t("downloadpage.install.levilamina_desc")}
@@ -383,8 +398,9 @@ export default function VersionSettingsPage() {
                             <Button
                               color="danger"
                               variant="flat"
-                              onPress={vs.handleUninstallLL}
-                              isDisabled={vs.installingLL}
+                              onPress={vs.openLLUninstallConfirm}
+                              isDisabled={vs.installingLL || vs.uninstallingLL}
+                              isLoading={vs.uninstallingLL}
                             >
                               {t("common.remove")}
                             </Button>
@@ -393,17 +409,12 @@ export default function VersionSettingsPage() {
                             color="success"
                             variant="flat"
                             className="bg-primary-500/10 text-primary-600 dark:text-primary-400 font-bold"
-                            onPress={() => {
-                              if (vs.isLLInstalled) {
-                                addToast({
-                                  title: t("common.tip"),
-                                  description: t("common.feature_unavailable"),
-                                  color: "warning",
-                                });
-                                return;
-                              }
-                              vs.handleInstallLeviLamina();
-                            }}
+                            onPress={vs.openLeviLaminaVersionSelect}
+                            isDisabled={
+                              vs.installingLL ||
+                              vs.uninstallingLL ||
+                              vs.llSupportedVersions.length === 0
+                            }
                             isLoading={vs.installingLL}
                           >
                             {vs.isLLInstalled
@@ -720,6 +731,118 @@ export default function VersionSettingsPage() {
 
       <UnifiedModal
         size="md"
+        isOpen={vs.llUninstallConfirmOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            vs.openLLUninstallConfirm();
+            return;
+          }
+          vs.closeLLUninstallConfirm();
+        }}
+        type="error"
+        title={t("versions.edit.loader.ll_remove_confirm_title")}
+        cancelText={t("common.cancel")}
+        confirmText={t("common.remove")}
+        showCancelButton
+        isDismissable={!vs.uninstallingLL}
+        onCancel={() => vs.closeLLUninstallConfirm()}
+        onConfirm={async () => {
+          const ok = await vs.confirmUninstallLL();
+          if (ok) {
+            vs.closeLLUninstallConfirm();
+          }
+        }}
+        confirmButtonProps={{
+          color: "danger",
+          isLoading: vs.uninstallingLL,
+          isDisabled: vs.uninstallingLL,
+          className: "font-bold shadow-lg shadow-danger-500/20",
+        }}
+        cancelButtonProps={{
+          isDisabled: vs.uninstallingLL,
+        }}
+      >
+        <div className="space-y-3">
+          <p className="text-sm text-default-700 dark:text-zinc-300">
+            {t("versions.edit.loader.ll_remove_confirm_body")}
+          </p>
+          <p className="text-tiny text-danger-500 dark:text-danger-400 font-semibold">
+            {t("versions.edit.loader.ll_remove_confirm_warning")}
+          </p>
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
+        size="md"
+        isOpen={vs.llVersionSelectOpen}
+        onOpenChange={vs.llVersionSelectOnOpenChange}
+        type="primary"
+        title={t("versions.edit.loader.ll_select_version")}
+        cancelText={t("common.cancel")}
+        confirmText={
+          vs.isLLInstalled
+            ? t("common.update")
+            : t("downloadpage.install.levilamina_label")
+        }
+        showCancelButton
+        onCancel={() => vs.llVersionSelectOnClose()}
+        onConfirm={async () => {
+          await vs.confirmLeviLaminaVersionSelect();
+        }}
+        confirmButtonProps={{
+          isLoading: vs.installingLL,
+          isDisabled:
+            !vs.selectedLLVersion ||
+            (vs.isLLInstalled && !vs.canInstallSelectedLLVersion),
+        }}
+      >
+        <div className="space-y-3">
+          <p className="text-small leading-6 text-default-500 dark:text-zinc-400">
+            {t("versions.edit.loader.ll_select_guidance")}
+          </p>
+          <Select
+            label={
+              t("versions.edit.loader.ll_select_version") as unknown as string
+            }
+            placeholder={
+              t(
+                "versions.edit.loader.ll_select_placeholder",
+              ) as unknown as string
+            }
+            classNames={COMPONENT_STYLES.select}
+            selectedKeys={
+              vs.selectedLLVersion
+                ? new Set([vs.selectedLLVersion])
+                : new Set([])
+            }
+            onSelectionChange={(keys) => {
+              const selected = Array.from(keys as unknown as Set<string>)[0];
+              vs.setSelectedLLVersion(String(selected || ""));
+            }}
+            isDisabled={vs.installingLL || vs.uninstallingLL}
+          >
+            {vs.llSupportedVersions.map((version: string) => (
+              <SelectItem
+                key={version}
+                textValue={version}
+                isDisabled={
+                  vs.llOnlyLatestSelectable && version !== vs.latestLLVersion
+                }
+              >
+                {version}
+              </SelectItem>
+            ))}
+          </Select>
+          {vs.llInstallBlockedReasonKey ? (
+            <p className="text-tiny text-warning-600 dark:text-warning-500">
+              {t(vs.llInstallBlockedReasonKey)}
+            </p>
+          ) : null}
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
+        size="md"
         isOpen={vs.rcOpen}
         onOpenChange={vs.rcOnOpenChange}
         type="warning"
@@ -731,7 +854,7 @@ export default function VersionSettingsPage() {
         onCancel={() => vs.rcOnClose()}
         onConfirm={() => {
           vs.rcOnClose();
-          vs.proceedInstallLeviLamina();
+          vs.proceedInstallLeviLamina(vs.selectedLLVersion);
         }}
       >
         <div className="text-sm text-default-700 dark:text-zinc-300 space-y-2">

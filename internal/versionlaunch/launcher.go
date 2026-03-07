@@ -28,12 +28,59 @@ func New(enablePreloader bool) *Launcher {
 	return &Launcher{}
 }
 
-func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) string {
+func isPathInside(root string, target string) bool {
+	absRoot, err1 := filepath.Abs(strings.TrimSpace(root))
+	absTarget, err2 := filepath.Abs(strings.TrimSpace(target))
+	if err1 != nil || err2 != nil {
+		return false
+	}
+	lowRoot := strings.ToLower(filepath.Clean(absRoot))
+	lowTarget := strings.ToLower(filepath.Clean(absTarget))
+	if lowTarget == lowRoot {
+		return true
+	}
+	return strings.HasPrefix(lowTarget, lowRoot+string(os.PathSeparator))
+}
+
+func resolveVersionDir(name string) (string, string) {
 	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
+		return "", "ERR_ACCESS_VERSIONS_DIR"
 	}
-	dir := filepath.Join(vdir, strings.TrimSpace(name))
+	n := strings.TrimSpace(name)
+	if n == "" {
+		return "", "ERR_INVALID_NAME"
+	}
+	if filepath.IsAbs(n) {
+		return "", "ERR_PATH_ESCAPE"
+	}
+	if strings.ContainsAny(n, `/\`) {
+		return "", "ERR_PATH_ESCAPE"
+	}
+	cleaned := filepath.Clean(n)
+	if cleaned == "." || cleaned == ".." {
+		return "", "ERR_PATH_ESCAPE"
+	}
+	if verr := versions.ValidateFolderName(n); verr != "" {
+		return "", "ERR_INVALID_NAME"
+	}
+	dir := filepath.Join(vdir, n)
+	if !isPathInside(vdir, dir) {
+		return "", "ERR_PATH_ESCAPE"
+	}
+	return dir, ""
+}
+
+func ValidateLaunchName(name string) string {
+	_, errCode := resolveVersionDir(name)
+	return errCode
+}
+
+func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) string {
+	dir, errCode := resolveVersionDir(name)
+	if errCode != "" {
+		return errCode
+	}
 	exe := filepath.Join(dir, "Minecraft.Windows.exe")
 	if !utils.FileExists(exe) {
 		return "ERR_NOT_FOUND_EXE"
@@ -80,11 +127,12 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 				cmd.Env = append(os.Environ(), envs...)
 			}
 			if err := cmd.Start(); err != nil {
+				log.Printf("Launch protocol failed for %s: %v", name, err)
 				return "ERR_LAUNCH_GAME"
 			}
 			gameVer = strings.TrimSpace(m.GameVersion)
 			discord.SetPlayingVersion(gameVer)
-			go launch.MonitorGameProcess(ctx, dir)
+			go launch.MonitorGameProcess(ctx, dir, 0)
 			return ""
 		}
 		if m.EnableEditorMode {
@@ -110,10 +158,15 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		}
 	}
 	if err := cmd.Start(); err != nil {
+		log.Printf("Launch executable failed for %s: %v", name, err)
 		return "ERR_LAUNCH_GAME"
 	}
 	discord.SetPlayingVersion(gameVer)
-	go launch.MonitorGameProcess(ctx, dir)
+	launchPID := 0
+	if cmd.Process != nil {
+		launchPID = cmd.Process.Pid
+	}
+	go launch.MonitorGameProcess(ctx, dir, launchPID)
 	return ""
 }
 

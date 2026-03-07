@@ -12,11 +12,11 @@ The supported user target in this documentation is **Windows**.
 
 ### Should I use Release or Preview?
 
-Use **Release** for normal play. Use **Preview** only when you specifically want upcoming features and are comfortable with instability.
+Use the Minecraft **Release** build for normal play. Choose the Minecraft **Preview** build only when you specifically want upcoming features and are comfortable with instability.
 
 ### Is isolation required?
 
-No, but it is strongly recommended for testing, Preview builds, and modded setups.
+No, but it is strongly recommended for testing, Minecraft Preview builds, and modded setups.
 
 ### Can I manage worlds and packs inside the launcher?
 
@@ -28,12 +28,13 @@ Yes, but mod workflows are an advanced area. Start with a clean isolated version
 
 ## Community links
 
-- **Discord:** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
+- **Official Discord:** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
+- **Personal Discord:** [discord.gg/XhH4BBaxEy](https://discord.gg/XhH4BBaxEy)
 - **QQ Group:** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## Download links
 
-- **GitHub Releases:** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
+- **GitHub Releases (LeviLauncher downloads):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Lanzou mirror:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — password: `levi`
 
 ## Reporting issues and feature requests
@@ -51,4 +52,3 @@ Use [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) for:
 - try a clean isolated version
 - temporarily disable new mods or packs
 - write down the exact steps that caused the problem
-

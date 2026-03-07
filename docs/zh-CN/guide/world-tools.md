@@ -13,7 +13,7 @@ LeviLauncher 提供了一些帮助你保护和检查世界数据的工具。
 
 以下场景都建议先备份：
 
-- 测试 Preview 版本前
+- 测试 Minecraft 预览版（Preview）前
 - 安装或更新多个 Mods 前
 - 修改重要世界元数据前
 - 在差异较大的环境之间迁移世界前
@@ -37,4 +37,3 @@ LeviLauncher 可以把 `level.dat` 中的部分字段以更易处理的方式暴
 - [内容管理](./content-management)
 - [版本管理](./version-management)
 - [更新与故障排查](./update-troubleshooting)
-

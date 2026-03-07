@@ -13,7 +13,7 @@ LeviLauncher includes tools to help you choose a usable download source, track p
 ## Recommended workflow
 
 1. Open **Download**.
-2. Choose Release or Preview.
+2. Choose the Minecraft Release or Preview build you want.
 3. Let LeviLauncher test or use your preferred mirror.
 4. Start the task.
 5. Open the task or download manager view if you want more detailed progress.
@@ -46,4 +46,3 @@ Check the following before retrying:
 - your selected mirror is still responsive
 
 Then continue with [Update & Troubleshooting](./update-troubleshooting) if the failure persists.
-

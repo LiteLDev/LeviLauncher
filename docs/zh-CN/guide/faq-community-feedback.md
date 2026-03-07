@@ -12,11 +12,11 @@
 
 ### 我应该选 Release 还是 Preview？
 
-日常游玩优先选 **Release**。只有你明确需要体验即将到来的内容，并且能接受不稳定时，再考虑 **Preview**。
+日常游玩优先选 Minecraft **正式版（Release）**。只有你明确需要体验即将到来的内容，并且能接受不稳定时，再考虑 **预览版（Preview）**。
 
 ### 隔离是必须的吗？
 
-不是必须，但对测试、Preview、Mod 环境来说非常推荐。
+不是必须，但对测试、Minecraft 预览版（Preview）环境和 Mod 环境来说非常推荐。
 
 ### 能在启动器里管理世界和资源包吗？
 
@@ -28,12 +28,13 @@
 
 ## 社区入口
 
-- **Discord：** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
+- **官方 Discord：** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
+- **个人 Discord 频道：** [discord.gg/XhH4BBaxEy](https://discord.gg/XhH4BBaxEy)
 - **QQ 群：** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## 下载入口
 
-- **GitHub Releases：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
+- **GitHub Releases（LeviLauncher 下载）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **蓝奏云镜像：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 密码：`levi`
 
 ## 如何反馈问题与功能建议
@@ -51,4 +52,3 @@
 - 用一个干净的隔离版本做一次对照测试
 - 暂时禁用新加入的 Mods 或资源包
 - 记录导致问题出现的精确步骤
-

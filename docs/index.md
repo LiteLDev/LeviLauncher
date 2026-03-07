@@ -4,7 +4,7 @@ layout: home
 hero:
   name: LeviLauncher
   text: Minecraft Bedrock (GDK) launcher for Windows
-  tagline: Install, manage, isolate, mod, and launch Release or Preview builds from one desktop app.
+  tagline: Install, manage, isolate, mod, and launch Minecraft Release or Preview builds from one desktop app.
   image:
     src: /appicon.png
     alt: LeviLauncher
@@ -13,7 +13,7 @@ hero:
       text: Read the guide
       link: /guide/quick-start
     - theme: alt
-      text: GitHub Releases
+      text: Download LeviLauncher
       link: https://github.com/LiteLDev/LeviLauncher/releases
     - theme: alt
       text: 简体中文
@@ -21,7 +21,7 @@ hero:
 
 features:
   - title: Version-first workflow
-    details: Install, rename, launch, and remove Release or Preview builds while keeping each setup under control.
+    details: Install, rename, launch, and remove Minecraft Release or Preview builds while keeping each setup under control.
   - title: Clean isolation
     details: Keep worlds, packs, and game files separated from your default AppData installation when you want a safer workspace.
   - title: Content toolkit
@@ -47,19 +47,20 @@ Go to [Quick Start](/guide/quick-start), then continue with [Requirements & Inst
 This documentation is written for **players and end users**, not maintainers.
 
 - How to install LeviLauncher and prepare Windows prerequisites
-- How to download, install, and launch versions
+- How to download, install, and launch Minecraft Release or Preview builds
 - How isolation works and when to use it
 - How to manage content, worlds, and mods
 - How to troubleshoot updates, missing components, and common launch issues
 
 ## Download channels
 
-- **GitHub Releases:** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
+- **GitHub Releases (LeviLauncher downloads):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Lanzou mirror:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — password: `levi`
 
 ## Community and feedback
 
-- **Discord:** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
+- **Official Discord:** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
+- **Personal Discord:** [discord.gg/XhH4BBaxEy](https://discord.gg/XhH4BBaxEy)
 - **QQ Group:** [458083875](https://qm.qq.com/q/1z791rJgJG)
 - **Issue tracker:** [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
 
@@ -70,4 +71,3 @@ This documentation is written for **players and end users**, not maintainers.
 3. [First Launch](/guide/first-launch)
 4. [Version Management](/guide/version-management)
 5. [Content Management](/guide/content-management)
-

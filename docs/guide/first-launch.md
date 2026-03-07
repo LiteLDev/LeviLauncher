@@ -39,7 +39,7 @@ Make sure you:
 
 ## Good defaults for new users
 
-- use one isolated Release version first
+- use one isolated Minecraft Release version first
 - keep Downloads and Content paths on a writable drive
 - avoid importing mods until your first clean launch succeeds
 
@@ -50,4 +50,3 @@ Continue with:
 - [Version Management](./version-management)
 - [Content Management](./content-management)
 - [Settings & Personalization](./settings-personalization)
-

@@ -19,7 +19,7 @@ Examples:
 
 - one version for vanilla survival worlds
 - one version for testing resource packs
-- one Preview version with separate screenshots and server entries
+- one Minecraft Preview version with separate screenshots and server entries
 
 ## Common actions
 
@@ -54,4 +54,3 @@ Screenshots and server lists can also be easier to reason about when each versio
 - [Version Management](./version-management)
 - [World Tools](./world-tools)
 - [Settings & Personalization](./settings-personalization)
-

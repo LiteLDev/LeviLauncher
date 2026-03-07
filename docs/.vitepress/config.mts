@@ -82,7 +82,7 @@ function buildGuideSidebar(
 function buildEnglishNav(): DefaultTheme.NavItem[] {
   return [
     { text: "Guide", link: "/guide/quick-start" },
-    { text: "Releases", link: releases },
+    { text: "Downloads", link: releases },
     { text: "Mirror", link: lanzou },
     { text: "Community", link: discord },
     { text: "GitHub", link: repo },

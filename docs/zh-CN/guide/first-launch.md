@@ -39,7 +39,7 @@
 
 ## 给新用户的好默认值
 
-- 先使用一个隔离的 Release 版本
+- 先使用一个隔离的正式版（Release）版本
 - 把下载与内容路径放在可写的磁盘位置
 - 第一次成功纯净启动之前，不要急着导入大量 Mods
 
@@ -48,4 +48,3 @@
 - [版本管理](./version-management)
 - [内容管理](./content-management)
 - [设置与个性化](./settings-personalization)
-

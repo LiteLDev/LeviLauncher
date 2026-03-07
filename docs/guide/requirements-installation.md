@@ -31,11 +31,11 @@ Complete this checklist first:
 
 ## Installing LeviLauncher itself
 
-### Option A: GitHub Releases
+### Option A: GitHub Releases page
 
-Use this if you want the official release page and changelog context.
+Use this if you want the official LeviLauncher download page together with release notes and changelog context.
 
-1. Open [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases).
+1. Open the [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) page for LeviLauncher.
 2. Download the installer.
 3. Run it and finish the setup wizard.
 
@@ -50,27 +50,27 @@ Use this if GitHub download speed is poor in your region.
 ## Installing your first managed version
 
 1. Open **Download** inside LeviLauncher.
-2. Choose **Release** or **Preview**.
+2. Choose **Release** or **Preview** for the Minecraft build you want.
 3. Pick a version entry.
 4. Decide whether to enable isolation.
 5. Start installation and wait for completion.
 
 ## Recommended installation strategy
 
-### Use Release when
+### Use a Minecraft Release version when
 
 - you want the most stable day-to-day setup
 - you are building a long-term world
 - you want fewer surprises with mods and packs
 
-### Use Preview when
+### Use a Minecraft Preview version when
 
 - you want to test upcoming features
 - you are comfortable with instability or compatibility breaks
-- you intentionally keep Preview content separate
+- you intentionally keep Minecraft Preview content separate from your main play setup
 
 ::: tip Recommended for most players
-Start with one isolated **Release** version. Add Preview later only if you specifically need it.
+Start with one isolated **Minecraft Release** version. Add a **Minecraft Preview** version later only if you specifically need it.
 :::
 
 ## If installation cannot continue
@@ -82,4 +82,3 @@ Go to [Update & Troubleshooting](./update-troubleshooting) if you run into:
 - missing Store ownership or installation state
 - write permission problems
 - failed downloads or mirror issues
-

@@ -4,14 +4,14 @@ LeviLauncher treats each installed setup as a version you can manage independent
 
 ## What you can do
 
-- install Release or Preview builds
+- install Minecraft Release or Preview builds
 - give versions recognizable names
 - launch a selected version quickly
 - remove versions you no longer need
 - open version-specific settings
 - create a desktop shortcut for a version
 
-## Release vs Preview
+## Minecraft Release vs Preview
 
 | Type | Best for | Notes |
 | --- | --- | --- |
@@ -25,7 +25,7 @@ When isolation is enabled, LeviLauncher stores the managed game data inside that
 Isolation is useful when you want:
 
 - different content sets for different versions
-- safer testing for mods or Preview builds
+- safer testing for mods or Minecraft Preview builds
 - less risk of one setup affecting another
 
 ## Common version tasks
@@ -40,7 +40,7 @@ Use **Versions** or the version settings page to give the setup a name that refl
 
 ### Delete a version
 
-Remove versions you no longer need, especially Preview test installs that are no longer relevant.
+Remove versions you no longer need, especially Minecraft Preview test installs that are no longer relevant.
 
 ::: warning Be careful before deleting
 Deleting a version can remove the managed environment for that setup. Back up important worlds first.
@@ -52,8 +52,8 @@ LeviLauncher can create a desktop shortcut for a specific version so you can lau
 
 ## Recommended version strategy
 
-- one isolated Release version for normal play
-- one isolated Preview version only when needed
+- one isolated Minecraft Release version for normal play
+- one isolated Minecraft Preview version only when needed
 - one temporary test version for mods or troubleshooting
 
 ## Related guides
@@ -61,4 +61,3 @@ LeviLauncher can create a desktop shortcut for a specific version so you can lau
 - [Downloads & Mirrors](./downloads-mirrors)
 - [World Tools](./world-tools)
 - [Update & Troubleshooting](./update-troubleshooting)
-

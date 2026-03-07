@@ -31,11 +31,11 @@
 
 ## 安装 LeviLauncher 本体
 
-### 方案 A：GitHub Releases
+### 方案 A：GitHub Releases 页面
 
-适合希望直接从官方发布页下载并查看更新记录的用户。
+适合希望直接从 LeviLauncher 官方下载页获取安装包，并顺便查看更新记录的用户。
 
-1. 打开 [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases)。
+1. 打开 LeviLauncher 的 [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) 页面。
 2. 下载安装程序。
 3. 运行并完成安装向导。
 
@@ -50,27 +50,27 @@
 ## 安装第一个托管版本
 
 1. 在 LeviLauncher 内打开 **Download**。
-2. 选择 **Release** 或 **Preview**。
+2. 选择你要安装的 Minecraft **Release** 或 **Preview**。
 3. 选择目标版本条目。
 4. 决定是否启用隔离。
 5. 开始安装并等待完成。
 
 ## 推荐安装策略
 
-### 什么时候选 Release
+### 什么时候选正式版（Release）
 
 - 你想要更稳定的日常游玩环境
 - 你在经营长期世界
 - 你希望 Mods 与资源包变化更少
 
-### 什么时候选 Preview
+### 什么时候选预览版（Preview）
 
 - 你想提前体验未来功能
 - 你能接受不稳定或兼容性变化
-- 你愿意把 Preview 环境与正式游玩环境分开
+- 你愿意把 Minecraft 预览版（Preview）环境与日常游玩环境分开
 
 ::: tip 多数玩家的推荐做法
-先建立一个**隔离的 Release 版本**。只有在明确需要时，再额外添加 Preview。
+先建立一个**隔离的正式版（Release）版本**。只有在明确需要体验预览内容时，再额外添加**预览版（Preview）**。
 :::
 
 ## 如果安装无法继续
@@ -82,4 +82,3 @@
 - 商店授权或安装状态不完整
 - 目标路径不可写
 - 下载或镜像失败
-

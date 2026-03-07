@@ -13,7 +13,7 @@ LeviLauncher supports mod-related workflows that go beyond a basic launcher.
 - work with LeviLamina-related mod setups
 
 ::: warning Advanced area
-Mods, loaders, and package integrations can change compatibility quickly, especially on Preview builds. Treat this area as advanced and test carefully.
+Mods, loaders, and package integrations can change compatibility quickly, especially on Minecraft Preview builds. Treat this area as advanced and test carefully.
 :::
 
 ## Recommended mod workflow
@@ -40,7 +40,7 @@ These integrations are aimed at more advanced users who want package-driven or l
 
 Best practices:
 
-- prefer stable Release versions first
+- prefer stable Minecraft Release versions first
 - avoid changing too many moving parts at once
 - note the exact version you tested successfully
 
@@ -50,4 +50,3 @@ Best practices:
 - compare against the last known good version
 - move important worlds to safety before more testing
 - continue with [Update & Troubleshooting](./update-troubleshooting)
-

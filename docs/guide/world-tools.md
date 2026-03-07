@@ -13,7 +13,7 @@ LeviLauncher includes utilities that help you protect and inspect your worlds.
 
 Always create a backup before you:
 
-- test Preview versions
+- test Minecraft Preview versions
 - install or update multiple mods
 - change important world metadata
 - move a world between very different setups
@@ -37,4 +37,3 @@ LeviLauncher can expose selected fields from `level.dat` for easier editing.
 - [Content Management](./content-management)
 - [Version Management](./version-management)
 - [Update & Troubleshooting](./update-troubleshooting)
-

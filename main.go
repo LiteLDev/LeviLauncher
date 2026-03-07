@@ -8,6 +8,7 @@ import (
 	"log"
 	"net"
 	"os"
+	"strconv"
 	"strings"
 	"time"
 	"unsafe"
@@ -309,6 +310,13 @@ func main() {
 			windows.SetSize(targetW, targetH)
 		}
 	}
+	syncWindowResizeHandles := func() {
+		isMaximised := windows.IsMaximised()
+		windows.ExecJS(`if (window._wails && typeof window._wails.setResizable === "function") { window._wails.setResizable(` + strconv.FormatBool(!isMaximised) + `); }`)
+		if !isMaximised {
+			reapplyWindowMinConstraints()
+		}
+	}
 
 	if strings.TrimSpace(autoLaunchVersion) != "" {
 		go func() {
@@ -326,9 +334,16 @@ func main() {
 			})
 		}
 	})
-	windows.OnWindowEvent(events.Common.WindowRestore, func(_ *application.WindowEvent) {
-		reapplyWindowMinConstraints()
+	windows.OnWindowEvent(events.Common.WindowMaximise, func(_ *application.WindowEvent) {
+		syncWindowResizeHandles()
 	})
+	windows.OnWindowEvent(events.Common.WindowUnMaximise, func(_ *application.WindowEvent) {
+		syncWindowResizeHandles()
+	})
+	windows.OnWindowEvent(events.Common.WindowRestore, func(_ *application.WindowEvent) {
+		syncWindowResizeHandles()
+	})
+	syncWindowResizeHandles()
 	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		w := windows.Width()
 		h := windows.Height()

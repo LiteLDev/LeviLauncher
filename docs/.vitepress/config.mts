@@ -5,9 +5,7 @@ const releases = `${repo}/releases`;
 const discord = "https://discord.gg/v5R5P4vRZk";
 const lanzou = "https://levimc.lanzoue.com/b016ke39hc";
 
-const projectBase = "/LeviLauncher/";
-const base =
-  process.env.DOCS_BASE ?? (process.argv.includes("dev") ? "/" : projectBase);
+const base = "/";
 
 function buildGuideSidebar(
   prefix: string,
@@ -183,6 +181,6 @@ export default defineConfig({
     lineNumbers: true,
   },
   sitemap: {
-    hostname: "https://liteldev.github.io/LeviLauncher/",
+    hostname: "https://levilauncher.levimc.org/",
   },
 });

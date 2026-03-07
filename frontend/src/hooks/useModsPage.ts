@@ -26,6 +26,7 @@ import { readCurrentVersionName } from "@/utils/currentVersion";
 import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
+import { setNavLockReason } from "@/hooks/useAppNavigation";
 
 const LEVILAMINA_NORMALIZED = "levilamina";
 const ERR_LL_MANAGED_IN_VERSION_SETTINGS =
@@ -467,15 +468,10 @@ export const useModsPage = (
   useBlocker(() => importing);
 
   useEffect(() => {
-    const lock = importing;
-    window.dispatchEvent(
-      new CustomEvent("ll-nav-lock-changed", { detail: { lock } }),
-    );
+    setNavLockReason("mods-import", importing);
     return () => {
-      if (lock) {
-        window.dispatchEvent(
-          new CustomEvent("ll-nav-lock-changed", { detail: { lock: false } }),
-        );
+      if (importing) {
+        setNavLockReason("mods-import", false);
       }
     };
   }, [importing]);

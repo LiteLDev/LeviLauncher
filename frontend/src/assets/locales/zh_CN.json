@@ -140,6 +140,22 @@
     "phase": {
       "download": "下载更新包",
       "install": "安装更新"
+    },
+    "status": {
+      "checking": "正在检查更新",
+      "verifying": "正在校验安装包完整性",
+      "elevating": "正在请求管理员权限",
+      "restarting": "正在重新启动启动器"
+    },
+    "errors": {
+      "generic": "更新时发生未知错误，请稍后重试。",
+      "update_admin_required": "继续更新需要管理员权限。",
+      "update_asset_missing": "所需的更新包缺失或命名不符合要求。",
+      "update_release_unavailable": "暂时无法获取更新元数据。",
+      "update_verify_failed": "更新包校验失败。",
+      "update_download_failed": "下载更新包失败。",
+      "update_install_failed": "安装更新包失败。",
+      "update_restart_failed": "更新完成后未能自动重新启动启动器。"
     }
   },
   "moddedcard": {
@@ -348,7 +364,8 @@
       "license": {
         "title": "许可协议",
         "body": "继续前必须接受 Microsoft GDK 公共开发套件许可协议。",
-        "accept": "我接受许可协议中的条款"
+        "accept": "我接受许可协议中的条款",
+        "link_text": "Microsoft 公共游戏开发工具包许可协议"
       },
       "download": {
         "title": "下载 GDK"
@@ -356,7 +373,8 @@
       "install": {
         "title": "正在安装 GDK",
         "body": "稍候，正在运行安装程序…"
-      }
+      },
+      "download_unavailable": "当前无法获取 GDK 下载地址。"
     },
     "lip": {
       "title": "lip",
@@ -758,6 +776,7 @@
         "ll_not_installed": "未安装",
         "ll_select_version": "LeviLamina 版本",
         "ll_select_placeholder": "请选择 LeviLamina 版本",
+        "ll_select_guidance": "请选择你要安装或更新的 LeviLamina 版本。",
         "ll_upgrade_only_hint": "实例设置仅允许升级到更高版本。",
         "ll_only_latest_when_current_unknown": "当前版本无法解析，仅允许更新到最新版本。",
         "ll_remove_confirm_title": "确认移除 LeviLamina",

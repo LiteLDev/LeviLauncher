@@ -37,6 +37,9 @@ import { useVersionSettings } from "@/hooks/useVersionSettings";
 export default function VersionSettingsPage() {
   const { t } = useTranslation();
   const vs = useVersionSettings();
+  const currentLLVersionText =
+    vs.currentLLVersion ||
+    (t("versions.edit.loader.ll_not_installed") as unknown as string);
 
   return (
     <PageContainer className="relative" animate={false}>
@@ -369,22 +372,22 @@ export default function VersionSettingsPage() {
                         />
                       </div>
                       <div>
-                        <div className="text-medium font-bold text-foreground">
-                          LeviLamina
+                        <div className="flex flex-wrap items-baseline gap-x-2 gap-y-1">
+                          <div className="text-medium font-bold text-foreground">
+                            LeviLamina
+                          </div>
+                          <span
+                            className={
+                              vs.currentLLVersion
+                                ? "text-small font-semibold text-default-500 dark:text-zinc-400"
+                                : "text-small font-medium text-default-400 dark:text-zinc-500"
+                            }
+                          >
+                            {currentLLVersionText}
+                          </span>
                         </div>
                         <div className="text-small text-default-500 dark:text-zinc-400">
                           {t("downloadpage.install.levilamina_desc")}
-                        </div>
-                        <div className="mt-1 text-small leading-6">
-                          <span className="font-medium text-default-700 dark:text-zinc-300">
-                            {t("versions.edit.loader.ll_current_version")}:
-                          </span>{" "}
-                          <span className="font-bold text-default-900 dark:text-zinc-100">
-                            {vs.currentLLVersion ||
-                              (t(
-                                "versions.edit.loader.ll_not_installed",
-                              ) as unknown as string)}
-                          </span>
                         </div>
                       </div>
                     </div>
@@ -794,17 +797,9 @@ export default function VersionSettingsPage() {
         }}
       >
         <div className="space-y-3">
-          <div className="text-small leading-6">
-            <span className="font-medium text-default-700 dark:text-zinc-300">
-              {t("versions.edit.loader.ll_current_version")}:
-            </span>{" "}
-            <span className="font-bold text-default-900 dark:text-zinc-100">
-              {vs.currentLLVersion ||
-                (t(
-                  "versions.edit.loader.ll_not_installed",
-                ) as unknown as string)}
-            </span>
-          </div>
+          <p className="text-small leading-6 text-default-500 dark:text-zinc-400">
+            {t("versions.edit.loader.ll_select_guidance")}
+          </p>
           <Select
             label={
               t("versions.edit.loader.ll_select_version") as unknown as string

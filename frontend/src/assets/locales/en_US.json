@@ -157,6 +157,22 @@
     "phase": {
       "download": "Download Update Package",
       "install": "Install Update"
+    },
+    "status": {
+      "checking": "Checking for updates",
+      "verifying": "Verifying package integrity",
+      "elevating": "Requesting administrator permission",
+      "restarting": "Restarting launcher"
+    },
+    "errors": {
+      "generic": "The update could not be completed. Please try again later.",
+      "update_admin_required": "Administrator permission is required to continue the update.",
+      "update_asset_missing": "The required update package is missing or named incorrectly.",
+      "update_release_unavailable": "Update metadata is currently unavailable.",
+      "update_verify_failed": "Update package verification failed.",
+      "update_download_failed": "Failed to download the update package.",
+      "update_install_failed": "Failed to install the update package.",
+      "update_restart_failed": "Updated launcher failed to restart automatically."
     }
   },
   "downloadpage": {
@@ -348,7 +364,8 @@
       "license": {
         "title": "License Agreement",
         "body": "You must accept the terms of the Microsoft Public Game Development Kit License Agreement to continue.",
-        "accept": "I accept the terms in the License Agreement."
+        "accept": "I accept the terms in the License Agreement.",
+        "link_text": "Microsoft Public Game Development Kit License Agreement"
       },
       "download": {
         "title": "Downloading GDK"
@@ -356,7 +373,8 @@
       "install": {
         "title": "Installing GDK",
         "body": "Please wait while the installer runs…"
-      }
+      },
+      "download_unavailable": "Default GDK download link is unavailable right now."
     },
     "lip": {
       "title": "lip",
@@ -758,6 +776,7 @@
         "ll_not_installed": "Not installed",
         "ll_select_version": "LeviLamina Version",
         "ll_select_placeholder": "Select a LeviLamina version",
+        "ll_select_guidance": "Choose the LeviLamina version you want to install or update.",
         "ll_upgrade_only_hint": "Only upgrades are allowed in instance settings.",
         "ll_only_latest_when_current_unknown": "Current version cannot be parsed. Only the latest version can be updated.",
         "ll_remove_confirm_title": "Confirm Remove LeviLamina",

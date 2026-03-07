@@ -124,7 +124,6 @@ function App() {
 
   const {
     navLocked,
-    setNavLocked,
     splashVisible,
     revealStarted,
     isFirstLoad,
@@ -157,7 +156,6 @@ function App() {
     hasBackend,
     revealStarted,
     isUpdatingMode,
-    setNavLocked,
   });
 
   // Counter/refresh for LauncherPage
@@ -211,19 +209,6 @@ function App() {
     document.addEventListener("dragstart", onDragStartCapture, true);
     return () => {
       document.removeEventListener("dragstart", onDragStartCapture, true);
-    };
-  }, []);
-
-  // Prevent Tab key
-  useEffect(() => {
-    const onKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Tab") {
-        e.preventDefault();
-      }
-    };
-    document.addEventListener("keydown", onKeyDown, true);
-    return () => {
-      document.removeEventListener("keydown", onKeyDown, true);
     };
   }, []);
 
@@ -470,7 +455,6 @@ function App() {
                     loading={updateLoading}
                     onDismiss={() => {
                       setUpdateOpen(false);
-                      setNavLocked(Boolean((window as any).llNavLock));
                     }}
                     onIgnore={() => {
                       try {
@@ -480,13 +464,11 @@ function App() {
                         );
                       } catch {}
                       setUpdateOpen(false);
-                      setNavLocked(Boolean((window as any).llNavLock));
                     }}
                     onUpdate={async () => {
                       setUpdateLoading(true);
                       try {
                         setUpdateOpen(false);
-                        setNavLocked(true);
                         navigate("/updating", { replace: true });
                       } finally {
                         setUpdateLoading(false);
@@ -500,7 +482,6 @@ function App() {
                     latestVersion={lipLatestVersion}
                     onDismiss={() => {
                       setLipUpdateOpen(false);
-                      setNavLocked(Boolean((window as any).llNavLock));
                     }}
                     onIgnore={() => {
                       try {
@@ -510,11 +491,9 @@ function App() {
                         );
                       } catch {}
                       setLipUpdateOpen(false);
-                      setNavLocked(Boolean((window as any).llNavLock));
                     }}
                     onOpenSettings={() => {
                       setLipUpdateOpen(false);
-                      setNavLocked(Boolean((window as any).llNavLock));
                       navigate("/settings", { state: { tab: "components" } });
                     }}
                   />

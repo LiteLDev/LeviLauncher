@@ -24,6 +24,7 @@ import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { resolveInstallError } from "@/utils/installError";
+import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialogs, Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
@@ -133,14 +134,7 @@ export default function InstallPage() {
 
   useEffect(() => {
     const guardActive = installing && !resultMsg;
-    try {
-      (window as any).llNavLock = guardActive;
-      window.dispatchEvent(
-        new CustomEvent("ll-nav-lock-changed", {
-          detail: { lock: guardActive },
-        }),
-      );
-    } catch {}
+    setNavLockReason("install-flow", guardActive);
     const originalPush = window.history.pushState.bind(window.history);
     const originalReplace = window.history.replaceState.bind(window.history);
 
@@ -156,12 +150,9 @@ export default function InstallPage() {
     return () => {
       (window.history as any).pushState = originalPush as any;
       (window.history as any).replaceState = originalReplace as any;
-      try {
-        (window as any).llNavLock = false;
-        window.dispatchEvent(
-          new CustomEvent("ll-nav-lock-changed", { detail: { lock: false } }),
-        );
-      } catch {}
+      if (guardActive) {
+        setNavLockReason("install-flow", false);
+      }
     };
   }, [installing, resultMsg]);
 

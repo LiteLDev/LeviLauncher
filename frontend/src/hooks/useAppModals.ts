@@ -1,16 +1,17 @@
 import { useState, useEffect, useCallback } from "react";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { setNavLockReason } from "@/hooks/useAppNavigation";
+import {
+  hasClarityChoiceMade,
+  persistClarityChoice,
+} from "@/utils/clarityConsent";
 
 interface UseAppModalsOptions {
   hasBackend: boolean;
   revealStarted: boolean;
   isUpdatingMode: boolean;
-  setNavLocked: (v: boolean) => void;
 }
 
-const CLARITY_ENABLED_KEY = "ll.clarity.enabled";
-const CLARITY_CHOICE_KEY = "ll.clarity.choiceMade3";
-const CLARITY_EVENT_NAME = "ll-clarity-consent-changed";
 const LIP_IGNORE_VERSION_KEY = "ll.ignoreLipVersion";
 
 const normalizeVersion = (value: unknown): string =>
@@ -22,7 +23,6 @@ export const useAppModals = ({
   hasBackend,
   revealStarted,
   isUpdatingMode,
-  setNavLocked,
 }: UseAppModalsOptions) => {
   const [termsOpen, setTermsOpen] = useState<boolean>(false);
   const [termsCountdown, setTermsCountdown] = useState<number>(0);
@@ -42,7 +42,6 @@ export const useAppModals = ({
       );
       const getter = (minecraft as any)?.GetLipStatus;
       if (typeof getter !== "function") {
-        setNavLocked(Boolean((window as any).llNavLock));
         return;
       }
       getter()
@@ -61,18 +60,14 @@ export const useAppModals = ({
             setLipCurrentVersion(currentVersion);
             setLipLatestVersion(latestVersion);
             setLipUpdateOpen(true);
-            setNavLocked(true);
             return;
           }
-          setNavLocked(Boolean((window as any).llNavLock));
         })
-        .catch(() => {
-          setNavLocked(Boolean((window as any).llNavLock));
-        });
+        .catch(() => {});
     } catch {
-      setNavLocked(Boolean((window as any).llNavLock));
+      return;
     }
-  }, [setNavLocked]);
+  }, []);
 
   const checkUpdate = useCallback(() => {
     try {
@@ -87,7 +82,6 @@ export const useAppModals = ({
             setUpdateVersion(ver);
             setUpdateBody(body);
             setUpdateOpen(true);
-            setNavLocked(true);
             return;
           }
           checkLipUpdate();
@@ -96,49 +90,37 @@ export const useAppModals = ({
           checkLipUpdate();
         });
     } catch {}
-  }, [checkLipUpdate, setNavLocked]);
+  }, [checkLipUpdate]);
 
   const runPostTermsFlow = useCallback(() => {
     try {
       const onboarded = localStorage.getItem("ll.onboarded");
       if (!onboarded) {
-        setNavLocked(Boolean((window as any).llNavLock));
         return;
       }
-      const clarityChoiceMade = localStorage.getItem(CLARITY_CHOICE_KEY);
-      if (!clarityChoiceMade) {
+      if (!hasClarityChoiceMade()) {
         setClarityPromptOpen(true);
-        setNavLocked(true);
         return;
       }
       checkUpdate();
     } catch {}
-  }, [checkUpdate, setNavLocked]);
+  }, [checkUpdate]);
 
   const acceptTerms = useCallback(() => {
     try {
       localStorage.setItem("ll.termsAccepted", "1");
     } catch {}
     setTermsOpen(false);
-    setNavLocked(Boolean((window as any).llNavLock));
     runPostTermsFlow();
-  }, [runPostTermsFlow, setNavLocked]);
+  }, [runPostTermsFlow]);
 
   const applyClarityChoice = useCallback(
     (enabled: boolean) => {
-      try {
-        localStorage.setItem(CLARITY_ENABLED_KEY, enabled ? "true" : "false");
-        localStorage.setItem(CLARITY_CHOICE_KEY, "1");
-        window.dispatchEvent(
-          new CustomEvent(CLARITY_EVENT_NAME, { detail: { enabled } }),
-        );
-      } catch {}
-
+      persistClarityChoice(enabled);
       setClarityPromptOpen(false);
-      setNavLocked(Boolean((window as any).llNavLock));
       checkUpdate();
     },
-    [checkUpdate, setNavLocked],
+    [checkUpdate],
   );
 
   const acceptClarity = useCallback(() => {
@@ -157,7 +139,6 @@ export const useAppModals = ({
       const accepted = localStorage.getItem("ll.termsAccepted");
       if (!accepted) {
         setTermsOpen(true);
-        setNavLocked(true);
         return;
       }
       runPostTermsFlow();
@@ -166,9 +147,19 @@ export const useAppModals = ({
     hasBackend,
     revealStarted,
     isUpdatingMode,
-    setNavLocked,
     runPostTermsFlow,
   ]);
+
+  useEffect(() => {
+    const modalLocked =
+      termsOpen || clarityPromptOpen || updateOpen || lipUpdateOpen;
+    setNavLockReason("app-modal", modalLocked);
+    return () => {
+      if (modalLocked) {
+        setNavLockReason("app-modal", false);
+      }
+    };
+  }, [termsOpen, clarityPromptOpen, updateOpen, lipUpdateOpen]);
 
   useEffect(() => {
     if (!termsOpen) return;

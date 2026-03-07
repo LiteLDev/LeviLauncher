@@ -49,7 +49,6 @@ import {
   GetBaseRoot,
   SetBaseRoot,
   CanWriteToDir,
-  StartGDKDownload,
   CancelGDKDownload,
   SetDisableDiscordRPC,
   SetEnableBetaUpdates,
@@ -134,13 +133,12 @@ export const SettingsPage: React.FC = () => {
     gdkDlSpeed,
     gdkDlStatus,
     gdkDlError,
-    setGdkDlError,
-    setGdkDlProgress,
     gdkProgressDisclosure,
     gdkLicenseDisclosure,
     gdkInstallDisclosure,
     gdkLicenseAccepted,
     setGdkLicenseAccepted,
+    startDefaultGdkDownload,
     selectedTab,
     setSelectedTab,
     layoutMode,
@@ -235,6 +233,18 @@ export const SettingsPage: React.FC = () => {
     resetOnClose,
   } = settings;
 
+  const getGdkErrorText = React.useCallback(
+    (code: string) => {
+      switch (String(code || "").trim()) {
+        case "ERR_GDK_DOWNLOAD_URL_MISSING":
+          return t("settings.gdk.download_unavailable");
+        default:
+          return code;
+      }
+    },
+    [t],
+  );
+
   const activeCustomThemeColor = normalizeHexColor(
     themeSettingMode === "light" ? lightCustomThemeColor : darkCustomThemeColor,
   );
@@ -267,7 +277,7 @@ export const SettingsPage: React.FC = () => {
                 description={t("settings.header.content")}
               />
               <Tabs
-                aria-label="Settings Tabs"
+                  aria-label={t("settings.header.title")}
                 selectedKey={selectedTab}
                 onSelectionChange={(k) => setSelectedTab(k as string)}
                 classNames={{
@@ -471,7 +481,7 @@ export const SettingsPage: React.FC = () => {
                         </Button>
                       </DropdownTrigger>
                       <DropdownMenu
-                        aria-label="Language selection"
+                            aria-label={t("settings.body.language.button")}
                         variant="flat"
                         disallowEmptySelection
                         selectionMode="single"
@@ -1019,7 +1029,7 @@ export const SettingsPage: React.FC = () => {
                                   </p>
                                   <Select
                                     size="sm"
-                                    aria-label="Fit Mode"
+                              aria-label={t("settings.appearance.background_fit_mode")}
                                     disallowEmptySelection
                                     classNames={COMPONENT_STYLES.select}
                                     selectedKeys={new Set([backgroundFitMode])}
@@ -1119,7 +1129,7 @@ export const SettingsPage: React.FC = () => {
                                   </p>
                                   <Select
                                     size="sm"
-                                    aria-label="Play Order"
+                              aria-label={t("settings.appearance.background_play_order")}
                                     disallowEmptySelection
                                     classNames={COMPONENT_STYLES.select}
                                     selectedKeys={
@@ -1206,7 +1216,7 @@ export const SettingsPage: React.FC = () => {
                                     step={1}
                                     maxValue={50}
                                     minValue={0}
-                                    aria-label="Blur"
+                            aria-label={t("settings.appearance.background_blur")}
                                     value={backgroundBlur}
                                     classNames={{
                                       filler: "bg-primary-500",
@@ -1269,7 +1279,7 @@ export const SettingsPage: React.FC = () => {
                                     step={1}
                                     maxValue={100}
                                     minValue={20}
-                                    aria-label="Brightness"
+                            aria-label={t("settings.appearance.background_brightness")}
                                     value={backgroundBrightness}
                                     classNames={{
                                       filler: "bg-primary-500",
@@ -1334,7 +1344,7 @@ export const SettingsPage: React.FC = () => {
                                     step={1}
                                     maxValue={100}
                                     minValue={0}
-                                    aria-label="Opacity"
+                            aria-label={t("settings.appearance.background_opacity")}
                                     value={backgroundOpacity}
                                     classNames={{
                                       filler: "bg-primary-500",
@@ -1759,7 +1769,7 @@ export const SettingsPage: React.FC = () => {
                                                 step={1}
                                                 maxValue={100}
                                                 minValue={0}
-                                                aria-label="Base Opacity"
+                                aria-label={t("settings.appearance.background_base_opacity")}
                                                 value={
                                                   themeSettingMode === "light"
                                                     ? lightBackgroundBaseOpacity
@@ -2333,12 +2343,7 @@ export const SettingsPage: React.FC = () => {
               onPress={() => {
                 gdkLicenseDisclosure.onClose();
                 try {
-                  setGdkDlError("");
-                  setGdkDlProgress(null);
-                  gdkProgressDisclosure.onOpen();
-                  StartGDKDownload(
-                    "https://github.bibk.top/microsoft/GDK/releases/download/October-2025-Update-1-v2510.1.6224/GDK_2510.1.6224.zip",
-                  );
+                  void startDefaultGdkDownload();
                 } catch {}
               }}
             >
@@ -2355,7 +2360,7 @@ export const SettingsPage: React.FC = () => {
             target="_blank"
             rel="noreferrer"
           >
-            Microsoft Public Game Development Kit License Agreement
+            {t("settings.gdk.license.link_text")}
           </a>
         </div>
         <div className="flex items-center gap-2 mt-3">
@@ -2508,7 +2513,7 @@ export const SettingsPage: React.FC = () => {
         }
       >
         {gdkDlError ? (
-          <div className="text-danger">{gdkDlError}</div>
+          <div className="text-danger">{getGdkErrorText(gdkDlError)}</div>
         ) : (
           <div className="flex flex-col gap-3">
             <div className="h-2 w-full rounded bg-default-200 overflow-hidden">

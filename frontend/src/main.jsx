@@ -13,6 +13,10 @@ import {
   createRoutesFromElements,
   Route,
 } from "react-router-dom";
+import {
+  CLARITY_ENABLED_KEY,
+  CLARITY_EVENT_NAME,
+} from "./utils/clarityConsent";
 
 const container = document.getElementById("root");
 
@@ -42,35 +46,11 @@ if (isTouchDevice) {
   window.addEventListener("gestureend", preventGestureZoom);
 }
 
-window.addEventListener("contextmenu", (e) => {
-  if (import.meta.env.DEV) return;
-  const target = e.target;
-  const tagName = target.tagName;
-  const isInput =
-    tagName === "INPUT" || tagName === "TEXTAREA" || target.isContentEditable;
-
-  if (isInput) {
-    const type = target.getAttribute("type")?.toLowerCase();
-    if (
-      !type ||
-      ["text", "password", "email", "number", "search", "url", "tel"].includes(
-        type,
-      ) ||
-      tagName === "TEXTAREA"
-    ) {
-      return;
-    }
-  }
-
-  e.preventDefault();
-});
-
 const router = createHashRouter(
   createRoutesFromElements(<Route path="/*" element={<App />} />),
 );
 
 const CLARITY_PROJECT_ID = "voq9l7h41c";
-const CLARITY_ENABLED_KEY = "ll.clarity.enabled";
 let clarityInitialized = false;
 
 const applyClarityConsent = (enabled) => {
@@ -102,7 +82,7 @@ const clarityEnabledOnStart = (() => {
 
 applyClarityConsent(clarityEnabledOnStart);
 
-window.addEventListener("ll-clarity-consent-changed", (event) => {
+window.addEventListener(CLARITY_EVENT_NAME, (event) => {
   const enabled = Boolean(event?.detail?.enabled);
   applyClarityConsent(enabled);
 });

@@ -89,6 +89,7 @@ const CurseForgeModPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [selectedGameVersion, setSelectedGameVersion] = useState<string>("all");
   const [selectedTab, setSelectedTab] = useState<string>("description");
+  const [isEntering, setIsEntering] = useState(true);
   const tabsRef = useRef<HTMLDivElement>(null);
 
   const [installModalOpen, setInstallModalOpen] = useState(false);
@@ -125,6 +126,7 @@ const CurseForgeModPage: React.FC = () => {
   const cleanupRef = useRef<() => void>(() => {});
 
   React.useLayoutEffect(() => {
+    setIsEntering(true);
     const reset = () => {
       try {
         window.scrollTo({ top: 0, left: 0, behavior: "auto" });
@@ -148,10 +150,12 @@ const CurseForgeModPage: React.FC = () => {
     const raf = requestAnimationFrame(reset);
     const t0 = window.setTimeout(reset, 0);
     const t1 = window.setTimeout(reset, 120);
+    const t2 = window.setTimeout(() => setIsEntering(false), 550);
     return () => {
       cancelAnimationFrame(raf);
       clearTimeout(t0);
       clearTimeout(t1);
+      clearTimeout(t2);
     };
   }, [id]);
 
@@ -584,11 +588,11 @@ const CurseForgeModPage: React.FC = () => {
   }
 
   return (
-    <PageContainer animate={false}>
+    <PageContainer animate={false} className={isEntering ? "overflow-y-hidden" : undefined}>
       {/* Header Card */}
       <motion.div
-        initial={{ opacity: 0, y: -20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.4 }}
       >
         <Card className={LAYOUT.GLASS_CARD.BASE}>
@@ -734,8 +738,8 @@ const CurseForgeModPage: React.FC = () => {
 
       {/* Content Card */}
       <motion.div
-        initial={{ opacity: 0, y: 20 }}
-        animate={{ opacity: 1, y: 0 }}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
         <Card className={`${LAYOUT.GLASS_CARD.BASE} min-h-[500px]`}>

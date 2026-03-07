@@ -1,6 +1,7 @@
 import React from "react";
 import { ModalContent, Button, ButtonProps } from "@heroui/react";
 import { motion } from "framer-motion";
+import { useTranslation } from "react-i18next";
 import {
   FiCheckCircle,
   FiAlertTriangle,
@@ -114,9 +115,9 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   scrollBehavior = "inside",
   icon,
   onConfirm,
-  confirmText = "Confirm",
+  confirmText,
   onCancel,
-  cancelText = "Cancel",
+  cancelText,
   confirmButtonProps,
   cancelButtonProps,
   showCancelButton = false,
@@ -128,8 +129,11 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   motionProps,
   contentKey,
 }) => {
+  const { t } = useTranslation();
   const config = TYPE_CONFIG[type];
   const Icon = config.icon;
+  const resolvedConfirmText = confirmText ?? t("common.confirm");
+  const resolvedCancelText = cancelText ?? t("common.cancel");
 
   const confirmBtnColor = confirmButtonProps?.color || config.buttonColor;
   const confirmBtnClass =
@@ -212,7 +216,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
                         }}
                         {...cancelButtonProps}
                       >
-                        {cancelText}
+                        {resolvedCancelText}
                       </Button>
                     )}
                     {showConfirmButton && (
@@ -223,7 +227,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
                         onPress={onConfirm}
                         {...confirmButtonProps}
                       >
-                        {confirmText}
+                        {resolvedConfirmText}
                       </Button>
                     )}
                   </>

@@ -157,6 +157,22 @@
     "phase": {
       "download": "更新パッケージをダウンロード中",
       "install": "更新をインストール中"
+    },
+    "status": {
+      "checking": "更新を確認しています",
+      "verifying": "パッケージの整合性を検証しています",
+      "elevating": "管理者権限を要求しています",
+      "restarting": "ランチャーを再起動しています"
+    },
+    "errors": {
+      "generic": "更新中に不明なエラーが発生しました。しばらくしてからもう一度お試しください。",
+      "update_admin_required": "更新を続行するには管理者権限が必要です。",
+      "update_asset_missing": "必要な更新パッケージが見つからないか、名前が正しくありません。",
+      "update_release_unavailable": "現在、更新メタデータを取得できません。",
+      "update_verify_failed": "更新パッケージの検証に失敗しました。",
+      "update_download_failed": "更新パッケージのダウンロードに失敗しました。",
+      "update_install_failed": "更新パッケージのインストールに失敗しました。",
+      "update_restart_failed": "更新後にランチャーを自動で再起動できませんでした。"
     }
   },
   "downloadpage": {
@@ -327,7 +343,8 @@
       "license": {
         "title": "使用許諾契約",
         "body": "続行するには、Microsoft Public Game Development Kit 使用許諾契約の条項に同意する必要があります。",
-        "accept": "使用許諾契約の条項に同意します。"
+        "accept": "使用許諾契約の条項に同意します。",
+        "link_text": "Microsoft Public Game Development Kit 使用許諾契約"
       },
       "download": {
         "title": "GDKをダウンロード中"
@@ -335,7 +352,8 @@
       "install": {
         "title": "GDKをインストール中",
         "body": "インストーラーを実行しています。お待ちください…"
-      }
+      },
+      "download_unavailable": "現在、GDK のダウンロード URL を取得できません。"
     },
     "lip": {
       "title": "lip",
@@ -740,6 +758,7 @@
         "ll_not_installed": "未インストール",
         "ll_select_version": "LeviLamina バージョン",
         "ll_select_placeholder": "LeviLamina バージョンを選択",
+        "ll_select_guidance": "インストールまたは更新する LeviLamina バージョンを選択してください。",
         "ll_upgrade_only_hint": "インスタンス設定ではアップグレードのみ可能です。",
         "ll_only_latest_when_current_unknown": "現在のバージョンを解析できないため、最新バージョンへの更新のみ可能です。",
         "ll_remove_confirm_title": "LeviLamina の削除確認",

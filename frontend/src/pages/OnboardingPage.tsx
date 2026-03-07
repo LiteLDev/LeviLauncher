@@ -32,6 +32,7 @@ import {
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { normalizeLanguage } from "@/utils/i18nUtils";
+import { persistClarityChoice } from "@/utils/clarityConsent";
 import { Browser, Dialogs } from "@wailsio/runtime";
 import { LuHardDrive, LuLanguages, LuShield } from "react-icons/lu";
 
@@ -86,19 +87,13 @@ export default function OnboardingPage() {
     setBaseRootWritable(true);
   }, [newBaseRoot]);
 
-  const persistClarityChoice = React.useCallback((enabled: boolean) => {
-    try {
-      localStorage.setItem("ll.clarity.enabled", enabled ? "true" : "false");
-      localStorage.setItem("ll.clarity.choiceMade", "1");
-      window.dispatchEvent(
-        new CustomEvent("ll-clarity-consent-changed", { detail: { enabled } }),
-      );
-    } catch {}
+  const persistClaritySelection = React.useCallback((enabled: boolean) => {
+    persistClarityChoice(enabled);
   }, []);
 
   const proceedHome = () => {
     try {
-      persistClarityChoice(clarityEnabled);
+      persistClaritySelection(clarityEnabled);
       localStorage.setItem("ll.onboarded", "1");
     } catch {}
     navigate("/", { replace: true });

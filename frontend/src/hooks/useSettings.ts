@@ -20,9 +20,10 @@ import {
   GetInstallerDir,
   GetVersionsDir,
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { Events } from "@wailsio/runtime";
+import { Call, Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { persistClarityChoice } from "@/utils/clarityConsent";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { useThemeManager, ThemeMode } from "@/utils/useThemeManager";
 
@@ -75,6 +76,7 @@ export const useSettings = (i18n: { language: string }) => {
   const [gdkDlSpeed, setGdkDlSpeed] = useState<number>(0);
   const [gdkDlStatus, setGdkDlStatus] = useState<string>("");
   const [gdkDlError, setGdkDlError] = useState<string>("");
+  const [defaultGdkDownloadURL, setDefaultGdkDownloadURL] = useState<string>("");
   const gdkProgressDisclosure = useDisclosure();
   const gdkLicenseDisclosure = useDisclosure();
   const gdkInstallDisclosure = useDisclosure();
@@ -312,13 +314,35 @@ export const useSettings = (i18n: { language: string }) => {
   // --- Handlers ---
   const setClarityEnabled = (enabled: boolean) => {
     setClarityEnabledState(enabled);
-    try {
-      localStorage.setItem("ll.clarity.enabled", enabled ? "true" : "false");
-      localStorage.setItem("ll.clarity.choiceMade", "1");
-      window.dispatchEvent(
-        new CustomEvent("ll-clarity-consent-changed", { detail: { enabled } }),
-      );
-    } catch {}
+    persistClarityChoice(enabled);
+  };
+
+  const callMinecraftByName = async <T,>(
+    method: string,
+    ...args: unknown[]
+  ): Promise<T> => {
+    return (await Call.ByName(`main.Minecraft.${method}`, ...args)) as T;
+  };
+
+  const startDefaultGdkDownload = async () => {
+    let url = defaultGdkDownloadURL.trim();
+    if (!url) {
+      try {
+        url = String(
+          (await callMinecraftByName<string>("GetDefaultGDKDownloadURL")) || "",
+        ).trim();
+        setDefaultGdkDownloadURL(url);
+      } catch {}
+    }
+    setGdkDlError("");
+    setGdkDlProgress(null);
+    if (!url) {
+      setGdkDlError("ERR_GDK_DOWNLOAD_URL_MISSING");
+      gdkProgressDisclosure.onOpen();
+      return "ERR_GDK_DOWNLOAD_URL_MISSING";
+    }
+    gdkProgressDisclosure.onOpen();
+    return minecraft.StartGDKDownload(url);
   };
 
   const refreshSunTimes = async () => {
@@ -497,6 +521,13 @@ export const useSettings = (i18n: { language: string }) => {
               const ok = await IsGDKInstalled();
               setGdkInstalled(Boolean(ok));
             } catch {}
+            try {
+              const url = String(
+                (await callMinecraftByName<string>("GetDefaultGDKDownloadURL")) ||
+                  "",
+              ).trim();
+              setDefaultGdkDownloadURL(url);
+            } catch {}
           }
         } catch {}
       })
@@ -649,8 +680,18 @@ export const useSettings = (i18n: { language: string }) => {
           gdkProgressDisclosure.onClose();
           try {
             gdkInstallDisclosure.onOpen();
-            await InstallGDKFromZip(dest);
-          } catch {}
+            const installErr = await InstallGDKFromZip(dest);
+            if (installErr) {
+              gdkInstallDisclosure.onClose();
+              setGdkDlError(String(installErr));
+              gdkProgressDisclosure.onOpen();
+            }
+          } catch (error) {
+            console.error("InstallGDKFromZip failed", error);
+            gdkInstallDisclosure.onClose();
+            setGdkDlError("ERR_GDK_INSTALL_FAILED");
+            gdkProgressDisclosure.onOpen();
+          }
         }),
       );
       offs.push(
@@ -793,6 +834,7 @@ export const useSettings = (i18n: { language: string }) => {
     gdkInstallDisclosure,
     gdkLicenseAccepted,
     setGdkLicenseAccepted,
+    startDefaultGdkDownload,
 
     // Tabs
     selectedTab,

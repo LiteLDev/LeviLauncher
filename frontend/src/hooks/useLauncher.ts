@@ -25,6 +25,22 @@ let __didCheckGamingServices = false;
 let __didCheckVcRuntime = false;
 const IGNORE_GS_KEY = "ll.ignore.gs";
 
+const getNextRandomTipIndex = (currentIndex: number, totalTips: number) => {
+  const normalizedTotal = Math.max(1, totalTips);
+
+  if (normalizedTotal <= 1) {
+    return 0;
+  }
+
+  let nextIndex = Math.floor(Math.random() * normalizedTotal);
+
+  if (nextIndex === currentIndex) {
+    nextIndex = (nextIndex + 1) % normalizedTotal;
+  }
+
+  return nextIndex;
+};
+
 export const useLauncher = (args: any) => {
   const [isAnimating, setIsAnimating] = React.useState(true);
   let [currentVersion, setCurrentVersion] = React.useState<string>("");
@@ -132,26 +148,32 @@ export const useLauncher = (args: any) => {
 
   const startTipTimer = React.useCallback((tipsLength: number) => {
     try {
-      if (tipTimerRef.current) {
+      if (tipTimerRef.current !== null) {
         clearInterval(tipTimerRef.current);
         tipTimerRef.current = null;
       }
-      const getNext = (prev: number, len: number) => {
-        const L = Math.max(1, len);
-        if (L <= 1) return 0;
-        let next = Math.floor(Math.random() * L);
-        if (next === prev) next = (next + 1) % L;
-        return next;
-      };
+
+      const normalizedTipsLength = Math.max(0, tipsLength);
+
+      setTipIndex((prev) =>
+        normalizedTipsLength <= 0 ? 0 : prev % normalizedTipsLength,
+      );
+
+      if (normalizedTipsLength <= 1) {
+        return;
+      }
+
       tipTimerRef.current = window.setInterval(() => {
-        setTipIndex((prev) => getNext(prev, tipsLength));
+        setTipIndex((prev) =>
+          getNextRandomTipIndex(prev, normalizedTipsLength),
+        );
       }, 10000);
     } catch {}
   }, []);
 
   const stopTipTimer = React.useCallback(() => {
     try {
-      if (tipTimerRef.current) {
+      if (tipTimerRef.current !== null) {
         clearInterval(tipTimerRef.current);
         tipTimerRef.current = null;
       }

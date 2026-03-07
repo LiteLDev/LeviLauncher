@@ -42,6 +42,36 @@ import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { useLauncher } from "@/hooks/useLauncher";
 
+const LAUNCH_TIP_KEYS = [
+  "choose_version_dropdown",
+  "open_version_settings_gear",
+  "mods_import_button",
+  "file_manager_pick",
+  "download_versions",
+  "content_counts_card",
+  "settings_base_root",
+  "directory_write_check",
+  "general",
+  "bug_report",
+  "world_backup",
+  "performance_optimization",
+  "network_settings",
+  "mod_compatibility",
+  "levilamina_tip",
+  "star_project",
+  "update_notifications",
+  "install_addon",
+  "feature_request",
+  "join_discord",
+  "join_qq_group",
+  "contribution",
+  "open_source",
+  "follow_github",
+  "check_updates",
+  "backup_worlds",
+  "customize_launcher",
+] as const;
+
 export const LauncherPage = (args: any) => {
   const { t } = useTranslation();
 
@@ -113,37 +143,11 @@ export const LauncherPage = (args: any) => {
   } = useLauncher(args);
 
   const launchTips = useMemo(
-    () => [
-      t("launcherpage.tip.choose_version_dropdown") as unknown as string,
-      t("launcherpage.tip.open_version_settings_gear") as unknown as string,
-      t("launcherpage.tip.mods_import_button") as unknown as string,
-      t("launcherpage.tip.file_manager_pick") as unknown as string,
-      t("launcherpage.tip.download_versions") as unknown as string,
-      t("launcherpage.tip.content_counts_card") as unknown as string,
-      t("launcherpage.tip.settings_base_root") as unknown as string,
-      t("launcherpage.tip.directory_write_check") as unknown as string,
-      t("launcherpage.tip.general") as unknown as string,
-      t("launcherpage.tip.bug_report") as unknown as string,
-      t("launcherpage.tip.world_backup") as unknown as string,
-      t("launcherpage.tip.performance_optimization") as unknown as string,
-      t("launcherpage.tip.network_settings") as unknown as string,
-      t("launcherpage.tip.mod_compatibility") as unknown as string,
-      t("launcherpage.tip.levilamina_tip") as unknown as string,
-      t("launcherpage.tip.star_project") as unknown as string,
-      t("launcherpage.tip.update_notifications") as unknown as string,
-      t("launcherpage.tip.install_addon") as unknown as string,
-      t("launcherpage.tip.feature_request") as unknown as string,
-      t("launcherpage.tip.join_discord") as unknown as string,
-      t("launcherpage.tip.join_qq_group") as unknown as string,
-      t("launcherpage.tip.contribution") as unknown as string,
-      t("launcherpage.tip.open_source") as unknown as string,
-      t("launcherpage.tip.follow_github") as unknown as string,
-      t("launcherpage.tip.check_updates") as unknown as string,
-      t("launcherpage.tip.backup_worlds") as unknown as string,
-      t("launcherpage.tip.customize_launcher") as unknown as string,// 屎山这一块
-    ],
+    () =>
+      LAUNCH_TIP_KEYS.map((key) => String(t(`launcherpage.tip.${key}`))),
     [t],
   );
+  const currentLaunchTip = launchTips[tipIndex] ?? launchTips[0] ?? "";
 
   useEffect(() => {
     startTipTimer(launchTips.length);
@@ -500,7 +504,7 @@ export const LauncherPage = (args: any) => {
                       exit={{ opacity: 0, y: -10 }}
                       className="text-sm text-default-500 dark:text-zinc-400 font-medium truncate absolute inset-0"
                     >
-                      {launchTips[tipIndex]}
+                      {currentLaunchTip}
                     </motion.div>
                   </AnimatePresence>
                 </div>
@@ -986,7 +990,7 @@ export const LauncherPage = (args: any) => {
                       exit={{ opacity: 0, y: -4 }}
                       transition={{ duration: 0.2 }}
                     >
-                      {launchTips[tipIndex]}
+                      {currentLaunchTip}
                     </motion.span>
                   </AnimatePresence>
                 </div>

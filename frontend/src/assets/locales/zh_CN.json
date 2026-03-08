@@ -726,7 +726,10 @@
     "level_name": "存档名称",
     "screenshots": "屏幕截图",
     "no_screenshots": "暂无截图",
-    "delete_screenshot_confirm": "确定要删除截图 {{name}} 吗？"
+    "delete_screenshot_confirm": "确定要删除截图 {{name}} 吗？",
+    "preview_screenshot": "查看大图",
+    "screenshot_viewer_hint": "大图预览",
+    "screenshot_viewer_nav_hint": "可使用 ← / → 键或两侧按钮切换截图"
   },
   "versions": {
     "info": {

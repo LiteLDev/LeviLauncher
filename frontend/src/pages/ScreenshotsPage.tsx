@@ -10,6 +10,7 @@ import {
   addToast,
   Checkbox,
   Image,
+  ModalContent,
 } from "@heroui/react";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -21,6 +22,9 @@ import {
   FaCheckSquare,
   FaCamera,
   FaClock,
+  FaExpand,
+  FaChevronLeft,
+  FaChevronRight,
 } from "react-icons/fa";
 import {
   OpenPathDir,
@@ -38,6 +42,12 @@ import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { formatDate } from "@/utils/formatting";
 import { useSelectionMode } from "@/hooks/useSelectionMode";
+import {
+  BaseModal,
+  BaseModalBody,
+  BaseModalFooter,
+  BaseModalHeader,
+} from "@/components/BaseModal";
 
 interface ScreenshotItem {
   name: string;
@@ -74,6 +84,12 @@ export default function ScreenshotsPage() {
     onOpenChange: delCfmOnOpenChange,
   } = useDisclosure();
   const {
+    isOpen: previewOpen,
+    onOpen: previewOnOpen,
+    onOpenChange: previewOnOpenChange,
+    onClose: previewOnClose,
+  } = useDisclosure();
+  const {
     isOpen: delManyCfmOpen,
     onOpen: delManyCfmOnOpen,
     onOpenChange: delManyCfmOnOpenChange,
@@ -85,6 +101,13 @@ export default function ScreenshotsPage() {
   const player = (location.state as any)?.player || "";
 
   const selection = useSelectionMode(screenshots);
+  const activeShotIndex = React.useMemo(
+    () => screenshots.findIndex((shot) => shot.path === activeShot?.path),
+    [activeShot, screenshots],
+  );
+  const hasPrevShot = activeShotIndex > 0;
+  const hasNextShot =
+    activeShotIndex >= 0 && activeShotIndex < screenshots.length - 1;
 
   const screenshotsRoot = React.useMemo(() => {
     if (!roots.usersRoot || !player) return "";
@@ -160,6 +183,40 @@ export default function ScreenshotsPage() {
   React.useEffect(() => {
     refreshAll();
   }, []);
+
+  React.useEffect(() => {
+    if (!previewOpen) return;
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === "ArrowLeft" && hasPrevShot) {
+        setActiveShot(screenshots[activeShotIndex - 1]);
+      }
+      if (event.key === "ArrowRight" && hasNextShot) {
+        setActiveShot(screenshots[activeShotIndex + 1]);
+      }
+    };
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [activeShotIndex, hasNextShot, hasPrevShot, previewOpen, screenshots]);
+
+  const openPreview = React.useCallback((shot: ScreenshotItem) => {
+    setActiveShot(shot);
+    previewOnOpen();
+  }, [previewOnOpen]);
+
+  const movePreview = React.useCallback(
+    (direction: "prev" | "next") => {
+      if (activeShotIndex < 0) return;
+
+      const targetIndex =
+        direction === "prev" ? activeShotIndex - 1 : activeShotIndex + 1;
+
+      if (targetIndex < 0 || targetIndex >= screenshots.length) return;
+      setActiveShot(screenshots[targetIndex]);
+    },
+    [activeShotIndex, screenshots],
+  );
 
   return (
     <PageContainer ref={scrollRef}>
@@ -254,23 +311,42 @@ export default function ScreenshotsPage() {
                   transition={{ duration: 0.2 }}
                   className={cn(
                     COMPONENT_STYLES.contentListItem,
-                    "relative group cursor-pointer overflow-hidden rounded-2xl",
+                    "relative group overflow-hidden rounded-2xl",
+                    selection.isSelectMode ? "cursor-pointer" : "cursor-default",
                     selection.isSelectMode && selection.selected[s.path]
                       ? "ring-2 ring-primary"
                       : "",
                   )}
                   onClick={() => {
-                    if (selection.isSelectMode) selection.toggleSelect(s.path);
+                    if (selection.isSelectMode) {
+                      selection.toggleSelect(s.path);
+                    }
                   }}
                 >
-                  <div className="aspect-video bg-default-100/50 dark:bg-zinc-800/50 flex items-center justify-center overflow-hidden">
+                  <div className="relative aspect-video bg-default-100/50 dark:bg-zinc-800/50 flex items-center justify-center overflow-hidden">
                     {s.dataUrl ? (
-                      <Image
-                        src={s.dataUrl}
-                        alt={s.name}
-                        className="w-full h-full object-cover"
-                        radius="none"
-                      />
+                      <>
+                        <Image
+                          src={s.dataUrl}
+                          alt={s.name}
+                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
+                          radius="none"
+                        />
+                        {!selection.isSelectMode && (
+                          <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/0 transition-all duration-300 group-hover:bg-black/25">
+                            <Button
+                              size="sm"
+                              radius="full"
+                              variant="flat"
+                              onPress={() => openPreview(s)}
+                              className="pointer-events-auto flex items-center gap-2 border border-white/20 bg-black/45 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:bg-black/55"
+                            >
+                              <FaExpand size={12} />
+                              <span>{t("contentpage.preview_screenshot")}</span>
+                            </Button>
+                          </div>
+                        )}
+                      </>
                     ) : (
                       <FaCamera className="text-3xl text-default-300" />
                     )}
@@ -409,6 +485,161 @@ export default function ScreenshotsPage() {
           }
         }}
       />
+
+      <BaseModal
+        isOpen={previewOpen}
+        onOpenChange={previewOnOpenChange}
+        size="5xl"
+        hideCloseButton={true}
+        isDismissable={true}
+        scrollBehavior="normal"
+        classNames={{
+          base: "w-[min(94vw,1040px)] max-w-[1040px] max-h-[calc(100vh-2.5rem)] overflow-hidden bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
+          wrapper: "overflow-hidden",
+        }}
+      >
+        <ModalContent className="shadow-none">
+          {(onClose) => (
+            <>
+              <BaseModalHeader className="gap-3 pb-2 pt-7 sm:pt-6">
+                <div className="flex items-start justify-between gap-4 pr-2 sm:pr-0">
+                  <div className="min-w-0">
+                    <h2 className="text-xl font-bold text-default-800 dark:text-zinc-100 truncate">
+                      {activeShot?.name || t("contentpage.screenshots")}
+                    </h2>
+                    <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-default-500 dark:text-zinc-400">
+                      <span>
+                        {activeShot?.captureTime
+                          ? formatDate(activeShot.captureTime)
+                          : t("contentpage.screenshots")}
+                      </span>
+                      {activeShotIndex >= 0 && (
+                        <>
+                          <span className="text-default-300 dark:text-zinc-700">•</span>
+                          <span>
+                            {activeShotIndex + 1} / {screenshots.length}
+                          </span>
+                        </>
+                      )}
+                    </div>
+                  </div>
+                  <div className="shrink-0 rounded-full bg-primary-50/80 px-3 py-1 text-xs font-medium text-primary-600 dark:bg-primary-500/10 dark:text-primary-400">
+                    {t("contentpage.screenshot_viewer_hint")}
+                  </div>
+                </div>
+              </BaseModalHeader>
+
+              <BaseModalBody className="overflow-hidden px-4 py-3 sm:px-5">
+                <div className="relative overflow-hidden rounded-[2rem] border border-black/5 bg-default-100/40 dark:border-white/10 dark:bg-zinc-900/40">
+                  <div className="absolute inset-y-0 left-0 z-20 hidden items-center pl-3 sm:flex sm:pl-4">
+                    <Button
+                      isIconOnly
+                      radius="full"
+                      variant="flat"
+                      onPress={() => movePreview("prev")}
+                      isDisabled={!hasPrevShot}
+                      className="bg-white/75 text-default-700 shadow-lg backdrop-blur-md disabled:opacity-30 dark:bg-zinc-900/75 dark:text-zinc-100"
+                    >
+                      <FaChevronLeft />
+                    </Button>
+                  </div>
+
+                  <div className="absolute inset-y-0 right-0 z-20 hidden items-center pr-3 sm:flex sm:pr-4">
+                    <Button
+                      isIconOnly
+                      radius="full"
+                      variant="flat"
+                      onPress={() => movePreview("next")}
+                      isDisabled={!hasNextShot}
+                      className="bg-white/75 text-default-700 shadow-lg backdrop-blur-md disabled:opacity-30 dark:bg-zinc-900/75 dark:text-zinc-100"
+                    >
+                      <FaChevronRight />
+                    </Button>
+                  </div>
+
+                  <AnimatePresence mode="wait">
+                    <motion.div
+                      key={activeShot?.path || "empty-preview"}
+                      initial={{ opacity: 0, scale: 0.985 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.985 }}
+                      transition={{ duration: 0.2, ease: "easeOut" }}
+                      className="flex h-[clamp(260px,52vh,560px)] items-center justify-center p-3 sm:p-4 md:p-5"
+                    >
+                      {activeShot?.dataUrl ? (
+                        <img
+                          src={activeShot.dataUrl}
+                          alt={activeShot.name}
+                          className="max-h-full w-auto max-w-full rounded-[1.5rem] object-contain shadow-[0_18px_50px_rgba(0,0,0,0.18)]"
+                        />
+                      ) : (
+                        <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-default-400 dark:text-zinc-500">
+                          <FaCamera className="text-5xl opacity-30" />
+                          <span>{t("contentpage.no_screenshots")}</span>
+                        </div>
+                      )}
+                    </motion.div>
+                  </AnimatePresence>
+                </div>
+
+                <div className="mt-3 flex items-center justify-center gap-2 sm:hidden">
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    variant="flat"
+                    onPress={() => movePreview("prev")}
+                    isDisabled={!hasPrevShot}
+                    className="bg-default-100/80 dark:bg-zinc-800/80 text-default-700 dark:text-zinc-100"
+                  >
+                    <FaChevronLeft />
+                  </Button>
+                  <Button
+                    isIconOnly
+                    radius="full"
+                    variant="flat"
+                    onPress={() => movePreview("next")}
+                    isDisabled={!hasNextShot}
+                    className="bg-default-100/80 dark:bg-zinc-800/80 text-default-700 dark:text-zinc-100"
+                  >
+                    <FaChevronRight />
+                  </Button>
+                </div>
+              </BaseModalBody>
+
+              <BaseModalFooter className="flex flex-col items-stretch justify-between gap-3 overflow-hidden pt-2 sm:flex-row sm:items-center">
+                <div className="text-sm text-default-500 dark:text-zinc-400">
+                  {t("contentpage.screenshot_viewer_nav_hint")}
+                </div>
+                <div className="flex items-center justify-end gap-2">
+                  <Button
+                    radius="full"
+                    variant="flat"
+                    startContent={<FaFolderOpen />}
+                    onPress={() => {
+                      if (activeShot?.dir) {
+                        OpenPathDir(activeShot.dir);
+                      } else if (screenshotsRoot) {
+                        OpenPathDir(screenshotsRoot);
+                      }
+                    }}
+                    className="bg-default-100/80 dark:bg-zinc-800/80 text-default-700 dark:text-zinc-100"
+                  >
+                    {t("common.open")}
+                  </Button>
+                  <Button
+                    radius="full"
+                    color="primary"
+                    className="font-semibold shadow-lg"
+                    onPress={onClose}
+                  >
+                    {t("common.close")}
+                  </Button>
+                </div>
+              </BaseModalFooter>
+            </>
+          )}
+        </ModalContent>
+      </BaseModal>
     </PageContainer>
   );
 }

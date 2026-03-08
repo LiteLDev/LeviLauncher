@@ -726,7 +726,10 @@
     "level_name": "Level Name",
     "screenshots": "Screenshots",
     "no_screenshots": "No screenshots",
-    "delete_screenshot_confirm": "Are you sure you want to delete screenshot {{name}}?"
+    "delete_screenshot_confirm": "Are you sure you want to delete screenshot {{name}}?",
+    "preview_screenshot": "View larger",
+    "screenshot_viewer_hint": "Large preview",
+    "screenshot_viewer_nav_hint": "Use ← / → keys or buttons to switch screenshots"
   },
   "versions": {
     "info": {

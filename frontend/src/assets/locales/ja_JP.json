@@ -21,6 +21,7 @@
     "open_exe_dir": "ゲームのインストール先を開く",
     "register_system_button": "システムに登録",
     "registered_tip": "登録済み",
+    "levilamina_update_available": "更新あり",
     "register": {
       "installing": {
         "title": "システムに登録中",
@@ -752,7 +753,7 @@
         "ll_not_installed": "未インストール",
         "ll_select_version": "LeviLamina バージョン",
         "ll_select_placeholder": "LeviLamina バージョンを選択",
-        "ll_select_guidance": "インストールまたは更新する LeviLamina バージョンを選択してください。",
+        "ll_select_guidance": "インストール、アップグレード、ダウングレード、または再インストールする LeviLamina バージョンを選択してください。",
         "ll_upgrade_only_hint": "インスタンス設定ではアップグレードのみ可能です。",
         "ll_only_latest_when_current_unknown": "現在のバージョンを解析できないため、最新バージョンへの更新のみ可能です。",
         "ll_remove_confirm_title": "LeviLamina の削除確認",
@@ -1070,8 +1071,13 @@
       "downgrade": "ダウングレード",
       "reinstall": "再インストール",
       "instance_game_version": "Game version: {{version}}",
+      "instance_game_version_label": "Game version",
       "select_instance_title": "Select Target Instance",
       "installing_version_label": "Installing package version",
+      "variant_label": "Variant",
+      "variant_hint_keep_default": "Usually no change needed",
+      "variant_placeholder": "Select a variant",
+      "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
       "checking_ll_state": "Checking LeviLamina status...",
       "ll_missing_auto_install_hint": "LeviLamina is not installed. Clicking Install will first install LeviLamina {{version}}, then install this package.",
@@ -1086,7 +1092,17 @@
       "downgrade_success": "ダウングレードが完了しました",
       "reinstall_success": "再インストールが完了しました",
       "current_installed_version": "Current installed version: {{version}}",
+      "current_installed_version_label": "Current installed version",
       "checking_current_installed_version": "Checking currently installed version..."
+    },
+    "guide": {
+      "open_button": "開発者ガイド",
+      "title": "LIP 開発者ガイド",
+      "description": "自分の Mod を LeviLauncher の LIP ページに掲載したい場合は、LIP の package_manifest 仕様に従って公開してください。",
+      "manifest_hint": "このダイアログは開発者向けの簡易案内です。フィールド名、必須項目、例、検証ルールの詳細は公式ドキュメントを参照してください。",
+      "variant_hint": "variant の label に client を含む場合に限り、ランチャーに収録されます。デフォルトでは \"label\": \"client\" を使用し、サブ拡張は \"label\": \"client_xxxx\" または \"label\": \"client\\xxxx\" を使用してください。",
+      "docs_button": "完全な仕様を見る",
+      "close_button": "閉じる"
     },
     "title": "lip Content",
     "sort_options": {

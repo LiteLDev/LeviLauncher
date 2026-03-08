@@ -16,6 +16,7 @@ import {
   Image,
   Select,
   SelectItem,
+  Spinner,
   Skeleton,
   Tab,
   Table,
@@ -65,6 +66,7 @@ import {
   resolveSupportedGameVersionsByLLRanges,
   type LIPPackageDetail,
   type LIPPackageFileInfo,
+  type LIPPackageVariantDetail,
 } from "@/utils/content";
 
 type GithubRepoRef = {
@@ -121,6 +123,17 @@ const INSTALL_DIALOG_ACTION_SUCCESS_KEYS: Record<
   upgrade: "lip.files.upgrade_success",
   downgrade: "lip.files.downgrade_success",
   reinstall: "lip.files.reinstall_success",
+};
+
+const getVariantDisplayLabel = (
+  variant: Pick<LIPPackageVariantDetail, "key" | "label"> | null | undefined,
+  defaultLabel: string,
+): string => {
+  const explicitLabel = String(variant?.label || "").trim();
+  if (explicitLabel) return explicitLabel;
+
+  const variantKey = String(variant?.key || "").trim();
+  return variantKey || defaultLabel;
 };
 
 const hasUrlScheme = (value: string): boolean =>
@@ -253,6 +266,7 @@ const LIPPackagePage: React.FC = () => {
   const [error, setError] = useState("");
   const [selectedTab, setSelectedTab] = useState<string>("description");
   const [readmeContent, setReadmeContent] = useState<string>("");
+  const [readmeLoading, setReadmeLoading] = useState<boolean>(false);
   const [instanceOptions, setInstanceOptions] = useState<string[]>([]);
   const [selectedInstance, setSelectedInstance] = useState<string>("");
   const [instanceGameVersions, setInstanceGameVersions] = useState<
@@ -275,6 +289,8 @@ const LIPPackagePage: React.FC = () => {
   const [mappingUnavailable, setMappingUnavailable] = useState<boolean>(false);
   const [installDialogOpen, setInstallDialogOpen] = useState<boolean>(false);
   const [installDialogTriggerVersion, setInstallDialogTriggerVersion] =
+    useState<string>("");
+  const [selectedVariantIdentifier, setSelectedVariantIdentifier] =
     useState<string>("");
   const [actionRunning, setActionRunning] = useState<boolean>(false);
 
@@ -541,8 +557,13 @@ const LIPPackagePage: React.FC = () => {
   useEffect(() => {
     if (!pkg?.projectUrl) {
       setReadmeContent("");
+      setReadmeLoading(false);
       return;
     }
+
+    let cancelled = false;
+    setReadmeContent("");
+    setReadmeLoading(true);
 
     const fetchReadme = async () => {
       try {
@@ -550,15 +571,27 @@ const LIPPackagePage: React.FC = () => {
           "GetLIPPackageReadme",
           pkg.projectUrl,
         );
+        if (cancelled) return;
         setReadmeContent(String(text || ""));
         return;
       } catch (readmeError) {
         console.warn("Failed to fetch README", readmeError);
       }
-      setReadmeContent("");
+
+      if (!cancelled) {
+        setReadmeContent("");
+      }
     };
 
-    void fetchReadme();
+    void fetchReadme().finally(() => {
+      if (!cancelled) {
+        setReadmeLoading(false);
+      }
+    });
+
+    return () => {
+      cancelled = true;
+    };
   }, [callMinecraftByName, pkg?.projectUrl]);
 
   useEffect(() => {
@@ -708,9 +741,78 @@ const LIPPackagePage: React.FC = () => {
     };
   }, []);
 
+  const routeVariantIdentifier = useMemo<string>(() => {
+    const raw = String(identifier || "").trim();
+    return raw.includes("#") ? raw : "";
+  }, [identifier]);
+
+  const packageVariants = useMemo<LIPPackageVariantDetail[]>(
+    () => pkg?.variantDetails || [],
+    [pkg?.variantDetails],
+  );
+
+  const visiblePackageVariants = useMemo<LIPPackageVariantDetail[]>(
+    () =>
+      packageVariants.filter((variant) =>
+        String(variant.key || "")
+          .trim()
+          .toLowerCase()
+          .includes("client"),
+      ),
+    [packageVariants],
+  );
+
+  const activeVariant = useMemo<LIPPackageVariantDetail | null>(() => {
+    if (visiblePackageVariants.length === 0) return null;
+
+    const candidates = [selectedVariantIdentifier, routeVariantIdentifier]
+      .map((value) => String(value || "").trim().toLowerCase())
+      .filter(Boolean);
+    for (const candidate of candidates) {
+      const matched = visiblePackageVariants.find(
+        (variant) =>
+          String(variant.packageIdentifier || "").trim().toLowerCase() ===
+          candidate,
+      );
+      if (matched) return matched;
+    }
+
+    const preferredVariantKey = String(pkg?.preferredVariantKey || "")
+      .trim()
+      .toLowerCase();
+    if (preferredVariantKey) {
+      const preferredVariant = visiblePackageVariants.find(
+        (variant) => String(variant.key || "").trim().toLowerCase() === preferredVariantKey,
+      );
+      if (preferredVariant) return preferredVariant;
+    }
+
+    return visiblePackageVariants[0] || null;
+  }, [
+    visiblePackageVariants,
+    pkg?.preferredVariantKey,
+    routeVariantIdentifier,
+    selectedVariantIdentifier,
+  ]);
+
+  const activePackageIdentifier = useMemo<string>(
+    () => String(activeVariant?.packageIdentifier || pkg?.identifier || "").trim(),
+    [activeVariant?.packageIdentifier, pkg?.identifier],
+  );
+
+  const activeVariantDisplayLabel = useMemo<string>(
+    () => getVariantDisplayLabel(activeVariant, t("lip.files.variant_default")),
+    [activeVariant, t],
+  );
+
+  const activeVariantFiles = useMemo<LIPPackageFileInfo[]>(
+    () => activeVariant?.files || pkg?.files || [],
+    [activeVariant?.files, pkg?.files],
+  );
+
   const filesWithGameVersionState = useMemo<FileGameVersionState[]>(
     () =>
-      (pkg?.files || []).map((file) => {
+      activeVariantFiles.map((file) => {
         const hasLLRequirement = file.llDependencyRanges.length > 0;
         const supportedGameVersions = hasLLRequirement
           ? resolveSupportedGameVersionsByLLRanges(
@@ -725,7 +827,7 @@ const LIPPackagePage: React.FC = () => {
           hasLLRequirement,
         };
       }),
-    [pkg?.files, gameToLLVersions],
+    [activeVariantFiles, gameToLLVersions],
   );
 
   const installDialogFileState = useMemo<FileGameVersionState | null>(() => {
@@ -873,12 +975,16 @@ const LIPPackagePage: React.FC = () => {
   }, [installDialogSelectedInstance, queryInstanceLLState]);
 
   useEffect(() => {
-    setInstancePackageStates({});
+    setSelectedVariantIdentifier("");
   }, [pkg?.identifier]);
 
   useEffect(() => {
+    setInstancePackageStates({});
+  }, [activePackageIdentifier]);
+
+  useEffect(() => {
     const instanceName = String(installDialogSelectedInstance || "").trim();
-    const packageIdentifier = String(pkg?.identifier || "").trim();
+    const packageIdentifier = activePackageIdentifier;
     if (!installDialogOpen || !instanceName || !packageIdentifier) return;
     const existingState = instancePackageStates[instanceName];
     if (existingState && !existingState.loading) return;
@@ -909,9 +1015,9 @@ const LIPPackagePage: React.FC = () => {
       cancelled = true;
     };
   }, [
+    activePackageIdentifier,
     installDialogOpen,
     installDialogSelectedInstance,
-    pkg?.identifier,
     queryInstancePackageState,
   ]);
 
@@ -1005,7 +1111,7 @@ const LIPPackagePage: React.FC = () => {
         async ({ addLog }) => {
           addLog(
             "info",
-            `${t(installDialogActionLabelKey)} ${pkg.identifier}@${installDialogTriggerVersion}`,
+            `${t(installDialogActionLabelKey)} ${activePackageIdentifier}@${installDialogTriggerVersion}`,
           );
 
           if (dialogRequiresLL && !dialogLLInstalled) {
@@ -1041,7 +1147,7 @@ const LIPPackagePage: React.FC = () => {
           const err = await callMinecraftByName<string>(
             "InstallLIPPackage",
             installDialogSelectedInstance,
-            pkg.identifier,
+            activePackageIdentifier,
             installDialogTriggerVersion,
           );
           if (String(err || "").trim()) {
@@ -1065,7 +1171,7 @@ const LIPPackagePage: React.FC = () => {
       }
       const packageState = await ensurePackageInstallState(
         installDialogSelectedInstance,
-        pkg.identifier,
+        activePackageIdentifier,
       );
       setInstancePackageStates((prev) => ({
         ...prev,
@@ -1085,6 +1191,7 @@ const LIPPackagePage: React.FC = () => {
       setActionRunning(false);
     }
   }, [
+    activePackageIdentifier,
     callMinecraftByName,
     dialogAutoInstallLLVersion,
     dialogLLInstalled,
@@ -1335,7 +1442,12 @@ const LIPPackagePage: React.FC = () => {
                 >
                   <Tab key="description" title={t("common.details")}>
                     <div className="prose dark:prose-invert max-w-none">
-                      {readmeContent ? (
+                      {readmeLoading ? (
+                        <div className="flex flex-col items-center justify-center py-12 gap-3 text-default-400 dark:text-zinc-500">
+                          <Spinner color="primary" size="lg" />
+                          <p>{t("common.loading")}</p>
+                        </div>
+                      ) : readmeContent ? (
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
                           components={markdownComponents}
@@ -1352,6 +1464,52 @@ const LIPPackagePage: React.FC = () => {
 
                   <Tab key="files" title={t("lip.files.tab_label")}>
                     <div className="flex flex-col gap-4">
+                      {visiblePackageVariants.length > 1 ? (
+                        <div className="max-w-sm">
+                          <Select
+                            label={
+                              <div className="flex items-center gap-2">
+                                <span>{t("lip.files.variant_label")}</span>
+                                <span className="text-tiny font-normal text-default-400 dark:text-zinc-500">
+                                  {t("lip.files.variant_hint_keep_default")}
+                                </span>
+                              </div>
+                            }
+                            placeholder={t("lip.files.variant_placeholder")}
+                            selectedKeys={
+                              activePackageIdentifier ? [activePackageIdentifier] : []
+                            }
+                            onChange={(e) =>
+                              setSelectedVariantIdentifier(String(e.target.value || "").trim())
+                            }
+                            size="sm"
+                            classNames={COMPONENT_STYLES.select}
+                            isDisabled={actionRunning}
+                          >
+                            {visiblePackageVariants.map((variant) => {
+                              const label = getVariantDisplayLabel(
+                                variant,
+                                t("lip.files.variant_default"),
+                              );
+                              return (
+                                <SelectItem
+                                  key={variant.packageIdentifier}
+                                  textValue={label}
+                                >
+                                  <div className="flex flex-col">
+                                    <span className="text-small">{label}</span>
+                                    <span className="text-tiny text-default-400 font-mono">
+                                      {variant.key
+                                        ? variant.packageIdentifier
+                                        : String(pkg?.identifier || "").trim()}
+                                    </span>
+                                  </div>
+                                </SelectItem>
+                              );
+                            })}
+                          </Select>
+                        </div>
+                      ) : null}
                       {filesWithGameVersionState.length > 0 ? (
                         <Table
                           aria-label={t("lip.files.table_aria_label")}
@@ -1602,25 +1760,29 @@ const LIPPackagePage: React.FC = () => {
               </SelectItem>
             ))}
           </Select>
-          <div className="text-small text-default-700 dark:text-zinc-300 flex items-center gap-2">
-            <span>{t("lip.files.installing_version_label")}:</span>
-            <Chip size="sm" variant="flat" className="font-mono">
-              {installDialogTriggerVersion || t("contentpage.none")}
-            </Chip>
-          </div>
-          <div className="text-small text-default-600 dark:text-zinc-300">
-            {dialogInstancePackageState?.loading
-              ? t("lip.files.checking_current_installed_version")
-              : t("lip.files.current_installed_version", {
-                  version:
-                    dialogInstalledPackageVersion || t("contentpage.none"),
-                })}
-          </div>
-          <div className="text-small text-default-600 dark:text-zinc-300">
-            {t("lip.files.instance_game_version", {
-              version:
-                installDialogInstanceGameVersion || t("contentpage.none"),
-            })}
+          <div className="grid grid-cols-2 gap-x-8 gap-y-3">
+            <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
+              <span>{t("lip.files.variant_label")}:</span>{" "}
+              <span>{activeVariantDisplayLabel || t("contentpage.none")}</span>
+            </div>
+            <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
+              <span>{t("lip.files.installing_version_label")}:</span>{" "}
+              <span>{installDialogTriggerVersion || t("contentpage.none")}</span>
+            </div>
+            <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
+              {dialogInstancePackageState?.loading ? (
+                t("lip.files.checking_current_installed_version")
+              ) : (
+                <>
+                  <span>{t("lip.files.current_installed_version_label")}:</span>{" "}
+                  <span>{dialogInstalledPackageVersion || t("contentpage.none")}</span>
+                </>
+              )}
+            </div>
+            <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
+              <span>{t("lip.files.instance_game_version_label")}:</span>{" "}
+              <span>{installDialogInstanceGameVersion || t("contentpage.none")}</span>
+            </div>
           </div>
           {dialogRequiresLL && dialogLLStateLoading ? (
             <div className="text-xs text-default-500 dark:text-zinc-400">

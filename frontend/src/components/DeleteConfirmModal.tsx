@@ -7,7 +7,7 @@ import { UnifiedModal } from "./UnifiedModal";
 export interface DeleteConfirmModalProps {
   isOpen: boolean;
   onOpenChange: (isOpen: boolean) => void;
-  onConfirm: () => void | Promise<void>;
+  onConfirm: () => boolean | void | Promise<boolean | void>;
   title: string;
   description?: React.ReactNode;
   itemName?: string;
@@ -15,6 +15,7 @@ export interface DeleteConfirmModalProps {
   confirmDisabled?: boolean;
   error?: string | null;
   warning?: string;
+  confirmText?: string;
 }
 
 export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
@@ -28,6 +29,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   confirmDisabled = false,
   error,
   warning,
+  confirmText,
 }) => {
   const { t } = useTranslation();
 
@@ -40,10 +42,11 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       icon={<FiTrash2 className="w-6 h-6 text-danger-500" />}
       isDismissable={!isPending}
       hideCloseButton={isPending}
-      confirmText={t("common.delete")}
+      confirmText={confirmText || t("common.delete")}
       cancelText={t("common.cancel")}
       onConfirm={async () => {
-        await onConfirm();
+        const shouldClose = await onConfirm();
+        if (shouldClose === false) return;
         onOpenChange(false);
       }}
       onCancel={() => onOpenChange(false)}

@@ -21,6 +21,7 @@
     "open_exe_dir": "Открыть папку установки игры",
     "register_system_button": "Зарегистрировать в системе",
     "registered_tip": "Зарегистрирован",
+    "levilamina_update_available": "Доступно обновление",
     "register": {
       "installing": {
         "title": "Регистрация в системе",
@@ -752,7 +753,7 @@
         "ll_not_installed": "Не установлено",
         "ll_select_version": "Версия LeviLamina",
         "ll_select_placeholder": "Выберите версию LeviLamina",
-        "ll_select_guidance": "Выберите версию LeviLamina, которую нужно установить или обновить.",
+        "ll_select_guidance": "Выберите версию LeviLamina, которую нужно установить, обновить, понизить или переустановить.",
         "ll_upgrade_only_hint": "В настройках инстанса доступны только обновления до более новой версии.",
         "ll_only_latest_when_current_unknown": "Текущую версию не удалось распознать; можно обновиться только до последней версии.",
         "ll_remove_confirm_title": "Подтвердите удаление LeviLamina",
@@ -1070,8 +1071,13 @@
       "downgrade": "Понизить версию",
       "reinstall": "Переустановить",
       "instance_game_version": "Game version: {{version}}",
+      "instance_game_version_label": "Game version",
       "select_instance_title": "Select Target Instance",
       "installing_version_label": "Installing package version",
+      "variant_label": "Variant",
+      "variant_hint_keep_default": "Usually no change needed",
+      "variant_placeholder": "Select a variant",
+      "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
       "checking_ll_state": "Checking LeviLamina status...",
       "ll_missing_auto_install_hint": "LeviLamina is not installed. Clicking Install will first install LeviLamina {{version}}, then install this package.",
@@ -1086,7 +1092,17 @@
       "downgrade_success": "Понижение версии выполнено успешно",
       "reinstall_success": "Переустановка выполнена успешно",
       "current_installed_version": "Current installed version: {{version}}",
+      "current_installed_version_label": "Current installed version",
       "checking_current_installed_version": "Checking currently installed version..."
+    },
+    "guide": {
+      "open_button": "Руководство для разработчиков",
+      "title": "Руководство для разработчиков LIP",
+      "description": "Если вы хотите, чтобы ваш мод появился на странице LIP в LeviLauncher, публикуйте его по спецификации LIP package_manifest.",
+      "manifest_hint": "Это краткая памятка для разработчиков. Названия полей, обязательные поля, примеры и правила валидации смотрите в официальной документации.",
+      "variant_hint": "Вариант будет включён в лаунчер только если его label содержит client. По умолчанию используйте \"label\": \"client\"; для подрасширений используйте \"label\": \"client_xxxx\" или \"label\": \"client\\xxxx\".",
+      "docs_button": "Открыть спецификацию",
+      "close_button": "Закрыть"
     },
     "title": "lip Content",
     "sort_options": {

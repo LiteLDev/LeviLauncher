@@ -18,17 +18,27 @@ var lipIdentifierPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$
 
 const leviLaminaClientPackageRefBase = "github.com/LiteLDev/LeviLamina#client"
 
+type lipPackageIdentifierParts struct {
+	base             string
+	variant          string
+	hasVariantMarker bool
+}
+
 func normalizeLIPPackageIdentifier(identifier string) string {
 	return strings.TrimSpace(identifier)
 }
 
-func canonicalizeLIPPackageIdentifier(identifier string) string {
+func canonicalizeLIPPackageIdentifier(identifier string) lipPackageIdentifierParts {
 	normalized := normalizeLIPPackageIdentifier(identifier)
 	if normalized == "" {
-		return ""
+		return lipPackageIdentifierParts{}
 	}
 
+	hasVariantMarker := false
+	variant := ""
 	if idx := strings.Index(normalized, "#"); idx >= 0 {
+		hasVariantMarker = true
+		variant = strings.TrimSpace(normalized[idx+1:])
 		normalized = strings.TrimSpace(normalized[:idx])
 	}
 	lowerNormalized := strings.ToLower(normalized)
@@ -39,26 +49,45 @@ func canonicalizeLIPPackageIdentifier(identifier string) string {
 	}
 	normalized = strings.Trim(normalized, "/")
 	if normalized == "" {
-		return ""
+		return lipPackageIdentifierParts{}
 	}
 
 	parts := strings.FieldsFunc(normalized, func(r rune) bool { return r == '/' })
 	if len(parts) == 2 {
-		return strings.Join(parts, "/")
+		return lipPackageIdentifierParts{
+			base:             strings.Join(parts, "/"),
+			variant:          variant,
+			hasVariantMarker: hasVariantMarker,
+		}
 	}
 	if len(parts) == 3 && strings.Contains(parts[0], ".") {
-		return fmt.Sprintf("%s/%s", parts[1], parts[2])
+		return lipPackageIdentifierParts{
+			base:             fmt.Sprintf("%s/%s", parts[1], parts[2]),
+			variant:          variant,
+			hasVariantMarker: hasVariantMarker,
+		}
 	}
 
-	return ""
+	return lipPackageIdentifierParts{}
 }
 
 func buildLIPPackageRefBase(identifier string) (string, string, bool) {
-	normalizedIdentifier := canonicalizeLIPPackageIdentifier(identifier)
-	if !lipIdentifierPattern.MatchString(normalizedIdentifier) {
+	parts := canonicalizeLIPPackageIdentifier(identifier)
+	if !lipIdentifierPattern.MatchString(parts.base) {
 		return "", "", false
 	}
-	return normalizedIdentifier, fmt.Sprintf("github.com/%s#client", normalizedIdentifier), true
+
+	normalizedIdentifier := parts.base
+	packageRefBase := fmt.Sprintf("github.com/%s#client", parts.base)
+	if parts.variant != "" {
+		normalizedIdentifier = fmt.Sprintf("%s#%s", normalizedIdentifier, parts.variant)
+		packageRefBase = fmt.Sprintf("github.com/%s#%s", parts.base, parts.variant)
+	} else if parts.hasVariantMarker {
+		normalizedIdentifier = normalizedIdentifier + "#"
+		packageRefBase = fmt.Sprintf("github.com/%s", parts.base)
+	}
+
+	return normalizedIdentifier, packageRefBase, true
 }
 
 func resolveLIPTargetDir(targetName string) (string, string) {

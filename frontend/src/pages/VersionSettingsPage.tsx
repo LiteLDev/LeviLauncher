@@ -40,6 +40,7 @@ export default function VersionSettingsPage() {
   const currentLLVersionText =
     vs.currentLLVersion ||
     (t("versions.edit.loader.ll_not_installed") as unknown as string);
+  const llInstallActionLabel = t(vs.llInstallActionLabelKey) as string;
 
   return (
     <PageContainer className="relative" animate={false}>
@@ -417,9 +418,7 @@ export default function VersionSettingsPage() {
                             }
                             isLoading={vs.installingLL}
                           >
-                            {vs.isLLInstalled
-                              ? t("common.update")
-                              : t("downloadpage.install.levilamina_label")}
+                            {t(vs.llInstallActionLabelKey)}
                           </Button>
                         </>
                       ) : (
@@ -729,8 +728,7 @@ export default function VersionSettingsPage() {
         </div>
       </UnifiedModal>
 
-      <UnifiedModal
-        size="md"
+      <DeleteConfirmModal
         isOpen={vs.llUninstallConfirmOpen}
         onOpenChange={(open) => {
           if (open) {
@@ -739,38 +737,18 @@ export default function VersionSettingsPage() {
           }
           vs.closeLLUninstallConfirm();
         }}
-        type="error"
+        onConfirm={vs.confirmUninstallLL}
         title={t("versions.edit.loader.ll_remove_confirm_title")}
-        cancelText={t("common.cancel")}
+        description={t("versions.edit.loader.ll_remove_confirm_body")}
+        itemName="LeviLamina"
+        confirmDisabled={vs.llUninstallBlocked}
+        warning={
+          vs.llUninstallWarning ||
+          t("versions.edit.loader.ll_remove_confirm_warning")
+        }
+        isPending={vs.uninstallingLL}
         confirmText={t("common.remove")}
-        showCancelButton
-        isDismissable={!vs.uninstallingLL}
-        onCancel={() => vs.closeLLUninstallConfirm()}
-        onConfirm={async () => {
-          const ok = await vs.confirmUninstallLL();
-          if (ok) {
-            vs.closeLLUninstallConfirm();
-          }
-        }}
-        confirmButtonProps={{
-          color: "danger",
-          isLoading: vs.uninstallingLL,
-          isDisabled: vs.uninstallingLL,
-          className: "font-bold shadow-lg shadow-danger-500/20",
-        }}
-        cancelButtonProps={{
-          isDisabled: vs.uninstallingLL,
-        }}
-      >
-        <div className="space-y-3">
-          <p className="text-sm text-default-700 dark:text-zinc-300">
-            {t("versions.edit.loader.ll_remove_confirm_body")}
-          </p>
-          <p className="text-tiny text-danger-500 dark:text-danger-400 font-semibold">
-            {t("versions.edit.loader.ll_remove_confirm_warning")}
-          </p>
-        </div>
-      </UnifiedModal>
+      />
 
       <UnifiedModal
         size="md"
@@ -779,11 +757,7 @@ export default function VersionSettingsPage() {
         type="primary"
         title={t("versions.edit.loader.ll_select_version")}
         cancelText={t("common.cancel")}
-        confirmText={
-          vs.isLLInstalled
-            ? t("common.update")
-            : t("downloadpage.install.levilamina_label")
-        }
+        confirmText={t(vs.llInstallActionLabelKey)}
         showCancelButton
         onCancel={() => vs.llVersionSelectOnClose()}
         onConfirm={async () => {
@@ -791,9 +765,7 @@ export default function VersionSettingsPage() {
         }}
         confirmButtonProps={{
           isLoading: vs.installingLL,
-          isDisabled:
-            !vs.selectedLLVersion ||
-            (vs.isLLInstalled && !vs.canInstallSelectedLLVersion),
+          isDisabled: !vs.selectedLLVersion || !vs.canInstallSelectedLLVersion,
         }}
       >
         <div className="space-y-3">
@@ -825,9 +797,7 @@ export default function VersionSettingsPage() {
               <SelectItem
                 key={version}
                 textValue={version}
-                isDisabled={
-                  vs.llOnlyLatestSelectable && version !== vs.latestLLVersion
-                }
+                isDisabled={false}
               >
                 {version}
               </SelectItem>
@@ -838,6 +808,44 @@ export default function VersionSettingsPage() {
               {t(vs.llInstallBlockedReasonKey)}
             </p>
           ) : null}
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
+        size="md"
+        isOpen={vs.llInstallConfirmOpen}
+        onOpenChange={(open) => {
+          if (open) {
+            vs.openLLInstallConfirm();
+            return;
+          }
+          vs.closeLLInstallConfirm();
+        }}
+        type="primary"
+        title={t("lip.package.confirm_install_title")}
+        confirmText={t("common.confirm")}
+        cancelText={t("common.cancel")}
+        showCancelButton
+        isDismissable={!vs.installingLL}
+        onCancel={() => vs.closeLLInstallConfirm()}
+        onConfirm={async () => {
+          await vs.confirmInstallLeviLaminaAction();
+        }}
+        confirmButtonProps={{
+          isLoading: vs.installingLL,
+          isDisabled: !vs.resolvedLLTargetVersion || vs.installingLL,
+        }}
+        cancelButtonProps={{
+          isDisabled: vs.installingLL,
+        }}
+      >
+        <div className="text-sm text-default-700 dark:text-zinc-300 whitespace-pre-wrap">
+          {t("lip.package.confirm_install_body", {
+            action: llInstallActionLabel,
+            package: "LeviLamina",
+            version: vs.resolvedLLTargetVersion || "-",
+            instance: vs.targetName || "-",
+          })}
         </div>
       </UnifiedModal>
 

@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -353,14 +354,25 @@ func (s *VersionService) DeleteVersionFolder(name string) string {
 }
 
 func (s *VersionService) RegisterVersionWithWdapp(name string, isPreview bool) string {
+	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" {
+		log.Printf("VersionService.RegisterVersionWithWdapp: version name is empty")
+		return "ERR_TARGET_DIR_NOT_SPECIFIED"
+	}
 	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
+		log.Printf("VersionService.RegisterVersionWithWdapp: failed to access versions dir for name=%s: %v", trimmedName, err)
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
-	folder := filepath.Join(vdir, strings.TrimSpace(name))
-	_ = gdk.UnregisterIfExists(isPreview)
+	folder := filepath.Join(vdir, trimmedName)
+	defer mcservice.ReconcileRegisteredFlags()
+	log.Printf("VersionService.RegisterVersionWithWdapp: start name=%s isPreview=%t folder=%s", trimmedName, isPreview, folder)
+	if unregisterMsg := gdk.UnregisterIfExists(isPreview); unregisterMsg != "" {
+		log.Printf("VersionService.RegisterVersionWithWdapp: pre-unregister returned %s for name=%s isPreview=%t", unregisterMsg, trimmedName, isPreview)
+	}
 	msg := gdk.RegisterVersionFolder(folder)
 	if msg != "" {
+		log.Printf("VersionService.RegisterVersionWithWdapp: register failed name=%s folder=%s code=%s", trimmedName, folder, msg)
 		return msg
 	}
 	pkg := "MICROSOFT.MINECRAFTUWP"
@@ -368,33 +380,49 @@ func (s *VersionService) RegisterVersionWithWdapp(name string, isPreview bool) s
 		pkg = "Microsoft.MinecraftWindowsBeta"
 	}
 	if info, e := registry.GetAppxInfo(pkg); e == nil && info != nil {
-		expected := normalizePath(filepath.Join(vdir, strings.TrimSpace(name)))
+		expected := normalizePath(folder)
 		loc := normalizePath(info.InstallLocation)
 		flag := loc != "" && loc == expected
+		log.Printf("VersionService.RegisterVersionWithWdapp: appx package=%s installLocation=%s expected=%s registered=%t", pkg, loc, expected, flag)
 		if m, er := versions.ReadMeta(folder); er == nil {
 			m.Registered = flag
 			_ = versions.WriteMeta(folder, m)
+		} else {
+			log.Printf("VersionService.RegisterVersionWithWdapp: read meta failed folder=%s: %v", folder, er)
 		}
+	} else if e != nil {
+		log.Printf("VersionService.RegisterVersionWithWdapp: GetAppxInfo failed for package=%s: %v", pkg, e)
 	}
-	mcservice.ReconcileRegisteredFlags()
+	log.Printf("VersionService.RegisterVersionWithWdapp: completed name=%s isPreview=%t folder=%s", trimmedName, isPreview, folder)
 	return msg
 }
 
 func (s *VersionService) UnregisterVersionByName(name string) string {
+	trimmedName := strings.TrimSpace(name)
+	if trimmedName == "" {
+		log.Printf("VersionService.UnregisterVersionByName: version name is empty")
+		return "ERR_TARGET_DIR_NOT_SPECIFIED"
+	}
 	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
+		log.Printf("VersionService.UnregisterVersionByName: failed to access versions dir for name=%s: %v", trimmedName, err)
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
-	folder := filepath.Join(vdir, strings.TrimSpace(name))
+	folder := filepath.Join(vdir, trimmedName)
+	defer mcservice.ReconcileRegisteredFlags()
+	log.Printf("VersionService.UnregisterVersionByName: start name=%s folder=%s", trimmedName, folder)
 	msg := gdk.UnregisterVersionFolder(folder)
 	if msg != "" {
+		log.Printf("VersionService.UnregisterVersionByName: unregister failed name=%s folder=%s code=%s", trimmedName, folder, msg)
 		return msg
 	}
 	if m, er := versions.ReadMeta(folder); er == nil {
 		m.Registered = false
 		_ = versions.WriteMeta(folder, m)
+	} else {
+		log.Printf("VersionService.UnregisterVersionByName: read meta failed folder=%s: %v", folder, er)
 	}
-	mcservice.ReconcileRegisteredFlags()
+	log.Printf("VersionService.UnregisterVersionByName: completed name=%s folder=%s", trimmedName, folder)
 	return ""
 }
 

@@ -41,6 +41,8 @@ import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { useLauncher } from "@/hooks/useLauncher";
+import { useModIntelligence } from "@/utils/ModIntelligenceContext";
+import { useLeviLamina } from "@/utils/LeviLaminaContext";
 
 const LAUNCH_TIP_KEYS = [
   "version_selector",
@@ -62,6 +64,9 @@ const LAUNCH_TIP_KEYS = [
 
 export const LauncherPage = (args: any) => {
   const { t } = useTranslation();
+  const { ensureInstanceHydrated, getInstanceSnapshot, snapshotRevision } =
+    useModIntelligence();
+  const { getLatestLLVersion, compareLLVersions } = useLeviLamina();
 
   const {
     // State
@@ -129,6 +134,10 @@ export const LauncherPage = (args: any) => {
     handleLaunchFailedForceRun,
     handleGdkMissingGoSettings,
   } = useLauncher(args);
+  const currentVersionName = String(currentVersion || "").trim();
+  const currentVersionInfo = currentVersionName
+    ? localVersionMap.get(currentVersionName)
+    : undefined;
 
   const launchTips = useMemo(
     () => LAUNCH_TIP_KEYS.map((key) => String(t(`launcherpage.tip.${key}`))),
@@ -142,6 +151,16 @@ export const LauncherPage = (args: any) => {
       stopTipTimer();
     };
   }, [launchTips.length, startTipTimer, stopTipTimer]);
+
+  useEffect(() => {
+    if (!currentVersionName || !currentVersionInfo?.isLeviLaminaInstalled) {
+      return;
+    }
+    void ensureInstanceHydrated(currentVersionName, {
+      background: true,
+      reason: "launcher-hero-ll-chip",
+    });
+  }, [currentVersionInfo?.isLeviLaminaInstalled, currentVersionName, ensureInstanceHydrated]);
 
   const worldsLabel = t("content.count.worlds") as string;
   const resourceLabel = t("content.count.resource_packs") as string;
@@ -161,12 +180,45 @@ export const LauncherPage = (args: any) => {
     () => buildVersionMenuItems(t("common.empty") as string),
     [buildVersionMenuItems, t],
   );
-  const isCurrentVersionRegistered = Boolean(
-    localVersionMap.get(currentVersion)?.isRegistered,
+  const currentInstanceSnapshot = useMemo(
+    () =>
+      currentVersionName ? getInstanceSnapshot(currentVersionName) : null,
+    [currentVersionName, getInstanceSnapshot, snapshotRevision],
   );
+  const isCurrentVersionRegistered = Boolean(currentVersionInfo?.isRegistered);
   const currentVersionHasLeviLamina = Boolean(
-    localVersionMap.get(currentVersion)?.isLeviLaminaInstalled,
+    currentVersionInfo?.isLeviLaminaInstalled,
   );
+  const currentGameVersion = String(currentVersionInfo?.version || "").trim();
+  const currentLeviLaminaVersion = String(
+    currentInstanceSnapshot?.llState?.installedVersion || "",
+  ).trim();
+  const latestLeviLaminaVersion = useMemo(
+    () =>
+      currentGameVersion
+        ? String(getLatestLLVersion(currentGameVersion) || "").trim()
+        : "",
+    [currentGameVersion, getLatestLLVersion],
+  );
+  const hasLeviLaminaUpdateAvailable = useMemo(() => {
+    if (
+      !currentVersionHasLeviLamina ||
+      !currentLeviLaminaVersion ||
+      !latestLeviLaminaVersion
+    ) {
+      return false;
+    }
+    const compared = compareLLVersions(
+      latestLeviLaminaVersion,
+      currentLeviLaminaVersion,
+    );
+    return Number.isFinite(compared) && compared > 0;
+  }, [
+    compareLLVersions,
+    currentLeviLaminaVersion,
+    currentVersionHasLeviLamina,
+    latestLeviLaminaVersion,
+  ]);
 
   return (
     <>
@@ -234,14 +286,25 @@ export const LauncherPage = (args: any) => {
                       >
                         <Chip
                           variant="flat"
-                          color="primary"
+                          color={hasLeviLaminaUpdateAvailable ? "warning" : "primary"}
                           classNames={{
-                            base: "bg-primary-500/10 border border-primary-500/20 hidden sm:flex",
-                            content:
-                              "font-semibold text-primary-600 dark:text-primary-500",
+                            base: cn(
+                              "hidden sm:flex border",
+                              hasLeviLaminaUpdateAvailable
+                                ? "bg-warning-500/10 border-warning-500/20"
+                                : "bg-primary-500/10 border-primary-500/20",
+                            ),
+                            content: cn(
+                              "font-semibold",
+                              hasLeviLaminaUpdateAvailable
+                                ? "text-warning-600 dark:text-warning-400"
+                                : "text-primary-600 dark:text-primary-500",
+                            ),
                           }}
                         >
-                          LeviLamina
+                          {hasLeviLaminaUpdateAvailable
+                            ? `LeviLamina · ${t("launcherpage.levilamina_update_available")}`
+                            : "LeviLamina"}
                         </Chip>
                       </motion.div>
                     )}

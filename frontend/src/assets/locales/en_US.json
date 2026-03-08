@@ -21,6 +21,7 @@
     "open_exe_dir": "Open Game Installation Directory",
     "register_system_button": "Register to System",
     "registered_tip": "Registered",
+    "levilamina_update_available": "Update Available",
     "register": {
       "installing": {
         "title": "Registering to System",
@@ -770,7 +771,7 @@
         "ll_not_installed": "Not installed",
         "ll_select_version": "LeviLamina Version",
         "ll_select_placeholder": "Select a LeviLamina version",
-        "ll_select_guidance": "Choose the LeviLamina version you want to install or update.",
+        "ll_select_guidance": "Choose the LeviLamina version you want to install, upgrade, downgrade, or reinstall.",
         "ll_upgrade_only_hint": "Only upgrades are allowed in instance settings.",
         "ll_only_latest_when_current_unknown": "Current version cannot be parsed. Only the latest version can be updated.",
         "ll_remove_confirm_title": "Confirm Remove LeviLamina",
@@ -1070,8 +1071,13 @@
       "downgrade": "Downgrade",
       "reinstall": "Reinstall",
       "instance_game_version": "Game version: {{version}}",
+      "instance_game_version_label": "Game version",
       "select_instance_title": "Select Target Instance",
       "installing_version_label": "Installing package version",
+      "variant_label": "Variant",
+      "variant_hint_keep_default": "Usually no change needed",
+      "variant_placeholder": "Select a variant",
+      "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
       "checking_ll_state": "Checking LeviLamina status...",
       "ll_missing_auto_install_hint": "LeviLamina is not installed. Clicking Install will first install LeviLamina {{version}}, then install this package.",
@@ -1086,7 +1092,17 @@
       "downgrade_success": "Downgrade completed successfully",
       "reinstall_success": "Reinstallation completed successfully",
       "current_installed_version": "Current installed version: {{version}}",
+      "current_installed_version_label": "Current installed version",
       "checking_current_installed_version": "Checking currently installed version..."
+    },
+    "guide": {
+      "open_button": "Developer Guide",
+      "title": "LIP Developer Guide",
+      "description": "If you want your mod to appear on LeviLauncher's LIP page, publish it according to the LIP package_manifest specification.",
+      "manifest_hint": "This dialog is only a quick overview for developers. Field names, required entries, examples, and validation rules are defined in the official documentation.",
+      "variant_hint": "A variant is indexed by the launcher only when its label contains client. By default, use \"label\": \"client\"; for sub-extensions, use \"label\": \"client_xxxx\" or \"label\": \"client\\xxxx\".",
+      "docs_button": "View Full Spec",
+      "close_button": "Close"
     },
     "title": "lip Content",
     "sort_options": {

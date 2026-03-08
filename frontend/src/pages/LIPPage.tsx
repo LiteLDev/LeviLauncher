@@ -11,12 +11,14 @@ import {
   SelectItem,
 } from "@heroui/react";
 import { PageHeader } from "@/components/PageHeader";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
+import { Browser } from "@wailsio/runtime";
 import {
   fetchLIPPackagesIndex,
   fetchLIPLeviLaminaClientMapping,
@@ -24,7 +26,14 @@ import {
   isLeviLaminaVersionCompatible,
   type LIPPackageBasicInfo,
 } from "@/utils/content";
-import { LuSearch, LuDownload, LuClock, LuFlame } from "react-icons/lu";
+import {
+  LuSearch,
+  LuDownload,
+  LuClock,
+  LuFlame,
+  LuBookOpen,
+  LuExternalLink,
+} from "react-icons/lu";
 import { motion } from "framer-motion";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { useCurrentVersion } from "@/utils/CurrentVersionContext";
@@ -37,6 +46,8 @@ import {
 const PAGE_SIZE = 20;
 const ALL_GAME_VERSION = "__all_game__";
 const ALL_LL_VERSION = "__all_ll__";
+const LIP_DEVELOPER_GUIDE_URL =
+  "https://lip.levimc.org/concepts/package_manifest.html";
 const HIDDEN_LIP_PACKAGES = new Set([
   "levilamina",
   "levilamina-loc",
@@ -227,6 +238,7 @@ const LIPPage: React.FC = () => {
     useState("");
   const [error, setError] = useState("");
   const [filterContextReady, setFilterContextReady] = useState(false);
+  const [developerGuideOpen, setDeveloperGuideOpen] = useState(false);
 
   const pageRootRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -644,6 +656,14 @@ const LIPPage: React.FC = () => {
               >
                 {t("common.refresh")}
               </Button>
+              <Button
+                variant="flat"
+                size="sm"
+                startContent={<LuBookOpen />}
+                onPress={() => setDeveloperGuideOpen(true)}
+              >
+                {t("lip.guide.open_button")}
+              </Button>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
@@ -860,6 +880,43 @@ const LIPPage: React.FC = () => {
           </CardBody>
         </Card>
       </motion.div>
+
+      <UnifiedModal
+        size="lg"
+        isOpen={developerGuideOpen}
+        onOpenChange={setDeveloperGuideOpen}
+        type="primary"
+        icon={<LuBookOpen size={24} className="text-primary-500" />}
+        title={t("lip.guide.title")}
+        isDismissable
+        footer={
+          <>
+            <Button
+              variant="light"
+              radius="full"
+              onPress={() => setDeveloperGuideOpen(false)}
+            >
+              {t("lip.guide.close_button")}
+            </Button>
+            <Button
+              color="primary"
+              radius="full"
+              startContent={<LuExternalLink />}
+              onPress={() => void Browser.OpenURL(LIP_DEVELOPER_GUIDE_URL)}
+            >
+              {t("lip.guide.docs_button")}
+            </Button>
+          </>
+        }
+      >
+        <div className="flex flex-col gap-4 text-sm leading-6 text-default-600 dark:text-zinc-300">
+          <p>{t("lip.guide.description")}</p>
+          <p>{t("lip.guide.manifest_hint")}</p>
+          <p className="font-medium text-default-800 dark:text-zinc-100">
+            {t("lip.guide.variant_hint")}
+          </p>
+        </div>
+      </UnifiedModal>
     </PageContainer>
   );
 };

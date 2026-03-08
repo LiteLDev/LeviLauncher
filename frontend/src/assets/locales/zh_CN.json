@@ -21,6 +21,7 @@
     "open_exe_dir": "打开游戏安装目录",
     "register_system_button": "注册到系统",
     "registered_tip": "已注册",
+    "levilamina_update_available": "可更新",
     "register": {
       "installing": {
         "title": "正在注册到系统",
@@ -770,7 +771,7 @@
         "ll_not_installed": "未安装",
         "ll_select_version": "LeviLamina 版本",
         "ll_select_placeholder": "请选择 LeviLamina 版本",
-        "ll_select_guidance": "请选择你要安装或更新的 LeviLamina 版本。",
+        "ll_select_guidance": "请选择你要安装、升级、降级或重装的 LeviLamina 版本。",
         "ll_upgrade_only_hint": "实例设置仅允许升级到更高版本。",
         "ll_only_latest_when_current_unknown": "当前版本无法解析，仅允许更新到最新版本。",
         "ll_remove_confirm_title": "确认移除 LeviLamina",
@@ -1088,7 +1089,12 @@
       "upgrade": "升级",
       "downgrade": "降级",
       "installing_version_label": "安装包版本",
+      "variant_label": "Variant",
+      "variant_hint_keep_default": "一般情况下无需改动",
+      "variant_placeholder": "选择要安装的 variant",
+      "variant_default": "默认",
       "instance_game_version": "游戏版本：{{version}}",
+      "instance_game_version_label": "游戏版本",
       "ll_installed_incompatible_hint": "已安装的 LeviLamina 版本 {{installedVersion}} 与此包不兼容，请先手动调整 LeviLamina。",
       "ll_missing_auto_install_hint": "未安装 LeviLamina。点击安装后将先安装 LeviLamina {{version}}，再安装此包。",
       "ll_missing_mapping_block_hint": "游戏版本映射不可用，无法自动安装 LeviLamina。请先手动安装 LeviLamina。",
@@ -1103,8 +1109,18 @@
       "downgrade_success": "降级成功",
       "reinstall_success": "重装成功",
       "current_installed_version": "当前已安装版本：{{version}}",
+      "current_installed_version_label": "当前已安装版本",
       "checking_current_installed_version": "正在检查当前已安装版本...",
       "reinstall": "重装"
+    },
+    "guide": {
+      "open_button": "开发者指南",
+      "title": "LIP 开发者指南",
+      "description": "如果你希望自己的模组出现在 LeviLauncher 的 LIP 页面中，请按照 LIP 的 package_manifest 规范发布。",
+      "manifest_hint": "这个弹窗只提供面向开发者的快速说明。字段命名、必填项、示例与校验细则请以官方文档为准。",
+      "variant_hint": "仅当 variant 的 label 包含 client 时，才会被启动器收录。默认情况下请使用 \"label\": \"client\"；子扩展请使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
+      "docs_button": "查看完整规范",
+      "close_button": "关闭"
     },
     "game_all_versions": "所有游戏版本",
     "game_version_label": "游戏版本",

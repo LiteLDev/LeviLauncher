@@ -34,6 +34,8 @@ export const useVersionSettings = () => {
   const initialName: string = String(location?.state?.name || "");
   const returnToPath: string = String(location?.state?.returnTo || "/versions");
   const hasBackend = minecraft !== undefined;
+  const ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS =
+    "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS";
 
   // Form state
   const [targetName, setTargetName] = React.useState<string>(initialName);
@@ -110,6 +112,11 @@ export const useVersionSettings = () => {
     onClose: llVersionSelectOnClose,
   } = useDisclosure();
   const {
+    isOpen: llInstallConfirmOpen,
+    onOpen: llInstallConfirmOnOpen,
+    onClose: llInstallConfirmOnClose,
+  } = useDisclosure();
+  const {
     isOpen: llUninstallConfirmOpen,
     onOpen: llUninstallConfirmOnOpen,
     onClose: llUninstallConfirmOnClose,
@@ -122,6 +129,7 @@ export const useVersionSettings = () => {
   } = useDisclosure();
   const [rcVersion, setRcVersion] = React.useState("");
   const [isLLInstalled, setIsLLInstalled] = React.useState(false);
+  const [llExplicitInstalled, setLLExplicitInstalled] = React.useState(false);
   const [currentLLVersion, setCurrentLLVersion] = React.useState("");
   const [selectedLLVersion, setSelectedLLVersion] = React.useState("");
   const [llSupportedVersions, setLLSupportedVersions] = React.useState<
@@ -132,6 +140,14 @@ export const useVersionSettings = () => {
     () => llSupportedVersions[0] || "",
     [llSupportedVersions],
   );
+  const resolvedLLTargetVersion = React.useMemo(
+    () => String(selectedLLVersion || getLatestLLVersion(gameVersion) || "").trim(),
+    [gameVersion, getLatestLLVersion, selectedLLVersion],
+  );
+  const llUninstallBlocked = React.useMemo(
+    () => Boolean(isLLInstalled) && !Boolean(llExplicitInstalled),
+    [isLLInstalled, llExplicitInstalled],
+  );
 
   const isSemverLike = React.useCallback((version: string) => {
     const v = String(version || "").trim();
@@ -140,72 +156,44 @@ export const useVersionSettings = () => {
     );
   }, []);
 
-  const canInstallSelectedLLVersion = React.useMemo(() => {
-    const selected = String(selectedLLVersion || "").trim();
-    if (!selected) return false;
-    if (!isLLInstalled) return true;
+  const canInstallSelectedLLVersion = React.useMemo(
+    () => Boolean(String(selectedLLVersion || "").trim()),
+    [selectedLLVersion],
+  );
+
+  const llInstallBlockedReasonKey = React.useMemo(() => "", []);
+
+  const llOnlyLatestSelectable = React.useMemo(() => false, []);
+
+  const llInstallActionKind = React.useMemo<
+    "install" | "upgrade" | "downgrade" | "reinstall"
+  >(() => {
+    const selected = String(resolvedLLTargetVersion || "").trim();
+    if (!selected) return "install";
+    if (!isLLInstalled) return "install";
 
     const current = String(currentLLVersion || "").trim();
-    if (!current) {
-      return selected === latestLLVersion;
-    }
-    if (!isSemverLike(current)) {
-      return selected === latestLLVersion;
-    }
+    if (!current) return "reinstall";
+
     const cmp = compareLLVersions(selected, current);
-    if (Number.isNaN(cmp)) {
-      return selected === latestLLVersion;
-    }
-    return cmp > 0;
+    if (Number.isNaN(cmp)) return "reinstall";
+    if (cmp > 0) return "upgrade";
+    if (cmp < 0) return "downgrade";
+    return "reinstall";
   }, [
-    selectedLLVersion,
-    isLLInstalled,
-    currentLLVersion,
-    latestLLVersion,
-    isSemverLike,
     compareLLVersions,
-  ]);
-
-  const llInstallBlockedReasonKey = React.useMemo(() => {
-    if (!isLLInstalled) return "";
-    if (canInstallSelectedLLVersion) return "";
-
-    const selected = String(selectedLLVersion || "").trim();
-    const current = String(currentLLVersion || "").trim();
-    if (!selected) {
-      return "versions.edit.loader.ll_upgrade_only_hint";
-    }
-    if (!current || !isSemverLike(current)) {
-      return "versions.edit.loader.ll_only_latest_when_current_unknown";
-    }
-    const cmp = compareLLVersions(selected, current);
-    if (Number.isNaN(cmp)) {
-      return "versions.edit.loader.ll_only_latest_when_current_unknown";
-    }
-    return "versions.edit.loader.ll_upgrade_only_hint";
-  }, [
-    isLLInstalled,
-    canInstallSelectedLLVersion,
-    selectedLLVersion,
     currentLLVersion,
-    isSemverLike,
-    compareLLVersions,
-  ]);
-
-  const llOnlyLatestSelectable = React.useMemo(() => {
-    if (!isLLInstalled) return false;
-    const current = String(currentLLVersion || "").trim();
-    if (!current) return true;
-    if (!isSemverLike(current)) return true;
-    const cmp = compareLLVersions(latestLLVersion, current);
-    return Number.isNaN(cmp);
-  }, [
     isLLInstalled,
-    currentLLVersion,
-    isSemverLike,
-    latestLLVersion,
-    compareLLVersions,
+    resolvedLLTargetVersion,
   ]);
+  const llInstallActionLabelKey = React.useMemo(
+    () => `lip.files.${llInstallActionKind}`,
+    [llInstallActionKind],
+  );
+  const llInstallSuccessKey = React.useMemo(
+    () => `lip.files.${llInstallActionKind}_success`,
+    [llInstallActionKind],
+  );
 
   // Load LL install status
   React.useEffect(() => {
@@ -220,12 +208,14 @@ export const useVersionSettings = () => {
         if (cancelled) return;
         const snapshot = getInstanceSnapshot(targetName);
         setIsLLInstalled(Boolean(snapshot?.llState?.installed));
+        setLLExplicitInstalled(Boolean(snapshot?.llState?.explicitInstalled));
         setCurrentLLVersion(
           String(snapshot?.llState?.installedVersion || "").trim(),
         );
       } catch {
         if (cancelled) return;
         setIsLLInstalled(false);
+        setLLExplicitInstalled(false);
         setCurrentLLVersion("");
       }
     };
@@ -255,12 +245,7 @@ export const useVersionSettings = () => {
       if (prev && llSupportedVersions.includes(prev)) {
         return prev;
       }
-      if (
-        isLLInstalled &&
-        currentLLVersion &&
-        isSemverLike(currentLLVersion) &&
-        llSupportedVersions.includes(currentLLVersion)
-      ) {
+      if (isLLInstalled && currentLLVersion && llSupportedVersions.includes(currentLLVersion)) {
         return currentLLVersion;
       }
       return latestLLVersion;
@@ -270,7 +255,6 @@ export const useVersionSettings = () => {
     isLLInstalled,
     currentLLVersion,
     latestLLVersion,
-    isSemverLike,
   ]);
 
   // Load version metadata
@@ -411,6 +395,37 @@ export const useVersionSettings = () => {
     [t],
   );
 
+  const llUninstallWarning = React.useMemo(() => {
+    if (!llUninstallBlocked) return "";
+    return resolveToastText(ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS);
+  }, [
+    ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS,
+    llUninstallBlocked,
+    resolveToastText,
+  ]);
+
+  const refreshLLStateForUninstall = React.useCallback(async () => {
+    if (!targetName) {
+      setIsLLInstalled(false);
+      setLLExplicitInstalled(false);
+      setCurrentLLVersion("");
+      return null;
+    }
+
+    try {
+      await ensureInstanceHydrated(targetName, {
+        background: true,
+        reason: "version-settings-loader-state",
+      });
+    } catch {}
+
+    const snapshot = getInstanceSnapshot(targetName);
+    setIsLLInstalled(Boolean(snapshot?.llState?.installed));
+    setLLExplicitInstalled(Boolean(snapshot?.llState?.explicitInstalled));
+    setCurrentLLVersion(String(snapshot?.llState?.installedVersion || "").trim());
+    return snapshot?.llState || null;
+  }, [ensureInstanceHydrated, getInstanceSnapshot, targetName]);
+
   // Save handler
   const onSave = React.useCallback(
     async (destPath?: string) => {
@@ -540,16 +555,16 @@ export const useVersionSettings = () => {
   // LeviLamina install handlers
   const proceedInstallLeviLamina = React.useCallback(
     async (forcedVersion?: string) => {
-      if (!hasBackend || !targetName || !gameVersion) return;
+      if (!hasBackend || !targetName || !gameVersion) return false;
       const installVersion = String(
-        forcedVersion || selectedLLVersion || latestLLVersion || "",
+        forcedVersion || resolvedLLTargetVersion || "",
       ).trim();
       if (!installVersion) {
         addToast({
           description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
           color: "danger",
         });
-        return;
+        return false;
       }
       setInstallingLL(true);
       try {
@@ -559,14 +574,13 @@ export const useVersionSettings = () => {
             description: resolveToastText("mods.err_lip_not_installed"),
             color: "danger",
           });
-          setInstallingLL(false);
-          return;
+          return false;
         }
         const installLL = (minecraft as any)?.InstallLeviLamina;
         if (typeof installLL === "function") {
           await runWithLipTask(
             {
-              action: isLLInstalled ? "update" : "install",
+              action: llInstallActionKind,
               target: targetName,
               methods: ["Install", "Update"],
               feedbackMode: "on_error",
@@ -584,12 +598,15 @@ export const useVersionSettings = () => {
           );
           await refreshInstance(targetName, "version-settings-install-ll");
           setIsLLInstalled(true);
+          setLLExplicitInstalled(true);
           setCurrentLLVersion(installVersion);
           addToast({
-            title: t("downloadpage.install.success") as string,
+            title: t(llInstallSuccessKey) as string,
             color: "success",
           });
+          return true;
         }
+        return false;
       } catch (e: any) {
         const rawError = String(e?.message || e || "");
         let toastKeyOrMsg = rawError;
@@ -600,6 +617,7 @@ export const useVersionSettings = () => {
           description: resolveToastText(toastKeyOrMsg),
           color: "danger",
         });
+        return false;
       } finally {
         setInstallingLL(false);
       }
@@ -608,50 +626,48 @@ export const useVersionSettings = () => {
       gameVersion,
       hasBackend,
       isLLInstalled,
-      latestLLVersion,
+      llInstallActionKind,
+      llInstallSuccessKey,
       resolveToastText,
+      resolvedLLTargetVersion,
       runWithLipTask,
       refreshInstance,
-      selectedLLVersion,
       t,
       targetName,
     ],
   );
 
   const handleInstallLeviLamina = React.useCallback(async () => {
-    if (!hasBackend || !targetName || !gameVersion) return;
+    if (!hasBackend || !targetName || !gameVersion) return false;
 
-    const targetLLVersion = String(
-      selectedLLVersion || getLatestLLVersion(gameVersion),
-    ).trim();
+    const targetLLVersion = resolvedLLTargetVersion;
     if (!targetLLVersion) {
       addToast({
         description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
         color: "danger",
       });
-      return;
+      return false;
     }
     if (isLLInstalled && !canInstallSelectedLLVersion) {
-      return;
+      return false;
     }
 
     if (targetLLVersion && targetLLVersion.includes("rc")) {
       setRcVersion(targetLLVersion);
       rcOnOpen();
-      return;
+      return true;
     }
 
-    await proceedInstallLeviLamina(targetLLVersion);
+    return await proceedInstallLeviLamina(targetLLVersion);
   }, [
     hasBackend,
     targetName,
     gameVersion,
-    selectedLLVersion,
-    getLatestLLVersion,
     isLLInstalled,
     canInstallSelectedLLVersion,
     rcOnOpen,
     proceedInstallLeviLamina,
+    resolvedLLTargetVersion,
     resolveToastText,
   ]);
 
@@ -659,14 +675,51 @@ export const useVersionSettings = () => {
     llVersionSelectOnOpen();
   }, [llVersionSelectOnOpen]);
 
-  const confirmLeviLaminaVersionSelect = React.useCallback(async () => {
-    llVersionSelectOnClose();
-    await handleInstallLeviLamina();
-  }, [llVersionSelectOnClose, handleInstallLeviLamina]);
+  const openLLInstallConfirm = React.useCallback(() => {
+    llInstallConfirmOnOpen();
+  }, [llInstallConfirmOnOpen]);
 
-  const openLLUninstallConfirm = React.useCallback(() => {
+  const closeLLInstallConfirm = React.useCallback(() => {
+    if (installingLL) return;
+    llInstallConfirmOnClose();
+  }, [installingLL, llInstallConfirmOnClose]);
+
+  const confirmLeviLaminaVersionSelect = React.useCallback(() => {
+    if (!resolvedLLTargetVersion) {
+      addToast({
+        description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
+        color: "danger",
+      });
+      return false;
+    }
+    if (isLLInstalled && !canInstallSelectedLLVersion) {
+      return false;
+    }
+    llVersionSelectOnClose();
+    llInstallConfirmOnOpen();
+    return true;
+  }, [
+    canInstallSelectedLLVersion,
+    isLLInstalled,
+    llInstallConfirmOnOpen,
+    llVersionSelectOnClose,
+    resolveToastText,
+    resolvedLLTargetVersion,
+  ]);
+
+  const confirmInstallLeviLaminaAction = React.useCallback(async () => {
+    const ok = await handleInstallLeviLamina();
+    if (ok) {
+      llInstallConfirmOnClose();
+    }
+    return ok;
+  }, [handleInstallLeviLamina, llInstallConfirmOnClose]);
+
+  const openLLUninstallConfirm = React.useCallback(async () => {
+    const latestState = await refreshLLStateForUninstall();
+    if (!latestState?.installed && !isLLInstalled) return;
     llUninstallConfirmOnOpen();
-  }, [llUninstallConfirmOnOpen]);
+  }, [isLLInstalled, llUninstallConfirmOnOpen, refreshLLStateForUninstall]);
 
   const closeLLUninstallConfirm = React.useCallback(() => {
     if (uninstallingLL) return;
@@ -675,6 +728,13 @@ export const useVersionSettings = () => {
 
   const confirmUninstallLL = React.useCallback(async (): Promise<boolean> => {
     if (!targetName) return false;
+    if (llUninstallBlocked) {
+      addToast({
+        description: resolveToastText(ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS),
+        color: "danger",
+      });
+      return false;
+    }
     setUninstallingLL(true);
     try {
       await runWithLipTask(
@@ -696,19 +756,36 @@ export const useVersionSettings = () => {
       );
       await refreshInstance(targetName, "version-settings-uninstall-ll");
       setIsLLInstalled(false);
+      setLLExplicitInstalled(false);
       setCurrentLLVersion("");
       addToast({ title: t("common.success") as string, color: "success" });
       return true;
     } catch (e) {
+      const errCode = String((e as any)?.message || e || "").trim();
+      if (
+        errCode === "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY" ||
+        errCode === ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS
+      ) {
+        await refreshLLStateForUninstall();
+      }
       addToast({
-        description: resolveToastText(String((e as any)?.message || e)),
+        description: resolveToastText(errCode),
         color: "danger",
       });
       return false;
     } finally {
       setUninstallingLL(false);
     }
-  }, [refreshInstance, resolveToastText, runWithLipTask, t, targetName]);
+  }, [
+    ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS,
+    llUninstallBlocked,
+    refreshLLStateForUninstall,
+    refreshInstance,
+    resolveToastText,
+    runWithLipTask,
+    t,
+    targetName,
+  ]);
 
   return {
     // Navigation
@@ -781,8 +858,14 @@ export const useVersionSettings = () => {
     canInstallSelectedLLVersion,
     llInstallBlockedReasonKey,
     llOnlyLatestSelectable,
+    llInstallActionKind,
+    llInstallActionLabelKey,
+    llInstallSuccessKey,
+    llUninstallBlocked,
+    llUninstallWarning,
     installingLL,
     uninstallingLL,
+    llInstallConfirmOpen,
     llUninstallConfirmOpen,
     llVersionSelectOpen,
     llVersionSelectOnOpenChange,
@@ -792,6 +875,7 @@ export const useVersionSettings = () => {
     rcOnClose,
     rcVersion,
     isLLInstalled,
+    resolvedLLTargetVersion,
 
     // Error helper
     getErrorKey,
@@ -802,6 +886,9 @@ export const useVersionSettings = () => {
     proceedInstallLeviLamina,
     openLeviLaminaVersionSelect,
     confirmLeviLaminaVersionSelect,
+    openLLInstallConfirm,
+    closeLLInstallConfirm,
+    confirmInstallLeviLaminaAction,
     openLLUninstallConfirm,
     closeLLUninstallConfirm,
     confirmUninstallLL,

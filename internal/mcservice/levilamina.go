@@ -276,16 +276,41 @@ func UninstallLeviLamina(ctx context.Context, targetName string) string {
 		return "ERR_TARGET_NOT_FOUND"
 	}
 
-	log.Printf("Uninstalling LeviLamina for %s using LIP", targetName)
+	packageRefBase := "github.com/LiteLDev/LeviLamina#client"
+	state, queryErr := lip.GetPackageInstallStateViaDaemon(ctx, targetDir, packageRefBase)
+	if queryErr != nil {
+		if code := lip.ErrorCode(queryErr); code == "ERR_LIP_NOT_INSTALLED" {
+			return code
+		}
+		log.Printf("UninstallLeviLamina: failed to query package state for %s in %s: %v", packageRefBase, targetName, queryErr)
+	} else if state.Installed && !state.ExplicitInstalled {
+		return "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS"
+	}
 
-	// Uninstall the top-level package only; dependency cleanup is resolved by LIP.
-	pkgs := []string{"github.com/LiteLDev/LeviLamina#client"}
-	if err := lip.UninstallPackagesViaDaemon(ctx, targetDir, pkgs, true); err != nil {
+	log.Printf("Uninstalling LeviLamina for %s using LIP", targetName)
+	if err := lip.UninstallPackagesViaDaemon(ctx, targetDir, []string{packageRefBase}, false); err != nil {
 		if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
 			return code
 		}
 		log.Printf("UninstallLeviLamina: lipd uninstall failed: %v", err)
-		return "ERR_LIP_UNINSTALL_FAILED"
+		return "ERR_LIP_PACKAGE_UNINSTALL_FAILED"
+	}
+
+	postState, postQueryErr := lip.GetPackageInstallStateViaDaemon(ctx, targetDir, packageRefBase)
+	if postQueryErr != nil {
+		if code := lip.ErrorCode(postQueryErr); code == "ERR_LIP_NOT_INSTALLED" {
+			return code
+		}
+		log.Printf("UninstallLeviLamina: post-uninstall query failed for %s in %s: %v", packageRefBase, targetName, postQueryErr)
+		return ""
+	}
+
+	if postState.Installed && !postState.ExplicitInstalled {
+		return "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY"
+	}
+	if postState.Installed && postState.ExplicitInstalled {
+		log.Printf("UninstallLeviLamina: package %s remains explicitly installed in %s after uninstall", packageRefBase, targetName)
+		return "ERR_LIP_PACKAGE_UNINSTALL_FAILED"
 	}
 
 	return ""

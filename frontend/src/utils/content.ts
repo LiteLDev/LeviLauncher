@@ -109,6 +109,14 @@ export interface LIPPackageBasicInfo {
   updated: string;
   versions: string[];
   llDependencyRanges: string[];
+  variants: LIPPackageVariantOption[];
+  preferredVariantKey: string;
+}
+
+export interface LIPPackageVariantOption {
+  key: string;
+  label: string;
+  packageIdentifier: string;
 }
 
 export interface LIPPackageFileInfo {
@@ -118,8 +126,15 @@ export interface LIPPackageFileInfo {
   otherDependencies: Record<string, string>;
 }
 
+export interface LIPPackageVariantDetail extends LIPPackageVariantOption {
+  files: LIPPackageFileInfo[];
+  versions: string[];
+  llDependencyRanges: string[];
+}
+
 export interface LIPPackageDetail extends LIPPackageBasicInfo {
   files: LIPPackageFileInfo[];
+  variantDetails: LIPPackageVariantDetail[];
 }
 
 export interface LIPSelfVariantRelation {
@@ -395,10 +410,18 @@ export const resolveSupportedGameVersionsByLLRanges = (
   return unique;
 };
 
-const getClientVersionsRecord = (variants: unknown): UnknownRecord | null => {
+const getVariantVersionsRecord = (
+  variants: unknown,
+  targetVariantKey: string,
+): UnknownRecord | null => {
   if (!isRecord(variants)) return null;
   for (const [variantKey, variantValue] of Object.entries(variants)) {
-    if (String(variantKey || "").trim().toLowerCase() !== "client") continue;
+    if (
+      String(variantKey || "").trim().toLowerCase() !==
+      String(targetVariantKey || "").trim().toLowerCase()
+    ) {
+      continue;
+    }
     if (!isRecord(variantValue)) return null;
     const versions = variantValue["versions"];
     if (!isRecord(versions)) return null;
@@ -407,14 +430,45 @@ const getClientVersionsRecord = (variants: unknown): UnknownRecord | null => {
   return null;
 };
 
-const parsePackageClientFiles = (
-  value: unknown,
+const getClientVersionsRecord = (variants: unknown): UnknownRecord | null =>
+  getVariantVersionsRecord(variants, "client");
+
+const buildVariantPackageIdentifier = (
+  identifier: string,
+  variantKey: string,
+): string => {
+  const normalizedIdentifier = String(identifier || "").trim().split("#")[0] || "";
+  const normalizedVariantKey = String(variantKey || "").trim();
+  if (!normalizedIdentifier) return "";
+  return normalizedVariantKey
+    ? `${normalizedIdentifier}#${normalizedVariantKey}`
+    : `${normalizedIdentifier}#`;
+};
+
+const getVariantSortRank = (variantKey: string): number => {
+  const normalizedVariantKey = String(variantKey || "").trim().toLowerCase();
+  if (normalizedVariantKey === "client") return 0;
+  if (!normalizedVariantKey) return 1;
+  return 2;
+};
+
+const resolvePreferredVariantKey = (
+  variants: LIPPackageVariantDetail[],
+): string => {
+  const clientVariant = variants.find(
+    (variant) => String(variant.key || "").trim().toLowerCase() === "client",
+  );
+  if (clientVariant) return clientVariant.key;
+  return "";
+};
+
+const parsePackageVersionsRecord = (
+  versionsValue: UnknownRecord | null,
 ): {
   files: LIPPackageFileInfo[];
   versions: string[];
   llDependencyRanges: string[];
 } => {
-  const versionsValue = getClientVersionsRecord(value);
   if (!versionsValue) {
     return { files: [], versions: [], llDependencyRanges: [] };
   }
@@ -466,6 +520,45 @@ const parsePackageClientFiles = (
     versions,
     llDependencyRanges: Array.from(packageRangeSet),
   };
+};
+
+const parsePackageVariants = (
+  value: unknown,
+  identifier: string,
+): LIPPackageVariantDetail[] => {
+  if (!isRecord(value)) return [];
+
+  const variants: LIPPackageVariantDetail[] = [];
+  for (const [variantKey, variantMeta] of Object.entries(value)) {
+    if (!isRecord(variantMeta)) continue;
+
+    const parsed = parsePackageVersionsRecord(
+      isRecord(variantMeta["versions"]) ? (variantMeta["versions"] as UnknownRecord) : null,
+    );
+    if (parsed.versions.length === 0) continue;
+
+    const normalizedVariantKey = String(variantKey || "").trim();
+    variants.push({
+      key: normalizedVariantKey,
+      label: toSafeString(variantMeta["label"]).trim(),
+      packageIdentifier: buildVariantPackageIdentifier(
+        identifier,
+        normalizedVariantKey,
+      ),
+      files: parsed.files,
+      versions: parsed.versions,
+      llDependencyRanges: parsed.llDependencyRanges,
+    });
+  }
+
+  return variants.sort((a, b) => {
+    const rankDiff = getVariantSortRank(a.key) - getVariantSortRank(b.key);
+    if (rankDiff !== 0) return rankDiff;
+
+    return a.packageIdentifier.localeCompare(b.packageIdentifier, undefined, {
+      sensitivity: "base",
+    });
+  });
 };
 
 const normalizeHttpUrl = (value: string): string => {
@@ -582,8 +675,15 @@ const parseLIPPackage = (
   const tags = toStringArray(info["tags"]);
   const avatarUrl = normalizeHttpUrl(toSafeString(info["avatar_url"]));
   const updated = toSafeString(value["updated_at"]).trim();
-  const parsed = parsePackageClientFiles(value["variants"]);
-  if (parsed.versions.length === 0) return null;
+  const variantDetails = parsePackageVariants(value["variants"], normalizedIdentifier);
+  if (variantDetails.length === 0) return null;
+
+  const preferredVariantKey = resolvePreferredVariantKey(variantDetails);
+  if (!preferredVariantKey) return null;
+  const preferredVariant =
+    variantDetails.find((variant) => variant.key === preferredVariantKey) ||
+    variantDetails[0];
+  if (!preferredVariant) return null;
   const hotness =
     toOptionalSafeNumber(value["stargazer_count"]) ?? toSafeNumber(value["stars"]);
 
@@ -597,13 +697,20 @@ const parseLIPPackage = (
     projectUrl: inferProjectUrlFromIdentifier(normalizedIdentifier),
     hotness,
     updated,
-    versions: parsed.versions,
-    llDependencyRanges: parsed.llDependencyRanges,
+    versions: preferredVariant.versions,
+    llDependencyRanges: preferredVariant.llDependencyRanges,
+    variants: variantDetails.map((variant) => ({
+      key: variant.key,
+      label: variant.label,
+      packageIdentifier: variant.packageIdentifier,
+    })),
+    preferredVariantKey: preferredVariant.key,
   };
 
   const detail: LIPPackageDetail = {
     ...basic,
-    files: parsed.files,
+    files: preferredVariant.files,
+    variantDetails,
   };
 
   return { basic, detail };
@@ -816,9 +923,19 @@ const findLIPPackageDetail = (
   if (!target) return null;
   if (detailsByIdentifier[target]) return detailsByIdentifier[target];
 
+  const targetBase = target.split("#")[0];
+  if (targetBase && detailsByIdentifier[targetBase]) {
+    return detailsByIdentifier[targetBase];
+  }
+
   const lowerTarget = target.toLowerCase();
+  const lowerTargetBase = targetBase.toLowerCase();
   for (const [candidateIdentifier, detail] of Object.entries(detailsByIdentifier)) {
-    if (candidateIdentifier.toLowerCase() === lowerTarget) {
+    const lowerCandidateIdentifier = candidateIdentifier.toLowerCase();
+    if (
+      lowerCandidateIdentifier === lowerTarget ||
+      lowerCandidateIdentifier === lowerTargetBase
+    ) {
       return detail;
     }
   }

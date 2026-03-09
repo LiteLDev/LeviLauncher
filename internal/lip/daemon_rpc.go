@@ -407,6 +407,14 @@ func callDaemonWithResultInternal(ctx context.Context, workDir string, method st
 		emitTaskStarted(taskMeta)
 	}
 
+	if err := ensureLipRuntimeConfig(); err != nil {
+		callErr := fmt.Errorf("ensure lip runtime config: %w", err)
+		if trackTask {
+			emitTaskFinished(taskMeta, false, callErr.Error(), "")
+		}
+		return nil, callErr
+	}
+
 	exePath := LipExePath()
 	cmd := exec.CommandContext(ctx, exePath, "run")
 	cmd.Dir = workDir

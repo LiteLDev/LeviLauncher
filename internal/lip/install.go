@@ -12,7 +12,9 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"strings"
+	"sync"
 	"syscall"
 	"time"
 	"unsafe"
@@ -23,6 +25,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/sys/windows"
+	winreg "golang.org/x/sys/windows/registry"
 )
 
 const (
@@ -37,7 +40,14 @@ const (
 	lipInstallTimeout    = 5 * time.Minute
 	lipStatusTimeout     = 20 * time.Second
 	lipVersionRPCTimeout = 15 * time.Second
+
+	lipConfigFormatVersion = 3
+	lipConfigFormatUUID    = "289f771f-2c9a-4d73-9f3f-8492495a924d"
+	lipConfigGithubProxy   = "https://github.bibk.top"
+	lipConfigGoModuleProxy = "https://goproxy.cn"
 )
+
+var lipRuntimeConfigMu sync.Mutex
 
 type Status struct {
 	Path           string `json:"path"`
@@ -82,6 +92,151 @@ func desiredLipExePath() string {
 
 func legacyLipExePath() string {
 	return filepath.Join(binDir(), lipBinaryName)
+}
+
+func lipConfigPath() string {
+	return filepath.Join(apppath.AppData(), "lip", "liprc.json")
+}
+
+func desiredLipRuntimeConfig() map[string]any {
+	return map[string]any{
+		"format_version":  lipConfigFormatVersion,
+		"format_uuid":     lipConfigFormatUUID,
+		"github_proxy":    lipConfigGithubProxy,
+		"go_module_proxy": lipConfigGoModuleProxy,
+	}
+}
+
+func isZhCnLocaleValue(v string) bool {
+	s := strings.ToLower(strings.TrimSpace(v))
+	if s == "" {
+		return false
+	}
+	s = strings.ReplaceAll(s, "_", "-")
+	s = strings.TrimPrefix(s, "0x")
+	if strings.HasPrefix(s, "zh-cn") || s == "zh" || s == "zh-hans" {
+		return true
+	}
+	if strings.Contains(s, "chinese (simplified") {
+		return true
+	}
+	return s == "804" || s == "0804" || s == "00000804"
+}
+
+func isWindowsTimeZoneChina() bool {
+	k, err := winreg.OpenKey(winreg.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Control\TimeZoneInformation`, winreg.QUERY_VALUE)
+	if err != nil {
+		return false
+	}
+	defer k.Close()
+
+	for _, field := range []string{"TimeZoneKeyName", "StandardName"} {
+		if val, _, err := k.GetStringValue(field); err == nil {
+			if strings.EqualFold(strings.TrimSpace(val), "China Standard Time") {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func isWindowsLocaleZhCN() bool {
+	k, err := winreg.OpenKey(winreg.CURRENT_USER, `Control Panel\International`, winreg.QUERY_VALUE)
+	if err == nil {
+		defer k.Close()
+		for _, field := range []string{"LocaleName", "Locale", "sLanguage"} {
+			if val, _, err := k.GetStringValue(field); err == nil && isZhCnLocaleValue(val) {
+				return true
+			}
+		}
+	}
+	for _, key := range []string{"LANG", "LANGUAGE", "LC_ALL", "LC_MESSAGES"} {
+		if isZhCnLocaleValue(os.Getenv(key)) {
+			return true
+		}
+	}
+	return false
+}
+
+func isChinaUser() bool {
+	if runtime.GOOS == "windows" {
+		return isWindowsTimeZoneChina() || isWindowsLocaleZhCN()
+	}
+
+	isTz := false
+	isLang := false
+	if b, err := os.ReadFile("/etc/timezone"); err == nil {
+		s := strings.ToLower(strings.TrimSpace(string(b)))
+		if s == "asia/shanghai" || s == "asia/urumqi" {
+			isTz = true
+		}
+	} else if p, err := os.Readlink("/etc/localtime"); err == nil {
+		low := strings.ToLower(p)
+		if strings.Contains(low, "asia/shanghai") || strings.Contains(low, "asia/urumqi") {
+			isTz = true
+		}
+	}
+
+	for _, key := range []string{"LANG", "LANGUAGE", "LC_ALL", "LC_MESSAGES"} {
+		v := strings.ToLower(strings.TrimSpace(os.Getenv(key)))
+		if v == "" {
+			continue
+		}
+		if strings.HasPrefix(v, "zh_cn") || strings.HasPrefix(v, "zh-cn") || v == "zh" {
+			isLang = true
+			break
+		}
+	}
+
+	return isTz || isLang
+}
+
+func ensureLipRuntimeConfig() error {
+	if !isChinaUser() {
+		return nil
+	}
+
+	lipRuntimeConfigMu.Lock()
+	defer lipRuntimeConfigMu.Unlock()
+
+	configPath := lipConfigPath()
+	expected := desiredLipRuntimeConfig()
+	config := map[string]any{}
+
+	if content, err := os.ReadFile(configPath); err == nil {
+		if err := json.Unmarshal(content, &config); err != nil {
+			log.Printf("lip: reset invalid runtime config %s: %v", configPath, err)
+			config = map[string]any{}
+		}
+	} else if !os.IsNotExist(err) {
+		return fmt.Errorf("ERR_LIP_READ_CONFIG: %w", err)
+	}
+
+	needsWrite := false
+	for key, value := range expected {
+		if fmt.Sprint(config[key]) == fmt.Sprint(value) {
+			continue
+		}
+		config[key] = value
+		needsWrite = true
+	}
+
+	if !needsWrite {
+		return nil
+	}
+	if err := os.MkdirAll(filepath.Dir(configPath), 0o755); err != nil {
+		return fmt.Errorf("ERR_LIP_CREATE_CONFIG_DIR: %w", err)
+	}
+
+	content, err := json.MarshalIndent(config, "", "  ")
+	if err != nil {
+		return fmt.Errorf("ERR_LIP_MARSHAL_CONFIG: %w", err)
+	}
+	content = append(content, '\n')
+	if err := os.WriteFile(configPath, content, 0o644); err != nil {
+		return fmt.Errorf("ERR_LIP_WRITE_CONFIG: %w", err)
+	}
+	return nil
 }
 
 func normalizeLipProcPath(path string) string {

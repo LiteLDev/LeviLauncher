@@ -24,7 +24,7 @@ import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { compareVersions } from "@/utils/version";
-import { FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
+import { FaSearch, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
 import {
   readCurrentVersionName,
   saveCurrentVersionName,
@@ -240,8 +240,12 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
                   <Input
                     value={query}
                     onValueChange={setQuery}
-                    placeholder={t("common.search") as string}
-                    variant="bordered"
+                    onClear={() => setQuery("")}
+                    isClearable
+                    placeholder={t("common.search_placeholder") as string}
+                    startContent={<FaSearch className="text-default-400" />}
+                    radius="full"
+                    variant="flat"
                     size="sm"
                     classNames={COMPONENT_STYLES.input}
                   />

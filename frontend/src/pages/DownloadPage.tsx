@@ -566,10 +566,10 @@ export const DownloadPage: React.FC = () => {
                     isClearable
                     radius="full"
                     classNames={{
-                      base: "max-w-full sm:max-w-[20rem] h-10",
-                      mainWrapper: "h-full",
-                      input: "text-small",
                       ...COMPONENT_STYLES.input,
+                      base: "max-w-full sm:max-w-[20rem] h-10",
+                      mainWrapper: cn(COMPONENT_STYLES.input.mainWrapper, "h-full"),
+                      input: cn(COMPONENT_STYLES.input.input, "text-small"),
                     }}
                     placeholder={t("downloadpage.topcontent.input.placeholder")}
                     value={query}

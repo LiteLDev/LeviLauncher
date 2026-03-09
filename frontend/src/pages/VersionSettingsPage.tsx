@@ -323,6 +323,7 @@ export default function VersionSettingsPage() {
                         if (vs.error) vs.setError("");
                       }}
                       size="md"
+                      variant="flat"
                       radius="lg"
                       placeholder={
                         t(

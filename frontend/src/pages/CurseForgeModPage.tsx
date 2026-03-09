@@ -993,15 +993,15 @@ const CurseForgeModPage: React.FC = () => {
         type={installStep === "error" ? "error" : "primary"}
         icon={
           installStep === "downloading" ? (
-            <LuDownload size={24} className="text-primary-500" />
+            <LuDownload size={24} />
           ) : installStep === "version_select" ? (
-            <LuGamepad2 size={24} className="text-primary-500" />
+            <LuGamepad2 size={24} />
           ) : installStep === "player_select" ? (
-            <LuUser size={24} className="text-primary-500" />
+            <LuUser size={24} />
           ) : installStep === "importing" ? (
-            <LuFileDigit size={24} className="text-primary-500" />
+            <LuFileDigit size={24} />
           ) : installStep === "success" ? (
-            <FiCheckCircle size={24} className="text-primary-500" />
+            <FiCheckCircle size={24} />
           ) : undefined
         }
         title={

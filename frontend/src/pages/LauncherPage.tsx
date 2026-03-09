@@ -755,7 +755,7 @@ export const LauncherPage = (args: any) => {
           type="success"
           title={t("launcherpage.gameinput.installing.title")}
           hideCloseButton
-          icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+          icon={<FaDownload className="w-6 h-6" />}
         >
           <>
             <p className="text-default-600 dark:text-zinc-300 font-medium">
@@ -838,7 +838,7 @@ export const LauncherPage = (args: any) => {
           type="success"
           title={t("launcherpage.vcruntime.installing.title")}
           hideCloseButton
-          icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+          icon={<FaDownload className="w-6 h-6" />}
         >
           <>
             <p className="text-default-600 dark:text-zinc-300 font-medium">
@@ -920,7 +920,7 @@ export const LauncherPage = (args: any) => {
           onOpenChange={gamingServicesMissingDisclosure.onOpenChange}
           type="warning"
           title={t("launcherpage.gs.missing.title")}
-          icon={<FaWindows className="w-6 h-6 text-warning-500" />}
+          icon={<FaWindows className="w-6 h-6" />}
           footer={
             <>
               <Button
@@ -961,7 +961,7 @@ export const LauncherPage = (args: any) => {
           onOpenChange={handleInstallConfirmOpenChange}
           type="success"
           title={t("launcherpage.install_confirm.title")}
-          icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+          icon={<FaDownload className="w-6 h-6" />}
           footer={
             <>
               <Button
@@ -994,7 +994,7 @@ export const LauncherPage = (args: any) => {
           onOpenChange={vcRuntimeCompletingDisclosure.onOpenChange}
           type="success"
           title={t("launcherpage.vcruntime.completing.title")}
-          icon={<FaCogs className="w-6 h-6 text-primary-500" />}
+          icon={<FaCogs className="w-6 h-6" />}
         >
           <p className="text-default-600 dark:text-zinc-300 font-medium">
             {t("launcherpage.vcruntime.completing.body")}
@@ -1089,9 +1089,9 @@ export const LauncherPage = (args: any) => {
           }
           icon={
             registerAction === "unregister" ? (
-              <FaExclamationTriangle className="w-6 h-6 text-warning-500" />
+              <FaExclamationTriangle className="w-6 h-6" />
             ) : (
-              <FaDownload className="w-6 h-6 text-primary-500" />
+              <FaDownload className="w-6 h-6" />
             )
           }
         >

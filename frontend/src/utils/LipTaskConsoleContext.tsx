@@ -572,12 +572,6 @@ export const LipTaskConsoleProvider: React.FC<{
     return "primary" as const;
   }, [status]);
 
-  const terminalIconClass = useMemo(() => {
-    if (status === "failed") return "text-danger-500";
-    if (status === "success") return "text-success-500";
-    return "text-primary-500";
-  }, [status]);
-
   const closeButtonColor = useMemo(() => {
     if (status === "failed") return "danger" as const;
     if (status === "success") return "success" as const;
@@ -663,7 +657,7 @@ export const LipTaskConsoleProvider: React.FC<{
         }}
         type={modalType}
         scrollBehavior="inside"
-        icon={<LuTerminal size={24} className={terminalIconClass} />}
+        icon={<LuTerminal size={24} />}
         title={modalTitle}
         isDismissable={!running}
         footer={

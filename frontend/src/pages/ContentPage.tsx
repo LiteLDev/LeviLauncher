@@ -527,7 +527,7 @@ export default function ContentPage() {
             ? t("contentpage.transfer_progress_title")
             : t("mods.importing_title")
         }
-        icon={<FiUploadCloud className="w-6 h-6 text-primary-500" />}
+        icon={<FiUploadCloud className="w-6 h-6" />}
         hideCloseButton
         isDismissable={false}
         showConfirmButton={false}

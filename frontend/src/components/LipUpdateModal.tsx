@@ -34,7 +34,7 @@ export const LipUpdateModal: React.FC<LipUpdateModalProps> = ({
       }}
       type="warning"
       title={t("settings.lip.startup_prompt.title")}
-      icon={<FaDownload className="w-5 h-5 text-warning-500" />}
+      icon={<FaDownload className="w-5 h-5" />}
       hideCloseButton
       showConfirmButton={false}
       showCancelButton={false}

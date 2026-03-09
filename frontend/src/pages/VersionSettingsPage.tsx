@@ -555,7 +555,7 @@ export default function VersionSettingsPage() {
         isDismissable={false}
         type="warning"
         title={t("versions.edit.unregister_progress.title")}
-        icon={<FiAlertTriangle className="w-6 h-6 text-warning-500" />}
+        icon={<FiAlertTriangle className="w-6 h-6" />}
       >
         <div className="text-medium font-medium text-default-600 dark:text-zinc-300 mb-4">
           {t("versions.edit.unregister_progress.body")}
@@ -576,7 +576,7 @@ export default function VersionSettingsPage() {
         size="md"
         type="success"
         title={t("versions.edit.unregister_success.title")}
-        icon={<FiCheckCircle className="w-6 h-6 text-success-500" />}
+        icon={<FiCheckCircle className="w-6 h-6" />}
         onConfirm={() => {
           vs.setUnregisterSuccessOpen(false);
         }}
@@ -595,7 +595,7 @@ export default function VersionSettingsPage() {
         }}
         type="warning"
         title={t("launcherpage.gdk_missing.title")}
-        icon={<FiAlertTriangle className="w-6 h-6 text-warning-500" />}
+        icon={<FiAlertTriangle className="w-6 h-6" />}
         footer={
           <>
             <Button
@@ -634,7 +634,7 @@ export default function VersionSettingsPage() {
         hideCloseButton
         type="error"
         title={t("common.error")}
-        icon={<FiAlertTriangle className="w-6 h-6 text-danger-500" />}
+        icon={<FiAlertTriangle className="w-6 h-6" />}
         onConfirm={() => {
           vs.setError("");
           vs.setErrorOpen(false);
@@ -657,7 +657,7 @@ export default function VersionSettingsPage() {
         size="md"
         type="success"
         title={t("launcherpage.shortcut.success.title")}
-        icon={<FiCheckCircle className="w-6 h-6 text-success-500" />}
+        icon={<FiCheckCircle className="w-6 h-6" />}
         onConfirm={() => {
           vs.setShortcutSuccessOpen(false);
         }}
@@ -687,7 +687,7 @@ export default function VersionSettingsPage() {
         size="md"
         type="success"
         title={t("launcherpage.delete.complete.title")}
-        icon={<FiCheckCircle className="w-6 h-6 text-success-500" />}
+        icon={<FiCheckCircle className="w-6 h-6" />}
         onConfirm={() => {
           vs.setDeleteSuccessOpen(false);
           vs.navigate(vs.returnToPath);
@@ -855,7 +855,7 @@ export default function VersionSettingsPage() {
         onOpenChange={vs.rcOnOpenChange}
         type="warning"
         title={t("mods.rc_warning.title")}
-        icon={<FiAlertTriangle className="w-6 h-6 text-warning-500" />}
+        icon={<FiAlertTriangle className="w-6 h-6" />}
         cancelText={t("common.cancel")}
         confirmText={t("common.continue")}
         showCancelButton

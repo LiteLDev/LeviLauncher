@@ -886,7 +886,7 @@ const LIPPage: React.FC = () => {
         isOpen={developerGuideOpen}
         onOpenChange={setDeveloperGuideOpen}
         type="primary"
-        icon={<LuBookOpen size={24} className="text-primary-500" />}
+        icon={<LuBookOpen size={24} />}
         title={t("lip.guide.title")}
         isDismissable
         footer={

@@ -97,7 +97,7 @@ export const ModsPage: React.FC = () => {
         onOpenChange={() => {}}
         title={t("mods.importing_title")}
         type="primary"
-        icon={<FiUploadCloud className="w-6 h-6 text-primary-500" />}
+        icon={<FiUploadCloud className="w-6 h-6" />}
         hideCloseButton
         isDismissable={false}
         showConfirmButton={false}
@@ -149,7 +149,7 @@ export const ModsPage: React.FC = () => {
         onOpenChange={mp.dllOnOpenChange}
         title={t("mods.dll_modal_title")}
         type="primary"
-        icon={<FaPuzzlePiece className="w-6 h-6 text-primary-500" />}
+        icon={<FaPuzzlePiece className="w-6 h-6" />}
         hideCloseButton
         onConfirm={() => {
           const nm = mp.dllName.trim();
@@ -756,7 +756,7 @@ export const ModsPage: React.FC = () => {
         onOpenChange={mp.infoOnOpenChange}
         title={t("mods.details_title")}
         type="primary"
-        icon={<FaPuzzlePiece className="w-6 h-6 text-primary-500" />}
+        icon={<FaPuzzlePiece className="w-6 h-6" />}
         hideCloseButton
         showConfirmButton={false}
         showCancelButton

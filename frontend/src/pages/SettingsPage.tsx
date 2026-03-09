@@ -2331,7 +2331,7 @@ export const SettingsPage: React.FC = () => {
         onOpenChange={gdkLicenseDisclosure.onOpenChange}
         type="info"
         title={t("settings.gdk.license.title")}
-        icon={<FaDownload className="w-6 h-6 text-primary-500" />}
+        icon={<FaDownload className="w-6 h-6" />}
         footer={
           <>
             <Button variant="light" onPress={gdkLicenseDisclosure.onClose}>
@@ -2391,7 +2391,7 @@ export const SettingsPage: React.FC = () => {
             </span>
           </div>
         }
-        icon={<FaList className="w-6 h-6 text-primary-500" />}
+        icon={<FaList className="w-6 h-6" />}
         footer={
           <Button variant="light" onPress={() => setProcessModalOpen(false)}>
             {t("common.close")}
@@ -2482,7 +2482,7 @@ export const SettingsPage: React.FC = () => {
         isDismissable={false}
         type={gdkDlError ? "error" : "info"}
         title={gdkDlError ? t("common.error") : t("settings.gdk.download.title")}
-        icon={gdkDlError ? undefined : <FaDownload className="w-6 h-6 text-primary-500" />}
+        icon={gdkDlError ? undefined : <FaDownload className="w-6 h-6" />}
         confirmText={gdkDlError ? t("common.close") : undefined}
         onConfirm={gdkDlError ? () => gdkProgressDisclosure.onClose() : undefined}
         footer={
@@ -2562,7 +2562,7 @@ export const SettingsPage: React.FC = () => {
         isDismissable={false}
         type="info"
         title={t("settings.gdk.install.title")}
-        icon={<FaCogs className="w-6 h-6 text-primary-500" />}
+        icon={<FaCogs className="w-6 h-6" />}
       >
         <div className="text-small text-default-500 dark:text-zinc-400">
           {t("settings.gdk.install.body")}
@@ -2578,7 +2578,7 @@ export const SettingsPage: React.FC = () => {
         isDismissable={false}
         type={lipError ? "error" : "info"}
         title={lipError ? t("common.error") : t("settings.lip.installing")}
-        icon={lipError ? undefined : <FaDownload className="w-6 h-6 text-primary-500" />}
+        icon={lipError ? undefined : <FaDownload className="w-6 h-6" />}
         confirmText={lipError ? t("common.close") : undefined}
         onConfirm={lipError ? () => lipProgressDisclosure.onClose() : undefined}
         footer={

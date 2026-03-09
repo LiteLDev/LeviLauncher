@@ -39,7 +39,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       onOpenChange={onOpenChange}
       type="error"
       title={title}
-      icon={<FiTrash2 className="w-6 h-6 text-danger-500" />}
+      icon={<FiTrash2 className="w-6 h-6" />}
       isDismissable={!isPending}
       hideCloseButton={isPending}
       confirmText={confirmText || t("common.delete")}

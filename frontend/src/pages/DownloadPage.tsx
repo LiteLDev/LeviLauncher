@@ -1028,7 +1028,7 @@ export const DownloadPage: React.FC = () => {
           scrollBehavior="inside"
           type="primary"
           title={t("downloadpage.mirror.title")}
-          icon={<FaCloudDownloadAlt size={24} className="text-primary-500" />}
+          icon={<FaCloudDownloadAlt size={24} />}
           hideScrollbar={true}
           showConfirmButton={false}
           showCancelButton={false}

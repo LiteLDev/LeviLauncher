@@ -32,6 +32,7 @@ export const useVersionSettings = () => {
   const navigate = useNavigate();
   const location = useLocation() as any;
   const initialName: string = String(location?.state?.name || "");
+  const initialTab: string = String(location?.state?.tab || "general");
   const returnToPath: string = String(location?.state?.returnTo || "/versions");
   const hasBackend = minecraft !== undefined;
   const ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS =
@@ -39,7 +40,7 @@ export const useVersionSettings = () => {
 
   // Form state
   const [targetName, setTargetName] = React.useState<string>(initialName);
-  const [selectedTab, setSelectedTab] = React.useState<string>("general");
+  const [selectedTab, setSelectedTab] = React.useState<string>(initialTab);
   const [newName, setNewName] = React.useState<string>(initialName);
   const [gameVersion, setGameVersion] = React.useState<string>("");
   const [versionType, setVersionType] = React.useState<string>("");
@@ -304,6 +305,12 @@ export const useVersionSettings = () => {
   React.useEffect(() => {
     setErrorOpen(!!error);
   }, [error]);
+
+  React.useEffect(() => {
+    if (location.state && (location.state as any).tab) {
+      setSelectedTab((location.state as any).tab);
+    }
+  }, [location.state]);
 
   // Unsaved changes navigation guard
   React.useEffect(() => {

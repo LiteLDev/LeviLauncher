@@ -2,6 +2,7 @@ import React from "react";
 import { ModalContent, Button, ButtonProps } from "@heroui/react";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
+import { cn } from "@/utils/cn";
 import {
   FiCheckCircle,
   FiAlertTriangle,
@@ -141,6 +142,20 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
       ? "text-white! font-bold shadow-lg shadow-warning-500/20"
       : confirmButtonProps?.className || "font-bold shadow-lg";
 
+  const resolvedIcon = React.useMemo(() => {
+    if (!icon) {
+      return <Icon className={cn("w-6 h-6", config.colorClass)} />;
+    }
+
+    if (!React.isValidElement<{ className?: string }>(icon)) {
+      return icon;
+    }
+
+    return React.cloneElement(icon, {
+      className: cn(icon.props.className, config.colorClass),
+    });
+  }, [Icon, config.colorClass, icon]);
+
   return (
     <BaseModal
       isOpen={isOpen}
@@ -170,11 +185,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
                 }}
                 className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border ${iconBgClass || `${config.bgClass} ${config.borderClass}`}`}
               >
-                {icon ? (
-                  icon
-                ) : (
-                  <Icon className={`w-6 h-6 ${config.colorClass}`} />
-                )}
+                {resolvedIcon}
               </motion.div>
               <motion.div
                 initial={{ opacity: 0, x: -10 }}

@@ -5,7 +5,7 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { useParams, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
   addToast,
@@ -249,6 +249,7 @@ const normalizeGameVersion = (value: string): string => {
 
 const LIPPackagePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
+  const location = useLocation();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const { runWithLipTask } = useLipTaskConsole();
@@ -907,26 +908,17 @@ const LIPPackagePage: React.FC = () => {
     dialogInstanceLLState?.installedVersion || "",
   ).trim();
 
-  const dialogGameLLCandidates = useMemo<string[]>(() => {
-    if (!dialogRequiresLL) return [];
-    if (!installDialogInstanceGameVersion) return [];
-    return Array.isArray(gameToLLVersions[installDialogInstanceGameVersion])
-      ? gameToLLVersions[installDialogInstanceGameVersion]
-      : [];
-  }, [dialogRequiresLL, installDialogInstanceGameVersion, gameToLLVersions]);
-
-  const dialogCompatibleLLCandidates = useMemo<string[]>(() => {
-    if (!dialogRequiresLL || !installDialogFileState) return [];
-    const llRanges = installDialogFileState.file.llDependencyRanges;
-    return dialogGameLLCandidates.filter((version) =>
-      isLeviLaminaVersionCompatible(String(version || "").trim(), llRanges),
-    );
-  }, [dialogRequiresLL, installDialogFileState, dialogGameLLCandidates]);
-
-  const dialogAutoInstallLLVersion = useMemo<string>(
-    () => String(dialogCompatibleLLCandidates[0] || "").trim(),
-    [dialogCompatibleLLCandidates],
-  );
+  const installDialogPrimaryActionLabelKey = useMemo<string>(() => {
+    if (dialogRequiresLL && !dialogLLStateLoading && !dialogLLInstalled) {
+      return "lip.files.redirect";
+    }
+    return installDialogActionLabelKey;
+  }, [
+    dialogLLInstalled,
+    dialogLLStateLoading,
+    dialogRequiresLL,
+    installDialogActionLabelKey,
+  ]);
 
   const dialogInstalledLLCompatible = useMemo<boolean>(() => {
     if (!dialogRequiresLL) return true;
@@ -1049,8 +1041,6 @@ const LIPPackagePage: React.FC = () => {
       return dialogInstalledLLCompatible;
     }
 
-    if (mappingUnavailable) return false;
-    if (!dialogAutoInstallLLVersion) return false;
     return true;
   }, [
     installDialogFileState,
@@ -1059,9 +1049,30 @@ const LIPPackagePage: React.FC = () => {
     dialogLLStateLoading,
     dialogLLInstalled,
     dialogInstalledLLCompatible,
-    mappingUnavailable,
-    dialogAutoInstallLLVersion,
   ]);
+
+  const redirectToInstanceLoaderSettings = useCallback(
+    (instanceName: string) => {
+      const normalizedName = String(instanceName || "").trim();
+      if (!normalizedName) return;
+
+      setInstallDialogOpen(false);
+      setInstallDialogTriggerVersion("");
+      addToast({
+        color: "warning",
+        title: t("common.tip"),
+        description: t("lip.files.ll_missing_redirect_to_loader"),
+      });
+      navigate("/versionSettings", {
+        state: {
+          name: normalizedName,
+          returnTo: `${location.pathname}${location.search}`,
+          tab: "loader",
+        },
+      });
+    },
+    [location.pathname, location.search, navigate, t],
+  );
 
   const openInstallDialog = useCallback(
     (version: string) => {
@@ -1099,6 +1110,11 @@ const LIPPackagePage: React.FC = () => {
       return;
     }
 
+    if (dialogRequiresLL && !dialogLLStateLoading && !dialogLLInstalled) {
+      redirectToInstanceLoaderSettings(installDialogSelectedInstance);
+      return;
+    }
+
     setActionRunning(true);
     try {
       await runWithLipTask(
@@ -1113,36 +1129,6 @@ const LIPPackagePage: React.FC = () => {
             "info",
             `${t(installDialogActionLabelKey)} ${activePackageIdentifier}@${installDialogTriggerVersion}`,
           );
-
-          if (dialogRequiresLL && !dialogLLInstalled) {
-            if (mappingUnavailable) {
-              throw new Error("ERR_LL_NOT_SUPPORTED");
-            }
-            if (!dialogAutoInstallLLVersion) {
-              throw new Error("ERR_LL_VERSION_UNSUPPORTED");
-            }
-
-            const llErr = await callMinecraftByName<string>(
-              "InstallLeviLamina",
-              installDialogInstanceGameVersion,
-              installDialogSelectedInstance,
-              dialogAutoInstallLLVersion,
-            );
-            if (String(llErr || "").trim()) {
-              throw new Error(String(llErr));
-            }
-
-            setInstanceLLStates((prev) => ({
-              ...prev,
-              [installDialogSelectedInstance]: {
-                installed: true,
-                explicitInstalled: true,
-                installedVersion: dialogAutoInstallLLVersion,
-                error: "",
-                loading: false,
-              },
-            }));
-          }
 
           const err = await callMinecraftByName<string>(
             "InstallLIPPackage",
@@ -1193,16 +1179,15 @@ const LIPPackagePage: React.FC = () => {
   }, [
     activePackageIdentifier,
     callMinecraftByName,
-    dialogAutoInstallLLVersion,
     dialogLLInstalled,
+    dialogLLStateLoading,
     dialogPackageStateLoading,
     dialogRequiresLL,
     installDialogActionKind,
     installDialogActionLabelKey,
     installDialogSelectedInstance,
-    installDialogInstanceGameVersion,
-    mappingUnavailable,
     pkg,
+    redirectToInstanceLoaderSettings,
     resolveErrorText,
     runWithLipTask,
     ensurePackageInstallState,
@@ -1687,7 +1672,7 @@ const LIPPackagePage: React.FC = () => {
           closeInstallDialog();
         }}
         type="primary"
-        icon={<LuGamepad2 size={24} className="text-primary-500" />}
+        icon={<LuGamepad2 size={24} />}
         title={t("lip.files.select_instance_title")}
         isDismissable={!actionRunning}
         footer={
@@ -1712,7 +1697,7 @@ const LIPPackagePage: React.FC = () => {
                 actionRunning
               }
             >
-              {t(installDialogActionLabelKey)}
+              {t(installDialogPrimaryActionLabelKey)}
             </Button>
           </>
         }
@@ -1791,30 +1776,9 @@ const LIPPackagePage: React.FC = () => {
           ) : null}
           {dialogRequiresLL &&
           !dialogLLStateLoading &&
-          !dialogLLInstalled &&
-          !mappingUnavailable &&
-          dialogAutoInstallLLVersion ? (
+          !dialogLLInstalled ? (
             <div className="text-xs text-warning-600 dark:text-warning-400">
-              {t("lip.files.ll_missing_auto_install_hint", {
-                version: dialogAutoInstallLLVersion,
-              })}
-            </div>
-          ) : null}
-          {dialogRequiresLL &&
-          !dialogLLStateLoading &&
-          !dialogLLInstalled &&
-          mappingUnavailable ? (
-            <div className="text-xs text-danger-500">
-              {t("lip.files.ll_missing_mapping_block_hint")}
-            </div>
-          ) : null}
-          {dialogRequiresLL &&
-          !dialogLLStateLoading &&
-          !dialogLLInstalled &&
-          !mappingUnavailable &&
-          !dialogAutoInstallLLVersion ? (
-            <div className="text-xs text-danger-500">
-              {t("lip.files.ll_missing_no_compatible_hint")}
+              {t("lip.files.ll_missing_redirect_hint")}
             </div>
           ) : null}
           {dialogRequiresLL &&

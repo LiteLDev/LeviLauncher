@@ -47,7 +47,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
           {version}
         </span>
       }
-      icon={<FaRocket className="w-5 h-5 text-primary-500" />}
+      icon={<FaRocket className="w-5 h-5" />}
       hideCloseButton
       showConfirmButton={false}
       showCancelButton={false}

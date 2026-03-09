@@ -914,7 +914,7 @@ export default function WorldsListPage() {
         onOpenChange={() => {}}
         type="primary"
         title={t("contentpage.transfer_progress_title")}
-        icon={<FaExchangeAlt className="w-6 h-6 text-primary-500" />}
+        icon={<FaExchangeAlt className="w-6 h-6" />}
         hideCloseButton
         isDismissable={false}
         showConfirmButton={false}

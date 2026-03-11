@@ -11,7 +11,7 @@ import {
 } from "@heroui/react";
 
 export const BaseModal: React.FC<ModalProps> = (props) => {
-  const { classNames, ...rest } = props;
+  const { classNames, isOpen, ...rest } = props;
 
   const finalClassNames = {
     ...classNames,
@@ -25,7 +25,17 @@ export const BaseModal: React.FC<ModalProps> = (props) => {
     wrapper: `z-[70] ${classNames?.wrapper || ""}`,
   };
 
-  return <Modal {...rest} backdrop="blur" classNames={finalClassNames} />;
+  return (
+    <>
+      {isOpen ? (
+        <div
+          aria-hidden="true"
+          className="wails-draggable fixed inset-x-0 top-0 h-14 z-[75]"
+        />
+      ) : null}
+      <Modal isOpen={isOpen} {...rest} backdrop="blur" classNames={finalClassNames} />
+    </>
+  );
 };
 
 export const BaseModalHeader: React.FC<ModalHeaderProps> = ({

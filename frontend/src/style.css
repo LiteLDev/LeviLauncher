@@ -254,7 +254,8 @@ body::-webkit-scrollbar,
   display: none; /* Chrome, Safari */
 }
 
-#wails-draggable {
+#wails-draggable,
+.wails-draggable {
   --wails-draggable: drag;
 }
 

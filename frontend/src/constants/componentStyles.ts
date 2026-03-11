@@ -20,7 +20,7 @@ export const COMPONENT_STYLES = {
   input: {
     mainWrapper: "gap-1",
     inputWrapper:
-      "bg-default-100/70 dark:bg-zinc-800/60 border-[1.5px] border-default-200/70 dark:border-white/10 hover:bg-default-100/85 dark:hover:bg-zinc-800/72 group-data-[hover=true]:bg-default-100/85 dark:group-data-[hover=true]:bg-zinc-800/72 hover:border-default-300/80 dark:hover:border-white/15 group-data-[hover=true]:border-default-300/80 dark:group-data-[hover=true]:border-white/15 focus-within:bg-default-50 dark:focus-within:bg-zinc-800 focus-within:!border-primary-500 group-data-[focus=true]:bg-default-50 dark:group-data-[focus=true]:bg-zinc-800 group-data-[focus=true]:!border-primary-500 shadow-sm rounded-xl transition-all duration-200 group-data-[invalid=true]:!border-danger-400 dark:group-data-[invalid=true]:!border-danger-500 group-data-[invalid=true]:bg-danger-50/35 dark:group-data-[invalid=true]:bg-danger-950/20 group-data-[disabled=true]:bg-default-100/55 dark:group-data-[disabled=true]:bg-zinc-900/45 group-data-[disabled=true]:shadow-none",
+      "bg-default-100/70 dark:bg-zinc-900/60 border-[1.5px] border-default-200/70 dark:border-white/10 hover:bg-default-100/85 dark:hover:bg-zinc-800/72 group-data-[hover=true]:bg-default-100/85 dark:group-data-[hover=true]:bg-zinc-800/72 hover:border-default-300/80 dark:hover:border-white/15 group-data-[hover=true]:border-default-300/80 dark:group-data-[hover=true]:border-white/15 focus-within:bg-default-50 dark:focus-within:bg-zinc-800 focus-within:!border-primary-500 group-data-[focus=true]:bg-default-50 dark:group-data-[focus=true]:bg-zinc-800 group-data-[focus=true]:!border-primary-500 shadow-sm rounded-xl transition-all duration-200 group-data-[invalid=true]:!border-danger-400 dark:group-data-[invalid=true]:!border-danger-500 group-data-[invalid=true]:bg-danger-50/35 dark:group-data-[invalid=true]:bg-danger-950/20 group-data-[disabled=true]:bg-default-100/55 dark:group-data-[disabled=true]:bg-zinc-900/45 group-data-[disabled=true]:shadow-none",
     innerWrapper: "gap-2",
     input:
       "text-default-800 dark:text-zinc-100 placeholder:text-default-500 dark:placeholder:text-zinc-400 [&::-webkit-calendar-picker-indicator]:cursor-pointer [&::-webkit-calendar-picker-indicator]:opacity-60 dark:[&::-webkit-calendar-picker-indicator]:invert transition-colors",
@@ -30,8 +30,7 @@ export const COMPONENT_STYLES = {
       "text-default-400 hover:text-default-600 dark:text-zinc-500 dark:hover:text-zinc-300 transition-colors",
     helperWrapper: "px-1 pt-1",
     description: "text-tiny text-default-400 dark:text-zinc-500",
-    errorMessage:
-      "text-tiny font-medium text-danger-500 dark:text-danger-400",
+    errorMessage: "text-tiny font-medium text-danger-500 dark:text-danger-400",
   },
   tabs: {
     tabList: "bg-default-100/50 dark:bg-zinc-800/50 rounded-xl px-1",

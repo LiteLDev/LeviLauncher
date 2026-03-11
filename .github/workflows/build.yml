@@ -88,30 +88,39 @@ jobs:
           build-platform: ${{ matrix.build.platform }}
           package: false
 
-      - name: Create ZIP archives
+      - name: Verify build outputs
         shell: pwsh
         run: |
-          Write-Host "Creating ZIP archives for Windows ${{ matrix.build.archs }}"
+          Write-Host "Checking build outputs for Windows ${{ matrix.build.archs }}"
           cd bin
 
-          if (Test-Path "LeviLauncher.exe") {
-            $zipName = "LeviLauncher_windows_${{ matrix.build.archs }}.zip"
-            Compress-Archive -Path "LeviLauncher.exe" -DestinationPath $zipName -Force
-            Write-Host "Created $zipName"
-          } else {
-            Write-Host "LeviLauncher.exe not found!"
-            Get-ChildItem
+          $requiredFiles = @(
+            "LeviLauncher.exe",
+            "LeviLauncher-${{ matrix.build.archs }}-installer.exe"
+          )
+
+          foreach ($file in $requiredFiles) {
+            if (-not (Test-Path $file)) {
+              throw "Required build output not found: $file"
+            }
           }
 
           Write-Host "Files in bin directory:"
           Get-ChildItem
 
-      - uses: actions/upload-artifact@v4
+      - name: Upload standalone EXE artifact
+        uses: actions/upload-artifact@v7.0.0
         with:
-          name: LeviLauncher-windows-${{ matrix.build.archs }}
-          path: |
-            bin/LeviLauncher_windows_${{ matrix.build.archs }}.zip
-            bin/LeviLauncher-${{ matrix.build.archs }}-installer.exe
+          path: bin/LeviLauncher.exe
+          archive: false
+          if-no-files-found: error
+
+      - name: Upload installer artifact
+        uses: actions/upload-artifact@v7.0.0
+        with:
+          path: bin/LeviLauncher-${{ matrix.build.archs }}-installer.exe
+          archive: false
+          if-no-files-found: error
 
   release:
     name: Create Release
@@ -124,7 +133,7 @@ jobs:
         uses: actions/checkout@v4
 
       - name: Download all artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.0
         with:
           path: ./artifacts
 
@@ -220,10 +229,10 @@ jobs:
         run: |
           echo "Uploading release assets..."
 
-          for zip_file in ./artifacts/*/*.zip; do
-            if [ -f "$zip_file" ]; then
-              echo "Uploading ZIP: $zip_file"
-              gh release upload ${{ github.ref_name }} "$zip_file" --clobber
+          for raw_exe_file in ./artifacts/*/LeviLauncher.exe; do
+            if [ -f "$raw_exe_file" ]; then
+              echo "Uploading standalone EXE: $raw_exe_file"
+              gh release upload ${{ github.ref_name }} "$raw_exe_file" --clobber
             fi
           done
 
@@ -239,7 +248,8 @@ jobs:
         if: startsWith(github.ref, 'refs/tags/')
         env:
           DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
-          EXE_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher-amd64-installer.exe"
+          INSTALLER_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher-amd64-installer.exe"
+          STANDALONE_EXE_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}/LeviLauncher.exe"
           TAG_NAME: ${{ github.ref_name }}
         run: |
           EMBED_TITLE="🚀 LeviLauncher Update!"
@@ -261,8 +271,13 @@ jobs:
                   \"inline\": true
                 },
                 {
-                  \"name\": \"🔗 Download\",
-                  \"value\": \"[**Click here to download EXE**]($EXE_URL)\",
+                  \"name\": \"📦 Installer\",
+                  \"value\": \"[**Click here to download installer**]($INSTALLER_URL)\",
+                  \"inline\": true
+                },
+                {
+                  \"name\": \"🧩 Standalone EXE\",
+                  \"value\": \"[**Click here to download EXE**]($STANDALONE_EXE_URL)\",
                   \"inline\": true
                 }
               ] 
@@ -280,7 +295,7 @@ jobs:
 
     steps:
       - name: Download build artifacts
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v8.0.0
         with:
           path: ./downloaded-artifacts
 
@@ -291,17 +306,6 @@ jobs:
           echo "Looking for LeviLauncher.exe in downloaded artifacts..."
 
           EXE_FILE=$(find ./downloaded-artifacts -name "LeviLauncher.exe" -type f | head -1 || true)
-          if [ -z "${EXE_FILE}" ]; then
-            echo "LeviLauncher.exe not found directly, trying to extract ZIP artifacts..."
-            while IFS= read -r zip_file; do
-              echo "Extracting: $zip_file"
-              dest_dir="$(dirname "$zip_file")/extracted"
-              mkdir -p "$dest_dir"
-              unzip -o "$zip_file" -d "$dest_dir"
-            done < <(find ./downloaded-artifacts -name "*.zip" -type f)
-
-            EXE_FILE=$(find ./downloaded-artifacts -name "LeviLauncher.exe" -type f | head -1 || true)
-          fi
 
           if [ -n "${EXE_FILE}" ]; then
             echo "Found EXE file: $EXE_FILE"

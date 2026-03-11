@@ -10,6 +10,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
 import { LAYOUT } from "@/constants/layout";
+import { ROUTES } from "@/constants/routes";
 
 interface TopBarProps {
   navLocked: boolean;
@@ -119,10 +120,10 @@ export const TopBar: React.FC<TopBarProps> = ({
               </span>
             ) : (
               <Link
-                to="/"
+                to={ROUTES.home}
                 onClick={(e) => {
                   e.preventDefault();
-                  tryNavigate("/");
+                  tryNavigate(ROUTES.home);
                 }}
                 className={`transition-colors hover:opacity-80 ${
                   pathnames.length === 0

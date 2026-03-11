@@ -19,8 +19,9 @@ import {
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { useTranslation } from "react-i18next";
+import { ROUTES } from "@/constants/routes";
 
-export const useVersionSettings = () => {
+export const useInstanceSettings = () => {
   const { t } = useTranslation();
   const { runWithLipTask } = useLipTaskConsole();
   const {
@@ -33,7 +34,9 @@ export const useVersionSettings = () => {
   const location = useLocation() as any;
   const initialName: string = String(location?.state?.name || "");
   const initialTab: string = String(location?.state?.tab || "general");
-  const returnToPath: string = String(location?.state?.returnTo || "/versions");
+  const returnToPath: string = String(
+    location?.state?.returnTo || ROUTES.instances,
+  );
   const hasBackend = minecraft !== undefined;
   const ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS =
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS";
@@ -139,6 +142,11 @@ export const useVersionSettings = () => {
     () => llSupportedVersions[0] || "",
     [llSupportedVersions],
   );
+
+  React.useEffect(() => {
+    if (initialName) return;
+    navigate(ROUTES.instances, { replace: true });
+  }, [initialName, navigate]);
   const resolvedLLTargetVersion = React.useMemo(
     () => String(selectedLLVersion || getLatestLLVersion(gameVersion) || "").trim(),
     [gameVersion, getLatestLLVersion, selectedLLVersion],

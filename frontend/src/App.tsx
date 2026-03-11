@@ -30,6 +30,7 @@ import { useBackgroundImage, getFitStyles } from "@/hooks/useBackgroundImage";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { useAppNavigation } from "@/hooks/useAppNavigation";
 import { useAppModals } from "@/hooks/useAppModals";
+import { ROUTES } from "@/constants/routes";
 
 // Lazy load pages
 const LauncherPage = lazy(() =>
@@ -46,12 +47,14 @@ const DownloadPage = lazy(() =>
 const SettingsPage = lazy(() =>
   import("@/pages/SettingsPage").then((m) => ({ default: m.SettingsPage })),
 );
-const VersionSelectPage = lazy(() =>
-  import("@/pages/VersionSelectPage").then((m) => ({
-    default: m.VersionSelectPage,
+const InstanceSelectPage = lazy(() =>
+  import("@/pages/InstanceSelectPage").then((m) => ({
+    default: m.InstanceSelectPage,
   })),
 );
-const VersionSettingsPage = lazy(() => import("@/pages/VersionSettingsPage"));
+const InstanceSettingsPage = lazy(() =>
+  import("@/pages/InstanceSettingsPage"),
+);
 const ModsPage = lazy(() => import("@/pages/ModsPage"));
 const UpdatingPage = lazy(() => import("@/pages/UpdatingPage"));
 const ContentPage = lazy(() => import("@/pages/ContentPage"));
@@ -353,31 +356,31 @@ function App() {
                         >
                           <Routes>
                             <Route
-                              path="/"
+                              path={ROUTES.home}
                               element={
                                 <LauncherPage refresh={refresh} count={count} />
                               }
                             />
                             <Route
-                              path="/download"
+                              path={ROUTES.download}
                               element={<DownloadPage />}
                             />
                             <Route
-                              path="/tasks"
+                              path={ROUTES.downloadTasks}
                               element={<DownloadManagerPage />}
                             />
                             <Route path="/install" element={<InstallPage />} />
                             <Route
-                              path="/settings"
+                              path={ROUTES.settings}
                               element={<SettingsPage />}
                             />
                             <Route
-                              path="/versions"
-                              element={<VersionSelectPage refresh={refresh} />}
+                              path={ROUTES.instances}
+                              element={<InstanceSelectPage refresh={refresh} />}
                             />
                             <Route
-                              path="/versionSettings"
-                              element={<VersionSettingsPage />}
+                              path={ROUTES.instanceSettings}
+                              element={<InstanceSettingsPage />}
                             />
                             <Route path="/mods" element={<ModsPage />} />
                             <Route
@@ -394,11 +397,11 @@ function App() {
                               element={<LIPPackagePage />}
                             />
                             <Route
-                              path="/updating"
+                              path={ROUTES.updating}
                               element={<UpdatingPage />}
                             />
                             <Route
-                              path="/onboarding"
+                              path={ROUTES.onboarding}
                               element={<OnboardingPage />}
                             />
                             <Route path="/content" element={<ContentPage />} />
@@ -430,7 +433,7 @@ function App() {
                               path="/content/servers"
                               element={<ServersPage />}
                             />
-                            <Route path="/about" element={<AboutPage />} />
+                            <Route path={ROUTES.about} element={<AboutPage />} />
                           </Routes>
                         </Suspense>
                       ))}

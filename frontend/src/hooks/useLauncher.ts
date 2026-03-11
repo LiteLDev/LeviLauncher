@@ -19,6 +19,7 @@ import * as versionService from "bindings/github.com/liteldev/LeviLauncher/versi
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/userservice";
 import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
+import { ROUTES } from "@/constants/routes";
 
 let __didCheckGameInput = false;
 let __didCheckGamingServices = false;
@@ -343,7 +344,7 @@ export const useLauncher = (args: any) => {
       }
     } else {
       launchRequestActiveRef.current = false;
-      navigate("/versions");
+      navigate(ROUTES.instances);
     }
   }, [
     currentVersion,

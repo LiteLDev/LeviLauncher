@@ -27,6 +27,7 @@ import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
+import { ROUTES } from "@/constants/routes";
 
 const LEVILAMINA_NORMALIZED = "levilamina";
 const ERR_LL_MANAGED_IN_VERSION_SETTINGS =
@@ -1498,7 +1499,7 @@ export const useModsPage = (
 
   useEffect(() => {
     if (!activeVersionName) {
-      navigate("/versions", { replace: true });
+      navigate(ROUTES.instances, { replace: true });
       return;
     }
     const snapshot = getInstanceSnapshot(activeVersionName);
@@ -2480,7 +2481,7 @@ export const useModsPage = (
   const openFolder = () => {
     const name = activeVersionName;
     if (!name) {
-      navigate("/versions");
+      navigate(ROUTES.instances);
       return;
     }
     OpenModsExplorer(name);

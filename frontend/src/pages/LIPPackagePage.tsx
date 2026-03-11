@@ -58,6 +58,7 @@ import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { formatDateStr } from "@/utils/formatting";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { compareVersions } from "@/utils/version";
+import { ROUTES } from "@/constants/routes";
 import type { LIPPackageInstallState } from "@/utils/modIntelligenceResolver";
 import {
   fetchLIPLeviLaminaClientMapping,
@@ -1063,7 +1064,7 @@ const LIPPackagePage: React.FC = () => {
         title: t("common.tip"),
         description: t("lip.files.ll_missing_redirect_to_loader"),
       });
-      navigate("/versionSettings", {
+      navigate(ROUTES.instanceSettings, {
         state: {
           name: normalizedName,
           returnTo: `${location.pathname}${location.search}`,

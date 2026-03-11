@@ -26,6 +26,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
+import { ROUTES, isRouteActive } from "@/constants/routes";
 
 interface GlobalNavbarProps {
   isBeta: boolean;
@@ -55,21 +56,21 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
     {
       key: "home",
       label: t("launcherpage.launch_button"),
-      path: "/",
+      path: ROUTES.home,
       icon: <FaRocket size={18} />,
       navbarClass: "flex",
     },
     {
       key: "download",
       label: t("downloadmodal.download_button"),
-      path: "/download",
+      path: ROUTES.download,
       icon: <FaDownload size={18} />,
       navbarClass: "flex",
     },
     {
       key: "versions",
       label: t("nav.versions"),
-      path: "/versions",
+      path: ROUTES.instances,
       icon: <FaList size={18} />,
       navbarClass: "hidden lg:flex",
       menuClass: "flex lg:hidden",
@@ -78,7 +79,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
     {
       key: "about",
       label: t("nav.about"),
-      path: "/about",
+      path: ROUTES.about,
       icon: <FaInfoCircle size={18} />,
       navbarClass: "hidden lg:flex",
       menuClass: "flex lg:hidden",
@@ -87,7 +88,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
     {
       key: "settings",
       label: t("app.settings"),
-      path: "/settings",
+      path: ROUTES.settings,
       icon: <FaCog size={18} />,
       navbarClass: "flex",
     },
@@ -96,7 +97,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   const extraItems = navItems.filter((item) => item.menuClass);
 
   const activeExtraItem = extraItems.find(
-    (item) => location.pathname === item.path,
+    (item) => isRouteActive(location.pathname, item.path),
   );
 
   const moreButtonClass = React.useMemo(() => {
@@ -162,7 +163,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
 
           <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap overflow-x-auto px-2 scrollbar-hide">
             {navItems.map((item) => {
-              const isActive = location.pathname === item.path;
+              const isActive = isRouteActive(location.pathname, item.path);
               return (
                 <Tooltip
                   key={item.key}

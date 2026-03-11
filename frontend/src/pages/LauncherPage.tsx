@@ -40,6 +40,7 @@ import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
+import { ROUTES } from "@/constants/routes";
 import { useLauncher } from "@/hooks/useLauncher";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
@@ -395,7 +396,7 @@ export const LauncherPage = (args: any) => {
                               size="sm"
                               variant="flat"
                               className="mt-2"
-                              onPress={() => navigate("/versions")}
+                              onPress={() => navigate(ROUTES.instances)}
                             >
                               {t("launcherpage.manage_versions")}
                             </Button>
@@ -488,11 +489,14 @@ export const LauncherPage = (args: any) => {
                           startContent={<FaCog />}
                           onPress={() => {
                             if (currentVersion) {
-                              navigate("/versionSettings", {
-                                state: { name: currentVersion, returnTo: "/" },
+                              navigate(ROUTES.instanceSettings, {
+                                state: {
+                                  name: currentVersion,
+                                  returnTo: ROUTES.home,
+                                },
                               });
                             } else {
-                              navigate("/versions");
+                              navigate(ROUTES.instances);
                             }
                           }}
                         >

@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { ROUTES } from "@/constants/routes";
 
 type NavLockListener = (locked: boolean) => void;
 
@@ -57,26 +58,26 @@ export const useAppNavigation = () => {
 
   const isUpdatingMode = (() => {
     const p = String(location?.pathname || "");
-    if (p === "/updating") return true;
+    if (p === ROUTES.updating) return true;
     const h =
       typeof window !== "undefined" ? String(window.location.hash || "") : "";
-    return h.startsWith("#/updating");
+    return h.startsWith(`#${ROUTES.updating}`);
   })();
 
   const isOnboardingMode = (() => {
     const p = String(location?.pathname || "");
-    if (p === "/onboarding") return true;
+    if (p === ROUTES.onboarding) return true;
     const h =
       typeof window !== "undefined" ? String(window.location.hash || "") : "";
-    return h.startsWith("#/onboarding");
+    return h.startsWith(`#${ROUTES.onboarding}`);
   })();
 
   const tryNavigate = useCallback(
     (path: string | number) => {
       if (navLocked || isUpdatingMode || isOnboardingMode) return;
       if (
-        location.pathname === "/settings" ||
-        location.pathname === "/versionSettings"
+        location.pathname === ROUTES.settings ||
+        location.pathname === ROUTES.instanceSettings
       ) {
         try {
           window.dispatchEvent(
@@ -91,7 +92,7 @@ export const useAppNavigation = () => {
   );
 
   useEffect(() => {
-    if (location.pathname === "/" && revealStarted) {
+    if (location.pathname === ROUTES.home && revealStarted) {
       try {
         const onboarded = localStorage.getItem("ll.onboarded");
         if (onboarded) {
@@ -149,9 +150,9 @@ export const useAppNavigation = () => {
     if (isUpdatingMode) return;
     try {
       const onboarded = localStorage.getItem("ll.onboarded");
-      if (!onboarded && location.pathname !== "/onboarding") {
+      if (!onboarded && location.pathname !== ROUTES.onboarding) {
         setNavLockReason("onboarding-route", true);
-        navigate("/onboarding", { replace: true });
+        navigate(ROUTES.onboarding, { replace: true });
       }
     } catch {}
   }, [revealStarted, isUpdatingMode, location?.pathname, navigate]);

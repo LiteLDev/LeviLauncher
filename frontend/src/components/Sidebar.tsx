@@ -12,6 +12,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { LAYOUT } from "@/constants/layout";
+import { ROUTES, isRouteActive } from "@/constants/routes";
 
 interface SidebarProps {
   isBeta: boolean;
@@ -41,31 +42,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
     {
       key: "home",
       label: t("launcherpage.launch_button"),
-      path: "/",
+      path: ROUTES.home,
       icon: <FaRocket size={20} />,
     },
     {
       key: "download",
       label: t("downloadmodal.download_button"),
-      path: "/download",
+      path: ROUTES.download,
       icon: <FaDownload size={20} />,
     },
     {
       key: "versions",
       label: t("nav.versions"),
-      path: "/versions",
+      path: ROUTES.instances,
       icon: <FaList size={20} />,
     },
     {
       key: "about",
       label: t("nav.about"),
-      path: "/about",
+      path: ROUTES.about,
       icon: <FaInfoCircle size={20} />,
     },
     {
       key: "settings",
       label: t("app.settings"),
-      path: "/settings",
+      path: ROUTES.settings,
       icon: <FaCog size={20} />,
     },
   ];
@@ -110,7 +111,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
         <div className="flex-1 flex flex-col items-center gap-4 w-full px-2 overflow-y-auto scrollbar-hide py-4">
           {navItems.map((item) => {
-            const isActive = location.pathname === item.path;
+            const isActive = isRouteActive(location.pathname, item.path);
             return (
               <Tooltip
                 key={item.key}

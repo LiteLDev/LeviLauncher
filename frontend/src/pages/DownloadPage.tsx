@@ -52,6 +52,7 @@ import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
+import { ROUTES } from "@/constants/routes";
 
 type ItemType = "Preview" | "Release";
 
@@ -608,7 +609,7 @@ export const DownloadPage: React.FC = () => {
                         state: {
                           mirrorVersion: "",
                           mirrorType: "Release",
-                          returnTo: "/download",
+                          returnTo: ROUTES.download,
                         },
                       })
                     }
@@ -718,7 +719,7 @@ export const DownloadPage: React.FC = () => {
                           ? "bg-primary-500 text-white"
                           : "bg-default-100/50 dark:bg-zinc-800/50 text-default-600 dark:text-zinc-200 hover:bg-default-200/50 dark:hover:bg-zinc-700/50"
                       }`}
-                      onPress={() => navigate("/tasks")}
+                      onPress={() => navigate(ROUTES.downloadTasks)}
                     >
                       <motion.div
                         animate={isDownloading ? { y: [0, -2, 0] } : {}}
@@ -904,7 +905,7 @@ export const DownloadPage: React.FC = () => {
                                     state: {
                                       mirrorVersion: item.short,
                                       mirrorType: item.type,
-                                      returnTo: "/download",
+                                      returnTo: ROUTES.download,
                                       isLeviLaminaSupported: isLLSupported(
                                         item.short,
                                       ),
@@ -1067,7 +1068,7 @@ export const DownloadPage: React.FC = () => {
                       state: {
                         mirrorVersion,
                         mirrorType,
-                        returnTo: "/download",
+                        returnTo: ROUTES.download,
                       },
                     });
                     onClose();

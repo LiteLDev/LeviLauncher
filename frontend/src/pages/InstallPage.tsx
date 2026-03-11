@@ -20,6 +20,7 @@ import {
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaChevronDown } from "react-icons/fa";
+import { ROUTES } from "@/constants/routes";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
@@ -62,7 +63,7 @@ export default function InstallPage() {
   const typeLabel: string = (mirrorType === "Preview"
     ? (t("common.preview") as unknown as string)
     : (t("common.release") as unknown as string)) as unknown as string;
-  const returnTo: string = String(location?.state?.returnTo || "/download");
+  const returnTo: string = String(location?.state?.returnTo || ROUTES.download);
   const isLeviLaminaSupported = Boolean(location?.state?.isLeviLaminaSupported);
 
   const [installName, setInstallName] = useState<string>(mirrorVersion || "");

@@ -30,11 +30,11 @@ import {
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import { PageHeader } from "@/components/PageHeader";
 import LeviLaminaIcon from "@/assets/images/LeviLamina.png";
-import { useVersionSettings } from "@/hooks/useVersionSettings";
+import { useInstanceSettings } from "@/hooks/useInstanceSettings";
 
-export default function VersionSettingsPage() {
+export default function InstanceSettingsPage() {
   const { t } = useTranslation();
-  const vs = useVersionSettings();
+  const vs = useInstanceSettings();
   const currentLLVersionText =
     vs.currentLLVersion ||
     (t("versions.edit.loader.ll_not_installed") as unknown as string);

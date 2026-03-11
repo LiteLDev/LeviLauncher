@@ -18,6 +18,7 @@ import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { LAYOUT } from "@/constants/layout";
+import { ROUTES } from "@/constants/routes";
 import { useNavigate } from "react-router-dom";
 import {
   GetLanguageNames,
@@ -96,7 +97,7 @@ export default function OnboardingPage() {
       persistClaritySelection(clarityEnabled);
       localStorage.setItem("ll.onboarded", "1");
     } catch {}
-    navigate("/", { replace: true });
+    navigate(ROUTES.home, { replace: true });
   };
 
   const requestFinish = () => {

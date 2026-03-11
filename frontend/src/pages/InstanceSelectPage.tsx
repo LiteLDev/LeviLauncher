@@ -25,6 +25,7 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { compareVersions } from "@/utils/version";
 import { FaSearch, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
+import { ROUTES } from "@/constants/routes";
 import {
   readCurrentVersionName,
   saveCurrentVersionName,
@@ -35,7 +36,7 @@ import {
   ListVersionMetas,
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 
-export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
+export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
   props,
 ) => {
   const [localVersionMap, setLocalVersionMap] = React.useState<
@@ -200,7 +201,9 @@ export const VersionSelectPage: React.FC<{ refresh?: () => void }> = (
 
   const openEditFor = React.useCallback(
     (name: string) => {
-      navigate("/versionSettings", { state: { name, returnTo: "/versions" } });
+      navigate(ROUTES.instanceSettings, {
+        state: { name, returnTo: ROUTES.instances },
+      });
     },
     [navigate],
   );

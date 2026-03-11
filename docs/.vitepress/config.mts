@@ -7,73 +7,113 @@ const lanzou = "https://levimc.lanzoue.com/b016ke39hc";
 
 const base = "/";
 
-function buildGuideSidebar(
-  prefix: string,
-  zh = false,
-): DefaultTheme.SidebarItem[] {
+// Helper for English Sidebar
+function buildEnglishSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   return [
     {
-      text: zh ? "快速开始" : "Quick Start",
+      text: "Quick Start",
       items: [
-        {
-          text: zh ? "5 分钟上手" : "Get Started in 5 Minutes",
-          link: `${prefix}quick-start`,
-        },
-        {
-          text: zh ? "系统要求与安装" : "Requirements & Installation",
-          link: `${prefix}requirements-installation`,
-        },
-        {
-          text: zh ? "首次启动" : "First Launch",
-          link: `${prefix}first-launch`,
-        },
+        { text: "Get Started in 5 Minutes", link: `${prefix}quick-start` },
+        { text: "Requirements & Installation", link: `${prefix}requirements-installation` },
+        { text: "First Launch", link: `${prefix}first-launch` },
       ],
     },
     {
-      text: zh ? "核心功能" : "Core Workflows",
+      text: "Core Workflows",
       items: [
-        {
-          text: zh ? "版本管理" : "Version Management",
-          link: `${prefix}version-management`,
-        },
-        {
-          text: zh ? "下载与镜像" : "Downloads & Mirrors",
-          link: `${prefix}downloads-mirrors`,
-        },
-        {
-          text: zh ? "内容管理" : "Content Management",
-          link: `${prefix}content-management`,
-        },
+        { text: "Version Management", link: `${prefix}version-management` },
+        { text: "Downloads & Mirrors", link: `${prefix}downloads-mirrors` },
+        { text: "Content Management", link: `${prefix}content-management` },
       ],
     },
     {
-      text: zh ? "高级能力" : "Advanced Features",
+      text: "Advanced Features",
       items: [
-        {
-          text: zh ? "Mods 与集成" : "Mods & Integrations",
-          link: `${prefix}mods-integrations`,
-        },
-        {
-          text: zh ? "世界工具" : "World Tools",
-          link: `${prefix}world-tools`,
-        },
-        {
-          text: zh ? "设置与个性化" : "Settings & Personalization",
-          link: `${prefix}settings-personalization`,
-        },
+        { text: "Mods & Integrations", link: `${prefix}mods-integrations` },
+        { text: "World Tools", link: `${prefix}world-tools` },
+        { text: "Settings & Personalization", link: `${prefix}settings-personalization` },
       ],
     },
     {
-      text: zh ? "帮助" : "Help",
+      text: "Help",
       items: [
-        {
-          text: zh ? "更新与故障排查" : "Update & Troubleshooting",
-          link: `${prefix}update-troubleshooting`,
-        },
-        {
-          text: zh ? "常见问题、社区与反馈" : "FAQ, Community & Feedback",
-          link: `${prefix}faq-community-feedback`,
-        },
+        { text: "Update & Troubleshooting", link: `${prefix}update-troubleshooting` },
+        { text: "FAQ, Community & Feedback", link: `${prefix}faq-community-feedback` },
+      ],
+    },
+  ];
+}
+
+// Helper for Simplified Chinese Sidebar (zh-CN)
+function buildChineseCNSidebar(prefix: string): DefaultTheme.SidebarItem[] {
+  return [
+    {
+      text: "快速开始",
+      items: [
+        { text: "5 分钟上手", link: `${prefix}quick-start` },
+        { text: "系统要求与安装", link: `${prefix}requirements-installation` },
+        { text: "首次启动", link: `${prefix}first-launch` },
+      ],
+    },
+    {
+      text: "核心功能",
+      items: [
+        { text: "版本管理", link: `${prefix}version-management` },
+        { text: "下载与镜像", link: `${prefix}downloads-mirrors` },
+        { text: "内容管理", link: `${prefix}content-management` },
+      ],
+    },
+    {
+      text: "高级能力",
+      items: [
+        { text: "Mods 与集成", link: `${prefix}mods-integrations` },
+        { text: "世界工具", link: `${prefix}world-tools` },
+        { text: "设置与个性化", link: `${prefix}settings-personalization` },
+      ],
+    },
+    {
+      text: "帮助",
+      items: [
+        { text: "更新与故障排查", link: `${prefix}update-troubleshooting` },
+        { text: "常见问题、社区与反馈", link: `${prefix}faq-community-feedback` },
+      ],
+    },
+  ];
+}
+
+// Helper for Traditional Chinese (HK) Sidebar (zh-HK)
+// Uses HK specific terminology based on previous translations
+function buildChineseHKSidebar(prefix: string): DefaultTheme.SidebarItem[] {
+  return [
+    {
+      text: "快速入門",
+      items: [
+        { text: "5 分鐘上手", link: `${prefix}quick-start` },
+        { text: "系統要求與安裝", link: `${prefix}requirements-installation` },
+        { text: "首次啟動", link: `${prefix}first-launch` },
+      ],
+    },
+    {
+      text: "核心功能",
+      items: [
+        { text: "版本管理", link: `${prefix}version-management` },
+        { text: "下載與鏡像", link: `${prefix}downloads-mirrors` },
+        { text: "內容管理", link: `${prefix}content-management` },
+      ],
+    },
+    {
+      text: "進階功能",
+      items: [
+        { text: "Mods 與整合", link: `${prefix}mods-integrations` },
+        { text: "世界工具", link: `${prefix}world-tools` },
+        { text: "設定與個人化", link: `${prefix}settings-personalization` },
+      ],
+    },
+    {
+      text: "協助",
+      items: [
+        { text: "更新與故障排查", link: `${prefix}update-troubleshooting` },
+        { text: "常見問題、社群與回饋", link: `${prefix}faq-community-feedback` },
       ],
     },
   ];
@@ -89,12 +129,22 @@ function buildEnglishNav(): DefaultTheme.NavItem[] {
   ];
 }
 
-function buildChineseNav(): DefaultTheme.NavItem[] {
+function buildChineseCNNav(): DefaultTheme.NavItem[] {
   return [
     { text: "文档", link: "/zh-CN/guide/quick-start" },
     { text: "下载", link: releases },
     { text: "蓝奏云", link: lanzou },
     { text: "社区", link: discord },
+    { text: "GitHub", link: repo },
+  ];
+}
+
+function buildChineseHKNav(): DefaultTheme.NavItem[] {
+  return [
+    { text: "文檔", link: "/zh-HK/guide/quick-start" },
+    { text: "下載", link: releases },
+    { text: "藍奏雲", link: lanzou },
+    { text: "社群", link: discord },
     { text: "GitHub", link: repo },
   ];
 }
@@ -129,7 +179,7 @@ export default defineConfig({
       themeConfig: {
         nav: buildEnglishNav(),
         sidebar: {
-          "/guide/": buildGuideSidebar("/guide/"),
+          "/guide/": buildEnglishSidebar("/guide/"),
         },
         outline: {
           level: [2, 3],
@@ -154,9 +204,9 @@ export default defineConfig({
       lang: "zh-CN",
       link: "/zh-CN/",
       themeConfig: {
-        nav: buildChineseNav(),
+        nav: buildChineseCNNav(),
         sidebar: {
-          "/zh-CN/guide/": buildGuideSidebar("/zh-CN/guide/", true),
+          "/zh-CN/guide/": buildChineseCNSidebar("/zh-CN/guide/"),
         },
         outline: {
           level: [2, 3],
@@ -174,6 +224,33 @@ export default defineConfig({
         darkModeSwitchLabel: "外观",
         lightModeSwitchTitle: "切换到浅色主题",
         darkModeSwitchTitle: "切换到深色主题",
+      },
+    },
+    "zh-HK": {
+      label: "繁體中文",
+      lang: "zh-HK",
+      link: "/zh-HK/",
+      themeConfig: {
+        nav: buildChineseHKNav(),
+        sidebar: {
+          "/zh-HK/guide/": buildChineseHKSidebar("/zh-HK/guide/"),
+        },
+        outline: {
+          level: [2, 3],
+        },
+        docFooter: {
+          prev: "上一頁",
+          next: "下一頁",
+        },
+        editLink: {
+          pattern: `${repo}/edit/main/docs/:path`,
+          text: "在 GitHub 上編輯此頁",
+        },
+        returnToTopLabel: "返回頂部",
+        sidebarMenuLabel: "選單",
+        darkModeSwitchLabel: "外觀",
+        lightModeSwitchTitle: "切換到淺色主題",
+        darkModeSwitchTitle: "切換到深色主題",
       },
     },
   },

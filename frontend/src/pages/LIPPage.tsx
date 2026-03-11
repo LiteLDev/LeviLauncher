@@ -47,7 +47,7 @@ const PAGE_SIZE = 20;
 const ALL_GAME_VERSION = "__all_game__";
 const ALL_LL_VERSION = "__all_ll__";
 const LIP_DEVELOPER_GUIDE_URL =
-  "https://lip.levimc.org/concepts/package_manifest.html";
+  "https://github.com/LiteLDev/levilamina-mod-template/blob/d0a888ec116c9a00fe4dc8f28ccead4dfc6b6760/tooth.json#L51";
 const HIDDEN_LIP_PACKAGES = new Set([
   "levilamina",
   "levilamina-loc",

@@ -20,11 +20,9 @@ import {
 } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
-import { FaWindows } from "react-icons/fa";
 import { FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
-  CreateDesktopShortcut,
   GetVersionLogoDataUrl,
   RemoveVersionLogo,
   SaveVersionLogoFromPath,
@@ -245,34 +243,6 @@ export default function VersionSettingsPage() {
                           }}
                         >
                           {t("versions.logo.clear")}
-                        </Button>
-                        <Button
-                          size="sm"
-                          variant="flat"
-                          color="primary"
-                          radius="full"
-                          className="justify-start px-4 font-medium bg-primary-500/10 text-primary-600 dark:text-primary-400"
-                          onPress={async () => {
-                            try {
-                              const err: string = await CreateDesktopShortcut(
-                                vs.targetName,
-                              );
-                              if (err) {
-                                vs.setError(String(err));
-                              } else {
-                                vs.setShortcutSuccessOpen(true);
-                              }
-                            } catch {
-                              vs.setError("ERR_SHORTCUT_CREATE_FAILED");
-                            }
-                          }}
-                          startContent={<FaWindows />}
-                        >
-                          {
-                            t(
-                              "launcherpage.shortcut.create_button",
-                            ) as unknown as string
-                          }
                         </Button>
                       </div>
                     </div>
@@ -647,26 +617,6 @@ export default function VersionSettingsPage() {
           <div className="text-medium wrap-break-word">
             {t(vs.getErrorKey(vs.error))}
           </div>
-        </div>
-      </UnifiedModal>
-
-      <UnifiedModal
-        isOpen={vs.shortcutSuccessOpen}
-        onOpenChange={(open) => {
-          if (!open) vs.setShortcutSuccessOpen(false);
-        }}
-        size="md"
-        type="success"
-        title={t("launcherpage.shortcut.success.title")}
-        icon={<FiCheckCircle className="w-6 h-6" />}
-        onConfirm={() => {
-          vs.setShortcutSuccessOpen(false);
-        }}
-        confirmText={t("common.close")}
-        showCancelButton={false}
-      >
-        <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
-          {t("launcherpage.shortcut.success.body")}
         </div>
       </UnifiedModal>
 

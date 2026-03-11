@@ -83,8 +83,6 @@ export const useVersionSettings = () => {
   const [deleteOpen, setDeleteOpen] = React.useState<boolean>(false);
   const [deleteSuccessOpen, setDeleteSuccessOpen] =
     React.useState<boolean>(false);
-  const [shortcutSuccessOpen, setShortcutSuccessOpen] =
-    React.useState<boolean>(false);
   const [deleting, setDeleting] = React.useState<boolean>(false);
   const [deleteSuccessMsg, setDeleteSuccessMsg] = React.useState<string>("");
 
@@ -844,8 +842,6 @@ export const useVersionSettings = () => {
     setDeleteOpen,
     deleteSuccessOpen,
     setDeleteSuccessOpen,
-    shortcutSuccessOpen,
-    setShortcutSuccessOpen,
     deleting,
     deleteSuccessMsg,
 

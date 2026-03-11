@@ -1071,7 +1071,6 @@
       "log_title": "日誌輸出",
       "no_output": "暫無輸出",
       "waiting_start": "等待 lipd 輸出...",
-      "stderr_title": "stderr",
       "copy_logs": "複製日誌",
       "copy_success": "日誌已複製",
       "close": "關閉",

@@ -107,7 +107,6 @@ type SessionMeta = {
 
 type PendingFailure = {
   message: string;
-  stderr: string;
 };
 
 const MAX_LOG_COUNT = 800;
@@ -165,7 +164,6 @@ export const LipTaskConsoleProvider: React.FC<{
   const [target, setTarget] = useState<string>("");
   const [logs, setLogs] = useState<LipTaskLogItem[]>([]);
   const [errorText, setErrorText] = useState<string>("");
-  const [stderrText, setStderrText] = useState<string>("");
   const [progress, setProgress] = useState<{
     percentage: number;
     message: string;
@@ -225,7 +223,6 @@ export const LipTaskConsoleProvider: React.FC<{
     setTarget("");
     setLogs([]);
     setErrorText("");
-    setStderrText("");
     setProgress(null);
   }, []);
 
@@ -237,16 +234,13 @@ export const LipTaskConsoleProvider: React.FC<{
   }, [clearCloseTimer, resetSessionState, running]);
 
   const setFailedState = useCallback(
-    (message: string, stderr: string) => {
+    (message: string) => {
       clearCloseTimer();
       runningRef.current = false;
       setRunning(false);
       setStatus("failed");
       if (normalizeString(message)) {
         setErrorText(normalizeString(message));
-      }
-      if (normalizeString(stderr)) {
-        setStderrText(normalizeString(stderr));
       }
       setOpen(true);
     },
@@ -360,7 +354,6 @@ export const LipTaskConsoleProvider: React.FC<{
         },
       ]);
       setErrorText("");
-      setStderrText("");
       setProgress(null);
 
       const tools: RunWithLipTaskTools = {
@@ -382,15 +375,13 @@ export const LipTaskConsoleProvider: React.FC<{
         const pendingFailure =
           pendingFailureRef.current as PendingFailure | null;
         const pendingMessage = pendingFailure ? pendingFailure.message : "";
-        const pendingStderr = pendingFailure ? pendingFailure.stderr : "";
         const message =
           parseErrorText(error) ||
           normalizeString(pendingMessage) ||
           t("common.error");
-        const stderr = normalizeString(pendingStderr);
         appendLog("error", message);
         if (feedbackMode === "on_error" || feedbackMode === "always") {
-          setFailedState(message, stderr);
+          setFailedState(message);
         } else {
           setOpen(false);
           resetSessionState();
@@ -501,26 +492,21 @@ export const LipTaskConsoleProvider: React.FC<{
         }
 
         const eventError = normalizeString(data.error);
-        const eventStderr = normalizeString(data.stderr);
         const failureMessage = eventError || t("common.error");
 
         if (eventError) {
           appendLog("error", eventError);
         }
-        if (eventStderr) {
-          setStderrText(eventStderr);
-        }
 
         pendingFailureRef.current = {
           message: failureMessage,
-          stderr: eventStderr,
         };
 
         if (!runningRef.current) {
           const feedbackMode =
             sessionRef.current?.feedbackMode || DEFAULT_FEEDBACK_MODE;
           if (feedbackMode === "on_error" || feedbackMode === "always") {
-            setFailedState(failureMessage, eventStderr);
+            setFailedState(failureMessage);
           }
         }
       }),
@@ -597,21 +583,12 @@ export const LipTaskConsoleProvider: React.FC<{
     return `${base} - ${target}`;
   }, [action, target, t]);
 
-  const showStderr = useMemo(
-    () => Boolean(stderrText) && !(status === "failed" && action === "install"),
-    [action, status, stderrText],
-  );
-
   const handleCopyLogs = useCallback(async () => {
     const lines: string[] = [];
     lines.push(`${t("lip.task_console.target_label")}: ${target || "-"}`);
     lines.push(`${t("lip.task_console.status_running")}: ${statusText}`);
     if (errorText) {
       lines.push(`${t("lip.task_console.status_failed")}: ${errorText}`);
-    }
-    if (showStderr) {
-      lines.push(`${t("lip.task_console.stderr_title")}:`);
-      lines.push(stderrText);
     }
     lines.push("");
     for (const item of logs) {
@@ -633,7 +610,7 @@ export const LipTaskConsoleProvider: React.FC<{
         description: t("common.error"),
       });
     }
-  }, [errorText, logs, showStderr, statusText, stderrText, t, target]);
+  }, [errorText, logs, statusText, t, target]);
 
   const contextValue = useMemo<LipTaskConsoleContextValue>(
     () => ({
@@ -711,17 +688,6 @@ export const LipTaskConsoleProvider: React.FC<{
             {errorText ? (
               <div className="rounded-xl border border-danger-300/60 bg-danger-50/60 dark:border-danger-500/30 dark:bg-danger-500/10 px-3 py-2 text-xs text-danger-700 dark:text-danger-300 whitespace-pre-wrap break-all">
                 {errorText}
-              </div>
-            ) : null}
-
-            {showStderr ? (
-              <div className="space-y-1">
-                <div className="text-xs font-semibold text-danger-600 dark:text-danger-400">
-                  {t("lip.task_console.stderr_title")}
-                </div>
-                <div className="max-h-[120px] overflow-y-auto custom-scrollbar rounded-xl border border-danger-200/70 bg-danger-50/60 px-3 py-2 text-xs font-mono text-danger-700 dark:border-danger-500/30 dark:bg-danger-500/10 dark:text-danger-300 whitespace-pre-wrap break-all">
-                  {stderrText}
-                </div>
               </div>
             ) : null}
           </div>

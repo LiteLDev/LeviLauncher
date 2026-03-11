@@ -1138,7 +1138,6 @@
       "log_title": "Log Output",
       "no_output": "No output yet",
       "waiting_start": "Waiting for lipd output...",
-      "stderr_title": "stderr",
       "copy_logs": "Copy Logs",
       "copy_success": "Logs copied",
       "close": "Close",

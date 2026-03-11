@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.7] - 2026-03-11
+
+### Added
+
+- Added LeviLamina version selection, update, and uninstall confirmation flows.
+- Added privacy settings with a Microsoft Clarity consent flow.
+- Added screenshot preview with in-app navigation.
+- Added more launcher tips.
+
+### Changed
+
+- Revamped lip-aware mod and package workflows, including instance package management and version registration.
+- Improved launcher-side lip package management and version registration.
+- Embedded `lipd` to support local daemon-based lip operations.
+- Reorganized instance-related pages and routes.
+
+### Fixed
+
+- Reported early startup failures before the game window appears.
+- Allowed downloading other installers while one installer task is active.
+- Preserved drag-restore behavior while suppressing resize cursors.
+- Hardened update and launch safety, and stabilized the update and settings experience.
+
 ## [v0.3.6] - 2026-02-25
 
 ### Fixed

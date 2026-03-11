@@ -49,6 +49,17 @@ import { cn } from "@/utils/cn";
 
 type ItemType = "Preview" | "Release";
 
+const INSTALL_ISOLATION_PREFERENCE_KEY = "ll.install.enableIsolation";
+
+function readInstallIsolationPreference(): boolean {
+  try {
+    const value = localStorage.getItem(INSTALL_ISOLATION_PREFERENCE_KEY);
+    if (value === "true") return true;
+    if (value === "false") return false;
+  } catch {}
+  return true;
+}
+
 export default function InstallPage() {
   const { t } = useTranslation();
   const { runWithLipTask } = useLipTaskConsole();
@@ -67,7 +78,9 @@ export default function InstallPage() {
   const isLeviLaminaSupported = Boolean(location?.state?.isLeviLaminaSupported);
 
   const [installName, setInstallName] = useState<string>(mirrorVersion || "");
-  const [installIsolation, setInstallIsolation] = useState<boolean>(true);
+  const [installIsolation, setInstallIsolation] = useState<boolean>(() =>
+    readInstallIsolationPreference(),
+  );
   const [installLeviLamina, setInstallLeviLamina] = useState<boolean>(false);
   const [inheritSource, setInheritSource] = useState<string>("");
   const [inheritMetas, setInheritMetas] = useState<any[]>([]);
@@ -98,6 +111,15 @@ export default function InstallPage() {
     totalBytes?: number;
     currentFile?: string;
   } | null>(null);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem(
+        INSTALL_ISOLATION_PREFERENCE_KEY,
+        installIsolation ? "true" : "false",
+      );
+    } catch {}
+  }, [installIsolation]);
 
   useEffect(() => {
     if (!installing) {

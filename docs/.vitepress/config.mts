@@ -82,7 +82,6 @@ function buildChineseCNSidebar(prefix: string): DefaultTheme.SidebarItem[] {
 }
 
 // Helper for Traditional Chinese (HK) Sidebar (zh-HK)
-// Uses HK specific terminology based on previous translations
 function buildChineseHKSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   return [
     {
@@ -119,6 +118,43 @@ function buildChineseHKSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   ];
 }
 
+// Helper for Russian Sidebar (ru-RU)
+function buildRussianSidebar(prefix: string): DefaultTheme.SidebarItem[] {
+  return [
+    {
+      text: "Быстрый старт",
+      items: [
+        { text: "Начало работы за 5 минут", link: `${prefix}quick-start` },
+        { text: "Требования и установка", link: `${prefix}requirements-installation` },
+        { text: "Первый запуск", link: `${prefix}first-launch` },
+      ],
+    },
+    {
+      text: "Основные рабочие процессы",
+      items: [
+        { text: "Управление версиями", link: `${prefix}version-management` },
+        { text: "Загрузки и зеркала", link: `${prefix}downloads-mirrors` },
+        { text: "Управление контентом", link: `${prefix}content-management` },
+      ],
+    },
+    {
+      text: "Расширенные функции",
+      items: [
+        { text: "Моды и интеграции", link: `${prefix}mods-integrations` },
+        { text: "Инструменты для миров", link: `${prefix}world-tools` },
+        { text: "Настройки и персонализация", link: `${prefix}settings-personalization` },
+      ],
+    },
+    {
+      text: "Помощь",
+      items: [
+        { text: "Обновление и устранение неполадок", link: `${prefix}update-troubleshooting` },
+        { text: "ЧаВО, сообщество и обратная связь", link: `${prefix}faq-community-feedback` },
+      ],
+    },
+  ];
+}
+
 function buildEnglishNav(): DefaultTheme.NavItem[] {
   return [
     { text: "Guide", link: "/guide/quick-start" },
@@ -145,6 +181,16 @@ function buildChineseHKNav(): DefaultTheme.NavItem[] {
     { text: "下載", link: releases },
     { text: "藍奏雲", link: lanzou },
     { text: "社群", link: discord },
+    { text: "GitHub", link: repo },
+  ];
+}
+
+function buildRussianNav(): DefaultTheme.NavItem[] {
+  return [
+    { text: "Документация", link: "/ru-RU/guide/quick-start" },
+    { text: "Загрузки", link: releases },
+    { text: "Зеркало", link: lanzou },
+    { text: "Сообщество", link: discord },
     { text: "GitHub", link: repo },
   ];
 }
@@ -251,6 +297,33 @@ export default defineConfig({
         darkModeSwitchLabel: "外觀",
         lightModeSwitchTitle: "切換到淺色主題",
         darkModeSwitchTitle: "切換到深色主題",
+      },
+    },
+    "ru-RU": {
+      label: "Русский",
+      lang: "ru-RU",
+      link: "/ru-RU/",
+      themeConfig: {
+        nav: buildRussianNav(),
+        sidebar: {
+          "/ru-RU/guide/": buildRussianSidebar("/ru-RU/guide/"),
+        },
+        outline: {
+          level: [2, 3],
+        },
+        docFooter: {
+          prev: "Предыдущая страница",
+          next: "Следующая страница",
+        },
+        editLink: {
+          pattern: `${repo}/edit/main/docs/:path`,
+          text: "Редактировать эту страницу на GitHub",
+        },
+        returnToTopLabel: "Вернуться наверх",
+        sidebarMenuLabel: "Меню",
+        darkModeSwitchLabel: "Внешний вид",
+        lightModeSwitchTitle: "Переключить на светлую тему",
+        darkModeSwitchTitle: "Переключить на темную тему",
       },
     },
   },

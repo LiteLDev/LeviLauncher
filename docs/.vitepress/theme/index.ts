@@ -8,7 +8,8 @@ const LOCALE_STORAGE_KEY = "levilauncher-docs-locale";
 // Supported locale identifiers
 const ENGLISH_LOCALE = "en-US";
 const CHINESE_CN_LOCALE = "zh-CN";
-const CHINESE_HK_LOCALE = "zh-HK"; // Added: Traditional Chinese (Hong Kong)
+const CHINESE_HK_LOCALE = "zh-HK"; // Traditional Chinese (Hong Kong)
+const RUSSIAN_LOCALE = "ru-RU";    // Russian
 
 /**
  * Removes the base path from the given pathname.
@@ -52,6 +53,14 @@ function normalizePath(pathname: string): string {
 function getLocaleFromPath(pathname: string, base: string): string {
   const normalizedPath = normalizePath(stripBase(pathname, base));
 
+  // Check for Russian
+  if (
+    normalizedPath === `/${RUSSIAN_LOCALE}` ||
+    normalizedPath.startsWith(`/${RUSSIAN_LOCALE}/`)
+  ) {
+    return RUSSIAN_LOCALE;
+  }
+
   // Check for Traditional Chinese (Hong Kong)
   if (
     normalizedPath === `/${CHINESE_HK_LOCALE}` ||
@@ -83,7 +92,8 @@ function readStoredLocale(): string | null {
     if (
       locale === ENGLISH_LOCALE ||
       locale === CHINESE_CN_LOCALE ||
-      locale === CHINESE_HK_LOCALE
+      locale === CHINESE_HK_LOCALE ||
+      locale === RUSSIAN_LOCALE
     ) {
       return locale;
     }
@@ -119,6 +129,12 @@ function getPreferredLocale(): string {
     navigator.language,
   ].filter((locale): locale is string => Boolean(locale));
 
+  // Check if the browser prefers Russian
+  const hasRussian = browserLocales.some((locale) => {
+    const lower = locale.toLowerCase();
+    return lower.startsWith("ru");
+  });
+
   // Check if the browser prefers Traditional Chinese (zh-HK, zh-TW, etc.)
   const hasTraditionalChinese = browserLocales.some((locale) => {
     const lower = locale.toLowerCase();
@@ -130,6 +146,11 @@ function getPreferredLocale(): string {
     const lower = locale.toLowerCase();
     return lower.startsWith("zh-cn") || (lower.startsWith("zh") && !hasTraditionalChinese);
   });
+
+  // Prioritize Russian if detected
+  if (hasRussian) {
+    return RUSSIAN_LOCALE;
+  }
 
   // Prioritize Traditional Chinese if detected
   if (hasTraditionalChinese) {
@@ -157,6 +178,10 @@ function buildLocaleRoot(base: string, locale: string): string {
   
   if (locale === CHINESE_HK_LOCALE) {
     return `${normalizedBase}${CHINESE_HK_LOCALE}/`;
+  }
+
+  if (locale === RUSSIAN_LOCALE) {
+    return `${normalizedBase}${RUSSIAN_LOCALE}/`;
   }
 
   return normalizedBase;

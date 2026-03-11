@@ -569,7 +569,10 @@ export const DownloadPage: React.FC = () => {
                     classNames={{
                       ...COMPONENT_STYLES.input,
                       base: "max-w-full sm:max-w-[20rem] h-10",
-                      mainWrapper: cn(COMPONENT_STYLES.input.mainWrapper, "h-full"),
+                      mainWrapper: cn(
+                        COMPONENT_STYLES.input.mainWrapper,
+                        "h-full",
+                      ),
                       input: cn(COMPONENT_STYLES.input.input, "text-small"),
                     }}
                     placeholder={t("downloadpage.topcontent.input.placeholder")}
@@ -1107,7 +1110,7 @@ export const DownloadPage: React.FC = () => {
           }
         >
           <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 p-4 bg-default-50 dark:bg-zinc-800/50 rounded-2xl border border-default-200/50 dark:border-white/5">
+            <div className="flex flex-col gap-4 p-4 bg-default-100 dark:bg-zinc-800/50 rounded-2xl border border-default-200/50 dark:border-white/5">
               <div className="flex items-center gap-2">
                 <Chip
                   size="sm"

@@ -385,8 +385,51 @@ jobs:
             local response_file="$4"
             shift 4
 
+            local status_file
             local status_code
-            status_code="$(curl -sS -o "$response_file" -w "%{http_code}" "$@" "$target_url" || true)"
+            local curl_exit
+            local curl_pid
+            local file_size_bytes
+            local file_size_mb
+
+            status_file="${response_file}.status"
+            file_size_bytes="$(wc -c < "$file_path" | tr -d ' ')"
+            file_size_mb="$(awk -v size="$file_size_bytes" 'BEGIN { printf "%.2f", size / 1024 / 1024 }')"
+
+            echo "Starting upload attempt (${mode}) for $(basename "$file_path") (${file_size_mb} MiB)"
+
+            : > "$response_file"
+            : > "$status_file"
+
+            (
+              curl -sS \
+                --connect-timeout 30 \
+                --http1.1 \
+                -o "$response_file" \
+                -w "%{http_code}" \
+                "$@" \
+                "$target_url" > "$status_file"
+            ) &
+            curl_pid=$!
+
+            while kill -0 "$curl_pid" 2>/dev/null; do
+              echo "Upload still running (${mode}) for $(basename "$file_path")..."
+              sleep 15
+            done
+
+            curl_exit=0
+            wait "$curl_pid" || curl_exit=$?
+
+            status_code="$(cat "$status_file" 2>/dev/null || true)"
+            rm -f "$status_file"
+
+            if [ "$curl_exit" -ne 0 ]; then
+              echo "Upload attempt exited with curl status ${curl_exit} (${mode})"
+              if [ -s "$response_file" ]; then
+                cat "$response_file"
+              fi
+              return 1
+            fi
 
             if [[ "$status_code" =~ ^2[0-9][0-9]$ ]]; then
               return 0
@@ -513,6 +556,7 @@ jobs:
               "$upload_url" \
               "$response_file" \
               -X "$request_method" \
+              -H "Expect:" \
               "${extra_header_args[@]}" \
               "${binary_payload_args[@]}"; then
               echo "Uploaded ${file_name} via ${request_method} binary."

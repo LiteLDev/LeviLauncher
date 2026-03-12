@@ -38,6 +38,8 @@ export const useInstanceSettings = () => {
     location?.state?.returnTo || ROUTES.instances,
   );
   const hasBackend = minecraft !== undefined;
+  const ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY =
+    "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY";
   const ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS =
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS";
 
@@ -107,6 +109,9 @@ export const useInstanceSettings = () => {
   } = useLeviLamina();
   const [installingLL, setInstallingLL] = React.useState(false);
   const [uninstallingLL, setUninstallingLL] = React.useState(false);
+  const [demotedWarningNames, setDemotedWarningNames] = React.useState<
+    string[]
+  >([]);
   const {
     isOpen: llVersionSelectOpen,
     onOpen: llVersionSelectOnOpen,
@@ -128,6 +133,11 @@ export const useInstanceSettings = () => {
     onOpen: rcOnOpen,
     onOpenChange: rcOnOpenChange,
     onClose: rcOnClose,
+  } = useDisclosure();
+  const {
+    isOpen: demotedWarningOpen,
+    onOpen: demotedWarningOnOpen,
+    onClose: demotedWarningOnClose,
   } = useDisclosure();
   const [rcVersion, setRcVersion] = React.useState("");
   const [isLLInstalled, setIsLLInstalled] = React.useState(false);
@@ -417,6 +427,31 @@ export const useInstanceSettings = () => {
     llUninstallBlocked,
     resolveToastText,
   ]);
+
+  const openDemotedWarning = React.useCallback((names: string[]) => {
+    const uniqueNames = Array.from(
+      new Set(names.map((item) => String(item || "").trim()).filter(Boolean)),
+    );
+    if (uniqueNames.length === 0) return;
+    setDemotedWarningNames(uniqueNames);
+    demotedWarningOnOpen();
+  }, [demotedWarningOnOpen]);
+
+  const closeDemotedWarning = React.useCallback(() => {
+    setDemotedWarningNames([]);
+    demotedWarningOnClose();
+  }, [demotedWarningOnClose]);
+
+  const demotedWarningOnOpenChange = React.useCallback(
+    (nextOpen: boolean) => {
+      if (nextOpen) {
+        demotedWarningOnOpen();
+        return;
+      }
+      closeDemotedWarning();
+    },
+    [closeDemotedWarning, demotedWarningOnOpen],
+  );
 
   const refreshLLStateForUninstall = React.useCallback(async () => {
     if (!targetName) {
@@ -787,6 +822,7 @@ export const useInstanceSettings = () => {
       return false;
     }
     setUninstallingLL(true);
+    let demotedToDependency = false;
     try {
       await runWithLipTask(
         {
@@ -800,12 +836,23 @@ export const useInstanceSettings = () => {
           const err = await (minecraft as any)?.UninstallLeviLamina?.(
             targetName,
           );
+          if (err === ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY) {
+            demotedToDependency = true;
+            addLog("warning", `LeviLamina: ${err}`);
+            return;
+          }
           if (err) {
             throw new Error(String(err));
           }
         },
       );
       await refreshInstance(targetName, "version-settings-uninstall-ll");
+      if (demotedToDependency) {
+        await refreshLLStateForUninstall();
+        llUninstallConfirmOnClose();
+        openDemotedWarning(["LeviLamina"]);
+        return false;
+      }
       setIsLLInstalled(false);
       setLLExplicitInstalled(false);
       setCurrentLLVersion("");
@@ -814,7 +861,7 @@ export const useInstanceSettings = () => {
     } catch (e) {
       const errCode = String((e as any)?.message || e || "").trim();
       if (
-        errCode === "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY" ||
+        errCode === ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY ||
         errCode === ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS
       ) {
         await refreshLLStateForUninstall();
@@ -828,8 +875,11 @@ export const useInstanceSettings = () => {
       setUninstallingLL(false);
     }
   }, [
+    ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY,
     ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS,
     llUninstallBlocked,
+    llUninstallConfirmOnClose,
+    openDemotedWarning,
     refreshLLStateForUninstall,
     refreshInstance,
     resolveToastText,
@@ -912,6 +962,7 @@ export const useInstanceSettings = () => {
     llInstallSuccessKey,
     llUninstallBlocked,
     llUninstallWarning,
+    demotedWarningNames,
     installingLL,
     uninstallingLL,
     llInstallConfirmOpen,
@@ -927,6 +978,8 @@ export const useInstanceSettings = () => {
     lipMissingOpen,
     setLipMissingOpen,
     resolvedLLTargetVersion,
+    demotedWarningOpen,
+    demotedWarningOnOpenChange,
 
     // Error helper
     getErrorKey,
@@ -943,6 +996,7 @@ export const useInstanceSettings = () => {
     confirmInstallLeviLaminaAction,
     openLLUninstallConfirm,
     closeLLUninstallConfirm,
+    closeDemotedWarning,
     confirmUninstallLL,
     handleInstallLeviLamina,
   };

@@ -960,7 +960,7 @@ export const ModsPage: React.FC = () => {
         isOpen={mp.batchUninstallOpen}
         onOpenChange={mp.batchUninstallOnOpenChange}
         title={t("mods.batch_uninstall_title")}
-        type="warning"
+        type="error"
         showCancelButton
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}

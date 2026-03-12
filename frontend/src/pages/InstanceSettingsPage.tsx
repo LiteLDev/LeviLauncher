@@ -728,6 +728,25 @@ export default function InstanceSettingsPage() {
       />
 
       <UnifiedModal
+        isOpen={vs.demotedWarningOpen}
+        onOpenChange={vs.demotedWarningOnOpenChange}
+        title={t("common.tip")}
+        type="warning"
+        confirmText={t("common.confirm")}
+        showCancelButton={false}
+        onConfirm={vs.closeDemotedWarning}
+      >
+        <div className="text-sm text-default-700 dark:text-zinc-300 whitespace-pre-wrap">
+          {t("errors.ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY")}
+        </div>
+        {vs.demotedWarningNames.length > 0 ? (
+          <div className="mt-3 rounded-md bg-warning-50/70 dark:bg-warning-500/10 border border-warning-200/70 dark:border-warning-500/30 px-3 py-2 text-warning-700 dark:text-warning-300 text-sm whitespace-pre-wrap break-all font-mono">
+            {vs.demotedWarningNames.join("\n")}
+          </div>
+        ) : null}
+      </UnifiedModal>
+
+      <UnifiedModal
         size="md"
         isOpen={vs.llVersionSelectOpen}
         onOpenChange={vs.llVersionSelectOnOpenChange}

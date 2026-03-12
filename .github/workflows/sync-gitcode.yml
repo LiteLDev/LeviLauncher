@@ -4,15 +4,20 @@ on:
   push:
     branches:
       - main
-
-concurrency:
-  group: sync-gitcode-main
-  cancel-in-progress: true
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: GitHub release tag to sync to GitCode
+        required: true
+        type: string
 
 jobs:
   sync:
-    if: github.repository == 'LiteLDev/LeviLauncher'
+    if: github.event_name == 'push' && github.repository == 'LiteLDev/LeviLauncher'
     runs-on: ubuntu-latest
+    concurrency:
+      group: sync-gitcode-main
+      cancel-in-progress: true
     permissions:
       contents: read
 
@@ -51,3 +56,162 @@ jobs:
         run: |
           git remote add gitcode "$GITCODE_PUSH_URL"
           git push gitcode refs/heads/main:refs/heads/main
+
+  sync-release:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'LiteLDev/LeviLauncher'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: sync-gitcode-release-${{ inputs.release_tag }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release sync settings
+        env:
+          GITCODE_API_TOKEN: ${{ secrets.GITCODE_API_TOKEN }}
+          GITCODE_PUSH_URL: ${{ secrets.GITCODE_PUSH_URL }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "::error::Missing required workflow input release_tag."
+            exit 1
+          fi
+
+          if [ -z "$GITCODE_PUSH_URL" ]; then
+            echo "::error::Missing required secret GITCODE_PUSH_URL."
+            exit 1
+          fi
+
+          if [ -z "$GITCODE_API_TOKEN" ]; then
+            echo "::error::Missing required secret GITCODE_API_TOKEN."
+            exit 1
+          fi
+
+      - name: Resolve GitCode repository
+        id: gitcode_repo
+        env:
+          GITCODE_PUSH_URL: ${{ secrets.GITCODE_PUSH_URL }}
+        run: |
+          set -euo pipefail
+
+          remote_without_scheme="${GITCODE_PUSH_URL#*://}"
+          remote_without_auth="${remote_without_scheme#*@}"
+          repo_path="${remote_without_auth#*/}"
+          repo_path="${repo_path%.git}"
+
+          gitcode_owner="${repo_path%%/*}"
+          gitcode_repo="${repo_path#*/}"
+
+          if [ -z "$gitcode_owner" ] || [ -z "$gitcode_repo" ] || [ "$gitcode_owner" = "$gitcode_repo" ]; then
+            echo "::error::Unable to parse GitCode owner/repo from GITCODE_PUSH_URL."
+            exit 1
+          fi
+
+          echo "owner=$gitcode_owner" >> "$GITHUB_OUTPUT"
+          echo "repo=$gitcode_repo" >> "$GITHUB_OUTPUT"
+          echo "repository=$gitcode_owner/$gitcode_repo" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch tags
+        run: |
+          git fetch --force --tags origin
+
+      - name: Push release tag to GitCode
+        env:
+          GITCODE_PUSH_URL: ${{ secrets.GITCODE_PUSH_URL }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          if ! git rev-parse "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $RELEASE_TAG does not exist in the GitHub repository."
+            exit 1
+          fi
+
+          git remote add gitcode "$GITCODE_PUSH_URL"
+          git push gitcode "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+
+      - name: Export GitHub release metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          gh api "repos/${{ github.repository }}/releases/tags/${RELEASE_TAG}" > github-release.json
+
+          release_name="$(jq -r 'if (.name // "") == "" then .tag_name else .name end' github-release.json)"
+          release_url="$(jq -r '.html_url' github-release.json)"
+          release_body="$(jq -r '.body // ""' github-release.json)"
+          target_commitish="$(jq -r 'if (.target_commitish // "") == "" then "main" else .target_commitish end' github-release.json)"
+          prerelease="$(jq -r '.prerelease // false' github-release.json)"
+          asset_links="$(jq -r '[.assets[]? | "- [" + .name + "](" + .browser_download_url + ")"] | join("\n")' github-release.json)"
+
+          if [ -n "$asset_links" ]; then
+            sync_body="$(printf "%s\n\n---\n\nSynced from GitHub release: %s\n\nGitHub assets:\n%s\n" "$release_body" "$release_url" "$asset_links")"
+          else
+            sync_body="$(printf "%s\n\n---\n\nSynced from GitHub release: %s\n" "$release_body" "$release_url")"
+          fi
+
+          jq -n \
+            --arg tag "$RELEASE_TAG" \
+            --arg name "$release_name" \
+            --arg body "$sync_body" \
+            --arg target_commitish "$target_commitish" \
+            --argjson prerelease "$prerelease" \
+            '{
+              tag_name: $tag,
+              name: $name,
+              body: $body,
+              target_commitish: $target_commitish,
+              prerelease: $prerelease
+            }' > gitcode-release.json
+
+      - name: Create or update GitCode release
+        env:
+          GITCODE_API_TOKEN: ${{ secrets.GITCODE_API_TOKEN }}
+          GITCODE_OWNER: ${{ steps.gitcode_repo.outputs.owner }}
+          GITCODE_REPO: ${{ steps.gitcode_repo.outputs.repo }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          release_api_root="https://api.gitcode.com/api/v5/repos/${GITCODE_OWNER}/${GITCODE_REPO}/releases"
+          release_api_url="${release_api_root}/${RELEASE_TAG}"
+
+          status_code="$(curl -sS -o gitcode-release-current.json -w "%{http_code}" \
+            -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
+            "$release_api_url")"
+
+          if [ "$status_code" = "200" ]; then
+            echo "Updating GitCode release for ${RELEASE_TAG}"
+            curl --fail-with-body -sS \
+              -X PATCH \
+              -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data @gitcode-release.json \
+              "$release_api_url" > gitcode-release-result.json
+          elif [ "$status_code" = "404" ]; then
+            echo "Creating GitCode release for ${RELEASE_TAG}"
+            curl --fail-with-body -sS \
+              -X POST \
+              -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data @gitcode-release.json \
+              "$release_api_root" > gitcode-release-result.json
+          else
+            echo "::error::Unexpected response while checking GitCode release: HTTP ${status_code}"
+            cat gitcode-release-current.json
+            exit 1
+          fi
+
+      - name: Print synced release summary
+        run: |
+          jq '{ tag_name, name, prerelease, html_url, url }' gitcode-release-result.json || cat gitcode-release-result.json

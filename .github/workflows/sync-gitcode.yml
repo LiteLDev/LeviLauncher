@@ -261,44 +261,6 @@ jobs:
         run: |
           jq '{ tag_name, name, prerelease, html_url, url }' gitcode-release-result.json || cat gitcode-release-result.json
 
-      - name: Get GitCode release upload target
-        if: steps.github_assets.outputs.has_assets == 'true'
-        env:
-          GITCODE_API_TOKEN: ${{ secrets.GITCODE_API_TOKEN }}
-          GITCODE_OWNER: ${{ steps.gitcode_repo.outputs.owner }}
-          GITCODE_REPO: ${{ steps.gitcode_repo.outputs.repo }}
-          RELEASE_TAG: ${{ inputs.release_tag }}
-        run: |
-          set -euo pipefail
-
-          upload_api_url="https://api.gitcode.com/api/v5/repos/${GITCODE_OWNER}/${GITCODE_REPO}/releases/${RELEASE_TAG}/upload_url"
-
-          status_code="$(curl -sS -o gitcode-upload-url.json -w "%{http_code}" \
-            -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
-            "$upload_api_url")"
-
-          if [ "$status_code" != "200" ]; then
-            echo "::error::Failed to get GitCode release upload target: HTTP ${status_code}"
-            cat gitcode-upload-url.json
-            exit 1
-          fi
-
-          echo "GitCode upload target summary:"
-          jq '
-            if type == "string" then
-              {
-                upload_url: (split("?")[0])
-              }
-            else
-              {
-                method: (.method // .data.method // null),
-                upload_url: ((.upload_url // .url // .data.upload_url // .data.url // "") | split("?")[0]),
-                header_keys: ((.headers // .data.headers // {}) | keys),
-                field_keys: ((.fields // .form_data // .data.fields // .data.form_data // {}) | keys)
-              }
-            end
-          ' gitcode-upload-url.json
-
       - name: Upload GitHub release assets to GitCode
         if: steps.github_assets.outputs.has_assets == 'true'
         env:
@@ -317,66 +279,6 @@ jobs:
 
           jq -r '.assets[]?.name' gitcode-release-state.json | sort -u > gitcode-existing-assets.txt || true
           touch gitcode-existing-assets.txt
-
-          upload_url="$(jq -r '
-            if type == "string" then
-              .
-            elif .upload_url? then
-              .upload_url
-            elif .url? then
-              .url
-            elif .data.upload_url? then
-              .data.upload_url
-            elif .data.url? then
-              .data.url
-            else
-              empty
-            end
-          ' gitcode-upload-url.json)"
-
-          if [ -z "$upload_url" ]; then
-            echo "::error::Unable to determine GitCode upload URL from upload target payload."
-            cat gitcode-upload-url.json
-            exit 1
-          fi
-
-          request_method="$(jq -r '
-            if .method? then
-              .method
-            elif .data.method? then
-              .data.method
-            else
-              empty
-            end
-          ' gitcode-upload-url.json | tr '[:lower:]' '[:upper:]')"
-
-          if [ -z "$request_method" ]; then
-            request_method="PUT"
-          fi
-
-          jq -c '
-            if .headers? then
-              .headers
-            elif .data.headers? then
-              .data.headers
-            else
-              {}
-            end
-          ' gitcode-upload-url.json > gitcode-upload-headers.json
-
-          jq -c '
-            if .fields? then
-              .fields
-            elif .form_data? then
-              .form_data
-            elif .data.fields? then
-              .data.fields
-            elif .data.form_data? then
-              .data.form_data
-            else
-              {}
-            end
-          ' gitcode-upload-url.json > gitcode-upload-fields.json
 
           url_encode() {
             jq -rn --arg value "$1" '$value|@uri'
@@ -426,8 +328,78 @@ jobs:
             fi
           }
 
+          extract_upload_url() {
+            local payload_file="$1"
+
+            jq -r '
+              if type == "string" then
+                .
+              elif .upload_url? then
+                .upload_url
+              elif .url? then
+                .url
+              elif .data.upload_url? then
+                .data.upload_url
+              elif .data.url? then
+                .data.url
+              else
+                empty
+              end
+            ' "$payload_file"
+          }
+
+          extract_request_method() {
+            local payload_file="$1"
+
+            jq -r '
+              if .method? then
+                .method
+              elif .data.method? then
+                .data.method
+              else
+                empty
+              end
+            ' "$payload_file" | tr '[:lower:]' '[:upper:]'
+          }
+
+          extract_header_file() {
+            local payload_file="$1"
+            local output_file="$2"
+
+            jq -c '
+              if .headers? then
+                .headers
+              elif .data.headers? then
+                .data.headers
+              else
+                {}
+              end
+            ' "$payload_file" > "$output_file"
+          }
+
+          extract_form_file() {
+            local payload_file="$1"
+            local output_file="$2"
+
+            jq -c '
+              if .fields? then
+                .fields
+              elif .form_data? then
+                .form_data
+              elif .data.fields? then
+                .data.fields
+              elif .data.form_data? then
+                .data.form_data
+              else
+                {}
+              end
+            ' "$payload_file" > "$output_file"
+          }
+
           collect_header_args() {
-            jq -r 'to_entries[] | @base64' gitcode-upload-headers.json | while read -r entry; do
+            local payload_file="$1"
+
+            jq -r 'to_entries[] | @base64' "$payload_file" | while read -r entry; do
               key="$(printf '%s' "$entry" | base64 -d | jq -r '.key')"
               value="$(printf '%s' "$entry" | base64 -d | jq -r '.value')"
               printf '%s\0' "-H" "${key}: ${value}"
@@ -435,15 +407,14 @@ jobs:
           }
 
           collect_form_args() {
-            jq -r 'to_entries[] | @base64' gitcode-upload-fields.json | while read -r entry; do
+            local payload_file="$1"
+
+            jq -r 'to_entries[] | @base64' "$payload_file" | while read -r entry; do
               key="$(printf '%s' "$entry" | base64 -d | jq -r '.key')"
               value="$(printf '%s' "$entry" | base64 -d | jq -r '.value')"
               printf '%s\0' "-F" "${key}=${value}"
             done
           }
-
-          mapfile -d '' -t extra_header_args < <(collect_header_args || true)
-          mapfile -d '' -t extra_form_args < <(collect_form_args || true)
 
           try_upload_request() {
             local mode="$1"
@@ -470,12 +441,72 @@ jobs:
           upload_asset() {
             local file_path="$1"
             local file_name
+            local encoded_file_name
+            local upload_target_api_url
+            local upload_target_file
+            local upload_header_file
+            local upload_form_file
+            local upload_target_status
+            local upload_url
+            local request_method
             file_name="$(basename "$file_path")"
+            encoded_file_name="$(url_encode "$file_name")"
 
             if grep -Fxq "$file_name" gitcode-existing-assets.txt; then
               echo "Skipping existing GitCode asset: $file_name"
               return 0
             fi
+
+            upload_target_api_url="https://api.gitcode.com/api/v5/repos/${GITCODE_OWNER}/${GITCODE_REPO}/releases/${RELEASE_TAG}/upload_url?file_name=${encoded_file_name}"
+            upload_target_file="gitcode-upload-url-${file_name}.json"
+            upload_header_file="gitcode-upload-headers-${file_name}.json"
+            upload_form_file="gitcode-upload-fields-${file_name}.json"
+
+            upload_target_status="$(curl -sS -o "$upload_target_file" -w "%{http_code}" \
+              -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
+              "$upload_target_api_url")"
+
+            if [ "$upload_target_status" != "200" ]; then
+              echo "::error::Failed to get GitCode upload target for ${file_name}: HTTP ${upload_target_status}"
+              cat "$upload_target_file"
+              exit 1
+            fi
+
+            echo "GitCode upload target summary for ${file_name}:"
+            jq '
+              if type == "string" then
+                {
+                  upload_url: (split("?")[0])
+                }
+              else
+                {
+                  method: (.method // .data.method // null),
+                  upload_url: ((.upload_url // .url // .data.upload_url // .data.url // "") | split("?")[0]),
+                  header_keys: ((.headers // .data.headers // {}) | keys),
+                  field_keys: ((.fields // .form_data // .data.fields // .data.form_data // {}) | keys)
+                }
+              end
+            ' "$upload_target_file"
+
+            upload_url="$(extract_upload_url "$upload_target_file")"
+
+            if [ -z "$upload_url" ]; then
+              echo "::error::Unable to determine GitCode upload URL for ${file_name}."
+              cat "$upload_target_file"
+              exit 1
+            fi
+
+            request_method="$(extract_request_method "$upload_target_file")"
+
+            if [ -z "$request_method" ]; then
+              request_method="PUT"
+            fi
+
+            extract_header_file "$upload_target_file" "$upload_header_file"
+            extract_form_file "$upload_target_file" "$upload_form_file"
+
+            mapfile -d '' -t extra_header_args < <(collect_header_args "$upload_header_file" || true)
+            mapfile -d '' -t extra_form_args < <(collect_form_args "$upload_form_file" || true)
 
             local primary_url
             local secondary_url

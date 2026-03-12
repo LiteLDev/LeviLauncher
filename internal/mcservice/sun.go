@@ -2,10 +2,10 @@ package mcservice
 
 import (
 	"fmt"
-	"net/http"
 	"time"
 
 	json "github.com/goccy/go-json"
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 )
 
 type SunTimes struct {
@@ -15,7 +15,7 @@ type SunTimes struct {
 }
 
 func GetSunTimes() SunTimes {
-	resp, err := http.Get("http://ip-api.com/json")
+	resp, err := httpx.Get("http://ip-api.com/json")
 	if err != nil {
 		return SunTimes{Sunrise: "06:00", Sunset: "18:00"}
 	}
@@ -32,7 +32,7 @@ func GetSunTimes() SunTimes {
 	}
 
 	apiURL := fmt.Sprintf("https://api.sunrise-sunset.org/json?lat=%f&lng=%f&formatted=0", geo.Latitude, geo.Longitude)
-	sunResp, err := http.Get(apiURL)
+	sunResp, err := httpx.Get(apiURL)
 	if err != nil {
 		return SunTimes{Sunrise: "06:00", Sunset: "18:00", IP: geo.IP}
 	}
@@ -65,4 +65,3 @@ func GetSunTimes() SunTimes {
 		IP:      geo.IP,
 	}
 }
-

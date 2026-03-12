@@ -9,6 +9,7 @@ import (
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/curseforge/client/types"
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 )
 
 const (
@@ -49,9 +50,7 @@ func (cfg *Config) IsDebug() bool {
 }
 
 func (cfg *Config) NewHTTPClient() *http.Client {
-	return &http.Client{
-		Timeout: cfg.timeout,
-	}
+	return httpx.NewClient(cfg.timeout)
 }
 
 func (cfg *Config) NewGetRequest(path string) (*http.Request, error) {
@@ -62,6 +61,7 @@ func (cfg *Config) NewGetRequest(path string) (*http.Request, error) {
 	}
 	req.Header.Add(xAPIKeyHeader, cfg.apiKey)
 	req.Header.Add("Accept", "application/json")
+	httpx.ApplyDefaultHeaders(req)
 
 	return req, nil
 }
@@ -88,6 +88,7 @@ func (cfg *Config) NewPostRequest(path string, body any) (*http.Request, error) 
 
 	req.Header.Add("Content-Type", "application/json")
 	req.Header.Add("Accept", "application/json")
+	httpx.ApplyDefaultHeaders(req)
 
 	return req, nil
 }

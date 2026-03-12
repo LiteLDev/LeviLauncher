@@ -378,7 +378,7 @@ func fetchLatestRelease(ctx context.Context) (string, string, error) {
 		httpx.ApplyDefaultHeaders(req)
 		req.Header.Set("Accept", "application/vnd.github+json")
 
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpx.Do(req)
 		if err != nil {
 			lastErr = err
 			continue
@@ -586,7 +586,7 @@ func FetchPackageReadme(projectURL string) (string, error) {
 		}
 		httpx.ApplyDefaultHeaders(req)
 
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpx.Do(req)
 		if err != nil {
 			lastErr = err
 			continue
@@ -630,7 +630,7 @@ func downloadArchive(ctx context.Context, rawURL string, dest string) error {
 		}
 		httpx.ApplyDefaultHeaders(req)
 
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpx.Do(req)
 		if err != nil {
 			lastErr = err
 			continue

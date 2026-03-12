@@ -215,7 +215,7 @@ func (m *Manager) run(s *state) {
 		if m.opts.Resume && cur > 0 {
 			req.Header.Set("Range", fmt.Sprintf("bytes=%d-", cur))
 		}
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpx.Do(req)
 		if err != nil {
 			m.emitError(err.Error(), local.dest)
 			m.finishRunning(local)

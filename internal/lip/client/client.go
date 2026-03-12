@@ -8,6 +8,7 @@ import (
 	"strconv"
 	"time"
 
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/liteldev/LeviLauncher/internal/lip/client/types"
 )
 
@@ -19,9 +20,7 @@ type Client struct {
 
 func NewClient() *Client {
 	return &Client{
-		httpClient: &http.Client{
-			Timeout: 30 * time.Second,
-		},
+		httpClient: httpx.NewClient(30 * time.Second),
 	}
 }
 

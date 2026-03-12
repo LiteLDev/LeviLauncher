@@ -92,7 +92,7 @@ func fetchRelease(ctx context.Context) (downloadURL, remoteSHA256 string, err er
 		httpx.ApplyDefaultHeaders(req)
 		req.Header.Set("Accept", "application/vnd.github+json")
 
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpx.Do(req)
 		if err != nil {
 			continue
 		}
@@ -128,7 +128,7 @@ func downloadFile(ctx context.Context, url, dest string) error {
 	}
 	httpx.ApplyDefaultHeaders(req)
 
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpx.Do(req)
 	if err != nil {
 		return err
 	}

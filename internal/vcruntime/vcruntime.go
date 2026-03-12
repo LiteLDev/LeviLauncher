@@ -140,7 +140,7 @@ func EnsureInteractive(ctx context.Context) {
 		return
 	}
 	httpx.ApplyDefaultHeaders(req)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpx.Do(req)
 	if err != nil {
 		application.Get().Event.Emit(EventDownloadError, err.Error())
 		application.Get().Event.Emit(EventEnsureDone, false)
@@ -292,7 +292,7 @@ func EnsureLatest(ctx context.Context, contentDir string) {
 	c, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 	defer cancel()
 	var downloadURL string
-	client := github.NewClient(nil)
+	client := github.NewClient(httpx.DefaultClient())
 	rel, _, err := client.Repositories.GetLatestRelease(c, "LiteLDev", "vcproxy")
 	if err == nil && rel != nil {
 		for _, asset := range rel.Assets {
@@ -314,7 +314,7 @@ func EnsureLatest(ctx context.Context, contentDir string) {
 		return
 	}
 	httpx.ApplyDefaultHeaders(req)
-	resp, err := http.DefaultClient.Do(req)
+	resp, err := httpx.Do(req)
 	if err != nil {
 		log.Printf("vcruntime.EnsureLatest: 请求失败: %v", err)
 		application.Get().Event.Emit(EventEnsureDone, false)

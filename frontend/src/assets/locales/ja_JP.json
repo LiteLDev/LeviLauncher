@@ -365,6 +365,8 @@
       "title": "lip",
       "install_button": "インストール",
       "check_button": "確認",
+      "cache_clean_button": "キャッシュを削除",
+      "cache_cleaning": "キャッシュを削除しています...",
       "installing": "lip をインストールしています...",
       "latest_label": "最新",
       "outdated_label": "更新あり",

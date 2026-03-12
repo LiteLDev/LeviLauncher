@@ -596,6 +596,14 @@ func callDaemon(ctx context.Context, workDir string, method string, params any) 
 	return err
 }
 
+func CacheClean(ctx context.Context) error {
+	if err := EnsureInstalledWithError(); err != nil {
+		return err
+	}
+	_, err := callDaemonWithResultQuiet(ctx, filepath.Dir(LipExePath()), "CacheClean", []any{})
+	return err
+}
+
 func InstallPackagesViaDaemon(ctx context.Context, workDir string, packages []string) error {
 	if strings.TrimSpace(workDir) == "" {
 		return fmt.Errorf("empty work directory")

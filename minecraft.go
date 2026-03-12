@@ -329,6 +329,13 @@ func (a *Minecraft) InstallLip() string {
 	return lip.Install()
 }
 
+func (a *Minecraft) CacheClean() string {
+	if err := lip.CacheClean(a.ctx); err != nil {
+		log.Printf("lip: cache clean failed: %v", err)
+	}
+	return ""
+}
+
 func (a *Minecraft) GetLipVersion() string {
 	return lip.GetVersion()
 }

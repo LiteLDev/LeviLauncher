@@ -264,6 +264,7 @@ export const useSettings = (i18n: { language: string }) => {
   const [lipUpToDate, setLipUpToDate] = useState<boolean>(false);
   const [lipStatusError, setLipStatusError] = useState<string>("");
   const [installingLip, setInstallingLip] = useState<boolean>(false);
+  const [cleaningLipCache, setCleaningLipCache] = useState<boolean>(false);
   const [lipStatus, setLipStatus] = useState<string>("");
   const [lipProgress, setLipProgress] = useState<{
     percentage: number;
@@ -414,6 +415,15 @@ export const useSettings = (i18n: { language: string }) => {
       setLipUpToDate(false);
       setLipLatestVersion("");
     }
+  };
+
+  const cleanLipCache = async () => {
+    setCleaningLipCache(true);
+    try {
+      await callMinecraftByName<string>("CacheClean");
+    } catch {}
+    setCleaningLipCache(false);
+    void refreshLipStatus();
   };
 
   const refreshResourceRulesStatus = async () => {
@@ -913,12 +923,14 @@ export const useSettings = (i18n: { language: string }) => {
     lipStatusError,
     installingLip,
     setInstallingLip,
+    cleaningLipCache,
     lipStatus,
     lipProgress,
     lipError,
     setLipError,
     lipProgressDisclosure,
     refreshLipStatus,
+    cleanLipCache,
 
     // Resource rules
     resourceRulesInstalled,

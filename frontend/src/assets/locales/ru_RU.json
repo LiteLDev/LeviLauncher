@@ -365,6 +365,8 @@
       "title": "lip",
       "install_button": "Установить",
       "check_button": "Проверить",
+      "cache_clean_button": "Очистить кэш",
+      "cache_cleaning": "Очистка кэша...",
       "installing": "Установка lip...",
       "latest_label": "Актуально",
       "outdated_label": "Доступно обновление",

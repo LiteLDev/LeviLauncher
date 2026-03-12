@@ -386,6 +386,8 @@
       "title": "lip",
       "install_button": "Install",
       "check_button": "Check",
+      "cache_clean_button": "Clean Cache",
+      "cache_cleaning": "Cleaning Cache...",
       "installing": "Installing lip...",
       "latest_label": "Latest",
       "outdated_label": "Update Available",

@@ -386,6 +386,8 @@
       "title": "lip",
       "install_button": "安装",
       "check_button": "检查",
+      "cache_clean_button": "清理缓存",
+      "cache_cleaning": "正在清理缓存...",
       "installing": "正在安装 lip...",
       "latest_label": "最新",
       "outdated_label": "可更新",

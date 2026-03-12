@@ -1,0 +1,53 @@
+name: Sync GitCode Mirror
+
+on:
+  push:
+    branches:
+      - main
+
+concurrency:
+  group: sync-gitcode-main
+  cancel-in-progress: true
+
+jobs:
+  sync:
+    if: github.repository == 'LiteLDev/LeviLauncher'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate GitCode remote
+        env:
+          GITCODE_PUSH_URL: ${{ secrets.GITCODE_PUSH_URL }}
+        run: |
+          if [ -z "$GITCODE_PUSH_URL" ]; then
+            echo "::error::Missing required secret GITCODE_PUSH_URL."
+            exit 1
+          fi
+
+      - name: Print source revision
+        run: |
+          echo "GitHub repository: ${{ github.repository }}"
+          echo "GitHub ref: ${{ github.ref }}"
+          echo "GitHub SHA: ${{ github.sha }}"
+
+      - name: Ensure local main branch
+        run: |
+          if git show-ref --verify --quiet refs/heads/main; then
+            git checkout --force main
+          else
+            git checkout --force -b main origin/main
+          fi
+
+      - name: Push main to GitCode
+        env:
+          GITCODE_PUSH_URL: ${{ secrets.GITCODE_PUSH_URL }}
+        run: |
+          git remote add gitcode "$GITCODE_PUSH_URL"
+          git push gitcode refs/heads/main:refs/heads/main

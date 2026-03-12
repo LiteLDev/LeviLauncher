@@ -177,7 +177,7 @@ jobs:
       - name: Create or update GitCode release
         env:
           GITCODE_API_TOKEN: ${{ secrets.GITCODE_API_TOKEN }}
-          GITCODE_OWNER: ${{ steps.gitcode_repo.outputs.owner }}
+          GITCODE_OWNER: "dreamguxiang"
           GITCODE_REPO: ${{ steps.gitcode_repo.outputs.repo }}
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |

@@ -177,28 +177,38 @@ jobs:
       - name: Create or update GitCode release
         env:
           GITCODE_API_TOKEN: ${{ secrets.GITCODE_API_TOKEN }}
-          GITCODE_OWNER: "dreamguxiang"
+          GITCODE_OWNER: ${{ steps.gitcode_repo.outputs.owner }}
           GITCODE_REPO: ${{ steps.gitcode_repo.outputs.repo }}
           RELEASE_TAG: ${{ inputs.release_tag }}
         run: |
           set -euo pipefail
 
           release_api_root="https://api.gitcode.com/api/v5/repos/${GITCODE_OWNER}/${GITCODE_REPO}/releases"
-          release_api_url="${release_api_root}/${RELEASE_TAG}"
+          release_by_tag_api_url="${release_api_root}/tags/${RELEASE_TAG}"
 
           status_code="$(curl -sS -o gitcode-release-current.json -w "%{http_code}" \
             -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
-            "$release_api_url")"
+            "$release_by_tag_api_url")"
+
+          api_error_code="$(jq -r '.error_code // empty' gitcode-release-current.json 2>/dev/null || true)"
+          release_id="$(jq -r '.id // empty' gitcode-release-current.json 2>/dev/null || true)"
 
           if [ "$status_code" = "200" ]; then
             echo "Updating GitCode release for ${RELEASE_TAG}"
+
+            if [ -n "$release_id" ]; then
+              release_update_api_url="${release_api_root}/${release_id}"
+            else
+              release_update_api_url="${release_api_root}/${RELEASE_TAG}"
+            fi
+
             curl --fail-with-body -sS \
               -X PATCH \
               -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
               -H "Content-Type: application/json" \
               --data @gitcode-release.json \
-              "$release_api_url" > gitcode-release-result.json
-          elif [ "$status_code" = "404" ]; then
+              "$release_update_api_url" > gitcode-release-result.json
+          elif [ "$status_code" = "404" ] || [ "$api_error_code" = "404" ]; then
             echo "Creating GitCode release for ${RELEASE_TAG}"
             curl --fail-with-body -sS \
               -X POST \
@@ -207,7 +217,7 @@ jobs:
               --data @gitcode-release.json \
               "$release_api_root" > gitcode-release-result.json
           else
-            echo "::error::Unexpected response while checking GitCode release: HTTP ${status_code}"
+            echo "::error::Unexpected response while checking GitCode release: HTTP ${status_code}, API error ${api_error_code:-unknown}"
             cat gitcode-release-current.json
             exit 1
           fi

@@ -1,6 +1,9 @@
 import React from "react";
 import { Button } from "@heroui/react";
-import { UnifiedModal } from "@/components/UnifiedModal";
+import {
+  UnifiedModal,
+  getUnifiedModalConfirmButtonProps,
+} from "@/components/UnifiedModal";
 import { useTranslation } from "react-i18next";
 import { FaDownload } from "react-icons/fa";
 
@@ -22,6 +25,7 @@ export const LipUpdateModal: React.FC<LipUpdateModalProps> = ({
   onOpenSettings,
 }) => {
   const { t } = useTranslation();
+  const warningConfirmButtonProps = getUnifiedModalConfirmButtonProps("warning");
 
   return (
     <UnifiedModal
@@ -46,7 +50,7 @@ export const LipUpdateModal: React.FC<LipUpdateModalProps> = ({
           <Button variant="flat" onPress={onIgnore}>
             {t("settings.lip.startup_prompt.ignore_button")}
           </Button>
-          <Button color="primary" onPress={onOpenSettings}>
+          <Button {...warningConfirmButtonProps} onPress={onOpenSettings}>
             {t("settings.lip.startup_prompt.open_settings_button")}
           </Button>
         </div>

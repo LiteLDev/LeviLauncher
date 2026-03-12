@@ -35,7 +35,10 @@ import { ModCard } from "@/components/ModdedCard";
 import { ContentDownloadCard } from "@/components/ContentDownloadCard";
 import { Window, Browser } from "@wailsio/runtime";
 import { motion, AnimatePresence } from "framer-motion";
-import { UnifiedModal } from "@/components/UnifiedModal";
+import {
+  UnifiedModal,
+  getUnifiedModalConfirmButtonProps,
+} from "@/components/UnifiedModal";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
@@ -65,6 +68,7 @@ const LAUNCH_TIP_KEYS = [
 
 export const LauncherPage = (args: any) => {
   const { t } = useTranslation();
+  const warningConfirmButtonProps = getUnifiedModalConfirmButtonProps("warning");
   const { ensureInstanceHydrated, getInstanceSnapshot, snapshotRevision } =
     useModIntelligence();
   const { getLatestLLVersion, compareLLVersions } = useLeviLamina();
@@ -944,9 +948,8 @@ export const LauncherPage = (args: any) => {
                 {t("launcherpage.gs.missing.ignore_forever")}
               </Button>
               <Button
-                color="primary"
+                {...warningConfirmButtonProps}
                 radius="full"
-                className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
                 onPress={() => handleGamingServicesInstall(Browser.OpenURL)}
               >
                 {t("launcherpage.gs.missing.open_store")}

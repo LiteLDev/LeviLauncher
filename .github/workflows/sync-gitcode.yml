@@ -284,50 +284,6 @@ jobs:
             jq -rn --arg value "$1" '$value|@uri'
           }
 
-          render_url_for_file() {
-            local base_url="$1"
-            local file_name="$2"
-            local encoded_name
-            encoded_name="$(url_encode "$file_name")"
-
-            if [[ "$base_url" == *"{filename}"* ]]; then
-              printf '%s' "${base_url//\{filename\}/$encoded_name}"
-              return
-            fi
-
-            if [[ "$base_url" == *"{file_name}"* ]]; then
-              printf '%s' "${base_url//\{file_name\}/$encoded_name}"
-              return
-            fi
-
-            if [[ "$base_url" == *":filename"* ]]; then
-              printf '%s' "${base_url//:filename/$encoded_name}"
-              return
-            fi
-
-            if [[ "$base_url" == *":file_name"* ]]; then
-              printf '%s' "${base_url//:file_name/$encoded_name}"
-              return
-            fi
-
-            printf '%s' "$base_url"
-          }
-
-          append_file_name_to_url() {
-            local base_url="$1"
-            local file_name="$2"
-            local encoded_name
-            encoded_name="$(url_encode "$file_name")"
-
-            if [[ "$base_url" == *\?* ]]; then
-              printf '%s&filename=%s' "$base_url" "$encoded_name"
-            elif [[ "$base_url" == */ ]]; then
-              printf '%s%s' "$base_url" "$encoded_name"
-            else
-              printf '%s/%s' "$base_url" "$encoded_name"
-            fi
-          }
-
           extract_upload_url() {
             local payload_file="$1"
 
@@ -398,10 +354,16 @@ jobs:
 
           collect_header_args() {
             local payload_file="$1"
+            local skip_content_type="${2:-false}"
 
             jq -r 'to_entries[] | @base64' "$payload_file" | while read -r entry; do
               key="$(printf '%s' "$entry" | base64 -d | jq -r '.key')"
               value="$(printf '%s' "$entry" | base64 -d | jq -r '.value')"
+
+              if [ "$skip_content_type" = "true" ] && [ "${key,,}" = "content-type" ]; then
+                continue
+              fi
+
               printf '%s\0' "-H" "${key}: ${value}"
             done
           }
@@ -449,6 +411,7 @@ jobs:
             local upload_target_status
             local upload_url
             local request_method
+            local has_form_fields
             file_name="$(basename "$file_path")"
             encoded_file_name="$(url_encode "$file_name")"
 
@@ -496,94 +459,64 @@ jobs:
               exit 1
             fi
 
-            request_method="$(extract_request_method "$upload_target_file")"
-
-            if [ -z "$request_method" ]; then
-              request_method="PUT"
-            fi
-
             extract_header_file "$upload_target_file" "$upload_header_file"
             extract_form_file "$upload_target_file" "$upload_form_file"
 
-            mapfile -d '' -t extra_header_args < <(collect_header_args "$upload_header_file" || true)
+            has_form_fields="$(jq -r 'if type == "object" then (length > 0) else false end' "$upload_form_file")"
+            request_method="$(extract_request_method "$upload_target_file")"
+
+            if [ -z "$request_method" ]; then
+              if [ "$has_form_fields" = "true" ]; then
+                request_method="POST"
+              else
+                request_method="PUT"
+              fi
+            fi
+
+            mapfile -d '' -t extra_header_args < <(collect_header_args "$upload_header_file" false || true)
+            mapfile -d '' -t multipart_header_args < <(collect_header_args "$upload_header_file" true || true)
             mapfile -d '' -t extra_form_args < <(collect_form_args "$upload_form_file" || true)
 
-            local primary_url
-            local secondary_url
             local response_file
-            primary_url="$(render_url_for_file "$upload_url" "$file_name")"
-            secondary_url="$(append_file_name_to_url "$upload_url" "$file_name")"
+            local -a binary_payload_args
             response_file="gitcode-upload-response-${file_name}.log"
 
             echo "Uploading GitCode asset: $file_name"
 
-            if [ "${#extra_form_args[@]}" -gt 0 ]; then
+            if [ "$has_form_fields" = "true" ]; then
               if try_upload_request \
                 "multipart-with-fields" \
                 "$file_path" \
-                "$primary_url" \
+                "$upload_url" \
                 "$response_file" \
-                -X POST \
-                "${extra_header_args[@]}" \
+                -X "$request_method" \
+                "${multipart_header_args[@]}" \
                 "${extra_form_args[@]}" \
                 -F "file=@${file_path};filename=${file_name}"; then
                 echo "Uploaded ${file_name} via multipart-with-fields."
                 return 0
               fi
+
+              echo "::error::Failed to upload GitCode asset via multipart form: ${file_name}"
+              exit 1
+            fi
+
+            if [ "$request_method" = "PUT" ]; then
+              binary_payload_args=(--upload-file "$file_path")
+            else
+              binary_payload_args=(--data-binary "@${file_path}")
             fi
 
             if try_upload_request \
-              "${request_method}-binary-primary" \
+              "${request_method}-binary" \
               "$file_path" \
-              "$primary_url" \
+              "$upload_url" \
               "$response_file" \
               -X "$request_method" \
               "${extra_header_args[@]}" \
-              -H "Content-Type: application/octet-stream" \
-              --upload-file "$file_path"; then
+              "${binary_payload_args[@]}"; then
               echo "Uploaded ${file_name} via ${request_method} binary."
               return 0
-            fi
-
-            if [ "$secondary_url" != "$primary_url" ]; then
-              if try_upload_request \
-                "${request_method}-binary-secondary" \
-                "$file_path" \
-                "$secondary_url" \
-                "$response_file" \
-                -X "$request_method" \
-                "${extra_header_args[@]}" \
-                -H "Content-Type: application/octet-stream" \
-                --upload-file "$file_path"; then
-                echo "Uploaded ${file_name} via ${request_method} binary with filename-appended URL."
-                return 0
-              fi
-            fi
-
-            if try_upload_request \
-              "multipart-file-primary" \
-              "$file_path" \
-              "$primary_url" \
-              "$response_file" \
-              -X POST \
-              "${extra_header_args[@]}" \
-              -F "file=@${file_path};filename=${file_name}"; then
-              echo "Uploaded ${file_name} via multipart file upload."
-              return 0
-            fi
-
-            if [ "$secondary_url" != "$primary_url" ]; then
-              if try_upload_request \
-                "multipart-file-secondary" \
-                "$file_path" \
-                "$secondary_url" \
-                "$response_file" \
-                -X POST \
-                "${extra_header_args[@]}" \
-                -F "file=@${file_path};filename=${file_name}"; then
-                echo "Uploaded ${file_name} via multipart file upload with filename-appended URL."
-                return 0
-              fi
             fi
 
             echo "::error::Failed to upload GitCode asset: ${file_name}"

@@ -1,5 +1,8 @@
 import { Dialogs } from "@wailsio/runtime";
-import { UnifiedModal } from "@/components/UnifiedModal";
+import {
+  UnifiedModal,
+  getUnifiedModalConfirmButtonProps,
+} from "@/components/UnifiedModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -35,6 +38,7 @@ import { useInstanceSettings } from "@/hooks/useInstanceSettings";
 export default function InstanceSettingsPage() {
   const { t } = useTranslation();
   const vs = useInstanceSettings();
+  const warningConfirmButtonProps = getUnifiedModalConfirmButtonProps("warning");
   const currentLLVersionText =
     vs.currentLLVersion ||
     (t("versions.edit.loader.ll_not_installed") as unknown as string);
@@ -579,9 +583,8 @@ export default function InstanceSettingsPage() {
               {t("common.cancel")}
             </Button>
             <Button
-              color="primary"
+              {...warningConfirmButtonProps}
               radius="full"
-              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={() => {
                 vs.setGdkMissingOpen(false);
                 vs.navigate("/settings", { state: { tab: "components" } });
@@ -594,6 +597,29 @@ export default function InstanceSettingsPage() {
       >
         <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
           {t("launcherpage.gdk_missing.body")}
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
+        isOpen={vs.lipMissingOpen}
+        onOpenChange={(open) => {
+          if (!open) vs.setLipMissingOpen(false);
+        }}
+        type="warning"
+        title={t("lip.guard.title")}
+        isDismissable={false}
+        footer={
+          <Button
+            {...warningConfirmButtonProps}
+            radius="full"
+            onPress={vs.openLipComponentsSettings}
+          >
+            {t("settings.lip.startup_prompt.open_settings_button")}
+          </Button>
+        }
+      >
+        <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
+          {t("lip.guard.description")}
         </div>
       </UnifiedModal>
 

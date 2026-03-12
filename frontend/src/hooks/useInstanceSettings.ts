@@ -134,6 +134,7 @@ export const useInstanceSettings = () => {
   const [llExplicitInstalled, setLLExplicitInstalled] = React.useState(false);
   const [currentLLVersion, setCurrentLLVersion] = React.useState("");
   const [selectedLLVersion, setSelectedLLVersion] = React.useState("");
+  const [lipMissingOpen, setLipMissingOpen] = React.useState(false);
   const [llSupportedVersions, setLLSupportedVersions] = React.useState<
     string[]
   >([]);
@@ -439,6 +440,37 @@ export const useInstanceSettings = () => {
     return snapshot?.llState || null;
   }, [ensureInstanceHydrated, getInstanceSnapshot, targetName]);
 
+  const openLipComponentsSettings = React.useCallback(() => {
+    setLipMissingOpen(false);
+    navigate(ROUTES.settings, { state: { tab: "components" } });
+  }, [navigate]);
+
+  const ensureLipRuntimeAvailable = React.useCallback(async () => {
+    try {
+      const getLipStatus = (minecraft as any)?.GetLipStatus;
+      if (typeof getLipStatus === "function") {
+        const status = await getLipStatus();
+        if (Boolean(status?.installed)) {
+          return true;
+        }
+      } else {
+        const isLipInstalled = await (minecraft as any)?.IsLipInstalled?.();
+        if (Boolean(isLipInstalled)) {
+          return true;
+        }
+      }
+    } catch (error) {
+      console.warn("Failed to check lip runtime status", error);
+      return true;
+    }
+
+    llVersionSelectOnClose();
+    llInstallConfirmOnClose();
+    rcOnClose();
+    setLipMissingOpen(true);
+    return false;
+  }, [llInstallConfirmOnClose, llVersionSelectOnClose, rcOnClose]);
+
   // Save handler
   const onSave = React.useCallback(
     async (destPath?: string) => {
@@ -581,12 +613,8 @@ export const useInstanceSettings = () => {
       }
       setInstallingLL(true);
       try {
-        const isLip = await (minecraft as any)?.IsLipInstalled();
-        if (!isLip) {
-          addToast({
-            description: resolveToastText("mods.err_lip_not_installed"),
-            color: "danger",
-          });
+        const lipReady = await ensureLipRuntimeAvailable();
+        if (!lipReady) {
           return false;
         }
         const installLL = (minecraft as any)?.InstallLeviLamina;
@@ -641,6 +669,7 @@ export const useInstanceSettings = () => {
       isLLInstalled,
       llInstallActionKind,
       llInstallSuccessKey,
+      ensureLipRuntimeAvailable,
       resolveToastText,
       resolvedLLTargetVersion,
       runWithLipTask,
@@ -684,9 +713,13 @@ export const useInstanceSettings = () => {
     resolveToastText,
   ]);
 
-  const openLeviLaminaVersionSelect = React.useCallback(() => {
+  const openLeviLaminaVersionSelect = React.useCallback(async () => {
+    const lipReady = await ensureLipRuntimeAvailable();
+    if (!lipReady) {
+      return;
+    }
     llVersionSelectOnOpen();
-  }, [llVersionSelectOnOpen]);
+  }, [ensureLipRuntimeAvailable, llVersionSelectOnOpen]);
 
   const openLLInstallConfirm = React.useCallback(() => {
     llInstallConfirmOnOpen();
@@ -697,7 +730,7 @@ export const useInstanceSettings = () => {
     llInstallConfirmOnClose();
   }, [installingLL, llInstallConfirmOnClose]);
 
-  const confirmLeviLaminaVersionSelect = React.useCallback(() => {
+  const confirmLeviLaminaVersionSelect = React.useCallback(async () => {
     if (!resolvedLLTargetVersion) {
       addToast({
         description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
@@ -708,11 +741,16 @@ export const useInstanceSettings = () => {
     if (isLLInstalled && !canInstallSelectedLLVersion) {
       return false;
     }
+    const lipReady = await ensureLipRuntimeAvailable();
+    if (!lipReady) {
+      return false;
+    }
     llVersionSelectOnClose();
     llInstallConfirmOnOpen();
     return true;
   }, [
     canInstallSelectedLLVersion,
+    ensureLipRuntimeAvailable,
     isLLInstalled,
     llInstallConfirmOnOpen,
     llVersionSelectOnClose,
@@ -886,6 +924,8 @@ export const useInstanceSettings = () => {
     rcOnClose,
     rcVersion,
     isLLInstalled,
+    lipMissingOpen,
+    setLipMissingOpen,
     resolvedLLTargetVersion,
 
     // Error helper
@@ -897,6 +937,7 @@ export const useInstanceSettings = () => {
     proceedInstallLeviLamina,
     openLeviLaminaVersionSelect,
     confirmLeviLaminaVersionSelect,
+    openLipComponentsSettings,
     openLLInstallConfirm,
     closeLLInstallConfirm,
     confirmInstallLeviLaminaAction,

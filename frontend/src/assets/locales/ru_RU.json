@@ -1110,6 +1110,10 @@
       "docs_button": "Открыть спецификацию",
       "close_button": "Закрыть"
     },
+    "guard": {
+      "title": "lipd не установлен",
+      "description": "lipd пока не установлен. Чтобы продолжить пользоваться страницами lip или установить LeviLamina, сначала откройте «Настройки > Сторонние компоненты» и установите его."
+    },
     "title": "lip Content",
     "sort_options": {
       "hotness": "Hotness",

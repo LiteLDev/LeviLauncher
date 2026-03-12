@@ -1110,6 +1110,10 @@
       "docs_button": "View Full Spec",
       "close_button": "Close"
     },
+    "guard": {
+      "title": "lipd is not installed",
+      "description": "lipd is not installed yet. To continue using lip-related pages or install LeviLamina, go to Settings > Third-party Components and install it first."
+    },
     "title": "lip Content",
     "sort_options": {
       "hotness": "Hotness",

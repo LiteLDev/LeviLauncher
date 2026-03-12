@@ -1110,6 +1110,10 @@
       "docs_button": "完全な仕様を見る",
       "close_button": "閉じる"
     },
+    "guard": {
+      "title": "lipd が見つかりません",
+      "description": "lipd がまだインストールされていません。lip 関連ページを引き続き利用する場合や LeviLamina をインストールする場合は、まず「設定 > サードパーティ製コンポーネント」でインストールしてください。"
+    },
     "title": "lip Content",
     "sort_options": {
       "hotness": "Hotness",

@@ -1127,6 +1127,10 @@
       "docs_button": "查看完整規範",
       "close_button": "關閉"
     },
+    "guard": {
+      "title": "未檢測到 lipd",
+      "description": "目前尚未安裝 lipd。若要繼續使用 lip 相關頁面或安裝 LeviLamina，請先前往「設定 > 第三方元件」完成安裝。"
+    },
     "game_all_versions": "所有遊戲版本",
     "game_version_label": "遊戲版本",
     "game_version_placeholder": "選擇遊戲版本",

@@ -42,6 +42,8 @@ import {
   GetVersionMeta,
   ListVersionMetas,
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+import { GetLipStatus } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { ROUTES } from "@/constants/routes";
 
 const PAGE_SIZE = 20;
 const ALL_GAME_VERSION = "__all_game__";
@@ -56,6 +58,9 @@ const HIDDEN_LIP_PACKAGES = new Set([
 
 type LIPSortKey = "hotness" | "updated" | "name";
 type LIPOrderKey = "asc" | "desc";
+type LipRuntimeStatus = {
+  installed?: boolean;
+};
 
 type ParsedSemver = {
   major: number;
@@ -239,6 +244,9 @@ const LIPPage: React.FC = () => {
   const [error, setError] = useState("");
   const [filterContextReady, setFilterContextReady] = useState(false);
   const [developerGuideOpen, setDeveloperGuideOpen] = useState(false);
+  const [lipGuardReady, setLipGuardReady] = useState(false);
+  const [lipAvailable, setLipAvailable] = useState(true);
+  const [lipMissingModalOpen, setLipMissingModalOpen] = useState(false);
 
   const pageRootRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -317,6 +325,39 @@ const LIPPage: React.FC = () => {
 
   useEffect(() => {
     void loadPackages();
+  }, []);
+
+  const openLipSettings = useCallback(() => {
+    setLipMissingModalOpen(false);
+    navigate(ROUTES.settings, { state: { tab: "components" } });
+  }, [navigate]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    const checkLipRuntime = async () => {
+      try {
+        const status = (await GetLipStatus()) as LipRuntimeStatus;
+        if (cancelled) return;
+
+        const installed = Boolean(status?.installed);
+        setLipAvailable(installed);
+        setLipMissingModalOpen(!installed);
+      } catch (guardError) {
+        console.warn("Failed to check lip runtime status", guardError);
+        if (cancelled) return;
+        setLipAvailable(true);
+      } finally {
+        if (!cancelled) {
+          setLipGuardReady(true);
+        }
+      }
+    };
+
+    void checkLipRuntime();
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   const loadFilterContext = useCallback(async () => {
@@ -420,8 +461,9 @@ const LIPPage: React.FC = () => {
   ]);
 
   useEffect(() => {
+    if (!lipGuardReady || !lipAvailable) return;
     void loadFilterContext();
-  }, [loadFilterContext]);
+  }, [lipAvailable, lipGuardReady, loadFilterContext]);
 
   useEffect(() => {
     if (!filterContextReady) return;
@@ -915,6 +957,21 @@ const LIPPage: React.FC = () => {
           <p className="font-medium text-default-800 dark:text-zinc-100">
             {t("lip.guide.variant_hint")}
           </p>
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
+        size="md"
+        isOpen={lipMissingModalOpen}
+        onOpenChange={setLipMissingModalOpen}
+        type="warning"
+        title={t("lip.guard.title")}
+        isDismissable={false}
+        confirmText={t("settings.lip.startup_prompt.open_settings_button")}
+        onConfirm={openLipSettings}
+      >
+        <div className="flex flex-col gap-3 text-sm leading-6 text-default-600 dark:text-zinc-300">
+          <p>{t("lip.guard.description")}</p>
         </div>
       </UnifiedModal>
     </PageContainer>

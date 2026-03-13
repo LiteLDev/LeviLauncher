@@ -143,7 +143,7 @@ func FetchLeviLaminaVersionDB() (map[string][]string, error) {
 
 	var lastErr error
 	for _, url := range urls {
-		client := &http.Client{Timeout: 10 * time.Second}
+		client := httpx.NewClient(10 * time.Second)
 		req, err := http.NewRequest(http.MethodGet, url, nil)
 		if err != nil {
 			lastErr = err

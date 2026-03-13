@@ -64,7 +64,6 @@ const TYPE_CONFIG: Record<
     colorClass: string;
     bgClass: string;
     borderClass: string;
-    buttonColor: ButtonProps["color"];
   }
 > = {
   success: {
@@ -72,36 +71,71 @@ const TYPE_CONFIG: Record<
     colorClass: "text-primary-500",
     bgClass: "bg-primary-50 dark:bg-primary-500/10",
     borderClass: "border-primary-100 dark:border-primary-500/20",
-    buttonColor: "primary",
   },
   warning: {
     icon: FiAlertTriangle,
     colorClass: "text-warning-500",
     bgClass: "bg-warning-50 dark:bg-warning-500/10",
     borderClass: "border-warning-100 dark:border-warning-500/20",
-    buttonColor: "warning",
   },
   error: {
     icon: FiXCircle,
     colorClass: "text-danger-500",
     bgClass: "bg-danger-50 dark:bg-danger-500/10",
     borderClass: "border-danger-100 dark:border-danger-500/20",
-    buttonColor: "danger",
   },
   info: {
     icon: FiInfo,
     colorClass: "text-primary-500",
     bgClass: "bg-primary-50 dark:bg-primary-500/10",
     borderClass: "border-primary-100 dark:border-primary-500/20",
-    buttonColor: "primary",
   },
   primary: {
     icon: FiHelpCircle,
     colorClass: "text-primary-500",
     bgClass: "bg-primary-50 dark:bg-primary-500/10",
     borderClass: "border-primary-100 dark:border-primary-500/20",
-    buttonColor: "primary",
   },
+};
+
+const CONFIRM_BUTTON_CONFIG: Record<
+  ModalType,
+  Pick<ButtonProps, "color" | "className">
+> = {
+  success: {
+    color: "primary",
+    className: "font-bold shadow-lg",
+  },
+  warning: {
+    color: "warning",
+    className: "text-white! font-bold shadow-lg shadow-warning-500/20",
+  },
+  error: {
+    color: "danger",
+    className: "font-bold shadow-lg shadow-danger-500/20",
+  },
+  info: {
+    color: "primary",
+    className: "font-bold shadow-lg",
+  },
+  primary: {
+    color: "primary",
+    className: "font-bold shadow-lg",
+  },
+};
+
+export const getUnifiedModalConfirmButtonProps = (
+  type: ModalType,
+  overrides?: Pick<ButtonProps, "color" | "className">,
+): Pick<ButtonProps, "color" | "className"> => {
+  const defaults = CONFIRM_BUTTON_CONFIG[type];
+
+  return {
+    color: overrides?.color ?? defaults.color,
+    className: overrides?.className
+      ? cn(defaults.className, overrides.className)
+      : defaults.className,
+  };
 };
 
 export const UnifiedModal: React.FC<UnifiedModalProps> = ({
@@ -135,12 +169,10 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   const Icon = config.icon;
   const resolvedConfirmText = confirmText ?? t("common.confirm");
   const resolvedCancelText = cancelText ?? t("common.cancel");
-
-  const confirmBtnColor = confirmButtonProps?.color || config.buttonColor;
-  const confirmBtnClass =
-    type === "warning" && !confirmButtonProps?.className
-      ? "text-white! font-bold shadow-lg shadow-warning-500/20"
-      : confirmButtonProps?.className || "font-bold shadow-lg";
+  const resolvedConfirmButtonProps = getUnifiedModalConfirmButtonProps(type, {
+    color: confirmButtonProps?.color,
+    className: confirmButtonProps?.className,
+  });
 
   const resolvedIcon = React.useMemo(() => {
     if (!icon) {
@@ -232,11 +264,11 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
                     )}
                     {showConfirmButton && (
                       <Button
-                        color={confirmBtnColor}
-                        radius="full"
-                        className={confirmBtnClass}
-                        onPress={onConfirm}
                         {...confirmButtonProps}
+                        color={resolvedConfirmButtonProps.color}
+                        radius="full"
+                        className={resolvedConfirmButtonProps.className}
+                        onPress={onConfirm}
                       >
                         {resolvedConfirmText}
                       </Button>

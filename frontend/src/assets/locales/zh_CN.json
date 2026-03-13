@@ -386,6 +386,8 @@
       "title": "lip",
       "install_button": "安装",
       "check_button": "检查",
+      "cache_clean_button": "清理缓存",
+      "cache_cleaning": "正在清理缓存...",
       "installing": "正在安装 lip...",
       "latest_label": "最新",
       "outdated_label": "可更新",
@@ -1126,6 +1128,10 @@
       "variant_hint": "仅当 variant 的 label 包含 client 时，才会被启动器收录。默认情况下请使用 \"label\": \"client\"；子扩展请使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
       "docs_button": "查看完整规范",
       "close_button": "关闭"
+    },
+    "guard": {
+      "title": "未检测到 lipd",
+      "description": "当前尚未安装 lipd。要继续使用 lip 相关页面或安装 LeviLamina，请先前往“设置 > 第三方组件”完成安装。"
     },
     "game_all_versions": "所有游戏版本",
     "game_version_label": "游戏版本",

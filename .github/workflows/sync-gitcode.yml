@@ -1,0 +1,605 @@
+name: Sync GitCode Mirror
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: GitHub release tag to sync to GitCode
+        required: true
+        type: string
+
+jobs:
+  sync:
+    if: github.event_name == 'push' && github.repository == 'LiteLDev/LeviLauncher'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: sync-gitcode-main
+      cancel-in-progress: true
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate GitCode remote
+        env:
+          GITCODE_PUSH_URL: ${{ secrets.GITCODE_PUSH_URL }}
+        run: |
+          if [ -z "$GITCODE_PUSH_URL" ]; then
+            echo "::error::Missing required secret GITCODE_PUSH_URL."
+            exit 1
+          fi
+
+      - name: Print source revision
+        run: |
+          echo "GitHub repository: ${{ github.repository }}"
+          echo "GitHub ref: ${{ github.ref }}"
+          echo "GitHub SHA: ${{ github.sha }}"
+
+      - name: Ensure local main branch
+        run: |
+          if git show-ref --verify --quiet refs/heads/main; then
+            git checkout --force main
+          else
+            git checkout --force -b main origin/main
+          fi
+
+      - name: Push main to GitCode
+        env:
+          GITCODE_PUSH_URL: ${{ secrets.GITCODE_PUSH_URL }}
+        run: |
+          git remote add gitcode "$GITCODE_PUSH_URL"
+          git push gitcode refs/heads/main:refs/heads/main
+
+  sync-release:
+    if: github.event_name == 'workflow_dispatch' && github.repository == 'LiteLDev/LeviLauncher'
+    runs-on: ubuntu-latest
+    concurrency:
+      group: sync-gitcode-release-${{ inputs.release_tag }}
+      cancel-in-progress: false
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Validate release sync settings
+        env:
+          GITCODE_API_TOKEN: ${{ secrets.GITCODE_API_TOKEN }}
+          GITCODE_PUSH_URL: ${{ secrets.GITCODE_PUSH_URL }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "$RELEASE_TAG" ]; then
+            echo "::error::Missing required workflow input release_tag."
+            exit 1
+          fi
+
+          if [ -z "$GITCODE_PUSH_URL" ]; then
+            echo "::error::Missing required secret GITCODE_PUSH_URL."
+            exit 1
+          fi
+
+          if [ -z "$GITCODE_API_TOKEN" ]; then
+            echo "::error::Missing required secret GITCODE_API_TOKEN."
+            exit 1
+          fi
+
+      - name: Resolve GitCode repository
+        id: gitcode_repo
+        env:
+          GITCODE_PUSH_URL: ${{ secrets.GITCODE_PUSH_URL }}
+        run: |
+          set -euo pipefail
+
+          remote_without_scheme="${GITCODE_PUSH_URL#*://}"
+          remote_without_auth="${remote_without_scheme#*@}"
+          repo_path="${remote_without_auth#*/}"
+          repo_path="${repo_path%.git}"
+
+          gitcode_owner="${repo_path%%/*}"
+          gitcode_repo="${repo_path#*/}"
+
+          if [ -z "$gitcode_owner" ] || [ -z "$gitcode_repo" ] || [ "$gitcode_owner" = "$gitcode_repo" ]; then
+            echo "::error::Unable to parse GitCode owner/repo from GITCODE_PUSH_URL."
+            exit 1
+          fi
+
+          echo "owner=$gitcode_owner" >> "$GITHUB_OUTPUT"
+          echo "repo=$gitcode_repo" >> "$GITHUB_OUTPUT"
+          echo "repository=$gitcode_owner/$gitcode_repo" >> "$GITHUB_OUTPUT"
+
+      - name: Fetch tags
+        run: |
+          git fetch --force --tags origin
+
+      - name: Push release tag to GitCode
+        env:
+          GITCODE_PUSH_URL: ${{ secrets.GITCODE_PUSH_URL }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          if ! git rev-parse "refs/tags/$RELEASE_TAG" >/dev/null 2>&1; then
+            echo "::error::Tag $RELEASE_TAG does not exist in the GitHub repository."
+            exit 1
+          fi
+
+          git remote add gitcode "$GITCODE_PUSH_URL"
+          git push gitcode "refs/tags/$RELEASE_TAG:refs/tags/$RELEASE_TAG"
+
+      - name: Export GitHub release metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          gh api "repos/${{ github.repository }}/releases/tags/${RELEASE_TAG}" > github-release.json
+
+          release_name="$(jq -r 'if (.name // "") == "" then .tag_name else .name end' github-release.json)"
+          release_url="$(jq -r '.html_url' github-release.json)"
+          release_body="$(jq -r '.body // ""' github-release.json)"
+          target_commitish="$(jq -r 'if (.target_commitish // "") == "" then "main" else .target_commitish end' github-release.json)"
+          prerelease="$(jq -r '.prerelease // false' github-release.json)"
+          asset_links="$(jq -r '[.assets[]? | "- [" + .name + "](" + .browser_download_url + ")"] | join("\n")' github-release.json)"
+
+          if [ -n "$asset_links" ]; then
+            sync_body="$(printf "%s\n\n---\n\nSynced from GitHub release: %s\n\nGitHub assets:\n%s\n" "$release_body" "$release_url" "$asset_links")"
+          else
+            sync_body="$(printf "%s\n\n---\n\nSynced from GitHub release: %s\n" "$release_body" "$release_url")"
+          fi
+
+          jq -n \
+            --arg tag "$RELEASE_TAG" \
+            --arg name "$release_name" \
+            --arg body "$sync_body" \
+            --arg target_commitish "$target_commitish" \
+            --argjson prerelease "$prerelease" \
+            '{
+              tag_name: $tag,
+              name: $name,
+              body: $body,
+              target_commitish: $target_commitish,
+              prerelease: $prerelease
+            }' > gitcode-release.json
+
+      - name: Download GitHub release assets
+        id: github_assets
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          mkdir -p github-release-assets
+
+          asset_count="$(jq -r '.assets | length' github-release.json)"
+          echo "count=$asset_count" >> "$GITHUB_OUTPUT"
+
+          if [ "$asset_count" = "0" ]; then
+            echo "has_assets=false" >> "$GITHUB_OUTPUT"
+            echo "GitHub release ${RELEASE_TAG} has no uploaded assets."
+            exit 0
+          fi
+
+          gh release download "$RELEASE_TAG" \
+            --repo "${{ github.repository }}" \
+            --dir github-release-assets
+
+          downloaded_count="$(find github-release-assets -maxdepth 1 -type f | wc -l | tr -d ' ')"
+          echo "downloaded=$downloaded_count" >> "$GITHUB_OUTPUT"
+
+          if [ "$downloaded_count" = "0" ]; then
+            echo "::error::GitHub release ${RELEASE_TAG} reports assets but none were downloaded."
+            exit 1
+          fi
+
+          echo "has_assets=true" >> "$GITHUB_OUTPUT"
+          echo "Downloaded GitHub release assets:"
+          find github-release-assets -maxdepth 1 -type f -printf '%f\n' | sort
+
+      - name: Create or update GitCode release
+        env:
+          GITCODE_API_TOKEN: ${{ secrets.GITCODE_API_TOKEN }}
+          GITCODE_OWNER: ${{ steps.gitcode_repo.outputs.owner }}
+          GITCODE_REPO: ${{ steps.gitcode_repo.outputs.repo }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          release_api_root="https://api.gitcode.com/api/v5/repos/${GITCODE_OWNER}/${GITCODE_REPO}/releases"
+          release_by_tag_api_url="${release_api_root}/tags/${RELEASE_TAG}"
+
+          status_code="$(curl -sS -o gitcode-release-current.json -w "%{http_code}" \
+            -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
+            "$release_by_tag_api_url")"
+
+          api_error_code="$(jq -r '.error_code // empty' gitcode-release-current.json 2>/dev/null || true)"
+          release_id="$(jq -r '.id // empty' gitcode-release-current.json 2>/dev/null || true)"
+
+          if [ "$status_code" = "200" ]; then
+            echo "Updating GitCode release for ${RELEASE_TAG}"
+
+            if [ -n "$release_id" ]; then
+              release_update_api_url="${release_api_root}/${release_id}"
+            else
+              release_update_api_url="${release_api_root}/${RELEASE_TAG}"
+            fi
+
+            curl --fail-with-body -sS \
+              -X PATCH \
+              -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data @gitcode-release.json \
+              "$release_update_api_url" > gitcode-release-result.json
+          elif [ "$status_code" = "404" ] || [ "$api_error_code" = "404" ]; then
+            echo "Creating GitCode release for ${RELEASE_TAG}"
+            curl --fail-with-body -sS \
+              -X POST \
+              -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
+              -H "Content-Type: application/json" \
+              --data @gitcode-release.json \
+              "$release_api_root" > gitcode-release-result.json
+          else
+            echo "::error::Unexpected response while checking GitCode release: HTTP ${status_code}, API error ${api_error_code:-unknown}"
+            cat gitcode-release-current.json
+            exit 1
+          fi
+
+      - name: Print synced release summary
+        run: |
+          jq '{ tag_name, name, prerelease, html_url, url }' gitcode-release-result.json || cat gitcode-release-result.json
+
+      - name: Upload GitHub release assets to GitCode
+        if: steps.github_assets.outputs.has_assets == 'true'
+        env:
+          GITCODE_API_TOKEN: ${{ secrets.GITCODE_API_TOKEN }}
+          GITCODE_OWNER: ${{ steps.gitcode_repo.outputs.owner }}
+          GITCODE_REPO: ${{ steps.gitcode_repo.outputs.repo }}
+          RELEASE_TAG: ${{ inputs.release_tag }}
+        run: |
+          set -euo pipefail
+
+          release_api_url="https://api.gitcode.com/api/v5/repos/${GITCODE_OWNER}/${GITCODE_REPO}/releases/tags/${RELEASE_TAG}"
+
+          curl --fail-with-body -sS \
+            -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
+            "$release_api_url" > gitcode-release-state.json
+
+          jq -r '.assets[]?.name' gitcode-release-state.json | sort -u > gitcode-existing-assets.txt || true
+          touch gitcode-existing-assets.txt
+
+          url_encode() {
+            jq -rn --arg value "$1" '$value|@uri'
+          }
+
+          extract_upload_url() {
+            local payload_file="$1"
+
+            jq -r '
+              if type == "string" then
+                .
+              elif .upload_url? then
+                .upload_url
+              elif .url? then
+                .url
+              elif .data.upload_url? then
+                .data.upload_url
+              elif .data.url? then
+                .data.url
+              else
+                empty
+              end
+            ' "$payload_file"
+          }
+
+          extract_request_method() {
+            local payload_file="$1"
+
+            jq -r '
+              if .method? then
+                .method
+              elif .data.method? then
+                .data.method
+              else
+                empty
+              end
+            ' "$payload_file" | tr '[:lower:]' '[:upper:]'
+          }
+
+          extract_header_file() {
+            local payload_file="$1"
+            local output_file="$2"
+
+            jq -c '
+              if .headers? then
+                .headers
+              elif .data.headers? then
+                .data.headers
+              else
+                {}
+              end
+            ' "$payload_file" > "$output_file"
+          }
+
+          extract_form_file() {
+            local payload_file="$1"
+            local output_file="$2"
+
+            jq -c '
+              if .fields? then
+                .fields
+              elif .form_data? then
+                .form_data
+              elif .data.fields? then
+                .data.fields
+              elif .data.form_data? then
+                .data.form_data
+              else
+                {}
+              end
+            ' "$payload_file" > "$output_file"
+          }
+
+          collect_header_args() {
+            local payload_file="$1"
+            local skip_content_type="${2:-false}"
+
+            jq -r 'to_entries[] | @base64' "$payload_file" | while read -r entry; do
+              key="$(printf '%s' "$entry" | base64 -d | jq -r '.key')"
+              value="$(printf '%s' "$entry" | base64 -d | jq -r '.value')"
+
+              if [ "$skip_content_type" = "true" ] && [ "${key,,}" = "content-type" ]; then
+                continue
+              fi
+
+              printf '%s\0' "-H" "${key}: ${value}"
+            done
+          }
+
+          collect_form_args() {
+            local payload_file="$1"
+
+            jq -r 'to_entries[] | @base64' "$payload_file" | while read -r entry; do
+              key="$(printf '%s' "$entry" | base64 -d | jq -r '.key')"
+              value="$(printf '%s' "$entry" | base64 -d | jq -r '.value')"
+              printf '%s\0' "-F" "${key}=${value}"
+            done
+          }
+
+          try_upload_request() {
+            local mode="$1"
+            local file_path="$2"
+            local target_url="$3"
+            local response_file="$4"
+            shift 4
+
+            local status_file
+            local status_code
+            local curl_exit
+            local curl_pid
+            local file_size_bytes
+            local file_size_mb
+
+            status_file="${response_file}.status"
+            file_size_bytes="$(wc -c < "$file_path" | tr -d ' ')"
+            file_size_mb="$(awk -v size="$file_size_bytes" 'BEGIN { printf "%.2f", size / 1024 / 1024 }')"
+
+            echo "Starting upload attempt (${mode}) for $(basename "$file_path") (${file_size_mb} MiB)"
+
+            : > "$response_file"
+            : > "$status_file"
+
+            (
+              curl -sS \
+                --connect-timeout 30 \
+                --http1.1 \
+                -o "$response_file" \
+                -w "%{http_code}" \
+                "$@" \
+                "$target_url" > "$status_file"
+            ) &
+            curl_pid=$!
+
+            while kill -0 "$curl_pid" 2>/dev/null; do
+              echo "Upload still running (${mode}) for $(basename "$file_path")..."
+              sleep 15
+            done
+
+            curl_exit=0
+            wait "$curl_pid" || curl_exit=$?
+
+            status_code="$(cat "$status_file" 2>/dev/null || true)"
+            rm -f "$status_file"
+
+            if [ "$curl_exit" -ne 0 ]; then
+              echo "Upload attempt exited with curl status ${curl_exit} (${mode})"
+              if [ -s "$response_file" ]; then
+                cat "$response_file"
+              fi
+              return 1
+            fi
+
+            if [[ "$status_code" =~ ^2[0-9][0-9]$ ]]; then
+              return 0
+            fi
+
+            echo "Upload attempt failed (${mode}) with HTTP ${status_code}"
+            if [ -s "$response_file" ]; then
+              cat "$response_file"
+            fi
+
+            return 1
+          }
+
+          upload_asset() {
+            local file_path="$1"
+            local file_name
+            local encoded_file_name
+            local upload_target_api_url
+            local upload_target_file
+            local upload_header_file
+            local upload_form_file
+            local upload_target_status
+            local upload_url
+            local request_method
+            local has_form_fields
+            file_name="$(basename "$file_path")"
+            encoded_file_name="$(url_encode "$file_name")"
+
+            if grep -Fxq "$file_name" gitcode-existing-assets.txt; then
+              echo "Skipping existing GitCode asset: $file_name"
+              return 0
+            fi
+
+            upload_target_api_url="https://api.gitcode.com/api/v5/repos/${GITCODE_OWNER}/${GITCODE_REPO}/releases/${RELEASE_TAG}/upload_url?file_name=${encoded_file_name}"
+            upload_target_file="gitcode-upload-url-${file_name}.json"
+            upload_header_file="gitcode-upload-headers-${file_name}.json"
+            upload_form_file="gitcode-upload-fields-${file_name}.json"
+
+            upload_target_status="$(curl -sS -o "$upload_target_file" -w "%{http_code}" \
+              -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
+              "$upload_target_api_url")"
+
+            if [ "$upload_target_status" != "200" ]; then
+              echo "::error::Failed to get GitCode upload target for ${file_name}: HTTP ${upload_target_status}"
+              cat "$upload_target_file"
+              exit 1
+            fi
+
+            echo "GitCode upload target summary for ${file_name}:"
+            jq '
+              if type == "string" then
+                {
+                  upload_url: (split("?")[0])
+                }
+              else
+                {
+                  method: (.method // .data.method // null),
+                  upload_url: ((.upload_url // .url // .data.upload_url // .data.url // "") | split("?")[0]),
+                  header_keys: ((.headers // .data.headers // {}) | keys),
+                  field_keys: ((.fields // .form_data // .data.fields // .data.form_data // {}) | keys)
+                }
+              end
+            ' "$upload_target_file"
+
+            upload_url="$(extract_upload_url "$upload_target_file")"
+
+            if [ -z "$upload_url" ]; then
+              echo "::error::Unable to determine GitCode upload URL for ${file_name}."
+              cat "$upload_target_file"
+              exit 1
+            fi
+
+            extract_header_file "$upload_target_file" "$upload_header_file"
+            extract_form_file "$upload_target_file" "$upload_form_file"
+
+            has_form_fields="$(jq -r 'if type == "object" then (length > 0) else false end' "$upload_form_file")"
+            request_method="$(extract_request_method "$upload_target_file")"
+
+            if [ -z "$request_method" ]; then
+              if [ "$has_form_fields" = "true" ]; then
+                request_method="POST"
+              else
+                request_method="PUT"
+              fi
+            fi
+
+            mapfile -d '' -t extra_header_args < <(collect_header_args "$upload_header_file" false || true)
+            mapfile -d '' -t multipart_header_args < <(collect_header_args "$upload_header_file" true || true)
+            mapfile -d '' -t extra_form_args < <(collect_form_args "$upload_form_file" || true)
+
+            local response_file
+            local -a binary_payload_args
+            response_file="gitcode-upload-response-${file_name}.log"
+
+            echo "Uploading GitCode asset: $file_name"
+
+            if [ "$has_form_fields" = "true" ]; then
+              if try_upload_request \
+                "multipart-with-fields" \
+                "$file_path" \
+                "$upload_url" \
+                "$response_file" \
+                -X "$request_method" \
+                "${multipart_header_args[@]}" \
+                "${extra_form_args[@]}" \
+                -F "file=@${file_path};filename=${file_name}"; then
+                echo "Uploaded ${file_name} via multipart-with-fields."
+                return 0
+              fi
+
+              echo "::error::Failed to upload GitCode asset via multipart form: ${file_name}"
+              exit 1
+            fi
+
+            if [ "$request_method" = "PUT" ]; then
+              binary_payload_args=(--upload-file "$file_path")
+            else
+              binary_payload_args=(--data-binary "@${file_path}")
+            fi
+
+            if try_upload_request \
+              "${request_method}-binary" \
+              "$file_path" \
+              "$upload_url" \
+              "$response_file" \
+              -X "$request_method" \
+              -H "Expect:" \
+              "${extra_header_args[@]}" \
+              "${binary_payload_args[@]}"; then
+              echo "Uploaded ${file_name} via ${request_method} binary."
+              return 0
+            fi
+
+            echo "::error::Failed to upload GitCode asset: ${file_name}"
+            exit 1
+          }
+
+          find github-release-assets -maxdepth 1 -type f -print0 | while IFS= read -r -d '' asset_path; do
+            upload_asset "$asset_path"
+          done
+
+          for attempt in 1 2 3 4 5; do
+            curl --fail-with-body -sS \
+              -H "PRIVATE-TOKEN: ${GITCODE_API_TOKEN}" \
+              "$release_api_url" > gitcode-release-verify.json
+
+            jq -r '.assets[]?.name' gitcode-release-verify.json | sort -u > gitcode-release-assets.txt || true
+            touch gitcode-release-assets.txt
+
+            missing_count=0
+
+            while IFS= read -r file_name; do
+              [ -n "$file_name" ] || continue
+              if ! grep -Fxq "$file_name" gitcode-release-assets.txt; then
+                echo "Asset not visible on GitCode yet: $file_name"
+                missing_count=$((missing_count + 1))
+              fi
+            done < <(find github-release-assets -maxdepth 1 -type f -printf '%f\n' | sort)
+
+            if [ "$missing_count" = "0" ]; then
+              echo "All GitHub release assets are now visible on GitCode."
+              exit 0
+            fi
+
+            if [ "$attempt" -lt 5 ]; then
+              sleep $((attempt * 2))
+            fi
+          done
+
+          echo "::error::Uploaded assets were not all visible on GitCode after verification retries."
+          echo "Current GitCode asset list:"
+          cat gitcode-release-assets.txt
+          exit 1

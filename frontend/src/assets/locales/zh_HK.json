@@ -365,6 +365,8 @@
       "title": "lip",
       "install_button": "安裝",
       "check_button": "檢查",
+      "cache_clean_button": "清理快取",
+      "cache_cleaning": "正在清理快取...",
       "installing": "正在安裝 lip...",
       "latest_label": "最新",
       "outdated_label": "可更新",
@@ -1126,6 +1128,10 @@
       "variant_hint": "僅當 variant 的 label 包含 client 時，才會被啟動器收錄。預設情況下請使用 \"label\": \"client\"；子擴展請使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
       "docs_button": "查看完整規範",
       "close_button": "關閉"
+    },
+    "guard": {
+      "title": "未檢測到 lipd",
+      "description": "目前尚未安裝 lipd。若要繼續使用 lip 相關頁面或安裝 LeviLamina，請先前往「設定 > 第三方元件」完成安裝。"
     },
     "game_all_versions": "所有遊戲版本",
     "game_version_label": "遊戲版本",

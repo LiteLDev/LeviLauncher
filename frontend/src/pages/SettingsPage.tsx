@@ -201,12 +201,14 @@ export const SettingsPage: React.FC = () => {
     lipStatusError,
     installingLip,
     setInstallingLip,
+    cleaningLipCache,
     lipStatus,
     lipProgress,
     lipError,
     setLipError,
     lipProgressDisclosure,
     refreshLipStatus,
+    cleanLipCache,
     resourceRulesInstalled,
     resourceRulesUpToDate,
     resourceRulesLocalSha,
@@ -1929,12 +1931,26 @@ export const SettingsPage: React.FC = () => {
                             ? t("settings.lip.outdated_label")
                             : t("settings.lip.missing_label")}
                       </Chip>
+                      {lipInstalled && (
+                        <Button
+                          radius="full"
+                          variant="bordered"
+                          size="sm"
+                          isLoading={cleaningLipCache}
+                          isDisabled={installingLip || cleaningLipCache}
+                          onPress={cleanLipCache}
+                        >
+                          {cleaningLipCache
+                            ? t("settings.lip.cache_cleaning")
+                            : t("settings.lip.cache_clean_button")}
+                        </Button>
+                      )}
                       <Button
                         radius="full"
                         variant="bordered"
                         size="sm"
                         isLoading={installingLip}
-                        isDisabled={installingLip}
+                        isDisabled={installingLip || cleaningLipCache}
                         onPress={() => {
                           if (lipInstalled && lipUpToDate) {
                             setLipError("");

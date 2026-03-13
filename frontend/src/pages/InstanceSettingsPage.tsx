@@ -1,5 +1,8 @@
 import { Dialogs } from "@wailsio/runtime";
-import { UnifiedModal } from "@/components/UnifiedModal";
+import {
+  UnifiedModal,
+  getUnifiedModalConfirmButtonProps,
+} from "@/components/UnifiedModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -35,6 +38,7 @@ import { useInstanceSettings } from "@/hooks/useInstanceSettings";
 export default function InstanceSettingsPage() {
   const { t } = useTranslation();
   const vs = useInstanceSettings();
+  const warningConfirmButtonProps = getUnifiedModalConfirmButtonProps("warning");
   const currentLLVersionText =
     vs.currentLLVersion ||
     (t("versions.edit.loader.ll_not_installed") as unknown as string);
@@ -579,9 +583,8 @@ export default function InstanceSettingsPage() {
               {t("common.cancel")}
             </Button>
             <Button
-              color="primary"
+              {...warningConfirmButtonProps}
               radius="full"
-              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
               onPress={() => {
                 vs.setGdkMissingOpen(false);
                 vs.navigate("/settings", { state: { tab: "components" } });
@@ -594,6 +597,29 @@ export default function InstanceSettingsPage() {
       >
         <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
           {t("launcherpage.gdk_missing.body")}
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
+        isOpen={vs.lipMissingOpen}
+        onOpenChange={(open) => {
+          if (!open) vs.setLipMissingOpen(false);
+        }}
+        type="warning"
+        title={t("lip.guard.title")}
+        isDismissable={false}
+        footer={
+          <Button
+            {...warningConfirmButtonProps}
+            radius="full"
+            onPress={vs.openLipComponentsSettings}
+          >
+            {t("settings.lip.startup_prompt.open_settings_button")}
+          </Button>
+        }
+      >
+        <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
+          {t("lip.guard.description")}
         </div>
       </UnifiedModal>
 
@@ -700,6 +726,25 @@ export default function InstanceSettingsPage() {
         isPending={vs.uninstallingLL}
         confirmText={t("common.remove")}
       />
+
+      <UnifiedModal
+        isOpen={vs.demotedWarningOpen}
+        onOpenChange={vs.demotedWarningOnOpenChange}
+        title={t("common.tip")}
+        type="warning"
+        confirmText={t("common.confirm")}
+        showCancelButton={false}
+        onConfirm={vs.closeDemotedWarning}
+      >
+        <div className="text-sm text-default-700 dark:text-zinc-300 whitespace-pre-wrap">
+          {t("errors.ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY")}
+        </div>
+        {vs.demotedWarningNames.length > 0 ? (
+          <div className="mt-3 rounded-md bg-warning-50/70 dark:bg-warning-500/10 border border-warning-200/70 dark:border-warning-500/30 px-3 py-2 text-warning-700 dark:text-warning-300 text-sm whitespace-pre-wrap break-all font-mono">
+            {vs.demotedWarningNames.join("\n")}
+          </div>
+        ) : null}
+      </UnifiedModal>
 
       <UnifiedModal
         size="md"

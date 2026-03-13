@@ -30,7 +30,7 @@ func FetchHistoricalVersions(preferCN bool) map[string]interface{} {
 		urls = []string{gitcodeURL, proxyURL, githubURL}
 	}
 
-	client := &http.Client{Timeout: 5 * time.Second}
+	client := httpx.NewClient(5 * time.Second)
 	var lastErr error
 	for _, u := range urls {
 		for attempt := 1; attempt <= maxAttemptsPerURL; attempt++ {
@@ -101,7 +101,7 @@ func TestMirrorLatencies(urls []string, timeoutMs int) []map[string]interface{} 
 	if timeoutMs <= 0 {
 		timeoutMs = 7000
 	}
-	client := &http.Client{Timeout: time.Duration(timeoutMs) * time.Millisecond}
+	client := httpx.NewClient(time.Duration(timeoutMs) * time.Millisecond)
 	results := make([]map[string]interface{}, 0, len(urls))
 	for _, u := range urls {
 		start := time.Now()

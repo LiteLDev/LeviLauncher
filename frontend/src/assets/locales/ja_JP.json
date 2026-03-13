@@ -365,6 +365,8 @@
       "title": "lip",
       "install_button": "インストール",
       "check_button": "確認",
+      "cache_clean_button": "キャッシュを削除",
+      "cache_cleaning": "キャッシュを削除しています...",
       "installing": "lip をインストールしています...",
       "latest_label": "最新",
       "outdated_label": "更新あり",
@@ -1109,6 +1111,10 @@
       "variant_hint": "variant の label に client を含む場合に限り、ランチャーに収録されます。デフォルトでは \"label\": \"client\" を使用し、サブ拡張は \"label\": \"client_xxxx\" または \"label\": \"client\\xxxx\" を使用してください。",
       "docs_button": "完全な仕様を見る",
       "close_button": "閉じる"
+    },
+    "guard": {
+      "title": "lipd が見つかりません",
+      "description": "lipd がまだインストールされていません。lip 関連ページを引き続き利用する場合や LeviLamina をインストールする場合は、まず「設定 > サードパーティ製コンポーネント」でインストールしてください。"
     },
     "title": "lip Content",
     "sort_options": {

@@ -193,7 +193,7 @@ func fetchReleases(ctx context.Context) ([]githubRelease, error) {
 			lastErr = err
 			continue
 		}
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpx.Do(req)
 		if err != nil {
 			cancel()
 			lastErr = err
@@ -308,7 +308,7 @@ func downloadTextWithCandidates(ctx context.Context, urls []string, timeout time
 			lastErr = err
 			continue
 		}
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpx.Do(req)
 		if err != nil {
 			cancel()
 			lastErr = err
@@ -385,7 +385,7 @@ func downloadUpdateAsset(ctx context.Context, urls []string, dest string) error 
 			continue
 		}
 		req.Header.Set("Accept", "application/zip")
-		resp, err := http.DefaultClient.Do(req)
+		resp, err := httpx.Do(req)
 		if err != nil {
 			cancel()
 			lastErr = err

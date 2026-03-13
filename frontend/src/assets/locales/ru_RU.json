@@ -365,6 +365,8 @@
       "title": "lip",
       "install_button": "Установить",
       "check_button": "Проверить",
+      "cache_clean_button": "Очистить кэш",
+      "cache_cleaning": "Очистка кэша...",
       "installing": "Установка lip...",
       "latest_label": "Актуально",
       "outdated_label": "Доступно обновление",
@@ -1109,6 +1111,10 @@
       "variant_hint": "Вариант будет включён в лаунчер только если его label содержит client. По умолчанию используйте \"label\": \"client\"; для подрасширений используйте \"label\": \"client_xxxx\" или \"label\": \"client\\xxxx\".",
       "docs_button": "Открыть спецификацию",
       "close_button": "Закрыть"
+    },
+    "guard": {
+      "title": "lipd не установлен",
+      "description": "lipd пока не установлен. Чтобы продолжить пользоваться страницами lip или установить LeviLamina, сначала откройте «Настройки > Сторонние компоненты» и установите его."
     },
     "title": "lip Content",
     "sort_options": {

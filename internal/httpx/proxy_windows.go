@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"sync"
 	"syscall"
+	"time"
 	"unsafe"
 
 	"golang.org/x/sys/windows"
@@ -17,6 +18,9 @@ const (
 	winHTTPAutoProxyConfigURL = 0x00000002
 	winHTTPDetectTypeDHCP     = 0x00000001
 	winHTTPDetectTypeDNSA     = 0x00000002
+
+	autoProxyLookupTimeout = 750 * time.Millisecond
+	autoProxyRetryDelay    = 30 * time.Second
 )
 
 type winHTTPCurrentUserIEProxyConfig struct {
@@ -59,6 +63,11 @@ var (
 	winHTTPSessionOnce sync.Once
 	winHTTPSession     uintptr
 	winHTTPSessionErr  error
+
+	autoProxyLookupMu           sync.Mutex
+	autoProxyLookupActive       bool
+	autoProxyLookupTimedOut     bool
+	autoProxyLookupDisabledTill time.Time
 )
 
 func newBaseTransport() *http.Transport {
@@ -84,14 +93,84 @@ func proxyFromWindowsSystem(req *http.Request) (*url.URL, error) {
 		return nil, nil
 	}
 
+	manual := newManualProxyConfig(cfg.proxy, cfg.proxyBypass)
+
 	if cfg.autoDetect || cfg.autoConfig != "" {
-		proxyURL, resolved, autoErr := proxyURLFromAutoConfig(req.URL, cfg)
-		if autoErr == nil && resolved {
+		proxyURL, resolved := proxyURLFromAutoConfigWithBudget(req.URL, cfg)
+		if resolved {
 			return proxyURL, nil
 		}
 	}
 
-	return newManualProxyConfig(cfg.proxy, cfg.proxyBypass).proxyForURL(req.URL)
+	return manual.proxyForURL(req.URL)
+}
+
+func proxyURLFromAutoConfigWithBudget(reqURL *url.URL, cfg ieProxyConfig) (*url.URL, bool) {
+	if reqURL == nil || !beginAutoProxyLookup() {
+		return nil, false
+	}
+
+	proxyURL, resolved, err, timedOut := runWithSoftTimeout(
+		autoProxyLookupTimeout,
+		func() (*url.URL, bool, error) {
+			return proxyURLFromAutoConfig(reqURL, cfg)
+		},
+		finishAutoProxyLookup,
+		markAutoProxyLookupTimeout,
+	)
+	if timedOut || err != nil {
+		return nil, false
+	}
+	return proxyURL, resolved
+}
+
+func beginAutoProxyLookup() bool {
+	autoProxyLookupMu.Lock()
+	defer autoProxyLookupMu.Unlock()
+
+	now := time.Now()
+	if autoProxyLookupActive {
+		return false
+	}
+	if now.Before(autoProxyLookupDisabledTill) {
+		return false
+	}
+
+	autoProxyLookupActive = true
+	autoProxyLookupTimedOut = false
+	return true
+}
+
+func finishAutoProxyLookup(err error) {
+	autoProxyLookupMu.Lock()
+	defer autoProxyLookupMu.Unlock()
+
+	autoProxyLookupActive = false
+	timedOut := autoProxyLookupTimedOut
+	autoProxyLookupTimedOut = false
+	if err != nil {
+		until := time.Now().Add(autoProxyRetryDelay)
+		if until.After(autoProxyLookupDisabledTill) {
+			autoProxyLookupDisabledTill = until
+		}
+		return
+	}
+	if timedOut {
+		return
+	}
+
+	autoProxyLookupDisabledTill = time.Time{}
+}
+
+func markAutoProxyLookupTimeout() {
+	autoProxyLookupMu.Lock()
+	defer autoProxyLookupMu.Unlock()
+
+	autoProxyLookupTimedOut = true
+	until := time.Now().Add(autoProxyRetryDelay)
+	if until.After(autoProxyLookupDisabledTill) {
+		autoProxyLookupDisabledTill = until
+	}
 }
 
 func getCurrentUserIEProxyConfig() (ieProxyConfig, error) {

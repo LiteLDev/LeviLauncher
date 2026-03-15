@@ -5,6 +5,7 @@ import (
 	"net/url"
 	"path"
 	"strings"
+	"time"
 )
 
 type proxyTarget struct {
@@ -242,4 +243,50 @@ func parseAutoProxyURL(raw string) (*url.URL, error) {
 		}
 	}
 	return nil, nil
+}
+
+type softTimeoutResult[T any] struct {
+	value    T
+	resolved bool
+	err      error
+}
+
+func runWithSoftTimeout[T any](timeout time.Duration, fn func() (T, bool, error), onFinish func(error), onTimeout func()) (T, bool, error, bool) {
+	var zero T
+	if fn == nil {
+		return zero, false, nil, false
+	}
+	if timeout <= 0 {
+		value, resolved, err := fn()
+		if onFinish != nil {
+			onFinish(err)
+		}
+		return value, resolved, err, false
+	}
+
+	resultCh := make(chan softTimeoutResult[T], 1)
+	go func() {
+		value, resolved, err := fn()
+		if onFinish != nil {
+			onFinish(err)
+		}
+		resultCh <- softTimeoutResult[T]{
+			value:    value,
+			resolved: resolved,
+			err:      err,
+		}
+	}()
+
+	timer := time.NewTimer(timeout)
+	defer timer.Stop()
+
+	select {
+	case result := <-resultCh:
+		return result.value, result.resolved, result.err, false
+	case <-timer.C:
+		if onTimeout != nil {
+			onTimeout()
+		}
+		return zero, false, nil, true
+	}
 }

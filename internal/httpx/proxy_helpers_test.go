@@ -1,8 +1,11 @@
 package httpx
 
 import (
+	"errors"
 	"net/url"
+	"sync/atomic"
 	"testing"
+	"time"
 )
 
 func TestManualProxyConfigUsesSchemeSpecificTargets(t *testing.T) {
@@ -78,4 +81,92 @@ func mustParseURL(t *testing.T, raw string) *url.URL {
 		t.Fatalf("url.Parse(%q) failed: %v", raw, err)
 	}
 	return parsed
+}
+
+func TestRunWithSoftTimeoutReturnsCompletedResult(t *testing.T) {
+	var finished atomic.Int32
+	var timedOut atomic.Int32
+
+	value, resolved, err, timeout := runWithSoftTimeout(
+		200*time.Millisecond,
+		func() (int, bool, error) {
+			return 42, true, nil
+		},
+		func(err error) {
+			if err != nil {
+				t.Fatalf("unexpected finish error: %v", err)
+			}
+			finished.Add(1)
+		},
+		func() {
+			timedOut.Add(1)
+		},
+	)
+	if timeout {
+		t.Fatal("expected lookup to complete before timeout")
+	}
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !resolved {
+		t.Fatal("expected resolved result")
+	}
+	if value != 42 {
+		t.Fatalf("unexpected value: %d", value)
+	}
+	if finished.Load() != 1 {
+		t.Fatalf("expected onFinish to be called once, got %d", finished.Load())
+	}
+	if timedOut.Load() != 0 {
+		t.Fatalf("expected onTimeout not to be called, got %d", timedOut.Load())
+	}
+}
+
+func TestRunWithSoftTimeoutFallsBackQuickly(t *testing.T) {
+	finishCh := make(chan error, 1)
+	var timedOut atomic.Int32
+
+	startedAt := time.Now()
+	value, resolved, err, timeout := runWithSoftTimeout(
+		40*time.Millisecond,
+		func() (int, bool, error) {
+			time.Sleep(120 * time.Millisecond)
+			return 7, true, errors.New("late failure")
+		},
+		func(err error) {
+			finishCh <- err
+		},
+		func() {
+			timedOut.Add(1)
+		},
+	)
+	elapsed := time.Since(startedAt)
+
+	if !timeout {
+		t.Fatal("expected lookup to time out")
+	}
+	if elapsed >= 100*time.Millisecond {
+		t.Fatalf("expected timeout fallback to return quickly, elapsed=%s", elapsed)
+	}
+	if err != nil {
+		t.Fatalf("expected timeout fallback to suppress late error, got %v", err)
+	}
+	if resolved {
+		t.Fatal("expected unresolved result after timeout")
+	}
+	if value != 0 {
+		t.Fatalf("expected zero value after timeout, got %d", value)
+	}
+	if timedOut.Load() != 1 {
+		t.Fatalf("expected onTimeout to be called once, got %d", timedOut.Load())
+	}
+
+	select {
+	case finishErr := <-finishCh:
+		if finishErr == nil || finishErr.Error() != "late failure" {
+			t.Fatalf("unexpected finish error: %v", finishErr)
+		}
+	case <-time.After(500 * time.Millisecond):
+		t.Fatal("expected onFinish to run after timeout")
+	}
 }

@@ -34,6 +34,8 @@ export type LipGroupItem = {
   identifierKey: string;
   displayIdentifier: string;
   packageName: string;
+  installedVersion: string;
+  explicitInstalled: boolean;
   folders: string[];
   mods: types.ModInfo[];
   childLabels: string[];
@@ -54,6 +56,7 @@ export type LIPPackageInstallState = {
 type LIPAliasCandidate = {
   identifier: string;
   identifierKey: string;
+  lookupKey: string;
   packageName: string;
   alias: string;
   matchTokens: string[];
@@ -64,6 +67,9 @@ const normalizeName = (value: string): string =>
   String(value || "").trim().toLowerCase();
 
 const normalizeIdentifier = (value: string): string =>
+  String(value || "").trim();
+
+const normalizeIdentifierLookupKey = (value: string): string =>
   String(value || "")
     .trim()
     .toLowerCase();
@@ -150,7 +156,7 @@ const buildPackageHints = (packageName: string, identifier: string): string[] =>
 
   add(packageName);
 
-  const normalizedIdentifier = normalizeIdentifier(identifier).split("#")[0];
+  const normalizedIdentifier = normalizeIdentifierLookupKey(identifier).split("#")[0];
   const parts = normalizedIdentifier.split("/").filter(Boolean);
   if (parts.length > 0) {
     add(parts[parts.length - 1]);
@@ -282,7 +288,8 @@ export const buildSelfVariantCandidates = (
   for (const relation of relations || []) {
     const identifier = String(relation.identifier || "").trim();
     const identifierKey = normalizeIdentifier(identifier);
-    if (!identifier || !identifierKey) continue;
+    const lookupKey = normalizeIdentifierLookupKey(identifierKey);
+    if (!identifier || !identifierKey || !lookupKey) continue;
     const packageName =
       String(relation.packageName || "").trim() || identifier;
     const packageHints = buildPackageHints(packageName, identifier);
@@ -291,12 +298,13 @@ export const buildSelfVariantCandidates = (
       const alias = normalizeName(rawAlias || "");
       if (!alias) continue;
 
-      const key = `${identifierKey}::${alias}`;
+      const key = `${lookupKey}::${alias}`;
       if (dedup.has(key)) continue;
 
       dedup.set(key, {
         identifier,
         identifierKey,
+        lookupKey,
         packageName,
         alias,
         matchTokens: buildAliasMatchTokens(alias),
@@ -362,7 +370,7 @@ export const buildModLIPStateByFolder = (args: {
     for (const alias of aliasesToCheck) {
       const candidates = selfVariantCandidatesByAlias.get(alias) || [];
       for (const candidate of candidates) {
-        aliasMatchesMap.set(candidate.identifierKey, candidate);
+        aliasMatchesMap.set(candidate.lookupKey, candidate);
       }
     }
 
@@ -375,7 +383,7 @@ export const buildModLIPStateByFolder = (args: {
         if (!isSelfVariantCandidateFuzzyMatched(candidate, valuesToMatch)) {
           continue;
         }
-        aliasMatchesMap.set(candidate.identifierKey, candidate);
+        aliasMatchesMap.set(candidate.lookupKey, candidate);
       }
     }
 
@@ -396,7 +404,7 @@ export const buildModLIPStateByFolder = (args: {
 
     if (aliasMatches.length === 1) {
       const matched = aliasMatches[0];
-      const matchedPackage = lipPackageByIdentifier[matched.identifierKey];
+      const matchedPackage = lipPackageByIdentifier[matched.lookupKey];
       const targetVersion = pickTargetVersion(matchedPackage?.versions || []);
       const canUpdate =
         Boolean(targetVersion) &&
@@ -479,20 +487,20 @@ export type CandidateLIPIdentifier = {
 export const collectCandidateLIPIdentifiers = (
   modLIPStateByFolder: Map<string, ModLIPState>,
 ): CandidateLIPIdentifier[] => {
-  const identifiers = new Map<string, string>();
+  const identifiers = new Map<string, CandidateLIPIdentifier>();
   for (const state of modLIPStateByFolder.values()) {
     if (state.sourceType !== "unique") continue;
     const identifier = String(state.identifier || "").trim();
     const identifierKey = normalizeIdentifier(
       state.identifierKey || state.identifier,
     );
-    if (!identifier || !identifierKey) continue;
-    if (!identifiers.has(identifierKey)) {
-      identifiers.set(identifierKey, identifier);
+    const lookupKey = normalizeIdentifierLookupKey(identifierKey || identifier);
+    if (!identifier || !identifierKey || !lookupKey) continue;
+    if (!identifiers.has(lookupKey)) {
+      identifiers.set(lookupKey, { identifier, identifierKey });
     }
   }
-  return Array.from(identifiers.entries())
-    .map(([identifierKey, identifier]) => ({ identifier, identifierKey }))
+  return Array.from(identifiers.values())
     .sort((a, b) =>
       a.identifierKey.localeCompare(b.identifierKey, undefined, {
         sensitivity: "base",
@@ -543,8 +551,15 @@ export const buildListItems = (args: {
       continue;
     }
 
-    if (!grouped.has(state.identifierKey)) {
-      grouped.set(state.identifierKey, {
+    const lookupKey = normalizeIdentifierLookupKey(
+      state.identifierKey || state.identifier,
+    );
+    if (!lookupKey) {
+      continue;
+    }
+
+    if (!grouped.has(lookupKey)) {
+      grouped.set(lookupKey, {
         identifier: state.identifier,
         identifierKey: state.identifierKey,
         packageName: state.packageName || mod.name || state.identifier,
@@ -556,7 +571,7 @@ export const buildListItems = (args: {
       });
     }
 
-    const current = grouped.get(state.identifierKey)!;
+    const current = grouped.get(lookupKey)!;
     current.mods.push(mod);
     current.folders.push(folder);
     current.hasSelfVariantMapping =
@@ -575,7 +590,10 @@ export const buildListItems = (args: {
     const installedByLIP = Boolean(installState?.installed);
     const queryError = String(installState?.error || "").trim();
     const treatedAsLip =
-      installedByLIP || (group.hasSelfVariantMapping && Boolean(queryError));
+      installedByLIP ||
+      (group.hasSelfVariantMapping &&
+        Boolean(queryError) &&
+        queryError !== "ERR_LIP_NOT_INSTALLED");
     if (!treatedAsLip) continue;
 
     const uniqueFolders = Array.from(new Set(group.folders));
@@ -587,6 +605,20 @@ export const buildListItems = (args: {
     );
 
     const targetVersion = group.targetVersion || "";
+    const installedVersionFromState = String(
+      installState?.installedVersion || "",
+    ).trim();
+    const uniqueModVersions = Array.from(
+      new Set(
+        group.mods
+          .map((mod) => String(mod.version || "").trim())
+          .filter(Boolean),
+      ),
+    );
+    const installedVersion =
+      installedVersionFromState ||
+      (uniqueModVersions.length === 1 ? uniqueModVersions[0] : "");
+    const explicitInstalled = Boolean(installState?.explicitInstalled);
     const canUpdate =
       Boolean(targetVersion) &&
       group.mods.some(
@@ -604,6 +636,8 @@ export const buildListItems = (args: {
       identifierKey: group.identifierKey,
       displayIdentifier: group.identifier,
       packageName: group.packageName || group.identifier,
+      installedVersion,
+      explicitInstalled,
       folders: uniqueFolders,
       mods: group.mods,
       childLabels: previewData.deduped,

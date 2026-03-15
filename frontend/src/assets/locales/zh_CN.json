@@ -955,7 +955,9 @@
     "lip_open_package": "打开包详情",
     "action_promote_install": "转为主动安装",
     "action_promote_install_success": "{{name}} 已转为主动安装",
-    "action_promote_install_failed_no_version": "未找到该包的已安装版本"
+    "action_promote_install_failed_no_version": "未找到该包的已安装版本",
+    "lip_sync_loading": "本地模组已加载，正在补全 lip 信息...",
+    "lip_sync_error": "lip 信息暂时不可用，当前仅显示本地模组。"
   },
   "terms": {
     "title": "LeviLauncher 用户协议",

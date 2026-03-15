@@ -133,6 +133,10 @@ func (a *Minecraft) GetLIPPackageInstallState(targetName string, identifier stri
 	return mcservice.GetLIPPackageInstallState(a.ctx, targetName, identifier)
 }
 
+func (a *Minecraft) GetLIPPackageInstallStates(targetName string, identifiers []string) []types.LIPPackageInstallStateEntry {
+	return mcservice.GetLIPPackageInstallStates(a.ctx, targetName, identifiers)
+}
+
 type KnownFolder struct {
 	Name string `json:"name"`
 	Path string `json:"path"`

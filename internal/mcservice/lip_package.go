@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"regexp"
 	"strings"
+	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/lip"
@@ -17,11 +18,25 @@ import (
 var lipIdentifierPattern = regexp.MustCompile(`^[A-Za-z0-9._-]+/[A-Za-z0-9._-]+$`)
 
 const leviLaminaClientPackageRefBase = "github.com/LiteLDev/LeviLamina#client"
+const lipPackageQueryTimeout = 10 * time.Second
+
+var lipIsInstalled = lip.IsInstalled
+var lipListPackageStatesViaDaemon = lip.ListPackageStatesViaDaemon
+var lipResolveTargetDir = resolveLIPTargetDir
 
 type lipPackageIdentifierParts struct {
 	base             string
 	variant          string
 	hasVariantMarker bool
+}
+
+type lipPackageInstallStateRequest struct {
+	Identifier        string
+	IdentifierKey     string
+	lookupKey         string
+	normalizedID      string
+	packageRefBase    string
+	preparedBaseState types.LIPPackageInstallState
 }
 
 func normalizeLIPPackageIdentifier(identifier string) string {
@@ -109,8 +124,123 @@ func resolveLIPTargetDir(targetName string) (string, string) {
 	return targetDir, ""
 }
 
+func buildLIPPackageInstallStateRequest(identifier string, identifierKey string) lipPackageInstallStateRequest {
+	normalizedIdentifierKey := strings.TrimSpace(identifierKey)
+	normalizedInput := normalizeLIPPackageIdentifier(identifier)
+	if normalizedIdentifierKey == "" {
+		normalizedIdentifierKey = normalizedInput
+	}
+
+	req := lipPackageInstallStateRequest{
+		Identifier:    normalizedInput,
+		IdentifierKey: normalizedIdentifierKey,
+		lookupKey:     strings.ToLower(normalizedIdentifierKey),
+		preparedBaseState: types.LIPPackageInstallState{
+			Identifier: normalizedInput,
+		},
+	}
+
+	normalizedIdentifier, packageRefBase, ok := buildLIPPackageRefBase(normalizedInput)
+	if !ok {
+		req.preparedBaseState.Error = "ERR_LIP_PACKAGE_INVALID_IDENTIFIER"
+		return req
+	}
+
+	req.normalizedID = normalizedIdentifier
+	req.packageRefBase = packageRefBase
+	req.preparedBaseState.Identifier = normalizedIdentifier
+	req.preparedBaseState.PackageRef = packageRefBase
+	return req
+}
+
+func queryLIPPackageInstallStates(
+	ctx context.Context,
+	targetName string,
+	requests []lipPackageInstallStateRequest,
+) ([]types.LIPPackageInstallStateEntry, error) {
+	entries := make([]types.LIPPackageInstallStateEntry, 0, len(requests))
+	if len(requests) == 0 {
+		return entries, nil
+	}
+
+	if !lipIsInstalled() {
+		for _, req := range requests {
+			state := req.preparedBaseState
+			state.Error = "ERR_LIP_NOT_INSTALLED"
+			entries = append(entries, types.LIPPackageInstallStateEntry{
+				IdentifierKey: req.IdentifierKey,
+				State:         state,
+			})
+		}
+		return entries, nil
+	}
+
+	targetDir, errCode := lipResolveTargetDir(targetName)
+	if errCode != "" {
+		for _, req := range requests {
+			state := req.preparedBaseState
+			state.Error = errCode
+			entries = append(entries, types.LIPPackageInstallStateEntry{
+				IdentifierKey: req.IdentifierKey,
+				State:         state,
+			})
+		}
+		return entries, nil
+	}
+
+	queryCtx, cancel := context.WithTimeout(ctx, lipPackageQueryTimeout)
+	defer cancel()
+
+	stateByPackageRef, err := lipListPackageStatesViaDaemon(queryCtx, targetDir)
+	var errorCode string
+	if err != nil {
+		errorCode = "ERR_LIP_PACKAGE_QUERY_FAILED"
+		if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
+			errorCode = code
+		}
+	}
+
+	for _, req := range requests {
+		state := req.preparedBaseState
+		switch {
+		case state.Error != "":
+		case errorCode != "":
+			state.Error = errorCode
+		default:
+			lookupKey := strings.ToLower(req.packageRefBase)
+			if matched, ok := stateByPackageRef[lookupKey]; ok {
+				state.Installed = matched.Installed
+				state.ExplicitInstalled = matched.ExplicitInstalled
+				state.InstalledVersion = matched.InstalledVersion
+			}
+		}
+
+		entries = append(entries, types.LIPPackageInstallStateEntry{
+			IdentifierKey: req.IdentifierKey,
+			State:         state,
+		})
+	}
+
+	return entries, err
+}
+
+func getInstallStateEntryMap(entries []types.LIPPackageInstallStateEntry) map[string]types.LIPPackageInstallState {
+	stateByLookupKey := make(map[string]types.LIPPackageInstallState, len(entries))
+	for _, entry := range entries {
+		lookupKey := strings.ToLower(strings.TrimSpace(entry.IdentifierKey))
+		if lookupKey == "" {
+			continue
+		}
+		if _, exists := stateByLookupKey[lookupKey]; exists {
+			continue
+		}
+		stateByLookupKey[lookupKey] = entry.State
+	}
+	return stateByLookupKey
+}
+
 func InstallLIPPackage(ctx context.Context, targetName string, identifier string, version string) string {
-	if !lip.IsInstalled() {
+	if !lipIsInstalled() {
 		return "ERR_LIP_NOT_INSTALLED"
 	}
 
@@ -133,16 +263,25 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 	targetOnlyPkgs := []string{pkg}
 	installPkgs := []string{pkg}
 	hasPinnedLL := false
+	stateRequests := []lipPackageInstallStateRequest{
+		buildLIPPackageInstallStateRequest(leviLaminaClientPackageRefBase, leviLaminaClientPackageRefBase),
+		buildLIPPackageInstallStateRequest(identifier, identifier),
+	}
+	stateEntries, stateQueryErr := queryLIPPackageInstallStates(ctx, targetName, stateRequests)
+	stateByLookupKey := getInstallStateEntryMap(stateEntries)
+	if stateQueryErr != nil {
+		log.Printf("InstallLIPPackage: failed to query install states for %s in %s: %v", normalizedIdentifier, targetName, stateQueryErr)
+	}
 
 	// Pin existing LeviLamina version to avoid dependency solver switching LL
 	// or fetching a large set of LL candidates from wide ranges (e.g. 1.9.*).
 	if !strings.EqualFold(packageRefBase, leviLaminaClientPackageRefBase) {
-		llState, llQueryErr := lip.GetPackageInstallStateViaDaemon(ctx, targetDir, leviLaminaClientPackageRefBase)
-		if llQueryErr != nil {
-			if code := lip.ErrorCode(llQueryErr); code == "ERR_LIP_NOT_INSTALLED" {
-				return code
-			}
-			log.Printf("InstallLIPPackage: failed to query LeviLamina state for %s in %s: %v", normalizedIdentifier, targetName, llQueryErr)
+		llState := stateByLookupKey[strings.ToLower(strings.TrimSpace(leviLaminaClientPackageRefBase))]
+		if llState.Error == "ERR_LIP_NOT_INSTALLED" {
+			return llState.Error
+		}
+		if llState.Error != "" {
+			log.Printf("InstallLIPPackage: failed to query LeviLamina state for %s in %s: %s", normalizedIdentifier, targetName, llState.Error)
 		} else if llState.Installed && !llState.ExplicitInstalled {
 			pinnedLLVersion := strings.TrimSpace(llState.InstalledVersion)
 			if pinnedLLVersion != "" {
@@ -152,12 +291,12 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 		}
 	}
 
-	state, queryErr := lip.GetPackageInstallStateViaDaemon(ctx, targetDir, packageRefBase)
-	if queryErr != nil {
-		if code := lip.ErrorCode(queryErr); code == "ERR_LIP_NOT_INSTALLED" {
-			return code
-		}
-		log.Printf("InstallLIPPackage: failed to query package state for %s in %s: %v", normalizedIdentifier, targetName, queryErr)
+	state := stateByLookupKey[strings.ToLower(strings.TrimSpace(identifier))]
+	if state.Error == "ERR_LIP_NOT_INSTALLED" {
+		return state.Error
+	}
+	if state.Error != "" {
+		log.Printf("InstallLIPPackage: failed to query package state for %s in %s: %s", normalizedIdentifier, targetName, state.Error)
 	}
 
 	shouldUpdate := state.ExplicitInstalled
@@ -207,7 +346,7 @@ func InstallLIPPackage(ctx context.Context, targetName string, identifier string
 }
 
 func UninstallLIPPackage(ctx context.Context, targetName string, identifier string) string {
-	if !lip.IsInstalled() {
+	if !lipIsInstalled() {
 		return "ERR_LIP_NOT_INSTALLED"
 	}
 
@@ -221,12 +360,19 @@ func UninstallLIPPackage(ctx context.Context, targetName string, identifier stri
 		return errCode
 	}
 
-	state, queryErr := lip.GetPackageInstallStateViaDaemon(ctx, targetDir, packageRefBase)
-	if queryErr != nil {
-		if code := lip.ErrorCode(queryErr); code == "ERR_LIP_NOT_INSTALLED" {
-			return code
-		}
-		log.Printf("UninstallLIPPackage: failed to query package state for %s in %s: %v", packageRefBase, targetName, queryErr)
+	preEntries, preQueryErr := queryLIPPackageInstallStates(ctx, targetName, []lipPackageInstallStateRequest{
+		buildLIPPackageInstallStateRequest(identifier, identifier),
+	})
+	if preQueryErr != nil {
+		log.Printf("UninstallLIPPackage: failed to query package state for %s in %s: %v", packageRefBase, targetName, preQueryErr)
+	}
+	preStates := getInstallStateEntryMap(preEntries)
+	state := preStates[strings.ToLower(strings.TrimSpace(identifier))]
+	if state.Error == "ERR_LIP_NOT_INSTALLED" {
+		return state.Error
+	}
+	if state.Error != "" {
+		log.Printf("UninstallLIPPackage: failed to query package state for %s in %s: %s", packageRefBase, targetName, state.Error)
 	} else if state.Installed && !state.ExplicitInstalled {
 		return "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS"
 	}
@@ -239,12 +385,19 @@ func UninstallLIPPackage(ctx context.Context, targetName string, identifier stri
 		return "ERR_LIP_PACKAGE_UNINSTALL_FAILED"
 	}
 
-	postState, postQueryErr := lip.GetPackageInstallStateViaDaemon(ctx, targetDir, packageRefBase)
+	postEntries, postQueryErr := queryLIPPackageInstallStates(ctx, targetName, []lipPackageInstallStateRequest{
+		buildLIPPackageInstallStateRequest(identifier, identifier),
+	})
 	if postQueryErr != nil {
-		if code := lip.ErrorCode(postQueryErr); code == "ERR_LIP_NOT_INSTALLED" {
-			return code
-		}
 		log.Printf("UninstallLIPPackage: post-uninstall query failed for %s in %s: %v", packageRefBase, targetName, postQueryErr)
+	}
+	postStates := getInstallStateEntryMap(postEntries)
+	postState := postStates[strings.ToLower(strings.TrimSpace(identifier))]
+	if postState.Error == "ERR_LIP_NOT_INSTALLED" {
+		return postState.Error
+	}
+	if postState.Error != "" {
+		log.Printf("UninstallLIPPackage: post-uninstall query failed for %s in %s: %s", packageRefBase, targetName, postState.Error)
 		return ""
 	}
 
@@ -259,43 +412,26 @@ func UninstallLIPPackage(ctx context.Context, targetName string, identifier stri
 	return ""
 }
 
-func GetLIPPackageInstallState(ctx context.Context, targetName string, identifier string) types.LIPPackageInstallState {
-	state := types.LIPPackageInstallState{
-		Identifier: normalizeLIPPackageIdentifier(identifier),
-	}
-	if !lip.IsInstalled() {
-		state.Error = "ERR_LIP_NOT_INSTALLED"
-		return state
+func GetLIPPackageInstallStates(ctx context.Context, targetName string, identifiers []string) []types.LIPPackageInstallStateEntry {
+	requests := make([]lipPackageInstallStateRequest, 0, len(identifiers))
+	for _, identifier := range identifiers {
+		requests = append(requests, buildLIPPackageInstallStateRequest(identifier, identifier))
 	}
 
-	normalizedIdentifier, packageRefBase, ok := buildLIPPackageRefBase(identifier)
-	if !ok {
-		state.Error = "ERR_LIP_PACKAGE_INVALID_IDENTIFIER"
-		return state
-	}
-
-	state.Identifier = normalizedIdentifier
-	state.PackageRef = packageRefBase
-
-	targetDir, errCode := resolveLIPTargetDir(targetName)
-	if errCode != "" {
-		state.Error = errCode
-		return state
-	}
-
-	daemonState, err := lip.GetPackageInstallStateViaDaemon(ctx, targetDir, packageRefBase)
+	entries, err := queryLIPPackageInstallStates(ctx, targetName, requests)
 	if err != nil {
-		log.Printf("GetLIPPackageInstallState: lipd query failed for %s in %s: %v", normalizedIdentifier, targetName, err)
-		if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
-			state.Error = code
-			return state
-		}
-		state.Error = "ERR_LIP_PACKAGE_QUERY_FAILED"
-		return state
+		log.Printf("GetLIPPackageInstallStates: lipd query failed in %s: %v", targetName, err)
 	}
+	return entries
+}
 
-	state.Installed = daemonState.Installed
-	state.ExplicitInstalled = daemonState.ExplicitInstalled
-	state.InstalledVersion = daemonState.InstalledVersion
-	return state
+func GetLIPPackageInstallState(ctx context.Context, targetName string, identifier string) types.LIPPackageInstallState {
+	entries := GetLIPPackageInstallStates(ctx, targetName, []string{identifier})
+	if len(entries) == 0 {
+		return types.LIPPackageInstallState{
+			Identifier: normalizeLIPPackageIdentifier(identifier),
+			Error:      "ERR_LIP_PACKAGE_QUERY_FAILED",
+		}
+	}
+	return entries[0].State
 }

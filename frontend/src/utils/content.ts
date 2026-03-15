@@ -848,6 +848,7 @@ const parseLIPIndexResult = (json: unknown): ParsedLIPIndexResult => {
 
 let cachedLIPIndexResult: ParsedLIPIndexResult | null = null;
 let cachedLIPIndexResultPromise: Promise<ParsedLIPIndexResult> | null = null;
+const LIP_INDEX_FETCH_TIMEOUT_MS = 8_000;
 
 const fetchLIPIndexResult = async (options?: {
   forceRefresh?: boolean;
@@ -864,19 +865,44 @@ const fetchLIPIndexResult = async (options?: {
   }
 
   cachedLIPIndexResultPromise = (async () => {
-    const response = await fetch(LIP_INDEX_URL, {
-      method: "GET",
-      cache: "no-store",
-      signal: options?.signal,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Failed to fetch lip package index: ${response.status}`);
+    const controller = new AbortController();
+    let timeoutTriggered = false;
+    const abort = () => controller.abort();
+    const timeoutId = globalThis.setTimeout(() => {
+      timeoutTriggered = true;
+      controller.abort();
+    }, LIP_INDEX_FETCH_TIMEOUT_MS);
+    if (options?.signal) {
+      if (options.signal.aborted) {
+        controller.abort();
+      } else {
+        options.signal.addEventListener("abort", abort, { once: true });
+      }
     }
 
-    const json: unknown = await response.json();
-    cachedLIPIndexResult = parseLIPIndexResult(json);
-    return cachedLIPIndexResult;
+    try {
+      const response = await fetch(LIP_INDEX_URL, {
+        method: "GET",
+        cache: "no-store",
+        signal: controller.signal,
+      });
+
+      if (!response.ok) {
+        throw new Error(`Failed to fetch lip package index: ${response.status}`);
+      }
+
+      const json: unknown = await response.json();
+      cachedLIPIndexResult = parseLIPIndexResult(json);
+      return cachedLIPIndexResult;
+    } catch (error) {
+      if (timeoutTriggered) {
+        throw new Error("ERR_LIP_INDEX_TIMEOUT");
+      }
+      throw error;
+    } finally {
+      globalThis.clearTimeout(timeoutId);
+      options?.signal?.removeEventListener("abort", abort);
+    }
   })();
 
   try {

@@ -143,3 +143,8 @@ type LIPPackageInstallState struct {
 	InstalledVersion  string `json:"installedVersion"`
 	Error             string `json:"error"`
 }
+
+type LIPPackageInstallStateEntry struct {
+	IdentifierKey string                 `json:"identifierKey"`
+	State         LIPPackageInstallState `json:"state"`
+}

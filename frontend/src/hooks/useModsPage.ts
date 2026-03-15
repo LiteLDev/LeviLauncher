@@ -380,20 +380,9 @@ export const useModsPage = (
   }>({ key: "name", direction: "asc" });
   const [tabKey, setTabKey] = useState<TabKey>("all");
   const [gameVersion, setGameVersion] = useState("");
-  const [lipPackagesByName, setLIPPackagesByName] = useState<
-    Record<string, LIPPackageBasicInfo[]>
-  >({});
-  const [lipPackageByIdentifier, setLIPPackageByIdentifier] = useState<
-    Record<string, LIPPackageBasicInfo>
-  >({});
-  const [lipSelfVariantRelations, setLipSelfVariantRelations] = useState<
-    LIPSelfVariantRelation[]
-  >([]);
   const [lipInstallStateByIdentifier, setLipInstallStateByIdentifier] = useState<
     Map<string, LIPPackageInstallState>
   >(new Map());
-  const [lipSourceLoaded, setLIPSourceLoaded] = useState(false);
-  const [installStateLoaded, setInstallStateLoaded] = useState(false);
 
   const dllResolveRef = useRef<((ok: boolean) => void) | null>(null);
   const dllConfirmRef = useRef<{
@@ -488,27 +477,26 @@ export const useModsPage = (
     identifier: string,
     identifierKey?: string,
   ): string => {
-    const rawIdentifier = String(identifier || "").trim();
-    const normalized = normalizeIdentifier(identifierKey || rawIdentifier);
-    if (!normalized) return rawIdentifier;
-    const fromIndex = String(
-      lipPackageByIdentifier[normalized]?.identifier || "",
-    ).trim();
-    if (fromIndex) return fromIndex;
-    return rawIdentifier;
+    return String(identifier || identifierKey || "").trim();
   };
 
   const activeVersionName = useMemo(
     () => currentVersionName || readCurrentVersionName(),
     [currentVersionName],
   );
+  const currentSnapshot = useMemo(
+    () => (activeVersionName ? getInstanceSnapshot(activeVersionName) : null),
+    [activeVersionName, getInstanceSnapshot, snapshotRevision],
+  );
+  const lipSyncStatus = currentSnapshot?.lipSyncStatus || "idle";
+  const lipSyncError = String(currentSnapshot?.lipSyncError || "").trim();
+  const lipSourceLoaded = lipSyncStatus !== "idle";
 
   useEffect(() => {
     if (!activeVersionName) {
       setModsInfo([]);
       setEnabledByFolder(new Map());
       setLipInstallStateByIdentifier(new Map());
-      setInstallStateLoaded(false);
       return;
     }
     void ensureInstanceHydrated(activeVersionName, {
@@ -519,71 +507,27 @@ export const useModsPage = (
 
   useEffect(() => {
     if (!activeVersionName) return;
-    const snapshot = getInstanceSnapshot(activeVersionName);
-    if (!snapshot) return;
+    if (!currentSnapshot) {
+      setModsInfo([]);
+      setEnabledByFolder(new Map());
+      setLipInstallStateByIdentifier(new Map());
+      return;
+    }
 
-    setModsInfo(Array.isArray(snapshot.modsInfo) ? snapshot.modsInfo : []);
+    setModsInfo(
+      Array.isArray(currentSnapshot.modsInfo) ? currentSnapshot.modsInfo : [],
+    );
     setEnabledByFolder(
-      snapshot.enabledByFolder instanceof Map
-        ? new Map(snapshot.enabledByFolder)
+      currentSnapshot.enabledByFolder instanceof Map
+        ? new Map(currentSnapshot.enabledByFolder)
         : new Map(),
     );
     setLipInstallStateByIdentifier(
-      snapshot.lipInstallStateByIdentifier instanceof Map
-        ? new Map(snapshot.lipInstallStateByIdentifier)
+      currentSnapshot.lipInstallStateByIdentifier instanceof Map
+        ? new Map(currentSnapshot.lipInstallStateByIdentifier)
         : new Map(),
     );
-    if (snapshot.status !== "loading") {
-      setInstallStateLoaded(true);
-    }
-  }, [activeVersionName, getInstanceSnapshot, snapshotRevision]);
-
-  useEffect(() => {
-    let cancelled = false;
-    const loadLIPPackages = async () => {
-      try {
-        const [packages, relations] = await Promise.all([
-          fetchLIPPackagesIndex(),
-          fetchLIPSelfVariantRelations(),
-        ]);
-        if (cancelled) return;
-
-        const groupedByName: Record<string, LIPPackageBasicInfo[]> = {};
-        const groupedByIdentifier: Record<string, LIPPackageBasicInfo> = {};
-
-        for (const pkg of packages) {
-          const normalizedName = normalizeName(pkg.name || "");
-          if (normalizedName) {
-            if (!Array.isArray(groupedByName[normalizedName])) {
-              groupedByName[normalizedName] = [];
-            }
-            groupedByName[normalizedName].push(pkg);
-          }
-
-          const normalizedIdentifier = normalizeIdentifier(pkg.identifier || "");
-          if (normalizedIdentifier && !groupedByIdentifier[normalizedIdentifier]) {
-            groupedByIdentifier[normalizedIdentifier] = pkg;
-          }
-        }
-
-        setLIPPackagesByName(groupedByName);
-        setLIPPackageByIdentifier(groupedByIdentifier);
-        setLipSelfVariantRelations(Array.isArray(relations) ? relations : []);
-      } catch {
-        if (cancelled) return;
-        setLIPPackagesByName({});
-        setLIPPackageByIdentifier({});
-        setLipSelfVariantRelations([]);
-      } finally {
-        if (!cancelled) setLIPSourceLoaded(true);
-      }
-    };
-
-    void loadLIPPackages();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
+  }, [activeVersionName, currentSnapshot]);
 
   useEffect(() => {
     const fetchVersion = async () => {
@@ -602,6 +546,30 @@ export const useModsPage = (
     void fetchVersion();
   }, [activeVersionName]);
 
+  const modLIPStateByFolder = useMemo(
+    () =>
+      currentSnapshot?.modLIPStateByFolder instanceof Map
+        ? new Map(currentSnapshot.modLIPStateByFolder)
+        : new Map<string, ModLIPState>(),
+    [currentSnapshot],
+  );
+
+  const baseLipGroupItems = useMemo(
+    () =>
+      Array.isArray(currentSnapshot?.lipGroupItems)
+        ? currentSnapshot.lipGroupItems
+        : [],
+    [currentSnapshot],
+  );
+
+  const baseNormalItems = useMemo(
+    () =>
+      Array.isArray(currentSnapshot?.normalItems)
+        ? currentSnapshot.normalItems
+        : [],
+    [currentSnapshot],
+  );
+
   const modsByFolder = useMemo(() => {
     const map = new Map<string, types.ModInfo>();
     for (const mod of modsInfo) {
@@ -612,375 +580,11 @@ export const useModsPage = (
     return map;
   }, [modsInfo]);
 
-  const selfVariantCandidates = useMemo(() => {
-    const dedup = new Map<string, LIPAliasCandidate>();
-
-    for (const relation of lipSelfVariantRelations) {
-      const identifier = String(relation.identifier || "").trim();
-      const identifierKey = normalizeIdentifier(identifier);
-      if (!identifier || !identifierKey) continue;
-      const packageName =
-        String(relation.packageName || "").trim() || identifier;
-      const packageHints = buildPackageHints(packageName, identifier);
-
-      for (const rawAlias of relation.aliases || []) {
-        const alias = normalizeName(rawAlias || "");
-        if (!alias) continue;
-
-        const key = `${identifierKey}::${alias}`;
-        if (dedup.has(key)) continue;
-
-        dedup.set(key, {
-          identifier,
-          identifierKey,
-          packageName,
-          alias,
-          matchTokens: buildAliasMatchTokens(alias),
-          packageHints,
-        });
-      }
-    }
-
-    return Array.from(dedup.values());
-  }, [lipSelfVariantRelations]);
-
-  const selfVariantCandidatesByAlias = useMemo(() => {
-    const map = new Map<string, LIPAliasCandidate[]>();
-    for (const candidate of selfVariantCandidates) {
-      const list = map.get(candidate.alias) || [];
-      list.push(candidate);
-      map.set(candidate.alias, list);
-    }
-    return map;
-  }, [selfVariantCandidates]);
-
-  const modLIPStateByFolder = useMemo(() => {
-    const map = new Map<string, ModLIPState>();
-
-    for (const mod of modsInfo) {
-      const folder = resolveModFolder(mod);
-      if (!folder) continue;
-
-      if (isLeviLaminaMod(mod)) {
-        map.set(folder, {
-          sourceType: "levilamina",
-          identifier: "",
-          identifierKey: "",
-          targetVersion: "",
-          canUpdate: false,
-          packageName: "",
-          mappingKind: "none",
-          matchedAlias: "",
-        });
-        continue;
-      }
-
-      if (!lipSourceLoaded) {
-        map.set(folder, buildDefaultModLIPState());
-        continue;
-      }
-
-      const aliasesToCheck = [normalizeName(mod.name || ""), normalizeName(folder)]
-        .filter(Boolean)
-        .filter((value, index, arr) => arr.indexOf(value) === index);
-
-      const aliasMatchesMap = new Map<string, LIPAliasCandidate>();
-      for (const alias of aliasesToCheck) {
-        const candidates = selfVariantCandidatesByAlias.get(alias) || [];
-        for (const candidate of candidates) {
-          aliasMatchesMap.set(candidate.identifierKey, candidate);
-        }
-      }
-
-      if (aliasMatchesMap.size === 0) {
-        const valuesToMatch = [normalizeMatchValue(mod.name || ""), normalizeMatchValue(folder)]
-          .filter(Boolean)
-          .filter((value, index, arr) => arr.indexOf(value) === index);
-
-        for (const candidate of selfVariantCandidates) {
-          if (!isSelfVariantCandidateFuzzyMatched(candidate, valuesToMatch)) {
-            continue;
-          }
-          aliasMatchesMap.set(candidate.identifierKey, candidate);
-        }
-      }
-
-      const aliasMatches = Array.from(aliasMatchesMap.values());
-      if (aliasMatches.length > 1) {
-        map.set(folder, {
-          sourceType: "ambiguous",
-          identifier: "",
-          identifierKey: "",
-          targetVersion: "",
-          canUpdate: false,
-          packageName: "",
-          mappingKind: "self_variant",
-          matchedAlias: "",
-        });
-        continue;
-      }
-
-      if (aliasMatches.length === 1) {
-        const matched = aliasMatches[0];
-        const matchedPackage = lipPackageByIdentifier[matched.identifierKey];
-        const targetVersion = pickTargetVersion(matchedPackage?.versions || []);
-        const canUpdate =
-          Boolean(targetVersion) &&
-          normalizeVersionForCompare(mod.version || "") !==
-            normalizeVersionForCompare(targetVersion);
-        const resolvedIdentifier = String(
-          matchedPackage?.identifier || matched.identifier,
-        ).trim();
-        const resolvedIdentifierKey = normalizeIdentifier(
-          resolvedIdentifier || matched.identifierKey,
-        );
-
-        map.set(folder, {
-          sourceType: matchedPackage ? "unique" : "none",
-          identifier: resolvedIdentifier,
-          identifierKey: resolvedIdentifierKey,
-          targetVersion,
-          canUpdate,
-          packageName:
-            String(matchedPackage?.name || "").trim() || matched.packageName,
-          mappingKind: "self_variant",
-          matchedAlias: matched.alias,
-        });
-        continue;
-      }
-
-      const normalizedModName = normalizeName(mod.name || "");
-      const nameCandidates = normalizedModName
-        ? lipPackagesByName[normalizedModName] || []
-        : [];
-
-      if (nameCandidates.length === 0) {
-        map.set(folder, buildDefaultModLIPState());
-        continue;
-      }
-
-      if (nameCandidates.length > 1) {
-        map.set(folder, {
-          sourceType: "ambiguous",
-          identifier: "",
-          identifierKey: "",
-          targetVersion: "",
-          canUpdate: false,
-          packageName: "",
-          mappingKind: "name",
-          matchedAlias: "",
-        });
-        continue;
-      }
-
-      const matched = nameCandidates[0];
-      const targetVersion = pickTargetVersion(matched.versions || []);
-      const canUpdate =
-        Boolean(targetVersion) &&
-        normalizeVersionForCompare(mod.version || "") !==
-          normalizeVersionForCompare(targetVersion);
-      const resolvedIdentifier = String(matched.identifier || "").trim();
-      const resolvedIdentifierKey = normalizeIdentifier(resolvedIdentifier);
-
-      map.set(folder, {
-        sourceType: "unique",
-        identifier: resolvedIdentifier,
-        identifierKey: resolvedIdentifierKey,
-        targetVersion,
-        canUpdate,
-        packageName: matched.name || "",
-        mappingKind: "name",
-        matchedAlias: "",
-      });
-    }
-
-    return map;
-  }, [
-    modsInfo,
-    lipSourceLoaded,
-    selfVariantCandidates,
-    selfVariantCandidatesByAlias,
-    lipPackagesByName,
-    lipPackageByIdentifier,
-  ]);
-
-  const candidateLIPIdentifiers = useMemo<CandidateLIPIdentifier[]>(() => {
-    const identifiers = new Map<string, string>();
-    for (const state of modLIPStateByFolder.values()) {
-      if (state.sourceType !== "unique") continue;
-      const identifier = String(state.identifier || "").trim();
-      const identifierKey = normalizeIdentifier(
-        state.identifierKey || state.identifier,
-      );
-      if (!identifier || !identifierKey) continue;
-      if (!identifiers.has(identifierKey)) {
-        identifiers.set(identifierKey, identifier);
-      }
-    }
-    return Array.from(identifiers.entries())
-      .map(([identifierKey, identifier]) => ({ identifier, identifierKey }))
-      .sort((a, b) =>
-        a.identifierKey.localeCompare(b.identifierKey, undefined, {
-          sensitivity: "base",
-        }),
-      );
-  }, [modLIPStateByFolder]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadInstallState = async () => {
-      const name = activeVersionName;
-      if (!name) {
-        setLipInstallStateByIdentifier(new Map());
-        setInstallStateLoaded(false);
-        return;
-      }
-      if (candidateLIPIdentifiers.length === 0) {
-        setLipInstallStateByIdentifier(new Map());
-        setInstallStateLoaded(true);
-        return;
-      }
-
-      const snapshot = getInstanceSnapshot(name);
-      if (snapshot?.lipInstallStateByIdentifier instanceof Map) {
-        const hasAll = candidateLIPIdentifiers.every((item) =>
-          snapshot.lipInstallStateByIdentifier.has(item.identifierKey),
-        );
-        if (hasAll) {
-          setLipInstallStateByIdentifier(
-            new Map(snapshot.lipInstallStateByIdentifier),
-          );
-          setInstallStateLoaded(true);
-          return;
-        }
-      }
-
-      setInstallStateLoaded(false);
-
-      const entries = await Promise.all(
-        candidateLIPIdentifiers.map(async (item) => {
-          try {
-            const sharedState = await ensurePackageInstallState(
-              name,
-              item.identifier,
-            );
-            return [
-              item.identifierKey,
-              {
-                installed: sharedState.installed,
-                explicitInstalled: sharedState.explicitInstalled,
-                installedVersion: String(sharedState.installedVersion || "").trim(),
-                error: String(sharedState.error || "").trim(),
-              },
-            ] as const;
-          } catch (error) {
-            return [
-              item.identifierKey,
-              {
-                installed: false,
-                explicitInstalled: false,
-                installedVersion: "",
-                error: parseErrorCode(error) || "ERR_LIP_PACKAGE_QUERY_FAILED",
-              },
-            ] as const;
-          }
-        }),
-      );
-
-      if (cancelled) return;
-      setLipInstallStateByIdentifier(new Map(entries));
-      setInstallStateLoaded(true);
-    };
-
-    void loadInstallState();
-    return () => {
-      cancelled = true;
-    };
-  }, [
-    activeVersionName,
-    candidateLIPIdentifiers,
-    ensurePackageInstallState,
-    getInstanceSnapshot,
-  ]);
-
-  const lipGroupItems = useMemo(() => {
-    const grouped = new Map<
-      string,
-      {
-        identifier: string;
-        identifierKey: string;
-        packageName: string;
-        mods: types.ModInfo[];
-        folders: string[];
-        childLabels: string[];
-        targetVersion: string;
-        hasSelfVariantMapping: boolean;
-      }
-    >();
-
-    for (const mod of modsInfo) {
-      const folder = resolveModFolder(mod);
-      if (!folder) continue;
-
-      const state = modLIPStateByFolder.get(folder);
-      if (
-        !state ||
-        state.sourceType !== "unique" ||
-        !state.identifier ||
-        !state.identifierKey
-      ) {
-        continue;
-      }
-
-      if (!grouped.has(state.identifierKey)) {
-        grouped.set(state.identifierKey, {
-          identifier: state.identifier,
-          identifierKey: state.identifierKey,
-          packageName: state.packageName || mod.name || state.identifier,
-          mods: [],
-          folders: [],
-          childLabels: [],
-          targetVersion: state.targetVersion,
-          hasSelfVariantMapping: false,
-        });
-      }
-
-      const current = grouped.get(state.identifierKey)!;
-      current.mods.push(mod);
-      current.folders.push(folder);
-      current.hasSelfVariantMapping =
-        current.hasSelfVariantMapping || state.mappingKind === "self_variant";
-
-      const childLabel =
-        state.mappingKind === "self_variant" && state.matchedAlias
-          ? state.matchedAlias
-          : normalizeName(mod.name || "") || normalizeName(folder);
-      if (childLabel) current.childLabels.push(childLabel);
-    }
-
-    const result: LipGroupItem[] = [];
-
-    for (const group of grouped.values()) {
+  const allLipGroupItems = useMemo(() => {
+    return baseLipGroupItems.map((group) => {
       const installState = lipInstallStateByIdentifier.get(group.identifierKey);
-      const installedByLIP = Boolean(installState?.installed);
-      const queryError = String(installState?.error || "").trim();
-      const treatedAsLip =
-        installedByLIP || (group.hasSelfVariantMapping && Boolean(queryError));
-      if (!treatedAsLip) continue;
+      if (!installState) return group;
 
-      const uniqueFolders = Array.from(new Set(group.folders));
-      const allEnabled =
-        uniqueFolders.length > 0 &&
-        uniqueFolders.every((folder) => Boolean(enabledByFolder.get(folder)));
-      const anyEnabled = uniqueFolders.some((folder) =>
-        Boolean(enabledByFolder.get(folder)),
-      );
-
-      const targetVersion = group.targetVersion || "";
-      const installedVersionFromState = String(
-        installState?.installedVersion || "",
-      ).trim();
       const uniqueModVersions = Array.from(
         new Set(
           group.mods
@@ -989,93 +593,38 @@ export const useModsPage = (
         ),
       );
       const installedVersion =
-        installedVersionFromState ||
-        (uniqueModVersions.length === 1 ? uniqueModVersions[0] : "");
-      const explicitInstalled = Boolean(installState?.explicitInstalled);
-      const canUpdate =
-        Boolean(targetVersion) &&
-        group.mods.some(
-          (mod) =>
-            normalizeVersionForCompare(mod.version || "") !==
-            normalizeVersionForCompare(targetVersion),
-        );
+        String(installState.installedVersion || "").trim() ||
+        (uniqueModVersions.length === 1 ? uniqueModVersions[0] : group.installedVersion);
 
-      const previewData = formatChildPreview(group.childLabels);
-      const displayIdentifier = String(
-        lipPackageByIdentifier[group.identifierKey]?.identifier || group.identifier,
-      ).trim();
-
-      result.push({
-        kind: "lip",
-        key: `lip:${group.identifierKey}`,
-        identifier: group.identifier,
-        identifierKey: group.identifierKey,
-        displayIdentifier: displayIdentifier || group.identifier,
-        packageName: group.packageName || group.identifier,
+      return {
+        ...group,
         installedVersion,
-        explicitInstalled,
-        folders: uniqueFolders,
-        mods: group.mods,
-        childLabels: previewData.deduped,
-        childPreview: previewData.preview,
-        extraChildrenCount: previewData.extra,
-        allEnabled,
-        anyEnabled,
-        lipState: {
-          sourceType: "unique",
-          identifier: group.identifier,
-          identifierKey: group.identifierKey,
-          targetVersion,
-          canUpdate,
-          packageName: group.packageName || group.identifier,
-          mappingKind: group.hasSelfVariantMapping ? "self_variant" : "name",
-          matchedAlias: "",
-        },
-      });
-    }
-
-    result.sort((a, b) => {
-      const nameA = String(a.packageName || "").toLowerCase();
-      const nameB = String(b.packageName || "").toLowerCase();
-      if (nameA < nameB) return sortConfig.direction === "asc" ? -1 : 1;
-      if (nameA > nameB) return sortConfig.direction === "asc" ? 1 : -1;
-      return 0;
+        explicitInstalled: Boolean(installState.explicitInstalled),
+      };
     });
-
-    return result;
-  }, [
-    modsInfo,
-    modLIPStateByFolder,
-    lipInstallStateByIdentifier,
-    lipPackageByIdentifier,
-    enabledByFolder,
-    sortConfig.direction,
-  ]);
+  }, [baseLipGroupItems, lipInstallStateByIdentifier]);
 
   const lipGroupByIdentifier = useMemo(() => {
     const map = new Map<string, LipGroupItem>();
-    for (const group of lipGroupItems) {
+    for (const group of allLipGroupItems) {
       map.set(group.identifierKey, group);
     }
     return map;
-  }, [lipGroupItems]);
+  }, [allLipGroupItems]);
 
   const lipManagedFolderSet = useMemo(() => {
     const set = new Set<string>();
-    for (const group of lipGroupItems) {
+    for (const group of allLipGroupItems) {
       for (const folder of group.folders) {
         set.add(folder);
       }
     }
     return set;
-  }, [lipGroupItems]);
+  }, [allLipGroupItems]);
 
   const normalMods = useMemo(() => {
-    return modsInfo.filter((mod) => {
-      const folder = resolveModFolder(mod);
-      return folder ? !lipManagedFolderSet.has(folder) : false;
-    });
-  }, [modsInfo, lipManagedFolderSet]);
+    return baseNormalItems.map((item) => item.mod);
+  }, [baseNormalItems]);
 
   const filteredNormalMods = useMemo(() => {
     let list = normalMods;
@@ -1110,26 +659,34 @@ export const useModsPage = (
     return items;
   }, [filteredNormalMods, sortConfig]);
 
+  const baseNormalItemsByFolder = useMemo(() => {
+    const map = new Map<string, ModListItem>();
+    for (const item of baseNormalItems) {
+      map.set(item.folder, item);
+    }
+    return map;
+  }, [baseNormalItems]);
+
   const normalItems = useMemo<ModListItem[]>(() => {
     return sortedNormalMods.map((mod) => {
       const folder = resolveModFolder(mod);
-      const resolvedState = modLIPStateByFolder.get(folder);
+      const baseItem = baseNormalItemsByFolder.get(folder);
       const lipState =
-        folder && lipManagedFolderSet.has(folder) && resolvedState
-          ? resolvedState
-          : buildDefaultModLIPState();
+        (folder && modLIPStateByFolder.get(folder)) ||
+        baseItem?.lipState ||
+        buildDefaultModLIPState();
       return {
         kind: "mod",
-        key: `mod:${folder}`,
+        key: baseItem?.key || `mod:${folder}`,
         folder,
         mod,
         lipState,
       };
     });
-  }, [sortedNormalMods, modLIPStateByFolder, lipManagedFolderSet]);
+  }, [baseNormalItemsByFolder, modLIPStateByFolder, sortedNormalMods]);
 
   const filteredLipItems = useMemo(() => {
-    let list = lipGroupItems;
+    let list = allLipGroupItems;
     if (onlyEnabled) {
       list = list.filter((item) => item.anyEnabled);
     }
@@ -1147,26 +704,39 @@ export const useModsPage = (
         String(text || "").toLowerCase().includes(q),
       );
     });
-  }, [lipGroupItems, onlyEnabled, query]);
+  }, [allLipGroupItems, onlyEnabled, query]);
+
+  const lipGroupItems = useMemo(() => {
+    const items = [...filteredLipItems];
+    items.sort((a, b) => {
+      const nameA = String(a.packageName || "").toLowerCase();
+      const nameB = String(b.packageName || "").toLowerCase();
+      if (nameA < nameB) return sortConfig.direction === "asc" ? -1 : 1;
+      if (nameA > nameB) return sortConfig.direction === "asc" ? 1 : -1;
+      return 0;
+    });
+    return items;
+  }, [filteredLipItems, sortConfig.direction]);
 
   const visibleItems = useMemo<VisibleItem[]>(() => {
-    if (!lipSourceLoaded) return [];
     if (tabKey === "normal") return normalItems;
-    if (tabKey === "lip") return filteredLipItems;
-    return [...normalItems, ...filteredLipItems];
-  }, [lipSourceLoaded, tabKey, normalItems, filteredLipItems]);
-
-  const currentSnapshot = useMemo(
-    () => (activeVersionName ? getInstanceSnapshot(activeVersionName) : null),
-    [activeVersionName, getInstanceSnapshot, snapshotRevision],
-  );
+    if (tabKey === "lip") return lipGroupItems;
+    return [...normalItems, ...lipGroupItems];
+  }, [lipGroupItems, normalItems, tabKey]);
 
   const listHydrating =
     Boolean(activeVersionName) &&
-    (!lipSourceLoaded ||
-      !installStateLoaded ||
-      !currentSnapshot ||
-      (currentSnapshot.status === "loading" && currentSnapshot.updatedAt <= 0));
+    (!currentSnapshot || currentSnapshot.status === "loading");
+
+  const lipInfoPending =
+    Boolean(activeVersionName) &&
+    currentSnapshot?.status === "ready" &&
+    lipSyncStatus === "loading";
+
+  const lipInfoWarning =
+    lipSyncStatus === "error" && lipSyncError !== "ERR_LIP_NOT_INSTALLED"
+      ? lipSyncError
+      : "";
 
   const visibleItemMap = useMemo(() => {
     const map = new Map<string, VisibleItem>();
@@ -1261,11 +831,19 @@ export const useModsPage = (
     identifierKey: string,
     state: LIPPackageInstallState,
   ) => {
-    const normalizedKey = normalizeIdentifier(identifierKey);
+    const normalizedKey = String(identifierKey || "").trim();
     if (!normalizedKey) return;
     setLipInstallStateByIdentifier((prev) => {
       const next = new Map(prev);
-      next.set(normalizedKey, state);
+      let targetKey = normalizedKey;
+      const lookupKey = normalizeIdentifier(normalizedKey);
+      for (const key of next.keys()) {
+        if (normalizeIdentifier(key) === lookupKey) {
+          targetKey = key;
+          break;
+        }
+      }
+      next.set(targetKey, state);
       return next;
     });
   };
@@ -1284,7 +862,10 @@ export const useModsPage = (
     }
 
     try {
-      const state = await ensurePackageInstallState(name, group.identifier);
+      const state = await ensurePackageInstallState(
+        name,
+        group.identifierKey || group.identifier,
+      );
       const normalizedState: LIPPackageInstallState = {
         installed: Boolean(state.installed),
         explicitInstalled: Boolean(state.explicitInstalled),
@@ -1500,15 +1081,8 @@ export const useModsPage = (
   useEffect(() => {
     if (!activeVersionName) {
       navigate(ROUTES.instances, { replace: true });
-      return;
     }
-    const snapshot = getInstanceSnapshot(activeVersionName);
-    if (!snapshot) {
-      setInstallStateLoaded(false);
-      return;
-    }
-    setInstallStateLoaded(snapshot.status !== "loading");
-  }, [activeVersionName, getInstanceSnapshot, navigate, snapshotRevision]);
+  }, [activeVersionName, navigate]);
 
   useEffect(() => {
     return Events.On("files-dropped", (event) => {
@@ -2606,6 +2180,10 @@ export const useModsPage = (
     setTabKey,
     gameVersion,
     lipSourceLoaded,
+    lipSyncStatus,
+    lipSyncError,
+    lipInfoPending,
+    lipInfoWarning,
     listHydrating,
     selectedMods,
     selectedItems,

@@ -934,7 +934,9 @@
     "lip_open_package": "打開套件詳情",
     "action_promote_install": "轉為主動安裝",
     "action_promote_install_success": "{{name}} 已轉為主動安裝",
-    "action_promote_install_failed_no_version": "未找到此套件的已安裝版本"
+    "action_promote_install_failed_no_version": "未找到此套件的已安裝版本",
+    "lip_sync_loading": "本地模組已載入，正在補全 lip 資訊...",
+    "lip_sync_error": "lip 資訊暫時不可用，目前僅顯示本地模組。"
   },
   "terms": {
     "title": "LeviLauncher 使用者協議",

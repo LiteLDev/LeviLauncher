@@ -922,6 +922,8 @@
     "action_promote_install": "明示的インストールに昇格",
     "action_promote_install_success": "{{name}} を明示的インストールに昇格しました",
     "action_promote_install_failed_no_version": "このパッケージのインストール済みバージョンが見つかりません",
+    "lip_sync_loading": "ローカル mod は読み込み済みです。lip 情報を補完しています...",
+    "lip_sync_error": "lip 情報は一時的に利用できません。ローカル mod のみ表示しています。",
     "action_update": "Update",
     "action_uninstall": "Uninstall",
     "batch_update_title": "Batch Update Mods",

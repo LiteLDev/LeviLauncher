@@ -934,7 +934,9 @@
     "err_ll_managed_in_version_settings": "LeviLamina can only be managed in Version Settings",
     "action_result_title_done": "Operation Completed",
     "action_result_title_partial": "Operation Completed (Partial Failures)",
-    "action_result_title_failed": "Operation Failed"
+    "action_result_title_failed": "Operation Failed",
+    "lip_sync_loading": "Локальные моды уже загружены. Дополняем информацию lip...",
+    "lip_sync_error": "Информация lip временно недоступна. Показаны только локальные моды."
   },
   "terms": {
     "title": "Лицензионное соглашение LeviLauncher",

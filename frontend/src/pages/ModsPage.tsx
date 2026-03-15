@@ -340,6 +340,44 @@ export const ModsPage: React.FC = () => {
           <Tab key="normal" title={t("mods.tab_normal") as string} />
           <Tab key="lip" title={t("mods.tab_lip") as string} />
         </Tabs>
+
+        {(mp.lipInfoPending || mp.lipInfoWarning) && (
+          <div
+            className={cn(
+              "rounded-2xl border px-4 py-3 flex items-start gap-3 backdrop-blur-md",
+              mp.lipInfoWarning
+                ? "border-warning-200/60 bg-warning-50/70 dark:border-warning-900/30 dark:bg-warning-900/10"
+                : "border-primary-200/60 bg-primary-50/70 dark:border-primary-900/30 dark:bg-primary-900/10",
+            )}
+          >
+            <div className="pt-0.5 shrink-0">
+              {mp.lipInfoWarning ? (
+                <FiAlertTriangle className="text-warning-600 dark:text-warning-400" />
+              ) : (
+                <Spinner size="sm" color="primary" />
+              )}
+            </div>
+            <div className="min-w-0">
+              <p
+                className={cn(
+                  "text-sm font-medium",
+                  mp.lipInfoWarning
+                    ? "text-warning-700 dark:text-warning-300"
+                    : "text-primary-700 dark:text-primary-300",
+                )}
+              >
+                {mp.lipInfoWarning
+                  ? t("mods.lip_sync_error")
+                  : t("mods.lip_sync_loading")}
+              </p>
+              {mp.lipInfoWarning && (
+                <p className="mt-1 text-xs text-warning-700/80 dark:text-warning-300/80 font-mono break-all">
+                  {mp.lipInfoWarning}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">

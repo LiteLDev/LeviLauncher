@@ -955,7 +955,9 @@
     "tab_normal": "Normal Mods",
     "tab_lip": "lip Mods",
     "lip_children_summary": "Includes: {{children}} (+{{count}})",
-    "lip_open_package": "Open Package"
+    "lip_open_package": "Open Package",
+    "lip_sync_loading": "Local mods are ready. Completing lip information...",
+    "lip_sync_error": "lip information is temporarily unavailable. Showing local mods only."
   },
   "terms": {
     "title": "LeviLauncher License Agreement",

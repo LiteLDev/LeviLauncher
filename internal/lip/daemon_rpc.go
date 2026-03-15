@@ -642,6 +642,68 @@ type PackageInstallState struct {
 	InstalledVersion  string
 }
 
+func buildPackageInstallStateIndex(grouped [][]daemonPackageSpec) map[string]PackageInstallState {
+	stateByPackageRef := make(map[string]PackageInstallState)
+
+	parseVersion := func(spec daemonPackageSpec) string {
+		return strings.TrimSpace(spec.Version)
+	}
+
+	mergeSpecs := func(specs []daemonPackageSpec, explicit bool) {
+		for _, spec := range specs {
+			key := strings.ToLower(trimPackageVersion(packageSpecID(spec)))
+			if key == "" {
+				continue
+			}
+
+			state := stateByPackageRef[key]
+			state.Installed = true
+			if explicit {
+				state.ExplicitInstalled = true
+				if version := parseVersion(spec); version != "" {
+					state.InstalledVersion = version
+				}
+			} else if state.InstalledVersion == "" {
+				state.InstalledVersion = parseVersion(spec)
+			}
+			stateByPackageRef[key] = state
+		}
+	}
+
+	if len(grouped) > 0 {
+		mergeSpecs(grouped[0], true)
+	}
+	for i := 1; i < len(grouped); i++ {
+		mergeSpecs(grouped[i], false)
+	}
+
+	return stateByPackageRef
+}
+
+func parsePackageInstallStates(raw json.RawMessage) (map[string]PackageInstallState, error) {
+	grouped, err := decodePackageSpecGroups(raw)
+	if err != nil {
+		return nil, fmt.Errorf("decode list result: %w", err)
+	}
+	return buildPackageInstallStateIndex(grouped), nil
+}
+
+func ListPackageStatesViaDaemon(ctx context.Context, workDir string) (map[string]PackageInstallState, error) {
+	if strings.TrimSpace(workDir) == "" {
+		return nil, fmt.Errorf("empty work directory")
+	}
+	if err := EnsureInstalledWithError(); err != nil {
+		return nil, err
+	}
+
+	result, err := callDaemonWithResultQuiet(ctx, filepath.Clean(workDir), "List", []any{})
+	if err != nil {
+		return nil, err
+	}
+
+	return parsePackageInstallStates(result)
+}
+
 func parsePackageSpecFromString(raw string) (daemonPackageSpec, bool) {
 	spec := strings.TrimSpace(raw)
 	if spec == "" {
@@ -803,54 +865,17 @@ func packageSpecID(spec daemonPackageSpec) string {
 
 func GetPackageInstallStateViaDaemon(ctx context.Context, workDir string, packageRef string) (PackageInstallState, error) {
 	state := PackageInstallState{}
-	if strings.TrimSpace(workDir) == "" {
-		return state, fmt.Errorf("empty work directory")
-	}
-	if err := EnsureInstalledWithError(); err != nil {
-		return state, err
-	}
-
-	result, err := callDaemonWithResult(ctx, filepath.Clean(workDir), "List", []any{})
-	if err != nil {
-		return state, err
-	}
-
-	grouped, err := decodePackageSpecGroups(result)
-	if err != nil {
-		return state, fmt.Errorf("decode list result: %w", err)
-	}
-
 	target := strings.ToLower(trimPackageVersion(packageRef))
 	if target == "" {
 		return state, nil
 	}
 
-	parseVersion := func(spec daemonPackageSpec) string {
-		return strings.TrimSpace(spec.Version)
+	stateByPackageRef, err := ListPackageStatesViaDaemon(ctx, workDir)
+	if err != nil {
+		return state, err
 	}
-
-	checkMatches := func(specs []daemonPackageSpec, explicit bool) {
-		for _, spec := range specs {
-			if strings.ToLower(packageSpecID(spec)) != target {
-				continue
-			}
-			state.Installed = true
-			if explicit {
-				state.ExplicitInstalled = true
-				state.InstalledVersion = parseVersion(spec)
-				continue
-			}
-			if state.InstalledVersion == "" {
-				state.InstalledVersion = parseVersion(spec)
-			}
-		}
-	}
-
-	if len(grouped) > 0 {
-		checkMatches(grouped[0], true)
-	}
-	for i := 1; i < len(grouped); i++ {
-		checkMatches(grouped[i], false)
+	if matched, ok := stateByPackageRef[target]; ok {
+		state = matched
 	}
 
 	return state, nil

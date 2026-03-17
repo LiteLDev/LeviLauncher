@@ -352,6 +352,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
               className="w-full min-w-0"
             >
               <Card
+                as="div"
                 isPressable
                 onPress={() => handleSelectVersion(it.name)}
                 className={cn(

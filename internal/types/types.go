@@ -85,6 +85,147 @@ type ContentRoots struct {
 	IsPreview     bool   `json:"isPreview"`
 }
 
+type InstanceBackupScope struct {
+	Key         string                    `json:"key"`
+	Label       string                    `json:"label"`
+	Path        string                    `json:"path"`
+	Size        int64                     `json:"size"`
+	Selectable  bool                      `json:"selectable"`
+	Exists      bool                      `json:"exists"`
+	Shared      bool                      `json:"shared"`
+	Modes       []InstanceBackupScopeMode `json:"modes,omitempty"`
+	DefaultMode string                    `json:"defaultMode"`
+	Warnings    []string                  `json:"warnings,omitempty"`
+}
+
+type InstanceBackupScopeMode struct {
+	Key        string `json:"key"`
+	Path       string `json:"path"`
+	Size       int64  `json:"size"`
+	Selectable bool   `json:"selectable"`
+	Warning    string `json:"warning,omitempty"`
+}
+
+type InstanceBackupModsLIPPackage struct {
+	Identifier        string   `json:"identifier"`
+	Version           string   `json:"version"`
+	ExplicitInstalled bool     `json:"explicitInstalled"`
+	Folders           []string `json:"folders"`
+}
+
+type InstanceBackupRequest struct {
+	Scopes          []string                       `json:"scopes"`
+	ScopeModes      map[string]string              `json:"scopeModes"`
+	ModsLIPPackages []InstanceBackupModsLIPPackage `json:"modsLipPackages"`
+}
+
+type InstanceBackupInfo struct {
+	Name      string                `json:"name"`
+	BackupDir string                `json:"backupDir"`
+	Scopes    []InstanceBackupScope `json:"scopes"`
+	ErrorCode string                `json:"errorCode"`
+}
+
+type InstanceBackupResult struct {
+	ArchivePath    string   `json:"archivePath"`
+	BackupDir      string   `json:"backupDir"`
+	IncludedScopes []string `json:"includedScopes"`
+	ErrorCode      string   `json:"errorCode"`
+}
+
+type InstanceBackupArchiveScope struct {
+	Key      string   `json:"key"`
+	Label    string   `json:"label"`
+	Mode     string   `json:"mode"`
+	Warnings []string `json:"warnings,omitempty"`
+}
+
+type InstanceBackupArchiveInfo struct {
+	FormatVersion         int                            `json:"formatVersion"`
+	Name                  string                         `json:"name"`
+	ArchivePath           string                         `json:"archivePath"`
+	ArchiveName           string                         `json:"archiveName"`
+	GameVersion           string                         `json:"gameVersion"`
+	Type                  string                         `json:"type"`
+	EnableIsolation       bool                           `json:"enableIsolation"`
+	CreatedAt             string                         `json:"createdAt"`
+	IncludedScopes        []string                       `json:"includedScopes"`
+	ScopeModes            map[string]string              `json:"scopeModes"`
+	Scopes                []InstanceBackupArchiveScope   `json:"scopes"`
+	ModsLIPPackages       []InstanceBackupModsLIPPackage `json:"modsLipPackages"`
+	RawModFolders         []string                       `json:"rawModFolders"`
+	BedrockWhitelistRoots []string                       `json:"bedrockWhitelistRoots"`
+	ErrorCode             string                         `json:"errorCode"`
+}
+
+type InstanceBackupRestoreRequest struct {
+	ArchivePath         string                            `json:"archivePath"`
+	Scopes              []string                          `json:"scopes"`
+	ConflictResolutions []InstanceBackupRestoreResolution `json:"conflictResolutions,omitempty"`
+}
+
+type InstanceBackupRestoreResolution struct {
+	ConflictID string `json:"conflictId"`
+	Choice     string `json:"choice"`
+}
+
+type InstanceBackupRestoreConflictDiffField struct {
+	Key          string `json:"key"`
+	Label        string `json:"label"`
+	BackupValue  string `json:"backupValue"`
+	CurrentValue string `json:"currentValue"`
+}
+
+type InstanceBackupRestoreConflict struct {
+	ID             string                                   `json:"id"`
+	ScopeKey       string                                   `json:"scopeKey"`
+	ScopeLabel     string                                   `json:"scopeLabel"`
+	Path           string                                   `json:"path"`
+	SourceType     string                                   `json:"sourceType"`
+	TargetType     string                                   `json:"targetType"`
+	IdentityKind   string                                   `json:"identityKind"`
+	IdentityKey    string                                   `json:"identityKey"`
+	BackupPath     string                                   `json:"backupPath"`
+	CurrentPath    string                                   `json:"currentPath"`
+	BackupSummary  string                                   `json:"backupSummary"`
+	CurrentSummary string                                   `json:"currentSummary"`
+	DiffFields     []InstanceBackupRestoreConflictDiffField `json:"diffFields,omitempty"`
+}
+
+type InstanceBackupRestoreConflictInfo struct {
+	ArchivePath    string                          `json:"archivePath"`
+	IncludedScopes []string                        `json:"includedScopes"`
+	Conflicts      []InstanceBackupRestoreConflict `json:"conflicts"`
+	ErrorCode      string                          `json:"errorCode"`
+}
+
+type InstanceBackupRestoreScopeResult struct {
+	Key       string   `json:"key"`
+	Label     string   `json:"label"`
+	Mode      string   `json:"mode"`
+	Status    string   `json:"status"`
+	ErrorCode string   `json:"errorCode"`
+	Warnings  []string `json:"warnings,omitempty"`
+	Details   []string `json:"details,omitempty"`
+}
+
+type InstanceBackupRestoreResult struct {
+	ArchivePath    string                             `json:"archivePath"`
+	Status         string                             `json:"status"`
+	IncludedScopes []string                           `json:"includedScopes"`
+	ScopeResults   []InstanceBackupRestoreScopeResult `json:"scopeResults"`
+	ErrorCode      string                             `json:"errorCode"`
+}
+
+type InstanceBackupRestoreProgress struct {
+	Phase       string `json:"phase"`
+	CurrentStep int    `json:"currentStep"`
+	TotalSteps  int    `json:"totalSteps"`
+	ScopeKey    string `json:"scopeKey,omitempty"`
+	ScopeLabel  string `json:"scopeLabel,omitempty"`
+	Ts          int64  `json:"ts"`
+}
+
 type PackInfo struct {
 	Name             string `json:"name"`
 	Description      string `json:"description"`

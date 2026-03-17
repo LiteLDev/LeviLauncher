@@ -16,6 +16,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/launchercore"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 )
@@ -351,6 +352,26 @@ func (s *VersionService) RenameVersionFolder(oldName string, newName string) str
 
 func (s *VersionService) DeleteVersionFolder(name string) string {
 	return mcservice.DeleteVersionFolder(name)
+}
+
+func (s *VersionService) GetInstanceBackupInfo(name string) types.InstanceBackupInfo {
+	return mcservice.GetInstanceBackupInfo(name)
+}
+
+func (s *VersionService) BackupInstance(name string, request types.InstanceBackupRequest) types.InstanceBackupResult {
+	return mcservice.BackupInstance(name, request)
+}
+
+func (s *VersionService) InspectInstanceBackupArchive(archivePath string) types.InstanceBackupArchiveInfo {
+	return mcservice.InspectInstanceBackupArchive(archivePath)
+}
+
+func (s *VersionService) PreviewInstanceBackupRestoreConflicts(name string, request types.InstanceBackupRestoreRequest) types.InstanceBackupRestoreConflictInfo {
+	return mcservice.PreviewInstanceBackupRestoreConflicts(name, request)
+}
+
+func (s *VersionService) RestoreInstanceBackup(name string, request types.InstanceBackupRestoreRequest) types.InstanceBackupRestoreResult {
+	return mcservice.RestoreInstanceBackup(s.launchContext(), name, request)
 }
 
 func (s *VersionService) RegisterVersionWithWdapp(name string, isPreview bool) string {

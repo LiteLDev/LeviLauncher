@@ -202,6 +202,7 @@ func init() {
 	application.RegisterEvent[string](mcservice.EventExtractError)
 	application.RegisterEvent[string](mcservice.EventExtractDone)
 	application.RegisterEvent[types.ExtractProgress](mcservice.EventExtractProgress)
+	application.RegisterEvent[types.InstanceBackupRestoreProgress](mcservice.EventInstanceBackupRestoreProgress)
 	// launch
 	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
 	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)

@@ -10,6 +10,7 @@ import (
 	"os"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unsafe"
 
@@ -57,6 +58,18 @@ var (
 	procShowWindow          = user32.NewProc("ShowWindow")
 	procSetForegroundWindow = user32.NewProc("SetForegroundWindow")
 )
+
+type startupLogger struct {
+	start time.Time
+}
+
+func newStartupLogger() *startupLogger {
+	return &startupLogger{start: time.Now()}
+}
+
+func (s *startupLogger) Mark(phase string) {
+	log.Printf("[startup] %s (+%dms)", phase, time.Since(s.start).Milliseconds())
+}
 
 func focusExistingWindow() {
 	title, _ := win.UTF16PtrFromString("LeviLauncher")
@@ -242,6 +255,9 @@ func init() {
 }
 
 func main() {
+	startup := newStartupLogger()
+	startup.Mark("process start")
+
 	_ = godotenv.Load()
 	initialURL, autoLaunchVersion, postUpdateRestart := parseArgs()
 
@@ -252,12 +268,8 @@ func main() {
 	if err != nil {
 		log.Printf("config.Load failed: %v", err)
 	}
-	extractor.Init()
 	update.Init()
-	go resourcerules.EnsureLatest(context.Background())
-	if !config.GetDiscordRPCDisabled() {
-		discord.Init()
-	}
+	startup.Mark("config loaded")
 	mc := NewMinecraft()
 	contentService := NewContentService(mc)
 	modsService := NewModsService(mc)
@@ -283,7 +295,7 @@ func main() {
 			Handler: application.AssetFileServerFS(assets),
 		},
 	})
-	mc.startup()
+	mc.startupEssential()
 	startSingleInstanceServer(versionService)
 
 	if strings.TrimSpace(autoLaunchVersion) != "" && initialURL == "/" {
@@ -321,17 +333,15 @@ func main() {
 		Mac:       application.MacWindow{},
 		Frameless: true,
 		BackgroundColour: application.RGBA{
-			Red:   0,
-			Green: 0,
-			Blue:  0,
-			Alpha: 0,
-		},
-		Windows: application.WindowsWindow{
-			BackdropType: application.Acrylic,
+			Red:   248,
+			Green: 250,
+			Blue:  252,
+			Alpha: 255,
 		},
 		URL:            initialURL,
 		EnableFileDrop: true,
 	})
+	startup.Mark("window created")
 	reapplyWindowMinConstraints := func() {
 		windows.SetMinSize(minWindowWidth, minWindowHeight)
 		currentW := windows.Width()
@@ -381,8 +391,45 @@ func main() {
 	windows.OnWindowEvent(events.Common.WindowRestore, func(_ *application.WindowEvent) {
 		syncWindowResizeHandles()
 	})
+	var deferredStartupOnce sync.Once
 	windows.OnWindowEvent(events.Windows.WebViewNavigationCompleted, func(_ *application.WindowEvent) {
 		syncWindowResizeHandles()
+		deferredStartupOnce.Do(func() {
+			startup.Mark("webview navigation completed")
+			go func() {
+				startup.Mark("deferred startup started")
+				var wg sync.WaitGroup
+
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					mc.startupDeferred()
+				}()
+
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					extractor.Init()
+				}()
+
+				wg.Add(1)
+				go func() {
+					defer wg.Done()
+					_ = resourcerules.EnsureLatestWithError(context.Background())
+				}()
+
+				if !config.GetDiscordRPCDisabled() {
+					wg.Add(1)
+					go func() {
+						defer wg.Done()
+						discord.Init()
+					}()
+				}
+
+				wg.Wait()
+				startup.Mark("deferred startup finished")
+			}()
+		})
 	})
 	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		w := windows.Width()

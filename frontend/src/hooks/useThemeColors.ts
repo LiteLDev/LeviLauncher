@@ -2,6 +2,7 @@ import { useState, useEffect } from "react";
 import { THEMES, hexToRgb, generateTheme } from "@/constants/themes";
 
 export const useThemeColors = (resolvedTheme: string | undefined) => {
+  const [themeColorsReady, setThemeColorsReady] = useState<boolean>(false);
   const [lightThemeColor, setLightThemeColor] = useState<string>(() => {
     try {
       const saved = localStorage.getItem("app.lightThemeColor");
@@ -103,6 +104,7 @@ export const useThemeColors = (resolvedTheme: string | undefined) => {
       const k = Number(key);
       root.style.setProperty(`--theme-${k}`, hexToRgb(theme[k]));
     });
+    setThemeColorsReady(true);
   }, [
     resolvedTheme,
     lightThemeColor,
@@ -110,4 +112,6 @@ export const useThemeColors = (resolvedTheme: string | undefined) => {
     darkThemeColor,
     darkCustomThemeColor,
   ]);
+
+  return { themeColorsReady };
 };

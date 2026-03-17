@@ -384,12 +384,15 @@ func (a *Minecraft) UpdateResourceRules() string {
 	return ""
 }
 
-func (a *Minecraft) startup() {
+func (a *Minecraft) startupEssential() {
 	a.ctx = application.Get().Context()
 
 	exePath, _ := os.Executable()
 	exeDir := filepath.Dir(exePath)
 	os.Chdir(exeDir)
+}
+
+func (a *Minecraft) startupDeferred() {
 	launch.EnsureGamingServicesInstalled(a.ctx)
 	mcservice.ReconcileRegisteredFlags()
 }

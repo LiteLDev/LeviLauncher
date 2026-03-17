@@ -6,6 +6,7 @@ import React, {
   useCallback,
 } from "react";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { useStartupInteractive } from "@/utils/startupState";
 
 type LeviLaminaDB = Record<string, any>;
 
@@ -91,6 +92,7 @@ export const LeviLaminaProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
   const hasBackend = minecraft !== undefined;
+  const startupInteractive = useStartupInteractive();
   const [llMap, setLlMap] = useState<Map<string, any>>(new Map());
   const [loading, setLoading] = useState<boolean>(false);
 
@@ -111,8 +113,9 @@ export const LeviLaminaProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [hasBackend]);
 
   useEffect(() => {
+    if (!startupInteractive) return;
     fetchLLDB();
-  }, [fetchLLDB]);
+  }, [fetchLLDB, startupInteractive]);
 
   const compareLLVersions = useCallback((a: string, b: string): number => {
     const av = parseSemver(a);

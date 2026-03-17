@@ -49,11 +49,7 @@ export const useAppNavigation = () => {
   const location = useLocation();
   const navigate = useNavigate();
 
-  const [splashVisible, setSplashVisible] = useState(true);
-  const [revealStarted, setRevealStarted] = useState(false);
-  const [isFirstLoad, setIsFirstLoad] = useState(false);
   const [isBeta, setIsBeta] = useState(false);
-  const [hasEnteredLauncher, setHasEnteredLauncher] = useState(false);
   const [navLocked, setNavLockedState] = useState<boolean>(() => getNavLockState());
 
   const isUpdatingMode = (() => {
@@ -92,17 +88,6 @@ export const useAppNavigation = () => {
   );
 
   useEffect(() => {
-    if (location.pathname === ROUTES.home && revealStarted) {
-      try {
-        const onboarded = localStorage.getItem("ll.onboarded");
-        if (onboarded) {
-          setHasEnteredLauncher(true);
-        }
-      } catch {}
-    }
-  }, [location.pathname, revealStarted]);
-
-  useEffect(() => {
     return subscribeNavLock(setNavLockedState);
   }, []);
 
@@ -125,37 +110,15 @@ export const useAppNavigation = () => {
   }, [isOnboardingMode]);
 
   useEffect(() => {
-    if (isUpdatingMode) {
-      setSplashVisible(false);
-      setRevealStarted(true);
-      return;
-    }
-    const splashDurationMs = 1400;
-
-    setIsFirstLoad(false);
-
-    const tHide = setTimeout(() => setSplashVisible(false), splashDurationMs);
-    const tHeader = setTimeout(
-      () => setRevealStarted(true),
-      splashDurationMs - 200,
-    );
-    return () => {
-      clearTimeout(tHide);
-      clearTimeout(tHeader);
-    };
-  }, [isUpdatingMode]);
-
-  useEffect(() => {
-    if (!revealStarted) return;
     if (isUpdatingMode) return;
+    if (isOnboardingMode) return;
     try {
       const onboarded = localStorage.getItem("ll.onboarded");
-      if (!onboarded && location.pathname !== ROUTES.onboarding) {
-        setNavLockReason("onboarding-route", true);
+      if (!onboarded) {
         navigate(ROUTES.onboarding, { replace: true });
       }
     } catch {}
-  }, [revealStarted, isUpdatingMode, location?.pathname, navigate]);
+  }, [isOnboardingMode, isUpdatingMode, location.pathname, navigate]);
 
   useEffect(() => {
     if (!hasBackend) return;
@@ -170,10 +133,6 @@ export const useAppNavigation = () => {
   return {
     navLocked,
     setNavLocked: setAppNavLock,
-    splashVisible,
-    revealStarted,
-    isFirstLoad,
-    hasEnteredLauncher,
     isBeta,
     isUpdatingMode,
     isOnboardingMode,

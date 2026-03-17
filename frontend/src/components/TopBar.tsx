@@ -4,9 +4,8 @@ import { UserAvatar } from "@/components/UserAvatar";
 
 import { Button, Tooltip } from "@heroui/react";
 import { IoArrowBack, IoArrowForward, IoChevronForward } from "react-icons/io5";
-import { useNavigate, useLocation, Link } from "react-router-dom";
+import { useLocation, Link } from "react-router-dom";
 import { LeviIcon } from "@/icons/LeviIcon";
-import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
 import { LAYOUT } from "@/constants/layout";
@@ -15,18 +14,15 @@ import { ROUTES } from "@/constants/routes";
 interface TopBarProps {
   navLocked: boolean;
   isOnboardingMode: boolean;
-  revealStarted: boolean;
   tryNavigate: (path: string | number) => void;
 }
 
 export const TopBar: React.FC<TopBarProps> = ({
   navLocked,
   isOnboardingMode,
-  revealStarted,
   tryNavigate,
 }) => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const location = useLocation();
   const { canGoBack, canGoForward, getBackEntry, getForwardEntry } =
     useNavigationHistory();
@@ -45,18 +41,10 @@ export const TopBar: React.FC<TopBarProps> = ({
   const NON_CLICKABLE_SEGMENTS = ["mod", "package"];
 
   return (
-    <AnimatePresence>
-      <motion.div
-        key="topbar"
+    <>
+      <div
         id="wails-draggable"
         className={`fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4 ${LAYOUT.NAVBAR_BG}`}
-        initial={{ x: -80, opacity: 0 }}
-        animate={{
-          x: revealStarted ? 0 : -80,
-          opacity: revealStarted ? 1 : 0,
-        }}
-        exit={{ x: -80, opacity: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
       >
         <div className="absolute bottom-0 right-0 left-[calc(3.5rem+20px)] h-px bg-default-200/50 dark:bg-zinc-800/50" />
         <div className="flex items-center gap-2 overflow-hidden">
@@ -185,19 +173,9 @@ export const TopBar: React.FC<TopBarProps> = ({
             />
           </div>
         </div>
-      </motion.div>
+      </div>
 
-      <motion.div
-        key="topbar-controls"
-        className="fixed top-0 right-0 h-14 z-[80] flex items-center justify-end pr-4 pointer-events-none"
-        initial={{ x: -80, opacity: 0 }}
-        animate={{
-          x: revealStarted ? 0 : -80,
-          opacity: revealStarted ? 1 : 0,
-        }}
-        exit={{ x: -80, opacity: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      >
+      <div className="fixed top-0 right-0 h-14 z-[80] flex items-center justify-end pr-4 pointer-events-none">
         <div className="pointer-events-auto">
           <WindowControls
             navLocked={navLocked}
@@ -206,7 +184,7 @@ export const TopBar: React.FC<TopBarProps> = ({
             className="text-default-600 dark:text-zinc-300 [&_button]:text-default-600 dark:[&_button]:text-zinc-300 [&_button:hover]:text-default-900 dark:[&_button:hover]:text-zinc-100"
           />
         </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </>
   );
 };

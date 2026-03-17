@@ -233,7 +233,7 @@ func NewVersionService(mc *Minecraft) *VersionService {
 	}
 	return &VersionService{
 		launcher: mc.launcher,
-		// NOTE: mc.ctx is set later in mc.startup(), so ctxProvider may return
+		// NOTE: mc.ctx is set later in mc.startupEssential(), so ctxProvider may return
 		// nil before startup completes. launchContext() falls back to
 		// context.Background() in that case, which means Wails app-level
 		// context (events, etc.) won't be available for early callers.

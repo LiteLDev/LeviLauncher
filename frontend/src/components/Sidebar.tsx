@@ -8,31 +8,21 @@ import {
   FaList,
   FaInfoCircle,
 } from "react-icons/fa";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { LAYOUT } from "@/constants/layout";
 import { ROUTES, isRouteActive } from "@/constants/routes";
 
 interface SidebarProps {
-  isBeta: boolean;
   navLocked: boolean;
   themeMode: string;
-  revealStarted: boolean;
-  isUpdatingMode: boolean;
-  isOnboardingMode: boolean;
-  hasEnteredLauncher: boolean;
   tryNavigate: (path: string | number) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
-  isBeta,
   navLocked,
   themeMode,
-  revealStarted,
-  isUpdatingMode,
-  isOnboardingMode,
-  hasEnteredLauncher,
   tryNavigate,
 }) => {
   const { t } = useTranslation();
@@ -72,18 +62,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
   ];
 
   return (
-    <AnimatePresence>
-      <motion.div
-        key="sidebar"
-        className={`fixed left-0 top-14 bottom-0 z-50 flex flex-col w-14 ${LAYOUT.NAVBAR_BG}`}
-        initial={{ x: -80, opacity: 0 }}
-        animate={{
-          x: revealStarted ? 0 : -80,
-          opacity: revealStarted ? 1 : 0,
-        }}
-        exit={{ x: -80, opacity: 0 }}
-        transition={{ duration: 0.5, ease: "easeOut" }}
-      >
+    <div
+      className={`fixed left-0 top-14 bottom-0 z-50 flex flex-col w-14 ${LAYOUT.NAVBAR_BG}`}
+    >
         <div className="absolute right-0 top-[20px] bottom-0 w-px bg-default-200/50 dark:bg-zinc-800/50" />
         {/* Corner Connector */}
         <div className="absolute top-0 -right-[20px] w-[20px] h-[20px] overflow-hidden pointer-events-none">
@@ -175,8 +156,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 </div>
               </Tooltip>
             )}
-        </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </div>
   );
 };

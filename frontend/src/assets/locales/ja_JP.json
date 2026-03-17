@@ -1002,9 +1002,6 @@
       "file": "ファイル"
     }
   },
-  "splash": {
-    "preparing": "起動準備中..."
-  },
   "mods": {
     "import_button": ".zip/.dllをインポート",
     "importing_title": "インポート中...",

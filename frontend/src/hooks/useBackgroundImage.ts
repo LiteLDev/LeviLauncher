@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { useStartupInteractive } from "@/utils/startupState";
 
 export const getFitStyles = (mode: string) => {
   switch (mode) {
@@ -91,9 +92,9 @@ const pickNextImage = async (folderPath: string) => {
 };
 
 export const useBackgroundImage = () => {
-  const [backgroundImagePath, setBackgroundImagePath] = useState<string>(
-    () => localStorage.getItem("app.backgroundImage") || "",
-  );
+  const startupInteractive = useStartupInteractive();
+  const [backgroundImagePath, setBackgroundImagePath] = useState<string>("");
+  const [backgroundReady, setBackgroundReady] = useState<boolean>(false);
   const [backgroundFitMode, setBackgroundFitMode] = useState<string>(
     () => localStorage.getItem("app.backgroundFitMode") || "smart",
   );
@@ -147,6 +148,7 @@ export const useBackgroundImage = () => {
     });
 
   useEffect(() => {
+    if (!startupInteractive) return;
     const initBackgrounds = async () => {
       try {
         const folder = localStorage.getItem("app.backgroundImage") || "";
@@ -157,7 +159,7 @@ export const useBackgroundImage = () => {
       } catch {}
     };
     initBackgrounds();
-  }, []);
+  }, [startupInteractive]);
 
   useEffect(() => {
     const handler = () => {
@@ -195,6 +197,7 @@ export const useBackgroundImage = () => {
   useEffect(() => {
     const handler = async () => {
       try {
+        setBackgroundReady(false);
         const folder = localStorage.getItem("app.backgroundImage") || "";
         const img = await pickNextImage(folder);
 
@@ -248,27 +251,40 @@ export const useBackgroundImage = () => {
   }, []);
 
   useEffect(() => {
+    if (!startupInteractive) return;
     const currentImg = backgroundImagePath;
 
     if (!currentImg) {
       setBgData("");
+      setBackgroundReady(true);
       return;
     }
     if (currentImg.startsWith("data:") || currentImg.startsWith("http")) {
       setBgData(currentImg);
+      setBackgroundReady(true);
       return;
     }
 
+    setBackgroundReady(false);
     (minecraft as any)
       .GetImageBase64?.(currentImg)
       .then((res: string) => {
-        if (res) setBgData(res);
+        if (res) {
+          setBgData(res);
+        } else {
+          setBgData("");
+        }
+        setBackgroundReady(true);
       })
-      .catch(() => {});
-  }, [backgroundImagePath]);
+      .catch(() => {
+        setBgData("");
+        setBackgroundReady(true);
+      });
+  }, [backgroundImagePath, startupInteractive]);
 
   return {
     bgData,
+    backgroundReady,
     backgroundFitMode,
     backgroundBlur,
     backgroundBrightness,

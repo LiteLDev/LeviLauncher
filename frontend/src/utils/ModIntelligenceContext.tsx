@@ -29,6 +29,7 @@ import {
   type ModLIPState,
   type ModListItem,
 } from "@/utils/modIntelligenceResolver";
+import { useStartupInteractive } from "@/utils/startupState";
 
 export type InstanceModSnapshot = {
   status: "idle" | "loading" | "ready" | "refreshing" | "error";
@@ -202,6 +203,7 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
   children,
 }) => {
   const { currentVersionName } = useCurrentVersion();
+  const startupInteractive = useStartupInteractive();
   const [lipSourceLoaded, setLipSourceLoaded] = useState(false);
   const [snapshotRevision, setRevision] = useState(0);
 
@@ -461,6 +463,7 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
   );
 
   useEffect(() => {
+    if (!startupInteractive) return;
     let cancelled = false;
 
     const loadLIPSource = async () => {
@@ -513,7 +516,7 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
     return () => {
       cancelled = true;
     };
-  }, []);
+  }, [startupInteractive]);
 
   const ensureInstanceHydrated = useCallback<
     ModIntelligenceContextValue["ensureInstanceHydrated"]

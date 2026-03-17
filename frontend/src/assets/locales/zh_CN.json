@@ -1023,9 +1023,6 @@
       "file": "文件"
     }
   },
-  "splash": {
-    "preparing": "正在准备启动..."
-  },
   "mods": {
     "import_button": "导入 .zip/.dll",
     "importing_title": "正在导入...",

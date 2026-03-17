@@ -1023,9 +1023,6 @@
       "file": "File"
     }
   },
-  "splash": {
-    "preparing": "Preparing to launch..."
-  },
   "mods": {
     "import_button": "Import .zip/.dll",
     "importing_title": "Importing...",

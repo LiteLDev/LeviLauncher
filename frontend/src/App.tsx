@@ -9,7 +9,6 @@ import { TermsModal } from "@/components/TermsModal";
 import { UpdateModal } from "@/components/UpdateModal";
 import { LipUpdateModal } from "@/components/LipUpdateModal";
 import { ClarityConsentModal } from "@/components/ClarityConsentModal";
-import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { VersionStatusProvider } from "@/utils/VersionStatusContext";
 import { CurseForgeProvider } from "@/utils/CurseForgeContext";
@@ -19,7 +18,6 @@ import { useTheme } from "next-themes";
 import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
 import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
 import { useThemeManager } from "@/utils/useThemeManager";
-import { SplashScreen } from "@/pages/SplashScreen";
 import { DownloadsProvider } from "@/utils/DownloadsContext";
 import { LipTaskConsoleProvider } from "@/utils/LipTaskConsoleContext";
 import { CurrentVersionProvider } from "@/utils/CurrentVersionContext";
@@ -31,6 +29,7 @@ import { useThemeColors } from "@/hooks/useThemeColors";
 import { useAppNavigation } from "@/hooks/useAppNavigation";
 import { useAppModals } from "@/hooks/useAppModals";
 import { ROUTES } from "@/constants/routes";
+import { markStartupVisualReady } from "@/utils/startupState";
 
 // Lazy load pages
 const LauncherPage = lazy(() =>
@@ -110,9 +109,10 @@ function App() {
   // Extracted hooks
   const { layoutMode } = useLayoutMode();
   useAnimations();
-  useThemeColors(resolvedTheme);
+  const { themeColorsReady } = useThemeColors(resolvedTheme);
   const {
     bgData,
+    backgroundReady,
     backgroundFitMode,
     backgroundBlur,
     backgroundBrightness,
@@ -127,10 +127,6 @@ function App() {
 
   const {
     navLocked,
-    splashVisible,
-    revealStarted,
-    isFirstLoad,
-    hasEnteredLauncher,
     isBeta,
     isUpdatingMode,
     isOnboardingMode,
@@ -157,7 +153,6 @@ function App() {
     setLipUpdateOpen,
   } = useAppModals({
     hasBackend,
-    revealStarted,
     isUpdatingMode,
   });
 
@@ -217,6 +212,11 @@ function App() {
 
   const effectiveNavLocked = navLocked || isUpdatingMode || isOnboardingMode;
 
+  useEffect(() => {
+    if (!themeColorsReady || !backgroundReady) return;
+    markStartupVisualReady();
+  }, [backgroundReady, themeColorsReady]);
+
   return (
     <KeybindingProvider>
       <CurrentVersionProvider>
@@ -228,279 +228,247 @@ function App() {
                 <CurseForgeProvider>
                   <NavigationHistoryProvider>
                     <LipTaskConsoleProvider>
-                  <ToastProvider
-                    placement="top-center"
-                    toastOffset={80}
-                    toastProps={{ timeout: 2000 }}
-                  />
-                  <AnimatePresence>
-                    {splashVisible && (
-                      <motion.div
-                        key="splash-overlay"
-                        className="fixed inset-0 z-[9999]"
-                        initial={{ opacity: 1 }}
-                        animate={{ opacity: 1 }}
-                        exit={{ opacity: 0 }}
-                        transition={{ duration: 0.6, ease: "easeOut" }}
-                      >
-                        <SplashScreen />
-                      </motion.div>
-                    )}
-                  </AnimatePresence>
+                      <ToastProvider
+                        placement="top-center"
+                        toastOffset={80}
+                        toastProps={{ timeout: 2000 }}
+                      />
 
-                  {(resolvedTheme === "light"
-                    ? lightBackgroundBaseMode
-                    : darkBackgroundBaseMode) !== "none" && (
-                    <div
-                      className="fixed inset-0 z-[-2] pointer-events-none"
-                      style={{
-                        backgroundColor:
+                      {(resolvedTheme === "light"
+                        ? lightBackgroundBaseMode
+                        : darkBackgroundBaseMode) !== "none" && (
+                        <div
+                          className="fixed inset-0 z-[-2] pointer-events-none"
+                          style={{
+                            backgroundColor:
+                              (resolvedTheme === "light"
+                                ? lightBackgroundBaseMode
+                                : darkBackgroundBaseMode) === "theme"
+                                ? resolvedTheme === "light"
+                                  ? "rgb(var(--theme-50))"
+                                  : "rgb(var(--theme-900))"
+                                : resolvedTheme === "light"
+                                  ? lightBackgroundBaseColor
+                                  : darkBackgroundBaseColor,
+                            opacity:
+                              (resolvedTheme === "light"
+                                ? lightBackgroundBaseOpacity
+                                : darkBackgroundBaseOpacity) / 100,
+                          }}
+                        />
+                      )}
+                      {bgData && (
+                        <div
+                          className="fixed inset-0 z-[-1]"
+                          style={{
+                            backgroundImage: `url("${bgData}")`,
+                            ...getFitStyles(backgroundFitMode),
+                            filter: `blur(${backgroundBlur}px) brightness(${backgroundBrightness}%)`,
+                            opacity: backgroundOpacity / 100,
+                          }}
+                        />
+                      )}
+
+                      <div
+                        style={
+                          {
+                            "--content-pt": "4.5rem",
+                          } as React.CSSProperties
+                        }
+                        className={`w-full min-h-dvh flex ${
+                          layoutMode === "sidebar" ? "flex-row" : "flex-col"
+                        } overflow-x-hidden ${
+                          bgData ||
                           (resolvedTheme === "light"
                             ? lightBackgroundBaseMode
-                            : darkBackgroundBaseMode) === "theme"
-                            ? resolvedTheme === "light"
-                              ? "rgb(var(--theme-50))"
-                              : "rgb(var(--theme-900))"
-                            : resolvedTheme === "light"
-                              ? lightBackgroundBaseColor
-                              : darkBackgroundBaseColor,
-                        opacity:
-                          (resolvedTheme === "light"
-                            ? lightBackgroundBaseOpacity
-                            : darkBackgroundBaseOpacity) / 100,
-                      }}
-                    />
-                  )}
-                  {bgData && (
-                    <div
-                      className="fixed inset-0 z-[-1]"
-                      style={{
-                        backgroundImage: `url("${bgData}")`,
-                        ...getFitStyles(backgroundFitMode),
-                        filter: `blur(${backgroundBlur}px) brightness(${backgroundBrightness}%)`,
-                        opacity: backgroundOpacity / 100,
-                      }}
-                    />
-                  )}
+                            : darkBackgroundBaseMode) !== "none"
+                            ? "bg-transparent"
+                            : "bg-background"
+                        } text-foreground ${updateOpen ? "overflow-y-hidden" : ""}`}
+                      >
+                        {layoutMode === "navbar" ? (
+                          <GlobalNavbar
+                            isBeta={isBeta}
+                            navLocked={effectiveNavLocked}
+                            themeMode={themeMode}
+                            isOnboardingMode={isOnboardingMode}
+                            tryNavigate={tryNavigate}
+                          />
+                        ) : (
+                          <>
+                            <Sidebar
+                              navLocked={effectiveNavLocked}
+                              themeMode={themeMode}
+                              tryNavigate={tryNavigate}
+                            />
+                            <TopBar
+                              navLocked={effectiveNavLocked}
+                              isOnboardingMode={isOnboardingMode}
+                              tryNavigate={tryNavigate}
+                            />
+                          </>
+                        )}
 
-                  <div
-                    style={
-                      {
-                        "--content-pt": "4.5rem",
-                      } as React.CSSProperties
-                    }
-                    className={`w-full min-h-dvh flex ${
-                      layoutMode === "sidebar" ? "flex-row" : "flex-col"
-                    } overflow-x-hidden ${
-                      bgData ||
-                      (resolvedTheme === "light"
-                        ? lightBackgroundBaseMode
-                        : darkBackgroundBaseMode) !== "none"
-                        ? "bg-transparent"
-                        : "bg-background"
-                    } text-foreground ${updateOpen ? "overflow-y-hidden" : ""}`}
-                  >
-                  {layoutMode === "navbar" ? (
-                    <>
-                      <GlobalNavbar
-                        isBeta={isBeta}
-                        navLocked={effectiveNavLocked}
-                        themeMode={themeMode}
-                        revealStarted={revealStarted}
-                        isUpdatingMode={isUpdatingMode}
-                        isOnboardingMode={isOnboardingMode}
-                        hasEnteredLauncher={hasEnteredLauncher}
-                        tryNavigate={tryNavigate}
-                      />
-                    </>
-                  ) : (
-                    <>
-                      <Sidebar
-                        isBeta={isBeta}
-                        navLocked={effectiveNavLocked}
-                        themeMode={themeMode}
-                        revealStarted={revealStarted}
-                        isUpdatingMode={isUpdatingMode}
-                        isOnboardingMode={isOnboardingMode}
-                        hasEnteredLauncher={hasEnteredLauncher}
-                        tryNavigate={tryNavigate}
-                      />
-                      <TopBar
-                        navLocked={effectiveNavLocked}
-                        revealStarted={revealStarted}
-                        isOnboardingMode={isOnboardingMode}
-                        tryNavigate={tryNavigate}
-                      />
-                    </>
-                  )}
-
-                  <motion.div
-                    className={`w-full flex-1 min-h-0 overflow-hidden ${
-                      layoutMode === "sidebar" ? "pl-14" : ""
-                    }`}
-                    initial={{ opacity: 0 }}
-                    animate={{ opacity: revealStarted ? 1 : 0 }}
-                    transition={{ duration: 0.6, ease: "easeOut" }}
-                    style={{ pointerEvents: revealStarted ? "auto" : "none" }}
-                  >
-                    {revealStarted &&
-                      (isFirstLoad ? (
-                        <></>
-                      ) : (
-                        <Suspense
-                          fallback={
-                            <div className="w-full h-full flex items-center justify-center">
-                              <Spinner size="lg" />
-                            </div>
-                          }
+                        <div
+                          className={`w-full flex-1 min-h-0 overflow-hidden ${
+                            layoutMode === "sidebar" ? "pl-14" : ""
+                          }`}
                         >
-                          <Routes>
-                            <Route
-                              path={ROUTES.home}
-                              element={
-                                <LauncherPage refresh={refresh} count={count} />
-                              }
-                            />
-                            <Route
-                              path={ROUTES.download}
-                              element={<DownloadPage />}
-                            />
-                            <Route
-                              path={ROUTES.downloadTasks}
-                              element={<DownloadManagerPage />}
-                            />
-                            <Route path="/install" element={<InstallPage />} />
-                            <Route
-                              path={ROUTES.settings}
-                              element={<SettingsPage />}
-                            />
-                            <Route
-                              path={ROUTES.instances}
-                              element={<InstanceSelectPage refresh={refresh} />}
-                            />
-                            <Route
-                              path={ROUTES.instanceSettings}
-                              element={<InstanceSettingsPage />}
-                            />
-                            <Route path="/mods" element={<ModsPage />} />
-                            <Route
-                              path="/curseforge"
-                              element={<CurseForgePage />}
-                            />
-                            <Route
-                              path="/curseforge/mod/:id"
-                              element={<CurseForgeModPage />}
-                            />
-                            <Route path="/lip" element={<LIPPage />} />
-                            <Route
-                              path="/lip/package/:id"
-                              element={<LIPPackagePage />}
-                            />
-                            <Route
-                              path={ROUTES.updating}
-                              element={<UpdatingPage />}
-                            />
-                            <Route
-                              path={ROUTES.onboarding}
-                              element={<OnboardingPage />}
-                            />
-                            <Route path="/content" element={<ContentPage />} />
-                            <Route
-                              path="/content/worlds"
-                              element={<WorldsListPage />}
-                            />
-                            <Route
-                              path="/content/worlds/worldEdit"
-                              element={<WorldLevelDatEditorPage />}
-                            />
-                            <Route
-                              path="/content/resourcePacks"
-                              element={<ResourcePacksPage />}
-                            />
-                            <Route
-                              path="/content/behaviorPacks"
-                              element={<BehaviorPacksPage />}
-                            />
-                            <Route
-                              path="/content/skinPacks"
-                              element={<SkinPacksPage />}
-                            />
-                            <Route
-                              path="/content/screenshots"
-                              element={<ScreenshotsPage />}
-                            />
-                            <Route
-                              path="/content/servers"
-                              element={<ServersPage />}
-                            />
-                            <Route path={ROUTES.about} element={<AboutPage />} />
-                          </Routes>
-                        </Suspense>
-                      ))}
-                  </motion.div>
+                          <Suspense
+                            fallback={
+                              <div className="w-full h-full flex items-center justify-center">
+                                <Spinner size="lg" />
+                              </div>
+                            }
+                          >
+                            <Routes>
+                              <Route
+                                path={ROUTES.home}
+                                element={
+                                  <LauncherPage refresh={refresh} count={count} />
+                                }
+                              />
+                              <Route
+                                path={ROUTES.download}
+                                element={<DownloadPage />}
+                              />
+                              <Route
+                                path={ROUTES.downloadTasks}
+                                element={<DownloadManagerPage />}
+                              />
+                              <Route path="/install" element={<InstallPage />} />
+                              <Route
+                                path={ROUTES.settings}
+                                element={<SettingsPage />}
+                              />
+                              <Route
+                                path={ROUTES.instances}
+                                element={<InstanceSelectPage refresh={refresh} />}
+                              />
+                              <Route
+                                path={ROUTES.instanceSettings}
+                                element={<InstanceSettingsPage />}
+                              />
+                              <Route path="/mods" element={<ModsPage />} />
+                              <Route
+                                path="/curseforge"
+                                element={<CurseForgePage />}
+                              />
+                              <Route
+                                path="/curseforge/mod/:id"
+                                element={<CurseForgeModPage />}
+                              />
+                              <Route path="/lip" element={<LIPPage />} />
+                              <Route
+                                path="/lip/package/:id"
+                                element={<LIPPackagePage />}
+                              />
+                              <Route
+                                path={ROUTES.updating}
+                                element={<UpdatingPage />}
+                              />
+                              <Route
+                                path={ROUTES.onboarding}
+                                element={<OnboardingPage />}
+                              />
+                              <Route path="/content" element={<ContentPage />} />
+                              <Route
+                                path="/content/worlds"
+                                element={<WorldsListPage />}
+                              />
+                              <Route
+                                path="/content/worlds/worldEdit"
+                                element={<WorldLevelDatEditorPage />}
+                              />
+                              <Route
+                                path="/content/resourcePacks"
+                                element={<ResourcePacksPage />}
+                              />
+                              <Route
+                                path="/content/behaviorPacks"
+                                element={<BehaviorPacksPage />}
+                              />
+                              <Route
+                                path="/content/skinPacks"
+                                element={<SkinPacksPage />}
+                              />
+                              <Route
+                                path="/content/screenshots"
+                                element={<ScreenshotsPage />}
+                              />
+                              <Route
+                                path="/content/servers"
+                                element={<ServersPage />}
+                              />
+                              <Route path={ROUTES.about} element={<AboutPage />} />
+                            </Routes>
+                          </Suspense>
+                        </div>
 
-                  <TermsModal
-                    isOpen={termsOpen}
-                    countdown={termsCountdown}
-                    onAccept={acceptTerms}
-                  />
+                        <TermsModal
+                          isOpen={termsOpen}
+                          countdown={termsCountdown}
+                          onAccept={acceptTerms}
+                        />
 
-                  <ClarityConsentModal
-                    isOpen={clarityPromptOpen}
-                    onEnable={acceptClarity}
-                    onKeepDisabled={declineClarity}
-                  />
+                        <ClarityConsentModal
+                          isOpen={clarityPromptOpen}
+                          onEnable={acceptClarity}
+                          onKeepDisabled={declineClarity}
+                        />
 
-                  <UpdateModal
-                    isOpen={updateOpen}
-                    version={updateVersion}
-                    body={updateBody}
-                    loading={updateLoading}
-                    onDismiss={() => {
-                      setUpdateOpen(false);
-                    }}
-                    onIgnore={() => {
-                      try {
-                        localStorage.setItem(
-                          "ll.ignoreVersion",
-                          updateVersion || "",
-                        );
-                      } catch {}
-                      setUpdateOpen(false);
-                    }}
-                    onUpdate={async () => {
-                      setUpdateLoading(true);
-                      try {
-                        setUpdateOpen(false);
-                        navigate("/updating", { replace: true });
-                      } finally {
-                        setUpdateLoading(false);
-                      }
-                    }}
-                  />
+                        <UpdateModal
+                          isOpen={updateOpen}
+                          version={updateVersion}
+                          body={updateBody}
+                          loading={updateLoading}
+                          onDismiss={() => {
+                            setUpdateOpen(false);
+                          }}
+                          onIgnore={() => {
+                            try {
+                              localStorage.setItem(
+                                "ll.ignoreVersion",
+                                updateVersion || "",
+                              );
+                            } catch {}
+                            setUpdateOpen(false);
+                          }}
+                          onUpdate={async () => {
+                            setUpdateLoading(true);
+                            try {
+                              setUpdateOpen(false);
+                              navigate(ROUTES.updating, { replace: true });
+                            } finally {
+                              setUpdateLoading(false);
+                            }
+                          }}
+                        />
 
-                  <LipUpdateModal
-                    isOpen={lipUpdateOpen}
-                    currentVersion={lipCurrentVersion}
-                    latestVersion={lipLatestVersion}
-                    onDismiss={() => {
-                      setLipUpdateOpen(false);
-                    }}
-                    onIgnore={() => {
-                      try {
-                        localStorage.setItem(
-                          "ll.ignoreLipVersion",
-                          lipLatestVersion || "",
-                        );
-                      } catch {}
-                      setLipUpdateOpen(false);
-                    }}
-                    onOpenSettings={() => {
-                      setLipUpdateOpen(false);
-                      navigate("/settings", { state: { tab: "components" } });
-                    }}
-                  />
-                  </div>
+                        <LipUpdateModal
+                          isOpen={lipUpdateOpen}
+                          currentVersion={lipCurrentVersion}
+                          latestVersion={lipLatestVersion}
+                          onDismiss={() => {
+                            setLipUpdateOpen(false);
+                          }}
+                          onIgnore={() => {
+                            try {
+                              localStorage.setItem(
+                                "ll.ignoreLipVersion",
+                                lipLatestVersion || "",
+                              );
+                            } catch {}
+                            setLipUpdateOpen(false);
+                          }}
+                          onOpenSettings={() => {
+                            setLipUpdateOpen(false);
+                            navigate(ROUTES.settings, {
+                              state: { tab: "components" },
+                            });
+                          }}
+                        />
+                      </div>
                     </LipTaskConsoleProvider>
                   </NavigationHistoryProvider>
                 </CurseForgeProvider>

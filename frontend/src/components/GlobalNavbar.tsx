@@ -3,7 +3,6 @@ import { useLocation } from "react-router-dom";
 import {
   Button,
   Tooltip,
-  Chip,
   Dropdown,
   DropdownTrigger,
   DropdownMenu,
@@ -22,7 +21,6 @@ import {
   FaInfoCircle,
 } from "react-icons/fa";
 import { IoArrowBack } from "react-icons/io5";
-import { motion, AnimatePresence } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -32,10 +30,7 @@ interface GlobalNavbarProps {
   isBeta: boolean;
   navLocked: boolean;
   themeMode: string;
-  revealStarted: boolean;
-  isUpdatingMode: boolean;
   isOnboardingMode: boolean;
-  hasEnteredLauncher: boolean;
   tryNavigate: (path: string | number) => void;
 }
 
@@ -43,10 +38,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   isBeta,
   navLocked,
   themeMode,
-  revealStarted,
-  isUpdatingMode,
   isOnboardingMode,
-  hasEnteredLauncher,
   tryNavigate,
 }) => {
   const { t } = useTranslation();
@@ -118,22 +110,13 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   }, [activeExtraItem]);
 
   return (
-    <AnimatePresence>
-      <motion.div
-        key="navbar"
-        id="wails-draggable"
-        className="fixed top-0 left-0 right-0 z-50 flex justify-center "
-        initial={{ opacity: 0, y: -20 }}
-        animate={{
-          opacity: revealStarted ? 1 : 0,
-          y: revealStarted ? 0 : -20,
-        }}
-        exit={{ opacity: 0, y: -20 }}
-        transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+    <div
+      id="wails-draggable"
+      className="fixed top-0 left-0 right-0 z-50 flex justify-center"
+    >
+      <div
+        className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} border-b border-default-200/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 px-4 py-2 flex items-center gap-4`}
       >
-        <div
-          className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG}  border-b border-default-200/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 px-4 py-2 flex items-center gap-4`}
-        >
           <div className="flex items-center gap-3 shrink-0">
             <Button
               isIconOnly
@@ -256,8 +239,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
               isOnboardingMode={isOnboardingMode}
             />
           </div>
-        </div>
-      </motion.div>
-    </AnimatePresence>
+      </div>
+    </div>
   );
 };

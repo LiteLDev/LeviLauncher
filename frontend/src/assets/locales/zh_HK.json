@@ -1002,9 +1002,6 @@
       "file": "檔案"
     }
   },
-  "splash": {
-    "preparing": "正在準備啟動..."
-  },
   "mods": {
     "import_button": "匯入 .zip/.dll",
     "importing_title": "正在匯入...",

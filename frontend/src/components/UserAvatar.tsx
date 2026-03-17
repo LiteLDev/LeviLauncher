@@ -2,7 +2,6 @@ import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
 import {
   Avatar,
-  Skeleton,
   Popover,
   PopoverTrigger,
   PopoverContent,
@@ -20,9 +19,11 @@ import {
   FaRoad,
 } from "react-icons/fa";
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/userservice";
+import { useStartupInteractive } from "@/utils/startupState";
 
 export const UserAvatar = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
+  const startupInteractive = useStartupInteractive();
   const [gamertag, setGamertag] = useState("");
   const [xuid, setXuid] = useState("");
   const [avatar, setAvatar] = useState("");
@@ -33,6 +34,7 @@ export const UserAvatar = () => {
   const [open, setOpen] = useState(false);
 
   useEffect(() => {
+    if (!startupInteractive) return;
     const fetchUser = async () => {
       try {
         if (!userService.GetLocalUserId) {
@@ -55,23 +57,6 @@ export const UserAvatar = () => {
           return;
         }
         setGamertag(tag);
-
-        try {
-          const getStats = (userService as any)?.GetAggregatedUserStatistics;
-          if (typeof getStats === "function") {
-            getStats(id).then((s: any) => {
-              if (s) setStats(s);
-            });
-          }
-        } catch {}
-
-        void userService.GetLocalUserGamerPicture(1)
-          .then((pic: any) => {
-            if (pic) setAvatar(`data:image/png;base64,${pic}`);
-          })
-          .catch((err: any) => {
-            console.error("[UserAvatar] GetLocalUserGamerPicture error", err);
-          });
       } catch (e) {
         console.error("[UserAvatar] fetchUser error", e);
       } finally {
@@ -79,10 +64,52 @@ export const UserAvatar = () => {
       }
     };
     fetchUser();
-  }, [reloadNonce]);
+  }, [reloadNonce, startupInteractive]);
 
-  if (loading) {
-    return <Skeleton className="flex rounded-full w-8 h-8 mr-2" />;
+  useEffect(() => {
+    if (!startupInteractive) return;
+    if (!open) return;
+    if (!xuid) return;
+
+    let cancelled = false;
+
+    const fetchDetails = async () => {
+      try {
+        const getStats = (userService as any)?.GetAggregatedUserStatistics;
+        if (typeof getStats === "function") {
+          const nextStats = await getStats(xuid);
+          if (!cancelled && nextStats) {
+            setStats(nextStats);
+          }
+        }
+      } catch {}
+
+      try {
+        const pic = await userService.GetLocalUserGamerPicture(1);
+        if (!cancelled && pic) {
+          setAvatar(`data:image/png;base64,${pic}`);
+        }
+      } catch (err) {
+        console.error("[UserAvatar] GetLocalUserGamerPicture error", err);
+      }
+    };
+
+    void fetchDetails();
+    return () => {
+      cancelled = true;
+    };
+  }, [open, startupInteractive, xuid]);
+
+  if (!startupInteractive || loading) {
+    return (
+      <div className="flex items-center gap-2">
+        <Avatar
+          size="sm"
+          isBordered
+          className="ring-2 ring-default-300/60 dark:ring-zinc-700/60 bg-default-100 dark:bg-zinc-800 text-default-400 dark:text-zinc-500"
+        />
+      </div>
+    );
   }
 
   if (!gamertag) {

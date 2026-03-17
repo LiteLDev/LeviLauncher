@@ -1002,9 +1002,6 @@
       "file": "Файл"
     }
   },
-  "splash": {
-    "preparing": "Подготовка к запуску..."
-  },
   "mods": {
     "import_button": "Импорт .zip/.dll",
     "importing_title": "Импорт...",

@@ -5,10 +5,10 @@ import {
   hasClarityChoiceMade,
   persistClarityChoice,
 } from "@/utils/clarityConsent";
+import { useStartupInteractive } from "@/utils/startupState";
 
 interface UseAppModalsOptions {
   hasBackend: boolean;
-  revealStarted: boolean;
   isUpdatingMode: boolean;
 }
 
@@ -21,9 +21,9 @@ const normalizeVersion = (value: unknown): string =>
 
 export const useAppModals = ({
   hasBackend,
-  revealStarted,
   isUpdatingMode,
 }: UseAppModalsOptions) => {
+  const startupInteractive = useStartupInteractive();
   const [termsOpen, setTermsOpen] = useState<boolean>(false);
   const [termsCountdown, setTermsCountdown] = useState<number>(0);
   const [clarityPromptOpen, setClarityPromptOpen] = useState<boolean>(false);
@@ -133,7 +133,7 @@ export const useAppModals = ({
 
   useEffect(() => {
     if (!hasBackend) return;
-    if (!revealStarted) return;
+    if (!startupInteractive) return;
     if (isUpdatingMode) return;
     try {
       const accepted = localStorage.getItem("ll.termsAccepted");
@@ -145,7 +145,7 @@ export const useAppModals = ({
     } catch {}
   }, [
     hasBackend,
-    revealStarted,
+    startupInteractive,
     isUpdatingMode,
     runPostTermsFlow,
   ]);

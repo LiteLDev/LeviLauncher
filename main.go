@@ -381,7 +381,9 @@ func main() {
 	windows.OnWindowEvent(events.Common.WindowRestore, func(_ *application.WindowEvent) {
 		syncWindowResizeHandles()
 	})
-	syncWindowResizeHandles()
+	windows.OnWindowEvent(events.Windows.WebViewNavigationCompleted, func(_ *application.WindowEvent) {
+		syncWindowResizeHandles()
+	})
 	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
 		w := windows.Width()
 		h := windows.Height()

@@ -33,38 +33,89 @@ export const UserAvatar = () => {
   const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState(false);
 
+  const clearUserState = React.useCallback(() => {
+    setGamertag("");
+    setXuid("");
+    setAvatar("");
+    setStats(null);
+  }, []);
+
+  const refreshSessionIfNeeded = React.useCallback(async (force = false) => {
+    try {
+      const getState = (userService as any)?.XUserGetState;
+      const reset = (userService as any)?.ResetSession;
+
+      if (typeof reset !== "function") {
+        return false;
+      }
+
+      let shouldReset = force;
+      if (!shouldReset && typeof getState === "function") {
+        const state = await getState();
+        shouldReset = typeof state === "number" && state !== 0;
+      }
+
+      if (!shouldReset) {
+        return false;
+      }
+
+      const result = await reset();
+      if (result) {
+        console.error("[UserAvatar] ResetSession error", result);
+      }
+      return true;
+    } catch (e) {
+      console.error("[UserAvatar] refreshSessionIfNeeded error", e);
+      return false;
+    }
+  }, []);
+
   useEffect(() => {
     if (!startupInteractive) return;
+    let cancelled = false;
+
     const fetchUser = async () => {
       try {
         if (!userService.GetLocalUserId) {
-          setLoading(false);
           return;
         }
+
+        await refreshSessionIfNeeded();
 
         const id = await userService.GetLocalUserId();
+        if (cancelled) return;
         if (!id) {
-          setGamertag("");
-          setXuid("");
-          setAvatar("");
+          clearUserState();
           return;
         }
 
+        const [tag, pic] = await Promise.all([
+          userService.GetLocalUserGamertag(),
+          userService.GetLocalUserGamerPicture(1).catch((err) => {
+            console.error("[UserAvatar] GetLocalUserGamerPicture error", err);
+            return "";
+          }),
+        ]);
+        if (cancelled) return;
+
         setXuid(id);
-        const tag = await userService.GetLocalUserGamertag();
-        if (!tag) {
-          setGamertag("");
-          return;
-        }
-        setGamertag(tag);
+        setGamertag(String(tag || ""));
+        setAvatar(pic ? `data:image/png;base64,${pic}` : "");
+        setStats(null);
       } catch (e) {
         console.error("[UserAvatar] fetchUser error", e);
       } finally {
-        setLoading(false);
+        if (!cancelled) {
+          setLoading(false);
+        }
       }
     };
-    fetchUser();
-  }, [reloadNonce, startupInteractive]);
+
+    void fetchUser();
+    return () => {
+      cancelled = true;
+    };
+  }, [clearUserState, refreshSessionIfNeeded, reloadNonce, startupInteractive]);
 
   useEffect(() => {
     if (!startupInteractive) return;
@@ -98,7 +149,7 @@ export const UserAvatar = () => {
     return () => {
       cancelled = true;
     };
-  }, [open, startupInteractive, xuid]);
+  }, [open, reloadNonce, startupInteractive, xuid]);
 
   if (!startupInteractive || loading) {
     return (
@@ -122,9 +173,7 @@ export const UserAvatar = () => {
             size="sm"
             onPress={() => {
               setLoading(true);
-              setGamertag("");
-              setXuid("");
-              setAvatar("");
+              clearUserState();
               setReloadNonce((v) => v + 1);
             }}
           >
@@ -158,22 +207,15 @@ export const UserAvatar = () => {
         setOpen(nextOpen);
         if (!nextOpen) return;
         try {
-          const getState = (userService as any)?.XUserGetState;
-          if (typeof getState === "function") {
-            const state = await getState();
-            console.log("[UserAvatar] XUserGetState =>", state);
-            if (typeof state === "number" && state !== 0) {
-              setRefreshing(true);
-              try {
-                const reset = (userService as any)?.ResetSession;
-                if (typeof reset === "function") await reset();
-              } catch {}
-              setReloadNonce((v) => v + 1);
-              setRefreshing(false);
-            }
+          setRefreshing(true);
+          const refreshed = await refreshSessionIfNeeded();
+          if (refreshed) {
+            setReloadNonce((v) => v + 1);
           }
         } catch (e) {
           console.error("[UserAvatar] XUserGetState error", e);
+        } finally {
+          setRefreshing(false);
         }
       }}
     >
@@ -209,10 +251,7 @@ export const UserAvatar = () => {
               isLoading={refreshing}
               onPress={async () => {
                 setRefreshing(true);
-                try {
-                  const reset = (userService as any)?.ResetSession;
-                  if (typeof reset === "function") await reset();
-                } catch {}
+                await refreshSessionIfNeeded(true);
                 setReloadNonce((v) => v + 1);
                 setRefreshing(false);
               }}

@@ -62,7 +62,8 @@ export const useSettings = (i18n: { language: string }) => {
 
   // Discord RPC / Beta updates
   const [discordRpcEnabled, setDiscordRpcEnabled] = useState<boolean>(true);
-  const [enableBetaUpdates, setEnableBetaUpdatesState] = useState<boolean>(false);
+  const [enableBetaUpdates, setEnableBetaUpdatesState] =
+    useState<boolean>(false);
   const [clarityEnabled, setClarityEnabledState] = useState<boolean>(() => {
     try {
       return localStorage.getItem("ll.clarity.enabled") === "true";
@@ -70,8 +71,10 @@ export const useSettings = (i18n: { language: string }) => {
       return false;
     }
   });
-  const [experimentalInstanceBackupEnabled, setExperimentalInstanceBackupEnabledState] =
-    useState<boolean>(() => readExperimentalInstanceBackupEnabled());
+  const [
+    experimentalInstanceBackupEnabled,
+    setExperimentalInstanceBackupEnabledState,
+  ] = useState<boolean>(() => readExperimentalInstanceBackupEnabled());
 
   // GDK
   const [gdkInstalled, setGdkInstalled] = useState<boolean>(false);
@@ -83,7 +86,8 @@ export const useSettings = (i18n: { language: string }) => {
   const [gdkDlSpeed, setGdkDlSpeed] = useState<number>(0);
   const [gdkDlStatus, setGdkDlStatus] = useState<string>("");
   const [gdkDlError, setGdkDlError] = useState<string>("");
-  const [defaultGdkDownloadURL, setDefaultGdkDownloadURL] = useState<string>("");
+  const [defaultGdkDownloadURL, setDefaultGdkDownloadURL] =
+    useState<string>("");
   const gdkProgressDisclosure = useDisclosure();
   const gdkLicenseDisclosure = useDisclosure();
   const gdkInstallDisclosure = useDisclosure();
@@ -330,7 +334,7 @@ export const useSettings = (i18n: { language: string }) => {
     persistExperimentalInstanceBackupEnabled(enabled);
   };
 
-  const callMinecraftByName = async <T,>(
+  const callMinecraftByName = async <T>(
     method: string,
     ...args: unknown[]
   ): Promise<T> => {
@@ -545,8 +549,9 @@ export const useSettings = (i18n: { language: string }) => {
             } catch {}
             try {
               const url = String(
-                (await callMinecraftByName<string>("GetDefaultGDKDownloadURL")) ||
-                  "",
+                (await callMinecraftByName<string>(
+                  "GetDefaultGDKDownloadURL",
+                )) || "",
               ).trim();
               setDefaultGdkDownloadURL(url);
             } catch {}

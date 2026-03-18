@@ -124,9 +124,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
                     >
                       {Array.isArray(children)
                         ? children.map((child) =>
-                            typeof child === "string"
-                              ? cleanUrl(child)
-                              : child,
+                            typeof child === "string" ? cleanUrl(child) : child,
                           )
                         : typeof children === "string"
                           ? cleanUrl(children)

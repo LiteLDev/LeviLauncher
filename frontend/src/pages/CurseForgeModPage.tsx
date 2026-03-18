@@ -588,7 +588,10 @@ const CurseForgeModPage: React.FC = () => {
   }
 
   return (
-    <PageContainer animate={false} className={isEntering ? "overflow-y-hidden" : undefined}>
+    <PageContainer
+      animate={false}
+      className={isEntering ? "overflow-y-hidden" : undefined}
+    >
       {/* Header Card */}
       <motion.div
         initial={{ opacity: 0 }}
@@ -761,7 +764,10 @@ const CurseForgeModPage: React.FC = () => {
                     "group-data-[selected=true]:text-primary-600 dark:group-data-[selected=true]:text-primary-500 font-bold",
                 }}
               >
-                <Tab key="description" title={t("curseforge.mod_tabs.description")}>
+                <Tab
+                  key="description"
+                  title={t("curseforge.mod_tabs.description")}
+                >
                   <div className="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-primary-600 dark:prose-a:text-primary-500">
                     {description ? (
                       <div

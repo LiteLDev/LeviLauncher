@@ -26,8 +26,7 @@ export const ModCard = (args: {
     useModIntelligence();
   const currentVersionName = String(args.currentVersion || "").trim();
   const snapshot = React.useMemo(
-    () =>
-      currentVersionName ? getInstanceSnapshot(currentVersionName) : null,
+    () => (currentVersionName ? getInstanceSnapshot(currentVersionName) : null),
     [currentVersionName, getInstanceSnapshot, snapshotRevision],
   );
   const modsInfo = React.useMemo<Array<types.ModInfo>>(() => {

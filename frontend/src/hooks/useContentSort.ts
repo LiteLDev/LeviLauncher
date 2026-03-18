@@ -70,13 +70,10 @@ export const useContentSort = <T>(
 
   const totalPages = Math.ceil(filtered.length / pageSize);
 
-  const setSort = React.useCallback(
-    (key: "name" | "time", asc: boolean) => {
-      setSortKey(key);
-      setSortAsc(asc);
-    },
-    [],
-  );
+  const setSort = React.useCallback((key: "name" | "time", asc: boolean) => {
+    setSortKey(key);
+    setSortAsc(asc);
+  }, []);
 
   return {
     query,

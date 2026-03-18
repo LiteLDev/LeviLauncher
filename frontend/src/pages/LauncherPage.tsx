@@ -68,7 +68,8 @@ const LAUNCH_TIP_KEYS = [
 
 export const LauncherPage = (args: any) => {
   const { t } = useTranslation();
-  const warningConfirmButtonProps = getUnifiedModalConfirmButtonProps("warning");
+  const warningConfirmButtonProps =
+    getUnifiedModalConfirmButtonProps("warning");
   const { ensureInstanceHydrated, getInstanceSnapshot, snapshotRevision } =
     useModIntelligence();
   const { getLatestLLVersion, compareLLVersions } = useLeviLamina();
@@ -165,7 +166,11 @@ export const LauncherPage = (args: any) => {
       background: true,
       reason: "launcher-hero-ll-chip",
     });
-  }, [currentVersionInfo?.isLeviLaminaInstalled, currentVersionName, ensureInstanceHydrated]);
+  }, [
+    currentVersionInfo?.isLeviLaminaInstalled,
+    currentVersionName,
+    ensureInstanceHydrated,
+  ]);
 
   const worldsLabel = t("content.count.worlds") as string;
   const resourceLabel = t("content.count.resource_packs") as string;
@@ -186,8 +191,7 @@ export const LauncherPage = (args: any) => {
     [buildVersionMenuItems, t],
   );
   const currentInstanceSnapshot = useMemo(
-    () =>
-      currentVersionName ? getInstanceSnapshot(currentVersionName) : null,
+    () => (currentVersionName ? getInstanceSnapshot(currentVersionName) : null),
     [currentVersionName, getInstanceSnapshot, snapshotRevision],
   );
   const isCurrentVersionRegistered = Boolean(currentVersionInfo?.isRegistered);
@@ -291,7 +295,9 @@ export const LauncherPage = (args: any) => {
                       >
                         <Chip
                           variant="flat"
-                          color={hasLeviLaminaUpdateAvailable ? "warning" : "primary"}
+                          color={
+                            hasLeviLaminaUpdateAvailable ? "warning" : "primary"
+                          }
                           classNames={{
                             base: cn(
                               "hidden sm:flex border",

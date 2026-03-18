@@ -461,7 +461,7 @@ export const useInstanceSettings = () => {
     "ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE";
 
   const callVersionService = React.useCallback(
-    async <T,>(method: string, ...args: unknown[]): Promise<T> => {
+    async <T>(method: string, ...args: unknown[]): Promise<T> => {
       return (await Call.ByName(
         `${VERSION_SERVICE_NAME}.${method}`,
         ...args,
@@ -508,7 +508,9 @@ export const useInstanceSettings = () => {
                   .filter(Boolean)
               : [],
           ),
-        ).sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+        ).sort((a, b) =>
+          a.localeCompare(b, undefined, { sensitivity: "base" }),
+        );
         if (folders.length === 0) {
           continue;
         }
@@ -551,8 +553,9 @@ export const useInstanceSettings = () => {
           ? allMods.filter((item) => {
               const record = asRecord(item);
               return (
-                String(record.name ?? "").trim().toLowerCase() ===
-                LEVILAMINA_MOD_NAME
+                String(record.name ?? "")
+                  .trim()
+                  .toLowerCase() === LEVILAMINA_MOD_NAME
               );
             })
           : [];
@@ -578,8 +581,9 @@ export const useInstanceSettings = () => {
               .filter(Boolean),
           ),
         );
-        const version = String(leviLaminaState?.installedVersion || "").trim()
-          || (modVersions.length === 1 ? modVersions[0] : "");
+        const version =
+          String(leviLaminaState?.installedVersion || "").trim() ||
+          (modVersions.length === 1 ? modVersions[0] : "");
         if (folders.length > 0 && version) {
           seen.add(leviLaminaLookupKey);
           packages.push({
@@ -659,8 +663,9 @@ export const useInstanceSettings = () => {
   const [backupOpen, setBackupOpen] = React.useState<boolean>(false);
   const [backupInfoLoading, setBackupInfoLoading] =
     React.useState<boolean>(false);
-  const [backupInfo, setBackupInfo] =
-    React.useState<InstanceBackupInfo | null>(null);
+  const [backupInfo, setBackupInfo] = React.useState<InstanceBackupInfo | null>(
+    null,
+  );
   const [selectedBackupScopes, setSelectedBackupScopes] = React.useState<
     string[]
   >([]);
@@ -698,8 +703,10 @@ export const useInstanceSettings = () => {
     React.useState<boolean>(false);
   const [restoreResult, setRestoreResult] =
     React.useState<InstanceBackupRestoreResult | null>(null);
-  const [instanceBackupExperimentalEnabled, setInstanceBackupExperimentalEnabled] =
-    React.useState<boolean>(() => readExperimentalInstanceBackupEnabled());
+  const [
+    instanceBackupExperimentalEnabled,
+    setInstanceBackupExperimentalEnabled,
+  ] = React.useState<boolean>(() => readExperimentalInstanceBackupEnabled());
 
   // Unsaved changes modal
   const {
@@ -794,14 +801,11 @@ export const useInstanceSettings = () => {
     if (!restoringInstance) {
       setRestoreOpen(false);
     }
-  }, [
-    backingUpInstance,
-    instanceBackupExperimentalEnabled,
-    restoringInstance,
-  ]);
+  }, [backingUpInstance, instanceBackupExperimentalEnabled, restoringInstance]);
 
   const resolvedLLTargetVersion = React.useMemo(
-    () => String(selectedLLVersion || getLatestLLVersion(gameVersion) || "").trim(),
+    () =>
+      String(selectedLLVersion || getLatestLLVersion(gameVersion) || "").trim(),
     [gameVersion, getLatestLLVersion, selectedLLVersion],
   );
   const llUninstallBlocked = React.useMemo(
@@ -905,17 +909,16 @@ export const useInstanceSettings = () => {
       if (prev && llSupportedVersions.includes(prev)) {
         return prev;
       }
-      if (isLLInstalled && currentLLVersion && llSupportedVersions.includes(currentLLVersion)) {
+      if (
+        isLLInstalled &&
+        currentLLVersion &&
+        llSupportedVersions.includes(currentLLVersion)
+      ) {
         return currentLLVersion;
       }
       return latestLLVersion;
     });
-  }, [
-    llSupportedVersions,
-    isLLInstalled,
-    currentLLVersion,
-    latestLLVersion,
-  ]);
+  }, [llSupportedVersions, isLLInstalled, currentLLVersion, latestLLVersion]);
 
   // Load version metadata
   React.useEffect(() => {
@@ -1070,14 +1073,17 @@ export const useInstanceSettings = () => {
     resolveToastText,
   ]);
 
-  const openDemotedWarning = React.useCallback((names: string[]) => {
-    const uniqueNames = Array.from(
-      new Set(names.map((item) => String(item || "").trim()).filter(Boolean)),
-    );
-    if (uniqueNames.length === 0) return;
-    setDemotedWarningNames(uniqueNames);
-    demotedWarningOnOpen();
-  }, [demotedWarningOnOpen]);
+  const openDemotedWarning = React.useCallback(
+    (names: string[]) => {
+      const uniqueNames = Array.from(
+        new Set(names.map((item) => String(item || "").trim()).filter(Boolean)),
+      );
+      if (uniqueNames.length === 0) return;
+      setDemotedWarningNames(uniqueNames);
+      demotedWarningOnOpen();
+    },
+    [demotedWarningOnOpen],
+  );
 
   const closeDemotedWarning = React.useCallback(() => {
     setDemotedWarningNames([]);
@@ -1113,7 +1119,9 @@ export const useInstanceSettings = () => {
     const snapshot = getInstanceSnapshot(targetName);
     setIsLLInstalled(Boolean(snapshot?.llState?.installed));
     setLLExplicitInstalled(Boolean(snapshot?.llState?.explicitInstalled));
-    setCurrentLLVersion(String(snapshot?.llState?.installedVersion || "").trim());
+    setCurrentLLVersion(
+      String(snapshot?.llState?.installedVersion || "").trim(),
+    );
     return snapshot?.llState || null;
   }, [ensureInstanceHydrated, getInstanceSnapshot, targetName]);
 
@@ -1159,7 +1167,10 @@ export const useInstanceSettings = () => {
   );
 
   const restoreScopes = React.useMemo(
-    () => (Array.isArray(restoreArchiveInfo?.scopes) ? restoreArchiveInfo.scopes : []),
+    () =>
+      Array.isArray(restoreArchiveInfo?.scopes)
+        ? restoreArchiveInfo.scopes
+        : [],
     [restoreArchiveInfo],
   );
 
@@ -1208,7 +1219,9 @@ export const useInstanceSettings = () => {
   }, [backupResult]);
 
   const getBackupScopeMode = React.useCallback(
-    (scope: InstanceBackupScope | null | undefined): InstanceBackupScopeMode | null => {
+    (
+      scope: InstanceBackupScope | null | undefined,
+    ): InstanceBackupScopeMode | null => {
       if (!scope || !Array.isArray(scope.modes) || scope.modes.length === 0) {
         return null;
       }
@@ -1216,7 +1229,9 @@ export const useInstanceSettings = () => {
         backupScopeModes[scope.key] || scope.defaultMode || "",
       ).trim();
       return (
-        scope.modes.find((mode) => String(mode.key || "").trim() === selectedModeKey) ||
+        scope.modes.find(
+          (mode) => String(mode.key || "").trim() === selectedModeKey,
+        ) ||
         scope.modes[0] ||
         null
       );
@@ -1227,7 +1242,10 @@ export const useInstanceSettings = () => {
   const backupFullModeSelected = React.useMemo(
     () =>
       backupScopes.some((scope) => {
-        if (scope.key !== "gameData" || !selectedBackupScopeSet.has(scope.key)) {
+        if (
+          scope.key !== "gameData" ||
+          !selectedBackupScopeSet.has(scope.key)
+        ) {
           return false;
         }
         return getBackupScopeMode(scope)?.key === "full";
@@ -1274,7 +1292,9 @@ export const useInstanceSettings = () => {
       0,
       Math.min(
         100,
-        Math.round((restoreProgress.currentStep / restoreProgress.totalSteps) * 100),
+        Math.round(
+          (restoreProgress.currentStep / restoreProgress.totalSteps) * 100,
+        ),
       ),
     );
   }, [restoreProgress]);
@@ -1333,11 +1353,14 @@ export const useInstanceSettings = () => {
   }, [restoreResult]);
 
   React.useEffect(() => {
-    const off = Events.On(EVENT_INSTANCE_BACKUP_RESTORE_PROGRESS, (event: any) => {
-      const payload = toInstanceBackupRestoreProgress(event?.data ?? event);
-      if (!payload.phase) return;
-      setRestoreProgress(payload);
-    });
+    const off = Events.On(
+      EVENT_INSTANCE_BACKUP_RESTORE_PROGRESS,
+      (event: any) => {
+        const payload = toInstanceBackupRestoreProgress(event?.data ?? event);
+        if (!payload.phase) return;
+        setRestoreProgress(payload);
+      },
+    );
     return () => off();
   }, []);
 
@@ -1469,22 +1492,22 @@ export const useInstanceSettings = () => {
         try {
           allMods = await GetMods(targetName);
         } catch (error) {
-          console.warn(
-            "Failed to read mods before instance backup",
-            error,
-          );
+          console.warn("Failed to read mods before instance backup", error);
           setError(ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE);
           return false;
         }
         snapshot = getInstanceSnapshot(targetName);
         if (!isBackupModsSnapshotReady(snapshot)) {
-          console.warn("Instance backup requires a ready mod intelligence snapshot", {
-            targetName,
-            snapshotStatus: String(snapshot?.status || "").trim(),
-            lipSyncStatus: String(snapshot?.lipSyncStatus || "").trim(),
-            snapshotError: String(snapshot?.error || "").trim(),
-            lipSyncError: String(snapshot?.lipSyncError || "").trim(),
-          });
+          console.warn(
+            "Instance backup requires a ready mod intelligence snapshot",
+            {
+              targetName,
+              snapshotStatus: String(snapshot?.status || "").trim(),
+              lipSyncStatus: String(snapshot?.lipSyncStatus || "").trim(),
+              snapshotError: String(snapshot?.error || "").trim(),
+              lipSyncError: String(snapshot?.lipSyncError || "").trim(),
+            },
+          );
           setError(ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE);
           return false;
         }
@@ -1492,8 +1515,9 @@ export const useInstanceSettings = () => {
       const nextModes: Record<string, string> = {};
       scopes.forEach((scope) => {
         if (!Array.isArray(scope.modes) || scope.modes.length === 0) return;
-        const fallback =
-          String(scope.defaultMode || scope.modes[0]?.key || "").trim();
+        const fallback = String(
+          scope.defaultMode || scope.modes[0]?.key || "",
+        ).trim();
         if (fallback) {
           nextModes[scope.key] = fallback;
         }
@@ -1512,7 +1536,9 @@ export const useInstanceSettings = () => {
       setBackupPreparedLipPackages(preparedLipPackages || []);
       setSelectedBackupScopes(
         scopes
-          .filter((scope) => Boolean(scope?.selectable) && Boolean(scope?.exists))
+          .filter(
+            (scope) => Boolean(scope?.selectable) && Boolean(scope?.exists),
+          )
           .map((scope) => String(scope?.key || "").trim())
           .filter(Boolean),
       );
@@ -1588,7 +1614,9 @@ export const useInstanceSettings = () => {
   );
 
   const openInstanceBackupDirectory = React.useCallback(async () => {
-    const dir = String(backupResult?.backupDir || backupInfo?.backupDir || "").trim();
+    const dir = String(
+      backupResult?.backupDir || backupInfo?.backupDir || "",
+    ).trim();
     if (!dir) return;
     try {
       await (minecraft as any)?.OpenPathDir?.(dir);
@@ -1610,8 +1638,14 @@ export const useInstanceSettings = () => {
         scopes: selectedBackupScopes,
         scopeModes: selectedBackupScopes.reduce<Record<string, string>>(
           (acc, scopeKey) => {
-            const selectedScope = backupScopes.find((scope) => scope.key === scopeKey);
-            if (!selectedScope || !Array.isArray(selectedScope.modes) || selectedScope.modes.length === 0) {
+            const selectedScope = backupScopes.find(
+              (scope) => scope.key === scopeKey,
+            );
+            if (
+              !selectedScope ||
+              !Array.isArray(selectedScope.modes) ||
+              selectedScope.modes.length === 0
+            ) {
               return acc;
             }
             const modeKey = String(
@@ -1627,7 +1661,11 @@ export const useInstanceSettings = () => {
         modsLipPackages: backupPreparedLipPackages,
       };
       const resolvedResult = toInstanceBackupResult(
-        await callVersionService<unknown>("BackupInstance", targetName, request),
+        await callVersionService<unknown>(
+          "BackupInstance",
+          targetName,
+          request,
+        ),
       );
       const errorCode = String(resolvedResult?.errorCode || "").trim();
       if (errorCode) {
@@ -1756,7 +1794,9 @@ export const useInstanceSettings = () => {
   const setRestoreConflictChoicesBulk = React.useCallback(
     (conflictIds: string[], choice: "backup" | "current") => {
       const normalizedIds = Array.from(
-        new Set(conflictIds.map((id) => String(id || "").trim()).filter(Boolean)),
+        new Set(
+          conflictIds.map((id) => String(id || "").trim()).filter(Boolean),
+        ),
       );
       if (normalizedIds.length === 0) return;
       setRestoreConflictChoices((prev) => {
@@ -1788,7 +1828,11 @@ export const useInstanceSettings = () => {
   );
 
   const confirmInstanceRestore = React.useCallback(async () => {
-    if (!instanceBackupExperimentalEnabled || !targetName || !restoreArchiveInfo) {
+    if (
+      !instanceBackupExperimentalEnabled ||
+      !targetName ||
+      !restoreArchiveInfo
+    ) {
       return false;
     }
     if (selectedRestoreScopes.length === 0) return false;
@@ -1817,8 +1861,8 @@ export const useInstanceSettings = () => {
               choice,
             };
           })
-          .filter(
-            (item): item is InstanceBackupRestoreResolution => Boolean(item),
+          .filter((item): item is InstanceBackupRestoreResolution =>
+            Boolean(item),
           );
       const request: InstanceBackupRestoreRequest = {
         archivePath: restoreArchiveInfo.archivePath,
@@ -1855,7 +1899,9 @@ export const useInstanceSettings = () => {
       });
       return resolvedResult.status === "success";
     } catch (e: any) {
-      setError(String(e?.message || e || "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET"));
+      setError(
+        String(e?.message || e || "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET"),
+      );
       return false;
     } finally {
       setRestoringInstance(false);

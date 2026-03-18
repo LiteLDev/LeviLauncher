@@ -14,8 +14,7 @@
 @source "../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 
 @theme {
-  --font-sans:
-    "MiSans", sans-serif;
+  --font-sans: "MiSans", sans-serif;
 
   --color-primary-50: rgb(var(--theme-50, 236, 253, 245));
   --color-primary-100: rgb(var(--theme-100, 209, 250, 229));

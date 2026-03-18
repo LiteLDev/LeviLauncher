@@ -88,8 +88,8 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
 
   const extraItems = navItems.filter((item) => item.menuClass);
 
-  const activeExtraItem = extraItems.find(
-    (item) => isRouteActive(location.pathname, item.path),
+  const activeExtraItem = extraItems.find((item) =>
+    isRouteActive(location.pathname, item.path),
   );
 
   const moreButtonClass = React.useMemo(() => {
@@ -117,128 +117,126 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
       <div
         className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} border-b border-default-200/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 px-4 py-2 flex items-center gap-4`}
       >
-          <div className="flex items-center gap-3 shrink-0">
-            <Button
-              isIconOnly
-              variant="light"
-              size="sm"
-              radius="lg"
-              onPress={() => tryNavigate(-1)}
-              isDisabled={navLocked}
-              className="wails-no-drag text-default-500 dark:text-zinc-400"
-            >
-              <IoArrowBack size={20} />
-            </Button>
-            <div className="p-1">
-              <LeviIcon width={28} height={28} />
-            </div>
-            <div className="hidden sm:flex flex-col leading-none gap-0.5">
-              <p className="font-bold text-[16px] tracking-tight bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
-                LeviLauncher
-              </p>
-              {isBeta && (
-                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">
-                  Beta
-                </span>
-              )}
-            </div>
+        <div className="flex items-center gap-3 shrink-0">
+          <Button
+            isIconOnly
+            variant="light"
+            size="sm"
+            radius="lg"
+            onPress={() => tryNavigate(-1)}
+            isDisabled={navLocked}
+            className="wails-no-drag text-default-500 dark:text-zinc-400"
+          >
+            <IoArrowBack size={20} />
+          </Button>
+          <div className="p-1">
+            <LeviIcon width={28} height={28} />
           </div>
+          <div className="hidden sm:flex flex-col leading-none gap-0.5">
+            <p className="font-bold text-[16px] tracking-tight bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
+              LeviLauncher
+            </p>
+            {isBeta && (
+              <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">
+                Beta
+              </span>
+            )}
+          </div>
+        </div>
 
-          <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap overflow-x-auto px-2 scrollbar-hide">
-            {navItems.map((item) => {
-              const isActive = isRouteActive(location.pathname, item.path);
-              return (
-                <Tooltip
-                  key={item.key}
-                  content={item.label}
-                  delay={500}
-                  closeDelay={0}
-                >
-                  <Button
-                    variant={isActive ? "flat" : "light"}
-                    color="default"
-                    aria-label={item.label}
-                    isDisabled={navLocked}
-                    onPress={(e) => {
-                      tryNavigate(item.path);
-                      (e.target as HTMLElement).blur();
-                    }}
-                    className={`min-w-0 px-3 h-10 rounded-xl transition-all duration-200 outline-none data-[focus-visible=true]:outline-none ${item.navbarClass} ${
-                      isActive
-                        ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
-                        : "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium"
-                    }`}
-                    startContent={
-                      <span
-                        className={
-                          isActive ? "text-zinc-900 dark:text-zinc-100" : ""
-                        }
-                      >
-                        {item.icon}
-                      </span>
-                    }
-                  >
-                    <span className="hidden md:inline">{item.label}</span>
-                  </Button>
-                </Tooltip>
-              );
-            })}
-
-            <div className="lg:hidden">
-              <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                <DropdownTrigger>
-                  <Button
-                    variant="light"
-                    aria-label="More Menu"
-                    isDisabled={navLocked}
-                    className={moreButtonClass}
-                    startContent={<FaEllipsisH size={18} />}
-                  >
-                    <span className="hidden md:inline">{t("nav.more")}</span>
-                  </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                  aria-label="more-menu"
-                  onAction={(key) => {
-                    const item = extraItems.find((i) => i.key === key);
-                    if (item) tryNavigate(item.path);
+        <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap overflow-x-auto px-2 scrollbar-hide">
+          {navItems.map((item) => {
+            const isActive = isRouteActive(location.pathname, item.path);
+            return (
+              <Tooltip
+                key={item.key}
+                content={item.label}
+                delay={500}
+                closeDelay={0}
+              >
+                <Button
+                  variant={isActive ? "flat" : "light"}
+                  color="default"
+                  aria-label={item.label}
+                  isDisabled={navLocked}
+                  onPress={(e) => {
+                    tryNavigate(item.path);
+                    (e.target as HTMLElement).blur();
                   }}
-                >
-                  {extraItems.map((item) => (
-                    <DropdownItem
-                      key={item.key}
-                      startContent={React.cloneElement(item.icon as any, {
-                        size: 14,
-                      })}
-                      className={item.menuClass}
+                  className={`min-w-0 px-3 h-10 rounded-xl transition-all duration-200 outline-none data-[focus-visible=true]:outline-none ${item.navbarClass} ${
+                    isActive
+                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
+                      : "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium"
+                  }`}
+                  startContent={
+                    <span
+                      className={
+                        isActive ? "text-zinc-900 dark:text-zinc-100" : ""
+                      }
                     >
-                      {item.label}
-                    </DropdownItem>
-                  ))}
-                </DropdownMenu>
-              </Dropdown>
-            </div>
+                      {item.icon}
+                    </span>
+                  }
+                >
+                  <span className="hidden md:inline">{item.label}</span>
+                </Button>
+              </Tooltip>
+            );
+          })}
+
+          <div className="lg:hidden">
+            <Dropdown classNames={COMPONENT_STYLES.dropdown}>
+              <DropdownTrigger>
+                <Button
+                  variant="light"
+                  aria-label="More Menu"
+                  isDisabled={navLocked}
+                  className={moreButtonClass}
+                  startContent={<FaEllipsisH size={18} />}
+                >
+                  <span className="hidden md:inline">{t("nav.more")}</span>
+                </Button>
+              </DropdownTrigger>
+              <DropdownMenu
+                aria-label="more-menu"
+                onAction={(key) => {
+                  const item = extraItems.find((i) => i.key === key);
+                  if (item) tryNavigate(item.path);
+                }}
+              >
+                {extraItems.map((item) => (
+                  <DropdownItem
+                    key={item.key}
+                    startContent={React.cloneElement(item.icon as any, {
+                      size: 14,
+                    })}
+                    className={item.menuClass}
+                  >
+                    {item.label}
+                  </DropdownItem>
+                ))}
+              </DropdownMenu>
+            </Dropdown>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-3 shrink-0 justify-end">
+          <div className="h-8 w-px bg-default-200 dark:bg-zinc-700 mx-1 hidden sm:block" />
+
+          {themeMode !== "auto" &&
+            themeMode !== "schedule" &&
+            themeMode !== "system" && <ThemeSwitcher isDisabled={navLocked} />}
+          <div
+            className={`hidden sm:block ${navLocked ? "pointer-events-none opacity-50" : ""}`}
+          >
+            <UserAvatar />
           </div>
 
-          <div className="flex items-center gap-3 shrink-0 justify-end">
-            <div className="h-8 w-px bg-default-200 dark:bg-zinc-700 mx-1 hidden sm:block" />
-
-            {themeMode !== "auto" &&
-              themeMode !== "schedule" &&
-              themeMode !== "system" && (
-                <ThemeSwitcher isDisabled={navLocked} />
-              )}
-            <div
-              className={`hidden sm:block ${navLocked ? "pointer-events-none opacity-50" : ""}`}
-            >
-              <UserAvatar />
-            </div>
-
-            <WindowControls
-              navLocked={navLocked}
-              isOnboardingMode={isOnboardingMode}
-            />
-          </div>
+          <WindowControls
+            navLocked={navLocked}
+            isOnboardingMode={isOnboardingMode}
+          />
+        </div>
       </div>
     </div>
   );

@@ -1,5 +1,9 @@
 import React, { createContext, useContext, useEffect, useState } from "react";
-import { useLocation, useNavigationType, NavigationType } from "react-router-dom";
+import {
+  useLocation,
+  useNavigationType,
+  NavigationType,
+} from "react-router-dom";
 
 interface HistoryEntry {
   key: string;
@@ -27,12 +31,12 @@ const NavigationHistoryContext = createContext<NavigationHistoryContextType>({
 
 export const useNavigationHistory = () => useContext(NavigationHistoryContext);
 
-export const NavigationHistoryProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const NavigationHistoryProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const location = useLocation();
   const navType = useNavigationType();
-  
+
   const [state, setState] = useState<{ stack: HistoryEntry[]; index: number }>({
     stack: [],
     index: -1,
@@ -42,12 +46,12 @@ export const NavigationHistoryProvider: React.FC<{ children: React.ReactNode }> 
     if (pathname === "/" || pathname === "") return "Home";
     const segments = pathname.split("/").filter(Boolean);
     if (segments.length === 0) return "Home";
-    
+
     // Capitalize last segment and decode URI
     const last = segments[segments.length - 1];
     try {
       const decoded = decodeURIComponent(last);
-      // Basic capitalization for now. 
+      // Basic capitalization for now.
       // In TopBar, it just does this. Real i18n would be better but this matches existing "breadcumb" style.
       return decoded.charAt(0).toUpperCase() + decoded.slice(1);
     } catch {
@@ -69,22 +73,22 @@ export const NavigationHistoryProvider: React.FC<{ children: React.ReactNode }> 
 
       // Handle Initial Load
       if (stack.length === 0) {
-         return { stack: [entry], index: 0 };
+        return { stack: [entry], index: 0 };
       }
 
       if (navType === NavigationType.Push) {
         // Remove forward history
         if (index < newStack.length - 1) {
-            newStack = newStack.slice(0, index + 1);
+          newStack = newStack.slice(0, index + 1);
         }
         newStack.push(entry);
         newIndex = newStack.length - 1;
       } else if (navType === NavigationType.Replace) {
         if (newIndex >= 0 && newIndex < newStack.length) {
-            newStack[newIndex] = entry;
+          newStack[newIndex] = entry;
         } else {
-            newStack.push(entry);
-            newIndex = newStack.length - 1;
+          newStack.push(entry);
+          newIndex = newStack.length - 1;
         }
       } else if (navType === NavigationType.Pop) {
         const foundIndex = newStack.findIndex((e) => e.key === entry.key);
@@ -105,9 +109,10 @@ export const NavigationHistoryProvider: React.FC<{ children: React.ReactNode }> 
 
   const canGoBack = state.index > 0;
   const canGoForward = state.index < state.stack.length - 1;
-  
+
   const getBackEntry = () => (canGoBack ? state.stack[state.index - 1] : null);
-  const getForwardEntry = () => (canGoForward ? state.stack[state.index + 1] : null);
+  const getForwardEntry = () =>
+    canGoForward ? state.stack[state.index + 1] : null;
 
   return (
     <NavigationHistoryContext.Provider

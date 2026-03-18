@@ -1,4 +1,10 @@
-import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import {
   Button,
   Input,
@@ -395,16 +401,18 @@ const LIPPage: React.FC = () => {
     }
 
     const normalizedGameToLL = Object.fromEntries(
-      Object.entries(mappingGameToLLVersions).map(([gameVersion, llVersions]) => [
-        normalizeGameVersionForFilter(String(gameVersion || "").trim()),
-        sortVersionValuesDesc(
-          Array.isArray(llVersions)
-            ? llVersions.map((version) =>
-                normalizeLLVersionForFilter(String(version || "").trim()),
-              )
-            : [],
-        ),
-      ]),
+      Object.entries(mappingGameToLLVersions).map(
+        ([gameVersion, llVersions]) => [
+          normalizeGameVersionForFilter(String(gameVersion || "").trim()),
+          sortVersionValuesDesc(
+            Array.isArray(llVersions)
+              ? llVersions.map((version) =>
+                  normalizeLLVersionForFilter(String(version || "").trim()),
+                )
+              : [],
+          ),
+        ],
+      ),
     ) as Record<string, string[]>;
 
     const gameOptions = sortVersionValuesDesc(
@@ -781,7 +789,9 @@ const LIPPage: React.FC = () => {
                 size="sm"
                 classNames={COMPONENT_STYLES.select}
               >
-                <SelectItem key="desc">{t("lip.order_options.desc")}</SelectItem>
+                <SelectItem key="desc">
+                  {t("lip.order_options.desc")}
+                </SelectItem>
                 <SelectItem key="asc">{t("lip.order_options.asc")}</SelectItem>
               </Select>
             </div>

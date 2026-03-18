@@ -200,10 +200,13 @@ export default function ScreenshotsPage() {
     return () => window.removeEventListener("keydown", onKeyDown);
   }, [activeShotIndex, hasNextShot, hasPrevShot, previewOpen, screenshots]);
 
-  const openPreview = React.useCallback((shot: ScreenshotItem) => {
-    setActiveShot(shot);
-    previewOnOpen();
-  }, [previewOnOpen]);
+  const openPreview = React.useCallback(
+    (shot: ScreenshotItem) => {
+      setActiveShot(shot);
+      previewOnOpen();
+    },
+    [previewOnOpen],
+  );
 
   const movePreview = React.useCallback(
     (direction: "prev" | "next") => {
@@ -275,9 +278,7 @@ export default function ScreenshotsPage() {
             </span>
             <span className="text-default-300 dark:text-zinc-700">|</span>
             <span>{t("contentpage.isolation")}:</span>
-            <span
-              className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md"
-            >
+            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
               {roots.isIsolation ? t("common.yes") : t("common.no")}
             </span>
           </div>
@@ -312,7 +313,9 @@ export default function ScreenshotsPage() {
                   className={cn(
                     COMPONENT_STYLES.contentListItem,
                     "relative group overflow-hidden rounded-2xl",
-                    selection.isSelectMode ? "cursor-pointer" : "cursor-default",
+                    selection.isSelectMode
+                      ? "cursor-pointer"
+                      : "cursor-default",
                     selection.isSelectMode && selection.selected[s.path]
                       ? "ring-2 ring-primary"
                       : "",
@@ -515,7 +518,9 @@ export default function ScreenshotsPage() {
                       </span>
                       {activeShotIndex >= 0 && (
                         <>
-                          <span className="text-default-300 dark:text-zinc-700">•</span>
+                          <span className="text-default-300 dark:text-zinc-700">
+                            •
+                          </span>
                           <span>
                             {activeShotIndex + 1} / {screenshots.length}
                           </span>

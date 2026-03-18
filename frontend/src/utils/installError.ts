@@ -21,7 +21,7 @@ const normalizeErrorText = (raw: string): string => {
     const noPrefix = text.replace(/^error\s*:\s*/i, "").trim();
     if (noPrefix) text = noPrefix;
 
-    if (!text.startsWith("{") && !text.startsWith("\"{")) break;
+    if (!text.startsWith("{") && !text.startsWith('"{')) break;
 
     try {
       const parsed = JSON.parse(text);

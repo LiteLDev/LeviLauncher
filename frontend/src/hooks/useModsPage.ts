@@ -2,7 +2,10 @@ import React, { useEffect, useMemo, useRef, useState } from "react";
 import { addToast, useDisclosure } from "@heroui/react";
 import { useNavigate, useBlocker } from "react-router-dom";
 import { Call, Events } from "@wailsio/runtime";
-import { ListDir, OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  ListDir,
+  OpenPathDir,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   GetVersionMeta,
   GetVersionsDir,
@@ -30,8 +33,7 @@ import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { ROUTES } from "@/constants/routes";
 
 const LEVILAMINA_NORMALIZED = "levilamina";
-const ERR_LL_MANAGED_IN_VERSION_SETTINGS =
-  "ERR_LL_MANAGED_IN_VERSION_SETTINGS";
+const ERR_LL_MANAGED_IN_VERSION_SETTINGS = "ERR_LL_MANAGED_IN_VERSION_SETTINGS";
 const ERR_NO_UPDATE_SOURCE = "ERR_NO_UPDATE_SOURCE";
 const ERR_ALREADY_LATEST = "ERR_ALREADY_LATEST";
 const ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS =
@@ -108,7 +110,9 @@ type CandidateLIPIdentifier = {
 };
 
 const normalizeName = (value: string): string =>
-  String(value || "").trim().toLowerCase();
+  String(value || "")
+    .trim()
+    .toLowerCase();
 
 const normalizeIdentifier = (value: string): string =>
   String(value || "")
@@ -183,7 +187,10 @@ const buildAliasMatchTokens = (alias: string): string[] => {
   return Array.from(set);
 };
 
-const buildPackageHints = (packageName: string, identifier: string): string[] => {
+const buildPackageHints = (
+  packageName: string,
+  identifier: string,
+): string[] => {
   const set = new Set<string>();
   const add = (value: string) => {
     const slug = slugifyText(value);
@@ -210,8 +217,16 @@ const isTokenMatchedInValue = (token: string, rawValue: string): boolean => {
   const value = normalizeMatchValue(rawValue);
   if (!token || !value) return false;
 
-  const tokenVariants = [token, token.replace(/_/g, "-"), token.replace(/-/g, "_")];
-  const valueVariants = [value, value.replace(/_/g, "-"), value.replace(/-/g, "_")];
+  const tokenVariants = [
+    token,
+    token.replace(/_/g, "-"),
+    token.replace(/-/g, "_"),
+  ];
+  const valueVariants = [
+    value,
+    value.replace(/_/g, "-"),
+    value.replace(/-/g, "_"),
+  ];
 
   for (const tokenVariant of tokenVariants) {
     for (const valueVariant of valueVariants) {
@@ -250,7 +265,9 @@ const isSelfVariantCandidateFuzzyMatched = (
 };
 
 const isStableVersion = (value: string): boolean =>
-  !String(value || "").trim().includes("-");
+  !String(value || "")
+    .trim()
+    .includes("-");
 
 export const resolveModFolder = (mod: types.ModInfo): string => {
   const folder = String((mod as any)?.folder || "").trim();
@@ -322,7 +339,9 @@ const formatChildPreview = (
   const deduped = Array.from(
     new Set(labels.map((item) => String(item || "").trim()).filter(Boolean)),
   );
-  deduped.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  deduped.sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" }),
+  );
   const previewItems = deduped.slice(0, 2);
   return {
     preview: previewItems.join(", "),
@@ -380,9 +399,8 @@ export const useModsPage = (
   }>({ key: "name", direction: "asc" });
   const [tabKey, setTabKey] = useState<TabKey>("all");
   const [gameVersion, setGameVersion] = useState("");
-  const [lipInstallStateByIdentifier, setLipInstallStateByIdentifier] = useState<
-    Map<string, LIPPackageInstallState>
-  >(new Map());
+  const [lipInstallStateByIdentifier, setLipInstallStateByIdentifier] =
+    useState<Map<string, LIPPackageInstallState>>(new Map());
 
   const dllResolveRef = useRef<((ok: boolean) => void) | null>(null);
   const dllConfirmRef = useRef<{
@@ -466,7 +484,7 @@ export const useModsPage = (
     };
   }, [importing]);
 
-  const callMinecraftByName = async <T,>(
+  const callMinecraftByName = async <T>(
     method: string,
     ...args: unknown[]
   ): Promise<T> => {
@@ -594,7 +612,9 @@ export const useModsPage = (
       );
       const installedVersion =
         String(installState.installedVersion || "").trim() ||
-        (uniqueModVersions.length === 1 ? uniqueModVersions[0] : group.installedVersion);
+        (uniqueModVersions.length === 1
+          ? uniqueModVersions[0]
+          : group.installedVersion);
 
       return {
         ...group,
@@ -701,7 +721,9 @@ export const useModsPage = (
         item.childLabels.join(" "),
       ];
       return haystacks.some((text) =>
-        String(text || "").toLowerCase().includes(q),
+        String(text || "")
+          .toLowerCase()
+          .includes(q),
       );
     });
   }, [allLipGroupItems, onlyEnabled, query]);
@@ -774,7 +796,9 @@ export const useModsPage = (
 
   const activeLipInstallState = useMemo(() => {
     if (!activeLipGroup) return null;
-    return lipInstallStateByIdentifier.get(activeLipGroup.identifierKey) || null;
+    return (
+      lipInstallStateByIdentifier.get(activeLipGroup.identifierKey) || null
+    );
   }, [activeLipGroup, lipInstallStateByIdentifier]);
 
   const activeDeleteBlocked = useMemo(() => {
@@ -886,7 +910,9 @@ export const useModsPage = (
 
   const resolvePromoteInstallVersion = (group: LipGroupItem): string => {
     const installState = lipInstallStateByIdentifier.get(group.identifierKey);
-    const installedVersion = String(installState?.installedVersion || "").trim();
+    const installedVersion = String(
+      installState?.installedVersion || "",
+    ).trim();
     if (installedVersion) return installedVersion;
     return String(group.installedVersion || "").trim();
   };
@@ -1406,7 +1432,8 @@ export const useModsPage = (
     }
 
     const updatableItems = selectedItems.filter(
-      (item) => item.lipState.sourceType === "unique" && item.lipState.canUpdate,
+      (item) =>
+        item.lipState.sourceType === "unique" && item.lipState.canUpdate,
     );
     if (updatableItems.length === 0) {
       batchUpdateOnClose();
@@ -1432,7 +1459,8 @@ export const useModsPage = (
             for (const item of updatableItems) {
               if (item.kind === "mod") {
                 const identifierKey = item.lipState.identifierKey;
-                if (identifierKey && handledIdentifiers.has(identifierKey)) continue;
+                if (identifierKey && handledIdentifiers.has(identifierKey))
+                  continue;
 
                 addLog("info", `${t("mods.action_update")}: ${item.mod.name}`);
                 const err = await installModByLIP(item.mod, addLog);
@@ -1448,7 +1476,10 @@ export const useModsPage = (
                 continue;
               }
 
-              if (item.identifierKey && handledIdentifiers.has(item.identifierKey)) {
+              if (
+                item.identifierKey &&
+                handledIdentifiers.has(item.identifierKey)
+              ) {
                 continue;
               }
 
@@ -1466,7 +1497,9 @@ export const useModsPage = (
             }
 
             if (failed.length > 0) {
-              throw new Error(failed[0].err || "ERR_LIP_PACKAGE_INSTALL_FAILED");
+              throw new Error(
+                failed[0].err || "ERR_LIP_PACKAGE_INSTALL_FAILED",
+              );
             }
           },
         );
@@ -1520,7 +1553,10 @@ export const useModsPage = (
           async ({ addLog }) => {
             for (const item of selectedItems) {
               if (item.kind === "mod") {
-                addLog("info", `${t("mods.action_uninstall")}: ${item.mod.name}`);
+                addLog(
+                  "info",
+                  `${t("mods.action_uninstall")}: ${item.mod.name}`,
+                );
                 const err = await uninstallModWithFallback(item.mod, addLog);
                 if (err) {
                   if (err === ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY) {
@@ -1539,7 +1575,10 @@ export const useModsPage = (
                 continue;
               }
 
-              if (item.identifierKey && handledIdentifiers.has(item.identifierKey)) {
+              if (
+                item.identifierKey &&
+                handledIdentifiers.has(item.identifierKey)
+              ) {
                 continue;
               }
 
@@ -1551,7 +1590,10 @@ export const useModsPage = (
                 continue;
               }
 
-              addLog("info", `${t("mods.action_uninstall")}: ${item.packageName}`);
+              addLog(
+                "info",
+                `${t("mods.action_uninstall")}: ${item.packageName}`,
+              );
               const err = await uninstallLipGroupWithFallback(item, addLog);
               if (err) {
                 if (err === ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY) {
@@ -1572,7 +1614,9 @@ export const useModsPage = (
             }
 
             if (failed.length > 0) {
-              throw new Error(failed[0].err || "ERR_LIP_PACKAGE_UNINSTALL_FAILED");
+              throw new Error(
+                failed[0].err || "ERR_LIP_PACKAGE_UNINSTALL_FAILED",
+              );
             }
           },
         );
@@ -1996,7 +2040,10 @@ export const useModsPage = (
             "info",
             `${t("mods.action_uninstall")}: ${activeLipGroup.packageName}`,
           );
-          const err = await uninstallLipGroupWithFallback(activeLipGroup, addLog);
+          const err = await uninstallLipGroupWithFallback(
+            activeLipGroup,
+            addLog,
+          );
           if (err === ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY) {
             demotedToDependency = true;
             addLog("warning", `${activeLipGroup.packageName}: ${err}`);
@@ -2112,7 +2159,10 @@ export const useModsPage = (
         }
       } catch {}
     }
-    await refreshInstance(name, val ? "mods-group-enable" : "mods-group-disable");
+    await refreshInstance(
+      name,
+      val ? "mods-group-enable" : "mods-group-disable",
+    );
   };
 
   const getModLIPState = (mod: types.ModInfo): ModLIPState => {
@@ -2282,5 +2332,3 @@ export const useModsPage = (
     navigate,
   };
 };
-
-

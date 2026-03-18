@@ -15,14 +15,17 @@ const emitCurrentVersionChanged = (
 ): void => {
   try {
     window.dispatchEvent(
-      new CustomEvent<CurrentVersionChangedDetail>(CURRENT_VERSION_CHANGED_EVENT, {
-        detail: {
-          prev: String(prev || ""),
-          next: String(next || ""),
-          source: String(source || "unknown"),
-          at: Date.now(),
+      new CustomEvent<CurrentVersionChangedDetail>(
+        CURRENT_VERSION_CHANGED_EVENT,
+        {
+          detail: {
+            prev: String(prev || ""),
+            next: String(next || ""),
+            source: String(source || "unknown"),
+            at: Date.now(),
+          },
         },
-      }),
+      ),
     );
   } catch {}
 };

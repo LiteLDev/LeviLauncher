@@ -8,7 +8,10 @@ import React, {
   useState,
 } from "react";
 import { Call, Events } from "@wailsio/runtime";
-import { GetMods, IsModEnabled } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
+import {
+  GetMods,
+  IsModEnabled,
+} from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
   fetchLIPPackagesIndex,
@@ -71,7 +74,9 @@ const PACKAGE_STATE_CACHE_TTL_MS = 30_000;
 const LEVILAMINA_IDENTIFIER = "LiteLDev/LeviLamina";
 
 const normalizeIdentifierLookupKey = (value: string): string =>
-  String(value || "").trim().toLowerCase();
+  String(value || "")
+    .trim()
+    .toLowerCase();
 
 const emptyInstallState = (): LIPPackageInstallState => ({
   installed: false,
@@ -140,7 +145,9 @@ type ParsedInstallStateEntry = {
   state: LIPPackageInstallState;
 };
 
-const parseInstallStateEntries = (value: unknown): ParsedInstallStateEntry[] => {
+const parseInstallStateEntries = (
+  value: unknown,
+): ParsedInstallStateEntry[] => {
   if (!Array.isArray(value)) return [];
 
   return value
@@ -199,9 +206,9 @@ const buildFallbackSnapshot = (args: {
   };
 };
 
-export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
+export const ModIntelligenceProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
   const { currentVersionName } = useCurrentVersion();
   const startupInteractive = useStartupInteractive();
   const [lipSourceLoaded, setLipSourceLoaded] = useState(false);
@@ -213,7 +220,9 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
     new Map(),
   );
 
-  const lipPackagesByNameRef = useRef<Record<string, LIPPackageBasicInfo[]>>({});
+  const lipPackagesByNameRef = useRef<Record<string, LIPPackageBasicInfo[]>>(
+    {},
+  );
   const lipPackageByIdentifierRef = useRef<Record<string, LIPPackageBasicInfo>>(
     {},
   );
@@ -247,7 +256,9 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
       }
 
       const requestIdentifiers = identifiers
-        .map((item) => String(item.identifierKey || item.identifier || "").trim())
+        .map((item) =>
+          String(item.identifierKey || item.identifier || "").trim(),
+        )
         .filter(Boolean);
 
       if (requestIdentifiers.length === 0) {
@@ -289,7 +300,8 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
 
         return nextMap;
       } catch (error) {
-        const errorCode = parseErrorCode(error) || "ERR_LIP_PACKAGE_QUERY_FAILED";
+        const errorCode =
+          parseErrorCode(error) || "ERR_LIP_PACKAGE_QUERY_FAILED";
         const nextMap = new Map<string, LIPPackageInstallState>();
 
         for (const request of identifiers) {
@@ -318,7 +330,10 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
   );
 
   const queryInstallState = useCallback(
-    async (instanceName: string, identifier: string): Promise<LIPPackageInstallState> => {
+    async (
+      instanceName: string,
+      identifier: string,
+    ): Promise<LIPPackageInstallState> => {
       const normalizedIdentifier = String(identifier || "").trim();
       if (!String(instanceName || "").trim() || !normalizedIdentifier) {
         return emptyInstallState();
@@ -330,12 +345,14 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
           identifierKey: normalizedIdentifier,
         },
       ]);
-      return result.get(normalizedIdentifier) || {
-        installed: false,
-        explicitInstalled: false,
-        installedVersion: "",
-        error: "ERR_LIP_PACKAGE_QUERY_FAILED",
-      };
+      return (
+        result.get(normalizedIdentifier) || {
+          installed: false,
+          explicitInstalled: false,
+          installedVersion: "",
+          error: "ERR_LIP_PACKAGE_QUERY_FAILED",
+        }
+      );
     },
     [queryInstallStates],
   );
@@ -361,10 +378,14 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
         return;
       }
 
-      const currentSnapshot = snapshotsRef.current.get(normalizedName) || baseSnapshot;
+      const currentSnapshot =
+        snapshotsRef.current.get(normalizedName) || baseSnapshot;
 
       if (lipSourceErrorRef.current) {
-        const llState = await queryInstallState(normalizedName, LEVILAMINA_IDENTIFIER);
+        const llState = await queryInstallState(
+          normalizedName,
+          LEVILAMINA_IDENTIFIER,
+        );
         setSnapshot(normalizedName, {
           ...buildFallbackSnapshot({
             base: currentSnapshot,
@@ -386,7 +407,8 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
         lipPackageByIdentifier: lipPackageByIdentifierRef.current,
       });
 
-      const candidateIdentifiers = collectCandidateLIPIdentifiers(modLIPStateByFolder);
+      const candidateIdentifiers =
+        collectCandidateLIPIdentifiers(modLIPStateByFolder);
       const llCandidate: CandidateLIPIdentifier = {
         identifier: LEVILAMINA_IDENTIFIER,
         identifierKey: LEVILAMINA_IDENTIFIER,
@@ -397,7 +419,10 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
       ]);
       const llState =
         allInstallStates.get(LEVILAMINA_IDENTIFIER) || emptyInstallState();
-      const lipInstallStateByIdentifier = new Map<string, LIPPackageInstallState>();
+      const lipInstallStateByIdentifier = new Map<
+        string,
+        LIPPackageInstallState
+      >();
       for (const item of candidateIdentifiers) {
         const state = allInstallStates.get(item.identifierKey);
         if (!state) continue;
@@ -405,7 +430,8 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
       }
 
       const llBlockingError =
-        Boolean(llState.error) && String(llState.error).trim() !== "ERR_LIP_NOT_INSTALLED";
+        Boolean(llState.error) &&
+        String(llState.error).trim() !== "ERR_LIP_NOT_INSTALLED";
       const hasBlockingError =
         llBlockingError ||
         Array.from(lipInstallStateByIdentifier.values()).some(
@@ -479,7 +505,9 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
         const groupedByIdentifier: Record<string, LIPPackageBasicInfo> = {};
 
         for (const pkg of packages || []) {
-          const normalizedName = String(pkg?.name || "").trim().toLowerCase();
+          const normalizedName = String(pkg?.name || "")
+            .trim()
+            .toLowerCase();
           if (normalizedName) {
             if (!Array.isArray(groupedByName[normalizedName])) {
               groupedByName[normalizedName] = [];
@@ -490,7 +518,10 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
           const identifierLookupKey = normalizeIdentifierLookupKey(
             String(pkg?.identifier || ""),
           );
-          if (identifierLookupKey && !groupedByIdentifier[identifierLookupKey]) {
+          if (
+            identifierLookupKey &&
+            !groupedByIdentifier[identifierLookupKey]
+          ) {
             groupedByIdentifier[identifierLookupKey] = pkg;
           }
         }
@@ -544,7 +575,8 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
       if (pending) return pending;
 
       const run = (async () => {
-        const previous = snapshotsRef.current.get(normalizedName) || buildInitialSnapshot();
+        const previous =
+          snapshotsRef.current.get(normalizedName) || buildInitialSnapshot();
         setSnapshot(normalizedName, {
           ...previous,
           status: previous.updatedAt > 0 ? "refreshing" : "loading",
@@ -560,7 +592,10 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
                 String(mod?.name || "").trim();
               if (!folder) return ["", false] as const;
               try {
-                const enabled = await (IsModEnabled as any)?.(normalizedName, folder);
+                const enabled = await (IsModEnabled as any)?.(
+                  normalizedName,
+                  folder,
+                );
                 return [folder, Boolean(enabled)] as const;
               } catch {
                 return [folder, false] as const;
@@ -588,7 +623,8 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
           setSnapshot(normalizedName, {
             ...current,
             status: "error",
-            error: parseErrorCode(error) || "ERR_MOD_INTELLIGENCE_REFRESH_FAILED",
+            error:
+              parseErrorCode(error) || "ERR_MOD_INTELLIGENCE_REFRESH_FAILED",
             updatedAt: current.updatedAt || Date.now(),
           });
         } finally {
@@ -602,7 +638,9 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
     [lipSourceLoaded, setSnapshot, syncInstanceLipState],
   );
 
-  const refreshInstance = useCallback<ModIntelligenceContextValue["refreshInstance"]>(
+  const refreshInstance = useCallback<
+    ModIntelligenceContextValue["refreshInstance"]
+  >(
     async (instanceName) => {
       await ensureInstanceHydrated(instanceName, {
         force: true,
@@ -618,7 +656,8 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
     (instanceName, reason) => {
       const normalizedName = String(instanceName || "").trim();
       if (!normalizedName) return;
-      const previous = snapshotsRef.current.get(normalizedName) || buildInitialSnapshot();
+      const previous =
+        snapshotsRef.current.get(normalizedName) || buildInitialSnapshot();
       setSnapshot(normalizedName, {
         ...previous,
         status: "idle",
@@ -670,7 +709,10 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
 
       if (snapshot) {
         const nextInstallMap = new Map(snapshot.lipInstallStateByIdentifier);
-        const existingKey = findInstallStateKeyByLookupKey(nextInstallMap, lookupKey);
+        const existingKey = findInstallStateKeyByLookupKey(
+          nextInstallMap,
+          lookupKey,
+        );
         nextInstallMap.set(existingKey || rawIdentifier, state);
         setSnapshot(normalizedName, {
           ...snapshot,
@@ -692,7 +734,9 @@ export const ModIntelligenceProvider: React.FC<{ children: React.ReactNode }> = 
     const off = Events.On("lip_task_finished", (event: unknown) => {
       const maybeEnvelope = event as { data?: unknown };
       const payload =
-        maybeEnvelope && typeof maybeEnvelope === "object" && "data" in maybeEnvelope
+        maybeEnvelope &&
+        typeof maybeEnvelope === "object" &&
+        "data" in maybeEnvelope
           ? (maybeEnvelope.data as any)
           : (event as any);
       if (!payload || typeof payload !== "object") return;

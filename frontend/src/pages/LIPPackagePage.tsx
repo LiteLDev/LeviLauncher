@@ -819,13 +819,18 @@ const LIPPackagePage: React.FC = () => {
     if (visiblePackageVariants.length === 0) return null;
 
     const candidates = [selectedVariantIdentifier, routeVariantIdentifier]
-      .map((value) => String(value || "").trim().toLowerCase())
+      .map((value) =>
+        String(value || "")
+          .trim()
+          .toLowerCase(),
+      )
       .filter(Boolean);
     for (const candidate of candidates) {
       const matched = visiblePackageVariants.find(
         (variant) =>
-          String(variant.packageIdentifier || "").trim().toLowerCase() ===
-          candidate,
+          String(variant.packageIdentifier || "")
+            .trim()
+            .toLowerCase() === candidate,
       );
       if (matched) return matched;
     }
@@ -835,7 +840,10 @@ const LIPPackagePage: React.FC = () => {
       .toLowerCase();
     if (preferredVariantKey) {
       const preferredVariant = visiblePackageVariants.find(
-        (variant) => String(variant.key || "").trim().toLowerCase() === preferredVariantKey,
+        (variant) =>
+          String(variant.key || "")
+            .trim()
+            .toLowerCase() === preferredVariantKey,
       );
       if (preferredVariant) return preferredVariant;
     }
@@ -849,7 +857,8 @@ const LIPPackagePage: React.FC = () => {
   ]);
 
   const activePackageIdentifier = useMemo<string>(
-    () => String(activeVariant?.packageIdentifier || pkg?.identifier || "").trim(),
+    () =>
+      String(activeVariant?.packageIdentifier || pkg?.identifier || "").trim(),
     [activeVariant?.packageIdentifier, pkg?.identifier],
   );
 
@@ -914,7 +923,9 @@ const LIPPackagePage: React.FC = () => {
     return installedVersion;
   }, [dialogInstancePackageState]);
 
-  const dialogPackageStateLoading = Boolean(dialogInstancePackageState?.loading);
+  const dialogPackageStateLoading = Boolean(
+    dialogInstancePackageState?.loading,
+  );
 
   const installDialogActionKind = useMemo<InstallDialogActionKind>(() => {
     if (!installDialogTriggerVersion || dialogPackageStateLoading) {
@@ -1202,12 +1213,17 @@ const LIPPackagePage: React.FC = () => {
         title: t("common.success"),
         description: t(installDialogSuccessKey),
       });
-      await refreshInstance(installDialogSelectedInstance, "lip-package-install");
+      await refreshInstance(
+        installDialogSelectedInstance,
+        "lip-package-install",
+      );
       const latestSnapshot = getInstanceSnapshot(installDialogSelectedInstance);
       if (latestSnapshot?.llState) {
         setInstanceLLStates((prev) => ({
           ...prev,
-          [installDialogSelectedInstance]: toInstanceState(latestSnapshot.llState),
+          [installDialogSelectedInstance]: toInstanceState(
+            latestSnapshot.llState,
+          ),
         }));
       }
       const packageState = await ensurePackageInstallState(
@@ -1517,10 +1533,14 @@ const LIPPackagePage: React.FC = () => {
                             }
                             placeholder={t("lip.files.variant_placeholder")}
                             selectedKeys={
-                              activePackageIdentifier ? [activePackageIdentifier] : []
+                              activePackageIdentifier
+                                ? [activePackageIdentifier]
+                                : []
                             }
                             onChange={(e) =>
-                              setSelectedVariantIdentifier(String(e.target.value || "").trim())
+                              setSelectedVariantIdentifier(
+                                String(e.target.value || "").trim(),
+                              )
                             }
                             size="sm"
                             classNames={COMPONENT_STYLES.select}
@@ -1807,7 +1827,9 @@ const LIPPackagePage: React.FC = () => {
             </div>
             <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
               <span>{t("lip.files.installing_version_label")}:</span>{" "}
-              <span>{installDialogTriggerVersion || t("contentpage.none")}</span>
+              <span>
+                {installDialogTriggerVersion || t("contentpage.none")}
+              </span>
             </div>
             <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
               {dialogInstancePackageState?.loading ? (
@@ -1815,13 +1837,17 @@ const LIPPackagePage: React.FC = () => {
               ) : (
                 <>
                   <span>{t("lip.files.current_installed_version_label")}:</span>{" "}
-                  <span>{dialogInstalledPackageVersion || t("contentpage.none")}</span>
+                  <span>
+                    {dialogInstalledPackageVersion || t("contentpage.none")}
+                  </span>
                 </>
               )}
             </div>
             <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
               <span>{t("lip.files.instance_game_version_label")}:</span>{" "}
-              <span>{installDialogInstanceGameVersion || t("contentpage.none")}</span>
+              <span>
+                {installDialogInstanceGameVersion || t("contentpage.none")}
+              </span>
             </div>
           </div>
           {dialogRequiresLL && dialogLLStateLoading ? (
@@ -1829,9 +1855,7 @@ const LIPPackagePage: React.FC = () => {
               {t("lip.files.checking_ll_state")}
             </div>
           ) : null}
-          {dialogRequiresLL &&
-          !dialogLLStateLoading &&
-          !dialogLLInstalled ? (
+          {dialogRequiresLL && !dialogLLStateLoading && !dialogLLInstalled ? (
             <div className="text-xs text-warning-600 dark:text-warning-400">
               {t("lip.files.ll_missing_redirect_hint")}
             </div>

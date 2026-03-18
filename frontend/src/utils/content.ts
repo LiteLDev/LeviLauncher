@@ -314,7 +314,10 @@ const parseWildcardRange = (
   return null;
 };
 
-const isRangeTokenMatched = (target: ParsedSemver, rawToken: string): boolean => {
+const isRangeTokenMatched = (
+  target: ParsedSemver,
+  rawToken: string,
+): boolean => {
   const token = String(rawToken || "").trim();
   if (!token) return false;
 
@@ -417,8 +420,12 @@ const getVariantVersionsRecord = (
   if (!isRecord(variants)) return null;
   for (const [variantKey, variantValue] of Object.entries(variants)) {
     if (
-      String(variantKey || "").trim().toLowerCase() !==
-      String(targetVariantKey || "").trim().toLowerCase()
+      String(variantKey || "")
+        .trim()
+        .toLowerCase() !==
+      String(targetVariantKey || "")
+        .trim()
+        .toLowerCase()
     ) {
       continue;
     }
@@ -437,7 +444,10 @@ const buildVariantPackageIdentifier = (
   identifier: string,
   variantKey: string,
 ): string => {
-  const normalizedIdentifier = String(identifier || "").trim().split("#")[0] || "";
+  const normalizedIdentifier =
+    String(identifier || "")
+      .trim()
+      .split("#")[0] || "";
   const normalizedVariantKey = String(variantKey || "").trim();
   if (!normalizedIdentifier) return "";
   return normalizedVariantKey
@@ -446,7 +456,9 @@ const buildVariantPackageIdentifier = (
 };
 
 const getVariantSortRank = (variantKey: string): number => {
-  const normalizedVariantKey = String(variantKey || "").trim().toLowerCase();
+  const normalizedVariantKey = String(variantKey || "")
+    .trim()
+    .toLowerCase();
   if (normalizedVariantKey === "client") return 0;
   if (!normalizedVariantKey) return 1;
   return 2;
@@ -456,7 +468,10 @@ const resolvePreferredVariantKey = (
   variants: LIPPackageVariantDetail[],
 ): string => {
   const clientVariant = variants.find(
-    (variant) => String(variant.key || "").trim().toLowerCase() === "client",
+    (variant) =>
+      String(variant.key || "")
+        .trim()
+        .toLowerCase() === "client",
   );
   if (clientVariant) return clientVariant.key;
   return "";
@@ -533,7 +548,9 @@ const parsePackageVariants = (
     if (!isRecord(variantMeta)) continue;
 
     const parsed = parsePackageVersionsRecord(
-      isRecord(variantMeta["versions"]) ? (variantMeta["versions"] as UnknownRecord) : null,
+      isRecord(variantMeta["versions"])
+        ? (variantMeta["versions"] as UnknownRecord)
+        : null,
     );
     if (parsed.versions.length === 0) continue;
 
@@ -592,7 +609,11 @@ const inferProjectUrlFromIdentifier = (identifier: string): string => {
   if (!normalized || !normalized.includes("/")) return "";
 
   const parts = normalized.split("/").filter(Boolean);
-  if (parts.length === 2 && !parts[0].includes(".") && !parts[0].includes(":")) {
+  if (
+    parts.length === 2 &&
+    !parts[0].includes(".") &&
+    !parts[0].includes(":")
+  ) {
     return normalizeHttpUrl(`https://github.com/${parts[0]}/${parts[1]}`);
   }
 
@@ -650,7 +671,10 @@ const extractSelfVariantAliasesFromPackage = (
 
       const hashIndex = normalizedDep.indexOf("#");
       if (hashIndex < 0) continue;
-      const alias = normalizedDep.slice(hashIndex + 1).trim().toLowerCase();
+      const alias = normalizedDep
+        .slice(hashIndex + 1)
+        .trim()
+        .toLowerCase();
       if (!alias) continue;
       aliasSet.add(alias);
     }
@@ -675,7 +699,10 @@ const parseLIPPackage = (
   const tags = toStringArray(info["tags"]);
   const avatarUrl = normalizeHttpUrl(toSafeString(info["avatar_url"]));
   const updated = toSafeString(value["updated_at"]).trim();
-  const variantDetails = parsePackageVariants(value["variants"], normalizedIdentifier);
+  const variantDetails = parsePackageVariants(
+    value["variants"],
+    normalizedIdentifier,
+  );
   if (variantDetails.length === 0) return null;
 
   const preferredVariantKey = resolvePreferredVariantKey(variantDetails);
@@ -685,7 +712,8 @@ const parseLIPPackage = (
     variantDetails[0];
   if (!preferredVariant) return null;
   const hotness =
-    toOptionalSafeNumber(value["stargazer_count"]) ?? toSafeNumber(value["stars"]);
+    toOptionalSafeNumber(value["stargazer_count"]) ??
+    toSafeNumber(value["stars"]);
 
   const basic: LIPPackageBasicInfo = {
     identifier: normalizedIdentifier,
@@ -723,7 +751,9 @@ const extractGameVersionFromRuntimeData = (value: string): string => {
   return match ? match[1] : "";
 };
 
-const parseLeviLaminaClientMapping = (value: unknown): LIPLeviLaminaClientMapping => {
+const parseLeviLaminaClientMapping = (
+  value: unknown,
+): LIPLeviLaminaClientMapping => {
   const result: LIPLeviLaminaClientMapping = {
     gameToLLVersions: {},
     llToGameVersion: {},
@@ -743,7 +773,9 @@ const parseLeviLaminaClientMapping = (value: unknown): LIPLeviLaminaClientMappin
 
     let runtimeDataVersion = "";
     for (const [depKey, depValue] of Object.entries(dependencies)) {
-      const normalizedKey = String(depKey || "").trim().toLowerCase();
+      const normalizedKey = String(depKey || "")
+        .trim()
+        .toLowerCase();
       if (normalizedKey !== BEDROCK_RUNTIME_DATA_KEY) continue;
       runtimeDataVersion = toSafeString(depValue).trim();
       break;
@@ -760,7 +792,9 @@ const parseLeviLaminaClientMapping = (value: unknown): LIPLeviLaminaClientMappin
     result.gameToLLVersions[gameVersion].push(normalizedLLVersion);
   }
 
-  for (const [gameVersion, llVersions] of Object.entries(result.gameToLLVersions)) {
+  for (const [gameVersion, llVersions] of Object.entries(
+    result.gameToLLVersions,
+  )) {
     const unique = Array.from(new Set(llVersions));
     unique.sort((a, b) => compareSemverLike(b, a));
     result.gameToLLVersions[gameVersion] = unique;
@@ -804,7 +838,8 @@ const parseLIPIndexResult = (json: unknown): ParsedLIPIndexResult => {
       const relationIdentifier =
         parsed?.basic.identifier || String(identifier || "").trim();
       if (relationIdentifier) {
-        const existing = selfVariantRelationsByIdentifier.get(relationIdentifier);
+        const existing =
+          selfVariantRelationsByIdentifier.get(relationIdentifier);
         if (!existing) {
           selfVariantRelationsByIdentifier.set(relationIdentifier, {
             identifier: relationIdentifier,
@@ -888,7 +923,9 @@ const fetchLIPIndexResult = async (options?: {
       });
 
       if (!response.ok) {
-        throw new Error(`Failed to fetch lip package index: ${response.status}`);
+        throw new Error(
+          `Failed to fetch lip package index: ${response.status}`,
+        );
       }
 
       const json: unknown = await response.json();
@@ -956,7 +993,9 @@ const findLIPPackageDetail = (
 
   const lowerTarget = target.toLowerCase();
   const lowerTargetBase = targetBase.toLowerCase();
-  for (const [candidateIdentifier, detail] of Object.entries(detailsByIdentifier)) {
+  for (const [candidateIdentifier, detail] of Object.entries(
+    detailsByIdentifier,
+  )) {
     const lowerCandidateIdentifier = candidateIdentifier.toLowerCase();
     if (
       lowerCandidateIdentifier === lowerTarget ||

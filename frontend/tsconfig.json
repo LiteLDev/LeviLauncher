@@ -1,4 +1,4 @@
-{
+﻿{
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,

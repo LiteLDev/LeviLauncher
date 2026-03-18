@@ -64,7 +64,9 @@ type LIPAliasCandidate = {
 };
 
 const normalizeName = (value: string): string =>
-  String(value || "").trim().toLowerCase();
+  String(value || "")
+    .trim()
+    .toLowerCase();
 
 const normalizeIdentifier = (value: string): string =>
   String(value || "").trim();
@@ -94,7 +96,9 @@ const slugifyText = (value: string): string =>
     .replace(/^-+|-+$/g, "");
 
 const isStableVersion = (value: string): boolean =>
-  !String(value || "").trim().includes("-");
+  !String(value || "")
+    .trim()
+    .includes("-");
 
 const ALIAS_GENERIC_TOKENS = new Set([
   "client",
@@ -145,7 +149,10 @@ const buildAliasMatchTokens = (alias: string): string[] => {
   return Array.from(set);
 };
 
-const buildPackageHints = (packageName: string, identifier: string): string[] => {
+const buildPackageHints = (
+  packageName: string,
+  identifier: string,
+): string[] => {
   const set = new Set<string>();
   const add = (value: string) => {
     const slug = slugifyText(value);
@@ -156,7 +163,8 @@ const buildPackageHints = (packageName: string, identifier: string): string[] =>
 
   add(packageName);
 
-  const normalizedIdentifier = normalizeIdentifierLookupKey(identifier).split("#")[0];
+  const normalizedIdentifier =
+    normalizeIdentifierLookupKey(identifier).split("#")[0];
   const parts = normalizedIdentifier.split("/").filter(Boolean);
   if (parts.length > 0) {
     add(parts[parts.length - 1]);
@@ -172,8 +180,16 @@ const isTokenMatchedInValue = (token: string, rawValue: string): boolean => {
   const value = normalizeMatchValue(rawValue);
   if (!token || !value) return false;
 
-  const tokenVariants = [token, token.replace(/_/g, "-"), token.replace(/-/g, "_")];
-  const valueVariants = [value, value.replace(/_/g, "-"), value.replace(/-/g, "_")];
+  const tokenVariants = [
+    token,
+    token.replace(/_/g, "-"),
+    token.replace(/-/g, "_"),
+  ];
+  const valueVariants = [
+    value,
+    value.replace(/_/g, "-"),
+    value.replace(/-/g, "_"),
+  ];
 
   for (const tokenVariant of tokenVariants) {
     for (const valueVariant of valueVariants) {
@@ -226,7 +242,9 @@ const formatChildPreview = (
   const deduped = Array.from(
     new Set(labels.map((item) => String(item || "").trim()).filter(Boolean)),
   );
-  deduped.sort((a, b) => a.localeCompare(b, undefined, { sensitivity: "base" }));
+  deduped.sort((a, b) =>
+    a.localeCompare(b, undefined, { sensitivity: "base" }),
+  );
   const previewItems = deduped.slice(0, 2);
   return {
     preview: previewItems.join(", "),
@@ -290,8 +308,7 @@ export const buildSelfVariantCandidates = (
     const identifierKey = normalizeIdentifier(identifier);
     const lookupKey = normalizeIdentifierLookupKey(identifierKey);
     if (!identifier || !identifierKey || !lookupKey) continue;
-    const packageName =
-      String(relation.packageName || "").trim() || identifier;
+    const packageName = String(relation.packageName || "").trim() || identifier;
     const packageHints = buildPackageHints(packageName, identifier);
 
     for (const rawAlias of relation.aliases || []) {
@@ -362,7 +379,10 @@ export const buildModLIPStateByFolder = (args: {
       continue;
     }
 
-    const aliasesToCheck = [normalizeName(mod.name || ""), normalizeName(folder)]
+    const aliasesToCheck = [
+      normalizeName(mod.name || ""),
+      normalizeName(folder),
+    ]
       .filter(Boolean)
       .filter((value, index, arr) => arr.indexOf(value) === index);
 
@@ -375,7 +395,10 @@ export const buildModLIPStateByFolder = (args: {
     }
 
     if (aliasMatchesMap.size === 0) {
-      const valuesToMatch = [normalizeMatchValue(mod.name || ""), normalizeMatchValue(folder)]
+      const valuesToMatch = [
+        normalizeMatchValue(mod.name || ""),
+        normalizeMatchValue(folder),
+      ]
         .filter(Boolean)
         .filter((value, index, arr) => arr.indexOf(value) === index);
 
@@ -500,12 +523,11 @@ export const collectCandidateLIPIdentifiers = (
       identifiers.set(lookupKey, { identifier, identifierKey });
     }
   }
-  return Array.from(identifiers.values())
-    .sort((a, b) =>
-      a.identifierKey.localeCompare(b.identifierKey, undefined, {
-        sensitivity: "base",
-      }),
-    );
+  return Array.from(identifiers.values()).sort((a, b) =>
+    a.identifierKey.localeCompare(b.identifierKey, undefined, {
+      sensitivity: "base",
+    }),
+  );
 };
 
 export const buildListItems = (args: {
@@ -525,12 +547,12 @@ export const buildListItems = (args: {
 
   const grouped = new Map<
     string,
-      {
-        identifier: string;
-        identifierKey: string;
-        packageName: string;
-        mods: types.ModInfo[];
-        folders: string[];
+    {
+      identifier: string;
+      identifierKey: string;
+      packageName: string;
+      mods: types.ModInfo[];
+      folders: string[];
       childLabels: string[];
       targetVersion: string;
       hasSelfVariantMapping: boolean;

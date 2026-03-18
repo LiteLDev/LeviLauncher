@@ -102,12 +102,7 @@ const focusAdjacentEditableElement = (currentElement, direction) => {
 window.addEventListener(
   "keydown",
   (event) => {
-    if (
-      event.key !== "Tab" ||
-      event.ctrlKey ||
-      event.metaKey ||
-      event.altKey
-    ) {
+    if (event.key !== "Tab" || event.ctrlKey || event.metaKey || event.altKey) {
       return;
     }
 
@@ -122,7 +117,10 @@ window.addEventListener(
       return;
     }
 
-    if (activeElement instanceof HTMLElement && activeElement !== document.body) {
+    if (
+      activeElement instanceof HTMLElement &&
+      activeElement !== document.body
+    ) {
       activeElement.blur();
     }
   },
@@ -170,7 +168,7 @@ const StartupShell = ({ errorMessage = "", visible = true }) => (
       background:
         "linear-gradient(180deg, rgba(248,250,252,1) 0%, rgba(241,245,249,1) 100%)",
       color: "#0f172a",
-      fontFamily: 'var(--font-sans, sans-serif)',
+      fontFamily: "var(--font-sans, sans-serif)",
       opacity: visible ? 1 : 0,
       visibility: visible ? "visible" : "hidden",
       transition: "opacity 220ms ease, visibility 220ms ease",
@@ -305,7 +303,11 @@ const bootstrapApp = async () => {
     startTransition(() => {
       root.render(
         <HeroUIProvider>
-          <NextThemesProvider attribute="class" defaultTheme="light" enableSystem>
+          <NextThemesProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+          >
             <I18nextProvider i18n={i18n}>
               <React.StrictMode>
                 <StartupLifecycle>

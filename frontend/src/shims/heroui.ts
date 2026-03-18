@@ -5,10 +5,7 @@ export { Button, ButtonGroup } from "@heroui/button";
 export type { ButtonGroupProps, ButtonProps } from "@heroui/button";
 
 export { Card, CardBody, CardFooter, CardHeader } from "@heroui/card";
-export type {
-  CardFooterProps,
-  CardProps,
-} from "@heroui/card";
+export type { CardFooterProps, CardProps } from "@heroui/card";
 
 export { Checkbox } from "@heroui/checkbox";
 export type { CheckboxProps } from "@heroui/checkbox";

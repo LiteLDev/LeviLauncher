@@ -1,4 +1,10 @@
-import React, { createContext, useContext, useEffect, useMemo, useState } from "react";
+import React, {
+  createContext,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+} from "react";
 import {
   CURRENT_VERSION_CHANGED_EVENT,
   clearCurrentVersionName as clearCurrentVersionNameStorage,
@@ -13,15 +19,15 @@ type CurrentVersionContextValue = {
   clearCurrentVersionName: (source?: string) => void;
 };
 
-const CurrentVersionContext = createContext<CurrentVersionContextValue | undefined>(
-  undefined,
-);
+const CurrentVersionContext = createContext<
+  CurrentVersionContextValue | undefined
+>(undefined);
 
-export const CurrentVersionProvider: React.FC<{ children: React.ReactNode }> = ({
-  children,
-}) => {
-  const [currentVersionName, setCurrentVersionNameState] = useState<string>(() =>
-    readCurrentVersionName(),
+export const CurrentVersionProvider: React.FC<{
+  children: React.ReactNode;
+}> = ({ children }) => {
+  const [currentVersionName, setCurrentVersionNameState] = useState<string>(
+    () => readCurrentVersionName(),
   );
 
   useEffect(() => {
@@ -30,7 +36,10 @@ export const CurrentVersionProvider: React.FC<{ children: React.ReactNode }> = (
       const next = String(custom.detail?.next || "").trim();
       setCurrentVersionNameState(next);
     };
-    window.addEventListener(CURRENT_VERSION_CHANGED_EVENT, handler as EventListener);
+    window.addEventListener(
+      CURRENT_VERSION_CHANGED_EVENT,
+      handler as EventListener,
+    );
     return () =>
       window.removeEventListener(
         CURRENT_VERSION_CHANGED_EVENT,
@@ -61,8 +70,9 @@ export const CurrentVersionProvider: React.FC<{ children: React.ReactNode }> = (
 export const useCurrentVersion = (): CurrentVersionContextValue => {
   const context = useContext(CurrentVersionContext);
   if (!context) {
-    throw new Error("useCurrentVersion must be used within CurrentVersionProvider");
+    throw new Error(
+      "useCurrentVersion must be used within CurrentVersionProvider",
+    );
   }
   return context;
 };
-

@@ -51,9 +51,7 @@ const InstanceSelectPage = lazy(() =>
     default: m.InstanceSelectPage,
   })),
 );
-const InstanceSettingsPage = lazy(() =>
-  import("@/pages/InstanceSettingsPage"),
-);
+const InstanceSettingsPage = lazy(() => import("@/pages/InstanceSettingsPage"));
 const ModsPage = lazy(() => import("@/pages/ModsPage"));
 const UpdatingPage = lazy(() => import("@/pages/UpdatingPage"));
 const ContentPage = lazy(() => import("@/pages/ContentPage"));
@@ -326,7 +324,10 @@ function App() {
                               <Route
                                 path={ROUTES.home}
                                 element={
-                                  <LauncherPage refresh={refresh} count={count} />
+                                  <LauncherPage
+                                    refresh={refresh}
+                                    count={count}
+                                  />
                                 }
                               />
                               <Route
@@ -337,14 +338,19 @@ function App() {
                                 path={ROUTES.downloadTasks}
                                 element={<DownloadManagerPage />}
                               />
-                              <Route path="/install" element={<InstallPage />} />
+                              <Route
+                                path="/install"
+                                element={<InstallPage />}
+                              />
                               <Route
                                 path={ROUTES.settings}
                                 element={<SettingsPage />}
                               />
                               <Route
                                 path={ROUTES.instances}
-                                element={<InstanceSelectPage refresh={refresh} />}
+                                element={
+                                  <InstanceSelectPage refresh={refresh} />
+                                }
                               />
                               <Route
                                 path={ROUTES.instanceSettings}
@@ -372,7 +378,10 @@ function App() {
                                 path={ROUTES.onboarding}
                                 element={<OnboardingPage />}
                               />
-                              <Route path="/content" element={<ContentPage />} />
+                              <Route
+                                path="/content"
+                                element={<ContentPage />}
+                              />
                               <Route
                                 path="/content/worlds"
                                 element={<WorldsListPage />}
@@ -401,7 +410,10 @@ function App() {
                                 path="/content/servers"
                                 element={<ServersPage />}
                               />
-                              <Route path={ROUTES.about} element={<AboutPage />} />
+                              <Route
+                                path={ROUTES.about}
+                                element={<AboutPage />}
+                              />
                             </Routes>
                           </Suspense>
                         </div>

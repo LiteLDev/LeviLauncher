@@ -25,7 +25,8 @@ export const LipUpdateModal: React.FC<LipUpdateModalProps> = ({
   onOpenSettings,
 }) => {
   const { t } = useTranslation();
-  const warningConfirmButtonProps = getUnifiedModalConfirmButtonProps("warning");
+  const warningConfirmButtonProps =
+    getUnifiedModalConfirmButtonProps("warning");
 
   return (
     <UnifiedModal
@@ -64,8 +65,14 @@ export const LipUpdateModal: React.FC<LipUpdateModalProps> = ({
           })}
         </p>
         <div className="rounded-2xl border border-default-200 dark:border-zinc-700 bg-default-100/60 dark:bg-zinc-800/60 px-4 py-3 text-small text-default-600 dark:text-zinc-300">
-          <div>{t("settings.lip.startup_prompt.current_version", { currentVersion })}</div>
-          <div>{t("settings.lip.startup_prompt.latest_version", { latestVersion })}</div>
+          <div>
+            {t("settings.lip.startup_prompt.current_version", {
+              currentVersion,
+            })}
+          </div>
+          <div>
+            {t("settings.lip.startup_prompt.latest_version", { latestVersion })}
+          </div>
         </div>
       </div>
     </UnifiedModal>

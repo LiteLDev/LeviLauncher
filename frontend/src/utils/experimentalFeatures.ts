@@ -11,9 +11,7 @@ export const readExperimentalInstanceBackupEnabled = (): boolean => {
   }
 };
 
-export const persistExperimentalInstanceBackupEnabled = (
-  enabled: boolean,
-) => {
+export const persistExperimentalInstanceBackupEnabled = (enabled: boolean) => {
   try {
     localStorage.setItem(
       EXPERIMENTAL_INSTANCE_BACKUP_KEY,

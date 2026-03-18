@@ -34,9 +34,7 @@ import {
 } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import {
-  OpenPathDir,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { motion } from "framer-motion";
@@ -470,9 +468,7 @@ export default function ServersPage() {
             </span>
             <span className="text-default-300">|</span>
             <span>{t("contentpage.isolation")}:</span>
-            <span
-              className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md"
-            >
+            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
               {roots.isIsolation ? t("common.yes") : t("common.no")}
             </span>
           </div>

@@ -50,7 +50,9 @@ export const useAppNavigation = () => {
   const navigate = useNavigate();
 
   const [isBeta, setIsBeta] = useState(false);
-  const [navLocked, setNavLockedState] = useState<boolean>(() => getNavLockState());
+  const [navLocked, setNavLockedState] = useState<boolean>(() =>
+    getNavLockState(),
+  );
 
   const isUpdatingMode = (() => {
     const p = String(location?.pathname || "");

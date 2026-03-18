@@ -261,10 +261,7 @@ export const SettingsPage: React.FC = () => {
     if (instanceBackupWarningCountdown > 0) return;
     setExperimentalInstanceBackupEnabled(true);
     setInstanceBackupWarningOpen(false);
-  }, [
-    instanceBackupWarningCountdown,
-    setExperimentalInstanceBackupEnabled,
-  ]);
+  }, [instanceBackupWarningCountdown, setExperimentalInstanceBackupEnabled]);
 
   const handleInstanceBackupExperimentalToggle = React.useCallback(
     (isSelected: boolean) => {
@@ -278,10 +275,7 @@ export const SettingsPage: React.FC = () => {
       }
       setInstanceBackupWarningOpen(true);
     },
-    [
-      experimentalInstanceBackupEnabled,
-      setExperimentalInstanceBackupEnabled,
-    ],
+    [experimentalInstanceBackupEnabled, setExperimentalInstanceBackupEnabled],
   );
 
   const getGdkErrorText = React.useCallback(
@@ -2618,12 +2612,8 @@ export const SettingsPage: React.FC = () => {
           <p className="font-medium text-warning-700 dark:text-warning-400">
             {t("settings.experimental.instance_backup.warning.body_1")}
           </p>
-          <p>
-            {t("settings.experimental.instance_backup.warning.body_2")}
-          </p>
-          <p>
-            {t("settings.experimental.instance_backup.warning.body_3")}
-          </p>
+          <p>{t("settings.experimental.instance_backup.warning.body_2")}</p>
+          <p>{t("settings.experimental.instance_backup.warning.body_3")}</p>
         </div>
       </UnifiedModal>
 

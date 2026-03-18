@@ -203,6 +203,13 @@ export default function InstanceSettingsPage() {
   const conflictItemFallbackLabel = t(
     "versions.edit.backup.restore.conflict_item_fallback",
   ) as string;
+  const backupSettingsPath = `${t("settings.header.title")} > ${t("settings.tabs.others")}`;
+  const backupExperimentalDisabledText = t(
+    "versions.edit.backup.experimental_disabled",
+    {
+      settingsPath: backupSettingsPath,
+    },
+  ) as string;
   const restoreConflictGroups = (() => {
     const scopeOrder = new Map(
       vs.restoreScopes.map((scope, index) => [scope.key, index]),
@@ -686,14 +693,24 @@ export default function InstanceSettingsPage() {
                 <div className="flex flex-col gap-6">
                   <section className="flex flex-col gap-3">
                     <div className="flex flex-col gap-1">
-                      <p className="font-medium text-default-700 dark:text-zinc-200">
-                        {t("versions.edit.backup.title")}
-                      </p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <p className="font-medium text-default-700 dark:text-zinc-200">
+                          {t("versions.edit.backup.title")}
+                        </p>
+                        <Chip size="sm" variant="flat" color="warning">
+                          {t("versions.edit.backup.experimental_badge")}
+                        </Chip>
+                      </div>
                       <p className="text-tiny text-default-500 dark:text-zinc-400 max-w-2xl">
                         {t("versions.edit.backup.hint", {
                           gameDataLabel: vs.backupGameDataLabel,
                         })}
                       </p>
+                      {!vs.instanceBackupExperimentalEnabled ? (
+                        <p className="text-tiny text-warning-600 dark:text-warning-400 max-w-2xl">
+                          {backupExperimentalDisabledText}
+                        </p>
+                      ) : null}
                     </div>
                     <div className="flex flex-col gap-4 md:flex-row md:items-center md:justify-between">
                       <div className="flex flex-col gap-1 max-w-2xl">
@@ -706,7 +723,11 @@ export default function InstanceSettingsPage() {
                           variant="flat"
                           radius="lg"
                           className="font-medium"
-                          isDisabled={!vs.targetName || vs.loading}
+                          isDisabled={
+                            !vs.instanceBackupExperimentalEnabled ||
+                            !vs.targetName ||
+                            vs.loading
+                          }
                           isLoading={
                             vs.restoreInfoLoading || vs.restoringInstance
                           }
@@ -718,7 +739,11 @@ export default function InstanceSettingsPage() {
                           color="primary"
                           radius="lg"
                           className="font-medium"
-                          isDisabled={!vs.targetName || vs.loading}
+                          isDisabled={
+                            !vs.instanceBackupExperimentalEnabled ||
+                            !vs.targetName ||
+                            vs.loading
+                          }
                           isLoading={
                             vs.backupInfoLoading || vs.backingUpInstance
                           }

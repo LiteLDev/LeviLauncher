@@ -22,6 +22,10 @@ import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { useTranslation } from "react-i18next";
 import { ROUTES } from "@/constants/routes";
+import {
+  EXPERIMENTAL_FEATURES_EVENT_NAME,
+  readExperimentalInstanceBackupEnabled,
+} from "@/utils/experimentalFeatures";
 
 type InstanceBackupScopeMode = {
   key: string;
@@ -694,6 +698,8 @@ export const useInstanceSettings = () => {
     React.useState<boolean>(false);
   const [restoreResult, setRestoreResult] =
     React.useState<InstanceBackupRestoreResult | null>(null);
+  const [instanceBackupExperimentalEnabled, setInstanceBackupExperimentalEnabled] =
+    React.useState<boolean>(() => readExperimentalInstanceBackupEnabled());
 
   // Unsaved changes modal
   const {
@@ -762,6 +768,38 @@ export const useInstanceSettings = () => {
     if (initialName) return;
     navigate(ROUTES.instances, { replace: true });
   }, [initialName, navigate]);
+
+  React.useEffect(() => {
+    const handleExperimentalFeaturesChange = () => {
+      setInstanceBackupExperimentalEnabled(
+        readExperimentalInstanceBackupEnabled(),
+      );
+    };
+    window.addEventListener(
+      EXPERIMENTAL_FEATURES_EVENT_NAME,
+      handleExperimentalFeaturesChange,
+    );
+    return () =>
+      window.removeEventListener(
+        EXPERIMENTAL_FEATURES_EVENT_NAME,
+        handleExperimentalFeaturesChange,
+      );
+  }, []);
+
+  React.useEffect(() => {
+    if (instanceBackupExperimentalEnabled) return;
+    if (!backingUpInstance) {
+      setBackupOpen(false);
+    }
+    if (!restoringInstance) {
+      setRestoreOpen(false);
+    }
+  }, [
+    backingUpInstance,
+    instanceBackupExperimentalEnabled,
+    restoringInstance,
+  ]);
+
   const resolvedLLTargetVersion = React.useMemo(
     () => String(selectedLLVersion || getLatestLLVersion(gameVersion) || "").trim(),
     [gameVersion, getLatestLLVersion, selectedLLVersion],
@@ -1396,7 +1434,7 @@ export const useInstanceSettings = () => {
   }, []);
 
   const openInstanceBackup = React.useCallback(async () => {
-    if (!targetName) return false;
+    if (!instanceBackupExperimentalEnabled || !targetName) return false;
     setBackupInfoLoading(true);
     setBackupSuccessOpen(false);
     try {
@@ -1495,6 +1533,7 @@ export const useInstanceSettings = () => {
     refreshInstance,
     resolveToastText,
     setError,
+    instanceBackupExperimentalEnabled,
     targetName,
   ]);
 
@@ -1539,9 +1578,13 @@ export const useInstanceSettings = () => {
   const onInstanceBackupOpenChange = React.useCallback(
     (open: boolean) => {
       if (backingUpInstance) return;
+      if (open && !instanceBackupExperimentalEnabled) {
+        setBackupOpen(false);
+        return;
+      }
       setBackupOpen(open);
     },
-    [backingUpInstance],
+    [backingUpInstance, instanceBackupExperimentalEnabled],
   );
 
   const openInstanceBackupDirectory = React.useCallback(async () => {
@@ -1555,7 +1598,7 @@ export const useInstanceSettings = () => {
   }, [backupInfo, backupResult]);
 
   const confirmInstanceBackup = React.useCallback(async () => {
-    if (!targetName) return false;
+    if (!instanceBackupExperimentalEnabled || !targetName) return false;
     if (selectedBackupScopes.length === 0) {
       return false;
     }
@@ -1609,13 +1652,14 @@ export const useInstanceSettings = () => {
     backupScopeModes,
     backupScopes,
     callVersionService,
+    instanceBackupExperimentalEnabled,
     selectedBackupScopes,
     t,
     targetName,
   ]);
 
   const openInstanceRestore = React.useCallback(async () => {
-    if (!targetName) return false;
+    if (!instanceBackupExperimentalEnabled || !targetName) return false;
     try {
       const selection = await Dialogs.OpenFile({
         Title: t("versions.edit.backup.restore.file_picker_title"),
@@ -1669,7 +1713,13 @@ export const useInstanceSettings = () => {
     } finally {
       setRestoreInfoLoading(false);
     }
-  }, [callVersionService, resolveToastText, t, targetName]);
+  }, [
+    callVersionService,
+    instanceBackupExperimentalEnabled,
+    resolveToastText,
+    t,
+    targetName,
+  ]);
 
   const setRestoreScopeSelected = React.useCallback(
     (scopeKey: string, selected: boolean) => {
@@ -1728,13 +1778,19 @@ export const useInstanceSettings = () => {
   const onInstanceRestoreOpenChange = React.useCallback(
     (open: boolean) => {
       if (restoringInstance) return;
+      if (open && !instanceBackupExperimentalEnabled) {
+        setRestoreOpen(false);
+        return;
+      }
       setRestoreOpen(open);
     },
-    [restoringInstance],
+    [instanceBackupExperimentalEnabled, restoringInstance],
   );
 
   const confirmInstanceRestore = React.useCallback(async () => {
-    if (!targetName || !restoreArchiveInfo) return false;
+    if (!instanceBackupExperimentalEnabled || !targetName || !restoreArchiveInfo) {
+      return false;
+    }
     if (selectedRestoreScopes.length === 0) return false;
     if (restoreConflictLoading || restoreHasUnresolvedConflicts) return false;
 
@@ -1806,6 +1862,7 @@ export const useInstanceSettings = () => {
     }
   }, [
     callVersionService,
+    instanceBackupExperimentalEnabled,
     restoreConflictChoices,
     restoreConflictLoading,
     restoreConflicts,
@@ -2264,6 +2321,7 @@ export const useInstanceSettings = () => {
     backupLipPackageSummary,
     backupFullModeSelected,
     backingUpInstance,
+    instanceBackupExperimentalEnabled,
     backupSuccessOpen,
     setBackupSuccessOpen,
     backupResult,

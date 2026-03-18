@@ -24,6 +24,11 @@ import { Call, Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { persistClarityChoice } from "@/utils/clarityConsent";
+import {
+  EXPERIMENTAL_FEATURES_EVENT_NAME,
+  persistExperimentalInstanceBackupEnabled,
+  readExperimentalInstanceBackupEnabled,
+} from "@/utils/experimentalFeatures";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { useThemeManager, ThemeMode } from "@/utils/useThemeManager";
 
@@ -65,6 +70,8 @@ export const useSettings = (i18n: { language: string }) => {
       return false;
     }
   });
+  const [experimentalInstanceBackupEnabled, setExperimentalInstanceBackupEnabledState] =
+    useState<boolean>(() => readExperimentalInstanceBackupEnabled());
 
   // GDK
   const [gdkInstalled, setGdkInstalled] = useState<boolean>(false);
@@ -318,6 +325,11 @@ export const useSettings = (i18n: { language: string }) => {
     persistClarityChoice(enabled);
   };
 
+  const setExperimentalInstanceBackupEnabled = (enabled: boolean) => {
+    setExperimentalInstanceBackupEnabledState(enabled);
+    persistExperimentalInstanceBackupEnabled(enabled);
+  };
+
   const callMinecraftByName = async <T,>(
     method: string,
     ...args: unknown[]
@@ -551,6 +563,23 @@ export const useSettings = (i18n: { language: string }) => {
   useEffect(() => {
     setBackgroundImageError(false);
   }, [backgroundImage]);
+
+  useEffect(() => {
+    const handleExperimentalFeaturesChange = () => {
+      setExperimentalInstanceBackupEnabledState(
+        readExperimentalInstanceBackupEnabled(),
+      );
+    };
+    window.addEventListener(
+      EXPERIMENTAL_FEATURES_EVENT_NAME,
+      handleExperimentalFeaturesChange,
+    );
+    return () =>
+      window.removeEventListener(
+        EXPERIMENTAL_FEATURES_EVENT_NAME,
+        handleExperimentalFeaturesChange,
+      );
+  }, []);
 
   // Background image preview loading
   useEffect(() => {
@@ -830,6 +859,8 @@ export const useSettings = (i18n: { language: string }) => {
     setEnableBetaUpdates: setEnableBetaUpdatesState,
     clarityEnabled,
     setClarityEnabled,
+    experimentalInstanceBackupEnabled,
+    setExperimentalInstanceBackupEnabled,
 
     // GDK
     gdkInstalled,

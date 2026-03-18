@@ -356,6 +356,21 @@
       "title": "Receive Beta Updates",
       "desc": "Enable to receive prerelease updates"
     },
+    "experimental": {
+      "title": "Experimental Features",
+      "desc": "Try unfinished capabilities here. These features may change, break, or disappear without notice.",
+      "instance_backup": {
+        "title": "Instance backup (Experimental)",
+        "desc": "Enable backup and restore actions in instance settings. This feature is still experimental.",
+        "warning": {
+          "title": "Enable experimental instance backup?",
+          "body_1": "This feature is intended for developers and testers only. Do not use production data casually.",
+          "body_2": "Backup format, included scope, and restore compatibility may change in future builds, and forward compatibility is not guaranteed.",
+          "body_3": "Please make sure you understand the risks, and decide whether to enable it only after reading this warning in full for 10 seconds.",
+          "confirm": "I understand the risks"
+        }
+      }
+    },
     "reset": {
       "confirm": {
         "title": "Restore default path?",
@@ -768,6 +783,8 @@
         "title": "Instance Backup",
         "hint": "Create a backup for this instance before changing settings, installing mods, or trying something new",
         "section_body": "Choose the game content and mods you want to keep together; the launcher app itself is not included",
+        "experimental_badge": "Experimental",
+        "experimental_disabled": "Enable this in {{settingsPath}} before using instance backup and restore.",
         "button": "Back up instance",
         "dialog_title": "Choose what to back up",
         "dialog_body": "Select what you want to keep in this backup",

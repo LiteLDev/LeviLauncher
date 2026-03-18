@@ -128,6 +128,8 @@ export const SettingsPage: React.FC = () => {
     setEnableBetaUpdates,
     clarityEnabled,
     setClarityEnabled,
+    experimentalInstanceBackupEnabled,
+    setExperimentalInstanceBackupEnabled,
     gdkInstalled,
     gdkDlProgress,
     gdkDlSpeed,
@@ -234,6 +236,53 @@ export const SettingsPage: React.FC = () => {
     resetOnOpenChange,
     resetOnClose,
   } = settings;
+  const [instanceBackupWarningOpen, setInstanceBackupWarningOpen] =
+    React.useState(false);
+  const [instanceBackupWarningCountdown, setInstanceBackupWarningCountdown] =
+    React.useState(0);
+
+  React.useEffect(() => {
+    if (!instanceBackupWarningOpen) {
+      setInstanceBackupWarningCountdown(0);
+      return;
+    }
+    setInstanceBackupWarningCountdown(10);
+    const timer = window.setInterval(() => {
+      setInstanceBackupWarningCountdown((value) => (value > 0 ? value - 1 : 0));
+    }, 1000);
+    return () => window.clearInterval(timer);
+  }, [instanceBackupWarningOpen]);
+
+  const closeInstanceBackupWarning = React.useCallback(() => {
+    setInstanceBackupWarningOpen(false);
+  }, []);
+
+  const confirmInstanceBackupWarning = React.useCallback(() => {
+    if (instanceBackupWarningCountdown > 0) return;
+    setExperimentalInstanceBackupEnabled(true);
+    setInstanceBackupWarningOpen(false);
+  }, [
+    instanceBackupWarningCountdown,
+    setExperimentalInstanceBackupEnabled,
+  ]);
+
+  const handleInstanceBackupExperimentalToggle = React.useCallback(
+    (isSelected: boolean) => {
+      if (!isSelected) {
+        setExperimentalInstanceBackupEnabled(false);
+        setInstanceBackupWarningOpen(false);
+        return;
+      }
+      if (experimentalInstanceBackupEnabled) {
+        return;
+      }
+      setInstanceBackupWarningOpen(true);
+    },
+    [
+      experimentalInstanceBackupEnabled,
+      setExperimentalInstanceBackupEnabled,
+    ],
+  );
 
   const getGdkErrorText = React.useCallback(
     (code: string) => {
@@ -2070,20 +2119,55 @@ export const SettingsPage: React.FC = () => {
               )}
 
               {selectedTab === "others" && (
-                <div className="flex items-center justify-between">
-                  <div className="flex flex-col gap-1">
-                    <p className="font-medium">{t("settings.process.title")}</p>
-                    <p className="text-tiny text-default-500 dark:text-zinc-400">
-                      {t("settings.process.desc")}
-                    </p>
+                <div className="flex flex-col gap-6">
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">
+                        {t("settings.process.title")}
+                      </p>
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
+                        {t("settings.process.desc")}
+                      </p>
+                    </div>
+                    <Button
+                      radius="full"
+                      variant="bordered"
+                      onPress={() => setProcessModalOpen(true)}
+                    >
+                      {t("settings.process.scan")}
+                    </Button>
                   </div>
-                  <Button
-                    radius="full"
-                    variant="bordered"
-                    onPress={() => setProcessModalOpen(true)}
-                  >
-                    {t("settings.process.scan")}
-                  </Button>
+
+                  <Divider className="bg-default-200/50" />
+
+                  <div className="flex flex-col gap-4">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">
+                        {t("settings.experimental.title")}
+                      </p>
+                      <p className="text-tiny text-default-500 dark:text-zinc-400 max-w-2xl">
+                        {t("settings.experimental.desc")}
+                      </p>
+                    </div>
+                    <div className="flex items-center justify-between gap-4">
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium">
+                          {t("settings.experimental.instance_backup.title")}
+                        </p>
+                        <p className="text-tiny text-default-500 dark:text-zinc-400 max-w-2xl">
+                          {t("settings.experimental.instance_backup.desc")}
+                        </p>
+                      </div>
+                      <Switch
+                        size="sm"
+                        isSelected={experimentalInstanceBackupEnabled}
+                        onValueChange={handleInstanceBackupExperimentalToggle}
+                        classNames={{
+                          wrapper: "group-data-[selected=true]:bg-primary-500",
+                        }}
+                      />
+                    </div>
+                  </div>
                 </div>
               )}
 
@@ -2498,6 +2582,48 @@ export const SettingsPage: React.FC = () => {
               ))}
             </div>
           )}
+        </div>
+      </UnifiedModal>
+
+      <UnifiedModal
+        size="lg"
+        isOpen={instanceBackupWarningOpen}
+        onOpenChange={setInstanceBackupWarningOpen}
+        type="warning"
+        title={t("settings.experimental.instance_backup.warning.title")}
+        hideCloseButton
+        isDismissable={false}
+        showConfirmButton={false}
+        showCancelButton={false}
+        footer={
+          <div className="flex w-full justify-end gap-2">
+            <Button variant="light" onPress={closeInstanceBackupWarning}>
+              {t("common.cancel")}
+            </Button>
+            <Button
+              color="warning"
+              radius="full"
+              className="text-white! font-bold shadow-lg shadow-warning-500/20"
+              isDisabled={instanceBackupWarningCountdown > 0}
+              onPress={confirmInstanceBackupWarning}
+            >
+              {instanceBackupWarningCountdown > 0
+                ? `${t("settings.experimental.instance_backup.warning.confirm")} (${instanceBackupWarningCountdown}s)`
+                : t("settings.experimental.instance_backup.warning.confirm")}
+            </Button>
+          </div>
+        }
+      >
+        <div className="space-y-4 text-sm leading-7 text-default-700 dark:text-zinc-300">
+          <p className="font-medium text-warning-700 dark:text-warning-400">
+            {t("settings.experimental.instance_backup.warning.body_1")}
+          </p>
+          <p>
+            {t("settings.experimental.instance_backup.warning.body_2")}
+          </p>
+          <p>
+            {t("settings.experimental.instance_backup.warning.body_3")}
+          </p>
         </div>
       </UnifiedModal>
 

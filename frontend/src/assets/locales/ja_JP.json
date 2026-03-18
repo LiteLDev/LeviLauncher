@@ -335,6 +335,21 @@
       "title": "ベータ版アップデートを受信",
       "desc": "プレリリース版のアップデートを受け取るには有効にしてください"
     },
+    "experimental": {
+      "title": "Experimental Features",
+      "desc": "Try unfinished capabilities here. These features may change, break, or disappear without notice.",
+      "instance_backup": {
+        "title": "Instance backup (Experimental)",
+        "desc": "Enable backup and restore actions in instance settings. This feature is still experimental.",
+        "warning": {
+          "title": "Enable experimental instance backup?",
+          "body_1": "This feature is intended for developers and testers only. Do not use production data casually.",
+          "body_2": "Backup format, included scope, and restore compatibility may change in future builds, and forward compatibility is not guaranteed.",
+          "body_3": "Please make sure you understand the risks, and decide whether to enable it only after reading this warning in full for 10 seconds.",
+          "confirm": "I understand the risks"
+        }
+      }
+    },
     "reset": {
       "confirm": {
         "title": "デフォルトパスに戻しますか？",
@@ -750,6 +765,8 @@
         "title": "インスタンスのバックアップ",
         "hint": "設定変更や mods の追加、新しいことを試す前に、このインスタンスのバックアップを作成しておけます",
         "section_body": "一緒に保存したいゲーム内容と mods を選べます；ランチャー本体は含まれません",
+        "experimental_badge": "Experimental",
+        "experimental_disabled": "Enable this in {{settingsPath}} before using instance backup and restore.",
         "button": "インスタンスをバックアップ",
         "dialog_title": "バックアップする内容を選択",
         "dialog_body": "今回一緒に保存したい内容を選んでください",

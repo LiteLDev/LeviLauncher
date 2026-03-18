@@ -3,7 +3,10 @@ import { useDisclosure } from "@heroui/react";
 import { Events } from "@wailsio/runtime";
 import { useNavigate } from "react-router-dom";
 import { compareVersions } from "@/utils/version";
-import { readCurrentVersionName, saveCurrentVersionName } from "@/utils/currentVersion";
+import {
+  readCurrentVersionName,
+  saveCurrentVersionName,
+} from "@/utils/currentVersion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   EnsureGameInputInteractive,
@@ -21,10 +24,30 @@ import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import { ROUTES } from "@/constants/routes";
 
-let __didCheckGameInput = false;
-let __didCheckGamingServices = false;
-let __didCheckVcRuntime = false;
 const IGNORE_GS_KEY = "ll.ignore.gs";
+const DEPENDENCY_CHECK_SESSION_KEYS = {
+  gameInput: "ll.session.dependency-check.gameinput",
+  gamingServices: "ll.session.dependency-check.gamingservices",
+  vcRuntime: "ll.session.dependency-check.vcruntime",
+} as const;
+
+const hasSessionDependencyCheckRun = (
+  key: (typeof DEPENDENCY_CHECK_SESSION_KEYS)[keyof typeof DEPENDENCY_CHECK_SESSION_KEYS],
+): boolean => {
+  try {
+    return window.sessionStorage.getItem(key) === "1";
+  } catch {
+    return false;
+  }
+};
+
+const markSessionDependencyCheckRun = (
+  key: (typeof DEPENDENCY_CHECK_SESSION_KEYS)[keyof typeof DEPENDENCY_CHECK_SESSION_KEYS],
+) => {
+  try {
+    window.sessionStorage.setItem(key, "1");
+  } catch {}
+};
 
 const getNextRandomTipIndex = (currentIndex: number, totalTips: number) => {
   const normalizedTotal = Math.max(1, totalTips);
@@ -282,8 +305,7 @@ export const useLauncher = (args: any) => {
         try {
           const mods = ((await (GetMods as any)?.(name)) || []) as any[];
           installed = mods.some(
-            (m: any) =>
-              String(m?.name || "").toLowerCase() === "levilamina",
+            (m: any) => String(m?.name || "").toLowerCase() === "levilamina",
           );
         } catch {}
 
@@ -612,8 +634,10 @@ export const useLauncher = (args: any) => {
   useEffect(() => {
     if (!hasBackend) return;
     const timer = setTimeout(() => {
-      if (!__didCheckVcRuntime) {
-        __didCheckVcRuntime = true;
+      if (
+        !hasSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.vcRuntime)
+      ) {
+        markSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.vcRuntime);
         try {
           (minecraft as any)?.IsVcRuntimeInstalled?.().then((ok: boolean) => {
             if (!ok) {
@@ -622,8 +646,10 @@ export const useLauncher = (args: any) => {
           });
         } catch {}
       }
-      if (!__didCheckGameInput) {
-        __didCheckGameInput = true;
+      if (
+        !hasSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.gameInput)
+      ) {
+        markSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.gameInput);
         try {
           minecraft?.IsGameInputInstalled?.().then((ok: boolean) => {
             if (!ok) {
@@ -632,8 +658,14 @@ export const useLauncher = (args: any) => {
           });
         } catch {}
       }
-      if (!__didCheckGamingServices) {
-        __didCheckGamingServices = true;
+      if (
+        !hasSessionDependencyCheckRun(
+          DEPENDENCY_CHECK_SESSION_KEYS.gamingServices,
+        )
+      ) {
+        markSessionDependencyCheckRun(
+          DEPENDENCY_CHECK_SESSION_KEYS.gamingServices,
+        );
         try {
           const ig = String(localStorage.getItem(IGNORE_GS_KEY) || "") === "1";
           if (!ig) {
@@ -647,7 +679,12 @@ export const useLauncher = (args: any) => {
       }
     }, 0);
     return () => clearTimeout(timer);
-  }, [hasBackend, gameInputMissingDisclosure, gamingServicesMissingDisclosure]);
+  }, [
+    hasBackend,
+    gameInputMissingDisclosure,
+    gamingServicesMissingDisclosure,
+    vcRuntimeMissingDisclosure,
+  ]);
 
   useEffect(() => {
     const unlistenGiStart = Events.On("gameinput.ensure.start", () => {
@@ -1256,5 +1293,3 @@ export const useLauncher = (args: any) => {
     handleGdkMissingGoSettings,
   };
 };
-
-

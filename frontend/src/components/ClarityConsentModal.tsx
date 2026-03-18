@@ -21,7 +21,6 @@ export const ClarityConsentModal: React.FC<ClarityConsentModalProps> = ({
     <UnifiedModal
       size="lg"
       isOpen={isOpen}
-      onOpenChange={() => {}}
       type="info"
       title={t("clarity.prompt.title")}
       hideCloseButton
@@ -48,7 +47,9 @@ export const ClarityConsentModal: React.FC<ClarityConsentModalProps> = ({
             size="sm"
             radius="full"
             variant="flat"
-            onPress={() => Browser.OpenURL("https://clarity.microsoft.com/terms")}
+            onPress={() =>
+              Browser.OpenURL("https://clarity.microsoft.com/terms")
+            }
           >
             {t("clarity.prompt.clarity_terms")}
           </Button>

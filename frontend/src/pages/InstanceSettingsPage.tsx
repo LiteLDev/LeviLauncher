@@ -123,7 +123,9 @@ const RESTORE_CONFLICT_CATEGORY_LABEL_KEYS: Record<
 };
 
 const normalizeConflictPath = (value: string): string =>
-  String(value || "").replace(/\\/g, "/").toLowerCase();
+  String(value || "")
+    .replace(/\\/g, "/")
+    .toLowerCase();
 
 const resolveRestoreConflictCategoryKey = (
   conflict: RestoreConflict,
@@ -180,13 +182,16 @@ const resolveRestoreConflictTitle = (
 const hasRestoreConflictDetails = (conflict: RestoreConflict): boolean =>
   Boolean(
     String(conflict.identityKey || "").trim() ||
-      String(conflict.backupPath || "").trim() ||
-      String(conflict.currentPath || "").trim() ||
-      (Array.isArray(conflict.diffFields) && conflict.diffFields.length > 0) ||
-      conflict.sourceType !== conflict.targetType,
+    String(conflict.backupPath || "").trim() ||
+    String(conflict.currentPath || "").trim() ||
+    (Array.isArray(conflict.diffFields) && conflict.diffFields.length > 0) ||
+    conflict.sourceType !== conflict.targetType,
   );
 
-const getScopeDisplayLabel = (scopeKey: string, fallbackLabel: string): string =>
+const getScopeDisplayLabel = (
+  scopeKey: string,
+  fallbackLabel: string,
+): string =>
   String(scopeKey || "").trim() === "mods"
     ? "Mods"
     : String(fallbackLabel || "").trim() || "-";
@@ -217,15 +222,21 @@ export default function InstanceSettingsPage() {
     const groups = new Map<
       string,
       RestoreConflictScopeGroup & {
-        categoryMap: Map<RestoreConflictCategoryKey, RestoreConflictCategoryGroup>;
+        categoryMap: Map<
+          RestoreConflictCategoryKey,
+          RestoreConflictCategoryGroup
+        >;
       }
     >();
 
     for (const conflict of vs.restoreConflicts as RestoreConflict[]) {
-      const groupKey = String(conflict.scopeKey || conflict.scopeLabel || "other").trim();
+      const groupKey = String(
+        conflict.scopeKey || conflict.scopeLabel || "other",
+      ).trim();
       const selectedChoice = vs.restoreConflictChoices[conflict.id];
       const categoryKey = resolveRestoreConflictCategoryKey(conflict);
-      const categoryLabelKey = RESTORE_CONFLICT_CATEGORY_LABEL_KEYS[categoryKey];
+      const categoryLabelKey =
+        RESTORE_CONFLICT_CATEGORY_LABEL_KEYS[categoryKey];
       let group = groups.get(groupKey);
       if (!group) {
         group = {
@@ -1000,7 +1011,6 @@ export default function InstanceSettingsPage() {
 
       <UnifiedModal
         isOpen={vs.backingUpInstance}
-        onOpenChange={() => {}}
         hideCloseButton
         isDismissable={false}
         type="primary"
@@ -1078,7 +1088,10 @@ export default function InstanceSettingsPage() {
             <div className="grid gap-3 md:grid-cols-2">
               {vs.restoreScopes.map((scope) => {
                 const isSelected = vs.selectedRestoreScopeSet.has(scope.key);
-                const displayLabel = getScopeDisplayLabel(scope.key, scope.label);
+                const displayLabel = getScopeDisplayLabel(
+                  scope.key,
+                  scope.label,
+                );
                 return (
                   <div
                     key={scope.key}
@@ -1103,7 +1116,9 @@ export default function InstanceSettingsPage() {
                           </span>
                           {scope.mode ? (
                             <Chip size="sm" variant="flat" color="primary">
-                              {t(`versions.edit.backup.mode.${scope.mode}.label`)}
+                              {t(
+                                `versions.edit.backup.mode.${scope.mode}.label`,
+                              )}
                             </Chip>
                           ) : null}
                         </div>
@@ -1113,7 +1128,9 @@ export default function InstanceSettingsPage() {
                             <div className="flex flex-wrap items-center">
                               <span className="text-tiny leading-6 text-default-600 dark:text-zinc-300">
                                 {t("versions.edit.backup.restore.lip_summary", {
-                                  count: vs.restoreArchiveInfo.modsLipPackages.length,
+                                  count:
+                                    vs.restoreArchiveInfo.modsLipPackages
+                                      .length,
                                 })}
                               </span>
                             </div>
@@ -1198,7 +1215,8 @@ export default function InstanceSettingsPage() {
                                     </span>
                                   ) : null}
                                   <span>
-                                    {t(category.labelKey)} {category.conflicts.length}
+                                    {t(category.labelKey)}{" "}
+                                    {category.conflicts.length}
                                   </span>
                                 </span>
                               ))}
@@ -1213,7 +1231,9 @@ export default function InstanceSettingsPage() {
                               className="min-w-[132px] border-default-300 bg-default-100 px-4 text-default-700 shadow-sm transition-colors hover:bg-default-200 dark:border-white/15 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/15"
                               onPress={() =>
                                 vs.setRestoreConflictChoicesBulk(
-                                  group.conflicts.map((conflict) => conflict.id),
+                                  group.conflicts.map(
+                                    (conflict) => conflict.id,
+                                  ),
                                   "backup",
                                 )
                               }
@@ -1230,7 +1250,9 @@ export default function InstanceSettingsPage() {
                               className="min-w-[132px] border-default-300 bg-default-100 px-4 text-default-700 shadow-sm transition-colors hover:bg-default-200 dark:border-white/15 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/15"
                               onPress={() =>
                                 vs.setRestoreConflictChoicesBulk(
-                                  group.conflicts.map((conflict) => conflict.id),
+                                  group.conflicts.map(
+                                    (conflict) => conflict.id,
+                                  ),
                                   "current",
                                 )
                               }
@@ -1255,9 +1277,7 @@ export default function InstanceSettingsPage() {
                                   <span className="text-default-300 dark:text-zinc-600">
                                     ·
                                   </span>
-                                  <span>
-                                    {category.conflicts.length}
-                                  </span>
+                                  <span>{category.conflicts.length}</span>
                                 </div>
                               ) : null}
                               <div className="grid gap-3">
@@ -1329,10 +1349,13 @@ export default function InstanceSettingsPage() {
                                                     </Chip>
                                                   ))
                                               : null}
-                                            {Array.isArray(conflict.diffFields) &&
+                                            {Array.isArray(
+                                              conflict.diffFields,
+                                            ) &&
                                             conflict.diffFields.length > 3 ? (
                                               <Chip size="sm" variant="flat">
-                                                +{conflict.diffFields.length - 3}
+                                                +
+                                                {conflict.diffFields.length - 3}
                                               </Chip>
                                             ) : null}
                                           </div>
@@ -1354,7 +1377,8 @@ export default function InstanceSettingsPage() {
                                             }
                                             isDisabled={vs.restoringInstance}
                                             onSelectionChange={(keys) => {
-                                              const nextValue = Array.from(keys)[0];
+                                              const nextValue =
+                                                Array.from(keys)[0];
                                               if (
                                                 nextValue === "backup" ||
                                                 nextValue === "current"
@@ -1457,12 +1481,15 @@ export default function InstanceSettingsPage() {
                                                     )}
                                                   </div>
                                                   <div className="font-mono text-xs text-default-700 dark:text-zinc-300 break-all">
-                                                    {conflict.currentPath || "-"}
+                                                    {conflict.currentPath ||
+                                                      "-"}
                                                   </div>
                                                 </div>
                                               </div>
                                             ) : null}
-                                            {Array.isArray(conflict.diffFields) &&
+                                            {Array.isArray(
+                                              conflict.diffFields,
+                                            ) &&
                                             conflict.diffFields.length > 0 ? (
                                               <div className="space-y-2">
                                                 <Divider />
@@ -1483,7 +1510,8 @@ export default function InstanceSettingsPage() {
                                                             )}
                                                           </div>
                                                           <div className="text-sm text-default-800 dark:text-zinc-100 break-all font-mono">
-                                                            {field.backupValue || "-"}
+                                                            {field.backupValue ||
+                                                              "-"}
                                                           </div>
                                                         </div>
                                                         <div className="rounded-xl bg-default-100/80 dark:bg-white/5 px-3 py-2">
@@ -1493,7 +1521,8 @@ export default function InstanceSettingsPage() {
                                                             )}
                                                           </div>
                                                           <div className="text-sm text-default-800 dark:text-zinc-100 break-all font-mono">
-                                                            {field.currentValue || "-"}
+                                                            {field.currentValue ||
+                                                              "-"}
                                                           </div>
                                                         </div>
                                                       </div>
@@ -1541,7 +1570,6 @@ export default function InstanceSettingsPage() {
 
       <UnifiedModal
         isOpen={vs.restoringInstance}
-        onOpenChange={() => {}}
         hideCloseButton
         isDismissable={false}
         type="primary"
@@ -1550,7 +1578,8 @@ export default function InstanceSettingsPage() {
         <div className="space-y-4">
           <div className="space-y-1">
             <div className="text-medium font-medium text-default-700 dark:text-zinc-200">
-              {vs.restoreProgressText || t("versions.edit.backup.restore.progress_body")}
+              {vs.restoreProgressText ||
+                t("versions.edit.backup.restore.progress_body")}
             </div>
             {vs.restoreProgressStepText ? (
               <div className="text-sm text-default-500 dark:text-zinc-400">

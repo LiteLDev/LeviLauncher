@@ -42,7 +42,11 @@ import { LuDownload } from "react-icons/lu";
 import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { FileDropOverlay } from "@/components/FileDropOverlay";
 import { useFileDrag } from "@/hooks/useFileDrag";
-import { useModsPage, type LipGroupItem, type ModListItem } from "@/hooks/useModsPage";
+import {
+  useModsPage,
+  type LipGroupItem,
+  type ModListItem,
+} from "@/hooks/useModsPage";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -73,7 +77,8 @@ export const ModsPage: React.FC = () => {
 
   const visibleCount = mp.visibleItems.length;
   const allSelected = visibleCount > 0 && mp.selectedKeys.size === visibleCount;
-  const indeterminate = mp.selectedKeys.size > 0 && mp.selectedKeys.size < visibleCount;
+  const indeterminate =
+    mp.selectedKeys.size > 0 && mp.selectedKeys.size < visibleCount;
 
   const selectedCount = mp.selectedItems.length;
 
@@ -94,7 +99,6 @@ export const ModsPage: React.FC = () => {
 
       <UnifiedModal
         isOpen={mp.importing && !mp.dllOpen}
-        onOpenChange={() => {}}
         title={t("mods.importing_title")}
         type="primary"
         icon={<FiUploadCloud className="w-6 h-6" />}
@@ -564,7 +568,8 @@ export const ModsPage: React.FC = () => {
                       className="col-start-3 row-start-1 md:col-start-4 md:row-start-1 flex items-center justify-end gap-2 pr-1"
                       onClick={(e) => e.stopPropagation()}
                     >
-                      {lipState.sourceType === "unique" && lipState.canUpdate ? (
+                      {lipState.sourceType === "unique" &&
+                      lipState.canUpdate ? (
                         <Button
                           isIconOnly
                           size="sm"
@@ -613,7 +618,8 @@ export const ModsPage: React.FC = () => {
                             startContent={<FaSync />}
                             onPress={() => void mp.handleUpdateMod(mod)}
                             isDisabled={
-                              lipState.sourceType !== "unique" || !lipState.canUpdate
+                              lipState.sourceType !== "unique" ||
+                              !lipState.canUpdate
                             }
                           >
                             {t("mods.action_update")}
@@ -641,7 +647,10 @@ export const ModsPage: React.FC = () => {
 
               const lipItem = item as LipGroupItem;
               const lipState = lipItem.lipState;
-              const childrenSummary = resolveLipChildrenSummary(t as any, lipItem);
+              const childrenSummary = resolveLipChildrenSummary(
+                t as any,
+                lipItem,
+              );
 
               return (
                 <div
@@ -755,7 +764,9 @@ export const ModsPage: React.FC = () => {
                           <DropdownItem
                             key="promote"
                             startContent={<LuDownload />}
-                            onPress={() => void mp.handlePromoteLipGroup(lipItem)}
+                            onPress={() =>
+                              void mp.handlePromoteLipGroup(lipItem)
+                            }
                           >
                             {t("mods.action_promote_install")}
                           </DropdownItem>
@@ -907,7 +918,10 @@ export const ModsPage: React.FC = () => {
                     wrapper: "group-data-[selected=true]:bg-primary-500",
                   }}
                   onValueChange={(value: boolean) =>
-                    mp.toggleModEnabled(mp.resolveModFolder(mp.activeMod!), value)
+                    mp.toggleModEnabled(
+                      mp.resolveModFolder(mp.activeMod!),
+                      value,
+                    )
                   }
                   aria-label={t("mods.toggle_label") as string}
                 />
@@ -1018,4 +1032,3 @@ export const ModsPage: React.FC = () => {
 };
 
 export default ModsPage;
-

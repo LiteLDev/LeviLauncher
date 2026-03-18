@@ -682,11 +682,11 @@ export default function ResourcePacksPage() {
                 </Checkbox>
               )}
 
-                <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                  <DropdownTrigger>
-                    <Button
-                      variant="flat"
-                      radius="full"
+              <Dropdown classNames={COMPONENT_STYLES.dropdown}>
+                <DropdownTrigger>
+                  <Button
+                    variant="flat"
+                    radius="full"
                     startContent={
                       sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
                     }
@@ -750,9 +750,7 @@ export default function ResourcePacksPage() {
             </span>
             <span className="text-default-300 dark:text-zinc-700">|</span>
             <span>{t("contentpage.isolation")}:</span>
-            <span
-              className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md"
-            >
+            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
               {roots.isIsolation ? t("common.yes") : t("common.no")}
             </span>
           </div>
@@ -1056,7 +1054,6 @@ export default function ResourcePacksPage() {
 
       <UnifiedModal
         isOpen={transferring}
-        onOpenChange={() => {}}
         type="primary"
         title={t("contentpage.transfer_progress_title")}
         icon={<FaExchangeAlt className="w-6 h-6" />}

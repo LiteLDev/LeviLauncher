@@ -21,7 +21,7 @@ export type ModalType = "success" | "warning" | "error" | "info" | "primary";
 
 export interface UnifiedModalProps {
   isOpen: boolean;
-  onOpenChange: (open: boolean) => void;
+  onOpenChange?: (open: boolean) => void;
   type?: ModalType;
   title: React.ReactNode;
   children?: React.ReactNode;
@@ -145,6 +145,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   title,
   children,
   footer,
+  hideCloseButton = false,
   isDismissable = false,
   size = "md",
   scrollBehavior = "inside",
@@ -167,6 +168,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   const { t } = useTranslation();
   const config = TYPE_CONFIG[type];
   const Icon = config.icon;
+  const handleOpenChange = onOpenChange ?? (() => {});
   const resolvedConfirmText = confirmText ?? t("common.confirm");
   const resolvedCancelText = cancelText ?? t("common.cancel");
   const resolvedConfirmButtonProps = getUnifiedModalConfirmButtonProps(type, {
@@ -191,9 +193,9 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   return (
     <BaseModal
       isOpen={isOpen}
-      onOpenChange={onOpenChange}
+      onOpenChange={handleOpenChange}
       size={size}
-      hideCloseButton={true}
+      hideCloseButton={hideCloseButton}
       isDismissable={isDismissable}
       scrollBehavior={scrollBehavior}
       classNames={{

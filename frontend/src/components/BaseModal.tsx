@@ -33,7 +33,12 @@ export const BaseModal: React.FC<ModalProps> = (props) => {
           className="wails-draggable fixed inset-x-0 top-0 h-14 z-[75]"
         />
       ) : null}
-      <Modal isOpen={isOpen} {...rest} backdrop="blur" classNames={finalClassNames} />
+      <Modal
+        isOpen={isOpen}
+        {...rest}
+        backdrop="blur"
+        classNames={finalClassNames}
+      />
     </>
   );
 };

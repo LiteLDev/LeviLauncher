@@ -911,7 +911,6 @@ export default function WorldsListPage() {
 
       <UnifiedModal
         isOpen={transferring}
-        onOpenChange={() => {}}
         type="primary"
         title={t("contentpage.transfer_progress_title")}
         icon={<FaExchangeAlt className="w-6 h-6" />}

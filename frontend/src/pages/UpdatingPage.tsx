@@ -125,7 +125,9 @@ export default function UpdatingPage() {
       const nextDownloaded = Number(payload.downloaded || 0);
       const nextTotal = Number(payload.total || 0);
       safeSet(() => {
-        setDownloaded(Number.isFinite(nextDownloaded) ? Math.max(0, nextDownloaded) : 0);
+        setDownloaded(
+          Number.isFinite(nextDownloaded) ? Math.max(0, nextDownloaded) : 0,
+        );
         setTotal(Number.isFinite(nextTotal) ? Math.max(0, nextTotal) : 0);
       });
     });
@@ -176,9 +178,12 @@ export default function UpdatingPage() {
     };
   }, []);
 
-  const installBusy = ["installing", "verifying", "elevating", "restarting"].includes(
-    currentStatus,
-  );
+  const installBusy = [
+    "installing",
+    "verifying",
+    "elevating",
+    "restarting",
+  ].includes(currentStatus);
 
   return (
     <PageContainer>
@@ -304,7 +309,6 @@ export default function UpdatingPage() {
       <UnifiedModal
         size="md"
         isOpen={!!errorCode}
-        onOpenChange={() => {}}
         type="error"
         title={t("updating.failed_title")}
         confirmText={t("common.confirm")}

@@ -21,7 +21,6 @@ export const TermsModal: React.FC<TermsModalProps> = ({
     <UnifiedModal
       size="lg"
       isOpen={isOpen}
-      onOpenChange={() => {}}
       type="primary"
       title={t("terms.title")}
       hideCloseButton
@@ -38,11 +37,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({
           >
             {t("terms.decline")}
           </Button>
-          <Button
-            color="primary"
-            isDisabled={countdown > 0}
-            onPress={onAccept}
-          >
+          <Button color="primary" isDisabled={countdown > 0} onPress={onAccept}>
             {countdown > 0
               ? `${t("terms.agree")} (${countdown}s)`
               : t("terms.agree")}

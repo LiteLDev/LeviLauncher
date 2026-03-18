@@ -407,19 +407,27 @@ function App() {
                         </div>
 
                         <TermsModal
-                          isOpen={termsOpen && !isOnboardingMode}
+                          isOpen={
+                            termsOpen && !isOnboardingMode && !isUpdatingMode
+                          }
                           countdown={termsCountdown}
                           onAccept={acceptTerms}
                         />
 
                         <ClarityConsentModal
-                          isOpen={clarityPromptOpen && !isOnboardingMode}
+                          isOpen={
+                            clarityPromptOpen &&
+                            !isOnboardingMode &&
+                            !isUpdatingMode
+                          }
                           onEnable={acceptClarity}
                           onKeepDisabled={declineClarity}
                         />
 
                         <UpdateModal
-                          isOpen={updateOpen && !isOnboardingMode}
+                          isOpen={
+                            updateOpen && !isOnboardingMode && !isUpdatingMode
+                          }
                           version={updateVersion}
                           body={updateBody}
                           loading={updateLoading}
@@ -447,7 +455,11 @@ function App() {
                         />
 
                         <LipUpdateModal
-                          isOpen={lipUpdateOpen && !isOnboardingMode}
+                          isOpen={
+                            lipUpdateOpen &&
+                            !isOnboardingMode &&
+                            !isUpdatingMode
+                          }
                           currentVersion={lipCurrentVersion}
                           latestVersion={lipLatestVersion}
                           onDismiss={() => {

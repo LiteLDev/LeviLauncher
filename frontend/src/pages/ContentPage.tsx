@@ -87,9 +87,7 @@ export default function ContentPage() {
                       |
                     </span>
                     <span>{t("contentpage.isolation")}:</span>
-                    <span
-                      className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md"
-                    >
+                    <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
                       {cp.roots.isIsolation ? t("common.yes") : t("common.no")}
                     </span>
                     <span className="text-default-300 dark:text-zinc-600">
@@ -520,7 +518,6 @@ export default function ContentPage() {
 
       <UnifiedModal
         isOpen={cp.importing}
-        onOpenChange={() => {}}
         type="primary"
         title={
           cp.transferring

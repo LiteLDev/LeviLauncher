@@ -5,6 +5,9 @@
 @font-face {
   font-family: "MiSans";
   src: url("./assets/fonts/MiSans-Medium.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
 }
 
 /* Note: You may need to change the path to fit your project structure */
@@ -12,9 +15,7 @@
 
 @theme {
   --font-sans:
-    "MiSans", ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont,
-    "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif,
-    "Apple Color Emoji", "Segoe UI Emoji", "Segoe UI Symbol", "Noto Color Emoji";
+    "MiSans", sans-serif;
 
   --color-primary-50: rgb(var(--theme-50, 236, 253, 245));
   --color-primary-100: rgb(var(--theme-100, 209, 250, 229));
@@ -216,8 +217,16 @@
 @variant dark (&:is(.dark *));
 
 body,
-html {
+html,
+button,
+input,
+textarea,
+select {
   font-family: var(--font-sans);
+}
+
+body,
+html {
   touch-action: pan-x pan-y;
 
   -webkit-user-select: none;

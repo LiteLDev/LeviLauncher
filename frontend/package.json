@@ -7,6 +7,7 @@
     "dev": "vite",
     "build:dev": "tsc --noEmit && vite build --minify false --mode development",
     "build": "tsc --noEmit && vite build --mode production",
+    "build:analyze": "tsc --noEmit && vite build --mode analyze",
     "preview": "vite preview",
     "type-check": "tsc --noEmit"
   },

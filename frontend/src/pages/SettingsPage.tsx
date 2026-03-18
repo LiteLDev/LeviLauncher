@@ -279,7 +279,7 @@ export const SettingsPage: React.FC = () => {
                 description={t("settings.header.content")}
               />
               <Tabs
-                  aria-label={t("settings.header.title")}
+                aria-label={t("settings.header.title")}
                 selectedKey={selectedTab}
                 onSelectionChange={(k) => setSelectedTab(k as string)}
                 classNames={{
@@ -483,7 +483,7 @@ export const SettingsPage: React.FC = () => {
                         </Button>
                       </DropdownTrigger>
                       <DropdownMenu
-                            aria-label={t("settings.body.language.button")}
+                        aria-label={t("settings.body.language.button")}
                         variant="flat"
                         disallowEmptySelection
                         selectionMode="single"
@@ -1031,7 +1031,9 @@ export const SettingsPage: React.FC = () => {
                                   </p>
                                   <Select
                                     size="sm"
-                              aria-label={t("settings.appearance.background_fit_mode")}
+                                    aria-label={t(
+                                      "settings.appearance.background_fit_mode",
+                                    )}
                                     disallowEmptySelection
                                     classNames={COMPONENT_STYLES.select}
                                     selectedKeys={new Set([backgroundFitMode])}
@@ -1131,7 +1133,9 @@ export const SettingsPage: React.FC = () => {
                                   </p>
                                   <Select
                                     size="sm"
-                              aria-label={t("settings.appearance.background_play_order")}
+                                    aria-label={t(
+                                      "settings.appearance.background_play_order",
+                                    )}
                                     disallowEmptySelection
                                     classNames={COMPONENT_STYLES.select}
                                     selectedKeys={
@@ -1218,7 +1222,9 @@ export const SettingsPage: React.FC = () => {
                                     step={1}
                                     maxValue={50}
                                     minValue={0}
-                            aria-label={t("settings.appearance.background_blur")}
+                                    aria-label={t(
+                                      "settings.appearance.background_blur",
+                                    )}
                                     value={backgroundBlur}
                                     classNames={{
                                       filler: "bg-primary-500",
@@ -1281,7 +1287,9 @@ export const SettingsPage: React.FC = () => {
                                     step={1}
                                     maxValue={100}
                                     minValue={20}
-                            aria-label={t("settings.appearance.background_brightness")}
+                                    aria-label={t(
+                                      "settings.appearance.background_brightness",
+                                    )}
                                     value={backgroundBrightness}
                                     classNames={{
                                       filler: "bg-primary-500",
@@ -1346,7 +1354,9 @@ export const SettingsPage: React.FC = () => {
                                     step={1}
                                     maxValue={100}
                                     minValue={0}
-                            aria-label={t("settings.appearance.background_opacity")}
+                                    aria-label={t(
+                                      "settings.appearance.background_opacity",
+                                    )}
                                     value={backgroundOpacity}
                                     classNames={{
                                       filler: "bg-primary-500",
@@ -1771,7 +1781,9 @@ export const SettingsPage: React.FC = () => {
                                                 step={1}
                                                 maxValue={100}
                                                 minValue={0}
-                                aria-label={t("settings.appearance.background_base_opacity")}
+                                                aria-label={t(
+                                                  "settings.appearance.background_base_opacity",
+                                                )}
                                                 value={
                                                   themeSettingMode === "light"
                                                     ? lightBackgroundBaseOpacity
@@ -2497,10 +2509,14 @@ export const SettingsPage: React.FC = () => {
         hideCloseButton
         isDismissable={false}
         type={gdkDlError ? "error" : "info"}
-        title={gdkDlError ? t("common.error") : t("settings.gdk.download.title")}
+        title={
+          gdkDlError ? t("common.error") : t("settings.gdk.download.title")
+        }
         icon={gdkDlError ? undefined : <FaDownload className="w-6 h-6" />}
         confirmText={gdkDlError ? t("common.close") : undefined}
-        onConfirm={gdkDlError ? () => gdkProgressDisclosure.onClose() : undefined}
+        onConfirm={
+          gdkDlError ? () => gdkProgressDisclosure.onClose() : undefined
+        }
         footer={
           gdkDlError ? undefined : (
             <>

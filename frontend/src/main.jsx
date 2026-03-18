@@ -170,8 +170,7 @@ const StartupShell = ({ errorMessage = "", visible = true }) => (
       background:
         "linear-gradient(180deg, rgba(248,250,252,1) 0%, rgba(241,245,249,1) 100%)",
       color: "#0f172a",
-      fontFamily:
-        '"MiSans","Segoe UI","PingFang SC","Microsoft YaHei",sans-serif',
+      fontFamily: 'var(--font-sans, sans-serif)',
       opacity: visible ? 1 : 0,
       visibility: visible ? "visible" : "hidden",
       transition: "opacity 220ms ease, visibility 220ms ease",
@@ -235,7 +234,7 @@ const bootstrapApp = async () => {
   try {
     const [
       { default: App },
-      { default: i18n },
+      { default: i18n, i18nReady },
       { I18nextProvider },
       { ThemeProvider: NextThemesProvider },
       { HeroUIProvider },
@@ -259,6 +258,8 @@ const bootstrapApp = async () => {
       "ll-startup-bootloader-mounted",
       "ll-startup-app-bundle-loaded",
     );
+
+    await i18nReady;
 
     const router = createHashRouter(
       createRoutesFromElements(<Route path="/*" element={<App />} />),

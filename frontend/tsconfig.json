@@ -16,6 +16,7 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/*"],
+      "@heroui/react": ["./src/shims/heroui.ts"],
       "bindings/*": ["./bindings/*"]
     }
   },

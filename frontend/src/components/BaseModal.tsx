@@ -11,7 +11,12 @@ import {
 } from "@heroui/react";
 
 export const BaseModal: React.FC<ModalProps> = (props) => {
-  const { classNames, isOpen, ...rest } = props;
+  const {
+    classNames,
+    isOpen,
+    hideCloseButton = true,
+    ...rest
+  } = props;
 
   const finalClassNames = {
     ...classNames,
@@ -35,6 +40,7 @@ export const BaseModal: React.FC<ModalProps> = (props) => {
       ) : null}
       <Modal
         isOpen={isOpen}
+        hideCloseButton={hideCloseButton}
         {...rest}
         backdrop="blur"
         classNames={finalClassNames}

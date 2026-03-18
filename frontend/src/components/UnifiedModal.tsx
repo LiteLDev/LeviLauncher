@@ -145,7 +145,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   title,
   children,
   footer,
-  hideCloseButton = false,
+  hideCloseButton = true,
   isDismissable = false,
   size = "md",
   scrollBehavior = "inside",

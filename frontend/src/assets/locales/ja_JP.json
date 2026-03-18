@@ -1105,15 +1105,6 @@
       "body": "コンテンツパスに未保存の変更があります。保存して終了しますか？",
       "cancel": "キャンセル",
       "save": "保存して完了"
-    },
-    "privacy": {
-      "title": "Privacy & Usage Data",
-      "subtitle": "Choose whether to enable anonymous analytics",
-      "desc": "If enabled, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data (such as clicks and page flow) to improve usability. It does not collect account information, game information, or disk content, and only applies to frontend pages.",
-      "links": {
-        "clarity_terms": "Clarity Terms",
-        "microsoft_privacy": "Microsoft Privacy Statement"
-      }
     }
   },
   "contentdownload": {

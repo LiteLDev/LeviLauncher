@@ -154,6 +154,7 @@ function App() {
   } = useAppModals({
     hasBackend,
     isUpdatingMode,
+    isOnboardingMode,
   });
 
   // Counter/refresh for LauncherPage
@@ -406,19 +407,19 @@ function App() {
                         </div>
 
                         <TermsModal
-                          isOpen={termsOpen}
+                          isOpen={termsOpen && !isOnboardingMode}
                           countdown={termsCountdown}
                           onAccept={acceptTerms}
                         />
 
                         <ClarityConsentModal
-                          isOpen={clarityPromptOpen}
+                          isOpen={clarityPromptOpen && !isOnboardingMode}
                           onEnable={acceptClarity}
                           onKeepDisabled={declineClarity}
                         />
 
                         <UpdateModal
-                          isOpen={updateOpen}
+                          isOpen={updateOpen && !isOnboardingMode}
                           version={updateVersion}
                           body={updateBody}
                           loading={updateLoading}
@@ -446,7 +447,7 @@ function App() {
                         />
 
                         <LipUpdateModal
-                          isOpen={lipUpdateOpen}
+                          isOpen={lipUpdateOpen && !isOnboardingMode}
                           currentVersion={lipCurrentVersion}
                           latestVersion={lipLatestVersion}
                           onDismiss={() => {

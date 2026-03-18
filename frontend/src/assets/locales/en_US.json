@@ -314,15 +314,6 @@
       "body": "You have unsaved changes to the content path. Do you want to save before finishing?",
       "cancel": "Cancel",
       "save": "Save and Finish"
-    },
-    "privacy": {
-      "title": "Privacy & Usage Data",
-      "subtitle": "Choose whether to enable anonymous analytics",
-      "desc": "If enabled, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data (such as clicks and page flow) to improve usability. It does not collect account information, game information, or disk content, and only applies to frontend pages.",
-      "links": {
-        "clarity_terms": "Clarity Terms",
-        "microsoft_privacy": "Microsoft Privacy Statement"
-      }
     }
   },
   "settings": {

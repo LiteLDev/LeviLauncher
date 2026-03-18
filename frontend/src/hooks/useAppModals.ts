@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import {
@@ -10,6 +10,7 @@ import { useStartupInteractive } from "@/utils/startupState";
 interface UseAppModalsOptions {
   hasBackend: boolean;
   isUpdatingMode: boolean;
+  isOnboardingMode: boolean;
 }
 
 const LIP_IGNORE_VERSION_KEY = "ll.ignoreLipVersion";
@@ -22,8 +23,11 @@ const normalizeVersion = (value: unknown): string =>
 export const useAppModals = ({
   hasBackend,
   isUpdatingMode,
+  isOnboardingMode,
 }: UseAppModalsOptions) => {
   const startupInteractive = useStartupInteractive();
+  const previousOnboardingModeRef = useRef<boolean>(isOnboardingMode);
+  const startupFlowArmedRef = useRef<boolean>(true);
   const [termsOpen, setTermsOpen] = useState<boolean>(false);
   const [termsCountdown, setTermsCountdown] = useState<number>(0);
   const [clarityPromptOpen, setClarityPromptOpen] = useState<boolean>(false);
@@ -131,10 +135,13 @@ export const useAppModals = ({
     applyClarityChoice(false);
   }, [applyClarityChoice]);
 
-  useEffect(() => {
-    if (!hasBackend) return;
-    if (!startupInteractive) return;
-    if (isUpdatingMode) return;
+  const runStartupModalFlow = useCallback(() => {
+    if (!startupFlowArmedRef.current) {
+      return;
+    }
+
+    startupFlowArmedRef.current = false;
+
     try {
       const accepted = localStorage.getItem("ll.termsAccepted");
       if (!accepted) {
@@ -143,11 +150,37 @@ export const useAppModals = ({
       }
       runPostTermsFlow();
     } catch {}
+  }, [runPostTermsFlow]);
+
+  useEffect(() => {
+    if (!hasBackend) return;
+    if (!startupInteractive) return;
+    if (isUpdatingMode) return;
+    if (isOnboardingMode) return;
+    runStartupModalFlow();
   }, [
     hasBackend,
     startupInteractive,
     isUpdatingMode,
-    runPostTermsFlow,
+    isOnboardingMode,
+    runStartupModalFlow,
+  ]);
+
+  useEffect(() => {
+    const wasOnboardingMode = previousOnboardingModeRef.current;
+    previousOnboardingModeRef.current = isOnboardingMode;
+
+    if (!wasOnboardingMode || isOnboardingMode) return;
+    if (!hasBackend) return;
+    if (!startupInteractive) return;
+    if (isUpdatingMode) return;
+    runStartupModalFlow();
+  }, [
+    hasBackend,
+    isOnboardingMode,
+    isUpdatingMode,
+    runStartupModalFlow,
+    startupInteractive,
   ]);
 
   useEffect(() => {

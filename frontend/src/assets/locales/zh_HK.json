@@ -1105,15 +1105,6 @@
       "body": "您更改了內容路徑但尚未儲存。是否儲存後完成引導？",
       "cancel": "取消",
       "save": "儲存並完成"
-    },
-    "privacy": {
-      "title": "私隱與使用資料",
-      "subtitle": "請選擇是否啟用匿名分析",
-      "desc": "啟用後，LeviLauncher 會透過 Microsoft Clarity 收集匿名操作資料（例如點擊、頁面停留）以改善易用性。不會收集帳號資料、遊戲資訊、磁碟內容，僅適用於前端頁面。",
-      "links": {
-        "clarity_terms": "Clarity 服務條款",
-        "microsoft_privacy": "Microsoft 私隱聲明"
-      }
     }
   },
   "contentdownload": {

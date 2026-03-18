@@ -314,15 +314,6 @@
       "body": "您更改了内容路径但尚未保存。是否保存后完成引导？",
       "cancel": "取消",
       "save": "保存并完成"
-    },
-    "privacy": {
-      "title": "隐私与使用数据",
-      "subtitle": "请选择是否开启匿名分析",
-      "desc": "开启后，LeviLauncher 会通过 Microsoft Clarity 收集匿名操作数据（如点击、页面停留）来改进易用性。不会收集账号信息、游戏信息、磁盘内容，仅应用于前端页面。",
-      "links": {
-        "clarity_terms": "Clarity 条款",
-        "microsoft_privacy": "Microsoft 隐私声明"
-      }
     }
   },
   "settings": {

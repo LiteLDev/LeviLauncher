@@ -2,6 +2,32 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.8] - 2026-03-18
+
+### Added
+
+- Added an experimental instance backup and restore workflow in instance settings, including backup scope selection and restore conflict handling.
+
+### Changed
+
+- Streamlined the launcher startup flow and kept startup prompts aligned with onboarding progress.
+- Gated instance backup behind an explicit experimental feature toggle in Settings.
+- Optimized the frontend startup bundle, introduced desktop-safe runtime shims, and unified typography across the app.
+- Refined lip package, instance state, and modal handling across the launcher UI.
+
+### Fixed
+
+- Prevented the Mods page from being blocked while lip status is still loading, with a safer local-only fallback when lip data is unavailable.
+- Prevented launcher startup from stalling when system proxy discovery fails offline.
+- Refreshed the user session during launcher startup.
+- Added desktop runtime fallback assets to improve packaged frontend startup resilience.
+- Guarded Wails resize flag initialization and avoided nested buttons in instance cards.
+- Hardened modal behavior for critical flows and hid modal close buttons by default.
+
+### Docs
+
+- Expanded the documentation site with Russian and Traditional Chinese (Hong Kong) translations and updated the multilingual docs configuration.
+
 ## [v0.3.7] - 2026-03-11
 
 ### Added

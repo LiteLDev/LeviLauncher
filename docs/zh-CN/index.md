@@ -15,6 +15,9 @@ hero:
     - theme: alt
       text: 下载 LeviLauncher
       link: https://github.com/LiteLDev/LeviLauncher/releases
+    - theme: alt
+      text: English
+      link: /
 
 features:
   - title: 以版本为中心

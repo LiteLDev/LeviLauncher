@@ -15,6 +15,9 @@ hero:
     - theme: alt
       text: Download LeviLauncher
       link: https://github.com/LiteLDev/LeviLauncher/releases
+    - theme: alt
+      text: 简体中文
+      link: /zh-CN/
 
 features:
   - title: Version-first workflow

@@ -10,6 +10,7 @@ const localeLoaders = {
   ru_RU: () => import("@/assets/locales/ru_RU.json"),
   ja_JP: () => import("@/assets/locales/ja_JP.json"),
   zh_HK: () => import("@/assets/locales/zh_HK.json"),
+  de_DE: () => import("@/assets/locales/de_DE.json"),
 } as const;
 
 type SupportedLocale = keyof typeof localeLoaders;
@@ -30,6 +31,25 @@ const supportedLngs = [
   "zh_HK",
   "zh-HK",
   "zhhk",
+  "ko_KR",
+  "ko-KR",
+  "ko",
+  "fr_FR",
+  "fr-FR",
+  "fr",
+  "de_DE",
+  "de-DE",
+  "de",
+  "es_ES",
+  "es-ES",
+  "es",
+  "pt_PT",
+  "pt-PT",
+  "pt",
+  "it_IT",
+  "it-IT",
+  "it",
+
 ] as const;
 
 const resolveLocale = (language: string): SupportedLocale => {

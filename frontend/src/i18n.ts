@@ -13,6 +13,7 @@ const localeLoaders = {
   de_DE: () => import("@/assets/locales/de_DE.json"),
   es_ES: () => import("@/assets/locales/es_ES.json"),
   ko_KR: () => import("@/assets/locales/ko_KR.json"),
+  fr_FR: () => import("@/assets/locales/fr_FR.json"),
 } as const;
 
 type SupportedLocale = keyof typeof localeLoaders;

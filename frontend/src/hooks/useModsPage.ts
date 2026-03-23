@@ -31,6 +31,7 @@ import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { ROUTES } from "@/constants/routes";
+import { getPathBaseName, normalizeDroppedFiles } from "@/utils/fs";
 
 const LEVILAMINA_NORMALIZED = "levilamina";
 const ERR_LL_MANAGED_IN_VERSION_SETTINGS = "ERR_LL_MANAGED_IN_VERSION_SETTINGS";
@@ -982,7 +983,8 @@ export const useModsPage = (
 
   const doImportFromPaths = async (paths: string[]) => {
     try {
-      if (!paths?.length) return;
+      const normalizedPaths = normalizeDroppedFiles(paths);
+      if (!normalizedPaths.length) return;
       const name = activeVersionName;
       if (!name) {
         setErrorMsg(t("launcherpage.currentVersion_none") as string);
@@ -991,14 +993,14 @@ export const useModsPage = (
       let started = false;
       const succFiles: string[] = [];
       const errPairs: Array<{ name: string; err: string }> = [];
-      for (const p of paths) {
+      for (const p of normalizedPaths) {
         const lower = p.toLowerCase();
         if (lower.endsWith(".zip")) {
           if (!started) {
             setImporting(true);
             started = true;
           }
-          const base = p.replace(/\\/g, "/").split("/").pop() || p;
+          const base = getPathBaseName(p);
           setCurrentFile(base);
           let err = await ImportModZipPath(name, p, false);
           if (err) {
@@ -1024,7 +1026,7 @@ export const useModsPage = (
           }
           succFiles.push(base);
         } else if (lower.endsWith(".dll")) {
-          const base = p.replace(/\\/g, "/").split("/").pop() || "";
+          const base = getPathBaseName(p);
           const baseNoExt = base.replace(/\.[^/.]+$/, "");
           setDllName(baseNoExt);
           setDllType("preload-native");
@@ -1113,8 +1115,9 @@ export const useModsPage = (
   useEffect(() => {
     return Events.On("files-dropped", (event) => {
       const data = (event.data as { files: string[] }) || {};
-      if (data.files && data.files.length > 0) {
-        void doImportRef.current(data.files);
+      const files = normalizeDroppedFiles(data.files);
+      if (files.length > 0) {
+        void doImportRef.current(files);
       }
     });
   }, []);

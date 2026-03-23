@@ -4,7 +4,7 @@
 
 ## 1. 安裝 LeviLauncher
 
-- 從 [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) 頁面或[藍奏雲鏡像](https://levimc.lanzoue.com/b016ke39hc) 下載 LeviLauncher 安裝程式。
+- 從 [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) 頁面或[藍奏雲鏡像](https://levimc.lanzoue.com/b016ke39hc) 下載 LeviLauncher 安裝程式，藍奏雲密碼為 `levi`。
 - 在 Windows 上執行安裝程式。
 - 如果安裝過程提示需要 WebView2 或其他依賴項，請允許其繼續安裝。
 

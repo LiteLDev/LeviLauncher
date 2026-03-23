@@ -4,7 +4,7 @@
 
 ## 1. 安装 LeviLauncher
 
-- 从 [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) 页面或[蓝奏云镜像](https://levimc.lanzoue.com/b016ke39hc)下载 LeviLauncher 安装包。
+- 从 [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) 页面或[蓝奏云镜像](https://levimc.lanzoue.com/b016ke39hc)下载 LeviLauncher 安装包，蓝奏云密码为 `levi`。
 - 在 Windows 上运行安装程序。
 - 如果安装过程提示需要 WebView2 或其他依赖，请允许其继续安装。
 

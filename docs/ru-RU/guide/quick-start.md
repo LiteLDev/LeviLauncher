@@ -4,7 +4,7 @@
 
 ## 1. Установка LeviLauncher
 
-- Загрузите установщик LeviLauncher со страницы [Релизы GitHub](https://github.com/LiteLDev/LeviLauncher/releases) или с [зеркала Lanzou](https://levimc.lanzoue.com/b016ke39hc).
+- Загрузите установщик LeviLauncher со страницы [Релизы GitHub](https://github.com/LiteLDev/LeviLauncher/releases) или с [зеркала Lanzou](https://levimc.lanzoue.com/b016ke39hc), используя пароль `levi`.
 - Запустите установщик в Windows.
 - Если Windows или установщик запросит WebView2 или другие необходимые компоненты, разрешите процессу продолжиться.
 

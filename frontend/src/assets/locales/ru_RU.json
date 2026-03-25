@@ -131,7 +131,8 @@
       "download_mirror": "Если загрузка идёт медленно, попробуйте сменить зеркало или проверить сетевые параметры в настройках.",
       "open_source": "LeviLauncher — проект с открытым исходным кодом; о проблемах лаунчера и идеях по улучшению можно сообщать через GitHub.",
       "backup_worlds": "Перед тестированием новых resource packs, behavior packs или модов рекомендуется сделать резервную копию важных миров."
-    },    "edition": "Bedrock Edition"
+    },
+    "edition": "Bedrock Edition"
   },
   "moddedcard": {
     "title": "Моды",
@@ -356,6 +357,7 @@
       "check_button": "Проверить",
       "cache_clean_button": "Очистить кэш",
       "cache_cleaning": "Очистка кэша...",
+      "cache_clean_success": "Кэш lip очищен",
       "installing": "Установка lip...",
       "latest_label": "Актуально",
       "outdated_label": "Доступно обновление",
@@ -976,6 +978,7 @@
     "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "Failed to clean lip cache",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
   },
   "filemanager": {

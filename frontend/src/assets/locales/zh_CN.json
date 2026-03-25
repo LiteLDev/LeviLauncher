@@ -131,7 +131,8 @@
       "download_mirror": "如果下载速度较慢，可在设置中切换镜像源或检查相关网络选项。",
       "open_source": "LeviLauncher 是开源项目；遇到启动器问题或有改进建议时，可前往 GitHub 提交反馈。",
       "backup_worlds": "在尝试新的资源包、行为包或模组前，建议先备份重要世界。"
-    },    "edition": "Bedrock Edition"
+    },
+    "edition": "Bedrock Edition"
   },
   "updating": {
     "title": "正在更新 LeviLauncher",
@@ -368,6 +369,7 @@
       "check_button": "检查",
       "cache_clean_button": "清理缓存",
       "cache_cleaning": "正在清理缓存...",
+      "cache_clean_success": "lip 缓存清理完成",
       "installing": "正在安装 lip...",
       "latest_label": "最新",
       "outdated_label": "可更新",
@@ -988,6 +990,7 @@
     "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "清理 lip 缓存失败",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
   },
   "filemanager": {

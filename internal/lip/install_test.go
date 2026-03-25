@@ -4,6 +4,8 @@ import (
 	"archive/tar"
 	"bytes"
 	"compress/gzip"
+	"errors"
+	"fmt"
 	"os"
 	"path/filepath"
 	"strings"
@@ -261,5 +263,13 @@ func TestExtractLipBinaryFromTarGzMissingTarget(t *testing.T) {
 	}
 	if got := extractErrCode(err); got != "ERR_LIP_EXTRACT_BINARY" {
 		t.Fatalf("unexpected error code: got %q want %q (%v)", got, "ERR_LIP_EXTRACT_BINARY", err)
+	}
+}
+
+func TestExtractErrCodeRecognizesCacheCleanFailure(t *testing.T) {
+	err := fmt.Errorf("ERR_LIP_CACHE_CLEAN_FAILED: %w", errors.New("boom"))
+
+	if got := extractErrCode(err); got != "ERR_LIP_CACHE_CLEAN_FAILED" {
+		t.Fatalf("unexpected error code: got %q want %q", got, "ERR_LIP_CACHE_CLEAN_FAILED")
 	}
 }

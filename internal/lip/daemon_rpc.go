@@ -609,7 +609,10 @@ func CacheClean(ctx context.Context) error {
 		return err
 	}
 	_, err := callDaemonWithResultQuiet(ctx, filepath.Dir(LipExePath()), "CacheClean", []any{})
-	return err
+	if err != nil {
+		return fmt.Errorf("ERR_LIP_CACHE_CLEAN_FAILED: %w", err)
+	}
+	return nil
 }
 
 func InstallPackagesViaDaemon(ctx context.Context, workDir string, packages []string) error {

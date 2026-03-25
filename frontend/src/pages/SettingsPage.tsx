@@ -21,6 +21,7 @@ import {
   Slider,
   Select,
   SelectItem,
+  addToast,
 } from "@heroui/react";
 
 import { useTheme } from "next-themes";
@@ -1938,7 +1939,28 @@ export const SettingsPage: React.FC = () => {
                           size="sm"
                           isLoading={cleaningLipCache}
                           isDisabled={installingLip || cleaningLipCache}
-                          onPress={cleanLipCache}
+                          onPress={() => {
+                            void cleanLipCache().then((err) => {
+                              if (err) {
+                                addToast({
+                                  title: t("common.error"),
+                                  description: t(`errors.${err}`, {
+                                    defaultValue: err,
+                                  }),
+                                  color: "danger",
+                                });
+                                return;
+                              }
+
+                              addToast({
+                                title: t("common.success"),
+                                description: t(
+                                  "settings.lip.cache_clean_success",
+                                ),
+                                color: "success",
+                              });
+                            });
+                          }}
                         >
                           {cleaningLipCache
                             ? t("settings.lip.cache_cleaning")

@@ -393,13 +393,17 @@ export const useSettings = (i18n: { language: string }) => {
     }
   };
 
-  const cleanLipCache = async () => {
+  const cleanLipCache = async (): Promise<string> => {
     setCleaningLipCache(true);
     try {
-      await callMinecraftByName<string>("CacheClean");
-    } catch {}
-    setCleaningLipCache(false);
-    void refreshLipStatus();
+      const err = await callMinecraftByName<string>("CacheClean");
+      return String(err || "");
+    } catch (e: any) {
+      return String(e?.data || e?.message || e || "ERR_LIP_CACHE_CLEAN_FAILED");
+    } finally {
+      setCleaningLipCache(false);
+      void refreshLipStatus();
+    }
   };
 
   const refreshResourceRulesStatus = async () => {

@@ -335,6 +335,7 @@ func (a *Minecraft) InstallLip() string {
 func (a *Minecraft) CacheClean() string {
 	if err := lip.CacheClean(a.ctx); err != nil {
 		log.Printf("lip: cache clean failed: %v", err)
+		return lip.ErrorCode(err)
 	}
 	return ""
 }

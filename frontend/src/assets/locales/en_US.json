@@ -131,7 +131,8 @@
       "download_mirror": "If downloads are slow, try switching mirrors or related network options in Settings.",
       "open_source": "LeviLauncher is open source. Use GitHub issues to report launcher problems or suggest improvements.",
       "backup_worlds": "Back up important worlds regularly before testing new resource packs, behavior packs, or mods."
-    },    "edition": "Bedrock Edition"
+    },
+    "edition": "Bedrock Edition"
   },
   "moddedcard": {
     "title": "Mods",
@@ -368,6 +369,7 @@
       "check_button": "Check",
       "cache_clean_button": "Clean Cache",
       "cache_cleaning": "Cleaning Cache...",
+      "cache_clean_success": "lip cache cleaned",
       "installing": "Installing lip...",
       "latest_label": "Latest",
       "outdated_label": "Update Available",
@@ -965,6 +967,7 @@
     "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "Failed to clean lip cache",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "This package is required by other installed mods and cannot be uninstalled now",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "This package is still required by other installed mods, so it cannot be fully uninstalled. It has been automatically switched to dependency install mode.",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings",

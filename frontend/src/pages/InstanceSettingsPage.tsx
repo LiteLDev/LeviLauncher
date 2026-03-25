@@ -7,7 +7,6 @@ import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
-import { ROUTES } from "@/constants/routes";
 import { formatBytes } from "@/utils/formatting";
 import {
   Button,
@@ -800,14 +799,6 @@ export default function InstanceSettingsPage() {
                             className="font-medium"
                             onPress={async () => {
                               try {
-                                const has = await (
-                                  minecraft as any
-                                )?.IsGDKInstalled?.();
-                                if (!has) {
-                                  vs.setUnregisterOpen(false);
-                                  vs.setGdkMissingOpen(true);
-                                  return;
-                                }
                                 const fn = UnregisterVersionByName as any;
                                 if (typeof fn === "function") {
                                   vs.setUnregisterOpen(true);
@@ -1797,43 +1788,6 @@ export default function InstanceSettingsPage() {
       >
         <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
           {t("versions.edit.unregister_success.body")}
-        </div>
-      </UnifiedModal>
-
-      <UnifiedModal
-        isOpen={vs.gdkMissingOpen}
-        onOpenChange={(open) => {
-          if (!open) vs.setGdkMissingOpen(false);
-        }}
-        type="warning"
-        title={t("launcherpage.gdk_missing.title")}
-        icon={<FiAlertTriangle className="w-6 h-6" />}
-        footer={
-          <>
-            <Button
-              variant="light"
-              radius="full"
-              onPress={() => {
-                vs.setGdkMissingOpen(false);
-              }}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              {...warningConfirmButtonProps}
-              radius="full"
-              onPress={() => {
-                vs.setGdkMissingOpen(false);
-                vs.navigate(ROUTES.settings, { state: { tab: "components" } });
-              }}
-            >
-              {t("launcherpage.gdk_missing.go_settings")}
-            </Button>
-          </>
-        }
-      >
-        <div className="text-medium font-medium text-default-600 dark:text-zinc-300">
-          {t("launcherpage.gdk_missing.body")}
         </div>
       </UnifiedModal>
 

@@ -414,11 +414,19 @@ func callDaemonWithResultInternal(ctx context.Context, workDir string, method st
 		}
 		return nil, callErr
 	}
+	if _, err := ensureLipDotNetRuntimeWithError(ctx); err != nil {
+		callErr := fmt.Errorf("ensure lip .NET runtime: %w", err)
+		if trackTask {
+			emitTaskFinished(taskMeta, false, callErr.Error(), "")
+		}
+		return nil, callErr
+	}
 
 	exePath := LipExePath()
 	cmd := exec.CommandContext(ctx, exePath, "run")
 	cmd.Dir = workDir
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	cmd.Env = lipCommandEnv()
 
 	stdin, err := cmd.StdinPipe()
 	if err != nil {

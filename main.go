@@ -21,7 +21,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/extractor"
-	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
@@ -227,14 +226,6 @@ func init() {
 	application.RegisterEvent[msixvc.DownloadDone](msixvc.EventDownloadDone)
 	application.RegisterEvent[msixvc.DownloadError](msixvc.EventDownloadError)
 	application.RegisterEvent[bool](msixvc.EventAppxInstallLoading)
-	// gdk
-	application.RegisterEvent[string](gdk.EventDownloadStatus)
-	application.RegisterEvent[gdk.DownloadProgress](gdk.EventDownloadProgress)
-	application.RegisterEvent[string](gdk.EventDownloadDone)
-	application.RegisterEvent[string](gdk.EventDownloadError)
-	application.RegisterEvent[string](gdk.EventInstallStart)
-	application.RegisterEvent[string](gdk.EventInstallDone)
-	application.RegisterEvent[string](gdk.EventInstallError)
 	// peeditor
 	application.RegisterEvent[struct{}](peeditor.EventEnsureStart)
 	application.RegisterEvent[bool](peeditor.EventEnsureDone)

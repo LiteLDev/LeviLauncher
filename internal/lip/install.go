@@ -1,7 +1,8 @@
 package lip
 
 import (
-	"archive/zip"
+	"archive/tar"
+	"compress/gzip"
 	"context"
 	"encoding/json"
 	"fmt"
@@ -11,6 +12,7 @@ import (
 	"net/url"
 	"os"
 	"os/exec"
+	"path"
 	"path/filepath"
 	"runtime"
 	"strings"
@@ -34,12 +36,23 @@ const (
 	EventLipInstallDone     = "lip_install_done"
 	EventLipInstallError    = "lip_install_error"
 
-	lipReleaseAPI        = "https://api.github.com/repos/futrime/lip/releases/latest"
-	lipBinaryName        = "lipd.exe"
-	lipArchiveSuffix     = "-win-x64.zip"
-	lipInstallTimeout    = 5 * time.Minute
-	lipStatusTimeout     = 20 * time.Second
-	lipVersionRPCTimeout = 15 * time.Second
+	lipMirrorMetadataAPI         = "https://mirrors.cloud.tencent.com/npm/@futrime/lip"
+	lipMirrorTarballHost         = "mirrors.cloud.tencent.com"
+	lipMirrorTarballPathPrefix   = "/npm/@futrime/lip/"
+	lipOfficialMetadataAPI       = "https://registry.npmjs.org/@futrime/lip"
+	lipOfficialTarballHost       = "registry.npmjs.org"
+	lipOfficialTarballPathPrefix = "/@futrime/lip/-/"
+	lipDotNetInstallScriptWin    = "https://dot.net/v1/dotnet-install.ps1"
+	lipDotNetInstallScriptUnix   = "https://dot.net/v1/dotnet-install.sh"
+	lipDotNetRuntimeName         = "Microsoft.NETCore.App"
+	lipDotNetChannel             = "10.0"
+	lipDotNetMajor               = 10
+	lipBinaryName                = "lipd.exe"
+	lipArchiveEntryPath          = "package/win32-x64/lipd.exe"
+	lipInstallTimeout            = 5 * time.Minute
+	lipDotNetInstallTimeout      = 15 * time.Minute
+	lipStatusTimeout             = 20 * time.Second
+	lipVersionRPCTimeout         = 15 * time.Second
 
 	lipConfigFormatVersion = 3
 	lipConfigFormatUUID    = "289f771f-2c9a-4d73-9f3f-8492495a924d"
@@ -58,14 +71,23 @@ type Status struct {
 	Error          string `json:"error"`
 }
 
-type releaseAsset struct {
-	Name               string `json:"name"`
-	BrowserDownloadURL string `json:"browser_download_url"`
+type lipPackageDist struct {
+	Tarball string `json:"tarball"`
 }
 
-type releaseResponse struct {
-	TagName string         `json:"tag_name"`
-	Assets  []releaseAsset `json:"assets"`
+type lipPackageVersion struct {
+	Dist lipPackageDist `json:"dist"`
+}
+
+type lipPackageMetadata struct {
+	DistTags map[string]string            `json:"dist-tags"`
+	Versions map[string]lipPackageVersion `json:"versions"`
+}
+
+type lipPackageSource struct {
+	MetadataURL       string
+	TarballHost       string
+	TarballPathPrefix string
 }
 
 func appExeName() string {
@@ -313,7 +335,7 @@ func LipExePath() string {
 }
 
 func IsInstalled() bool {
-	return utils.FileExists(LipExePath())
+	return utils.FileExists(LipExePath()) && isLipDotNetRuntimeInstalled()
 }
 
 func normalizeLipVersion(value string) string {
@@ -341,91 +363,374 @@ func isLipVersionCurrent(localVersion string, latestVersion string) bool {
 	return strings.EqualFold(local, latest)
 }
 
-func releaseAPIs() []string {
-	return []string{
-		lipReleaseAPI,
-		"https://cdn.gh-proxy.org/" + lipReleaseAPI,
-		"https://edgeone.gh-proxy.org/" + lipReleaseAPI,
-		"https://gh-proxy.org/" + lipReleaseAPI,
-		"https://hk.gh-proxy.org/" + lipReleaseAPI,
-		"https://ghproxy.vip/" + lipReleaseAPI,
+func currentLipPackageSource() lipPackageSource {
+	if isChinaUser() {
+		return lipPackageSource{
+			MetadataURL:       lipMirrorMetadataAPI,
+			TarballHost:       lipMirrorTarballHost,
+			TarballPathPrefix: lipMirrorTarballPathPrefix,
+		}
+	}
+
+	return lipPackageSource{
+		MetadataURL:       lipOfficialMetadataAPI,
+		TarballHost:       lipOfficialTarballHost,
+		TarballPathPrefix: lipOfficialTarballPathPrefix,
 	}
 }
 
-func mirroredDownloadURLs(rawURL string) []string {
-	trimmed := strings.TrimSpace(rawURL)
-	if trimmed == "" {
-		return nil
+func lookupLipPackageVersion(versions map[string]lipPackageVersion, latestTag string) (lipPackageVersion, bool) {
+	for _, candidate := range []string{
+		strings.TrimSpace(latestTag),
+		normalizeLipVersion(latestTag),
+	} {
+		if candidate == "" {
+			continue
+		}
+		if version, ok := versions[candidate]; ok {
+			return version, true
+		}
 	}
-	return []string{
-		trimmed,
-		"https://cdn.gh-proxy.org/" + trimmed,
-		"https://edgeone.gh-proxy.org/" + trimmed,
-		"https://gh-proxy.org/" + trimmed,
-		"https://hk.gh-proxy.org/" + trimmed,
-		"https://ghproxy.vip/" + trimmed,
+	return lipPackageVersion{}, false
+}
+
+func isAllowedLipTarballURL(rawURL string, source lipPackageSource) bool {
+	parsed, err := url.Parse(strings.TrimSpace(rawURL))
+	if err != nil {
+		return false
 	}
+	if !strings.EqualFold(parsed.Scheme, "https") {
+		return false
+	}
+	if !strings.EqualFold(parsed.Hostname(), source.TarballHost) {
+		return false
+	}
+	return strings.HasPrefix(parsed.Path, source.TarballPathPrefix)
+}
+
+func resolveLatestTarball(meta lipPackageMetadata, source lipPackageSource) (string, string, error) {
+	latestTag := strings.TrimSpace(meta.DistTags["latest"])
+	latestVersion := normalizeLipVersion(latestTag)
+	if latestVersion == "" {
+		return "", "", fmt.Errorf("ERR_LIP_FETCH_RELEASE: missing dist-tags.latest")
+	}
+
+	version, ok := lookupLipPackageVersion(meta.Versions, latestTag)
+	if !ok {
+		return "", "", fmt.Errorf("ERR_LIP_RELEASE_ASSET_NOT_FOUND: version %q not found in metadata", latestVersion)
+	}
+
+	tarballURL := strings.TrimSpace(version.Dist.Tarball)
+	if tarballURL == "" {
+		return "", "", fmt.Errorf("ERR_LIP_RELEASE_ASSET_NOT_FOUND: missing tarball for %q", latestVersion)
+	}
+	if !isAllowedLipTarballURL(tarballURL, source) {
+		return "", "", fmt.Errorf("ERR_LIP_RELEASE_ASSET_NOT_FOUND: unsupported tarball URL %q", tarballURL)
+	}
+	return latestVersion, tarballURL, nil
 }
 
 func fetchLatestRelease(ctx context.Context) (string, string, error) {
-	var lastErr error
-	for _, api := range releaseAPIs() {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, api, nil)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		httpx.ApplyDefaultHeaders(req)
-		req.Header.Set("Accept", "application/vnd.github+json")
+	source := currentLipPackageSource()
 
-		resp, err := httpx.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-
-		var rel releaseResponse
-		func() {
-			defer resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				lastErr = fmt.Errorf("HTTP %d", resp.StatusCode)
-				return
-			}
-			if err := json.NewDecoder(resp.Body).Decode(&rel); err != nil {
-				lastErr = err
-				return
-			}
-		}()
-		if resp.StatusCode != http.StatusOK {
-			continue
-		}
-
-		latestVersion := normalizeLipVersion(rel.TagName)
-		if latestVersion == "" {
-			lastErr = fmt.Errorf("empty tag_name")
-			continue
-		}
-
-		expectedName := fmt.Sprintf("lip-%s%s", latestVersion, lipArchiveSuffix)
-		for _, asset := range rel.Assets {
-			if strings.EqualFold(strings.TrimSpace(asset.Name), expectedName) {
-				return latestVersion, strings.TrimSpace(asset.BrowserDownloadURL), nil
-			}
-		}
-		for _, asset := range rel.Assets {
-			if strings.HasSuffix(strings.ToLower(strings.TrimSpace(asset.Name)), lipArchiveSuffix) {
-				return latestVersion, strings.TrimSpace(asset.BrowserDownloadURL), nil
-			}
-		}
-		lastErr = fmt.Errorf("asset %s not found", expectedName)
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, source.MetadataURL, nil)
+	if err != nil {
+		return "", "", fmt.Errorf("ERR_LIP_FETCH_RELEASE: %w", err)
 	}
-	if lastErr != nil {
-		if strings.Contains(strings.ToLower(lastErr.Error()), "asset") {
-			return "", "", fmt.Errorf("ERR_LIP_RELEASE_ASSET_NOT_FOUND: %w", lastErr)
-		}
-		return "", "", fmt.Errorf("ERR_LIP_FETCH_RELEASE: %w", lastErr)
+	httpx.ApplyDefaultHeaders(req)
+
+	resp, err := httpx.Do(req)
+	if err != nil {
+		return "", "", fmt.Errorf("ERR_LIP_FETCH_RELEASE: %w", err)
 	}
-	return "", "", fmt.Errorf("ERR_LIP_FETCH_RELEASE")
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return "", "", fmt.Errorf("ERR_LIP_FETCH_RELEASE: HTTP %d", resp.StatusCode)
+	}
+
+	var meta lipPackageMetadata
+	if err := json.NewDecoder(resp.Body).Decode(&meta); err != nil {
+		return "", "", fmt.Errorf("ERR_LIP_FETCH_RELEASE: %w", err)
+	}
+
+	return resolveLatestTarball(meta, source)
+}
+
+func firstNonEmpty(values ...string) string {
+	for _, value := range values {
+		trimmed := strings.TrimSpace(value)
+		if trimmed != "" {
+			return trimmed
+		}
+	}
+	return ""
+}
+
+func lipDotNetDefaultRoot() string {
+	if custom := strings.TrimSpace(os.Getenv("DOTNET_INSTALL_DIR")); custom != "" {
+		return custom
+	}
+
+	homeDir, _ := os.UserHomeDir()
+	if runtime.GOOS == "windows" {
+		localAppData := firstNonEmpty(
+			os.Getenv("LocalAppData"),
+			os.Getenv("LOCALAPPDATA"),
+		)
+		if localAppData == "" && homeDir != "" {
+			localAppData = filepath.Join(homeDir, "AppData", "Local")
+		}
+		if localAppData == "" {
+			localAppData = filepath.Join(os.TempDir(), "Microsoft")
+		}
+		return filepath.Join(localAppData, "Microsoft", "dotnet")
+	}
+
+	if homeDir == "" {
+		return filepath.Join(os.TempDir(), ".dotnet")
+	}
+	return filepath.Join(homeDir, ".dotnet")
+}
+
+func lipDotNetSharedRuntimeDir(root string) string {
+	return filepath.Join(strings.TrimSpace(root), "shared", lipDotNetRuntimeName)
+}
+
+func hasLipDotNetMajorInRoot(root string) bool {
+	runtimeDir := lipDotNetSharedRuntimeDir(root)
+	entries, err := os.ReadDir(runtimeDir)
+	if err != nil {
+		return false
+	}
+
+	prefix := fmt.Sprintf("%d.", lipDotNetMajor)
+	for _, entry := range entries {
+		if !entry.IsDir() {
+			continue
+		}
+		name := strings.TrimSpace(entry.Name())
+		if strings.HasPrefix(name, prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasLipDotNetMajorInListRuntimesOutput(output string) bool {
+	if strings.TrimSpace(output) == "" {
+		return false
+	}
+
+	prefix := fmt.Sprintf("%s %d.", lipDotNetRuntimeName, lipDotNetMajor)
+	for _, line := range strings.Split(output, "\n") {
+		if strings.HasPrefix(strings.TrimSpace(line), prefix) {
+			return true
+		}
+	}
+	return false
+}
+
+func findLipDotNetRoot() string {
+	if dotnetRoot := strings.TrimSpace(os.Getenv("DOTNET_ROOT")); dotnetRoot != "" && hasLipDotNetMajorInRoot(dotnetRoot) {
+		return dotnetRoot
+	}
+
+	defaultRoot := lipDotNetDefaultRoot()
+	if hasLipDotNetMajorInRoot(defaultRoot) {
+		return defaultRoot
+	}
+
+	return ""
+}
+
+func upsertEnv(env []string, key string, value string) []string {
+	if strings.TrimSpace(key) == "" || strings.TrimSpace(value) == "" {
+		return append([]string{}, env...)
+	}
+
+	out := append([]string{}, env...)
+	prefix := key + "="
+	for index, entry := range out {
+		name := entry
+		if cut := strings.Index(entry, "="); cut >= 0 {
+			name = entry[:cut]
+		}
+		if strings.EqualFold(strings.TrimSpace(name), key) {
+			out[index] = prefix + value
+			return out
+		}
+	}
+	return append(out, prefix+value)
+}
+
+func lipCommandEnv() []string {
+	env := os.Environ()
+	if dotnetRoot := findLipDotNetRoot(); dotnetRoot != "" {
+		return upsertEnv(env, "DOTNET_ROOT", dotnetRoot)
+	}
+	return env
+}
+
+func isLipDotNetRuntimeInstalled() bool {
+	if findLipDotNetRoot() != "" {
+		return true
+	}
+
+	cmd := exec.Command("dotnet", "--list-runtimes")
+	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		return false
+	}
+	return hasLipDotNetMajorInListRuntimesOutput(string(output))
+}
+
+func lipDotNetInstallScriptURL() string {
+	if runtime.GOOS == "windows" {
+		return lipDotNetInstallScriptWin
+	}
+	return lipDotNetInstallScriptUnix
+}
+
+func lipDotNetInstallScriptPath() string {
+	dir, err := apppath.InstallersDir()
+	if err != nil || strings.TrimSpace(dir) == "" {
+		dir = filepath.Join(os.TempDir(), "LeviLauncher", "Installers")
+	}
+	_ = os.MkdirAll(dir, 0o755)
+
+	fileName := "dotnet-install.sh"
+	if runtime.GOOS == "windows" {
+		fileName = "dotnet-install.ps1"
+	}
+	return filepath.Join(dir, fileName)
+}
+
+func downloadLipDotNetInstallScript(ctx context.Context, dest string) error {
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, lipDotNetInstallScriptURL(), nil)
+	if err != nil {
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_DOTNET_INSTALLER: %w", err)
+	}
+	httpx.ApplyDefaultHeaders(req)
+
+	resp, err := httpx.Do(req)
+	if err != nil {
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_DOTNET_INSTALLER: %w", err)
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_DOTNET_INSTALLER: HTTP %d", resp.StatusCode)
+	}
+
+	tmp := dest + ".tmp"
+	file, err := os.OpenFile(tmp, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o755)
+	if err != nil {
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_DOTNET_INSTALLER: %w", err)
+	}
+
+	if _, err := io.Copy(file, resp.Body); err != nil {
+		_ = file.Close()
+		_ = os.Remove(tmp)
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_DOTNET_INSTALLER: %w", err)
+	}
+	if err := file.Close(); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_DOTNET_INSTALLER: %w", err)
+	}
+
+	_ = os.Remove(dest)
+	if err := os.Rename(tmp, dest); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_DOTNET_INSTALLER: %w", err)
+	}
+	return nil
+}
+
+func resolvePowerShellBinary() string {
+	if resolved, err := exec.LookPath("pwsh.exe"); err == nil && strings.TrimSpace(resolved) != "" {
+		return resolved
+	}
+	return "powershell.exe"
+}
+
+func ensureLipDotNetRuntimeWithError(ctx context.Context) (bool, error) {
+	if isLipDotNetRuntimeInstalled() {
+		return false, nil
+	}
+
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	installCtx := ctx
+	cancel := func() {}
+	if _, hasDeadline := installCtx.Deadline(); !hasDeadline {
+		installCtx, cancel = context.WithTimeout(installCtx, lipDotNetInstallTimeout)
+	}
+	defer cancel()
+
+	scriptPath := lipDotNetInstallScriptPath()
+	if err := downloadLipDotNetInstallScript(installCtx, scriptPath); err != nil {
+		return false, err
+	}
+
+	installRoot := lipDotNetDefaultRoot()
+	var cmd *exec.Cmd
+	if runtime.GOOS == "windows" {
+		cmd = exec.CommandContext(
+			installCtx,
+			resolvePowerShellBinary(),
+			"-NoLogo",
+			"-NoProfile",
+			"-NonInteractive",
+			"-ExecutionPolicy",
+			"Bypass",
+			"-File",
+			scriptPath,
+			"-Runtime",
+			"dotnet",
+			"-Channel",
+			lipDotNetChannel,
+			"-InstallDir",
+			installRoot,
+			"-NoPath",
+		)
+		cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	} else {
+		cmd = exec.CommandContext(
+			installCtx,
+			"bash",
+			scriptPath,
+			"--runtime",
+			"dotnet",
+			"--channel",
+			lipDotNetChannel,
+			"--install-dir",
+			installRoot,
+			"--no-path",
+		)
+	}
+	cmd.Env = os.Environ()
+
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		trimmedOutput := strings.TrimSpace(string(output))
+		if trimmedOutput != "" {
+			return true, fmt.Errorf("ERR_LIP_INSTALL_DOTNET_RUNTIME: %w: %s", err, trimmedOutput)
+		}
+		return true, fmt.Errorf("ERR_LIP_INSTALL_DOTNET_RUNTIME: %w", err)
+	}
+
+	if !isLipDotNetRuntimeInstalled() {
+		trimmedOutput := strings.TrimSpace(string(output))
+		if trimmedOutput != "" {
+			return true, fmt.Errorf("ERR_LIP_VERIFY_DOTNET_RUNTIME: %s", trimmedOutput)
+		}
+		return true, fmt.Errorf("ERR_LIP_VERIFY_DOTNET_RUNTIME")
+	}
+
+	return true, nil
 }
 
 func extractErrCode(err error) string {
@@ -485,6 +790,7 @@ func getVersionWithError(ctx context.Context) (string, error) {
 	cmd := exec.CommandContext(versionCtx, LipExePath(), "--version")
 	cmd.Dir = filepath.Dir(LipExePath())
 	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
+	cmd.Env = lipCommandEnv()
 	output, err := cmd.CombinedOutput()
 	if err != nil {
 		trimmedOutput := strings.TrimSpace(string(output))
@@ -621,134 +927,129 @@ func FetchPackageReadme(projectURL string) (string, error) {
 }
 
 func downloadArchive(ctx context.Context, rawURL string, dest string) error {
-	var lastErr error
-	for _, candidate := range mirroredDownloadURLs(rawURL) {
-		req, err := http.NewRequestWithContext(ctx, http.MethodGet, candidate, nil)
-		if err != nil {
-			lastErr = err
-			continue
-		}
-		httpx.ApplyDefaultHeaders(req)
+	candidate := strings.TrimSpace(rawURL)
+	if candidate == "" {
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE: empty download URL")
+	}
 
-		resp, err := httpx.Do(req)
-		if err != nil {
-			lastErr = err
-			continue
-		}
+	req, err := http.NewRequestWithContext(ctx, http.MethodGet, candidate, nil)
+	if err != nil {
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE: %w", err)
+	}
+	httpx.ApplyDefaultHeaders(req)
 
-		func() {
-			defer resp.Body.Close()
-			if resp.StatusCode != http.StatusOK {
-				lastErr = fmt.Errorf("HTTP %d", resp.StatusCode)
-				return
-			}
+	resp, err := httpx.Do(req)
+	if err != nil {
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE: %w", err)
+	}
+	defer resp.Body.Close()
 
-			tmp := dest + ".tmp"
-			out, err := os.Create(tmp)
-			if err != nil {
-				lastErr = err
-				return
-			}
+	if resp.StatusCode != http.StatusOK {
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE: HTTP %d", resp.StatusCode)
+	}
 
-			total := resp.ContentLength
-			if total < 0 {
-				total = 0
-			}
-			emitInstallProgress(20, 0, total)
+	tmp := dest + ".tmp"
+	out, err := os.Create(tmp)
+	if err != nil {
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE: %w", err)
+	}
 
-			buffer := make([]byte, 128*1024)
-			var downloaded int64
-			lastEmit := time.Now()
+	total := resp.ContentLength
+	if total < 0 {
+		total = 0
+	}
+	emitInstallProgress(20, 0, total)
 
-			for {
-				n, readErr := resp.Body.Read(buffer)
-				if n > 0 {
-					written, writeErr := out.Write(buffer[:n])
-					if writeErr != nil {
-						_ = out.Close()
-						_ = os.Remove(tmp)
-						lastErr = writeErr
-						return
-					}
-					downloaded += int64(written)
-					percentage := 50.0
-					if total > 0 {
-						percentage = 20 + (float64(downloaded)/float64(total))*60
-					}
-					if percentage > 80 {
-						percentage = 80
-					}
-					if time.Since(lastEmit) >= 120*time.Millisecond {
-						emitInstallProgress(percentage, downloaded, total)
-						lastEmit = time.Now()
-					}
-				}
-				if readErr != nil {
-					if readErr != io.EOF {
-						_ = out.Close()
-						_ = os.Remove(tmp)
-						lastErr = readErr
-						return
-					}
-					break
-				}
-			}
+	buffer := make([]byte, 128*1024)
+	var downloaded int64
+	lastEmit := time.Now()
 
-			if err := out.Close(); err != nil {
+	for {
+		n, readErr := resp.Body.Read(buffer)
+		if n > 0 {
+			written, writeErr := out.Write(buffer[:n])
+			if writeErr != nil {
+				_ = out.Close()
 				_ = os.Remove(tmp)
-				lastErr = err
-				return
+				return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE: %w", writeErr)
 			}
-			emitInstallProgress(80, downloaded, total)
-
-			_ = os.Remove(dest)
-			if err := os.Rename(tmp, dest); err != nil {
+			downloaded += int64(written)
+			percentage := 50.0
+			if total > 0 {
+				percentage = 20 + (float64(downloaded)/float64(total))*60
+			}
+			if percentage > 80 {
+				percentage = 80
+			}
+			if time.Since(lastEmit) >= 120*time.Millisecond {
+				emitInstallProgress(percentage, downloaded, total)
+				lastEmit = time.Now()
+			}
+		}
+		if readErr != nil {
+			if readErr != io.EOF {
+				_ = out.Close()
 				_ = os.Remove(tmp)
-				lastErr = err
-				return
+				return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE: %w", readErr)
 			}
-			lastErr = nil
-		}()
-
-		if lastErr == nil {
-			return nil
+			break
 		}
 	}
-	if lastErr != nil {
-		return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE: %w", lastErr)
+
+	if err := out.Close(); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE: %w", err)
 	}
-	return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE")
+	emitInstallProgress(80, downloaded, total)
+
+	_ = os.Remove(dest)
+	if err := os.Rename(tmp, dest); err != nil {
+		_ = os.Remove(tmp)
+		return fmt.Errorf("ERR_LIP_DOWNLOAD_ARCHIVE: %w", err)
+	}
+	return nil
 }
 
 func extractLipBinary(archivePath string, dest string) error {
-	reader, err := zip.OpenReader(archivePath)
+	reader, err := os.Open(archivePath)
 	if err != nil {
 		return fmt.Errorf("ERR_LIP_OPEN_ARCHIVE: %w", err)
 	}
 	defer reader.Close()
 
-	for _, file := range reader.File {
-		if file.FileInfo().IsDir() {
-			continue
-		}
-		if !strings.EqualFold(filepath.Base(file.Name), lipBinaryName) {
-			continue
-		}
+	return extractLipBinaryFromTarGz(reader, dest)
+}
 
-		rc, err := file.Open()
+func extractLipBinaryFromTarGz(source io.Reader, dest string) error {
+	gzipReader, err := gzip.NewReader(source)
+	if err != nil {
+		return fmt.Errorf("ERR_LIP_OPEN_ARCHIVE: %w", err)
+	}
+	defer gzipReader.Close()
+
+	tarReader := tar.NewReader(gzipReader)
+	for {
+		header, err := tarReader.Next()
+		if err == io.EOF {
+			break
+		}
 		if err != nil {
 			return fmt.Errorf("ERR_LIP_EXTRACT_BINARY: %w", err)
+		}
+		if header == nil || !header.FileInfo().Mode().IsRegular() {
+			continue
+		}
+		if !strings.EqualFold(path.Clean(strings.TrimSpace(header.Name)), lipArchiveEntryPath) {
+			continue
 		}
 
 		out, err := os.OpenFile(dest, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, 0o755)
 		if err != nil {
-			rc.Close()
 			return fmt.Errorf("ERR_LIP_EXTRACT_BINARY: %w", err)
 		}
 
-		_, copyErr := io.Copy(out, rc)
+		_, copyErr := io.Copy(out, tarReader)
 		closeErr := out.Close()
-		rcErr := rc.Close()
 		if copyErr != nil {
 			_ = os.Remove(dest)
 			return fmt.Errorf("ERR_LIP_EXTRACT_BINARY: %w", copyErr)
@@ -757,14 +1058,10 @@ func extractLipBinary(archivePath string, dest string) error {
 			_ = os.Remove(dest)
 			return fmt.Errorf("ERR_LIP_EXTRACT_BINARY: %w", closeErr)
 		}
-		if rcErr != nil {
-			_ = os.Remove(dest)
-			return fmt.Errorf("ERR_LIP_EXTRACT_BINARY: %w", rcErr)
-		}
 		return nil
 	}
 
-	return fmt.Errorf("ERR_LIP_EXTRACT_BINARY: %s not found", lipBinaryName)
+	return fmt.Errorf("ERR_LIP_EXTRACT_BINARY: %s not found", lipArchiveEntryPath)
 }
 
 func EnsureLatestWithError(ctx context.Context) error {
@@ -773,6 +1070,17 @@ func EnsureLatestWithError(ctx context.Context) error {
 	}
 	installCtx, cancel := context.WithTimeout(ctx, lipInstallTimeout)
 	defer cancel()
+
+	emit(EventLipInstallStatus, "checking_runtime")
+	emitInstallProgress(12, 0, 0)
+	runtimeWasMissing := !isLipDotNetRuntimeInstalled()
+	if runtimeWasMissing {
+		emit(EventLipInstallStatus, "installing_runtime")
+		emitInstallProgress(18, 0, 0)
+	}
+	if _, err := ensureLipDotNetRuntimeWithError(installCtx); err != nil {
+		return err
+	}
 
 	latestVersion, archiveURL, err := fetchLatestRelease(installCtx)
 	if err != nil {
@@ -788,9 +1096,14 @@ func EnsureLatestWithError(ctx context.Context) error {
 		return fmt.Errorf("ERR_LIP_CREATE_TARGET_DIR: %w", err)
 	}
 
-	archivePath := filepath.Join(filepath.Dir(target), "lip-latest-win-x64.zip")
+	archivePath := filepath.Join(filepath.Dir(target), "lip-latest-win32-x64.tgz")
 	_ = os.Remove(archivePath)
 	defer os.Remove(archivePath)
+
+	emit(EventLipInstallStatus, "downloading")
+	if runtimeWasMissing {
+		emitInstallProgress(20, 0, 0)
+	}
 
 	if err := downloadArchive(installCtx, archiveURL, archivePath); err != nil {
 		return err
@@ -841,11 +1154,18 @@ func EnsureLatest(ctx context.Context) {
 
 func CheckStatus() Status {
 	out := Status{Path: LipExePath()}
-	if !utils.FileExists(out.Path) {
+	exeExists := utils.FileExists(out.Path)
+	runtimeInstalled := isLipDotNetRuntimeInstalled()
+
+	if !exeExists {
 		out.Path = desiredLipExePath()
 	}
 
-	if utils.FileExists(LipExePath()) {
+	if exeExists && !runtimeInstalled {
+		out.Error = "ERR_LIP_VERIFY_DOTNET_RUNTIME"
+	}
+
+	if exeExists && runtimeInstalled {
 		out.Installed = true
 		ctx, cancel := context.WithTimeout(context.Background(), lipVersionRPCTimeout)
 		currentVersion, versionErr := getVersionWithError(ctx)
@@ -890,7 +1210,6 @@ func Install() string {
 
 	emit(EventLipInstallStatus, "preparing")
 	emitInstallProgress(10, 0, 0)
-	emit(EventLipInstallStatus, "downloading")
 
 	if err := EnsureLatestWithError(context.Background()); err != nil {
 		code := extractErrCode(err)

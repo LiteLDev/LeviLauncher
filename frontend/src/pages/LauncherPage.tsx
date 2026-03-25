@@ -54,7 +54,6 @@ const LAUNCH_TIP_KEYS = [
   "manage_versions",
   "quick_actions_menu",
   "launch_dependencies",
-  "gdk_required",
   "mods_card",
   "content_counts_card",
   "incompatible_resource_packs",
@@ -110,7 +109,6 @@ export const LauncherPage = (args: any) => {
     registerInstallingDisclosure,
     registerSuccessDisclosure,
     registerFailedDisclosure,
-    gdkMissingDisclosure,
 
     // Navigation
     navigate,
@@ -138,7 +136,6 @@ export const LauncherPage = (args: any) => {
     handleInstallConfirmOpenChange,
     handleRegisterSuccessOpenChange,
     handleLaunchFailedForceRun,
-    handleGdkMissingGoSettings,
   } = useLauncher(args);
   const currentVersionName = String(currentVersion || "").trim();
   const currentVersionInfo = currentVersionName
@@ -1178,36 +1175,6 @@ export const LauncherPage = (args: any) => {
           </div>
         </UnifiedModal>
 
-        {/* GDK Missing */}
-        <UnifiedModal
-          isOpen={gdkMissingDisclosure.isOpen}
-          onOpenChange={gdkMissingDisclosure.onOpenChange}
-          type="warning"
-          title={t("launcherpage.gdk_missing.title")}
-          footer={
-            <>
-              <Button
-                variant="light"
-                radius="full"
-                onPress={gdkMissingDisclosure.onClose}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                color="warning"
-                radius="full"
-                className="text-white"
-                onPress={handleGdkMissingGoSettings}
-              >
-                {t("launcherpage.gdk_missing.go_settings")}
-              </Button>
-            </>
-          }
-        >
-          <p className="text-default-600 dark:text-zinc-300 font-medium">
-            {t("launcherpage.gdk_missing.body")}
-          </p>
-        </UnifiedModal>
       </PageContainer>
     </>
   );

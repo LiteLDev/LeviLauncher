@@ -36,11 +36,6 @@
         "body": "註冊過程中發生錯誤，請重試或檢查環境。"
       }
     },
-    "gdk_missing": {
-      "title": "缺少 Microsoft GDK",
-      "body": "未偵測到 GDK 工具包，註冊功能需先安裝。是否跳轉到設定頁進行安裝？",
-      "go_settings": "前往設定"
-    },
     "delete": {
       "complete": {
         "title": "刪除完成",
@@ -127,7 +122,6 @@
       "manage_versions": "點擊下拉面板裡的「實例列表」，即可安裝、匯入或整理實例。",
       "quick_actions_menu": "啟動按鈕旁的選單提供實例設定、桌面捷徑、遊戲目錄和系統註冊等操作。",
       "launch_dependencies": "若缺少 GameInput、VC++ Runtime 或 Gaming Services，LeviLauncher 會在啟動前引導你完成安裝。",
-      "gdk_required": "註冊到系統需要 Microsoft GDK；如果跳出提示，請先前往「設定 > 元件」安裝。",
       "mods_card": "Mods 卡片會顯示目前實例已啟用的模組，並可一鍵進入完整 Mods 頁面。",
       "content_counts_card": "內容管理卡片會顯示世界、資源包和行為包數量，點擊對應列可直接進入頁面。",
       "incompatible_resource_packs": "偵測到不相容資源包時，可點擊警告列直接查看需要處理的項目。",
@@ -356,26 +350,6 @@
         "body": "這將把內容路徑重設為預設位置。確定要繼續嗎？"
       }
     },
-    "gdk": {
-      "title": "Microsoft GDK 開發套件",
-      "installed": "已安裝",
-      "install_button": "下載並安裝",
-      "path_label": "路徑：{{path}}",
-      "license": {
-        "title": "授權協議",
-        "body": "繼續前必須接受 Microsoft GDK 公共開發套件授權協議。",
-        "accept": "我接受授權協議中的條款",
-        "link_text": "Microsoft 公共遊戲開發工具包授權協議"
-      },
-      "download": {
-        "title": "下載 GDK"
-      },
-      "install": {
-        "title": "正在安裝 GDK",
-        "body": "稍候，正在執行安裝程式…"
-      },
-      "download_unavailable": "目前無法取得 GDK 下載地址。"
-    },
     "lip": {
       "title": "lip",
       "install_button": "安裝",
@@ -388,7 +362,9 @@
       "missing_label": "缺失",
       "status": {
         "checking": "正在檢查 lip 狀態...",
+        "checking_runtime": "正在檢查 .NET 10 執行階段...",
         "preparing": "正在準備下載...",
+        "installing_runtime": "正在安裝 .NET 10 執行階段...",
         "downloading": "正在下載 lip 壓縮檔...",
         "extracting": "正在解壓 lipd.exe...",
         "writing": "正在寫入 lipd.exe...",
@@ -400,11 +376,14 @@
         "done": "lip 安裝完成"
       },
       "error": {
-        "lip_fetch_release": "取得最新 lip 發佈資訊失敗",
-        "lip_release_asset_not_found": "最新發佈中未找到 Windows x64 的 lip 安裝包",
-        "lip_download_archive": "下載 lip 壓縮檔失敗",
-        "lip_open_archive": "打開 lip 壓縮檔失敗",
-        "lip_extract_binary": "解壓 lipd.exe 失敗",
+        "lip_fetch_release": "取得 lip 套件中繼資料失敗",
+        "lip_release_asset_not_found": "最新 lip 中繼資料中未找到 Windows x64 安裝包",
+        "lip_download_dotnet_installer": "下載 .NET 10 安裝腳本失敗",
+        "lip_install_dotnet_runtime": "安裝 .NET 10 執行階段失敗",
+        "lip_verify_dotnet_runtime": "驗證 .NET 10 執行階段失敗",
+        "lip_download_archive": "下載 lip .tgz 壓縮檔失敗",
+        "lip_open_archive": "打開 lip .tgz 壓縮檔失敗",
+        "lip_extract_binary": "提取 win32-x64/lipd.exe 失敗",
         "lip_create_target_dir": "建立 lip 安裝目錄失敗",
         "lip_replace_file": "替換 lipd.exe 失敗",
         "lip_verify_install": "驗證已安裝的 lip 版本失敗",

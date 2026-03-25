@@ -18,7 +18,6 @@ import (
 	cursetypes "github.com/liteldev/LeviLauncher/internal/curseforge/client/types"
 	"github.com/liteldev/LeviLauncher/internal/downloader"
 	"github.com/liteldev/LeviLauncher/internal/gameinput"
-	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/lang"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/lip"
@@ -431,21 +430,6 @@ func (a *Minecraft) ResolveDownloadedMsixvc(version string, versionType string) 
 
 func (a *Minecraft) DeleteDownloadedMsixvc(version string, versionType string) string {
 	return mcservice.DeleteDownloadedMsixvc(version, versionType)
-}
-
-// GDK helpers
-func (a *Minecraft) IsGDKInstalled() bool { return gdk.IsInstalled() }
-
-func (a *Minecraft) GetDefaultGDKDownloadURL() string {
-	return gdk.GetDefaultDownloadURL()
-}
-
-func (a *Minecraft) StartGDKDownload(url string) string { return gdk.StartDownload(a.ctx, url) }
-
-func (a *Minecraft) CancelGDKDownload() { gdk.CancelDownload() }
-
-func (a *Minecraft) InstallGDKFromZip(zipPath string) string {
-	return gdk.InstallFromZip(a.ctx, zipPath)
 }
 
 func (a *Minecraft) OpenWorldsExplorer(name string, isPreview bool) {

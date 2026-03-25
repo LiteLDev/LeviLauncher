@@ -11,7 +11,6 @@ import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft"
 import {
   EnsureGameInputInteractive,
   EnsureVcRuntimeInteractive,
-  IsGDKInstalled,
   ListDir,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
@@ -87,7 +86,6 @@ export const useLauncher = (args: any) => {
   const registerInstallingDisclosure = useDisclosure();
   const registerSuccessDisclosure = useDisclosure();
   const registerFailedDisclosure = useDisclosure();
-  const gdkMissingDisclosure = useDisclosure();
 
   const hasBackend = minecraft !== undefined;
   const navigate = useNavigate();
@@ -525,13 +523,6 @@ export const useLauncher = (args: any) => {
     const isCurrentlyRegistered = Boolean(
       localVersionMap.get(currentVersion)?.isRegistered,
     );
-    try {
-      const ok = await IsGDKInstalled();
-      if (!ok) {
-        gdkMissingDisclosure.onOpen();
-        return;
-      }
-    } catch {}
     if (isCurrentlyRegistered) {
       setRegisterAction("unregister");
       registerInstallingDisclosure.onOpen();
@@ -557,12 +548,8 @@ export const useLauncher = (args: any) => {
           args.refresh();
           return;
         }
-        if (result === "ERR_GDK_MISSING") {
-          gdkMissingDisclosure.onOpen();
-        } else {
-          setLaunchErrorCode(result);
-          registerFailedDisclosure.onOpen();
-        }
+        setLaunchErrorCode(result);
+        registerFailedDisclosure.onOpen();
       } catch {
         registerInstallingDisclosure.onClose();
         setLaunchErrorCode("ERR_UNREGISTER_FAILED");
@@ -604,9 +591,6 @@ export const useLauncher = (args: any) => {
         window.setTimeout(() => {
           void syncRegisteredFlags();
         }, 1200);
-      } else if (result === "ERR_GDK_MISSING") {
-        registerInstallingDisclosure.onClose();
-        gdkMissingDisclosure.onOpen();
       } else {
         registerInstallingDisclosure.onClose();
         setLaunchErrorCode(result);
@@ -624,7 +608,6 @@ export const useLauncher = (args: any) => {
     navigate,
     applyOptimisticRegisterState,
     applyOptimisticUnregisterState,
-    gdkMissingDisclosure,
     registerInstallingDisclosure,
     registerSuccessDisclosure,
     registerFailedDisclosure,
@@ -1217,11 +1200,6 @@ export const useLauncher = (args: any) => {
     doForceLaunch();
   }, [launchFailedDisclosure, doForceLaunch]);
 
-  const handleGdkMissingGoSettings = React.useCallback(() => {
-    gdkMissingDisclosure.onClose();
-    navigate("/settings", { state: { tab: "components" } });
-  }, [gdkMissingDisclosure, navigate]);
-
   return {
     // State
     isAnimating,
@@ -1261,7 +1239,6 @@ export const useLauncher = (args: any) => {
     registerInstallingDisclosure,
     registerSuccessDisclosure,
     registerFailedDisclosure,
-    gdkMissingDisclosure,
 
     // Navigation
     navigate,
@@ -1290,6 +1267,5 @@ export const useLauncher = (args: any) => {
     handleInstallConfirmOpenChange,
     handleRegisterSuccessOpenChange,
     handleLaunchFailedForceRun,
-    handleGdkMissingGoSettings,
   };
 };

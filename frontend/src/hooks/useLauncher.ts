@@ -29,6 +29,7 @@ const DEPENDENCY_CHECK_SESSION_KEYS = {
   gamingServices: "ll.session.dependency-check.gamingservices",
   vcRuntime: "ll.session.dependency-check.vcruntime",
 } as const;
+const VC_RUNTIME_CHECK_RETRY_DELAY_MS = 800;
 
 const hasSessionDependencyCheckRun = (
   key: (typeof DEPENDENCY_CHECK_SESSION_KEYS)[keyof typeof DEPENDENCY_CHECK_SESSION_KEYS],
@@ -616,17 +617,43 @@ export const useLauncher = (args: any) => {
 
   useEffect(() => {
     if (!hasBackend) return;
+    let disposed = false;
+    let vcRuntimeRetryTimer: number | null = null;
+
+    const runVcRuntimeDependencyCheck = (attempt: number) => {
+      const checkVcRuntime = (minecraft as any)?.IsVcRuntimeInstalled;
+      if (typeof checkVcRuntime !== "function") {
+        return;
+      }
+
+      Promise.resolve(checkVcRuntime())
+        .then((ok: boolean) => {
+          if (disposed) return;
+          markSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.vcRuntime);
+          if (!ok) {
+            vcRuntimeMissingDisclosure.onOpen();
+          }
+        })
+        .catch((error: unknown) => {
+          if (disposed) return;
+          console.warn("Failed to check VC runtime status", error);
+          if (attempt > 0 || vcRuntimeRetryTimer !== null) {
+            return;
+          }
+          vcRuntimeRetryTimer = window.setTimeout(() => {
+            vcRuntimeRetryTimer = null;
+            if (disposed) return;
+            runVcRuntimeDependencyCheck(attempt + 1);
+          }, VC_RUNTIME_CHECK_RETRY_DELAY_MS);
+        });
+    };
+
     const timer = setTimeout(() => {
       if (
         !hasSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.vcRuntime)
       ) {
-        markSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.vcRuntime);
         try {
-          (minecraft as any)?.IsVcRuntimeInstalled?.().then((ok: boolean) => {
-            if (!ok) {
-              vcRuntimeMissingDisclosure.onOpen();
-            }
-          });
+          runVcRuntimeDependencyCheck(0);
         } catch {}
       }
       if (
@@ -661,7 +688,14 @@ export const useLauncher = (args: any) => {
         } catch {}
       }
     }, 0);
-    return () => clearTimeout(timer);
+
+    return () => {
+      disposed = true;
+      clearTimeout(timer);
+      if (vcRuntimeRetryTimer !== null) {
+        clearTimeout(vcRuntimeRetryTimer);
+      }
+    };
   }, [
     hasBackend,
     gameInputMissingDisclosure,

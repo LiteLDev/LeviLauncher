@@ -49,8 +49,8 @@ const (
 	lipDotNetMajor               = 10
 	lipBinaryName                = "lipd.exe"
 	lipArchiveEntryPath          = "package/win32-x64/lipd.exe"
-	lipInstallTimeout            = 5 * time.Minute
-	lipDotNetInstallTimeout      = 15 * time.Minute
+	lipInstallTimeout            = 3 * time.Minute
+	lipDotNetInstallTimeout      = 3 * time.Minute
 	lipStatusTimeout             = 20 * time.Second
 	lipVersionRPCTimeout         = 15 * time.Second
 

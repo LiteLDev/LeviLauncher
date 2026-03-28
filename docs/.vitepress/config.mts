@@ -327,6 +327,54 @@ function buildJapaneseSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   ];
 }
 
+function buildKoreanSidebar(prefix: string): DefaultTheme.SidebarItem[] {
+  return [
+    {
+      text: "빠른 시작",
+      items: [
+        { text: "5분 만에 시작하기", link: `${prefix}quick-start` },
+        {
+          text: "시스템 요구사항 및 설치",
+          link: `${prefix}requirements-installation`,
+        },
+        { text: "처음 실행하기", link: `${prefix}first-launch` },
+      ],
+    },
+    {
+      text: "핵심 워크플로우",
+      items: [
+        { text: "버전 관리", link: `${prefix}version-management` },
+        { text: "다운로드 및 미러", link: `${prefix}downloads-mirrors` },
+        { text: "콘텐츠 관리", link: `${prefix}content-management` },
+      ],
+    },
+    {
+      text: "고급 기능",
+      items: [
+        { text: "모드 및 통합", link: `${prefix}mods-integrations` },
+        { text: "월드 도구", link: `${prefix}world-tools` },
+        {
+          text: "설정 및 개인화",
+          link: `${prefix}settings-personalization`,
+        },
+      ],
+    },
+    {
+      text: "도움말",
+      items: [
+        {
+          text: "업데이트 및 문제 해결",
+          link: `${prefix}update-troubleshooting`,
+        },
+        {
+          text: "자주 묻는 질문, 커뮤니티 및 피드백",
+          link: `${prefix}faq-community-feedback`,
+        },
+      ],
+    },
+  ];
+}
+
 // --- Navbar Builders ---
 
 function buildEnglishNav(): DefaultTheme.NavItem[] {
@@ -395,6 +443,16 @@ function buildJapaneseNav(): DefaultTheme.NavItem[] {
     { text: "ダウンロード", link: releases },
     { text: "ミラー", link: lanzou },
     { text: "コミュニティ", link: discord },
+    { text: "GitHub", link: repo },
+  ];
+}
+
+function buildKoreanNav(): DefaultTheme.NavItem[] {
+  return [
+    { text: "가이드", link: "/ko-KR/guide/quick-start" },
+    { text: "다운로드", link: releases },
+    { text: "미러", link: lanzou },
+    { text: "커뮤니티", link: discord },
     { text: "GitHub", link: repo },
   ];
 }
@@ -581,6 +639,28 @@ export default defineConfig({
         darkModeSwitchLabel: "外観",
         lightModeSwitchTitle: "ライトモードに切り替え",
         darkModeSwitchTitle: "ダークモードに切り替え",
+      },
+    },
+    "ko-KR": {
+      label: "한국어",
+      lang: "ko-KR",
+      link: "/ko-KR/",
+      themeConfig: {
+        nav: buildKoreanNav(),
+        sidebar: {
+          "/ko-KR/gnowledge/": buildKoreanSidebar("/ko-KR/guide/"),
+        },
+        outline: { level: [2, 3] },
+        docFooter: { prev: "이전 페이지", next: "다음 페이지" },
+        editLink: {
+          pattern: `${repo}/edit/main/docs/:path`,
+          text: "GitHub에서 이 페이지 편집",
+        },
+        returnToTopLabel: "맨 위로 돌아가기",
+        sidebarMenuLabel: "메뉴",
+        darkModeSwitchLabel: "외관",
+        lightModeSwitchTitle: "라이트 테마로 전환",
+        darkModeSwitchTitle: "다크 테마로 전환",
       },
     },
   },

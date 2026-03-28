@@ -11,6 +11,7 @@ const CHINESE_CN_LOCALE = "zh-CN";
 const CHINESE_HK_LOCALE = "zh-HK"; // Traditional Chinese (Hong Kong)
 const RUSSIAN_LOCALE = "ru-RU";    // Russian
 const GERMAN_LOCALE = "de-DE";     // German
+const JAPANESE_LOCALE = "ja-JP";   // Japanese —— ONLY ADDITION HERE
 
 /**
  * Removes the base path from the given pathname.
@@ -53,6 +54,14 @@ function normalizePath(pathname: string): string {
  */
 function getLocaleFromPath(pathname: string, base: string): string {
   const normalizedPath = normalizePath(stripBase(pathname, base));
+
+  // Check for Japanese —— ONLY ADDITION HERE
+  if (
+    normalizedPath === `/${JAPANESE_LOCALE}` ||
+    normalizedPath.startsWith(`/${JAPANESE_LOCALE}/`)
+  ) {
+    return JAPANESE_LOCALE;
+  }
 
   // Check for German
   if (
@@ -103,7 +112,8 @@ function readStoredLocale(): string | null {
       locale === CHINESE_CN_LOCALE ||
       locale === CHINESE_HK_LOCALE ||
       locale === RUSSIAN_LOCALE ||
-      locale === GERMAN_LOCALE
+      locale === GERMAN_LOCALE ||
+      locale === JAPANESE_LOCALE
     ) {
       return locale;
     }
@@ -139,6 +149,12 @@ function getPreferredLocale(): string {
     navigator.language,
   ].filter((locale): locale is string => Boolean(locale));
 
+  // Check if the browser prefers Japanese —— ONLY ADDITION HERE
+  const hasJapanese = browserLocales.some((locale) => {
+    const lower = locale.toLowerCase();
+    return lower.startsWith("ja");
+  });
+
   // Check if the browser prefers German
   const hasGerman = browserLocales.some((locale) => {
     const lower = locale.toLowerCase();
@@ -162,6 +178,11 @@ function getPreferredLocale(): string {
     const lower = locale.toLowerCase();
     return lower.startsWith("zh-cn") || (lower.startsWith("zh") && !hasTraditionalChinese);
   });
+
+  // Prioritize Japanese if detected —— ONLY ADDITION HERE
+  if (hasJapanese) {
+    return JAPANESE_LOCALE;
+  }
 
   // Prioritize German if detected
   if (hasGerman) {
@@ -207,6 +228,10 @@ function buildLocaleRoot(base: string, locale: string): string {
 
   if (locale === GERMAN_LOCALE) {
     return `${normalizedBase}${GERMAN_LOCALE}/`;
+  }
+
+  if (locale === JAPANESE_LOCALE) {
+    return `${normalizedBase}${JAPANESE_LOCALE}/`; // —— ONLY ADDITION HERE
   }
 
   return normalizedBase;

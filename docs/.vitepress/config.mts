@@ -7,7 +7,7 @@ const lanzou = "https://levimc.lanzoue.com/b016ke39hc";
 
 const base = "/";
 
-// Helper for English Sidebar
+// Helper function for English sidebar
 function buildEnglishSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   return [
     {
@@ -64,7 +64,7 @@ function buildChineseCNSidebar(prefix: string): DefaultTheme.SidebarItem[] {
       ],
     },
     {
-      text: "高级能力",
+      text: "高级功能",
       items: [
         { text: "Mods 与集成", link: `${prefix}mods-integrations` },
         { text: "世界工具", link: `${prefix}world-tools` },
@@ -192,6 +192,44 @@ function buildGermanSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   ];
 }
 
+// Helper function for Japanese sidebar
+function buildJapaneseSidebar(prefix: string): DefaultTheme.SidebarItem[] {
+  return [
+    {
+      text: "クイックスタート",
+      items: [
+        { text: "5 分で始める", link: `${prefix}quick-start` },
+        { text: "システム要件とインストール", link: `${prefix}requirements-installation` },
+        { text: "初回起動", link: `${prefix}first-launch` },
+      ],
+    },
+    {
+      text: "コア機能",
+      items: [
+        { text: "バージョン管理", link: `${prefix}version-management` },
+        { text: "ダウンロードとミラー", link: `${prefix}downloads-mirrors` },
+        { text: "コンテンツ管理", link: `${prefix}content-management` },
+      ],
+    },
+    {
+      text: "高度な機能",
+      items: [
+        { text: "Mod と統合", link: `${prefix}mods-integrations` },
+        { text: "ワールドツール", link: `${prefix}world-tools` },
+        { text: "設定とカスタマイズ", link: `${prefix}settings-personalization` },
+      ],
+    },
+    {
+      text: "ヘルプ",
+      items: [
+        { text: "更新とトラブルシューティング", link: `${prefix}update-troubleshooting` },
+        { text: "FAQ、コミュニティ、フィードバック", link: `${prefix}faq-community-feedback` },
+      ],
+    },
+  ];
+}
+
+// English Navbar
 function buildEnglishNav(): DefaultTheme.NavItem[] {
   return [
     { text: "Guide", link: "/guide/quick-start" },
@@ -202,6 +240,7 @@ function buildEnglishNav(): DefaultTheme.NavItem[] {
   ];
 }
 
+// Simplified Chinese Navbar
 function buildChineseCNNav(): DefaultTheme.NavItem[] {
   return [
     { text: "文档", link: "/zh-CN/guide/quick-start" },
@@ -212,6 +251,7 @@ function buildChineseCNNav(): DefaultTheme.NavItem[] {
   ];
 }
 
+// Traditional Chinese (HK) Navbar
 function buildChineseHKNav(): DefaultTheme.NavItem[] {
   return [
     { text: "文檔", link: "/zh-HK/guide/quick-start" },
@@ -222,6 +262,7 @@ function buildChineseHKNav(): DefaultTheme.NavItem[] {
   ];
 }
 
+// Russian Navbar
 function buildRussianNav(): DefaultTheme.NavItem[] {
   return [
     { text: "Документация", link: "/ru-RU/guide/quick-start" },
@@ -232,12 +273,24 @@ function buildRussianNav(): DefaultTheme.NavItem[] {
   ];
 }
 
+// German Navbar
 function buildGermanNav(): DefaultTheme.NavItem[] {
   return [
     { text: "Dokumentation", link: "/de-DE/guide/quick-start" },
     { text: "Downloads", link: releases },
     { text: "Spiegel", link: lanzou },
     { text: "Community", link: discord },
+    { text: "GitHub", link: repo },
+  ];
+}
+
+// Japanese Navbar
+function buildJapaneseNav(): DefaultTheme.NavItem[] {
+  return [
+    { text: "ドキュメント", link: "/ja-JP/guide/quick-start" },
+    { text: "ダウンロード", link: releases },
+    { text: "ミラー", link: lanzou },
+    { text: "コミュニティ", link: discord },
     { text: "GitHub", link: repo },
   ];
 }
@@ -398,6 +451,33 @@ export default defineConfig({
         darkModeSwitchLabel: "Erscheinungsbild",
         lightModeSwitchTitle: "Zum hellen Thema wechseln",
         darkModeSwitchTitle: "Zum dunklen Thema wechseln",
+      },
+    },
+    "ja-JP": {
+      label: "日本語",
+      lang: "ja-JP",
+      link: "/ja-JP/",
+      themeConfig: {
+        nav: buildJapaneseNav(),
+        sidebar: {
+          "/ja-JP/guide/": buildJapaneseSidebar("/ja-JP/guide/"),
+        },
+        outline: {
+          level: [2, 3],
+        },
+        docFooter: {
+          prev: "前のページ",
+          next: "次のページ",
+        },
+        editLink: {
+          pattern: `${repo}/edit/main/docs/:path`,
+          text: "GitHub でこのページを編集",
+        },
+        returnToTopLabel: "トップに戻る",
+        sidebarMenuLabel: "メニュー",
+        darkModeSwitchLabel: "外観",
+        lightModeSwitchTitle: "ライトモードに切り替え",
+        darkModeSwitchTitle: "ダークモードに切り替え",
       },
     },
   },

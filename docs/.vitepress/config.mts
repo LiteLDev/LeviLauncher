@@ -7,14 +7,18 @@ const lanzou = "https://levimc.lanzoue.com/b016ke39hc";
 
 const base = "/";
 
-// Helper function for English sidebar
+// --- Sidebar Builders ---
+
 function buildEnglishSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   return [
     {
       text: "Quick Start",
       items: [
         { text: "Get Started in 5 Minutes", link: `${prefix}quick-start` },
-        { text: "Requirements & Installation", link: `${prefix}requirements-installation` },
+        {
+          text: "Requirements & Installation",
+          link: `${prefix}requirements-installation`,
+        },
         { text: "First Launch", link: `${prefix}first-launch` },
       ],
     },
@@ -31,20 +35,76 @@ function buildEnglishSidebar(prefix: string): DefaultTheme.SidebarItem[] {
       items: [
         { text: "Mods & Integrations", link: `${prefix}mods-integrations` },
         { text: "World Tools", link: `${prefix}world-tools` },
-        { text: "Settings & Personalization", link: `${prefix}settings-personalization` },
+        {
+          text: "Settings & Personalization",
+          link: `${prefix}settings-personalization`,
+        },
       ],
     },
     {
       text: "Help",
       items: [
-        { text: "Update & Troubleshooting", link: `${prefix}update-troubleshooting` },
-        { text: "FAQ, Community & Feedback", link: `${prefix}faq-community-feedback` },
+        {
+          text: "Update & Troubleshooting",
+          link: `${prefix}update-troubleshooting`,
+        },
+        {
+          text: "FAQ, Community & Feedback",
+          link: `${prefix}faq-community-feedback`,
+        },
       ],
     },
   ];
 }
 
-// Helper for Simplified Chinese Sidebar (zh-CN)
+function buildSpanishSidebar(prefix: string): DefaultTheme.SidebarItem[] {
+  return [
+    {
+      text: "Inicio rápido",
+      items: [
+        { text: "Comienza en 5 minutos", link: `${prefix}quick-start` },
+        {
+          text: "Requisitos e instalación",
+          link: `${prefix}requirements-installation`,
+        },
+        { text: "Primer inicio", link: `${prefix}first-launch` },
+      ],
+    },
+    {
+      text: "Flujos principales",
+      items: [
+        { text: "Gestión de versiones", link: `${prefix}version-management` },
+        { text: "Descargas y espejos", link: `${prefix}downloads-mirrors` },
+        { text: "Gestión de contenido", link: `${prefix}content-management` },
+      ],
+    },
+    {
+      text: "Funciones avanzadas",
+      items: [
+        { text: "Mods e integraciones", link: `${prefix}mods-integrations` },
+        { text: "Herramientas para mundos", link: `${prefix}world-tools` },
+        {
+          text: "Ajustes y personalización",
+          link: `${prefix}settings-personalization`,
+        },
+      ],
+    },
+    {
+      text: "Ayuda",
+      items: [
+        {
+          text: "Actualizaciones y solución de problemas",
+          link: `${prefix}update-troubleshooting`,
+        },
+        {
+          text: "Preguntas frecuentes, comunidad y comentarios",
+          link: `${prefix}faq-community-feedback`,
+        },
+      ],
+    },
+  ];
+}
+
 function buildChineseCNSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   return [
     {
@@ -75,13 +135,15 @@ function buildChineseCNSidebar(prefix: string): DefaultTheme.SidebarItem[] {
       text: "帮助",
       items: [
         { text: "更新与故障排查", link: `${prefix}update-troubleshooting` },
-        { text: "常见问题、社区与反馈", link: `${prefix}faq-community-feedback` },
+        {
+          text: "常见问题、社区与反馈",
+          link: `${prefix}faq-community-feedback`,
+        },
       ],
     },
   ];
 }
 
-// Helper for Traditional Chinese (HK) Sidebar (zh-HK)
 function buildChineseHKSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   return [
     {
@@ -112,20 +174,25 @@ function buildChineseHKSidebar(prefix: string): DefaultTheme.SidebarItem[] {
       text: "協助",
       items: [
         { text: "更新與故障排查", link: `${prefix}update-troubleshooting` },
-        { text: "常見問題、社群與回饋", link: `${prefix}faq-community-feedback` },
+        {
+          text: "常見問題、社群與回饋",
+          link: `${prefix}faq-community-feedback`,
+        },
       ],
     },
   ];
 }
 
-// Helper for Russian Sidebar (ru-RU)
 function buildRussianSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   return [
     {
       text: "Быстрый старт",
       items: [
         { text: "Начало работы за 5 минут", link: `${prefix}quick-start` },
-        { text: "Требования и установка", link: `${prefix}requirements-installation` },
+        {
+          text: "Требования и установка",
+          link: `${prefix}requirements-installation`,
+        },
         { text: "Первый запуск", link: `${prefix}first-launch` },
       ],
     },
@@ -142,27 +209,38 @@ function buildRussianSidebar(prefix: string): DefaultTheme.SidebarItem[] {
       items: [
         { text: "Моды и интеграции", link: `${prefix}mods-integrations` },
         { text: "Инструменты для миров", link: `${prefix}world-tools` },
-        { text: "Настройки и персонализация", link: `${prefix}settings-personalization` },
+        {
+          text: "Настройки и персонализация",
+          link: `${prefix}settings-personalization`,
+        },
       ],
     },
     {
       text: "Помощь",
       items: [
-        { text: "Обновление и устранение неполадок", link: `${prefix}update-troubleshooting` },
-        { text: "ЧаВО, сообщество и обратная связь", link: `${prefix}faq-community-feedback` },
+        {
+          text: "Обновление и устранение неполадок",
+          link: `${prefix}update-troubleshooting`,
+        },
+        {
+          text: "ЧаВО, сообщество и обратная связь",
+          link: `${prefix}faq-community-feedback`,
+        },
       ],
     },
   ];
 }
 
-// Helper for German Sidebar (de-DE)
 function buildGermanSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   return [
     {
       text: "Schnellstart",
       items: [
         { text: "In 5 Minuten loslegen", link: `${prefix}quick-start` },
-        { text: "Anforderungen & Installation", link: `${prefix}requirements-installation` },
+        {
+          text: "Anforderungen & Installation",
+          link: `${prefix}requirements-installation`,
+        },
         { text: "Erster Start", link: `${prefix}first-launch` },
       ],
     },
@@ -179,27 +257,38 @@ function buildGermanSidebar(prefix: string): DefaultTheme.SidebarItem[] {
       items: [
         { text: "Mods & Integrationen", link: `${prefix}mods-integrations` },
         { text: "Welt-Tools", link: `${prefix}world-tools` },
-        { text: "Einstellungen & Personalisierung", link: `${prefix}settings-personalization` },
+        {
+          text: "Einstellungen & Personalisierung",
+          link: `${prefix}settings-personalization`,
+        },
       ],
     },
     {
       text: "Hilfe",
       items: [
-        { text: "Update & Fehlerbehebung", link: `${prefix}update-troubleshooting` },
-        { text: "FAQ, Community & Feedback", link: `${prefix}faq-community-feedback` },
+        {
+          text: "Update & Fehlerbehebung",
+          link: `${prefix}update-troubleshooting`,
+        },
+        {
+          text: "FAQ, Community & Feedback",
+          link: `${prefix}faq-community-feedback`,
+        },
       ],
     },
   ];
 }
 
-// Helper function for Japanese sidebar
 function buildJapaneseSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   return [
     {
       text: "クイックスタート",
       items: [
         { text: "5 分で始める", link: `${prefix}quick-start` },
-        { text: "システム要件とインストール", link: `${prefix}requirements-installation` },
+        {
+          text: "システム要件とインストール",
+          link: `${prefix}requirements-installation`,
+        },
         { text: "初回起動", link: `${prefix}first-launch` },
       ],
     },
@@ -216,20 +305,30 @@ function buildJapaneseSidebar(prefix: string): DefaultTheme.SidebarItem[] {
       items: [
         { text: "Mod と統合", link: `${prefix}mods-integrations` },
         { text: "ワールドツール", link: `${prefix}world-tools` },
-        { text: "設定とカスタマイズ", link: `${prefix}settings-personalization` },
+        {
+          text: "設定とカスタマイズ",
+          link: `${prefix}settings-personalization`,
+        },
       ],
     },
     {
       text: "ヘルプ",
       items: [
-        { text: "更新とトラブルシューティング", link: `${prefix}update-troubleshooting` },
-        { text: "FAQ、コミュニティ、フィードバック", link: `${prefix}faq-community-feedback` },
+        {
+          text: "更新とトラブルシューティング",
+          link: `${prefix}update-troubleshooting`,
+        },
+        {
+          text: "FAQ、コミュニティ、フィードバック",
+          link: `${prefix}faq-community-feedback`,
+        },
       ],
     },
   ];
 }
 
-// English Navbar
+// --- Navbar Builders ---
+
 function buildEnglishNav(): DefaultTheme.NavItem[] {
   return [
     { text: "Guide", link: "/guide/quick-start" },
@@ -240,7 +339,16 @@ function buildEnglishNav(): DefaultTheme.NavItem[] {
   ];
 }
 
-// Simplified Chinese Navbar
+function buildSpanishNav(): DefaultTheme.NavItem[] {
+  return [
+    { text: "Guía", link: "/es-ES/guide/quick-start" },
+    { text: "Descargas", link: releases },
+    { text: "Espejo", link: lanzou },
+    { text: "Comunidad", link: discord },
+    { text: "GitHub", link: repo },
+  ];
+}
+
 function buildChineseCNNav(): DefaultTheme.NavItem[] {
   return [
     { text: "文档", link: "/zh-CN/guide/quick-start" },
@@ -251,7 +359,6 @@ function buildChineseCNNav(): DefaultTheme.NavItem[] {
   ];
 }
 
-// Traditional Chinese (HK) Navbar
 function buildChineseHKNav(): DefaultTheme.NavItem[] {
   return [
     { text: "文檔", link: "/zh-HK/guide/quick-start" },
@@ -262,7 +369,6 @@ function buildChineseHKNav(): DefaultTheme.NavItem[] {
   ];
 }
 
-// Russian Navbar
 function buildRussianNav(): DefaultTheme.NavItem[] {
   return [
     { text: "Документация", link: "/ru-RU/guide/quick-start" },
@@ -273,7 +379,6 @@ function buildRussianNav(): DefaultTheme.NavItem[] {
   ];
 }
 
-// German Navbar
 function buildGermanNav(): DefaultTheme.NavItem[] {
   return [
     { text: "Dokumentation", link: "/de-DE/guide/quick-start" },
@@ -284,7 +389,6 @@ function buildGermanNav(): DefaultTheme.NavItem[] {
   ];
 }
 
-// Japanese Navbar
 function buildJapaneseNav(): DefaultTheme.NavItem[] {
   return [
     { text: "ドキュメント", link: "/ja-JP/guide/quick-start" },
@@ -294,6 +398,8 @@ function buildJapaneseNav(): DefaultTheme.NavItem[] {
     { text: "GitHub", link: repo },
   ];
 }
+
+// --- Export Config ---
 
 export default defineConfig({
   title: "LeviLauncher",
@@ -327,13 +433,8 @@ export default defineConfig({
         sidebar: {
           "/guide/": buildEnglishSidebar("/guide/"),
         },
-        outline: {
-          level: [2, 3],
-        },
-        docFooter: {
-          prev: "Previous page",
-          next: "Next page",
-        },
+        outline: { level: [2, 3] },
+        docFooter: { prev: "Previous page", next: "Next page" },
         editLink: {
           pattern: `${repo}/edit/main/docs/:path`,
           text: "Edit this page on GitHub",
@@ -345,6 +446,28 @@ export default defineConfig({
         darkModeSwitchTitle: "Switch to dark theme",
       },
     },
+    "es-ES": {
+      label: "Español",
+      lang: "es-ES",
+      link: "/es-ES/",
+      themeConfig: {
+        nav: buildSpanishNav(),
+        sidebar: {
+          "/es-ES/guide/": buildSpanishSidebar("/es-ES/guide/"),
+        },
+        outline: { level: [2, 3] },
+        docFooter: { prev: "Página anterior", next: "Siguiente página" },
+        editLink: {
+          pattern: `${repo}/edit/main/docs/:path`,
+          text: "Editar esta página en GitHub",
+        },
+        returnToTopLabel: "Volver arriba",
+        sidebarMenuLabel: "Menú",
+        darkModeSwitchLabel: "Apariencia",
+        lightModeSwitchTitle: "Cambiar al tema claro",
+        darkModeSwitchTitle: "Cambiar al tema oscuro",
+      },
+    },
     "zh-CN": {
       label: "简体中文",
       lang: "zh-CN",
@@ -354,13 +477,8 @@ export default defineConfig({
         sidebar: {
           "/zh-CN/guide/": buildChineseCNSidebar("/zh-CN/guide/"),
         },
-        outline: {
-          level: [2, 3],
-        },
-        docFooter: {
-          prev: "上一页",
-          next: "下一页",
-        },
+        outline: { level: [2, 3] },
+        docFooter: { prev: "上一页", next: "下一页" },
         editLink: {
           pattern: `${repo}/edit/main/docs/:path`,
           text: "在 GitHub 上编辑此页",
@@ -381,13 +499,8 @@ export default defineConfig({
         sidebar: {
           "/zh-HK/guide/": buildChineseHKSidebar("/zh-HK/guide/"),
         },
-        outline: {
-          level: [2, 3],
-        },
-        docFooter: {
-          prev: "上一頁",
-          next: "下一頁",
-        },
+        outline: { level: [2, 3] },
+        docFooter: { prev: "上一頁", next: "下一頁" },
         editLink: {
           pattern: `${repo}/edit/main/docs/:path`,
           text: "在 GitHub 上編輯此頁",
@@ -408,13 +521,8 @@ export default defineConfig({
         sidebar: {
           "/ru-RU/guide/": buildRussianSidebar("/ru-RU/guide/"),
         },
-        outline: {
-          level: [2, 3],
-        },
-        docFooter: {
-          prev: "Предыдущая страница",
-          next: "Следующая страница",
-        },
+        outline: { level: [2, 3] },
+        docFooter: { prev: "Предыдущая страница", next: "Следующая страница" },
         editLink: {
           pattern: `${repo}/edit/main/docs/:path`,
           text: "Редактировать эту страницу на GitHub",
@@ -435,13 +543,8 @@ export default defineConfig({
         sidebar: {
           "/de-DE/guide/": buildGermanSidebar("/de-DE/guide/"),
         },
-        outline: {
-          level: [2, 3],
-        },
-        docFooter: {
-          prev: "Vorherige Seite",
-          next: "Nächste Seite",
-        },
+        outline: { level: [2, 3] },
+        docFooter: { prev: "Vorherige Seite", next: "Nächste Seite" },
         editLink: {
           pattern: `${repo}/edit/main/docs/:path`,
           text: "Diese Seite auf GitHub bearbeiten",

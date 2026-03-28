@@ -7,11 +7,12 @@ const LOCALE_STORAGE_KEY = "levilauncher-docs-locale";
 
 // Supported locale identifiers
 const ENGLISH_LOCALE = "en-US";
+const SPANISH_LOCALE = "es-ES";    // Spanish (Spain)
 const CHINESE_CN_LOCALE = "zh-CN";
 const CHINESE_HK_LOCALE = "zh-HK"; // Traditional Chinese (Hong Kong)
 const RUSSIAN_LOCALE = "ru-RU";    // Russian
 const GERMAN_LOCALE = "de-DE";     // German
-const JAPANESE_LOCALE = "ja-JP";   // Japanese —— ONLY ADDITION HERE
+const JAPANESE_LOCALE = "ja-JP";   // Japanese
 
 /**
  * Removes the base path from the given pathname.
@@ -55,7 +56,15 @@ function normalizePath(pathname: string): string {
 function getLocaleFromPath(pathname: string, base: string): string {
   const normalizedPath = normalizePath(stripBase(pathname, base));
 
-  // Check for Japanese —— ONLY ADDITION HERE
+  // Check for Spanish
+  if (
+    normalizedPath === `/${SPANISH_LOCALE}` ||
+    normalizedPath.startsWith(`/${SPANISH_LOCALE}/`)
+  ) {
+    return SPANISH_LOCALE;
+  }
+
+  // Check for Japanese
   if (
     normalizedPath === `/${JAPANESE_LOCALE}` ||
     normalizedPath.startsWith(`/${JAPANESE_LOCALE}/`)
@@ -109,6 +118,7 @@ function readStoredLocale(): string | null {
     // Validate that the stored value is a supported locale
     if (
       locale === ENGLISH_LOCALE ||
+      locale === SPANISH_LOCALE ||
       locale === CHINESE_CN_LOCALE ||
       locale === CHINESE_HK_LOCALE ||
       locale === RUSSIAN_LOCALE ||
@@ -149,7 +159,7 @@ function getPreferredLocale(): string {
     navigator.language,
   ].filter((locale): locale is string => Boolean(locale));
 
-  // Check if the browser prefers Japanese —— ONLY ADDITION HERE
+  // Check if the browser prefers Japanese
   const hasJapanese = browserLocales.some((locale) => {
     const lower = locale.toLowerCase();
     return lower.startsWith("ja");
@@ -159,6 +169,12 @@ function getPreferredLocale(): string {
   const hasGerman = browserLocales.some((locale) => {
     const lower = locale.toLowerCase();
     return lower.startsWith("de");
+  });
+
+  // Check if the browser prefers Spanish
+  const hasSpanish = browserLocales.some((locale) => {
+    const lower = locale.toLowerCase();
+    return lower.startsWith("es");
   });
 
   // Check if the browser prefers Russian
@@ -179,7 +195,7 @@ function getPreferredLocale(): string {
     return lower.startsWith("zh-cn") || (lower.startsWith("zh") && !hasTraditionalChinese);
   });
 
-  // Prioritize Japanese if detected —— ONLY ADDITION HERE
+  // Prioritize Japanese if detected
   if (hasJapanese) {
     return JAPANESE_LOCALE;
   }
@@ -187,6 +203,11 @@ function getPreferredLocale(): string {
   // Prioritize German if detected
   if (hasGerman) {
     return GERMAN_LOCALE;
+  }
+
+  // Prioritize Spanish if detected
+  if (hasSpanish) {
+    return SPANISH_LOCALE;
   }
 
   // Prioritize Russian if detected
@@ -214,6 +235,10 @@ function getPreferredLocale(): string {
 function buildLocaleRoot(base: string, locale: string): string {
   const normalizedBase = base.endsWith("/") ? base : `${base}/`;
 
+  if (locale === SPANISH_LOCALE) {
+    return `${normalizedBase}${SPANISH_LOCALE}/`;
+  }
+
   if (locale === CHINESE_CN_LOCALE) {
     return `${normalizedBase}${CHINESE_CN_LOCALE}/`;
   }
@@ -231,7 +256,7 @@ function buildLocaleRoot(base: string, locale: string): string {
   }
 
   if (locale === JAPANESE_LOCALE) {
-    return `${normalizedBase}${JAPANESE_LOCALE}/`; // —— ONLY ADDITION HERE
+    return `${normalizedBase}${JAPANESE_LOCALE}/`;
   }
 
   return normalizedBase;

@@ -375,6 +375,58 @@ function buildKoreanSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   ];
 }
 
+// Helper for French Sidebar (fr-FR)
+function buildFrenchSidebar(prefix: string): DefaultTheme.SidebarItem[] {
+  return [
+    {
+      text: "Démarrage rapide",
+      items: [
+        { text: "Commencer en 5 minutes", link: `${prefix}quick-start` },
+        {
+          text: "Configuration requise & Installation",
+          link: `${prefix}requirements-installation`,
+        },
+        { text: "Premier lancement", link: `${prefix}first-launch` },
+      ],
+    },
+    {
+      text: "Fonctionnalités principales",
+      items: [
+        { text: "Gestion des versions", link: `${prefix}version-management` },
+        {
+          text: "Téléchargements & Miroirs",
+          link: `${prefix}downloads-mirrors`,
+        },
+        { text: "Gestion du contenu", link: `${prefix}content-management` },
+      ],
+    },
+    {
+      text: "Fonctionnalités avancées",
+      items: [
+        { text: "Mods & Intégrations", link: `${prefix}mods-integrations` },
+        { text: "Outils pour les mondes", link: `${prefix}world-tools` },
+        {
+          text: "Paramètres & Personnalisation",
+          link: `${prefix}settings-personalization`,
+        },
+      ],
+    },
+    {
+      text: "Aide",
+      items: [
+        {
+          text: "Mises à jour & Dépannage",
+          link: `${prefix}update-troubleshooting`,
+        },
+        {
+          text: "FAQ, communauté & Retour",
+          link: `${prefix}faq-community-feedback`,
+        },
+      ],
+    },
+  ];
+}
+
 // --- Navbar Builders ---
 
 function buildEnglishNav(): DefaultTheme.NavItem[] {
@@ -453,6 +505,17 @@ function buildKoreanNav(): DefaultTheme.NavItem[] {
     { text: "다운로드", link: releases },
     { text: "미러", link: lanzou },
     { text: "커뮤니티", link: discord },
+    { text: "GitHub", link: repo },
+  ];
+}
+
+// French Navbar
+function buildFrenchNav(): DefaultTheme.NavItem[] {
+  return [
+    { text: "Guide", link: "/fr-FR/guide/quick-start" },
+    { text: "Téléchargements", link: releases },
+    { text: "Miroir", link: lanzou },
+    { text: "Communauté", link: discord },
     { text: "GitHub", link: repo },
   ];
 }
@@ -661,6 +724,33 @@ export default defineConfig({
         darkModeSwitchLabel: "외관",
         lightModeSwitchTitle: "라이트 테마로 전환",
         darkModeSwitchTitle: "다크 테마로 전환",
+      },
+    },
+    "fr-FR": {
+      label: "Français",
+      lang: "fr-FR",
+      link: "/fr-FR/",
+      themeConfig: {
+        nav: buildFrenchNav(),
+        sidebar: {
+          "/fr-FR/guide/": buildFrenchSidebar("/fr-FR/guide/"),
+        },
+        outline: {
+          level: [2, 3],
+        },
+        docFooter: {
+          prev: "Page précédente",
+          next: "Page suivante",
+        },
+        editLink: {
+          pattern: `${repo}/edit/main/docs/:path`,
+          text: "Modifier cette page sur GitHub",
+        },
+        returnToTopLabel: "Retour en haut",
+        sidebarMenuLabel: "Menu",
+        darkModeSwitchLabel: "Apparence",
+        lightModeSwitchTitle: "Passer en thème clair",
+        darkModeSwitchTitle: "Passer en thème sombre",
       },
     },
   },

@@ -13,6 +13,7 @@ const CHINESE_HK_LOCALE = "zh-HK"; // Traditional Chinese (Hong Kong)
 const RUSSIAN_LOCALE = "ru-RU";    // Russian
 const GERMAN_LOCALE = "de-DE";     // German
 const JAPANESE_LOCALE = "ja-JP";   // Japanese
+const FRENCH_LOCALE = "fr-FR"; // French
 
 /**
  * Removes the base path from the given pathname.
@@ -102,6 +103,14 @@ function getLocaleFromPath(pathname: string, base: string): string {
     normalizedPath.startsWith(`/${CHINESE_CN_LOCALE}/`)
   ) {
     return CHINESE_CN_LOCALE;
+  }
+
+  // Check for French
+  if (
+    normalizedPath === `/${FRENCH_LOCALE}` ||
+    normalizedPath.startsWith(`/${FRENCH_LOCALE}/`)
+  ) {
+    return FRENCH_LOCALE;
   }
 
   // Default to English
@@ -195,6 +204,12 @@ function getPreferredLocale(): string {
     return lower.startsWith("zh-cn") || (lower.startsWith("zh") && !hasTraditionalChinese);
   });
 
+  // Check if the browser prefers French
+  const hasFrench = browserLocales.some((locale) => {
+    const lower = locale.toLowerCase();
+    return lower.startsWith("fr-FR");
+  });
+
   // Prioritize Japanese if detected
   if (hasJapanese) {
     return JAPANESE_LOCALE;
@@ -223,6 +238,10 @@ function getPreferredLocale(): string {
   // Fallback to Simplified Chinese if detected
   if (hasSimplifiedChinese) {
     return CHINESE_CN_LOCALE;
+  }
+
+  if (hasFrench) {
+    return FRENCH_LOCALE;
   }
 
   // Default to English
@@ -257,6 +276,10 @@ function buildLocaleRoot(base: string, locale: string): string {
 
   if (locale === JAPANESE_LOCALE) {
     return `${normalizedBase}${JAPANESE_LOCALE}/`;
+  }
+
+  if (locale === FRENCH_LOCALE) {
+    return `${normalizedBase}${FRENCH_LOCALE}/`;
   }
 
   return normalizedBase;

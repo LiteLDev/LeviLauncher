@@ -41,9 +41,26 @@ type EnsureProgress struct {
 	Total      int64
 }
 
+type vcRuntimeRegistryState struct {
+	Installed    uint64
+	HasInstalled bool
+	Version      string
+	Major        uint64
+	HasMajor     bool
+}
+
 var (
-	mu       sync.Mutex
-	ensuring bool
+	mu                       sync.Mutex
+	ensuring                 bool
+	vcRuntimeMismatchLogOnce sync.Once
+	vcRuntimeRegistryPaths   = []string{
+		`SOFTWARE\Microsoft\VisualStudio\14.0\VC\Runtimes\x64`,
+		`SOFTWARE\Wow6432Node\Microsoft\VisualStudio\14.0\VC\Runtimes\x64`,
+	}
+	vcRuntimeUninstallKeyPaths = []string{
+		`SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall`,
+		`SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall`,
+	}
 )
 
 //go:embed vcruntime140_1.dll
@@ -64,18 +81,64 @@ func fileSHA256(p string) ([]byte, error) {
 	return h.Sum(nil), nil
 }
 
-func hasVCMinimumRuntime(path string) bool {
+func readVcRuntimeRegistryState(path string) (vcRuntimeRegistryState, bool) {
 	key, err := winreg.OpenKey(winreg.LOCAL_MACHINE, path, winreg.READ)
 	if err != nil {
+		return vcRuntimeRegistryState{}, false
+	}
+	defer key.Close()
+
+	state := vcRuntimeRegistryState{}
+	if installed, _, err := key.GetIntegerValue("Installed"); err == nil {
+		state.Installed = installed
+		state.HasInstalled = true
+	}
+	if version, _, err := key.GetStringValue("Version"); err == nil {
+		state.Version = strings.TrimSpace(version)
+	}
+	if major, _, err := key.GetIntegerValue("Major"); err == nil {
+		state.Major = major
+		state.HasMajor = true
+	}
+	return state, true
+}
+
+func isVcRuntimeRegistryStateInstalled(state vcRuntimeRegistryState) bool {
+	if !state.HasInstalled || state.Installed != 1 {
 		return false
+	}
+	if strings.TrimSpace(state.Version) != "" {
+		return true
+	}
+	return state.HasMajor && state.Major >= 14
+}
+
+func hasInstalledVcRuntime(paths []string, readState func(string) (vcRuntimeRegistryState, bool)) bool {
+	for _, path := range paths {
+		state, ok := readState(path)
+		if !ok {
+			continue
+		}
+		if isVcRuntimeRegistryStateInstalled(state) {
+			return true
+		}
+	}
+	return false
+}
+
+func readVCUninstallDisplayNames(path string) ([]string, error) {
+	key, err := winreg.OpenKey(winreg.LOCAL_MACHINE, path, winreg.READ)
+	if err != nil {
+		return nil, err
 	}
 	defer key.Close()
 
 	names, err := key.ReadSubKeyNames(-1)
 	if err != nil {
-		return false
+		return nil, err
 	}
 
+	displayNames := make([]string, 0, len(names))
 	for _, name := range names {
 		sub, err := winreg.OpenKey(key, name, winreg.QUERY_VALUE)
 		if err != nil {
@@ -86,12 +149,38 @@ func hasVCMinimumRuntime(path string) bool {
 		if err != nil {
 			continue
 		}
+		displayNames = append(displayNames, displayName)
+	}
+	return displayNames, nil
+}
 
+func hasVCUninstallEvidenceFromDisplayNames(displayNames []string) bool {
+	for _, displayName := range displayNames {
 		l := strings.ToLower(strings.TrimSpace(displayName))
-		if strings.Contains(l, "visual c++") &&
-			strings.Contains(l, "x64") &&
-			strings.Contains(l, "2022") &&
-			strings.Contains(l, "minimum runtime") {
+		if !strings.Contains(l, "visual c++") || !strings.Contains(l, "x64") {
+			continue
+		}
+		if !strings.Contains(l, "redistributable") && !strings.Contains(l, "runtime") {
+			continue
+		}
+		if strings.Contains(l, "2015") ||
+			strings.Contains(l, "2017") ||
+			strings.Contains(l, "2019") ||
+			strings.Contains(l, "2022") ||
+			strings.Contains(l, "v14") {
+			return true
+		}
+	}
+	return false
+}
+
+func hasVCUninstallEvidence(readDisplayNames func(string) ([]string, error)) bool {
+	for _, path := range vcRuntimeUninstallKeyPaths {
+		displayNames, err := readDisplayNames(path)
+		if err != nil {
+			continue
+		}
+		if hasVCUninstallEvidenceFromDisplayNames(displayNames) {
 			return true
 		}
 	}
@@ -99,8 +188,15 @@ func hasVCMinimumRuntime(path string) bool {
 }
 
 func IsInstalled() bool {
-	return hasVCMinimumRuntime(`SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall`) ||
-		hasVCMinimumRuntime(`SOFTWARE\Wow6432Node\Microsoft\Windows\CurrentVersion\Uninstall`)
+	if hasInstalledVcRuntime(vcRuntimeRegistryPaths, readVcRuntimeRegistryState) {
+		return true
+	}
+	if hasVCUninstallEvidence(readVCUninstallDisplayNames) {
+		vcRuntimeMismatchLogOnce.Do(func() {
+			log.Println("vcruntime: found Visual C++ uninstall entries but official VC runtime registry keys are missing")
+		})
+	}
+	return false
 }
 
 func EnsureInteractive(ctx context.Context) {

@@ -653,7 +653,6 @@ export const useInstanceSettings = () => {
   const [unregisterOpen, setUnregisterOpen] = React.useState<boolean>(false);
   const [unregisterSuccessOpen, setUnregisterSuccessOpen] =
     React.useState<boolean>(false);
-  const [gdkMissingOpen, setGdkMissingOpen] = React.useState<boolean>(false);
   const [errorOpen, setErrorOpen] = React.useState<boolean>(false);
   const [deleteOpen, setDeleteOpen] = React.useState<boolean>(false);
   const [deleteSuccessOpen, setDeleteSuccessOpen] =
@@ -2343,8 +2342,6 @@ export const useInstanceSettings = () => {
     setUnregisterOpen,
     unregisterSuccessOpen,
     setUnregisterSuccessOpen,
-    gdkMissingOpen,
-    setGdkMissingOpen,
     errorOpen,
     setErrorOpen,
     deleteOpen,

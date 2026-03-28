@@ -36,11 +36,6 @@
         "body": "Во время регистрации произошла ошибка. Попробуйте ещё раз или проверьте параметры"
       }
     },
-    "gdk_missing": {
-      "title": "Microsoft GDK отсутствует",
-      "body": "GDK toolkit не обнаружен. Открыть настройки для установки?",
-      "go_settings": "Открыть настройки"
-    },
     "delete": {
       "complete": {
         "title": "Удалено",
@@ -127,7 +122,6 @@
       "manage_versions": "Откройте «Список экземпляров» в выпадающей панели, чтобы устанавливать, импортировать и упорядочивать экземпляры.",
       "quick_actions_menu": "Меню рядом с кнопкой запуска открывает настройки экземпляра, ярлык на рабочем столе, папку игры и регистрацию в системе.",
       "launch_dependencies": "Если отсутствуют GameInput, VC++ Runtime или Gaming Services, LeviLauncher предложит установить их перед запуском.",
-      "gdk_required": "Для регистрации в системе требуется Microsoft GDK. Если появится подсказка, сначала установите его в «Настройки > Компоненты».",
       "mods_card": "Карточка Mods показывает включённые моды текущего экземпляра и в один клик открывает полную страницу Mods.",
       "content_counts_card": "Карточка управления контентом показывает количество миров, resource packs и behavior packs, а каждая строка открывает нужную страницу.",
       "incompatible_resource_packs": "Если найдены несовместимые resource packs, нажмите на строку предупреждения, чтобы сразу открыть их список.",
@@ -137,7 +131,8 @@
       "download_mirror": "Если загрузка идёт медленно, попробуйте сменить зеркало или проверить сетевые параметры в настройках.",
       "open_source": "LeviLauncher — проект с открытым исходным кодом; о проблемах лаунчера и идеях по улучшению можно сообщать через GitHub.",
       "backup_worlds": "Перед тестированием новых resource packs, behavior packs или модов рекомендуется сделать резервную копию важных миров."
-    },    "edition": "Bedrock Edition"
+    },
+    "edition": "Bedrock Edition"
   },
   "moddedcard": {
     "title": "Моды",
@@ -356,39 +351,22 @@
         "body": "Это сбросит путь к контенту на стандартный. Вы уверены?"
       }
     },
-    "gdk": {
-      "title": "Microsoft Game Development Kit",
-      "installed": "Установлен",
-      "install_button": "Скачать и установить",
-      "path_label": "Путь: {{path}}",
-      "license": {
-        "title": "Лицензионное соглашение",
-        "body": "Для продолжения необходимо принять условия лицензионного соглашения Microsoft Public Game Development Kit.",
-        "accept": "Я принимаю условия лицензионного соглашения.",
-        "link_text": "Лицензионное соглашение Microsoft Public Game Development Kit"
-      },
-      "download": {
-        "title": "Загрузка GDK"
-      },
-      "install": {
-        "title": "Установка GDK",
-        "body": "Пожалуйста, подождите, пока установщик работает…"
-      },
-      "download_unavailable": "Сейчас не удаётся получить ссылку для загрузки GDK."
-    },
     "lip": {
       "title": "lip",
       "install_button": "Установить",
       "check_button": "Проверить",
       "cache_clean_button": "Очистить кэш",
       "cache_cleaning": "Очистка кэша...",
+      "cache_clean_success": "Кэш lip очищен",
       "installing": "Установка lip...",
       "latest_label": "Актуально",
       "outdated_label": "Доступно обновление",
       "missing_label": "Не установлен",
       "status": {
         "checking": "Проверка состояния lip...",
+        "checking_runtime": "Проверка среды выполнения .NET 10...",
         "preparing": "Подготовка загрузки...",
+        "installing_runtime": "Установка среды выполнения .NET 10...",
         "downloading": "Загрузка архива lip...",
         "extracting": "Распаковка lipd.exe...",
         "writing": "Запись lipd.exe...",
@@ -400,11 +378,14 @@
         "done": "Установка lip завершена"
       },
       "error": {
-        "lip_fetch_release": "Не удалось получить сведения о последнем релизе lip",
-        "lip_release_asset_not_found": "В последнем релизе не найден пакет lip для Windows x64",
-        "lip_download_archive": "Не удалось загрузить архив lip",
-        "lip_open_archive": "Не удалось открыть архив lip",
-        "lip_extract_binary": "Не удалось распаковать lipd.exe",
+        "lip_fetch_release": "Не удалось получить метаданные пакета lip",
+        "lip_release_asset_not_found": "В последних метаданных lip не найден пакет Windows x64",
+        "lip_download_dotnet_installer": "Не удалось загрузить установочный скрипт .NET 10",
+        "lip_install_dotnet_runtime": "Не удалось установить среду выполнения .NET 10",
+        "lip_verify_dotnet_runtime": "Не удалось проверить среду выполнения .NET 10",
+        "lip_download_archive": "Не удалось загрузить пакет lip в формате .tgz",
+        "lip_open_archive": "Не удалось открыть пакет lip в формате .tgz",
+        "lip_extract_binary": "Не удалось извлечь win32-x64/lipd.exe",
         "lip_create_target_dir": "Не удалось создать каталог установки lip",
         "lip_replace_file": "Не удалось заменить lipd.exe",
         "lip_verify_install": "Не удалось проверить установленную версию lip",
@@ -997,6 +978,7 @@
     "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "Failed to clean lip cache",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
   },
   "filemanager": {

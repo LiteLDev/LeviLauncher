@@ -12,7 +12,7 @@ import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/conte
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
-import { countDirectories } from "@/utils/fs";
+import { countDirectories, getPathBaseName, normalizeDroppedFiles } from "@/utils/fs";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as contentService from "bindings/github.com/liteldev/LeviLauncher/contentservice";
@@ -308,22 +308,23 @@ export const useContentPage = (t: TFunc) => {
 
   const doImportFromPaths = async (paths: string[]) => {
     try {
-      if (!paths?.length) return;
+      const normalizedPaths = normalizeDroppedFiles(paths);
+      if (!normalizedPaths.length) return;
       const name = currentVersionName || readCurrentVersionName();
       if (!name) {
         setErrorMsg(t("launcherpage.currentVersion_none") as string);
         return;
       }
-      const hasWorld = paths.some((p) => p?.toLowerCase().endsWith(".mcworld"));
+      const hasWorld = normalizedPaths.some((p) =>
+        p.toLowerCase().endsWith(".mcworld"),
+      );
       let hasSkin = false;
-      if (paths.length > 0) {
+      if (normalizedPaths.length > 0) {
         setImporting(true);
-        const firstBase =
-          paths[0].replace(/\\/g, "/").split("/").pop() || paths[0];
-        setCurrentFile(firstBase);
+        setCurrentFile(getPathBaseName(normalizedPaths[0]));
       }
-      for (const p of paths) {
-        if (p?.toLowerCase().endsWith(".mcpack")) {
+      for (const p of normalizedPaths) {
+        if (p.toLowerCase().endsWith(".mcpack")) {
           const isSkin = await (contentService as any)?.IsMcpackSkinPackPath?.(
             p,
           );
@@ -338,7 +339,7 @@ export const useContentPage = (t: TFunc) => {
       const needsPlayer = hasWorld || (hasSkin && !isSharedMode);
 
       if (needsPlayer) {
-        pendingImportPathsRef.current = paths;
+        pendingImportPathsRef.current = normalizedPaths;
         playerSelectOnOpen();
         chosenPlayer = await new Promise<string>((resolve) => {
           playerSelectResolveRef.current = resolve;
@@ -356,7 +357,7 @@ export const useContentPage = (t: TFunc) => {
       const pathsToImport =
         pendingImportPathsRef.current.length > 0
           ? pendingImportPathsRef.current
-          : paths;
+          : normalizedPaths;
       pendingImportPathsRef.current = [];
       const playerToUse = chosenPlayer || selectedPlayer || "";
       for (const p of pathsToImport) {
@@ -366,7 +367,7 @@ export const useContentPage = (t: TFunc) => {
             setImporting(true);
             started = true;
           }
-          const base = p.replace(/\\/g, "/").split("/").pop() || p;
+          const base = getPathBaseName(p);
           setCurrentFile(base);
 
           let err = "";
@@ -442,7 +443,7 @@ export const useContentPage = (t: TFunc) => {
             setImporting(true);
             started = true;
           }
-          const base = p.replace(/\\/g, "/").split("/").pop() || p;
+          const base = getPathBaseName(p);
           setCurrentFile(base);
           let err = "";
           if (
@@ -503,7 +504,7 @@ export const useContentPage = (t: TFunc) => {
           }
           succFiles.push(base);
         } else if (lower.endsWith(".mcworld")) {
-          const base = p.replace(/\\/g, "/").split("/").pop() || p;
+          const base = getPathBaseName(p);
           if (!playerToUse) {
             errPairs.push({ name: base, err: "ERR_NO_PLAYER" });
             continue;
@@ -683,8 +684,7 @@ export const useContentPage = (t: TFunc) => {
         for (const pack of packs) {
           const packPath = String(pack?.path || "").trim();
           if (!packPath) continue;
-          const fallbackName =
-            packPath.replace(/\\/g, "/").split("/").pop() || packPath;
+          const fallbackName = getPathBaseName(packPath);
           const packName = String(pack?.manifest?.name || fallbackName);
           const itemLabel = `${packName} -> ${targetName}`;
           setCurrentFile(itemLabel);
@@ -774,8 +774,9 @@ export const useContentPage = (t: TFunc) => {
   React.useEffect(() => {
     return Events.On("files-dropped", (event) => {
       const data = (event.data as { files: string[] }) || {};
-      if (data.files && data.files.length > 0) {
-        void doImportRef.current(data.files);
+      const files = normalizeDroppedFiles(data.files);
+      if (files.length > 0) {
+        void doImportRef.current(files);
       }
     });
   }, []);

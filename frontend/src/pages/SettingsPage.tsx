@@ -21,6 +21,7 @@ import {
   Slider,
   Select,
   SelectItem,
+  addToast,
 } from "@heroui/react";
 
 import { useTheme } from "next-themes";
@@ -49,7 +50,6 @@ import {
   GetBaseRoot,
   SetBaseRoot,
   CanWriteToDir,
-  CancelGDKDownload,
   SetDisableDiscordRPC,
   SetEnableBetaUpdates,
   ResetBaseRoot,
@@ -130,17 +130,6 @@ export const SettingsPage: React.FC = () => {
     setClarityEnabled,
     experimentalInstanceBackupEnabled,
     setExperimentalInstanceBackupEnabled,
-    gdkInstalled,
-    gdkDlProgress,
-    gdkDlSpeed,
-    gdkDlStatus,
-    gdkDlError,
-    gdkProgressDisclosure,
-    gdkLicenseDisclosure,
-    gdkInstallDisclosure,
-    gdkLicenseAccepted,
-    setGdkLicenseAccepted,
-    startDefaultGdkDownload,
     selectedTab,
     setSelectedTab,
     layoutMode,
@@ -276,18 +265,6 @@ export const SettingsPage: React.FC = () => {
       setInstanceBackupWarningOpen(true);
     },
     [experimentalInstanceBackupEnabled, setExperimentalInstanceBackupEnabled],
-  );
-
-  const getGdkErrorText = React.useCallback(
-    (code: string) => {
-      switch (String(code || "").trim()) {
-        case "ERR_GDK_DOWNLOAD_URL_MISSING":
-          return t("settings.gdk.download_unavailable");
-        default:
-          return code;
-      }
-    },
-    [t],
   );
 
   const activeCustomThemeColor = normalizeHexColor(
@@ -1927,37 +1904,6 @@ export const SettingsPage: React.FC = () => {
 
               {selectedTab === "components" && (
                 <div className="flex flex-col gap-6">
-                  {/* GDK */}
-                  <div className="flex items-center justify-between">
-                    <div className="flex flex-col gap-1">
-                      <p className="font-medium">{t("settings.gdk.title")}</p>
-                      <p className="text-tiny text-default-500 dark:text-zinc-400">
-                        {t("settings.gdk.path_label", {
-                          path: "C:\\Program Files (x86)\\Microsoft GDK",
-                        })}
-                      </p>
-                    </div>
-                    {gdkInstalled ? (
-                      <Chip color="success" variant="flat">
-                        {t("settings.gdk.installed")}
-                      </Chip>
-                    ) : (
-                      <Button
-                        radius="full"
-                        variant="bordered"
-                        size="sm"
-                        onPress={() => {
-                          setGdkLicenseAccepted(false);
-                          gdkLicenseDisclosure.onOpen();
-                        }}
-                      >
-                        {t("settings.gdk.install_button")}
-                      </Button>
-                    )}
-                  </div>
-
-                  <Divider className="bg-default-200/50" />
-
                   {/* LIP */}
                   <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col gap-1 min-w-0">
@@ -1993,7 +1939,28 @@ export const SettingsPage: React.FC = () => {
                           size="sm"
                           isLoading={cleaningLipCache}
                           isDisabled={installingLip || cleaningLipCache}
-                          onPress={cleanLipCache}
+                          onPress={() => {
+                            void cleanLipCache().then((err) => {
+                              if (err) {
+                                addToast({
+                                  title: t("common.error"),
+                                  description: t(`errors.${err}`, {
+                                    defaultValue: err,
+                                  }),
+                                  color: "danger",
+                                });
+                                return;
+                              }
+
+                              addToast({
+                                title: t("common.success"),
+                                description: t(
+                                  "settings.lip.cache_clean_success",
+                                ),
+                                color: "success",
+                              });
+                            });
+                          }}
                         >
                           {cleaningLipCache
                             ? t("settings.lip.cache_cleaning")
@@ -2430,58 +2397,6 @@ export const SettingsPage: React.FC = () => {
         </motion.div>
       </div>
 
-      {/* GDK License */}
-      <UnifiedModal
-        size="md"
-        isOpen={gdkLicenseDisclosure.isOpen}
-        onOpenChange={gdkLicenseDisclosure.onOpenChange}
-        type="info"
-        title={t("settings.gdk.license.title")}
-        icon={<FaDownload className="w-6 h-6" />}
-        footer={
-          <>
-            <Button variant="light" onPress={gdkLicenseDisclosure.onClose}>
-              {t("common.cancel")}
-            </Button>
-            <Button
-              color="primary"
-              isDisabled={!gdkLicenseAccepted}
-              onPress={() => {
-                gdkLicenseDisclosure.onClose();
-                try {
-                  void startDefaultGdkDownload();
-                } catch {}
-              }}
-            >
-              {t("downloadmodal.download_button")}
-            </Button>
-          </>
-        }
-      >
-        <div className="text-default-700 dark:text-zinc-300 text-sm">
-          {t("settings.gdk.license.body")}{" "}
-          <a
-            className="text-primary underline"
-            href="https://aka.ms/GDK_EULA"
-            target="_blank"
-            rel="noreferrer"
-          >
-            {t("settings.gdk.license.link_text")}
-          </a>
-        </div>
-        <div className="flex items-center gap-2 mt-3">
-          <input
-            type="checkbox"
-            id="gdk-license"
-            checked={gdkLicenseAccepted}
-            onChange={(e) => setGdkLicenseAccepted(Boolean(e.target.checked))}
-          />
-          <label htmlFor="gdk-license" className="text-small">
-            {t("settings.gdk.license.accept")}
-          </label>
-        </div>
-      </UnifiedModal>
-
       {/* Process Management Modal */}
       <UnifiedModal
         size="2xl"
@@ -2614,106 +2529,6 @@ export const SettingsPage: React.FC = () => {
           </p>
           <p>{t("settings.experimental.instance_backup.warning.body_2")}</p>
           <p>{t("settings.experimental.instance_backup.warning.body_3")}</p>
-        </div>
-      </UnifiedModal>
-
-      {/* GDK Download Progress */}
-      <UnifiedModal
-        size="md"
-        isOpen={gdkProgressDisclosure.isOpen}
-        onOpenChange={gdkProgressDisclosure.onOpenChange}
-        hideCloseButton
-        isDismissable={false}
-        type={gdkDlError ? "error" : "info"}
-        title={
-          gdkDlError ? t("common.error") : t("settings.gdk.download.title")
-        }
-        icon={gdkDlError ? undefined : <FaDownload className="w-6 h-6" />}
-        confirmText={gdkDlError ? t("common.close") : undefined}
-        onConfirm={
-          gdkDlError ? () => gdkProgressDisclosure.onClose() : undefined
-        }
-        footer={
-          gdkDlError ? undefined : (
-            <>
-              <Button
-                color="danger"
-                variant="light"
-                isDisabled={gdkDlStatus === "done"}
-                onPress={() => {
-                  try {
-                    CancelGDKDownload();
-                  } catch {}
-                  gdkProgressDisclosure.onClose();
-                }}
-              >
-                {t("common.cancel")}
-              </Button>
-              <Button
-                color="primary"
-                isDisabled={gdkDlStatus !== "done"}
-                onPress={() => gdkProgressDisclosure.onClose()}
-              >
-                {t("common.ok")}
-              </Button>
-            </>
-          )
-        }
-      >
-        {gdkDlError ? (
-          <div className="text-danger">{getGdkErrorText(gdkDlError)}</div>
-        ) : (
-          <div className="flex flex-col gap-3">
-            <div className="h-2 w-full rounded bg-default-200 overflow-hidden">
-              {(() => {
-                const total = gdkDlProgress?.total || 0;
-                const done = gdkDlProgress?.downloaded || 0;
-                const pct =
-                  total > 0
-                    ? Math.min(100, Math.round((done / total) * 100))
-                    : 0;
-                return (
-                  <div
-                    className="h-full bg-primary"
-                    style={{ width: `${pct}%` }}
-                  />
-                );
-              })()}
-            </div>
-            <div className="text-small text-default-500 dark:text-zinc-400">
-              {(() => {
-                const total = gdkDlProgress?.total || 0;
-                const done = gdkDlProgress?.downloaded || 0;
-                const fmt = (n: number) =>
-                  `${(n / (1024 * 1024)).toFixed(2)} MB`;
-                const fmtSpd = (bps: number) =>
-                  `${(bps / (1024 * 1024)).toFixed(2)} MB/s`;
-                if (total > 0) {
-                  const pct = Math.min(100, Math.round((done / total) * 100));
-                  return `${fmt(done)} / ${fmt(total)} (${pct}%) · ${fmtSpd(
-                    gdkDlSpeed || 0,
-                  )}`;
-                }
-                return `${fmt(done)} · ${fmtSpd(gdkDlSpeed || 0)}`;
-              })()}
-            </div>
-          </div>
-        )}
-      </UnifiedModal>
-
-      {/* GDK Install */}
-      <UnifiedModal
-        size="md"
-        isOpen={gdkInstallDisclosure.isOpen}
-        onOpenChange={gdkInstallDisclosure.onOpenChange}
-        hideCloseButton
-        isDismissable={false}
-        type="info"
-        title={t("settings.gdk.install.title")}
-        icon={<FaCogs className="w-6 h-6" />}
-      >
-        <div className="text-small text-default-500 dark:text-zinc-400">
-          {t("settings.gdk.install.body")}
         </div>
       </UnifiedModal>
 

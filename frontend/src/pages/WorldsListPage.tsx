@@ -80,6 +80,7 @@ import { useSelectionMode } from "@/hooks/useSelectionMode";
 import { useContentSort } from "@/hooks/useContentSort";
 import { formatBytes } from "@/utils/formatting";
 import { compareVersions } from "@/utils/version";
+import { getPathBaseName } from "@/utils/fs";
 
 interface WorldInfo {
   Path: string;
@@ -457,7 +458,7 @@ export default function WorldsListPage() {
     const worldNameMap = new Map<string, string>(
       worlds.map((w) => [
         w.Path,
-        w.FolderName || w.Path.split("\\").pop() || w.Path,
+        w.FolderName || getPathBaseName(w.Path) || w.Path,
       ]),
     );
 
@@ -472,7 +473,7 @@ export default function WorldsListPage() {
         for (const worldPath of selectedWorldPaths) {
           const worldName =
             worldNameMap.get(worldPath) ||
-            worldPath.split("\\").pop() ||
+            getPathBaseName(worldPath) ||
             worldPath;
           const itemLabel = `${worldName} -> ${targetName}`;
           setCurrentTransferItem(itemLabel);

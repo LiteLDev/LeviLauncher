@@ -36,11 +36,6 @@
         "body": "An error occurred during registration. Please retry or check environment."
       }
     },
-    "gdk_missing": {
-      "title": "Microsoft GDK Missing",
-      "body": "GDK toolkit not detected. Registration requires installation. Open Settings to install?",
-      "go_settings": "Open Settings"
-    },
     "delete": {
       "complete": {
         "title": "Delete Complete",
@@ -127,7 +122,6 @@
       "manage_versions": "Click \"Manage Versions\" in the dropdown panel to install, import, or organize instances.",
       "quick_actions_menu": "The menu next to the launch button provides instance settings, desktop shortcut, game folder, and system registration actions.",
       "launch_dependencies": "If GameInput, VC++ Runtime, or Gaming Services are missing, LeviLauncher guides you through installing them before launch.",
-      "gdk_required": "System registration requires Microsoft GDK. Install it from Settings > Components first if prompted.",
       "mods_card": "The Mods card shows enabled mods for the current instance and opens the full Mods page in one click.",
       "content_counts_card": "The Content card shows world, resource pack, and behavior pack counts, and each row opens the matching page.",
       "incompatible_resource_packs": "If incompatible resource packs are detected, click the warning row to review them directly.",
@@ -137,7 +131,8 @@
       "download_mirror": "If downloads are slow, try switching mirrors or related network options in Settings.",
       "open_source": "LeviLauncher is open source. Use GitHub issues to report launcher problems or suggest improvements.",
       "backup_worlds": "Back up important worlds regularly before testing new resource packs, behavior packs, or mods."
-    },    "edition": "Bedrock Edition"
+    },
+    "edition": "Bedrock Edition"
   },
   "moddedcard": {
     "title": "Mods",
@@ -368,39 +363,22 @@
         "body": "This will reset the content path to the default location. Are you sure?"
       }
     },
-    "gdk": {
-      "title": "Microsoft Game Development Kit",
-      "installed": "Installed",
-      "install_button": "Download & Install",
-      "path_label": "Path: {{path}}",
-      "license": {
-        "title": "License Agreement",
-        "body": "You must accept the terms of the Microsoft Public Game Development Kit License Agreement to continue.",
-        "accept": "I accept the terms in the License Agreement.",
-        "link_text": "Microsoft Public Game Development Kit License Agreement"
-      },
-      "download": {
-        "title": "Downloading GDK"
-      },
-      "install": {
-        "title": "Installing GDK",
-        "body": "Please wait while the installer runs…"
-      },
-      "download_unavailable": "Default GDK download link is unavailable right now."
-    },
     "lip": {
       "title": "lip",
       "install_button": "Install",
       "check_button": "Check",
       "cache_clean_button": "Clean Cache",
       "cache_cleaning": "Cleaning Cache...",
+      "cache_clean_success": "lip cache cleaned",
       "installing": "Installing lip...",
       "latest_label": "Latest",
       "outdated_label": "Update Available",
       "missing_label": "Missing",
       "status": {
         "checking": "Checking lip status...",
+        "checking_runtime": "Checking .NET 10 runtime...",
         "preparing": "Preparing download...",
+        "installing_runtime": "Installing .NET 10 runtime...",
         "downloading": "Downloading lip archive...",
         "extracting": "Extracting lipd.exe...",
         "writing": "Writing lipd.exe...",
@@ -412,11 +390,14 @@
         "done": "lip installation completed"
       },
       "error": {
-        "lip_fetch_release": "Failed to fetch the latest lip release",
-        "lip_release_asset_not_found": "Could not find the Windows x64 lip package in the latest release",
-        "lip_download_archive": "Failed to download the lip archive",
-        "lip_open_archive": "Failed to open the lip archive",
-        "lip_extract_binary": "Failed to extract lipd.exe",
+        "lip_fetch_release": "Failed to fetch lip package metadata",
+        "lip_release_asset_not_found": "The latest lip metadata does not contain a Windows x64 package",
+        "lip_download_dotnet_installer": "Failed to download the .NET 10 installer script",
+        "lip_install_dotnet_runtime": "Failed to install the .NET 10 runtime",
+        "lip_verify_dotnet_runtime": "Failed to verify the .NET 10 runtime",
+        "lip_download_archive": "Failed to download the lip .tgz package",
+        "lip_open_archive": "Failed to open the lip .tgz package",
+        "lip_extract_binary": "Failed to extract win32-x64/lipd.exe",
         "lip_create_target_dir": "Failed to create the lip install directory",
         "lip_replace_file": "Failed to replace lipd.exe",
         "lip_verify_install": "Failed to verify the installed lip version",
@@ -986,6 +967,7 @@
     "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "Failed to clean lip cache",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "This package is required by other installed mods and cannot be uninstalled now",
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "This package is still required by other installed mods, so it cannot be fully uninstalled. It has been automatically switched to dependency install mode.",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings",

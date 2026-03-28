@@ -77,8 +77,9 @@ import { useSelectionMode } from "@/hooks/useSelectionMode";
 import { useContentSort } from "@/hooks/useContentSort";
 import { formatBytes, formatDate } from "@/utils/formatting";
 import { ImportResultModal } from "@/components/ImportResultModal";
+import { getPathBaseName } from "@/utils/fs";
 
-const getNameFn = (p: any) => String(p.name || p.path?.split("\\").pop() || "");
+const getNameFn = (p: any) => String(p.name || getPathBaseName(p.path) || "");
 const getTimeFn = (p: any) => Number(p.modTime || 0);
 type TransferTargetVersion = {
   name: string;
@@ -468,7 +469,7 @@ export default function SkinPacksPage() {
     const packNameMap = new Map<string, string>(
       packs.map((pack: any) => {
         const path = String(pack?.path || "");
-        const fallbackName = path.replace(/\\/g, "/").split("/").pop() || path;
+        const fallbackName = getPathBaseName(path);
         const displayName = String(pack?.name || fallbackName);
         return [path, displayName];
       }),
@@ -483,8 +484,7 @@ export default function SkinPacksPage() {
 
       for (const targetName of targetNames) {
         for (const packPath of selectedPaths) {
-          const fallbackName =
-            packPath.replace(/\\/g, "/").split("/").pop() || packPath;
+          const fallbackName = getPathBaseName(packPath);
           const packName = packNameMap.get(packPath) || fallbackName;
           const itemLabel = `${packName} -> ${targetName}`;
           setCurrentTransferItem(itemLabel);
@@ -857,7 +857,7 @@ export default function SkinPacksPage() {
                             className="text-lg font-bold text-default-900 dark:text-white truncate"
                             title={p.name}
                           >
-                            {renderMcText(p.name || p.path.split("\\").pop())}
+                            {renderMcText(p.name || getPathBaseName(p.path))}
                           </h3>
                         </div>
 

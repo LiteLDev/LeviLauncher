@@ -58,6 +58,6 @@ LeviLauncher может создать ярлык на рабочем столе
 
 ## Связанные руководства
 
-- [Загрузки и зеркала](./ru-RU/downloads-mirrors)
-- [Инструменты для миров](./ru-RU/world-tools)
-- [Обновление и устранение неполадок](./ru-RU/update-troubleshooting)
+- [Загрузки и зеркала](./downloads-mirrors)
+- [Инструменты для миров](./world-tools)
+- [Обновление и устранение неполадок](./update-troubleshooting)

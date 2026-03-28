@@ -11,7 +11,6 @@ import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft"
 import {
   EnsureGameInputInteractive,
   EnsureVcRuntimeInteractive,
-  IsGDKInstalled,
   ListDir,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
@@ -30,6 +29,7 @@ const DEPENDENCY_CHECK_SESSION_KEYS = {
   gamingServices: "ll.session.dependency-check.gamingservices",
   vcRuntime: "ll.session.dependency-check.vcruntime",
 } as const;
+const VC_RUNTIME_CHECK_RETRY_DELAY_MS = 800;
 
 const hasSessionDependencyCheckRun = (
   key: (typeof DEPENDENCY_CHECK_SESSION_KEYS)[keyof typeof DEPENDENCY_CHECK_SESSION_KEYS],
@@ -87,7 +87,6 @@ export const useLauncher = (args: any) => {
   const registerInstallingDisclosure = useDisclosure();
   const registerSuccessDisclosure = useDisclosure();
   const registerFailedDisclosure = useDisclosure();
-  const gdkMissingDisclosure = useDisclosure();
 
   const hasBackend = minecraft !== undefined;
   const navigate = useNavigate();
@@ -525,13 +524,6 @@ export const useLauncher = (args: any) => {
     const isCurrentlyRegistered = Boolean(
       localVersionMap.get(currentVersion)?.isRegistered,
     );
-    try {
-      const ok = await IsGDKInstalled();
-      if (!ok) {
-        gdkMissingDisclosure.onOpen();
-        return;
-      }
-    } catch {}
     if (isCurrentlyRegistered) {
       setRegisterAction("unregister");
       registerInstallingDisclosure.onOpen();
@@ -557,12 +549,8 @@ export const useLauncher = (args: any) => {
           args.refresh();
           return;
         }
-        if (result === "ERR_GDK_MISSING") {
-          gdkMissingDisclosure.onOpen();
-        } else {
-          setLaunchErrorCode(result);
-          registerFailedDisclosure.onOpen();
-        }
+        setLaunchErrorCode(result);
+        registerFailedDisclosure.onOpen();
       } catch {
         registerInstallingDisclosure.onClose();
         setLaunchErrorCode("ERR_UNREGISTER_FAILED");
@@ -604,9 +592,6 @@ export const useLauncher = (args: any) => {
         window.setTimeout(() => {
           void syncRegisteredFlags();
         }, 1200);
-      } else if (result === "ERR_GDK_MISSING") {
-        registerInstallingDisclosure.onClose();
-        gdkMissingDisclosure.onOpen();
       } else {
         registerInstallingDisclosure.onClose();
         setLaunchErrorCode(result);
@@ -624,7 +609,6 @@ export const useLauncher = (args: any) => {
     navigate,
     applyOptimisticRegisterState,
     applyOptimisticUnregisterState,
-    gdkMissingDisclosure,
     registerInstallingDisclosure,
     registerSuccessDisclosure,
     registerFailedDisclosure,
@@ -633,17 +617,43 @@ export const useLauncher = (args: any) => {
 
   useEffect(() => {
     if (!hasBackend) return;
+    let disposed = false;
+    let vcRuntimeRetryTimer: number | null = null;
+
+    const runVcRuntimeDependencyCheck = (attempt: number) => {
+      const checkVcRuntime = (minecraft as any)?.IsVcRuntimeInstalled;
+      if (typeof checkVcRuntime !== "function") {
+        return;
+      }
+
+      Promise.resolve(checkVcRuntime())
+        .then((ok: boolean) => {
+          if (disposed) return;
+          markSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.vcRuntime);
+          if (!ok) {
+            vcRuntimeMissingDisclosure.onOpen();
+          }
+        })
+        .catch((error: unknown) => {
+          if (disposed) return;
+          console.warn("Failed to check VC runtime status", error);
+          if (attempt > 0 || vcRuntimeRetryTimer !== null) {
+            return;
+          }
+          vcRuntimeRetryTimer = window.setTimeout(() => {
+            vcRuntimeRetryTimer = null;
+            if (disposed) return;
+            runVcRuntimeDependencyCheck(attempt + 1);
+          }, VC_RUNTIME_CHECK_RETRY_DELAY_MS);
+        });
+    };
+
     const timer = setTimeout(() => {
       if (
         !hasSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.vcRuntime)
       ) {
-        markSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.vcRuntime);
         try {
-          (minecraft as any)?.IsVcRuntimeInstalled?.().then((ok: boolean) => {
-            if (!ok) {
-              vcRuntimeMissingDisclosure.onOpen();
-            }
-          });
+          runVcRuntimeDependencyCheck(0);
         } catch {}
       }
       if (
@@ -678,7 +688,14 @@ export const useLauncher = (args: any) => {
         } catch {}
       }
     }, 0);
-    return () => clearTimeout(timer);
+
+    return () => {
+      disposed = true;
+      clearTimeout(timer);
+      if (vcRuntimeRetryTimer !== null) {
+        clearTimeout(vcRuntimeRetryTimer);
+      }
+    };
   }, [
     hasBackend,
     gameInputMissingDisclosure,
@@ -1217,11 +1234,6 @@ export const useLauncher = (args: any) => {
     doForceLaunch();
   }, [launchFailedDisclosure, doForceLaunch]);
 
-  const handleGdkMissingGoSettings = React.useCallback(() => {
-    gdkMissingDisclosure.onClose();
-    navigate("/settings", { state: { tab: "components" } });
-  }, [gdkMissingDisclosure, navigate]);
-
   return {
     // State
     isAnimating,
@@ -1261,7 +1273,6 @@ export const useLauncher = (args: any) => {
     registerInstallingDisclosure,
     registerSuccessDisclosure,
     registerFailedDisclosure,
-    gdkMissingDisclosure,
 
     // Navigation
     navigate,
@@ -1290,6 +1301,5 @@ export const useLauncher = (args: any) => {
     handleInstallConfirmOpenChange,
     handleRegisterSuccessOpenChange,
     handleLaunchFailedForceRun,
-    handleGdkMissingGoSettings,
   };
 };

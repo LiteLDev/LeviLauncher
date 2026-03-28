@@ -36,11 +36,6 @@
         "body": "登録中にエラーが発生しました。再試行するか、環境を確認してください。"
       }
     },
-    "gdk_missing": {
-      "title": "Microsoft GDK がインストールされていません",
-      "body": "GDKツールキットが検出されませんでした。登録にはインストールが必要です。設定を開いてインストールしますか？",
-      "go_settings": "設定を開く"
-    },
     "delete": {
       "complete": {
         "title": "削除完了",
@@ -127,7 +122,6 @@
       "manage_versions": "ドロップダウン内の「インスタンス一覧」から、インスタンスのインストール・インポート・整理ができます。",
       "quick_actions_menu": "起動ボタン横のメニューから、インスタンス設定、デスクトップショートカット、ゲームフォルダー、システム登録を実行できます。",
       "launch_dependencies": "GameInput、VC++ Runtime、Gaming Services が不足している場合、LeviLauncher が起動前にインストールを案内します。",
-      "gdk_required": "システム登録には Microsoft GDK が必要です。案内が表示されたら、先に「設定 > コンポーネント」でインストールしてください。",
       "mods_card": "Mods カードには現在のインスタンスで有効な Mod が表示され、ワンクリックで Mods ページを開けます。",
       "content_counts_card": "コンテンツ管理カードにはワールド、リソースパック、ビヘイビアパックの数が表示され、各行から対応ページを直接開けます。",
       "incompatible_resource_packs": "互換性のないリソースパックが検出された場合は、警告行をクリックして対象をすぐ確認できます。",
@@ -137,7 +131,8 @@
       "download_mirror": "ダウンロードが遅い場合は、設定でミラーや関連するネットワーク項目を見直してみてください。",
       "open_source": "LeviLauncher はオープンソースです。ランチャーの不具合報告や改善提案は GitHub から送れます。",
       "backup_worlds": "新しいリソースパック、ビヘイビアパック、Mod を試す前に、大切なワールドをバックアップしておくことをおすすめします。"
-    },    "edition": "Bedrock Edition"
+    },
+    "edition": "Bedrock Edition"
   },
   "moddedcard": {
     "title": "Mod",
@@ -356,39 +351,22 @@
         "body": "コンテンツパスをデフォルトの場所に戻します。よろしいですか？"
       }
     },
-    "gdk": {
-      "title": "Microsoft Game Development Kit",
-      "installed": "インストール済み",
-      "install_button": "ダウンロードしてインストール",
-      "path_label": "パス: {{path}}",
-      "license": {
-        "title": "使用許諾契約",
-        "body": "続行するには、Microsoft Public Game Development Kit 使用許諾契約の条項に同意する必要があります。",
-        "accept": "使用許諾契約の条項に同意します。",
-        "link_text": "Microsoft Public Game Development Kit 使用許諾契約"
-      },
-      "download": {
-        "title": "GDKをダウンロード中"
-      },
-      "install": {
-        "title": "GDKをインストール中",
-        "body": "インストーラーを実行しています。お待ちください…"
-      },
-      "download_unavailable": "現在、GDK のダウンロード URL を取得できません。"
-    },
     "lip": {
       "title": "lip",
       "install_button": "インストール",
       "check_button": "確認",
       "cache_clean_button": "キャッシュを削除",
       "cache_cleaning": "キャッシュを削除しています...",
+      "cache_clean_success": "lip のキャッシュを削除しました",
       "installing": "lip をインストールしています...",
       "latest_label": "最新",
       "outdated_label": "更新あり",
       "missing_label": "未インストール",
       "status": {
         "checking": "lip の状態を確認しています...",
+        "checking_runtime": ".NET 10 ランタイムを確認しています...",
         "preparing": "ダウンロードを準備しています...",
+        "installing_runtime": ".NET 10 ランタイムをインストールしています...",
         "downloading": "lip アーカイブをダウンロードしています...",
         "extracting": "lipd.exe を展開しています...",
         "writing": "lipd.exe を書き込んでいます...",
@@ -400,11 +378,14 @@
         "done": "lip のインストールが完了しました"
       },
       "error": {
-        "lip_fetch_release": "最新の lip リリース取得に失敗しました",
-        "lip_release_asset_not_found": "最新リリースに Windows x64 向けの lip パッケージが見つかりません",
-        "lip_download_archive": "lip アーカイブのダウンロードに失敗しました",
-        "lip_open_archive": "lip アーカイブを開けませんでした",
-        "lip_extract_binary": "lipd.exe の展開に失敗しました",
+        "lip_fetch_release": "lip パッケージのメタデータを取得できませんでした",
+        "lip_release_asset_not_found": "最新の lip メタデータに Windows x64 向けパッケージが見つかりません",
+        "lip_download_dotnet_installer": ".NET 10 インストーラースクリプトをダウンロードできませんでした",
+        "lip_install_dotnet_runtime": ".NET 10 ランタイムのインストールに失敗しました",
+        "lip_verify_dotnet_runtime": ".NET 10 ランタイムの確認に失敗しました",
+        "lip_download_archive": "lip の .tgz パッケージをダウンロードできませんでした",
+        "lip_open_archive": "lip の .tgz パッケージを開けませんでした",
+        "lip_extract_binary": "win32-x64/lipd.exe の展開に失敗しました",
         "lip_create_target_dir": "lip のインストール先ディレクトリを作成できませんでした",
         "lip_replace_file": "lipd.exe の置き換えに失敗しました",
         "lip_verify_install": "インストール済み lip バージョンの確認に失敗しました",
@@ -997,6 +978,7 @@
     "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "Failed to clean lip cache",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
   },
   "filemanager": {

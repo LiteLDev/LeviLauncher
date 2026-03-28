@@ -4,7 +4,7 @@ If you only want the shortest path from download to play, follow this page first
 
 ## 1. Install LeviLauncher
 
-- Download the LeviLauncher installer from [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) or the [Lanzou mirror](https://levimc.lanzoue.com/b016ke39hc).
+- Download the LeviLauncher installer from [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) or the [Lanzou mirror](https://levimc.lanzoue.com/b016ke39hc) using password `levi`.
 - Run the installer on Windows.
 - If Windows or the installer asks for WebView2 or other required components, allow the process to continue.
 

@@ -36,11 +36,6 @@
         "body": "注册过程中发生错误，请重试或检查环境。"
       }
     },
-    "gdk_missing": {
-      "title": "缺少 Microsoft GDK",
-      "body": "未检测到 GDK 工具包，注册功能需先安装。是否跳转到设置页进行安装？",
-      "go_settings": "前往设置"
-    },
     "delete": {
       "complete": {
         "title": "删除完成",
@@ -127,7 +122,6 @@
       "manage_versions": "点击下拉面板里的“实例列表”，即可安装、导入或整理实例。",
       "quick_actions_menu": "启动按钮旁的菜单提供实例设置、桌面快捷方式、游戏目录和系统注册等操作。",
       "launch_dependencies": "若缺少 GameInput、VC++ Runtime 或 Gaming Services，LeviLauncher 会在启动前引导你完成安装。",
-      "gdk_required": "注册到系统需要 Microsoft GDK；如果弹出提示，请先前往“设置 > 组件”安装。",
       "mods_card": "Mods 卡片会显示当前实例已启用的模组，并可一键进入完整 Mods 页面。",
       "content_counts_card": "内容管理卡片会显示世界、资源包和行为包数量，点击对应行可直接进入页面。",
       "incompatible_resource_packs": "检测到不兼容资源包时，可点击警告行直接查看需要处理的项目。",
@@ -137,7 +131,8 @@
       "download_mirror": "如果下载速度较慢，可在设置中切换镜像源或检查相关网络选项。",
       "open_source": "LeviLauncher 是开源项目；遇到启动器问题或有改进建议时，可前往 GitHub 提交反馈。",
       "backup_worlds": "在尝试新的资源包、行为包或模组前，建议先备份重要世界。"
-    },    "edition": "Bedrock Edition"
+    },
+    "edition": "Bedrock Edition"
   },
   "updating": {
     "title": "正在更新 LeviLauncher",
@@ -368,39 +363,22 @@
         "body": "这将把内容路径重置为默认位置。确定要继续吗？"
       }
     },
-    "gdk": {
-      "title": "Microsoft GDK 开发套件",
-      "installed": "已安装",
-      "install_button": "下载并安装",
-      "path_label": "路径：{{path}}",
-      "license": {
-        "title": "许可协议",
-        "body": "继续前必须接受 Microsoft GDK 公共开发套件许可协议。",
-        "accept": "我接受许可协议中的条款",
-        "link_text": "Microsoft 公共游戏开发工具包许可协议"
-      },
-      "download": {
-        "title": "下载 GDK"
-      },
-      "install": {
-        "title": "正在安装 GDK",
-        "body": "稍候，正在运行安装程序…"
-      },
-      "download_unavailable": "当前无法获取 GDK 下载地址。"
-    },
     "lip": {
       "title": "lip",
       "install_button": "安装",
       "check_button": "检查",
       "cache_clean_button": "清理缓存",
       "cache_cleaning": "正在清理缓存...",
+      "cache_clean_success": "lip 缓存清理完成",
       "installing": "正在安装 lip...",
       "latest_label": "最新",
       "outdated_label": "可更新",
       "missing_label": "缺失",
       "status": {
         "checking": "正在检查 lip 状态...",
+        "checking_runtime": "正在检查 .NET 10 运行时...",
         "preparing": "正在准备下载...",
+        "installing_runtime": "正在安装 .NET 10 运行时...",
         "downloading": "正在下载 lip 压缩包...",
         "extracting": "正在解压 lipd.exe...",
         "writing": "正在写入 lipd.exe...",
@@ -412,11 +390,14 @@
         "done": "lip 安装完成"
       },
       "error": {
-        "lip_fetch_release": "获取最新 lip 发布信息失败",
-        "lip_release_asset_not_found": "最新发布中未找到 Windows x64 的 lip 安装包",
-        "lip_download_archive": "下载 lip 压缩包失败",
-        "lip_open_archive": "打开 lip 压缩包失败",
-        "lip_extract_binary": "解压 lipd.exe 失败",
+        "lip_fetch_release": "获取 lip 包元数据失败",
+        "lip_release_asset_not_found": "最新 lip 元数据中未找到 Windows x64 安装包",
+        "lip_download_dotnet_installer": "下载 .NET 10 安装脚本失败",
+        "lip_install_dotnet_runtime": "安装 .NET 10 运行时失败",
+        "lip_verify_dotnet_runtime": "验证 .NET 10 运行时失败",
+        "lip_download_archive": "下载 lip .tgz 压缩包失败",
+        "lip_open_archive": "打开 lip .tgz 压缩包失败",
+        "lip_extract_binary": "提取 win32-x64/lipd.exe 失败",
         "lip_create_target_dir": "创建 lip 安装目录失败",
         "lip_replace_file": "替换 lipd.exe 失败",
         "lip_verify_install": "验证已安装的 lip 版本失败",
@@ -1009,6 +990,7 @@
     "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "清理 lip 缓存失败",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
   },
   "filemanager": {

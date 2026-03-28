@@ -47,6 +47,6 @@
 
 Продолжите работу со следующими разделами:
 
-- [Управление версиями](./ru-RU/version-management)
-- [Управление контентом](./ru-RU/content-management)
-- [Настройки и персонализация](./ru-RU/settings-personalization)
+- [Управление версиями](./version-management)
+- [Управление контентом](./content-management)
+- [Настройки и персонализация](./settings-personalization)

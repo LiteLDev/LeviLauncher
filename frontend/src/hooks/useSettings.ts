@@ -6,8 +6,6 @@ import {
   CheckUpdate,
   GetLanguageNames,
   GetBaseRoot,
-  IsGDKInstalled,
-  InstallGDKFromZip,
   GetDisableDiscordRPC,
   GetEnableBetaUpdates,
   GetResourceRulesStatus,
@@ -75,23 +73,6 @@ export const useSettings = (i18n: { language: string }) => {
     experimentalInstanceBackupEnabled,
     setExperimentalInstanceBackupEnabledState,
   ] = useState<boolean>(() => readExperimentalInstanceBackupEnabled());
-
-  // GDK
-  const [gdkInstalled, setGdkInstalled] = useState<boolean>(false);
-  const [gdkDlProgress, setGdkDlProgress] = useState<{
-    downloaded: number;
-    total: number;
-    dest?: string;
-  } | null>(null);
-  const [gdkDlSpeed, setGdkDlSpeed] = useState<number>(0);
-  const [gdkDlStatus, setGdkDlStatus] = useState<string>("");
-  const [gdkDlError, setGdkDlError] = useState<string>("");
-  const [defaultGdkDownloadURL, setDefaultGdkDownloadURL] =
-    useState<string>("");
-  const gdkProgressDisclosure = useDisclosure();
-  const gdkLicenseDisclosure = useDisclosure();
-  const gdkInstallDisclosure = useDisclosure();
-  const [gdkLicenseAccepted, setGdkLicenseAccepted] = useState<boolean>(false);
 
   // Tabs
   const [selectedTab, setSelectedTab] = useState<string>("general");
@@ -341,27 +322,6 @@ export const useSettings = (i18n: { language: string }) => {
     return (await Call.ByName(`main.Minecraft.${method}`, ...args)) as T;
   };
 
-  const startDefaultGdkDownload = async () => {
-    let url = defaultGdkDownloadURL.trim();
-    if (!url) {
-      try {
-        url = String(
-          (await callMinecraftByName<string>("GetDefaultGDKDownloadURL")) || "",
-        ).trim();
-        setDefaultGdkDownloadURL(url);
-      } catch {}
-    }
-    setGdkDlError("");
-    setGdkDlProgress(null);
-    if (!url) {
-      setGdkDlError("ERR_GDK_DOWNLOAD_URL_MISSING");
-      gdkProgressDisclosure.onOpen();
-      return "ERR_GDK_DOWNLOAD_URL_MISSING";
-    }
-    gdkProgressDisclosure.onOpen();
-    return minecraft.StartGDKDownload(url);
-  };
-
   const refreshSunTimes = async () => {
     setLoadingSunTimes(true);
     await fetchSunTimes();
@@ -433,13 +393,17 @@ export const useSettings = (i18n: { language: string }) => {
     }
   };
 
-  const cleanLipCache = async () => {
+  const cleanLipCache = async (): Promise<string> => {
     setCleaningLipCache(true);
     try {
-      await callMinecraftByName<string>("CacheClean");
-    } catch {}
-    setCleaningLipCache(false);
-    void refreshLipStatus();
+      const err = await callMinecraftByName<string>("CacheClean");
+      return String(err || "");
+    } catch (e: any) {
+      return String(e?.data || e?.message || e || "ERR_LIP_CACHE_CLEAN_FAILED");
+    } finally {
+      setCleaningLipCache(false);
+      void refreshLipStatus();
+    }
   };
 
   const refreshResourceRulesStatus = async () => {
@@ -542,18 +506,6 @@ export const useSettings = (i18n: { language: string }) => {
             try {
               const enabled = await GetEnableBetaUpdates();
               setEnableBetaUpdatesState(enabled);
-            } catch {}
-            try {
-              const ok = await IsGDKInstalled();
-              setGdkInstalled(Boolean(ok));
-            } catch {}
-            try {
-              const url = String(
-                (await callMinecraftByName<string>(
-                  "GetDefaultGDKDownloadURL",
-                )) || "",
-              ).trim();
-              setDefaultGdkDownloadURL(url);
             } catch {}
           }
         } catch {}
@@ -668,103 +620,6 @@ export const useSettings = (i18n: { language: string }) => {
     }
   }, [location.state]);
 
-  // GDK download/install events
-  useEffect(() => {
-    if (!hasBackend) return;
-    const offs: (() => void)[] = [];
-    try {
-      const speedRef: { ts: number; bytes: number; ema: number } = {
-        ts: 0,
-        bytes: 0,
-        ema: 0,
-      } as any;
-      offs.push(
-        Events.On("gdk_download_progress", (event) => {
-          const downloaded = Number(event?.data?.Downloaded || 0);
-          const total = Number(event?.data?.Total || 0);
-          const dest = String(event?.data?.Dest || "");
-          setGdkDlProgress({ downloaded, total, dest });
-          try {
-            const now = Date.now();
-            if (speedRef.ts > 0) {
-              const dt = (now - speedRef.ts) / 1000;
-              const db = downloaded - speedRef.bytes;
-              const inst = dt > 0 && db >= 0 ? db / dt : 0;
-              const alpha = 0.25;
-              speedRef.ema =
-                alpha * inst + (1 - alpha) * (speedRef.ema || inst);
-              setGdkDlSpeed(speedRef.ema);
-            }
-            speedRef.ts = now;
-            speedRef.bytes = downloaded;
-          } catch {}
-        }),
-      );
-      offs.push(
-        Events.On("gdk_download_status", (event) => {
-          const s = String(event?.data || "");
-          setGdkDlStatus(s);
-          if (s === "started" || s === "resumed" || s === "cancelled") {
-            setGdkDlError("");
-            try {
-              (window as any).__gdkDlLast = null;
-            } catch {}
-            setGdkDlSpeed(0);
-          }
-        }),
-      );
-      offs.push(
-        Events.On("gdk_download_error", (event) => {
-          setGdkDlError(String(event?.data || ""));
-        }),
-      );
-      offs.push(
-        Events.On("gdk_download_done", async (event) => {
-          const dest = String(event?.data || gdkDlProgress?.dest || "");
-          gdkProgressDisclosure.onClose();
-          try {
-            gdkInstallDisclosure.onOpen();
-            const installErr = await InstallGDKFromZip(dest);
-            if (installErr) {
-              gdkInstallDisclosure.onClose();
-              setGdkDlError(String(installErr));
-              gdkProgressDisclosure.onOpen();
-            }
-          } catch (error) {
-            console.error("InstallGDKFromZip failed", error);
-            gdkInstallDisclosure.onClose();
-            setGdkDlError("ERR_GDK_INSTALL_FAILED");
-            gdkProgressDisclosure.onOpen();
-          }
-        }),
-      );
-      offs.push(
-        Events.On("gdk_install_done", (_event) => {
-          gdkInstallDisclosure.onClose();
-          setTimeout(async () => {
-            try {
-              const ok = await IsGDKInstalled();
-              setGdkInstalled(Boolean(ok));
-            } catch {}
-          }, 500);
-        }),
-      );
-      offs.push(
-        Events.On("gdk_install_error", (event) => {
-          gdkInstallDisclosure.onClose();
-          setGdkDlError(String(event?.data || ""));
-        }),
-      );
-    } catch {}
-    return () => {
-      for (const off of offs) {
-        try {
-          off();
-        } catch {}
-      }
-    };
-  }, [hasBackend]);
-
   // Lip install events
   useEffect(() => {
     if (!hasBackend) return;
@@ -866,21 +721,6 @@ export const useSettings = (i18n: { language: string }) => {
     setClarityEnabled,
     experimentalInstanceBackupEnabled,
     setExperimentalInstanceBackupEnabled,
-
-    // GDK
-    gdkInstalled,
-    gdkDlProgress,
-    gdkDlSpeed,
-    gdkDlStatus,
-    gdkDlError,
-    setGdkDlError,
-    setGdkDlProgress,
-    gdkProgressDisclosure,
-    gdkLicenseDisclosure,
-    gdkInstallDisclosure,
-    gdkLicenseAccepted,
-    setGdkLicenseAccepted,
-    startDefaultGdkDownload,
 
     // Tabs
     selectedTab,

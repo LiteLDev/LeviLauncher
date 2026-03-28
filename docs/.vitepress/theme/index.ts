@@ -10,6 +10,7 @@ const ENGLISH_LOCALE = "en-US";
 const CHINESE_CN_LOCALE = "zh-CN";
 const CHINESE_HK_LOCALE = "zh-HK"; // Traditional Chinese (Hong Kong)
 const RUSSIAN_LOCALE = "ru-RU";    // Russian
+const GERMAN_LOCALE = "de-DE";     // German
 
 /**
  * Removes the base path from the given pathname.
@@ -53,6 +54,14 @@ function normalizePath(pathname: string): string {
 function getLocaleFromPath(pathname: string, base: string): string {
   const normalizedPath = normalizePath(stripBase(pathname, base));
 
+  // Check for German
+  if (
+    normalizedPath === `/${GERMAN_LOCALE}` ||
+    normalizedPath.startsWith(`/${GERMAN_LOCALE}/`)
+  ) {
+    return GERMAN_LOCALE;
+  }
+
   // Check for Russian
   if (
     normalizedPath === `/${RUSSIAN_LOCALE}` ||
@@ -93,7 +102,8 @@ function readStoredLocale(): string | null {
       locale === ENGLISH_LOCALE ||
       locale === CHINESE_CN_LOCALE ||
       locale === CHINESE_HK_LOCALE ||
-      locale === RUSSIAN_LOCALE
+      locale === RUSSIAN_LOCALE ||
+      locale === GERMAN_LOCALE
     ) {
       return locale;
     }
@@ -129,6 +139,12 @@ function getPreferredLocale(): string {
     navigator.language,
   ].filter((locale): locale is string => Boolean(locale));
 
+  // Check if the browser prefers German
+  const hasGerman = browserLocales.some((locale) => {
+    const lower = locale.toLowerCase();
+    return lower.startsWith("de");
+  });
+
   // Check if the browser prefers Russian
   const hasRussian = browserLocales.some((locale) => {
     const lower = locale.toLowerCase();
@@ -146,6 +162,11 @@ function getPreferredLocale(): string {
     const lower = locale.toLowerCase();
     return lower.startsWith("zh-cn") || (lower.startsWith("zh") && !hasTraditionalChinese);
   });
+
+  // Prioritize German if detected
+  if (hasGerman) {
+    return GERMAN_LOCALE;
+  }
 
   // Prioritize Russian if detected
   if (hasRussian) {
@@ -182,6 +203,10 @@ function buildLocaleRoot(base: string, locale: string): string {
 
   if (locale === RUSSIAN_LOCALE) {
     return `${normalizedBase}${RUSSIAN_LOCALE}/`;
+  }
+
+  if (locale === GERMAN_LOCALE) {
+    return `${normalizedBase}${GERMAN_LOCALE}/`;
   }
 
   return normalizedBase;

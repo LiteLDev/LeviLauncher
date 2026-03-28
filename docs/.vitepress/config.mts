@@ -155,6 +155,43 @@ function buildRussianSidebar(prefix: string): DefaultTheme.SidebarItem[] {
   ];
 }
 
+// Helper for German Sidebar (de-DE)
+function buildGermanSidebar(prefix: string): DefaultTheme.SidebarItem[] {
+  return [
+    {
+      text: "Schnellstart",
+      items: [
+        { text: "In 5 Minuten loslegen", link: `${prefix}quick-start` },
+        { text: "Anforderungen & Installation", link: `${prefix}requirements-installation` },
+        { text: "Erster Start", link: `${prefix}first-launch` },
+      ],
+    },
+    {
+      text: "Kernabläufe",
+      items: [
+        { text: "Versionsverwaltung", link: `${prefix}version-management` },
+        { text: "Downloads & Spiegel", link: `${prefix}downloads-mirrors` },
+        { text: "Inhaltsverwaltung", link: `${prefix}content-management` },
+      ],
+    },
+    {
+      text: "Erweiterte Funktionen",
+      items: [
+        { text: "Mods & Integrationen", link: `${prefix}mods-integrations` },
+        { text: "Welt-Tools", link: `${prefix}world-tools` },
+        { text: "Einstellungen & Personalisierung", link: `${prefix}settings-personalization` },
+      ],
+    },
+    {
+      text: "Hilfe",
+      items: [
+        { text: "Update & Fehlerbehebung", link: `${prefix}update-troubleshooting` },
+        { text: "FAQ, Community & Feedback", link: `${prefix}faq-community-feedback` },
+      ],
+    },
+  ];
+}
+
 function buildEnglishNav(): DefaultTheme.NavItem[] {
   return [
     { text: "Guide", link: "/guide/quick-start" },
@@ -191,6 +228,16 @@ function buildRussianNav(): DefaultTheme.NavItem[] {
     { text: "Загрузки", link: releases },
     { text: "Зеркало", link: lanzou },
     { text: "Сообщество", link: discord },
+    { text: "GitHub", link: repo },
+  ];
+}
+
+function buildGermanNav(): DefaultTheme.NavItem[] {
+  return [
+    { text: "Dokumentation", link: "/de-DE/guide/quick-start" },
+    { text: "Downloads", link: releases },
+    { text: "Spiegel", link: lanzou },
+    { text: "Community", link: discord },
     { text: "GitHub", link: repo },
   ];
 }
@@ -324,6 +371,33 @@ export default defineConfig({
         darkModeSwitchLabel: "Внешний вид",
         lightModeSwitchTitle: "Переключить на светлую тему",
         darkModeSwitchTitle: "Переключить на темную тему",
+      },
+    },
+    "de-DE": {
+      label: "Deutsch",
+      lang: "de-DE",
+      link: "/de-DE/",
+      themeConfig: {
+        nav: buildGermanNav(),
+        sidebar: {
+          "/de-DE/guide/": buildGermanSidebar("/de-DE/guide/"),
+        },
+        outline: {
+          level: [2, 3],
+        },
+        docFooter: {
+          prev: "Vorherige Seite",
+          next: "Nächste Seite",
+        },
+        editLink: {
+          pattern: `${repo}/edit/main/docs/:path`,
+          text: "Diese Seite auf GitHub bearbeiten",
+        },
+        returnToTopLabel: "Zurück nach oben",
+        sidebarMenuLabel: "Menü",
+        darkModeSwitchLabel: "Erscheinungsbild",
+        lightModeSwitchTitle: "Zum hellen Thema wechseln",
+        darkModeSwitchTitle: "Zum dunklen Thema wechseln",
       },
     },
   },

@@ -1,0 +1,1339 @@
+{
+  "app": {
+    "settings": "Paramètres"
+  },
+  "nav": {
+    "versions": "Instances",
+    "more": "Plus",
+    "about": "À propos",
+    "back": "Retour",
+    "forward": "Avancer"
+  },
+  "theme": {
+    "toggle": "Changer de thème"
+  },
+  "launcherpage": {
+    "launch_button": "Lancer",
+    "content_manage": "Gestion du contenu",
+    "go_version_settings": "Paramètres de l'instance",
+    "manage_versions": "Instances",
+    "search_versions": "Rechercher des instances ou des noms",
+    "open_exe_dir": "Ouvrir le dossier d'installation du jeu",
+    "register_system_button": "Enregistrer dans le système",
+    "registered_tip": "Enregistré",
+    "levilamina_update_available": "Mise à jour disponible",
+    "register": {
+      "installing": {
+        "title": "Enregistrement dans le système",
+        "body": "Enregistrement en cours. Veuillez patienter…"
+      },
+      "success": {
+        "title": "Enregistrement terminé",
+        "body": "L'instance a été enregistrée. Vous pouvez la lancer depuis la liste des applications du système."
+      },
+      "failed": {
+        "title": "Échec de l'enregistrement",
+        "body": "Une erreur s'est produite lors de l'enregistrement. Veuillez réessayer ou vérifier votre environnement."
+      }
+    },
+    "gdk_missing": {
+      "title": "Microsoft GDK manquant",
+      "body": "Le kit d'outils GDK n'a pas été détecté. L'enregistrement nécessite une installation. Ouvrir les Paramètres pour installer ?",
+      "go_settings": "Ouvrir les Paramètres"
+    },
+    "delete": {
+      "complete": {
+        "title": "Suppression terminée",
+        "content": "L'instance sélectionnée a été supprimée avec succès !",
+        "close_button": "Fermer"
+      },
+      "confirm": {
+        "title": "Confirmer la suppression",
+        "content": "Voulez-vous vraiment supprimer cette instance ? Cette opération est irréversible."
+      }
+    },
+    "launch": {
+      "failed": {
+        "title": "Échec du lancement",
+        "content": "Vérifiez les fichiers de l'instance et les environnements d'exécution requis, et assurez-vous qu'il n'y a pas de mods/add-ons/packs de ressources incompatibles avant de réessayer.",
+        "close_button": "Fermer"
+      },
+      "force_run_button": "Forcer le lancement"
+    },
+    "currentVersion": "Instance actuelle",
+    "vcruntime": {
+      "completing": {
+        "title": "Complétion de la DLL manquante",
+        "body": "Téléchargement et complétion de vcruntime140_1.dll, veuillez patienter…"
+      },
+      "installing": {
+        "title": "Installation de Visual C++ Runtime",
+        "body": "Téléchargement et installation de Microsoft Visual C++ Runtime, veuillez patienter…",
+        "preparing": "Préparation du téléchargement..."
+      },
+      "missing": {
+        "title": "Visual C++ Runtime manquant",
+        "body": "Microsoft Visual C++ 2015-2022 Redistributable (x64) est requis pour exécuter le jeu. Installer maintenant ?",
+        "install_now": "Installer maintenant"
+      }
+    },
+    "mclaunch": {
+      "loading": {
+        "title": "Démarrage de Minecraft",
+        "body": "En attente de l'apparition de la fenêtre du jeu, veuillez patienter…"
+      }
+    },
+    "shortcut": {
+      "create_button": "Créer un raccourci sur le bureau",
+      "success": {
+        "title": "Raccourci créé",
+        "body": "Un raccourci bureau a été créé pour cette instance."
+      }
+    },
+    "gameinput": {
+      "installing": {
+        "title": "Installation de GameInput",
+        "body": "Téléchargement et lancement de l'installateur. Suivez les instructions du système pour terminer.",
+        "preparing": "Préparation du téléchargement..."
+      },
+      "missing": {
+        "title": "Composant GameInput manquant",
+        "body": "Microsoft GameInput est requis pour exécuter le jeu. Installer maintenant ?",
+        "install_now": "Installer maintenant"
+      }
+    },
+    "gs": {
+      "missing": {
+        "title": "Services de jeu Microsoft manquants",
+        "body": "Les Services de jeu Microsoft n'ont pas été détectés. Cette dépendance est requise pour Minecraft.",
+        "open_store": "Ouvrir le Store pour installer",
+        "ignore_forever": "Ignorer et ne plus rappeler"
+      }
+    },
+    "install_confirm": {
+      "title": "Installation terminée ?",
+      "body": "Après avoir terminé l'installation, cliquez sur 'Terminé, revérifier'. Sinon, continuez l'installation.",
+      "continue": "Continuer l'installation",
+      "done_and_check": "Terminé, revérifier"
+    },
+    "currentVersion_none": "Aucune",
+    "version_select": {
+      "title": "Sélectionner une instance",
+      "unknown": "Inconnu"
+    },
+    "tip": {
+      "version_selector": "Utilisez le menu déroulant des versions pour basculer rapidement vers l'instance actuelle.",
+      "version_search": "Recherchez par nom d'instance ou version du jeu avant de sélectionner dans la liste déroulante.",
+      "manage_versions": "Cliquez sur \"Gérer les versions\" dans le panneau déroulant pour installer, importer ou organiser des instances.",
+      "quick_actions_menu": "Le menu à côté du bouton de lancement offre les paramètres de l'instance, le raccourci bureau, le dossier du jeu et les actions d'enregistrement système.",
+      "launch_dependencies": "Si GameInput, VC++ Runtime ou les Services de jeu sont manquants, LeviLauncher vous guidera pour les installer avant le lancement.",
+      "gdk_required": "L'enregistrement système nécessite Microsoft GDK. Installez-le d'abord via Paramètres > Composants si vous y êtes invité.",
+      "mods_card": "La carte Mods affiche les mods activés pour l'instance actuelle et ouvre la page complète des mods en un clic.",
+      "content_counts_card": "La carte Contenu affiche le nombre de mondes, packs de ressources et packs de comportement, et chaque ligne ouvre la page correspondante.",
+      "incompatible_resource_packs": "Si des packs de ressources incompatibles sont détectés, cliquez sur la ligne d'avertissement pour les examiner directement.",
+      "content_download_sources": "Utilisez la carte de téléchargement pour parcourir les sources de contenu CurseForge ou lip sans quitter le lanceur.",
+      "settings_personalize": "Les Paramètres vous permettent d'ajuster le thème, la couleur, l'arrière-plan et d'autres options d'apparence pour les adapter à votre configuration.",
+      "settings_storage_path": "Vous pouvez modifier les chemins de stockage dans les Paramètres. Assurez-vous que le répertoire cible est accessible en écriture avant de déplacer du contenu.",
+      "download_mirror": "Si les téléchargements sont lents, essayez de changer de miroir ou les options réseau associées dans les Paramètres.",
+      "open_source": "LeviLauncher est open source. Utilisez les issues GitHub pour signaler des problèmes ou suggérer des améliorations.",
+      "backup_worlds": "Sauvegardez régulièrement vos mondes importants avant de tester de nouveaux packs de ressources, packs de comportement ou mods."
+    },
+    "edition": "Édition Bedrock"
+  },
+  "moddedcard": {
+    "title": "Mods",
+    "content": {
+      "none": "0 mod trouvé"
+    },
+    "manage": "Gérer les mods"
+  },
+  "download_manager": {
+    "title": "Gestionnaire de téléchargement",
+    "description": "Afficher et gérer les tâches de téléchargement actuelles",
+    "no_downloads": "Aucune tâche de téléchargement active",
+    "unknown_file": "Fichier inconnu",
+    "actions": {
+      "retry": "Réessayer",
+      "delete": "Supprimer"
+    }
+  },
+  "updating": {
+    "title": "Mise à jour de LeviLauncher",
+    "body": "Demande de privilèges administrateur et application de la mise à jour. Ne fermez pas cette fenêtre pendant la mise à jour.",
+    "failed_title": "Échec de la mise à jour",
+    "phase": {
+      "download": "Téléchargement du paquet de mise à jour",
+      "install": "Installation de la mise à jour"
+    },
+    "status": {
+      "checking": "Recherche de mises à jour",
+      "verifying": "Vérification de l'intégrité du paquet",
+      "elevating": "Demande de privilèges administrateur",
+      "restarting": "Redémarrage du lanceur"
+    },
+    "errors": {
+      "generic": "La mise à jour n'a pas pu être terminée. Veuillez réessayer plus tard.",
+      "update_admin_required": "Des privilèges administrateur sont requis pour continuer la mise à jour.",
+      "update_asset_missing": "Le paquet de mise à jour requis est manquant ou mal nommé.",
+      "update_release_unavailable": "Les métadonnées de mise à jour ne sont pas disponibles actuellement.",
+      "update_verify_failed": "La vérification du paquet de mise à jour a échoué.",
+      "update_download_failed": "Le téléchargement du paquet de mise à jour a échoué.",
+      "update_install_failed": "L'installation du paquet de mise à jour a échoué.",
+      "update_restart_failed": "Le lanceur mis à jour n'a pas pu redémarrer automatiquement."
+    }
+  },
+  "downloadpage": {
+    "error": {
+      "already_downloading": "Ce fichier est déjà en cours de téléchargement"
+    },
+    "changelog": {
+      "title": "Dernier journal des modifications"
+    },
+    "status": {
+      "downloaded": "Téléchargé",
+      "not_downloaded": "Non téléchargé",
+      "checking": "Vérification…"
+    },
+    "table": {
+      "aria_label": "Tableau des versions",
+      "empty": "Aucune donnée",
+      "header": {
+        "version": "VERSION",
+        "type": "TYPE",
+        "status": "STATUT",
+        "loader": "CHARGEUR",
+        "actions": "ACTION"
+      },
+      "type": {
+        "release": "Version stable",
+        "preview": "Aperçu"
+      }
+    },
+    "topcontent": {
+      "types": "Types",
+      "types_all": "Tous",
+      "status": "Statut",
+      "status_all": "Tous",
+      "status_downloaded": "Téléchargé",
+      "status_not_downloaded": "Non téléchargé",
+      "loader": "Chargeur",
+      "input": {
+        "placeholder": "Rechercher par version..."
+      }
+    },
+    "actions": {
+      "delete_installer": "Supprimer l'installateur"
+    },
+    "bottomcontent": {
+      "total": "Total {{count}} versions"
+    },
+    "install_folder": {
+      "confirm_title": "Installer l'instance",
+      "name_label": "Nom de la version",
+      "placeholder_name": "Veuillez entrer le nom de la version",
+      "enable_isolation": "Isolement de la version",
+      "enable_isolation_desc": "Rediriger les données du jeu (mondes, paramètres, caches, etc.) vers versions/<nom>/ au lieu de les stocker dans AppData.",
+      "inherit_label": "Hériter de",
+      "inherit_hint": "Copier les données d'une version isolée de type correspondant",
+      "inherit_none": "Aucun héritage",
+      "inherit_gdk": "Hériter du répertoire GDK"
+    },
+    "mirror": {
+      "no_recommended": "Aucun miroir recommandé",
+      "download_started": "Téléchargement démarré...",
+      "title": "Sélectionner un miroir de téléchargement",
+      "target": "Cible",
+      "testing": "Test en cours…",
+      "unselected": "Non sélectionné",
+      "copy_link": "Copier le lien",
+      "recommended": "Miroir recommandé",
+      "auto_testing": "Test automatique…",
+      "others": "Autres miroirs",
+      "no_mirrors": "Aucun miroir disponible pour cette version.",
+      "filename_fallback": "(fichier)",
+      "retest": "Retester",
+      "download_selected": "Télécharger la sélection",
+      "install_button": "Installer",
+      "install_selected": "Installer la sélection"
+    },
+    "progress": {
+      "unknown_error": "Erreur inconnue"
+    },
+    "download": {
+      "success_body": "Fichier téléchargé : "
+    },
+    "delete": {
+      "title": "Confirmer la suppression",
+      "body": "Cela supprimera l'installateur : ",
+      "warning": "Cette action est irréversible.",
+      "success_body": "Installateur supprimé : "
+    },
+    "install": {
+      "levilamina_label": "Installer LeviLamina",
+      "levilamina_desc": "Installer automatiquement le chargeur LeviLamina",
+      "version_label": "Version",
+      "ll_version_label": "Version de LeviLamina",
+      "ll_version_placeholder": "Sélectionner une version de LeviLamina",
+      "hint": "Veuillez patienter, ce processus peut prendre un certain temps…",
+      "estimated_size": "Taille écrite (estimée)",
+      "target": "Cible d'installation",
+      "success_title": "Installation terminée",
+      "success": "Installation terminée avec succès.",
+      "progress": "Progression de l'installation",
+      "custom_installer": {
+        "label": "Choisir un installateur local (.msixvc)",
+        "hint": "Utilise par défaut les fichiers du répertoire des installateurs"
+      },
+      "levilamina_unsupported": "LeviLamina n'est pas pris en charge pour cette version du jeu",
+      "title": "Installer"
+    },
+    "customappx": {
+      "button": "Personnalisé",
+      "modal": {
+        "1": {
+          "header": "Informations sur la version",
+          "body": {
+            "select": {
+              "item1": "Version stable",
+              "item2": "Aperçu"
+            }
+          },
+          "footer": {
+            "install_button": "Installer"
+          }
+        }
+      }
+    }
+  },
+  "onboarding": {
+    "title": "Configuration du premier lancement",
+    "subtitle": "Veuillez d'abord définir le chemin du contenu et la langue",
+    "skip": "Passer",
+    "finish": "Terminer",
+    "unsaved": {
+      "title": "Modifications non enregistrées",
+      "body": "Vous avez des modifications non enregistrées dans le chemin du contenu. Voulez-vous enregistrer avant de terminer ?",
+      "cancel": "Annuler",
+      "save": "Enregistrer et terminer"
+    }
+  },
+  "settings": {
+    "layout": {
+      "title_navbar": "Utiliser la barre de navigation supérieure",
+      "desc_navbar": "Activer pour utiliser la barre de navigation supérieure au lieu de la barre latérale verticale par défaut"
+    },
+    "tabs": {
+      "general": "Paramètres généraux",
+      "personalization": "Personnalisation",
+      "components": "Composants tiers",
+      "others": "Autres",
+      "updates": "Mises à jour",
+      "about": "À propos",
+      "privacy": "Confidentialité"
+    },
+    "unsaved": {
+      "title": "Modifications non enregistrées",
+      "body": "Vous avez modifié le chemin du contenu mais ne l'avez pas enregistré. Enregistrer et quitter ?",
+      "cancel": "Annuler",
+      "save": "Enregistrer et quitter"
+    },
+    "lang": {
+      "changed": "Langue modifiée"
+    },
+    "discord_rpc": {
+      "title": "Discord Rich Presence",
+      "desc": "Afficher votre statut de jeu sur Discord"
+    },
+    "beta_updates": {
+      "title": "Recevoir les mises à jour Bêta",
+      "desc": "Activer pour recevoir les versions préliminaires des mises à jour"
+    },
+    "experimental": {
+      "title": "Fonctionnalités expérimentales",
+      "desc": "Essayez ici des fonctionnalités non terminées. Ces fonctions peuvent changer, casser ou disparaître sans préavis.",
+      "instance_backup": {
+        "title": "Sauvegarde d'instance (Expérimental)",
+        "desc": "Active les actions de sauvegarde et de restauration dans les paramètres de l'instance. Cette fonctionnalité est encore expérimentale.",
+        "warning": {
+          "title": "Activer la sauvegarde expérimentale d'instance ?",
+          "body_1": "Cette fonctionnalité est destinée uniquement aux développeurs et testeurs. N'utilisez pas de données de production à la légère.",
+          "body_2": "Le format de sauvegarde, la portée incluse et la compatibilité de restauration peuvent changer dans les futures versions, et la rétrocompatibilité n'est pas garantie.",
+          "body_3": "Assurez-vous de comprendre les risques, et décidez de l'activer seulement après avoir lu cet avertissement complet pendant 10 secondes.",
+          "confirm": "Je comprends les risques"
+        }
+      }
+    },
+    "reset": {
+      "confirm": {
+        "title": "Restaurer le chemin par défaut ?",
+        "body": "Cela réinitialisera le chemin du contenu à l'emplacement par défaut. Êtes-vous sûr ?"
+      }
+    },
+    "gdk": {
+      "title": "Kit de développement de jeux Microsoft",
+      "installed": "Installé",
+      "install_button": "Télécharger et installer",
+      "path_label": "Chemin : {{path}}",
+      "license": {
+        "title": "Accord de licence",
+        "body": "Vous devez accepter les termes de l'Accord de licence publique du Kit de développement de jeux Microsoft pour continuer.",
+        "accept": "J'accepte les termes de l'accord de licence.",
+        "link_text": "Accord de licence publique du Kit de développement de jeux Microsoft"
+      },
+      "download": {
+        "title": "Téléchargement de GDK"
+      },
+      "install": {
+        "title": "Installation de GDK",
+        "body": "Veuillez patienter pendant l'exécution de l'installateur…"
+      },
+      "download_unavailable": "Le lien de téléchargement par défaut de GDK n'est pas disponible actuellement."
+    },
+    "lip": {
+      "title": "lip",
+      "install_button": "Installer",
+      "check_button": "Vérifier",
+      "cache_clean_button": "Nettoyer le cache",
+      "cache_cleaning": "Nettoyage du cache...",
+      "installing": "Installation de lip...",
+      "latest_label": "Dernière version",
+      "outdated_label": "Mise à jour disponible",
+      "missing_label": "Manquant",
+      "status": {
+        "checking": "Vérification de l'état de lip...",
+        "preparing": "Préparation du téléchargement...",
+        "downloading": "Téléchargement de l'archive lip...",
+        "extracting": "Extraction de lipd.exe...",
+        "writing": "Écriture de lipd.exe...",
+        "verifying": "Vérification de l'installation...",
+        "up_to_date": "La version actuelle est à jour",
+        "outdated": "Une version plus récente est disponible",
+        "missing": "lip n'est pas installé",
+        "check_failed": "Échec de la vérification de l'état de lip : {{error}}",
+        "done": "Installation de lip terminée"
+      },
+      "error": {
+        "lip_fetch_release": "Échec de la récupération de la dernière version de lip",
+        "lip_release_asset_not_found": "Impossible de trouver le paquet lip pour Windows x64 dans la dernière version",
+        "lip_download_archive": "Échec du téléchargement de l'archive lip",
+        "lip_open_archive": "Échec de l'ouverture de l'archive lip",
+        "lip_extract_binary": "Échec de l'extraction de lipd.exe",
+        "lip_create_target_dir": "Échec de la création du répertoire d'installation de lip",
+        "lip_replace_file": "Échec du remplacement de lipd.exe",
+        "lip_verify_install": "Échec de la vérification de la version installée de lip",
+        "lip_install_failed": "Échec de l'installation de lip"
+      },
+      "version_label": "Actuelle : {{currentVersion}} / Dernière : {{latestVersion}}",
+      "startup_prompt": {
+        "title": "Mise à jour de lip disponible",
+        "description": "Une version plus récente de lip est disponible ({{currentVersion}} -> {{latestVersion}}). LeviLauncher ne la mettra pas à jour automatiquement. Allez dans Paramètres > Composants pour la mettre à jour manuellement.",
+        "later_button": "Plus tard",
+        "ignore_button": "Ignorer cette version",
+        "open_settings_button": "Ouvrir les Paramètres",
+        "current_version": "Version actuelle : {{currentVersion}}",
+        "latest_version": "Dernière version : {{latestVersion}}"
+      },
+      "unknown_version": "Inconnu",
+      "update_button": "Mettre à jour"
+    },
+    "resource_rules": {
+      "title": "Données d'exécution du lanceur",
+      "check_button": "Vérifier la mise à jour",
+      "update_button": "Mettre à jour",
+      "latest_label": "Dernière version",
+      "outdated_label": "Obsolète",
+      "missing_label": "Manquant",
+      "status": {
+        "checking": "Vérification du SHA256...",
+        "up_to_date": "Le SHA256 correspond à la version distante",
+        "outdated": "Le SHA256 diffère de la version distante",
+        "missing": "Fichier local introuvable",
+        "check_failed": "Échec de la vérification : {{error}}"
+      }
+    },
+    "header": {
+      "title": "Paramètres",
+      "content": "Configurer les options courantes du lanceur"
+    },
+    "body": {
+      "version": {
+        "name": "Version actuelle",
+        "hasnew": "Nouvelle version disponible ! ",
+        "button": "Vérifier la mise à jour",
+        "ignore": "Ignorer cette version"
+      },
+      "paths": {
+        "title": "Chemins du contenu",
+        "subtitle": "Gérer l'emplacement de stockage des données du jeu",
+        "base_root": "Racine de base",
+        "apply": "Appliquer",
+        "reset": "Réinitialiser",
+        "installer": "Installateurs",
+        "versions": "Versions",
+        "unsaved": "Modifications non enregistrées",
+        "not_writable": "Le répertoire n'est pas accessible en écriture"
+      },
+      "language": {
+        "name": "Langue",
+        "button": "Modifier"
+      }
+    },
+    "process": {
+      "title": "Gestionnaire de processus",
+      "desc": "Gérer les processus Minecraft en cours d'exécution",
+      "scan": "Scanner les processus",
+      "kill_all": "Terminer tous les processus",
+      "kill": "Terminer la tâche",
+      "no_process": "Aucun processus Minecraft en cours d'exécution trouvé"
+    },
+    "modal": {
+      "2": {
+        "footer": {
+          "download_button": "Mettre à jour"
+        }
+      }
+    },
+    "appearance": {
+      "global_config": "Configuration globale",
+      "mode_config": "Configuration spécifique au mode",
+      "edit_mode_desc": "Les paramètres de personnalisation (couleurs, opacité, etc.) sont enregistrés indépendamment pour les modes Clair et Sombre. Changez d'onglet à droite pour configurer chaque mode.",
+      "theme_mode": "Mode du thème",
+      "theme_mode_desc": "Choisir le thème de l'application",
+      "theme_system": "Suivre le système",
+      "theme_light": "Mode clair",
+      "theme_dark": "Mode sombre",
+      "theme_schedule": "Programmation manuelle",
+      "theme_auto": "Lever/Coucher du soleil",
+      "theme_start_time": "Heure de début du mode sombre",
+      "theme_end_time": "Heure de fin du mode sombre",
+      "theme_schedule_desc": "Basculer automatiquement en mode sombre pendant la période spécifiée",
+      "theme_auto_desc": "Changer automatiquement de thème selon les heures locales de lever et de coucher du soleil",
+      "theme_system_desc": "Suivre les paramètres du système Windows",
+      "theme_color": "Couleur du thème",
+      "theme_color_desc": "La couleur d'accentuation principale de l'application",
+      "theme_standard": "Couleurs prédéfinies",
+      "theme_generated": "Plus de couleurs",
+      "hue": "Teinte",
+      "custom_color": "Couleur personnalisée",
+      "background_image": "Image d'arrière-plan",
+      "background_image_desc": "Sélectionner un dossier pour choisir des images comme arrière-plan",
+      "background_play_order": "Ordre de lecture",
+      "background_play_random": "Aléatoire",
+      "background_play_sequential": "Séquentiel",
+      "background_fit_mode": "Mode d'ajustement",
+      "background_fit_smart": "Intelligent",
+      "background_fit_center": "Centré",
+      "background_fit_fit": "Ajuster",
+      "background_fit_stretch": "Étirer",
+      "background_fit_tile": "Mosaïque",
+      "background_fit_top_left": "Haut gauche",
+      "background_fit_top_right": "Haut droit",
+      "no_image_selected": "Aucun dossier sélectionné",
+      "select_image": "Sélectionner un dossier",
+      "clear_image": "Effacer le dossier",
+      "background_blur": "Flou d'arrière-plan",
+      "background_brightness": "Luminosité de l'arrière-plan",
+      "background_opacity": "Opacité de l'arrière-plan",
+      "background_base_mode": "Mode de base",
+      "background_base_mode_desc": "Ajouter un masque de couleur unie sous l'image d'arrière-plan pour améliorer le contraste",
+      "background_base_none": "Aucun",
+      "background_base_theme": "Suivre la couleur du thème",
+      "background_base_color": "Couleur personnalisée",
+      "background_base_color_pick": "Couleur de base",
+      "background_base_opacity": "Opacité de base",
+      "disable_animations": "Désactiver les animations",
+      "disable_animations_desc": "Désactiver les animations de transition de l'interface pour améliorer les performances",
+      "calculating": "Calcul en cours...",
+      "sunrise_time": "Lever du soleil aujourd'hui",
+      "sunset_time": "Coucher du soleil aujourd'hui",
+      "sun_fetch_failed": "Échec de la récupération des heures de lever/coucher du soleil"
+    },
+    "privacy": {
+      "analytics": {
+        "title": "Analyse d'utilisation anonyme (Microsoft Clarity)",
+        "desc": "Lorsqu'activé, cela nous aide à améliorer les fonctionnalités et l'interface utilisateur. Vous pouvez le désactiver à tout moment."
+      },
+      "links": {
+        "clarity_terms": "Conditions de Clarity",
+        "microsoft_privacy": "Déclaration de confidentialité de Microsoft"
+      }
+    }
+  },
+  "downloadmodal": {
+    "download_button": "Télécharger",
+    "installing": {
+      "title": "Installation en cours"
+    },
+    "open_folder": "Ouvrir le dossier"
+  },
+  "aboutcard": {
+    "title": "À propos",
+    "description": " 2024-2026 {{name}} Tous droits réservés",
+    "font": "Ce logiciel utilise la police {{name}}"
+  },
+  "about": {
+    "description": "LeviLauncher - Un lanceur moderne pour Minecraft Bedrock",
+    "authors": "Auteurs et mainteneurs",
+    "author": "Auteur",
+    "ll_authors": "Auteurs de LeviLauncher",
+    "source": "Code source et open source",
+    "thanks": "Remerciements spéciaux",
+    "thanks.desc": "Remerciements spéciaux aux individus et projets qui soutiennent LeviLauncher.",
+    "sponsors": "Supporters (Sponsors)",
+    "sponsors.desc": "Merci à tous les sponsors et supporters pour le développement du projet !",
+    "contribute": "Contribuer",
+    "contribute.desc": "Les contributions via des Issues ou des Pull Requests sont les bienvenues pour améliorer LeviLauncher.",
+    "afdian": "Afdian",
+    "patreon": "Patreon",
+    "github_repo": "GitHub · LeviLauncher",
+    "github_org": "Organisation LiteLDev",
+    "license.tip": "Consultez LICENSE dans le dépôt pour les détails de la licence.",
+    "website": "Site web",
+    "issue": "Issue",
+    "star_fork": "Star / Fork",
+    "rhymc_name": "RhyMC"
+  },
+  "common": {
+    "retry": "Réessayer",
+    "completed": "Terminé",
+    "downloading": "Téléchargement en cours",
+    "ok": "OK",
+    "continue": "Continuer",
+    "cancel": "Annuler",
+    "cancelled": "Annulé",
+    "error": "Erreur",
+    "refresh": "Actualiser",
+    "quit_launcher": "Quitter le lanceur",
+    "confirm": "Confirmer",
+    "success": "Succès",
+    "delete": "Supprimer",
+    "search": "Rechercher",
+    "search_placeholder": "Rechercher...",
+    "open": "Ouvrir",
+    "select_mode": "Sélectionner le mode",
+    "select_all": "Tout sélectionner",
+    "selected_count": "{{count}} sélectionné(s)",
+    "preview": "Aperçu",
+    "release": "Version stable",
+    "back": "Retour",
+    "loading": "Chargement",
+    "yes": "Oui",
+    "no": "Non",
+    "close": "Fermer",
+    "empty": "Aucune donnée",
+    "browse": "Parcourir...",
+    "processing": "Traitement en cours...",
+    "done": "Terminé",
+    "wait": "Veuillez patienter...",
+    "updating": "Mise à jour en cours",
+    "expand": "Développer",
+    "collapse": "Réduire",
+    "save": "Enregistrer",
+    "add": "Ajouter",
+    "save_failed": "Échec de l'enregistrement",
+    "load_failed": "Échec du chargement",
+    "view_all": "Voir tout",
+    "confirm_delete": "Confirmer la suppression",
+    "no_results": "Aucun résultat trouvé",
+    "hide": "Masquer",
+    "edit": "Modifier",
+    "backup": "Sauvegarde",
+    "date": "Date",
+    "version": "Version",
+    "details": "Détails",
+    "disable": "Désactiver",
+    "enable": "Activer",
+    "open_folder": "Ouvrir le dossier",
+    "remove": "Supprimer",
+    "update": "Mettre à jour",
+    "tip": "Astuce",
+    "feature_unavailable": "Cette fonctionnalité est temporairement indisponible",
+    "unknown": "Inconnu"
+  },
+  "useravatar": {
+    "no_login_retry": "Connexion Xbox non détectée (cliquez pour réessayer)",
+    "xbox_live": "Xbox Live",
+    "refresh_session_aria": "Actualiser la session Xbox",
+    "xuid": "XUID : {{xuid}}",
+    "stats": {
+      "minutes_played": "Temps de jeu",
+      "blocks_broken": "Blocs cassés",
+      "mobs_defeated": "Mobs vaincus",
+      "distance_travelled": "Distance parcourue",
+      "time_format": "{{days}}j {{hours}}h {{minutes}}m"
+    }
+  },
+  "content": {
+    "count": {
+      "worlds": "Mondes",
+      "resource_packs": "Packs de ressources",
+      "behavior_packs": "Packs de comportement"
+    }
+  },
+  "contentpage": {
+    "current_version": "Instance actuelle",
+    "none": "Aucun",
+    "isolation": "Isolement de l'instance",
+    "worlds": "Mondes",
+    "worlds_list": "Liste des mondes",
+    "select_player": "Sélectionner un joueur",
+    "no_players": "Aucun joueur",
+    "backup_success": "Sauvegarde réussie",
+    "backup_failed": "Échec de la sauvegarde",
+    "resource_packs": "Packs de ressources",
+    "no_resource_packs": "Aucun pack de ressources",
+    "behavior_packs": "Packs de comportement",
+    "no_behavior_packs": "Aucun pack de comportement",
+    "skin_packs": "Packs de skins",
+    "no_skin_packs": "Aucun pack de skins",
+    "shader_chip": "Shader",
+    "only_show_updates": "Shaders incompatibles",
+    "update_material_bin": "Mettre à jour .material.bin",
+    "update_material_bin_desc": "Mise à jour requise pour la compatibilité",
+    "update_material_bin_modal_title": "Mettre à jour .material.bin",
+    "update_material_bin_modal_content": "Cela mettra à jour l'en-tête .material.bin dans le pack de shaders pour que Minecraft puisse le charger correctement.",
+    "update_material_bin_risk_title": "Avertissement de risque :",
+    "update_material_bin_risk_content": "Le pack de ressources mis à jour peut ne pas fonctionner correctement dans les anciennes versions de Minecraft. Il est recommandé de sauvegarder vos mondes ou d'exporter le pack de ressources d'abord.",
+    "update_material_bin_success": "Mise à jour du matériau terminée",
+    "update_material_bin_failed": "Échec de la mise à jour du matériau",
+    "update_material_bin_stat_updated": "Mis à jour : {{count}}",
+    "update_material_bin_stat_failed": "Échecs : {{count}}",
+    "servers": "Serveurs",
+    "error_resolve_paths": "Échec de la résolution des chemins de contenu.",
+    "open_users_dir": "Ouvrir le répertoire de stockage",
+    "players_aria": "Joueurs",
+    "sort_time": "Temps",
+    "sort_asc": "Croissant",
+    "sort_desc": "Décroissant",
+    "drop_hint": "Glissez-déposez .mcworld/.mcpack/.mcaddon ici pour importer",
+    "import_button": "Importer",
+    "transfer_resources_button": "Transférer les ressources",
+    "transfer_resources_title": "Transférer les ressources vers des instances isolées",
+    "transfer_resources_body_overview": "Cela transférera tous les packs de ressources, packs de comportement, packs de skins et mondes de l'instance actuelle vers l'instance cible. Veuillez sélectionner une instance cible.",
+    "transfer_resources_body_simple": "Veuillez sélectionner une instance cible pour le transfert.",
+    "transfer_no_targets": "Aucune autre instance isolée disponible",
+    "transfer_target_placeholder": "Sélectionner l'instance cible",
+    "transfer_progress_title": "Transfert des ressources en cours...",
+    "transfer_progress_body": "Veuillez patienter pendant le transfert des ressources vers les instances sélectionnées.",
+    "require_player_for_world_import": "Sélectionnez un joueur avant d'importer un monde (.mcworld)",
+    "no_player_selected": "Aucun joueur sélectionné",
+    "world_leveldat_editor": "Éditeur level.dat du monde",
+    "version": "Version",
+    "add_field": "Ajouter un champ",
+    "field_name": "Nom",
+    "initial_value": "Valeur initiale",
+    "select_player_title": "Sélectionner un joueur",
+    "select_player_for_import": "Veuillez sélectionner le joueur pour l'importation",
+    "no_items": "Aucun élément trouvé",
+    "delete_pack_confirm": "Voulez-vous vraiment supprimer {{name}} ?",
+    "delete_warning": "Cette action est irréversible !",
+    "delete_selected_confirm": "Voulez-vous vraiment supprimer les {{count}} éléments sélectionnés ?",
+    "deleted_name": "{{name}} supprimé",
+    "deleted_count": "{{count}} éléments supprimés",
+    "delete_world_confirm": "Voulez-vous vraiment supprimer le monde {{name}} ?",
+    "basic_info": "Informations de base",
+    "level_name": "Nom du niveau",
+    "screenshots": "Captures d'écran",
+    "no_screenshots": "Aucune capture d'écran",
+    "delete_screenshot_confirm": "Voulez-vous vraiment supprimer la capture d'écran {{name}} ?",
+    "preview_screenshot": "Voir en grand",
+    "screenshot_viewer_hint": "Grand aperçu",
+    "screenshot_viewer_nav_hint": "Utilisez les touches ← / → ou les boutons pour changer de capture d'écran"
+  },
+  "versions": {
+    "info": {
+      "name": "Nom"
+    },
+    "edit": {
+      "tabs": {
+        "general": "Général",
+        "launch": "Options de lancement",
+        "features": "Fonctionnalités",
+        "manage": "Gestion",
+        "loader": "Chargeur"
+      },
+      "title": "Paramètres de l'instance",
+      "mc_version": "Version du jeu",
+      "new_name": "Nouveau nom",
+      "placeholder": "Entrez le nouveau nom",
+      "hint": "Renomme uniquement le dossier. La version et le type du jeu ne sont pas affectés.",
+      "enable_isolation": "Activer l'isolement",
+      "enable_console": "Activer la console",
+      "enable_render_dragon": "Charger les shaders RenderDragon",
+      "enable_ctrl_r_reload_resources": "Ctrl+R Rechargement rapide des ressources",
+      "enable_editor_mode": "Activer le mode éditeur",
+      "launch_args": "Arguments de lancement",
+      "launch_args_placeholder": "Arguments de lancement (ex. -Editor true)",
+      "launch_args_hint": "Définir les arguments de lancement du jeu.",
+      "env_vars": "Variables d'environnement",
+      "env_vars_placeholder": "Variables d'environnement (CLÉ=VALEUR), une par ligne",
+      "env_vars_hint": "Définir les variables d'environnement de lancement.",
+      "delete_hint": "Supprime définitivement cette instance de votre appareil, y compris les mondes, configurations et contenus installés. Cette action est irréversible.",
+      "danger_title": "Zone de danger",
+      "danger_hint": "Ces actions affectent l'enregistrement de l'instance ou les fichiers locaux. Vérifiez deux fois avant de continuer.",
+      "backup": {
+        "title": "Sauvegarde d'instance",
+        "hint": "Créez une sauvegarde pour cette instance avant de modifier les paramètres, d'installer des mods ou d'essayer quelque chose de nouveau",
+        "section_body": "Choisissez le contenu du jeu et les mods que vous souhaitez conserver ensemble ; l'application du lanceur n'est pas incluse",
+        "experimental_badge": "Expérimental",
+        "experimental_disabled": "Activez ceci dans {{settingsPath}} avant d'utiliser la sauvegarde et la restauration d'instance.",
+        "button": "Sauvegarder l'instance",
+        "dialog_title": "Choisir quoi sauvegarder",
+        "dialog_body": "Sélectionnez ce que vous souhaitez conserver dans cette sauvegarde",
+        "path_label": "Emplacement",
+        "size_label": "Taille approx.",
+        "shared_tag": "Contenu partagé",
+        "missing_tag": "Introuvable",
+        "empty_tag": "Actuellement vide",
+        "shared_warning": "Cette instance partage les mêmes données de jeu que l'installation système par défaut, donc inclure les données du jeu sauvegardera également ce contenu partagé",
+        "no_scope_selected": "Veuillez choisir au moins un élément à sauvegarder",
+        "confirm": "Démarrer la sauvegarde",
+        "progress_title": "Sauvegarde de l'instance en cours",
+        "progress_body": "Empaquetage des étendues sélectionnées. Veuillez patienter...",
+        "success_title": "Sauvegarde d'instance terminée",
+        "success_body": "Votre fichier de sauvegarde est prêt",
+        "archive_label": "Fichier de sauvegarde",
+        "location_label": "Enregistré dans",
+        "open_dir": "Ouvrir le dossier",
+        "lip_summary": "{{count}} paquets gérés par lip détectés : {{summary}}",
+        "mode": {
+          "safe": {
+            "label": "Mode sécurisé"
+          },
+          "full": {
+            "label": "Mode complet",
+            "warning": "Une sauvegarde complète inclut du contenu en dehors de la liste blanche des Utilisateurs et peut contenir des caches de compte, des données sensibles de confidentialité ou d'autres fichiers qui ne doivent pas être partagés."
+          }
+        },
+        "restore": {
+          "section_body": "Restaurer le contenu depuis une archive de sauvegarde d'instance existante. Si des conflits avec l'instance actuelle sont trouvés, vous pouvez choisir élément par élément de conserver la version de sauvegarde ou la version actuelle avant de restaurer.",
+          "button": "Restaurer la sauvegarde",
+          "file_picker_title": "Choisir une archive de sauvegarde d'instance",
+          "dialog_title": "Confirmer la restauration de la sauvegarde d'instance",
+          "dialog_body": "Choisissez quoi restaurer depuis cette sauvegarde. Si des conflits sont trouvés, ils seront listés avant la restauration pour que vous puissiez choisir chaque résolution.",
+          "confirm": "Démarrer la restauration",
+          "scope_section_title": "Restaurer les étendues",
+          "created_at": "Créé le",
+          "lip_summary": "{{count}} paquets gérés par lip détectés. La restauration tentera de les réinstaller automatiquement.",
+          "conflict_loading": "Analyse des conflits de restauration. Veuillez patienter...",
+          "conflict_summary": "{{count}} conflits ont été trouvés avec l'instance actuelle. Choisissez pour chaque élément de conserver la version de sauvegarde ou la version actuelle.",
+          "conflict_empty": "Aucun conflit trouvé pour les étendues sélectionnées. Vous pouvez restaurer directement.",
+          "conflict_choice_placeholder": "Choisissez comment résoudre ce conflit",
+          "conflict_choice_backup": "Utiliser la version de sauvegarde",
+          "conflict_choice_current": "Conserver la version actuelle",
+          "conflict_choice_pending": "Choix requis",
+          "conflict_group_count": "{{count}} conflits",
+          "conflict_group_unresolved": "{{count}} choix en attente",
+          "conflict_group_resolved": "Choix terminés",
+          "conflict_group_apply_backup": "Utiliser la sauvegarde pour le groupe",
+          "conflict_group_apply_current": "Conserver l'actuel pour le groupe",
+          "conflict_unresolved": "Veuillez choisir comment résoudre chaque conflit avant de restaurer.",
+          "conflict_details_toggle": "Voir les chemins et différences détaillés",
+          "conflict_item_fallback": "Contenu sans nom",
+          "pack_uuid_hint": "Les conflits de packs sont identifiés par l'UUID du manifeste. Si l'UUID correspond, il est traité comme le même pack même si les noms de dossier diffèrent.",
+          "identity_key_label": "Identité du conflit",
+          "backup_side_label": "Version de sauvegarde",
+          "current_side_label": "Version actuelle",
+          "backup_path_label": "Chemin de sauvegarde",
+          "current_path_label": "Chemin actuel",
+          "conflict_category": {
+            "mods": "Mods",
+            "skin_packs": "Packs de skins",
+            "behavior_packs": "Packs de comportement",
+            "resource_packs": "Packs de ressources",
+            "worlds": "Mondes",
+            "dev_behavior_packs": "Packs de comportement de développement",
+            "dev_resource_packs": "Packs de ressources de développement",
+            "templates": "Modèles de monde",
+            "files": "Autres fichiers",
+            "other": "Autre contenu"
+          },
+          "identity_kind": {
+            "pack_uuid": "Pack",
+            "world_folder": "Dossier de monde",
+            "mod_folder": "Dossier de mod",
+            "file_path": "Chemin de fichier"
+          },
+          "conflict_type": {
+            "file": "Fichier",
+            "dir": "Répertoire"
+          },
+          "diff_field": {
+            "folder": "Dossier",
+            "uuid": "UUID",
+            "name": "Nom",
+            "version": "Version",
+            "min_engine_version": "Version minimale du moteur",
+            "level_name": "Nom du monde",
+            "entry": "Entrée",
+            "type": "Type"
+          },
+          "progress_title": "Restauration de la sauvegarde d'instance en cours",
+          "progress_body": "Application des contenus de sauvegarde. Veuillez patienter...",
+          "progress_preparing": "Préparation du contenu de restauration...",
+          "progress_extracting": "Extraction des contenus de sauvegarde...",
+          "progress_scope": "Restauration de {{scope}}...",
+          "progress_finalizing": "Finalisation des résultats de restauration...",
+          "progress_step": "Étape {{current}} / {{total}}",
+          "success_title": "Restauration d'instance terminée",
+          "partial_title": "Restauration d'instance partiellement terminée",
+          "failed_title": "Échec de la restauration d'instance",
+          "success_body": "Le contenu sélectionné a été restauré.",
+          "partial_body": "Certains contenus ont été restaurés, mais certains éléments nécessitent encore une attention manuelle.",
+          "failed_body": "Cette restauration n'a pas été terminée. Vérifiez les résultats ci-dessous.",
+          "status": {
+            "success": "Succès",
+            "partial": "Partiel",
+            "failed": "Échec"
+          }
+        }
+      },
+      "unregister_button": "Désenregistrer",
+      "unregister_hint": "Désenregistrer cette instance du système pour qu'elle n'apparaisse plus dans la liste des applications du système. Cela ne supprimera aucun fichier.",
+      "unregister_progress": {
+        "title": "Désenregistrement en cours",
+        "body": "Désenregistrement du système en cours. Veuillez patienter…"
+      },
+      "unregister_success": {
+        "title": "Désenregistrement réussi",
+        "body": "Désenregistré avec succès. Vous pouvez maintenant supprimer cette version."
+      },
+      "loader": {
+        "ll_not_installed": "Non installé",
+        "ll_select_version": "Version de LeviLamina",
+        "ll_select_placeholder": "Sélectionner une version de LeviLamina",
+        "ll_select_guidance": "Choisissez la version de LeviLamina que vous souhaitez installer, mettre à niveau, rétrograder ou réinstaller.",
+        "ll_upgrade_only_hint": "Seules les mises à niveau sont autorisées dans les paramètres de l'instance.",
+        "ll_only_latest_when_current_unknown": "Impossible d'analyser la version actuelle. Seule la dernière version peut être mise à niveau.",
+        "ll_remove_confirm_title": "Confirmer la suppression de LeviLamina",
+        "ll_remove_confirm_body": "LeviLamina sera supprimé de cette instance.",
+        "ll_remove_confirm_warning": "Cette action est irréversible."
+      }
+    },
+    "logo": {
+      "title": "Icône personnalisée (carré requis)",
+      "change": "Cliquez pour modifier",
+      "clear": "Effacer",
+      "hint": "Sera enregistré sous LargeLogo.png dans le dossier de la version. Cliquez sur l'icône pour modifier."
+    },
+    "unsaved": {
+      "body": "Vous avez des modifications non enregistrées dans les paramètres de l'instance. Voulez-vous enregistrer avant de quitter ?"
+    },
+    "sort": {
+      "name": "Nom (A-Z)",
+      "name_za": "Nom (Z-A)",
+      "version": "Version (Plus récente)",
+      "version_old_new": "Version (Plus ancienne)"
+    },
+    "tab": {
+      "all": "Tous",
+      "preview": "Aperçu",
+      "release": "Version stable"
+    }
+  },
+  "mirror": {
+    "target": "Instance cible"
+  },
+  "errors": {
+    "ERR_GAME_ALREADY_RUNNING": "Il a été détecté que l'instance actuelle de Minecraft est déjà en cours d'exécution. Veuillez la fermer avant de lancer ou passer à une autre instance.",
+    "ERR_TARGET_DIR_NOT_SPECIFIED": "Répertoire cible non spécifié",
+    "ERR_CREATE_TARGET_DIR": "Échec de la création du répertoire cible",
+    "ERR_NOT_FOUND_GAME_DIR": "Répertoire de contenu du jeu introuvable",
+    "ERR_NOT_FOUND_EXE": "Exécutable introuvable",
+    "ERR_WRITE_TARGET": "Échec de l'écriture de la configuration cible",
+    "ERR_LAUNCH_GAME": "Le jeu n'a pas pu démarrer correctement",
+    "ERR_GAME_CRASH_DURING_LAUNCH": "Le jeu a planté pendant le démarrage",
+    "ERR_WAIT_KERNEL_TIMEOUT": "Délai d'attente de préparation du noyau dépassé",
+    "ERR_COPY_WALK": "Échec du parcours des fichiers",
+    "ERR_COPY_FAILED": "Échec de la copie",
+    "ERR_NAME_REQUIRED": "Le nom est requis",
+    "ERR_NAME_TOO_LONG": "Le nom est trop long",
+    "ERR_NAME_TRAILING_DOT_SPACE": "Le nom ne peut pas se terminer par un point ou un espace",
+    "ERR_NAME_INVALID_CHAR": "Le nom contient des caractères invalides : <>:\\\"/\\\\|?*",
+    "ERR_NAME_CONTROL_CHAR": "Le nom contient des caractères de contrôle",
+    "ERR_NAME_RESERVED": "Le nom est un mot réservé de Windows",
+    "ERR_ACCESS_VERSIONS_DIR": "Impossible d'accéder au répertoire des versions",
+    "ERR_ACCESS_INSTALLERS_DIR": "Impossible d'accéder au répertoire des installateurs",
+    "ERR_READ_VERSIONS_DIR": "Échec de la lecture du répertoire des versions",
+    "ERR_LL_VERSION_UNSUPPORTED": "La version de LeviLamina sélectionnée n'est pas prise en charge pour cette version du jeu",
+    "ERR_LL_NOT_SUPPORTED": "LeviLamina n'est pas pris en charge pour cette version du jeu",
+    "ERR_FETCH_LL_DB": "Échec de la récupération de la base de données des versions de LeviLamina",
+    "ERR_INVALID_VERSION_FORMAT": "Format de version du jeu invalide",
+    "ERR_LIP_INSTALL_FAILED": "Échec de l'installation de LeviLamina via lip",
+    "ERR_NAME_EXISTS": "Le nom existe déjà",
+    "ERR_INVALID_NAME": "Nom invalide",
+    "ERR_ICON_DECODE": "Échec du décodage de l'icône",
+    "ERR_ICON_NOT_SQUARE": "L'icône doit être carrée",
+    "ERR_NOT_FOUND_OLD": "Répertoire original introuvable",
+    "ERR_RENAME_FAILED": "Échec du renommage, peut-être en cours d'utilisation ou permission refusée",
+    "ERR_MSIXVC_NOT_SPECIFIED": "Paquet installateur non spécifié",
+    "ERR_MSIXVC_NOT_FOUND": "Paquet installateur introuvable",
+    "ERR_APPX_UNINSTALL_FAILED": "Échec de la désinstallation du jeu existant",
+    "ERR_APPX_INSTALL_FAILED": "Échec de l'installation. Veuillez réessayer.",
+    "ERR_MC_NOT_AUTHORIZED": "Veuillez vous assurer que vous possédez une licence légale de Minecraft {{typeLabel}}. Connectez-vous avec un compte possédant le produit ou achetez-le et réessayez.",
+    "ERR_INHERIT_SOURCE_NOT_FOUND": "Version source d'héritage introuvable",
+    "ERR_DELETE_FAILED": "Échec de la suppression, peut-être en cours d'utilisation ou permission refusée",
+    "ERR_INHERIT_TARGET_NOT_FOUND": "Version cible introuvable",
+    "ERR_INHERIT_TYPE_MISMATCH": "Incompatibilité de type, impossible d'hériter",
+    "ERR_INHERIT_COPY_FAILED": "Échec de la copie des données héritées",
+    "ERR_NO_GAME_DATA": "Aucune donnée de jeu trouvée pour la source sélectionnée",
+    "ERR_VCRUNTIME_MISSING": "Dépendance d'exécution manquante. Veuillez installer Microsoft Visual C++ Runtime et réessayer",
+    "ERR_SHORTCUT_CREATE_FAILED": "Échec de la création du raccourci bureau",
+    "ERR_UNREGISTER_FAILED": "Échec du désenregistrement",
+    "ERR_NOT_REGISTERED_THIS_VERSION": "Cette version n'est pas enregistrée",
+    "ERR_DEV_MODE_REQUIRED": "Le mode Développeur n'est pas activé, et l'activation automatique a échoué. Veuillez activer le mode Développeur manuellement et réessayer.",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Identifiant de paquet lip invalide",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "La version du paquet lip est requise",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Échec de l'installation du paquet lip",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Échec de la désinstallation du paquet lip",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "Échec de la requête de l'état du paquet lip",
+    "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "Ce paquet est requis par d'autres mods installés et ne peut pas être désinstallé maintenant",
+    "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "Ce paquet est toujours requis par d'autres mods installés, donc il ne peut pas être complètement désinstallé. Il a été automatiquement passé en mode d'installation de dépendance.",
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina ne peut être géré que dans les Paramètres de Version",
+    "ERR_LIP_NOT_INSTALLED": "lip n'est pas installé. Allez dans Paramètres > Composants pour l'installer ou le mettre à jour manuellement.",
+    "ERR_INSTANCE_BACKUP_INSTANCE_NOT_FOUND": "L'instance à sauvegarder est introuvable",
+    "ERR_INSTANCE_BACKUP_NO_SCOPE": "Veuillez sélectionner au moins une étendue de sauvegarde",
+    "ERR_INSTANCE_BACKUP_INVALID_SCOPE": "La demande inclut une étendue de sauvegarde invalide",
+    "ERR_INSTANCE_BACKUP_INVALID_SCOPE_MODE": "Le mode de sauvegarde sélectionné est invalide",
+    "ERR_INSTANCE_BACKUP_GAME_DATA_NOT_FOUND": "Le répertoire de données de Minecraft Bedrock est introuvable",
+    "ERR_INSTANCE_BACKUP_CREATE_DIR": "Échec de la création du répertoire de sauvegarde d'instance",
+    "ERR_INSTANCE_BACKUP_CREATE_ARCHIVE": "Échec de la création de l'archive de sauvegarde d'instance",
+    "ERR_INSTANCE_BACKUP_READ_SOURCE": "Échec de la lecture du répertoire source de sauvegarde",
+    "ERR_INSTANCE_BACKUP_WRITE_ARCHIVE": "Échec de l'écriture de l'archive de sauvegarde d'instance",
+    "ERR_INSTANCE_BACKUP_ARCHIVE_OPEN": "Échec de l'ouverture de l'archive de sauvegarde d'instance",
+    "ERR_INSTANCE_BACKUP_INVALID_ARCHIVE": "Le format de l'archive de sauvegarde d'instance est invalide",
+    "ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE": "Impossible de vérifier l'état des Mods/LIP. Mettez à jour l'état de l'instance et réessayez la sauvegarde.",
+    "ERR_INSTANCE_BACKUP_RESTORE_EXTRACT_ARCHIVE": "Échec de l'extraction de l'archive de sauvegarde d'instance",
+    "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET": "Échec de la restauration des contenus de sauvegarde dans l'instance cible",
+    "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "Certains conflits de restauration ne sont pas encore résolus. Terminez d'abord de choisir une résolution pour chaque conflit.",
+    "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "La résolution de conflit de restauration sélectionnée est invalide. Veuillez vérifier vos choix.",
+    "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Les sauvegardes complètes de Minecraft Bedrock ne peuvent être restaurées que dans un répertoire cible vide",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Certains paquets gérés par lip n'ont pas pu être installés",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Certains paquets gérés par lip n'ont pas été restaurés",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Certaines versions de paquets gérés par lip ne correspondent pas à la sauvegarde"
+  },
+  "filemanager": {
+    "sort": {
+      "name": "Nom"
+    }
+  },
+  "file": {
+    "types": {
+      "folder": "Dossier",
+      "executable": "Exécutable",
+      "library": "Bibliothèque",
+      "archive": "Archive",
+      "image": "Image",
+      "text": "Texte",
+      "json": "JSON",
+      "jar": "JAR",
+      "mcpack": "Pack MC",
+      "mcaddon": "Addon MC",
+      "file": "Fichier"
+    }
+  },
+  "mods": {
+    "import_button": "Importer .zip/.dll",
+    "importing_title": "Importation en cours...",
+    "importing_body": "Veuillez patienter pendant le traitement des fichiers sélectionnés.",
+    "summary_title_done": "Importation terminée",
+    "summary_title_partial": "Importation terminée (Échecs partiels)",
+    "summary_success": "Succès",
+    "summary_failed": "Échec",
+    "details_title": "Détails du mod",
+    "field_name": "Nom",
+    "field_version": "Version",
+    "field_type": "Type",
+    "field_entry": "Entrée",
+    "field_author": "Auteur",
+    "confirm_delete_body": "Voulez-vous vraiment supprimer ce {{type}} ? Cette action est irréversible.",
+    "dll_modal_title": "Importer un plugin DLL",
+    "dll_name": "Nom du plugin",
+    "dll_type": "Type",
+    "dll_version": "Version",
+    "err_invalid_name": "Version ou nom de module invalide",
+    "err_access_versions_dir": "Impossible d'accéder au répertoire des versions",
+    "err_create_target_dir": "Échec de la création du répertoire cible",
+    "err_open_zip": "Impossible d'ouvrir le fichier ZIP",
+    "err_manifest_not_found": "manifest.json introuvable",
+    "err_invalid_package": "Structure de paquet invalide",
+    "err_duplicate_folder": "Un dossier de module avec le même nom existe",
+    "err_read_zip_entry": "Échec de la lecture de l'entrée ZIP",
+    "err_write_file": "Échec de l'écriture du fichier",
+    "err_unknown": "Erreur inconnue",
+    "overwrite_modal_title": "Doublon détecté",
+    "overwrite_modal_body": "Un dossier de module avec le même nom existe. Écraser (mettre à jour) ?",
+    "toggle_label": "Activer le mod",
+    "toggle_on": "Activé",
+    "toggle_off": "Désactivé",
+    "toggle_desc_on": "Le mod est activé et sera chargé au démarrage du jeu.",
+    "toggle_desc_off": "Le mod est désactivé et ne sera pas chargé au démarrage du jeu.",
+    "only_enabled": "Afficher uniquement les mods activés",
+    "drop_hint": "Déposez .zip ou .dll ici pour importer des mods/plugins",
+    "err_lip_not_installed": "lip n'est pas installé. Allez dans Paramètres > Composants pour l'installer ou le mettre à jour manuellement.",
+    "err_lip_install_failed_suggestion": "Échec de l'installation, veuillez essayer de réinstaller Minecraft",
+    "rc_warning": {
+      "title": "Avertissement de version expérimentale",
+      "body_1": "La version de LeviLamina ({{version}}) que vous êtes sur le point d'installer est une Candidate à la Publication (RC).",
+      "body_2": "Il s'agit d'une version expérimentale qui peut être instable. Elle est recommandée uniquement pour les développeurs ou les utilisateurs avancés.",
+      "body_3": "Voulez-vous continuer ?"
+    },
+    "action_update": "Mettre à jour",
+    "action_uninstall": "Désinstaller",
+    "action_promote_install": "Promouvoir vers une installation explicite",
+    "action_promote_install_success": "{{name}} a été promu vers une installation explicite",
+    "action_promote_install_failed_no_version": "Aucune version installée trouvée pour ce paquet",
+    "batch_update_title": "Mettre à jour les mods en lot",
+    "batch_update_body": "{{selected}} mods sélectionnés. {{updatable}} mod(s) peuvent être mis à jour depuis lip. Continuer ?",
+    "batch_uninstall_title": "Désinstaller les mods en lot",
+    "batch_uninstall_body": "Vous êtes sur le point de désinstaller {{count}} mod(s). Continuer ?",
+    "update_available": "Mettre à jour vers {{version}}",
+    "update_latest": "Déjà la plus récente",
+    "no_update_source": "Aucune source de mise à jour lip",
+    "err_ll_managed_in_version_settings": "LeviLamina ne peut être géré que dans les Paramètres de Version",
+    "action_result_title_done": "Opération terminée",
+    "action_result_title_partial": "Opération terminée (Échecs partiels)",
+    "action_result_title_failed": "Échec de l'opération",
+    "tab_all": "Tous",
+    "tab_normal": "Mods normaux",
+    "tab_lip": "Mods lip",
+    "lip_children_summary": "Comprend : {{children}} (+{{count}})",
+    "lip_open_package": "Ouvrir le paquet",
+    "lip_sync_loading": "Mods locaux prêts. Complétion des informations lip...",
+    "lip_sync_error": "Les informations lip sont temporairement indisponibles. Affichage des mods locaux uniquement."
+  },
+  "terms": {
+    "title": "Accord de Licence de LeviLauncher",
+    "body": "Bienvenue sur LeviLauncher\n\nEn utilisant ce logiciel, vous acceptez que :\n• Ceci est un lanceur non officiel de Minecraft\n• Vous devez posséder une copie légalement licenciée de Minecraft, sinon le mode test sera utilisé automatiquement\n• Toute forme de piratage ou de triche est interdite\n• L'utilisation de mods/packs de ressources se fait à vos propres risques\n• Aucune affiliation avec Mojang/Microsoft\n\nContinuer l'utilisation implique l'acceptation des conditions",
+    "agree": "Accepter et continuer",
+    "decline": "Refuser et quitter"
+  },
+  "contentdownload": {
+    "title": "Téléchargement de contenu"
+  },
+  "curseforge": {
+    "title": "CurseForge",
+    "search_placeholder": "Rechercher des ressources de jeu...",
+    "search": "Rechercher",
+    "minecraft_version": "Version de Minecraft",
+    "select_version": "Sélectionner une version",
+    "all_versions": "Toutes les versions",
+    "load_error": "Échec du chargement des données, veuillez réessayer",
+    "search_error": "Échec de la recherche, veuillez réessayer",
+    "class": "Classe",
+    "select_class": "Sélectionner une classe",
+    "all_classes": "Toutes les classes",
+    "category": "Catégorie",
+    "select_category": "Sélectionner une catégorie",
+    "sort_by": "Trier par",
+    "select_sort": "Sélectionner le tri",
+    "no_results": "Aucun résultat trouvé",
+    "by_author": "Par {{author}}",
+    "no_description": "Aucune description disponible.",
+    "downloads": "Téléchargements",
+    "updated": "Mis à jour",
+    "created": "Créé",
+    "size": "Taille",
+    "game_version": "Version de Minecraft",
+    "mod_not_found": "Mod introuvable",
+    "go_back": "Retour",
+    "by": "Par",
+    "updated_date": "Mis à jour le {{date}}",
+    "download_count": "{{count}} Téléchargements",
+    "install_action": "Installer",
+    "website": "Site web",
+    "source": "Source",
+    "issues": "Issues",
+    "share": "Partager",
+    "no_download_url": "Aucune URL de téléchargement disponible",
+    "no_files_found": "Aucun fichier trouvé",
+    "sort": {
+      "featured": "En vedette",
+      "popularity": "Popularité",
+      "last_updated": "Dernière mise à jour",
+      "creation_date": "Date de création",
+      "total_downloads": "Total des téléchargements"
+    },
+    "install": {
+      "downloading_title": "Téléchargement du contenu",
+      "select_version_title": "Sélectionner l'instance de jeu",
+      "select_player_title": "Sélectionner un joueur",
+      "importing_title": "Importation du contenu",
+      "success_title": "Succès",
+      "error_title": "Erreur",
+      "downloading_body": "Téléchargement du fichier...",
+      "select_version_body": "Veuillez sélectionner l'instance de jeu pour l'importation :",
+      "local_installation": "Instance locale",
+      "select_version_placeholder": "Sélectionner une instance",
+      "registered": "Enregistré",
+      "select_player_body": "Ce contenu nécessite la sélection d'un joueur :",
+      "player_label": "Joueur",
+      "select_player_placeholder": "Sélectionner un joueur",
+      "importing_body": "Importation du contenu...",
+      "success_msg": "Importation réussie",
+      "success_desc": "Le contenu a été importé avec succès dans l'instance sélectionnée.",
+      "failed_msg": "Échec de l'importation",
+      "next": "Suivant",
+      "close": "Fermer"
+    },
+    "mod_details_aria_label": "Détails du mod",
+    "loading_description": "Chargement de la description...",
+    "mod_tabs": {
+      "description": "Description",
+      "files": "Fichiers"
+    },
+    "mod_files": {
+      "title": "Tous les fichiers",
+      "table_aria_label": "Tableau des fichiers de mod",
+      "columns": {
+        "type": "Type",
+        "name": "Nom",
+        "uploaded": "Téléversé",
+        "size": "Taille",
+        "downloads": "Téléchargements",
+        "actions": "Actions"
+      }
+    }
+  },
+  "lip": {
+    "search_placeholder": "Rechercher des paquets...",
+    "sort_by": "Trier par",
+    "select_sort": "Sélectionner le tri",
+    "order_by": "Ordre",
+    "select_order": "Sélectionner l'ordre",
+    "no_description": "Aucune description disponible",
+    "ll_version_label": "Version de LeviLamina",
+    "ll_version_placeholder": "Sélectionner une version de LeviLamina",
+    "ll_all_versions": "Toutes les versions de LeviLamina",
+    "game_version_label": "Version du jeu",
+    "game_version_placeholder": "Sélectionner une version du jeu",
+    "game_all_versions": "Toutes les versions du jeu",
+    "files": {
+      "game_versions_label": "Versions du jeu",
+      "game_versions_unrestricted": "Aucune restriction de version du jeu",
+      "game_versions_unavailable": "Mappage de version du jeu non disponible",
+      "ll_requirement": "Exigence LL",
+      "dependencies": "Dépendances",
+      "action": "Action",
+      "dependencies_count": "{{count}} dépendances",
+      "install": "Installer",
+      "upgrade": "Mettre à niveau",
+      "downgrade": "Rétrograder",
+      "reinstall": "Réinstaller",
+      "redirect": "Aller au chargeur",
+      "instance_game_version": "Version du jeu : {{version}}",
+      "instance_game_version_label": "Version du jeu",
+      "select_instance_title": "Sélectionner l'instance cible",
+      "installing_version_label": "Installation de la version du paquet",
+      "variant_label": "Variante",
+      "variant_hint_keep_default": "Généralement, aucun changement n'est nécessaire",
+      "variant_placeholder": "Sélectionner une variante",
+      "variant_default": "default",
+      "select_version_incompatible_hint": "La version {{version}} n'est pas compatible avec la version du jeu {{gameVersion}}.",
+      "checking_ll_state": "Vérification de l'état de LeviLamina...",
+      "ll_missing_auto_install_hint": "LeviLamina n'est pas installé. En cliquant sur Installer, LeviLamina {{version}} sera d'abord installé, puis ce paquet.",
+      "ll_missing_redirect_hint": "LeviLamina n'est pas installé pour cette instance. En cliquant sur Aller au chargeur, l'onglet Chargeur dans les Paramètres de l'Instance s'ouvrira pour que vous puissiez l'installer manuellement d'abord.",
+      "ll_missing_redirect_to_loader": "LeviLamina n'est pas installé. Redirection vers l'onglet Chargeur dans les Paramètres de l'Instance.",
+      "ll_missing_mapping_block_hint": "Le mappage de version du jeu n'est pas disponible, donc LeviLamina ne peut pas être auto-installé. Veuillez installer LeviLamina manuellement d'abord.",
+      "ll_missing_no_compatible_hint": "Aucune version de LeviLamina ne correspond à la plage de dépendances de ce paquet pour la version du jeu sélectionnée.",
+      "ll_installed_incompatible_hint": "La version installée de LeviLamina {{installedVersion}} est incompatible avec ce paquet. Veuillez ajuster LeviLamina manuellement d'abord.",
+      "action_failed": "Échec de l'opération : {{error}}",
+      "tab_label": "Fichiers",
+      "table_aria_label": "Tableau des fichiers de paquet",
+      "install_success": "Installation terminée avec succès",
+      "upgrade_success": "Mise à niveau terminée avec succès",
+      "downgrade_success": "Rétrogradation terminée avec succès",
+      "reinstall_success": "Réinstallation terminée avec succès",
+      "current_installed_version": "Version actuellement installée : {{version}}",
+      "current_installed_version_label": "Version actuellement installée",
+      "checking_current_installed_version": "Vérification de la version actuellement installée..."
+    },
+    "guide": {
+      "open_button": "Guide du développeur",
+      "title": "Guide du développeur LIP",
+      "description": "Si vous souhaitez que votre mod apparaisse sur la page LIP de LeviLauncher, publiez-le conformément à la spécification package_manifest de LIP.",
+      "manifest_hint": "Cette boîte de dialogue est seulement un aperçu rapide pour les développeurs. Les noms de champs, les entrées requises, les exemples et les règles de validation sont définis dans la documentation officielle.",
+      "variant_hint": "Une variante est indexée par le lanceur uniquement lorsque son étiquette contient client. Par défaut, utilisez \\\"label\\\": \\\"client\\\"; pour les sous-extensions, utilisez \\\"label\\\": \\\"client_xxxx\\\" ou \\\"label\\\": \\\"client\\\\xxxx\\\".",
+      "docs_button": "Voir la spécification complète",
+      "close_button": "Fermer"
+    },
+    "guard": {
+      "title": "lipd n'est pas installé",
+      "description": "lipd n'est pas encore installé. Pour continuer à utiliser les pages liées à lip ou installer LeviLamina, allez dans Paramètres > Composants tiers et installez-le d'abord."
+    },
+    "title": "Contenu lip",
+    "sort_options": {
+      "hotness": "Popularité",
+      "updated": "Mis à jour",
+      "name": "Nom"
+    },
+    "order_options": {
+      "desc": "Décroissant",
+      "asc": "Croissant"
+    },
+    "by_author_inline": "| Par {{author}}",
+    "package_details_aria_label": "Détails du paquet",
+    "task_console": {
+      "title_install": "Installation en cours",
+      "title_upgrade": "Mise à niveau en cours",
+      "title_downgrade": "Rétrogradation en cours",
+      "title_reinstall": "Réinstallation en cours",
+      "title_update": "Mise à jour en cours",
+      "title_uninstall": "Désinstallation en cours",
+      "title_generic": "Tâche lip",
+      "status_running": "En cours d'exécution",
+      "status_success": "Succès",
+      "status_failed": "Échec",
+      "target_label": "Cible",
+      "progress_label": "Progression",
+      "log_title": "Sortie du journal",
+      "no_output": "Pas encore de sortie",
+      "waiting_start": "En attente de la sortie de lipd...",
+      "copy_logs": "Copier les journaux",
+      "copy_success": "Journaux copiés",
+      "close": "Fermer",
+      "stage_install_pkg": "Installation du paquet cible",
+      "stage_fallback_delete": "Désinstallation du paquet non disponible, retour à la suppression du répertoire"
+    },
+    "package": {
+      "confirm_install_title": "Confirmer l'installation",
+      "confirm_install_body": "Voulez-vous vraiment {{action}} {{package}} {{version}} pour {{instance}} ?"
+    }
+  },
+  "server": {
+    "offline": "Hors ligne / Impossible de se connecter",
+    "players": "Joueurs en ligne",
+    "delay": "Latence",
+    "online": "En ligne",
+    "version": "Version"
+  },
+  "installpage": {
+    "error": {
+      "dll_dependency_missing": "VC++ Runtime manquant",
+      "name_required": "Le nom est requis",
+      "msixvc_not_specified": "Paquet installateur non spécifié",
+      "lip_not_installed": "lip n'est pas installé. Allez dans Paramètres > Composants pour l'installer ou le mettre à jour manuellement.",
+      "unknown": "Erreur inconnue",
+      "nh_err_unknown": "Erreur inconnue",
+      "nh_err_exception": "Exception non capturée ou erreur non classifiable",
+      "nh_err_invalid_params": "Paramètres invalides",
+      "nh_err_key_not_found": "Échec de la validation du paquet installateur du jeu. Veuillez supprimer l'installateur et réessayer.",
+      "nh_err_unauthorized_caller": "Veuillez vous assurer que le nom de l'exécutable du lanceur n'a pas été changé (LeviLauncher.exe)",
+      "nh_err_pipe_open_failed": "Échec de l'ouverture du pipe de progression",
+      "nh_err_input_not_found": "Fichier d'entrée introuvable",
+      "nh_err_output_dir_invalid": "Répertoire de sortie invalide",
+      "nh_err_parse_failed": "Échec de l'analyse du paquet",
+      "nh_err_extract_failed": "Échec de la décompression"
+    }
+  },
+  "clarity": {
+    "prompt": {
+      "title": "Aider à améliorer LeviLauncher ?",
+      "body": "Avec votre permission, LeviLauncher utilise Microsoft Clarity pour collecter des données d'interaction anonymes afin d'améliorer les fonctionnalités et l'interface utilisateur. Il ne collecte aucune information de compte, information de jeu ni contenu du disque, et s'applique uniquement aux pages frontend. Vous pouvez modifier ceci à tout moment dans Paramètres > Confidentialité.",
+      "enable": "Autoriser et activer",
+      "disable": "Pas maintenant",
+      "clarity_terms": "Conditions de Clarity",
+      "microsoft_privacy": "Déclaration de confidentialité de Microsoft"
+    }
+  }
+}

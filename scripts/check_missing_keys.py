@@ -1,13 +1,11 @@
+import json
 import os
 import re
-import json
-import sys
+from pathlib import Path
 
 # Configuration
 SRC_DIR = r'frontend/src'
 LOCALES_DIR = r'frontend/src/assets/locales'
-# List of all locale files to check
-LOCALE_FILES = ['en_US.json', 'ru_RU.json', 'zh_CN.json', 'ja_JP.json', 'zh_HK.json']
 
 # Regex to match t('key') or t("key") or i18n.t('key')
 KEY_PATTERN = re.compile(r'\b(?:t|i18n\.t)\s*\(\s*(["\'])([\w\.-]+)\1')
@@ -60,23 +58,33 @@ def scan_code_for_keys(src_dir):
                     
     return found_keys
 
-def main():
-    cwd = os.getcwd()
-    if os.path.basename(cwd) == 'scripts':
-        project_root = os.path.dirname(cwd)
-    elif os.path.exists(os.path.join(cwd, 'frontend')):
-        project_root = cwd
-    else:
-        project_root = cwd
 
+def resolve_project_root():
+    script_dir = Path(__file__).resolve().parent
+    return script_dir.parent
+
+
+def get_locale_files(locales_dir):
+    return sorted(path.name for path in Path(locales_dir).glob("*.json"))
+
+def main():
+    project_root = str(resolve_project_root())
     src_path = os.path.join(project_root, SRC_DIR)
     locales_dir_path = os.path.join(project_root, LOCALES_DIR)
+    locale_files = get_locale_files(locales_dir_path)
     
     print(f"Scanning code in: {src_path}")
     code_keys = scan_code_for_keys(src_path)
     print(f"Found {len(code_keys)} keys in code.\n")
+
+    if not locale_files:
+        print(f"Error: No locale files found in {locales_dir_path}")
+        return
     
-    for locale_file in LOCALE_FILES:
+    print(f"Locale files scanned: {len(locale_files)}")
+    print("")
+
+    for locale_file in locale_files:
         locale_path = os.path.join(locales_dir_path, locale_file)
         print(f"Checking {locale_file}...")
         

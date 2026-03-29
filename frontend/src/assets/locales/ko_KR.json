@@ -36,11 +36,6 @@
         "body": "등록 중 오류가 발생했습니다. 다시 시도하거나 환경을 확인해 주세요."
       }
     },
-    "gdk_missing": {
-      "title": "Microsoft GDK 누락",
-      "body": "GDK 툴킷이 감지되지 않았습니다. 등록하려면 설치가 필요합니다. 설정을 열어 설치하시겠습니까?",
-      "go_settings": "설정으로 이동"
-    },
     "delete": {
       "complete": {
         "title": "삭제 완료",
@@ -369,32 +364,13 @@
         "body": "이렇게 하면 콘텐츠 경로가 기본 위치로 재설정됩니다. 확실합니까?"
       }
     },
-    "gdk": {
-      "title": "Microsoft Game Development Kit",
-      "installed": "설치됨",
-      "install_button": "다운로드 및 설치",
-      "path_label": "경로: {{path}}",
-      "license": {
-        "title": "라이선스 동의",
-        "body": "계속하려면 Microsoft Public Game Development Kit 라이선스 계약 조건에 동의해야 합니다.",
-        "accept": "라이선스 계약 조건에 동의합니다.",
-        "link_text": "Microsoft Public Game Development Kit 라이선스 계약"
-      },
-      "download": {
-        "title": "GDK 다운로드 중"
-      },
-      "install": {
-        "title": "GDK 설치 중",
-        "body": "설치 프로그램이 실행되는 동안 기다려 주세요…"
-      },
-      "download_unavailable": "현재 기본 GDK 다운로드 링크를 사용할 수 없습니다."
-    },
     "lip": {
       "title": "lip",
       "install_button": "설치",
       "check_button": "확인",
       "cache_clean_button": "캐시 지우기",
       "cache_cleaning": "캐시 지우는 중...",
+      "cache_clean_success": "lip 캐시 정리 완료",
       "installing": "lip 설치 중...",
       "latest_label": "최신",
       "outdated_label": "업데이트 사용 가능",
@@ -645,7 +621,6 @@
     "enable": "활성화",
     "open_folder": "폴더 열기",
     "remove": "제거",
-    "update": "업데이트",
     "tip": "팁",
     "feature_unavailable": "이 기능은 일시적으로 사용할 수 없습니다",
     "unknown": "알 수 없음"
@@ -806,7 +781,6 @@
           }
         },
         "restore": {
-          "section_body": "기존 인스턴스 백업 아카이브에서 콘텐츠를 복원합니다. 현재 인스턴스와 충돌이 발견되면 복원 전에 항목별로 백업 버전 또는 현재 버전 유지 여부를 선택할 수 있습니다.",
           "button": "백업 복원",
           "file_picker_title": "인스턴스 백업 아카이브 선택",
           "dialog_title": "인스턴스 백업 복원 확인",
@@ -830,7 +804,6 @@
           "conflict_unresolved": "복원하기 전에 각 충돌을 어떻게 해결할지 선택해 주세요.",
           "conflict_details_toggle": "경로 및 세부 차이 보기",
           "conflict_item_fallback": "이름 없는 콘텐츠",
-          "pack_uuid_hint": "팩 충돌은 매니페스트 UUID 로 식별됩니다. UUID 가 일치하면 폴더 이름이 다르더라도 동일한 팩으로 취급됩니다.",
           "identity_key_label": "충돌 식별자",
           "backup_side_label": "백업 버전",
           "current_side_label": "현재 버전",
@@ -903,8 +876,6 @@
         "ll_select_version": "LeviLamina 버전",
         "ll_select_placeholder": "LeviLamina 버전 선택",
         "ll_select_guidance": "설치, 업그레이드, 다운그레이드 또는 재설치하려는 LeviLamina 버전을 선택하세요.",
-        "ll_upgrade_only_hint": "인스턴스 설정에서는 업그레이드만 허용됩니다.",
-        "ll_only_latest_when_current_unknown": "현재 버전을 분석할 수 없습니다. 최신 버전으로만 업그레이드할 수 있습니다.",
         "ll_remove_confirm_title": "LeviLamina 제거 확인",
         "ll_remove_confirm_body": "LeviLamina 가 이 인스턴스에서 제거됩니다.",
         "ll_remove_confirm_warning": "이 작업은 되돌릴 수 없습니다."
@@ -1070,7 +1041,6 @@
     "toggle_desc_off": "모드가 비활성화되어 게임 시작 시 로드되지 않습니다.",
     "only_enabled": "활성화된 모드만 표시",
     "drop_hint": ".zip 또는 .dll 을 (를) 여기로 끌어와서 모드/플러그인 가져오기",
-    "err_lip_not_installed": "lip 이 설치되어 있지 않습니다. 수동으로 설치하거나 업데이트하려면 설정 > 구성 요소로 이동하세요.",
     "err_lip_install_failed_suggestion": "설치 실패, Minecraft 를 다시 설치해 보세요",
     "rc_warning": {
       "title": "실험적 버전 경고",
@@ -1221,7 +1191,6 @@
       "downgrade": "다운그레이드",
       "reinstall": "재설치",
       "redirect": "로더로 이동",
-      "instance_game_version": "게임 버전: {{version}}",
       "instance_game_version_label": "게임 버전",
       "select_instance_title": "대상 인스턴스 선택",
       "installing_version_label": "패키지 버전 설치 중",
@@ -1231,11 +1200,8 @@
       "variant_default": "default",
       "select_version_incompatible_hint": "{{version}} 버전은 게임 버전 {{gameVersion}} 과 호환되지 않습니다.",
       "checking_ll_state": "LeviLamina 상태 확인 중...",
-      "ll_missing_auto_install_hint": "LeviLamina 가 설치되어 있지 않습니다. 설치를 클릭하면 먼저 LeviLamina {{version}} 이 설치된 후 이 패키지가 설치됩니다.",
       "ll_missing_redirect_hint": "이 인스턴스에 LeviLamina 가 설치되어 있지 않습니다. 로더로 이동을 클릭하면 인스턴스 설정의 로더 탭이 열려 수동으로 먼저 설치할 수 있습니다.",
       "ll_missing_redirect_to_loader": "LeviLamina 가 설치되어 있지 않습니다. 인스턴스 설정의 로더 탭으로 리디렉션합니다.",
-      "ll_missing_mapping_block_hint": "게임 버전 매핑을 사용할 수 없어 LeviLamina 를 자동으로 설치할 수 없습니다. 먼저 LeviLamina 를 수동으로 설치해 주세요.",
-      "ll_missing_no_compatible_hint": "선택한 게임 버전에서 이 패키지의 의존성 범위와 일치하는 LeviLamina 버전이 없습니다.",
       "ll_installed_incompatible_hint": "설치된 LeviLamina 버전 {{installedVersion}} 은 이 패키지와 호환되지 않습니다. 먼저 LeviLamina 를 수동으로 조정해 주세요.",
       "action_failed": "작업 실패: {{error}}",
       "tab_label": "파일",
@@ -1244,7 +1210,6 @@
       "upgrade_success": "업그레이드가 성공적으로 완료되었습니다",
       "downgrade_success": "다운그레이드가 성공적으로 완료되었습니다",
       "reinstall_success": "재설치가 성공적으로 완료되었습니다",
-      "current_installed_version": "현재 설치된 버전: {{version}}",
       "current_installed_version_label": "현재 설치된 버전",
       "checking_current_installed_version": "현재 설치된 버전 확인 중..."
     },

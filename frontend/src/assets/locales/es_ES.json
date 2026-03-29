@@ -36,11 +36,6 @@
         "body": "Ocurrió un error durante el registro. Por favor reintente o verifique el entorno."
       }
     },
-    "gdk_missing": {
-      "title": "Falta Microsoft GDK",
-      "body": "No se detectó el kit de herramientas GDK. El registro requiere instalación. ¿Abrir Configuración para instalar?",
-      "go_settings": "Abrir Configuración"
-    },
     "delete": {
       "complete": {
         "title": "Eliminación completada",
@@ -369,32 +364,13 @@
         "body": "Esto restablecerá la ruta de contenido a la ubicación predeterminada. ¿Está seguro?"
       }
     },
-    "gdk": {
-      "title": "Kit de Desarrollo de Juegos de Microsoft",
-      "installed": "Instalado",
-      "install_button": "Descargar e instalar",
-      "path_label": "Ruta: {{path}}",
-      "license": {
-        "title": "Acuerdo de licencia",
-        "body": "Debe aceptar los términos del Acuerdo de Licencia Pública del Kit de Desarrollo de Juegos de Microsoft para continuar.",
-        "accept": "Acepto los términos del Acuerdo de Licencia.",
-        "link_text": "Acuerdo de Licencia Pública del Kit de Desarrollo de Juegos de Microsoft"
-      },
-      "download": {
-        "title": "Descargando GDK"
-      },
-      "install": {
-        "title": "Instalando GDK",
-        "body": "Por favor espere mientras se ejecuta el instalador…"
-      },
-      "download_unavailable": "El enlace de descarga predeterminado de GDK no está disponible en este momento."
-    },
     "lip": {
       "title": "lip",
       "install_button": "Instalar",
       "check_button": "Verificar",
       "cache_clean_button": "Limpiar caché",
       "cache_cleaning": "Limpiando caché...",
+      "cache_clean_success": "Caché de lip limpiada",
       "installing": "Instalando lip...",
       "latest_label": "Más reciente",
       "outdated_label": "Actualización disponible",
@@ -645,7 +621,6 @@
     "enable": "Activar",
     "open_folder": "Abrir carpeta",
     "remove": "Eliminar",
-    "update": "Actualizar",
     "tip": "Consejo",
     "feature_unavailable": "Esta función no está disponible temporalmente",
     "unknown": "Desconocido"
@@ -806,7 +781,6 @@
           }
         },
         "restore": {
-          "section_body": "Restaurar contenido desde un archivo de copia de seguridad de instancia existente. Si se encuentran conflictos con la instancia actual, puede elegir elemento por elemento si mantener la versión de copia de seguridad o la versión actual antes de restaurar.",
           "button": "Restaurar copia de seguridad",
           "file_picker_title": "Elegir un archivo de copia de seguridad de instancia",
           "dialog_title": "Confirmar restauración de copia de seguridad de instancia",
@@ -830,7 +804,6 @@
           "conflict_unresolved": "Por favor elija cómo resolver cada conflicto antes de restaurar.",
           "conflict_details_toggle": "Ver rutas y diferencias detalladas",
           "conflict_item_fallback": "Contenido sin nombre",
-          "pack_uuid_hint": "Los conflictos de paquetes se identifican por el UUID del manifiesto. Si el UUID coincide, se trata como el mismo paquete incluso cuando los nombres de carpeta difieren.",
           "identity_key_label": "Identidad del conflicto",
           "backup_side_label": "Versión de copia de seguridad",
           "current_side_label": "Versión actual",
@@ -903,8 +876,6 @@
         "ll_select_version": "Versión de LeviLamina",
         "ll_select_placeholder": "Seleccionar una versión de LeviLamina",
         "ll_select_guidance": "Elija la versión de LeviLamina que desea instalar, actualizar, degradar o reinstalar.",
-        "ll_upgrade_only_hint": "Solo se permiten actualizaciones en la configuración de instancia.",
-        "ll_only_latest_when_current_unknown": "No se puede analizar la versión actual. Solo se puede actualizar a la última versión.",
         "ll_remove_confirm_title": "Confirmar eliminación de LeviLamina",
         "ll_remove_confirm_body": "LeviLamina será eliminado de esta instancia.",
         "ll_remove_confirm_warning": "Esta acción no se puede deshacer."
@@ -1070,7 +1041,6 @@
     "toggle_desc_off": "El mod está desactivado y no se cargará cuando inicie el juego.",
     "only_enabled": "Mostrar solo mods activados",
     "drop_hint": "Suelte .zip o .dll para importar mods/plugins",
-    "err_lip_not_installed": "lip no está instalado. Vaya a Configuración > Componentes para instalarlo o actualizarlo manualmente.",
     "err_lip_install_failed_suggestion": "Instalación fallida, por favor intente reinstalar Minecraft",
     "rc_warning": {
       "title": "Advertencia de versión experimental",
@@ -1221,7 +1191,6 @@
       "downgrade": "Degradar",
       "reinstall": "Reinstalar",
       "redirect": "Ir al cargador",
-      "instance_game_version": "Versión del juego: {{version}}",
       "instance_game_version_label": "Versión del juego",
       "select_instance_title": "Seleccionar instancia objetivo",
       "installing_version_label": "Instalando versión del paquete",
@@ -1231,11 +1200,8 @@
       "variant_default": "predeterminado",
       "select_version_incompatible_hint": "La versión {{version}} no es compatible con la versión del juego {{gameVersion}}.",
       "checking_ll_state": "Verificando estado de LeviLamina...",
-      "ll_missing_auto_install_hint": "LeviLamina no está instalado. Al hacer clic en Instalar se instalará primero LeviLamina {{version}}, luego este paquete.",
       "ll_missing_redirect_hint": "LeviLamina no está instalado para esta instancia. Al hacer clic en Ir al cargador se abrirá la pestaña Cargador en Configuración de Instancia para que pueda instalarlo manualmente primero.",
       "ll_missing_redirect_to_loader": "LeviLamina no está instalado. Redirigiendo a la pestaña Cargador en Configuración de Instancia.",
-      "ll_missing_mapping_block_hint": "El mapeo de versión del juego no está disponible, por lo que LeviLamina no se puede autoinstalar. Por favor instale LeviLamina manualmente primero.",
-      "ll_missing_no_compatible_hint": "Ninguna versión de LeviLamina coincide con el rango de dependencia de este paquete para la versión del juego seleccionada.",
       "ll_installed_incompatible_hint": "La versión instalada de LeviLamina {{installedVersion}} es incompatible con este paquete. Por favor ajuste LeviLamina manualmente primero.",
       "action_failed": "Operación fallida: {{error}}",
       "tab_label": "Archivos",
@@ -1244,7 +1210,6 @@
       "upgrade_success": "Actualización completada exitosamente",
       "downgrade_success": "Degradación completada exitosamente",
       "reinstall_success": "Reinstalación completada exitosamente",
-      "current_installed_version": "Versión instalada actual: {{version}}",
       "current_installed_version_label": "Versión instalada actual",
       "checking_current_installed_version": "Verificando versión actualmente instalada..."
     },

@@ -2,6 +2,35 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.9] - 2026-03-31
+
+### Added
+
+- Added German, Spanish, French, Italian, Korean, and Portuguese locale support across the launcher.(AI)
+
+### Changed
+
+- Optimized the lip download experience for users in China and streamlined related launcher settings and workflows.
+- Refined the update modal changelog layout for better readability.
+- Cleaned up locale keys and refreshed the repository sync scripts.
+
+### Fixed
+
+- Prevented invalid dropped file paths from breaking frontend file handling.
+- Improved Visual C++ runtime detection stability.
+- Shortened lip install timeouts to reduce stalled installation flows.
+- Surfaced lip cache clean results directly in Settings.
+- Removed the forced GDK `1.26.0.0` registration override to avoid incorrect registrations.
+
+### Docs
+
+- Clarified the Lanzou password in quick start guides.
+- Fixed broken links in the Russian documentation.
+
+### Chore
+
+- Bumped version to `0.3.9`.
+
 ## [v0.3.8] - 2026-03-18
 
 ### Added

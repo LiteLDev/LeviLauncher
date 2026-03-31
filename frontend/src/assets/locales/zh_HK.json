@@ -613,7 +613,6 @@
     "enable": "啟用",
     "open_folder": "開啟資料夾",
     "remove": "移除",
-    "update": "更新",
     "tip": "提示",
     "feature_unavailable": "該功能暫時不可用",
     "unknown": "未知"
@@ -777,7 +776,6 @@
           }
         },
         "restore": {
-          "section_body": "可從現有實例備份壓縮檔中還原所選內容；若發現與目前實例衝突的內容，可在還原前逐項選擇保留備份版本或目前版本。",
           "button": "還原備份",
           "file_picker_title": "選擇實例備份壓縮檔",
           "dialog_title": "確認還原實例備份",
@@ -801,7 +799,6 @@
           "conflict_unresolved": "請先為每一項衝突選擇處理方式。",
           "conflict_details_toggle": "查看路徑與詳細差異",
           "conflict_item_fallback": "未命名內容",
-          "pack_uuid_hint": "內容包衝突會按 manifest 的 UUID 識別；即使目錄名稱不同，只要 UUID 相同也會視為同一個包。",
           "identity_key_label": "衝突身份",
           "backup_side_label": "備份版本",
           "current_side_label": "目前版本",
@@ -874,8 +871,6 @@
         "ll_select_version": "LeviLamina 版本",
         "ll_select_placeholder": "請選擇 LeviLamina 版本",
         "ll_select_guidance": "請選擇你要安裝、升級、降級或重裝的 LeviLamina 版本。",
-        "ll_upgrade_only_hint": "實例設定僅允許升級到更高版本。",
-        "ll_only_latest_when_current_unknown": "目前版本無法解析，僅允許更新到最新版本。",
         "ll_remove_confirm_title": "確認移除 LeviLamina",
         "ll_remove_confirm_body": "將從目前實例中移除 LeviLamina。",
         "ll_remove_confirm_warning": "此操作不可復原。"
@@ -1030,7 +1025,6 @@
     "err_read_zip_entry": "讀取壓縮檔項目失敗",
     "err_write_file": "寫入檔案失敗",
     "err_unknown": "未知錯誤",
-    "err_lip_not_installed": "lip 未安裝，請前往「設定 > 組件」手動安裝或更新。",
     "err_lip_install_failed_suggestion": "安裝失敗，請嘗試重新安裝 Minecraft",
     "overwrite_modal_title": "偵測到重複",
     "overwrite_modal_body": "同名模組資料夾已存在，是否覆蓋（更新）？",
@@ -1224,14 +1218,10 @@
       "variant_hint_keep_default": "一般情況下無需改動",
       "variant_placeholder": "選擇要安裝的 variant",
       "variant_default": "預設",
-      "instance_game_version": "遊戲版本：{{version}}",
       "instance_game_version_label": "遊戲版本",
       "ll_installed_incompatible_hint": "已安裝的 LeviLamina 版本 {{installedVersion}} 與此套件不相容，請先手動調整 LeviLamina。",
-      "ll_missing_auto_install_hint": "尚未安裝 LeviLamina。點擊安裝後會先安裝 LeviLamina {{version}}，再安裝此套件。",
       "ll_missing_redirect_hint": "此實例尚未安裝 LeviLamina。點擊轉跳後將開啟實例設定的載入器頁面，請先手動安裝 LeviLamina。",
       "ll_missing_redirect_to_loader": "未檢測到 LeviLamina，正在跳轉到實例設定的載入器頁面。",
-      "ll_missing_mapping_block_hint": "遊戲版本映射不可用，無法自動安裝 LeviLamina。請先手動安裝 LeviLamina。",
-      "ll_missing_no_compatible_hint": "目前遊戲版本下沒有符合此套件依賴範圍的 LeviLamina 版本。",
       "ll_requirement": "LL 依賴",
       "select_instance_title": "選擇目標實例",
       "select_version_incompatible_hint": "版本 {{version}} 與遊戲版本 {{gameVersion}} 不相容。",
@@ -1241,7 +1231,6 @@
       "upgrade_success": "升級成功",
       "downgrade_success": "降級成功",
       "reinstall_success": "重裝成功",
-      "current_installed_version": "目前已安裝版本：{{version}}",
       "current_installed_version_label": "目前已安裝版本",
       "checking_current_installed_version": "正在檢查目前已安裝版本...",
       "reinstall": "重裝"

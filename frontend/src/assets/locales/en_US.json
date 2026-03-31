@@ -625,7 +625,6 @@
     "enable": "Enable",
     "open_folder": "Open Folder",
     "remove": "Remove",
-    "update": "Update",
     "tip": "Tip",
     "feature_unavailable": "This feature is temporarily unavailable",
     "unknown": "Unknown"
@@ -786,7 +785,6 @@
           }
         },
         "restore": {
-          "section_body": "Restore content from an existing instance backup archive. If conflicts with the current instance are found, you can choose item by item whether to keep the backup version or the current version before restoring.",
           "button": "Restore backup",
           "file_picker_title": "Choose an instance backup archive",
           "dialog_title": "Confirm instance backup restore",
@@ -810,7 +808,6 @@
           "conflict_unresolved": "Please choose how to resolve every conflict before restoring.",
           "conflict_details_toggle": "View paths and detailed differences",
           "conflict_item_fallback": "Unnamed content",
-          "pack_uuid_hint": "Pack conflicts are identified by the manifest UUID. If the UUID matches, it is treated as the same pack even when the folder names differ.",
           "identity_key_label": "Conflict identity",
           "backup_side_label": "Backup version",
           "current_side_label": "Current version",
@@ -883,8 +880,6 @@
         "ll_select_version": "LeviLamina Version",
         "ll_select_placeholder": "Select a LeviLamina version",
         "ll_select_guidance": "Choose the LeviLamina version you want to install, upgrade, downgrade, or reinstall.",
-        "ll_upgrade_only_hint": "Only upgrades are allowed in instance settings.",
-        "ll_only_latest_when_current_unknown": "Current version cannot be parsed. Only the latest version can be updated.",
         "ll_remove_confirm_title": "Confirm Remove LeviLamina",
         "ll_remove_confirm_body": "LeviLamina will be removed from this instance.",
         "ll_remove_confirm_warning": "This action cannot be undone."
@@ -1051,7 +1046,6 @@
     "toggle_desc_off": "Mod is disabled and will not load when the game starts.",
     "only_enabled": "Only show enabled mods",
     "drop_hint": "Drop .zip or .dll to import mods/plugins",
-    "err_lip_not_installed": "lip is not installed. Go to Settings > Components to install or update it manually.",
     "err_lip_install_failed_suggestion": "Installation failed, please try reinstalling Minecraft",
     "rc_warning": {
       "title": "Experimental Version Warning",
@@ -1202,7 +1196,6 @@
       "downgrade": "Downgrade",
       "reinstall": "Reinstall",
       "redirect": "Go to Loader",
-      "instance_game_version": "Game version: {{version}}",
       "instance_game_version_label": "Game version",
       "select_instance_title": "Select Target Instance",
       "installing_version_label": "Installing package version",
@@ -1212,11 +1205,8 @@
       "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
       "checking_ll_state": "Checking LeviLamina status...",
-      "ll_missing_auto_install_hint": "LeviLamina is not installed. Clicking Install will first install LeviLamina {{version}}, then install this package.",
       "ll_missing_redirect_hint": "LeviLamina is not installed for this instance. Clicking Go to Loader will open the Loader tab in Instance Settings so you can install it manually first.",
       "ll_missing_redirect_to_loader": "LeviLamina is not installed. Redirecting to the Loader tab in Instance Settings.",
-      "ll_missing_mapping_block_hint": "Game version mapping is unavailable, so LeviLamina cannot be auto-installed. Please install LeviLamina manually first.",
-      "ll_missing_no_compatible_hint": "No LeviLamina version matches this package's dependency range for the selected game version.",
       "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",
       "action_failed": "Operation failed: {{error}}",
       "tab_label": "Files",
@@ -1225,7 +1215,6 @@
       "upgrade_success": "Upgrade completed successfully",
       "downgrade_success": "Downgrade completed successfully",
       "reinstall_success": "Reinstallation completed successfully",
-      "current_installed_version": "Current installed version: {{version}}",
       "current_installed_version_label": "Current installed version",
       "checking_current_installed_version": "Checking currently installed version..."
     },

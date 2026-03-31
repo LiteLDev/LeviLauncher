@@ -3,5 +3,11 @@
   ["zh_CN", "中文(简体)"],
   ["zh_HK", "中文(香港)"],
   ["ja_JP", "日本語"],
-  ["ru_RU", "Русский язык"]
+  ["ru_RU", "Русский язык"],
+  ["ko_KR", "한국어"],
+  ["fr_FR", "Français"],
+  ["de_DE", "Deutsch"],
+  ["es_ES", "Español"],
+  ["pt_PT", "Português"],
+  ["it_IT", "Italiano"]
 ]

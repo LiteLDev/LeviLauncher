@@ -8,7 +8,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 	"syscall"
@@ -17,10 +16,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
-
-const forcedRegistrationConfigVersion = "1.26.0.0"
-
-var microsoftGameConfigIdentityVersionPattern = regexp.MustCompile(`(?is)(<Identity\b[^>]*\bVersion\s*=\s*")([^"]*)(")`)
 
 var appxManifestTemplate = template.Must(template.New("appxManifest").Funcs(template.FuncMap{
 	"attr": xmlEscapeAttr,
@@ -227,50 +222,6 @@ func normalizeInstallPath(path string) string {
 	norm = strings.TrimPrefix(norm, `\\?\`)
 	norm = strings.TrimPrefix(norm, `\??\`)
 	return norm
-}
-
-func replaceMicrosoftGameConfigVersion(content []byte, version string) ([]byte, string, error) {
-	text := string(content)
-	matches := microsoftGameConfigIdentityVersionPattern.FindStringSubmatch(text)
-	if len(matches) != 4 {
-		return nil, "", fmt.Errorf("identity version attribute not found")
-	}
-	originalVersion := strings.TrimSpace(matches[2])
-	if originalVersion == version {
-		return content, originalVersion, nil
-	}
-	replaced := microsoftGameConfigIdentityVersionPattern.ReplaceAllString(text, "${1}"+version+"${3}")
-	return []byte(replaced), originalVersion, nil
-}
-
-func overrideMicrosoftGameConfigVersion(folder string, version string) (func() error, error) {
-	configPath := filepath.Join(folder, "MicrosoftGame.Config")
-	info, err := os.Stat(configPath)
-	if err != nil {
-		return nil, err
-	}
-	if info.IsDir() {
-		return nil, fmt.Errorf("%s is a directory", configPath)
-	}
-	originalContent, err := os.ReadFile(configPath)
-	if err != nil {
-		return nil, err
-	}
-	updatedContent, originalVersion, err := replaceMicrosoftGameConfigVersion(originalContent, version)
-	if err != nil {
-		return nil, err
-	}
-	if err := os.WriteFile(configPath, updatedContent, info.Mode().Perm()); err != nil {
-		return nil, err
-	}
-	log.Printf("gdk.overrideMicrosoftGameConfigVersion: temporary override path=%s version=%s original=%s", configPath, version, originalVersion)
-	return func() error {
-		if err := os.WriteFile(configPath, originalContent, info.Mode().Perm()); err != nil {
-			return err
-		}
-		log.Printf("gdk.overrideMicrosoftGameConfigVersion: restored path=%s version=%s", configPath, originalVersion)
-		return nil
-	}, nil
 }
 
 func xmlEscapeAttr(value string) string {
@@ -555,7 +506,7 @@ func registerVersionFolderInternal(folder string) error {
 	return registerLoosePackageWithPowerShell(manifestPath)
 }
 
-func RegisterVersionFolder(folder string) (result string) {
+func RegisterVersionFolder(folder string) string {
 	folder = filepath.Clean(strings.TrimSpace(folder))
 	log.Printf("gdk.RegisterVersionFolder: start folder=%s", folder)
 	if folder == "" || !utils.FileExists(folder) {
@@ -570,22 +521,6 @@ func RegisterVersionFolder(folder string) (result string) {
 		}
 		log.Printf("gdk.RegisterVersionFolder: Windows Developer Mode enabled")
 	}
-	restoreConfig, err := overrideMicrosoftGameConfigVersion(folder, forcedRegistrationConfigVersion)
-	if err != nil {
-		log.Printf("gdk.RegisterVersionFolder: failed to override MicrosoftGame.Config version for folder=%s: %v", folder, err)
-		return "ERR_REGISTER_FAILED"
-	}
-	defer func() {
-		if restoreConfig == nil {
-			return
-		}
-		if restoreErr := restoreConfig(); restoreErr != nil {
-			log.Printf("gdk.RegisterVersionFolder: failed to restore MicrosoftGame.Config for folder=%s: %v", folder, restoreErr)
-			if result == "" {
-				result = "ERR_REGISTER_FAILED"
-			}
-		}
-	}()
 	if err := registerVersionFolderInternal(folder); err != nil {
 		log.Printf("gdk.RegisterVersionFolder: internal register failed for folder=%s: %v", folder, err)
 		return "ERR_REGISTER_FAILED"

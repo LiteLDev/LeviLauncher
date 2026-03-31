@@ -613,7 +613,6 @@
     "enable": "Включить",
     "open_folder": "Открыть папку",
     "remove": "Удалить",
-    "update": "Обновить",
     "tip": "Подсказка",
     "feature_unavailable": "Эта функция временно недоступна",
     "unknown": "Неизвестно"
@@ -777,7 +776,6 @@
           }
         },
         "restore": {
-          "section_body": "Можно восстановить содержимое из существующего архива резервной копии экземпляра. Если будут найдены конфликты с текущим экземпляром, перед восстановлением можно выбрать для каждого пункта, оставить версию из резервной копии или текущую версию.",
           "button": "Восстановить из резервной копии",
           "file_picker_title": "Выберите архив резервной копии экземпляра",
           "dialog_title": "Подтвердите восстановление экземпляра",
@@ -801,7 +799,6 @@
           "conflict_unresolved": "Перед восстановлением нужно выбрать способ разрешения для каждого конфликта.",
           "conflict_details_toggle": "Показать пути и подробные различия",
           "conflict_item_fallback": "Безымянное содержимое",
-          "pack_uuid_hint": "Конфликты контент-паков определяются по UUID из manifest. Если UUID совпадает, это считается одним и тем же паком, даже если имена папок различаются.",
           "identity_key_label": "Идентификатор конфликта",
           "backup_side_label": "Версия из резервной копии",
           "current_side_label": "Текущая версия",
@@ -874,8 +871,6 @@
         "ll_select_version": "Версия LeviLamina",
         "ll_select_placeholder": "Выберите версию LeviLamina",
         "ll_select_guidance": "Выберите версию LeviLamina, которую нужно установить, обновить, понизить или переустановить.",
-        "ll_upgrade_only_hint": "В настройках инстанса доступны только обновления до более новой версии.",
-        "ll_only_latest_when_current_unknown": "Текущую версию не удалось распознать; можно обновиться только до последней версии.",
         "ll_remove_confirm_title": "Подтвердите удаление LeviLamina",
         "ll_remove_confirm_body": "LeviLamina будет удалена из этого инстанса.",
         "ll_remove_confirm_warning": "Это действие нельзя отменить."
@@ -1039,7 +1034,6 @@
     "toggle_desc_off": "Мод выключен и не будет загружаться при запуске игры.",
     "only_enabled": "Показывать только включённые моды",
     "drop_hint": "Перетащите .zip или .dll для импорта модов/плагинов",
-    "err_lip_not_installed": "lip не установлен. Откройте «Настройки > Компоненты», чтобы установить или обновить его вручную.",
     "err_lip_install_failed_suggestion": "Установка не удалась, попробуйте переустановить Minecraft",
     "rc_warning": {
       "title": "Предупреждение об экспериментальной версии",
@@ -1202,7 +1196,6 @@
       "downgrade": "Понизить версию",
       "reinstall": "Переустановить",
       "redirect": "Перейти к Loader",
-      "instance_game_version": "Game version: {{version}}",
       "instance_game_version_label": "Game version",
       "select_instance_title": "Select Target Instance",
       "installing_version_label": "Installing package version",
@@ -1212,11 +1205,8 @@
       "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
       "checking_ll_state": "Checking LeviLamina status...",
-      "ll_missing_auto_install_hint": "LeviLamina is not installed. Clicking Install will first install LeviLamina {{version}}, then install this package.",
       "ll_missing_redirect_hint": "Для этого экземпляра LeviLamina не установлен. При нажатии «Перейти к Loader» откроется вкладка Loader в настройках экземпляра, чтобы вы сначала установили его вручную.",
       "ll_missing_redirect_to_loader": "LeviLamina не установлен. Выполняется переход на вкладку Loader в настройках экземпляра.",
-      "ll_missing_mapping_block_hint": "Game version mapping is unavailable, so LeviLamina cannot be auto-installed. Please install LeviLamina manually first.",
-      "ll_missing_no_compatible_hint": "No LeviLamina version matches this package's dependency range for the selected game version.",
       "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",
       "action_failed": "Operation failed: {{error}}",
       "tab_label": "Files",
@@ -1225,7 +1215,6 @@
       "upgrade_success": "Обновление выполнено успешно",
       "downgrade_success": "Понижение версии выполнено успешно",
       "reinstall_success": "Переустановка выполнена успешно",
-      "current_installed_version": "Current installed version: {{version}}",
       "current_installed_version_label": "Current installed version",
       "checking_current_installed_version": "Checking currently installed version..."
     },

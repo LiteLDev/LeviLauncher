@@ -1,0 +1,1304 @@
+{
+  "app": {
+    "settings": "설정"
+  },
+  "nav": {
+    "versions": "인스턴스",
+    "more": "더보기",
+    "about": "정보",
+    "back": "뒤로",
+    "forward": "앞으로"
+  },
+  "theme": {
+    "toggle": "테마 전환"
+  },
+  "launcherpage": {
+    "launch_button": "실행",
+    "content_manage": "콘텐츠 관리",
+    "go_version_settings": "인스턴스 설정",
+    "manage_versions": "버전 관리",
+    "search_versions": "인스턴스 또는 이름 검색",
+    "open_exe_dir": "게임 설치 폴더 열기",
+    "register_system_button": "시스템에 등록",
+    "registered_tip": "등록됨",
+    "levilamina_update_available": "업데이트 사용 가능",
+    "register": {
+      "installing": {
+        "title": "시스템 등록 중",
+        "body": "시스템에 등록 중입니다. 잠시만 기다려 주세요…"
+      },
+      "success": {
+        "title": "등록 완료",
+        "body": "인스턴스가 성공적으로 등록되었습니다. 시스템 앱 목록에서 실행할 수 있습니다."
+      },
+      "failed": {
+        "title": "등록 실패",
+        "body": "등록 중 오류가 발생했습니다. 다시 시도하거나 환경을 확인해 주세요."
+      }
+    },
+    "delete": {
+      "complete": {
+        "title": "삭제 완료",
+        "content": "선택한 인스턴스가 성공적으로 삭제되었습니다!",
+        "close_button": "닫기"
+      },
+      "confirm": {
+        "title": "삭제 확인",
+        "content": "정말로 이 인스턴스를 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다."
+      }
+    },
+    "launch": {
+      "failed": {
+        "title": "실행 실패",
+        "content": "인스턴스 파일과 필요한 런타임을 확인하고, 호환되지 않는 모드/애드온/리소스 팩이 없는지 확인한 후 다시 시도해 주세요.",
+        "close_button": "닫기"
+      },
+      "force_run_button": "강제 실행"
+    },
+    "currentVersion": "현재 인스턴스",
+    "vcruntime": {
+      "completing": {
+        "title": "누락된 DLL 복구 중",
+        "body": "vcruntime140_1.dll 을 다운로드 및 복구 중입니다. 잠시만 기다려 주세요…"
+      },
+      "installing": {
+        "title": "Visual C++ Runtime 설치 중",
+        "body": "Microsoft Visual C++ Runtime 을 다운로드 및 설치 중입니다. 잠시만 기다려 주세요…",
+        "preparing": "다운로드 준비 중..."
+      },
+      "missing": {
+        "title": "Visual C++ Runtime 누락",
+        "body": "게임을 실행하려면 Microsoft Visual C++ 2015-2022 재배포 가능 패키지 (x64) 가 필요합니다. 지금 설치하시겠습니까?",
+        "install_now": "지금 설치"
+      }
+    },
+    "mclaunch": {
+      "loading": {
+        "title": "Minecraft 시작 중",
+        "body": "게임 창이 나타날 때까지 기다리는 중입니다. 잠시만 기다려 주세요…"
+      }
+    },
+    "shortcut": {
+      "create_button": "바탕 화면 바로 가기 만들기",
+      "success": {
+        "title": "바로 가기 생성됨",
+        "body": "이 인스턴스의 바탕 화면 바로 가기가 생성되었습니다."
+      }
+    },
+    "gameinput": {
+      "installing": {
+        "title": "GameInput 설치 중",
+        "body": "설치 프로그램을 다운로드 및 실행 중입니다. 시스템 안내에 따라 완료해 주세요.",
+        "preparing": "다운로드 준비 중..."
+      },
+      "missing": {
+        "title": "GameInput 구성 요소 누락",
+        "body": "게임을 실행하려면 Microsoft GameInput 이 필요합니다. 지금 설치하시겠습니까?",
+        "install_now": "지금 설치"
+      }
+    },
+    "gs": {
+      "missing": {
+        "title": "Microsoft Gaming Services 누락",
+        "body": "Microsoft Gaming Services 가 감지되지 않았습니다. Minecraft 에 필요한 의존성입니다.",
+        "open_store": "설치를 위해 스토어 열기",
+        "ignore_forever": "무시하고 다시 알림 안 함"
+      }
+    },
+    "install_confirm": {
+      "title": "설치가 완료되었습니까?",
+      "body": "설치가 완료된 후 '완료, 다시 확인'을 클릭하세요. 그렇지 않으면 설치를 계속합니다.",
+      "continue": "설치 계속",
+      "done_and_check": "완료, 다시 확인"
+    },
+    "currentVersion_none": "없음",
+    "version_select": {
+      "title": "인스턴스 선택",
+      "unknown": "알 수 없음"
+    },
+    "tip": {
+      "version_selector": "버전 드롭다운을 사용하여 현재 인스턴스로 빠르게 전환하세요.",
+      "version_search": "드롭다운 목록에서 선택하기 전에 인스턴스 이름 또는 게임 버전을 검색하세요.",
+      "manage_versions": "드롭다운 영역에서 \"버전 관리\"를 클릭하여 인스턴스를 설치, 가져오기 또는 정리하세요.",
+      "quick_actions_menu": "실행 버튼 옆 메뉴는 인스턴스 설정, 바탕 화면 바로 가기, 게임 폴더 및 시스템 등록 작업을 제공합니다.",
+      "launch_dependencies": "GameInput, VC++ Runtime 또는 Gaming Services 가 누락된 경우, LeviLauncher 가 게임 실행 전 설치를 안내합니다.",
+      "gdk_required": "시스템 등록에는 Microsoft GDK 가 필요합니다. 요청되면 설정 > 구성 요소에서 먼저 설치하세요.",
+      "mods_card": "모드 카드는 현재 인스턴스에 활성화된 모드를 표시하며, 클릭 한 번으로 전체 모드 페이지를 엽니다.",
+      "content_counts_card": "콘텐츠 카드는 월드, 리소스 팩, 행동 팩의 수를 표시하며, 각 행은 해당 페이지를 엽니다.",
+      "incompatible_resource_packs": "호환되지 않는 리소스 팩이 감지되면 경고 행을 클릭하여 직접 확인하세요.",
+      "content_download_sources": "다운로드 카드를 사용하여 런처를 벗어나지 않고 CurseForge 또는 lip 콘텐츠 소스를 탐색하세요.",
+      "settings_personalize": "설정에서 테마, 색상, 배경 및 기타 모양 옵션을 조정하여 설정에 맞게 맞춤화할 수 있습니다.",
+      "settings_storage_path": "설정에서 저장 경로를 변경할 수 있습니다. 콘텐츠를 이동하기 전에 대상 디렉토리에 쓰기 권한이 있는지 확인하세요.",
+      "download_mirror": "다운로드가 느린 경우, 설정에서 미러 서버 또는 관련 네트워크 옵션을 변경해 보세요.",
+      "open_source": "LeviLauncher 는 오픈 소스입니다. GitHub 이슈를 사용하여 런처 문제를 보고하거나 개선을 제안하세요.",
+      "backup_worlds": "새로운 리소스 팩, 행동 팩 또는 모드를 테스트하기 전에 중요한 월드를 정기적으로 백업하세요."
+    },
+    "edition": "Bedrock Edition"
+  },
+  "moddedcard": {
+    "title": "모드",
+    "content": {
+      "none": "찾은 모드 0 개"
+    },
+    "manage": "모드 관리"
+  },
+  "download_manager": {
+    "title": "다운로드 관리자",
+    "description": "현재 다운로드 작업 보기 및 관리",
+    "no_downloads": "활성 다운로드 작업 없음",
+    "unknown_file": "알 수 없는 파일",
+    "actions": {
+      "retry": "다시 시도",
+      "delete": "삭제"
+    }
+  },
+  "updating": {
+    "title": "LeviLauncher 업데이트 중",
+    "body": "관리자 권한을 요청하고 업데이트를 수행 중입니다. 업데이트 중이 창을 닫지 마세요.",
+    "failed_title": "업데이트 실패",
+    "phase": {
+      "download": "업데이트 패키지 다운로드",
+      "install": "업데이트 설치"
+    },
+    "status": {
+      "checking": "업데이트 확인 중",
+      "verifying": "패키지 무결성 검증 중",
+      "elevating": "관리자 권한 요청 중",
+      "restarting": "런처 재시작 중"
+    },
+    "errors": {
+      "generic": "업데이트를 완료할 수 없습니다. 나중에 다시 시도해 주세요.",
+      "update_admin_required": "업데이트를 계속하려면 관리자 권한이 필요합니다.",
+      "update_asset_missing": "필요한 업데이트 패키지가 없거나 이름이 잘못되었습니다.",
+      "update_release_unavailable": "현재 업데이트 메타데이터를 사용할 수 없습니다.",
+      "update_verify_failed": "업데이트 패키지 검증에 실패했습니다.",
+      "update_download_failed": "업데이트 패키지 다운로드에 실패했습니다.",
+      "update_install_failed": "업데이트 패키지 설치에 실패했습니다.",
+      "update_restart_failed": "업데이트된 런처를 자동으로 재시작하지 못했습니다."
+    }
+  },
+  "downloadpage": {
+    "error": {
+      "already_downloading": "이 파일은 이미 다운로드 중입니다"
+    },
+    "changelog": {
+      "title": "최신 변경 로그"
+    },
+    "status": {
+      "downloaded": "다운로드됨",
+      "not_downloaded": "다운로드되지 않음",
+      "checking": "확인 중…"
+    },
+    "table": {
+      "aria_label": "버전 표",
+      "empty": "데이터 없음",
+      "header": {
+        "version": "버전",
+        "type": "유형",
+        "status": "상태",
+        "loader": "로더",
+        "actions": "작업"
+      },
+      "type": {
+        "release": "릴리스",
+        "preview": "미리보기"
+      }
+    },
+    "topcontent": {
+      "types": "유형",
+      "types_all": "전체",
+      "status": "상태",
+      "status_all": "전체",
+      "status_downloaded": "다운로드됨",
+      "status_not_downloaded": "다운로드되지 않음",
+      "loader": "로더",
+      "input": {
+        "placeholder": "버전 검색..."
+      }
+    },
+    "actions": {
+      "delete_installer": "설치 프로그램 삭제"
+    },
+    "bottomcontent": {
+      "total": "총 {{count}}개 버전"
+    },
+    "install_folder": {
+      "confirm_title": "인스턴스 설치",
+      "name_label": "버전 이름",
+      "placeholder_name": "버전 이름을 입력하세요",
+      "enable_isolation": "버전 격리",
+      "enable_isolation_desc": "게임 데이터 (월드, 설정, 캐시 등) 를 AppData 대신 versions/<name>/ 으로 리디렉션합니다.",
+      "inherit_label": "상속 대상",
+      "inherit_hint": "일치하는 유형의 격리된 버전에서 데이터 복사",
+      "inherit_none": "상속 없음",
+      "inherit_gdk": "GDK 디렉토리에서 상속"
+    },
+    "mirror": {
+      "no_recommended": "추천 미러 없음",
+      "download_started": "다운로드 시작...",
+      "title": "다운로드 미러 선택",
+      "target": "대상",
+      "testing": "테스트 중…",
+      "unselected": "선택되지 않음",
+      "copy_link": "링크 복사",
+      "recommended": "추천 미러",
+      "auto_testing": "자동 테스트 중…",
+      "others": "기타 미러",
+      "no_mirrors": "이 버전에 사용할 수 있는 미러가 없습니다.",
+      "filename_fallback": "(파일)",
+      "retest": "재테스트",
+      "download_selected": "선택 항목 다운로드",
+      "install_button": "설치",
+      "install_selected": "선택 항목 설치"
+    },
+    "progress": {
+      "unknown_error": "알 수 없는 오류"
+    },
+    "download": {
+      "success_body": "파일 다운로드됨: "
+    },
+    "delete": {
+      "title": "삭제 확인",
+      "body": "이렇게 하면 설치 프로그램이 삭제됩니다: ",
+      "warning": "이 작업은 되돌릴 수 없습니다.",
+      "success_body": "설치 프로그램 삭제됨: "
+    },
+    "install": {
+      "levilamina_label": "LeviLamina 설치",
+      "levilamina_desc": "LeviLamina 로더 자동 설치",
+      "version_label": "버전",
+      "ll_version_label": "LeviLamina 버전",
+      "ll_version_placeholder": "LeviLamina 버전 선택",
+      "hint": "잠시만 기다려 주세요. 이 과정은 시간이 걸릴 수 있습니다…",
+      "estimated_size": "기록될 크기 (예상)",
+      "target": "설치 대상",
+      "success_title": "설치 완료",
+      "success": "설치가 성공적으로 완료되었습니다.",
+      "progress": "설치 진행률",
+      "custom_installer": {
+        "label": "로컬 설치 프로그램 선택 (.msixvc)",
+        "hint": "기본적으로 설치 프로그램 디렉토리의 파일을 사용합니다"
+      },
+      "levilamina_unsupported": "이 게임 버전에서는 LeviLamina 를 지원하지 않습니다",
+      "title": "설치"
+    },
+    "customappx": {
+      "button": "사용자 지정",
+      "modal": {
+        "1": {
+          "header": "버전 정보",
+          "body": {
+            "select": {
+              "item1": "릴리스",
+              "item2": "미리보기"
+            }
+          },
+          "footer": {
+            "install_button": "설치"
+          }
+        }
+      }
+    }
+  },
+  "onboarding": {
+    "title": "첫 실행 설정",
+    "subtitle": "먼저 콘텐츠 경로와 언어를 설정해 주세요",
+    "skip": "건너뛰기",
+    "finish": "완료",
+    "unsaved": {
+      "title": "저장되지 않은 변경 사항",
+      "body": "콘텐츠 경로에 저장되지 않은 변경 사항이 있습니다. 완료 전에 저장하시겠습니까?",
+      "cancel": "취소",
+      "save": "저장하고 완료"
+    }
+  },
+  "settings": {
+    "layout": {
+      "title_navbar": "상단 탐색 바 사용",
+      "desc_navbar": "기본 세로 사이드바 대신 상단 탐색 바를 사용하도록 활성화"
+    },
+    "tabs": {
+      "general": "일반 설정",
+      "personalization": "개인화",
+      "components": "타사 구성 요소",
+      "others": "기타",
+      "updates": "업데이트",
+      "about": "정보",
+      "privacy": "개인정보"
+    },
+    "unsaved": {
+      "title": "저장되지 않은 변경 사항",
+      "body": "콘텐츠 경로를 변경했지만 저장하지 않았습니다. 저장하고 종료하시겠습니까?",
+      "cancel": "취소",
+      "save": "저장하고 종료"
+    },
+    "lang": {
+      "changed": "언어 변경됨"
+    },
+    "discord_rpc": {
+      "title": "Discord Rich Presence",
+      "desc": "Discord 에 게임 상태 표시"
+    },
+    "beta_updates": {
+      "title": "베타 업데이트 수신",
+      "desc": "사전 릴리스 업데이트를 받으려면 활성화"
+    },
+    "experimental": {
+      "title": "실험적 기능",
+      "desc": "여기서 완성되지 않은 기능을 시험해 보세요. 이러한 기능은 예고 없이 변경, 손상되거나 제거될 수 있습니다.",
+      "instance_backup": {
+        "title": "인스턴스 백업 (실험적)",
+        "desc": "인스턴스 설정에서 백업 및 복원 작업을 활성화합니다. 이 기능은 아직 실험적입니다.",
+        "warning": {
+          "title": "실험적 인스턴스 백업을 활성화하시겠습니까?",
+          "body_1": "이 기능은 개발자 및 테스터 전용입니다. 프로덕션 데이터를 함부로 사용하지 마세요.",
+          "body_2": "백업 형식, 포함된 범위 및 복원 호환성은 향후 빌드에서 변경될 수 있으며 하위 호환성은 보장되지 않습니다.",
+          "body_3": "위험을 충분히 이해했는지 확인하고, 이 경고를 10 초 동안 완전히 읽은 후에만 활성화 여부를 결정하세요.",
+          "confirm": "위험을 이해함"
+        }
+      }
+    },
+    "reset": {
+      "confirm": {
+        "title": "기본 경로로 복원하시겠습니까?",
+        "body": "이렇게 하면 콘텐츠 경로가 기본 위치로 재설정됩니다. 확실합니까?"
+      }
+    },
+    "lip": {
+      "title": "lip",
+      "install_button": "설치",
+      "check_button": "확인",
+      "cache_clean_button": "캐시 지우기",
+      "cache_cleaning": "캐시 지우는 중...",
+      "cache_clean_success": "lip 캐시 정리 완료",
+      "installing": "lip 설치 중...",
+      "latest_label": "최신",
+      "outdated_label": "업데이트 사용 가능",
+      "missing_label": "누락됨",
+      "status": {
+        "checking": "lip 상태 확인 중...",
+        "preparing": "다운로드 준비 중...",
+        "downloading": "lip 아카이브 다운로드 중...",
+        "extracting": "lipd.exe 추출 중...",
+        "writing": "lipd.exe 기록 중...",
+        "verifying": "설치 검증 중...",
+        "up_to_date": "현재 버전이 최신입니다",
+        "outdated": "새로운 버전을 사용할 수 있습니다",
+        "missing": "lip 이 설치되어 있지 않습니다",
+        "check_failed": "lip 상태 확인 실패: {{error}}",
+        "done": "lip 설치 완료"
+      },
+      "error": {
+        "lip_fetch_release": "최신 lip 버전 가져오기 실패",
+        "lip_release_asset_not_found": "최신 릴리스에서 Windows x64 lip 패키지를 찾을 수 없습니다",
+        "lip_download_archive": "lip 아카이브 다운로드 실패",
+        "lip_open_archive": "lip 아카이브 열기 실패",
+        "lip_extract_binary": "lipd.exe 추출 실패",
+        "lip_create_target_dir": "lip 설치 디렉토리 생성 실패",
+        "lip_replace_file": "lipd.exe 교체 실패",
+        "lip_verify_install": "설치된 lip 버전 검증 실패",
+        "lip_install_failed": "lip 설치 실패"
+      },
+      "version_label": "현재: {{currentVersion}} / 최신: {{latestVersion}}",
+      "startup_prompt": {
+        "title": "lip 업데이트 사용 가능",
+        "description": "새로운 lip 버전을 사용할 수 있습니다 ({{currentVersion}} -> {{latestVersion}}). LeviLauncher 는 자동으로 업데이트하지 않습니다. 수동으로 업데이트하려면 설정 > 구성 요소로 이동하세요.",
+        "later_button": "나중에",
+        "ignore_button": "이 버전 무시",
+        "open_settings_button": "설정 열기",
+        "current_version": "현재 버전: {{currentVersion}}",
+        "latest_version": "최신 버전: {{latestVersion}}"
+      },
+      "unknown_version": "알 수 없음",
+      "update_button": "업데이트"
+    },
+    "resource_rules": {
+      "title": "런처 런타임 데이터",
+      "check_button": "업데이트 확인",
+      "update_button": "업데이트",
+      "latest_label": "최신",
+      "outdated_label": "구버전",
+      "missing_label": "누락됨",
+      "status": {
+        "checking": "SHA256 확인 중...",
+        "up_to_date": "SHA256 이 원격 릴리스와 일치함",
+        "outdated": "SHA256 이 원격 릴리스와 다름",
+        "missing": "로컬 파일을 찾을 수 없음",
+        "check_failed": "확인 실패: {{error}}"
+      }
+    },
+    "header": {
+      "title": "설정",
+      "content": "일반 런처 옵션 구성"
+    },
+    "body": {
+      "version": {
+        "name": "현재 버전",
+        "hasnew": "새 버전을 사용할 수 있습니다! ",
+        "button": "업데이트 확인",
+        "ignore": "이 버전 무시"
+      },
+      "paths": {
+        "title": "콘텐츠 경로",
+        "subtitle": "게임 데이터 저장 위치 관리",
+        "base_root": "기본 루트",
+        "apply": "적용",
+        "reset": "재설정",
+        "installer": "설치 프로그램",
+        "versions": "버전",
+        "unsaved": "변경 사항 저장되지 않음",
+        "not_writable": "디렉토리에 쓰기 권한이 없음"
+      },
+      "language": {
+        "name": "언어",
+        "button": "변경"
+      }
+    },
+    "process": {
+      "title": "프로세스 관리자",
+      "desc": "실행 중인 Minecraft 프로세스 관리",
+      "scan": "프로세스 스캔",
+      "kill_all": "모든 프로세스 종료",
+      "kill": "작업 종료",
+      "no_process": "실행 중인 Minecraft 프로세스를 찾을 수 없음"
+    },
+    "modal": {
+      "2": {
+        "footer": {
+          "download_button": "업데이트"
+        }
+      }
+    },
+    "appearance": {
+      "global_config": "전역 구성",
+      "mode_config": "모드별 구성",
+      "edit_mode_desc": "개인화 설정 (색상, 불투명도 등) 은 밝음 모드와 어두움 모드에 대해 독립적으로 저장됩니다. 오른쪽 탭을 전환하여 각 모드를 구성하세요.",
+      "theme_mode": "테마 모드",
+      "theme_mode_desc": "애플리케이션 테마 선택",
+      "theme_system": "시스템 따르기",
+      "theme_light": "밝은 모드",
+      "theme_dark": "어두운 모드",
+      "theme_schedule": "수동 일정",
+      "theme_auto": "일출/일몰",
+      "theme_start_time": "어두운 모드 시작 시간",
+      "theme_end_time": "어두운 모드 종료 시간",
+      "theme_schedule_desc": "지정된 시간 동안 자동으로 어두운 모드로 전환",
+      "theme_auto_desc": "현지 일출 및 일몰 시간에 따라 자동으로 테마 전환",
+      "theme_system_desc": "Windows 시스템 설정 따르기",
+      "theme_color": "테마 색상",
+      "theme_color_desc": "애플리케이션의 주요 강조 색상",
+      "theme_standard": "사전 설정 색상",
+      "theme_generated": "추가 색상",
+      "hue": "색조",
+      "custom_color": "사용자 지정 색상",
+      "background_image": "배경 이미지",
+      "background_image_desc": "배경으로 사용할 이미지를 선택할 폴더 선택",
+      "background_play_order": "재생 순서",
+      "background_play_random": "무작위",
+      "background_play_sequential": "순차적",
+      "background_fit_mode": "맞춤 모드",
+      "background_fit_smart": "스마트",
+      "background_fit_center": "중앙",
+      "background_fit_fit": "맞춤",
+      "background_fit_stretch": "늘리기",
+      "background_fit_tile": "타일",
+      "background_fit_top_left": "왼쪽 상단",
+      "background_fit_top_right": "오른쪽 상단",
+      "no_image_selected": "선택된 폴더 없음",
+      "select_image": "폴더 선택",
+      "clear_image": "폴더 지우기",
+      "background_blur": "배경 흐림",
+      "background_brightness": "배경 밝기",
+      "background_opacity": "배경 불투명도",
+      "background_base_mode": "기본 모드",
+      "background_base_mode_desc": "대비 개선을 위해 배경 이미지 아래에 단색 마스크 추가",
+      "background_base_none": "없음",
+      "background_base_theme": "테마 색상 따르기",
+      "background_base_color": "사용자 지정 색상",
+      "background_base_color_pick": "기본 색상",
+      "background_base_opacity": "기본 불투명도",
+      "disable_animations": "애니메이션 비활성화",
+      "disable_animations_desc": "성능 향상을 위해 인터페이스 전환 애니메이션 끄기",
+      "calculating": "계산 중...",
+      "sunrise_time": "오늘 일출 시간",
+      "sunset_time": "오늘 일몰 시간",
+      "sun_fetch_failed": "일출/일몰 시간 가져오기 실패"
+    },
+    "privacy": {
+      "analytics": {
+        "title": "익명 사용 분석 (Microsoft Clarity)",
+        "desc": "활성화되면 기능 및 UI 개선에 도움이 됩니다. 언제든지 비활성화할 수 있습니다."
+      },
+      "links": {
+        "clarity_terms": "Clarity 약관",
+        "microsoft_privacy": "Microsoft 개인정보 처리방침"
+      }
+    }
+  },
+  "downloadmodal": {
+    "download_button": "다운로드",
+    "installing": {
+      "title": "설치 중"
+    },
+    "open_folder": "폴더 열기"
+  },
+  "aboutcard": {
+    "title": "정보",
+    "description": " 2024-2026 {{name}} 판권 소유",
+    "font": "이 소프트웨어는 {{name}} 글꼴을 사용합니다"
+  },
+  "about": {
+    "description": "LeviLauncher - 현대적인 Minecraft Bedrock 런처",
+    "authors": "작성자 및 유지 관리자",
+    "author": "작성자",
+    "ll_authors": "LeviLauncher 작성자",
+    "source": "소스 코드 및 오픈 소스",
+    "thanks": "특별 감사",
+    "thanks.desc": "LeviLauncher 를 지원하는 개인 및 프로젝트에 특별 감사를 드립니다.",
+    "sponsors": "후원자 (스폰서)",
+    "sponsors.desc": "프로젝트 개발을 위해 모든 후원자와 지지자들에게 감사합니다!",
+    "contribute": "기여",
+    "contribute.desc": "이슈 또는 풀 리퀘스트를 통한 기여는 LeviLauncher 개선에 환영합니다.",
+    "afdian": "Afdian",
+    "patreon": "Patreon",
+    "github_repo": "GitHub · LeviLauncher",
+    "github_org": "LiteLDev 조직",
+    "license.tip": "라이선스 세부 정보는 저장소의 LICENSE 를 참조하세요.",
+    "website": "웹사이트",
+    "issue": "이슈",
+    "star_fork": "Star / Fork",
+    "rhymc_name": "RhyMC"
+  },
+  "common": {
+    "retry": "다시 시도",
+    "completed": "완료됨",
+    "downloading": "다운로드 중",
+    "ok": "확인",
+    "continue": "계속",
+    "cancel": "취소",
+    "cancelled": "취소됨",
+    "error": "오류",
+    "refresh": "새로고침",
+    "quit_launcher": "런처 종료",
+    "confirm": "확인",
+    "success": "성공",
+    "delete": "삭제",
+    "search": "검색",
+    "search_placeholder": "검색...",
+    "open": "열기",
+    "select_mode": "모드 선택",
+    "select_all": "전체 선택",
+    "selected_count": "{{count}}개 선택됨",
+    "preview": "미리보기",
+    "release": "릴리스",
+    "back": "뒤로",
+    "loading": "로딩 중",
+    "yes": "예",
+    "no": "아니오",
+    "close": "닫기",
+    "empty": "데이터 없음",
+    "browse": "찾아보기...",
+    "processing": "처리 중...",
+    "done": "완료",
+    "wait": "잠시만 기다려 주세요...",
+    "updating": "업데이트 중",
+    "expand": "펼치기",
+    "collapse": "접기",
+    "save": "저장",
+    "add": "추가",
+    "save_failed": "저장 실패",
+    "load_failed": "로드 실패",
+    "view_all": "전체 보기",
+    "confirm_delete": "삭제 확인",
+    "no_results": "결과를 찾을 수 없음",
+    "hide": "숨기기",
+    "edit": "편집",
+    "backup": "백업",
+    "date": "날짜",
+    "version": "버전",
+    "details": "세부 정보",
+    "disable": "비활성화",
+    "enable": "활성화",
+    "open_folder": "폴더 열기",
+    "remove": "제거",
+    "tip": "팁",
+    "feature_unavailable": "이 기능은 일시적으로 사용할 수 없습니다",
+    "unknown": "알 수 없음"
+  },
+  "useravatar": {
+    "no_login_retry": "Xbox 로그인이 감지되지 않음 (클릭하여 다시 시도)",
+    "xbox_live": "Xbox Live",
+    "refresh_session_aria": "Xbox 세션 새로고침",
+    "xuid": "XUID: {{xuid}}",
+    "stats": {
+      "minutes_played": "플레이 시간",
+      "blocks_broken": "깨진 블록",
+      "mobs_defeated": "처치한 몹",
+      "distance_travelled": "이동 거리",
+      "time_format": "{{days}}일 {{hours}}시간 {{minutes}}분"
+    }
+  },
+  "content": {
+    "count": {
+      "worlds": "월드",
+      "resource_packs": "리소스 팩",
+      "behavior_packs": "행동 팩"
+    }
+  },
+  "contentpage": {
+    "current_version": "현재 인스턴스",
+    "none": "없음",
+    "isolation": "인스턴스 격리",
+    "worlds": "월드",
+    "worlds_list": "월드 목록",
+    "select_player": "플레이어 선택",
+    "no_players": "플레이어 없음",
+    "backup_success": "백업 성공",
+    "backup_failed": "백업 실패",
+    "resource_packs": "리소스 팩",
+    "no_resource_packs": "리소스 팩 없음",
+    "behavior_packs": "행동 팩",
+    "no_behavior_packs": "행동 팩 없음",
+    "skin_packs": "스킨 팩",
+    "no_skin_packs": "스킨 팩 없음",
+    "shader_chip": "셰이더",
+    "only_show_updates": "호환되지 않는 셰이더",
+    "update_material_bin": ".material.bin 업데이트",
+    "update_material_bin_desc": "호환성을 위해 업데이트 필요",
+    "update_material_bin_modal_title": ".material.bin 업데이트",
+    "update_material_bin_modal_content": "이것은 Minecraft 가 올바르게 로드할 수 있도록 셰이더 팩의 .material.bin 헤더를 업데이트합니다.",
+    "update_material_bin_risk_title": "위험 경고:",
+    "update_material_bin_risk_content": "업데이트된 리소스 팩은 이전 버전의 Minecraft 에서 제대로 작동하지 않을 수 있습니다. 월드를 백업하거나 리소스 팩을 먼저 내보내는 것이 좋습니다.",
+    "update_material_bin_success": "머티리얼 업데이트 완료",
+    "update_material_bin_failed": "머티리얼 업데이트 실패",
+    "update_material_bin_stat_updated": "업데이트됨: {{count}}",
+    "update_material_bin_stat_failed": "실패: {{count}}",
+    "servers": "서버",
+    "error_resolve_paths": "콘텐츠 경로 해결 실패.",
+    "open_users_dir": "저장 디렉토리 열기",
+    "players_aria": "플레이어",
+    "sort_time": "시간",
+    "sort_asc": "오름차순",
+    "sort_desc": "내림차순",
+    "drop_hint": ".mcworld/.mcpack/.mcaddon 을 여기로 끌어와서 가져오기",
+    "import_button": "가져오기",
+    "transfer_resources_button": "리소스 전송",
+    "transfer_resources_title": "격리된 인스턴스로 리소스 전송",
+    "transfer_resources_body_overview": "이것은 현재 인스턴스의 모든 리소스 팩, 행동 팩, 스킨 팩 및 월드를 대상 인스턴스로 전송합니다. 대상 인스턴스를 선택해 주세요.",
+    "transfer_resources_body_simple": "전송할 대상 인스턴스를 선택해 주세요.",
+    "transfer_no_targets": "사용 가능한 다른 격리된 인스턴스가 없음",
+    "transfer_target_placeholder": "대상 인스턴스 선택",
+    "transfer_progress_title": "리소스 전송 중...",
+    "transfer_progress_body": "선택한 인스턴스로 리소스를 전송하는 동안 기다려 주세요.",
+    "require_player_for_world_import": "월드 (.mcworld) 를 가져오기 전에 플레이어를 선택하세요",
+    "no_player_selected": "선택된 플레이어 없음",
+    "world_leveldat_editor": "월드 level.dat 편집기",
+    "version": "버전",
+    "add_field": "필드 추가",
+    "field_name": "이름",
+    "initial_value": "초기값",
+    "select_player_title": "플레이어 선택",
+    "select_player_for_import": "가져올 플레이어를 선택해 주세요",
+    "no_items": "항목을 찾을 수 없음",
+    "delete_pack_confirm": "정말로 {{name}} 을 (를) 삭제하시겠습니까?",
+    "delete_warning": "이 작업은 되돌릴 수 없습니다!",
+    "delete_selected_confirm": "정말로 선택한 {{count}} 개의 항목을 삭제하시겠습니까?",
+    "deleted_name": "{{name}} 삭제됨",
+    "deleted_count": "{{count}} 개 항목 삭제됨",
+    "delete_world_confirm": "정말로 월드 {{name}} 을 (를) 삭제하시겠습니까?",
+    "basic_info": "기본 정보",
+    "level_name": "레벨 이름",
+    "screenshots": "스크린샷",
+    "no_screenshots": "스크린샷 없음",
+    "delete_screenshot_confirm": "정말로 스크린샷 {{name}} 을 (를) 삭제하시겠습니까?",
+    "preview_screenshot": "크게 보기",
+    "screenshot_viewer_hint": "큰 미리보기",
+    "screenshot_viewer_nav_hint": "← / → 키 또는 버튼을 사용하여 스크린샷 전환"
+  },
+  "versions": {
+    "info": {
+      "name": "이름"
+    },
+    "edit": {
+      "tabs": {
+        "general": "일반",
+        "launch": "실행 옵션",
+        "features": "기능",
+        "manage": "관리",
+        "loader": "로더"
+      },
+      "title": "인스턴스 설정",
+      "mc_version": "게임 버전",
+      "new_name": "새 이름",
+      "placeholder": "새 이름 입력",
+      "hint": "폴더 이름만 변경합니다. 게임 버전과 유형은 영향을 받지 않습니다.",
+      "enable_isolation": "격리 활성화",
+      "enable_console": "콘솔 활성화",
+      "enable_render_dragon": "RenderDragon 셰이더 로드",
+      "enable_ctrl_r_reload_resources": "Ctrl+R 빠른 리소스 다시 로드",
+      "enable_editor_mode": "편집기 모드 활성화",
+      "launch_args": "실행 인수",
+      "launch_args_placeholder": "실행 인수 (예: -Editor true)",
+      "launch_args_hint": "게임 실행 인수를 설정합니다.",
+      "env_vars": "환경 변수",
+      "env_vars_placeholder": "환경 변수 (KEY=VALUE), 줄당 하나씩",
+      "env_vars_hint": "실행 환경 변수를 설정합니다.",
+      "delete_hint": "이 인스턴스를 장치에서 영구적으로 삭제합니다. 월드, 설정 및 설치된 콘텐츠가 포함됩니다. 이 작업은 되돌릴 수 없습니다.",
+      "danger_title": "위험 구역",
+      "danger_hint": "이러한 작업은 인스턴스 등록 또는 로컬 파일에 영향을 미칩니다. 계속하기 전에 다시 확인하세요.",
+      "backup": {
+        "title": "인스턴스 백업",
+        "hint": "설정을 변경하거나 모드를 설치하거나 새로운 것을 시도하기 전에 이 인스턴스의 백업을 만드세요",
+        "section_body": "함께 유지하려는 게임 콘텐츠와 모드를 선택하세요; 런처 앱 자체는 포함되지 않습니다",
+        "experimental_badge": "실험적",
+        "experimental_disabled": "인스턴스 백업 및 복원을 사용하기 전에 {{settingsPath}} 에서 이를 활성화하세요.",
+        "button": "인스턴스 백업",
+        "dialog_title": "백업할 항목 선택",
+        "dialog_body": "이 백업에 유지하려는 항목을 선택하세요",
+        "path_label": "위치",
+        "size_label": "대략적인 크기",
+        "shared_tag": "공유 콘텐츠",
+        "missing_tag": "찾을 수 없음",
+        "empty_tag": "현재 비어 있음",
+        "shared_warning": "이 인스턴스는 기본 시스템 설치와 동일한 게임 데이터를 공유하므로 게임 데이터를 포함하면 해당 공유 콘텐츠도 백업됩니다",
+        "no_scope_selected": "백업할 항목을至少 하나 이상 선택해 주세요",
+        "confirm": "백업 시작",
+        "progress_title": "인스턴스 백업 중",
+        "progress_body": "선택한 범위를 압축 중입니다. 잠시만 기다려 주세요...",
+        "success_title": "인스턴스 백업 완료",
+        "success_body": "백업 파일이 준비되었습니다",
+        "archive_label": "백업 파일",
+        "location_label": "저장 위치",
+        "open_dir": "폴더 열기",
+        "lip_summary": "{{count}} 개의 lip 관리 패키지 감지됨: {{summary}}",
+        "mode": {
+          "safe": {
+            "label": "안전 모드"
+          },
+          "full": {
+            "label": "전체 모드",
+            "warning": "전체 백업에는 사용자 화이트리스트 밖의 콘텐츠가 포함되어 계정 캐시, 민감한 개인정보 또는 공유해서는 안 되는 기타 파일이 포함될 수 있습니다."
+          }
+        },
+        "restore": {
+          "button": "백업 복원",
+          "file_picker_title": "인스턴스 백업 아카이브 선택",
+          "dialog_title": "인스턴스 백업 복원 확인",
+          "dialog_body": "이 백업에서 복원할 항목을 선택하세요. 충돌이 발견되면 복원 전에 나열되므로 각각의 해결 방법을 선택할 수 있습니다.",
+          "confirm": "복원 시작",
+          "scope_section_title": "범위 복원",
+          "created_at": "생성일",
+          "lip_summary": "{{count}} 개의 lip 관리 패키지가 감지되었습니다. 복원은 이를 자동으로 다시 설치하려고 시도합니다.",
+          "conflict_loading": "복원 충돌을 스캔 중입니다. 잠시만 기다려 주세요...",
+          "conflict_summary": "현재 인스턴스와 {{count}} 개의 충돌이 발견되었습니다. 각 항목에 대해 백업 버전 또는 현재 버전 유지 여부를 선택하세요.",
+          "conflict_empty": "선택한 범위에 대한 충돌이 발견되지 않았습니다. 직접 복원할 수 있습니다.",
+          "conflict_choice_placeholder": "이 충돌을 해결할 방법 선택",
+          "conflict_choice_backup": "백업 버전 사용",
+          "conflict_choice_current": "현재 버전 유지",
+          "conflict_choice_pending": "선택 필요",
+          "conflict_group_count": "{{count}} 개 충돌",
+          "conflict_group_unresolved": "{{count}} 개 선택 대기 중",
+          "conflict_group_resolved": "선택 완료",
+          "conflict_group_apply_backup": "그룹에 백업 적용",
+          "conflict_group_apply_current": "그룹에 현재 유지",
+          "conflict_unresolved": "복원하기 전에 각 충돌을 어떻게 해결할지 선택해 주세요.",
+          "conflict_details_toggle": "경로 및 세부 차이 보기",
+          "conflict_item_fallback": "이름 없는 콘텐츠",
+          "identity_key_label": "충돌 식별자",
+          "backup_side_label": "백업 버전",
+          "current_side_label": "현재 버전",
+          "backup_path_label": "백업 경로",
+          "current_path_label": "현재 경로",
+          "conflict_category": {
+            "mods": "모드",
+            "skin_packs": "스킨 팩",
+            "behavior_packs": "행동 팩",
+            "resource_packs": "리소스 팩",
+            "worlds": "월드",
+            "dev_behavior_packs": "개발용 행동 팩",
+            "dev_resource_packs": "개발용 리소스 팩",
+            "templates": "월드 템플릿",
+            "files": "기타 파일",
+            "other": "기타 콘텐츠"
+          },
+          "identity_kind": {
+            "pack_uuid": "팩",
+            "world_folder": "월드 폴더",
+            "mod_folder": "모드 폴더",
+            "file_path": "파일 경로"
+          },
+          "conflict_type": {
+            "file": "파일",
+            "dir": "디렉토리"
+          },
+          "diff_field": {
+            "folder": "폴더",
+            "uuid": "UUID",
+            "name": "이름",
+            "version": "버전",
+            "min_engine_version": "최소 엔진 버전",
+            "level_name": "월드 이름",
+            "entry": "엔트리",
+            "type": "유형"
+          },
+          "progress_title": "인스턴스 백업 복원 중",
+          "progress_body": "백업 콘텐츠를 적용 중입니다. 잠시만 기다려 주세요...",
+          "progress_preparing": "복원 콘텐츠 준비 중...",
+          "progress_extracting": "백업 콘텐츠 추출 중...",
+          "progress_scope": "{{scope}} 복원 중...",
+          "progress_finalizing": "복원 결과 마무리 중...",
+          "progress_step": "단계 {{current}} / {{total}}",
+          "success_title": "인스턴스 복원 완료",
+          "partial_title": "인스턴스 복원 부분 완료",
+          "failed_title": "인스턴스 복원 실패",
+          "success_body": "선택한 콘텐츠가 복원되었습니다.",
+          "partial_body": "일부 콘텐츠는 복원되었지만 일부 항목은 여전히 수동 주의가 필요합니다.",
+          "failed_body": "이 복원이 완료되지 않았습니다. 아래 결과를 확인하세요.",
+          "status": {
+            "success": "성공",
+            "partial": "부분",
+            "failed": "실패"
+          }
+        }
+      },
+      "unregister_button": "등록 해제",
+      "unregister_hint": "시스템 앱 목록에 더 이상 표시되지 않도록 이 인스턴스의 시스템 등록을 해제합니다. 파일을 삭제하지는 않습니다.",
+      "unregister_progress": {
+        "title": "등록 해제 중",
+        "body": "시스템 등록 해제를 수행 중입니다. 잠시만 기다려 주세요…"
+      },
+      "unregister_success": {
+        "title": "등록 해제 성공",
+        "body": "성공적으로 등록 해제되었습니다. 이제 이 버전을 삭제할 수 있습니다."
+      },
+      "loader": {
+        "ll_not_installed": "설치되지 않음",
+        "ll_select_version": "LeviLamina 버전",
+        "ll_select_placeholder": "LeviLamina 버전 선택",
+        "ll_select_guidance": "설치, 업그레이드, 다운그레이드 또는 재설치하려는 LeviLamina 버전을 선택하세요.",
+        "ll_remove_confirm_title": "LeviLamina 제거 확인",
+        "ll_remove_confirm_body": "LeviLamina 가 이 인스턴스에서 제거됩니다.",
+        "ll_remove_confirm_warning": "이 작업은 되돌릴 수 없습니다."
+      }
+    },
+    "logo": {
+      "title": "사용자 지정 아이콘 (정사각형 필요)",
+      "change": "변경하려면 클릭",
+      "clear": "지우기",
+      "hint": "버전 폴더 아래에 LargeLogo.png 로 저장됩니다. 아이콘을 클릭하여 변경하세요."
+    },
+    "unsaved": {
+      "body": "인스턴스 설정에 저장되지 않은 변경 사항이 있습니다. 종료 전에 저장하시겠습니까?"
+    },
+    "sort": {
+      "name": "이름 (A-Z)",
+      "name_za": "이름 (Z-A)",
+      "version": "버전 (최신)",
+      "version_old_new": "버전 (오래된 순)"
+    },
+    "tab": {
+      "all": "전체",
+      "preview": "미리보기",
+      "release": "릴리스"
+    }
+  },
+  "mirror": {
+    "target": "대상 인스턴스"
+  },
+  "errors": {
+    "ERR_GAME_ALREADY_RUNNING": "현재 Minecraft 인스턴스가 이미 실행 중인 것으로 감지되었습니다. 실행하기 전에 닫거나 다른 인스턴스로 전환해 주세요.",
+    "ERR_TARGET_DIR_NOT_SPECIFIED": "대상 디렉토리가 지정되지 않았습니다",
+    "ERR_CREATE_TARGET_DIR": "대상 디렉토리 생성 실패",
+    "ERR_NOT_FOUND_GAME_DIR": "게임 콘텐츠 디렉토리를 찾을 수 없습니다",
+    "ERR_NOT_FOUND_EXE": "실행 파일을 찾을 수 없습니다",
+    "ERR_WRITE_TARGET": "대상 구성 기록 실패",
+    "ERR_LAUNCH_GAME": "게임을 올바르게 시작할 수 없습니다",
+    "ERR_GAME_CRASH_DURING_LAUNCH": "게임이 시작 중 충돌했습니다",
+    "ERR_WAIT_KERNEL_TIMEOUT": "커널 준비 시간 초과",
+    "ERR_COPY_WALK": "파일 순회 실패",
+    "ERR_COPY_FAILED": "복사 실패",
+    "ERR_NAME_REQUIRED": "이름이 필요합니다",
+    "ERR_NAME_TOO_LONG": "이름이 너무 깁니다",
+    "ERR_NAME_TRAILING_DOT_SPACE": "이름은 점이나 공백으로 끝날 수 없습니다",
+    "ERR_NAME_INVALID_CHAR": "이름에 잘못된 문자가 포함되어 있습니다: <>:\\\"/\\\\|?*",
+    "ERR_NAME_CONTROL_CHAR": "이름에 제어 문자가 포함되어 있습니다",
+    "ERR_NAME_RESERVED": "이름은 Windows 예약어입니다",
+    "ERR_ACCESS_VERSIONS_DIR": "versions 디렉토리에 접근할 수 없습니다",
+    "ERR_ACCESS_INSTALLERS_DIR": "installers 디렉토리에 접근할 수 없습니다",
+    "ERR_READ_VERSIONS_DIR": "versions 디렉토리 읽기 실패",
+    "ERR_LL_VERSION_UNSUPPORTED": "선택한 LeviLamina 버전은 이 게임 버전에서 지원되지 않습니다",
+    "ERR_LL_NOT_SUPPORTED": "LeviLamina 는 이 게임 버전에서 지원되지 않습니다",
+    "ERR_FETCH_LL_DB": "LeviLamina 버전 데이터베이스 가져오기 실패",
+    "ERR_INVALID_VERSION_FORMAT": "잘못된 게임 버전 형식",
+    "ERR_LIP_INSTALL_FAILED": "lip 를 통한 LeviLamina 설치 실패",
+    "ERR_NAME_EXISTS": "이름이 이미 존재합니다",
+    "ERR_INVALID_NAME": "잘못된 이름",
+    "ERR_ICON_DECODE": "아이콘 디코딩 실패",
+    "ERR_ICON_NOT_SQUARE": "아이콘은 정사각형이어야 합니다",
+    "ERR_NOT_FOUND_OLD": "원본 디렉토리를 찾을 수 없습니다",
+    "ERR_RENAME_FAILED": "이름 바꾸기 실패, 사용 중이거나 권한이 없을 수 있습니다",
+    "ERR_MSIXVC_NOT_SPECIFIED": "설치 프로그램 패키지가 지정되지 않았습니다",
+    "ERR_MSIXVC_NOT_FOUND": "설치 프로그램 패키지를 찾을 수 없습니다",
+    "ERR_APPX_UNINSTALL_FAILED": "기존 게임 제거 실패",
+    "ERR_APPX_INSTALL_FAILED": "설치 실패. 다시 시도해 주세요.",
+    "ERR_MC_NOT_AUTHORIZED": "合法的인 {{typeLabel}} Minecraft 라이선스를 소유하고 있는지 확인해 주세요. 제품을 소유한 계정으로 로그인하거나 구매 후 다시 시도하세요.",
+    "ERR_INHERIT_SOURCE_NOT_FOUND": "상속 소스 버전을 찾을 수 없습니다",
+    "ERR_DELETE_FAILED": "삭제 실패, 사용 중이거나 권한이 거부되었을 수 있습니다",
+    "ERR_INHERIT_TARGET_NOT_FOUND": "대상 버전을 찾을 수 없습니다",
+    "ERR_INHERIT_TYPE_MISMATCH": "유형이 일치하지 않아 상속할 수 없습니다",
+    "ERR_INHERIT_COPY_FAILED": "상속된 데이터 복사 실패",
+    "ERR_NO_GAME_DATA": "선택한 소스에 대한 게임 데이터를 찾을 수 없습니다",
+    "ERR_VCRUNTIME_MISSING": "런타임 의존성이 누락되었습니다. Microsoft Visual C++ Runtime 을 설치하고 다시 시도해 주세요",
+    "ERR_SHORTCUT_CREATE_FAILED": "바탕 화면 바로 가기 생성 실패",
+    "ERR_UNREGISTER_FAILED": "등록 해제 실패",
+    "ERR_NOT_REGISTERED_THIS_VERSION": "이 버전은 등록되지 않았습니다",
+    "ERR_DEV_MODE_REQUIRED": "개발자 모드가 활성화되지 않았으며 자동 활성화도 실패했습니다. 개발자 모드를 수동으로 활성화하고 다시 시도해 주세요.",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "잘못된 lip 패키지 식별자",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "lip 패키지 버전이 필요합니다",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "lip 패키지 설치 실패",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "lip 패키지 제거 실패",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "lip 패키지 상태 쿼리 실패",
+    "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "이 패키지는 다른 설치된 모드에서 필요로 하며 현재 제거할 수 없습니다",
+    "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "이 패키지는 여전히 다른 설치된 모드에서 필요로 하므로 완전히 제거할 수 없습니다. 자동으로 의존성 설치 모드로 전환되었습니다.",
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina 는 버전 설정에서만 관리할 수 있습니다",
+    "ERR_LIP_NOT_INSTALLED": "lip 이 설치되어 있지 않습니다. 수동으로 설치하거나 업데이트하려면 설정 > 구성 요소로 이동하세요.",
+    "ERR_INSTANCE_BACKUP_INSTANCE_NOT_FOUND": "백업할 인스턴스를 찾을 수 없습니다",
+    "ERR_INSTANCE_BACKUP_NO_SCOPE": "적어도 하나의 백업 범위를 선택해 주세요",
+    "ERR_INSTANCE_BACKUP_INVALID_SCOPE": "요청에 잘못된 백업 범위가 포함되어 있습니다",
+    "ERR_INSTANCE_BACKUP_INVALID_SCOPE_MODE": "선택한 백업 모드가 잘못되었습니다",
+    "ERR_INSTANCE_BACKUP_GAME_DATA_NOT_FOUND": "Minecraft Bedrock 데이터 디렉토리를 찾을 수 없습니다",
+    "ERR_INSTANCE_BACKUP_CREATE_DIR": "인스턴스 백업 디렉토리 생성 실패",
+    "ERR_INSTANCE_BACKUP_CREATE_ARCHIVE": "인스턴스 백업 아카이브 생성 실패",
+    "ERR_INSTANCE_BACKUP_READ_SOURCE": "백업 소스 디렉토리 읽기 실패",
+    "ERR_INSTANCE_BACKUP_WRITE_ARCHIVE": "인스턴스 백업 아카이브 기록 실패",
+    "ERR_INSTANCE_BACKUP_ARCHIVE_OPEN": "인스턴스 백업 아카이브 열기 실패",
+    "ERR_INSTANCE_BACKUP_INVALID_ARCHIVE": "인스턴스 백업 아카이브 형식이 잘못되었습니다",
+    "ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE": "모드/LIP 상태를 확인할 수 없습니다. 인스턴스 상태를 업데이트하고 백업을 다시 시도하세요.",
+    "ERR_INSTANCE_BACKUP_RESTORE_EXTRACT_ARCHIVE": "인스턴스 백업 아카이브 추출 실패",
+    "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET": "대상 인스턴스에 백업 콘텐츠 복원 실패",
+    "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "일부 복원 충돌이 아직 해결되지 않았습니다. 먼저 각 충돌에 대한 해결 방법을 선택하세요.",
+    "ERR_INSTANCE_BACKUP_RESTORE_INVALID_CONFLICT_RESOLUTION": "선택한 복원 충돌 해결 방법이 잘못되었습니다. 선택 사항을 확인해 주세요.",
+    "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "완전한 Minecraft Bedrock 백업은 빈 대상 디렉토리로만 복원할 수 있습니다",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "일부 lip 관리 패키지를 설치하지 못했습니다",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "일부 lip 관리 패키지가 복원되지 않았습니다",
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "일부 lip 관리 패키지 버전이 백업과 일치하지 않습니다"
+  },
+  "filemanager": {
+    "sort": {
+      "name": "이름"
+    }
+  },
+  "file": {
+    "types": {
+      "folder": "폴더",
+      "executable": "실행 파일",
+      "library": "라이브러리",
+      "archive": "아카이브",
+      "image": "이미지",
+      "text": "텍스트",
+      "json": "JSON",
+      "jar": "JAR",
+      "mcpack": "MC 팩",
+      "mcaddon": "MC 애드온",
+      "file": "파일"
+    }
+  },
+  "mods": {
+    "import_button": ".zip/.dll 가져오기",
+    "importing_title": "가져오는 중...",
+    "importing_body": "선택한 파일을 처리하는 동안 기다려 주세요.",
+    "summary_title_done": "가져오기 완료",
+    "summary_title_partial": "가져오기 완료 (일부 실패)",
+    "summary_success": "성공",
+    "summary_failed": "실패",
+    "details_title": "모드 세부 정보",
+    "field_name": "이름",
+    "field_version": "버전",
+    "field_type": "유형",
+    "field_entry": "엔트리",
+    "field_author": "작성자",
+    "confirm_delete_body": "정말로 이 {{type}} 을 (를) 삭제하시겠습니까? 이 작업은 되돌릴 수 없습니다.",
+    "dll_modal_title": "DLL 플러그인 가져오기",
+    "dll_name": "플러그인 이름",
+    "dll_type": "유형",
+    "dll_version": "버전",
+    "err_invalid_name": "잘못된 버전 또는 모듈 이름",
+    "err_access_versions_dir": "versions 디렉토리에 접근할 수 없습니다",
+    "err_create_target_dir": "대상 디렉토리 생성 실패",
+    "err_open_zip": "ZIP 파일을 열 수 없습니다",
+    "err_manifest_not_found": "manifest.json 을 (를) 찾을 수 없습니다",
+    "err_invalid_package": "잘못된 패키지 구조",
+    "err_duplicate_folder": "동일한 이름의 모듈 폴더가 존재합니다",
+    "err_read_zip_entry": "ZIP 엔트리 읽기 실패",
+    "err_write_file": "파일 기록 실패",
+    "err_unknown": "알 수 없는 오류",
+    "overwrite_modal_title": "중복 감지",
+    "overwrite_modal_body": "동일한 이름의 모듈 폴더가 존재합니다. 덮어쓰기 (업데이트) 하시겠습니까?",
+    "toggle_label": "모드 활성화",
+    "toggle_on": "활성화됨",
+    "toggle_off": "비활성화됨",
+    "toggle_desc_on": "모드가 활성화되어 게임 시작 시 로드됩니다.",
+    "toggle_desc_off": "모드가 비활성화되어 게임 시작 시 로드되지 않습니다.",
+    "only_enabled": "활성화된 모드만 표시",
+    "drop_hint": ".zip 또는 .dll 을 (를) 여기로 끌어와서 모드/플러그인 가져오기",
+    "err_lip_install_failed_suggestion": "설치 실패, Minecraft 를 다시 설치해 보세요",
+    "rc_warning": {
+      "title": "실험적 버전 경고",
+      "body_1": "설치하려는 LeviLamina 버전 ({{version}}) 은 릴리스 후보 (RC) 입니다.",
+      "body_2": "이는 불안정할 수 있는 실험적 버전입니다. 개발자 또는 고급 사용자에게만 권장됩니다.",
+      "body_3": "계속하시겠습니까?"
+    },
+    "action_update": "업데이트",
+    "action_uninstall": "제거",
+    "action_promote_install": "명시적 설치로 승격",
+    "action_promote_install_success": "{{name}} 이 (가) 명시적 설치로 승격되었습니다",
+    "action_promote_install_failed_no_version": "이 패키지에 대한 설치된 버전을 찾을 수 없습니다",
+    "batch_update_title": "모드 일괄 업데이트",
+    "batch_update_body": "{{selected}} 개의 모드가 선택되었습니다. {{updatable}} 개의 모드를 lip 에서 업데이트할 수 있습니다. 계속하시겠습니까?",
+    "batch_uninstall_title": "모드 일괄 제거",
+    "batch_uninstall_body": "{{count}} 개의 모드를 제거하려 합니다. 계속하시겠습니까?",
+    "update_available": "{{version}} (으) 로 업데이트",
+    "update_latest": "이미 최신 버전입니다",
+    "no_update_source": "lip 업데이트 소스 없음",
+    "err_ll_managed_in_version_settings": "LeviLamina 는 버전 설정에서만 관리할 수 있습니다",
+    "action_result_title_done": "작업 완료",
+    "action_result_title_partial": "작업 완료 (일부 실패)",
+    "action_result_title_failed": "작업 실패",
+    "tab_all": "전체",
+    "tab_normal": "일반 모드",
+    "tab_lip": "lip 모드",
+    "lip_children_summary": "포함: {{children}} (+{{count}})",
+    "lip_open_package": "패키지 열기",
+    "lip_sync_loading": "로컬 모드 준비됨. lip 정보 완성 중...",
+    "lip_sync_error": "lip 정보를 일시적으로 사용할 수 없습니다. 로컬 모드만 표시됩니다."
+  },
+  "terms": {
+    "title": "LeviLauncher 라이선스 계약",
+    "body": "LeviLauncher 에 오신 것을 환영합니다\n\n이 소프트웨어를 사용함으로써 다음에 동의합니다:\n• 이것은 비공식 Minecraft 런처입니다\n• 합법적으로 라이선스된 Minecraft 사본을 소유해야 하며, 그렇지 않으면 자동으로 테스트 모드가 사용됩니다\n•任何形式的 해적 행위 또는 치팅은 금지됩니다\n• 모드/리소스 팩 사용은 사용자의 책임 하에 이루어집니다\n• Mojang/Microsoft 와는 관련이 없습니다\n\n계속 사용하면 조건에 동의한 것으로 간주됩니다",
+    "agree": "동의하고 계속",
+    "decline": "거부하고 종료"
+  },
+  "contentdownload": {
+    "title": "콘텐츠 다운로드"
+  },
+  "curseforge": {
+    "title": "CurseForge",
+    "search_placeholder": "게임 리소스 검색...",
+    "search": "검색",
+    "minecraft_version": "Minecraft 버전",
+    "select_version": "버전 선택",
+    "all_versions": "모든 버전",
+    "load_error": "데이터 로드 실패, 다시 시도해 주세요",
+    "search_error": "검색 실패, 다시 시도해 주세요",
+    "class": "클래스",
+    "select_class": "클래스 선택",
+    "all_classes": "모든 클래스",
+    "category": "카테고리",
+    "select_category": "카테고리 선택",
+    "sort_by": "정렬 기준",
+    "select_sort": "정렬 선택",
+    "no_results": "결과를 찾을 수 없음",
+    "by_author": "{{author}} 제작",
+    "no_description": "사용 가능한 설명이 없습니다.",
+    "downloads": "다운로드",
+    "updated": "업데이트됨",
+    "created": "생성됨",
+    "size": "크기",
+    "game_version": "Minecraft 버전",
+    "mod_not_found": "모드를 찾을 수 없음",
+    "go_back": "뒤로 가기",
+    "by": "제작",
+    "updated_date": "{{date}} 업데이트됨",
+    "download_count": "{{count}} 회 다운로드",
+    "install_action": "설치",
+    "website": "웹사이트",
+    "source": "소스",
+    "issues": "이슈",
+    "share": "공유",
+    "no_download_url": "사용 가능한 다운로드 URL 이 없음",
+    "no_files_found": "파일을 찾을 수 없음",
+    "sort": {
+      "featured": "추천",
+      "popularity": "인기도",
+      "last_updated": "최근 업데이트",
+      "creation_date": "생성일",
+      "total_downloads": "총 다운로드"
+    },
+    "install": {
+      "downloading_title": "콘텐츠 다운로드 중",
+      "select_version_title": "게임 인스턴스 선택",
+      "select_player_title": "플레이어 선택",
+      "importing_title": "콘텐츠 가져오는 중",
+      "success_title": "성공",
+      "error_title": "오류",
+      "downloading_body": "파일 다운로드 중...",
+      "select_version_body": "가져올 게임 인스턴스를 선택해 주세요:",
+      "local_installation": "로컬 인스턴스",
+      "select_version_placeholder": "인스턴스 선택",
+      "registered": "등록됨",
+      "select_player_body": "이 콘텐츠는 플레이어 선택이 필요합니다:",
+      "player_label": "플레이어",
+      "select_player_placeholder": "플레이어 선택",
+      "importing_body": "콘텐츠 가져오는 중...",
+      "success_msg": "가져오기 성공",
+      "success_desc": "콘텐츠가 선택한 인스턴스로 성공적으로 가져와졌습니다.",
+      "failed_msg": "가져오기 실패",
+      "next": "다음",
+      "close": "닫기"
+    },
+    "mod_details_aria_label": "모드 세부 정보",
+    "loading_description": "설명 로딩 중...",
+    "mod_tabs": {
+      "description": "설명",
+      "files": "파일"
+    },
+    "mod_files": {
+      "title": "모든 파일",
+      "table_aria_label": "모드 파일 표",
+      "columns": {
+        "type": "유형",
+        "name": "이름",
+        "uploaded": "업로드됨",
+        "size": "크기",
+        "downloads": "다운로드",
+        "actions": "작업"
+      }
+    }
+  },
+  "lip": {
+    "search_placeholder": "패키지 검색...",
+    "sort_by": "정렬 기준",
+    "select_sort": "정렬 선택",
+    "order_by": "순서",
+    "select_order": "순서 선택",
+    "no_description": "사용 가능한 설명이 없습니다",
+    "ll_version_label": "LeviLamina 버전",
+    "ll_version_placeholder": "LeviLamina 버전 선택",
+    "ll_all_versions": "모든 LeviLamina 버전",
+    "game_version_label": "게임 버전",
+    "game_version_placeholder": "게임 버전 선택",
+    "game_all_versions": "모든 게임 버전",
+    "files": {
+      "game_versions_label": "게임 버전",
+      "game_versions_unrestricted": "게임 버전 제한 없음",
+      "game_versions_unavailable": "게임 버전 매핑을 사용할 수 없음",
+      "ll_requirement": "LL 요구 사항",
+      "dependencies": "의존성",
+      "action": "작업",
+      "dependencies_count": "{{count}} 개 의존성",
+      "install": "설치",
+      "upgrade": "업그레이드",
+      "downgrade": "다운그레이드",
+      "reinstall": "재설치",
+      "redirect": "로더로 이동",
+      "instance_game_version_label": "게임 버전",
+      "select_instance_title": "대상 인스턴스 선택",
+      "installing_version_label": "패키지 버전 설치 중",
+      "variant_label": "변형",
+      "variant_hint_keep_default": "일반적으로 변경이 필요하지 않음",
+      "variant_placeholder": "변형 선택",
+      "variant_default": "default",
+      "select_version_incompatible_hint": "{{version}} 버전은 게임 버전 {{gameVersion}} 과 호환되지 않습니다.",
+      "checking_ll_state": "LeviLamina 상태 확인 중...",
+      "ll_missing_redirect_hint": "이 인스턴스에 LeviLamina 가 설치되어 있지 않습니다. 로더로 이동을 클릭하면 인스턴스 설정의 로더 탭이 열려 수동으로 먼저 설치할 수 있습니다.",
+      "ll_missing_redirect_to_loader": "LeviLamina 가 설치되어 있지 않습니다. 인스턴스 설정의 로더 탭으로 리디렉션합니다.",
+      "ll_installed_incompatible_hint": "설치된 LeviLamina 버전 {{installedVersion}} 은 이 패키지와 호환되지 않습니다. 먼저 LeviLamina 를 수동으로 조정해 주세요.",
+      "action_failed": "작업 실패: {{error}}",
+      "tab_label": "파일",
+      "table_aria_label": "패키지 파일 표",
+      "install_success": "설치가 성공적으로 완료되었습니다",
+      "upgrade_success": "업그레이드가 성공적으로 완료되었습니다",
+      "downgrade_success": "다운그레이드가 성공적으로 완료되었습니다",
+      "reinstall_success": "재설치가 성공적으로 완료되었습니다",
+      "current_installed_version_label": "현재 설치된 버전",
+      "checking_current_installed_version": "현재 설치된 버전 확인 중..."
+    },
+    "guide": {
+      "open_button": "개발자 가이드",
+      "title": "LIP 개발자 가이드",
+      "description": "모드가 LeviLauncher 의 LIP 페이지에 나타나도록 하려면 LIP package_manifest 사양에 따라 게시하세요.",
+      "manifest_hint": "이 대화 상자는 개발자를 위한 빠른 개요일 뿐입니다. 필드 이름, 필수 엔트리, 예제 및 유효성 검사 규칙은 공식 문서에 정의되어 있습니다.",
+      "variant_hint": "변형은 레이블에 client 가 포함된 경우에만 런처에서 인덱싱됩니다. 기본적으로 \\\"label\\\": \\\"client\\\"를 사용하세요; 하위 확장용으로는 \\\"label\\\": \\\"client_xxxx\\\" 또는 \\\"label\\\": \\\"client\\\\xxxx\\\"를 사용하세요.",
+      "docs_button": "전체 사양 보기",
+      "close_button": "닫기"
+    },
+    "guard": {
+      "title": "lipd 가 설치되어 있지 않습니다",
+      "description": "lipd 가 아직 설치되어 있지 않습니다. lip 관련 페이지를 계속 사용하거나 LeviLamina 를 설치하려면 설정 > 타사 구성 요소로 이동하여 먼저 설치하세요."
+    },
+    "title": "lip 콘텐츠",
+    "sort_options": {
+      "hotness": "인기도",
+      "updated": "업데이트됨",
+      "name": "이름"
+    },
+    "order_options": {
+      "desc": "내림차순",
+      "asc": "오름차순"
+    },
+    "by_author_inline": "| {{author}} 제작",
+    "package_details_aria_label": "패키지 세부 정보",
+    "task_console": {
+      "title_install": "설치 중",
+      "title_upgrade": "업그레이드 중",
+      "title_downgrade": "다운그레이드 중",
+      "title_reinstall": "재설치 중",
+      "title_update": "업데이트 중",
+      "title_uninstall": "제거 중",
+      "title_generic": "lip 작업",
+      "status_running": "실행 중",
+      "status_success": "성공",
+      "status_failed": "실패",
+      "target_label": "대상",
+      "progress_label": "진행률",
+      "log_title": "로그 출력",
+      "no_output": "아직 출력 없음",
+      "waiting_start": "lipd 출력 대기 중...",
+      "copy_logs": "로그 복사",
+      "copy_success": "로그 복사됨",
+      "close": "닫기",
+      "stage_install_pkg": "대상 패키지 설치 중",
+      "stage_fallback_delete": "패키지 제거를 사용할 수 없음, 디렉토리 삭제로 대체"
+    },
+    "package": {
+      "confirm_install_title": "설치 확인",
+      "confirm_install_body": "정말로 {{instance}} 에 대해 {{package}} {{version}} 을 (를) {{action}} 하시겠습니까?"
+    }
+  },
+  "server": {
+    "offline": "오프라인 / 연결할 수 없음",
+    "players": "온라인 플레이어",
+    "delay": "지연 시간",
+    "online": "온라인",
+    "version": "버전"
+  },
+  "installpage": {
+    "error": {
+      "dll_dependency_missing": "VC++ Runtime 누락",
+      "name_required": "이름이 필요합니다",
+      "msixvc_not_specified": "설치 프로그램 패키지가 지정되지 않았습니다",
+      "lip_not_installed": "lip 이 설치되어 있지 않습니다. 수동으로 설치하거나 업데이트하려면 설정 > 구성 요소로 이동하세요.",
+      "unknown": "알 수 없는 오류",
+      "nh_err_unknown": "알 수 없는 오류",
+      "nh_err_exception": "잡히지 않은 예외 또는 분류할 수 없는 오류",
+      "nh_err_invalid_params": "잘못된 매개변수",
+      "nh_err_key_not_found": "게임 설치 프로그램 패키지 검증 실패. 설치 프로그램을 삭제하고 다시 시도해 주세요.",
+      "nh_err_unauthorized_caller": "런처 exe 이름이 변경되지 않았는지 확인해 주세요 (LeviLauncher.exe)",
+      "nh_err_pipe_open_failed": "진행 파이프 열기 실패",
+      "nh_err_input_not_found": "입력 파일을 찾을 수 없습니다",
+      "nh_err_output_dir_invalid": "출력 디렉토리가 잘못되었습니다",
+      "nh_err_parse_failed": "패키지 구문 분석 실패",
+      "nh_err_extract_failed": "압축 해제 실패"
+    }
+  },
+  "clarity": {
+    "prompt": {
+      "title": "LeviLauncher 개선에 도움을 주시겠습니까?",
+      "body": "허락하신다면, LeviLauncher 는 기능 및 UI 개선을 위해 Microsoft Clarity 를 사용하여 익명 상호작용 데이터를 수집합니다. 계정 정보, 게임 정보 또는 디스크 콘텐츠를 수집하지 않으며 프론트엔드 페이지에만 적용됩니다. 설정 > 개인정보에서 언제든지 변경할 수 있습니다.",
+      "enable": "허용하고 활성화",
+      "disable": "지금 아니오",
+      "clarity_terms": "Clarity 약관",
+      "microsoft_privacy": "Microsoft 개인정보 처리방침"
+    }
+  }
+}

@@ -1183,6 +1183,7 @@
     "game_version_label": "Game version",
     "game_version_placeholder": "Select game version",
     "game_all_versions": "All game versions",
+    "mapping_unavailable_hint": "LeviLamina game version mapping is unavailable. Version-related filters have been disabled to avoid incorrect matches.",
     "files": {
       "game_versions_label": "Game Versions",
       "game_versions_unrestricted": "No game version restriction",
@@ -1205,6 +1206,7 @@
       "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
       "checking_ll_state": "Checking LeviLamina status...",
+      "mapping_unavailable_blocked_hint": "LeviLamina-to-game-version mapping is unavailable, so this installation has been blocked to avoid installing the wrong package.",
       "ll_missing_redirect_hint": "LeviLamina is not installed for this instance. Clicking Go to Loader will open the Loader tab in Instance Settings so you can install it manually first.",
       "ll_missing_redirect_to_loader": "LeviLamina is not installed. Redirecting to the Loader tab in Instance Settings.",
       "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",

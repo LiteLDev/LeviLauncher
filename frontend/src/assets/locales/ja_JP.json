@@ -1183,6 +1183,7 @@
     "game_version_label": "Game version",
     "game_version_placeholder": "Select game version",
     "game_all_versions": "All game versions",
+    "mapping_unavailable_hint": "LeviLamina のゲームバージョン対応表を現在利用できないため、誤った一致を避ける目的でバージョン関連のフィルターを無効化しました。",
     "files": {
       "game_versions_label": "Game Versions",
       "game_versions_unrestricted": "No game version restriction",
@@ -1205,6 +1206,7 @@
       "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
       "checking_ll_state": "Checking LeviLamina status...",
+      "mapping_unavailable_blocked_hint": "現在、LeviLamina とゲームバージョンの対応を確認できないため、誤ったインストールを避ける目的でこのインストールはブロックされています。",
       "ll_missing_redirect_hint": "このインスタンスには LeviLamina がインストールされていません。『Loader へ移動』を押すと、インスタンス設定の Loader タブを開き、先に手動でインストールできます。",
       "ll_missing_redirect_to_loader": "LeviLamina がインストールされていないため、インスタンス設定の Loader タブへ移動します。",
       "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",

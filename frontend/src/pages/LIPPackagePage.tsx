@@ -55,6 +55,7 @@ import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { useCurrentVersion } from "@/utils/CurrentVersionContext";
+import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { formatDateStr } from "@/utils/formatting";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
@@ -62,7 +63,6 @@ import { compareVersions } from "@/utils/version";
 import { ROUTES } from "@/constants/routes";
 import type { LIPPackageInstallState } from "@/utils/modIntelligenceResolver";
 import {
-  fetchLIPLeviLaminaClientMapping,
   fetchLIPPackageDetail,
   isLeviLaminaVersionCompatible,
   resolveSupportedGameVersionsByLLRanges,
@@ -243,15 +243,6 @@ const getErrorCode = (value: unknown): string => {
   return match ? match[0] : raw;
 };
 
-const normalizeGameVersion = (value: string): string => {
-  const normalized = String(value || "")
-    .trim()
-    .replace(/^v/i, "");
-  if (!normalized) return "";
-  const match = normalized.match(/(\d+\.\d+\.\d+)/);
-  return match ? match[1] : normalized;
-};
-
 const LIPPackagePage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const location = useLocation();
@@ -259,6 +250,13 @@ const LIPPackagePage: React.FC = () => {
   const { t } = useTranslation();
   const { runWithLipTask } = useLipTaskConsole();
   const { currentVersionName } = useCurrentVersion();
+  const {
+    gameToLLVersions,
+    mappingAvailable,
+    mappingInitialized,
+    loading: llMappingLoading,
+    normalizeGameVersion,
+  } = useLeviLamina();
   const {
     ensureInstanceHydrated,
     getInstanceSnapshot,
@@ -289,10 +287,6 @@ const LIPPackagePage: React.FC = () => {
   >({});
   const [installDialogSelectedInstance, setInstallDialogSelectedInstance] =
     useState<string>("");
-  const [gameToLLVersions, setGameToLLVersions] = useState<
-    Record<string, string[]>
-  >({});
-  const [mappingUnavailable, setMappingUnavailable] = useState<boolean>(false);
   const [installDialogOpen, setInstallDialogOpen] = useState<boolean>(false);
   const [installDialogTriggerVersion, setInstallDialogTriggerVersion] =
     useState<string>("");
@@ -304,6 +298,8 @@ const LIPPackagePage: React.FC = () => {
   const [lipMissingModalOpen, setLipMissingModalOpen] = useState(false);
 
   const tabsRef = useRef<HTMLDivElement>(null);
+  const mappingUnavailable = mappingInitialized && !mappingAvailable;
+  const mappingReady = mappingInitialized && !llMappingLoading;
 
   const identifier = useMemo(() => {
     const raw = String(id || "");
@@ -771,29 +767,6 @@ const LIPPackagePage: React.FC = () => {
     });
   }, [getInstanceSnapshot, instanceOptions, snapshotRevision, toInstanceState]);
 
-  useEffect(() => {
-    let cancelled = false;
-
-    const loadLeviLaminaMapping = async () => {
-      try {
-        const mapping = await fetchLIPLeviLaminaClientMapping();
-        if (cancelled) return;
-        setGameToLLVersions(mapping.gameToLLVersions || {});
-        setMappingUnavailable(false);
-      } catch (mappingError) {
-        console.warn("Failed to load LeviLamina game mapping", mappingError);
-        if (cancelled) return;
-        setGameToLLVersions({});
-        setMappingUnavailable(true);
-      }
-    };
-
-    void loadLeviLaminaMapping();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
-
   const routeVariantIdentifier = useMemo<string>(() => {
     const raw = String(identifier || "").trim();
     return raw.includes("#") ? raw : "";
@@ -1082,23 +1055,20 @@ const LIPPackagePage: React.FC = () => {
   const installDialogGameVersionCompatible = useMemo<boolean>(() => {
     if (!installDialogFileState) return false;
     if (!installDialogFileState.hasLLRequirement) return true;
-    if (mappingUnavailable) return true;
+    if (!mappingAvailable) return false;
     if (!installDialogInstanceGameVersion) return false;
 
-    const supported = new Set(
-      installDialogFileState.supportedGameVersions.map((version) =>
-        normalizeGameVersion(version),
-      ),
-    );
+    const supported = new Set(installDialogFileState.supportedGameVersions);
     return supported.has(installDialogInstanceGameVersion);
   }, [
     installDialogFileState,
     installDialogInstanceGameVersion,
-    mappingUnavailable,
+    mappingAvailable,
   ]);
 
   const installDialogVersionInstallable = useMemo<boolean>(() => {
     if (!installDialogFileState) return false;
+    if (dialogRequiresLL && !mappingAvailable) return false;
     if (!installDialogGameVersionCompatible) return false;
     if (!dialogRequiresLL) return true;
     if (dialogLLStateLoading) return false;
@@ -1115,6 +1085,7 @@ const LIPPackagePage: React.FC = () => {
     dialogLLStateLoading,
     dialogLLInstalled,
     dialogInstalledLLCompatible,
+    mappingAvailable,
   ]);
 
   const redirectToInstanceLoaderSettings = useCallback(
@@ -1662,6 +1633,14 @@ const LIPPackagePage: React.FC = () => {
                                           "lip.files.game_versions_unrestricted",
                                         )}
                                       </Chip>
+                                    ) : !mappingReady ? (
+                                      <Chip
+                                        size="sm"
+                                        variant="flat"
+                                        color="default"
+                                      >
+                                        {t("common.loading")}
+                                      </Chip>
                                     ) : mappingUnavailable ? (
                                       <Chip
                                         size="sm"
@@ -1708,6 +1687,8 @@ const LIPPackagePage: React.FC = () => {
                                       }
                                       isDisabled={
                                         instanceOptions.length === 0 ||
+                                        (fileState.hasLLRequirement &&
+                                          !mappingAvailable) ||
                                         actionRunning
                                       }
                                     >
@@ -1855,6 +1836,11 @@ const LIPPackagePage: React.FC = () => {
               {t("lip.files.checking_ll_state")}
             </div>
           ) : null}
+          {dialogRequiresLL && mappingUnavailable ? (
+            <div className="text-xs text-warning-600 dark:text-warning-400">
+              {t("lip.files.mapping_unavailable_blocked_hint")}
+            </div>
+          ) : null}
           {dialogRequiresLL && !dialogLLStateLoading && !dialogLLInstalled ? (
             <div className="text-xs text-warning-600 dark:text-warning-400">
               {t("lip.files.ll_missing_redirect_hint")}
@@ -1871,7 +1857,7 @@ const LIPPackagePage: React.FC = () => {
             </div>
           ) : null}
           {installDialogFileState?.hasLLRequirement &&
-          !mappingUnavailable &&
+          mappingReady &&
           !installDialogGameVersionCompatible ? (
             <div className="text-xs text-danger-500">
               {t("lip.files.select_version_incompatible_hint", {

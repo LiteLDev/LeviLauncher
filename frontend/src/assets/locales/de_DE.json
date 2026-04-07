@@ -1178,6 +1178,7 @@
     "game_version_label": "Spielversion",
     "game_version_placeholder": "Spielversion auswählen",
     "game_all_versions": "Alle Spielversionen",
+    "mapping_unavailable_hint": "Die LeviLamina-Spielversionszuordnung ist derzeit nicht verfügbar. Versionsbezogene Filter wurden deaktiviert, um falsche Treffer zu vermeiden.",
     "files": {
       "game_versions_label": "Spielversionen",
       "game_versions_unrestricted": "Keine Spielversionseinschränkung",
@@ -1200,6 +1201,7 @@
       "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} ist nicht kompatibel mit Spielversion {{gameVersion}}.",
       "checking_ll_state": "LeviLamina-Status wird geprüft...",
+      "mapping_unavailable_blocked_hint": "Die Zuordnung zwischen LeviLamina und Spielversion ist derzeit nicht verfügbar. Diese Installation wurde vorsorglich blockiert, um Fehlinstallationen zu vermeiden.",
       "ll_missing_redirect_hint": "LeviLamina ist für diese Instanz nicht installiert. Durch Klicken auf Zum Loader gehen wird die Loader-Registerkarte in den Instanzeinstellungen geöffnet, sodass Sie es zuerst manuell installieren können.",
       "ll_missing_redirect_to_loader": "LeviLamina ist nicht installiert. Weiterleitung zur Loader-Registerkarte in den Instanzeinstellungen.",
       "ll_installed_incompatible_hint": "Die installierte LeviLamina-Version {{installedVersion}} ist nicht kompatibel mit diesem Paket. Bitte passen Sie LeviLamina zuerst manuell an.",

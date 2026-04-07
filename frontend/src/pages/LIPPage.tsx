@@ -27,7 +27,6 @@ import { cn } from "@/utils/cn";
 import { Browser } from "@wailsio/runtime";
 import {
   fetchLIPPackagesIndex,
-  fetchLIPLeviLaminaClientMapping,
   isLeviLaminaRangesCompatibleWithAnyVersion,
   isLeviLaminaVersionCompatible,
   type LIPPackageBasicInfo,
@@ -43,7 +42,9 @@ import {
 import { motion } from "framer-motion";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { useCurrentVersion } from "@/utils/CurrentVersionContext";
+import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
+import { compareVersions } from "@/utils/version";
 import {
   GetVersionMeta,
   ListVersionMetas,
@@ -137,7 +138,7 @@ const compareSemverLike = (a: string, b: string): number => {
   return normalizeSemverInput(a).localeCompare(normalizeSemverInput(b));
 };
 
-const sortVersionValuesDesc = (values: string[]): string[] => {
+const sortLLVersionValuesDesc = (values: string[]): string[] => {
   const unique = Array.from(
     new Set(values.map((value) => String(value || "").trim()).filter(Boolean)),
   );
@@ -145,11 +146,12 @@ const sortVersionValuesDesc = (values: string[]): string[] => {
   return unique;
 };
 
-const normalizeGameVersionForFilter = (value: string): string => {
-  const raw = String(value || "").trim();
-  if (!raw) return "";
-  const match = raw.match(/(\d+\.\d+\.\d+)/);
-  return match ? match[1] : raw;
+const sortGameVersionValuesDesc = (values: string[]): string[] => {
+  const unique = Array.from(
+    new Set(values.map((value) => String(value || "").trim()).filter(Boolean)),
+  );
+  unique.sort((a, b) => compareVersions(b, a));
+  return unique;
 };
 
 const normalizeLLVersionForFilter = (value: string): string =>
@@ -227,6 +229,12 @@ const LIPPage: React.FC = () => {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const { currentVersionName } = useCurrentVersion();
+  const {
+    gameToLLVersions,
+    mappingAvailable,
+    mappingInitialized,
+    normalizeGameVersion,
+  } = useLeviLamina();
   const { ensureInstanceHydrated, getInstanceSnapshot, snapshotRevision } =
     useModIntelligence();
   const [queryInput, setQueryInput] = useState("");
@@ -242,9 +250,6 @@ const LIPPage: React.FC = () => {
     useState<string>(ALL_LL_VERSION);
   const [gameVersionOptions, setGameVersionOptions] = useState<string[]>([]);
   const [llVersionOptions, setLLVersionOptions] = useState<string[]>([]);
-  const [gameToLLVersions, setGameToLLVersions] = useState<
-    Record<string, string[]>
-  >({});
   const [currentInstalledLLVersion, setCurrentInstalledLLVersion] =
     useState("");
   const [error, setError] = useState("");
@@ -258,6 +263,9 @@ const LIPPage: React.FC = () => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const gameFilterInitializedRef = useRef(false);
   const llFilterInitializedRef = useRef(false);
+  const versionFiltersEnabled = mappingAvailable;
+  const showMappingUnavailableHint =
+    lipGuardReady && lipAvailable && mappingInitialized && !mappingAvailable;
 
   const collectScrollTargets = () => {
     const seen = new Set<unknown>();
@@ -371,19 +379,12 @@ const LIPPage: React.FC = () => {
 
     let currentGameVersion = "";
     let installedLLVersion = "";
-    let mappingGameToLLVersions: Record<string, string[]> = {};
-
-    try {
-      const mapping = await fetchLIPLeviLaminaClientMapping();
-      mappingGameToLLVersions = mapping.gameToLLVersions || {};
-    } catch (err) {
-      console.warn("Failed to load LeviLamina game mapping", err);
-    }
+    const mappingGameToLLVersions = mappingAvailable ? gameToLLVersions : {};
 
     if (instanceName) {
       try {
         const meta: any = await GetVersionMeta(instanceName);
-        currentGameVersion = normalizeGameVersionForFilter(
+        currentGameVersion = normalizeGameVersion(
           String(meta?.gameVersion || "").trim(),
         );
       } catch {}
@@ -403,8 +404,8 @@ const LIPPage: React.FC = () => {
     const normalizedGameToLL = Object.fromEntries(
       Object.entries(mappingGameToLLVersions).map(
         ([gameVersion, llVersions]) => [
-          normalizeGameVersionForFilter(String(gameVersion || "").trim()),
-          sortVersionValuesDesc(
+          normalizeGameVersion(String(gameVersion || "").trim()),
+          sortLLVersionValuesDesc(
             Array.isArray(llVersions)
               ? llVersions.map((version) =>
                   normalizeLLVersionForFilter(String(version || "").trim()),
@@ -415,10 +416,14 @@ const LIPPage: React.FC = () => {
       ),
     ) as Record<string, string[]>;
 
-    const gameOptions = sortVersionValuesDesc(
+    const gameOptions = sortGameVersionValuesDesc(
       Object.keys(normalizedGameToLL).filter(Boolean),
     );
-    if (currentGameVersion && !gameOptions.includes(currentGameVersion)) {
+    if (
+      mappingAvailable &&
+      currentGameVersion &&
+      !gameOptions.includes(currentGameVersion)
+    ) {
       gameOptions.unshift(currentGameVersion);
       if (!Array.isArray(normalizedGameToLL[currentGameVersion])) {
         normalizedGameToLL[currentGameVersion] = [];
@@ -429,7 +434,6 @@ const LIPPage: React.FC = () => {
       Array.isArray(normalizedGameToLL[currentGameVersion]) &&
       normalizedGameToLL[currentGameVersion].length > 0;
 
-    setGameToLLVersions(normalizedGameToLL);
     setGameVersionOptions(gameOptions);
     setCurrentInstalledLLVersion(installedLLVersion);
     setSelectedGameVersion((prev) => {
@@ -464,7 +468,10 @@ const LIPPage: React.FC = () => {
   }, [
     currentVersionName,
     ensureInstanceHydrated,
+    gameToLLVersions,
     getInstanceSnapshot,
+    mappingAvailable,
+    normalizeGameVersion,
     snapshotRevision,
   ]);
 
@@ -476,15 +483,20 @@ const LIPPage: React.FC = () => {
   useEffect(() => {
     if (!filterContextReady) return;
 
-    const allMappedLLVersions = sortVersionValuesDesc(
+    const allMappedLLVersions = sortLLVersionValuesDesc(
       Object.values(gameToLLVersions).flatMap((versions) => versions),
     );
     let nextOptions =
       selectedGameVersion === ALL_GAME_VERSION
-        ? allMappedLLVersions
-        : sortVersionValuesDesc(gameToLLVersions[selectedGameVersion] || []);
+        ? sortLLVersionValuesDesc(allMappedLLVersions)
+        : sortLLVersionValuesDesc(gameToLLVersions[selectedGameVersion] || []);
+
+    if (!mappingAvailable) {
+      nextOptions = [];
+    }
 
     if (
+      mappingAvailable &&
       currentInstalledLLVersion &&
       !nextOptions.includes(currentInstalledLLVersion) &&
       selectedGameVersion === ALL_GAME_VERSION
@@ -521,19 +533,22 @@ const LIPPage: React.FC = () => {
     selectedGameVersion,
     gameToLLVersions,
     currentInstalledLLVersion,
+    mappingAvailable,
   ]);
 
   const llCandidatesByGame = useMemo(() => {
-    if (selectedGameVersion === ALL_GAME_VERSION) return [];
+    if (!mappingAvailable || selectedGameVersion === ALL_GAME_VERSION) return [];
     return gameToLLVersions[selectedGameVersion] || [];
-  }, [selectedGameVersion, gameToLLVersions]);
+  }, [gameToLLVersions, mappingAvailable, selectedGameVersion]);
 
   const filteredPackages = useMemo(() => {
     const keyword = query.trim().toLowerCase();
 
     return allPackages.filter((pkg) => {
-      const gameFilterActive = selectedGameVersion !== ALL_GAME_VERSION;
-      const llFilterActive = selectedLLVersion !== ALL_LL_VERSION;
+      const gameFilterActive =
+        mappingAvailable && selectedGameVersion !== ALL_GAME_VERSION;
+      const llFilterActive =
+        mappingAvailable && selectedLLVersion !== ALL_LL_VERSION;
 
       if (gameFilterActive && !pkg.llDependencyRanges?.length) {
         return false;
@@ -590,6 +605,7 @@ const LIPPage: React.FC = () => {
     });
   }, [
     allPackages,
+    mappingAvailable,
     query,
     selectedGameVersion,
     selectedLLVersion,
@@ -728,6 +744,7 @@ const LIPPage: React.FC = () => {
                 }}
                 size="sm"
                 classNames={COMPONENT_STYLES.select}
+                isDisabled={!versionFiltersEnabled}
                 items={[
                   { key: ALL_GAME_VERSION, label: t("lip.game_all_versions") },
                   ...gameVersionOptions.map((version) => ({
@@ -750,6 +767,7 @@ const LIPPage: React.FC = () => {
                 }}
                 size="sm"
                 classNames={COMPONENT_STYLES.select}
+                isDisabled={!versionFiltersEnabled}
                 items={[
                   { key: ALL_LL_VERSION, label: t("lip.ll_all_versions") },
                   ...llVersionOptions.map((version) => ({
@@ -795,6 +813,12 @@ const LIPPage: React.FC = () => {
                 <SelectItem key="asc">{t("lip.order_options.asc")}</SelectItem>
               </Select>
             </div>
+
+            {showMappingUnavailableHint ? (
+              <div className="text-sm text-warning-600" role="status">
+                {t("lip.mapping_unavailable_hint")}
+              </div>
+            ) : null}
 
             {error ? (
               <div className="text-sm text-danger-500" role="alert">

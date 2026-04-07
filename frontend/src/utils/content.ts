@@ -1,4 +1,5 @@
 import { listDirectories } from "./fs";
+import { compareVersions } from "./version";
 import { GetUserGamertagMap } from "bindings/github.com/liteldev/LeviLauncher/userservice";
 
 export async function listPlayers(usersRoot: string): Promise<string[]> {
@@ -56,7 +57,6 @@ const LL_DEPENDENCY_KEYS = new Set([
   "github.com/liteldev/levilamina",
   "github.com/liteldev/levilamina#client",
 ]);
-const BEDROCK_RUNTIME_DATA_KEY = "github.com/liteldev/bedrock-runtime-data";
 const LEVI_LAMINA_IDENTIFIER = "liteldev/levilamina";
 
 const normalizeLIPIdentifier = (value: string): string => {
@@ -143,15 +143,9 @@ export interface LIPSelfVariantRelation {
   aliases: string[];
 }
 
-export interface LIPLeviLaminaClientMapping {
-  gameToLLVersions: Record<string, string[]>;
-  llToGameVersion: Record<string, string>;
-}
-
 type ParsedLIPIndexResult = {
   packages: LIPPackageBasicInfo[];
   detailsByIdentifier: Record<string, LIPPackageDetail>;
-  mapping: LIPLeviLaminaClientMapping;
   selfVariantRelations: LIPSelfVariantRelation[];
 };
 
@@ -409,36 +403,9 @@ export const resolveSupportedGameVersionsByLLRanges = (
   }
 
   const unique = Array.from(new Set(matchedGameVersions));
-  unique.sort((a, b) => compareSemverLike(b, a));
+  unique.sort((a, b) => compareVersions(b, a));
   return unique;
 };
-
-const getVariantVersionsRecord = (
-  variants: unknown,
-  targetVariantKey: string,
-): UnknownRecord | null => {
-  if (!isRecord(variants)) return null;
-  for (const [variantKey, variantValue] of Object.entries(variants)) {
-    if (
-      String(variantKey || "")
-        .trim()
-        .toLowerCase() !==
-      String(targetVariantKey || "")
-        .trim()
-        .toLowerCase()
-    ) {
-      continue;
-    }
-    if (!isRecord(variantValue)) return null;
-    const versions = variantValue["versions"];
-    if (!isRecord(versions)) return null;
-    return versions;
-  }
-  return null;
-};
-
-const getClientVersionsRecord = (variants: unknown): UnknownRecord | null =>
-  getVariantVersionsRecord(variants, "client");
 
 const buildVariantPackageIdentifier = (
   identifier: string,
@@ -744,70 +711,10 @@ const parseLIPPackage = (
   return { basic, detail };
 };
 
-const extractGameVersionFromRuntimeData = (value: string): string => {
-  const normalized = String(value || "").trim();
-  if (!normalized) return "";
-  const match = normalized.match(/^(\d+\.\d+\.\d+)/);
-  return match ? match[1] : "";
-};
-
-const parseLeviLaminaClientMapping = (
-  value: unknown,
-): LIPLeviLaminaClientMapping => {
-  const result: LIPLeviLaminaClientMapping = {
-    gameToLLVersions: {},
-    llToGameVersion: {},
-  };
-
-  if (!isRecord(value)) return result;
-  const clientVersions = getClientVersionsRecord(value["variants"]);
-  if (!clientVersions) return result;
-
-  for (const [llVersion, meta] of Object.entries(clientVersions)) {
-    const normalizedLLVersion = String(llVersion || "").trim();
-    if (!normalizedLLVersion) continue;
-    if (!isRecord(meta)) continue;
-
-    const dependencies = meta["dependencies"];
-    if (!isRecord(dependencies)) continue;
-
-    let runtimeDataVersion = "";
-    for (const [depKey, depValue] of Object.entries(dependencies)) {
-      const normalizedKey = String(depKey || "")
-        .trim()
-        .toLowerCase();
-      if (normalizedKey !== BEDROCK_RUNTIME_DATA_KEY) continue;
-      runtimeDataVersion = toSafeString(depValue).trim();
-      break;
-    }
-    if (!runtimeDataVersion) continue;
-
-    const gameVersion = extractGameVersionFromRuntimeData(runtimeDataVersion);
-    if (!gameVersion) continue;
-
-    result.llToGameVersion[normalizedLLVersion] = gameVersion;
-    if (!Array.isArray(result.gameToLLVersions[gameVersion])) {
-      result.gameToLLVersions[gameVersion] = [];
-    }
-    result.gameToLLVersions[gameVersion].push(normalizedLLVersion);
-  }
-
-  for (const [gameVersion, llVersions] of Object.entries(
-    result.gameToLLVersions,
-  )) {
-    const unique = Array.from(new Set(llVersions));
-    unique.sort((a, b) => compareSemverLike(b, a));
-    result.gameToLLVersions[gameVersion] = unique;
-  }
-
-  return result;
-};
-
 const parseLIPIndexResult = (json: unknown): ParsedLIPIndexResult => {
   const empty: ParsedLIPIndexResult = {
     packages: [],
     detailsByIdentifier: {},
-    mapping: { gameToLLVersions: {}, llToGameVersion: {} },
     selfVariantRelations: [],
   };
   if (!isRecord(json)) return empty;
@@ -821,10 +728,6 @@ const parseLIPIndexResult = (json: unknown): ParsedLIPIndexResult => {
     string,
     LIPSelfVariantRelation
   >();
-  let mapping: LIPLeviLaminaClientMapping = {
-    gameToLLVersions: {},
-    llToGameVersion: {},
-  };
 
   for (const [identifier, item] of Object.entries(packagesValue)) {
     const parsed = parseLIPPackage(item, identifier);
@@ -858,9 +761,6 @@ const parseLIPIndexResult = (json: unknown): ParsedLIPIndexResult => {
       }
     }
 
-    if (isLeviLaminaIdentifier(identifier)) {
-      mapping = parseLeviLaminaClientMapping(item);
-    }
   }
 
   const selfVariantRelations = Array.from(
@@ -876,7 +776,6 @@ const parseLIPIndexResult = (json: unknown): ParsedLIPIndexResult => {
   return {
     packages: Array.from(deduplicatedPackages.values()),
     detailsByIdentifier,
-    mapping,
     selfVariantRelations,
   };
 };
@@ -960,14 +859,6 @@ export async function fetchLIPPackagesIndex(options?: {
 }): Promise<LIPPackageBasicInfo[]> {
   const result = await fetchLIPIndexResult(options);
   return result.packages;
-}
-
-export async function fetchLIPLeviLaminaClientMapping(options?: {
-  forceRefresh?: boolean;
-  signal?: AbortSignal;
-}): Promise<LIPLeviLaminaClientMapping> {
-  const result = await fetchLIPIndexResult(options);
-  return result.mapping;
 }
 
 export async function fetchLIPSelfVariantRelations(options?: {

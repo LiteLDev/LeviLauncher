@@ -1183,6 +1183,7 @@
     "game_version_label": "Game version",
     "game_version_placeholder": "Select game version",
     "game_all_versions": "All game versions",
+    "mapping_unavailable_hint": "Сопоставление версий игры для LeviLamina сейчас недоступно. Фильтры, связанные с версиями, отключены, чтобы избежать неверных совпадений.",
     "files": {
       "game_versions_label": "Game Versions",
       "game_versions_unrestricted": "No game version restriction",
@@ -1205,6 +1206,7 @@
       "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
       "checking_ll_state": "Checking LeviLamina status...",
+      "mapping_unavailable_blocked_hint": "Сейчас невозможно проверить сопоставление между LeviLamina и версией игры, поэтому эта установка заблокирована во избежание неправильной установки.",
       "ll_missing_redirect_hint": "Для этого экземпляра LeviLamina не установлен. При нажатии «Перейти к Loader» откроется вкладка Loader в настройках экземпляра, чтобы вы сначала установили его вручную.",
       "ll_missing_redirect_to_loader": "LeviLamina не установлен. Выполняется переход на вкладку Loader в настройках экземпляра.",
       "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",

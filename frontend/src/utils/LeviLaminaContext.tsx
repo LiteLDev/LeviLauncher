@@ -2,26 +2,46 @@ import React, {
   createContext,
   useContext,
   useEffect,
-  useState,
   useCallback,
+  useMemo,
+  useState,
 } from "react";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { useStartupInteractive } from "@/utils/startupState";
 
-type LeviLaminaDB = Record<string, any>;
+type LeviLaminaDB = Record<string, string[]>;
 
 type CtxValue = {
-  llMap: Map<string, any>;
+  llMap: Map<string, string[]>;
+  gameToLLVersions: Record<string, string[]>;
   refreshLLDB: () => Promise<void>;
   isLLSupported: (version: string) => boolean;
   getSupportedLLVersions: (version: string) => string[];
   getLatestLLVersion: (version: string) => string;
   compareLLVersions: (a: string, b: string) => number;
+  normalizeGameVersion: (version: string) => string;
   loading: boolean;
+  mappingAvailable: boolean;
+  mappingInitialized: boolean;
 };
 
 const normalizeLLVersion = (version: string): string =>
   String(version || "").trim();
+
+const normalizeGameVersionValue = (version: string): string =>
+  String(version || "")
+    .trim()
+    .replace(/^v/i, "");
+
+const normalizeLLVersionList = (list: unknown): string[] => {
+  if (!Array.isArray(list)) return [];
+  const normalized = list
+    .map((item) => normalizeLLVersion(String(item || "")))
+    .filter(Boolean);
+  const unique = Array.from(new Set(normalized));
+  unique.sort((a, b) => compareLLVersionValue(b, a));
+  return unique;
+};
 
 type ParsedSemver = {
   major: number;
@@ -93,22 +113,43 @@ export const LeviLaminaProvider: React.FC<{ children: React.ReactNode }> = ({
 }) => {
   const hasBackend = minecraft !== undefined;
   const startupInteractive = useStartupInteractive();
-  const [llMap, setLlMap] = useState<Map<string, any>>(new Map());
+  const [llMap, setLlMap] = useState<Map<string, string[]>>(new Map());
   const [loading, setLoading] = useState<boolean>(false);
+  const [mappingAvailable, setMappingAvailable] = useState<boolean>(false);
+  const [mappingInitialized, setMappingInitialized] = useState<boolean>(false);
 
   const fetchLLDB = useCallback(async () => {
-    if (hasBackend && (minecraft as any).FetchLeviLaminaVersionDB) {
-      setLoading(true);
-      try {
-        const res = await (minecraft as any).FetchLeviLaminaVersionDB();
-        if (res) {
-          setLlMap(new Map(Object.entries(res)));
+    if (!hasBackend || !(minecraft as any).FetchLeviLaminaVersionDB) {
+      setLlMap(new Map());
+      setMappingAvailable(false);
+      setMappingInitialized(true);
+      return;
+    }
+
+    setLoading(true);
+    try {
+      const res = ((await (minecraft as any).FetchLeviLaminaVersionDB()) ||
+        {}) as LeviLaminaDB;
+      const nextMap = new Map<string, string[]>();
+
+      for (const [gameVersion, llVersions] of Object.entries(res)) {
+        const normalizedGameVersion = normalizeGameVersionValue(gameVersion);
+        const normalizedLLVersions = normalizeLLVersionList(llVersions);
+        if (!normalizedGameVersion || normalizedLLVersions.length === 0) {
+          continue;
         }
-      } catch (e) {
-        console.error("FetchLeviLaminaVersionDB failed", e);
-      } finally {
-        setLoading(false);
+        nextMap.set(normalizedGameVersion, normalizedLLVersions);
       }
+
+      setLlMap(nextMap);
+      setMappingAvailable(nextMap.size > 0);
+    } catch (e) {
+      console.error("FetchLeviLaminaVersionDB failed", e);
+      setLlMap(new Map());
+      setMappingAvailable(false);
+    } finally {
+      setLoading(false);
+      setMappingInitialized(true);
     }
   }, [hasBackend]);
 
@@ -124,24 +165,15 @@ export const LeviLaminaProvider: React.FC<{ children: React.ReactNode }> = ({
     return compareSemver(av, bv);
   }, []);
 
+  const normalizeGameVersion = useCallback((version: string): string => {
+    return normalizeGameVersionValue(version);
+  }, []);
+
   const getSupportedLLVersions = useCallback(
     (version: string): string[] => {
-      const v = String(version || "").trim();
+      const v = normalizeGameVersionValue(version);
       if (!v || !llMap.size) return [];
-
-      const normalize = (list: any): string[] => {
-        if (!Array.isArray(list)) return [];
-        const normalized = list
-          .map((it) => String(it || "").trim())
-          .filter((it) => it.length > 0);
-        const unique = Array.from(new Set(normalized));
-        unique.sort((a, b) => compareLLVersionValue(b, a));
-        return unique;
-      };
-
-      const exact = normalize(llMap.get(v));
-      if (exact.length > 0) return exact;
-      return [];
+      return llMap.get(v) || [];
     },
     [llMap],
   );
@@ -161,16 +193,29 @@ export const LeviLaminaProvider: React.FC<{ children: React.ReactNode }> = ({
     [getSupportedLLVersions],
   );
 
+  const gameToLLVersions = useMemo<Record<string, string[]>>(() => {
+    return Object.fromEntries(
+      Array.from(llMap.entries()).map(([gameVersion, llVersions]) => [
+        gameVersion,
+        [...llVersions],
+      ]),
+    );
+  }, [llMap]);
+
   return (
     <LeviLaminaContext.Provider
       value={{
         llMap,
+        gameToLLVersions,
         refreshLLDB: fetchLLDB,
         isLLSupported,
         getSupportedLLVersions,
         getLatestLLVersion,
         compareLLVersions,
+        normalizeGameVersion,
         loading,
+        mappingAvailable,
+        mappingInitialized,
       }}
     >
       {children}

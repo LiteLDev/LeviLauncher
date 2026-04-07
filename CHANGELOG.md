@@ -2,7 +2,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v0.3.10] - 2026-03-31
+## [v0.3.10] - 2026-04-07
 
 ### Added
 
@@ -21,15 +21,20 @@ All notable changes to this project will be documented in this file.
 - Shortened lip install timeouts to reduce stalled installation flows.
 - Surfaced lip cache clean results directly in Settings.
 - Removed the forced GDK `1.26.0.0` registration override to avoid incorrect registrations.
+- Enforced exact LeviLamina-to-game-version mapping during install and backup compatibility checks.
+- Waited for the frontend dev server before launching the desktop app in local development tasks.
+- Restored monospace font fallbacks to avoid incorrect font rendering in the frontend.
 
 ### Docs
 
 - Clarified the Lanzou password in quick start guides.
 - Fixed broken links in the Russian documentation.
+- Expanded the documentation site with German, Spanish, French, Japanese, and Korean translations.
 
 ### Chore
 
-- Bumped version to `0.3.9`.
+- Bumped version to `0.3.10`.
+- Bumped frontend dependency `picomatch` to `4.0.4`.
 
 ## [v0.3.8] - 2026-03-18
 

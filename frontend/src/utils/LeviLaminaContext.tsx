@@ -141,13 +141,6 @@ export const LeviLaminaProvider: React.FC<{ children: React.ReactNode }> = ({
 
       const exact = normalize(llMap.get(v));
       if (exact.length > 0) return exact;
-
-      const parts = v.split(".");
-      if (parts.length >= 3) {
-        const key = `${parts[0]}.${parts[1]}.${parts[2]}`;
-        const fallback = normalize(llMap.get(key));
-        if (fallback.length > 0) return fallback;
-      }
       return [];
     },
     [llMap],

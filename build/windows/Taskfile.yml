@@ -92,5 +92,10 @@ tasks:
       - wails3 tool msix-install-tools
 
   run:
+    vars:
+      DEVSERVER_URL: '{{.FRONTEND_DEVSERVER_URL | default ""}}'
     cmds:
+      - cmd: >-
+          pwsh -NoLogo -NoProfile -Command '$url = "{{.DEVSERVER_URL}}"; if ([string]::IsNullOrWhiteSpace($url)) { exit 0 }; $uri = [uri]$url; $deadline = (Get-Date).AddSeconds(30); while ((Get-Date) -lt $deadline) { $client = $null; try { $client = [System.Net.Sockets.TcpClient]::new(); $task = $client.ConnectAsync($uri.Host, $uri.Port); if ($task.Wait(1000) -and $client.Connected) { $client.Dispose(); exit 0 } } catch {} finally { if ($null -ne $client) { $client.Dispose() } }; Start-Sleep -Milliseconds 250 }; Write-Error ("Frontend dev server did not become ready within 30 seconds: " + $url); exit 1'
+        silent: true
       - "{{.BIN_DIR}}/{{.APP_NAME}}.exe"

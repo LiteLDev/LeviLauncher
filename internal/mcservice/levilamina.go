@@ -23,6 +23,12 @@ type LeviLaminaVersionDB struct {
 	Versions      map[string][]string `json:"versions"`
 }
 
+var fetchLeviLaminaVersionDB = FetchLeviLaminaVersionDB
+var leviLaminaLipIsInstalled = lip.IsInstalled
+var leviLaminaIsPackageExplicitlyInstalledViaDaemon = lip.IsPackageExplicitlyInstalledViaDaemon
+var leviLaminaUpdatePackagesViaDaemon = lip.UpdatePackagesViaDaemon
+var leviLaminaInstallPackagesViaDaemon = lip.InstallPackagesViaDaemon
+
 func resolveSupportedLeviLaminaVersions(db map[string][]string, mcVersion string) []string {
 	v := strings.TrimSpace(mcVersion)
 	if v == "" {
@@ -30,14 +36,6 @@ func resolveSupportedLeviLaminaVersions(db map[string][]string, mcVersion string
 	}
 	if exact, ok := db[v]; ok && len(exact) > 0 {
 		return exact
-	}
-	parts := strings.Split(v, ".")
-	if len(parts) < 3 {
-		return nil
-	}
-	key := fmt.Sprintf("%s.%s.%s", parts[0], parts[1], parts[2])
-	if byMajorMinorPatch, ok := db[key]; ok && len(byMajorMinorPatch) > 0 {
-		return byMajorMinorPatch
 	}
 	return nil
 }
@@ -135,10 +133,10 @@ func isLipInstallAlreadyInstalledErrorForPackage(err error, packageRef string) b
 
 func FetchLeviLaminaVersionDB() (map[string][]string, error) {
 	urls := []string{
-		"https://cdn.jsdelivr.net/gh/LiteLDev/levilamina-client-version-db@main/version-db.json",
-		"https://fastly.jsdelivr.net/gh/LiteLDev/levilamina-client-version-db@main/version-db.json",
-		"https://raw.githubusercontent.com/LiteLDev/levilamina-client-version-db/refs/heads/main/version-db.json",
-		"https://github.bibk.top/LiteLDev/levilamina-client-version-db/raw/refs/heads/main/version-db.json",
+		"https://cdn.jsdelivr.net/gh/LiteLDev/levilamina-client-version-db@main/v2/version-db.json",
+		"https://fastly.jsdelivr.net/gh/LiteLDev/levilamina-client-version-db@main/v2/version-db.json",
+		"https://raw.githubusercontent.com/LiteLDev/levilamina-client-version-db/refs/heads/main/v2/version-db.json",
+		"https://github.bibk.top/LiteLDev/levilamina-client-version-db/raw/refs/heads/main/v2/version-db.json",
 	}
 
 	var lastErr error
@@ -180,11 +178,11 @@ func FetchLeviLaminaVersionDB() (map[string][]string, error) {
 }
 
 func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string, llVersion string) string {
-	if !lip.IsInstalled() {
+	if !leviLaminaLipIsInstalled() {
 		return "ERR_LIP_NOT_INSTALLED"
 	}
 
-	db, err := FetchLeviLaminaVersionDB()
+	db, err := fetchLeviLaminaVersionDB()
 	if err != nil {
 		log.Println("InstallLeviLamina: Fetch DB failed:", err)
 		return "ERR_FETCH_LL_DB"
@@ -223,14 +221,14 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 
 	basePkg := "github.com/LiteLDev/LeviLamina#client"
 	pkg := fmt.Sprintf("%s@%s", basePkg, llVersion)
-	explicitInstalled, listErr := lip.IsPackageExplicitlyInstalledViaDaemon(ctx, targetDir, basePkg)
+	explicitInstalled, listErr := leviLaminaIsPackageExplicitlyInstalledViaDaemon(ctx, targetDir, basePkg)
 	if listErr != nil {
 		log.Printf("InstallLeviLamina: lipd list failed, fallback to install-first strategy: %v", listErr)
 	}
 
 	if explicitInstalled {
 		log.Printf("Updating LeviLamina %s for %s using LIP", llVersion, targetName)
-		if err := lip.UpdatePackagesViaDaemon(ctx, targetDir, []string{pkg}); err != nil {
+		if err := leviLaminaUpdatePackagesViaDaemon(ctx, targetDir, []string{pkg}); err != nil {
 			if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
 				return code
 			}
@@ -241,7 +239,7 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 	}
 
 	log.Printf("Installing LeviLamina %s for %s using LIP", llVersion, targetName)
-	if err := lip.InstallPackagesViaDaemon(ctx, targetDir, []string{pkg}); err != nil {
+	if err := leviLaminaInstallPackagesViaDaemon(ctx, targetDir, []string{pkg}); err != nil {
 		if code := lip.ErrorCode(err); code == "ERR_LIP_NOT_INSTALLED" {
 			return code
 		}
@@ -250,7 +248,7 @@ func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string,
 			return "ERR_LIP_INSTALL_FAILED"
 		}
 		log.Printf("InstallLeviLamina: package already installed, switching to update: %v", err)
-		if updateErr := lip.UpdatePackagesViaDaemon(ctx, targetDir, []string{pkg}); updateErr != nil {
+		if updateErr := leviLaminaUpdatePackagesViaDaemon(ctx, targetDir, []string{pkg}); updateErr != nil {
 			if code := lip.ErrorCode(updateErr); code == "ERR_LIP_NOT_INSTALLED" {
 				return code
 			}

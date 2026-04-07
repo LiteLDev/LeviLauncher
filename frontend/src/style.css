@@ -15,6 +15,7 @@
 
 @theme {
   --font-sans: "MiSans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "MiSans", sans-serif;
 
   --color-primary-50: rgb(var(--theme-50, 236, 253, 245));
   --color-primary-100: rgb(var(--theme-100, 209, 250, 229));

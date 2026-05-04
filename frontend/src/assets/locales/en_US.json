@@ -212,14 +212,14 @@
       "status_not_downloaded": "Not downloaded",
       "loader": "Loader",
       "input": {
-        "placeholder": "Search by verison..."
+        "placeholder": "Search by version..."
       }
     },
     "actions": {
       "delete_installer": "Delete installer"
     },
     "bottomcontent": {
-      "total": "Total {{count}} verions"
+      "total": "Total {{count}} versions"
     },
     "install_folder": {
       "confirm_title": "Install Instance",

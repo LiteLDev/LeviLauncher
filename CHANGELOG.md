@@ -2,6 +2,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.11] - 2026-05-04
+
+### Added
+
+- Added startup diagnostics that write `%APPDATA%\levilauncher.exe\logs\startup.log` and surface the log path when the launcher fails before the UI appears.
+
+### Changed
+
+- Started WebView2 with safer software-rendered GPU settings to reduce startup crashes on affected Windows GPU and driver combinations.
+
+### Fixed
+
+- Normalized detected locale aliases, including script and region variants, before selecting launcher translations.
+- Corrected English download page typos in version search and version totals.
+
+### Docs
+
+- Documented startup crash recovery steps and startup log reporting in the troubleshooting guides and bug report template.
+
+### Chore
+
+- Bumped version to `0.3.11`.
+
 ## [v0.3.10] - 2026-04-07
 
 ### Added

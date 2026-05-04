@@ -41,5 +41,10 @@ body:
 
   - type: textarea
     attributes:
+      label: Logs
+      description: If LeviLauncher fails to open or closes immediately, please attach `%APPDATA%\\levilauncher.exe\\logs\\startup.log`.
+
+  - type: textarea
+    attributes:
       label: Additional context
-      description: Add any other context about the problem here.
+      description: Add any other context about the problem here. If startup fails before the UI appears, include `%APPDATA%\\levilauncher.exe\\logs\\startup.log` when possible.

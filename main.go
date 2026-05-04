@@ -4,13 +4,18 @@ import (
 	"bufio"
 	"context"
 	"embed"
+	"fmt"
+	"io"
 	"io/fs"
 	"log"
+	"log/slog"
 	"net"
 	"os"
+	"runtime/debug"
 	"strconv"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 	"unsafe"
 
@@ -18,6 +23,7 @@ import (
 	"gopkg.in/natefinch/npipe.v2"
 
 	"github.com/joho/godotenv"
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/extractor"
@@ -45,6 +51,8 @@ const singleInstancePipe = `\\.\pipe\LeviLauncher_SingleInstance_Pipe`
 
 const (
 	SW_RESTORE          = 9
+	MB_OK               = 0x00000000
+	MB_ICONERROR        = 0x00000010
 	minWindowWidth      = 960
 	minWindowHeight     = 600
 	defaultWindowWidth  = 1024
@@ -54,9 +62,12 @@ const (
 var (
 	user32                  = win.NewLazySystemDLL("user32.dll")
 	procFindWindowW         = user32.NewProc("FindWindowW")
+	procMessageBoxW         = user32.NewProc("MessageBoxW")
 	procShowWindow          = user32.NewProc("ShowWindow")
 	procSetForegroundWindow = user32.NewProc("SetForegroundWindow")
 )
+
+const startupFailureDialogTitle = "LeviLauncher Startup Failed"
 
 type startupLogger struct {
 	start time.Time
@@ -68,6 +79,172 @@ func newStartupLogger() *startupLogger {
 
 func (s *startupLogger) Mark(phase string) {
 	log.Printf("[startup] %s (+%dms)", phase, time.Since(s.start).Milliseconds())
+}
+
+type startupDiagnostics struct {
+	logPath         string
+	logFile         *os.File
+	logger          *slog.Logger
+	reportOnce      sync.Once
+	startupComplete atomic.Bool
+	showDialog      func(title string, message string)
+}
+
+func initStartupDiagnostics() *startupDiagnostics {
+	logPath := apppath.StartupLogPath()
+	writers := []io.Writer{os.Stderr}
+
+	var logFile *os.File
+	file, err := os.OpenFile(logPath, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0o644)
+	if err == nil {
+		logFile = file
+		writers = append(writers, file)
+	}
+
+	logWriter := io.MultiWriter(writers...)
+	log.SetOutput(logWriter)
+	log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+
+	diag := &startupDiagnostics{
+		logPath:    logPath,
+		logFile:    logFile,
+		logger:     slog.New(slog.NewTextHandler(logWriter, &slog.HandlerOptions{Level: slog.LevelDebug})),
+		showDialog: showStartupFailureDialog,
+	}
+
+	if err != nil {
+		log.Printf("[startup] failed to open startup log %s: %v", logPath, err)
+	} else {
+		log.Printf("[startup] startup log path: %s", logPath)
+	}
+
+	return diag
+}
+
+func (s *startupDiagnostics) Logger() *slog.Logger {
+	if s == nil {
+		return nil
+	}
+	return s.logger
+}
+
+func (s *startupDiagnostics) Close() {
+	if s == nil || s.logFile == nil {
+		return
+	}
+	_ = s.logFile.Sync()
+	_ = s.logFile.Close()
+}
+
+func (s *startupDiagnostics) flush() {
+	if s == nil || s.logFile == nil {
+		return
+	}
+	_ = s.logFile.Sync()
+}
+
+func (s *startupDiagnostics) MarkStartupComplete() {
+	if s == nil {
+		return
+	}
+	s.startupComplete.Store(true)
+}
+
+func (s *startupDiagnostics) HandleError(source string, err error) {
+	if err == nil {
+		return
+	}
+	s.logError(source, err)
+	if s == nil || s.startupComplete.Load() {
+		s.flush()
+		return
+	}
+	s.reportOnce.Do(func() {
+		if s.showDialog == nil {
+			s.flush()
+			return
+		}
+		s.flush()
+		s.showDialog(startupFailureDialogTitle, buildStartupFailureDialogMessage(s.logPath))
+		s.flush()
+	})
+}
+
+func (s *startupDiagnostics) HandlePanic(source string, err error, stackTrace string) {
+	if err == nil {
+		err = fmt.Errorf("unknown panic")
+	}
+	if strings.TrimSpace(stackTrace) == "" {
+		stackTrace = string(debug.Stack())
+	}
+	log.Printf("[startup] panic in %s: %v", source, err)
+	if strings.TrimSpace(stackTrace) != "" {
+		log.Printf("[startup] panic stack trace:\n%s", stackTrace)
+	}
+	s.flush()
+	if s == nil || s.startupComplete.Load() {
+		return
+	}
+	s.reportOnce.Do(func() {
+		if s.showDialog != nil {
+			s.showDialog(startupFailureDialogTitle, buildStartupFailureDialogMessage(s.logPath))
+		}
+		s.flush()
+	})
+}
+
+func (s *startupDiagnostics) logError(source string, err error) {
+	if err == nil {
+		return
+	}
+	if strings.TrimSpace(source) == "" {
+		log.Printf("[startup] error: %v", err)
+		return
+	}
+	log.Printf("[startup] %s: %v", source, err)
+}
+
+func buildStartupFailureDialogMessage(logPath string) string {
+	if strings.TrimSpace(logPath) == "" {
+		logPath = "Unavailable"
+	}
+	return fmt.Sprintf(
+		"LeviLauncher failed to start.\n\nPlease retry. If it still closes immediately, open a GitHub issue and attach the startup log.\n\nLog path:\n%s",
+		logPath,
+	)
+}
+
+func defaultWebview2AdditionalBrowserArgs() []string {
+	return []string{
+		"--disable-gpu",
+		"--disable-gpu-compositing",
+	}
+}
+
+func panicErrorValue(v any) error {
+	if err, ok := v.(error); ok {
+		return err
+	}
+	return fmt.Errorf("%v", v)
+}
+
+func showStartupFailureDialog(title string, message string) {
+	titlePtr, err := win.UTF16PtrFromString(title)
+	if err != nil {
+		log.Printf("[startup] failed to encode error dialog title: %v", err)
+		return
+	}
+	messagePtr, err := win.UTF16PtrFromString(message)
+	if err != nil {
+		log.Printf("[startup] failed to encode error dialog message: %v", err)
+		return
+	}
+	_, _, _ = procMessageBoxW.Call(
+		0,
+		uintptr(unsafe.Pointer(messagePtr)),
+		uintptr(unsafe.Pointer(titlePtr)),
+		uintptr(MB_OK|MB_ICONERROR),
+	)
 }
 
 func focusExistingWindow() {
@@ -246,6 +423,15 @@ func init() {
 }
 
 func main() {
+	diagnostics := initStartupDiagnostics()
+	defer diagnostics.Close()
+	defer func() {
+		if recovered := recover(); recovered != nil {
+			diagnostics.HandlePanic("main", panicErrorValue(recovered), string(debug.Stack()))
+			os.Exit(2)
+		}
+	}()
+
 	startup := newStartupLogger()
 	startup.Mark("process start")
 
@@ -257,7 +443,8 @@ func main() {
 	}
 	c, err := config.Load()
 	if err != nil {
-		log.Printf("config.Load failed: %v", err)
+		diagnostics.HandleError("config.Load failed", err)
+		return
 	}
 	update.Init()
 	startup.Mark("config loaded")
@@ -269,12 +456,29 @@ func main() {
 
 	assets, err := fs.Sub(assets, "frontend/dist")
 	if err != nil {
-		log.Fatal(err)
+		diagnostics.HandleError("failed to load frontend assets", err)
+		return
 	}
 
 	app := application.New(application.Options{
 		Name:        "LeviLauncher",
 		Description: "A Minecraft Launcher",
+		Logger:      diagnostics.Logger(),
+		LogLevel:    slog.LevelDebug,
+		Windows: application.WindowsOptions{
+			AdditionalBrowserArgs: defaultWebview2AdditionalBrowserArgs(),
+		},
+		ErrorHandler: func(err error) {
+			diagnostics.HandleError("Wails/WebView2 error", err)
+		},
+		PanicHandler: func(details *application.PanicDetails) {
+			if details == nil {
+				diagnostics.HandlePanic("Wails panic", fmt.Errorf("panic details unavailable"), "")
+				os.Exit(2)
+			}
+			diagnostics.HandlePanic("Wails panic", details.Error, details.FullStackTrace)
+			os.Exit(2)
+		},
 		Services: []application.Service{
 			application.NewService(mc),
 			application.NewService(contentService),
@@ -384,6 +588,7 @@ func main() {
 	})
 	var deferredStartupOnce sync.Once
 	windows.OnWindowEvent(events.Windows.WebViewNavigationCompleted, func(_ *application.WindowEvent) {
+		diagnostics.MarkStartupComplete()
 		syncWindowResizeHandles()
 		deferredStartupOnce.Do(func() {
 			startup.Mark("webview navigation completed")
@@ -445,7 +650,8 @@ func main() {
 	err = app.Run()
 
 	if err != nil {
-		log.Fatal(err.Error())
+		diagnostics.HandleError("app.Run failed", err)
+		return
 	}
 
 	if singleInstanceGuard != 0 {

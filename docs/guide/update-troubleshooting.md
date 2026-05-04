@@ -19,6 +19,12 @@ Use this page when LeviLauncher installs, updates, or launches do not behave as 
 - Move your managed content path to a writable location in **Settings**.
 - If the launcher requests elevation for install or self-update, allow it when you trust the action.
 
+### LeviLauncher closes immediately or never shows a window
+
+- On Windows, LeviLauncher now starts WebView2 in a safer software-rendered mode to reduce startup crashes on some GPU and driver combinations.
+- If the launcher still fails before the UI appears, check `%APPDATA%\levilauncher.exe\logs\startup.log`.
+- Retry once after a failed launch. If it still happens, attach `startup.log` when opening a GitHub issue.
+
 ### A version fails to launch
 
 - test the same version without mods
@@ -59,4 +65,3 @@ When reporting, include:
 - screenshots or logs if available
 
 Open issues here: [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
-

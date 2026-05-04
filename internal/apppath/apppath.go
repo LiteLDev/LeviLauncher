@@ -16,6 +16,20 @@ func SetBaseRootOverride(path string) {
 	baseRootOverride = path
 }
 
+func executableStorageRoot() string {
+	exeName := "levilauncher.exe"
+	if exe, err := os.Executable(); err == nil {
+		base := strings.TrimSpace(filepath.Base(exe))
+		if base != "" {
+			exeName = strings.ToLower(base)
+		}
+	}
+
+	root := filepath.Join(AppData(), exeName)
+	_ = os.MkdirAll(root, 0o755)
+	return root
+}
+
 func LauncherDir() string {
 	exe, err := os.Executable()
 	if err != nil {
@@ -36,20 +50,21 @@ func AppData() string {
 }
 
 func ConfigPath() string {
-	exeName := "levilauncher.exe"
-	if exe, err := os.Executable(); err == nil {
-		b := strings.TrimSpace(filepath.Base(exe))
-		if b != "" {
-			exeName = strings.ToLower(b)
-		}
-	}
-	base := filepath.Join(AppData(), exeName)
-	_ = os.MkdirAll(base, 0o755)
-	return filepath.Join(base, "config.json")
+	return filepath.Join(executableStorageRoot(), "config.json")
 }
 
 func ConfigDir() string {
 	return filepath.Dir(ConfigPath())
+}
+
+func LogsDir() string {
+	dir := filepath.Join(executableStorageRoot(), "logs")
+	_ = os.MkdirAll(dir, 0o755)
+	return dir
+}
+
+func StartupLogPath() string {
+	return filepath.Join(LogsDir(), "startup.log")
 }
 
 func BaseRoot() string {
@@ -65,17 +80,7 @@ func BaseRoot() string {
 		}
 	}
 
-	exeName := "levilauncher.exe"
-	if exe, err := os.Executable(); err == nil {
-		base := strings.TrimSpace(filepath.Base(exe))
-		if base != "" {
-			exeName = strings.ToLower(base)
-		}
-	}
-
-	root := filepath.Join(AppData(), exeName)
-	_ = os.MkdirAll(root, 0o755)
-	return root
+	return executableStorageRoot()
 }
 
 func InstallersDir() (string, error) {

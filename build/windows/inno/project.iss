@@ -61,38 +61,54 @@ ShowLanguageDialog=auto
 [Languages]
 Name: "english"; MessagesFile: "compiler:Default.isl"
 Name: "simpchinese"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
+Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 
 [CustomMessages]
 english.InstallWebView2=Installing WebView2 Runtime...
 simpchinese.InstallWebView2=正在安装 WebView2 运行时...
+japanese.InstallWebView2=WebView2 ランタイムをインストールしています...
 english.MsgCloseBeforeUninstall={#AppName} is currently running. Please close it before uninstalling.
 simpchinese.MsgCloseBeforeUninstall={#AppName} 正在运行。请先关闭后再卸载。
+japanese.MsgCloseBeforeUninstall={#AppName} は現在実行中です。アンインストールする前に閉じてください。
 english.UninstallOptionsTitle=Optional Data Cleanup
 simpchinese.UninstallOptionsTitle=可选数据清理
+japanese.UninstallOptionsTitle=オプションのデータ削除
 english.UninstallOptionsDesc=BaseRoot is your instance library and may contain instances, saves, mods, and resource packs.
 simpchinese.UninstallOptionsDesc=BaseRoot 是你的实例库，可能包含实例、存档、模组和资源包。
+japanese.UninstallOptionsDesc=BaseRoot はインスタンスライブラリです。インスタンス、セーブデータ、Mod、リソースパックが含まれている場合があります。
 english.UninstallDefaultSafe=Default behavior keeps all BaseRoot data intact.
 simpchinese.UninstallDefaultSafe=默认行为会保留 BaseRoot 下的全部数据。
+japanese.UninstallDefaultSafe=デフォルトでは BaseRoot のデータはすべて保持されます。
 english.UninstallDetectedBaseRoot=Detected BaseRoot:
 simpchinese.UninstallDetectedBaseRoot=检测到 BaseRoot：
+japanese.UninstallDetectedBaseRoot=検出された BaseRoot:
 english.UninstallDangerNote=Caution: deleting these folders may remove game files or user data depending on your layout.
 simpchinese.UninstallDangerNote=注意：删除以下目录可能导致游戏文件或用户数据丢失（取决于你的目录布局）。
+japanese.UninstallDangerNote=注意：以下のフォルダを削除すると、ゲームファイルやユーザーデータが失われる場合があります（ディレクトリ構成によって異なります）。
 english.UninstallSelectWhatToDelete=Select folders to delete:
 simpchinese.UninstallSelectWhatToDelete=请选择要删除的目录：
+japanese.UninstallSelectWhatToDelete=削除するフォルダを選択してください:
 english.UninstallDeleteInstallers=Delete "installers" (installer package directory)
 simpchinese.UninstallDeleteInstallers=删除 "installers"（安装包目录）
+japanese.UninstallDeleteInstallers="installers" を削除（インストーラーパッケージのディレクトリ）
 english.UninstallDeleteVersions=[Dangerous] Delete "versions" (game instance directory)
 simpchinese.UninstallDeleteVersions=[高风险] 删除 "versions"（游戏实例目录）
+japanese.UninstallDeleteVersions=[危険] "versions" を削除（ゲームインスタンスのディレクトリ）
 english.UninstallDeleteBackups=Delete "backups" (backup directory)
 simpchinese.UninstallDeleteBackups=删除 "backups"（备份目录）
+japanese.UninstallDeleteBackups="backups" を削除（バックアップのディレクトリ）
 english.UninstallFolderNotFound=(not found)
 simpchinese.UninstallFolderNotFound=（未找到）
+japanese.UninstallFolderNotFound=（見つかりません）
 english.UninstallNoOptionalData=No optional BaseRoot cleanup targets were found. Keeping all instance data.
 simpchinese.UninstallNoOptionalData=未发现可选的 BaseRoot 清理目标，实例数据将全部保留。
+japanese.UninstallNoOptionalData=削除対象の BaseRoot データが見つかりませんでした。インスタンスデータはすべて保持されます。
 english.UpgradeModeDesc=Upgrade mode detected. Existing installation path:%n%1%nThis setup will upgrade in place and keep your current installation directory.
 simpchinese.UpgradeModeDesc=检测到升级模式。现有安装路径：%n%1%n本次将执行原地升级，并保留当前安装目录。
+japanese.UpgradeModeDesc=アップグレードモードを検出しました。既存のインストールパス:%n%1%nこのセットアップは既存の場所にアップグレードし、現在のインストールディレクトリを保持します。
 english.NsisMigrationModeDesc=Upgrade mode detected. Existing installation path:%n%1%nThis setup will upgrade in place and keep your current installation directory.
 simpchinese.NsisMigrationModeDesc=检测到升级模式。现有安装路径：%n%1%n本次将执行原地升级，并保留当前安装目录。
+japanese.NsisMigrationModeDesc=アップグレードモードを検出しました。既存のインストールパス:%n%1%nこのセットアップは既存の場所にアップグレードし、現在のインストールディレクトリを保持します。
 
 [Tasks]
 Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; Flags: checkedonce

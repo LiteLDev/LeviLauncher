@@ -194,6 +194,101 @@ func IsModEnabled(mcname string, modFolder string) bool {
 	return utils.FileExists(mfile)
 }
 
+func UpdateModManifest(mcname string, modFolder string, modName string, version string, modType string, entry string, author string) string {
+	name := strings.TrimSpace(mcname)
+	mod := strings.TrimSpace(modFolder)
+	if name == "" || mod == "" || strings.TrimSpace(modName) == "" {
+		return "ERR_INVALID_NAME"
+	}
+	if mod == "." || strings.ContainsAny(mod, `/\`) {
+		return "ERR_INVALID_NAME"
+	}
+	vroot, err := apppath.VersionsDir()
+	if err != nil || strings.TrimSpace(vroot) == "" {
+		return "ERR_ACCESS_VERSIONS_DIR"
+	}
+	root := filepath.Join(vroot, name)
+	modsDir := filepath.Join(root, "mods")
+	targetRoot := filepath.Join(modsDir, mod)
+	absTarget, _ := filepath.Abs(targetRoot)
+	absMods, _ := filepath.Abs(modsDir)
+	lowT := strings.ToLower(absTarget)
+	lowM := strings.ToLower(absMods)
+	if lowT != lowM && !strings.HasPrefix(lowT, lowM+string(os.PathSeparator)) {
+		return "ERR_INVALID_PACKAGE"
+	}
+	if !utils.DirExists(targetRoot) {
+		return "ERR_INVALID_PACKAGE"
+	}
+
+	manifestPath := filepath.Join(targetRoot, "manifest.json")
+	closedPath := manifestPath + ".close"
+	manifestExists := utils.FileExists(manifestPath)
+	closedExists := utils.FileExists(closedPath)
+	if !manifestExists && !closedExists {
+		return "ERR_MANIFEST_NOT_FOUND"
+	}
+
+	readPath := manifestPath
+	if !manifestExists {
+		readPath = closedPath
+	}
+	data, err := os.ReadFile(readPath)
+	if err != nil {
+		return "ERR_INVALID_PACKAGE"
+	}
+
+	manifest := map[string]interface{}{}
+	if len(bytes.TrimSpace(data)) > 0 {
+		if err := json.Unmarshal(utils.JsonCompatBytes(data), &manifest); err != nil {
+			return "ERR_INVALID_PACKAGE"
+		}
+	}
+
+	manifest["name"] = strings.TrimSpace(modName)
+	manifest["version"] = strings.TrimSpace(version)
+	manifest["type"] = strings.TrimSpace(modType)
+	manifest["entry"] = strings.TrimSpace(entry)
+	if strings.TrimSpace(author) == "" {
+		delete(manifest, "author")
+	} else {
+		manifest["author"] = strings.TrimSpace(author)
+	}
+
+	mbytes, err := json.MarshalIndent(manifest, "", "  ")
+	if err != nil {
+		return "ERR_WRITE_FILE"
+	}
+
+	targetPaths := []string{}
+	if manifestExists {
+		targetPaths = append(targetPaths, manifestPath)
+	}
+	if closedExists {
+		targetPaths = append(targetPaths, closedPath)
+	}
+	for _, path := range targetPaths {
+		tmp := path + ".tmp"
+		f, er := os.OpenFile(tmp, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, 0644)
+		if er != nil {
+			return "ERR_WRITE_FILE"
+		}
+		if _, er = f.Write(mbytes); er != nil {
+			_ = f.Close()
+			_ = os.Remove(tmp)
+			return "ERR_WRITE_FILE"
+		}
+		_ = f.Sync()
+		_ = f.Close()
+		_ = os.Remove(path)
+		if er = os.Rename(tmp, path); er != nil {
+			_ = os.Remove(tmp)
+			return "ERR_WRITE_FILE"
+		}
+	}
+	return ""
+}
+
 func ImportZipToMods(mcname string, data []byte, overwrite bool) string {
 	name := strings.TrimSpace(mcname)
 	if name == "" {

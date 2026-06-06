@@ -29,6 +29,7 @@ import {
   FaChevronDown,
   FaBan,
   FaCheck,
+  FaPen,
 } from "react-icons/fa6";
 import {
   FaSync,
@@ -625,6 +626,13 @@ export const ModsPage: React.FC = () => {
                             {t("mods.action_update")}
                           </DropdownItem>
                           <DropdownItem
+                            key="edit"
+                            startContent={<FaPen />}
+                            onPress={() => mp.openEditForMod(mod)}
+                          >
+                            {t("common.edit")}
+                          </DropdownItem>
+                          <DropdownItem
                             key="folder"
                             startContent={<FaFolderOpen />}
                             onPress={() => mp.openModFolder(mod)}
@@ -817,6 +825,16 @@ export const ModsPage: React.FC = () => {
               {t("common.cancel")}
             </Button>
             <Button
+              variant="flat"
+              onPress={() => {
+                if (!mp.activeMod) return;
+                mp.openEditForMod(mp.activeMod);
+              }}
+              isDisabled={!mp.activeMod}
+            >
+              {t("common.edit")}
+            </Button>
+            <Button
               color="primary"
               variant="flat"
               onPress={() => {
@@ -934,6 +952,66 @@ export const ModsPage: React.FC = () => {
             </div>
           </div>
         ) : null}
+      </UnifiedModal>
+
+      <UnifiedModal
+        isOpen={mp.editOpen}
+        onOpenChange={mp.editOnOpenChange}
+        title={t("common.edit")}
+        type="primary"
+        icon={<FaPen className="w-5 h-5" />}
+        hideCloseButton
+        showCancelButton
+        confirmText={t("common.save")}
+        cancelText={t("common.cancel")}
+        onCancel={mp.editOnClose}
+        onConfirm={() => void mp.handleSaveModEdit()}
+        confirmButtonProps={{
+          isLoading: mp.editSaving,
+          isDisabled: !mp.editFormValid,
+        }}
+        cancelButtonProps={{ isDisabled: mp.editSaving }}
+      >
+        <div className="flex flex-col gap-3">
+          <Input
+            label={t("mods.field_name") as string}
+            value={mp.editName}
+            onValueChange={mp.setEditName}
+            autoFocus
+            size="sm"
+            isRequired
+            isInvalid={mp.editName.trim().length === 0}
+            classNames={COMPONENT_STYLES.input}
+          />
+          <Input
+            label={t("mods.field_version") as string}
+            value={mp.editVersion}
+            onValueChange={mp.setEditVersion}
+            size="sm"
+            classNames={COMPONENT_STYLES.input}
+          />
+          <Input
+            label={t("mods.field_type") as string}
+            value={mp.editType}
+            onValueChange={mp.setEditType}
+            size="sm"
+            classNames={COMPONENT_STYLES.input}
+          />
+          <Input
+            label={t("mods.field_entry") as string}
+            value={mp.editEntry}
+            onValueChange={mp.setEditEntry}
+            size="sm"
+            classNames={COMPONENT_STYLES.input}
+          />
+          <Input
+            label={t("mods.field_author") as string}
+            value={mp.editAuthor}
+            onValueChange={mp.setEditAuthor}
+            size="sm"
+            classNames={COMPONENT_STYLES.input}
+          />
+        </div>
       </UnifiedModal>
 
       <DeleteConfirmModal

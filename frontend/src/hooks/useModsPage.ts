@@ -17,6 +17,7 @@ import {
   DisableMod,
   ImportModZipPath,
   ImportModDllPath,
+  UpdateModManifest,
 } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
@@ -378,6 +379,13 @@ export const useModsPage = (
   >([]);
   const [currentFile, setCurrentFile] = useState("");
   const [activeMod, setActiveMod] = useState<types.ModInfo | null>(null);
+  const [editMod, setEditMod] = useState<types.ModInfo | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editVersion, setEditVersion] = useState("");
+  const [editType, setEditType] = useState("");
+  const [editEntry, setEditEntry] = useState("");
+  const [editAuthor, setEditAuthor] = useState("");
+  const [editSaving, setEditSaving] = useState(false);
   const [activeLipIdentifier, setActiveLipIdentifier] = useState("");
   const [deleting, setDeleting] = useState<boolean>(false);
   const [batchUpdating, setBatchUpdating] = useState<boolean>(false);
@@ -450,6 +458,11 @@ export const useModsPage = (
     onOpen: infoOnOpen,
     onOpenChange: infoOnOpenChange,
     onClose: infoOnClose,
+  } = useDisclosure();
+  const {
+    isOpen: editOpen,
+    onOpen: editOnOpen,
+    onClose: editOnClose,
   } = useDisclosure();
   const {
     isOpen: batchUpdateOpen,
@@ -956,6 +969,117 @@ export const useModsPage = (
     setResultFailed(failed);
     if (success.length > 0 || failed.length > 0) {
       delOnOpen();
+    }
+  };
+
+  const populateEditForm = (mod: types.ModInfo) => {
+    setEditName(String(mod.name || ""));
+    setEditVersion(String(mod.version || ""));
+    setEditType(String(mod.type || ""));
+    setEditEntry(String(mod.entry || ""));
+    setEditAuthor(String((mod as any).author || ""));
+  };
+
+  const openEditForMod = (mod: types.ModInfo) => {
+    setActiveLipIdentifier("");
+    setEditMod(mod);
+    populateEditForm(mod);
+    editOnOpen();
+  };
+
+  const resetEditForm = () => {
+    setEditMod(null);
+    setEditName("");
+    setEditVersion("");
+    setEditType("");
+    setEditEntry("");
+    setEditAuthor("");
+  };
+
+  const closeEditModal = () => {
+    if (editSaving) return;
+    editOnClose();
+    resetEditForm();
+  };
+
+  const editOnOpenChange = (nextOpen: boolean) => {
+    if (nextOpen) {
+      editOnOpen();
+      return;
+    }
+    closeEditModal();
+  };
+
+  const editFormValid = editName.trim().length > 0 && !editSaving;
+
+  const handleSaveModEdit = async () => {
+    const name = activeVersionName;
+    const mod = editMod;
+    const folder = mod ? resolveModFolder(mod) : "";
+    const nextName = editName.trim();
+
+    if (!name || !mod || !folder || !nextName) {
+      addToast({
+        color: "danger",
+        title: t("common.error"),
+        description: t("mods.err_invalid_name"),
+      });
+      return;
+    }
+
+    const nextMod = {
+      ...mod,
+      name: nextName,
+      version: editVersion.trim(),
+      type: editType.trim(),
+      entry: editEntry.trim(),
+      author: editAuthor.trim(),
+      folder,
+    } as types.ModInfo;
+
+    const pos = scrollRef.current?.scrollTop || 0;
+    lastScrollTopRef.current = pos;
+    restorePendingRef.current = true;
+    setEditSaving(true);
+
+    try {
+      const err = await UpdateModManifest(
+        name,
+        folder,
+        nextMod.name,
+        nextMod.version,
+        nextMod.type,
+        nextMod.entry,
+        String((nextMod as any).author || ""),
+      );
+
+      if (err) {
+        showActionToast("error", t("common.save"), mod.name, err);
+        return;
+      }
+
+      setModsInfo((prev) =>
+        prev.map((item) =>
+          resolveModFolder(item) === folder ? nextMod : item,
+        ),
+      );
+      setActiveMod((current) =>
+        current && resolveModFolder(current) === folder ? nextMod : current,
+      );
+      setEditMod(nextMod);
+      await refreshInstance(name, "mods-edit");
+      showActionToast("success", t("common.save"), nextMod.name);
+      editOnClose();
+      resetEditForm();
+    } catch (error) {
+      showActionToast(
+        "error",
+        t("common.save"),
+        mod.name,
+        parseErrorCode(error) || "ERR_WRITE_FILE",
+      );
+    } finally {
+      setEditSaving(false);
     }
   };
 
@@ -2204,6 +2328,19 @@ export const useModsPage = (
     currentFile,
     activeMod,
     setActiveMod,
+    editMod,
+    editName,
+    setEditName,
+    editVersion,
+    setEditVersion,
+    editType,
+    setEditType,
+    editEntry,
+    setEditEntry,
+    editAuthor,
+    setEditAuthor,
+    editSaving,
+    editFormValid,
     activeLipIdentifier,
     setActiveLipIdentifier,
     activeLipGroup,
@@ -2273,6 +2410,10 @@ export const useModsPage = (
     infoOnOpen,
     infoOnClose,
     infoOnOpenChange,
+    editOpen,
+    editOnOpen,
+    editOnClose: closeEditModal,
+    editOnOpenChange,
     batchUpdateOpen,
     batchUpdateOnOpen,
     batchUpdateOnClose,
@@ -2313,6 +2454,8 @@ export const useModsPage = (
     handleBatchUpdate,
     handleBatchUninstall,
     openDetails,
+    openEditForMod,
+    handleSaveModEdit,
     openLIPPackageDetails,
     openDeleteForMod,
     openDeleteForLipGroup,

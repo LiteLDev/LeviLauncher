@@ -274,6 +274,10 @@ func (s *ModsService) IsModEnabled(name string, modName string) bool {
 	return mods.IsModEnabled(name, modName)
 }
 
+func (s *ModsService) UpdateModManifest(name string, modFolder string, modName string, version string, modType string, entry string, author string) string {
+	return mods.UpdateModManifest(name, modFolder, modName, version, modType, entry, author)
+}
+
 func (s *ModsService) OpenModsExplorer(name string) {
 	mcservice.OpenModsExplorer(name)
 }

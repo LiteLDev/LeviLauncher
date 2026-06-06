@@ -50,16 +50,23 @@ var singleInstanceGuard win.Handle
 const singleInstancePipe = `\\.\pipe\LeviLauncher_SingleInstance_Pipe`
 
 const (
-	SW_RESTORE          = 9
-	MB_OK               = 0x00000000
-	MB_ICONERROR        = 0x00000010
-	minWindowWidth      = 960
-	minWindowHeight     = 600
-	defaultWindowWidth  = 1024
-	defaultWindowHeight = 640
+	ATTACH_PARENT_PROCESS = ^uint32(0)
+	CP_UTF8               = 65001
+	SW_RESTORE            = 9
+	MB_OK                 = 0x00000000
+	MB_ICONERROR          = 0x00000010
+	minWindowWidth        = 960
+	minWindowHeight       = 600
+	defaultWindowWidth    = 1024
+	defaultWindowHeight   = 640
 )
 
 var (
+	kernel32                = win.NewLazySystemDLL("kernel32.dll")
+	procAttachConsole       = kernel32.NewProc("AttachConsole")
+	procAllocConsole        = kernel32.NewProc("AllocConsole")
+	procSetConsoleOutputCP  = kernel32.NewProc("SetConsoleOutputCP")
+	procSetConsoleCP        = kernel32.NewProc("SetConsoleCP")
 	user32                  = win.NewLazySystemDLL("user32.dll")
 	procFindWindowW         = user32.NewProc("FindWindowW")
 	procMessageBoxW         = user32.NewProc("MessageBoxW")
@@ -249,8 +256,76 @@ func focusExistingWindow() {
 	}
 }
 
-func parseArgs() (initialURL string, autoLaunchVersion string, postUpdateRestart bool) {
+func isDebugArg(arg string) bool {
+	switch strings.ToLower(strings.TrimSpace(arg)) {
+	case "debug", "-debug", "--debug", "/debug":
+		return true
+	default:
+		return false
+	}
+}
+
+func isDebugModeRequested(args []string) bool {
+	for _, arg := range args {
+		if isDebugArg(arg) {
+			return true
+		}
+	}
+	return false
+}
+
+func attachOrAllocateConsole() error {
+	r1, _, attachErr := procAttachConsole.Call(uintptr(ATTACH_PARENT_PROCESS))
+	if r1 != 0 || attachErr == win.ERROR_ACCESS_DENIED {
+		return nil
+	}
+
+	r1, _, allocErr := procAllocConsole.Call()
+	if r1 != 0 {
+		return nil
+	}
+
+	return fmt.Errorf("AttachConsole failed: %v; AllocConsole failed: %v", attachErr, allocErr)
+}
+
+func redirectStandardStreamsToConsole() error {
+	stdout, err := os.OpenFile("CONOUT$", os.O_WRONLY, 0)
+	if err != nil {
+		return fmt.Errorf("open CONOUT$ for stdout: %w", err)
+	}
+	stderr, err := os.OpenFile("CONOUT$", os.O_WRONLY, 0)
+	if err != nil {
+		_ = stdout.Close()
+		return fmt.Errorf("open CONOUT$ for stderr: %w", err)
+	}
+	if stdin, err := os.OpenFile("CONIN$", os.O_RDONLY, 0); err == nil {
+		os.Stdin = stdin
+		_ = win.SetStdHandle(win.STD_INPUT_HANDLE, win.Handle(stdin.Fd()))
+		win.Stdin = win.Handle(stdin.Fd())
+	}
+
+	os.Stdout = stdout
+	os.Stderr = stderr
+	_ = win.SetStdHandle(win.STD_OUTPUT_HANDLE, win.Handle(stdout.Fd()))
+	_ = win.SetStdHandle(win.STD_ERROR_HANDLE, win.Handle(stderr.Fd()))
+	win.Stdout = win.Handle(stdout.Fd())
+	win.Stderr = win.Handle(stderr.Fd())
+	log.SetOutput(os.Stderr)
+	return nil
+}
+
+func enableDebugConsole() error {
+	if err := attachOrAllocateConsole(); err != nil {
+		return err
+	}
+	_, _, _ = procSetConsoleOutputCP.Call(uintptr(CP_UTF8))
+	_, _, _ = procSetConsoleCP.Call(uintptr(CP_UTF8))
+	return redirectStandardStreamsToConsole()
+}
+
+func parseArgs() (initialURL string, autoLaunchVersion string, postUpdateRestart bool, debugMode bool) {
 	initialURL = "/"
+	debugMode = isDebugModeRequested(os.Args[1:])
 	for _, arg := range os.Args[1:] {
 		if strings.HasPrefix(arg, "--self-update=") {
 			initialURL = "/#/updating"
@@ -266,7 +341,7 @@ func parseArgs() (initialURL string, autoLaunchVersion string, postUpdateRestart
 			autoLaunchVersion = v
 		}
 	}
-	return initialURL, autoLaunchVersion, postUpdateRestart
+	return initialURL, autoLaunchVersion, postUpdateRestart, debugMode
 }
 
 func sendLaunchToExistingInstance(version string) bool {
@@ -416,6 +491,16 @@ func init() {
 }
 
 func main() {
+	initialURL, autoLaunchVersion, postUpdateRestart, debugMode := parseArgs()
+	var debugConsoleErr error
+	if debugMode {
+		debugConsoleErr = enableDebugConsole()
+		log.SetFlags(log.LstdFlags | log.Lmicroseconds)
+		if debugConsoleErr == nil {
+			log.Printf("[startup] debug console enabled")
+		}
+	}
+
 	if !vcruntime.EnsureStartupInteractive(context.Background()) {
 		return
 	}
@@ -432,9 +517,15 @@ func main() {
 	startup := newStartupLogger()
 	startup.Mark("process start")
 	startup.Mark("VC runtime ready")
+	if debugMode {
+		if debugConsoleErr != nil {
+			log.Printf("[startup] debug console setup failed: %v", debugConsoleErr)
+		} else {
+			log.Printf("[startup] debug mode requested")
+		}
+	}
 
 	_ = godotenv.Load()
-	initialURL, autoLaunchVersion, postUpdateRestart := parseArgs()
 
 	if !ensureSingleInstance(autoLaunchVersion, postUpdateRestart) {
 		return

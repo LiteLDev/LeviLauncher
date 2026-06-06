@@ -37,6 +37,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
+	"github.com/liteldev/LeviLauncher/internal/webview2runtime"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"github.com/wailsapp/wails/v3/pkg/events"
@@ -504,6 +505,9 @@ func main() {
 	if !vcruntime.EnsureStartupInteractive(context.Background()) {
 		return
 	}
+	if !webview2runtime.EnsureStartupInteractive(context.Background()) {
+		return
+	}
 
 	diagnostics := initStartupDiagnostics()
 	defer diagnostics.Close()
@@ -517,6 +521,7 @@ func main() {
 	startup := newStartupLogger()
 	startup.Mark("process start")
 	startup.Mark("VC runtime ready")
+	startup.Mark("WebView2 runtime ready")
 	if debugMode {
 		if debugConsoleErr != nil {
 			log.Printf("[startup] debug console setup failed: %v", debugConsoleErr)

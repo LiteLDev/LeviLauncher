@@ -214,13 +214,6 @@ func buildStartupFailureDialogMessage(logPath string) string {
 	)
 }
 
-func defaultWebview2AdditionalBrowserArgs() []string {
-	return []string{
-		"--disable-gpu",
-		"--disable-gpu-compositing",
-	}
-}
-
 func panicErrorValue(v any) error {
 	if err, ok := v.(error); ok {
 		return err
@@ -423,6 +416,10 @@ func init() {
 }
 
 func main() {
+	if !vcruntime.EnsureStartupInteractive(context.Background()) {
+		return
+	}
+
 	diagnostics := initStartupDiagnostics()
 	defer diagnostics.Close()
 	defer func() {
@@ -434,6 +431,7 @@ func main() {
 
 	startup := newStartupLogger()
 	startup.Mark("process start")
+	startup.Mark("VC runtime ready")
 
 	_ = godotenv.Load()
 	initialURL, autoLaunchVersion, postUpdateRestart := parseArgs()
@@ -465,9 +463,6 @@ func main() {
 		Description: "A Minecraft Launcher",
 		Logger:      diagnostics.Logger(),
 		LogLevel:    slog.LevelDebug,
-		Windows: application.WindowsOptions{
-			AdditionalBrowserArgs: defaultWebview2AdditionalBrowserArgs(),
-		},
 		ErrorHandler: func(err error) {
 			diagnostics.HandleError("Wails/WebView2 error", err)
 		},

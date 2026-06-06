@@ -1,6 +1,9 @@
 package vcruntime
 
-import "testing"
+import (
+	"path/filepath"
+	"testing"
+)
 
 func TestIsVcRuntimeRegistryStateInstalled(t *testing.T) {
 	t.Parallel()
@@ -15,7 +18,7 @@ func TestIsVcRuntimeRegistryStateInstalled(t *testing.T) {
 			state: vcRuntimeRegistryState{
 				Installed:    1,
 				HasInstalled: true,
-				Version:      "v14.50.35719.00",
+				Version:      "v14.44.35208.0",
 			},
 			want: true,
 		},
@@ -32,7 +35,7 @@ func TestIsVcRuntimeRegistryStateInstalled(t *testing.T) {
 		{
 			name: "missing installed flag",
 			state: vcRuntimeRegistryState{
-				Version: "v14.50.35719.00",
+				Version: "v14.44.35208.0",
 			},
 			want: false,
 		},
@@ -41,7 +44,7 @@ func TestIsVcRuntimeRegistryStateInstalled(t *testing.T) {
 			state: vcRuntimeRegistryState{
 				Installed:    0,
 				HasInstalled: true,
-				Version:      "v14.50.35719.00",
+				Version:      "v14.44.35208.0",
 			},
 			want: false,
 		},
@@ -52,14 +55,6 @@ func TestIsVcRuntimeRegistryStateInstalled(t *testing.T) {
 				HasInstalled: true,
 				Major:        13,
 				HasMajor:     true,
-			},
-			want: false,
-		},
-		{
-			name: "installed but no version or major",
-			state: vcRuntimeRegistryState{
-				Installed:    1,
-				HasInstalled: true,
 			},
 			want: false,
 		},
@@ -78,59 +73,159 @@ func TestIsVcRuntimeRegistryStateInstalled(t *testing.T) {
 	}
 }
 
-func TestHasInstalledVcRuntime(t *testing.T) {
+func TestHasInstalledVcRuntimeRegistry(t *testing.T) {
 	t.Parallel()
 
-	makeReader := func(states map[string]vcRuntimeRegistryState) func(string) (vcRuntimeRegistryState, bool) {
-		return func(path string) (vcRuntimeRegistryState, bool) {
-			state, ok := states[path]
-			return state, ok
-		}
+	paths := []string{"native", "fallback"}
+	states := map[string]vcRuntimeRegistryState{
+		"fallback": {
+			Installed:    1,
+			HasInstalled: true,
+			Version:      "v14.44.35208.0",
+		},
 	}
 
+	got := hasInstalledVcRuntimeRegistry(paths, func(path string) (vcRuntimeRegistryState, bool) {
+		state, ok := states[path]
+		return state, ok
+	})
+	if !got {
+		t.Fatal("expected installed registry state to be detected")
+	}
+}
+
+func TestIsVC2015To2022X64RedistributableDisplayName(t *testing.T) {
+	t.Parallel()
+
 	cases := []struct {
-		name   string
-		states map[string]vcRuntimeRegistryState
-		want   bool
+		name        string
+		displayName string
+		want        bool
 	}{
 		{
-			name: "native registry path present",
-			states: map[string]vcRuntimeRegistryState{
-				vcRuntimeRegistryPaths[0]: {
-					Installed:    1,
-					HasInstalled: true,
-					Version:      "v14.50.35719.00",
-				},
-			},
-			want: true,
+			name:        "canonical x64 redistributable",
+			displayName: "Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.44.35208.0",
+			want:        true,
 		},
 		{
-			name: "wow6432 registry path present",
-			states: map[string]vcRuntimeRegistryState{
-				vcRuntimeRegistryPaths[1]: {
-					Installed:    1,
-					HasInstalled: true,
-					Major:        14,
-					HasMajor:     true,
-				},
-			},
-			want: true,
+			name:        "case insensitive x64",
+			displayName: "microsoft visual c++ 2015-2022 redistributable x64",
+			want:        true,
 		},
 		{
-			name:   "official keys missing",
-			states: map[string]vcRuntimeRegistryState{},
-			want:   false,
+			name:        "x86 redistributable ignored",
+			displayName: "Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.44.35208.0",
+			want:        false,
 		},
 		{
-			name: "official key exists but invalid",
-			states: map[string]vcRuntimeRegistryState{
-				vcRuntimeRegistryPaths[0]: {
-					Installed:    1,
-					HasInstalled: true,
-					Major:        13,
-					HasMajor:     true,
-				},
-			},
+			name:        "old runtime ignored",
+			displayName: "Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40664",
+			want:        false,
+		},
+		{
+			name:        "runtime package ignored",
+			displayName: "Microsoft Visual C++ 2022 X64 Minimum Runtime - 14.44.35208",
+			want:        false,
+		},
+	}
+
+	for _, tc := range cases {
+		tc := tc
+		t.Run(tc.name, func(t *testing.T) {
+			t.Parallel()
+
+			got := isVC2015To2022X64RedistributableDisplayName(tc.displayName)
+			if got != tc.want {
+				t.Fatalf("isVC2015To2022X64RedistributableDisplayName() = %v, want %v", got, tc.want)
+			}
+		})
+	}
+}
+
+func TestHasVC2015To2022X64UninstallEntry(t *testing.T) {
+	t.Parallel()
+
+	gotRootPath := ""
+	got := hasVC2015To2022X64UninstallEntry(func(rootPath string) []string {
+		gotRootPath = rootPath
+		return []string{
+			"Microsoft Visual C++ 2013 Redistributable (x64) - 12.0.40664",
+			"Microsoft Visual C++ 2015-2022 Redistributable (x64) - 14.44.35208.0",
+		}
+	})
+	if !got {
+		t.Fatal("expected x64 2015-2022 redistributable uninstall entry to be detected")
+	}
+	if gotRootPath != vcRuntimeUninstallRootPath {
+		t.Fatalf("root path = %q, want %q", gotRootPath, vcRuntimeUninstallRootPath)
+	}
+
+	if hasVC2015To2022X64UninstallEntry(func(string) []string {
+		return []string{"Microsoft Visual C++ 2015-2022 Redistributable (x86) - 14.44.35208.0"}
+	}) {
+		t.Fatal("did not expect x86 uninstall entry to count as installed")
+	}
+}
+
+func TestHasVC2015To2022X64SystemFiles(t *testing.T) {
+	t.Parallel()
+
+	system32Dir := filepath.Join("C:", "Windows", "System32")
+	files := make(map[string]bool, len(vcRuntimeX64SystemDLLs))
+	for _, dll := range vcRuntimeX64SystemDLLs {
+		files[filepath.Join(system32Dir, dll)] = true
+	}
+
+	if !hasVC2015To2022X64SystemFiles(system32Dir, func(path string) bool { return files[path] }) {
+		t.Fatal("expected complete x64 system DLL set to count as installed")
+	}
+
+	delete(files, filepath.Join(system32Dir, "vcruntime140_1.dll"))
+	if hasVC2015To2022X64SystemFiles(system32Dir, func(path string) bool { return files[path] }) {
+		t.Fatal("did not expect missing vcruntime140_1.dll to count as installed")
+	}
+
+	if hasVC2015To2022X64SystemFiles("", func(string) bool { return true }) {
+		t.Fatal("did not expect empty system32 path to count as installed")
+	}
+}
+
+func TestIsVC2015To2022X64Installed(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name              string
+		forceNoInstalled  bool
+		hasRegistry       bool
+		hasUninstallEntry bool
+		hasSystemFiles    bool
+		want              bool
+	}{
+		{
+			name:              "force no installed overrides all evidence",
+			forceNoInstalled:  true,
+			hasRegistry:       true,
+			hasUninstallEntry: true,
+			hasSystemFiles:    true,
+			want:              false,
+		},
+		{
+			name:        "registry installed",
+			hasRegistry: true,
+			want:        true,
+		},
+		{
+			name:              "uninstall entry installed",
+			hasUninstallEntry: true,
+			want:              true,
+		},
+		{
+			name:           "x64 system files installed",
+			hasSystemFiles: true,
+			want:           true,
+		},
+		{
+			name: "no evidence missing",
 			want: false,
 		},
 	}
@@ -140,47 +235,10 @@ func TestHasInstalledVcRuntime(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			t.Parallel()
 
-			got := hasInstalledVcRuntime(vcRuntimeRegistryPaths, makeReader(tc.states))
+			got := isVC2015To2022X64Installed(tc.forceNoInstalled, tc.hasRegistry, tc.hasUninstallEntry, tc.hasSystemFiles)
 			if got != tc.want {
-				t.Fatalf("hasInstalledVcRuntime() = %v, want %v", got, tc.want)
+				t.Fatalf("isVC2015To2022X64Installed() = %v, want %v", got, tc.want)
 			}
 		})
-	}
-}
-
-func TestHasVCUninstallEvidenceFromDisplayNames(t *testing.T) {
-	t.Parallel()
-
-	displayNames := []string{
-		"Microsoft Visual C++ 2022 X64 Minimum Runtime - 14.50.35719",
-		"Microsoft Visual C++ v14 Redistributable (x64) - 14.50.35719",
-		"Microsoft Visual C++ 2013 x64 Minimum Runtime - 12.0.40664",
-	}
-
-	if !hasVCUninstallEvidenceFromDisplayNames(displayNames) {
-		t.Fatal("expected uninstall evidence to be detected")
-	}
-
-	if hasVCUninstallEvidenceFromDisplayNames([]string{
-		"Microsoft Visual C++ 2013 x64 Minimum Runtime - 12.0.40664",
-		"Some Other Package",
-	}) {
-		t.Fatal("did not expect old runtimes or unrelated packages to count as VC14 runtime evidence")
-	}
-}
-
-func TestOfficialRegistryKeysRemainTheOnlyInstallSignal(t *testing.T) {
-	t.Parallel()
-
-	if hasInstalledVcRuntime(vcRuntimeRegistryPaths, func(string) (vcRuntimeRegistryState, bool) {
-		return vcRuntimeRegistryState{}, false
-	}) {
-		t.Fatal("expected missing official registry keys to be treated as not installed")
-	}
-
-	if !hasVCUninstallEvidenceFromDisplayNames([]string{
-		"Microsoft Visual C++ 2022 X64 Additional Runtime - 14.50.35719",
-	}) {
-		t.Fatal("expected uninstall entries to still be detectable for debug logging")
 	}
 }

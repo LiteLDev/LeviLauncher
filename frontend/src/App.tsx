@@ -230,7 +230,15 @@ function App() {
                       <ToastProvider
                         placement="top-center"
                         toastOffset={80}
-                        toastProps={{ timeout: 2000 }}
+                        regionProps={{ className: "wails-no-drag z-[120]" }}
+                        toastProps={{
+                          timeout: 2000,
+                          classNames: {
+                            motionDiv: "wails-no-drag z-[120]",
+                            base: "wails-no-drag",
+                            closeButton: "wails-no-drag",
+                          },
+                        }}
                       />
 
                       {(resolvedTheme === "light"

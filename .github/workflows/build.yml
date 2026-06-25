@@ -67,7 +67,7 @@ jobs:
           $innoDir = Split-Path -Path $isccPath -Parent
           $langDir = Join-Path $innoDir "Languages"
           $chineseSimplifiedPath = Join-Path $langDir "ChineseSimplified.isl"
-          $chineseSimplifiedUrl = "https://https://raw.githubusercontent.com/jrsoftware/issrc/refs/heads/main/Files/Languages/ChineseSimplified.isl"
+          $chineseSimplifiedUrl = "https://raw.githubusercontent.com/jrsoftware/issrc/refs/heads/main/Files/Languages/ChineseSimplified.isl"
 
           if (-not (Test-Path $langDir)) {
             New-Item -ItemType Directory -Path $langDir -Force | Out-Null

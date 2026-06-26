@@ -2,6 +2,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.13] - 2026-06-26
+
+### Fixed
+
+- Fixed a crash on Minecraft Bedrock `1.26.31` by updating the bundled `vcruntime140_1.dll`.
+
+### CI
+
+- Fixed Windows build workflow configuration.
+
+### Chore
+
+- Bumped version to `0.3.13`.
+
 ## [v0.3.12] - 2026-06-06
 
 ### Added

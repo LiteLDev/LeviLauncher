@@ -4,14 +4,16 @@ import { extname, join, relative, resolve } from "node:path";
 
 const distDir = resolve("dist");
 const limits = {
-  total: 4_500_000,
+  total: 9_500_000,
   javascript: 3_800_000,
   css: 370_000,
-  fonts: 0,
+  fonts: 5_000_000,
   largestJavaScript: 850_000,
 };
 const forbiddenFiles = new Set(["stats.html", ".vite/manifest.json"]);
 const fontExtensions = new Set([".woff", ".woff2", ".ttf", ".otf", ".eot"]);
+const requiredFontPattern =
+  /^assets\/MiSans-Medium-[A-Za-z0-9_-]+\.woff2$/;
 
 const files = [];
 const visit = async (directory) => {
@@ -46,6 +48,12 @@ const forbidden = files
 const javascriptFiles = files.filter((file) => file.extension === ".js");
 const cssFiles = files.filter((file) => file.extension === ".css");
 const fontFiles = files.filter((file) => fontExtensions.has(file.extension));
+const requiredFonts = fontFiles.filter((file) =>
+  requiredFontPattern.test(file.relativePath),
+);
+const unexpectedFonts = fontFiles.filter(
+  (file) => !requiredFontPattern.test(file.relativePath),
+);
 const sum = (items) => items.reduce((total, item) => total + item.size, 0);
 const total = sum(files);
 const javascript = sum(javascriptFiles);
@@ -80,9 +88,27 @@ console.log(
 );
 
 const exceeded = metrics.filter(([, actual, limit]) => actual > limit);
-if (forbidden.length > 0 || exceeded.length > 0) {
+const requiredFontMissing = requiredFonts.length !== 1;
+if (
+  forbidden.length > 0 ||
+  exceeded.length > 0 ||
+  requiredFontMissing ||
+  unexpectedFonts.length > 0
+) {
   if (forbidden.length > 0) {
     console.error(`Forbidden production artifacts: ${forbidden.join(", ")}`);
+  }
+  if (requiredFontMissing) {
+    console.error(
+      `Expected exactly one bundled MiSans Medium font, found ${requiredFonts.length}.`,
+    );
+  }
+  if (unexpectedFonts.length > 0) {
+    console.error(
+      `Unexpected production fonts: ${unexpectedFonts
+        .map((file) => file.relativePath)
+        .join(", ")}`,
+    );
   }
   for (const [name, actual, limit] of exceeded) {
     console.error(

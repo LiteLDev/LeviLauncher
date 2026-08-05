@@ -2,11 +2,19 @@
 @plugin "@tailwindcss/typography";
 @plugin "./hero.ts";
 
+@font-face {
+  font-family: "MiSans";
+  src: url("./assets/fonts/MiSans-Medium.woff2") format("woff2");
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+}
+
 @source "../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
 
 @theme {
-  --font-sans: "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", "Microsoft YaHei", system-ui, sans-serif;
-  --font-mono: "Cascadia Mono", "Cascadia Code", Consolas, "Courier New", monospace;
+  --font-sans: "MiSans", sans-serif;
+  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "MiSans", sans-serif;
 
   --color-primary-50: rgb(var(--theme-50, 236, 253, 245));
   --color-primary-100: rgb(var(--theme-100, 209, 250, 229));

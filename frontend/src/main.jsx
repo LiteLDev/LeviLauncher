@@ -106,7 +106,7 @@ const StartupShell = ({
           "linear-gradient(180deg, rgba(248,250,252,1) 0%, rgba(241,245,249,1) 100%)",
         color: "#0f172a",
         fontFamily:
-          '"Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", sans-serif',
+          '"MiSans", "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", sans-serif',
         opacity: visible ? 1 : 0,
         visibility: visible ? "visible" : "hidden",
         transition: "opacity 220ms ease, visibility 220ms ease",

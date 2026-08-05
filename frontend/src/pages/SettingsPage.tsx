@@ -2359,7 +2359,7 @@ export const SettingsPage: React.FC = () => {
                         </p>
                         <p className="text-tiny text-default-500 dark:text-zinc-400">
                           {t("aboutcard.description", { name: "LeviMC" })} ·{" "}
-                          {t("aboutcard.font", { name: "Segoe UI / System UI" })}
+                          {t("aboutcard.font", { name: "MiSans" })}
                         </p>
                       </div>
                     </div>

@@ -206,12 +206,20 @@ func (a *Minecraft) GetImageBase64(path string) string {
 	return "data:" + mime + ";base64," + enc
 }
 
+func (a *Minecraft) GetImageURL(path string) string {
+	if a == nil || a.localImages == nil {
+		return ""
+	}
+	return a.localImages.register(path)
+}
+
 type Minecraft struct {
 	ctx            context.Context
 	curseClient    client.CurseClient
 	lipClient      lipService
 	launcher       launchService
 	contentManager contentService
+	localImages    *localImageRegistry
 }
 
 type lipService interface {
@@ -297,6 +305,7 @@ func NewMinecraftWithDeps(deps MinecraftDeps) *Minecraft {
 		lipClient:      lipClient,
 		launcher:       launcher,
 		contentManager: contentManager,
+		localImages:    newLocalImageRegistry(),
 	}
 }
 

@@ -61,6 +61,50 @@ func GetMods(mcname string) (result []types.ModInfo) {
 	return result
 }
 
+func HasNamedMod(mcname string, targetName string) bool {
+	name := strings.TrimSpace(mcname)
+	if name == "" || strings.TrimSpace(targetName) == "" {
+		return false
+	}
+
+	vroot, err := apppath.VersionsDir()
+	if err != nil || strings.TrimSpace(vroot) == "" {
+		return false
+	}
+
+	modsDir := filepath.Join(vroot, name, "mods")
+	if !utils.DirExists(modsDir) {
+		_ = os.MkdirAll(modsDir, 0o755)
+	}
+
+	for _, modDir := range utils.GetDirNames(modsDir) {
+		manifestPath := filepath.Join(modsDir, modDir, "manifest.json")
+		disabledManifestPath := manifestPath + ".close"
+		switch {
+		case utils.FileExists(manifestPath):
+		case utils.FileExists(disabledManifestPath):
+			manifestPath = disabledManifestPath
+		default:
+			continue
+		}
+
+		data, err := os.ReadFile(manifestPath)
+		if err != nil {
+			continue
+		}
+
+		var manifest types.ModManifestJson
+		if err := json.Unmarshal(utils.JsonCompatBytes(data), &manifest); err != nil {
+			continue
+		}
+		if strings.EqualFold(manifest.Name, targetName) {
+			return true
+		}
+	}
+
+	return false
+}
+
 func DeleteMod(mcname string, modFolder string) string {
 	name := strings.TrimSpace(mcname)
 	mod := strings.TrimSpace(modFolder)

@@ -94,6 +94,88 @@ func TestUpdateModManifestUpdatesDisabledManifestWithoutEnabling(t *testing.T) {
 	}
 }
 
+func TestHasNamedModFindsEnabledAndDisabledManifests(t *testing.T) {
+	versionsDir := setupModsTestVersionsDir(t)
+	modsDir := filepath.Join(versionsDir, "Demo", "mods")
+	enabledDir := filepath.Join(modsDir, "enabled")
+	disabledDir := filepath.Join(modsDir, "disabled")
+	if err := os.MkdirAll(enabledDir, 0o755); err != nil {
+		t.Fatalf("mkdir enabled mod dir: %v", err)
+	}
+	if err := os.MkdirAll(disabledDir, 0o755); err != nil {
+		t.Fatalf("mkdir disabled mod dir: %v", err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(enabledDir, "manifest.json"),
+		[]byte(`{"name":"Other Mod"}`),
+		0o644,
+	); err != nil {
+		t.Fatalf("write enabled manifest: %v", err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(disabledDir, "manifest.json.close"),
+		[]byte(`{"name":"LeviLamina"}`),
+		0o644,
+	); err != nil {
+		t.Fatalf("write disabled manifest: %v", err)
+	}
+
+	if !HasNamedMod("Demo", "levilamina") {
+		t.Fatal("expected disabled LeviLamina manifest to be detected")
+	}
+	if HasNamedMod("Demo", "missing") {
+		t.Fatal("unexpected match for missing mod")
+	}
+}
+
+func TestHasNamedModRejectsEmptyInput(t *testing.T) {
+	setupModsTestVersionsDir(t)
+	if HasNamedMod("", "levilamina") {
+		t.Fatal("empty instance name must not match")
+	}
+	if HasNamedMod("Demo", "") {
+		t.Fatal("empty target name must not match")
+	}
+}
+
+func TestHasNamedModPreservesManifestNameWhitespaceSemantics(t *testing.T) {
+	versionsDir := setupModsTestVersionsDir(t)
+	modDir := filepath.Join(versionsDir, "Demo", "mods", "spaced")
+	if err := os.MkdirAll(modDir, 0o755); err != nil {
+		t.Fatalf("mkdir mod dir: %v", err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(modDir, "manifest.json"),
+		[]byte(`{"name":" LeviLamina "}`),
+		0o644,
+	); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	if HasNamedMod("Demo", "levilamina") {
+		t.Fatal("manifest name whitespace must not be normalized")
+	}
+}
+
+func TestHasNamedModIgnoresInvalidManifest(t *testing.T) {
+	versionsDir := setupModsTestVersionsDir(t)
+	modDir := filepath.Join(versionsDir, "Demo", "mods", "invalid")
+	if err := os.MkdirAll(modDir, 0o755); err != nil {
+		t.Fatalf("mkdir mod dir: %v", err)
+	}
+	if err := os.WriteFile(
+		filepath.Join(modDir, "manifest.json"),
+		[]byte(`{"name":`),
+		0o644,
+	); err != nil {
+		t.Fatalf("write manifest: %v", err)
+	}
+
+	if HasNamedMod("Demo", "levilamina") {
+		t.Fatal("invalid manifest must not match")
+	}
+}
+
 func readModsTestManifest(t *testing.T, path string) types.ModManifestJson {
 	t.Helper()
 	data, err := os.ReadFile(path)

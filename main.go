@@ -81,8 +81,11 @@ type startupLogger struct {
 	start time.Time
 }
 
-func newStartupLogger() *startupLogger {
-	return &startupLogger{start: time.Now()}
+func newStartupLogger(start time.Time) *startupLogger {
+	if start.IsZero() {
+		start = time.Now()
+	}
+	return &startupLogger{start: start}
 }
 
 func (s *startupLogger) Mark(phase string) {
@@ -528,6 +531,7 @@ func init() {
 }
 
 func main() {
+	processStart := time.Now()
 	initialURL, autoLaunchVersion, postUpdateRestart, debugMode := parseArgs()
 	var debugConsoleErr error
 	if debugMode {
@@ -536,13 +540,6 @@ func main() {
 		if debugConsoleErr == nil {
 			log.Printf("[startup] debug console enabled")
 		}
-	}
-
-	if !vcruntime.EnsureStartupInteractive(context.Background()) {
-		return
-	}
-	if !webview2runtime.EnsureStartupInteractive(context.Background()) {
-		return
 	}
 
 	diagnostics := initStartupDiagnostics(debugMode)
@@ -554,10 +551,8 @@ func main() {
 		}
 	}()
 
-	startup := newStartupLogger()
+	startup := newStartupLogger(processStart)
 	startup.Mark("process start")
-	startup.Mark("VC runtime ready")
-	startup.Mark("WebView2 runtime ready")
 	if debugMode {
 		if debugConsoleErr != nil {
 			log.Printf("[startup] debug console setup failed: %v", debugConsoleErr)
@@ -565,6 +560,17 @@ func main() {
 			log.Printf("[startup] debug mode requested")
 		}
 	}
+
+	if !vcruntime.EnsureStartupInteractive(context.Background()) {
+		startup.Mark("VC runtime unavailable")
+		return
+	}
+	startup.Mark("VC runtime ready")
+	if !webview2runtime.EnsureStartupInteractive(context.Background()) {
+		startup.Mark("WebView2 runtime unavailable")
+		return
+	}
+	startup.Mark("WebView2 runtime ready")
 
 	_ = godotenv.Load()
 
@@ -614,7 +620,8 @@ func main() {
 			application.NewService(versionService),
 		},
 		Assets: application.AssetOptions{
-			Handler: application.AssetFileServerFS(assets),
+			Handler:    application.AssetFileServerFS(assets),
+			Middleware: mc.localImages.middleware,
 		},
 	})
 	mc.startupEssential()

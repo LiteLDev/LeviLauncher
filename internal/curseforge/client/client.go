@@ -188,27 +188,26 @@ func (c *curseClient) buildRequestPath(path string, q ApiQueryParams) string {
 	return fmt.Sprintf("%s?%s", path, q.QueryString())
 }
 
-func (c *curseClient) parseResponse(res *http.Response, step string, debug bool, out types.CurseforgeAPIResponse) error {
+func (c *curseClient) parseResponse(
+	res *http.Response,
+	body []byte,
+	step string,
+	out types.CurseforgeAPIResponse,
+) error {
 	if res.StatusCode/100 != 2 {
-		b, _ := io.ReadAll(res.Body)
 		return types.Wrap(
 			fmt.Errorf("%s request failed with status code %d", step, res.StatusCode),
-			string(b),
+			string(body),
 			res.StatusCode,
 		)
 	}
 
-	b, err := io.ReadAll(res.Body)
-	if err != nil {
-		return fmt.Errorf("reading get game versions response: %w", err)
-	}
+	bodyAsString := string(body)
 
-	bodyAsString := string(b)
-
-	if err := json.Unmarshal(b, out); err != nil {
+	if err := json.Unmarshal(body, out); err != nil {
 		return types.Wrap(
 			fmt.Errorf("decoding get game versions response: %w", err),
-			string(b),
+			bodyAsString,
 			res.StatusCode,
 		)
 	}
@@ -233,7 +232,9 @@ func (c *curseClient) executeRequest(req *http.Request, step string, out types.C
 			return fmt.Errorf("reading api request body: %w", err)
 		}
 
-		reqData["body"] = string(b)
+		if c.opt.debug {
+			reqData["body"] = string(b)
+		}
 
 		req.Body = io.NopCloser(bytes.NewReader(b))
 	}
@@ -244,6 +245,7 @@ func (c *curseClient) executeRequest(req *http.Request, step string, out types.C
 		slog.With("request", reqData, "error", err).Error("APIRequest")
 		return types.Wrap(err, "failed to execute request", -1)
 	}
+	defer res.Body.Close()
 
 	reqData["status_code"] = res.StatusCode
 
@@ -252,12 +254,13 @@ func (c *curseClient) executeRequest(req *http.Request, step string, out types.C
 		return fmt.Errorf("reading api response body: %w", err)
 	}
 
-	reqData["response_body"] = string(resBody)
-	res.Body = io.NopCloser(bytes.NewReader(resBody))
+	if c.opt.debug {
+		reqData["response_body"] = string(resBody)
+	}
 
 	slog.With("request", reqData).Info("APIRequest")
 
-	if err := c.parseResponse(res, step, c.opt.debug, out); err != nil {
+	if err := c.parseResponse(res, resBody, step, out); err != nil {
 		return fmt.Errorf("parsing api response response: %w", err)
 	}
 

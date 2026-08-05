@@ -9,12 +9,14 @@ import (
 	"path/filepath"
 	"strconv"
 	"strings"
+	"sync"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/launchercore"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
+	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
@@ -227,6 +229,64 @@ type VersionService struct {
 	ctxProvider func() context.Context
 }
 
+type VersionMenuDetail struct {
+	Name                string `json:"name"`
+	Registered          bool   `json:"registered"`
+	LogoDataURL         string `json:"logoDataUrl"`
+	LeviLaminaInstalled bool   `json:"leviLaminaInstalled"`
+}
+
+type versionMenuDetailJob struct {
+	index int
+	meta  versions.VersionMeta
+}
+
+func buildVersionMenuDetails(
+	metas []versions.VersionMeta,
+	getLogo func(string) string,
+	hasLeviLamina func(string) bool,
+) []VersionMenuDetail {
+	details := make([]VersionMenuDetail, len(metas))
+	if len(metas) == 0 {
+		return details
+	}
+
+	workerCount := min(4, len(metas))
+	jobs := make(chan versionMenuDetailJob)
+	var workers sync.WaitGroup
+	workers.Add(workerCount)
+
+	for range workerCount {
+		go func() {
+			defer workers.Done()
+			for job := range jobs {
+				name := job.meta.Name
+				lookupName := strings.TrimSpace(name)
+				detail := VersionMenuDetail{
+					Name:       name,
+					Registered: job.meta.Registered,
+				}
+				if lookupName != "" {
+					if getLogo != nil {
+						detail.LogoDataURL = getLogo(lookupName)
+					}
+					if hasLeviLamina != nil {
+						detail.LeviLaminaInstalled = hasLeviLamina(lookupName)
+					}
+				}
+				details[job.index] = detail
+			}
+		}()
+	}
+
+	for index, meta := range metas {
+		jobs <- versionMenuDetailJob{index: index, meta: meta}
+	}
+	close(jobs)
+	workers.Wait()
+	return details
+}
+
 func NewVersionService(mc *Minecraft) *VersionService {
 	if mc == nil {
 		return &VersionService{}
@@ -308,6 +368,16 @@ func (s *VersionService) ListVersionMetasWithRegistered() []versions.VersionMeta
 		}
 	}
 	return metas
+}
+
+func (s *VersionService) GetVersionMenuDetails() []VersionMenuDetail {
+	return buildVersionMenuDetails(
+		s.ListVersionMetasWithRegistered(),
+		mcservice.GetVersionLogoDataUrl,
+		func(name string) bool {
+			return mods.HasNamedMod(name, "levilamina")
+		},
+	)
 }
 
 func (s *VersionService) GetVersionMeta(name string) versions.VersionMeta {

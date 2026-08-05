@@ -610,60 +610,110 @@ func (m *Manager) UpdateResourcePackMaterialBins(versionName string, packPath st
 }
 
 func (m *Manager) CheckResourcePackMaterialCompatibility(versionName string, packPath string) MaterialCompatResult {
-	result := MaterialCompatResult{
-		Compatible: true,
+	results := m.CheckResourcePackMaterialCompatibilityBatch(
+		versionName,
+		[]string{packPath},
+	)
+	if len(results) == 0 {
+		return MaterialCompatResult{Compatible: true}
 	}
+	return results[0]
+}
+
+func (m *Manager) CheckResourcePackMaterialCompatibilityBatch(
+	versionName string,
+	packPaths []string,
+) []MaterialCompatResult {
 	verName := strings.TrimSpace(versionName)
-	packDir := strings.TrimSpace(packPath)
-	if verName == "" || packDir == "" {
-		result.Error = "invalid input"
-		return result
+	results := make([]MaterialCompatResult, len(packPaths))
+	if len(packPaths) == 0 {
+		return results
 	}
-	files, err := listPackMaterialBinFiles(packDir)
-	if err != nil || len(files) == 0 {
-		// If pack has no renderer/materials/*.material.bin (including subpacks), show nothing.
-		return result
-	}
-	result.HasMaterialBin = true
 
-	vdir, err := apppath.VersionsDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		result.Error = "ERR_ACCESS_VERSIONS_DIR"
-		return result
+	type gameMaterialState struct {
+		resolved bool
+		path     string
+		version  uint64
+		errCode  string
 	}
-	gameMaterialPath := filepath.Join(vdir, verName, "data", "renderer", "materials", "RenderChunk.material.bin")
-	result.GameMaterialPath = gameMaterialPath
-
-	gameVersion, err := readMaterialBinVersion(gameMaterialPath)
-	if err != nil {
-		result.Error = "ERR_READ_GAME_RENDERCHUNK"
-		return result
-	}
-	result.GameMaterialVersion = gameVersion
-
-	parsedAny := false
-	for _, p := range files {
-		packVersion, err := readMaterialBinVersion(p)
+	gameMaterial := gameMaterialState{}
+	resolveGameMaterial := func() gameMaterialState {
+		if gameMaterial.resolved {
+			return gameMaterial
+		}
+		gameMaterial.resolved = true
+		vdir, err := apppath.VersionsDir()
+		if err != nil || strings.TrimSpace(vdir) == "" {
+			gameMaterial.errCode = "ERR_ACCESS_VERSIONS_DIR"
+			return gameMaterial
+		}
+		gameMaterial.path = filepath.Join(
+			vdir,
+			verName,
+			"data",
+			"renderer",
+			"materials",
+			"RenderChunk.material.bin",
+		)
+		gameMaterial.version, err = readMaterialBinVersion(gameMaterial.path)
 		if err != nil {
+			gameMaterial.errCode = "ERR_READ_GAME_RENDERCHUNK"
+		}
+		return gameMaterial
+	}
+
+	for index, packPath := range packPaths {
+		result := MaterialCompatResult{Compatible: true}
+		packDir := strings.TrimSpace(packPath)
+		if verName == "" || packDir == "" {
+			result.Error = "invalid input"
+			results[index] = result
 			continue
 		}
+
+		files, err := listPackMaterialBinFiles(packDir)
+		if err != nil || len(files) == 0 {
+			// Packs without renderer/materials/*.material.bin should not show a warning.
+			results[index] = result
+			continue
+		}
+		result.HasMaterialBin = true
+
+		game := resolveGameMaterial()
+		result.GameMaterialPath = game.path
+		result.GameMaterialVersion = game.version
+		if game.errCode != "" {
+			result.Error = game.errCode
+			results[index] = result
+			continue
+		}
+
+		parsedAny := false
+		for _, path := range files {
+			packVersion, err := readMaterialBinVersion(path)
+			if err != nil {
+				continue
+			}
+			if !parsedAny {
+				result.PackMaterialPath = path
+				result.PackMaterialVersion = packVersion
+				parsedAny = true
+			}
+			if packVersion != game.version {
+				result.Compatible = false
+				result.NeedsUpdate = true
+				result.PackMaterialPath = path
+				result.PackMaterialVersion = packVersion
+				break
+			}
+		}
 		if !parsedAny {
-			result.PackMaterialPath = p
-			result.PackMaterialVersion = packVersion
-			parsedAny = true
+			result.Error = "ERR_READ_PACK_MATERIALBIN"
 		}
-		if packVersion != gameVersion {
-			result.Compatible = false
-			result.NeedsUpdate = true
-			result.PackMaterialPath = p
-			result.PackMaterialVersion = packVersion
-			return result
-		}
+		results[index] = result
 	}
-	if !parsedAny {
-		result.Error = "ERR_READ_PACK_MATERIALBIN"
-	}
-	return result
+
+	return results
 }
 
 func (m *Manager) DeletePack(name string, path string) string {

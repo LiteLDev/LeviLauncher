@@ -5,6 +5,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/liteldev/LeviLauncher/internal/contentmgr"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/packages"
@@ -178,6 +179,60 @@ func (s *ContentService) CheckResourcePackMaterialCompatibility(versionName stri
 		GameMaterialVersion: result.GameMaterialVersion,
 		Error:               result.Error,
 	}
+}
+
+func (s *ContentService) CheckResourcePackMaterialCompatibilityBatch(
+	versionName string,
+	packPaths []string,
+) []ResourcePackMaterialCompatResult {
+	results := make([]ResourcePackMaterialCompatResult, len(packPaths))
+	if s.manager == nil {
+		for index := range results {
+			results[index].Error = "ERR_ACCESS_VERSIONS_DIR"
+		}
+		return results
+	}
+
+	type batchChecker interface {
+		CheckResourcePackMaterialCompatibilityBatch(
+			versionName string,
+			packPaths []string,
+		) []contentmgr.MaterialCompatResult
+	}
+
+	var raw []contentmgr.MaterialCompatResult
+	if checker, ok := s.manager.(batchChecker); ok {
+		raw = checker.CheckResourcePackMaterialCompatibilityBatch(
+			versionName,
+			packPaths,
+		)
+	}
+	if len(raw) != len(packPaths) {
+		raw = make([]contentmgr.MaterialCompatResult, len(packPaths))
+		for index, packPath := range packPaths {
+			raw[index] = s.manager.CheckResourcePackMaterialCompatibility(
+				versionName,
+				packPath,
+			)
+		}
+	}
+
+	for index, result := range raw {
+		if index >= len(results) {
+			break
+		}
+		results[index] = ResourcePackMaterialCompatResult{
+			HasMaterialBin:      result.HasMaterialBin,
+			Compatible:          result.Compatible,
+			NeedsUpdate:         result.NeedsUpdate,
+			PackMaterialPath:    result.PackMaterialPath,
+			PackMaterialVersion: result.PackMaterialVersion,
+			GameMaterialPath:    result.GameMaterialPath,
+			GameMaterialVersion: result.GameMaterialVersion,
+			Error:               result.Error,
+		}
+	}
+	return results
 }
 
 func (s *ContentService) DeletePack(name string, path string) string {

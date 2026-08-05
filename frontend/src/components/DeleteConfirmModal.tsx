@@ -76,7 +76,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
         )}
 
         {warning && (
-          <div className="text-small text-danger-500 font-bold flex items-center gap-2">
+          <div className="text-small text-danger-700 dark:text-danger-300 font-bold flex items-center gap-2">
             <FiAlertTriangle className="w-4 h-4 shrink-0" />
             {warning}
           </div>
@@ -88,7 +88,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="text-small text-white bg-danger-500/90 px-3 py-2 rounded-lg"
+              className="text-small text-danger-800 dark:text-danger-200 bg-danger-100 dark:bg-danger-950/50 px-3 py-2 rounded-lg"
             >
               {error}
             </motion.div>

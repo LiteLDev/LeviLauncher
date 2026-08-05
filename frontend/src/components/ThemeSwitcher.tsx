@@ -1,9 +1,9 @@
-import { useTheme } from "next-themes";
 import React, { useEffect, useState } from "react";
 import { Button } from "@heroui/react";
 import { MoonIcon } from "@/icons/MoonIcon";
 import { SunIcon } from "@/icons/SunIcon";
 import { useThemeManager } from "@/utils/useThemeManager";
+import { useTranslation } from "react-i18next";
 
 export interface ThemeSwitcherProps {
   className?: string;
@@ -16,6 +16,7 @@ export function ThemeSwitcher({
   iconSize = 20,
   isDisabled,
 }: ThemeSwitcherProps) {
+  const { t } = useTranslation();
   const { toggleTheme, resolvedTheme } = useThemeManager();
   const [mounted, setMounted] = useState(false);
 
@@ -35,7 +36,7 @@ export function ThemeSwitcher({
       radius="lg"
       onPress={toggleTheme}
       isDisabled={isDisabled}
-      aria-label="Toggle theme"
+      aria-label={t("theme.toggle")}
       className={
         className ||
         "w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"

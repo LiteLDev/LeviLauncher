@@ -354,7 +354,7 @@ export const SettingsPage: React.FC = () => {
                           radius="full"
                           isDisabled={!newBaseRoot || !baseRootWritable}
                           isLoading={savingBaseRoot}
-                          className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                          className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
                           onPress={async () => {
                             setSavingBaseRoot(true);
                             try {
@@ -931,6 +931,8 @@ export const SettingsPage: React.FC = () => {
                                 {previewBgData && !backgroundImageError ? (
                                   <img
                                     src={previewBgData}
+                                    alt=""
+                                    aria-hidden="true"
                                     className="w-full h-full object-cover"
                                     onError={() =>
                                       setBackgroundImageError(true)
@@ -2251,7 +2253,7 @@ export const SettingsPage: React.FC = () => {
                               radius="full"
                               onPress={onUpdate}
                               isDisabled={updating}
-                              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
                               startContent={<RxUpdate />}
                             >
                               {updating
@@ -2357,7 +2359,7 @@ export const SettingsPage: React.FC = () => {
                         </p>
                         <p className="text-tiny text-default-500 dark:text-zinc-400">
                           {t("aboutcard.description", { name: "LeviMC" })} ·{" "}
-                          {t("aboutcard.font", { name: "MiSans" })}
+                          {t("aboutcard.font", { name: "Segoe UI / System UI" })}
                         </p>
                       </div>
                     </div>
@@ -2483,6 +2485,7 @@ export const SettingsPage: React.FC = () => {
                     size="sm"
                     color="danger"
                     variant="light"
+                    className="text-danger-700 dark:text-danger-300"
                     onPress={() => handleKillProcess(p.pid)}
                   >
                     {t("settings.process.kill")}
@@ -2512,7 +2515,7 @@ export const SettingsPage: React.FC = () => {
             <Button
               color="warning"
               radius="full"
-              className="text-white! font-bold shadow-lg shadow-warning-500/20"
+              className="text-warning-foreground! font-bold shadow-lg shadow-warning-500/20"
               isDisabled={instanceBackupWarningCountdown > 0}
               onPress={confirmInstanceBackupWarning}
             >
@@ -2550,6 +2553,7 @@ export const SettingsPage: React.FC = () => {
               <Button
                 color="danger"
                 variant="light"
+                className="text-danger-700 dark:text-danger-300"
                 onPress={lipProgressDisclosure.onClose}
                 isDisabled={!installingLip}
               >

@@ -7,7 +7,8 @@
     "more": "更多",
     "about": "关于",
     "back": "返回",
-    "forward": "前进"
+    "forward": "前进",
+    "breadcrumb": "面包屑导航"
   },
   "theme": {
     "toggle": "切换主题"

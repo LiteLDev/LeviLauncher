@@ -1,13 +1,11 @@
 import "./polyfills/wails";
-import { Route, Routes } from "react-router-dom";
+import { Navigate, Route, Routes } from "react-router-dom";
 import React, { useEffect, useState, Suspense, lazy } from "react";
 import { ToastProvider, Spinner } from "@heroui/react";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { TermsModal } from "@/components/TermsModal";
-import { UpdateModal } from "@/components/UpdateModal";
-import { LipUpdateModal } from "@/components/LipUpdateModal";
 import { ClarityConsentModal } from "@/components/ClarityConsentModal";
 import { useTranslation } from "react-i18next";
 import { VersionStatusProvider } from "@/utils/VersionStatusContext";
@@ -71,6 +69,51 @@ const CurseForgeModPage = lazy(() => import("@/pages/CurseForgeModPage"));
 const LIPPage = lazy(() => import("@/pages/LIPPage"));
 const LIPPackagePage = lazy(() => import("@/pages/LIPPackagePage"));
 const ServersPage = lazy(() => import("@/pages/ServersPage"));
+const UpdateModal = lazy(() =>
+  import("@/components/UpdateModal").then((module) => ({
+    default: module.UpdateModal,
+  })),
+);
+const LipUpdateModal = lazy(() =>
+  import("@/components/LipUpdateModal").then((module) => ({
+    default: module.LipUpdateModal,
+  })),
+);
+
+const ModalLoadingFallback = ({ label }: { label: string }) => (
+  <div
+    aria-atomic="true"
+    aria-live="polite"
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm"
+    role="status"
+  >
+    <Spinner label={label} />
+  </div>
+);
+
+const StartupContentReady = ({ ready }: { ready: boolean }) => {
+  useEffect(() => {
+    if (!ready) {
+      return;
+    }
+
+    let secondFrame = 0;
+    const firstFrame = window.requestAnimationFrame(() => {
+      secondFrame = window.requestAnimationFrame(() => {
+        markStartupVisualReady();
+      });
+    });
+
+    return () => {
+      window.cancelAnimationFrame(firstFrame);
+      if (secondFrame) {
+        window.cancelAnimationFrame(secondFrame);
+      }
+    };
+  }, [ready]);
+
+  return null;
+};
 
 const GlobalShortcuts = ({
   tryNavigate,
@@ -100,6 +143,7 @@ const GlobalShortcuts = ({
 };
 
 function App() {
+  const { t } = useTranslation();
   const { resolvedTheme } = useTheme();
   const hasBackend = minecraft !== undefined;
   const { themeMode } = useThemeManager();
@@ -211,11 +255,6 @@ function App() {
 
   const effectiveNavLocked = navLocked || isUpdatingMode || isOnboardingMode;
 
-  useEffect(() => {
-    if (!themeColorsReady || !backgroundReady) return;
-    markStartupVisualReady();
-  }, [backgroundReady, themeColorsReady]);
-
   return (
     <KeybindingProvider>
       <CurrentVersionProvider>
@@ -316,7 +355,9 @@ function App() {
                           </>
                         )}
 
-                        <div
+                        <main
+                          id="main-content"
+                          tabIndex={-1}
                           className={`w-full flex-1 min-h-0 overflow-hidden ${
                             layoutMode === "sidebar" ? "pl-14" : ""
                           }`}
@@ -347,7 +388,7 @@ function App() {
                                 element={<DownloadManagerPage />}
                               />
                               <Route
-                                path="/install"
+                                path={ROUTES.install}
                                 element={<InstallPage />}
                               />
                               <Route
@@ -364,18 +405,18 @@ function App() {
                                 path={ROUTES.instanceSettings}
                                 element={<InstanceSettingsPage />}
                               />
-                              <Route path="/mods" element={<ModsPage />} />
+                              <Route path={ROUTES.mods} element={<ModsPage />} />
                               <Route
-                                path="/curseforge"
+                                path={ROUTES.curseForge}
                                 element={<CurseForgePage />}
                               />
                               <Route
-                                path="/curseforge/mod/:id"
+                                path={ROUTES.curseForgeMod}
                                 element={<CurseForgeModPage />}
                               />
-                              <Route path="/lip" element={<LIPPage />} />
+                              <Route path={ROUTES.lip} element={<LIPPage />} />
                               <Route
-                                path="/lip/package/:id"
+                                path={ROUTES.lipPackage}
                                 element={<LIPPackagePage />}
                               />
                               <Route
@@ -387,44 +428,53 @@ function App() {
                                 element={<OnboardingPage />}
                               />
                               <Route
-                                path="/content"
+                                path={ROUTES.content}
                                 element={<ContentPage />}
                               />
                               <Route
-                                path="/content/worlds"
+                                path={ROUTES.contentWorlds}
                                 element={<WorldsListPage />}
                               />
                               <Route
-                                path="/content/worlds/worldEdit"
+                                path={ROUTES.contentWorldEditor}
                                 element={<WorldLevelDatEditorPage />}
                               />
                               <Route
-                                path="/content/resourcePacks"
+                                path={ROUTES.contentResourcePacks}
                                 element={<ResourcePacksPage />}
                               />
                               <Route
-                                path="/content/behaviorPacks"
+                                path={ROUTES.contentBehaviorPacks}
                                 element={<BehaviorPacksPage />}
                               />
                               <Route
-                                path="/content/skinPacks"
+                                path={ROUTES.contentSkinPacks}
                                 element={<SkinPacksPage />}
                               />
                               <Route
-                                path="/content/screenshots"
+                                path={ROUTES.contentScreenshots}
                                 element={<ScreenshotsPage />}
                               />
                               <Route
-                                path="/content/servers"
+                                path={ROUTES.contentServers}
                                 element={<ServersPage />}
                               />
                               <Route
                                 path={ROUTES.about}
                                 element={<AboutPage />}
                               />
+                              <Route
+                                path="*"
+                                element={
+                                  <Navigate to={ROUTES.home} replace />
+                                }
+                              />
                             </Routes>
+                            <StartupContentReady
+                              ready={themeColorsReady && backgroundReady}
+                            />
                           </Suspense>
-                        </div>
+                        </main>
 
                         <TermsModal
                           isOpen={
@@ -444,63 +494,81 @@ function App() {
                           onKeepDisabled={declineClarity}
                         />
 
-                        <UpdateModal
-                          isOpen={
-                            updateOpen && !isOnboardingMode && !isUpdatingMode
-                          }
-                          version={updateVersion}
-                          body={updateBody}
-                          loading={updateLoading}
-                          onDismiss={() => {
-                            setUpdateOpen(false);
-                          }}
-                          onIgnore={() => {
-                            try {
-                              localStorage.setItem(
-                                "ll.ignoreVersion",
-                                updateVersion || "",
-                              );
-                            } catch {}
-                            setUpdateOpen(false);
-                          }}
-                          onUpdate={async () => {
-                            setUpdateLoading(true);
-                            try {
-                              setUpdateOpen(false);
-                              navigate(ROUTES.updating, { replace: true });
-                            } finally {
-                              setUpdateLoading(false);
+                        {updateOpen &&
+                        !isOnboardingMode &&
+                        !isUpdatingMode ? (
+                          <Suspense
+                            fallback={
+                              <ModalLoadingFallback
+                                label={t("common.loading")}
+                              />
                             }
-                          }}
-                        />
+                          >
+                            <UpdateModal
+                              isOpen
+                              version={updateVersion}
+                              body={updateBody}
+                              loading={updateLoading}
+                              onDismiss={() => {
+                                setUpdateOpen(false);
+                              }}
+                              onIgnore={() => {
+                                try {
+                                  localStorage.setItem(
+                                    "ll.ignoreVersion",
+                                    updateVersion || "",
+                                  );
+                                } catch {}
+                                setUpdateOpen(false);
+                              }}
+                              onUpdate={async () => {
+                                setUpdateLoading(true);
+                                try {
+                                  setUpdateOpen(false);
+                                  navigate(ROUTES.updating, { replace: true });
+                                } finally {
+                                  setUpdateLoading(false);
+                                }
+                              }}
+                            />
+                          </Suspense>
+                        ) : null}
 
-                        <LipUpdateModal
-                          isOpen={
-                            lipUpdateOpen &&
-                            !isOnboardingMode &&
-                            !isUpdatingMode
-                          }
-                          currentVersion={lipCurrentVersion}
-                          latestVersion={lipLatestVersion}
-                          onDismiss={() => {
-                            setLipUpdateOpen(false);
-                          }}
-                          onIgnore={() => {
-                            try {
-                              localStorage.setItem(
-                                "ll.ignoreLipVersion",
-                                lipLatestVersion || "",
-                              );
-                            } catch {}
-                            setLipUpdateOpen(false);
-                          }}
-                          onOpenSettings={() => {
-                            setLipUpdateOpen(false);
-                            navigate(ROUTES.settings, {
-                              state: { tab: "components" },
-                            });
-                          }}
-                        />
+                        {lipUpdateOpen &&
+                        !isOnboardingMode &&
+                        !isUpdatingMode ? (
+                          <Suspense
+                            fallback={
+                              <ModalLoadingFallback
+                                label={t("common.loading")}
+                              />
+                            }
+                          >
+                            <LipUpdateModal
+                              isOpen
+                              currentVersion={lipCurrentVersion}
+                              latestVersion={lipLatestVersion}
+                              onDismiss={() => {
+                                setLipUpdateOpen(false);
+                              }}
+                              onIgnore={() => {
+                                try {
+                                  localStorage.setItem(
+                                    "ll.ignoreLipVersion",
+                                    lipLatestVersion || "",
+                                  );
+                                } catch {}
+                                setLipUpdateOpen(false);
+                              }}
+                              onOpenSettings={() => {
+                                setLipUpdateOpen(false);
+                                navigate(ROUTES.settings, {
+                                  state: { tab: "components" },
+                                });
+                              }}
+                            />
+                          </Suspense>
+                        ) : null}
                       </div>
                     </LipTaskConsoleProvider>
                   </NavigationHistoryProvider>

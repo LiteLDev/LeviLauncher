@@ -58,7 +58,7 @@ export const DownloadManagerPage: React.FC = () => {
                   <div className="flex flex-col gap-4">
                     <div className="flex items-start justify-between">
                       <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-gradient-to-br from-primary-500 to-primary-700 text-white shadow-lg shadow-primary-500/20">
+                        <div className="p-3 rounded-2xl bg-primary-500 text-primary-foreground shadow-lg shadow-primary-500/20">
                           <FaBoxOpen size={24} />
                         </div>
                         <div>

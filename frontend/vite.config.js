@@ -20,7 +20,7 @@ export default defineConfig(({ mode }) => {
       }),
       isAnalyzeMode &&
         visualizer({
-          filename: "dist/stats.html",
+          filename: ".artifacts/stats.html",
           template: "treemap",
           gzipSize: true,
           brotliSize: true,
@@ -63,8 +63,7 @@ export default defineConfig(({ mode }) => {
 
             if (
               normalizedId.includes("/node_modules/i18next/") ||
-              normalizedId.includes("/node_modules/react-i18next/") ||
-              normalizedId.includes("/node_modules/uuid/")
+              normalizedId.includes("/node_modules/react-i18next/")
             ) {
               return "vendor-utils";
             }
@@ -73,7 +72,7 @@ export default defineConfig(({ mode }) => {
           },
         },
       },
-      chunkSizeWarningLimit: 1500,
+      chunkSizeWarningLimit: 850,
     },
   };
 });

@@ -7,7 +7,8 @@
     "more": "Mais",
     "about": "Sobre",
     "back": "Voltar",
-    "forward": "Avançar"
+    "forward": "Avançar",
+    "breadcrumb": "Caminho de navegação"
   },
   "theme": {
     "toggle": "Alternar tema"

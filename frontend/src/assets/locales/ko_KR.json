@@ -7,7 +7,8 @@
     "more": "더보기",
     "about": "정보",
     "back": "뒤로",
-    "forward": "앞으로"
+    "forward": "앞으로",
+    "breadcrumb": "이동 경로"
   },
   "theme": {
     "toggle": "테마 전환"

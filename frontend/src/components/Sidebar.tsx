@@ -121,7 +121,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   isDisabled={navLocked}
                   onPress={(e) => {
                     tryNavigate(item.path);
-                    (e.target as HTMLElement).blur();
+                    if (e.pointerType !== "keyboard") {
+                      (e.target as HTMLElement).blur();
+                    }
                   }}
                   className={`w-12 h-12 rounded-xl transition-all duration-200 ${
                     isActive

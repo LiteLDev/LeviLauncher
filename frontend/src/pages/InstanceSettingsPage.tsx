@@ -351,7 +351,7 @@ export default function InstanceSettingsPage() {
                     <Button
                       color="primary"
                       radius="full"
-                      className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                      className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
                       onPress={() => vs.onSave()}
                     >
                       {t("common.ok")}

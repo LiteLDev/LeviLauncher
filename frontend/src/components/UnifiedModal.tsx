@@ -108,7 +108,8 @@ const CONFIRM_BUTTON_CONFIG: Record<
   },
   warning: {
     color: "warning",
-    className: "text-white! font-bold shadow-lg shadow-warning-500/20",
+    className:
+      "text-warning-foreground! font-bold shadow-lg shadow-warning-500/20",
   },
   error: {
     color: "danger",
@@ -228,7 +229,10 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
                 className="flex flex-col"
               >
                 <h2
-                  className={`text-xl font-bold ${titleClass || config.colorClass}`}
+                  className={`text-xl font-bold ${
+                    titleClass ||
+                    "text-default-900 dark:text-zinc-100"
+                  }`}
                 >
                   {title}
                 </h2>

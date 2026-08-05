@@ -38,6 +38,7 @@ import { FileDropOverlay } from "@/components/FileDropOverlay";
 import { useFileDrag } from "@/hooks/useFileDrag";
 import { useContentPage } from "@/hooks/useContentPage";
 import { LAYOUT } from "@/constants/layout";
+import { ROUTES } from "@/constants/routes";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
@@ -155,7 +156,7 @@ export default function ContentPage() {
                 <div className="flex items-center gap-2">
                   <Button
                     radius="full"
-                    className="bg-primary-500 text-white font-medium shadow-sm"
+                    className="bg-primary-500 text-primary-foreground font-medium shadow-sm"
                     startContent={<FiUploadCloud />}
                     onPress={async () => {
                       try {
@@ -244,7 +245,7 @@ export default function ContentPage() {
         <Card
           isPressable
           onPress={() =>
-            cp.navigate("/content/worlds", {
+            cp.navigate(ROUTES.contentWorlds, {
               state: { player: cp.selectedPlayer },
             })
           }
@@ -290,7 +291,7 @@ export default function ContentPage() {
 
         <Card
           isPressable
-          onPress={() => cp.navigate("/content/resourcePacks")}
+          onPress={() => cp.navigate(ROUTES.contentResourcePacks)}
           className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}
         >
           <CardBody className="p-6">
@@ -333,7 +334,7 @@ export default function ContentPage() {
 
         <Card
           isPressable
-          onPress={() => cp.navigate("/content/behaviorPacks")}
+          onPress={() => cp.navigate(ROUTES.contentBehaviorPacks)}
           className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}
         >
           <CardBody className="p-6">
@@ -377,7 +378,7 @@ export default function ContentPage() {
         <Card
           isPressable
           onPress={() =>
-            cp.navigate("/content/skinPacks", {
+            cp.navigate(ROUTES.contentSkinPacks, {
               state: { player: cp.selectedPlayer },
             })
           }
@@ -424,7 +425,7 @@ export default function ContentPage() {
         <Card
           isPressable
           onPress={() =>
-            cp.navigate("/content/servers", {
+            cp.navigate(ROUTES.contentServers, {
               state: { player: cp.selectedPlayer },
             })
           }
@@ -471,7 +472,7 @@ export default function ContentPage() {
         <Card
           isPressable
           onPress={() =>
-            cp.navigate("/content/screenshots", {
+            cp.navigate(ROUTES.contentScreenshots, {
               state: { player: cp.selectedPlayer },
             })
           }

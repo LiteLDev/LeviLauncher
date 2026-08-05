@@ -7,7 +7,8 @@
     "more": "その他",
     "about": "情報",
     "back": "戻る",
-    "forward": "進む"
+    "forward": "進む",
+    "breadcrumb": "パンくずリスト"
   },
   "theme": {
     "toggle": "テーマの切り替え"

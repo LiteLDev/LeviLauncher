@@ -608,7 +608,7 @@ export const DownloadPage: React.FC = () => {
                     variant="flat"
                     className="bg-default-100/50 dark:bg-zinc-800/50 text-default-600 dark:text-zinc-200 font-medium hover:bg-default-200/50 dark:hover:bg-zinc-700/50 transition-colors"
                     onPress={() =>
-                      navigate("/install", {
+                      navigate(ROUTES.install, {
                         state: {
                           mirrorVersion: "",
                           mirrorType: "Release",
@@ -719,7 +719,7 @@ export const DownloadPage: React.FC = () => {
                       color={isDownloading ? "success" : "default"}
                       className={`transition-all ${
                         isDownloading
-                          ? "bg-primary-500 text-white"
+                          ? "bg-primary-500 text-primary-foreground"
                           : "bg-default-100/50 dark:bg-zinc-800/50 text-default-600 dark:text-zinc-200 hover:bg-default-200/50 dark:hover:bg-zinc-700/50"
                       }`}
                       onPress={() => navigate(ROUTES.downloadTasks)}
@@ -904,7 +904,7 @@ export const DownloadPage: React.FC = () => {
                                 className="px-2 h-8 font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-700/50 w-[88px]"
                                 startContent={<FaBoxOpen size={14} />}
                                 onPress={() => {
-                                  navigate("/install", {
+                                  navigate(ROUTES.install, {
                                     state: {
                                       mirrorVersion: item.short,
                                       mirrorType: item.type,
@@ -1017,7 +1017,7 @@ export const DownloadPage: React.FC = () => {
                   variant="light"
                   classNames={{
                     cursor:
-                      "bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20",
+                      "bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20",
                   }}
                 />
               </div>
@@ -1059,7 +1059,7 @@ export const DownloadPage: React.FC = () => {
                 {t("downloadpage.mirror.retest")}
               </Button>
               <Button
-                className="font-bold text-white shadow-lg shadow-primary-900/20 bg-primary-500 hover:bg-primary-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
+                className="font-bold text-primary-foreground shadow-lg shadow-primary-900/20 bg-primary-500 hover:bg-primary-500 hover:scale-[1.02] active:scale-[0.98] transition-transform"
                 radius="full"
                 size="lg"
                 isDisabled={!selectedUrl}
@@ -1067,7 +1067,7 @@ export const DownloadPage: React.FC = () => {
                 onPress={async (e) => {
                   if (!selectedUrl) return;
                   if (installMode) {
-                    navigate("/install", {
+                    navigate(ROUTES.install, {
                       state: {
                         mirrorVersion,
                         mirrorType,
@@ -1201,7 +1201,7 @@ export const DownloadPage: React.FC = () => {
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                             selectedUrl === bestMirror.url
-                              ? "bg-primary-500 text-white"
+                              ? "bg-primary-500 text-primary-foreground"
                               : "bg-default-200 dark:bg-zinc-700 text-default-500 dark:text-zinc-400"
                           }`}
                         >
@@ -1236,7 +1236,7 @@ export const DownloadPage: React.FC = () => {
                           >
                             <div className="w-6 h-6 rounded-full bg-primary-500 flex items-center justify-center">
                               <svg
-                                className="w-3.5 h-3.5 text-white"
+                                className="w-3.5 h-3.5 text-primary-foreground"
                                 fill="none"
                                 viewBox="0 0 24 24"
                                 stroke="currentColor"
@@ -1526,7 +1526,7 @@ export const DownloadPage: React.FC = () => {
                 pointerEvents: "none",
               }}
             >
-              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-primary-400 to-primary-600 text-white flex items-center justify-center">
+              <div className="w-8 h-8 rounded-full bg-primary-500 text-primary-foreground flex items-center justify-center">
                 <FaCloudDownloadAlt size={14} />
               </div>
             </motion.div>

@@ -94,7 +94,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
 
   const moreButtonClass = React.useMemo(() => {
     const base =
-      "min-w-0 px-3 h-10 rounded-xl transition-all duration-200 outline-none data-[focus-visible=true]:outline-none";
+      "min-w-0 px-3 h-10 rounded-xl transition-all duration-200";
     const inactive =
       "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium";
     const active =
@@ -126,6 +126,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             onPress={() => tryNavigate(-1)}
             isDisabled={navLocked}
             className="wails-no-drag text-default-500 dark:text-zinc-400"
+            aria-label={t("nav.back")}
           >
             <IoArrowBack size={20} />
           </Button>
@@ -161,9 +162,11 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                   isDisabled={navLocked}
                   onPress={(e) => {
                     tryNavigate(item.path);
-                    (e.target as HTMLElement).blur();
+                    if (e.pointerType !== "keyboard") {
+                      (e.target as HTMLElement).blur();
+                    }
                   }}
-                  className={`min-w-0 px-3 h-10 rounded-xl transition-all duration-200 outline-none data-[focus-visible=true]:outline-none ${item.navbarClass} ${
+                  className={`min-w-0 px-3 h-10 rounded-xl transition-all duration-200 ${item.navbarClass} ${
                     isActive
                       ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
                       : "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium"
@@ -189,7 +192,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
               <DropdownTrigger>
                 <Button
                   variant="light"
-                  aria-label="More Menu"
+                  aria-label={t("nav.more")}
                   isDisabled={navLocked}
                   className={moreButtonClass}
                   startContent={<FaEllipsisH size={18} />}
@@ -198,7 +201,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                 </Button>
               </DropdownTrigger>
               <DropdownMenu
-                aria-label="more-menu"
+                aria-label={t("nav.more")}
                 onAction={(key) => {
                   const item = extraItems.find((i) => i.key === key);
                   if (item) tryNavigate(item.path);

@@ -3,7 +3,7 @@ import React, { startTransition } from "react";
 import { createRoot } from "react-dom/client";
 import { ROUTES } from "./constants/routes";
 import {
-  markStartupInteractive,
+  markStartupDeferredWorkReady,
   markStartupPhase,
   measureStartupPhase,
   useStartupVisualReady,
@@ -13,119 +13,6 @@ const container = document.getElementById("root");
 
 const root = createRoot(container);
 let startupLifecycleCommitted = false;
-
-const coarsePointerMedia = window.matchMedia?.("(pointer: coarse)");
-const isTouchDevice =
-  navigator.maxTouchPoints > 0 || Boolean(coarsePointerMedia?.matches);
-
-if (isTouchDevice) {
-  window.addEventListener(
-    "wheel",
-    (e) => {
-      if (e.ctrlKey) {
-        e.preventDefault();
-      }
-    },
-    { passive: false },
-  );
-
-  const preventGestureZoom = (e) => {
-    e.preventDefault();
-  };
-
-  window.addEventListener("gesturestart", preventGestureZoom);
-  window.addEventListener("gesturechange", preventGestureZoom);
-  window.addEventListener("gestureend", preventGestureZoom);
-}
-
-const EDITABLE_FOCUSABLE_SELECTOR = [
-  'input:not([type="hidden"]):not([type="button"]):not([type="submit"]):not([type="reset"]):not([type="checkbox"]):not([type="radio"]):not([type="range"]):not([type="color"]):not([type="file"]):not([disabled])',
-  "textarea:not([disabled])",
-  "select:not([disabled])",
-  '[contenteditable=""]',
-  '[contenteditable="true"]',
-].join(", ");
-
-const isVisibleFocusableElement = (element) => {
-  if (!(element instanceof HTMLElement)) {
-    return false;
-  }
-
-  if (element.getAttribute("aria-hidden") === "true") {
-    return false;
-  }
-
-  return element.getClientRects().length > 0;
-};
-
-const isEditableFocusableElement = (element) => {
-  if (!(element instanceof HTMLElement)) {
-    return false;
-  }
-
-  if (element.isContentEditable) {
-    return isVisibleFocusableElement(element);
-  }
-
-  return (
-    element.matches(EDITABLE_FOCUSABLE_SELECTOR) &&
-    isVisibleFocusableElement(element)
-  );
-};
-
-const getEditableFocusableElements = () =>
-  Array.from(document.querySelectorAll(EDITABLE_FOCUSABLE_SELECTOR)).filter(
-    isVisibleFocusableElement,
-  );
-
-const focusAdjacentEditableElement = (currentElement, direction) => {
-  const editableElements = getEditableFocusableElements();
-  const currentIndex = editableElements.findIndex(
-    (element) => element === currentElement || element.contains(currentElement),
-  );
-
-  if (currentIndex === -1) {
-    currentElement.blur();
-    return;
-  }
-
-  const nextElement = editableElements[currentIndex + direction];
-
-  if (!(nextElement instanceof HTMLElement)) {
-    currentElement.blur();
-    return;
-  }
-
-  nextElement.focus();
-};
-
-window.addEventListener(
-  "keydown",
-  (event) => {
-    if (event.key !== "Tab" || event.ctrlKey || event.metaKey || event.altKey) {
-      return;
-    }
-
-    const activeElement = document.activeElement;
-
-    event.preventDefault();
-    event.stopPropagation();
-    event.stopImmediatePropagation();
-
-    if (isEditableFocusableElement(activeElement)) {
-      focusAdjacentEditableElement(activeElement, event.shiftKey ? -1 : 1);
-      return;
-    }
-
-    if (
-      activeElement instanceof HTMLElement &&
-      activeElement !== document.body
-    ) {
-      activeElement.blur();
-    }
-  },
-  true,
-);
 
 const getCurrentHashPath = () => {
   const hash = String(window.location.hash || "");
@@ -157,40 +44,167 @@ if (shouldRedirectToOnboarding) {
   window.history.replaceState(null, "", `#${ROUTES.onboarding}`);
 }
 
-const StartupShell = ({ errorMessage = "", visible = true }) => (
-  <div
-    style={{
-      position: "fixed",
-      inset: 0,
-      display: "flex",
-      alignItems: "center",
-      justifyContent: "center",
-      background:
-        "linear-gradient(180deg, rgba(248,250,252,1) 0%, rgba(241,245,249,1) 100%)",
-      color: "#0f172a",
-      fontFamily: "var(--font-sans, sans-serif)",
-      opacity: visible ? 1 : 0,
-      visibility: visible ? "visible" : "hidden",
-      transition: "opacity 220ms ease, visibility 220ms ease",
-      pointerEvents: "none",
-    }}
-  >
-    {errorMessage ? (
-      <p
+const startupLanguage = (() => {
+  try {
+    return (
+      localStorage.getItem("i18nextLng") ||
+      navigator.language ||
+      "en-US"
+    );
+  } catch {
+    return navigator.language || "en-US";
+  }
+})();
+
+document.documentElement.lang = String(startupLanguage).replace("_", "-");
+
+const startupCopy = (() => {
+  const language = String(startupLanguage).toLowerCase();
+  if (language.startsWith("zh")) {
+    return {
+      loading: "正在启动…",
+      error: "启动失败，请查看日志或稍后重试。",
+      retry: "重新加载",
+    };
+  }
+
+  return {
+    loading: "Starting…",
+    error: "Startup failed. Check the logs or try again.",
+    retry: "Reload",
+  };
+})();
+
+const StartupShell = ({
+  errorMessage = "",
+  visible = true,
+  onRetry = null,
+}) => {
+  const hasError = Boolean(errorMessage);
+  const retryButtonRef = React.useRef(null);
+
+  React.useEffect(() => {
+    if (hasError && visible) {
+      retryButtonRef.current?.focus();
+    }
+  }, [hasError, visible]);
+
+  return (
+    <div
+      role={hasError ? "alert" : "status"}
+      aria-live={hasError ? "assertive" : "polite"}
+      aria-atomic="true"
+      aria-busy={!hasError && visible}
+      style={{
+        position: "fixed",
+        inset: 0,
+        zIndex: 9999,
+        display: "flex",
+        alignItems: "center",
+        justifyContent: "center",
+        background:
+          "linear-gradient(180deg, rgba(248,250,252,1) 0%, rgba(241,245,249,1) 100%)",
+        color: "#0f172a",
+        fontFamily:
+          '"Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", sans-serif',
+        opacity: visible ? 1 : 0,
+        visibility: visible ? "visible" : "hidden",
+        transition: "opacity 220ms ease, visibility 220ms ease",
+        pointerEvents: visible ? "auto" : "none",
+      }}
+    >
+      <div
         style={{
-          margin: 0,
-          padding: "0 24px",
-          fontSize: "14px",
-          lineHeight: 1.6,
-          color: "#475569",
+          display: "flex",
+          maxWidth: "420px",
+          flexDirection: "column",
+          alignItems: "center",
+          gap: "14px",
+          padding: "24px",
           textAlign: "center",
         }}
       >
-        {errorMessage}
-      </p>
-    ) : null}
-  </div>
-);
+        <div
+          aria-hidden="true"
+          style={{
+            display: "grid",
+            width: "48px",
+            height: "48px",
+            placeItems: "center",
+            borderRadius: "16px",
+            background: "rgba(59, 130, 246, 0.12)",
+            color: "#2563eb",
+            fontSize: "24px",
+            fontWeight: 800,
+          }}
+        >
+          L
+        </div>
+        <strong style={{ fontSize: "18px", letterSpacing: "0.01em" }}>
+          LeviLauncher
+        </strong>
+        <p
+          style={{
+            margin: 0,
+            fontSize: "14px",
+            lineHeight: 1.6,
+            color: "#475569",
+          }}
+        >
+          {errorMessage || startupCopy.loading}
+        </p>
+        {hasError && typeof onRetry === "function" ? (
+          <button
+            ref={retryButtonRef}
+            type="button"
+            onClick={onRetry}
+            style={{
+              minHeight: "38px",
+              padding: "0 18px",
+              border: 0,
+              borderRadius: "999px",
+              background: "#2563eb",
+              color: "#ffffff",
+              cursor: "pointer",
+              font: "inherit",
+              fontWeight: 700,
+            }}
+          >
+            {startupCopy.retry}
+          </button>
+        ) : null}
+      </div>
+    </div>
+  );
+};
+
+class AppErrorBoundary extends React.Component {
+  constructor(props) {
+    super(props);
+    this.state = { hasError: false };
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true };
+  }
+
+  componentDidCatch(error, errorInfo) {
+    console.error("[runtime] Unhandled render error", error, errorInfo);
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <StartupShell
+          errorMessage={startupCopy.error}
+          onRetry={() => window.location.reload()}
+        />
+      );
+    }
+
+    return this.props.children;
+  }
+}
 
 const StartupLifecycle = ({ children }) => {
   React.useEffect(() => {
@@ -206,7 +220,7 @@ const StartupLifecycle = ({ children }) => {
     );
 
     const rafId = window.requestAnimationFrame(() => {
-      markStartupInteractive();
+      markStartupDeferredWorkReady();
     });
 
     return () => {
@@ -222,7 +236,14 @@ const BootRoot = ({ router, RouterProviderComponent }) => {
 
   return (
     <>
-      <RouterProviderComponent router={router} />
+      <div
+        data-startup-content
+        inert={!visualReady}
+        aria-hidden={!visualReady}
+        style={{ display: "contents" }}
+      >
+        <RouterProviderComponent router={router} />
+      </div>
       <StartupShell visible={!visualReady} />
     </>
   );
@@ -237,16 +258,14 @@ const bootstrapApp = async () => {
       { ThemeProvider: NextThemesProvider },
       { HeroUIProvider },
       { createHashRouter, RouterProvider, createRoutesFromElements, Route },
-      { default: Clarity },
       { CLARITY_ENABLED_KEY, CLARITY_EVENT_NAME },
     ] = await Promise.all([
       import("./App"),
       import("./i18n"),
       import("react-i18next"),
       import("next-themes"),
-      import("@heroui/react"),
+      import("./providers/HeroUIProvider"),
       import("react-router-dom"),
-      import("@microsoft/clarity"),
       import("./utils/clarityConsent"),
     ]);
 
@@ -265,10 +284,30 @@ const bootstrapApp = async () => {
 
     const CLARITY_PROJECT_ID = "voq9l7h41c";
     let clarityInitialized = false;
+    let clarityConsentEnabled = false;
+    let clarityClient = null;
+    let clarityLoadPromise = null;
 
-    const applyClarityConsent = (enabled) => {
+    const getClarityClient = () => {
+      if (!clarityLoadPromise) {
+        clarityLoadPromise = import("@microsoft/clarity").then(
+          ({ default: Clarity }) => {
+            clarityClient = Clarity;
+            return Clarity;
+          },
+        );
+      }
+      return clarityLoadPromise;
+    };
+
+    const applyClarityConsent = async (enabled) => {
+      clarityConsentEnabled = enabled;
       try {
         if (enabled) {
+          const Clarity = await getClarityClient();
+          if (!clarityConsentEnabled) {
+            return;
+          }
           if (!clarityInitialized) {
             Clarity.init(CLARITY_PROJECT_ID);
             clarityInitialized = true;
@@ -277,8 +316,8 @@ const bootstrapApp = async () => {
           return;
         }
 
-        if (clarityInitialized) {
-          Clarity.consent(false);
+        if (clarityInitialized && clarityClient) {
+          clarityClient.consent(false);
         }
       } catch (error) {
         console.error("Failed to apply Clarity consent", error);
@@ -293,39 +332,44 @@ const bootstrapApp = async () => {
       }
     })();
 
-    applyClarityConsent(clarityEnabledOnStart);
+    void applyClarityConsent(clarityEnabledOnStart);
 
     window.addEventListener(CLARITY_EVENT_NAME, (event) => {
       const enabled = Boolean(event?.detail?.enabled);
-      applyClarityConsent(enabled);
+      void applyClarityConsent(enabled);
     });
 
     startTransition(() => {
       root.render(
-        <HeroUIProvider>
-          <NextThemesProvider
-            attribute="class"
-            defaultTheme="light"
-            enableSystem
-          >
-            <I18nextProvider i18n={i18n}>
-              <React.StrictMode>
-                <StartupLifecycle>
-                  <BootRoot
-                    router={router}
-                    RouterProviderComponent={RouterProvider}
-                  />
-                </StartupLifecycle>
-              </React.StrictMode>
-            </I18nextProvider>
-          </NextThemesProvider>
-        </HeroUIProvider>,
+        <AppErrorBoundary>
+          <HeroUIProvider>
+            <NextThemesProvider
+              attribute="class"
+              defaultTheme="light"
+              enableSystem
+            >
+              <I18nextProvider i18n={i18n}>
+                <React.StrictMode>
+                  <StartupLifecycle>
+                    <BootRoot
+                      router={router}
+                      RouterProviderComponent={RouterProvider}
+                    />
+                  </StartupLifecycle>
+                </React.StrictMode>
+              </I18nextProvider>
+            </NextThemesProvider>
+          </HeroUIProvider>
+        </AppErrorBoundary>,
       );
     });
   } catch (error) {
     console.error("[startup] Failed to bootstrap app", error);
     root.render(
-      <StartupShell errorMessage="启动失败，请查看日志或稍后重试。" />,
+      <StartupShell
+        errorMessage={startupCopy.error}
+        onRetry={() => window.location.reload()}
+      />,
     );
   }
 };

@@ -67,7 +67,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 onPress={() => tryNavigate(-1)}
                 isDisabled={navLocked || !canGoBack}
                 className="wails-no-drag text-default-500 dark:text-zinc-400"
-                aria-label="Go back"
+                aria-label={t("nav.back")}
               >
                 <IoArrowBack size={20} />
               </Button>
@@ -86,7 +86,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 onPress={() => tryNavigate(1)}
                 isDisabled={navLocked || !canGoForward}
                 className="wails-no-drag text-default-500 dark:text-zinc-400"
-                aria-label="Go forward"
+                aria-label={t("nav.forward")}
               >
                 <IoArrowForward size={20} />
               </Button>
@@ -95,7 +95,10 @@ export const TopBar: React.FC<TopBarProps> = ({
 
           <div className="w-px h-5 bg-default-300/50 mx-1 shrink-0" />
 
-          <nav className="flex items-center text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis min-w-0">
+          <nav
+            aria-label={t("nav.breadcrumb")}
+            className="flex items-center text-sm font-medium whitespace-nowrap overflow-hidden text-ellipsis min-w-0"
+          >
             {navLocked ? (
               <span
                 className={`${
@@ -166,7 +169,11 @@ export const TopBar: React.FC<TopBarProps> = ({
             <UserAvatar />
           </div>
 
-          <div className="opacity-0 pointer-events-none" aria-hidden="true">
+          <div
+            inert
+            className="opacity-0 pointer-events-none"
+            aria-hidden="true"
+          >
             <WindowControls
               navLocked={navLocked}
               isOnboardingMode={isOnboardingMode}

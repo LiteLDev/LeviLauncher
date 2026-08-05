@@ -253,6 +253,7 @@ export const useBackgroundImage = () => {
   useEffect(() => {
     if (!startupInteractive) return;
     const currentImg = backgroundImagePath;
+    let cancelled = false;
 
     if (!currentImg) {
       setBgData("");
@@ -266,20 +267,47 @@ export const useBackgroundImage = () => {
     }
 
     setBackgroundReady(false);
-    (minecraft as any)
-      .GetImageBase64?.(currentImg)
-      .then((res: string) => {
-        if (res) {
-          setBgData(res);
-        } else {
-          setBgData("");
+    const loadBackground = async () => {
+      try {
+        let source = "";
+        if (typeof (minecraft as any).GetImageURL === "function") {
+          source = await (minecraft as any).GetImageURL(currentImg);
         }
+        if (
+          !source &&
+          typeof (minecraft as any).GetImageBase64 === "function"
+        ) {
+          source = await (minecraft as any).GetImageBase64(currentImg);
+        }
+        if (cancelled) return;
+
+        if (!source) {
+          setBgData("");
+          setBackgroundReady(true);
+          return;
+        }
+
+        const loaded = await new Promise<boolean>((resolve) => {
+          const image = new Image();
+          image.onload = () => resolve(true);
+          image.onerror = () => resolve(false);
+          image.src = source;
+        });
+        if (cancelled) return;
+
+        setBgData(loaded ? source : "");
         setBackgroundReady(true);
-      })
-      .catch(() => {
+      } catch {
+        if (cancelled) return;
         setBgData("");
         setBackgroundReady(true);
-      });
+      }
+    };
+
+    void loadBackground();
+    return () => {
+      cancelled = true;
+    };
   }, [backgroundImagePath, startupInteractive]);
 
   return {

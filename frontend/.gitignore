@@ -12,6 +12,7 @@
 /build
 /dist
 /bindings
+/.artifacts
 
 # misc
 .DS_Store

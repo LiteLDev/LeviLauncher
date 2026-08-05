@@ -7,7 +7,8 @@
     "more": "更多",
     "about": "關於",
     "back": "返回",
-    "forward": "前進"
+    "forward": "前進",
+    "breadcrumb": "麵包屑導覽"
   },
   "theme": {
     "toggle": "切換主題"

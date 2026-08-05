@@ -195,7 +195,7 @@ export default function WorldLevelDatEditorPage() {
                       onPress={handleSave}
                       isLoading={saving}
                       isDisabled={!hasBackend || loading}
-                      className="bg-linear-to-r from-primary-500 to-primary-400 text-white shadow-lg shadow-primary-900/20"
+                      className="bg-primary-500 text-primary-foreground shadow-lg shadow-primary-900/20"
                     >
                       <FaSave className="w-4 h-4" />
                     </Button>
@@ -372,7 +372,7 @@ export default function WorldLevelDatEditorPage() {
                             <Button
                               size="sm"
                               radius="lg"
-                              className="bg-linear-to-r from-primary-500 to-primary-400 text-white shadow-lg shadow-primary-900/20"
+                              className="bg-primary-500 text-primary-foreground shadow-lg shadow-primary-900/20"
                               onPress={addField}
                             >
                               {t("common.add")}

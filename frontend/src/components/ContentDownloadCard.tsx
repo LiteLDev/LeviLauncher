@@ -5,6 +5,7 @@ import { useNavigate } from "react-router-dom";
 import { SiCurseforge } from "react-icons/si";
 import { FaCloudDownloadAlt, FaCube } from "react-icons/fa";
 import { LAYOUT } from "@/constants/layout";
+import { ROUTES } from "@/constants/routes";
 import { cn } from "@/utils/cn";
 
 export const ContentDownloadCard = () => {
@@ -31,21 +32,26 @@ export const ContentDownloadCard = () => {
       </CardHeader>
 
       <CardBody className="p-4 flex flex-col gap-3">
-        <div
-          className="flex items-center justify-between p-3 rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-default-200/50 dark:hover:border-white/10"
-          onClick={() => navigate("/curseforge")}
+        <button
+          type="button"
+          className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-default-200/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+          onClick={() => navigate(ROUTES.curseForge)}
         >
           <div className="flex items-center gap-3">
-            <SiCurseforge className="text-[#f16436] text-xl" />
+            <SiCurseforge
+              aria-hidden="true"
+              className="text-[#f16436] text-xl"
+            />
             <span className="font-medium text-default-700 dark:text-zinc-200">
               {t("curseforge.title")}
             </span>
           </div>
-        </div>
+        </button>
 
-        <div
-          className="flex items-center justify-between p-3 rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-default-200/50 dark:hover:border-white/10"
-          onClick={() => navigate("/lip")}
+        <button
+          type="button"
+          className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-default-200/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+          onClick={() => navigate(ROUTES.lip)}
         >
           <div className="flex items-center gap-3">
             <FaCube className="text-green-500 text-xl" />
@@ -53,7 +59,7 @@ export const ContentDownloadCard = () => {
               lip
             </span>
           </div>
-        </div>
+        </button>
       </CardBody>
     </Card>
   );

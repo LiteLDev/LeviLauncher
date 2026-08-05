@@ -13,6 +13,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { LAYOUT } from "@/constants/layout";
+import { ROUTES } from "@/constants/routes";
 import { cn } from "@/utils/cn";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { resolveModFolder } from "@/utils/modIntelligenceResolver";
@@ -96,7 +97,7 @@ export const ModCard = (args: {
               </AnimatePresence>
             </div>
           ) : (
-            <div className="h-full flex flex-col items-center justify-center text-default-400 gap-2">
+            <div className="h-full flex flex-col items-center justify-center text-default-600 dark:text-zinc-300 gap-2">
               <FaPuzzlePiece size={32} className="opacity-20" />
               <span className="text-sm">{t("moddedcard.content.none")}</span>
             </div>
@@ -109,7 +110,7 @@ export const ModCard = (args: {
             color="primary"
             variant="flat"
             endContent={<FaArrowRight />}
-            onPress={() => navigate("/mods")}
+            onPress={() => navigate(ROUTES.mods)}
             isDisabled={!args.currentVersion}
             className="font-semibold shadow-sm"
           >

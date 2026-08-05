@@ -7,7 +7,8 @@
     "more": "Plus",
     "about": "À propos",
     "back": "Retour",
-    "forward": "Avancer"
+    "forward": "Avancer",
+    "breadcrumb": "Fil d’Ariane"
   },
   "theme": {
     "toggle": "Changer de thème"

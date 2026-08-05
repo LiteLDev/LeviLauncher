@@ -878,7 +878,7 @@ export default function ResourcePacksPage() {
                                   setPackToUpdate(p);
                                   updateCfmOnOpen();
                                 }}
-                                className="font-medium text-white shadow-warning-500/20 shrink-0"
+                                className="font-medium text-warning-foreground shadow-warning-500/20 shrink-0"
                               >
                                 {t("contentpage.update_material_bin")}
                               </Button>

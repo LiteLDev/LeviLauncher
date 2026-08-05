@@ -7,7 +7,8 @@
     "more": "More",
     "about": "About",
     "back": "Back",
-    "forward": "Forward"
+    "forward": "Forward",
+    "breadcrumb": "Breadcrumb"
   },
   "theme": {
     "toggle": "Toggle Theme"

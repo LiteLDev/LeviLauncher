@@ -8,7 +8,7 @@ export function ModdedChip() {
       variant="shadow"
       classNames={{
         base: "bg-linear-to-br from-indigo-500 to-pink-500 border-small border-white/50 shadow-pink-500/30",
-        content: "drop-shadow shadow-black text-white",
+        content: "font-medium text-black",
       }}
     >
       Modded
@@ -23,7 +23,7 @@ export function ShaderChip() {
       variant="shadow"
       classNames={{
         base: "bg-linear-to-br from-teal-400 to-emerald-500 border-small border-white/50 shadow-emerald-500/30",
-        content: "drop-shadow shadow-black text-white",
+        content: "font-medium text-black",
       }}
     >
       {t("contentpage.shader_chip")}
@@ -37,7 +37,7 @@ export function VanillaChip() {
       variant="shadow"
       classNames={{
         base: "bg-linear-to-br from-green-500 to-yellow-500 border-small border-white/50 shadow-yellow-500/30",
-        content: "drop-shadow shadow-black text-white",
+        content: "font-medium text-black",
       }}
     >
       Vanilla
@@ -51,7 +51,7 @@ export function ReleaseChip() {
       variant="shadow"
       classNames={{
         base: "bg-linear-to-br from-blue-500 to-cyan-500 border-small border-white/50 shadow-cyan-500/30",
-        content: "drop-shadow shadow-black text-white",
+        content: "font-medium text-black",
       }}
     >
       Release
@@ -65,7 +65,7 @@ export function PreviewChip() {
       variant="shadow"
       classNames={{
         base: "bg-linear-to-br from-purple-500 to-fuchsia-500 border-small border-white/50 shadow-fuchsia-500/30",
-        content: "drop-shadow shadow-black text-white",
+        content: "font-medium text-black",
       }}
     >
       Preview

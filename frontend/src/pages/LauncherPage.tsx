@@ -115,7 +115,6 @@ export const LauncherPage = (args: any) => {
 
     // Computed
     buildVersionMenuItems,
-    ensureLogo,
 
     // Tip timer
     startTipTimer,
@@ -318,7 +317,7 @@ export const LauncherPage = (args: any) => {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-lg sm:text-xl font-medium text-default-500 dark:text-zinc-400">
+                    <span className="text-lg sm:text-xl font-medium text-default-600 dark:text-zinc-300">
                       {t("launcherpage.edition")}
                     </span>
                   </div>
@@ -346,13 +345,13 @@ export const LauncherPage = (args: any) => {
                                   className="w-full h-full object-cover"
                                 />
                               ) : (
-                                <span className="text-base font-bold text-default-500 dark:text-zinc-400">
+                                <span className="text-base font-bold text-default-600 dark:text-zinc-300">
                                   M
                                 </span>
                               )}
                             </div>
                             <div className="flex flex-col hidden lg:flex">
-                              <span className="text-xs text-default-500 dark:text-zinc-400 font-medium">
+                              <span className="text-xs text-default-600 dark:text-zinc-300 font-medium">
                                 {t("launcherpage.currentVersion")}
                               </span>
                               <span className="text-sm font-bold text-default-900 dark:text-white leading-tight max-w-[120px] truncate">
@@ -422,14 +421,15 @@ export const LauncherPage = (args: any) => {
                                 {(() => {
                                   const u =
                                     item.logo || logoByName.get(item.name);
-                                  if (!u) ensureLogo(item.name);
                                   return u ? (
                                     <img
                                       src={u}
+                                      alt=""
+                                      aria-hidden="true"
                                       className="w-full h-full object-cover"
                                     />
                                   ) : (
-                                    <span className="text-sm font-bold text-default-500 dark:text-zinc-400">
+                                    <span className="text-sm font-bold text-default-600 dark:text-zinc-300">
                                       M
                                     </span>
                                   );
@@ -482,15 +482,22 @@ export const LauncherPage = (args: any) => {
                           variant="light"
                           radius="full"
                           size="sm"
+                          aria-label={t(
+                            "launcherpage.tip.quick_actions_menu",
+                          )}
                           className="data-[hover=true]:bg-default-200/50 dark:data-[hover=true]:bg-white/5"
                         >
                           <FaCogs
                             size={18}
-                            className="text-default-500 dark:text-zinc-400"
+                            className="text-default-600 dark:text-zinc-300"
                           />
                         </Button>
                       </DropdownTrigger>
-                      <DropdownMenu aria-label="Version Actions">
+                      <DropdownMenu
+                        aria-label={t(
+                          "launcherpage.tip.quick_actions_menu",
+                        )}
+                      >
                         <DropdownItem
                           key="settings"
                           startContent={<FaCog />}
@@ -542,12 +549,22 @@ export const LauncherPage = (args: any) => {
                   >
                     <Button
                       size="lg"
-                      className="h-14 px-8 text-lg font-bold text-white shadow-primary-900/20 shadow-lg bg-primary-500 hover:bg-primary-500 rounded-2xl w-full sm:w-auto"
-                      startContent={<FaRocket className="mb-0.5" />}
+                      className="h-14 px-8 text-lg font-bold text-primary-foreground shadow-primary-900/20 shadow-lg bg-primary-500 hover:bg-primary-500 rounded-2xl w-full sm:w-auto"
+                      startContent={
+                        currentVersion ? (
+                          <FaRocket className="mb-0.5" />
+                        ) : (
+                          <FaList className="mb-0.5" />
+                        )
+                      }
                       onPress={doLaunch}
                       isLoading={mcLaunchLoadingDisclosure.isOpen}
                     >
-                      {t("launcherpage.launch_button")}
+                      {t(
+                        currentVersion
+                          ? "launcherpage.launch_button"
+                          : "launcherpage.manage_versions",
+                      )}
                     </Button>
                   </motion.div>
                 </div>
@@ -563,7 +580,7 @@ export const LauncherPage = (args: any) => {
                       initial={{ opacity: 0, y: 10 }}
                       animate={{ opacity: 1, y: 0 }}
                       exit={{ opacity: 0, y: -10 }}
-                      className="text-sm text-default-500 dark:text-zinc-400 font-medium truncate absolute inset-0"
+                      className="text-sm text-default-600 dark:text-zinc-300 font-medium truncate absolute inset-0"
                     >
                       {currentLaunchTip}
                     </motion.div>
@@ -614,19 +631,20 @@ export const LauncherPage = (args: any) => {
                 <Button
                   size="sm"
                   variant="light"
-                  className="text-xs text-default-500 dark:text-zinc-400 data-[hover=true]:text-default-800 dark:data-[hover=true]:text-zinc-200"
+                  className="text-xs text-default-600 dark:text-zinc-300 data-[hover=true]:text-default-800 dark:data-[hover=true]:text-zinc-200"
                   endContent={<FaArrowRight size={10} />}
-                  onPress={() => navigate("/content")}
+                  onPress={() => navigate(ROUTES.content)}
                 >
                   {t("common.view_all")}
                 </Button>
               </CardHeader>
               <CardBody className="p-3 gap-2 relative">
                 {incompatibleShaderCount > 0 && (
-                  <div
-                    className="group/hint flex items-center justify-between p-2 rounded-xl bg-warning-500/10 hover:bg-warning-500/20 text-warning-600 dark:text-warning-400 cursor-pointer transition-colors"
+                  <button
+                    type="button"
+                    className="group/hint flex w-full items-center justify-between p-2 text-left rounded-xl bg-warning-500/10 hover:bg-warning-500/20 text-warning-600 dark:text-warning-400 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-warning-500"
                     onClick={() =>
-                      navigate("/content/resourcePacks", {
+                      navigate(ROUTES.contentResourcePacks, {
                         state: { showIncompatible: true },
                       })
                     }
@@ -640,34 +658,35 @@ export const LauncherPage = (args: any) => {
                     <span className="font-bold text-sm">
                       {incompatibleShaderCount}
                     </span>
-                  </div>
+                  </button>
                 )}
                 {[
                   {
                     label: worldsLabel,
                     count: contentCounts.worlds,
                     icon: FaGlobe,
-                    path: "/content/worlds",
+                    path: ROUTES.contentWorlds,
                     color: "text-blue-500",
                   },
                   {
                     label: resourceLabel,
                     count: contentCounts.resourcePacks,
                     icon: FaImage,
-                    path: "/content/resourcePacks",
+                    path: ROUTES.contentResourcePacks,
                     color: "text-purple-500",
                   },
                   {
                     label: behaviorLabel,
                     count: contentCounts.behaviorPacks,
                     icon: FaCogs,
-                    path: "/content/behaviorPacks",
+                    path: ROUTES.contentBehaviorPacks,
                     color: "text-orange-500",
                   },
-                ].map((item, idx) => (
-                  <div
-                    key={idx}
-                    className="group/item flex items-center justify-between p-2 rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-200"
+                ].map((item) => (
+                  <button
+                    key={item.path}
+                    type="button"
+                    className="group/item flex w-full items-center justify-between p-2 text-left rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
                     onClick={() => navigate(item.path)}
                   >
                     <div className="flex items-center gap-3">
@@ -689,7 +708,7 @@ export const LauncherPage = (args: any) => {
                         size={10}
                       />
                     </div>
-                  </div>
+                  </button>
                 ))}
               </CardBody>
             </Card>
@@ -721,7 +740,7 @@ export const LauncherPage = (args: any) => {
                 <Button
                   color="warning"
                   radius="full"
-                  className="text-white font-bold"
+                  className="text-warning-foreground font-bold"
                   onPress={handleLaunchFailedForceRun}
                 >
                   {t("launcherpage.launch.force_run_button")}
@@ -743,7 +762,7 @@ export const LauncherPage = (args: any) => {
             <p className="text-lg font-semibold text-default-800 dark:text-zinc-100">
               {launchErrorMessage}
             </p>
-            <p className="text-sm leading-6 text-default-500 dark:text-zinc-400 max-w-[520px]">
+            <p className="text-sm leading-6 text-default-600 dark:text-zinc-300 max-w-[520px]">
               {t("launcherpage.launch.failed.content") as unknown as string}
             </p>
             {launchErrorCode && (
@@ -775,7 +794,7 @@ export const LauncherPage = (args: any) => {
             <div className="mt-4">
               {giTotal > 0 ? (
                 <div className="flex flex-col gap-2">
-                  <div className="flex justify-between text-small font-bold text-default-500 dark:text-zinc-400">
+                  <div className="flex justify-between text-small font-bold text-default-600 dark:text-zinc-300">
                     <span>
                       {Math.min(
                         100,
@@ -799,7 +818,7 @@ export const LauncherPage = (args: any) => {
                   />
                 </div>
               ) : (
-                <div className="flex items-center gap-3 text-default-500 dark:text-zinc-400">
+                <div className="flex items-center gap-3 text-default-600 dark:text-zinc-300">
                   <Spinner size="sm" color="primary" />
                   <span>
                     {t("launcherpage.gameinput.installing.preparing")}
@@ -822,6 +841,7 @@ export const LauncherPage = (args: any) => {
                 color="danger"
                 variant="light"
                 radius="full"
+                className="text-danger-700 dark:text-danger-300"
                 onPress={() => Window.Close()}
               >
                 {t("common.quit_launcher")}
@@ -829,7 +849,7 @@ export const LauncherPage = (args: any) => {
               <Button
                 color="warning"
                 radius="full"
-                className="text-white font-bold"
+                className="text-warning-foreground font-bold"
                 onPress={handleGameInputInstall}
               >
                 {t("launcherpage.gameinput.missing.install_now")}
@@ -858,7 +878,7 @@ export const LauncherPage = (args: any) => {
             <div className="mt-4">
               {vcTotal > 0 ? (
                 <div className="flex flex-col gap-2">
-                  <div className="flex justify-between text-small font-bold text-default-500 dark:text-zinc-400">
+                  <div className="flex justify-between text-small font-bold text-default-600 dark:text-zinc-300">
                     <span>
                       {Math.min(
                         100,
@@ -882,7 +902,7 @@ export const LauncherPage = (args: any) => {
                   />
                 </div>
               ) : (
-                <div className="flex items-center gap-3 text-default-500 dark:text-zinc-400">
+                <div className="flex items-center gap-3 text-default-600 dark:text-zinc-300">
                   <Spinner size="sm" color="primary" />
                   <span>
                     {t("launcherpage.vcruntime.installing.preparing")}
@@ -905,6 +925,7 @@ export const LauncherPage = (args: any) => {
                 color="danger"
                 variant="light"
                 radius="full"
+                className="text-danger-700 dark:text-danger-300"
                 onPress={() => Window.Close()}
               >
                 {t("common.quit_launcher")}
@@ -912,7 +933,7 @@ export const LauncherPage = (args: any) => {
               <Button
                 color="warning"
                 radius="full"
-                className="text-white font-bold"
+                className="text-warning-foreground font-bold"
                 onPress={handleVcRuntimeInstall}
               >
                 {t("launcherpage.vcruntime.missing.install_now")}
@@ -938,6 +959,7 @@ export const LauncherPage = (args: any) => {
                 color="danger"
                 variant="light"
                 radius="full"
+                className="text-danger-700 dark:text-danger-300"
                 onPress={() => Window.Close()}
               >
                 {t("common.quit_launcher")}
@@ -985,7 +1007,7 @@ export const LauncherPage = (args: any) => {
               <Button
                 color="primary"
                 radius="full"
-                className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
                 onPress={handleInstallConfirmCheck}
               >
                 {t("launcherpage.install_confirm.done_and_check")}
@@ -1022,7 +1044,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
               onPress={mcLaunchLoadingDisclosure.onClose}
             >
               {t("common.close")}
@@ -1075,7 +1097,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
               onPress={shortcutSuccessDisclosure.onClose}
             >
               {t("common.close")}
@@ -1139,7 +1161,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
               onPress={registerSuccessDisclosure.onClose}
             >
               {t("common.close")}

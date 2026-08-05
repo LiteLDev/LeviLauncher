@@ -43,13 +43,17 @@ export const isStartupInteractive = (): boolean => startupInteractive;
 export const isStartupVisualReady = (): boolean => startupVisualReady;
 
 export const markStartupInteractive = () => {
+  markStartupDeferredWorkReady();
+};
+
+export const markStartupDeferredWorkReady = () => {
   if (startupInteractive) return;
   startupInteractive = true;
-  markStartupPhase("ll-startup-interactive-ready");
+  markStartupPhase("ll-startup-deferred-work-ready");
   measureStartupPhase(
-    "ll-startup-time-to-interactive",
+    "ll-startup-time-to-deferred-work",
     "ll-startup-bootloader-mounted",
-    "ll-startup-interactive-ready",
+    "ll-startup-deferred-work-ready",
   );
   window.dispatchEvent(new CustomEvent(STARTUP_INTERACTIVE_EVENT));
 };

@@ -31,7 +31,7 @@ import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
-import { ROUTES } from "@/constants/routes";
+import { ROUTES, routeTo } from "@/constants/routes";
 import { getPathBaseName, normalizeDroppedFiles } from "@/utils/fs";
 
 const LEVILAMINA_NORMALIZED = "levilamina";
@@ -1778,7 +1778,7 @@ export const useModsPage = (
   const openLIPPackageDetails = (identifier: string) => {
     const target = String(identifier || "").trim();
     if (!target) return;
-    navigate(`/lip/package/${encodeURIComponent(target)}`);
+    navigate(routeTo.lipPackage(target));
   };
 
   const openDeleteForMod = (mod: types.ModInfo) => {

@@ -171,6 +171,7 @@ export const UserAvatar = () => {
             isIconOnly
             variant="light"
             size="sm"
+            aria-label={t("useravatar.no_login_retry")}
             onPress={() => {
               setLoading(true);
               clearUserState();

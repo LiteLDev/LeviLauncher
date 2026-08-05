@@ -7,7 +7,8 @@
     "more": "Mehr",
     "about": "Über",
     "back": "Zurück",
-    "forward": "Vorwärts"
+    "forward": "Vorwärts",
+    "breadcrumb": "Navigationspfad"
   },
   "theme": {
     "toggle": "Design wechseln"

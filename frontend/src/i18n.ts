@@ -67,6 +67,14 @@ const resolveLocale = (language: string): SupportedLocale => {
   return "en_US";
 };
 
+const syncDocumentLanguage = (language: string) => {
+  if (typeof document === "undefined") {
+    return;
+  }
+
+  document.documentElement.lang = resolveLocale(language).replace("_", "-");
+};
+
 const localeBackend: BackendModule = {
   type: "backend",
   init: () => {},
@@ -82,6 +90,8 @@ const localeBackend: BackendModule = {
       });
   },
 };
+
+i18n.on("languageChanged", syncDocumentLanguage);
 
 export const i18nReady = i18n
   .use(LanguageDetector)
@@ -101,6 +111,10 @@ export const i18nReady = i18n
     interpolation: {
       escapeValue: false,
     },
+  })
+  .then((result) => {
+    syncDocumentLanguage(i18n.resolvedLanguage || i18n.language);
+    return result;
   });
 
 export default i18n;

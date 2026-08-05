@@ -29,6 +29,7 @@ import {
 } from "@/utils/experimentalFeatures";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { useThemeManager, ThemeMode } from "@/utils/useThemeManager";
+import { ROUTES } from "@/constants/routes";
 
 export type { ThemeMode };
 
@@ -370,7 +371,7 @@ export const useSettings = (i18n: { language: string }) => {
   const onUpdate = async () => {
     setUpdating(true);
     try {
-      navigate("/updating", { replace: true });
+      navigate(ROUTES.updating, { replace: true });
     } finally {
       setUpdating(false);
     }

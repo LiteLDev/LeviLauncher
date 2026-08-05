@@ -32,6 +32,7 @@ import {
 } from "@/utils/content";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
+import { shouldDisableAnimations } from "@/hooks/useAnimations";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion } from "framer-motion";
 import { PageContainer } from "@/components/PageContainer";
@@ -577,7 +578,7 @@ const CurseForgeModPage: React.FC = () => {
             <Button
               onPress={() => navigate(-1)}
               color="primary"
-              className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
             >
               {t("curseforge.go_back")}
             </Button>
@@ -679,14 +680,14 @@ const CurseForgeModPage: React.FC = () => {
               {/* Actions */}
               <div className="flex flex-col gap-3 min-w-[240px] md:border-l md:border-default-100 md:pl-8 justify-center">
                 <Button
-                  className="w-full font-semibold shadow-md shadow-primary-900/20 text-white bg-primary-500 hover:bg-primary-500"
+                  className="w-full font-semibold shadow-md shadow-primary-900/20 text-primary-foreground bg-primary-500 hover:bg-primary-500"
                   startContent={<LuDownload size={20} />}
                   size="lg"
                   onPress={() => {
                     setSelectedTab("files");
                     setTimeout(() => {
                       tabsRef.current?.scrollIntoView({
-                        behavior: "smooth",
+                        behavior: shouldDisableAnimations() ? "auto" : "smooth",
                         block: "start",
                       });
                     }, 100);
@@ -1047,7 +1048,7 @@ const CurseForgeModPage: React.FC = () => {
                 <Button
                   color="primary"
                   onPress={handleVersionSelectNext}
-                  className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                  className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
                 >
                   {t("curseforge.install.next")}
                 </Button>
@@ -1060,7 +1061,7 @@ const CurseForgeModPage: React.FC = () => {
                 className={
                   installStep === "error"
                     ? "font-bold shadow-lg shadow-danger-500/20"
-                    : "bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                    : "bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
                 }
               >
                 {t("curseforge.install.close")}
@@ -1254,7 +1255,7 @@ const CurseForgeModPage: React.FC = () => {
             </Button>
             <Button
               color="warning"
-              className="font-bold shadow-lg shadow-warning-500/20 text-white"
+              className="font-bold shadow-lg shadow-warning-500/20 text-warning-foreground"
               onPress={() => {
                 try {
                   if (dupResolveRef.current) dupResolveRef.current(true);

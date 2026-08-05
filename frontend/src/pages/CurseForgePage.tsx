@@ -16,6 +16,7 @@ import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
+import { routeTo } from "@/constants/routes";
 import { cn } from "@/utils/cn";
 import {
   formatNumber,
@@ -432,7 +433,7 @@ export const CurseForgePage: React.FC = () => {
                 onPress={handleSearch}
                 startContent={<LuSearch />}
                 size="sm"
-                className="bg-primary-500 hover:bg-primary-500 text-white font-bold shadow-lg shadow-primary-900/20"
+                className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
               >
                 {t("curseforge.search")}
               </Button>
@@ -579,7 +580,7 @@ export const CurseForgePage: React.FC = () => {
                         className="w-full p-4 bg-default-50/50 dark:bg-white/5 hover:bg-default-100/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-default-100 dark:border-white/5"
                         onClick={() => {
                           saveScrollPosition();
-                          navigate(`/curseforge/mod/${mod.id}`);
+                          navigate(routeTo.curseForgeMod(mod.id));
                         }}
                       >
                         <div className="shrink-0">

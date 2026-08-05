@@ -1,14 +1,29 @@
 import { useState, useEffect } from "react";
 import { MotionGlobalConfig } from "framer-motion";
 
+const prefersReducedMotion = () =>
+  typeof window !== "undefined" &&
+  (window.matchMedia?.("(prefers-reduced-motion: reduce)").matches ?? false);
+
+export const shouldDisableAnimations = () => {
+  if (typeof window === "undefined") {
+    return false;
+  }
+
+  try {
+    return (
+      window.localStorage.getItem("app.disableAnimations") === "true" ||
+      prefersReducedMotion()
+    );
+  } catch {
+    return prefersReducedMotion();
+  }
+};
+
 export const useAnimations = () => {
-  const [disableAnimations, setDisableAnimations] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("app.disableAnimations") === "true";
-    } catch {
-      return false;
-    }
-  });
+  const [disableAnimations, setDisableAnimations] = useState<boolean>(
+    shouldDisableAnimations,
+  );
 
   useEffect(() => {
     MotionGlobalConfig.skipAnimations = disableAnimations;
@@ -33,6 +48,7 @@ export const useAnimations = () => {
     }
 
     return () => {
+      MotionGlobalConfig.skipAnimations = false;
       const style = document.getElementById("disable-animations-style");
       if (style) {
         style.remove();
@@ -41,18 +57,21 @@ export const useAnimations = () => {
   }, [disableAnimations]);
 
   useEffect(() => {
-    const handleAnimationsChange = () => {
-      try {
-        const val = localStorage.getItem("app.disableAnimations") === "true";
-        setDisableAnimations(val);
-      } catch {}
-    };
+    const reducedMotionMedia = window.matchMedia?.(
+      "(prefers-reduced-motion: reduce)",
+    );
+    const handleAnimationsChange = () =>
+      setDisableAnimations(shouldDisableAnimations());
+
     window.addEventListener("app-animations-changed", handleAnimationsChange);
+    reducedMotionMedia?.addEventListener("change", handleAnimationsChange);
+
     return () => {
       window.removeEventListener(
         "app-animations-changed",
         handleAnimationsChange,
       );
+      reducedMotionMedia?.removeEventListener("change", handleAnimationsChange);
     };
   }, []);
 

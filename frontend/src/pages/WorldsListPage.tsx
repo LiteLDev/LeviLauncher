@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
+import { routeTo } from "@/constants/routes";
 import {
   Button,
   Input,
@@ -860,11 +861,7 @@ export default function WorldsListPage() {
                             radius="lg"
                             onClick={(e) => {
                               e.stopPropagation();
-                              navigate(
-                                `/content/worlds/worldEdit?path=${encodeURIComponent(
-                                  w.Path,
-                                )}`,
-                              );
+                              navigate(routeTo.contentWorldEditor(w.Path));
                             }}
                             className="bg-default-100 hover:bg-default-200 text-default-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200"
                           >

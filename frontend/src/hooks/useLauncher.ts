@@ -13,13 +13,10 @@ import {
   EnsureVcRuntimeInteractive,
   ListDir,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import {
-  GetContentRoots,
-  CheckResourcePackMaterialCompatibility,
-} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+import * as contentService from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+import * as modsService from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import * as versionService from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/userservice";
-import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import { ROUTES } from "@/constants/routes";
 
@@ -115,8 +112,6 @@ export const useLauncher = (args: any) => {
   const [registerAction, setRegisterAction] = React.useState<
     "register" | "unregister"
   >("register");
-  const fetchingLogos = React.useRef<Set<string>>(new Set());
-  const fetchingLeviLaminaStatuses = React.useRef<Set<string>>(new Set());
   const [tipIndex, setTipIndex] = React.useState<number>(0);
   const tipTimerRef = React.useRef<number | null>(null);
   const launchRequestActiveRef = React.useRef<boolean>(false);
@@ -153,9 +148,11 @@ export const useLauncher = (args: any) => {
             });
             const getter = (versionService as any)?.GetVersionLogoDataUrl;
             if (typeof getter === "function") {
-              getter(saved).then((u: string) =>
-                setLogoDataUrl(String(u || "")),
-              );
+              getter(saved).then((u: string) => {
+                if (readCurrentVersionName() === saved) {
+                  setLogoDataUrl(String(u || ""));
+                }
+              });
             }
           })
           .catch(() => {});
@@ -257,85 +254,6 @@ export const useLauncher = (args: any) => {
     },
     [filteredVersionNames, localVersionMap, logoByName],
   );
-
-  const ensureLogo = React.useCallback(
-    (name: string) => {
-      if (!name || logoByName.has(name) || fetchingLogos.current.has(name))
-        return;
-      fetchingLogos.current.add(name);
-      try {
-        const getter = versionService?.GetVersionLogoDataUrl;
-        if (typeof getter === "function") {
-          getter(name)
-            .then((u: string) => {
-              fetchingLogos.current.delete(name);
-              if (u) {
-                setLogoByName((prev) => {
-                  const m = new Map(prev);
-                  m.set(name, String(u));
-                  return m;
-                });
-              }
-            })
-            .catch(() => {
-              fetchingLogos.current.delete(name);
-            });
-        } else {
-          fetchingLogos.current.delete(name);
-        }
-      } catch {
-        fetchingLogos.current.delete(name);
-      }
-    },
-    [logoByName],
-  );
-
-  const ensureLeviLaminaStatus = React.useCallback(
-    (name: string) => {
-      if (!name || fetchingLeviLaminaStatuses.current.has(name)) return;
-
-      const known = localVersionMap.get(name)?.isLeviLaminaInstalled;
-      if (typeof known === "boolean") return;
-
-      fetchingLeviLaminaStatuses.current.add(name);
-
-      (async () => {
-        let installed = false;
-        try {
-          const mods = ((await (GetMods as any)?.(name)) || []) as any[];
-          installed = mods.some(
-            (m: any) => String(m?.name || "").toLowerCase() === "levilamina",
-          );
-        } catch {}
-
-        setLocalVersionMap((prev) => {
-          const next = new Map(prev);
-          const old = next.get(name);
-          if (!old) return prev;
-          next.set(name, {
-            ...old,
-            isLeviLaminaInstalled: installed,
-          });
-          return next;
-        });
-
-        fetchingLeviLaminaStatuses.current.delete(name);
-      })();
-    },
-    [localVersionMap],
-  );
-
-  useEffect(() => {
-    try {
-      const items = buildVersionMenuItems("");
-      items.forEach((it: any) => {
-        if (!it?.isDisabled) {
-          ensureLogo(it.name);
-          ensureLeviLaminaStatus(it.name);
-        }
-      });
-    } catch {}
-  }, [buildVersionMenuItems, ensureLogo, ensureLeviLaminaStatus]);
 
   const doLaunch = React.useCallback(() => {
     const name = currentVersion;
@@ -854,7 +772,7 @@ export const useLauncher = (args: any) => {
         setContentCounts({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
         return;
       }
-      const roots = await GetContentRoots(name);
+      const roots = await contentService.GetContentRoots(name);
       const safe = roots || {
         base: "",
         usersRoot: "",
@@ -873,20 +791,38 @@ export const useLauncher = (args: any) => {
         const resDirs = (resEntries || []).filter((e: any) => e.isDir);
         res = resDirs.length;
 
-        const promises = resDirs.map(async (dir: any) => {
+        const packPaths = resDirs.map((dir: any) => String(dir.path || ""));
+        const batchCheck = (contentService as any)
+          .CheckResourcePackMaterialCompatibilityBatch;
+        let compatibilityResults: any[] = [];
+
+        if (typeof batchCheck === "function") {
           try {
-            const compat = await CheckResourcePackMaterialCompatibility(
-              name,
-              dir.path,
-            );
-            if (compat.hasMaterialBin && !compat.compatible) {
-              return 1;
-            }
+            compatibilityResults = await batchCheck(name, packPaths);
           } catch {}
-          return 0;
-        });
-        const results = await Promise.all(promises);
-        incompatibleCount = results.reduce((a: number, b) => a + b, 0);
+        }
+        if (
+          !Array.isArray(compatibilityResults) ||
+          compatibilityResults.length !== packPaths.length
+        ) {
+          compatibilityResults = await Promise.all(
+            packPaths.map(async (packPath: string) => {
+              try {
+                return await contentService.CheckResourcePackMaterialCompatibility(
+                  name,
+                  packPath,
+                );
+              } catch {
+                return null;
+              }
+            }),
+          );
+        }
+        incompatibleCount = compatibilityResults.reduce(
+          (count: number, compat: any) =>
+            count + (compat?.hasMaterialBin && !compat?.compatible ? 1 : 0),
+          0,
+        );
 
         bp = await countDir(safe.behaviorPacks);
       } catch {}
@@ -1039,22 +975,85 @@ export const useLauncher = (args: any) => {
           : "";
         setDisplayVersion(ver || "None");
         setDisplayName(useName || "");
-        try {
-          const getter = versionService?.GetVersionLogoDataUrl;
-          if (typeof getter === "function" && useName) {
-            getter(useName).then((u: string) =>
-              setLogoDataUrl(String(u || "")),
-            );
-          } else {
-            setLogoDataUrl("");
-          }
-        } catch {
-          setLogoDataUrl("");
-        }
+        setLogoDataUrl("");
       };
 
       const fastFn = (versionService as any)?.ListVersionMetas;
       const slowFn = (versionService as any)?.ListVersionMetasWithRegistered;
+      const detailsFn = (versionService as any)?.GetVersionMenuDetails;
+
+      const applyDetails = (details: any[]) => {
+        const detailList = Array.isArray(details) ? details : [];
+        const nextLogos = new Map<string, string>();
+        const detailByName = new Map<string, any>();
+
+        detailList.forEach((detail: any) => {
+          const name = String(detail?.name || "");
+          if (!name) return;
+          detailByName.set(name, detail);
+          const logo = String(detail?.logoDataUrl || "");
+          if (logo) {
+            nextLogos.set(name, logo);
+          }
+        });
+
+        setLogoByName(nextLogos);
+        setLocalVersionMap((prev) => {
+          const next = new Map(prev);
+          detailByName.forEach((detail, name) => {
+            const current = next.get(name);
+            if (!current) return;
+            next.set(name, {
+              ...current,
+              isRegistered: Boolean(detail?.registered),
+              isLeviLaminaInstalled: Boolean(
+                detail?.leviLaminaInstalled,
+              ),
+            });
+          });
+          return next;
+        });
+
+        const selectedName = readCurrentVersionName();
+        setLogoDataUrl(nextLogos.get(selectedName) || "");
+      };
+
+      const loadLegacyDetails = async () => {
+        if (typeof slowFn !== "function") {
+          throw new Error("Version detail fallback is unavailable");
+        }
+
+        const fullMetas = await slowFn();
+        processMetas(fullMetas);
+        setIsLoadingVersions(false);
+        const details = await Promise.all(
+          (Array.isArray(fullMetas) ? fullMetas : []).map(
+            async (meta: any) => {
+              const name = String(meta?.name || "");
+              const [logoDataUrl, installedMods] = await Promise.all([
+                Promise.resolve(
+                  (versionService as any)?.GetVersionLogoDataUrl?.(name),
+                ).catch(() => ""),
+                Promise.resolve((modsService as any)?.GetMods?.(name)).catch(
+                  () => [],
+                ),
+              ]);
+              return {
+                name,
+                registered: Boolean(meta?.registered),
+                logoDataUrl: String(logoDataUrl || ""),
+                leviLaminaInstalled: (
+                  Array.isArray(installedMods) ? installedMods : []
+                ).some(
+                  (mod: any) =>
+                    String(mod?.name || "").toLowerCase() === "levilamina",
+                ),
+              };
+            },
+          ),
+        );
+        applyDetails(details);
+      };
 
       if (typeof fastFn === "function") {
         fastFn()
@@ -1062,33 +1061,25 @@ export const useLauncher = (args: any) => {
             processMetas(metas);
             setIsLoadingVersions(false);
 
-            if (typeof slowFn === "function") {
-              slowFn()
-                .then((fullMetas: any[]) => {
-                  processMetas(fullMetas);
-                })
-                .catch(() => {});
+            if (typeof detailsFn === "function") {
+              detailsFn()
+                .then(applyDetails)
+                .catch(() => void loadLegacyDetails().catch(() => {}));
+            } else if (typeof slowFn === "function") {
+              void loadLegacyDetails().catch(() => {});
             }
           })
           .catch(() => {
             if (typeof slowFn === "function") {
-              slowFn()
-                .then((fullMetas: any[]) => {
-                  processMetas(fullMetas);
-                  setIsLoadingVersions(false);
-                })
-                .catch(() => setIsLoadingVersions(false));
+              void loadLegacyDetails().catch(() =>
+                setIsLoadingVersions(false),
+              );
             } else {
               setIsLoadingVersions(false);
             }
           });
       } else if (typeof slowFn === "function") {
-        slowFn()
-          .then((metas: any[]) => {
-            processMetas(metas);
-            setIsLoadingVersions(false);
-          })
-          .catch(() => setIsLoadingVersions(false));
+        void loadLegacyDetails().catch(() => setIsLoadingVersions(false));
       } else {
         setIsLoadingVersions(false);
       }
@@ -1108,16 +1099,11 @@ export const useLauncher = (args: any) => {
         setDisplayVersion(ver || "None");
         try {
           saveCurrentVersionName(selected, "launcher.select");
-          const getter = versionService?.GetVersionLogoDataUrl;
-          if (typeof getter === "function") {
-            getter(selected).then((u: string) =>
-              setLogoDataUrl(String(u || "")),
-            );
-          }
+          setLogoDataUrl(logoByName.get(selected) || "");
         } catch {}
       }
     },
-    [localVersionMap],
+    [localVersionMap, logoByName],
   );
 
   const handleGameInputInstall = React.useCallback(() => {
@@ -1279,7 +1265,6 @@ export const useLauncher = (args: any) => {
 
     // Computed
     buildVersionMenuItems,
-    ensureLogo,
 
     // Tip timer
     startTipTimer,

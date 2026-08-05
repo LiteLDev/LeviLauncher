@@ -31,6 +31,8 @@ import { normalizeLanguage } from "@/utils/i18nUtils";
 import { Dialogs } from "@wailsio/runtime";
 import { LuHardDrive, LuLanguages } from "react-icons/lu";
 
+type OnboardingErrorKey = "common.load_failed" | "common.save_failed" | null;
+
 export default function OnboardingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
@@ -43,6 +45,7 @@ export default function OnboardingPage() {
   const [newBaseRoot, setNewBaseRoot] = React.useState<string>("");
   const [baseRootWritable, setBaseRootWritable] = React.useState<boolean>(true);
   const [savingBaseRoot, setSavingBaseRoot] = React.useState<boolean>(false);
+  const [errorKey, setErrorKey] = React.useState<OnboardingErrorKey>(null);
   const {
     isOpen: unsavedOpen,
     onOpen: unsavedOnOpen,
@@ -51,7 +54,12 @@ export default function OnboardingPage() {
   } = useDisclosure();
 
   React.useEffect(() => {
-    GetLanguageNames().then((res: any) => setLangNames(res));
+    GetLanguageNames()
+      .then((res: any) => setLangNames(res))
+      .catch((error: unknown) => {
+        console.error("Failed to load language names", error);
+        setErrorKey("common.load_failed");
+      });
 
     setSelectedLang(normalizeLanguage(i18n.language));
     (async () => {
@@ -61,7 +69,10 @@ export default function OnboardingPage() {
           setBaseRoot(String(br || ""));
           setNewBaseRoot(String(br || ""));
         }
-      } catch {}
+      } catch (error) {
+        console.error("Failed to load base root", error);
+        setErrorKey("common.load_failed");
+      }
     })();
   }, []);
 
@@ -97,7 +108,9 @@ export default function OnboardingPage() {
                 <div className="w-16 h-16 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-600 dark:text-primary-500 shrink-0">
                   <svg
                     className="w-10 h-10"
+                    aria-hidden="true"
                     fill="none"
+                    focusable="false"
                     stroke="currentColor"
                     viewBox="0 0 24 24"
                     xmlns="http://www.w3.org/2000/svg"
@@ -124,7 +137,7 @@ export default function OnboardingPage() {
                   <Button
                     color="primary"
                     radius="full"
-                    className="font-black px-10 h-12 text-lg shadow-lg shadow-primary-500/20"
+                    className="font-black px-10 h-12 text-lg text-primary-foreground shadow-lg shadow-primary-500/20"
                     onPress={requestFinish}
                   >
                     {t("onboarding.finish")}
@@ -138,6 +151,16 @@ export default function OnboardingPage() {
         {/* Content Card */}
         <Card className={LAYOUT.GLASS_CARD.BASE}>
           <CardBody className="p-6 space-y-8">
+            {errorKey ? (
+              <p
+                aria-atomic="true"
+                className="text-sm font-medium text-danger-500"
+                role="alert"
+              >
+                {t(errorKey)}
+              </p>
+            ) : null}
+
             <div className="space-y-4">
               <SectionHeader
                 title={t("settings.body.paths.title")}
@@ -151,15 +174,21 @@ export default function OnboardingPage() {
                       radius="full"
                       className="font-bold px-4"
                       onPress={async () => {
+                        setErrorKey(null);
                         try {
                           const err = await ResetBaseRoot();
-                          if (!err) {
-                            const br = await GetBaseRoot();
-                            setBaseRoot(String(br || ""));
-                            setNewBaseRoot(String(br || ""));
-                            setBaseRootWritable(true);
+                          if (err) {
+                            throw new Error(err);
                           }
-                        } catch {}
+
+                          const br = await GetBaseRoot();
+                          setBaseRoot(String(br || ""));
+                          setNewBaseRoot(String(br || ""));
+                          setBaseRootWritable(true);
+                        } catch (error) {
+                          console.error("Failed to reset base root", error);
+                          setErrorKey("common.save_failed");
+                        }
                       }}
                     >
                       {t("settings.body.paths.reset")}
@@ -176,6 +205,7 @@ export default function OnboardingPage() {
                       }
                       isLoading={savingBaseRoot}
                       onPress={async () => {
+                        setErrorKey(null);
                         setSavingBaseRoot(true);
                         try {
                           const ok = await CanWriteToDir(newBaseRoot);
@@ -183,13 +213,19 @@ export default function OnboardingPage() {
                             setBaseRootWritable(false);
                           } else {
                             const err = await SetBaseRoot(newBaseRoot);
-                            if (!err) {
-                              const br = await GetBaseRoot();
-                              setBaseRoot(String(br || ""));
+                            if (err) {
+                              throw new Error(err);
                             }
+
+                            const br = await GetBaseRoot();
+                            setBaseRoot(String(br || ""));
                           }
-                        } catch {}
-                        setSavingBaseRoot(false);
+                        } catch (error) {
+                          console.error("Failed to save base root", error);
+                          setErrorKey("common.save_failed");
+                        } finally {
+                          setSavingBaseRoot(false);
+                        }
                       }}
                     >
                       {t("settings.body.paths.apply")}
@@ -207,18 +243,18 @@ export default function OnboardingPage() {
                   variant="bordered"
                   radius="lg"
                   classNames={COMPONENT_STYLES.input}
+                  isInvalid={!baseRootWritable}
+                  errorMessage={
+                    !baseRootWritable
+                      ? t("settings.body.paths.not_writable")
+                      : undefined
+                  }
                   description={
-                    newBaseRoot && newBaseRoot !== baseRoot ? (
-                      <span
-                        className={
-                          baseRootWritable
-                            ? "text-warning-500 font-medium"
-                            : "text-danger-500 font-medium"
-                        }
-                      >
-                        {baseRootWritable
-                          ? t("settings.body.paths.unsaved")
-                          : t("settings.body.paths.not_writable")}
+                    baseRootWritable &&
+                    newBaseRoot &&
+                    newBaseRoot !== baseRoot ? (
+                      <span className="text-warning-500 font-medium">
+                        {t("settings.body.paths.unsaved")}
                       </span>
                     ) : null
                   }
@@ -245,8 +281,9 @@ export default function OnboardingPage() {
                           } else if (typeof result === "string" && result) {
                             setNewBaseRoot(result);
                           }
-                        } catch (e) {
-                          console.error(e);
+                        } catch (error) {
+                          console.error("Failed to browse for base root", error);
+                          setErrorKey("common.load_failed");
                         }
                       }}
                     >
@@ -279,7 +316,7 @@ export default function OnboardingPage() {
                       </Button>
                     </DropdownTrigger>
                     <DropdownMenu
-                      aria-label="Language selection"
+                      aria-label={t("settings.body.language.name")}
                       variant="flat"
                       disallowEmptySelection
                       selectionMode="single"
@@ -289,14 +326,20 @@ export default function OnboardingPage() {
                         const arr = Array.from(keys as unknown as Set<string>);
                         const next = arr[0];
                         if (typeof next === "string" && next.length > 0) {
+                          const previous = selectedLang;
+                          setErrorKey(null);
                           setSelectedLang(next);
-                          Promise.resolve(i18n.changeLanguage(next)).then(
-                            () => {
+                          Promise.resolve(i18n.changeLanguage(next))
+                            .then(() => {
                               try {
                                 localStorage.setItem("i18nextLng", next);
                               } catch {}
-                            },
-                          );
+                            })
+                            .catch((error: unknown) => {
+                              console.error("Failed to change language", error);
+                              setSelectedLang(previous);
+                              setErrorKey("common.load_failed");
+                            });
                         }
                       }}
                     >
@@ -329,6 +372,7 @@ export default function OnboardingPage() {
         }}
         onCancel={() => unsavedOnClose()}
         onConfirm={async () => {
+          setErrorKey(null);
           setSavingBaseRoot(true);
           try {
             const ok = await CanWriteToDir(newBaseRoot);
@@ -336,15 +380,21 @@ export default function OnboardingPage() {
               setBaseRootWritable(false);
             } else {
               const err = await SetBaseRoot(newBaseRoot);
-              if (!err) {
-                const br = await GetBaseRoot();
-                setBaseRoot(String(br || ""));
-                unsavedOnClose();
-                proceedHome();
+              if (err) {
+                throw new Error(err);
               }
+
+              const br = await GetBaseRoot();
+              setBaseRoot(String(br || ""));
+              unsavedOnClose();
+              proceedHome();
             }
-          } catch {}
-          setSavingBaseRoot(false);
+          } catch (error) {
+            console.error("Failed to save base root before finishing", error);
+            setErrorKey("common.save_failed");
+          } finally {
+            setSavingBaseRoot(false);
+          }
         }}
       >
         <div className="flex flex-col gap-2">

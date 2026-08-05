@@ -561,12 +561,32 @@ func main() {
 		}
 	}
 
+	webView2ConfigPath := webview2runtime.DefaultStartupConfigPath()
+	webView2Options, err := webview2runtime.ResolveStartupOptions(os.Args[1:], webView2ConfigPath)
+	if err != nil {
+		log.Printf("[startup] WebView2 runtime configuration failed: %v", err)
+		webview2runtime.ShowStartupConfigurationError(webView2ConfigPath, err)
+		return
+	}
+	if webView2Options.BrowserExecutableFolder == "" {
+		log.Printf("[startup] WebView2 runtime source: %s", webView2Options.Source)
+	} else {
+		log.Printf(
+			"[startup] WebView2 runtime source: %s; path: %s",
+			webView2Options.Source,
+			webView2Options.BrowserExecutableFolder,
+		)
+	}
+
 	if !vcruntime.EnsureStartupInteractive(context.Background()) {
 		startup.Mark("VC runtime unavailable")
 		return
 	}
 	startup.Mark("VC runtime ready")
-	if !webview2runtime.EnsureStartupInteractive(context.Background()) {
+	if !webview2runtime.EnsureStartupInteractive(
+		context.Background(),
+		webView2Options.BrowserExecutableFolder,
+	) {
 		startup.Mark("WebView2 runtime unavailable")
 		return
 	}
@@ -622,6 +642,9 @@ func main() {
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),
 			Middleware: mc.localImages.middleware,
+		},
+		Windows: application.WindowsOptions{
+			WebviewBrowserPath: webView2Options.BrowserExecutableFolder,
 		},
 	})
 	mc.startupEssential()

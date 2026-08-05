@@ -21,6 +21,26 @@ LeviLauncher may guide you through missing components during first launch or bef
 
 Depending on your Windows setup, you may already have some of them installed.
 
+### Using a custom WebView2 Fixed Version Runtime
+
+If the Evergreen WebView2 Runtime is not installed but you manage a WebView2 Fixed Version Runtime yourself, start LeviLauncher using either of the following methods.
+
+Specify the directory on the command line:
+
+```powershell
+LeviLauncher.exe --webview2-runtime-dir "D:\WebView2\FixedRuntime"
+```
+
+Alternatively, create `webview2.json` next to `LeviLauncher.exe`:
+
+```json
+{
+  "browserExecutableFolder": "D:\\WebView2\\FixedRuntime"
+}
+```
+
+Relative paths are resolved from the directory containing `webview2.json`. The selected directory must directly contain `msedgewebview2.exe`. The command-line option takes precedence over the configuration file. If neither is configured, LeviLauncher continues to use the system-installed WebView2 Runtime.
+
 ## Before you install a version
 
 Complete this checklist first:

@@ -21,6 +21,26 @@
 
 具体是否缺失，取决于你的 Windows 环境状态。
 
+### 使用自定义 WebView2 Fixed Version Runtime
+
+如果系统中没有 Evergreen WebView2 Runtime，但你已经自行管理了 WebView2 Fixed Version Runtime，可以使用以下任一种方式启动 LeviLauncher。
+
+通过命令行参数指定：
+
+```powershell
+LeviLauncher.exe --webview2-runtime-dir "D:\WebView2\FixedRuntime"
+```
+
+或者在 `LeviLauncher.exe` 同一目录创建 `webview2.json`：
+
+```json
+{
+  "browserExecutableFolder": "D:\\WebView2\\FixedRuntime"
+}
+```
+
+相对路径以 `webview2.json` 所在目录为基准。指定目录必须直接包含 `msedgewebview2.exe`。命令行参数的优先级高于配置文件；如果两者都没有配置，LeviLauncher 会继续使用系统安装的 WebView2 Runtime。
+
 ## 在安装版本之前
 
 请先完成这份检查清单：

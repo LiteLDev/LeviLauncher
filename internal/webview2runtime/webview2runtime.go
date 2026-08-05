@@ -2,6 +2,7 @@ package webview2runtime
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"io"
 	"log"
@@ -19,12 +20,29 @@ import (
 )
 
 const (
-	webView2ClientID       = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
-	webView2DownloadURL    = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
-	webView2InstallerName  = "MicrosoftEdgeWebview2Setup.exe"
-	webView2HklmClientPath = "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\" + webView2ClientID
-	webView2HkcuClientPath = "Software\\Microsoft\\EdgeUpdate\\Clients\\" + webView2ClientID
+	webView2ClientID              = "{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}"
+	webView2DownloadURL           = "https://go.microsoft.com/fwlink/p/?LinkId=2124703"
+	webView2InstallerName         = "MicrosoftEdgeWebview2Setup.exe"
+	webView2RuntimeExecutableName = "msedgewebview2.exe"
+	webView2HklmClientPath        = "SOFTWARE\\WOW6432Node\\Microsoft\\EdgeUpdate\\Clients\\" + webView2ClientID
+	webView2HkcuClientPath        = "Software\\Microsoft\\EdgeUpdate\\Clients\\" + webView2ClientID
 )
+
+const (
+	StartupConfigFileName      = "webview2.json"
+	StartupRuntimeSourceSystem = "system"
+	StartupRuntimeSourceConfig = "config"
+	StartupRuntimeSourceCLI    = "command-line"
+)
+
+type StartupOptions struct {
+	BrowserExecutableFolder string
+	Source                  string
+}
+
+type startupConfig struct {
+	BrowserExecutableFolder string `json:"browserExecutableFolder"`
+}
 
 const (
 	messageBoxOK              = 0x00000000
@@ -139,6 +157,21 @@ func webView2StartupInstallerOpenedMessage() string {
 	return "The Microsoft Edge WebView2 installer has been opened. Finish the installation, then restart LeviLauncher."
 }
 
+func webView2StartupConfigurationErrorMessage(configPath string, err error) string {
+	if isChineseWindowsUI() {
+		return fmt.Sprintf(
+			"自定义 WebView2 Runtime 配置无效。\n\n配置文件:\n%s\n\n也可以通过 --webview2-runtime-dir <目录> 指定 Fixed Version Runtime。\n\n错误:\n%v",
+			configPath,
+			err,
+		)
+	}
+	return fmt.Sprintf(
+		"The custom WebView2 Runtime configuration is invalid.\n\nConfiguration file:\n%s\n\nYou can also specify a Fixed Version Runtime with --webview2-runtime-dir <directory>.\n\nError:\n%v",
+		configPath,
+		err,
+	)
+}
+
 func showWebView2StartupInstallPrompt() bool {
 	result := messageBox(
 		webView2StartupRequiredTitle(),
@@ -172,9 +205,118 @@ func showWebView2StartupInfo(message string) {
 	)
 }
 
+func ShowStartupConfigurationError(configPath string, err error) {
+	showWebView2StartupError(webView2StartupConfigurationErrorMessage(configPath, err))
+}
+
 func fileExists(path string) bool {
 	info, err := os.Stat(path)
 	return err == nil && !info.IsDir() && info.Size() > 0
+}
+
+func DefaultStartupConfigPath() string {
+	return filepath.Join(apppath.LauncherDir(), StartupConfigFileName)
+}
+
+func ResolveStartupOptions(args []string, configPath string) (StartupOptions, error) {
+	if value, found, err := webView2RuntimeDirArgument(args); err != nil {
+		return StartupOptions{}, err
+	} else if found {
+		resolved, err := resolveAndValidateRuntimeDir(value, filepath.Dir(configPath))
+		if err != nil {
+			return StartupOptions{}, fmt.Errorf("--webview2-runtime-dir: %w", err)
+		}
+		return StartupOptions{
+			BrowserExecutableFolder: resolved,
+			Source:                  StartupRuntimeSourceCLI,
+		}, nil
+	}
+
+	options := StartupOptions{Source: StartupRuntimeSourceSystem}
+	content, err := os.ReadFile(configPath)
+	if os.IsNotExist(err) {
+		return options, nil
+	}
+	if err != nil {
+		return StartupOptions{}, fmt.Errorf("read %s: %w", configPath, err)
+	}
+
+	var config startupConfig
+	if err := json.Unmarshal(content, &config); err != nil {
+		return StartupOptions{}, fmt.Errorf("parse %s: %w", configPath, err)
+	}
+	if strings.TrimSpace(config.BrowserExecutableFolder) == "" {
+		return options, nil
+	}
+	resolved, err := resolveAndValidateRuntimeDir(
+		config.BrowserExecutableFolder,
+		filepath.Dir(configPath),
+	)
+	if err != nil {
+		return StartupOptions{}, fmt.Errorf("browserExecutableFolder: %w", err)
+	}
+	options.BrowserExecutableFolder = resolved
+	options.Source = StartupRuntimeSourceConfig
+	return options, nil
+}
+
+func webView2RuntimeDirArgument(args []string) (string, bool, error) {
+	const option = "--webview2-runtime-dir"
+	for index := 0; index < len(args); index++ {
+		arg := strings.TrimSpace(args[index])
+		if strings.HasPrefix(arg, option+"=") {
+			value := strings.Trim(strings.TrimSpace(strings.TrimPrefix(arg, option+"=")), `"'`)
+			if value == "" {
+				return "", false, fmt.Errorf("%s requires a directory", option)
+			}
+			return value, true, nil
+		}
+		if arg != option {
+			continue
+		}
+		if index+1 >= len(args) {
+			return "", false, fmt.Errorf("%s requires a directory", option)
+		}
+		value := strings.Trim(strings.TrimSpace(args[index+1]), `"'`)
+		if value == "" || strings.HasPrefix(value, "--") {
+			return "", false, fmt.Errorf("%s requires a directory", option)
+		}
+		return value, true, nil
+	}
+	return "", false, nil
+}
+
+func resolveAndValidateRuntimeDir(value string, relativeTo string) (string, error) {
+	runtimeDir := filepath.Clean(strings.TrimSpace(value))
+	if runtimeDir == "" || runtimeDir == "." {
+		return "", fmt.Errorf("runtime directory is empty")
+	}
+	if !filepath.IsAbs(runtimeDir) {
+		runtimeDir = filepath.Join(relativeTo, runtimeDir)
+	}
+	absolute, err := filepath.Abs(runtimeDir)
+	if err != nil {
+		return "", fmt.Errorf("resolve runtime directory: %w", err)
+	}
+	if err := ValidateBrowserExecutableFolder(absolute); err != nil {
+		return "", err
+	}
+	return absolute, nil
+}
+
+func ValidateBrowserExecutableFolder(runtimeDir string) error {
+	info, err := os.Stat(runtimeDir)
+	if err != nil {
+		return fmt.Errorf("access runtime directory %q: %w", runtimeDir, err)
+	}
+	if !info.IsDir() {
+		return fmt.Errorf("runtime path is not a directory: %q", runtimeDir)
+	}
+	executable := filepath.Join(runtimeDir, webView2RuntimeExecutableName)
+	if !fileExists(executable) {
+		return fmt.Errorf("%s was not found in %q", webView2RuntimeExecutableName, runtimeDir)
+	}
+	return nil
 }
 
 func webView2InstallerPath() (string, string) {
@@ -280,7 +422,10 @@ func IsInstalled() bool {
 	return hasInstalledWebView2Registry(webView2RegistryEntries, readWebView2RegistryVersion)
 }
 
-func EnsureStartupInteractive(ctx context.Context) bool {
+func EnsureStartupInteractive(ctx context.Context, browserExecutableFolder ...string) bool {
+	if len(browserExecutableFolder) > 0 && strings.TrimSpace(browserExecutableFolder[0]) != "" {
+		return ValidateBrowserExecutableFolder(browserExecutableFolder[0]) == nil
+	}
 	if IsInstalled() {
 		return true
 	}

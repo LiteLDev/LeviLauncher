@@ -9,7 +9,55 @@ on:
   pull_request:
 
 jobs:
+  quality:
+    name: Quality gates
+    runs-on: windows-2022
+    permissions:
+      contents: read
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-go@v6
+        with:
+          go-version-file: go.mod
+          cache: true
+
+      - uses: actions/setup-node@v6
+        with:
+          node-version: 24
+          cache: npm
+          cache-dependency-path: frontend/package-lock.json
+
+      - name: Install frontend dependencies
+        working-directory: frontend
+        run: npm ci
+
+      - name: Generate Wails bindings
+        shell: pwsh
+        run: |
+          go install github.com/wailsapp/wails/v3/cmd/wails3@v3.0.0-alpha.77
+          wails3 generate bindings -clean=true
+
+      - name: Build frontend and enforce bundle budget
+        working-directory: frontend
+        run: npm run build
+
+      - name: Run browser accessibility tests
+        working-directory: frontend
+        run: |
+          npx playwright install chromium
+          npm run test:e2e
+
+      - name: Test and vet Go code
+        shell: pwsh
+        run: |
+          go test ./...
+          go vet ./...
+          go test -race ./internal/downloader ./internal/curseforge/client
+
   build:
+    needs: quality
     strategy:
       fail-fast: false
       matrix:
@@ -67,7 +115,7 @@ jobs:
           $innoDir = Split-Path -Path $isccPath -Parent
           $langDir = Join-Path $innoDir "Languages"
           $chineseSimplifiedPath = Join-Path $langDir "ChineseSimplified.isl"
-          $chineseSimplifiedUrl = "https://raw.githubusercontent.com/jrsoftware/issrc/refs/heads/main/Files/Languages/ChineseSimplified.isl"
+          $chineseSimplifiedUrl = "https://raw.githubusercontent.com/jrsoftware/issrc/6ef32198ef1f7b7b375cd4b6b90896c2a58eb4c2/Files/Languages/ChineseSimplified.isl"
 
           if (-not (Test-Path $langDir)) {
             New-Item -ItemType Directory -Path $langDir -Force | Out-Null
@@ -84,8 +132,9 @@ jobs:
       - uses: ToQuery/wails3-build-action@v3-alpha.14
         with:
           go-archs: ${{ matrix.build.archs }}
-          build-name: ${{ matrix.build.name }}
-          build-platform: ${{ matrix.build.platform }}
+          go-version: "1.25.3"
+          node-version: "24"
+          wails3-version: "v3.0.0-alpha.77"
           package: false
 
       - name: Verify build outputs
@@ -213,12 +262,12 @@ jobs:
 
       - name: Create Release
         id: create_release
-        uses: softprops/action-gh-release@v1
+        uses: softprops/action-gh-release@v2
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         with:
           tag_name: ${{ github.ref_name }}
-          release_name: Release ${{ github.ref_name }}
+          name: Release ${{ github.ref_name }}
           draft: false
           prerelease: ${{ steps.check_prerelease.outputs.is_prerelease }}
           body_path: release-notes.md

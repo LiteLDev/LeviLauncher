@@ -2,6 +2,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v0.3.14] - 2026-08-05
+
+### Added
+
+- Added support for selecting a custom WebView2 Fixed Version Runtime through `--webview2-runtime-dir` or a `webview2.json` file next to the launcher executable ([#118](https://github.com/LiteLDev/LeviLauncher/issues/118)).
+- Added automated accessibility coverage for core launcher workflows.
+
+### Changed
+
+- Streamlined frontend startup, routing, animations, and state initialization while improving keyboard and screen-reader accessibility.
+- Batched backend metadata requests and streamed local image assets to reduce startup and content-management overhead.
+
+### Fixed
+
+- Validated imported mod manifests and entry files before extraction, and made archive replacement transactional so invalid packages cannot overwrite existing mods ([#114](https://github.com/LiteLDev/LeviLauncher/issues/114)).
+- Serialized downloader task lifecycle transitions to prevent duplicate terminal events and inconsistent task state.
+- Restored the bundled MiSans font and its required typography fallbacks.
+- Restored readable white foregrounds for primary buttons across custom themes.
+
+### CI
+
+- Enforced backend tests, frontend production bundle limits, and accessibility checks in the build workflow.
+
+### Docs
+
+- Documented custom WebView2 Fixed Version Runtime configuration for English and Simplified Chinese users.
+
+### Chore
+
+- Bumped version to `0.3.14`.
+
 ## [v0.3.13] - 2026-06-26
 
 ### Fixed

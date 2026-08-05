@@ -41,10 +41,11 @@ type DownloadProgress struct {
 }
 
 type Manager struct {
-	mu     sync.Mutex
-	tasks  map[string]*state
-	events Events
-	opts   Options
+	mu        sync.Mutex
+	tasks     map[string]*state
+	events    Events
+	opts      Options
+	emitEvent func(name string, data ...any) bool
 }
 
 type state struct {
@@ -65,7 +66,14 @@ func NewManager(events Events, opts Options) *Manager {
 	if opts.Throttle <= 0 {
 		opts.Throttle = 250 * time.Millisecond
 	}
-	return &Manager{events: events, opts: opts, tasks: map[string]*state{}}
+	return &Manager{
+		events: events,
+		opts:   opts,
+		tasks:  map[string]*state{},
+		emitEvent: func(name string, data ...any) bool {
+			return application.Get().Event.Emit(name, data...)
+		},
+	}
 }
 
 func (m *Manager) Start(ctx context.Context, src string, dest string, md5sum string) string {
@@ -82,7 +90,13 @@ func (m *Manager) Start(ctx context.Context, src string, dest string, md5sum str
 		m.emitStatus("started", dest)
 		return dest
 	}
-	local := &state{ctx: ctx, url: src, dest: dest, expectedMD5: md5sum}
+	local := &state{
+		ctx:         ctx,
+		url:         src,
+		dest:        dest,
+		expectedMD5: md5sum,
+		running:     true,
+	}
 	m.tasks[dest] = local
 	m.mu.Unlock()
 	go m.run(local)
@@ -115,6 +129,7 @@ func (m *Manager) Resume() {
 			continue
 		}
 		st.paused = false
+		st.running = true
 		go m.run(st)
 		m.emitStatus("resumed", st.dest)
 	}
@@ -155,6 +170,7 @@ func (m *Manager) ResumeTask(dest string) {
 	m.mu.Lock()
 	if st, ok := m.tasks[dest]; ok && st != nil && !st.cancelled && !st.running {
 		st.paused = false
+		st.running = true
 		go m.run(st)
 		m.emitStatus("resumed", st.dest)
 	}
@@ -184,12 +200,24 @@ func (m *Manager) run(s *state) {
 		return
 	}
 	if local == nil || local.cancelled || local.paused {
+		if local != nil {
+			local.running = false
+			if local.cancelled {
+				delete(m.tasks, local.dest)
+			}
+		}
 		m.mu.Unlock()
 		return
 	}
 	m.mu.Unlock()
 
 	for {
+		cancelled, paused, current := m.taskState(local)
+		if !current || cancelled || paused {
+			m.finishRunning(local)
+			return
+		}
+
 		var cur int64
 		downloadDest := local.dest + ".download"
 		if m.opts.Resume {
@@ -197,12 +225,21 @@ func (m *Manager) run(s *state) {
 				cur = fi.Size()
 			}
 		}
+		m.mu.Lock()
 		local.downloaded = cur
+		m.mu.Unlock()
 		ctx, cancel := context.WithCancel(local.ctx)
 		m.mu.Lock()
+		if m.tasks[local.dest] != local || local.cancelled || local.paused {
+			local.running = false
+			if local.cancelled && m.tasks[local.dest] == local {
+				delete(m.tasks, local.dest)
+			}
+			m.mu.Unlock()
+			cancel()
+			return
+		}
 		local.cancelFn = cancel
-		local.running = true
-		m.tasks[local.dest] = local
 		m.mu.Unlock()
 
 		req, err := http.NewRequestWithContext(ctx, "GET", local.url, nil)
@@ -217,6 +254,14 @@ func (m *Manager) run(s *state) {
 		}
 		resp, err := httpx.Do(req)
 		if err != nil {
+			cancelled, paused, _ := m.taskState(local)
+			if paused || cancelled {
+				if cancelled && m.opts.RemoveOnCancel && downloadDest != "" {
+					_ = os.Remove(downloadDest)
+				}
+				m.finishRunning(local)
+				return
+			}
 			m.emitError(err.Error(), local.dest)
 			m.finishRunning(local)
 			return
@@ -232,7 +277,9 @@ func (m *Manager) run(s *state) {
 		if m.opts.Resume && cur > 0 && resp.StatusCode == http.StatusOK {
 			_ = os.Remove(downloadDest)
 			cur = 0
+			m.mu.Lock()
 			local.downloaded = 0
+			m.mu.Unlock()
 		}
 
 		total := resp.ContentLength
@@ -249,7 +296,9 @@ func (m *Manager) run(s *state) {
 				total = cur + total
 			}
 		}
+		m.mu.Lock()
 		local.total = total
+		m.mu.Unlock()
 
 		flags := os.O_CREATE | os.O_WRONLY
 		if cur == 0 {
@@ -271,26 +320,22 @@ func (m *Manager) run(s *state) {
 				return
 			}
 		}
-		{
-			payload := any(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
-			if m.events.ProgressFactory != nil {
-				payload = m.events.ProgressFactory(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
-			}
-			application.Get().Event.Emit(m.events.Progress, payload)
-		}
+		m.emitProgress(m.progress(local))
 		buf := make([]byte, 128*1024)
 		lastEmit := time.Now()
 
 		var loopErr error
 		for {
-			if local.cancelled || local.paused {
+			cancelled, paused, current := m.taskState(local)
+			if !current || cancelled || paused {
 				_ = f.Close()
 				resp.Body.Close()
-				if local.cancelled && m.opts.RemoveOnCancel && downloadDest != "" {
+				cancel()
+				if cancelled && m.opts.RemoveOnCancel && downloadDest != "" {
 					_ = os.Remove(downloadDest)
 				}
 				m.finishRunning(local)
-				if local.cancelled {
+				if cancelled {
 					m.emitStatus("cancelled", local.dest)
 				}
 				return
@@ -301,13 +346,9 @@ func (m *Manager) run(s *state) {
 					loopErr = werr
 					break
 				}
-				local.downloaded += int64(n)
+				progress := m.addDownloaded(local, int64(n))
 				if time.Since(lastEmit) >= m.opts.Throttle {
-					payload := any(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
-					if m.events.ProgressFactory != nil {
-						payload = m.events.ProgressFactory(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
-					}
-					application.Get().Event.Emit(m.events.Progress, payload)
+					m.emitProgress(progress)
 					lastEmit = time.Now()
 				}
 			}
@@ -322,14 +363,20 @@ func (m *Manager) run(s *state) {
 		}
 		_ = f.Close()
 		resp.Body.Close()
+		contextWasCancelled := ctx.Err() == context.Canceled
+		cancel()
+		m.mu.Lock()
+		local.cancelFn = nil
+		m.mu.Unlock()
 
 		if loopErr != nil {
-			if ctx.Err() == context.Canceled || local.cancelled {
+			cancelled, paused, _ := m.taskState(local)
+			if !paused && (contextWasCancelled || cancelled) {
 				if m.opts.RemoveOnCancel && downloadDest != "" {
 					_ = os.Remove(downloadDest)
 				}
 				m.emitStatus("cancelled", local.dest)
-			} else {
+			} else if !paused {
 				m.emitError(loopErr.Error(), local.dest)
 			}
 			m.finishRunning(local)
@@ -343,9 +390,9 @@ func (m *Manager) run(s *state) {
 				if !strings.EqualFold(hash, local.expectedMD5) {
 					// Mismatch
 					_ = os.Remove(downloadDest)
-					local.retryCount++
-					if local.retryCount < 3 {
-						m.emitError(fmt.Sprintf("MD5 mismatch (attempt %d/3), retrying...", local.retryCount), local.dest)
+					retryCount := m.incrementRetryCount(local)
+					if retryCount < 3 {
+						m.emitError(fmt.Sprintf("MD5 mismatch (attempt %d/3), retrying...", retryCount), local.dest)
 						m.emitStatus("started", local.dest)
 						time.Sleep(1 * time.Second)
 						continue
@@ -366,11 +413,7 @@ func (m *Manager) run(s *state) {
 		if err := os.Rename(downloadDest, local.dest); err != nil {
 			m.emitError(err.Error(), local.dest)
 		} else {
-			payload := any(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
-			if m.events.ProgressFactory != nil {
-				payload = m.events.ProgressFactory(DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest})
-			}
-			application.Get().Event.Emit(m.events.Progress, payload)
+			m.emitProgress(m.progress(local))
 			m.emitDone(local.dest)
 		}
 		m.finishRunning(local)
@@ -394,6 +437,8 @@ func calculateMD5(path string) (string, error) {
 func (m *Manager) finishRunning(s *state) {
 	m.mu.Lock()
 	s.running = false
+	cancel := s.cancelFn
+	s.cancelFn = nil
 	if s.cancelled || !s.paused {
 		if m.tasks != nil {
 			if cur, ok := m.tasks[s.dest]; ok && cur == s {
@@ -402,6 +447,56 @@ func (m *Manager) finishRunning(s *state) {
 		}
 	}
 	m.mu.Unlock()
+	if cancel != nil {
+		cancel()
+	}
+}
+
+func (m *Manager) taskState(s *state) (cancelled bool, paused bool, current bool) {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return s.cancelled, s.paused, m.tasks[s.dest] == s
+}
+
+func (m *Manager) progress(s *state) DownloadProgress {
+	m.mu.Lock()
+	defer m.mu.Unlock()
+	return DownloadProgress{
+		Downloaded: s.downloaded,
+		Total:      s.total,
+		Dest:       s.dest,
+	}
+}
+
+func (m *Manager) addDownloaded(s *state, count int64) DownloadProgress {
+	m.mu.Lock()
+	s.downloaded += count
+	progress := DownloadProgress{
+		Downloaded: s.downloaded,
+		Total:      s.total,
+		Dest:       s.dest,
+	}
+	m.mu.Unlock()
+	return progress
+}
+
+func (m *Manager) incrementRetryCount(s *state) int {
+	m.mu.Lock()
+	s.retryCount++
+	retryCount := s.retryCount
+	m.mu.Unlock()
+	return retryCount
+}
+
+func (m *Manager) emitProgress(progress DownloadProgress) {
+	if m.events.Progress == "" {
+		return
+	}
+	payload := any(progress)
+	if m.events.ProgressFactory != nil {
+		payload = m.events.ProgressFactory(progress)
+	}
+	m.emit(m.events.Progress, payload)
 }
 
 func (m *Manager) emitStatus(status string, dest string) {
@@ -412,7 +507,7 @@ func (m *Manager) emitStatus(status string, dest string) {
 	if m.events.StatusFactory != nil {
 		payload = m.events.StatusFactory(status, dest)
 	}
-	application.Get().Event.Emit(m.events.Status, payload)
+	m.emit(m.events.Status, payload)
 }
 
 func (m *Manager) emitDone(dest string) {
@@ -423,7 +518,7 @@ func (m *Manager) emitDone(dest string) {
 	if m.events.DoneFactory != nil {
 		payload = m.events.DoneFactory(dest)
 	}
-	application.Get().Event.Emit(m.events.Done, payload)
+	m.emit(m.events.Done, payload)
 }
 
 func (m *Manager) emitError(err string, dest string) {
@@ -434,7 +529,13 @@ func (m *Manager) emitError(err string, dest string) {
 	if m.events.ErrorFactory != nil {
 		payload = m.events.ErrorFactory(err, dest)
 	}
-	application.Get().Event.Emit(m.events.Error, payload)
+	m.emit(m.events.Error, payload)
+}
+
+func (m *Manager) emit(name string, data ...any) {
+	if m.emitEvent != nil {
+		m.emitEvent(name, data...)
+	}
 }
 
 func parseInt64(s string) (int64, error) {

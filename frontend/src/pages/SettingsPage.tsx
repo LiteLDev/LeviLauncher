@@ -354,7 +354,7 @@ export const SettingsPage: React.FC = () => {
                           radius="full"
                           isDisabled={!newBaseRoot || !baseRootWritable}
                           isLoading={savingBaseRoot}
-                          className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+                          className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
                           onPress={async () => {
                             setSavingBaseRoot(true);
                             try {
@@ -2253,7 +2253,7 @@ export const SettingsPage: React.FC = () => {
                               radius="full"
                               onPress={onUpdate}
                               isDisabled={updating}
-                              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+                              className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
                               startContent={<RxUpdate />}
                             >
                               {updating

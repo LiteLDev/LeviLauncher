@@ -267,7 +267,7 @@ export const ModsPage: React.FC = () => {
                 <Button
                   color="primary"
                   variant="shadow"
-                  className="bg-primary-500 hover:bg-primary-500 text-primary-foreground shadow-lg shadow-primary-900/20"
+                  className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground shadow-lg shadow-primary-900/20"
                   startContent={<FiUploadCloud />}
                   onPress={async () => {
                     try {

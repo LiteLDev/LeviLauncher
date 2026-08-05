@@ -137,7 +137,7 @@ export default function OnboardingPage() {
                   <Button
                     color="primary"
                     radius="full"
-                    className="font-black px-10 h-12 text-lg text-primary-foreground shadow-lg shadow-primary-500/20"
+                    className="font-black px-10 h-12 text-lg brand-primary-foreground shadow-lg shadow-primary-500/20"
                     onPress={requestFinish}
                   >
                     {t("onboarding.finish")}

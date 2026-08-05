@@ -1303,7 +1303,7 @@ const LIPPackagePage: React.FC = () => {
             <Button
               onPress={() => void loadPackage(identifier, true)}
               color="primary"
-              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
             >
               {t("common.retry")}
             </Button>
@@ -1325,7 +1325,7 @@ const LIPPackagePage: React.FC = () => {
             <Button
               onPress={() => navigate(-1)}
               color="primary"
-              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
             >
               {t("common.back")}
             </Button>
@@ -1411,7 +1411,7 @@ const LIPPackagePage: React.FC = () => {
 
                 <div className="flex flex-col gap-3 min-w-[240px] md:border-l md:border-default-100 md:pl-8 justify-center">
                   <Button
-                    className="w-full font-semibold shadow-md shadow-primary-900/20 text-primary-foreground bg-primary-500 hover:bg-primary-500"
+                    className="w-full font-semibold shadow-md shadow-primary-900/20 brand-primary-foreground bg-primary-500 hover:bg-primary-500"
                     startContent={<LuDownload size={20} />}
                     size="lg"
                     onPress={() => {
@@ -1749,7 +1749,7 @@ const LIPPackagePage: React.FC = () => {
             <Button
               color="primary"
               onPress={() => void handleConfirmInstall()}
-              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
               isLoading={actionRunning}
               isDisabled={
                 !installDialogSelectedInstance ||

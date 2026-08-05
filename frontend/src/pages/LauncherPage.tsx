@@ -548,8 +548,9 @@ export const LauncherPage = (args: any) => {
                     whileTap={{ scale: 0.98 }}
                   >
                     <Button
+                      data-testid="primary-launch-button"
                       size="lg"
-                      className="h-14 px-8 text-lg font-bold text-primary-foreground shadow-primary-900/20 shadow-lg bg-primary-500 hover:bg-primary-500 rounded-2xl w-full sm:w-auto"
+                      className="h-14 px-8 text-lg font-bold brand-primary-foreground shadow-primary-900/20 shadow-lg bg-primary-500 hover:bg-primary-500 rounded-2xl w-full sm:w-auto"
                       startContent={
                         currentVersion ? (
                           <FaRocket className="mb-0.5" />
@@ -1007,7 +1008,7 @@ export const LauncherPage = (args: any) => {
               <Button
                 color="primary"
                 radius="full"
-                className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+                className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
                 onPress={handleInstallConfirmCheck}
               >
                 {t("launcherpage.install_confirm.done_and_check")}
@@ -1044,7 +1045,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
               onPress={mcLaunchLoadingDisclosure.onClose}
             >
               {t("common.close")}
@@ -1097,7 +1098,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
               onPress={shortcutSuccessDisclosure.onClose}
             >
               {t("common.close")}
@@ -1161,7 +1162,7 @@ export const LauncherPage = (args: any) => {
             <Button
               color="primary"
               radius="full"
-              className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+              className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
               onPress={registerSuccessDisclosure.onClose}
             >
               {t("common.close")}

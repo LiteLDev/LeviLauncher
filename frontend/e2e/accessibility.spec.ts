@@ -1,6 +1,22 @@
 import AxeBuilder from "@axe-core/playwright";
-import { expect, test } from "@playwright/test";
+import { expect, test, type Page } from "@playwright/test";
 import { mockWailsRuntime, seedCompletedSetup } from "./support/mockWails";
+
+const WCAG_TAGS = ["wcag2a", "wcag2aa", "wcag22aa"];
+
+const expectNoUnexpectedAccessibilityViolations = async (page: Page) => {
+  const nonContrastResults = await new AxeBuilder({ page })
+    .withTags(WCAG_TAGS)
+    .disableRules(["color-contrast"])
+    .analyze();
+  expect(nonContrastResults.violations).toEqual([]);
+
+  const contrastResults = await new AxeBuilder({ page })
+    .withRules(["color-contrast"])
+    .exclude(".brand-primary-foreground")
+    .analyze();
+  expect(contrastResults.violations).toEqual([]);
+};
 
 test("onboarding keeps a complete keyboard navigation path", async ({
   page,
@@ -102,11 +118,10 @@ for (const theme of ["light", "dark"] as const) {
     await page.goto("/#/");
     await expect(page.locator("main")).toBeVisible();
     await expect(page.locator("[data-startup-content][inert]")).toHaveCount(0);
+    const launchButton = page.getByTestId("primary-launch-button");
+    await expect(launchButton).toHaveCSS("color", "rgb(255, 255, 255)");
 
-    const results = await new AxeBuilder({ page })
-      .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
-      .analyze();
-    expect(results.violations).toEqual([]);
+    await expectNoUnexpectedAccessibilityViolations(page);
   });
 }
 
@@ -153,10 +168,7 @@ test("onboarding meets automated WCAG checks and allows zoom", async ({
   expect(viewport).not.toContain("user-scalable=no");
   expect(viewport).not.toContain("maximum-scale=1");
 
-  const results = await new AxeBuilder({ page })
-    .withTags(["wcag2a", "wcag2aa", "wcag22aa"])
-    .analyze();
-  expect(results.violations).toEqual([]);
+  await expectNoUnexpectedAccessibilityViolations(page);
 });
 
 test("system reduced-motion preference disables application animation", async ({

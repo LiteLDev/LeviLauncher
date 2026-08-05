@@ -707,7 +707,7 @@ const LIPPage: React.FC = () => {
                 onPress={handleSearch}
                 startContent={<LuSearch />}
                 size="sm"
-                className="bg-primary-500 hover:bg-primary-500 text-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+                className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
               >
                 {t("common.search")}
               </Button>

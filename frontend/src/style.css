@@ -224,6 +224,10 @@ select {
   font-family: var(--font-sans);
 }
 
+.brand-primary-foreground {
+  color: #fff !important;
+}
+
 body,
 html {
   touch-action: manipulation;

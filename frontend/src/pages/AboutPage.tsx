@@ -257,7 +257,7 @@ export default function AboutPage() {
                     <Button
                       size="sm"
                       color="primary"
-                      className="bg-primary-500 text-primary-foreground shadow-lg shadow-primary-900/20"
+                      className="bg-primary-500 brand-primary-foreground shadow-lg shadow-primary-900/20"
                       startContent={<FaStar />}
                       onPress={() => Browser.OpenURL(`${repoUrl}`)}
                     >

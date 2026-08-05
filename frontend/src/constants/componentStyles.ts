@@ -35,8 +35,7 @@ export const COMPONENT_STYLES = {
   tabs: {
     tabList: "bg-default-100/50 dark:bg-zinc-800/50 rounded-xl px-1",
     cursor: "bg-primary-500 hover:bg-primary-500 shadow-md",
-    tabContent:
-      "group-data-[selected=true]:text-primary-foreground font-medium",
+    tabContent: "group-data-[selected=true]:text-white font-medium",
   },
   table: {
     thead: "rounded-none after:hidden",

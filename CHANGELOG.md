@@ -24,6 +24,7 @@ All notable changes to this project will be documented in this file.
 ### CI
 
 - Enforced backend tests, frontend production bundle limits, and accessibility checks in the build workflow.
+- Restored complete cross-platform optional dependency metadata in the frontend lockfile so clean `npm ci` installs remain reproducible.
 
 ### Docs
 

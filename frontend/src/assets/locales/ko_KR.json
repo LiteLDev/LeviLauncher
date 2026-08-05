@@ -1028,6 +1028,8 @@
     "err_create_target_dir": "대상 디렉토리 생성 실패",
     "err_open_zip": "ZIP 파일을 열 수 없습니다",
     "err_manifest_not_found": "manifest.json 을 (를) 찾을 수 없습니다",
+    "err_invalid_manifest": "manifest.json이 잘못되었거나 필수 필드가 없습니다",
+    "err_manifest_entry_not_found": "manifest.json에 지정된 진입점 파일을 찾을 수 없습니다",
     "err_invalid_package": "잘못된 패키지 구조",
     "err_duplicate_folder": "동일한 이름의 모듈 폴더가 존재합니다",
     "err_read_zip_entry": "ZIP 엔트리 읽기 실패",

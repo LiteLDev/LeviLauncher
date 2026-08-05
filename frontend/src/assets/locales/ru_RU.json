@@ -1021,6 +1021,8 @@
     "err_create_target_dir": "Не удалось создать целевую папку",
     "err_open_zip": "Не удалось открыть ZIP-архив",
     "err_manifest_not_found": "Файл manifest.json не найден",
+    "err_invalid_manifest": "Файл manifest.json недействителен или не содержит обязательных полей",
+    "err_manifest_entry_not_found": "Файл входа, указанный в manifest.json, не найден",
     "err_invalid_package": "Неправильная структура пакета",
     "err_duplicate_folder": "Папка модуля с таким именем уже существует",
     "err_read_zip_entry": "Не удалось прочитать элемент ZIP",

@@ -1021,6 +1021,8 @@
     "err_create_target_dir": "ターゲットディレクトリの作成に失敗しました",
     "err_open_zip": "ZIPファイルを開けません",
     "err_manifest_not_found": "manifest.json が見つかりません",
+    "err_invalid_manifest": "manifest.json が無効か、必須フィールドがありません",
+    "err_manifest_entry_not_found": "manifest.json で指定されたエントリファイルが見つかりません",
     "err_invalid_package": "無効なパッケージ構造です",
     "err_duplicate_folder": "同じ名前のモジュールフォルダが存在します",
     "err_read_zip_entry": "ZIPエントリの読み取りに失敗しました",

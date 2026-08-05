@@ -15,6 +15,10 @@ export const resolveImportError = (err: string, t: TFunction): string => {
       return t("mods.err_open_zip");
     case "ERR_MANIFEST_NOT_FOUND":
       return t("mods.err_manifest_not_found");
+    case "ERR_INVALID_MANIFEST":
+      return t("mods.err_invalid_manifest");
+    case "ERR_MANIFEST_ENTRY_NOT_FOUND":
+      return t("mods.err_manifest_entry_not_found");
     case "ERR_INVALID_PACKAGE":
       return t("mods.err_invalid_package");
     case "ERR_DUPLICATE_FOLDER":

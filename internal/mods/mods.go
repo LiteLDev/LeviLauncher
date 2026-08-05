@@ -4,7 +4,9 @@ import (
 	"archive/zip"
 	"bytes"
 	"io"
+	"log"
 	"os"
+	"path"
 	"path/filepath"
 	"strings"
 
@@ -353,40 +355,14 @@ func ImportZipToMods(mcname string, data []byte, overwrite bool) string {
 	if err != nil {
 		return "ERR_OPEN_ZIP"
 	}
-	manifestDir := ""
-	manifestName := ""
-	var manifestJson types.ModManifestJson
-	for _, f := range zr.File {
-		nameInZip := strings.TrimPrefix(f.Name, "./")
-		if strings.HasSuffix(nameInZip, "/") {
-			continue
-		}
-		if strings.EqualFold(filepath.Base(nameInZip), "manifest.json") {
-			dir := filepath.Dir(nameInZip)
-			rc, er := f.Open()
-			if er == nil {
-				b, _ := io.ReadAll(rc)
-				_ = rc.Close()
-				_ = json.Unmarshal(utils.JsonCompatBytes(b), &manifestJson)
-				manifestName = strings.TrimSpace(manifestJson.Name)
-			}
-			if dir != "." && strings.TrimSpace(dir) != "" {
-				manifestDir = dir
-			}
-			break
-		}
+
+	manifestDir, manifest, errCode := validateModArchive(zr)
+	if errCode != "" {
+		return errCode
 	}
-	if manifestDir == "" && manifestName == "" {
-		return "ERR_MANIFEST_NOT_FOUND"
-	}
-	modFolderName := ""
+	modFolderName := strings.TrimSpace(manifest.Name)
 	if manifestDir != "" {
-		modFolderName = filepath.Base(manifestDir)
-	} else {
-		modFolderName = manifestName
-	}
-	if strings.TrimSpace(modFolderName) == "" || modFolderName == "." || modFolderName == string(os.PathSeparator) {
-		return "ERR_INVALID_PACKAGE"
+		modFolderName = path.Base(manifestDir)
 	}
 	targetRoot := filepath.Join(modsDir, modFolderName)
 	if utils.DirExists(targetRoot) {
@@ -394,31 +370,30 @@ func ImportZipToMods(mcname string, data []byte, overwrite bool) string {
 			return "ERR_DUPLICATE_FOLDER"
 		}
 	}
+
+	stagingRoot, err := os.MkdirTemp(modsDir, ".mod-import-*")
+	if err != nil {
+		return "ERR_CREATE_TARGET_DIR"
+	}
+	defer os.RemoveAll(stagingRoot)
+
 	for _, f := range zr.File {
-		nameInZip := strings.TrimPrefix(f.Name, "./")
-		var relInDir string
-		if manifestDir != "" {
-			if nameInZip != manifestDir && !strings.HasPrefix(nameInZip, manifestDir+"/") {
-				continue
-			}
-			relInDir = strings.TrimPrefix(strings.TrimPrefix(nameInZip, manifestDir), "/")
-		} else {
-			relInDir = nameInZip
+		relInDir, selected, valid := modArchiveRelativePath(f.Name, manifestDir)
+		if !valid {
+			return "ERR_INVALID_PACKAGE"
 		}
-		target := targetRoot
-		if relInDir != "" && relInDir != "/" {
-			target = filepath.Join(targetRoot, relInDir)
-		}
-		safeTarget, _ := filepath.Abs(target)
-		safeRoot, _ := filepath.Abs(targetRoot)
-		if !strings.HasPrefix(strings.ToLower(safeTarget), strings.ToLower(safeRoot+string(os.PathSeparator))) && strings.ToLower(safeTarget) != strings.ToLower(safeRoot) {
+		if !selected || relInDir == "" {
 			continue
 		}
+		target := filepath.Join(stagingRoot, filepath.FromSlash(relInDir))
 		if f.FileInfo().IsDir() || strings.HasSuffix(f.Name, "/") {
 			if err := os.MkdirAll(target, 0755); err != nil {
 				return "ERR_CREATE_TARGET_DIR"
 			}
 			continue
+		}
+		if f.Mode()&os.ModeSymlink != 0 {
+			return "ERR_INVALID_PACKAGE"
 		}
 		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
 			return "ERR_CREATE_TARGET_DIR"
@@ -429,16 +404,168 @@ func ImportZipToMods(mcname string, data []byte, overwrite bool) string {
 		}
 		out, er := os.Create(target)
 		if er != nil {
-			rc.Close()
+			_ = rc.Close()
 			return "ERR_WRITE_FILE"
 		}
-		if _, er = io.Copy(out, rc); er != nil {
-			out.Close()
-			rc.Close()
+		_, copyErr := io.Copy(out, rc)
+		closeOutErr := out.Close()
+		closeReadErr := rc.Close()
+		if copyErr != nil || closeOutErr != nil {
 			return "ERR_WRITE_FILE"
 		}
-		out.Close()
-		rc.Close()
+		if closeReadErr != nil {
+			return "ERR_READ_ZIP_ENTRY"
+		}
+	}
+
+	return replaceImportedMod(stagingRoot, targetRoot, overwrite)
+}
+
+func validateModArchive(zr *zip.Reader) (string, types.ModManifestJson, string) {
+	manifestDir := ""
+	var manifest types.ModManifestJson
+	manifestFound := false
+
+	for _, file := range zr.File {
+		normalized, valid := normalizeModArchivePath(file.Name)
+		if !valid {
+			return "", manifest, "ERR_INVALID_PACKAGE"
+		}
+		if normalized == "" || file.FileInfo().IsDir() || strings.HasSuffix(file.Name, "/") {
+			continue
+		}
+		if !strings.EqualFold(path.Base(normalized), "manifest.json") {
+			continue
+		}
+
+		manifestFound = true
+		manifestDir = path.Dir(normalized)
+		if manifestDir == "." {
+			manifestDir = ""
+		}
+		rc, err := file.Open()
+		if err != nil {
+			return "", manifest, "ERR_READ_ZIP_ENTRY"
+		}
+		content, readErr := io.ReadAll(rc)
+		closeErr := rc.Close()
+		if readErr != nil || closeErr != nil {
+			return "", manifest, "ERR_READ_ZIP_ENTRY"
+		}
+		if err := json.Unmarshal(utils.JsonCompatBytes(content), &manifest); err != nil {
+			return "", manifest, "ERR_INVALID_MANIFEST"
+		}
+		break
+	}
+
+	if !manifestFound {
+		return "", manifest, "ERR_MANIFEST_NOT_FOUND"
+	}
+	if strings.TrimSpace(manifest.Name) == "" ||
+		strings.TrimSpace(manifest.Entry) == "" ||
+		strings.TrimSpace(manifest.Version) == "" ||
+		strings.TrimSpace(manifest.Type) == "" {
+		return "", manifest, "ERR_INVALID_MANIFEST"
+	}
+	if manifestDir == "" && !isSafeModFolderName(manifest.Name) {
+		return "", manifest, "ERR_INVALID_MANIFEST"
+	}
+
+	entryPath, valid := normalizeModArchivePath(manifest.Entry)
+	if !valid || entryPath == "" {
+		return "", manifest, "ERR_INVALID_MANIFEST"
+	}
+	for _, file := range zr.File {
+		relative, selected, valid := modArchiveRelativePath(file.Name, manifestDir)
+		if !valid {
+			return "", manifest, "ERR_INVALID_PACKAGE"
+		}
+		if selected && !file.FileInfo().IsDir() && strings.EqualFold(relative, entryPath) {
+			return manifestDir, manifest, ""
+		}
+	}
+	return "", manifest, "ERR_MANIFEST_ENTRY_NOT_FOUND"
+}
+
+func normalizeModArchivePath(value string) (string, bool) {
+	normalized := strings.ReplaceAll(strings.TrimSpace(value), `\`, "/")
+	normalized = strings.TrimPrefix(normalized, "./")
+	if normalized == "" {
+		return "", true
+	}
+	if strings.HasPrefix(normalized, "/") || strings.Contains(normalized, ":") {
+		return "", false
+	}
+	cleaned := path.Clean(normalized)
+	if cleaned == "." {
+		return "", true
+	}
+	if cleaned == ".." || strings.HasPrefix(cleaned, "../") {
+		return "", false
+	}
+	return cleaned, true
+}
+
+func modArchiveRelativePath(name string, manifestDir string) (string, bool, bool) {
+	normalized, valid := normalizeModArchivePath(name)
+	if !valid {
+		return "", false, false
+	}
+	if manifestDir == "" {
+		return normalized, true, true
+	}
+	if normalized == manifestDir {
+		return "", true, true
+	}
+	prefix := manifestDir + "/"
+	if !strings.HasPrefix(normalized, prefix) {
+		return "", false, true
+	}
+	return strings.TrimPrefix(normalized, prefix), true, true
+}
+
+func isSafeModFolderName(name string) bool {
+	trimmed := strings.TrimSpace(name)
+	return trimmed != "" &&
+		trimmed != "." &&
+		trimmed != ".." &&
+		!strings.ContainsAny(trimmed, `/\:`)
+}
+
+func replaceImportedMod(stagingRoot string, targetRoot string, overwrite bool) string {
+	if !utils.DirExists(targetRoot) {
+		if err := os.Rename(stagingRoot, targetRoot); err != nil {
+			return "ERR_WRITE_FILE"
+		}
+		return ""
+	}
+	if !overwrite {
+		return "ERR_DUPLICATE_FOLDER"
+	}
+
+	backupRoot, err := os.MkdirTemp(filepath.Dir(targetRoot), ".mod-backup-*")
+	if err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	if err := os.Remove(backupRoot); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	if err := os.Rename(targetRoot, backupRoot); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	if err := os.Rename(stagingRoot, targetRoot); err != nil {
+		if rollbackErr := os.Rename(backupRoot, targetRoot); rollbackErr != nil {
+			log.Printf(
+				"mods: failed to roll back import for %s: import error: %v; rollback error: %v",
+				targetRoot,
+				err,
+				rollbackErr,
+			)
+		}
+		return "ERR_WRITE_FILE"
+	}
+	if err := os.RemoveAll(backupRoot); err != nil {
+		log.Printf("mods: imported %s but failed to remove backup %s: %v", targetRoot, backupRoot, err)
 	}
 	return ""
 }

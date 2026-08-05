@@ -1028,6 +1028,8 @@
     "err_create_target_dir": "Erstellen des Zielverzeichnisses fehlgeschlagen",
     "err_open_zip": "ZIP-Datei kann nicht geöffnet werden",
     "err_manifest_not_found": "manifest.json nicht gefunden",
+    "err_invalid_manifest": "manifest.json ist ungültig oder erforderliche Felder fehlen",
+    "err_manifest_entry_not_found": "Die in manifest.json angegebene Einstiegsdatei wurde nicht gefunden",
     "err_invalid_package": "Ungültige Paketstruktur",
     "err_duplicate_folder": "Modulordner mit gleichem Namen existiert",
     "err_read_zip_entry": "Lesen des ZIP-Eintrags fehlgeschlagen",

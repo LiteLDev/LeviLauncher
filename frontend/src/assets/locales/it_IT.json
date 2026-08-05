@@ -1028,6 +1028,8 @@
     "err_create_target_dir": "Creazione directory di destinazione fallita",
     "err_open_zip": "Impossibile aprire il file ZIP",
     "err_manifest_not_found": "manifest.json non trovato",
+    "err_invalid_manifest": "manifest.json non è valido o mancano campi obbligatori",
+    "err_manifest_entry_not_found": "Il file di ingresso dichiarato in manifest.json non è stato trovato",
     "err_invalid_package": "Struttura pacchetto non valida",
     "err_duplicate_folder": "Esiste una cartella modulo con lo stesso nome",
     "err_read_zip_entry": "Lettura voce ZIP fallita",

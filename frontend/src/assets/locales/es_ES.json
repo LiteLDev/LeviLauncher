@@ -1028,6 +1028,8 @@
     "err_create_target_dir": "Falló la creación del directorio objetivo",
     "err_open_zip": "No se puede abrir el archivo ZIP",
     "err_manifest_not_found": "manifest.json no encontrado",
+    "err_invalid_manifest": "manifest.json no es válido o le faltan campos obligatorios",
+    "err_manifest_entry_not_found": "No se encontró el archivo de entrada indicado en manifest.json",
     "err_invalid_package": "Estructura de paquete inválida",
     "err_duplicate_folder": "Existe una carpeta de módulo con el mismo nombre",
     "err_read_zip_entry": "Falló la lectura de la entrada ZIP",

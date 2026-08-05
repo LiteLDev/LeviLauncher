@@ -1033,6 +1033,8 @@
     "err_create_target_dir": "Failed to create target directory",
     "err_open_zip": "Cannot open ZIP file",
     "err_manifest_not_found": "manifest.json not found",
+    "err_invalid_manifest": "manifest.json is invalid or missing required fields",
+    "err_manifest_entry_not_found": "The entry file declared by manifest.json was not found",
     "err_invalid_package": "Invalid package structure",
     "err_duplicate_folder": "Module folder with same name exists",
     "err_read_zip_entry": "Failed to read ZIP entry",

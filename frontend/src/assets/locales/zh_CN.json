@@ -1033,6 +1033,8 @@
     "err_create_target_dir": "创建目标目录失败",
     "err_open_zip": "无法打开ZIP文件",
     "err_manifest_not_found": "未找到 manifest.json",
+    "err_invalid_manifest": "manifest.json 无效或缺少必要字段",
+    "err_manifest_entry_not_found": "manifest.json 指定的入口文件不存在",
     "err_invalid_package": "无效的包结构",
     "err_duplicate_folder": "同名模块文件夹已存在",
     "err_read_zip_entry": "读取压缩包条目失败",

@@ -534,6 +534,22 @@
         "clarity_terms": "Clarity 약관",
         "microsoft_privacy": "Microsoft 개인정보 처리방침"
       }
+    },
+    "game_behavior": {
+      "title": "게임 실행 동작",
+      "on_launch_title": "Minecraft 실행 시",
+      "on_launch_desc": "Minecraft 실행 후 런처의 동작",
+      "on_launch_minimize": "런처 최소화",
+      "on_launch_hide": "런처 숨기기",
+      "on_launch_close": "런처 닫기",
+      "on_launch_keep": "런처 열어두기",
+      "on_exit_title": "Minecraft 종료 시",
+      "on_exit_desc": "Minecraft 종료 후 런처의 동작",
+      "on_exit_reopen": "런처 다시 열기",
+      "on_exit_keep": "아무것도 하지 않음",
+      "on_exit_close": "런처 닫기",
+      "minimize_to_tray": "닫을 때 트레이로 최소화",
+      "minimize_to_tray_desc": "창을 닫을 때 프로그램을 종료하지 않고 시스템 트레이로 숨깁니다"
     }
   },
   "downloadmodal": {

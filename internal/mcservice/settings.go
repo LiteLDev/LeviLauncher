@@ -74,3 +74,54 @@ func SetEnableBetaUpdates(enable bool) string {
 	}
 	return ""
 }
+
+func GetGameLaunchBehavior() string {
+	return config.GetOnGameLaunch()
+}
+
+func SetGameLaunchBehavior(behavior string) string {
+	switch behavior {
+	case config.OnGameLaunchMinimize, config.OnGameLaunchHide, config.OnGameLaunchClose, config.OnGameLaunchKeep:
+		// valid
+	default:
+		return "ERR_INVALID_PARAM"
+	}
+	c, _ := config.Load()
+	c.OnGameLaunch = behavior
+	if err := config.Save(c); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
+}
+
+func GetGameExitBehavior() string {
+	return config.GetOnGameExit()
+}
+
+func SetGameExitBehavior(behavior string) string {
+	switch behavior {
+	case config.OnGameExitReopen, config.OnGameExitKeep, config.OnGameExitClose:
+		// valid
+	default:
+		return "ERR_INVALID_PARAM"
+	}
+	c, _ := config.Load()
+	c.OnGameExit = behavior
+	if err := config.Save(c); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
+}
+
+func GetMinimizeToTray() bool {
+	return config.GetMinimizeToTray()
+}
+
+func SetMinimizeToTray(enable bool) string {
+	c, _ := config.Load()
+	c.MinimizeToTray = enable
+	if err := config.Save(c); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
+}

@@ -338,7 +338,7 @@
     },
     "discord_rpc": {
       "title": "Discord Rich Presence",
-      "desc": "Mostrar su estado de juego en Discord"
+      "desc": "Muestra tu estado de juego en Discord"
     },
     "beta_updates": {
       "title": "Recibir actualizaciones Beta",
@@ -534,6 +534,22 @@
         "clarity_terms": "Términos de Clarity",
         "microsoft_privacy": "Declaración de privacidad de Microsoft"
       }
+    },
+    "game_behavior": {
+      "title": "Comportamiento del juego",
+      "on_launch_title": "Al iniciar Minecraft",
+      "on_launch_desc": "Acción a realizar con el iniciador cuando inicia Minecraft",
+      "on_launch_minimize": "Minimizar el iniciador",
+      "on_launch_hide": "Ocultar el iniciador",
+      "on_launch_close": "Cerrar el iniciador",
+      "on_launch_keep": "Mantener el iniciador abierto",
+      "on_exit_title": "Al cerrar Minecraft",
+      "on_exit_desc": "Acción a realizar con el iniciador cuando cierra Minecraft",
+      "on_exit_reopen": "Volver a abrir el iniciador",
+      "on_exit_keep": "No hacer nada",
+      "on_exit_close": "Cerrar el iniciador",
+      "minimize_to_tray": "Minimizar a la bandeja al cerrar",
+      "minimize_to_tray_desc": "Ocultar el iniciador en la bandeja del sistema en lugar de salir al cerrar la ventana"
     }
   },
   "downloadmodal": {

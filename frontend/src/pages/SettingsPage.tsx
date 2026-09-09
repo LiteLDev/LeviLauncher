@@ -130,6 +130,12 @@ export const SettingsPage: React.FC = () => {
     setClarityEnabled,
     experimentalInstanceBackupEnabled,
     setExperimentalInstanceBackupEnabled,
+    gameLaunchBehavior,
+    setGameLaunchBehavior,
+    gameExitBehavior,
+    setGameExitBehavior,
+    minimizeToTray,
+    setMinimizeToTray,
     selectedTab,
     setSelectedTab,
     layoutMode,
@@ -558,6 +564,127 @@ export const SettingsPage: React.FC = () => {
                         setDiscordRpcEnabled(isSelected);
                         SetDisableDiscordRPC(!isSelected);
                       }}
+                      classNames={{
+                        wrapper: "group-data-[selected=true]:bg-primary-500",
+                      }}
+                    />
+                  </div>
+
+                  <Divider className="bg-default-200/50" />
+
+                  {/* Minecraft Launch Behavior */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">
+                        {t("settings.game_behavior.on_launch_title")}
+                      </p>
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
+                        {t("settings.game_behavior.on_launch_desc")}
+                      </p>
+                    </div>
+                    <Select
+                      size="sm"
+                      aria-label={t("settings.game_behavior.on_launch_title")}
+                      disallowEmptySelection
+                      className="w-56"
+                      classNames={COMPONENT_STYLES.select}
+                      selectedKeys={new Set([gameLaunchBehavior || "minimize"])}
+                      onSelectionChange={(keys) => {
+                        const val = Array.from(keys)[0] as string;
+                        if (!val) return;
+                        setGameLaunchBehavior(val);
+                      }}
+                    >
+                      <SelectItem
+                        key="minimize"
+                        textValue={t("settings.game_behavior.on_launch_minimize")}
+                      >
+                        {t("settings.game_behavior.on_launch_minimize")}
+                      </SelectItem>
+                      <SelectItem
+                        key="hide"
+                        textValue={t("settings.game_behavior.on_launch_hide")}
+                      >
+                        {t("settings.game_behavior.on_launch_hide")}
+                      </SelectItem>
+                      <SelectItem
+                        key="close"
+                        textValue={t("settings.game_behavior.on_launch_close")}
+                      >
+                        {t("settings.game_behavior.on_launch_close")}
+                      </SelectItem>
+                      <SelectItem
+                        key="keep"
+                        textValue={t("settings.game_behavior.on_launch_keep")}
+                      >
+                        {t("settings.game_behavior.on_launch_keep")}
+                      </SelectItem>
+                    </Select>
+                  </div>
+
+                  <Divider className="bg-default-200/50" />
+
+                  {/* Minecraft Exit Behavior */}
+                  <div className="flex items-center justify-between gap-4">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">
+                        {t("settings.game_behavior.on_exit_title")}
+                      </p>
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
+                        {t("settings.game_behavior.on_exit_desc")}
+                      </p>
+                    </div>
+                    <Select
+                      size="sm"
+                      aria-label={t("settings.game_behavior.on_exit_title")}
+                      disallowEmptySelection
+                      isDisabled={gameLaunchBehavior === "close"}
+                      className="w-56"
+                      classNames={COMPONENT_STYLES.select}
+                      selectedKeys={new Set([gameExitBehavior || "reopen"])}
+                      onSelectionChange={(keys) => {
+                        const val = Array.from(keys)[0] as string;
+                        if (!val) return;
+                        setGameExitBehavior(val);
+                      }}
+                    >
+                      <SelectItem
+                        key="reopen"
+                        textValue={t("settings.game_behavior.on_exit_reopen")}
+                      >
+                        {t("settings.game_behavior.on_exit_reopen")}
+                      </SelectItem>
+                      <SelectItem
+                        key="keep"
+                        textValue={t("settings.game_behavior.on_exit_keep")}
+                      >
+                        {t("settings.game_behavior.on_exit_keep")}
+                      </SelectItem>
+                      <SelectItem
+                        key="close"
+                        textValue={t("settings.game_behavior.on_exit_close")}
+                      >
+                        {t("settings.game_behavior.on_exit_close")}
+                      </SelectItem>
+                    </Select>
+                  </div>
+
+                  <Divider className="bg-default-200/50" />
+
+                  {/* Minimize to tray on close */}
+                  <div className="flex items-center justify-between">
+                    <div className="flex flex-col gap-1">
+                      <p className="font-medium">
+                        {t("settings.game_behavior.minimize_to_tray")}
+                      </p>
+                      <p className="text-tiny text-default-500 dark:text-zinc-400">
+                        {t("settings.game_behavior.minimize_to_tray_desc")}
+                      </p>
+                    </div>
+                    <Switch
+                      size="sm"
+                      isSelected={minimizeToTray}
+                      onValueChange={setMinimizeToTray}
                       classNames={{
                         wrapper: "group-data-[selected=true]:bg-primary-500",
                       }}

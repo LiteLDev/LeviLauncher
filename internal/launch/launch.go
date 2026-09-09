@@ -10,6 +10,7 @@ import (
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
+	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"golang.org/x/sys/windows"
@@ -19,13 +20,16 @@ const (
 	EventMcLaunchStart         = "mc.launch.start"
 	EventMcLaunchDone          = "mc.launch.done"
 	EventMcLaunchFailed        = "mc.launch.failed"
+	EventMcLaunchStopped       = "mc.launch.stopped"
 	EventGamingServicesMissing = "gamingservices.missing"
 )
 
 var (
-	user32              = syscall.NewLazyDLL("user32.dll")
-	procFindWindowW     = user32.NewProc("FindWindowW")
-	procIsWindowVisible = user32.NewProc("IsWindowVisible")
+	user32                  = syscall.NewLazyDLL("user32.dll")
+	procFindWindowW         = user32.NewProc("FindWindowW")
+	procIsWindowVisible     = user32.NewProc("IsWindowVisible")
+	procShowWindow          = user32.NewProc("ShowWindow")
+	procSetForegroundWindow = user32.NewProc("SetForegroundWindow")
 )
 
 func FindWindowByTitleExact(title string) bool {
@@ -203,7 +207,7 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 		return
 	}
 
-	found, visible, canceled := waitForGameWindow(ctx, versionDir, 60*time.Second)
+	found, _, canceled = waitForGameWindow(ctx, versionDir, 60*time.Second)
 	if canceled {
 		return
 	}
@@ -216,14 +220,28 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 
 	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
 
-	if visible {
-		w := application.Get().Window.Current()
-		if w != nil {
+	launchBehavior := config.GetOnGameLaunch()
+	switch launchBehavior {
+	case config.OnGameLaunchClose:
+		if app := application.Get(); app != nil {
+			app.Quit()
+		}
+		return
+	case config.OnGameLaunchHide:
+		if w := GetMainWindow(); w != nil {
+			w.Hide()
+		}
+	case config.OnGameLaunchKeep:
+		// keep launcher open, do nothing
+	case config.OnGameLaunchMinimize:
+		fallthrough
+	default:
+		if w := GetMainWindow(); w != nil {
 			w.Minimise()
 		}
 	}
 
-	ticker := time.NewTicker(3 * time.Second)
+	ticker := time.NewTicker(2 * time.Second)
 	defer ticker.Stop()
 
 	for {
@@ -233,13 +251,65 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 		case <-ticker.C:
 			if !isGameRunning(versionDir) {
 				discord.SetLauncherIdle()
-				// 似乎会出现Bug，后续修复
-				//w := application.Get().Window.Current()
-				//if w != nil {
-				//w.Restore()
-				//}
+				application.Get().Event.Emit(EventMcLaunchStopped, struct{}{})
+
+				exitBehavior := config.GetOnGameExit()
+				switch exitBehavior {
+				case config.OnGameExitClose:
+					if app := application.Get(); app != nil {
+						app.Quit()
+					}
+				case config.OnGameExitKeep:
+					// keep launcher as-is
+				case config.OnGameExitReopen:
+					fallthrough
+				default:
+					RestoreLauncherWindow()
+				}
 				return
 			}
 		}
 	}
+}
+
+func GetMainWindow() application.Window {
+	app := application.Get()
+	if app == nil || app.Window == nil {
+		return nil
+	}
+	if w, ok := app.Window.GetByName("main"); ok && w != nil {
+		return w
+	}
+	all := app.Window.GetAll()
+	if len(all) > 0 {
+		return all[0]
+	}
+	return nil
+}
+
+func FocusLauncherWindowWin32() {
+	title, err := syscall.UTF16PtrFromString("LeviLauncher")
+	if err != nil {
+		return
+	}
+	hwnd, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(title)))
+	if hwnd != 0 {
+		const swRestore = 9
+		_, _, _ = procShowWindow.Call(hwnd, uintptr(swRestore))
+		_, _, _ = procSetForegroundWindow.Call(hwnd)
+	}
+}
+
+func RestoreLauncherWindow() {
+	w := GetMainWindow()
+	if w != nil {
+		w.Show()
+		if w.IsMinimised() {
+			w.UnMinimise()
+		} else {
+			w.Restore()
+		}
+		w.Focus()
+	}
+	FocusLauncherWindowWin32()
 }

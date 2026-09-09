@@ -538,6 +538,22 @@
         "clarity_terms": "Clarity Terms",
         "microsoft_privacy": "Microsoft Privacy Statement"
       }
+    },
+    "game_behavior": {
+      "title": "Game Lifecycle",
+      "on_launch_title": "On Game Launch",
+      "on_launch_desc": "Action to perform with the launcher when Minecraft starts",
+      "on_launch_minimize": "Minimize launcher",
+      "on_launch_hide": "Hide to system tray",
+      "on_launch_close": "Close launcher",
+      "on_launch_keep": "Keep launcher open",
+      "on_exit_title": "On Game Exit",
+      "on_exit_desc": "Action to perform with the launcher when Minecraft closes",
+      "on_exit_reopen": "Re-open launcher",
+      "on_exit_keep": "Do nothing",
+      "on_exit_close": "Close launcher",
+      "minimize_to_tray": "Minimize to tray on close",
+      "minimize_to_tray_desc": "Hide the launcher to the system tray instead of exiting when closing the window"
     }
   },
   "downloadmodal": {

@@ -526,6 +526,22 @@
         "clarity_terms": "Clarity 利用規約",
         "microsoft_privacy": "Microsoft プライバシーに関する声明"
       }
+    },
+    "game_behavior": {
+      "title": "ゲームの動作設定",
+      "on_launch_title": "Minecraft 起動時",
+      "on_launch_desc": "Minecraft 起動後のランチャーの動作",
+      "on_launch_minimize": "ランチャーを最小化",
+      "on_launch_hide": "タスクトレイに最小化",
+      "on_launch_close": "ランチャーを閉じる",
+      "on_launch_keep": "ランチャーを開いたままにする",
+      "on_exit_title": "Minecraft 終了時",
+      "on_exit_desc": "Minecraft 終了後のランチャーの動作",
+      "on_exit_reopen": "ランチャーを再表示",
+      "on_exit_keep": "何もしない",
+      "on_exit_close": "ランチャーを閉じる",
+      "minimize_to_tray": "閉じる時にトレイに最小化",
+      "minimize_to_tray_desc": "ウィンドウを閉じる時に終了せずタスクトレイに最小化します"
     }
   },
   "downloadmodal": {

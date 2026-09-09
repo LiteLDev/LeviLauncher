@@ -534,6 +534,22 @@
         "clarity_terms": "Clarity-Bedingungen",
         "microsoft_privacy": "Microsoft-Datenschutzerklärung"
       }
+    },
+    "game_behavior": {
+      "title": "Spiel-Lebenszyklus",
+      "on_launch_title": "Beim Start von Minecraft",
+      "on_launch_desc": "Aktion für den Launcher beim Start von Minecraft",
+      "on_launch_minimize": "Launcher minimieren",
+      "on_launch_hide": "Launcher ausblenden",
+      "on_launch_close": "Launcher schließen",
+      "on_launch_keep": "Launcher geöffnet lassen",
+      "on_exit_title": "Beim Beenden von Minecraft",
+      "on_exit_desc": "Aktion für den Launcher nach Beenden von Minecraft",
+      "on_exit_reopen": "Launcher wieder öffnen",
+      "on_exit_keep": "Nichts tun",
+      "on_exit_close": "Launcher schließen",
+      "minimize_to_tray": "Beim Schließen ins Tray minimieren",
+      "minimize_to_tray_desc": "Den Launcher beim Schließen ins System-Tray minimieren statt zu beenden"
     }
   },
   "downloadmodal": {

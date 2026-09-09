@@ -556,6 +556,30 @@ func (a *Minecraft) SetEnableBetaUpdates(enable bool) string {
 	return mcservice.SetEnableBetaUpdates(enable)
 }
 
+func (a *Minecraft) GetGameLaunchBehavior() string {
+	return mcservice.GetGameLaunchBehavior()
+}
+
+func (a *Minecraft) SetGameLaunchBehavior(behavior string) string {
+	return mcservice.SetGameLaunchBehavior(behavior)
+}
+
+func (a *Minecraft) GetGameExitBehavior() string {
+	return mcservice.GetGameExitBehavior()
+}
+
+func (a *Minecraft) SetGameExitBehavior(behavior string) string {
+	return mcservice.SetGameExitBehavior(behavior)
+}
+
+func (a *Minecraft) GetMinimizeToTray() bool {
+	return mcservice.GetMinimizeToTray()
+}
+
+func (a *Minecraft) SetMinimizeToTray(enable bool) string {
+	return mcservice.SetMinimizeToTray(enable)
+}
+
 func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }
 
 func (a *Minecraft) CanWriteToDir(path string) bool { return mcservice.CanWriteToDir(path) }

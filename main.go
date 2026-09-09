@@ -47,6 +47,9 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed build/appicon.png
+var appIcon []byte
+
 var singleInstanceGuard win.Handle
 
 const singleInstancePipe = `\\.\pipe\LeviLauncher_SingleInstance_Pipe`
@@ -443,6 +446,49 @@ func startSingleInstanceServer(versionService *VersionService) {
 	}()
 }
 
+func getTrayLabels() (showLabel, exitLabel string) {
+	if procGetUserDefaultUILanguage != nil && procGetUserDefaultUILanguage.Find() == nil {
+		langID, _, _ := procGetUserDefaultUILanguage.Call()
+		primaryLang := langID & 0x3ff
+		switch primaryLang {
+		case 0x19: // Russian (LANG_RUSSIAN)
+			return "Открыть LeviLauncher", "Выход"
+		case 0x04: // Chinese (LANG_CHINESE)
+			return "打开 LeviLauncher", "退出"
+		}
+	}
+	return "Show LeviLauncher", "Exit"
+}
+
+func setupSystemTray(app *application.App) *application.SystemTray {
+	tray := app.SystemTray.New()
+	if len(appIcon) > 0 {
+		tray.SetIcon(appIcon)
+	}
+	tray.SetTooltip("LeviLauncher")
+
+	showLabel, exitLabel := getTrayLabels()
+
+	menu := app.NewMenu()
+	menu.Add(showLabel).OnClick(func(_ *application.Context) {
+		launch.RestoreLauncherWindow()
+	})
+	menu.AddSeparator()
+	menu.Add(exitLabel).OnClick(func(_ *application.Context) {
+		app.Quit()
+	})
+	tray.SetMenu(menu)
+
+	tray.OnClick(func() {
+		launch.RestoreLauncherWindow()
+	})
+	tray.OnDoubleClick(func() {
+		launch.RestoreLauncherWindow()
+	})
+
+	return tray
+}
+
 func ensureSingleInstance(autoLaunchVersion string, postUpdateRestart bool) bool {
 	name, err := win.UTF16PtrFromString("Global\\LeviLauncher_SingleInstance")
 	if err != nil {
@@ -503,6 +549,7 @@ func init() {
 	// launch
 	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
 	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)
+	application.RegisterEvent[struct{}](launch.EventMcLaunchStopped)
 	application.RegisterEvent[string](launch.EventMcLaunchFailed)
 	application.RegisterEvent[struct{}](launch.EventGamingServicesMissing)
 	//msixvc
@@ -647,6 +694,10 @@ func main() {
 			WebviewBrowserPath: webView2Options.BrowserExecutableFolder,
 		},
 	})
+	if len(appIcon) > 0 {
+		app.SetIcon(appIcon)
+	}
+	setupSystemTray(app)
 	mc.startupEssential()
 	startSingleInstanceServer(versionService)
 
@@ -677,6 +728,7 @@ func main() {
 		_ = config.Save(c)
 	}
 	windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:      "main",
 		Title:     "LeviLauncher",
 		Width:     w,
 		Height:    h,
@@ -802,6 +854,11 @@ func main() {
 			c.WindowWidth = w
 			c.WindowHeight = h
 			_ = config.Save(c)
+		}
+
+		if config.GetMinimizeToTray() {
+			event.Cancel()
+			windows.Hide()
 		}
 	})
 	err = app.Run()

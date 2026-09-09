@@ -534,6 +534,22 @@
         "clarity_terms": "Conditions de Clarity",
         "microsoft_privacy": "Déclaration de confidentialité de Microsoft"
       }
+    },
+    "game_behavior": {
+      "title": "Cycle de vie du jeu",
+      "on_launch_title": "Au lancement de Minecraft",
+      "on_launch_desc": "Action à effectuer avec le lanceur lorsque Minecraft démarre",
+      "on_launch_minimize": "Minimiser le lanceur",
+      "on_launch_hide": "Masquer le lanceur",
+      "on_launch_close": "Fermer le lanceur",
+      "on_launch_keep": "Laisser le lanceur ouvert",
+      "on_exit_title": "À la fermeture de Minecraft",
+      "on_exit_desc": "Action à effectuer avec le lanceur lorsque Minecraft se ferme",
+      "on_exit_reopen": "Rouvrir le lanceur",
+      "on_exit_keep": "Ne rien faire",
+      "on_exit_close": "Fermer le lanceur",
+      "minimize_to_tray": "Réduire dans la zone de notification",
+      "minimize_to_tray_desc": "Réduire le lanceur dans la zone de notification lors de la fermeture au lieu de quitter"
     }
   },
   "downloadmodal": {

@@ -8,6 +8,12 @@ import {
   GetBaseRoot,
   GetDisableDiscordRPC,
   GetEnableBetaUpdates,
+  GetGameLaunchBehavior,
+  SetGameLaunchBehavior,
+  GetGameExitBehavior,
+  SetGameExitBehavior,
+  GetMinimizeToTray,
+  SetMinimizeToTray,
   GetResourceRulesStatus,
   UpdateResourceRules,
   ListMinecraftProcesses,
@@ -74,6 +80,14 @@ export const useSettings = (i18n: { language: string }) => {
     experimentalInstanceBackupEnabled,
     setExperimentalInstanceBackupEnabledState,
   ] = useState<boolean>(() => readExperimentalInstanceBackupEnabled());
+
+  // Game lifecycle behaviors
+  const [gameLaunchBehavior, setGameLaunchBehaviorState] =
+    useState<string>("minimize");
+  const [gameExitBehavior, setGameExitBehaviorState] =
+    useState<string>("reopen");
+  const [minimizeToTray, setMinimizeToTrayState] =
+    useState<boolean>(false);
 
   // Tabs
   const [selectedTab, setSelectedTab] = useState<string>("general");
@@ -316,6 +330,27 @@ export const useSettings = (i18n: { language: string }) => {
     persistExperimentalInstanceBackupEnabled(enabled);
   };
 
+  const setGameLaunchBehavior = async (behavior: string) => {
+    setGameLaunchBehaviorState(behavior);
+    try {
+      await SetGameLaunchBehavior(behavior);
+    } catch {}
+  };
+
+  const setGameExitBehavior = async (behavior: string) => {
+    setGameExitBehaviorState(behavior);
+    try {
+      await SetGameExitBehavior(behavior);
+    } catch {}
+  };
+
+  const setMinimizeToTray = async (enable: boolean) => {
+    setMinimizeToTrayState(enable);
+    try {
+      await SetMinimizeToTray(enable);
+    } catch {}
+  };
+
   const callMinecraftByName = async <T>(
     method: string,
     ...args: unknown[]
@@ -507,6 +542,18 @@ export const useSettings = (i18n: { language: string }) => {
             try {
               const enabled = await GetEnableBetaUpdates();
               setEnableBetaUpdatesState(enabled);
+            } catch {}
+            try {
+              const launchBehavior = await GetGameLaunchBehavior();
+              if (launchBehavior) setGameLaunchBehaviorState(launchBehavior);
+            } catch {}
+            try {
+              const exitBehavior = await GetGameExitBehavior();
+              if (exitBehavior) setGameExitBehaviorState(exitBehavior);
+            } catch {}
+            try {
+              const trayEnabled = await GetMinimizeToTray();
+              setMinimizeToTrayState(trayEnabled);
             } catch {}
           }
         } catch {}
@@ -722,6 +769,14 @@ export const useSettings = (i18n: { language: string }) => {
     setClarityEnabled,
     experimentalInstanceBackupEnabled,
     setExperimentalInstanceBackupEnabled,
+
+    // Game lifecycle behaviors
+    gameLaunchBehavior,
+    setGameLaunchBehavior,
+    gameExitBehavior,
+    setGameExitBehavior,
+    minimizeToTray,
+    setMinimizeToTray,
 
     // Tabs
     selectedTab,

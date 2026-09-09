@@ -538,6 +538,22 @@
         "clarity_terms": "Clarity 条款",
         "microsoft_privacy": "Microsoft 隐私声明"
       }
+    },
+    "game_behavior": {
+      "title": "游戏运行行为",
+      "on_launch_title": "Minecraft 启动时",
+      "on_launch_desc": "Minecraft 启动后启动器的行为",
+      "on_launch_minimize": "最小化启动器",
+      "on_launch_hide": "隐藏到系统托盘",
+      "on_launch_close": "关闭启动器",
+      "on_launch_keep": "保持启动器开启",
+      "on_exit_title": "Minecraft 关闭时",
+      "on_exit_desc": "Minecraft 退出后启动器的行为",
+      "on_exit_reopen": "重新打开启动器",
+      "on_exit_keep": "保持原样",
+      "on_exit_close": "关闭启动器",
+      "minimize_to_tray": "关闭窗口时最小化到托盘",
+      "minimize_to_tray_desc": "关闭主窗口时将启动器最小化到系统托盘，而不是直接退出"
     }
   },
   "downloadmodal": {

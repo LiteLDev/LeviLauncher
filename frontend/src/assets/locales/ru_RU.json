@@ -526,6 +526,22 @@
         "clarity_terms": "Clarity Terms",
         "microsoft_privacy": "Microsoft Privacy Statement"
       }
+    },
+    "game_behavior": {
+      "title": "Поведение лаунчера",
+      "on_launch_title": "При запуске Minecraft",
+      "on_launch_desc": "Действие с лаунчером при старте игры",
+      "on_launch_minimize": "Сворачивать лаунчер",
+      "on_launch_hide": "Скрывать в системный трей",
+      "on_launch_close": "Закрывать лаунчер",
+      "on_launch_keep": "Оставлять открытым",
+      "on_exit_title": "После закрытия Minecraft",
+      "on_exit_desc": "Действие с лаунчером после выхода из игры",
+      "on_exit_reopen": "Разворачивать лаунчер",
+      "on_exit_keep": "Ничего не делать",
+      "on_exit_close": "Закрывать лаунчер",
+      "minimize_to_tray": "Сворачивать в трей при закрытии",
+      "minimize_to_tray_desc": "При нажатии кнопки закрытия окно лаунчера сворачивается в область уведомлений (трей) вместо выхода"
     }
   },
   "downloadmodal": {

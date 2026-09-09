@@ -23,7 +23,21 @@ type AppConfig struct {
 	WindowHeight      int    `json:"window_height"`
 	DisableDiscordRPC bool   `json:"disable_discord_rpc"`
 	EnableBetaUpdates bool   `json:"enable_beta_updates"`
+	OnGameLaunch      string `json:"on_game_launch,omitempty"`
+	OnGameExit        string `json:"on_game_exit,omitempty"`
+	MinimizeToTray    bool   `json:"minimize_to_tray,omitempty"`
 }
+
+const (
+	OnGameLaunchMinimize = "minimize"
+	OnGameLaunchHide     = "hide"
+	OnGameLaunchClose    = "close"
+	OnGameLaunchKeep     = "keep"
+
+	OnGameExitReopen = "reopen"
+	OnGameExitKeep   = "keep"
+	OnGameExitClose  = "close"
+)
 
 func Load() (AppConfig, error) {
 	configMutex.RLock()
@@ -115,4 +129,55 @@ func GetDiscordRPCDisabled() bool {
 
 	c, _ := Load()
 	return c.DisableDiscordRPC
+}
+
+func GetOnGameLaunch() string {
+	configMutex.RLock()
+	if isLoaded {
+		v := cachedConfig.OnGameLaunch
+		configMutex.RUnlock()
+		if v == "" {
+			return OnGameLaunchMinimize
+		}
+		return v
+	}
+	configMutex.RUnlock()
+
+	c, _ := Load()
+	if c.OnGameLaunch == "" {
+		return OnGameLaunchMinimize
+	}
+	return c.OnGameLaunch
+}
+
+func GetOnGameExit() string {
+	configMutex.RLock()
+	if isLoaded {
+		v := cachedConfig.OnGameExit
+		configMutex.RUnlock()
+		if v == "" {
+			return OnGameExitReopen
+		}
+		return v
+	}
+	configMutex.RUnlock()
+
+	c, _ := Load()
+	if c.OnGameExit == "" {
+		return OnGameExitReopen
+	}
+	return c.OnGameExit
+}
+
+func GetMinimizeToTray() bool {
+	configMutex.RLock()
+	if isLoaded {
+		v := cachedConfig.MinimizeToTray
+		configMutex.RUnlock()
+		return v
+	}
+	configMutex.RUnlock()
+
+	c, _ := Load()
+	return c.MinimizeToTray
 }

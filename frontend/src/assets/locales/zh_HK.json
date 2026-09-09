@@ -526,6 +526,22 @@
         "clarity_terms": "Clarity 服務條款",
         "microsoft_privacy": "Microsoft 私隱聲明"
       }
+    },
+    "game_behavior": {
+      "title": "遊戲運行行為",
+      "on_launch_title": "Minecraft 啟動時",
+      "on_launch_desc": "Minecraft 啟動後啟動器的行為",
+      "on_launch_minimize": "最小化啟動器",
+      "on_launch_hide": "隱藏到系統匣",
+      "on_launch_close": "關閉啟動器",
+      "on_launch_keep": "保持啟動器開啟",
+      "on_exit_title": "Minecraft 關閉時",
+      "on_exit_desc": "Minecraft 退出後啟動器的行為",
+      "on_exit_reopen": "重新打開啟動器",
+      "on_exit_keep": "保持原樣",
+      "on_exit_close": "關閉啟動器",
+      "minimize_to_tray": "關閉視窗時最小化到系統匣",
+      "minimize_to_tray_desc": "關閉主視窗時將啟動器最小化到系統匣，而不是直接結束"
     }
   },
   "downloadmodal": {

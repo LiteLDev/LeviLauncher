@@ -1,7 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { readdir, readFile } from "node:fs/promises";
 import { join } from "node:path";
-import { THEMES, getSolidAccent } from "../src/constants/themes";
+import { THEMES, generateTheme, getAccentForeground, getAccentHover, getReadableAccent } from "../src/constants/themes";
 import { ROUTES, routeTo } from "../src/constants/routes";
 import { mockWailsRuntime, seedCompletedSetup } from "./support/mockWails";
 
@@ -16,6 +16,19 @@ const contrast = (background: number[], foreground = [255, 255, 255]) => {
   const values = [luminance(background), luminance(foreground)];
   return (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05);
 };
+
+test("custom pastel shades remain ordered and do not become saturated red", () => {
+  const channels = (hex: string) => [1, 3, 5].map(offset => parseInt(hex.slice(offset, offset + 2), 16));
+  for (const base of ["#ffb6c1", "#fefefe", "#ffffff", "#000000", "#777777"]) {
+    const palette = generateTheme(base);
+    const shades = Object.values(palette).map(color => luminance(channels(color)));
+    expect(palette[500]).toBe(base);
+    expect(shades).toEqual([...shades].sort((a, b) => b - a));
+  }
+  const pink = channels(generateTheme("#ffb6c1")[700]);
+  // A darker pastel retains its red/green balance instead of losing green.
+  expect(pink[1] / pink[0]).toBeCloseTo(182 / 255, 2);
+});
 
 test("application styles contain no gradient backgrounds, text, borders or SVG fills", async () => {
   const violations: string[] = [];
@@ -36,11 +49,16 @@ test("application styles contain no gradient backgrounds, text, borders or SVG f
 });
 
 test("solid accents preserve label contrast for every palette and extreme custom colors", () => {
-  for (const base of [...Object.values(THEMES).map((theme) => theme[500]), "#ffffff", "#ffff00", "#000000", "#fefefe"]) {
-    for (const foreground of ["#ffffff", "#f4f4f5"]) {
-      const accent = getSolidAccent(base, foreground);
-      const channels = (hex: string) => [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
+  const channels = (hex: string) => [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
+  for (const base of [...Object.values(THEMES).map((theme) => theme[500]), "#ffffff", "#ffff00", "#000000", "#fefefe", "#ffb6c1", "#777777"]) {
+    const foreground = getAccentForeground(base);
+    for (const accent of [base, getAccentHover(base)]) {
       expect(contrast(channels(accent), channels(foreground)), `${base} → ${accent} / ${foreground}`).toBeGreaterThanOrEqual(4.5);
+    }
+    for (const surface of ["#f4f4f5", "#27272a"]) {
+      for (const ratio of [3.1, 4.6]) {
+        expect(contrast(channels(getReadableAccent(base, surface, ratio)), channels(surface))).toBeGreaterThanOrEqual(ratio);
+      }
     }
   }
 });
@@ -65,9 +83,10 @@ for (const theme of ["light", "dark"] as const) {
         label: element.getAttribute("aria-label") || element.textContent?.trim(),
         color: getComputedStyle(element).color,
         solid: element.matches(".button--primary, .button--danger, .button.bg-brand-500, .pagination__link.bg-accent"),
+        danger: element.matches(".button--danger"),
       })));
       counts[name] = colors.length;
-      expect(colors.filter(action => action.color !== (action.solid ? "rgb(244, 244, 245)" : expected)), name).toEqual([]);
+      expect(colors.filter(action => action.color !== (action.danger ? "rgb(244, 244, 245)" : action.solid ? "rgb(24, 24, 27)" : expected)), name).toEqual([]);
     };
     for (const route of [ROUTES.home, ROUTES.instances, ROUTES.download, ROUTES.downloadTasks,
       ROUTES.mods, ROUTES.curseForge, ROUTES.lip, ROUTES.content, ROUTES.contentWorlds,
@@ -89,7 +108,7 @@ for (const theme of ["light", "dark"] as const) {
     await testInfo.attach("action-color-counts", { body: JSON.stringify(counts, null, 2), contentType: "application/json" });
   });
 
-  for (const color of ["emerald", "amber", "custom", "custom_black"]) {
+  for (const color of ["emerald", "amber", "pink", "custom", "custom_black", "custom_pink"]) {
     test(`primary action has readable neutral labels in ${theme}/${color}`, async ({ page }) => {
       await mockWailsRuntime(page);
       await seedCompletedSetup(page);
@@ -97,14 +116,17 @@ for (const theme of ["light", "dark"] as const) {
       await page.addInitScript(({ theme, color }) => {
         localStorage.setItem("theme", theme);
         localStorage.setItem("app.themeMode", theme);
-        localStorage.setItem(`app.${theme}ThemeColor`, color === "custom_black" ? "custom" : color);
-        localStorage.setItem(`app.${theme}CustomThemeColor`, color === "custom_black" ? "#000000" : "#ffffff");
+        localStorage.setItem(`app.${theme}ThemeColor`, color.startsWith("custom") ? "custom" : color);
+        localStorage.setItem(`app.${theme}CustomThemeColor`, color === "custom_black" ? "#000000" : color === "custom_pink" ? "#ffb6c1" : "#ffffff");
       }, { theme, color });
       await page.goto(`/#${ROUTES.home}`);
       const launch = page.getByTestId("primary-launch-button");
       await expect(launch).toBeVisible();
-      const foreground = [244, 244, 245];
+      const foreground = color === "custom_black" ? [255, 255, 255] : [24, 24, 27];
       await expect(launch).toHaveCSS("color", `rgb(${foreground.join(", ")})`);
+      const base = color === "custom_black" ? "#000000" : color === "custom_pink" ? "#ffb6c1" : color === "custom" ? "#ffffff" : THEMES[color][500];
+      const baseChannels = [1, 3, 5].map(offset => parseInt(base.slice(offset, offset + 2), 16));
+      await expect(launch).toHaveCSS("background-color", `rgb(${baseChannels.join(", ")})`);
       for (const hover of [false, true]) {
         if (hover) await launch.hover();
         const background = await launch.evaluate((element) => {
@@ -115,6 +137,10 @@ for (const theme of ["light", "dark"] as const) {
           return Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3);
         });
         expect(contrast(background, foreground)).toBeGreaterThanOrEqual(4.5);
+      }
+      if (color === "pink" || color === "custom_pink") {
+        await page.mouse.move(0, 0);
+        await page.screenshot({ path: `.artifacts/personalization/${theme}-${color}.png` });
       }
       if (theme === "dark" && color === "custom_black") {
         const focus = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--focus"));

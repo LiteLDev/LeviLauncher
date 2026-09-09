@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
-import { THEMES, hexToRgb, generateTheme, getSolidAccent } from "@/constants/themes";
-
-const BRAND_PRIMARY_FOREGROUND = "#ffffff";
+import {
+  THEMES,
+  hexToRgb,
+  generateTheme,
+  getAccentForeground,
+  getAccentHover,
+  getReadableAccent,
+} from "@/constants/themes";
 
 export const useThemeColors = (resolvedTheme: string | undefined) => {
   const [themeColorsReady, setThemeColorsReady] = useState<boolean>(false);
@@ -106,10 +111,13 @@ export const useThemeColors = (resolvedTheme: string | undefined) => {
       const k = Number(key);
       root.style.setProperty(`--theme-${k}`, hexToRgb(theme[k]));
     });
-    root.style.setProperty("--theme-solid", getSolidAccent(theme[500]));
-    root.style.setProperty("--theme-action-solid", getSolidAccent(theme[500], "#f4f4f5"));
-    // Decorative shades retain the palette; solid actions keep readable white labels.
-    root.style.setProperty("--accent-foreground", BRAND_PRIMARY_FOREGROUND);
+    root.style.setProperty("--theme-solid", theme[500]);
+    root.style.setProperty("--theme-solid-hover", getAccentHover(theme[500]));
+    root.style.setProperty("--theme-solid-foreground", getAccentForeground(theme[500]));
+    for (const [mode, surface] of [["light", "#f4f4f5"], ["dark", "#27272a"]]) {
+      root.style.setProperty(`--theme-text-${mode}`, getReadableAccent(theme[500], surface));
+      root.style.setProperty(`--theme-heading-${mode}`, getReadableAccent(theme[500], surface, 3.1));
+    }
     setThemeColorsReady(true);
   }, [
     resolvedTheme,

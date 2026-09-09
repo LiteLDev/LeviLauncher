@@ -22,112 +22,74 @@ const parseHex = (hex: string) => {
   return { r, g, b };
 };
 
-const rgbToHsl = (r: number, g: number, b: number) => {
-  r /= 255;
-  g /= 255;
-  b /= 255;
-  const max = Math.max(r, g, b),
-    min = Math.min(r, g, b);
-  let h = 0,
-    s,
-    l = (max + min) / 2;
-  if (max === min) {
-    h = s = 0;
-  } else {
-    const d = max - min;
-    s = l > 0.5 ? d / (2 - max - min) : d / (max + min);
-    switch (max) {
-      case r:
-        h = (g - b) / d + (g < b ? 6 : 0);
-        break;
-      case g:
-        h = (b - r) / d + 2;
-        break;
-      case b:
-        h = (r - g) / d + 4;
-        break;
-    }
-    h /= 6;
-  }
-  return { h: h * 360, s: s * 100, l: l * 100 };
+const luminance = (hex: string) => {
+  const rgb = parseHex(hex);
+  const linear = [rgb.r, rgb.g, rgb.b].map((value) => {
+    const channel = value / 255;
+    return channel <= 0.04045
+      ? channel / 12.92
+      : Math.pow((channel + 0.055) / 1.055, 2.4);
+  });
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
 };
 
-const hslToRgb = (h: number, s: number, l: number) => {
-  h /= 360;
-  s /= 100;
-  l /= 100;
-  let r, g, b;
-  if (s === 0) {
-    r = g = b = l;
-  } else {
-    const q = l < 0.5 ? l * (1 + s) : l + s - l * s;
-    const p = 2 * l - q;
-    const hue2rgb = (t: number) => {
-      if (t < 0) t += 1;
-      if (t > 1) t -= 1;
-      if (t < 1 / 6) return p + (q - p) * 6 * t;
-      if (t < 1 / 2) return q;
-      if (t < 2 / 3) return p + (q - p) * (2 / 3 - t) * 6;
-      return p;
-    };
-    r = hue2rgb(h + 1 / 3);
-    g = hue2rgb(h);
-    b = hue2rgb(h - 1 / 3);
-  }
-  return {
-    r: Math.round(r * 255),
-    g: Math.round(g * 255),
-    b: Math.round(b * 255),
-  };
+const contrast = (a: string, b: string) => {
+  const values = [luminance(a), luminance(b)];
+  return (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05);
 };
 
-// Keep the selected hue while meeting AA contrast for the actual label color.
-export const getSolidAccent = (baseColor: string, foreground = "#ffffff"): string => {
-  const { r, g, b } = parseHex(baseColor);
-  const { h, s, l } = rgbToHsl(r, g, b);
-  const luminance = (rgb: { r: number; g: number; b: number }) => {
-    const linear = [rgb.r, rgb.g, rgb.b].map((value) => {
-      const channel = value / 255;
-      return channel <= 0.04045
-        ? channel / 12.92
-        : Math.pow((channel + 0.055) / 1.055, 2.4);
-    });
-    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
-  };
-  const labelLuminance = luminance(parseHex(foreground));
-  const direction = labelLuminance > 0.5 ? -1 : 1;
+const mixColor = (base: string, target: string, amount: number) => {
+  const a = parseHex(base);
+  const b = parseHex(target);
+  return rgbToHex(
+    a.r + (b.r - a.r) * amount,
+    a.g + (b.g - a.g) * amount,
+    a.b + (b.b - a.b) * amount,
+  );
+};
 
-  for (let lightness = l; lightness >= 0 && lightness <= 100; lightness += direction * 0.5) {
-    const rgb = hslToRgb(h, s, lightness);
-    const backgroundLuminance = luminance(rgb);
-    const contrast = (Math.max(labelLuminance, backgroundLuminance) + 0.05) /
-      (Math.min(labelLuminance, backgroundLuminance) + 0.05);
-    if (contrast >= 4.6) return rgbToHex(rgb.r, rgb.g, rgb.b);
+// Preserve the selected fill. Adapt the label instead of darkening pastels.
+export const getAccentForeground = (base: string): string => {
+  if (contrast(base, "#18181b") >= 4.5) return "#18181b";
+  return contrast(base, "#ffffff") >= 4.5 ? "#ffffff" : "#000000";
+};
+
+export const getAccentHover = (base: string): string =>
+  mixColor(
+    base,
+    getAccentForeground(base) === "#ffffff" ? "#000000" : "#ffffff",
+    0.08,
+  );
+
+// Adjust text only as far as its surface requires. RGB mixing retains the soft
+// character of pastels; lowering HSL lightness made pink turn saturated red.
+export const getReadableAccent = (
+  base: string,
+  surface: string,
+  ratio = 4.6,
+): string => {
+  const target = luminance(surface) > 0.5 ? "#000000" : "#ffffff";
+  for (let step = 0; step <= 200; step++) {
+    const color = mixColor(base, target, step / 200);
+    if (contrast(color, surface) >= ratio) return color;
   }
-  return direction < 0 ? "#000000" : "#ffffff";
+  return target;
 };
 
 export const generateTheme = (baseColor: string): Record<number, string> => {
-  const { r, g, b } = parseHex(baseColor);
-  const { h, s, l } = rgbToHsl(r, g, b);
-
-  const getShade = (lightness: number, satMult: number = 1) => {
-    const rgb = hslToRgb(h, Math.min(100, s * satMult), lightness);
-    return rgbToHex(rgb.r, rgb.g, rgb.b);
-  };
-
+  // Mix toward white/black without boosting saturation or clipping pale shades.
   return {
-    50: getShade(Math.min(98, l + (100 - l) * 0.95), 1.1),
-    100: getShade(Math.min(95, l + (100 - l) * 0.9), 1.1),
-    200: getShade(Math.min(90, l + (100 - l) * 0.75), 1.05),
-    300: getShade(Math.min(80, l + (100 - l) * 0.5), 1.02),
-    400: getShade(Math.min(70, l + (100 - l) * 0.25), 1),
+    50: mixColor(baseColor, "#ffffff", 0.95),
+    100: mixColor(baseColor, "#ffffff", 0.9),
+    200: mixColor(baseColor, "#ffffff", 0.75),
+    300: mixColor(baseColor, "#ffffff", 0.5),
+    400: mixColor(baseColor, "#ffffff", 0.25),
     500: baseColor,
-    600: getShade(l * 0.85, 1),
-    700: getShade(l * 0.7, 1.02),
-    800: getShade(l * 0.5, 1.05),
-    900: getShade(l * 0.3, 1.1),
-    950: getShade(l * 0.15, 1.2),
+    600: mixColor(baseColor, "#000000", 0.15),
+    700: mixColor(baseColor, "#000000", 0.3),
+    800: mixColor(baseColor, "#000000", 0.5),
+    900: mixColor(baseColor, "#000000", 0.7),
+    950: mixColor(baseColor, "#000000", 0.85),
   };
 };
 

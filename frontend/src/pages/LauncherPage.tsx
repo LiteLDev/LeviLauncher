@@ -249,7 +249,7 @@ export const LauncherPage = (args: any) => {
                 <div className="flex flex-col gap-1 min-w-0">
                   <div className="flex items-center gap-3">
                     <motion.h1
-                      className="text-4xl sm:text-5xl font-black tracking-tight text-brand-700 dark:text-brand-300 truncate pb-2"
+                      className="text-4xl sm:text-5xl font-black tracking-tight text-brand-heading truncate pb-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}

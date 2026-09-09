@@ -5,6 +5,12 @@
 
 @theme inline {
   --color-surface-quaternary: var(--surface-quaternary);
+  --color-brand-heading: var(--brand-heading);
+  --color-brand-foreground: var(--brand-foreground);
+}
+
+@utility text-accent {
+  color: var(--brand-foreground);
 }
 
 @font-face {
@@ -203,17 +209,19 @@
   --surface: #ffffff;
   --surface-quaternary: #d4d4d8;
   --overlay: #ffffff;
-  --accent: var(--theme-solid, #047857);
-  --accent-hover: color-mix(in srgb, var(--accent) 90%, #000);
-  --accent-foreground: #ffffff;
-  --accent-soft-foreground: rgb(var(--theme-800, 6, 95, 70));
-  --focus: var(--accent);
+  --accent: var(--theme-solid, #10b981);
+  --accent-hover: var(--theme-solid-hover, #23bf8b);
+  --accent-foreground: var(--theme-solid-foreground, #18181b);
+  --brand-foreground: var(--theme-text-light, #047857);
+  --brand-heading: var(--theme-heading-light, #059669);
+  --accent-soft-foreground: var(--brand-foreground);
+  --focus: var(--brand-foreground);
   --danger-foreground: #000000;
   --warning-foreground: #27272a;
   --action-foreground: #3f3f46;
   --action-solid-foreground: #f4f4f5;
-  --action-accent: var(--theme-action-solid, #047857);
-  --action-accent-hover: color-mix(in srgb, var(--action-accent) 90%, #000);
+  --action-accent: var(--accent);
+  --action-accent-hover: var(--accent-hover);
   --action-danger: #c52f3b;
   --action-danger-hover: color-mix(in srgb, var(--action-danger) 90%, #000);
   --action-warning: #925f00;
@@ -227,10 +235,12 @@
   --surface: #18181b;
   --surface-quaternary: #52525b;
   --overlay: #18181b;
-  --accent: var(--theme-solid, #047857);
-  --accent-hover: color-mix(in srgb, var(--accent) 90%, #000);
-  --accent-foreground: #ffffff;
-  --accent-soft-foreground: rgb(var(--theme-200, 167, 243, 208));
+  --accent: var(--theme-solid, #10b981);
+  --accent-hover: var(--theme-solid-hover, #23bf8b);
+  --accent-foreground: var(--theme-solid-foreground, #18181b);
+  --brand-foreground: var(--theme-text-dark, #34d399);
+  --brand-heading: var(--theme-heading-dark, #10b981);
+  --accent-soft-foreground: var(--brand-foreground);
   --focus: rgb(var(--theme-300, 110, 231, 183));
   --danger-foreground: #000000;
 }
@@ -280,7 +290,7 @@ select {
   color: var(--accent-foreground);
 }
 
-/* Decorative brand surfaces keep their existing contrast-safe palette. */
+/* Filled brand surfaces and their labels use the same selected color pair. */
 .brand-primary-foreground.bg-brand-500 {
   background-color: var(--accent);
 }
@@ -293,8 +303,13 @@ select {
   color: var(--action-foreground);
 }
 
-/* Filled color actions always use soft white labels, including in light mode. */
-:is(.button--primary, .button--danger, .button.bg-brand-500, .pagination__link.bg-accent) {
+/* Brand labels adapt to the selected fill; danger labels remain independent. */
+:is(.button--primary, .button.bg-brand-500, .pagination__link.bg-accent) {
+  --button-fg: var(--accent-foreground);
+  color: var(--accent-foreground);
+}
+
+.button--danger {
   --button-fg: var(--action-solid-foreground);
   color: var(--action-solid-foreground);
 }

@@ -61,7 +61,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 aria-label={t("nav.back")}
                 variant={"ghost"}
                 className={cn(
-                  "rounded-lg",
+                  "rounded-full",
                   "wails-no-drag text-muted dark:text-zinc-400",
                 )}
               >
@@ -84,7 +84,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 aria-label={t("nav.forward")}
                 variant={"ghost"}
                 className={cn(
-                  "rounded-lg",
+                  "rounded-full",
                   "wails-no-drag text-muted dark:text-zinc-400",
                 )}
               >

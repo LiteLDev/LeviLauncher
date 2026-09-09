@@ -230,6 +230,12 @@
 
 /* Match the launcher's existing content layout while using v3 compound parts. */
 @layer components {
+  /* Ordinary actions use pill corners. Explicit utilities retain the shape of
+     launcher, navigation and window controls; grouped buttons keep joined edges. */
+  .button,
+  .pagination__link {
+    @apply rounded-full;
+  }
   .card {
     padding: 0;
     gap: 0;

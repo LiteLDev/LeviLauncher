@@ -475,7 +475,7 @@ export default function ScreenshotsPage() {
                             delCfmOnOpen();
                           }}
                           className={cn(
-                            "rounded-lg",
+                            "rounded-full",
                             "bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-900/20 dark:hover:bg-rose-900/30",
                           )}
                         >

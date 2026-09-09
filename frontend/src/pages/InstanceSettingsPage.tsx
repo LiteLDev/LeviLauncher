@@ -860,7 +860,7 @@ export default function InstanceSettingsPage() {
                           isPending={
                             vs.restoreInfoLoading || vs.restoringInstance
                           }
-                          className={cn("rounded-lg", "font-medium")}
+                          className={cn("rounded-full", "font-medium")}
                         >
                           {({ isPending }) => (
                             <>
@@ -884,7 +884,7 @@ export default function InstanceSettingsPage() {
                           isPending={
                             vs.backupInfoLoading || vs.backingUpInstance
                           }
-                          className={cn("rounded-lg", "font-medium")}
+                          className={cn("rounded-full", "font-medium")}
                         >
                           {({ isPending }) => (
                             <>
@@ -950,7 +950,7 @@ export default function InstanceSettingsPage() {
                             }}
                             variant={"secondary"}
                             className={cn(
-                              "rounded-lg",
+                              "rounded-full",
                               "bg-warning text-warning-foreground",
                               "font-medium",
                             )}
@@ -961,7 +961,7 @@ export default function InstanceSettingsPage() {
                           <Button
                             onPress={() => vs.setDeleteOpen(true)}
                             variant={"danger-soft"}
-                            className={cn("rounded-lg", "font-medium")}
+                            className={cn("rounded-full", "font-medium")}
                           >
                             {t("common.delete")}
                           </Button>

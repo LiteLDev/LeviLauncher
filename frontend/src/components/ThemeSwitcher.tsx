@@ -39,7 +39,7 @@ export function ThemeSwitcher({
       aria-label={t("theme.toggle")}
       variant={"ghost"}
       className={cn(
-        "rounded-lg",
+        "rounded-full",
         className ||
           "w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100",
       )}

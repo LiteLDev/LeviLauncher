@@ -19,7 +19,7 @@ export function ModalAction({ className, isIconOnly, ...props }: Omit<ButtonProp
       isIconOnly={isIconOnly}
       className={cn(
         className,
-        "h-9 rounded-xl text-sm font-semibold shadow-none",
+        "h-9 rounded-full text-sm font-semibold shadow-none",
         !isIconOnly && "min-w-22 px-4 whitespace-normal h-auto min-h-9 py-2",
       )}
     />

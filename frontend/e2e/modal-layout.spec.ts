@@ -35,7 +35,13 @@ async function expectFits(dialog: Locator, width?: number) {
   })).toBe(true);
   await expect(dialog.locator(".modal__footer")).toBeInViewport({ ratio: 1 });
   for (const button of await dialog.locator(".modal__footer button").all()) {
-    await expect(button).toHaveCSS("border-radius", "12px");
+    expect(await button.evaluate((element) => {
+      const style = getComputedStyle(element);
+      const radius = Math.min(element.clientWidth, element.clientHeight) / 2;
+      return [style.borderTopLeftRadius, style.borderTopRightRadius,
+        style.borderBottomLeftRadius, style.borderBottomRightRadius]
+        .every(value => parseFloat(value) >= radius);
+    })).toBe(true);
     await expect(button).toHaveCSS("font-size", "14px");
   }
   const animatedBody = dialog.locator(".modal__body > div");

@@ -550,7 +550,7 @@ export default function WorldLevelDatEditorPage() {
                               onPress={addField}
                               variant={"secondary"}
                               className={cn(
-                                "rounded-lg",
+                                "rounded-full",
                                 "bg-brand-500 brand-primary-foreground shadow-lg shadow-brand-900/20",
                               )}
                             >
@@ -803,7 +803,7 @@ export default function WorldLevelDatEditorPage() {
                               }}
                               variant={"secondary"}
                               className={cn(
-                                "rounded-lg",
+                                "rounded-full",
                                 "bg-surface-secondary dark:bg-surface/20 text-foreground dark:text-zinc-300",
                               )}
                             >
@@ -1108,7 +1108,7 @@ export default function WorldLevelDatEditorPage() {
                                             }}
                                             variant={"secondary"}
                                             className={cn(
-                                              "rounded-lg",
+                                              "rounded-full",
                                               "bg-surface-secondary dark:bg-surface/20 text-foreground dark:text-zinc-300",
                                             )}
                                           >

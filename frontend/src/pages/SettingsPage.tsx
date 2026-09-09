@@ -66,6 +66,7 @@ import { LAYOUT } from "@/constants/layout";
 import { THEMES, THEME_GROUPS } from "@/constants/themes";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { CustomColorPicker } from "@/components/CustomColorPicker";
+import { BackgroundAppearanceSettings } from "@/components/BackgroundAppearanceSettings";
 import { useSettings, ThemeMode } from "@/hooks/useSettings";
 
 const normalizeHexColor = (
@@ -532,7 +533,7 @@ export const SettingsPage: React.FC = () => {
                       ) : null}
 
                       <div className="grid grid-cols-1 gap-2 pt-2">
-                        <div className="p-3 rounded-xl bg-surface-secondary/50 dark:bg-zinc-800/30 border border-border/50 dark:border-white/5">
+                        <div className="p-3 rounded-xl bg-surface-secondary/50 dark:bg-surface-secondary/30 border border-border/50 dark:border-white/5">
                           <div
                             className="text-xs text-muted dark:text-zinc-400 flex items-center gap-2 truncate"
                             title={installerDir || "-"}
@@ -546,7 +547,7 @@ export const SettingsPage: React.FC = () => {
                             </span>
                           </div>
                         </div>
-                        <div className="p-3 rounded-xl bg-surface-secondary/50 dark:bg-zinc-800/30 border border-border/50 dark:border-white/5">
+                        <div className="p-3 rounded-xl bg-surface-secondary/50 dark:bg-surface-secondary/30 border border-border/50 dark:border-white/5">
                           <div
                             className="text-xs text-muted dark:text-zinc-400 flex items-center gap-2 truncate"
                             title={versionsDir || "-"}
@@ -1076,7 +1077,7 @@ export const SettingsPage: React.FC = () => {
 
                         <div className="flex flex-col gap-6">
                           {/* Image Picker Row */}
-                          <div className="flex items-center justify-between">
+                          <div className="flex flex-wrap items-center justify-between gap-3">
                             <div className="flex items-center gap-3 overflow-hidden">
                               <div className="w-12 h-12 rounded-lg bg-surface-quaternary/30 flex items-center justify-center flex-shrink-0 border border-border/50 overflow-hidden">
                                 {previewBgData && !backgroundImageError ? (
@@ -1103,6 +1104,10 @@ export const SettingsPage: React.FC = () => {
                             <div className="flex items-center gap-2">
                               {backgroundImage && (
                                 <>
+                                  <Button size="sm" variant="secondary" isDisabled={backgroundImageCount < 2}
+                                    onPress={() => window.dispatchEvent(new Event("app-background-changed"))}>
+                                    {t("settings.appearance.material.next_image")}
+                                  </Button>
                                   <Button
                                     size="sm"
                                     onPress={async () => {
@@ -1183,6 +1188,8 @@ export const SettingsPage: React.FC = () => {
                               </Button>
                             </div>
                           </div>
+
+                          <BackgroundAppearanceSettings mode={themeSettingMode} onModeChange={setThemeSettingMode} />
 
                           {backgroundImage && (
                             <>
@@ -2624,7 +2631,7 @@ export const SettingsPage: React.FC = () => {
                         exit={{ opacity: 0, height: 0 }}
                         className="overflow-hidden"
                       >
-                        <div className="rounded-xl bg-surface-secondary/50 dark:bg-zinc-800/30 p-4 border border-border/50 dark:border-white/5">
+                        <div className="rounded-xl bg-surface-secondary/50 dark:bg-surface-secondary/30 p-4 border border-border/50 dark:border-white/5">
                           <div className="flex items-center justify-between mb-3">
                             <p className="text-sm font-bold text-brand-600 dark:text-brand-500">
                               {t("settings.body.version.hasnew")} {newVersion}

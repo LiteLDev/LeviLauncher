@@ -5,13 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
-    "build:dev": "tsc --noEmit && vite build --minify false --mode development",
-    "build": "tsc --noEmit && vite build --mode production && node ./scripts/check-bundle.mjs",
-    "build:analyze": "tsc --noEmit && vite build --mode analyze && node ./scripts/check-bundle.mjs",
+    "build:dev": "npm run styles:check && tsc --noEmit && vite build --minify false --mode development",
+    "build": "npm run styles:check && tsc --noEmit && vite build --mode production && node ./scripts/check-bundle.mjs",
+    "build:analyze": "npm run styles:check && tsc --noEmit && vite build --mode analyze && node ./scripts/check-bundle.mjs",
     "bundle:check": "node ./scripts/check-bundle.mjs",
     "test:e2e": "playwright test",
     "preview": "vite preview",
-    "type-check": "tsc --noEmit"
+    "type-check": "tsc --noEmit",
+    "styles:check": "node ./scripts/check-materials.mjs"
   },
   "dependencies": {
     "@heroui/react": "3.2.4",

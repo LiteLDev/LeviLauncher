@@ -322,7 +322,7 @@ export default function OnboardingPage() {
                           variant={"secondary"}
                           className={cn(
                             "rounded-full",
-                            "bg-surface-tertiary/50 dark:bg-white/10 font-medium",
+                            "bg-surface-tertiary/50 dark:bg-surface/10 font-medium",
                           )}
                         >
                           {t("common.browse")}
@@ -362,7 +362,7 @@ export default function OnboardingPage() {
                       variant={"secondary"}
                       className={cn(
                         "rounded-full",
-                        "bg-surface-tertiary/50 dark:bg-white/10 font-bold",
+                        "bg-surface-tertiary/50 dark:bg-surface/10 font-bold",
                       )}
                     >
                       {t("settings.body.language.button")}

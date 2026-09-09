@@ -208,7 +208,7 @@ export default function UpdatingPage() {
                 </div>
               }
             />
-            <div className="mt-6 rounded-3xl border border-black/5 dark:border-white/10 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm px-4 py-3">
+            <div className="mt-6 rounded-3xl border border-black/5 dark:border-white/10 bg-surface/50 launcher-material-blur px-4 py-3">
               <div className="text-xs font-semibold uppercase tracking-wide text-muted">
                 {t("common.updating")}
               </div>

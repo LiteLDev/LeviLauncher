@@ -1,6 +1,10 @@
 import { useState, useEffect } from "react";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { useStartupInteractive } from "@/utils/startupState";
+import { clampNumber } from "@/utils/backgroundAppearance";
+
+const readNumber = (key: string, fallback: number, max: number) =>
+  clampNumber(localStorage.getItem(`app.${key}`), fallback, 0, max);
 
 export const getFitStyles = (mode: string) => {
   switch (mode) {
@@ -68,22 +72,18 @@ const pickNextImage = async (folderPath: string) => {
       );
     });
     if (images.length === 0) return "";
+    images.sort((a: any, b: any) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+    const currentPath = localStorage.getItem("app.currentBackgroundImage");
 
     const playOrder =
       localStorage.getItem("app.backgroundPlayOrder") || "random";
 
     if (playOrder === "sequential") {
-      const lastIdxKey = "app.backgroundLastIndex";
-      let lastIdx = parseInt(localStorage.getItem(lastIdxKey) || "-1");
-      let nextIdx = lastIdx + 1;
-      if (nextIdx >= images.length) {
-        nextIdx = 0;
-      }
-      localStorage.setItem(lastIdxKey, String(nextIdx));
-      return images[nextIdx].path;
+      const currentIndex = images.findIndex((image: any) => image.path === currentPath);
+      return images[(currentIndex + 1) % images.length].path;
     } else {
-      const randomIdx = Math.floor(Math.random() * images.length);
-      return images[randomIdx].path;
+      const candidates = images.length > 1 ? images.filter((image: any) => image.path !== currentPath) : images;
+      return candidates[Math.floor(Math.random() * candidates.length)].path;
     }
   } catch (err) {
     console.error("Failed to pick next image:", err);
@@ -94,6 +94,7 @@ const pickNextImage = async (folderPath: string) => {
 export const useBackgroundImage = () => {
   const startupInteractive = useStartupInteractive();
   const [backgroundImagePath, setBackgroundImagePath] = useState<string>("");
+  const [backgroundRevision, setBackgroundRevision] = useState(0);
   const [backgroundReady, setBackgroundReady] = useState<boolean>(false);
   const [backgroundFitMode, setBackgroundFitMode] = useState<string>(
     () => localStorage.getItem("app.backgroundFitMode") || "smart",
@@ -101,19 +102,19 @@ export const useBackgroundImage = () => {
   const [bgData, setBgData] = useState<string>("");
 
   const [backgroundBlur, setBackgroundBlur] = useState<number>(() =>
-    Number(localStorage.getItem("app.backgroundBlur") || "0"),
+    readNumber("backgroundBlur", 0, 50),
   );
 
   const [backgroundBrightness, setBackgroundBrightness] = useState<number>(
     () => {
       const item = localStorage.getItem("app.backgroundBrightness");
-      return item !== null ? Number(item) : 100;
+      return clampNumber(item, 100, 0, 200);
     },
   );
 
   const [backgroundOpacity, setBackgroundOpacity] = useState<number>(() => {
     const item = localStorage.getItem("app.backgroundOpacity");
-    return item !== null ? Number(item) : 100;
+    return clampNumber(item, 100, 0, 100);
   });
 
   const [lightBackgroundBaseMode, setLightBackgroundBaseMode] =
@@ -138,33 +139,41 @@ export const useBackgroundImage = () => {
   const [lightBackgroundBaseOpacity, setLightBackgroundBaseOpacity] =
     useState<number>(() => {
       const item = localStorage.getItem("app.lightBackgroundBaseOpacity");
-      return item !== null ? Number(item) : 50;
+      return clampNumber(item, 50, 0, 100);
     });
 
   const [darkBackgroundBaseOpacity, setDarkBackgroundBaseOpacity] =
     useState<number>(() => {
       const item = localStorage.getItem("app.darkBackgroundBaseOpacity");
-      return item !== null ? Number(item) : 50;
+      return clampNumber(item, 50, 0, 100);
     });
 
   useEffect(() => {
     if (!startupInteractive) return;
+    let request = 0;
     const initBackgrounds = async () => {
+      const currentRequest = ++request;
       try {
         const folder = localStorage.getItem("app.backgroundImage") || "";
         const img = await pickNextImage(folder);
-
+        if (currentRequest !== request) return;
         setBackgroundImagePath(img);
+        setBackgroundRevision((revision) => revision + 1);
         localStorage.setItem("app.currentBackgroundImage", img);
       } catch {}
     };
-    initBackgrounds();
+    void initBackgrounds();
+    window.addEventListener("app-background-changed", initBackgrounds);
+    return () => {
+      ++request;
+      window.removeEventListener("app-background-changed", initBackgrounds);
+    };
   }, [startupInteractive]);
 
   useEffect(() => {
     const handler = () => {
       try {
-        const val = Number(localStorage.getItem("app.backgroundBlur") || "0");
+        const val = readNumber("backgroundBlur", 0, 50);
         setBackgroundBlur(val);
       } catch {}
     };
@@ -176,7 +185,7 @@ export const useBackgroundImage = () => {
     const handler = () => {
       try {
         const item = localStorage.getItem("app.backgroundOpacity");
-        setBackgroundOpacity(item !== null ? Number(item) : 100);
+        setBackgroundOpacity(clampNumber(item, 100, 0, 100));
       } catch {}
     };
     window.addEventListener("app-opacity-changed", handler);
@@ -187,26 +196,11 @@ export const useBackgroundImage = () => {
     const handler = () => {
       try {
         const item = localStorage.getItem("app.backgroundBrightness");
-        setBackgroundBrightness(item !== null ? Number(item) : 100);
+        setBackgroundBrightness(clampNumber(item, 100, 0, 200));
       } catch {}
     };
     window.addEventListener("app-brightness-changed", handler);
     return () => window.removeEventListener("app-brightness-changed", handler);
-  }, []);
-
-  useEffect(() => {
-    const handler = async () => {
-      try {
-        setBackgroundReady(false);
-        const folder = localStorage.getItem("app.backgroundImage") || "";
-        const img = await pickNextImage(folder);
-
-        setBackgroundImagePath(img);
-        localStorage.setItem("app.currentBackgroundImage", img);
-      } catch {}
-    };
-    window.addEventListener("app-background-changed", handler);
-    return () => window.removeEventListener("app-background-changed", handler);
   }, []);
 
   useEffect(() => {
@@ -234,14 +228,14 @@ export const useBackgroundImage = () => {
           "app.lightBackgroundBaseOpacity",
         );
         setLightBackgroundBaseOpacity(
-          lightOpacity !== null ? Number(lightOpacity) : 50,
+          clampNumber(lightOpacity, 50, 0, 100),
         );
 
         const darkOpacity = localStorage.getItem(
           "app.darkBackgroundBaseOpacity",
         );
         setDarkBackgroundBaseOpacity(
-          darkOpacity !== null ? Number(darkOpacity) : 50,
+          clampNumber(darkOpacity, 50, 0, 100),
         );
       } catch {}
     };
@@ -254,23 +248,18 @@ export const useBackgroundImage = () => {
     if (!startupInteractive) return;
     const currentImg = backgroundImagePath;
     let cancelled = false;
+    let cancelDecode: (() => void) | undefined;
 
     if (!currentImg) {
       setBgData("");
       setBackgroundReady(true);
       return;
     }
-    if (currentImg.startsWith("data:") || currentImg.startsWith("http")) {
-      setBgData(currentImg);
-      setBackgroundReady(true);
-      return;
-    }
-
     setBackgroundReady(false);
     const loadBackground = async () => {
       try {
-        let source = "";
-        if (typeof (minecraft as any).GetImageURL === "function") {
+        let source = /^(data:|https?:)/.test(currentImg) ? currentImg : "";
+        if (!source && typeof (minecraft as any).GetImageURL === "function") {
           source = await (minecraft as any).GetImageURL(currentImg);
         }
         if (
@@ -289,8 +278,16 @@ export const useBackgroundImage = () => {
 
         const loaded = await new Promise<boolean>((resolve) => {
           const image = new Image();
-          image.onload = () => resolve(true);
-          image.onerror = () => resolve(false);
+          const finish = (success: boolean) => {
+            window.clearTimeout(timeout);
+            image.onload = null;
+            image.onerror = null;
+            resolve(success);
+          };
+          const timeout = window.setTimeout(() => finish(false), 10000);
+          cancelDecode = () => { finish(false); image.src = ""; };
+          image.onload = () => finish(true);
+          image.onerror = () => finish(false);
           image.src = source;
         });
         if (cancelled) return;
@@ -307,8 +304,9 @@ export const useBackgroundImage = () => {
     void loadBackground();
     return () => {
       cancelled = true;
+      cancelDecode?.();
     };
-  }, [backgroundImagePath, startupInteractive]);
+  }, [backgroundImagePath, backgroundRevision, startupInteractive]);
 
   return {
     bgData,

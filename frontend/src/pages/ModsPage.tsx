@@ -275,7 +275,7 @@ export const ModsPage: React.FC = () => {
                     size="sm"
                     variant="soft"
                     className={
-                      "h-5 text-xs bg-surface-secondary dark:bg-zinc-800"
+                      "h-5 text-xs bg-surface-secondary "
                     }
                   >
                     <Chip.Label>{mp.modsInfo.length}</Chip.Label>
@@ -315,7 +315,7 @@ export const ModsPage: React.FC = () => {
                 <Button
                   onPress={mp.openFolder}
                   variant={"secondary"}
-                  className={"bg-surface-secondary dark:bg-zinc-800"}
+                  className={"bg-surface-secondary "}
                 >
                   {t("downloadmodal.open_folder")}
                 </Button>
@@ -365,7 +365,7 @@ export const ModsPage: React.FC = () => {
               </InputGroup.Suffix>
             </InputGroup>
           </TextField>
-          <div className="w-px h-6 bg-surface-tertiary dark:bg-white/10 hidden sm:block" />
+          <div className="w-px h-6 bg-surface-tertiary dark:bg-surface/10 hidden sm:block" />
           <Checkbox
             isSelected={mp.onlyEnabled}
             onChange={mp.setOnlyEnabled}
@@ -423,7 +423,7 @@ export const ModsPage: React.FC = () => {
         {(mp.lipInfoPending || mp.lipInfoWarning) && (
           <div
             className={cn(
-              "rounded-2xl border px-4 py-3 flex items-start gap-3 backdrop-blur-md",
+              "rounded-2xl border px-4 py-3 flex items-start gap-3 launcher-material-blur",
               mp.lipInfoWarning
                 ? "border-amber-200/60 bg-amber-50/70 dark:border-amber-900/30 dark:bg-amber-900/10"
                 : "border-brand-200/60 bg-brand-50/70 dark:border-brand-900/30 dark:bg-brand-900/10",
@@ -498,7 +498,7 @@ export const ModsPage: React.FC = () => {
                 onPress={mp.handleBatchEnable}
                 variant={"secondary"}
                 className={
-                  "bg-surface-secondary dark:bg-zinc-800 h-8 min-w-0 px-3"
+                  "bg-surface-secondary h-8 min-w-0 px-3"
                 }
               >
                 {<FaCheck />}
@@ -509,7 +509,7 @@ export const ModsPage: React.FC = () => {
                 onPress={mp.handleBatchDisable}
                 variant={"secondary"}
                 className={
-                  "bg-surface-secondary dark:bg-zinc-800 h-8 min-w-0 px-3"
+                  "bg-surface-secondary h-8 min-w-0 px-3"
                 }
               >
                 {<FaBan />}
@@ -617,7 +617,7 @@ export const ModsPage: React.FC = () => {
                   <div
                     key={item.key || `${mod.name}-${mod.version}-${idx}`}
                     className={cn(
-                      "grid rounded-2xl border transition-all p-3 bg-white/60 dark:bg-zinc-800/40 hover:bg-white/80 dark:hover:bg-zinc-800/80",
+                      "grid rounded-2xl border transition-all p-3 bg-surface/60 dark:bg-surface-secondary/40 hover:bg-surface/80 dark:hover:bg-surface-secondary/80",
                       listGridColumns,
                       "grid-rows-[auto_auto] md:grid-rows-1 gap-x-3 gap-y-2",
                       mp.selectedKeys.has(item.key)
@@ -645,7 +645,7 @@ export const ModsPage: React.FC = () => {
                     </div>
 
                     <div className="col-start-2 row-span-2 md:row-span-1 min-w-0 flex items-start gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-surface-secondary dark:bg-zinc-900 flex items-center justify-center text-muted dark:text-zinc-400 shrink-0">
+                      <div className="w-11 h-11 rounded-xl bg-surface-secondary dark:bg-surface flex items-center justify-center text-muted dark:text-zinc-400 shrink-0">
                         <FaPuzzlePiece className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex flex-col justify-center">
@@ -815,7 +815,7 @@ export const ModsPage: React.FC = () => {
                 <div
                   key={item.key || `${lipItem.identifier}-${idx}`}
                   className={cn(
-                    "grid rounded-2xl border transition-all p-3 bg-white/60 dark:bg-zinc-800/40 hover:bg-white/80 dark:hover:bg-zinc-800/80",
+                    "grid rounded-2xl border transition-all p-3 bg-surface/60 dark:bg-surface-secondary/40 hover:bg-surface/80 dark:hover:bg-surface-secondary/80",
                     listGridColumns,
                     "grid-rows-[auto_auto] md:grid-rows-1 gap-x-3 gap-y-2",
                     mp.selectedKeys.has(item.key)
@@ -843,7 +843,7 @@ export const ModsPage: React.FC = () => {
                   </div>
 
                   <div className="col-start-2 row-span-2 md:row-span-1 min-w-0 flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-surface-secondary dark:bg-zinc-900 flex items-center justify-center text-muted dark:text-zinc-400 shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-surface-secondary dark:bg-surface flex items-center justify-center text-muted dark:text-zinc-400 shrink-0">
                       <FaBoxOpen className="w-5 h-5" />
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">

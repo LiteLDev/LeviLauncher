@@ -78,7 +78,7 @@ export const ModCard = (args: {
                     initial={{ opacity: 0, x: -10 }}
                     animate={{ opacity: 1, x: 0 }}
                     transition={{ delay: idx * 0.05 }}
-                    className="flex items-center justify-between p-2 rounded-xl hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 transition-colors"
+                    className="flex items-center justify-between p-2 rounded-xl hover:bg-surface-tertiary/50 transition-colors"
                   >
                     <div className="flex flex-col min-w-0 w-full">
                       <span className="text-sm font-semibold truncate text-foreground dark:text-zinc-200">

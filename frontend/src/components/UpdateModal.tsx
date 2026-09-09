@@ -66,7 +66,7 @@ export const UpdateModal: React.FC<UpdateModalProps> = ({
       </>}
     >
       {body ? (
-        <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-border bg-surface-secondary/60 overflow-hidden dark:border-zinc-700 dark:bg-zinc-800/60">
+        <div className="flex min-h-0 flex-1 flex-col rounded-2xl border border-border bg-surface-secondary/60 overflow-hidden dark:border-zinc-700 ">
           <div className="border-b border-border/80 px-4 py-3 dark:border-zinc-700/80">
             <ModalDescription>
               {t("downloadpage.changelog.title")}

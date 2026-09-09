@@ -34,7 +34,7 @@ export const ContentDownloadCard = () => {
       <Card.Content className="p-4 flex flex-col gap-3">
         <button
           type="button"
-          className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-border/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-surface-tertiary/50 cursor-pointer transition-all border border-transparent hover:border-border/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           onClick={() => navigate(ROUTES.curseForge)}
         >
           <div className="flex items-center gap-3">
@@ -49,7 +49,7 @@ export const ContentDownloadCard = () => {
         </button>
         <button
           type="button"
-          className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-border/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+          className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-surface-tertiary/50 cursor-pointer transition-all border border-transparent hover:border-border/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           onClick={() => navigate(ROUTES.lip)}
         >
           <div className="flex items-center gap-3">

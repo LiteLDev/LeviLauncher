@@ -629,7 +629,7 @@ const CurseForgeModPage: React.FC = () => {
   if (!mod) {
     return (
       <div className="w-full h-full min-h-0 flex flex-col p-4 sm:p-6 gap-4 items-center justify-center">
-        <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl p-8">
+        <Card className="bg-surface/50 dark:bg-surface/40 launcher-material-blur rounded-4xl p-8">
           <Card.Content className="flex flex-col items-center gap-4">
             <p role={loadError ? "alert" : "status"} className="text-xl font-bold">
               {t(
@@ -1032,7 +1032,7 @@ const CurseForgeModPage: React.FC = () => {
                                 return (
                                   <Table.Row
                                     className={cn(
-                                      "group transition-colors hover:bg-surface/50 dark:hover:bg-zinc-800/30",
+                                      "group transition-colors hover:bg-surface/50 dark:hover:bg-surface-secondary/30",
                                     )}
                                     key={file.id}
                                     id={file.id}
@@ -1098,7 +1098,7 @@ const CurseForgeModPage: React.FC = () => {
                                       <div className="flex items-center gap-1">
                                         {sortedVersions.length > 0 ? (
                                           <>
-                                            <span className="text-foreground dark:text-zinc-300 bg-surface-secondary dark:bg-zinc-800 px-2 py-1 rounded text-xs">
+                                            <span className="text-foreground dark:text-zinc-300 bg-surface-secondary px-2 py-1 rounded text-xs">
                                               {sortedVersions[0]}
                                             </span>
                                             {sortedVersions.length > 1 && (
@@ -1114,7 +1114,7 @@ const CurseForgeModPage: React.FC = () => {
                                                         .map((v) => (
                                                           <span
                                                             key={v}
-                                                            className="text-xs bg-surface dark:bg-zinc-800 text-muted dark:text-zinc-400 px-1.5 py-0.5 rounded border border-border dark:border-zinc-700"
+                                                            className="text-xs bg-surface dark:bg-surface-secondary text-muted dark:text-zinc-400 px-1.5 py-0.5 rounded border border-border dark:border-zinc-700"
                                                           >
                                                             {v}
                                                           </span>

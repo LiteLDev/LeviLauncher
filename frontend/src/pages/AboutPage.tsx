@@ -72,7 +72,7 @@ export default function AboutPage() {
                 icon={<FaUsers size={20} />}
                 title={t("about.authors")}
               />
-              <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-surface/50 dark:bg-white/5 border border-border dark:border-white/5">
+              <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-surface/50 dark:bg-surface/5 border border-border dark:border-white/5">
                 <div className="flex items-center gap-3">
                   <img
                     src="https://avatars.githubusercontent.com/u/62042544?v=4"
@@ -107,7 +107,7 @@ export default function AboutPage() {
                   }
                   variant={"secondary"}
                   className={
-                    "bg-surface-secondary dark:bg-white/10 text-foreground dark:text-zinc-300"
+                    "bg-surface-secondary dark:bg-surface/10 text-foreground dark:text-zinc-300"
                   }
                 >
                   {<FaHeart className="text-pink-500" />}
@@ -120,7 +120,7 @@ export default function AboutPage() {
                   }
                   variant={"secondary"}
                   className={
-                    "bg-surface-secondary dark:bg-white/10 text-foreground dark:text-zinc-300"
+                    "bg-surface-secondary dark:bg-surface/10 text-foreground dark:text-zinc-300"
                   }
                 >
                   {<FaPatreon className="text-orange-500" />}
@@ -149,7 +149,7 @@ export default function AboutPage() {
               <p className="text-foreground dark:text-zinc-400 leading-relaxed mb-4">
                 {t("about.thanks.desc")}
               </p>
-              <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-surface/50 dark:bg-white/5 border border-border dark:border-white/5">
+              <div className="flex items-center justify-between gap-3 p-4 rounded-2xl bg-surface/50 dark:bg-surface/5 border border-border dark:border-white/5">
                 <div className="flex items-center gap-3">
                   <img
                     src="https://www.rhymc.com/assets/img/logo.png"
@@ -218,7 +218,7 @@ export default function AboutPage() {
                     <Button
                       onPress={() => Browser.OpenURL(repoUrl)}
                       variant={"secondary"}
-                      className={"bg-surface-secondary dark:bg-white/10"}
+                      className={"bg-surface-secondary dark:bg-surface/10"}
                     >
                       {<FaGithub className="text-lg" />}
                       {t("about.github_repo")}
@@ -226,7 +226,7 @@ export default function AboutPage() {
                     <Button
                       onPress={() => Browser.OpenURL(orgUrl)}
                       variant={"secondary"}
-                      className={"bg-surface-secondary dark:bg-white/10"}
+                      className={"bg-surface-secondary dark:bg-surface/10"}
                     >
                       {<FaGithub className="text-lg" />}
                       {t("about.github_org")}
@@ -252,7 +252,7 @@ export default function AboutPage() {
                       size="sm"
                       onPress={() => Browser.OpenURL(`${repoUrl}/issues`)}
                       variant={"secondary"}
-                      className={"bg-surface-secondary dark:bg-white/10"}
+                      className={"bg-surface-secondary dark:bg-surface/10"}
                     >
                       {<FaGithub />}
                       {t("about.issue")}

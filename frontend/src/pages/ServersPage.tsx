@@ -161,7 +161,7 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
           {info?.status === "online" && (
             <>
               <div
-                className="flex items-center gap-1.5 bg-surface-secondary/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
+                className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg"
                 title={t("server.version")}
               >
                 <FaTag className="text-muted" />
@@ -170,7 +170,7 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
                 </span>
               </div>
               <div
-                className="flex items-center gap-1.5 bg-surface-secondary/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
+                className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg"
                 title={t("server.players")}
               >
                 <FaGamepad className="text-muted" />
@@ -179,7 +179,7 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
                 </span>
               </div>
               <div
-                className="flex items-center gap-1.5 bg-surface-secondary/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
+                className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg"
                 title={t("server.delay")}
               >
                 <FaSignal className={`text-${delayColor}-500`} />
@@ -192,7 +192,7 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
             </>
           )}
           <div
-            className="flex items-center gap-1.5 bg-surface-secondary/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
+            className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg"
             title={t("common.date")}
           >
             <FaClock className="text-muted" />
@@ -315,7 +315,7 @@ export default function ServersPage() {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "w-full sm:w-auto sm:min-w-[200px] bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                      "w-full sm:w-auto sm:min-w-[200px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                     )}
                   >
                     {<FaUser />}
@@ -375,7 +375,7 @@ export default function ServersPage() {
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
-                    "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                    "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                   )}
                 >
                   {<FaFolderOpen />}
@@ -391,7 +391,7 @@ export default function ServersPage() {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200",
+                      "bg-surface-secondary text-foreground dark:text-zinc-200",
                     )}
                   >
                     <FaSync
@@ -447,7 +447,7 @@ export default function ServersPage() {
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
-                    "min-w-[120px] bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                    "min-w-[120px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                   )}
                 >
                   {sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />}
@@ -516,12 +516,12 @@ export default function ServersPage() {
           </div>
           <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
             <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
               {currentVersionName || t("contentpage.none")}
             </span>
             <span className="text-muted">|</span>
             <span>{t("contentpage.isolation")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
               {roots.isIsolation ? t("common.yes") : t("common.no")}
             </span>
           </div>

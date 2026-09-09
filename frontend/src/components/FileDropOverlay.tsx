@@ -29,7 +29,7 @@ export const FileDropOverlay: React.FC<FileDropOverlayProps> = ({
               transition: { duration: 0.3, ease: "easeOut" },
             }}
             exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeIn" } }}
-            className="absolute inset-0 backdrop-blur-md backdrop-saturate-150 bg-black/30"
+            className="absolute inset-0 launcher-material-blur backdrop-saturate-150 bg-black/30"
           />
 
           <div className="absolute inset-0 flex items-center justify-center p-4">

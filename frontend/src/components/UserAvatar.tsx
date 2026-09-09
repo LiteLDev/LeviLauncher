@@ -152,7 +152,7 @@ export const UserAvatar = () => {
           size="sm"
           className={cn(
             "ring-2 ring-border",
-            "ring-2 ring-border/60 dark:ring-zinc-700/60 bg-surface-secondary dark:bg-zinc-800 text-muted dark:text-zinc-500",
+            "ring-2 ring-border/60 dark:ring-zinc-700/60 bg-surface-secondary text-muted dark:text-zinc-500",
           )}
         >
           <Avatar.Image alt={""} />
@@ -231,7 +231,7 @@ export const UserAvatar = () => {
         </Avatar>
       </Button>
       <Popover.Content
-        className="p-1 bg-white dark:bg-zinc-900 border border-border/70 dark:border-zinc-700/60 shadow-2xl rounded-2xl"
+        className="p-1 bg-overlay border border-border/70 dark:border-zinc-700/60 shadow-2xl rounded-2xl"
         placement="bottom end"
       >
         <Popover.Arrow />

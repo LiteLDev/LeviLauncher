@@ -668,7 +668,7 @@ export default function InstallPage() {
                         variant={"secondary"}
                         className={cn(
                           "rounded-full",
-                          "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-300 font-medium",
+                          "bg-surface-secondary text-foreground dark:text-zinc-300 font-medium",
                         )}
                       >
                         {t("common.open_folder")}
@@ -709,7 +709,7 @@ export default function InstallPage() {
                   <div className="flex flex-col items-center justify-center h-full gap-4">
                     <div className="relative flex items-center justify-center">
                       <div className="absolute inset-0 bg-brand-500/20 blur-xl rounded-full animate-pulse" />
-                      <div className="w-16 h-16 rounded-full bg-surface dark:bg-zinc-800 border-4 border-border dark:border-zinc-700 flex items-center justify-center relative z-10">
+                      <div className="w-16 h-16 rounded-full bg-surface dark:bg-surface-secondary border-4 border-border dark:border-zinc-700 flex items-center justify-center relative z-10">
                         <Spinner size="md" color={"accent"} />
                       </div>
                     </div>
@@ -725,7 +725,7 @@ export default function InstallPage() {
 
                     <div className="w-full max-w-lg flex flex-col gap-2">
                       {installingVersion && (
-                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-secondary/50 dark:bg-zinc-800/50">
+                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-secondary/50 ">
                           <span className="text-sm font-medium text-muted dark:text-zinc-400">
                             {t("downloadpage.install.version_label")}
                           </span>
@@ -736,7 +736,7 @@ export default function InstallPage() {
                       )}
 
                       {installingTargetName && (
-                        <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-surface-secondary/50 dark:bg-zinc-800/50">
+                        <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-surface-secondary/50 ">
                           <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
                             {t("downloadpage.install.target")}
                           </span>
@@ -747,7 +747,7 @@ export default function InstallPage() {
                       )}
 
                       <div className="mt-1 flex flex-col gap-2">
-                        <div className="h-1.5 w-full rounded-full bg-surface-tertiary/50 dark:bg-zinc-700/50 overflow-hidden border border-border dark:border-white/5 relative">
+                        <div className="h-1.5 w-full rounded-full bg-surface-tertiary/50 overflow-hidden border border-border dark:border-white/5 relative">
                           {extractInfo?.totalBytes ? (
                             <motion.div
                               className="h-full bg-brand-500 rounded-full"
@@ -889,7 +889,7 @@ export default function InstallPage() {
 
                     <div className="w-full max-w-lg mt-1">
                       {installingTargetName && (
-                        <div className="rounded-xl bg-surface-secondary/50 dark:bg-zinc-800/50 border border-border/50 dark:border-white/5 p-3 flex flex-col gap-1 items-center">
+                        <div className="rounded-xl bg-surface-secondary/50 border border-border/50 dark:border-white/5 p-3 flex flex-col gap-1 items-center">
                           <span className="text-[10px] uppercase tracking-wider text-muted font-bold">
                             {t("downloadpage.install.target")}
                           </span>
@@ -1025,7 +1025,7 @@ export default function InstallPage() {
                           }
                         }}
                         variant={"secondary"}
-                        className={"bg-surface-secondary dark:bg-white/10"}
+                        className={"bg-surface-secondary dark:bg-surface/10"}
                       >
                         {t("common.browse")}
                       </Button>
@@ -1147,7 +1147,7 @@ export default function InstallPage() {
                             size="sm"
                             variant={"secondary"}
                             className={
-                              "bg-surface-secondary dark:bg-white/10 w-full justify-between"
+                              "bg-surface-secondary dark:bg-surface/10 w-full justify-between"
                             }
                           >
                             {inheritLabel}

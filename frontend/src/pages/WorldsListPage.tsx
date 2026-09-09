@@ -558,7 +558,7 @@ export default function WorldsListPage() {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "w-full sm:w-auto sm:min-w-[200px] bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                      "w-full sm:w-auto sm:min-w-[200px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                     )}
                   >
                     {<FaUser />}
@@ -626,7 +626,7 @@ export default function WorldsListPage() {
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
-                    "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                    "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                   )}
                 >
                   {<FaFolderOpen />}
@@ -640,7 +640,7 @@ export default function WorldsListPage() {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200",
+                      "bg-surface-secondary text-foreground dark:text-zinc-200",
                     )}
                   >
                     <FaCheckSquare />
@@ -656,7 +656,7 @@ export default function WorldsListPage() {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200",
+                      "bg-surface-secondary text-foreground dark:text-zinc-200",
                     )}
                   >
                     <FaSync
@@ -712,7 +712,7 @@ export default function WorldsListPage() {
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
-                    "min-w-[120px] bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                    "min-w-[120px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                   )}
                 >
                   {sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />}
@@ -783,12 +783,12 @@ export default function WorldsListPage() {
           </div>
           <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
             <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
               {currentVersionName || t("contentpage.none")}
             </span>
             <span className="text-muted dark:text-zinc-600">|</span>
             <span>{t("contentpage.isolation")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
               {roots.isIsolation ? t("common.yes") : t("common.no")}
             </span>
           </div>
@@ -875,7 +875,7 @@ export default function WorldsListPage() {
                           <Checkbox.Content>
                             <Checkbox.Control
                               className={
-                                "bg-white dark:bg-zinc-900 shadow-lg scale-110"
+                                "bg-surface shadow-lg scale-110"
                               }
                             >
                               <Checkbox.Indicator />
@@ -899,11 +899,11 @@ export default function WorldsListPage() {
 
                     <div className="flex items-end justify-between mt-auto">
                       <div className="flex flex-wrap items-center gap-4 text-xs text-muted dark:text-zinc-500">
-                        <div className="flex items-center gap-1.5 bg-surface-secondary/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                        <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
                           <FaHdd className="text-muted" />
                           <span>{formatBytes(w.Size)}</span>
                         </div>
-                        <div className="flex items-center gap-1.5 bg-surface-secondary/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                        <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
                           <FaClock className="text-muted" />
                           <span>
                             {new Date(w.LastModified * 1000).toLocaleString()}
@@ -924,7 +924,7 @@ export default function WorldsListPage() {
                             }}
                             className={cn(
                               "rounded-full",
-                              "bg-surface-secondary hover:bg-surface-tertiary text-foreground dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200",
+                              "bg-surface-secondary hover:bg-surface-tertiary text-foreground dark:text-zinc-200",
                             )}
                           >
                             <FaFolderOpen size={14} />
@@ -944,7 +944,7 @@ export default function WorldsListPage() {
                             }}
                             className={cn(
                               "rounded-full",
-                              "bg-surface-secondary hover:bg-surface-tertiary text-foreground dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200",
+                              "bg-surface-secondary hover:bg-surface-tertiary text-foreground dark:text-zinc-200",
                             )}
                           >
                             {({ isPending }) => (
@@ -974,7 +974,7 @@ export default function WorldsListPage() {
                             }}
                             className={cn(
                               "rounded-full",
-                              "bg-surface-secondary hover:bg-surface-tertiary text-foreground dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200",
+                              "bg-surface-secondary hover:bg-surface-tertiary text-foreground dark:text-zinc-200",
                             )}
                           >
                             <FaEdit size={14} />

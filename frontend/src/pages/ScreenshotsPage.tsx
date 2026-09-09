@@ -275,7 +275,7 @@ export default function ScreenshotsPage() {
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
-                    "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                    "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                   )}
                 >
                   {<FaFolderOpen />}
@@ -289,7 +289,7 @@ export default function ScreenshotsPage() {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200",
+                      "bg-surface-secondary text-foreground dark:text-zinc-200",
                     )}
                   >
                     <FaCheckSquare />
@@ -305,7 +305,7 @@ export default function ScreenshotsPage() {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200",
+                      "bg-surface-secondary text-foreground dark:text-zinc-200",
                     )}
                   >
                     <FaSync
@@ -322,12 +322,12 @@ export default function ScreenshotsPage() {
           />
           <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
             <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
               {currentVersionName || t("contentpage.none")}
             </span>
             <span className="text-muted dark:text-zinc-700">|</span>
             <span>{t("contentpage.isolation")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
               {roots.isIsolation ? t("common.yes") : t("common.no")}
             </span>
           </div>
@@ -390,7 +390,7 @@ export default function ScreenshotsPage() {
                     }
                   }}
                 >
-                  <div className="relative aspect-video bg-surface-secondary/50 dark:bg-zinc-800/50 flex items-center justify-center overflow-hidden">
+                  <div className="relative aspect-video bg-surface-secondary/50 flex items-center justify-center overflow-hidden">
                     {s.dataUrl ? (
                       <>
                         <img
@@ -412,7 +412,7 @@ export default function ScreenshotsPage() {
                               variant={"secondary"}
                               className={cn(
                                 "rounded-full",
-                                "pointer-events-auto flex items-center gap-2 border border-white/20 bg-black/45 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-black/55",
+                                "pointer-events-auto flex items-center gap-2 border border-border bg-overlay px-3 py-1.5 text-xs font-medium text-foreground opacity-0 shadow-lg launcher-material-blur transition-all duration-300 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-segment",
                               )}
                             >
                               <FaExpand size={12} />
@@ -444,7 +444,7 @@ export default function ScreenshotsPage() {
                         <Checkbox.Content>
                           <Checkbox.Control
                             className={
-                              "bg-white dark:bg-zinc-900 shadow-lg scale-110"
+                              "bg-surface shadow-lg scale-110"
                             }
                           >
                             <Checkbox.Indicator />
@@ -605,7 +605,7 @@ export default function ScreenshotsPage() {
             </BaseModalHeader>
 
             <BaseModalBody className="overflow-hidden px-4 py-3 sm:px-5">
-              <div className="relative overflow-hidden rounded-[2rem] border border-black/5 bg-surface-secondary/40 dark:border-white/10 dark:bg-zinc-900/40">
+              <div className="relative overflow-hidden rounded-[2rem] border border-black/5 bg-surface-secondary/40 dark:border-white/10 dark:bg-surface/40">
                 <div className="absolute inset-y-0 left-0 z-20 hidden items-center pl-3 sm:flex sm:pl-4">
                   <Button
                     isIconOnly
@@ -615,7 +615,7 @@ export default function ScreenshotsPage() {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "bg-white/75 text-foreground shadow-lg backdrop-blur-md disabled:opacity-30 dark:bg-zinc-900/75 dark:text-zinc-100",
+                      "bg-surface/75 text-foreground shadow-lg launcher-material-blur disabled:opacity-30 dark:text-zinc-100",
                     )}
                   >
                     <FaChevronLeft />
@@ -631,7 +631,7 @@ export default function ScreenshotsPage() {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "bg-white/75 text-foreground shadow-lg backdrop-blur-md disabled:opacity-30 dark:bg-zinc-900/75 dark:text-zinc-100",
+                      "bg-surface/75 text-foreground shadow-lg launcher-material-blur disabled:opacity-30 dark:text-zinc-100",
                     )}
                   >
                     <FaChevronRight />
@@ -678,7 +678,7 @@ export default function ScreenshotsPage() {
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
-                    "bg-surface-secondary/80 dark:bg-zinc-800/80 text-foreground dark:text-zinc-100",
+                    "bg-surface-secondary/80 text-foreground dark:text-zinc-100",
                   )}
                 >
                   <FaChevronLeft />
@@ -691,7 +691,7 @@ export default function ScreenshotsPage() {
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
-                    "bg-surface-secondary/80 dark:bg-zinc-800/80 text-foreground dark:text-zinc-100",
+                    "bg-surface-secondary/80 text-foreground dark:text-zinc-100",
                   )}
                 >
                   <FaChevronRight />

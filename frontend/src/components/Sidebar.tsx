@@ -67,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div
       className={`fixed left-0 top-14 bottom-0 z-50 flex flex-col w-14 ${LAYOUT.NAVBAR_BG}`}
     >
-      <div className="absolute right-0 top-[20px] bottom-0 w-px bg-surface-tertiary/50 dark:bg-zinc-800/50" />
+      <div className="absolute right-0 top-[20px] bottom-0 w-px bg-surface-tertiary/50 dark:bg-surface-secondary/50" />
       {/* Corner Connector */}
       <div className="absolute top-0 -right-[20px] w-[20px] h-[20px] overflow-hidden pointer-events-none">
         {/* Fill the corner gap */}
@@ -123,7 +123,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   className={`w-12 h-12 rounded-xl transition-all duration-200 ${
                     isActive
                       ? "bg-brand-500/10 text-brand-600 dark:text-brand-400"
-                      : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary dark:hover:bg-zinc-800"
+                      : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary "
                   }`}
                 >
                   {item.icon}
@@ -145,7 +145,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
               <div>
                 <ThemeSwitcher
                   isDisabled={navLocked}
-                  className="w-12 h-12 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary dark:hover:bg-zinc-800 transition-all duration-200"
+                  className="w-12 h-12 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary transition-all duration-200"
                   iconSize={20}
                 />
               </div>

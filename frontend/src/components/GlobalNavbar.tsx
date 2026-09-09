@@ -93,7 +93,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
     const inactive =
       "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium";
     const active =
-      "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium";
+      "bg-surface-secondary text-zinc-900 dark:text-zinc-100 font-medium";
 
     if (!activeExtraItem) return `${base} ${inactive}`;
 
@@ -159,7 +159,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                   variant={isActive ? "secondary" : "ghost"}
                   className={`min-w-0 px-3 h-10 rounded-xl transition-all duration-200 ${item.navbarClass} ${
                     isActive
-                      ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
+                      ? "bg-surface-secondary text-zinc-900 dark:text-zinc-100 font-medium"
                       : "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium"
                   }`}
                 >
@@ -213,7 +213,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
         </div>
 
         <div className="flex items-center gap-3 shrink-0 justify-end">
-          <div className="h-8 w-px bg-surface-tertiary dark:bg-zinc-700 mx-1 hidden sm:block" />
+          <div className="h-8 w-px bg-surface-tertiary mx-1 hidden sm:block" />
 
           {themeMode !== "auto" &&
             themeMode !== "schedule" &&

@@ -339,11 +339,11 @@ export const LauncherPage = (args: any) => {
                       <Button
                         variant={"ghost"}
                         className={
-                          "h-12 px-3 rounded-xl data-[hovered]:bg-surface-tertiary/50 dark:data-[hovered]:bg-white/5"
+                          "h-12 px-3 rounded-xl data-[hovered]:bg-surface-tertiary/50 dark:data-[hovered]:bg-surface/5"
                         }
                       >
                         <div className="flex items-center gap-3 text-left">
-                          <div className="w-8 h-8 rounded-lg bg-surface-tertiary/50 dark:bg-white/10 flex items-center justify-center overflow-hidden shadow-sm">
+                          <div className="w-8 h-8 rounded-lg bg-surface-tertiary/50 dark:bg-surface/10 flex items-center justify-center overflow-hidden shadow-sm">
                             {logoDataUrl ? (
                               <img
                                 src={logoDataUrl}
@@ -443,7 +443,7 @@ export const LauncherPage = (args: any) => {
                               isDisabled={item.isDisabled}
                             >
                               {
-                                <div className="w-8 h-8 shrink-0 rounded-lg bg-surface-secondary dark:bg-white/10 flex items-center justify-center overflow-hidden">
+                                <div className="w-8 h-8 shrink-0 rounded-lg bg-surface-secondary dark:bg-surface/10 flex items-center justify-center overflow-hidden">
                                   {(() => {
                                     const u =
                                       item.logo || logoByName.get(item.name);
@@ -533,7 +533,7 @@ export const LauncherPage = (args: any) => {
                         variant={"ghost"}
                         className={cn(
                           "rounded-full",
-                          "data-[hovered]:bg-surface-tertiary/50 dark:data-[hovered]:bg-white/5",
+                          "data-[hovered]:bg-surface-tertiary/50 dark:data-[hovered]:bg-surface/5",
                         )}
                       >
                         <FaCogs size={18} />
@@ -769,7 +769,7 @@ export const LauncherPage = (args: any) => {
                   <button
                     key={item.path}
                     type="button"
-                    className="group/item flex w-full items-center justify-between p-2 text-left rounded-xl hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
+                    className="group/item flex w-full items-center justify-between p-2 text-left rounded-xl hover:bg-surface-tertiary/50 cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                     onClick={() => navigate(item.path)}
                   >
                     <div className="flex items-center gap-3">

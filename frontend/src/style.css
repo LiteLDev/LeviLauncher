@@ -1,6 +1,11 @@
 @import "tailwindcss";
 @import "./heroui.css";
+@import "./personalization.css";
 @plugin "@tailwindcss/typography";
+
+@theme inline {
+  --color-surface-quaternary: var(--surface-quaternary);
+}
 
 @font-face {
   font-family: "MiSans";
@@ -196,6 +201,7 @@
   --foreground: #27272a;
   --muted: #52525b;
   --surface: #ffffff;
+  --surface-quaternary: #d4d4d8;
   --overlay: #ffffff;
   --accent: var(--theme-solid, #047857);
   --accent-hover: color-mix(in srgb, var(--accent) 90%, #000);
@@ -219,6 +225,7 @@
   --foreground: #fafafa;
   --muted: #a1a1aa;
   --surface: #18181b;
+  --surface-quaternary: #52525b;
   --overlay: #18181b;
   --accent: var(--theme-solid, #047857);
   --accent-hover: color-mix(in srgb, var(--accent) 90%, #000);

@@ -24,7 +24,11 @@ import { CurrentVersionProvider } from "@/utils/CurrentVersionContext";
 import { ModIntelligenceProvider } from "@/utils/ModIntelligenceContext";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
 import { useAnimations } from "@/hooks/useAnimations";
-import { useBackgroundImage, getFitStyles } from "@/hooks/useBackgroundImage";
+import { useBackgroundImage } from "@/hooks/useBackgroundImage";
+import { useBackgroundAppearance } from "@/hooks/useBackgroundAppearance";
+import { BackgroundLayers } from "@/components/BackgroundLayers";
+import { BackgroundContext } from "@/utils/BackgroundContext";
+import { useDocumentAppearance } from "@/hooks/useDocumentAppearance";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { useAppNavigation } from "@/hooks/useAppNavigation";
 import { useAppModals } from "@/hooks/useAppModals";
@@ -86,7 +90,7 @@ const ModalLoadingFallback = ({ label }: { label: string }) => (
   <div
     aria-atomic="true"
     aria-live="polite"
-    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm"
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 launcher-material-blur"
     role="status"
   >
     <div className="flex flex-col items-center gap-2">
@@ -157,20 +161,13 @@ function App() {
   const { layoutMode } = useLayoutMode();
   useAnimations();
   const { themeColorsReady } = useThemeColors(resolvedTheme);
-  const {
-    bgData,
-    backgroundReady,
-    backgroundFitMode,
-    backgroundBlur,
-    backgroundBrightness,
-    backgroundOpacity,
-    lightBackgroundBaseMode,
-    darkBackgroundBaseMode,
-    lightBackgroundBaseColor,
-    darkBackgroundBaseColor,
-    lightBackgroundBaseOpacity,
-    darkBackgroundBaseOpacity,
-  } = useBackgroundImage();
+  const background = useBackgroundImage();
+  const { backgroundReady } = background;
+  const { profiles } = useBackgroundAppearance();
+  const appearanceMode = resolvedTheme === "dark" ? "dark" : "light";
+  const appearance = profiles[appearanceMode];
+  const hasWallpaper = Boolean(background.bgData) && background.backgroundOpacity > 0;
+  useDocumentAppearance(hasWallpaper, appearance, appearanceMode, background.backgroundBrightness, background.backgroundBlur, background.backgroundOpacity);
 
   const {
     navLocked,
@@ -261,6 +258,7 @@ function App() {
   const effectiveNavLocked = navLocked || isUpdatingMode || isOnboardingMode;
 
   return (
+    <BackgroundContext.Provider value={background}>
     <KeybindingProvider>
       <CurrentVersionProvider>
         <ModIntelligenceProvider>
@@ -276,58 +274,19 @@ function App() {
                         className="wails-no-drag z-[120] top-20"
                       />
 
-                      {(resolvedTheme === "light"
-                        ? lightBackgroundBaseMode
-                        : darkBackgroundBaseMode) !== "none" && (
-                        <div
-                          className="fixed inset-0 z-[-2] pointer-events-none"
-                          style={{
-                            backgroundColor:
-                              (resolvedTheme === "light"
-                                ? lightBackgroundBaseMode
-                                : darkBackgroundBaseMode) === "theme"
-                                ? resolvedTheme === "light"
-                                  ? "rgb(var(--theme-50))"
-                                  : "rgb(var(--theme-900))"
-                                : resolvedTheme === "light"
-                                  ? lightBackgroundBaseColor
-                                  : darkBackgroundBaseColor,
-                            opacity:
-                              (resolvedTheme === "light"
-                                ? lightBackgroundBaseOpacity
-                                : darkBackgroundBaseOpacity) / 100,
-                          }}
-                        />
-                      )}
-                      {bgData && (
-                        <div
-                          className="fixed inset-0 z-[-1]"
-                          style={{
-                            backgroundImage: `url("${bgData}")`,
-                            ...getFitStyles(backgroundFitMode),
-                            filter: `blur(${backgroundBlur}px) brightness(${backgroundBrightness}%)`,
-                            opacity: backgroundOpacity / 100,
-                          }}
-                        />
-                      )}
-
                       <div
+                        data-wallpaper-active={hasWallpaper ? "true" : undefined}
+                        data-readability={appearance.readability ? "true" : undefined}
                         style={
                           {
                             "--content-pt": "4.5rem",
                           } as React.CSSProperties
                         }
-                        className={`w-full min-h-dvh flex ${
+                        className={`app-backdrop relative isolate w-full min-h-dvh flex ${
                           layoutMode === "sidebar" ? "flex-row" : "flex-col"
-                        } overflow-x-hidden ${
-                          bgData ||
-                          (resolvedTheme === "light"
-                            ? lightBackgroundBaseMode
-                            : darkBackgroundBaseMode) !== "none"
-                            ? "bg-transparent"
-                            : "bg-background"
-                        } text-foreground ${updateOpen ? "overflow-y-hidden" : ""}`}
+                        } overflow-x-hidden bg-background text-foreground ${updateOpen ? "overflow-y-hidden" : ""}`}
                       >
+                        <BackgroundLayers background={background} mode={appearanceMode} />
                         {layoutMode === "navbar" ? (
                           <GlobalNavbar
                             isBeta={isBeta}
@@ -574,6 +533,7 @@ function App() {
         </ModIntelligenceProvider>
       </CurrentVersionProvider>
     </KeybindingProvider>
+    </BackgroundContext.Provider>
   );
 }
 

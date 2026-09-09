@@ -647,7 +647,7 @@ export const DownloadPage: React.FC = () => {
                     isPending={versionsLoading || refreshing}
                     className={cn(
                       "rounded-full",
-                      "bg-surface-secondary/50 dark:bg-zinc-800/50 text-foreground dark:text-zinc-200 font-medium hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 transition-colors",
+                      "bg-surface-secondary/50 text-foreground dark:text-zinc-200 font-medium hover:bg-surface-tertiary/50 transition-colors",
                     )}
                   >
                     {({ isPending }) => (
@@ -680,7 +680,7 @@ export const DownloadPage: React.FC = () => {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "bg-surface-secondary/50 dark:bg-zinc-800/50 text-foreground dark:text-zinc-200 font-medium hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 transition-colors",
+                      "bg-surface-secondary/50 text-foreground dark:text-zinc-200 font-medium hover:bg-surface-tertiary/50 transition-colors",
                     )}
                   >
                     {t("audit.primary.local_install")}
@@ -690,7 +690,7 @@ export const DownloadPage: React.FC = () => {
                       variant={"secondary"}
                       className={cn(
                         "rounded-full",
-                        "bg-surface-secondary/50 dark:bg-zinc-800/50 text-foreground dark:text-zinc-200 font-medium shrink-0 hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 transition-colors",
+                        "bg-surface-secondary/50 text-foreground dark:text-zinc-200 font-medium shrink-0 hover:bg-surface-tertiary/50 transition-colors",
                       )}
                     >
                       {t("downloadpage.topcontent.types")}
@@ -753,7 +753,7 @@ export const DownloadPage: React.FC = () => {
                       variant={"secondary"}
                       className={cn(
                         "rounded-full",
-                        "bg-surface-secondary/50 dark:bg-zinc-800/50 text-foreground dark:text-zinc-200 font-medium shrink-0 hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 transition-colors",
+                        "bg-surface-secondary/50 text-foreground dark:text-zinc-200 font-medium shrink-0 hover:bg-surface-tertiary/50 transition-colors",
                       )}
                     >
                       {t("downloadpage.topcontent.status")}
@@ -815,7 +815,7 @@ export const DownloadPage: React.FC = () => {
                       variant={"secondary"}
                       className={cn(
                         "rounded-full",
-                        "bg-surface-secondary/50 dark:bg-zinc-800/50 text-foreground dark:text-zinc-200 font-medium shrink-0 hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 transition-colors",
+                        "bg-surface-secondary/50 text-foreground dark:text-zinc-200 font-medium shrink-0 hover:bg-surface-tertiary/50 transition-colors",
                       )}
                     >
                       {t("downloadpage.topcontent.loader")}
@@ -868,7 +868,7 @@ export const DownloadPage: React.FC = () => {
                         `transition-all ${
                           isDownloading
                             ? "bg-brand-500 brand-primary-foreground"
-                            : "bg-surface-secondary/50 dark:bg-zinc-800/50 text-foreground dark:text-zinc-200 hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50"
+                            : "bg-surface-secondary/50 text-foreground dark:text-zinc-200 hover:bg-surface-tertiary/50 "
                         }`,
                       )}
                     >
@@ -989,7 +989,7 @@ export const DownloadPage: React.FC = () => {
                       {paged.map((item, index) => (
                         <Table.Row
                           className={cn(
-                            "group transition-colors hover:bg-surface/50 dark:hover:bg-zinc-800/30",
+                            "group transition-colors hover:bg-surface/50 dark:hover:bg-surface-secondary/30",
                           )}
                           key={`${item.type}-${item.short}`}
                           id={`${item.type}-${item.short}`}
@@ -1138,7 +1138,7 @@ export const DownloadPage: React.FC = () => {
                                     }}
                                     variant={"secondary"}
                                     className={
-                                      "px-2 h-8 font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-700/50 w-[88px]"
+                                      "px-2 h-8 font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-surface-tertiary/50 w-[88px]"
                                     }
                                   >
                                     {<FaBoxOpen size={14} />}
@@ -1149,7 +1149,7 @@ export const DownloadPage: React.FC = () => {
                                       isIconOnly
                                       variant={"secondary"}
                                       className={
-                                        "h-8 min-w-8 w-8 px-0 bg-surface-secondary dark:bg-zinc-700/50"
+                                        "h-8 min-w-8 w-8 px-0 bg-surface-secondary dark:bg-surface-tertiary/50"
                                       }
                                     >
                                       <FaChevronDown size={12} />
@@ -1233,7 +1233,7 @@ export const DownloadPage: React.FC = () => {
                                   variant={"secondary"}
                                   className={cn(
                                     "rounded-full",
-                                    "px-0 h-8 font-medium bg-surface-secondary dark:bg-zinc-700/50 text-foreground dark:text-zinc-200 hover:bg-surface-tertiary dark:hover:bg-zinc-600 transition-all w-[120px]",
+                                    "px-0 h-8 font-medium bg-surface-secondary dark:bg-surface-tertiary/50 text-foreground dark:text-zinc-200 hover:bg-surface-tertiary dark:hover:bg-surface-quaternary transition-all w-[120px]",
                                   )}
                                 >
                                   {<FaDownload size={14} />}
@@ -1381,7 +1381,7 @@ export const DownloadPage: React.FC = () => {
                   const domain = labelFromUrl(target);
                   const fname = fileNameFromUrl(target);
                   return (
-                    <div className="flex items-center gap-3 min-w-0 bg-white/50 dark:bg-black/20 rounded-xl px-3 py-1.5 border border-black/5 dark:border-white/5">
+                    <div className="flex items-center gap-3 min-w-0 bg-surface/50 dark:bg-surface/20 rounded-xl px-3 py-1.5 border border-black/5 dark:border-white/5">
                       <div className="text-sm truncate max-w-[400px] text-foreground dark:text-zinc-300">
                         <span className="font-semibold text-brand-600 dark:text-brand-500">
                           {domain}
@@ -1394,7 +1394,7 @@ export const DownloadPage: React.FC = () => {
                         onPress={() => navigator.clipboard?.writeText(target)}
                         variant={"secondary"}
                         className={
-                          "h-7 min-w-20 bg-surface-tertiary/50 dark:bg-white/10"
+                          "h-7 min-w-20 bg-surface-tertiary/50 dark:bg-surface/10"
                         }
                       >
                         {<FaCopy size={12} />}
@@ -1429,7 +1429,7 @@ export const DownloadPage: React.FC = () => {
                       className={`group relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl border-2 p-4 transition-all cursor-pointer ${
                         selectedUrl === bestMirror.url
                           ? "border-brand-500 bg-brand-500/5 shadow-xl shadow-brand-500/10"
-                          : "border-transparent bg-surface dark:bg-zinc-800/50 hover:bg-surface-secondary dark:hover:bg-zinc-800"
+                          : "border-transparent bg-surface dark:bg-surface-secondary/50 hover:bg-surface-secondary "
                       }`}
                       onClick={() => setSelectedUrl(bestMirror.url)}
                     >
@@ -1438,7 +1438,7 @@ export const DownloadPage: React.FC = () => {
                           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
                             selectedUrl === bestMirror.url
                               ? "bg-brand-500 brand-primary-foreground"
-                              : "bg-surface-tertiary dark:bg-zinc-700 text-muted dark:text-zinc-400"
+                              : "bg-surface-tertiary text-muted dark:text-zinc-400"
                           }`}
                         >
                           <FaDownload size={16} />
@@ -1508,12 +1508,12 @@ export const DownloadPage: React.FC = () => {
                         className={`relative flex items-center justify-between gap-3 rounded-xl border p-2.5 transition-all cursor-pointer ${
                           selectedUrl === m.url
                             ? "border-brand-500/50 bg-brand-500/5"
-                            : "border-border/50 dark:border-zinc-600 bg-white/50 dark:bg-zinc-700/30 hover:bg-surface-secondary dark:hover:bg-zinc-700 hover:border-border"
+                            : "border-border/50 dark:border-zinc-600 bg-surface/50 dark:bg-surface-tertiary/30 hover:bg-surface-secondary dark:hover:bg-surface-tertiary hover:border-border"
                         }`}
                         onClick={() => setSelectedUrl(m.url)}
                       >
                         <div className="flex items-center gap-3 min-w-0 overflow-hidden">
-                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-surface-secondary dark:bg-zinc-600 text-xs font-bold text-foreground dark:text-zinc-100 shrink-0">
+                          <div className="flex items-center justify-center w-6 h-6 rounded-full bg-surface-secondary dark:bg-surface-quaternary text-xs font-bold text-foreground dark:text-zinc-100 shrink-0">
                             {String.fromCharCode(65 + i)}
                           </div>
                           <div className="flex flex-col min-w-0">

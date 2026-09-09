@@ -31,10 +31,13 @@ import {
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { useThemeManager, ThemeMode } from "@/utils/useThemeManager";
 import { ROUTES } from "@/constants/routes";
+import { useCurrentBackground } from "@/utils/BackgroundContext";
+import { clampNumber } from "@/utils/backgroundAppearance";
 
 export type { ThemeMode };
 
 export const useSettings = (i18n: { language: string }) => {
+  const currentBackground = useCurrentBackground();
   const hasBackend = minecraft !== undefined;
   const navigate = useNavigate();
   const location = useLocation();
@@ -159,19 +162,19 @@ export const useSettings = (i18n: { language: string }) => {
   );
 
   const [backgroundBlur, setBackgroundBlur] = useState<number>(() =>
-    Number(localStorage.getItem("app.backgroundBlur") || "0"),
+    clampNumber(localStorage.getItem("app.backgroundBlur"), 0, 0, 50),
   );
 
   const [backgroundBrightness, setBackgroundBrightness] = useState<number>(
     () => {
       const item = localStorage.getItem("app.backgroundBrightness");
-      return item !== null ? Number(item) : 100;
+      return clampNumber(item, 100, 0, 200);
     },
   );
 
   const [backgroundOpacity, setBackgroundOpacity] = useState<number>(() => {
     const item = localStorage.getItem("app.backgroundOpacity");
-    return item !== null ? Number(item) : 100;
+    return clampNumber(item, 100, 0, 100);
   });
 
   const [backgroundPlayOrder, setBackgroundPlayOrder] = useState<
@@ -210,13 +213,13 @@ export const useSettings = (i18n: { language: string }) => {
   const [lightBackgroundBaseOpacity, setLightBackgroundBaseOpacity] =
     useState<number>(() => {
       const item = localStorage.getItem("app.lightBackgroundBaseOpacity");
-      return item !== null ? Number(item) : 50;
+      return clampNumber(item, 50, 0, 100);
     });
 
   const [darkBackgroundBaseOpacity, setDarkBackgroundBaseOpacity] =
     useState<number>(() => {
       const item = localStorage.getItem("app.darkBackgroundBaseOpacity");
-      return item !== null ? Number(item) : 50;
+      return clampNumber(item, 50, 0, 100);
     });
 
   // Theme manager
@@ -248,7 +251,7 @@ export const useSettings = (i18n: { language: string }) => {
   // Background image preview
   const [backgroundImageError, setBackgroundImageError] = useState(false);
   const [backgroundImageCount, setBackgroundImageCount] = useState<number>(0);
-  const [previewBgData, setPreviewBgData] = useState<string>("");
+  const previewBgData = currentBackground?.bgData || "";
 
   // Lip
   const [lipInstalled, setLipInstalled] = useState<boolean>(false);
@@ -530,7 +533,7 @@ export const useSettings = (i18n: { language: string }) => {
 
   useEffect(() => {
     setBackgroundImageError(false);
-  }, [backgroundImage]);
+  }, [backgroundImage, previewBgData]);
 
   useEffect(() => {
     const handleExperimentalFeaturesChange = () => {
@@ -549,29 +552,20 @@ export const useSettings = (i18n: { language: string }) => {
       );
   }, []);
 
-  // Background image preview loading
+  // The preview shares the decoded image with App; only enumerate folder size here.
   useEffect(() => {
     const folderPath = backgroundImage;
-
+    let cancelled = false;
     if (!folderPath) {
-      setPreviewBgData("");
       setBackgroundImageCount(0);
       return;
     }
 
     const loadPreview = async () => {
       try {
-        // Try to get current image from App.tsx first
-        const currentPath = localStorage.getItem("app.currentBackgroundImage");
-
-        let previewPath = "";
-        if (currentPath && currentPath.startsWith(folderPath)) {
-          previewPath = currentPath;
-        }
-
         const entries = await (minecraft as any).ListDir(folderPath);
+        if (cancelled) return;
         if (!entries || entries.length === 0) {
-          setPreviewBgData("");
           setBackgroundImageCount(0);
           return;
         }
@@ -588,40 +582,15 @@ export const useSettings = (i18n: { language: string }) => {
           );
         });
         setBackgroundImageCount(images.length);
-
-        if (images.length === 0) {
-          setPreviewBgData("");
-          return;
-        }
-
-        if (!previewPath) {
-          // Use the first image for preview in settings if no current image
-          previewPath = images[0].path;
-        }
-
-        const res = await (minecraft as any).GetImageBase64?.(previewPath);
-        if (res) {
-          setPreviewBgData(res);
-          setBackgroundImageError(false);
-        } else {
-          // Fallback to first image if current fails
-          const fallbackPath = images[0].path;
-          const fallbackRes = await (minecraft as any).GetImageBase64?.(
-            fallbackPath,
-          );
-          if (fallbackRes) {
-            setPreviewBgData(fallbackRes);
-            setBackgroundImageError(false);
-          } else {
-            setBackgroundImageError(true);
-          }
-        }
       } catch {
+        if (cancelled) return;
+        setBackgroundImageCount(0);
         setBackgroundImageError(true);
       }
     };
 
-    loadPreview();
+    void loadPreview();
+    return () => { cancelled = true; };
   }, [backgroundImage]);
 
   // Tab from location state

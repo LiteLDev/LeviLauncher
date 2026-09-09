@@ -1020,7 +1020,7 @@ export default function InstanceSettingsPage() {
                   className={`rounded-2xl border p-4 transition-colors ${
                     isSelected
                       ? "border-brand-300 dark:border-brand-500/40 bg-brand-50/70 dark:bg-brand-500/10"
-                      : "border-border/70 dark:border-white/10 bg-surface/40 dark:bg-white/5"
+                      : "border-border/70 dark:border-white/10 bg-surface/40 dark:bg-surface/5"
                   }`}
                 >
                   <div className="flex items-start gap-3">
@@ -1219,7 +1219,7 @@ export default function InstanceSettingsPage() {
               {t("versions.edit.backup.mode.full.warning")}
             </ModalNotice>
           ) : null}
-          <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/25 dark:bg-white/5 px-4 py-4 space-y-3">
+          <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/25 dark:bg-surface/5 px-4 py-4 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm font-semibold text-foreground dark:text-zinc-100">
                 {t("versions.edit.backup.restore.scope_section_title")}
@@ -1241,7 +1241,7 @@ export default function InstanceSettingsPage() {
                     className={`rounded-2xl border p-4 transition-colors ${
                       isSelected
                         ? "border-brand-300 dark:border-brand-500/40 bg-brand-50/70 dark:bg-brand-500/10"
-                        : "border-border/70 dark:border-white/10 bg-surface/40 dark:bg-white/5"
+                        : "border-border/70 dark:border-white/10 bg-surface/40 dark:bg-surface/5"
                     }`}
                   >
                     <div className="flex items-start gap-3">
@@ -1281,7 +1281,7 @@ export default function InstanceSettingsPage() {
                         </div>
                         {scope.key === "mods" &&
                         vs.restoreArchiveInfo?.modsLipPackages?.length ? (
-                          <div className="rounded-xl border border-border/70 dark:border-white/10 bg-white/55 dark:bg-white/5 px-3 py-2.5">
+                          <div className="rounded-xl border border-border/70 dark:border-white/10 bg-surface/55 dark:bg-surface/5 px-3 py-2.5">
                             <div className="flex flex-wrap items-center">
                               <span className="text-xs leading-6 text-foreground dark:text-zinc-300">
                                 {t("versions.edit.backup.restore.lip_summary", {
@@ -1316,7 +1316,7 @@ export default function InstanceSettingsPage() {
           {vs.selectedRestoreScopes.length > 0 ? (
             <div className="space-y-3">
               {vs.restoreConflictLoading ? (
-                <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/60 dark:bg-white/5 px-4 py-3 text-sm text-foreground dark:text-zinc-300">
+                <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/60 dark:bg-surface/5 px-4 py-3 text-sm text-foreground dark:text-zinc-300">
                   {t("versions.edit.backup.restore.conflict_loading")}
                 </div>
               ) : null}
@@ -1331,7 +1331,7 @@ export default function InstanceSettingsPage() {
                     {restoreConflictGroups.map((group) => (
                       <div
                         key={group.key}
-                        className="rounded-[28px] border border-border/70 dark:border-white/10 bg-surface/40 dark:bg-white/5 p-4 sm:p-5 space-y-4"
+                        className="rounded-[28px] border border-border/70 dark:border-white/10 bg-surface/40 dark:bg-surface/5 p-4 sm:p-5 space-y-4"
                       >
                         <div className="flex flex-col gap-3 lg:flex-row lg:items-center lg:justify-between">
                           <div className="min-w-0 space-y-2">
@@ -1394,7 +1394,7 @@ export default function InstanceSettingsPage() {
                               variant={"outline"}
                               className={cn(
                                 "rounded-full",
-                                "min-w-[132px] border-border bg-surface-secondary px-4 text-foreground shadow-sm transition-colors hover:bg-surface-tertiary dark:border-white/15 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/15",
+                                "min-w-[132px] border-border bg-surface-secondary px-4 text-foreground shadow-sm transition-colors hover:bg-surface-tertiary dark:border-white/15 dark:bg-surface/10 dark:text-zinc-300 dark:hover:bg-surface/15",
                               )}
                             >
                               {t(
@@ -1415,7 +1415,7 @@ export default function InstanceSettingsPage() {
                               variant={"outline"}
                               className={cn(
                                 "rounded-full",
-                                "min-w-[132px] border-border bg-surface-secondary px-4 text-foreground shadow-sm transition-colors hover:bg-surface-tertiary dark:border-white/15 dark:bg-white/10 dark:text-zinc-300 dark:hover:bg-white/15",
+                                "min-w-[132px] border-border bg-surface-secondary px-4 text-foreground shadow-sm transition-colors hover:bg-surface-tertiary dark:border-white/15 dark:bg-surface/10 dark:text-zinc-300 dark:hover:bg-surface/15",
                               )}
                             >
                               {t(
@@ -1454,7 +1454,7 @@ export default function InstanceSettingsPage() {
                                   return (
                                     <div
                                       key={conflict.id}
-                                      className="rounded-2xl border border-border/70 dark:border-white/10 bg-white/70 dark:bg-zinc-900/20 p-4 space-y-3"
+                                      className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/70 dark:bg-surface/20 p-4 space-y-3"
                                     >
                                       <div className="flex flex-col gap-3 xl:flex-row xl:items-start xl:justify-between">
                                         <div className="min-w-0 space-y-2">
@@ -1466,7 +1466,7 @@ export default function InstanceSettingsPage() {
                                               size="sm"
                                               variant="soft"
                                               className={
-                                                "bg-surface-secondary text-foreground dark:bg-white/10 dark:text-zinc-300"
+                                                "bg-surface-secondary text-foreground dark:bg-surface/10 dark:text-zinc-300"
                                               }
                                             >
                                               <Chip.Label>
@@ -1495,7 +1495,7 @@ export default function InstanceSettingsPage() {
                                                 size="sm"
                                                 variant="soft"
                                                 className={
-                                                  "bg-surface-secondary text-foreground dark:bg-white/10 dark:text-zinc-300"
+                                                  "bg-surface-secondary text-foreground dark:bg-surface/10 dark:text-zinc-300"
                                                 }
                                               >
                                                 <Chip.Label>
@@ -1609,7 +1609,7 @@ export default function InstanceSettingsPage() {
                                       {conflict.backupSummary ||
                                       conflict.currentSummary ? (
                                         <div className="grid gap-2 lg:grid-cols-2">
-                                          <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/70 dark:bg-white/5 px-3 py-3 space-y-2">
+                                          <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/70 dark:bg-surface/5 px-3 py-3 space-y-2">
                                             <div className="text-[11px] uppercase tracking-wide text-muted dark:text-zinc-400">
                                               {t(
                                                 "versions.edit.backup.restore.backup_side_label",
@@ -1619,7 +1619,7 @@ export default function InstanceSettingsPage() {
                                               {conflict.backupSummary || "-"}
                                             </ModalDescription>
                                           </div>
-                                          <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/70 dark:bg-white/5 px-3 py-3 space-y-2">
+                                          <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/70 dark:bg-surface/5 px-3 py-3 space-y-2">
                                             <div className="text-[11px] uppercase tracking-wide text-muted dark:text-zinc-400">
                                               {t(
                                                 "versions.edit.backup.restore.current_side_label",
@@ -1632,7 +1632,7 @@ export default function InstanceSettingsPage() {
                                         </div>
                                       ) : null}
                                       {canShowDetails ? (
-                                        <details className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/60 dark:bg-white/5 px-3 py-3">
+                                        <details className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/60 dark:bg-surface/5 px-3 py-3">
                                           <summary className="cursor-pointer text-xs font-medium text-foreground dark:text-zinc-300 select-none">
                                             {t(
                                               "versions.edit.backup.restore.conflict_details_toggle",
@@ -1686,13 +1686,13 @@ export default function InstanceSettingsPage() {
                                                   (field) => (
                                                     <div
                                                       key={`${conflict.id}-${field.key}`}
-                                                      className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/40 dark:bg-white/5 px-3 py-3 space-y-2"
+                                                      className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/40 dark:bg-surface/5 px-3 py-3 space-y-2"
                                                     >
                                                       <ModalDescription>
                                                         {t(field.label)}
                                                       </ModalDescription>
                                                       <div className="grid gap-2 md:grid-cols-2">
-                                                        <div className="rounded-xl bg-surface-secondary/80 dark:bg-white/5 px-3 py-2">
+                                                        <div className="rounded-xl bg-surface-secondary/80 dark:bg-surface/5 px-3 py-2">
                                                           <div className="text-[11px] uppercase tracking-wide text-muted dark:text-zinc-400">
                                                             {t(
                                                               "versions.edit.backup.restore.backup_side_label",
@@ -1703,7 +1703,7 @@ export default function InstanceSettingsPage() {
                                                               "-"}
                                                           </div>
                                                         </div>
-                                                        <div className="rounded-xl bg-surface-secondary/80 dark:bg-white/5 px-3 py-2">
+                                                        <div className="rounded-xl bg-surface-secondary/80 dark:bg-surface/5 px-3 py-2">
                                                           <div className="text-[11px] uppercase tracking-wide text-muted dark:text-zinc-400">
                                                             {t(
                                                               "versions.edit.backup.restore.current_side_label",

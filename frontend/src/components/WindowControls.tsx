@@ -83,7 +83,7 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
   return (
     <div className={`flex items-center gap-1 ${className || ""}`}>
       {!hideSeparator && (
-        <div className="w-px h-6 bg-surface-tertiary dark:bg-zinc-700 mx-2" />
+        <div className="w-px h-6 bg-surface-tertiary mx-2" />
       )}
 
       <Button

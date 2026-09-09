@@ -689,7 +689,7 @@ export const CurseForgePage: React.FC = () => {
                       transition={{ duration: 0.2 }}
                     >
                       <Link
-                        className="w-full p-4 bg-surface/50 dark:bg-white/5 hover:bg-surface-secondary/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-border dark:border-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        className="w-full p-4 bg-surface/50 dark:bg-surface/5 hover:bg-surface-secondary/50 dark:hover:bg-surface/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-border dark:border-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
                         to={routeTo.curseForgeMod(mod.id)}
                         aria-label={t("audit.mods.view_details", { name: mod.name })}
                         onClick={saveScrollPosition}
@@ -797,7 +797,7 @@ export const CurseForgePage: React.FC = () => {
                                   variant="soft"
                                   className={cn(
                                     "rounded-sm",
-                                    "h-5 text-[10px] bg-surface-secondary dark:bg-zinc-800 text-muted dark:text-zinc-400 group-hover:bg-surface-tertiary dark:group-hover:bg-zinc-700 transition-colors",
+                                    "h-5 text-[10px] bg-surface-secondary text-muted dark:text-zinc-400 group-hover:bg-surface-tertiary dark:group-hover:bg-surface-tertiary transition-colors",
                                   )}
                                 >
                                   <Chip.Label>{cat.name}</Chip.Label>
@@ -812,7 +812,7 @@ export const CurseForgePage: React.FC = () => {
               )}
             </div>
             {totalPages > 1 && (
-              <div className="flex justify-center p-4 border-t border-border dark:border-white/5 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shrink-0">
+              <div className="flex justify-center p-4 border-t border-border dark:border-white/5 bg-surface/50 launcher-material-blur shrink-0">
                 <PagePagination
                   className="gap-2"
                   pageCount={totalPages}

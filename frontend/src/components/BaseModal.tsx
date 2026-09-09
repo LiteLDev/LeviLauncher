@@ -65,7 +65,7 @@ export const BaseModal = ({
       >
         <Modal.Dialog
           className={cn(
-            "w-full min-w-0 gap-0 p-0 bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-3xl",
+            "w-full min-w-0 gap-0 p-0 bg-overlay border border-white/40 dark:border-zinc-700/50 shadow-2xl rounded-3xl",
             MODAL_WIDTHS[size],
             size === "full" && "rounded-none",
             className,

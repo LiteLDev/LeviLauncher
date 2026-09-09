@@ -533,7 +533,34 @@
       "calculating": "Calculating...",
       "sunrise_time": "Sunrise Today",
       "sunset_time": "Sunset Today",
-      "sun_fetch_failed": "Failed to fetch sunrise/sunset times"
+      "sun_fetch_failed": "Failed to fetch sunrise/sunset times",
+      "material": {
+        "title": "Interface material",
+        "description": "One material system for navigation, cards, tabs, controls and popups. Light and dark profiles are saved separately and follow the theme.",
+        "edit_mode": "Edit material for theme",
+        "preview": "Live preview",
+        "preview_label": "Wallpaper, text and card material preview for the selected theme",
+        "preview_action": "Launch",
+        "preview_text": "Text and controls stay in front; your wallpaper sets the atmosphere.",
+        "no_image": "Choose a working image folder and set image opacity above 0 to see the effect. Your material settings are saved for later.",
+        "presets": "Material presets",
+        "balanced": "Balanced",
+        "balanced_desc": "Soft glass, readable content",
+        "clear": "Clear",
+        "clear_desc": "More wallpaper, less protection",
+        "solid": "Solid",
+        "solid_desc": "Opaque panels, no blur",
+        "opacity": "Interface opacity",
+        "blur": "Interface blur",
+        "overlay": "Wallpaper overlay",
+        "readability": "Readability protection",
+        "readability_desc": "Sets a minimum surface tint for the theme, image brightness and blur, and strengthens secondary text. Controls and popups use the same material with their own visual hierarchy.",
+        "protected_opacity": "Protection is active: effective interface opacity is {{value}}%.",
+        "protected": "Readability protection is on.",
+        "unprotected": "Protection is off. Busy images may make text harder to read.",
+        "reset": "Reset this theme",
+        "next_image": "Next image"
+      }
     },
     "privacy": {
       "analytics": {

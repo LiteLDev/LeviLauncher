@@ -156,7 +156,7 @@ export default function WorldLevelDatEditorPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: delay * 0.03 }}
-          className="group relative overflow-hidden rounded-2xl border border-border dark:border-border/10 bg-white/50 dark:bg-zinc-900/50 p-4 transition-all hover:bg-surface-secondary dark:hover:bg-zinc-800/50 hover:shadow-lg"
+          className="group relative overflow-hidden rounded-2xl border border-border dark:border-border/10 bg-surface/50 p-4 transition-all hover:bg-surface-secondary dark:hover:bg-surface-secondary/50 hover:shadow-lg"
         >
           <div className="flex items-center justify-between mb-3">
             <div
@@ -331,7 +331,7 @@ export default function WorldLevelDatEditorPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: 0.1 }}
-                  className="p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 border border-border dark:border-border/10 backdrop-blur-md shadow-sm"
+                  className="p-6 rounded-2xl bg-surface/50 border border-border dark:border-border/10 launcher-material-blur shadow-sm"
                 >
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-1 h-6 rounded-full bg-brand-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
@@ -367,7 +367,7 @@ export default function WorldLevelDatEditorPage() {
                       <label className="text-sm text-foreground dark:text-zinc-400">
                         {t("contentpage.version")}
                       </label>
-                      <div className="h-10 px-3 flex items-center rounded-lg bg-surface-secondary dark:bg-zinc-800/50 text-muted dark:text-zinc-400 text-sm font-mono border border-transparent dark:border-zinc-700/50">
+                      <div className="h-10 px-3 flex items-center rounded-lg bg-surface-secondary dark:bg-surface-secondary/50 text-muted dark:text-zinc-400 text-sm font-mono border border-transparent dark:border-zinc-700/50">
                         {typedVersion}
                       </div>
                     </div>
@@ -409,7 +409,7 @@ export default function WorldLevelDatEditorPage() {
                         transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                       >
-                        <div className="p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 border border-border dark:border-border/10 backdrop-blur-md shadow-sm transition-all">
+                        <div className="p-6 rounded-2xl bg-surface/50 border border-border dark:border-border/10 launcher-material-blur shadow-sm transition-all">
                           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_100px_1fr_80px] gap-4 items-end">
                             <Select
                               value={
@@ -849,7 +849,7 @@ export default function WorldLevelDatEditorPage() {
                                       >
                                         <Select.Trigger
                                           className={cn(
-                                            "bg-surface-secondary/50 dark:bg-zinc-800/50 data-[hovered]:bg-surface-tertiary/50 dark:data-[hovered]:bg-zinc-700/50 data-[focused]:border-brand-600 rounded-xl",
+                                            "bg-surface-secondary/50 data-[hovered]:bg-surface-tertiary/50 data-[focused]:border-brand-600 rounded-xl",
                                             "rounded-lg",
                                             "min-h-8 text-sm",
                                           )}
@@ -859,7 +859,7 @@ export default function WorldLevelDatEditorPage() {
                                         </Select.Trigger>
                                         <Select.Popover
                                           className={
-                                            "bg-surface-secondary/80 dark:bg-zinc-800/80 border border-border/50 dark:border-white/10"
+                                            "bg-surface-secondary/80 border border-border/50 dark:border-white/10"
                                           }
                                         >
                                           <ListBox>

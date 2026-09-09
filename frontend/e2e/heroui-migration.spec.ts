@@ -114,17 +114,21 @@ test("settings tabs, switch and theme palette retain controlled state", async ({
       exact: true,
     }),
   ).toHaveAttribute("aria-selected", "true");
-  const switches = page.getByRole("switch");
-  await expect(switches).toHaveCount(2);
-  await page.locator('[data-slot="switch-content"]').last().click();
-  await expect(switches.last()).toBeChecked();
+  const animationSwitch = page.getByRole("switch", {
+    name: en.settings.appearance.disable_animations,
+    exact: true,
+  });
+  await page.locator('[data-slot="switch"]')
+    .filter({ has: animationSwitch })
+    .locator('[data-slot="switch-content"]').click();
+  await expect(animationSwitch).toBeChecked();
   await expect
     .poll(() =>
       page.evaluate(() => localStorage.getItem("app.disableAnimations")),
     )
     .toBe("true");
-  await switches.last().press("Space");
-  await expect(switches.last()).not.toBeChecked();
+  await animationSwitch.press("Space");
+  await expect(animationSwitch).not.toBeChecked();
   await expect
     .poll(() =>
       page.evaluate(() => localStorage.getItem("app.disableAnimations")),

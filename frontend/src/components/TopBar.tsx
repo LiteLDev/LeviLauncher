@@ -41,7 +41,7 @@ export const TopBar: React.FC<TopBarProps> = ({
         id="wails-draggable"
         className={`fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4 ${LAYOUT.NAVBAR_BG}`}
       >
-        <div className="absolute bottom-0 right-0 left-[calc(3.5rem+20px)] h-px bg-surface-tertiary/50 dark:bg-zinc-800/50" />
+        <div className="absolute bottom-0 right-0 left-[calc(3.5rem+20px)] h-px bg-surface-tertiary/50 dark:bg-surface-secondary/50" />
         <div className="flex items-center gap-2 overflow-hidden">
           <div className="w-14 shrink-0 flex items-center justify-center">
             <LeviIcon width={32} height={32} />

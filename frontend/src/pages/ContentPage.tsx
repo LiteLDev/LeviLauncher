@@ -79,12 +79,12 @@ export default function ContentPage() {
                   </div>
                   <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
                     <span>{t("contentpage.current_version")}:</span>
-                    <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+                    <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
                       {cp.currentVersionName || t("contentpage.none")}
                     </span>
                     <span className="text-muted dark:text-zinc-600">|</span>
                     <span>{t("contentpage.isolation")}:</span>
-                    <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+                    <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
                       {cp.roots.isIsolation ? t("common.yes") : t("common.no")}
                     </span>
                     <span className="text-muted dark:text-zinc-600">|</span>
@@ -198,7 +198,7 @@ export default function ContentPage() {
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
-                      "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                      "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                     )}
                   >
                     {<FaExchangeAlt />}
@@ -215,7 +215,7 @@ export default function ContentPage() {
                       variant={"secondary"}
                       className={cn(
                         "rounded-full",
-                        "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                        "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                       )}
                     >
                       {<FaFolderOpen />}
@@ -724,7 +724,7 @@ export default function ContentPage() {
                   }}
                   variant={"secondary"}
                   className={
-                    "w-full justify-start bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200"
+                    "w-full justify-start bg-surface-secondary text-foreground dark:text-zinc-200"
                   }
                 >
                   {resolvePlayerDisplayName(p, cp.playerGamertagMap)}

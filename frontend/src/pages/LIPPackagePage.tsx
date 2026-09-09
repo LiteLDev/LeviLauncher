@@ -1242,7 +1242,7 @@ const LIPPackagePage: React.FC = () => {
   if (error) {
     return (
       <div className="w-full h-full min-h-0 flex flex-col p-4 sm:p-6 gap-4 items-center justify-center">
-        <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl p-8">
+        <Card className="bg-surface/50 dark:bg-surface/40 launcher-material-blur rounded-4xl p-8">
           <Card.Content className="flex flex-col items-center gap-4">
             <p className="text-xl font-bold text-rose-500">{error}</p>
             <Button
@@ -1266,7 +1266,7 @@ const LIPPackagePage: React.FC = () => {
   if (!pkg) {
     return (
       <div className="w-full h-full min-h-0 flex flex-col p-4 sm:p-6 gap-4 items-center justify-center">
-        <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl p-8">
+        <Card className="bg-surface/50 dark:bg-surface/40 launcher-material-blur rounded-4xl p-8">
           <Card.Content className="flex flex-col items-center gap-4">
             <p className="text-xl font-bold">{t("common.empty")}</p>
             <Button

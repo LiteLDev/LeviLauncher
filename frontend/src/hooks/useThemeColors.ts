@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { THEMES, hexToRgb, generateTheme } from "@/constants/themes";
+import { THEMES, hexToRgb, generateTheme, getSolidAccent } from "@/constants/themes";
 
 const BRAND_PRIMARY_FOREGROUND = "#ffffff";
 
@@ -106,7 +106,8 @@ export const useThemeColors = (resolvedTheme: string | undefined) => {
       const k = Number(key);
       root.style.setProperty(`--theme-${k}`, hexToRgb(theme[k]));
     });
-    // Primary actions intentionally keep the original white brand foreground.
+    root.style.setProperty("--theme-solid", getSolidAccent(theme[500]));
+    // Decorative shades retain the palette; solid actions keep readable white labels.
     root.style.setProperty("--accent-foreground", BRAND_PRIMARY_FOREGROUND);
     setThemeColorsReady(true);
   }, [

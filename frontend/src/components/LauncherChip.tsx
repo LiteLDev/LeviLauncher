@@ -10,7 +10,7 @@ export function ModdedChip() {
       variant="primary"
       className={cn(
         "shadow-md",
-        "bg-linear-to-br from-indigo-500 to-pink-500 border border-white/50 shadow-pink-500/30",
+        "bg-indigo-300 border border-white/50 shadow-indigo-500/20",
       )}
     >
       <Chip.Label className={"font-medium text-black"}>Modded</Chip.Label>
@@ -25,7 +25,7 @@ export function ShaderChip() {
       variant="primary"
       className={cn(
         "shadow-md",
-        "bg-linear-to-br from-teal-400 to-emerald-500 border border-white/50 shadow-emerald-500/30",
+        "bg-emerald-300 border border-white/50 shadow-emerald-500/20",
       )}
     >
       <Chip.Label className={"font-medium text-black"}>
@@ -41,7 +41,7 @@ export function VanillaChip() {
       variant="primary"
       className={cn(
         "shadow-md",
-        "bg-linear-to-br from-green-500 to-yellow-500 border border-white/50 shadow-yellow-500/30",
+        "bg-green-300 border border-white/50 shadow-green-500/20",
       )}
     >
       <Chip.Label className={"font-medium text-black"}>Vanilla</Chip.Label>
@@ -55,7 +55,7 @@ export function ReleaseChip() {
       variant="primary"
       className={cn(
         "shadow-md",
-        "bg-linear-to-br from-blue-500 to-cyan-500 border border-white/50 shadow-cyan-500/30",
+        "bg-blue-300 border border-white/50 shadow-blue-500/20",
       )}
     >
       <Chip.Label className={"font-medium text-black"}>Release</Chip.Label>
@@ -69,7 +69,7 @@ export function PreviewChip() {
       variant="primary"
       className={cn(
         "shadow-md",
-        "bg-linear-to-br from-purple-500 to-fuchsia-500 border border-white/50 shadow-fuchsia-500/30",
+        "bg-purple-300 border border-white/50 shadow-purple-500/20",
       )}
     >
       <Chip.Label className={"font-medium text-black"}>Preview</Chip.Label>

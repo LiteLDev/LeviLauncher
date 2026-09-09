@@ -131,7 +131,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             <LeviIcon width={28} height={28} />
           </div>
           <div className="hidden sm:flex flex-col leading-none gap-0.5">
-            <p className="font-bold text-[16px] tracking-tight bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">
+            <p className="font-bold text-[16px] tracking-tight text-brand-700 dark:text-brand-300">
               LeviLauncher
             </p>
             {isBeta && (

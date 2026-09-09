@@ -289,7 +289,7 @@ export const UserAvatar = () => {
               <div className="flex flex-col items-start">
                 <div className="text-lg">
                   {
-                    <span className="font-bold text-lg bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">
+                    <span className="font-bold text-lg text-brand-700 dark:text-brand-300">
                       {gamertag}
                     </span>
                   }

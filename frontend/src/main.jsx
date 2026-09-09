@@ -98,8 +98,7 @@ const StartupShell = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background:
-          "linear-gradient(180deg, rgba(248,250,252,1) 0%, rgba(241,245,249,1) 100%)",
+        background: "#f8fafc",
         color: "#0f172a",
         fontFamily:
           '"MiSans", "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", sans-serif',

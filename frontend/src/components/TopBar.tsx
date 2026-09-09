@@ -12,6 +12,7 @@ import { useTranslation } from "react-i18next";
 import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
 import { LAYOUT } from "@/constants/layout";
 import { ROUTES } from "@/constants/routes";
+import { getRouteLabelKey, ROUTE_LABEL_KEYS } from "@/constants/routeLabels";
 
 interface TopBarProps {
   navLocked: boolean;
@@ -26,21 +27,13 @@ export const TopBar: React.FC<TopBarProps> = ({
 }) => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { canGoBack, canGoForward, getBackEntry, getForwardEntry } =
+  const { canGoBack, canGoForward, getBackEntry, getForwardEntry, currentTitle } =
     useNavigationHistory();
 
   const pathnames = location.pathname.split("/").filter((x) => x);
 
-  const getName = (value: string) => {
-    try {
-      const decoded = decodeURIComponent(value);
-      return decoded.charAt(0).toUpperCase() + decoded.slice(1);
-    } catch {
-      return value.charAt(0).toUpperCase() + value.slice(1);
-    }
-  };
-
-  const NON_CLICKABLE_SEGMENTS = ["mod", "package"];
+  const getHistoryTitle = (entry: ReturnType<typeof getBackEntry>, fallback: string) =>
+    entry ? entry.title || t(getRouteLabelKey(entry.pathname)) : t(fallback);
 
   return (
     <>
@@ -75,7 +68,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <IoArrowBack size={20} />
               </Button>
               <Tooltip.Content>
-                {getBackEntry()?.title || t("nav.back")}
+                {getHistoryTitle(getBackEntry(), "nav.back")}
               </Tooltip.Content>
             </Tooltip>
             <Tooltip
@@ -98,7 +91,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                 <IoArrowForward size={20} />
               </Button>
               <Tooltip.Content>
-                {getForwardEntry()?.title || t("nav.forward")}
+                {getHistoryTitle(getForwardEntry(), "nav.forward")}
               </Tooltip.Content>
             </Tooltip>
           </div>
@@ -113,11 +106,11 @@ export const TopBar: React.FC<TopBarProps> = ({
               <span
                 className={`${
                   pathnames.length === 0
-                    ? "font-bold text-lg bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent"
+                    ? "font-bold text-lg text-brand-700 dark:text-brand-300"
                     : "text-muted dark:text-zinc-400"
                 }`}
               >
-                {pathnames.length === 0 ? "LeviLauncher" : "Home"}
+                {pathnames.length === 0 ? "LeviLauncher" : t("nav.home")}
               </span>
             ) : (
               <Link
@@ -128,24 +121,26 @@ export const TopBar: React.FC<TopBarProps> = ({
                 }}
                 className={`transition-colors hover:opacity-80 ${
                   pathnames.length === 0
-                    ? "font-bold text-lg bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent"
+                    ? "font-bold text-lg text-brand-700 dark:text-brand-300"
                     : "text-muted dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-200"
                 }`}
               >
-                {pathnames.length === 0 ? "LeviLauncher" : "Home"}
+                {pathnames.length === 0 ? "LeviLauncher" : t("nav.home")}
               </Link>
             )}
-            {pathnames.map((value, index) => {
+            {pathnames.map((_, index) => {
               const to = `/${pathnames.slice(0, index + 1).join("/")}`;
               const isLast = index === pathnames.length - 1;
-              const name = getName(value);
-              const isNonClickable = NON_CLICKABLE_SEGMENTS.includes(value);
+              const name = isLast && currentTitle ? currentTitle : t(getRouteLabelKey(to));
+              const isNonClickable = !ROUTE_LABEL_KEYS[to];
 
               return (
                 <React.Fragment key={to}>
                   <IoChevronForward className="mx-1 text-muted shrink-0" />
                   {isLast || navLocked || isNonClickable ? (
                     <span
+                      title={name}
+                      aria-current={isLast ? "page" : undefined}
                       className={`${
                         isLast
                           ? "font-bold text-foreground dark:text-zinc-100"
@@ -157,6 +152,7 @@ export const TopBar: React.FC<TopBarProps> = ({
                   ) : (
                     <Link
                       to={to}
+                      title={name}
                       onClick={(e) => {
                         e.preventDefault();
                         tryNavigate(to);

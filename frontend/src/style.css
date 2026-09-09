@@ -111,30 +111,6 @@
     }
   }
 
-  @keyframes gradient {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-
-  @keyframes text-gradient-move {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-
   @keyframes dropAndBounce {
     0% {
       transform: translateY(-1000px);
@@ -201,8 +177,6 @@
   }
 
   --animate-spin: spin 5s linear infinite;
-  --animate-gradient: gradient 10s ease infinite;
-  --animate-text-gradient: text-gradient-move 4s ease-in-out infinite;
   --animate-drop-and-bounce: dropAndBounce 1.5s ease-in-out;
   --animate-fade-out: fadeOut 1.25s forwards 1.25s;
   --animate-fadeInMove: fadeInMove 0.6s ease-out both;
@@ -220,9 +194,11 @@
 .light {
   --background: rgba(250, 250, 250, 0.9);
   --foreground: #27272a;
+  --muted: #52525b;
   --surface: #ffffff;
   --overlay: #ffffff;
-  --accent: rgb(var(--theme-500, 16, 185, 129));
+  --accent: var(--theme-solid, #047857);
+  --accent-hover: color-mix(in srgb, var(--accent) 90%, #000);
   --accent-foreground: #ffffff;
   --accent-soft-foreground: rgb(var(--theme-800, 6, 95, 70));
   --focus: var(--accent);
@@ -233,12 +209,14 @@
 .dark {
   --background: #000000;
   --foreground: #fafafa;
+  --muted: #a1a1aa;
   --surface: #18181b;
   --overlay: #18181b;
-  --accent: rgb(var(--theme-500, 16, 185, 129));
+  --accent: var(--theme-solid, #047857);
+  --accent-hover: color-mix(in srgb, var(--accent) 90%, #000);
   --accent-foreground: #ffffff;
   --accent-soft-foreground: rgb(var(--theme-200, 167, 243, 208));
-  --focus: var(--accent);
+  --focus: rgb(var(--theme-300, 110, 231, 183));
   --danger-foreground: #000000;
 }
 
@@ -281,6 +259,11 @@ select {
   color: #fff !important;
 }
 
+/* Existing solid brand actions share the semantic, contrast-safe background. */
+:is(.button, .brand-primary-foreground).bg-brand-500 {
+  background-color: var(--accent);
+}
+
 body,
 html {
   touch-action: manipulation;
@@ -298,6 +281,15 @@ html {
 img {
   -webkit-user-drag: none;
   user-drag: none;
+}
+
+/* Keep the window chrome non-selectable, while supporting copy in information areas. */
+:is(main, [role="dialog"], [role="alertdialog"]) :is(p, pre, code, .prose),
+[role="alert"],
+[role="status"],
+.select-text {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* Make root fill viewport and disable window-level scroll; internal panes should manage their own scrolling */
@@ -328,30 +320,16 @@ body::-webkit-scrollbar,
   --wails-draggable: no-drag;
 }
 
-.gradient-text {
-  background: linear-gradient(90deg, #fbbf24, #10b981);
-  background-size: 200% 200%;
-  animation: var(--animate-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+/* Loading placeholders and scroll edges use solid surfaces as well. */
+.skeleton--shimmer::before,
+.skeleton--shimmer::after {
+  background-image: none;
+  content: none;
 }
 
-/* Branded, higher-contrast animated gradient for header title */
-.brand-text-gradient {
-  background-image: linear-gradient(
-    90deg,
-    #22c55e 0%,
-    #06b6d4 50%,
-    #f59e0b 100%
-  );
-}
-.dark .brand-text-gradient {
-  background-image: linear-gradient(
-    90deg,
-    #34d399 0%,
-    #60a5fa 50%,
-    #fbbf24 100%
-  );
+.scroll-shadow {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 /* Global Scrollbar overrides to match .pretty-scrollbar style */

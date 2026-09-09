@@ -712,7 +712,11 @@ func DeleteVersionFolder(name string) string {
 	if utils.FileExists(exe) && IsProcessRunningAtPath(exe) {
 		return "ERR_GAME_ALREADY_RUNNING"
 	}
-	if err := os.RemoveAll(dir); err != nil {
+	// For a junction/symlink version folder, only unlink the entry itself.
+	// os.RemoveAll on Windows can recurse through a junction and delete the
+	// linked target's contents, which would destroy the external game
+	// directory the user pointed at.
+	if err := utils.RemoveDir(dir); err != nil {
 		return "ERR_DELETE_FAILED"
 	}
 	return ""

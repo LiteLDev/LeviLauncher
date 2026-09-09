@@ -14,7 +14,28 @@ func CreateDir(path string) error {
 	return os.MkdirAll(path, 0755)
 }
 
+// IsSymlink reports whether path is a reparse point (a directory junction or
+// a symlink) rather than a real directory. It does not follow the link.
+func IsSymlink(path string) bool {
+	fi, err := os.Lstat(path)
+	if err != nil {
+		return false
+	}
+	return fi.Mode()&os.ModeSymlink != 0
+}
+
+// RemoveDir removes a directory. For a reparse point (junction/symlink) it
+// only unlinks the entry itself instead of recursing into the target, so a
+// version folder backed by an external directory never has its contents
+// deleted accidentally.
 func RemoveDir(path string) error {
+	if IsSymlink(path) {
+		err := os.Remove(path)
+		if os.IsNotExist(err) {
+			return nil
+		}
+		return err
+	}
 	return os.RemoveAll(path)
 }
 

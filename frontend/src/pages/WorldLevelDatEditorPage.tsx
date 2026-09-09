@@ -12,13 +12,14 @@ import {
   Switch,
   TextField,
   Tooltip,
+  toast,
 } from "@heroui/react";
 
 import React from "react";
 import { useTranslation } from "react-i18next";
 
 import { motion, AnimatePresence } from "framer-motion";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useBlocker, useLocation, useNavigate } from "react-router-dom";
 import {
   FaArrowLeft,
   FaSave,
@@ -32,6 +33,8 @@ import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
+import { UnifiedModal } from "@/components/UnifiedModal";
+import { useRouteTitle } from "@/hooks/useRouteTitle";
 import {
   useLevelDatEditor,
   normTag,
@@ -49,6 +52,7 @@ export default function WorldLevelDatEditorPage() {
   const worldPath = sp.get("path") || "";
 
   const {
+    isDirty,
     loading,
     error,
     levelName,
@@ -82,10 +86,39 @@ export default function WorldLevelDatEditorPage() {
     saveAll,
     getOrderedCompoundChildren,
   } = useLevelDatEditor(worldPath);
+  useRouteTitle(levelName);
+  const blocker = useBlocker(isDirty || saving);
+  const [refreshPending, setRefreshPending] = React.useState(false);
+  const confirmationOpen = refreshPending || blocker.state === "blocked";
+
+  const continueEditing = () => {
+    setRefreshPending(false);
+    if (blocker.state === "blocked") blocker.reset();
+  };
+  const continueAction = () => {
+    if (blocker.state === "blocked") blocker.proceed();
+    else if (refreshPending) void load();
+    setRefreshPending(false);
+  };
+  const requestRefresh = () => {
+    if (saving || loading) return;
+    if (isDirty) setRefreshPending(true);
+    else void load();
+  };
+
+  React.useEffect(() => {
+    const beforeUnload = (event: BeforeUnloadEvent) => {
+      if (!isDirty && !saving) return;
+      event.preventDefault();
+      event.returnValue = "";
+    };
+    window.addEventListener("beforeunload", beforeUnload);
+    return () => window.removeEventListener("beforeunload", beforeUnload);
+  }, [isDirty, saving]);
 
   const handleSave = async () => {
     const ok = await saveAll();
-    if (ok) navigate(-1);
+    if (ok) toast(t("common.success"), { variant: "success" });
   };
 
   const FieldBox = React.useMemo(() => {
@@ -158,6 +191,8 @@ export default function WorldLevelDatEditorPage() {
               startContent={
                 <Button
                   isIconOnly
+                  aria-label={t("common.back")}
+                  isDisabled={saving || loading}
                   onPress={() => navigate(-1)}
                   variant={"ghost"}
                   className={"rounded-full"}
@@ -214,7 +249,9 @@ export default function WorldLevelDatEditorPage() {
                   <Tooltip>
                     <Button
                       isIconOnly
-                      onPress={load}
+                      aria-label={t("common.refresh")}
+                      onPress={requestRefresh}
+                      isDisabled={saving}
                       variant={"secondary"}
                       isPending={loading}
                       className={cn(
@@ -239,7 +276,8 @@ export default function WorldLevelDatEditorPage() {
                     <Button
                       isIconOnly
                       onPress={handleSave}
-                      isDisabled={!hasBackend || loading}
+                      aria-label={t("common.save")}
+                      isDisabled={!hasBackend || loading || saving || !isDirty}
                       variant={"primary"}
                       isPending={saving}
                       className={cn(
@@ -264,6 +302,8 @@ export default function WorldLevelDatEditorPage() {
               }
             />
 
+            {isDirty && <p role="status" className="text-sm text-warning">{t("contentpage.editor_unsaved")}</p>}
+
             {error && (
               <div className="w-full p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 text-danger flex items-center gap-2">
                 <FaTimes className="w-4 h-4" />
@@ -274,6 +314,7 @@ export default function WorldLevelDatEditorPage() {
           <div
             ref={scrollRef}
             className="flex-1 overflow-y-auto pretty-scrollbar p-4 sm:p-6 pt-0"
+            inert={saving}
           >
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64 gap-4">
@@ -292,7 +333,7 @@ export default function WorldLevelDatEditorPage() {
                   className="p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 border border-border dark:border-border/10 backdrop-blur-md shadow-sm"
                 >
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-1 h-6 rounded-full bg-linear-to-b from-brand-500 to-brand-400 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+                    <div className="w-1 h-6 rounded-full bg-brand-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
                     <h3 className="text-lg font-bold text-foreground dark:text-zinc-200">
                       {t("contentpage.basic_info")}
                     </h3>
@@ -339,7 +380,7 @@ export default function WorldLevelDatEditorPage() {
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-1 h-6 rounded-full bg-linear-to-b from-brand-500 to-brand-400 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+                      <div className="w-1 h-6 rounded-full bg-brand-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
                       <h3 className="text-lg font-bold text-foreground dark:text-zinc-200">
                         {t("contentpage.add_field")}
                       </h3>
@@ -568,20 +609,7 @@ export default function WorldLevelDatEditorPage() {
                                     }}
                                   >
                                     <Input
-                                      onBlur={() => {
-                                        const val = String(
-                                          typedDrafts[dk] ??
-                                            stringifyList(items),
-                                        );
-                                        setTypedFieldValueByName(String(k), {
-                                          valueJSON: val,
-                                        });
-                                        setTypedDrafts((prev) => {
-                                          const nn = { ...prev };
-                                          delete nn[dk];
-                                          return nn;
-                                        });
-                                      }}
+
                                       className={cn(
                                         COMPONENT_STYLES.input.inputWrapper,
                                         COMPONENT_STYLES.input.input,
@@ -712,17 +740,7 @@ export default function WorldLevelDatEditorPage() {
                                 }}
                               >
                                 <Input
-                                  onBlur={() => {
-                                    const val = String(typedDrafts[dk] ?? "");
-                                    setTypedFieldValueByName(String(k), {
-                                      valueString: val,
-                                    });
-                                    setTypedDrafts((prev) => {
-                                      const next = { ...prev };
-                                      delete next[dk];
-                                      return next;
-                                    });
-                                  }}
+
                                   className={cn(
                                     COMPONENT_STYLES.input.inputWrapper,
                                     COMPONENT_STYLES.input.input,
@@ -889,19 +907,7 @@ export default function WorldLevelDatEditorPage() {
                                       }}
                                     >
                                       <Input
-                                        onBlur={() => {
-                                          const val = String(
-                                            typedDrafts[dk] ?? "",
-                                          );
-                                          setCompoundFieldValue(pathKey, si, {
-                                            valueString: val,
-                                          });
-                                          setTypedDrafts((prev) => {
-                                            const next = { ...prev };
-                                            delete next[dk];
-                                            return next;
-                                          });
-                                        }}
+
                                         className={cn(
                                           COMPONENT_STYLES.input.inputWrapper,
                                           COMPONENT_STYLES.input.input,
@@ -950,22 +956,7 @@ export default function WorldLevelDatEditorPage() {
                                             }}
                                           >
                                             <Input
-                                              onBlur={() => {
-                                                const val = String(
-                                                  typedDrafts[dk] ??
-                                                    stringifyList(items),
-                                                );
-                                                setCompoundFieldValue(
-                                                  pathKey,
-                                                  si,
-                                                  { valueJSON: val },
-                                                );
-                                                setTypedDrafts((prev) => {
-                                                  const nn = { ...prev };
-                                                  delete nn[dk];
-                                                  return nn;
-                                                });
-                                              }}
+
                                               className={cn(
                                                 COMPONENT_STYLES.input
                                                   .inputWrapper,
@@ -1057,19 +1048,7 @@ export default function WorldLevelDatEditorPage() {
                                       }}
                                     >
                                       <Input
-                                        onBlur={() => {
-                                          const val = String(
-                                            typedDrafts[dk] ?? "",
-                                          );
-                                          setCompoundFieldValue(pathKey, si, {
-                                            valueString: val,
-                                          });
-                                          setTypedDrafts((prev) => {
-                                            const next = { ...prev };
-                                            delete next[dk];
-                                            return next;
-                                          });
-                                        }}
+
                                         className={cn(
                                           COMPONENT_STYLES.input.inputWrapper,
                                           COMPONENT_STYLES.input.input,
@@ -1111,23 +1090,7 @@ export default function WorldLevelDatEditorPage() {
                                           }}
                                         >
                                           <Input
-                                            onBlur={() => {
-                                              const val = String(
-                                                typedDrafts[dk] ?? "",
-                                              );
-                                              setCompoundFieldValue(
-                                                pathKey,
-                                                si,
-                                                {
-                                                  valueJSON: val,
-                                                },
-                                              );
-                                              setTypedDrafts((prev) => {
-                                                const next = { ...prev };
-                                                delete next[dk];
-                                                return next;
-                                              });
-                                            }}
+
                                             className={cn(
                                               COMPONENT_STYLES.input
                                                 .inputWrapper,
@@ -1185,6 +1148,23 @@ export default function WorldLevelDatEditorPage() {
           </div>
         </Card.Content>
       </Card>
+      <UnifiedModal
+        isOpen={confirmationOpen}
+        onOpenChange={(open) => { if (!open && !saving) continueEditing(); }}
+        type="warning"
+        title={t("contentpage.editor_unsaved")}
+        isDismissable={!saving}
+        footer={<div className="flex flex-wrap justify-end gap-2">
+          <Button variant="ghost" isDisabled={saving} onPress={continueEditing}>{t("contentpage.editor_continue")}</Button>
+          <Button variant="danger-soft" isDisabled={saving} onPress={continueAction}>{t("contentpage.editor_discard")}</Button>
+          <Button variant="primary" isPending={saving} onPress={async () => {
+            if (await saveAll()) continueAction();
+          }}>{t(refreshPending ? "contentpage.editor_save_refresh" : "contentpage.editor_save_leave")}</Button>
+        </div>}
+      >
+        <p>{t("contentpage.editor_unsaved_body")}</p>
+        {error && <p role="alert" className="mt-3 text-danger">{t(error)}</p>}
+      </UnifiedModal>
     </PageContainer>
   );
 }

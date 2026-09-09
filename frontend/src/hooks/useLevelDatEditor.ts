@@ -195,6 +195,37 @@ export const useLevelDatEditor = (worldPath: string) => {
   const [typedDrafts, setTypedDrafts] = React.useState<Record<string, string>>(
     {},
   );
+  const [saved, setSaved] = React.useState({
+    levelName: "",
+    fields: [] as TypedField[],
+    compounds: {} as Record<string, TypedField[]>,
+  });
+  const effectiveFields = React.useMemo(() => {
+    const fields = typedFields.map((field) => ({ ...field }));
+    const compounds = Object.fromEntries(Object.entries(compoundFields).map(
+      ([key, list]) => [key, list.map((field) => ({ ...field }))],
+    ));
+    for (const [key, value] of Object.entries(typedDrafts)) {
+      const separator = key.indexOf(":");
+      const kind = key.slice(0, separator);
+      const target = key.slice(separator + 1);
+      const isTop = kind === "tf" || kind === "tflist";
+      const parentSeparator = target.indexOf(":");
+      const list = isTop ? fields : compounds[target.slice(0, parentSeparator)];
+      const name = isTop ? target : target.slice(parentSeparator + 1);
+      const field = list?.find((item) => item.name === name);
+      if (field) {
+        if (kind === "tf" || kind === "cf") field.valueString = value;
+        else field.valueJSON = value;
+      }
+    }
+    return { fields, compounds };
+  }, [typedFields, compoundFields, typedDrafts]);
+  const isDirty = levelName !== saved.levelName ||
+    JSON.stringify(effectiveFields.fields) !== JSON.stringify(saved.fields) ||
+    Object.entries(effectiveFields.compounds).some(([key, fields]) =>
+      JSON.stringify(fields) !== JSON.stringify(saved.compounds[key] || []),
+    );
   const [filterText, setFilterText] = React.useState<string>("");
 
   // Add field state
@@ -320,6 +351,10 @@ export const useLevelDatEditor = (worldPath: string) => {
           path,
         );
         const remote = Array.isArray(res?.fields) ? res.fields : [];
+        setSaved((previous) => ({
+          ...previous,
+          compounds: { ...previous.compounds, [key]: remote },
+        }));
         setCompoundFields((prev) => {
           const local = prev[key] ? prev[key].slice() : [];
           const localMap = new Map<string, any>();
@@ -399,14 +434,18 @@ export const useLevelDatEditor = (worldPath: string) => {
       );
       const v2 = Number(res2?.version || 0);
       const fields2 = Array.isArray(res2?.fields) ? res2.fields : [];
+      const txt = await (minecraft as any)?.GetWorldLevelName?.(worldPath);
+      const name = String(txt || "");
       setTypedVersion(v2);
       setTypedFields(fields2);
+      setLevelName(name);
+      setCompoundFields({});
+      setCompoundOrders({});
+      setCompoundOpen({});
+      setTypedDrafts({});
+      setSaved({ levelName: name, fields: fields2, compounds: {} });
       const ord = Array.isArray(res2?.order) ? (res2.order as string[]) : [];
       setTopOrder(ord);
-      try {
-        const txt = await (minecraft as any)?.GetWorldLevelName?.(worldPath);
-        setLevelName(String(txt || ""));
-      } catch {}
     } catch {
       setError("common.load_failed");
     } finally {
@@ -424,77 +463,7 @@ export const useLevelDatEditor = (worldPath: string) => {
     setSaving(true);
     setError("");
     try {
-      // Flush drafts
-      const drafts = { ...typedDrafts };
-      if (Object.keys(drafts).length > 0) {
-        Object.keys(drafts).forEach((dk) => {
-          const val = String(drafts[dk] ?? "");
-          if (dk.startsWith("tf:")) {
-            const name = dk.slice(3);
-            setTypedFieldValueByName(name, { valueString: val });
-          } else if (dk.startsWith("cf:")) {
-            const rest = dk.slice(3);
-            const p = rest.split(":");
-            if (p.length >= 2) {
-              const parentPathKey = p[0];
-              const childName = p.slice(1).join(":");
-              setCompoundFields((prev) => {
-                const list = prev[parentPathKey]
-                  ? prev[parentPathKey].slice()
-                  : [];
-                const idx = list.findIndex(
-                  (x) => String(x.name || "") === childName,
-                );
-                if (idx >= 0)
-                  list[idx] = { ...list[idx], valueString: val } as any;
-                return { ...prev, [parentPathKey]: list };
-              });
-            }
-          } else if (dk.startsWith("cfjson:")) {
-            const rest = dk.slice(7);
-            const p = rest.split(":");
-            if (p.length >= 2) {
-              const parentPathKey = p[0];
-              const childName = p.slice(1).join(":");
-              setCompoundFields((prev) => {
-                const list = prev[parentPathKey]
-                  ? prev[parentPathKey].slice()
-                  : [];
-                const idx = list.findIndex(
-                  (x) => String(x.name || "") === childName,
-                );
-                if (idx >= 0)
-                  list[idx] = { ...list[idx], valueJSON: val } as any;
-                return { ...prev, [parentPathKey]: list };
-              });
-            }
-          } else if (dk.startsWith("tflist:")) {
-            const name = dk.slice(7);
-            setTypedFieldValueByName(name, { valueJSON: val });
-          } else if (dk.startsWith("cflist:")) {
-            const rest = dk.slice(7);
-            const p = rest.split(":");
-            if (p.length >= 2) {
-              const parentPathKey = p[0];
-              const childName = p.slice(1).join(":");
-              setCompoundFields((prev) => {
-                const list = prev[parentPathKey]
-                  ? prev[parentPathKey].slice()
-                  : [];
-                const idx = list.findIndex(
-                  (x) => String(x.name || "") === childName,
-                );
-                if (idx >= 0)
-                  list[idx] = { ...list[idx], valueJSON: val } as any;
-                return { ...prev, [parentPathKey]: list };
-              });
-            }
-          }
-        });
-        setTypedDrafts({});
-      }
-
-      const typedFieldsSafe = sanitizeJSON(typedFields);
+      const typedFieldsSafe = sanitizeJSON(effectiveFields.fields);
       const err2 = await (minecraft as any)?.SetWorldLevelName?.(
         worldPath,
         levelName,
@@ -504,7 +473,7 @@ export const useLevelDatEditor = (worldPath: string) => {
         { version: typedVersion || 0, fields: typedFieldsSafe, levelName },
       );
       let err4 = "";
-      const entries = Object.entries(compoundFields);
+      const entries = Object.entries(effectiveFields.compounds);
       for (const [pathKey, list] of entries) {
         const erx = await (minecraft as any)?.WriteWorldLevelDatFieldsAt?.(
           worldPath,
@@ -520,6 +489,10 @@ export const useLevelDatEditor = (worldPath: string) => {
         setError("common.save_failed");
         return false;
       }
+      setTypedFields(effectiveFields.fields);
+      setCompoundFields(effectiveFields.compounds);
+      setTypedDrafts({});
+      setSaved({ levelName, fields: effectiveFields.fields, compounds: effectiveFields.compounds });
       return true;
     } catch {
       setError("common.save_failed");
@@ -530,6 +503,7 @@ export const useLevelDatEditor = (worldPath: string) => {
   }, [
     hasBackend,
     worldPath,
+    effectiveFields,
     typedDrafts,
     typedFields,
     levelName,
@@ -565,6 +539,7 @@ export const useLevelDatEditor = (worldPath: string) => {
   );
 
   return {
+    isDirty,
     // State
     loading,
     error,

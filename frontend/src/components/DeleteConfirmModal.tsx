@@ -11,6 +11,8 @@ export interface DeleteConfirmModalProps {
   title: string;
   description?: React.ReactNode;
   itemName?: string;
+  itemNames?: string[];
+  scopeLabel?: string;
   isPending?: boolean;
   confirmDisabled?: boolean;
   error?: string | null;
@@ -25,6 +27,8 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   title,
   description,
   itemName,
+  itemNames,
+  scopeLabel,
   isPending = false,
   confirmDisabled = false,
   error,
@@ -32,6 +36,12 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
   confirmText,
 }) => {
   const { t } = useTranslation();
+  const [confirmError, setConfirmError] = React.useState("");
+  const confirmationGeneration = React.useRef(0);
+  React.useEffect(() => {
+    confirmationGeneration.current++;
+    if (isOpen) setConfirmError("");
+  }, [isOpen, scopeLabel]);
 
   return (
     <UnifiedModal
@@ -45,9 +55,17 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       confirmText={confirmText || t("common.delete")}
       cancelText={t("common.cancel")}
       onConfirm={async () => {
-        const shouldClose = await onConfirm();
-        if (shouldClose === false) return;
-        onOpenChange(false);
+        const generation = ++confirmationGeneration.current;
+        setConfirmError("");
+        try {
+          const shouldClose = await onConfirm();
+          if (generation !== confirmationGeneration.current) return;
+          if (shouldClose === false) return;
+          onOpenChange(false);
+        } catch (cause) {
+          if (generation !== confirmationGeneration.current) return;
+          setConfirmError(cause instanceof Error ? cause.message : String(cause));
+        }
       }}
       onCancel={() => onOpenChange(false)}
       showCancelButton={!isPending}
@@ -61,6 +79,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       }}
     >
       <div className="flex flex-col gap-3">
+        {scopeLabel && <p className="text-sm font-medium text-muted">{scopeLabel}</p>}
         {description && (
           <div className="text-base text-foreground dark:text-zinc-300 font-medium whitespace-pre-wrap">
             {description}
@@ -74,6 +93,11 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
             </span>
           </div>
         )}
+        {!!itemNames?.length && (
+          <ul className="max-h-40 overflow-y-auto rounded-xl bg-surface-secondary/50 p-3 text-sm break-all">
+            {itemNames.map((name, index) => <li key={`${index}-${name}`}>{name}</li>)}
+          </ul>
+        )}
 
         {warning && (
           <div className="text-sm text-rose-700 dark:text-rose-300 font-bold flex items-center gap-2">
@@ -83,14 +107,15 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
         )}
 
         <AnimatePresence>
-          {error && (
+          {(error || confirmError) && (
             <motion.div
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="text-sm text-rose-800 dark:text-rose-200 bg-rose-100 dark:bg-rose-950/50 px-3 py-2 rounded-lg"
+              role="alert"
+              className="text-sm text-rose-800 dark:text-rose-200 bg-rose-100 dark:bg-rose-950/50 px-3 py-2 rounded-lg whitespace-pre-wrap max-h-48 overflow-y-auto"
             >
-              {error}
+              {error || confirmError}
             </motion.div>
           )}
         </AnimatePresence>

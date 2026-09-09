@@ -107,7 +107,7 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
     <div
       className={cn(
         COMPONENT_STYLES.contentListItem,
-        "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
+        "w-full p-5 flex gap-5 group cursor-default relative overflow-hidden",
       )}
     >
       <div className="relative shrink-0">
@@ -306,6 +306,7 @@ export default function ServersPage() {
         <Card.Content className="p-6 flex flex-col gap-6">
           <PageHeader
             title={t("contentpage.servers")}
+            description={t("contentpage.servers_read_only")}
             endContent={
               <div className="flex items-center gap-2">
                 <Dropdown>
@@ -384,6 +385,7 @@ export default function ServersPage() {
                 <Tooltip>
                   <Button
                     isIconOnly
+                    aria-label={t("common.refresh")}
                     onPress={refreshAll}
                     isDisabled={loading}
                     variant={"secondary"}
@@ -495,7 +497,7 @@ export default function ServersPage() {
                       textValue={String("time-asc")}
                     >
                       {<FaSortAmountDown />}
-                      <Label>{t("contentpage.sort_time")}(Old-New)</Label>
+                      <Label>{t("contentpage.sort_old_new")}</Label>
                       <Dropdown.ItemIndicator />
                     </Dropdown.Item>
                     <Dropdown.Item
@@ -504,7 +506,7 @@ export default function ServersPage() {
                       textValue={String("time-desc")}
                     >
                       {<FaSortAmountUp />}
-                      <Label>{t("contentpage.sort_time")}(New-Old)</Label>
+                      <Label>{t("contentpage.sort_new_old")}</Label>
                       <Dropdown.ItemIndicator />
                     </Dropdown.Item>
                   </Dropdown.Menu>

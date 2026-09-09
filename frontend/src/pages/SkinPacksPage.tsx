@@ -38,6 +38,7 @@ import {
   FaTag,
   FaExchangeAlt,
 } from "react-icons/fa";
+import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -107,10 +108,12 @@ export default function SkinPacksPage() {
   });
   const [players, setPlayers] = React.useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = React.useState<string>("");
+  const playerWasChosen = React.useRef(Boolean(location.state?.player));
   const [playerGamertagMap, setPlayerGamertagMap] = React.useState<
     Record<string, string>
   >({});
   const [packs, setPacks] = React.useState<any[]>([]);
+  const packsLoadGeneration = React.useRef(0);
   const [resultSuccess, setResultSuccess] = React.useState<string[]>([]);
   const [resultFailed, setResultFailed] = React.useState<
     Array<{ name: string; err: string }>
@@ -172,10 +175,20 @@ export default function SkinPacksPage() {
     [packs],
     [sort.currentPage],
   );
-  const selection = useSelectionMode(sort.filtered);
+  const contentScope = JSON.stringify([currentVersionName, selectedPlayer]);
+  const contentScopeRef = React.useRef(contentScope);
+  contentScopeRef.current = contentScope;
+  const selection = useSelectionMode(sort.filtered, (item) => item.path, JSON.stringify([currentVersionName, selectedPlayer]), packs);
+  React.useEffect(() => {
+    delCfmOnOpenChange(false);
+    delManyCfmOnOpenChange(false);
+    setActivePack(null);
+  }, [currentVersionName, selectedPlayer]);
+
 
   const refreshAll = React.useCallback(
     async (silent?: boolean, forcePlayer?: string) => {
+      const generation = ++packsLoadGeneration.current;
       if (!silent) setLoading(true);
       setError("");
       const name = readCurrentVersionName();
@@ -196,6 +209,7 @@ export default function SkinPacksPage() {
           setPacks([]);
         } else {
           const r = await GetContentRoots(name);
+          if (generation !== packsLoadGeneration.current) return;
           const safe = r || {
             base: "",
             usersRoot: "",
@@ -210,6 +224,7 @@ export default function SkinPacksPage() {
           try {
             meta = await GetVersionMeta(name);
           } catch {}
+          if (generation !== packsLoadGeneration.current) return;
           const isShared =
             meta.gameVersion && compareVersions(meta.gameVersion, "1.26.0") > 0;
           setIsSharedMode(isShared);
@@ -224,6 +239,7 @@ export default function SkinPacksPage() {
             nextPlayer = "";
           } else {
             names = safe.usersRoot ? await listPlayers(safe.usersRoot) : [];
+            if (generation !== packsLoadGeneration.current) return;
             setPlayers(names);
 
             if (nextPlayer === undefined) {
@@ -240,16 +256,18 @@ export default function SkinPacksPage() {
             (async () => {
               if (safe.usersRoot) {
                 const map = await getPlayerGamertagMap(safe.usersRoot);
+                if (generation !== packsLoadGeneration.current) return;
                 setPlayerGamertagMap(map);
 
-                if (forcePlayer === undefined) {
+                if (forcePlayer === undefined && !playerWasChosen.current) {
                   try {
                     const tag = await GetLocalUserGamertag();
+                    if (generation !== packsLoadGeneration.current || playerWasChosen.current) return;
                     if (tag) {
                       for (const p of names) {
                         if (map[p] === tag) {
                           if (p !== nextPlayer) {
-                            refreshAll(false, p);
+                            setSelectedPlayer(p);
                           }
                           break;
                         }
@@ -264,6 +282,7 @@ export default function SkinPacksPage() {
           }
 
           const allPacks = await ListPacksForVersion(name, nextPlayer || "");
+          if (generation !== packsLoadGeneration.current) return;
 
           const filtered = (allPacks || []).filter(
             (p) => p.manifest.pack_type === 7,
@@ -299,6 +318,7 @@ export default function SkinPacksPage() {
               return { ...p, modTime };
             }),
           );
+          if (generation !== packsLoadGeneration.current) return;
           setPacks(withTime);
           Promise.resolve()
             .then(async () => {
@@ -320,6 +340,7 @@ export default function SkinPacksPage() {
               const limit = 4;
               const items = withTime.slice();
               for (let i = 0; i < items.length; i += limit) {
+                if (generation !== packsLoadGeneration.current) return;
                 const chunk = items.slice(i, i + limit);
                 await Promise.all(
                   chunk.map(async (p: any) => {
@@ -344,6 +365,7 @@ export default function SkinPacksPage() {
                           size = await (minecraft as any).GetPathSize(key);
                         }
                       } catch {}
+                      if (generation !== packsLoadGeneration.current) return;
                       cache[key] = { modTime: p.modTime || 0, size };
                       setPacks((prev) =>
                         prev.map((it: any) =>
@@ -359,9 +381,10 @@ export default function SkinPacksPage() {
             .catch(() => {});
         }
       } catch (e: any) {
+        if (generation !== packsLoadGeneration.current) return;
         setError(e.toString());
       } finally {
-        if (!silent) setLoading(false);
+        if (!silent && generation === packsLoadGeneration.current) setLoading(false);
       }
     },
     [hasBackend, location?.state?.player, selectedPlayer],
@@ -373,11 +396,12 @@ export default function SkinPacksPage() {
     if (selectedPlayer) {
       localStorage.setItem("content.selectedPlayer", selectedPlayer);
     }
+    return () => { packsLoadGeneration.current++; };
   }, [refreshAll, selectedPlayer]);
 
   const onChangePlayer = async (player: string) => {
+    playerWasChosen.current = true;
     setSelectedPlayer(player);
-    await refreshAll(false, player);
   };
 
   const openTransferTargetModal = React.useCallback(async () => {
@@ -666,6 +690,7 @@ export default function SkinPacksPage() {
                   <Tooltip>
                     <Button
                       isIconOnly
+                    aria-label={t("common.select_mode")}
                       onPress={selection.toggleSelectMode}
                       variant={"secondary"}
                       className={cn(
@@ -680,6 +705,7 @@ export default function SkinPacksPage() {
                   <Tooltip>
                     <Button
                       isIconOnly
+                    aria-label={t("common.refresh")}
                       onPress={() => refreshAll()}
                       isDisabled={loading}
                       variant={"secondary"}
@@ -792,7 +818,7 @@ export default function SkinPacksPage() {
                         textValue={String("time-asc")}
                       >
                         {<FaSortAmountDown />}
-                        <Label>{t("contentpage.sort_time")}(Old-New)</Label>
+                        <Label>{t("contentpage.sort_old_new")}</Label>
                         <Dropdown.ItemIndicator />
                       </Dropdown.Item>
                       <Dropdown.Item
@@ -801,7 +827,7 @@ export default function SkinPacksPage() {
                         textValue={String("time-desc")}
                       >
                         {<FaSortAmountUp />}
-                        <Label>{t("contentpage.sort_time")}(New-Old)</Label>
+                        <Label>{t("contentpage.sort_new_old")}</Label>
                         <Dropdown.ItemIndicator />
                       </Dropdown.Item>
                     </Dropdown.Menu>
@@ -824,7 +850,8 @@ export default function SkinPacksPage() {
         </Card>
 
         <SelectionBar
-          selectedCount={selection.selectedCount}
+          hiddenSelectedCount={selection.hiddenSelectedCount}
+        selectedCount={selection.selectedCount}
           totalCount={sort.filtered.length}
           onSelectAll={selection.selectAll}
           onDelete={delManyCfmOnOpen}
@@ -859,7 +886,8 @@ export default function SkinPacksPage() {
                     <div
                       className={cn(
                         COMPONENT_STYLES.contentListItem,
-                        "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
+                        "w-full p-5 flex gap-5 group relative overflow-hidden",
+                    selection.isSelectMode ? "cursor-pointer" : "cursor-default",
                         selection.isSelectMode && selection.selected[p.path]
                           ? "ring-2 ring-accent bg-accent/5"
                           : "",
@@ -892,6 +920,8 @@ export default function SkinPacksPage() {
                         {selection.isSelectMode && (
                           <div className="absolute -top-2 -left-2 z-20">
                             <Checkbox
+                              aria-label={t("contentpage.select_item", { name: p.name })}
+                          onClick={(event) => event.stopPropagation()}
                               isSelected={!!selection.selected[p.path]}
                               onChange={() => selection.toggleSelect(p.path)}
                               className={"group"}
@@ -946,10 +976,11 @@ export default function SkinPacksPage() {
                             )}
                           </div>
 
-                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity ml-4">
                             <Tooltip>
                               <Button
                                 isIconOnly
+                    aria-label={t("common.open")}
                                 size="sm"
                                 variant={"secondary"}
                                 onClick={(event) => event.stopPropagation()}
@@ -970,6 +1001,7 @@ export default function SkinPacksPage() {
                             <Tooltip>
                               <Button
                                 isIconOnly
+                    aria-label={t("common.delete")}
                                 size="sm"
                                 variant={"danger-soft"}
                                 onClick={(event) => event.stopPropagation()}
@@ -1039,8 +1071,9 @@ export default function SkinPacksPage() {
           lastScrollTopRef.current = pos;
           restorePendingRef.current = true;
           try {
-            await DeletePack(currentVersionName, activePack.path);
-            refreshAll();
+            const result = await DeletePack(currentVersionName, activePack.path);
+            if (result) throw new Error(result);
+            if (contentScopeRef.current === contentScope) refreshAll();
             toast(
               t("contentpage.deleted_name", {
                 name: activePack.name,
@@ -1064,44 +1097,22 @@ export default function SkinPacksPage() {
         isOpen={delManyCfmOpen}
         onOpenChange={delManyCfmOnOpenChange}
         title={t("common.confirm_delete")}
+        scopeLabel={t("contentpage.delete_scope", { instance: currentVersionName, player: selectedPlayer || t("contentpage.select_player") })}
+        itemNames={packs.filter((item) => selection.selected[item.path]).map((item) => item.name || item.path)}
+        confirmDisabled={selection.selectedCount === 0}
         description={t("contentpage.delete_selected_confirm", {
           count: Object.values(selection.selected).filter(Boolean).length,
         })}
         isPending={deletingMany}
         onConfirm={async () => {
           const targets = selection.getSelectedKeys();
-          if (targets.length === 0) return;
-
-          const pos =
-            scrollRef.current?.scrollTop ??
-            (document.scrollingElement as any)?.scrollTop ??
-            0;
-          setDeletingMany(true);
-          lastScrollTopRef.current = pos;
-          restorePendingRef.current = true;
-
-          try {
-            let success = 0;
-            for (const p of targets) {
-              try {
-                await DeletePack(currentVersionName, p);
-                success++;
-              } catch (e) {
-                console.error(e);
-              }
-            }
-
-            toast(
-              t("contentpage.deleted_count", {
-                count: success,
-              }),
-              { variant: "success", timeout: 2000 },
-            );
-            selection.clearSelection();
-            refreshAll();
-          } finally {
-            setDeletingMany(false);
-          }
+    if (!targets.length) return false;
+    setDeletingMany(true);
+    try {
+      return await deleteContentItems(targets, (path) => DeletePack(currentVersionName, path), selection.retainSelection, () => refreshAll(), t, () => contentScopeRef.current === contentScope);
+    } finally {
+      setDeletingMany(false);
+    }
         }}
       />
 

@@ -60,6 +60,7 @@ import {
 import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { readCurrentVersionName } from "@/utils/currentVersion";
+import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { ImportResultModal } from "@/components/ImportResultModal";
@@ -109,11 +110,15 @@ export default function WorldsListPage() {
   const [selectedPlayer, setSelectedPlayer] = useState<string>(
     location.state?.player || "",
   );
+  const selectedPlayerRef = React.useRef(selectedPlayer);
+  selectedPlayerRef.current = selectedPlayer;
+  const playerWasChosen = React.useRef(Boolean(location.state?.player));
   const [players, setPlayers] = useState<string[]>([]);
   const [playerGamertagMap, setPlayerGamertagMap] = useState<
     Record<string, string>
   >({});
   const [worlds, setWorlds] = useState<WorldInfo[]>([]);
+  const worldsLoadGeneration = React.useRef(0);
   const [loading, setLoading] = useState(false);
   const [roots, setRoots] = useState<any>({});
 
@@ -172,35 +177,50 @@ export default function WorldsListPage() {
     (w: WorldInfo) => Number(w.LastModified || 0),
   );
   useScrollManager(scrollRef, [worlds], [sort.currentPage]);
-  const selection = useSelectionMode(sort.filtered, (w: WorldInfo) => w.Path);
+  const contentScope = JSON.stringify([currentVersionName, selectedPlayer]);
+  const contentScopeRef = React.useRef(contentScope);
+  contentScopeRef.current = contentScope;
+  const selection = useSelectionMode(sort.filtered, (w: WorldInfo) => w.Path, JSON.stringify([currentVersionName, selectedPlayer]), worlds);
+  React.useEffect(() => {
+    delOnOpenChange(false);
+    delManyCfmOnOpenChange(false);
+    setActiveWorld(null);
+  }, [currentVersionName, selectedPlayer]);
+
 
   useEffect(() => {
+    let cancelled = false;
     const fetchPlayers = async () => {
       try {
         const r = await GetContentRoots(currentVersionName || "");
+        if (cancelled) return;
         setRoots(r);
         if (r.usersRoot) {
           const pList = await listPlayers(r.usersRoot);
+          if (cancelled) return;
           setPlayers(pList);
 
           let defaultP = "";
-          if (!selectedPlayer && pList.length > 0) {
+          if (!pList.includes(selectedPlayerRef.current) && pList.length > 0) {
             defaultP = pList[0];
+            playerWasChosen.current = false;
             setSelectedPlayer(defaultP);
           }
 
           (async () => {
             try {
               const map = await getPlayerGamertagMap(r.usersRoot);
+              if (cancelled) return;
               setPlayerGamertagMap(map);
 
               const tag = await GetLocalUserGamertag();
+              if (cancelled || playerWasChosen.current) return;
               if (tag) {
                 for (const p of pList) {
                   if (map[p] === tag) {
                     if (
                       p !== defaultP &&
-                      (!selectedPlayer || selectedPlayer === defaultP)
+                      (!selectedPlayerRef.current || selectedPlayerRef.current === defaultP)
                     ) {
                       setSelectedPlayer(p);
                     }
@@ -215,20 +235,24 @@ export default function WorldsListPage() {
           setPlayerGamertagMap({});
         }
       } catch (e) {
+        if (cancelled) return;
         console.error("Failed to list players", e);
         setPlayers([]);
         setPlayerGamertagMap({});
       }
     };
     fetchPlayers();
+    return () => { cancelled = true; };
   }, [currentVersionName]);
 
   const refreshAll = useCallback(() => {
+    const generation = ++worldsLoadGeneration.current;
     setLoading(true);
 
     const fetchWorlds = async () => {
       try {
         const r = await GetContentRoots(currentVersionName || "");
+        if (generation !== worldsLoadGeneration.current) return;
         setRoots(r);
         let worldsPath = "";
         if (r.usersRoot && selectedPlayer) {
@@ -243,6 +267,7 @@ export default function WorldsListPage() {
         setCurrentWorldsPath(worldsPath);
 
         const entries = await ListDir(worldsPath);
+        if (generation !== worldsLoadGeneration.current) return;
         if (!entries) {
           setWorlds([]);
           return;
@@ -271,8 +296,9 @@ export default function WorldsListPage() {
           }),
         );
 
-        setWorlds(list);
+        if (generation === worldsLoadGeneration.current) setWorlds(list);
       } catch (err: any) {
+        if (generation !== worldsLoadGeneration.current) return;
         console.error(err);
         toast(undefined, {
           description: String(err),
@@ -280,11 +306,11 @@ export default function WorldsListPage() {
           timeout: 2000,
         });
       } finally {
-        setLoading(false);
+        if (generation === worldsLoadGeneration.current) setLoading(false);
       }
     };
 
-    fetchWorlds();
+    return fetchWorlds();
   }, [selectedPlayer, currentVersionName]);
 
   useEffect(() => {
@@ -293,15 +319,17 @@ export default function WorldsListPage() {
     if (selectedPlayer) {
       localStorage.setItem("content.selectedPlayer", selectedPlayer);
     }
+    return () => { worldsLoadGeneration.current++; };
   }, [selectedPlayer, refreshAll]);
 
   const handleDelete = async () => {
     if (!activeWorld) return;
     setDeletingOne(true);
     try {
-      await DeleteWorld(currentVersionName || "", activeWorld.Path);
+      const result = await DeleteWorld(currentVersionName || "", activeWorld.Path);
+      if (result) throw new Error(result);
       toast(t("common.success"), { variant: "success", timeout: 2000 });
-      refreshAll();
+      if (contentScopeRef.current === contentScope) refreshAll();
       delOnClose();
     } catch (e) {
       toast(undefined, {
@@ -309,33 +337,18 @@ export default function WorldsListPage() {
         variant: "danger",
         timeout: 2000,
       });
+      throw e;
     } finally {
       setDeletingOne(false);
     }
   };
 
   const handleBatchDelete = async () => {
-    const paths = selection.getSelectedKeys();
-    if (paths.length === 0) return;
-
+    const targets = selection.getSelectedKeys();
+    if (!targets.length) return false;
     setDeletingMany(true);
     try {
-      let successCount = 0;
-      for (const p of paths) {
-        try {
-          await DeleteWorld(currentVersionName || "", p);
-          successCount++;
-        } catch (e) {
-          console.error(e);
-        }
-      }
-      toast(t("contentpage.deleted_count", { count: successCount }), {
-        variant: "success",
-        timeout: 2000,
-      });
-      selection.clearSelection();
-      refreshAll();
-      delManyCfmOnClose();
+      return await deleteContentItems(targets, (path) => DeleteWorld(currentVersionName || "", path), selection.retainSelection, () => refreshAll(), t, () => contentScopeRef.current === contentScope);
     } finally {
       setDeletingMany(false);
     }
@@ -573,6 +586,7 @@ export default function WorldsListPage() {
                         const arr = Array.from(keys as unknown as Set<string>);
                         const next = arr[0] || "";
                         if (typeof next === "string" && next)
+                          playerWasChosen.current = true;
                           setSelectedPlayer(next);
                       }}
                     >
@@ -623,6 +637,7 @@ export default function WorldsListPage() {
                 <Tooltip>
                   <Button
                     isIconOnly
+                    aria-label={t("common.select_mode")}
                     onPress={selection.toggleSelectMode}
                     variant={"secondary"}
                     className={cn(
@@ -637,6 +652,7 @@ export default function WorldsListPage() {
                 <Tooltip>
                   <Button
                     isIconOnly
+                    aria-label={t("common.refresh")}
                     onPress={() => refreshAll()}
                     isDisabled={loading}
                     variant={"secondary"}
@@ -750,7 +766,7 @@ export default function WorldsListPage() {
                       textValue={String("time-asc")}
                     >
                       {<FaSortAmountDown />}
-                      <Label>{t("contentpage.sort_time")}(Old-New)</Label>
+                      <Label>{t("contentpage.sort_old_new")}</Label>
                       <Dropdown.ItemIndicator />
                     </Dropdown.Item>
                     <Dropdown.Item
@@ -759,7 +775,7 @@ export default function WorldsListPage() {
                       textValue={String("time-desc")}
                     >
                       {<FaSortAmountUp />}
-                      <Label>{t("contentpage.sort_time")}(New-Old)</Label>
+                      <Label>{t("contentpage.sort_new_old")}</Label>
                       <Dropdown.ItemIndicator />
                     </Dropdown.Item>
                   </Dropdown.Menu>
@@ -782,6 +798,7 @@ export default function WorldsListPage() {
       </Card>
 
       <SelectionBar
+        hiddenSelectedCount={selection.hiddenSelectedCount}
         selectedCount={selection.selectedCount}
         totalCount={sort.filtered.length}
         onSelectAll={selection.selectAll}
@@ -820,7 +837,8 @@ export default function WorldsListPage() {
                 <div
                   className={cn(
                     COMPONENT_STYLES.contentListItem,
-                    "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
+                    "w-full p-5 flex gap-5 group relative overflow-hidden",
+                    selection.isSelectMode ? "cursor-pointer" : "cursor-default",
                     selection.isSelectMode && selection.selected[w.Path]
                       ? "ring-2 ring-accent bg-accent/5"
                       : "",
@@ -850,6 +868,8 @@ export default function WorldsListPage() {
                     {selection.isSelectMode && (
                       <div className="absolute -top-2 -left-2 z-20">
                         <Checkbox
+                          aria-label={t("contentpage.select_item", { name: w.FolderName })}
+                          onClick={(event) => event.stopPropagation()}
                           isSelected={!!selection.selected[w.Path]}
                           onChange={() => selection.toggleSelect(w.Path)}
                           className={"group"}
@@ -893,10 +913,11 @@ export default function WorldsListPage() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity ml-4">
                         <Tooltip>
                           <Button
                             isIconOnly
+                    aria-label={t("common.open")}
                             size="sm"
                             variant={"secondary"}
                             onClick={(event) => event.stopPropagation()}
@@ -915,6 +936,7 @@ export default function WorldsListPage() {
                         <Tooltip>
                           <Button
                             isIconOnly
+                    aria-label={t("common.backup")}
                             size="sm"
                             variant={"secondary"}
                             isPending={backingUp === w.Path}
@@ -945,6 +967,7 @@ export default function WorldsListPage() {
                         <Tooltip>
                           <Button
                             isIconOnly
+                    aria-label={t("common.edit")}
                             size="sm"
                             variant={"secondary"}
                             onClick={(event) => event.stopPropagation()}
@@ -963,6 +986,7 @@ export default function WorldsListPage() {
                         <Tooltip>
                           <Button
                             isIconOnly
+                    aria-label={t("common.delete")}
                             size="sm"
                             variant={"danger-soft"}
                             onClick={(event) => event.stopPropagation()}
@@ -1153,6 +1177,9 @@ export default function WorldsListPage() {
         isOpen={delManyCfmOpen}
         onOpenChange={delManyCfmOnOpenChange}
         title={t("common.confirm_delete")}
+        scopeLabel={t("contentpage.delete_scope", { instance: currentVersionName, player: selectedPlayer || t("contentpage.select_player") })}
+        itemNames={worlds.filter((item) => selection.selected[item.Path]).map((item) => item.FolderName)}
+        confirmDisabled={selection.selectedCount === 0}
         description={t("contentpage.delete_selected_confirm", {
           count: selection.selectedCount,
         })}

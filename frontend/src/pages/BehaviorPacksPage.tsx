@@ -19,6 +19,7 @@ import {
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -163,7 +164,10 @@ export default function BehaviorPacksPage() {
     [packs],
     [sort.currentPage],
   );
-  const selection = useSelectionMode(sort.filtered);
+  const contentScope = currentVersionName;
+  const contentScopeRef = React.useRef(contentScope);
+  contentScopeRef.current = contentScope;
+  const selection = useSelectionMode(sort.filtered, (item) => item.path, currentVersionName, packs);
 
   const refreshAll = React.useCallback(
     async (silent?: boolean) => {
@@ -309,9 +313,10 @@ export default function BehaviorPacksPage() {
     if (!activePack) return;
     setDeletingOne(true);
     try {
-      await DeletePack(currentVersionName, activePack.path);
+      const result = await DeletePack(currentVersionName, activePack.path);
+      if (result) throw new Error(result);
       toast(t("common.success"), { variant: "success", timeout: 2000 });
-      refreshAll(true);
+      if (contentScopeRef.current === contentScope) refreshAll(true);
       delOnClose();
     } catch (e) {
       toast("Error", {
@@ -319,35 +324,21 @@ export default function BehaviorPacksPage() {
         variant: "danger",
         timeout: 2000,
       });
+      throw e;
     } finally {
       setDeletingOne(false);
     }
   };
 
   const handleBatchDelete = async () => {
-    const paths = selection.getSelectedKeys();
-    if (paths.length === 0) return;
-
+    const targets = selection.getSelectedKeys();
+    if (!targets.length) return false;
     setDeletingMany(true);
-    let successCount = 0;
-    for (const p of paths) {
-      try {
-        await DeletePack(currentVersionName, p);
-        successCount++;
-      } catch (e) {
-        console.error(e);
-      }
+    try {
+      return await deleteContentItems(targets, (path) => DeletePack(currentVersionName, path), selection.retainSelection, () => refreshAll(), t, () => contentScopeRef.current === contentScope);
+    } finally {
+      setDeletingMany(false);
     }
-    toast(
-      t("contentpage.deleted_count", {
-        count: successCount,
-      }),
-      { variant: "success", timeout: 2000 },
-    );
-    selection.clearSelection();
-    refreshAll(true);
-    delManyCfmOnClose();
-    setDeletingMany(false);
   };
 
   const openTransferTargetModal = React.useCallback(async () => {
@@ -550,6 +541,7 @@ export default function BehaviorPacksPage() {
                 <Tooltip>
                   <Button
                     isIconOnly
+                    aria-label={t("common.select_mode")}
                     onPress={selection.toggleSelectMode}
                     variant={"secondary"}
                     className={cn(
@@ -564,6 +556,7 @@ export default function BehaviorPacksPage() {
                 <Tooltip>
                   <Button
                     isIconOnly
+                    aria-label={t("common.refresh")}
                     onPress={() => refreshAll()}
                     isDisabled={loading}
                     variant={"secondary"}
@@ -676,7 +669,7 @@ export default function BehaviorPacksPage() {
                       textValue={String("time-asc")}
                     >
                       {<FaSortAmountDown />}
-                      <Label>{t("contentpage.sort_time")}(Old-New)</Label>
+                      <Label>{t("contentpage.sort_old_new")}</Label>
                       <Dropdown.ItemIndicator />
                     </Dropdown.Item>
                     <Dropdown.Item
@@ -685,7 +678,7 @@ export default function BehaviorPacksPage() {
                       textValue={String("time-desc")}
                     >
                       {<FaSortAmountUp />}
-                      <Label>{t("contentpage.sort_time")}(New-Old)</Label>
+                      <Label>{t("contentpage.sort_new_old")}</Label>
                       <Dropdown.ItemIndicator />
                     </Dropdown.Item>
                   </Dropdown.Menu>
@@ -708,6 +701,7 @@ export default function BehaviorPacksPage() {
       </Card>
 
       <SelectionBar
+        hiddenSelectedCount={selection.hiddenSelectedCount}
         selectedCount={selection.selectedCount}
         totalCount={sort.filtered.length}
         onSelectAll={selection.selectAll}
@@ -740,7 +734,8 @@ export default function BehaviorPacksPage() {
                   <div
                     className={cn(
                       COMPONENT_STYLES.contentListItem,
-                      "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
+                      "w-full p-5 flex gap-5 group relative overflow-hidden",
+                    selection.isSelectMode ? "cursor-pointer" : "cursor-default",
                       selection.isSelectMode && selection.selected[p.path]
                         ? "ring-2 ring-accent bg-accent/5"
                         : "",
@@ -773,6 +768,8 @@ export default function BehaviorPacksPage() {
                       {selection.isSelectMode && (
                         <div className="absolute -top-2 -left-2 z-20">
                           <Checkbox
+                            aria-label={t("contentpage.select_item", { name: p.name })}
+                          onClick={(event) => event.stopPropagation()}
                             isSelected={!!selection.selected[p.path]}
                             onChange={() => selection.toggleSelect(p.path)}
                             className={"group"}
@@ -827,10 +824,11 @@ export default function BehaviorPacksPage() {
                           )}
                         </div>
 
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity ml-4">
                           <Tooltip>
                             <Button
                               isIconOnly
+                    aria-label={t("common.open")}
                               size="sm"
                               variant={"secondary"}
                               onClick={(event) => event.stopPropagation()}
@@ -851,6 +849,7 @@ export default function BehaviorPacksPage() {
                           <Tooltip>
                             <Button
                               isIconOnly
+                    aria-label={t("common.delete")}
                               size="sm"
                               variant={"danger-soft"}
                               onClick={(event) => event.stopPropagation()}
@@ -919,6 +918,8 @@ export default function BehaviorPacksPage() {
         isOpen={delManyCfmOpen}
         onOpenChange={delManyCfmOnOpenChange}
         title={t("common.confirm_delete")}
+        itemNames={packs.filter((item) => selection.selected[item.path]).map((item) => item.name || item.path)}
+        confirmDisabled={selection.selectedCount === 0}
         description={t("contentpage.delete_selected_confirm", {
           count: selection.selectedCount,
         })}

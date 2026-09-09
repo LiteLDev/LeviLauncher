@@ -19,6 +19,7 @@ import {
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -203,7 +204,10 @@ export default function ResourcePacksPage() {
     [displayedPacks],
     [sort.currentPage],
   );
-  const selection = useSelectionMode(sort.filtered);
+  const contentScope = currentVersionName;
+  const contentScopeRef = React.useRef(contentScope);
+  contentScopeRef.current = contentScope;
+  const selection = useSelectionMode(sort.filtered, (item) => item.path, currentVersionName, packs);
 
   const refreshAll = React.useCallback(
     async (silent?: boolean) => {
@@ -614,6 +618,7 @@ export default function ResourcePacksPage() {
                 <Tooltip>
                   <Button
                     isIconOnly
+                    aria-label={t("common.select_mode")}
                     onPress={selection.toggleSelectMode}
                     variant={"secondary"}
                     className={cn(
@@ -628,6 +633,7 @@ export default function ResourcePacksPage() {
                 <Tooltip>
                   <Button
                     isIconOnly
+                    aria-label={t("common.refresh")}
                     onPress={() => refreshAll()}
                     isDisabled={loading}
                     variant={"secondary"}
@@ -761,7 +767,7 @@ export default function ResourcePacksPage() {
                       textValue={String("time-asc")}
                     >
                       {<FaSortAmountDown />}
-                      <Label>{t("contentpage.sort_time")}(Old-New)</Label>
+                      <Label>{t("contentpage.sort_old_new")}</Label>
                       <Dropdown.ItemIndicator />
                     </Dropdown.Item>
                     <Dropdown.Item
@@ -770,7 +776,7 @@ export default function ResourcePacksPage() {
                       textValue={String("time-desc")}
                     >
                       {<FaSortAmountUp />}
-                      <Label>{t("contentpage.sort_time")}(New-Old)</Label>
+                      <Label>{t("contentpage.sort_new_old")}</Label>
                       <Dropdown.ItemIndicator />
                     </Dropdown.Item>
                   </Dropdown.Menu>
@@ -793,6 +799,7 @@ export default function ResourcePacksPage() {
       </Card>
 
       <SelectionBar
+        hiddenSelectedCount={selection.hiddenSelectedCount}
         selectedCount={selection.selectedCount}
         totalCount={sort.filtered.length}
         onSelectAll={selection.selectAll}
@@ -825,7 +832,8 @@ export default function ResourcePacksPage() {
                   <div
                     className={cn(
                       COMPONENT_STYLES.contentListItem,
-                      "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
+                      "w-full p-5 flex gap-5 group relative overflow-hidden",
+                    selection.isSelectMode ? "cursor-pointer" : "cursor-default",
                       selection.isSelectMode && selection.selected[p.path]
                         ? "ring-2 ring-accent bg-accent/5"
                         : "",
@@ -858,6 +866,8 @@ export default function ResourcePacksPage() {
                       {selection.isSelectMode && (
                         <div className="absolute -top-2 -left-2 z-20">
                           <Checkbox
+                            aria-label={t("contentpage.select_item", { name: p.name })}
+                          onClick={(event) => event.stopPropagation()}
                             isSelected={!!selection.selected[p.path]}
                             onChange={() => selection.toggleSelect(p.path)}
                             className={"group"}
@@ -965,10 +975,11 @@ export default function ResourcePacksPage() {
                           )}
                         </div>
 
-                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
+                        <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity ml-4">
                           <Tooltip>
                             <Button
                               isIconOnly
+                    aria-label={t("common.open")}
                               size="sm"
                               variant={"secondary"}
                               onClick={(event) => event.stopPropagation()}
@@ -989,6 +1000,7 @@ export default function ResourcePacksPage() {
                           <Tooltip>
                             <Button
                               isIconOnly
+                    aria-label={t("common.delete")}
                               size="sm"
                               variant={"danger-soft"}
                               onClick={(event) => event.stopPropagation()}
@@ -1054,7 +1066,8 @@ export default function ResourcePacksPage() {
           if (activePack) {
             setDeletingOne(true);
             try {
-              await DeletePack(currentVersionName, activePack.path);
+              const result = await DeletePack(currentVersionName, activePack.path);
+              if (result) throw new Error(result);
               toast(
                 t("contentpage.deleted_name", {
                   name: activePack.name,
@@ -1062,7 +1075,7 @@ export default function ResourcePacksPage() {
                 { variant: "success", timeout: 2000 },
               );
               setActivePack(null);
-              refreshAll();
+              if (contentScopeRef.current === contentScope) refreshAll();
             } catch (e) {
               toast("Error", {
                 description: String(e),
@@ -1082,6 +1095,8 @@ export default function ResourcePacksPage() {
         isOpen={delManyCfmOpen}
         onOpenChange={delManyCfmOnOpenChange}
         title={t("common.confirm_delete")}
+        itemNames={packs.filter((item) => selection.selected[item.path]).map((item) => item.name || item.path)}
+        confirmDisabled={selection.selectedCount === 0}
         description={t("contentpage.delete_selected_confirm", {
           count: Object.values(selection.selected).filter(Boolean).length,
         })}
@@ -1089,30 +1104,13 @@ export default function ResourcePacksPage() {
         isPending={deletingMany}
         onConfirm={async () => {
           const targets = selection.getSelectedKeys();
-          if (targets.length === 0) return;
-
-          setDeletingMany(true);
-          try {
-            let success = 0;
-            for (const p of targets) {
-              try {
-                await DeletePack(currentVersionName, p);
-                success++;
-              } catch (e) {
-                console.error(e);
-              }
-            }
-            toast(
-              t("contentpage.deleted_count", {
-                count: success,
-              }),
-              { variant: "success", timeout: 2000 },
-            );
-            selection.clearSelection();
-            refreshAll();
-          } finally {
-            setDeletingMany(false);
-          }
+    if (!targets.length) return false;
+    setDeletingMany(true);
+    try {
+      return await deleteContentItems(targets, (path) => DeletePack(currentVersionName, path), selection.retainSelection, () => refreshAll(), t, () => contentScopeRef.current === contentScope);
+    } finally {
+      setDeletingMany(false);
+    }
         }}
       />
 

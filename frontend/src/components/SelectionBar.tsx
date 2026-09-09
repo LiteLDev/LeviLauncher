@@ -11,6 +11,7 @@ import { LAYOUT } from "@/constants/layout";
 interface SelectionBarProps {
   selectedCount: number;
   totalCount: number;
+  hiddenSelectedCount?: number;
   onSelectAll: (isSelected: boolean) => void;
   onDelete: () => void;
   isSelectMode: boolean;
@@ -22,6 +23,7 @@ interface SelectionBarProps {
 export const SelectionBar: React.FC<SelectionBarProps> = ({
   selectedCount,
   totalCount,
+  hiddenSelectedCount = 0,
   onSelectAll,
   onDelete,
   isSelectMode,
@@ -45,7 +47,7 @@ export const SelectionBar: React.FC<SelectionBarProps> = ({
           >
             <Card.Content className="py-2 px-4 flex-row items-center gap-4">
               <Checkbox
-                isSelected={totalCount > 0 && selectedCount === totalCount}
+                isSelected={totalCount > 0 && selectedCount - hiddenSelectedCount === totalCount}
                 onChange={onSelectAll}
                 className={"group"}
               >
@@ -59,6 +61,11 @@ export const SelectionBar: React.FC<SelectionBarProps> = ({
               <div className="h-4 w-px bg-surface-quaternary" />
               <span className="text-sm text-muted">
                 {t("common.selected_count", { count: selectedCount })}
+                {hiddenSelectedCount > 0 && (
+                  <span className="block text-xs" role="status">
+                    {t("contentpage.selected_outside_filter", { count: hiddenSelectedCount })}
+                  </span>
+                )}
               </span>
               <div className="flex-1" />
               {onTransfer && (

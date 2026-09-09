@@ -12,9 +12,11 @@ import {
 import React from "react";
 import { useTranslation } from "react-i18next";
 
+import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLocation } from "react-router-dom";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ROUTES } from "@/constants/routes";
 import {
   FaSync,
   FaFolderOpen,
@@ -28,7 +30,7 @@ import {
 } from "react-icons/fa";
 import {
   OpenPathDir,
-  GetImageBase64,
+  GetImageURL,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import * as contentService from "bindings/github.com/liteldev/LeviLauncher/contentservice";
@@ -55,6 +57,7 @@ interface ScreenshotItem {
   dir: string;
   captureTime: number;
   dataUrl?: string;
+  imageError?: string;
 }
 
 import { SelectionBar } from "@/components/SelectionBar";
@@ -62,8 +65,11 @@ import { SelectionBar } from "@/components/SelectionBar";
 export default function ScreenshotsPage() {
   const { t } = useTranslation();
   const location = useLocation();
+  const navigate = useNavigate();
   const hasBackend = minecraft !== undefined;
   const [loading, setLoading] = React.useState<boolean>(true);
+  const [loadError, setLoadError] = React.useState("");
+  const loadGeneration = React.useRef(0);
   const [screenshots, setScreenshots] = React.useState<ScreenshotItem[]>([]);
   const [currentVersionName, setCurrentVersionName] =
     React.useState<string>("");
@@ -100,11 +106,15 @@ export default function ScreenshotsPage() {
 
   const player = (location.state as any)?.player || "";
 
-  const selection = useSelectionMode(screenshots);
+  const contentScope = JSON.stringify([currentVersionName, player]);
+  const contentScopeRef = React.useRef(contentScope);
+  contentScopeRef.current = contentScope;
+  const selection = useSelectionMode(screenshots, (item) => item.path, JSON.stringify([currentVersionName, player]), screenshots);
   const activeShotIndex = React.useMemo(
     () => screenshots.findIndex((shot) => shot.path === activeShot?.path),
     [activeShot, screenshots],
   );
+  const previewShot = screenshots[activeShotIndex] || activeShot;
   const hasPrevShot = activeShotIndex > 0;
   const hasNextShot =
     activeShotIndex >= 0 && activeShotIndex < screenshots.length - 1;
@@ -115,7 +125,9 @@ export default function ScreenshotsPage() {
   }, [roots.usersRoot, player]);
 
   const refreshAll = React.useCallback(async () => {
+    const generation = ++loadGeneration.current;
     setLoading(true);
+    setLoadError("");
     const name = readCurrentVersionName();
     setCurrentVersionName(name);
     try {
@@ -124,6 +136,7 @@ export default function ScreenshotsPage() {
         return;
       }
       const r = await GetContentRoots(name);
+      if (generation !== loadGeneration.current) return;
       const safe = r || {
         base: "",
         usersRoot: "",
@@ -138,6 +151,7 @@ export default function ScreenshotsPage() {
         name,
         player,
       );
+      if (generation !== loadGeneration.current) return;
       if (!list || !Array.isArray(list)) {
         setScreenshots([]);
         return;
@@ -150,39 +164,62 @@ export default function ScreenshotsPage() {
       }));
       items.sort((a, b) => b.captureTime - a.captureTime);
       setScreenshots(items);
+      // Metadata is enough to render the grid. Each image fills in independently.
+      setLoading(false);
 
       const limit = 4;
       for (let i = 0; i < items.length; i += limit) {
+        if (generation !== loadGeneration.current) return;
         const chunk = items.slice(i, i + limit);
         const urls = await Promise.all(
           chunk.map(async (item) => {
             try {
-              return await GetImageBase64(item.path);
-            } catch {
-              return "";
+              const dataUrl = await GetImageURL(item.path);
+              if (!dataUrl) throw new Error(t("common.load_failed"));
+              return { dataUrl, imageError: "" };
+            } catch (error) {
+              return { dataUrl: "", imageError: error instanceof Error ? error.message : String(error) };
             }
           }),
         );
+        if (generation !== loadGeneration.current) return;
         setScreenshots((prev) =>
           prev.map((s) => {
             const idx = chunk.findIndex((c) => c.path === s.path);
             if (idx >= 0 && urls[idx]) {
-              return { ...s, dataUrl: urls[idx] };
+              return { ...s, ...urls[idx] };
             }
             return s;
           }),
         );
       }
-    } catch {
+    } catch (error) {
+      if (generation !== loadGeneration.current) return;
       setScreenshots([]);
+      setLoadError(error instanceof Error ? error.message : String(error));
     } finally {
-      setLoading(false);
+      if (generation === loadGeneration.current) setLoading(false);
     }
-  }, [hasBackend, player]);
+  }, [hasBackend, player, t]);
 
   React.useEffect(() => {
     refreshAll();
-  }, []);
+    return () => { loadGeneration.current++; };
+  }, [refreshAll]);
+
+  const retryImage = React.useCallback(async (shot: ScreenshotItem) => {
+    const generation = loadGeneration.current;
+    setScreenshots((items) => items.map((item) => item.path === shot.path ? { ...item, imageError: "" } : item));
+    try {
+      const dataUrl = await GetImageURL(shot.path);
+      if (!dataUrl) throw new Error(t("common.load_failed"));
+      if (generation !== loadGeneration.current) return;
+      setScreenshots((items) => items.map((item) => item.path === shot.path ? { ...item, dataUrl, imageError: "" } : item));
+    } catch (error) {
+      if (generation !== loadGeneration.current) return;
+      setScreenshots((items) => items.map((item) => item.path === shot.path ? { ...item, imageError: error instanceof Error ? error.message : String(error) } : item));
+    }
+  }, [t]);
 
   React.useEffect(() => {
     if (!previewOpen) return;
@@ -246,6 +283,7 @@ export default function ScreenshotsPage() {
                 <Tooltip>
                   <Button
                     isIconOnly
+                    aria-label={t("common.select_mode")}
                     onPress={selection.toggleSelectMode}
                     variant={"secondary"}
                     className={cn(
@@ -260,6 +298,7 @@ export default function ScreenshotsPage() {
                 <Tooltip>
                   <Button
                     isIconOnly
+                    aria-label={t("common.refresh")}
                     onPress={() => refreshAll()}
                     isDisabled={loading}
                     variant={"secondary"}
@@ -295,6 +334,7 @@ export default function ScreenshotsPage() {
       </Card>
 
       <SelectionBar
+        hiddenSelectedCount={selection.hiddenSelectedCount}
         selectedCount={selection.selectedCount}
         totalCount={screenshots.length}
         onSelectAll={selection.selectAll}
@@ -302,12 +342,26 @@ export default function ScreenshotsPage() {
         isSelectMode={selection.isSelectMode}
       />
 
-      {loading ? (
+      {!player || (!loading && !currentVersionName) ? (
+        <div role="status" className="flex flex-col items-center gap-4 py-16 text-muted">
+          <p>{t(!player ? "contentpage.screenshot_select_player" : "contentpage.screenshot_no_instance")}</p>
+          <Button variant="secondary" onPress={() => navigate(ROUTES.content)}>{t("common.back")}</Button>
+        </div>
+      ) : loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
           <span className="text-muted dark:text-zinc-400">
             {t("common.loading")}
           </span>
+        </div>
+      ) : loadError ? (
+        <div role="alert" className="flex flex-col items-center gap-4 py-16">
+          <p className="font-medium">{t("contentpage.screenshot_load_failed")}</p>
+          <p className="text-sm text-muted select-text break-all">{loadError}</p>
+          <div className="flex gap-2">
+            <Button variant="primary" onPress={() => void refreshAll()}>{t("common.retry")}</Button>
+            <Button variant="secondary" isDisabled={!screenshotsRoot} onPress={() => { if (screenshotsRoot) void OpenPathDir(screenshotsRoot); }}>{t("common.open")}</Button>
+          </div>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
@@ -341,6 +395,9 @@ export default function ScreenshotsPage() {
                         <img
                           src={s.dataUrl}
                           alt={s.name}
+                          loading="lazy"
+                          decoding="async"
+                          onError={() => setScreenshots((items) => items.map((item) => item.path === s.path ? { ...item, dataUrl: "", imageError: t("common.load_failed") } : item))}
                           className={cn(
                             "rounded-none",
                             "w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]",
@@ -354,7 +411,7 @@ export default function ScreenshotsPage() {
                               variant={"secondary"}
                               className={cn(
                                 "rounded-full",
-                                "pointer-events-auto flex items-center gap-2 border border-white/20 bg-black/45 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:bg-black/55",
+                                "pointer-events-auto flex items-center gap-2 border border-white/20 bg-black/45 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 group-hover:opacity-100 group-focus-within:opacity-100 hover:bg-black/55",
                               )}
                             >
                               <FaExpand size={12} />
@@ -363,14 +420,22 @@ export default function ScreenshotsPage() {
                           </div>
                         )}
                       </>
+                    ) : s.imageError ? (
+                      <div className="flex flex-col items-center gap-2 p-3 text-center">
+                        <p className="text-xs text-danger" role="status">{t("contentpage.screenshot_image_failed", { name: s.name })}</p>
+                        <p className="text-xs text-muted line-clamp-2 select-text">{s.imageError}</p>
+                        <Button size="sm" variant="secondary" onClick={(event) => event.stopPropagation()} onPress={() => void retryImage(s)}>{t("common.retry")}</Button>
+                      </div>
                     ) : (
-                      <FaCamera className="text-3xl text-muted" />
+                      <div role="status" aria-label={t("common.loading")} className="w-full h-full animate-pulse bg-surface-tertiary flex items-center justify-center"><FaCamera className="text-3xl text-muted" /></div>
                     )}
                   </div>
 
                   {selection.isSelectMode && (
                     <div className="absolute top-2 left-2 z-20">
                       <Checkbox
+                        aria-label={t("contentpage.select_item", { name: s.name })}
+                        onClick={(event) => event.stopPropagation()}
                         isSelected={!!selection.selected[s.path]}
                         onChange={() => selection.toggleSelect(s.path)}
                         className={"group"}
@@ -396,10 +461,11 @@ export default function ScreenshotsPage() {
                         {s.captureTime ? formatDate(s.captureTime) : s.name}
                       </span>
                     </div>
-                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                    <div className="flex gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
                       <Tooltip>
                         <Button
                           isIconOnly
+                    aria-label={t("common.delete")}
                           size="sm"
                           variant={"danger-soft"}
                           onClick={(event) => event.stopPropagation()}
@@ -445,11 +511,12 @@ export default function ScreenshotsPage() {
           if (activeShot) {
             setDeletingOne(true);
             try {
-              await (contentService as any)?.DeleteScreenshot?.(
+              const result = await (contentService as any)?.DeleteScreenshot?.(
                 currentVersionName,
                 player,
                 activeShot.path,
               );
+              if (result) throw new Error(String(result));
               toast(
                 t("contentpage.deleted_name", {
                   name: activeShot.name,
@@ -457,7 +524,7 @@ export default function ScreenshotsPage() {
                 { variant: "success", timeout: 2000 },
               );
               setActiveShot(null);
-              refreshAll();
+              if (contentScopeRef.current === contentScope) refreshAll();
             } catch (e) {
               toast("Error", {
                 description: String(e),
@@ -477,6 +544,9 @@ export default function ScreenshotsPage() {
         isOpen={delManyCfmOpen}
         onOpenChange={delManyCfmOnOpenChange}
         title={t("common.confirm_delete")}
+        scopeLabel={t("contentpage.delete_scope", { instance: currentVersionName, player: player || t("contentpage.select_player") })}
+        itemNames={screenshots.filter((item) => selection.selected[item.path]).map((item) => item.name || item.path)}
+        confirmDisabled={selection.selectedCount === 0}
         description={t("contentpage.delete_selected_confirm", {
           count: Object.values(selection.selected).filter(Boolean).length,
         })}
@@ -484,31 +554,13 @@ export default function ScreenshotsPage() {
         isPending={deletingMany}
         onConfirm={async () => {
           const targets = selection.getSelectedKeys();
-          if (targets.length === 0) return;
-          setDeletingMany(true);
-          try {
-            let success = 0;
-            for (const p of targets) {
-              try {
-                await (contentService as any)?.DeleteScreenshot?.(
-                  currentVersionName,
-                  player,
-                  p,
-                );
-                success++;
-              } catch (e) {
-                console.error(e);
-              }
-            }
-            toast(t("contentpage.deleted_count", { count: success }), {
-              variant: "success",
-              timeout: 2000,
-            });
-            selection.clearSelection();
-            refreshAll();
-          } finally {
-            setDeletingMany(false);
-          }
+    if (!targets.length) return false;
+    setDeletingMany(true);
+    try {
+      return await deleteContentItems(targets, (path) => contentService.DeleteScreenshot(currentVersionName, player, path), selection.retainSelection, () => refreshAll(), t, () => contentScopeRef.current === contentScope);
+    } finally {
+      setDeletingMany(false);
+    }
         }}
       />
 
@@ -559,6 +611,7 @@ export default function ScreenshotsPage() {
                 <div className="absolute inset-y-0 left-0 z-20 hidden items-center pl-3 sm:flex sm:pl-4">
                   <Button
                     isIconOnly
+                    aria-label={t("contentpage.previous_screenshot")}
                     onPress={() => movePreview("prev")}
                     isDisabled={!hasPrevShot}
                     variant={"secondary"}
@@ -574,6 +627,7 @@ export default function ScreenshotsPage() {
                 <div className="absolute inset-y-0 right-0 z-20 hidden items-center pr-3 sm:flex sm:pr-4">
                   <Button
                     isIconOnly
+                    aria-label={t("contentpage.next_screenshot")}
                     onPress={() => movePreview("next")}
                     isDisabled={!hasNextShot}
                     variant={"secondary"}
@@ -595,16 +649,22 @@ export default function ScreenshotsPage() {
                     transition={{ duration: 0.2, ease: "easeOut" }}
                     className="flex h-[clamp(260px,52vh,560px)] items-center justify-center p-3 sm:p-4 md:p-5"
                   >
-                    {activeShot?.dataUrl ? (
+                    {previewShot?.dataUrl ? (
                       <img
-                        src={activeShot.dataUrl}
-                        alt={activeShot.name}
+                        src={previewShot.dataUrl}
+                        alt={previewShot.name}
                         className="max-h-full w-auto max-w-full rounded-[1.5rem] object-contain shadow-[0_18px_50px_rgba(0,0,0,0.18)]"
                       />
+                    ) : previewShot?.imageError ? (
+                      <div role="alert" className="flex flex-col items-center gap-3 p-4 text-center">
+                        <p>{t("contentpage.screenshot_image_failed", { name: previewShot.name })}</p>
+                        <p className="text-sm text-muted select-text">{previewShot.imageError}</p>
+                        <Button variant="secondary" onPress={() => void retryImage(previewShot)}>{t("common.retry")}</Button>
+                      </div>
                     ) : (
                       <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-muted dark:text-zinc-500">
-                        <FaCamera className="text-5xl opacity-30" />
-                        <span>{t("contentpage.no_screenshots")}</span>
+                        <Spinner aria-label={t("common.loading")} />
+                        <span role="status">{t("common.loading")}</span>
                       </div>
                     )}
                   </motion.div>
@@ -614,6 +674,7 @@ export default function ScreenshotsPage() {
               <div className="mt-3 flex items-center justify-center gap-2 sm:hidden">
                 <Button
                   isIconOnly
+                  aria-label={t("contentpage.previous_screenshot")}
                   onPress={() => movePreview("prev")}
                   isDisabled={!hasPrevShot}
                   variant={"secondary"}
@@ -626,6 +687,7 @@ export default function ScreenshotsPage() {
                 </Button>
                 <Button
                   isIconOnly
+                  aria-label={t("contentpage.next_screenshot")}
                   onPress={() => movePreview("next")}
                   isDisabled={!hasNextShot}
                   variant={"secondary"}

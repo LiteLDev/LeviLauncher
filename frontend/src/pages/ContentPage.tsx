@@ -594,7 +594,7 @@ export default function ContentPage() {
         }}
         type="primary"
         title={t("contentpage.transfer_resources_title")}
-        confirmText={t("common.confirm")}
+        confirmText={t("contentpage.transfer_resources_button")}
         cancelText={t("common.cancel")}
         showCancelButton
         onConfirm={() => cp.transferResourcesToTargets()}
@@ -692,7 +692,7 @@ export default function ContentPage() {
         }}
         type="warning"
         title={t("mods.overwrite_modal_title")}
-        confirmText={t("common.confirm")}
+        confirmText={t("mods.overwrite_and_import")}
         cancelText={t("common.cancel")}
         showCancelButton
         onConfirm={() => {

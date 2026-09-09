@@ -1025,7 +1025,7 @@ export const DownloadPage: React.FC = () => {
                                 size="sm"
                                 variant="soft"
                                 color={
-                                  item.type === "Release" ? "warning" : "accent"
+                                  item.type === "Release" ? "success" : "warning"
                                 }
                                 className={"font-medium"}
                               >
@@ -1353,7 +1353,7 @@ export const DownloadPage: React.FC = () => {
                 <Chip
                   size="sm"
                   variant="soft"
-                  color={mirrorType === "Preview" ? "accent" : "warning"}
+                  color={mirrorType === "Preview" ? "warning" : "success"}
                   className={"h-6"}
                 >
                   <Chip.Label>{mirrorType}</Chip.Label>

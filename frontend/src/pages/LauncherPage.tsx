@@ -351,26 +351,26 @@ export const LauncherPage = (args: any) => {
                                 className="w-full h-full object-cover"
                               />
                             ) : (
-                              <span className="text-base font-bold text-foreground dark:text-zinc-300">
+                              <span className="text-base font-bold">
                                 M
                               </span>
                             )}
                           </div>
                           <div className="flex flex-col hidden lg:flex">
-                            <span className="text-xs text-foreground dark:text-zinc-300 font-medium">
+                            <span className="text-xs font-medium">
                               {t("launcherpage.currentVersion")}
                             </span>
-                            <span className="text-sm font-bold text-foreground dark:text-white leading-tight max-w-[120px] truncate">
+                            <span className="text-sm font-bold leading-tight max-w-[120px] truncate">
                               {displayName ||
                                 t("launcherpage.currentVersion_none")}
                             </span>
                           </div>
-                          <span className="text-sm font-bold text-foreground dark:text-white leading-tight max-w-[120px] truncate lg:hidden">
+                          <span className="text-sm font-bold leading-tight max-w-[120px] truncate lg:hidden">
                             {displayName ||
                               t("launcherpage.currentVersion_none")}
                           </span>
                           <FaChevronDown
-                            className="text-muted dark:text-zinc-300 ml-1"
+                            className="ml-1"
                             size={12}
                           />
                         </div>
@@ -536,10 +536,7 @@ export const LauncherPage = (args: any) => {
                           "data-[hovered]:bg-surface-tertiary/50 dark:data-[hovered]:bg-white/5",
                         )}
                       >
-                        <FaCogs
-                          size={18}
-                          className="text-foreground dark:text-zinc-300"
-                        />
+                        <FaCogs size={18} />
                       </Button>
                       <Dropdown.Popover
                         className={COMPONENT_STYLES.dropdown.content}
@@ -781,16 +778,16 @@ export const LauncherPage = (args: any) => {
                       >
                         <item.icon size={16} />
                       </div>
-                      <span className="font-medium text-sm text-foreground dark:text-zinc-200 truncate max-w-[100px] lg:max-w-none">
+                      <span className="font-medium text-sm truncate max-w-[100px] lg:max-w-none">
                         {item.label}
                       </span>
                     </div>
                     <div className="flex items-center gap-2">
-                      <span className="text-base font-bold text-foreground dark:text-zinc-200">
+                      <span className="text-base font-bold">
                         {item.count}
                       </span>
                       <FaChevronDown
-                        className="text-muted dark:text-zinc-500 -rotate-90"
+                        className="-rotate-90"
                         size={10}
                       />
                     </div>

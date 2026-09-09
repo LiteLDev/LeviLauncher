@@ -359,7 +359,7 @@ export const ModsPage: React.FC = () => {
                     title={t("audit.mods.clear_search")}
                     onClick={() => mp.setQuery("")}
                   >
-                    <FaTimes className="text-muted hover:text-foreground" />
+                      <FaTimes />
                   </button>
                 )}
               </InputGroup.Suffix>

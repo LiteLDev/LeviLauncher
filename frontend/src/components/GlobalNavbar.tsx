@@ -164,13 +164,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                   }`}
                 >
                   {
-                    <span
-                      className={
-                        isActive ? "text-zinc-900 dark:text-zinc-100" : ""
-                      }
-                    >
-                      {item.icon}
-                    </span>
+                    <span>{item.icon}</span>
                   }
                   <span className="hidden md:inline">{item.label}</span>
                 </Button>

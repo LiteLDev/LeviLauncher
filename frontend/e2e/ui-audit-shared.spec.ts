@@ -5,12 +5,16 @@ import { THEMES, getSolidAccent } from "../src/constants/themes";
 import { ROUTES, routeTo } from "../src/constants/routes";
 import { mockWailsRuntime, seedCompletedSetup } from "./support/mockWails";
 
-const whiteContrast = (channels: number[]) => {
+const luminance = (channels: number[]) => {
   const linear = channels.map((value) => {
     const channel = value / 255;
     return channel <= 0.04045 ? channel / 12.92 : ((channel + 0.055) / 1.055) ** 2.4;
   });
-  return 1.05 / (0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2] + 0.05);
+  return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
+};
+const contrast = (background: number[], foreground = [255, 255, 255]) => {
+  const values = [luminance(background), luminance(foreground)];
+  return (Math.max(...values) + 0.05) / (Math.min(...values) + 0.05);
 };
 
 test("application styles contain no gradient backgrounds, text, borders or SVG fills", async () => {
@@ -31,17 +35,62 @@ test("application styles contain no gradient backgrounds, text, borders or SVG f
   expect(violations).toEqual([]);
 });
 
-test("solid accents preserve white-label contrast for every palette and extreme custom colors", () => {
+test("solid accents preserve label contrast for every palette and extreme custom colors", () => {
   for (const base of [...Object.values(THEMES).map((theme) => theme[500]), "#ffffff", "#ffff00", "#000000", "#fefefe"]) {
-    const accent = getSolidAccent(base);
-    const channels = [1, 3, 5].map((offset) => parseInt(accent.slice(offset, offset + 2), 16));
-    expect(whiteContrast(channels), `${base} → ${accent}`).toBeGreaterThanOrEqual(4.5);
+    for (const foreground of ["#ffffff", "#f4f4f5"]) {
+      const accent = getSolidAccent(base, foreground);
+      const channels = (hex: string) => [1, 3, 5].map((offset) => parseInt(hex.slice(offset, offset + 2), 16));
+      expect(contrast(channels(accent), channels(foreground)), `${base} → ${accent} / ${foreground}`).toBeGreaterThanOrEqual(4.5);
+    }
   }
 });
 
 for (const theme of ["light", "dark"] as const) {
+  test(`action colors remain neutral across pages and settings tabs in ${theme}`, async ({ page }, testInfo) => {
+    test.setTimeout(120_000);
+    await mockWailsRuntime(page);
+    await seedCompletedSetup(page);
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.addInitScript(theme => {
+      localStorage.setItem("theme", theme);
+      localStorage.setItem("app.themeMode", theme);
+    }, theme);
+    await page.route("**/levilauncher.json", route => route.fulfill({ json: { packages: {} } }));
+    const expected = theme === "dark" ? "rgb(244, 244, 245)" : "rgb(63, 63, 70)";
+    const counts: Record<string, number> = {};
+    const inspect = async (name: string) => {
+      const actions = page.locator('button:visible, [role="button"]:visible, .pagination__link:visible');
+      await expect(actions.first()).toBeVisible();
+      const colors = await actions.evaluateAll(elements => elements.map(element => ({
+        label: element.getAttribute("aria-label") || element.textContent?.trim(),
+        color: getComputedStyle(element).color,
+        solid: element.matches(".button--primary, .button--danger, .button.bg-brand-500, .pagination__link.bg-accent"),
+      })));
+      counts[name] = colors.length;
+      expect(colors.filter(action => action.color !== (action.solid ? "rgb(244, 244, 245)" : expected)), name).toEqual([]);
+    };
+    for (const route of [ROUTES.home, ROUTES.instances, ROUTES.download, ROUTES.downloadTasks,
+      ROUTES.mods, ROUTES.curseForge, ROUTES.lip, ROUTES.content, ROUTES.contentWorlds,
+      ROUTES.contentResourcePacks, ROUTES.contentBehaviorPacks, ROUTES.contentSkinPacks,
+      ROUTES.contentServers, ROUTES.contentScreenshots, ROUTES.settings, ROUTES.about]) {
+      await page.goto(`/#${route}`);
+      await expect(page.locator("html")).toHaveClass(new RegExp(theme));
+      await expect(page.locator("main")).toBeVisible();
+      await expect(page.locator("main .animate-spin, main .skeleton")).toHaveCount(0);
+      await inspect(route);
+    }
+    await page.goto(`/#${ROUTES.settings}`);
+    const settingsTabs = page.getByRole("tablist").first().getByRole("tab");
+    await expect(settingsTabs.first()).toBeVisible();
+    for (const tab of await settingsTabs.all()) {
+      await tab.click();
+      await inspect(`settings/${await tab.textContent()}`);
+    }
+    await testInfo.attach("action-color-counts", { body: JSON.stringify(counts, null, 2), contentType: "application/json" });
+  });
+
   for (const color of ["emerald", "amber", "custom", "custom_black"]) {
-    test(`primary action has readable white labels in ${theme}/${color}`, async ({ page }) => {
+    test(`primary action has readable neutral labels in ${theme}/${color}`, async ({ page }) => {
       await mockWailsRuntime(page);
       await seedCompletedSetup(page);
       await page.emulateMedia({ reducedMotion: "reduce" });
@@ -54,16 +103,23 @@ for (const theme of ["light", "dark"] as const) {
       await page.goto(`/#${ROUTES.home}`);
       const launch = page.getByTestId("primary-launch-button");
       await expect(launch).toBeVisible();
-      await expect(launch).toHaveCSS("color", "rgb(255, 255, 255)");
+      const foreground = [244, 244, 245];
+      await expect(launch).toHaveCSS("color", `rgb(${foreground.join(", ")})`);
       for (const hover of [false, true]) {
         if (hover) await launch.hover();
-        const background = await launch.evaluate((element) => getComputedStyle(element).backgroundColor);
-        expect(whiteContrast(background.match(/[\d.]+/g)!.slice(0, 3).map(Number))).toBeGreaterThanOrEqual(4.5);
+        const background = await launch.evaluate((element) => {
+          // Normalize rgb(), oklch() and color(srgb ...) through the browser.
+          const context = document.createElement("canvas").getContext("2d")!;
+          context.fillStyle = getComputedStyle(element).backgroundColor;
+          context.fillRect(0, 0, 1, 1);
+          return Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3);
+        });
+        expect(contrast(background, foreground)).toBeGreaterThanOrEqual(4.5);
       }
       if (theme === "dark" && color === "custom_black") {
         const focus = await page.evaluate(() => getComputedStyle(document.documentElement).getPropertyValue("--focus"));
         const channels = focus.match(/[\d.]+/g)!.slice(0, 3).map(Number);
-        expect(21 / whiteContrast(channels)).toBeGreaterThanOrEqual(3);
+        expect(contrast(channels, [0, 0, 0])).toBeGreaterThanOrEqual(3);
       }
     });
   }

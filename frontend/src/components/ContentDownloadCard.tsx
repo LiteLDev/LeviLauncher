@@ -42,7 +42,7 @@ export const ContentDownloadCard = () => {
               aria-hidden="true"
               className="text-[#f16436] text-xl"
             />
-            <span className="font-medium text-foreground dark:text-zinc-200">
+            <span className="font-medium">
               {t("curseforge.title")}
             </span>
           </div>
@@ -54,7 +54,7 @@ export const ContentDownloadCard = () => {
         >
           <div className="flex items-center gap-3">
             <FaCube className="text-green-500 text-xl" />
-            <span className="font-medium text-foreground dark:text-zinc-200">
+            <span className="font-medium">
               {t("lip.title")}
             </span>
           </div>

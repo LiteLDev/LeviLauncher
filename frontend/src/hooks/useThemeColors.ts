@@ -107,6 +107,7 @@ export const useThemeColors = (resolvedTheme: string | undefined) => {
       root.style.setProperty(`--theme-${k}`, hexToRgb(theme[k]));
     });
     root.style.setProperty("--theme-solid", getSolidAccent(theme[500]));
+    root.style.setProperty("--theme-action-solid", getSolidAccent(theme[500], "#f4f4f5"));
     // Decorative shades retain the palette; solid actions keep readable white labels.
     root.style.setProperty("--accent-foreground", BRAND_PRIMARY_FOREGROUND);
     setThemeColorsReady(true);

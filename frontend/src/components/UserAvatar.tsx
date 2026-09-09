@@ -177,7 +177,7 @@ export const UserAvatar = () => {
             }}
             variant={"ghost"}
           >
-            <FaXbox className="text-muted" size={24} />
+            <FaXbox size={24} />
           </Button>
           <Tooltip.Content>{t("useravatar.no_login_retry")}</Tooltip.Content>
         </Tooltip>

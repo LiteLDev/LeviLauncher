@@ -679,7 +679,7 @@ export default function ResourcePacksPage() {
                 <InputGroup.Suffix>
                   {sort.query && (
                     <button onClick={() => sort.setQuery("")}>
-                      <FaTimes className="text-muted hover:text-foreground" />
+                      <FaTimes />
                     </button>
                   )}
                 </InputGroup.Suffix>

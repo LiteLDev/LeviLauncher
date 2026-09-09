@@ -275,7 +275,7 @@ export default function ContentPage() {
                   <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500">
                     <FaGlobe className="w-6 h-6" />
                   </div>
-                  <span className="text-lg font-medium text-foreground dark:text-zinc-200">
+                  <span className="text-lg font-medium">
                     {t("contentpage.worlds")}
                   </span>
                 </div>
@@ -297,7 +297,7 @@ export default function ContentPage() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold text-foreground dark:text-zinc-100"
+                      className="text-2xl font-bold"
                     >
                       {cp.worldsCount}
                     </motion.span>
@@ -320,7 +320,7 @@ export default function ContentPage() {
                   <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-500">
                     <FaImage className="w-6 h-6" />
                   </div>
-                  <span className="text-lg font-medium text-foreground dark:text-zinc-200">
+                  <span className="text-lg font-medium">
                     {t("contentpage.resource_packs")}
                   </span>
                 </div>
@@ -342,7 +342,7 @@ export default function ContentPage() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold text-foreground dark:text-zinc-100"
+                      className="text-2xl font-bold"
                     >
                       {cp.resCount}
                     </motion.span>
@@ -365,7 +365,7 @@ export default function ContentPage() {
                   <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-500">
                     <FaCogs className="w-6 h-6" />
                   </div>
-                  <span className="text-lg font-medium text-foreground dark:text-zinc-200">
+                  <span className="text-lg font-medium">
                     {t("contentpage.behavior_packs")}
                   </span>
                 </div>
@@ -387,7 +387,7 @@ export default function ContentPage() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold text-foreground dark:text-zinc-100"
+                      className="text-2xl font-bold"
                     >
                       {cp.bpCount}
                     </motion.span>
@@ -414,7 +414,7 @@ export default function ContentPage() {
                   <div className="p-2 rounded-xl bg-pink-50 dark:bg-pink-900/20 text-pink-500">
                     <FaUserTag className="w-6 h-6" />
                   </div>
-                  <span className="text-lg font-medium text-foreground dark:text-zinc-200">
+                  <span className="text-lg font-medium">
                     {t("contentpage.skin_packs")}
                   </span>
                 </div>
@@ -436,7 +436,7 @@ export default function ContentPage() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold text-foreground dark:text-zinc-100"
+                      className="text-2xl font-bold"
                     >
                       {cp.skinCount}
                     </motion.span>
@@ -463,7 +463,7 @@ export default function ContentPage() {
                   <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500">
                     <FaServer className="w-6 h-6" />
                   </div>
-                  <span className="text-lg font-medium text-foreground dark:text-zinc-200">
+                  <span className="text-lg font-medium">
                     {t("contentpage.servers")}
                   </span>
                 </div>
@@ -485,7 +485,7 @@ export default function ContentPage() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold text-foreground dark:text-zinc-100"
+                      className="text-2xl font-bold"
                     >
                       {cp.serversCount}
                     </motion.span>
@@ -512,7 +512,7 @@ export default function ContentPage() {
                   <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-500">
                     <FaCamera className="w-6 h-6" />
                   </div>
-                  <span className="text-lg font-medium text-foreground dark:text-zinc-200">
+                  <span className="text-lg font-medium">
                     {t("contentpage.screenshots")}
                   </span>
                 </div>
@@ -534,7 +534,7 @@ export default function ContentPage() {
                       animate={{ opacity: 1 }}
                       exit={{ opacity: 0 }}
                       transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold text-foreground dark:text-zinc-100"
+                      className="text-2xl font-bold"
                     >
                       {cp.screenshotsCount}
                     </motion.span>

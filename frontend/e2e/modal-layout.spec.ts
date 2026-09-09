@@ -66,7 +66,19 @@ for (const theme of ["light", "dark"]) {
     await expectFits(deletion, 680);
     expect((await deletion.boundingBox())!.height).toBeLessThan(360);
     await expect(deletion).toContainText(instance.name);
+    const foreground = theme === "dark" ? "rgb(244, 244, 245)" : "rgb(63, 63, 70)";
+    for (const action of await deletion.locator(".modal__footer button").all()) {
+      const expected = (await action.textContent())?.trim() === zh.common.delete ? "rgb(244, 244, 245)" : foreground;
+      await expect(action).toHaveCSS("color", expected);
+      await action.hover();
+      await expect(action).toHaveCSS("color", expected);
+      await action.focus();
+      await expect(action).toHaveCSS("color", expected);
+    }
+    await deletion.getByRole("heading").click();
+    await page.mouse.move(0, 0);
     await page.screenshot({ path: `.artifacts/modals/delete-${theme}.png` });
+    await deletion.screenshot({ path: `.artifacts/modals/delete-${theme}-detail.png` });
     for (const viewport of [{ width: 800, height: 600 }, { width: 320, height: 568 }]) {
       await page.setViewportSize(viewport);
       await expectFits(deletion);

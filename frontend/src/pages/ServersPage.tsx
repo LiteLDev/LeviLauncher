@@ -434,7 +434,7 @@ export default function ServersPage() {
                 <InputGroup.Suffix>
                   {query && (
                     <button onClick={() => setQuery("")}>
-                      <FaTimes className="text-muted hover:text-foreground" />
+                      <FaTimes />
                     </button>
                   )}
                 </InputGroup.Suffix>

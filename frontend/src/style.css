@@ -204,9 +204,17 @@
   --focus: var(--accent);
   --danger-foreground: #000000;
   --warning-foreground: #27272a;
+  --action-foreground: #3f3f46;
+  --action-solid-foreground: #f4f4f5;
+  --action-accent: var(--theme-action-solid, #047857);
+  --action-accent-hover: color-mix(in srgb, var(--action-accent) 90%, #000);
+  --action-danger: #c52f3b;
+  --action-danger-hover: color-mix(in srgb, var(--action-danger) 90%, #000);
+  --action-warning: #925f00;
 }
 
 .dark {
+  --action-foreground: #f4f4f5;
   --background: #000000;
   --foreground: #fafafa;
   --muted: #a1a1aa;
@@ -256,12 +264,54 @@ select {
 }
 
 .brand-primary-foreground {
-  color: #fff !important;
+  color: var(--accent-foreground);
 }
 
-/* Existing solid brand actions share the semantic, contrast-safe background. */
-:is(.button, .brand-primary-foreground).bg-brand-500 {
+/* Decorative brand surfaces keep their existing contrast-safe palette. */
+.brand-primary-foreground.bg-brand-500 {
   background-color: var(--accent);
+}
+
+/* Ordinary action labels follow the theme in every interaction state. Keep this
+   outside Tailwind layers so page-level legacy color utilities cannot tint them.
+   Do not reset descendants: logos, badges and color previews retain their colors. */
+:is(button, [role="button"], .button, .pagination__link) {
+  --button-fg: var(--action-foreground);
+  color: var(--action-foreground);
+}
+
+/* Filled color actions always use soft white labels, including in light mode. */
+:is(.button--primary, .button--danger, .button.bg-brand-500, .pagination__link.bg-accent) {
+  --button-fg: var(--action-solid-foreground);
+  color: var(--action-solid-foreground);
+}
+
+.button--primary {
+  --button-bg: var(--action-accent);
+  --button-bg-hover: var(--action-accent-hover);
+  --button-bg-pressed: var(--action-accent-hover);
+}
+
+:is(.button.bg-brand-500, .pagination__link.bg-accent) {
+  background-color: var(--action-accent);
+  &:is(:hover, :active, [data-hovered="true"], [data-pressed="true"]) {
+    background-color: var(--action-accent-hover);
+  }
+}
+
+.button--danger {
+  --button-bg: var(--action-danger);
+  --button-bg-hover: var(--action-danger-hover);
+  --button-bg-pressed: var(--action-danger-hover);
+}
+
+/* Solid warning actions need a deeper amber behind soft white text. */
+.button.bg-warning {
+  color: var(--action-solid-foreground);
+  background-color: var(--action-warning);
+  &:is(:hover, :active, [data-hovered="true"], [data-pressed="true"]) {
+    background-color: color-mix(in srgb, var(--action-warning) 90%, #000);
+  }
 }
 
 body,

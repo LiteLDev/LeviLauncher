@@ -120,7 +120,7 @@ for (const theme of ["light", "dark"] as const) {
     await expect(page.locator("html")).toHaveClass(new RegExp(theme));
     await expect(page.locator("[data-startup-content][inert]")).toHaveCount(0);
     const launchButton = page.getByTestId("primary-launch-button");
-    await expect(launchButton).toHaveCSS("color", "rgb(255, 255, 255)");
+    await expect(launchButton).toHaveCSS("color", "rgb(244, 244, 245)");
 
     await expectNoUnexpectedAccessibilityViolations(page);
   });

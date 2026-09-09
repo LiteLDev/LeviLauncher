@@ -2759,10 +2759,7 @@ export const SettingsPage: React.FC = () => {
                           variant={"ghost"}
                           className={"rounded-full"}
                         >
-                          <FaGithub
-                            size={20}
-                            className="text-muted dark:text-zinc-400"
-                          />
+                          <FaGithub size={20} />
                         </Button>
                         <Tooltip.Content>
                           {t("audit.mods.github")}
@@ -2778,10 +2775,7 @@ export const SettingsPage: React.FC = () => {
                           variant={"ghost"}
                           className={"rounded-full"}
                         >
-                          <FaDiscord
-                            size={20}
-                            className="text-muted dark:text-zinc-400"
-                          />
+                          <FaDiscord size={20} />
                         </Button>
                         <Tooltip.Content>
                           {t("audit.mods.discord")}

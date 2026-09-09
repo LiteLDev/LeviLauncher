@@ -81,25 +81,30 @@ const hslToRgb = (h: number, s: number, l: number) => {
   };
 };
 
-// Keep the selected hue while giving white action labels WCAG AA contrast.
-export const getSolidAccent = (baseColor: string): string => {
+// Keep the selected hue while meeting AA contrast for the actual label color.
+export const getSolidAccent = (baseColor: string, foreground = "#ffffff"): string => {
   const { r, g, b } = parseHex(baseColor);
   const { h, s, l } = rgbToHsl(r, g, b);
-  const contrast = (rgb: { r: number; g: number; b: number }) => {
+  const luminance = (rgb: { r: number; g: number; b: number }) => {
     const linear = [rgb.r, rgb.g, rgb.b].map((value) => {
       const channel = value / 255;
       return channel <= 0.04045
         ? channel / 12.92
         : Math.pow((channel + 0.055) / 1.055, 2.4);
     });
-    return 1.05 / (0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2] + 0.05);
+    return 0.2126 * linear[0] + 0.7152 * linear[1] + 0.0722 * linear[2];
   };
+  const labelLuminance = luminance(parseHex(foreground));
+  const direction = labelLuminance > 0.5 ? -1 : 1;
 
-  for (let lightness = l; lightness >= 0; lightness -= 0.5) {
+  for (let lightness = l; lightness >= 0 && lightness <= 100; lightness += direction * 0.5) {
     const rgb = hslToRgb(h, s, lightness);
-    if (contrast(rgb) >= 4.6) return rgbToHex(rgb.r, rgb.g, rgb.b);
+    const backgroundLuminance = luminance(rgb);
+    const contrast = (Math.max(labelLuminance, backgroundLuminance) + 0.05) /
+      (Math.min(labelLuminance, backgroundLuminance) + 0.05);
+    if (contrast >= 4.6) return rgbToHex(rgb.r, rgb.g, rgb.b);
   }
-  return "#000000";
+  return direction < 0 ? "#000000" : "#ffffff";
 };
 
 export const generateTheme = (baseColor: string): Record<number, string> => {

@@ -1,15 +1,9 @@
+import { Avatar, Button, Chip, Popover, Spinner, Tooltip } from "@heroui/react";
+import { cn } from "@/utils/cn";
+
 import React, { useEffect, useState } from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Avatar,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  User,
-  Button,
-  Chip,
-  Tooltip,
-} from "@heroui/react";
+
 import {
   FaSync,
   FaXbox,
@@ -156,9 +150,14 @@ export const UserAvatar = () => {
       <div className="flex items-center gap-2">
         <Avatar
           size="sm"
-          isBordered
-          className="ring-2 ring-default-300/60 dark:ring-zinc-700/60 bg-default-100 dark:bg-zinc-800 text-default-400 dark:text-zinc-500"
-        />
+          className={cn(
+            "ring-2 ring-border",
+            "ring-2 ring-border/60 dark:ring-zinc-700/60 bg-surface-secondary dark:bg-zinc-800 text-muted dark:text-zinc-500",
+          )}
+        >
+          <Avatar.Image alt={""} />
+          <Avatar.Fallback>{"?"}</Avatar.Fallback>
+        </Avatar>
       </div>
     );
   }
@@ -166,10 +165,9 @@ export const UserAvatar = () => {
   if (!gamertag) {
     return (
       <div className="flex items-center gap-2">
-        <Tooltip content={t("useravatar.no_login_retry")}>
+        <Tooltip>
           <Button
             isIconOnly
-            variant="light"
             size="sm"
             aria-label={t("useravatar.no_login_retry")}
             onPress={() => {
@@ -177,9 +175,11 @@ export const UserAvatar = () => {
               clearUserState();
               setReloadNonce((v) => v + 1);
             }}
+            variant={"ghost"}
           >
-            <FaXbox className="text-default-400" size={24} />
+            <FaXbox className="text-muted" size={24} />
           </Button>
+          <Tooltip.Content>{t("useravatar.no_login_retry")}</Tooltip.Content>
         </Tooltip>
       </div>
     );
@@ -200,9 +200,6 @@ export const UserAvatar = () => {
 
   return (
     <Popover
-      placement="bottom-end"
-      showArrow
-      backdrop="transparent"
       isOpen={open}
       onOpenChange={async (nextOpen: boolean) => {
         setOpen(nextOpen);
@@ -220,136 +217,158 @@ export const UserAvatar = () => {
         }
       }}
     >
-      <PopoverTrigger>
-        <div className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95">
-          <Avatar
-            src={avatar}
-            name={gamertag}
-            size="sm"
-            isBordered
-            color="primary"
-            className="ring-2 ring-primary-500/30"
-          />
-        </div>
-      </PopoverTrigger>
-      <PopoverContent className="p-1 bg-white dark:bg-zinc-900 border border-default-200/70 dark:border-zinc-700/60 shadow-2xl rounded-2xl">
-        <div className="px-4 py-3 w-64">
-          <div className="flex items-center justify-between mb-3">
-            <Chip
-              startContent={<FaXbox className="text-primary-600" />}
-              variant="flat"
-              color="primary"
-              size="sm"
-              className="bg-primary-100/70 dark:bg-primary-900/25 text-primary-700 dark:text-primary-400"
-            >
-              {t("useravatar.xbox_live")}
-            </Chip>
-            <Button
-              isIconOnly
-              variant="light"
-              size="sm"
-              aria-label={t("useravatar.refresh_session_aria")}
-              isLoading={refreshing}
-              onPress={async () => {
-                setRefreshing(true);
-                await refreshSessionIfNeeded(true);
-                setReloadNonce((v) => v + 1);
-                setRefreshing(false);
-              }}
-            >
-              <FaSync size={14} className={refreshing ? "animate-spin" : ""} />
-            </Button>
-          </div>
+      <Button
+        variant="ghost"
+        aria-label={gamertag}
+        className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+      >
+        <Avatar
+          size="sm"
+          className={cn("ring-2 ring-border", "ring-2 ring-brand-500/30")}
+        >
+          <Avatar.Image src={avatar} alt={gamertag} />
+          <Avatar.Fallback>{gamertag.slice(0, 2)}</Avatar.Fallback>
+        </Avatar>
+      </Button>
+      <Popover.Content
+        className="p-1 bg-white dark:bg-zinc-900 border border-border/70 dark:border-zinc-700/60 shadow-2xl rounded-2xl"
+        placement="bottom end"
+      >
+        <Popover.Arrow />
+        <Popover.Dialog aria-label={gamertag}>
+          <div className="px-4 py-3 w-64">
+            <div className="flex items-center justify-between mb-3">
+              <Chip
+                size="sm"
+                variant="soft"
+                color={"accent"}
+                className={
+                  "bg-brand-100/70 dark:bg-brand-900/25 text-brand-700 dark:text-brand-400"
+                }
+              >
+                {<FaXbox className="text-brand-600" />}
+                <Chip.Label>{t("useravatar.xbox_live")}</Chip.Label>
+              </Chip>
+              <Button
+                isIconOnly
+                size="sm"
+                aria-label={t("useravatar.refresh_session_aria")}
+                onPress={async () => {
+                  setRefreshing(true);
+                  await refreshSessionIfNeeded(true);
+                  setReloadNonce((v) => v + 1);
+                  setRefreshing(false);
+                }}
+                variant={"ghost"}
+                isPending={refreshing}
+              >
+                {({ isPending }) => (
+                  <>
+                    <Spinner
+                      size="sm"
+                      color="current"
+                      className={isPending ? "" : "hidden"}
+                    />
+                    <FaSync
+                      size={14}
+                      className={refreshing ? "animate-spin" : ""}
+                    />
+                  </>
+                )}
+              </Button>
+            </div>
 
-          <User
-            name={
-              <span className="font-bold text-lg bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
-                {gamertag}
-              </span>
-            }
-            description={
-              <div className="flex flex-col gap-1">
-                <span className="text-xs text-default-500 dark:text-zinc-400">
-                  {t("useravatar.xuid", {
-                    xuid,
-                  })}
-                </span>
-              </div>
-            }
-            avatarProps={{
-              src: avatar,
-              size: "lg",
-              isBordered: true,
-              className: "w-14 h-14 bg-transparent ring-2 ring-primary-500",
-            }}
-            classNames={{
-              base: "justify-start gap-4",
-              name: "text-lg",
-            }}
-          />
-
-          {stats && (
-            <div className="mt-4 pt-3 border-t border-default-100 dark:border-white/10">
-              <div className="flex flex-col gap-4">
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-blue-100/50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
-                    <FaClock size={12} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
-                      {t("useravatar.stats.minutes_played")}
+            <div className="inline-flex items-center justify-start gap-4">
+              <Avatar
+                size="lg"
+                className="w-14 h-14 bg-transparent ring-2 ring-accent"
+              >
+                <Avatar.Image src={avatar} alt={gamertag} />
+                <Avatar.Fallback>{gamertag.slice(0, 2)}</Avatar.Fallback>
+              </Avatar>
+              <div className="flex flex-col items-start">
+                <div className="text-lg">
+                  {
+                    <span className="font-bold text-lg bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">
+                      {gamertag}
                     </span>
-                    <span className="text-xs font-bold text-default-700 dark:text-zinc-200">
-                      {formatPlayTime(stats.minutesPlayed)}
-                    </span>
-                  </div>
+                  }
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-orange-100/50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
-                    <FaCube size={12} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
-                      {t("useravatar.stats.blocks_broken")}
-                    </span>
-                    <span className="text-xs font-bold text-default-700 dark:text-zinc-200">
-                      {stats.blockBroken?.toLocaleString()}
+                {
+                  <div className="flex flex-col gap-1">
+                    <span className="text-xs text-muted dark:text-zinc-400">
+                      {t("useravatar.xuid", {
+                        xuid,
+                      })}
                     </span>
                   </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-red-100/50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
-                    <FaSkull size={12} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
-                      {t("useravatar.stats.mobs_defeated")}
-                    </span>
-                    <span className="text-xs font-bold text-default-700 dark:text-zinc-200">
-                      {stats.mobKilled?.toLocaleString()}
-                    </span>
-                  </div>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="p-1.5 rounded-lg bg-purple-100/50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
-                    <FaRoad size={12} />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-[10px] text-default-400 tracking-wider font-semibold whitespace-nowrap">
-                      {t("useravatar.stats.distance_travelled")}
-                    </span>
-                    <span className="text-xs font-bold text-default-700 dark:text-zinc-200">
-                      {(stats.distanceTravelled / 1000).toFixed(1)} km
-                    </span>
-                  </div>
-                </div>
+                }
               </div>
             </div>
-          )}
 
-          <div className="mt-3 pt-3 border-t border-default-100 flex justify-end" />
-        </div>
-      </PopoverContent>
+            {stats && (
+              <div className="mt-4 pt-3 border-t border-border dark:border-white/10">
+                <div className="flex flex-col gap-4">
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-blue-100/50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
+                      <FaClock size={12} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted tracking-wider font-semibold whitespace-nowrap">
+                        {t("useravatar.stats.minutes_played")}
+                      </span>
+                      <span className="text-xs font-bold text-foreground dark:text-zinc-200">
+                        {formatPlayTime(stats.minutesPlayed)}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-orange-100/50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
+                      <FaCube size={12} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted tracking-wider font-semibold whitespace-nowrap">
+                        {t("useravatar.stats.blocks_broken")}
+                      </span>
+                      <span className="text-xs font-bold text-foreground dark:text-zinc-200">
+                        {stats.blockBroken?.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-red-100/50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
+                      <FaSkull size={12} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted tracking-wider font-semibold whitespace-nowrap">
+                        {t("useravatar.stats.mobs_defeated")}
+                      </span>
+                      <span className="text-xs font-bold text-foreground dark:text-zinc-200">
+                        {stats.mobKilled?.toLocaleString()}
+                      </span>
+                    </div>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <div className="p-1.5 rounded-lg bg-purple-100/50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
+                      <FaRoad size={12} />
+                    </div>
+                    <div className="flex flex-col">
+                      <span className="text-[10px] text-muted tracking-wider font-semibold whitespace-nowrap">
+                        {t("useravatar.stats.distance_travelled")}
+                      </span>
+                      <span className="text-xs font-bold text-foreground dark:text-zinc-200">
+                        {(stats.distanceTravelled / 1000).toFixed(1)} km
+                      </span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            <div className="mt-3 pt-3 border-t border-border flex justify-end" />
+          </div>
+        </Popover.Dialog>
+      </Popover.Content>
     </Popover>
   );
 };

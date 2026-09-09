@@ -1,5 +1,7 @@
-import React, { useEffect, useState } from "react";
+import { cn } from "@/utils/cn";
 import { Button } from "@heroui/react";
+import React, { useEffect, useState } from "react";
+
 import { MoonIcon } from "@/icons/MoonIcon";
 import { SunIcon } from "@/icons/SunIcon";
 import { useThemeManager } from "@/utils/useThemeManager";
@@ -31,16 +33,16 @@ export function ThemeSwitcher({
   return (
     <Button
       isIconOnly
-      variant="light"
       size="sm"
-      radius="lg"
       onPress={toggleTheme}
       isDisabled={isDisabled}
       aria-label={t("theme.toggle")}
-      className={
+      variant={"ghost"}
+      className={cn(
+        "rounded-lg",
         className ||
-        "w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
-      }
+          "w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100",
+      )}
     >
       {isDark ? (
         <MoonIcon className={`w-[${iconSize}px] h-[${iconSize}px]`} />

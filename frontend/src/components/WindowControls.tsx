@@ -1,5 +1,7 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { cn } from "@/utils/cn";
 import { Button } from "@heroui/react";
+import React, { useCallback, useEffect, useState } from "react";
+
 import {
   IoRemoveOutline,
   IoSquareOutline,
@@ -81,14 +83,12 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
   return (
     <div className={`flex items-center gap-1 ${className || ""}`}>
       {!hideSeparator && (
-        <div className="w-px h-6 bg-default-200 dark:bg-zinc-700 mx-2" />
+        <div className="w-px h-6 bg-surface-tertiary dark:bg-zinc-700 mx-2" />
       )}
 
       <Button
         isIconOnly
-        variant="light"
         size="sm"
-        radius="lg"
         aria-label={t("common.collapse")}
         isDisabled={navLocked && !isOnboardingMode}
         onPress={() => {
@@ -98,20 +98,26 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
             document.activeElement.blur();
           }
         }}
-        className="wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        variant={"ghost"}
+        className={cn(
+          "rounded-lg",
+          "wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100",
+        )}
       >
         <IoRemoveOutline size={20} />
       </Button>
 
       <Button
         isIconOnly
-        variant="light"
         size="sm"
-        radius="lg"
         aria-label={isMaximized ? t("common.collapse") : t("common.expand")}
         isDisabled={navLocked && !isOnboardingMode}
         onPress={handleToggleMaximize}
-        className="wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        variant={"ghost"}
+        className={cn(
+          "rounded-lg",
+          "wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100",
+        )}
       >
         {isMaximized ? (
           <IoCopyOutline size={18} />
@@ -122,9 +128,7 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
 
       <Button
         isIconOnly
-        variant="light"
         size="sm"
-        radius="lg"
         aria-label={t("common.close")}
         isDisabled={navLocked && !isOnboardingMode}
         onPress={() => {
@@ -134,7 +138,11 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
             document.activeElement.blur();
           }
         }}
-        className="wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-red-600 hover:bg-red-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-red-900/20"
+        variant={"ghost"}
+        className={cn(
+          "rounded-lg",
+          "wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-red-600 hover:bg-red-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-red-900/20",
+        )}
       >
         <IoCloseOutline size={22} />
       </Button>

@@ -1,5 +1,6 @@
-import React from "react";
 import { Button } from "@heroui/react";
+import React from "react";
+
 import {
   UnifiedModal,
   getUnifiedModalConfirmButtonProps,
@@ -45,26 +46,30 @@ export const LipUpdateModal: React.FC<LipUpdateModalProps> = ({
       showCancelButton={false}
       footer={
         <div className="flex w-full flex-wrap justify-end gap-2">
-          <Button variant="light" onPress={onDismiss}>
+          <Button onPress={onDismiss} variant={"ghost"}>
             {t("settings.lip.startup_prompt.later_button")}
           </Button>
-          <Button variant="flat" onPress={onIgnore}>
+          <Button onPress={onIgnore} variant={"secondary"}>
             {t("settings.lip.startup_prompt.ignore_button")}
           </Button>
-          <Button {...warningConfirmButtonProps} onPress={onOpenSettings}>
+          <Button
+            {...warningConfirmButtonProps}
+            onPress={onOpenSettings}
+            variant={"secondary"}
+          >
             {t("settings.lip.startup_prompt.open_settings_button")}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-3">
-        <p className="text-small text-default-600 dark:text-zinc-300 leading-6">
+        <p className="text-sm text-foreground dark:text-zinc-300 leading-6">
           {t("settings.lip.startup_prompt.description", {
             currentVersion,
             latestVersion,
           })}
         </p>
-        <div className="rounded-2xl border border-default-200 dark:border-zinc-700 bg-default-100/60 dark:bg-zinc-800/60 px-4 py-3 text-small text-default-600 dark:text-zinc-300">
+        <div className="rounded-2xl border border-border dark:border-zinc-700 bg-surface-secondary/60 dark:bg-zinc-800/60 px-4 py-3 text-sm text-foreground dark:text-zinc-300">
           <div>
             {t("settings.lip.startup_prompt.current_version", {
               currentVersion,

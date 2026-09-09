@@ -46,11 +46,7 @@ if (shouldRedirectToOnboarding) {
 
 const startupLanguage = (() => {
   try {
-    return (
-      localStorage.getItem("i18nextLng") ||
-      navigator.language ||
-      "en-US"
-    );
+    return localStorage.getItem("i18nextLng") || navigator.language || "en-US";
   } catch {
     return navigator.language || "en-US";
   }
@@ -256,7 +252,6 @@ const bootstrapApp = async () => {
       { default: i18n, i18nReady },
       { I18nextProvider },
       { ThemeProvider: NextThemesProvider },
-      { HeroUIProvider },
       { createHashRouter, RouterProvider, createRoutesFromElements, Route },
       { CLARITY_ENABLED_KEY, CLARITY_EVENT_NAME },
     ] = await Promise.all([
@@ -264,7 +259,6 @@ const bootstrapApp = async () => {
       import("./i18n"),
       import("react-i18next"),
       import("next-themes"),
-      import("./providers/HeroUIProvider"),
       import("react-router-dom"),
       import("./utils/clarityConsent"),
     ]);
@@ -342,24 +336,22 @@ const bootstrapApp = async () => {
     startTransition(() => {
       root.render(
         <AppErrorBoundary>
-          <HeroUIProvider>
-            <NextThemesProvider
-              attribute="class"
-              defaultTheme="light"
-              enableSystem
-            >
-              <I18nextProvider i18n={i18n}>
-                <React.StrictMode>
-                  <StartupLifecycle>
-                    <BootRoot
-                      router={router}
-                      RouterProviderComponent={RouterProvider}
-                    />
-                  </StartupLifecycle>
-                </React.StrictMode>
-              </I18nextProvider>
-            </NextThemesProvider>
-          </HeroUIProvider>
+          <NextThemesProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+          >
+            <I18nextProvider i18n={i18n}>
+              <React.StrictMode>
+                <StartupLifecycle>
+                  <BootRoot
+                    router={router}
+                    RouterProviderComponent={RouterProvider}
+                  />
+                </StartupLifecycle>
+              </React.StrictMode>
+            </I18nextProvider>
+          </NextThemesProvider>
         </AppErrorBoundary>,
       );
     });

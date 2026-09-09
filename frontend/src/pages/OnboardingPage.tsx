@@ -1,17 +1,22 @@
+import {
+  Button,
+  Card,
+  Description,
+  Dropdown,
+  FieldError,
+  InputGroup,
+  Label,
+  Separator,
+  Spinner,
+  TextField,
+  useOverlayState,
+} from "@heroui/react";
+
+import { cn } from "@/utils/cn";
+
 import React from "react";
 import { useTranslation } from "react-i18next";
-import {
-  Card,
-  CardBody,
-  Button,
-  Input,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Divider,
-  useDisclosure,
-} from "@heroui/react";
+
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader, SectionHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
@@ -48,10 +53,10 @@ export default function OnboardingPage() {
   const [errorKey, setErrorKey] = React.useState<OnboardingErrorKey>(null);
   const {
     isOpen: unsavedOpen,
-    onOpen: unsavedOnOpen,
-    onClose: unsavedOnClose,
-    onOpenChange: unsavedOnOpenChange,
-  } = useDisclosure();
+    open: unsavedOnOpen,
+    close: unsavedOnClose,
+    setOpen: unsavedOnOpenChange,
+  } = useOverlayState();
 
   React.useEffect(() => {
     GetLanguageNames()
@@ -100,12 +105,12 @@ export default function OnboardingPage() {
       <div className="flex flex-col gap-6">
         {/* Header Card */}
         <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <CardBody className="p-6">
+          <Card.Content className="p-6">
             <PageHeader
               title={t("onboarding.title")}
               description={t("onboarding.subtitle")}
               startContent={
-                <div className="w-16 h-16 rounded-2xl bg-primary-500/10 flex items-center justify-center text-primary-600 dark:text-primary-500 shrink-0">
+                <div className="w-16 h-16 rounded-2xl bg-brand-500/10 flex items-center justify-center text-brand-600 dark:text-brand-500 shrink-0">
                   <svg
                     className="w-10 h-10"
                     aria-hidden="true"
@@ -127,40 +132,40 @@ export default function OnboardingPage() {
               endContent={
                 <div className="flex items-center gap-3">
                   <Button
-                    variant="light"
-                    radius="full"
                     onPress={requestFinish}
-                    className="font-bold text-default-500 px-6"
+                    variant={"ghost"}
+                    className={cn("rounded-full", "font-bold text-muted px-6")}
                   >
                     {t("onboarding.skip")}
                   </Button>
                   <Button
-                    color="primary"
-                    radius="full"
-                    className="font-black px-10 h-12 text-lg brand-primary-foreground shadow-lg shadow-primary-500/20"
                     onPress={requestFinish}
+                    variant={"primary"}
+                    className={cn(
+                      "rounded-full",
+                      "font-black px-10 h-12 text-lg brand-primary-foreground shadow-lg shadow-brand-500/20",
+                    )}
                   >
                     {t("onboarding.finish")}
                   </Button>
                 </div>
               }
             />
-          </CardBody>
+          </Card.Content>
         </Card>
 
         {/* Content Card */}
         <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <CardBody className="p-6 space-y-8">
+          <Card.Content className="p-6 space-y-8">
             {errorKey ? (
               <p
                 aria-atomic="true"
-                className="text-sm font-medium text-danger-500"
+                className="text-sm font-medium text-rose-500"
                 role="alert"
               >
                 {t(errorKey)}
               </p>
             ) : null}
-
             <div className="space-y-4">
               <SectionHeader
                 title={t("settings.body.paths.title")}
@@ -170,9 +175,6 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-2">
                     <Button
                       size="md"
-                      variant="light"
-                      radius="full"
-                      className="font-bold px-4"
                       onPress={async () => {
                         setErrorKey(null);
                         try {
@@ -190,20 +192,18 @@ export default function OnboardingPage() {
                           setErrorKey("common.save_failed");
                         }
                       }}
+                      variant={"ghost"}
+                      className={cn("rounded-full", "font-bold px-4")}
                     >
                       {t("settings.body.paths.reset")}
                     </Button>
                     <Button
                       size="md"
-                      color="primary"
-                      radius="full"
-                      className="font-bold px-6"
                       isDisabled={
                         !newBaseRoot ||
                         !baseRootWritable ||
                         newBaseRoot === baseRoot
                       }
-                      isLoading={savingBaseRoot}
                       onPress={async () => {
                         setErrorKey(null);
                         setSavingBaseRoot(true);
@@ -227,75 +227,104 @@ export default function OnboardingPage() {
                           setSavingBaseRoot(false);
                         }
                       }}
+                      variant={"primary"}
+                      isPending={savingBaseRoot}
+                      className={cn("rounded-full", "font-bold px-6")}
                     >
-                      {t("settings.body.paths.apply")}
+                      {({ isPending }) => (
+                        <>
+                          <Spinner
+                            size="sm"
+                            color="current"
+                            className={isPending ? "" : "hidden"}
+                          />
+                          {t("settings.body.paths.apply")}
+                        </>
+                      )}
                     </Button>
                   </div>
                 }
               />
 
               <div className="space-y-4">
-                <Input
-                  label={t("settings.body.paths.base_root") as string}
-                  placeholder={t("settings.body.paths.base_root")}
-                  value={newBaseRoot}
-                  onValueChange={setNewBaseRoot}
-                  variant="bordered"
-                  radius="lg"
-                  classNames={COMPONENT_STYLES.input}
+                <TextField
                   isInvalid={!baseRootWritable}
-                  errorMessage={
-                    !baseRootWritable
-                      ? t("settings.body.paths.not_writable")
-                      : undefined
-                  }
-                  description={
-                    baseRootWritable &&
+                  className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
+                  value={newBaseRoot}
+                  onChange={setNewBaseRoot}
+                >
+                  <Label className={COMPONENT_STYLES.input.label}>
+                    {t("settings.body.paths.base_root") as string}
+                  </Label>
+                  <InputGroup
+                    className={cn(
+                      COMPONENT_STYLES.input.inputWrapper,
+                      COMPONENT_STYLES.input.innerWrapper,
+                      "rounded-lg",
+                    )}
+                  >
+                    <InputGroup.Input
+                      placeholder={t("settings.body.paths.base_root")}
+                      className={COMPONENT_STYLES.input.input}
+                    />
+                    <InputGroup.Suffix>
+                      {
+                        <Button
+                          size="sm"
+                          onPress={async () => {
+                            try {
+                              const options: any = {
+                                Title: t("settings.body.paths.title"),
+                                CanChooseDirectories: true,
+                                CanChooseFiles: false,
+                                PromptForSingleSelection: true,
+                              };
+                              if (baseRoot) {
+                                options.Directory = baseRoot;
+                              }
+                              const result = await Dialogs.OpenFile(options);
+                              if (Array.isArray(result) && result.length > 0) {
+                                setNewBaseRoot(result[0]);
+                              } else if (typeof result === "string" && result) {
+                                setNewBaseRoot(result);
+                              }
+                            } catch (error) {
+                              console.error(
+                                "Failed to browse for base root",
+                                error,
+                              );
+                              setErrorKey("common.load_failed");
+                            }
+                          }}
+                          variant={"secondary"}
+                          className={cn(
+                            "rounded-full",
+                            "bg-surface-tertiary/50 dark:bg-white/10 font-medium",
+                          )}
+                        >
+                          {t("common.browse")}
+                        </Button>
+                      }
+                    </InputGroup.Suffix>
+                  </InputGroup>
+                  <Description className={COMPONENT_STYLES.input.description}>
+                    {baseRootWritable &&
                     newBaseRoot &&
                     newBaseRoot !== baseRoot ? (
-                      <span className="text-warning-500 font-medium">
+                      <span className="text-amber-500 font-medium">
                         {t("settings.body.paths.unsaved")}
                       </span>
-                    ) : null
-                  }
-                  endContent={
-                    <Button
-                      size="sm"
-                      variant="flat"
-                      radius="full"
-                      className="bg-default-200/50 dark:bg-white/10 font-medium"
-                      onPress={async () => {
-                        try {
-                          const options: any = {
-                            Title: t("settings.body.paths.title"),
-                            CanChooseDirectories: true,
-                            CanChooseFiles: false,
-                            PromptForSingleSelection: true,
-                          };
-                          if (baseRoot) {
-                            options.Directory = baseRoot;
-                          }
-                          const result = await Dialogs.OpenFile(options);
-                          if (Array.isArray(result) && result.length > 0) {
-                            setNewBaseRoot(result[0]);
-                          } else if (typeof result === "string" && result) {
-                            setNewBaseRoot(result);
-                          }
-                        } catch (error) {
-                          console.error("Failed to browse for base root", error);
-                          setErrorKey("common.load_failed");
-                        }
-                      }}
-                    >
-                      {t("common.browse")}
-                    </Button>
-                  }
-                />
+                    ) : null}
+                  </Description>
+                  <FieldError className={COMPONENT_STYLES.input.errorMessage}>
+                    {!baseRootWritable
+                      ? t("settings.body.paths.not_writable")
+                      : undefined}
+                  </FieldError>
+                </TextField>
               </div>
             </div>
-
-            <Divider className="opacity-50" />
-
+            <Separator className="opacity-50" />
             <div className="space-y-4">
               <SectionHeader
                 title={t("settings.body.language.name")}
@@ -305,55 +334,68 @@ export default function OnboardingPage() {
                 }
                 icon={<LuLanguages className="w-5 h-5" />}
                 action={
-                  <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                    <DropdownTrigger>
-                      <Button
-                        radius="full"
-                        variant="flat"
-                        className="bg-default-200/50 dark:bg-white/10 font-bold"
-                      >
-                        {t("settings.body.language.button")}
-                      </Button>
-                    </DropdownTrigger>
-                    <DropdownMenu
-                      aria-label={t("settings.body.language.name")}
-                      variant="flat"
-                      disallowEmptySelection
-                      selectionMode="single"
-                      className="max-h-60 overflow-y-auto custom-scrollbar"
-                      selectedKeys={new Set([selectedLang])}
-                      onSelectionChange={(keys) => {
-                        const arr = Array.from(keys as unknown as Set<string>);
-                        const next = arr[0];
-                        if (typeof next === "string" && next.length > 0) {
-                          const previous = selectedLang;
-                          setErrorKey(null);
-                          setSelectedLang(next);
-                          Promise.resolve(i18n.changeLanguage(next))
-                            .then(() => {
-                              try {
-                                localStorage.setItem("i18nextLng", next);
-                              } catch {}
-                            })
-                            .catch((error: unknown) => {
-                              console.error("Failed to change language", error);
-                              setSelectedLang(previous);
-                              setErrorKey("common.load_failed");
-                            });
-                        }
-                      }}
+                  <Dropdown>
+                    <Button
+                      variant={"secondary"}
+                      className={cn(
+                        "rounded-full",
+                        "bg-surface-tertiary/50 dark:bg-white/10 font-bold",
+                      )}
                     >
-                      {langNames.map((lang) => (
-                        <DropdownItem key={lang.code} textValue={lang.language}>
-                          {lang.language}
-                        </DropdownItem>
-                      ))}
-                    </DropdownMenu>
+                      {t("settings.body.language.button")}
+                    </Button>
+                    <Dropdown.Popover
+                      className={COMPONENT_STYLES.dropdown.content}
+                    >
+                      <Dropdown.Menu
+                        aria-label={t("settings.body.language.name")}
+                        disallowEmptySelection
+                        selectionMode="single"
+                        className="max-h-60 overflow-y-auto custom-scrollbar"
+                        selectedKeys={new Set([selectedLang])}
+                        onSelectionChange={(keys) => {
+                          const arr = Array.from(
+                            keys as unknown as Set<string>,
+                          );
+                          const next = arr[0];
+                          if (typeof next === "string" && next.length > 0) {
+                            const previous = selectedLang;
+                            setErrorKey(null);
+                            setSelectedLang(next);
+                            Promise.resolve(i18n.changeLanguage(next))
+                              .then(() => {
+                                try {
+                                  localStorage.setItem("i18nextLng", next);
+                                } catch {}
+                              })
+                              .catch((error: unknown) => {
+                                console.error(
+                                  "Failed to change language",
+                                  error,
+                                );
+                                setSelectedLang(previous);
+                                setErrorKey("common.load_failed");
+                              });
+                          }
+                        }}
+                      >
+                        {langNames.map((lang) => (
+                          <Dropdown.Item
+                            key={lang.code}
+                            id={lang.code}
+                            textValue={lang.language}
+                          >
+                            <Label>{lang.language}</Label>
+                            <Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                        ))}
+                      </Dropdown.Menu>
+                    </Dropdown.Popover>
                   </Dropdown>
                 }
               />
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
 
@@ -367,7 +409,7 @@ export default function OnboardingPage() {
         confirmText={t("onboarding.unsaved.save")}
         showCancelButton
         confirmButtonProps={{
-          isLoading: savingBaseRoot,
+          isPending: savingBaseRoot,
           isDisabled: !newBaseRoot || !baseRootWritable,
         }}
         onCancel={() => unsavedOnClose()}
@@ -398,11 +440,11 @@ export default function OnboardingPage() {
         }}
       >
         <div className="flex flex-col gap-2">
-          <div className="text-default-700 dark:text-zinc-300 text-sm">
+          <div className="text-foreground dark:text-zinc-300 text-sm">
             {t("onboarding.unsaved.body")}
           </div>
           {!baseRootWritable && (
-            <div className="text-tiny text-danger-500">
+            <div className="text-xs text-rose-500">
               {t("settings.body.paths.not_writable")}
             </div>
           )}

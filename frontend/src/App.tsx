@@ -1,7 +1,9 @@
+import { Spinner, ToastProvider } from "@heroui/react";
+
 import "./polyfills/wails";
 import { Navigate, Route, Routes } from "react-router-dom";
 import React, { useEffect, useState, Suspense, lazy } from "react";
-import { ToastProvider, Spinner } from "@heroui/react";
+
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
@@ -87,7 +89,10 @@ const ModalLoadingFallback = ({ label }: { label: string }) => (
     className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm"
     role="status"
   >
-    <Spinner label={label} />
+    <div className="flex flex-col items-center gap-2">
+      <Spinner />
+      <span>{label}</span>
+    </div>
   </div>
 );
 
@@ -267,17 +272,8 @@ function App() {
                   <NavigationHistoryProvider>
                     <LipTaskConsoleProvider>
                       <ToastProvider
-                        placement="top-center"
-                        toastOffset={80}
-                        regionProps={{ className: "wails-no-drag z-[120]" }}
-                        toastProps={{
-                          timeout: 2000,
-                          classNames: {
-                            motionDiv: "wails-no-drag z-[120]",
-                            base: "wails-no-drag",
-                            closeButton: "wails-no-drag",
-                          },
-                        }}
+                        placement="top"
+                        className="wails-no-drag z-[120] top-20"
                       />
 
                       {(resolvedTheme === "light"
@@ -405,7 +401,10 @@ function App() {
                                 path={ROUTES.instanceSettings}
                                 element={<InstanceSettingsPage />}
                               />
-                              <Route path={ROUTES.mods} element={<ModsPage />} />
+                              <Route
+                                path={ROUTES.mods}
+                                element={<ModsPage />}
+                              />
                               <Route
                                 path={ROUTES.curseForge}
                                 element={<CurseForgePage />}
@@ -465,9 +464,7 @@ function App() {
                               />
                               <Route
                                 path="*"
-                                element={
-                                  <Navigate to={ROUTES.home} replace />
-                                }
+                                element={<Navigate to={ROUTES.home} replace />}
                               />
                             </Routes>
                             <StartupContentReady
@@ -494,9 +491,7 @@ function App() {
                           onKeepDisabled={declineClarity}
                         />
 
-                        {updateOpen &&
-                        !isOnboardingMode &&
-                        !isUpdatingMode ? (
+                        {updateOpen && !isOnboardingMode && !isUpdatingMode ? (
                           <Suspense
                             fallback={
                               <ModalLoadingFallback

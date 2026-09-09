@@ -1,6 +1,7 @@
+import { toast, useOverlayState } from "@heroui/react";
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDisclosure, addToast } from "@heroui/react";
+
 import { Call, Dialogs, Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
@@ -710,10 +711,10 @@ export const useInstanceSettings = () => {
   // Unsaved changes modal
   const {
     isOpen: unsavedOpen,
-    onOpen: unsavedOnOpen,
-    onClose: unsavedOnClose,
-    onOpenChange: unsavedOnOpenChange,
-  } = useDisclosure();
+    open: unsavedOnOpen,
+    close: unsavedOnClose,
+    setOpen: unsavedOnOpenChange,
+  } = useOverlayState();
   const [pendingNavPath, setPendingNavPath] = React.useState<string>("");
 
   // LeviLamina
@@ -730,31 +731,31 @@ export const useInstanceSettings = () => {
   >([]);
   const {
     isOpen: llVersionSelectOpen,
-    onOpen: llVersionSelectOnOpen,
-    onOpenChange: llVersionSelectOnOpenChange,
-    onClose: llVersionSelectOnClose,
-  } = useDisclosure();
+    open: llVersionSelectOnOpen,
+    setOpen: llVersionSelectOnOpenChange,
+    close: llVersionSelectOnClose,
+  } = useOverlayState();
   const {
     isOpen: llInstallConfirmOpen,
-    onOpen: llInstallConfirmOnOpen,
-    onClose: llInstallConfirmOnClose,
-  } = useDisclosure();
+    open: llInstallConfirmOnOpen,
+    close: llInstallConfirmOnClose,
+  } = useOverlayState();
   const {
     isOpen: llUninstallConfirmOpen,
-    onOpen: llUninstallConfirmOnOpen,
-    onClose: llUninstallConfirmOnClose,
-  } = useDisclosure();
+    open: llUninstallConfirmOnOpen,
+    close: llUninstallConfirmOnClose,
+  } = useOverlayState();
   const {
     isOpen: rcOpen,
-    onOpen: rcOnOpen,
-    onOpenChange: rcOnOpenChange,
-    onClose: rcOnClose,
-  } = useDisclosure();
+    open: rcOnOpen,
+    setOpen: rcOnOpenChange,
+    close: rcOnClose,
+  } = useOverlayState();
   const {
     isOpen: demotedWarningOpen,
-    onOpen: demotedWarningOnOpen,
-    onClose: demotedWarningOnClose,
-  } = useDisclosure();
+    open: demotedWarningOnOpen,
+    close: demotedWarningOnClose,
+  } = useOverlayState();
   const [rcVersion, setRcVersion] = React.useState("");
   const [isLLInstalled, setIsLLInstalled] = React.useState(false);
   const [llExplicitInstalled, setLLExplicitInstalled] = React.useState(false);
@@ -1465,9 +1466,10 @@ export const useInstanceSettings = () => {
       );
       const errorCode = String(info?.errorCode || "").trim();
       if (errorCode) {
-        addToast({
+        toast(undefined, {
           description: resolveToastText(errorCode),
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
         return false;
       }
@@ -1673,9 +1675,9 @@ export const useInstanceSettings = () => {
       }
       setBackupResult(resolvedResult);
       setBackupSuccessOpen(true);
-      addToast({
-        title: t("versions.edit.backup.success_title") as string,
-        color: "success",
+      toast(t("versions.edit.backup.success_title") as string, {
+        variant: "success",
+        timeout: 2000,
       });
       return true;
     } catch (e: any) {
@@ -1731,9 +1733,10 @@ export const useInstanceSettings = () => {
       );
       const errorCode = String(info.errorCode || "").trim();
       if (errorCode) {
-        addToast({
+        toast(undefined, {
           description: resolveToastText(errorCode),
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
         return false;
       }
@@ -1881,21 +1884,24 @@ export const useInstanceSettings = () => {
       }
       setRestoreResult(resolvedResult);
       setRestoreResultOpen(true);
-      addToast({
-        title: t(
+      toast(
+        t(
           resolvedResult.status === "success"
             ? "versions.edit.backup.restore.success_title"
             : resolvedResult.status === "partial"
               ? "versions.edit.backup.restore.partial_title"
               : "versions.edit.backup.restore.failed_title",
         ) as string,
-        color:
-          resolvedResult.status === "success"
-            ? "success"
-            : resolvedResult.status === "partial"
-              ? "warning"
-              : "danger",
-      });
+        {
+          variant:
+            resolvedResult.status === "success"
+              ? "success"
+              : resolvedResult.status === "partial"
+                ? "warning"
+                : "danger",
+          timeout: 2000,
+        },
+      );
       return resolvedResult.status === "success";
     } catch (e: any) {
       setError(
@@ -2052,9 +2058,10 @@ export const useInstanceSettings = () => {
         forcedVersion || resolvedLLTargetVersion || "",
       ).trim();
       if (!installVersion) {
-        addToast({
+        toast(undefined, {
           description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
         return false;
       }
@@ -2088,9 +2095,9 @@ export const useInstanceSettings = () => {
           setIsLLInstalled(true);
           setLLExplicitInstalled(true);
           setCurrentLLVersion(installVersion);
-          addToast({
-            title: t(llInstallSuccessKey) as string,
-            color: "success",
+          toast(t(llInstallSuccessKey) as string, {
+            variant: "success",
+            timeout: 2000,
           });
           return true;
         }
@@ -2101,9 +2108,10 @@ export const useInstanceSettings = () => {
         if (rawError.includes("ERR_LIP_INSTALL_FAILED")) {
           toastKeyOrMsg = "mods.err_lip_install_failed_suggestion";
         }
-        addToast({
+        toast(undefined, {
           description: resolveToastText(toastKeyOrMsg),
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
         return false;
       } finally {
@@ -2131,9 +2139,10 @@ export const useInstanceSettings = () => {
 
     const targetLLVersion = resolvedLLTargetVersion;
     if (!targetLLVersion) {
-      addToast({
+      toast(undefined, {
         description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       return false;
     }
@@ -2179,9 +2188,10 @@ export const useInstanceSettings = () => {
 
   const confirmLeviLaminaVersionSelect = React.useCallback(async () => {
     if (!resolvedLLTargetVersion) {
-      addToast({
+      toast(undefined, {
         description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       return false;
     }
@@ -2227,9 +2237,10 @@ export const useInstanceSettings = () => {
   const confirmUninstallLL = React.useCallback(async (): Promise<boolean> => {
     if (!targetName) return false;
     if (llUninstallBlocked) {
-      addToast({
+      toast(undefined, {
         description: resolveToastText(ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       return false;
     }
@@ -2268,7 +2279,10 @@ export const useInstanceSettings = () => {
       setIsLLInstalled(false);
       setLLExplicitInstalled(false);
       setCurrentLLVersion("");
-      addToast({ title: t("common.success") as string, color: "success" });
+      toast(t("common.success") as string, {
+        variant: "success",
+        timeout: 2000,
+      });
       return true;
     } catch (e) {
       const errCode = String((e as any)?.message || e || "").trim();
@@ -2278,9 +2292,10 @@ export const useInstanceSettings = () => {
       ) {
         await refreshLLStateForUninstall();
       }
-      addToast({
+      toast(undefined, {
         description: resolveToastText(errCode),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       return false;
     } finally {

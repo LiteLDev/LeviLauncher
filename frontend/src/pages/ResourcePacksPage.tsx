@@ -1,33 +1,24 @@
-import React from "react";
-import { useTranslation } from "react-i18next";
+import { PagePagination } from "@/components/PagePagination";
 import {
   Button,
-  Chip,
-  Image,
-  Spinner,
-  Tooltip,
-  useDisclosure,
-  Input,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Checkbox,
-  Pagination,
   Card,
-  CardBody,
-  addToast,
+  Checkbox,
+  Dropdown,
+  InputGroup,
+  Label,
+  ListBox,
+  ProgressBar,
   Select,
-  SelectItem,
-  Progress,
+  Spinner,
+  TextField,
+  Tooltip,
+  toast,
+  useOverlayState,
 } from "@heroui/react";
-import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-} from "@heroui/react";
+
+import React from "react";
+import { useTranslation } from "react-i18next";
+
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion, AnimatePresence } from "framer-motion";
@@ -116,41 +107,41 @@ export default function ResourcePacksPage() {
   const [activePack, setActivePack] = React.useState<any | null>(null);
   const {
     isOpen: delOpen,
-    onOpen: delOnOpen,
-    onOpenChange: delOnOpenChange,
-  } = useDisclosure();
+    open: delOnOpen,
+    setOpen: delOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: delCfmOpen,
-    onOpen: delCfmOnOpen,
-    onOpenChange: delCfmOnOpenChange,
-  } = useDisclosure();
+    open: delCfmOnOpen,
+    setOpen: delCfmOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: delManyCfmOpen,
-    onOpen: delManyCfmOnOpen,
-    onOpenChange: delManyCfmOnOpenChange,
-  } = useDisclosure();
+    open: delManyCfmOnOpen,
+    setOpen: delManyCfmOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: updateCfmOpen,
-    onOpen: updateCfmOnOpen,
-    onOpenChange: updateCfmOnOpenChange,
-  } = useDisclosure();
+    open: updateCfmOnOpen,
+    setOpen: updateCfmOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: transferTargetOpen,
-    onOpen: transferTargetOnOpen,
-    onClose: transferTargetOnClose,
-    onOpenChange: transferTargetOnOpenChange,
-  } = useDisclosure();
+    open: transferTargetOnOpen,
+    close: transferTargetOnClose,
+    setOpen: transferTargetOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: transferResultOpen,
-    onOpen: transferResultOnOpen,
-    onOpenChange: transferResultOnOpenChange,
-  } = useDisclosure();
+    open: transferResultOnOpen,
+    setOpen: transferResultOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: dupOpen,
-    onOpen: dupOnOpen,
-    onClose: dupOnClose,
-    onOpenChange: dupOnOpenChange,
-  } = useDisclosure();
+    open: dupOnOpen,
+    close: dupOnClose,
+    setOpen: dupOnOpenChange,
+  } = useOverlayState();
   const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
   const [packToUpdate, setPackToUpdate] = React.useState<any | null>(null);
@@ -386,24 +377,23 @@ export default function ResourcePacksPage() {
           result = await UpdateResourcePackMaterialBins(currentVersionName, p);
         } catch {}
         if (!result) {
-          addToast({
-            title: t("contentpage.update_material_bin_failed") as string,
-            color: "danger",
+          toast(t("contentpage.update_material_bin_failed") as string, {
+            variant: "danger",
+            timeout: 2000,
           });
           return;
         }
         if (result.error) {
-          addToast({
-            title: t("contentpage.update_material_bin_failed") as string,
+          toast(t("contentpage.update_material_bin_failed") as string, {
             description: String(result.error),
-            color: "danger",
+            variant: "danger",
+            timeout: 2000,
           });
           return;
         }
         const updated = Number(result.updatedCount || 0);
         const failed = Number(result.failedCount || 0);
-        addToast({
-          title: t("contentpage.update_material_bin_success") as string,
+        toast(t("contentpage.update_material_bin_success") as string, {
           description:
             t("contentpage.update_material_bin_stat_updated", {
               count: updated,
@@ -414,7 +404,8 @@ export default function ResourcePacksPage() {
                   count: failed,
                 })
               : ""),
-          color: failed > 0 ? "warning" : "success",
+          variant: failed > 0 ? "warning" : "success",
+          timeout: 2000,
         });
         await refreshAll(true);
       } finally {
@@ -429,9 +420,9 @@ export default function ResourcePacksPage() {
 
     const sourceVersionName = currentVersionName || readCurrentVersionName();
     if (!sourceVersionName) {
-      addToast({
-        title: t("launcherpage.currentVersion_none") as string,
-        color: "danger",
+      toast(t("launcherpage.currentVersion_none") as string, {
+        variant: "danger",
+        timeout: 2000,
       });
       return;
     }
@@ -475,10 +466,10 @@ export default function ResourcePacksPage() {
       setSelectedTransferTargets(targets.length > 0 ? [targets[0].name] : []);
       transferTargetOnOpen();
     } catch (e) {
-      addToast({
-        title: "Error",
+      toast("Error", {
         description: String(e),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
     }
   }, [
@@ -494,9 +485,9 @@ export default function ResourcePacksPage() {
 
     const sourceVersionName = currentVersionName || readCurrentVersionName();
     if (!sourceVersionName) {
-      addToast({
-        title: t("launcherpage.currentVersion_none") as string,
-        color: "danger",
+      toast(t("launcherpage.currentVersion_none") as string, {
+        variant: "danger",
+        timeout: 2000,
       });
       return;
     }
@@ -579,10 +570,10 @@ export default function ResourcePacksPage() {
         await refreshAll(true);
       }
     } catch (e) {
-      addToast({
-        title: "Error",
+      toast("Error", {
         description: String(e),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
     } finally {
       setTransferring(false);
@@ -604,157 +595,201 @@ export default function ResourcePacksPage() {
   return (
     <PageContainer ref={scrollRef}>
       <Card className={LAYOUT.GLASS_CARD.BASE}>
-        <CardBody className="p-6 flex flex-col gap-6">
+        <Card.Content className="p-6 flex flex-col gap-6">
           <PageHeader
             title={t("contentpage.resource_packs")}
             endContent={
               <div className="flex items-center gap-2">
                 <Button
-                  radius="full"
-                  variant="flat"
-                  startContent={<FaFolderOpen />}
                   onPress={() => OpenPathDir(roots.resourcePacks)}
-                  className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
+                  variant={"secondary"}
+                  className={cn(
+                    "rounded-full",
+                    "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                  )}
                 >
+                  {<FaFolderOpen />}
                   {t("common.open")}
                 </Button>
-                <Tooltip content={t("common.select_mode")}>
+                <Tooltip>
                   <Button
                     isIconOnly
-                    radius="full"
-                    variant="flat"
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200"
                     onPress={selection.toggleSelectMode}
+                    variant={"secondary"}
+                    className={cn(
+                      "rounded-full",
+                      "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200",
+                    )}
                   >
                     <FaCheckSquare />
                   </Button>
+                  <Tooltip.Content>{t("common.select_mode")}</Tooltip.Content>
                 </Tooltip>
-                <Tooltip content={t("common.refresh") as unknown as string}>
+                <Tooltip>
                   <Button
                     isIconOnly
-                    radius="full"
-                    variant="flat"
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200"
                     onPress={() => refreshAll()}
                     isDisabled={loading}
+                    variant={"secondary"}
+                    className={cn(
+                      "rounded-full",
+                      "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200",
+                    )}
                   >
                     <FaSync
                       className={loading ? "animate-spin" : ""}
                       size={18}
                     />
                   </Button>
+                  <Tooltip.Content>
+                    {t("common.refresh") as unknown as string}
+                  </Tooltip.Content>
                 </Tooltip>
               </div>
             }
           />
-
           <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
-            <Input
-              placeholder={t("common.search_placeholder")}
+            <TextField
+              aria-label={t("common.search_placeholder")}
+              className={cn(
+                "group",
+                COMPONENT_STYLES.input.mainWrapper,
+                "w-full md:max-w-xs",
+              )}
               value={sort.query}
-              onValueChange={sort.setQuery}
-              startContent={<FaFilter className="text-default-400" />}
-              endContent={
-                sort.query && (
-                  <button onClick={() => sort.setQuery("")}>
-                    <FaTimes className="text-default-400 hover:text-default-600" />
-                  </button>
-                )
-              }
-              radius="full"
-              variant="flat"
-              className="w-full md:max-w-xs"
-              classNames={COMPONENT_STYLES.input}
-            />
+              onChange={sort.setQuery}
+            >
+              <InputGroup
+                className={cn(
+                  COMPONENT_STYLES.input.inputWrapper,
+                  COMPONENT_STYLES.input.innerWrapper,
+                  "rounded-full",
+                )}
+              >
+                <InputGroup.Prefix>
+                  {<FaFilter className="text-muted" />}
+                </InputGroup.Prefix>
+                <InputGroup.Input
+                  placeholder={t("common.search_placeholder")}
+                  className={COMPONENT_STYLES.input.input}
+                />
+                <InputGroup.Suffix>
+                  {sort.query && (
+                    <button onClick={() => sort.setQuery("")}>
+                      <FaTimes className="text-muted hover:text-foreground" />
+                    </button>
+                  )}
+                </InputGroup.Suffix>
+              </InputGroup>
+            </TextField>
 
             <div className="flex items-center gap-3">
               {hasIncompatibleShaders && (
                 <Checkbox
                   isSelected={onlyShowUpdates}
-                  onValueChange={setOnlyShowUpdates}
-                  radius="full"
-                  size="lg"
-                  classNames={{ wrapper: "after:bg-warning" }}
+                  onChange={setOnlyShowUpdates}
+                  className={"group"}
                 >
-                  <span className="text-sm text-default-600">
-                    {t("contentpage.only_show_updates")}
-                  </span>
+                  <Checkbox.Content>
+                    <Checkbox.Control
+                      className={cn("after:bg-warning", "rounded-full")}
+                    >
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <span>
+                      <span className="text-sm text-foreground">
+                        {t("contentpage.only_show_updates")}
+                      </span>
+                    </span>
+                  </Checkbox.Content>
                 </Checkbox>
               )}
 
-              <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                <DropdownTrigger>
-                  <Button
-                    variant="flat"
-                    radius="full"
-                    startContent={
-                      sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
-                    }
-                    className="min-w-[120px] bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
-                  >
-                    {sort.sortKey === "name"
-                      ? (t("filemanager.sort.name") as string)
-                      : (t("contentpage.sort_time") as string)}
-                    {" / "}
-                    {sort.sortAsc
-                      ? t("contentpage.sort_asc")
-                      : t("contentpage.sort_desc")}
-                  </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                  selectionMode="single"
-                  selectedKeys={
-                    new Set([
-                      `${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`,
-                    ])
-                  }
-                  onSelectionChange={(keys) => {
-                    const val = Array.from(keys)[0] as string;
-                    const [k, order] = val.split("-");
-                    sort.setSortKey(k as "name" | "time");
-                    sort.setSortAsc(order === "asc");
-                  }}
+              <Dropdown>
+                <Button
+                  variant={"secondary"}
+                  className={cn(
+                    "rounded-full",
+                    "min-w-[120px] bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                  )}
                 >
-                  <DropdownItem
-                    key="name-asc"
-                    startContent={<FaSortAmountDown />}
+                  {sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />}
+                  {sort.sortKey === "name"
+                    ? (t("filemanager.sort.name") as string)
+                    : (t("contentpage.sort_time") as string)}
+                  {" / "}
+                  {sort.sortAsc
+                    ? t("contentpage.sort_asc")
+                    : t("contentpage.sort_desc")}
+                </Button>
+                <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
+                  <Dropdown.Menu
+                    selectionMode="single"
+                    selectedKeys={
+                      new Set([
+                        `${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`,
+                      ])
+                    }
+                    onSelectionChange={(keys) => {
+                      const val = Array.from(keys)[0] as string;
+                      const [k, order] = val.split("-");
+                      sort.setSortKey(k as "name" | "time");
+                      sort.setSortAsc(order === "asc");
+                    }}
                   >
-                    {t("filemanager.sort.name")} (A-Z)
-                  </DropdownItem>
-                  <DropdownItem
-                    key="name-desc"
-                    startContent={<FaSortAmountUp />}
-                  >
-                    {t("filemanager.sort.name")} (Z-A)
-                  </DropdownItem>
-                  <DropdownItem
-                    key="time-asc"
-                    startContent={<FaSortAmountDown />}
-                  >
-                    {t("contentpage.sort_time")} (Old-New)
-                  </DropdownItem>
-                  <DropdownItem
-                    key="time-desc"
-                    startContent={<FaSortAmountUp />}
-                  >
-                    {t("contentpage.sort_time")} (New-Old)
-                  </DropdownItem>
-                </DropdownMenu>
+                    <Dropdown.Item
+                      key="name-asc"
+                      id={"name-asc"}
+                      textValue={String("name-asc")}
+                    >
+                      {<FaSortAmountDown />}
+                      <Label>{t("filemanager.sort.name")}(A-Z)</Label>
+                      <Dropdown.ItemIndicator />
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      key="name-desc"
+                      id={"name-desc"}
+                      textValue={String("name-desc")}
+                    >
+                      {<FaSortAmountUp />}
+                      <Label>{t("filemanager.sort.name")}(Z-A)</Label>
+                      <Dropdown.ItemIndicator />
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      key="time-asc"
+                      id={"time-asc"}
+                      textValue={String("time-asc")}
+                    >
+                      {<FaSortAmountDown />}
+                      <Label>{t("contentpage.sort_time")}(Old-New)</Label>
+                      <Dropdown.ItemIndicator />
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      key="time-desc"
+                      id={"time-desc"}
+                      textValue={String("time-desc")}
+                    >
+                      {<FaSortAmountUp />}
+                      <Label>{t("contentpage.sort_time")}(New-Old)</Label>
+                      <Dropdown.ItemIndicator />
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
               </Dropdown>
             </div>
           </div>
-          <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
+          <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
             <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
               {currentVersionName || t("contentpage.none")}
             </span>
-            <span className="text-default-300 dark:text-zinc-700">|</span>
+            <span className="text-muted dark:text-zinc-700">|</span>
             <span>{t("contentpage.isolation")}:</span>
-            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
               {roots.isIsolation ? t("common.yes") : t("common.no")}
             </span>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       <SelectionBar
@@ -772,7 +807,7 @@ export default function ResourcePacksPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
-          <span className="text-default-500 dark:text-zinc-400">
+          <span className="text-muted dark:text-zinc-400">
             {t("common.loading")}
           </span>
         </div>
@@ -792,7 +827,7 @@ export default function ResourcePacksPage() {
                       COMPONENT_STYLES.contentListItem,
                       "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
                       selection.isSelectMode && selection.selected[p.path]
-                        ? "ring-2 ring-primary bg-primary/5"
+                        ? "ring-2 ring-accent bg-accent/5"
                         : "",
                     )}
                     onClick={() => {
@@ -801,18 +836,20 @@ export default function ResourcePacksPage() {
                     }}
                   >
                     <div className="relative shrink-0">
-                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-default-100/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+                      <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-surface-secondary/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
                         {p.iconDataUrl ? (
-                          <Image
+                          <img
                             src={p.iconDataUrl}
                             alt={p.name || p.path}
-                            className="w-full h-full object-cover"
-                            radius="none"
+                            className={cn(
+                              "rounded-none",
+                              "w-full h-full object-cover",
+                            )}
                           />
                         ) : (
                           <div className="flex flex-col items-center gap-2">
-                            <FaFolderOpen className="text-4xl text-default-300" />
-                            <span className="text-[10px] text-default-400 font-medium uppercase tracking-wider">
+                            <FaFolderOpen className="text-4xl text-muted" />
+                            <span className="text-[10px] text-muted font-medium uppercase tracking-wider">
                               No Icon
                             </span>
                           </div>
@@ -822,12 +859,20 @@ export default function ResourcePacksPage() {
                         <div className="absolute -top-2 -left-2 z-20">
                           <Checkbox
                             isSelected={!!selection.selected[p.path]}
-                            onValueChange={() => selection.toggleSelect(p.path)}
-                            classNames={{
-                              wrapper:
-                                "bg-white dark:bg-zinc-900 shadow-lg scale-110",
-                            }}
-                          />
+                            onChange={() => selection.toggleSelect(p.path)}
+                            className={"group"}
+                          >
+                            <Checkbox.Content>
+                              <Checkbox.Control
+                                className={
+                                  "bg-white dark:bg-zinc-900 shadow-lg scale-110"
+                                }
+                              >
+                                <Checkbox.Indicator />
+                              </Checkbox.Control>
+                              <span></span>
+                            </Checkbox.Content>
+                          </Checkbox>
                         </div>
                       )}
                     </div>
@@ -835,7 +880,7 @@ export default function ResourcePacksPage() {
                     <div className="flex flex-col flex-1 min-w-0">
                       <div className="flex justify-between items-start gap-2 mb-1">
                         <h3
-                          className="text-lg font-bold text-default-900 dark:text-white truncate"
+                          className="text-lg font-bold text-foreground dark:text-white truncate"
                           title={p.name}
                         >
                           {renderMcText(p.name || getPathBaseName(p.path))}
@@ -843,7 +888,7 @@ export default function ResourcePacksPage() {
                       </div>
 
                       <p
-                        className="text-sm text-default-500 dark:text-zinc-400 line-clamp-2 w-full mb-3"
+                        className="text-sm text-muted dark:text-zinc-400 line-clamp-2 w-full mb-3"
                         title={p.description}
                       >
                         {renderMcText(p.description || "")}
@@ -851,11 +896,11 @@ export default function ResourcePacksPage() {
                       {p.materialCompat?.hasMaterialBin &&
                         p.materialCompat?.needsUpdate && (
                           <div
-                            className="mb-3 rounded-xl border border-warning-200/50 bg-warning-50/50 p-3 dark:border-warning-900/30 dark:bg-warning-900/10 backdrop-blur-md"
+                            className="mb-3 rounded-xl border border-amber-200/50 bg-amber-50/50 p-3 dark:border-amber-900/30 dark:bg-amber-900/10 backdrop-blur-md"
                             onClick={(e) => e.stopPropagation()}
                           >
                             <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                              <div className="flex items-center gap-2 text-warning-600 dark:text-warning-400">
+                              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
                                 <FaSync
                                   className={
                                     updatingMaterialByPath[p.path]
@@ -869,78 +914,98 @@ export default function ResourcePacksPage() {
                               </div>
                               <Button
                                 size="sm"
-                                color="warning"
-                                variant="shadow"
-                                radius="full"
-                                isLoading={!!updatingMaterialByPath[p.path]}
                                 onPress={(e) => {
                                   // e.stopPropagation() is handled by parent div onClick
                                   setPackToUpdate(p);
                                   updateCfmOnOpen();
                                 }}
-                                className="font-medium text-warning-foreground shadow-warning-500/20 shrink-0"
+                                variant={"primary"}
+                                isPending={!!updatingMaterialByPath[p.path]}
+                                className={cn(
+                                  "rounded-full",
+                                  "bg-warning text-warning-foreground",
+                                  "font-medium text-warning-foreground shadow-amber-500/20 shrink-0",
+                                )}
                               >
-                                {t("contentpage.update_material_bin")}
+                                {({ isPending }) => (
+                                  <>
+                                    <Spinner
+                                      size="sm"
+                                      color="current"
+                                      className={isPending ? "" : "hidden"}
+                                    />
+                                    {t("contentpage.update_material_bin")}
+                                  </>
+                                )}
                               </Button>
                             </div>
                           </div>
                         )}
                       <div className="flex items-end justify-between mt-auto">
-                        <div className="flex flex-wrap items-center gap-4 text-xs text-default-400 dark:text-zinc-500">
-                          <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
-                            <FaHdd className="text-default-400" />
+                        <div className="flex flex-wrap items-center gap-4 text-xs text-muted dark:text-zinc-500">
+                          <div className="flex items-center gap-1.5 bg-surface-secondary/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                            <FaHdd className="text-muted" />
                             <span>{formatBytes(p.size)}</span>
                           </div>
-                          <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
-                            <FaClock className="text-default-400" />
+                          <div className="flex items-center gap-1.5 bg-surface-secondary/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                            <FaClock className="text-muted" />
                             <span>{formatDate(p.modTime)}</span>
                           </div>
                           {p.version && (
-                            <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
-                              <FaTag className="text-default-400" />
+                            <div className="flex items-center gap-1.5 bg-surface-secondary/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                              <FaTag className="text-muted" />
                               <span>v{p.version}</span>
                             </div>
                           )}
                           {p.materialCompat?.hasMaterialBin && (
-                            <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
-                              <FaMagic className="text-default-400" />
+                            <div className="flex items-center gap-1.5 bg-surface-secondary/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
+                              <FaMagic className="text-muted" />
                               <span>{t("contentpage.shader_chip")}</span>
                             </div>
                           )}
                         </div>
 
                         <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
-                          <Tooltip content={t("common.open")}>
+                          <Tooltip>
                             <Button
                               isIconOnly
                               size="sm"
-                              variant="flat"
-                              radius="lg"
-                              onClick={(e) => {
-                                e.stopPropagation();
+                              variant={"secondary"}
+                              onClick={(event) => event.stopPropagation()}
+                              onPress={(e) => {
                                 OpenPathDir(p.path);
                               }}
-                              className="bg-default-100 hover:bg-default-200 text-default-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200"
+                              className={cn(
+                                "rounded-lg",
+                                "bg-surface-secondary hover:bg-surface-tertiary text-foreground dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200",
+                              )}
                             >
                               <FaFolderOpen size={14} />
                             </Button>
+                            <Tooltip.Content>
+                              {t("common.open")}
+                            </Tooltip.Content>
                           </Tooltip>
-                          <Tooltip content={t("common.delete")}>
+                          <Tooltip>
                             <Button
                               isIconOnly
                               size="sm"
-                              color="danger"
-                              variant="flat"
-                              radius="lg"
-                              onClick={(e) => {
-                                e.stopPropagation();
+                              variant={"danger-soft"}
+                              onClick={(event) => event.stopPropagation()}
+                              onPress={(e) => {
                                 setActivePack(p);
                                 delCfmOnOpen();
                               }}
-                              className="bg-danger-50 hover:bg-danger-100 text-danger-500 dark:bg-danger-900/20 dark:hover:bg-danger-900/30"
+                              className={cn(
+                                "rounded-lg",
+                                "bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-900/20 dark:hover:bg-rose-900/30",
+                              )}
                             >
                               <FaTrash size={14} />
                             </Button>
+                            <Tooltip.Content>
+                              {t("common.delete")}
+                            </Tooltip.Content>
                           </Tooltip>
                         </div>
                       </div>
@@ -950,7 +1015,7 @@ export default function ResourcePacksPage() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-default-400 dark:text-zinc-500">
+            <div className="flex flex-col items-center justify-center py-20 text-muted dark:text-zinc-500">
               <FaBox className="text-6xl mb-4 opacity-20" />
               <p>
                 {sort.query
@@ -963,12 +1028,11 @@ export default function ResourcePacksPage() {
           {sort.totalPages > 1 && (
             <div className="relative h-12">
               <div className="absolute left-1/2 -translate-x-1/2 bottom-0 w-full flex justify-center">
-                <Pagination
-                  total={sort.totalPages}
-                  page={sort.currentPage}
-                  onChange={sort.setCurrentPage}
-                  showControls
+                <PagePagination
                   size="sm"
+                  pageCount={sort.totalPages}
+                  currentPage={sort.currentPage}
+                  onPageChange={sort.setCurrentPage}
                 />
               </div>
             </div>
@@ -991,19 +1055,19 @@ export default function ResourcePacksPage() {
             setDeletingOne(true);
             try {
               await DeletePack(currentVersionName, activePack.path);
-              addToast({
-                title: t("contentpage.deleted_name", {
+              toast(
+                t("contentpage.deleted_name", {
                   name: activePack.name,
                 }),
-                color: "success",
-              });
+                { variant: "success", timeout: 2000 },
+              );
               setActivePack(null);
               refreshAll();
             } catch (e) {
-              addToast({
-                title: "Error",
+              toast("Error", {
                 description: String(e),
-                color: "danger",
+                variant: "danger",
+                timeout: 2000,
               });
               throw e;
             } finally {
@@ -1038,12 +1102,12 @@ export default function ResourcePacksPage() {
                 console.error(e);
               }
             }
-            addToast({
-              title: t("contentpage.deleted_count", {
+            toast(
+              t("contentpage.deleted_count", {
                 count: success,
               }),
-              color: "success",
-            });
+              { variant: "success", timeout: 2000 },
+            );
             selection.clearSelection();
             refreshAll();
           } finally {
@@ -1063,18 +1127,22 @@ export default function ResourcePacksPage() {
         showCancelButton={false}
       >
         <div className="flex flex-col gap-4">
-          <Progress
+          <ProgressBar
             isIndeterminate
             aria-label="transferring"
-            className="w-full"
             size="sm"
-            color="primary"
-          />
-          <div className="text-default-600 dark:text-zinc-300 text-sm">
+            color={"accent"}
+            className={"w-full"}
+          >
+            <ProgressBar.Track>
+              <ProgressBar.Fill />
+            </ProgressBar.Track>
+          </ProgressBar>
+          <div className="text-foreground dark:text-zinc-300 text-sm">
             {t("contentpage.transfer_progress_body")}
           </div>
           {currentTransferItem ? (
-            <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
+            <div className="p-3 bg-surface-secondary/50 dark:bg-zinc-800 rounded-xl border border-border/50 text-sm font-mono text-foreground dark:text-zinc-200 break-all">
               {currentTransferItem}
             </div>
           ) : null}
@@ -1101,50 +1169,68 @@ export default function ResourcePacksPage() {
         }}
       >
         <div className="flex flex-col gap-4">
-          <div className="text-sm text-default-700 dark:text-zinc-300">
+          <div className="text-sm text-foreground dark:text-zinc-300">
             {t("contentpage.transfer_resources_body_simple")}
           </div>
 
           {transferTargets.length > 0 ? (
             <Select
-              items={transferTargets}
-              label={t("mirror.target") || "Target Instance"}
               placeholder={t("contentpage.transfer_target_placeholder")}
-              selectedKeys={new Set(selectedTransferTargets)}
-              onSelectionChange={(keys) => {
-                const selected = Array.from(keys).map(String);
+              value={Array.from(new Set(selectedTransferTargets))[0] ?? null}
+              onChange={(keys) => {
+                const selected = [keys].map(String);
                 setSelectedTransferTargets(selected);
               }}
-              classNames={COMPONENT_STYLES.select}
             >
-              {(item) => (
-                <SelectItem key={item.name} textValue={item.name}>
-                  <div className="flex gap-2 items-center">
-                    <div className="w-8 h-8 rounded bg-default-200 flex items-center justify-center overflow-hidden">
-                      <img
-                        src={
-                          item.icon ||
-                          "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
-                        }
-                        alt="icon"
-                        className="w-full h-full object-cover"
-                        onError={(e) =>
-                          (e.currentTarget.style.display = "none")
-                        }
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-small">{item.name}</span>
-                      <span className="text-tiny text-default-400">
-                        {item.gameVersion}
-                      </span>
-                    </div>
-                  </div>
-                </SelectItem>
-              )}
+              <Label>{t("mirror.target") || "Target Instance"}</Label>
+              <Select.Trigger className={COMPONENT_STYLES.select.trigger}>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover
+                className={COMPONENT_STYLES.select.popoverContent}
+              >
+                <ListBox
+                  items={transferTargets}
+                  className={COMPONENT_STYLES.select.listbox}
+                >
+                  {(item) => (
+                    <ListBox.Item
+                      key={item.name}
+                      id={item.name}
+                      textValue={item.name}
+                    >
+                      <Label>
+                        <div className="flex gap-2 items-center">
+                          <div className="w-8 h-8 rounded bg-surface-tertiary flex items-center justify-center overflow-hidden">
+                            <img
+                              src={
+                                item.icon ||
+                                "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                              }
+                              alt="icon"
+                              className="w-full h-full object-cover"
+                              onError={(e) =>
+                                (e.currentTarget.style.display = "none")
+                              }
+                            />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm">{item.name}</span>
+                            <span className="text-xs text-muted">
+                              {item.gameVersion}
+                            </span>
+                          </div>
+                        </div>
+                      </Label>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  )}
+                </ListBox>
+              </Select.Popover>
             </Select>
           ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-default-400 dark:text-zinc-500">
+            <div className="flex flex-col items-center justify-center py-8 text-muted dark:text-zinc-500">
               <FaExchangeAlt className="text-4xl mb-3 opacity-20" />
               <p className="text-sm">{t("contentpage.transfer_no_targets")}</p>
             </div>
@@ -1188,11 +1274,11 @@ export default function ResourcePacksPage() {
         }}
       >
         <div className="flex flex-col gap-4">
-          <div className="text-sm text-default-700 dark:text-zinc-300">
+          <div className="text-sm text-foreground dark:text-zinc-300">
             {t("mods.overwrite_modal_body")}
           </div>
           {dupNameRef.current ? (
-            <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
+            <div className="p-3 bg-surface-secondary/50 dark:bg-zinc-800 rounded-xl border border-border/50 text-sm font-mono text-foreground dark:text-zinc-200 break-all">
               {dupNameRef.current}
             </div>
           ) : null}
@@ -1212,15 +1298,15 @@ export default function ResourcePacksPage() {
           if (packToUpdate) {
             void updateMaterialBinsForPack(packToUpdate.path);
           }
-          updateCfmOnOpenChange();
+          updateCfmOnOpenChange(false);
         }}
       >
         <p>{t("contentpage.update_material_bin_modal_content")}</p>
-        <div className="mt-4 p-3 bg-warning-50 dark:bg-warning-900/20 border border-warning-200 dark:border-warning-800 rounded-lg">
-          <p className="text-warning-600 dark:text-warning-500 text-sm font-medium">
+        <div className="mt-4 p-3 bg-amber-50 dark:bg-amber-900/20 border border-amber-200 dark:border-amber-800 rounded-lg">
+          <p className="text-amber-600 dark:text-amber-500 text-sm font-medium">
             {t("contentpage.update_material_bin_risk_title")}
           </p>
-          <p className="text-warning-600 dark:text-warning-500 text-sm mt-1">
+          <p className="text-amber-600 dark:text-amber-500 text-sm mt-1">
             {t("contentpage.update_material_bin_risk_content")}
           </p>
         </div>

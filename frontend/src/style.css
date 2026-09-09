@@ -1,6 +1,6 @@
 @import "tailwindcss";
+@import "./heroui.css";
 @plugin "@tailwindcss/typography";
-@plugin "./hero.ts";
 
 @font-face {
   font-family: "MiSans";
@@ -10,24 +10,24 @@
   font-display: swap;
 }
 
-@source "../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
-
 @theme {
   --font-sans: "MiSans", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "MiSans", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", "MiSans", sans-serif;
 
-  --color-primary-50: rgb(var(--theme-50, 236, 253, 245));
-  --color-primary-100: rgb(var(--theme-100, 209, 250, 229));
-  --color-primary-200: rgb(var(--theme-200, 167, 243, 208));
-  --color-primary-300: rgb(var(--theme-300, 110, 231, 183));
-  --color-primary-400: rgb(var(--theme-400, 52, 211, 153));
-  --color-primary-500: rgb(var(--theme-500, 16, 185, 129));
-  --color-primary-600: rgb(var(--theme-600, 5, 150, 105));
-  --color-primary-700: rgb(var(--theme-700, 4, 120, 87));
-  --color-primary-800: rgb(var(--theme-800, 6, 95, 70));
-  --color-primary-900: rgb(var(--theme-900, 6, 78, 59));
-  --color-primary-950: rgb(var(--theme-950, 2, 44, 34));
-  --color-primary: rgb(var(--theme-500, 16, 185, 129));
+  --color-brand-50: rgb(var(--theme-50, 236, 253, 245));
+  --color-brand-100: rgb(var(--theme-100, 209, 250, 229));
+  --color-brand-200: rgb(var(--theme-200, 167, 243, 208));
+  --color-brand-300: rgb(var(--theme-300, 110, 231, 183));
+  --color-brand-400: rgb(var(--theme-400, 52, 211, 153));
+  --color-brand-500: rgb(var(--theme-500, 16, 185, 129));
+  --color-brand-600: rgb(var(--theme-600, 5, 150, 105));
+  --color-brand-700: rgb(var(--theme-700, 4, 120, 87));
+  --color-brand-800: rgb(var(--theme-800, 6, 95, 70));
+  --color-brand-900: rgb(var(--theme-900, 6, 78, 59));
+  --color-brand-950: rgb(var(--theme-950, 2, 44, 34));
+  --color-brand: rgb(var(--theme-500, 16, 185, 129));
 
   --animate-fadeInUp: fadeInUp 1s ease-out;
   --animate-fadeInUp2: fadeInUp 1.5s ease-out;
@@ -214,6 +214,59 @@
 }
 
 @variant dark (&:is(.dark *));
+
+/* Launcher palettes are application-owned; HeroUI consumes the semantic tokens. */
+:root,
+.light {
+  --background: rgba(250, 250, 250, 0.9);
+  --foreground: #27272a;
+  --surface: #ffffff;
+  --overlay: #ffffff;
+  --accent: rgb(var(--theme-500, 16, 185, 129));
+  --accent-foreground: #ffffff;
+  --accent-soft-foreground: rgb(var(--theme-800, 6, 95, 70));
+  --focus: var(--accent);
+  --danger-foreground: #000000;
+  --warning-foreground: #27272a;
+}
+
+.dark {
+  --background: #000000;
+  --foreground: #fafafa;
+  --surface: #18181b;
+  --overlay: #18181b;
+  --accent: rgb(var(--theme-500, 16, 185, 129));
+  --accent-foreground: #ffffff;
+  --accent-soft-foreground: rgb(var(--theme-200, 167, 243, 208));
+  --focus: var(--accent);
+  --danger-foreground: #000000;
+}
+
+/* Match the launcher's existing content layout while using v3 compound parts. */
+@layer components {
+  .card {
+    padding: 0;
+    gap: 0;
+  }
+  .card__content {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem;
+  }
+  .card__header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.75rem;
+  }
+  .table__column {
+    background: var(--surface-secondary);
+    color: var(--muted);
+  }
+  .table__cell {
+    border-bottom: 1px solid var(--border);
+  }
+}
 
 body,
 html,

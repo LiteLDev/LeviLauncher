@@ -1,5 +1,6 @@
-import React from "react";
 import { Button } from "@heroui/react";
+import React from "react";
+
 import { useTranslation } from "react-i18next";
 import { Browser } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
@@ -29,37 +30,37 @@ export const ClarityConsentModal: React.FC<ClarityConsentModalProps> = ({
       showConfirmButton={false}
       footer={
         <div className="flex w-full flex-wrap justify-end gap-2">
-          <Button variant="light" onPress={onKeepDisabled}>
+          <Button onPress={onKeepDisabled} variant={"ghost"}>
             {t("clarity.prompt.disable")}
           </Button>
-          <Button color="primary" onPress={onEnable}>
+          <Button onPress={onEnable} variant={"primary"}>
             {t("clarity.prompt.enable")}
           </Button>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
-        <p className="text-default-700 dark:text-zinc-300 text-sm leading-6">
+        <p className="text-foreground dark:text-zinc-300 text-sm leading-6">
           {t("clarity.prompt.body")}
         </p>
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
-            radius="full"
-            variant="flat"
             onPress={() =>
               Browser.OpenURL("https://clarity.microsoft.com/terms")
             }
+            variant={"secondary"}
+            className={"rounded-full"}
           >
             {t("clarity.prompt.clarity_terms")}
           </Button>
           <Button
             size="sm"
-            radius="full"
-            variant="light"
             onPress={() =>
               Browser.OpenURL("https://privacy.microsoft.com/privacystatement")
             }
+            variant={"ghost"}
+            className={"rounded-full"}
           >
             {t("clarity.prompt.microsoft_privacy")}
           </Button>

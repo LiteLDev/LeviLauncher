@@ -1,5 +1,6 @@
+import { Card } from "@heroui/react";
 import React from "react";
-import { Card, CardBody, CardHeader } from "@heroui/react";
+
 import { useTranslation } from "react-i18next";
 import { useNavigate } from "react-router-dom";
 import { SiCurseforge } from "react-icons/si";
@@ -20,21 +21,20 @@ export const ContentDownloadCard = () => {
         "rounded-3xl",
       )}
     >
-      <CardHeader className="px-5 py-3 border-b border-default-100 dark:border-white/5 flex justify-between items-center">
+      <Card.Header className="px-5 py-3 border-b border-border dark:border-white/5 flex justify-between items-center">
         <div className="flex items-center gap-2">
           <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
             <FaCloudDownloadAlt size={16} />
           </div>
-          <h3 className="text-base font-bold text-default-800 dark:text-zinc-100">
+          <h3 className="text-base font-bold text-foreground dark:text-zinc-100">
             {t("contentdownload.title")}
           </h3>
         </div>
-      </CardHeader>
-
-      <CardBody className="p-4 flex flex-col gap-3">
+      </Card.Header>
+      <Card.Content className="p-4 flex flex-col gap-3">
         <button
           type="button"
-          className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-default-200/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+          className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-border/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           onClick={() => navigate(ROUTES.curseForge)}
         >
           <div className="flex items-center gap-3">
@@ -42,25 +42,24 @@ export const ContentDownloadCard = () => {
               aria-hidden="true"
               className="text-[#f16436] text-xl"
             />
-            <span className="font-medium text-default-700 dark:text-zinc-200">
+            <span className="font-medium text-foreground dark:text-zinc-200">
               {t("curseforge.title")}
             </span>
           </div>
         </button>
-
         <button
           type="button"
-          className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-default-200/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-default-200/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary-500"
+          className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 cursor-pointer transition-all border border-transparent hover:border-border/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           onClick={() => navigate(ROUTES.lip)}
         >
           <div className="flex items-center gap-3">
             <FaCube className="text-green-500 text-xl" />
-            <span className="font-medium text-default-700 dark:text-zinc-200">
+            <span className="font-medium text-foreground dark:text-zinc-200">
               lip
             </span>
           </div>
         </button>
-      </CardBody>
+      </Card.Content>
     </Card>
   );
 };

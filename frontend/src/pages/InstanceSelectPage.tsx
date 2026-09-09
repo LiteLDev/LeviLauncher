@@ -1,3 +1,16 @@
+import {
+  Button,
+  Card,
+  Chip,
+  CloseButton,
+  Dropdown,
+  InputGroup,
+  Label,
+  Tabs,
+  TextField,
+  toast,
+} from "@heroui/react";
+
 import React from "react";
 import { getPlayerGamertagMap } from "@/utils/content";
 import { PageContainer } from "@/components/PageContainer";
@@ -5,21 +18,7 @@ import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import { PageHeader } from "@/components/PageHeader";
-import {
-  Button,
-  Card,
-  CardBody,
-  CardHeader,
-  Tabs,
-  Tab,
-  Input,
-  Chip,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  addToast,
-} from "@heroui/react";
+
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -188,10 +187,10 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
       saveCurrentVersionName(name);
       setSelectedVersionName(name);
       setPersistedName(name);
-      addToast({
-        title: t("common.success"),
+      toast(t("common.success"), {
         description: t("launcherpage.currentVersion") + ": " + name,
-        color: "primary",
+        variant: "accent",
+        timeout: 2000,
       });
     }
     try {
@@ -221,7 +220,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
           onAnimationComplete={() => setIsAnimating(false)}
         >
           <Card className={cn("w-full", LAYOUT.GLASS_CARD.BASE)}>
-            <CardHeader className="flex flex-col gap-6 p-6">
+            <Card.Header className="flex flex-col gap-6 p-6">
               <PageHeader
                 className="w-full"
                 title={t("launcherpage.version_select.title")}
@@ -229,99 +228,163 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
               />
               <div className="flex w-full flex-wrap items-center gap-3">
                 <Tabs
-                  aria-label="Filter versions"
                   selectedKey={activeTab}
                   onSelectionChange={(k) => setActiveTab(k as any)}
-                  variant="solid"
-                  classNames={COMPONENT_STYLES.tabs}
+                  variant="primary"
                 >
-                  <Tab key="all" title={t("versions.tab.all")} />
-                  <Tab key="release" title={t("versions.tab.release")} />
-                  <Tab key="preview" title={t("versions.tab.preview")} />
+                  <Tabs.ListContainer>
+                    <Tabs.List
+                      aria-label={"Filter versions"}
+                      className={COMPONENT_STYLES.tabs.tabList}
+                    >
+                      <Tabs.Tab
+                        key="all"
+                        id={"all"}
+                        className={COMPONENT_STYLES.tabs.tabContent}
+                      >
+                        {t("versions.tab.all")}
+                        <Tabs.Indicator
+                          className={COMPONENT_STYLES.tabs.cursor}
+                        />
+                      </Tabs.Tab>
+                      <Tabs.Tab
+                        key="release"
+                        id={"release"}
+                        className={COMPONENT_STYLES.tabs.tabContent}
+                      >
+                        {t("versions.tab.release")}
+                        <Tabs.Indicator
+                          className={COMPONENT_STYLES.tabs.cursor}
+                        />
+                      </Tabs.Tab>
+                      <Tabs.Tab
+                        key="preview"
+                        id={"preview"}
+                        className={COMPONENT_STYLES.tabs.tabContent}
+                      >
+                        {t("versions.tab.preview")}
+                        <Tabs.Indicator
+                          className={COMPONENT_STYLES.tabs.cursor}
+                        />
+                      </Tabs.Tab>
+                    </Tabs.List>
+                  </Tabs.ListContainer>
                 </Tabs>
                 <div className="flex-1 min-w-[200px]">
-                  <Input
+                  <TextField
+                    aria-label={t("common.search_placeholder") as string}
+                    className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
                     value={query}
-                    onValueChange={setQuery}
-                    onClear={() => setQuery("")}
-                    isClearable
-                    placeholder={t("common.search_placeholder") as string}
-                    startContent={<FaSearch className="text-default-400" />}
-                    radius="full"
-                    variant="flat"
-                    size="sm"
-                    classNames={COMPONENT_STYLES.input}
-                  />
+                    onChange={setQuery}
+                  >
+                    <InputGroup
+                      className={cn(
+                        COMPONENT_STYLES.input.inputWrapper,
+                        COMPONENT_STYLES.input.innerWrapper,
+                        "rounded-full",
+                        "min-h-8 text-sm",
+                      )}
+                    >
+                      <InputGroup.Prefix>
+                        {<FaSearch className="text-muted" />}
+                      </InputGroup.Prefix>
+                      <InputGroup.Input
+                        placeholder={t("common.search_placeholder") as string}
+                        className={COMPONENT_STYLES.input.input}
+                      />
+                      <InputGroup.Suffix>
+                        {query && (
+                          <CloseButton
+                            aria-label="Clear"
+                            onPress={() => setQuery("")}
+                            className={COMPONENT_STYLES.input.clearButton}
+                          />
+                        )}
+                      </InputGroup.Suffix>
+                    </InputGroup>
+                  </TextField>
                 </div>
                 <div className="flex items-center gap-2">
                   <div className="min-w-[140px]">
-                    <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                      <DropdownTrigger>
-                        <Button
-                          variant="flat"
-                          size="sm"
-                          startContent={
-                            sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
-                          }
-                          className={cn(
-                            COMPONENT_STYLES.dropdownTriggerButton,
-                            "w-full justify-between",
-                          )}
-                        >
-                          {sortBy === "name"
-                            ? sortAsc
-                              ? t("versions.sort.name")
-                              : t("versions.sort.name_za")
-                            : sortAsc
-                              ? t("versions.sort.version_old_new")
-                              : t("versions.sort.version")}
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu
-                        selectionMode="single"
-                        selectedKeys={
-                          new Set([`${sortBy}-${sortAsc ? "asc" : "desc"}`])
-                        }
-                        onSelectionChange={(keys) => {
-                          const val = Array.from(keys)[0] as string;
-                          const [k, order] = val.split("-");
-                          setSortBy(k as "version" | "name");
-                          setSortAsc(order === "asc");
-                        }}
+                    <Dropdown>
+                      <Button
+                        size="sm"
+                        variant={"secondary"}
+                        className={cn(
+                          COMPONENT_STYLES.dropdownTriggerButton,
+                          "w-full justify-between",
+                        )}
                       >
-                        <DropdownItem
-                          key="version-desc"
-                          startContent={<FaSortAmountUp />}
+                        {sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />}
+                        {sortBy === "name"
+                          ? sortAsc
+                            ? t("versions.sort.name")
+                            : t("versions.sort.name_za")
+                          : sortAsc
+                            ? t("versions.sort.version_old_new")
+                            : t("versions.sort.version")}
+                      </Button>
+                      <Dropdown.Popover
+                        className={COMPONENT_STYLES.dropdown.content}
+                      >
+                        <Dropdown.Menu
+                          selectionMode="single"
+                          selectedKeys={
+                            new Set([`${sortBy}-${sortAsc ? "asc" : "desc"}`])
+                          }
+                          onSelectionChange={(keys) => {
+                            const val = Array.from(keys)[0] as string;
+                            const [k, order] = val.split("-");
+                            setSortBy(k as "version" | "name");
+                            setSortAsc(order === "asc");
+                          }}
                         >
-                          {t("versions.sort.version")}
-                        </DropdownItem>
-                        <DropdownItem
-                          key="version-asc"
-                          startContent={<FaSortAmountDown />}
-                        >
-                          {t("versions.sort.version_old_new")}
-                        </DropdownItem>
-                        <DropdownItem
-                          key="name-asc"
-                          startContent={<FaSortAmountDown />}
-                        >
-                          {t("versions.sort.name")}
-                        </DropdownItem>
-                        <DropdownItem
-                          key="name-desc"
-                          startContent={<FaSortAmountUp />}
-                        >
-                          {t("versions.sort.name_za")}
-                        </DropdownItem>
-                      </DropdownMenu>
+                          <Dropdown.Item
+                            key="version-desc"
+                            id={"version-desc"}
+                            textValue={t("versions.sort.version")}
+                          >
+                            {<FaSortAmountUp />}
+                            <Label>{t("versions.sort.version")}</Label>
+                            <Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                          <Dropdown.Item
+                            key="version-asc"
+                            id={"version-asc"}
+                            textValue={t("versions.sort.version_old_new")}
+                          >
+                            {<FaSortAmountDown />}
+                            <Label>{t("versions.sort.version_old_new")}</Label>
+                            <Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                          <Dropdown.Item
+                            key="name-asc"
+                            id={"name-asc"}
+                            textValue={t("versions.sort.name")}
+                          >
+                            {<FaSortAmountDown />}
+                            <Label>{t("versions.sort.name")}</Label>
+                            <Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                          <Dropdown.Item
+                            key="name-desc"
+                            id={"name-desc"}
+                            textValue={t("versions.sort.name_za")}
+                          >
+                            {<FaSortAmountUp />}
+                            <Label>{t("versions.sort.name_za")}</Label>
+                            <Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                        </Dropdown.Menu>
+                      </Dropdown.Popover>
                     </Dropdown>
                   </div>
                 </div>
-                <Chip variant="flat" color="default">
-                  {flatItems.length}
+                <Chip variant="soft" color={"default"}>
+                  <Chip.Label>{flatItems.length}</Chip.Label>
                 </Chip>
               </div>
-            </CardHeader>
+            </Card.Header>
           </Card>
         </motion.div>
 
@@ -352,50 +415,54 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
               className="w-full min-w-0"
             >
               <Card
-                as="div"
-                isPressable
-                onPress={() => handleSelectVersion(it.name)}
                 className={cn(
-                  "w-full h-full transition-all",
+                  "relative w-full h-full transition-all",
                   LAYOUT.GLASS_CARD.BASE,
                   "border-2 border-solid",
                   selectedVersionName === it.name
-                    ? "border-primary-600 dark:border-primary-500 bg-primary-500/5 dark:bg-primary-500/10 shadow-primary-500/20"
-                    : "border-transparent hover:border-default-200 dark:hover:border-zinc-700",
+                    ? "border-brand-600 dark:border-brand-500 bg-brand-500/5 dark:bg-brand-500/10 shadow-brand-500/20"
+                    : "border-transparent hover:border-border dark:hover:border-zinc-700",
                 )}
               >
-                <CardBody className="p-4 flex flex-col gap-1">
+                <Card.Content className="p-4 flex flex-col gap-1">
+                  <button
+                    type="button"
+                    aria-label={it.name}
+                    aria-pressed={selectedVersionName === it.name}
+                    className="absolute inset-0 z-10 cursor-pointer rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
+                    onClick={() => handleSelectVersion(it.name)}
+                  />
                   <div className="flex items-center justify-between w-full">
                     <div className="font-bold text-lg truncate">{it.name}</div>
                     <div className="flex items-center gap-2">
                       {it.isPreview ? (
                         <Chip
                           size="sm"
-                          color="warning"
-                          variant="flat"
-                          className="shrink-0"
+                          variant="soft"
+                          color={"warning"}
+                          className={"shrink-0"}
                         >
-                          Preview
+                          <Chip.Label>Preview</Chip.Label>
                         </Chip>
                       ) : (
                         <Chip
                           size="sm"
-                          color="success"
-                          variant="flat"
-                          className="shrink-0"
+                          variant="soft"
+                          color={"success"}
+                          className={"shrink-0"}
                         >
-                          Release
+                          <Chip.Label>Release</Chip.Label>
                         </Chip>
                       )}
                       <Button
                         isIconOnly
                         size="sm"
-                        variant="light"
                         onPress={() => {
                           openEditFor(it.name);
                         }}
                         aria-label="settings"
-                        className="shrink-0"
+                        variant={"ghost"}
+                        className={"relative z-20 shrink-0"}
                       >
                         <svg
                           width="18"
@@ -413,13 +480,13 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                       </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-default-500 dark:text-zinc-400 shrink-0 text-sm">
+                  <div className="flex items-center gap-2 text-muted dark:text-zinc-400 shrink-0 text-sm">
                     {(() => {
                       const u = logoMap.get(it.name);
                       return u ? (
                         <img src={u} alt="logo" className="h-4 w-4 rounded" />
                       ) : (
-                        <div className="h-4 w-4 rounded bg-default-200" />
+                        <div className="h-4 w-4 rounded bg-surface-tertiary" />
                       );
                     })()}
                     <span>
@@ -427,7 +494,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                       {it.version || t("launcherpage.version_select.unknown")}
                     </span>
                   </div>
-                </CardBody>
+                </Card.Content>
               </Card>
             </motion.div>
           ))}

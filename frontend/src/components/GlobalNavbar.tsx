@@ -1,13 +1,9 @@
+import { Button, Dropdown, Label, Tooltip } from "@heroui/react";
+import { cn } from "@/utils/cn";
+
 import React from "react";
 import { useLocation } from "react-router-dom";
-import {
-  Button,
-  Tooltip,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
+
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { UserAvatar } from "@/components/UserAvatar";
 import { LeviIcon } from "@/icons/LeviIcon";
@@ -93,8 +89,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   );
 
   const moreButtonClass = React.useMemo(() => {
-    const base =
-      "min-w-0 px-3 h-10 rounded-xl transition-all duration-200";
+    const base = "min-w-0 px-3 h-10 rounded-xl transition-all duration-200";
     const inactive =
       "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium";
     const active =
@@ -115,18 +110,20 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
       className="fixed top-0 left-0 right-0 z-50 flex justify-center"
     >
       <div
-        className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} border-b border-default-200/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 px-4 py-2 flex items-center gap-4`}
+        className={`pointer-events-auto w-full ${LAYOUT.NAVBAR_BG} border-b border-border/50 dark:border-zinc-800/50 shadow-sm dark:shadow-zinc-950/20 px-4 py-2 flex items-center gap-4`}
       >
         <div className="flex items-center gap-3 shrink-0">
           <Button
             isIconOnly
-            variant="light"
             size="sm"
-            radius="lg"
             onPress={() => tryNavigate(-1)}
             isDisabled={navLocked}
-            className="wails-no-drag text-default-500 dark:text-zinc-400"
             aria-label={t("nav.back")}
+            variant={"ghost"}
+            className={cn(
+              "rounded-lg",
+              "wails-no-drag text-muted dark:text-zinc-400",
+            )}
           >
             <IoArrowBack size={20} />
           </Button>
@@ -134,7 +131,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             <LeviIcon width={28} height={28} />
           </div>
           <div className="hidden sm:flex flex-col leading-none gap-0.5">
-            <p className="font-bold text-[16px] tracking-tight bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent">
+            <p className="font-bold text-[16px] tracking-tight bg-gradient-to-r from-brand-600 to-brand-400 bg-clip-text text-transparent">
               LeviLauncher
             </p>
             {isBeta && (
@@ -149,15 +146,8 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
           {navItems.map((item) => {
             const isActive = isRouteActive(location.pathname, item.path);
             return (
-              <Tooltip
-                key={item.key}
-                content={item.label}
-                delay={500}
-                closeDelay={0}
-              >
+              <Tooltip key={item.key} delay={500} closeDelay={0}>
                 <Button
-                  variant={isActive ? "flat" : "light"}
-                  color="default"
                   aria-label={item.label}
                   isDisabled={navLocked}
                   onPress={(e) => {
@@ -166,12 +156,14 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                       (e.target as HTMLElement).blur();
                     }
                   }}
+                  variant={isActive ? "secondary" : "ghost"}
                   className={`min-w-0 px-3 h-10 rounded-xl transition-all duration-200 ${item.navbarClass} ${
                     isActive
                       ? "bg-zinc-100 dark:bg-zinc-800 text-zinc-900 dark:text-zinc-100 font-medium"
                       : "text-zinc-700 hover:text-black dark:text-zinc-300 dark:hover:text-white font-medium"
                   }`}
-                  startContent={
+                >
+                  {
                     <span
                       className={
                         isActive ? "text-zinc-900 dark:text-zinc-100" : ""
@@ -180,51 +172,54 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                       {item.icon}
                     </span>
                   }
-                >
                   <span className="hidden md:inline">{item.label}</span>
                 </Button>
+                <Tooltip.Content>{item.label}</Tooltip.Content>
               </Tooltip>
             );
           })}
 
           <div className="lg:hidden">
-            <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-              <DropdownTrigger>
-                <Button
-                  variant="light"
-                  aria-label={t("nav.more")}
-                  isDisabled={navLocked}
-                  className={moreButtonClass}
-                  startContent={<FaEllipsisH size={18} />}
-                >
-                  <span className="hidden md:inline">{t("nav.more")}</span>
-                </Button>
-              </DropdownTrigger>
-              <DropdownMenu
+            <Dropdown>
+              <Button
                 aria-label={t("nav.more")}
-                onAction={(key) => {
-                  const item = extraItems.find((i) => i.key === key);
-                  if (item) tryNavigate(item.path);
-                }}
+                isDisabled={navLocked}
+                variant={"ghost"}
+                className={moreButtonClass}
               >
-                {extraItems.map((item) => (
-                  <DropdownItem
-                    key={item.key}
-                    startContent={React.cloneElement(item.icon as any, {
-                      size: 14,
-                    })}
-                    className={item.menuClass}
-                  >
-                    {item.label}
-                  </DropdownItem>
-                ))}
-              </DropdownMenu>
+                {<FaEllipsisH size={18} />}
+                <span className="hidden md:inline">{t("nav.more")}</span>
+              </Button>
+              <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
+                <Dropdown.Menu
+                  aria-label={t("nav.more")}
+                  onAction={(key) => {
+                    const item = extraItems.find((i) => i.key === key);
+                    if (item) tryNavigate(item.path);
+                  }}
+                >
+                  {extraItems.map((item) => (
+                    <Dropdown.Item
+                      key={item.key}
+                      className={item.menuClass}
+                      id={item.key}
+                      textValue={item.label}
+                    >
+                      {React.cloneElement(item.icon as any, {
+                        size: 14,
+                      })}
+                      <Label>{item.label}</Label>
+                      <Dropdown.ItemIndicator />
+                    </Dropdown.Item>
+                  ))}
+                </Dropdown.Menu>
+              </Dropdown.Popover>
             </Dropdown>
           </div>
         </div>
 
         <div className="flex items-center gap-3 shrink-0 justify-end">
-          <div className="h-8 w-px bg-default-200 dark:bg-zinc-700 mx-1 hidden sm:block" />
+          <div className="h-8 w-px bg-surface-tertiary dark:bg-zinc-700 mx-1 hidden sm:block" />
 
           {themeMode !== "auto" &&
             themeMode !== "schedule" &&

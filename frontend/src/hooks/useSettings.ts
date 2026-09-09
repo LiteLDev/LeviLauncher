@@ -1,6 +1,7 @@
+import { useOverlayState } from "@heroui/react";
 import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDisclosure } from "@heroui/react";
+
 import {
   GetAppVersion,
   CheckUpdate,
@@ -265,7 +266,7 @@ export const useSettings = (i18n: { language: string }) => {
     total: number;
   }>({ percentage: 0, current: 0, total: 0 });
   const [lipError, setLipError] = useState<string>("");
-  const lipProgressDisclosure = useDisclosure();
+  const lipProgressDisclosure = useOverlayState();
 
   // resource_pack_rules.bin
   const [resourceRulesInstalled, setResourceRulesInstalled] =
@@ -293,17 +294,17 @@ export const useSettings = (i18n: { language: string }) => {
   // Unsaved changes / navigation
   const {
     isOpen: unsavedOpen,
-    onOpen: unsavedOnOpen,
-    onOpenChange: unsavedOnOpenChange,
-    onClose: unsavedOnClose,
-  } = useDisclosure();
+    open: unsavedOnOpen,
+    setOpen: unsavedOnOpenChange,
+    close: unsavedOnClose,
+  } = useOverlayState();
   const [pendingNavPath, setPendingNavPath] = useState<string>("");
   const {
     isOpen: resetOpen,
-    onOpen: resetOnOpen,
-    onOpenChange: resetOnOpenChange,
-    onClose: resetOnClose,
-  } = useDisclosure();
+    open: resetOnOpen,
+    setOpen: resetOnOpenChange,
+    close: resetOnClose,
+  } = useOverlayState();
 
   // --- Handlers ---
   const setClarityEnabled = (enabled: boolean) => {

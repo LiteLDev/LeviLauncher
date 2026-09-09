@@ -70,11 +70,11 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
       <div className="flex flex-col gap-4">
         {success.length > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="text-medium text-default-700 dark:text-zinc-300 font-bold flex items-center gap-2">
+            <div className="text-base text-foreground dark:text-zinc-300 font-bold flex items-center gap-2">
               {resolvedSuccessLabel} ({success.length})
             </div>
-            <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 max-h-[150px] overflow-y-auto custom-scrollbar">
-              <div className="text-small font-bold font-mono text-default-800 dark:text-zinc-200 whitespace-pre-wrap break-all">
+            <div className="p-3 bg-surface-secondary/50 dark:bg-zinc-800 rounded-xl border border-border/50 max-h-[150px] overflow-y-auto custom-scrollbar">
+              <div className="text-sm font-bold font-mono text-foreground dark:text-zinc-200 whitespace-pre-wrap break-all">
                 {success.join("\n")}
               </div>
             </div>
@@ -83,12 +83,12 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
 
         {failed.length > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="text-small font-bold text-danger-600 dark:text-danger-500 flex items-center gap-2">
+            <div className="text-sm font-bold text-rose-600 dark:text-rose-500 flex items-center gap-2">
               <FiAlertTriangle className="w-4 h-4" />
               {resolvedFailedLabel} ({failed.length})
             </div>
-            <div className="p-3 bg-danger-50/50 dark:bg-danger-500/10 rounded-xl border border-danger-100 dark:border-danger-500/20 max-h-[150px] overflow-y-auto custom-scrollbar">
-              <div className="text-xs font-mono text-danger-700 dark:text-danger-400 whitespace-pre-wrap break-all flex flex-col gap-1">
+            <div className="p-3 bg-rose-50/50 dark:bg-rose-500/10 rounded-xl border border-rose-100 dark:border-rose-500/20 max-h-[150px] overflow-y-auto custom-scrollbar">
+              <div className="text-xs font-mono text-rose-700 dark:text-rose-400 whitespace-pre-wrap break-all flex flex-col gap-1">
                 {failed.map((it, idx) => (
                   <div key={idx} className="flex gap-2">
                     <span className="font-bold shrink-0">{it.name}:</span>

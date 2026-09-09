@@ -1,22 +1,22 @@
-import React, { useEffect, useMemo, useState } from "react";
 import {
   Button,
-  Input,
-  Switch,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
   Card,
-  CardBody,
-  CardHeader,
   Chip,
-  Spinner,
+  Dropdown,
+  FieldError,
+  Input,
+  Label,
+  ListBox,
   Select,
-  SelectItem,
-  useDisclosure,
-  addToast,
+  Spinner,
+  Switch,
+  TextField,
+  toast,
+  useOverlayState,
 } from "@heroui/react";
+
+import React, { useEffect, useMemo, useState } from "react";
+
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { FaChevronDown } from "react-icons/fa";
@@ -97,10 +97,10 @@ export default function InstallPage() {
   const { getSupportedLLVersions, getLatestLLVersion } = useLeviLamina();
   const {
     isOpen: rcOpen,
-    onOpen: rcOnOpen,
-    onOpenChange: rcOnOpenChange,
-    onClose: rcOnClose,
-  } = useDisclosure();
+    open: rcOnOpen,
+    setOpen: rcOnOpenChange,
+    close: rcOnClose,
+  } = useOverlayState();
   const [rcVersion, setRcVersion] = useState("");
   const [llSupportedVersions, setLLSupportedVersions] = useState<string[]>([]);
   const [selectedLLVersion, setSelectedLLVersion] = useState<string>("");
@@ -366,10 +366,10 @@ export default function InstallPage() {
       try {
         const lipInstalled = await minecraft.IsLipInstalled();
         if (!lipInstalled) {
-          addToast({
-            title: t("common.error"),
+          toast(t("common.error"), {
             description: resolveInstallError("ERR_LIP_NOT_INSTALLED", t),
-            color: "danger",
+            variant: "danger",
+            timeout: 2000,
           });
           return;
         }
@@ -424,10 +424,10 @@ export default function InstallPage() {
         } catch {}
       }
       if (!fname) {
-        addToast({
-          title: t("common.error"),
+        toast(t("common.error"), {
           description: resolveInstallError("ERR_MSIXVC_NOT_SPECIFIED", t),
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
         return;
       }
@@ -446,10 +446,10 @@ export default function InstallPage() {
       if (typeof install === "function") {
         const err: string = await install(fname, name, isPrev);
         if (err) {
-          addToast({
-            title: t("common.error"),
+          toast(t("common.error"), {
             description: resolveInstallError(err, t),
-            color: "danger",
+            variant: "danger",
+            timeout: 2000,
           });
           setInstalling(false);
           return;
@@ -483,24 +483,24 @@ export default function InstallPage() {
               copyErr = await copyFromVersion(inheritSource, name);
           }
           if (copyErr) {
-            addToast({
-              title: t("common.error"),
+            toast(t("common.error"), {
               description: resolveInstallError(copyErr, t),
-              color: "danger",
+              variant: "danger",
+              timeout: 2000,
             });
             setInstalling(false);
             await rollback();
             return;
           }
         } catch (e: any) {
-          addToast({
-            title: t("common.error"),
+          toast(t("common.error"), {
             description: resolveInstallError(
               String(e?.message || e || ""),
               t,
               typeLabel,
             ),
-            color: "danger",
+            variant: "danger",
+            timeout: 2000,
           });
           setInstalling(false);
           await rollback();
@@ -514,10 +514,10 @@ export default function InstallPage() {
             selectedLLVersion || getLatestLLVersion(mirrorVersion),
           ).trim();
           if (!installVersion) {
-            addToast({
-              title: t("common.error"),
+            toast(t("common.error"), {
               description: resolveInstallError("ERR_LL_VERSION_UNSUPPORTED", t),
-              color: "danger",
+              variant: "danger",
+              timeout: 2000,
             });
             setInstalling(false);
             await rollback();
@@ -545,14 +545,14 @@ export default function InstallPage() {
             );
           }
         } catch (e: any) {
-          addToast({
-            title: t("common.error"),
+          toast(t("common.error"), {
             description: resolveInstallError(
               String(e?.message || e || ""),
               t,
               typeLabel,
             ),
-            color: "danger",
+            variant: "danger",
+            timeout: 2000,
           });
           setInstalling(false);
           await rollback();
@@ -590,14 +590,14 @@ export default function InstallPage() {
       setInstalledFolderName(name);
       setInstalling(false);
     } catch (e: any) {
-      addToast({
-        title: t("common.error"),
+      toast(t("common.error"), {
         description: resolveInstallError(
           String(e?.message || e || ""),
           t,
           typeLabel,
         ),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       setInstalling(false);
       await rollback();
@@ -610,10 +610,10 @@ export default function InstallPage() {
         selectedLLVersion || getLatestLLVersion(mirrorVersion),
       ).trim();
       if (!targetLLVersion) {
-        addToast({
-          title: t("common.error"),
+        toast(t("common.error"), {
           description: resolveInstallError("ERR_LL_VERSION_UNSUPPORTED", t),
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
         return;
       }
@@ -649,7 +649,7 @@ export default function InstallPage() {
           transition={{ duration: 0.4 }}
         >
           <Card className={LAYOUT.GLASS_CARD.BASE}>
-            <CardBody className="p-6 flex flex-row items-center justify-between gap-4">
+            <Card.Content className="p-6 flex flex-row items-center justify-between gap-4">
               <div className="flex-1">
                 <PageHeader
                   title={headerTitle}
@@ -657,12 +657,14 @@ export default function InstallPage() {
                     <div className="flex items-center gap-2">
                       <Chip
                         size="sm"
-                        variant="flat"
-                        color={mirrorType === "Preview" ? "warning" : "primary"}
+                        variant="soft"
+                        color={mirrorType === "Preview" ? "warning" : "accent"}
                       >
-                        {mirrorType === "Preview"
-                          ? `${t("common.preview")} Minecraft`
-                          : `${t("common.release")} Minecraft`}
+                        <Chip.Label>
+                          {mirrorType === "Preview"
+                            ? `${t("common.preview")} Minecraft`
+                            : `${t("common.release")} Minecraft`}
+                        </Chip.Label>
                       </Chip>
                       <span className="font-mono">{mirrorVersion}</span>
                     </div>
@@ -674,15 +676,18 @@ export default function InstallPage() {
                   {!resultMsg ? (
                     <>
                       <Button
-                        variant="light"
                         onPress={() => navigate(returnTo)}
+                        variant={"ghost"}
                       >
                         {t("common.cancel")}
                       </Button>
                       <Button
-                        className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
-                        radius="full"
                         onPress={handleInstall}
+                        variant={"secondary"}
+                        className={cn(
+                          "rounded-full",
+                          "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20",
+                        )}
                       >
                         {t(
                           "downloadpage.customappx.modal.1.footer.install_button",
@@ -692,17 +697,22 @@ export default function InstallPage() {
                   ) : (
                     <div className="flex gap-2">
                       <Button
-                        variant="flat"
                         onPress={handleOpenFolder}
-                        className="bg-default-100 dark:bg-zinc-800 text-default-700 dark:text-zinc-300 font-medium"
-                        radius="full"
+                        variant={"secondary"}
+                        className={cn(
+                          "rounded-full",
+                          "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-300 font-medium",
+                        )}
                       >
                         {t("common.open_folder")}
                       </Button>
                       <Button
-                        className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
-                        radius="full"
                         onPress={() => navigate(returnTo)}
+                        variant={"secondary"}
+                        className={cn(
+                          "rounded-full",
+                          "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20",
+                        )}
                       >
                         {t("common.back")}
                       </Button>
@@ -710,7 +720,7 @@ export default function InstallPage() {
                   )}
                 </div>
               )}
-            </CardBody>
+            </Card.Content>
           </Card>
         </motion.div>
 
@@ -724,56 +734,52 @@ export default function InstallPage() {
               exit={{ opacity: 0, scale: 0.95 }}
             >
               <Card className={LAYOUT.GLASS_CARD.BASE}>
-                <CardBody className="py-12">
+                <Card.Content className="py-12">
                   <div className="flex flex-col items-center justify-center h-full gap-4">
                     <div className="relative flex items-center justify-center">
-                      <div className="absolute inset-0 bg-primary-500/20 blur-xl rounded-full animate-pulse" />
-                      <div className="w-16 h-16 rounded-full bg-default-50 dark:bg-zinc-800 border-4 border-default-100 dark:border-zinc-700 flex items-center justify-center relative z-10">
-                        <Spinner
-                          size="md"
-                          color="primary"
-                          classNames={{ wrapper: "w-8 h-8" }}
-                        />
+                      <div className="absolute inset-0 bg-brand-500/20 blur-xl rounded-full animate-pulse" />
+                      <div className="w-16 h-16 rounded-full bg-surface dark:bg-zinc-800 border-4 border-border dark:border-zinc-700 flex items-center justify-center relative z-10">
+                        <Spinner size="md" color={"accent"} />
                       </div>
                     </div>
 
                     <div className="flex flex-col items-center gap-1 text-center max-w-sm">
-                      <h2 className="text-xl font-bold text-default-900 dark:text-white">
+                      <h2 className="text-xl font-bold text-foreground dark:text-white">
                         {t("downloadmodal.installing.title")}
                       </h2>
-                      <p className="text-small text-default-500 dark:text-zinc-400">
+                      <p className="text-sm text-muted dark:text-zinc-400">
                         {t("downloadpage.install.hint")}
                       </p>
                     </div>
 
                     <div className="w-full max-w-lg flex flex-col gap-2">
                       {installingVersion && (
-                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-default-100/50 dark:bg-zinc-800/50">
-                          <span className="text-small font-medium text-default-500 dark:text-zinc-400">
+                        <div className="flex items-center justify-between px-3 py-2 rounded-xl bg-surface-secondary/50 dark:bg-zinc-800/50">
+                          <span className="text-sm font-medium text-muted dark:text-zinc-400">
                             {t("downloadpage.install.version_label")}
                           </span>
-                          <span className="text-small font-bold text-default-700 dark:text-zinc-300">
+                          <span className="text-sm font-bold text-foreground dark:text-zinc-300">
                             {installingVersion}
                           </span>
                         </div>
                       )}
 
                       {installingTargetName && (
-                        <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-default-100/50 dark:bg-zinc-800/50">
-                          <span className="text-[10px] font-bold uppercase tracking-wider text-default-400">
+                        <div className="flex flex-col gap-1 px-3 py-2 rounded-xl bg-surface-secondary/50 dark:bg-zinc-800/50">
+                          <span className="text-[10px] font-bold uppercase tracking-wider text-muted">
                             {t("downloadpage.install.target")}
                           </span>
-                          <span className="font-mono text-xs text-default-600 dark:text-zinc-400 truncate">
+                          <span className="font-mono text-xs text-foreground dark:text-zinc-400 truncate">
                             {installingTargetName}
                           </span>
                         </div>
                       )}
 
                       <div className="mt-1 flex flex-col gap-2">
-                        <div className="h-1.5 w-full rounded-full bg-default-200/50 dark:bg-zinc-700/50 overflow-hidden border border-default-100 dark:border-white/5 relative">
+                        <div className="h-1.5 w-full rounded-full bg-surface-tertiary/50 dark:bg-zinc-700/50 overflow-hidden border border-border dark:border-white/5 relative">
                           {extractInfo?.totalBytes ? (
                             <motion.div
-                              className="h-full bg-gradient-to-r from-primary-500 to-primary-400 rounded-full"
+                              className="h-full bg-gradient-to-r from-brand-500 to-brand-400 rounded-full"
                               initial={{ width: 0 }}
                               animate={{
                                 width: `${Math.min(
@@ -795,7 +801,7 @@ export default function InstallPage() {
 
                         {typeof extractInfo?.bytes === "number" &&
                         extractInfo.bytes > 0 ? (
-                          <div className="flex justify-between text-tiny text-default-500 dark:text-zinc-400 font-medium">
+                          <div className="flex justify-between text-xs text-muted dark:text-zinc-400 font-medium">
                             <span>
                               {extractInfo.totalBytes
                                 ? (() => {
@@ -848,7 +854,7 @@ export default function InstallPage() {
                       </div>
                     </div>
                   </div>
-                </CardBody>
+                </Card.Content>
               </Card>
             </motion.div>
           ) : resultMsg ? (
@@ -859,7 +865,7 @@ export default function InstallPage() {
               exit={{ opacity: 0, scale: 0.95 }}
             >
               <Card className={LAYOUT.GLASS_CARD.BASE}>
-                <CardBody className="py-12">
+                <Card.Content className="py-12">
                   <div className="flex flex-col items-center justify-center h-full gap-4">
                     <div className="relative">
                       <motion.div
@@ -871,7 +877,7 @@ export default function InstallPage() {
                           damping: 20,
                           delay: 0.1,
                         }}
-                        className="w-16 h-16 rounded-full bg-linear-to-br from-primary-400 to-primary-600 flex items-center justify-center shadow-lg shadow-primary-900/20"
+                        className="w-16 h-16 rounded-full bg-linear-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-900/20"
                       >
                         <svg
                           viewBox="0 0 24 24"
@@ -895,38 +901,35 @@ export default function InstallPage() {
                     </div>
 
                     <div className="flex flex-col items-center gap-1 text-center">
-                      <h2 className="text-2xl font-black bg-linear-to-br from-primary-600 to-primary-400 dark:from-primary-500 dark:to-primary-300 bg-clip-text text-transparent">
+                      <h2 className="text-2xl font-black bg-linear-to-br from-brand-600 to-brand-400 dark:from-brand-500 dark:to-brand-300 bg-clip-text text-transparent">
                         {t("downloadpage.install.success_title")}
                       </h2>
                       {installingVersion && (
-                        <Chip
-                          variant="flat"
-                          color="primary"
-                          size="sm"
-                          classNames={{ content: "font-bold" }}
-                        >
-                          {installingVersion}
+                        <Chip size="sm" variant="soft" color={"accent"}>
+                          <Chip.Label className={"font-bold"}>
+                            {installingVersion}
+                          </Chip.Label>
                         </Chip>
                       )}
-                      <p className="text-default-500 dark:text-zinc-400 text-sm mt-2 max-w-xs">
+                      <p className="text-muted dark:text-zinc-400 text-sm mt-2 max-w-xs">
                         {t("downloadpage.install.success")}
                       </p>
                     </div>
 
                     <div className="w-full max-w-lg mt-1">
                       {installingTargetName && (
-                        <div className="rounded-xl bg-default-100/50 dark:bg-zinc-800/50 border border-default-200/50 dark:border-white/5 p-3 flex flex-col gap-1 items-center">
-                          <span className="text-[10px] uppercase tracking-wider text-default-400 font-bold">
+                        <div className="rounded-xl bg-surface-secondary/50 dark:bg-zinc-800/50 border border-border/50 dark:border-white/5 p-3 flex flex-col gap-1 items-center">
+                          <span className="text-[10px] uppercase tracking-wider text-muted font-bold">
                             {t("downloadpage.install.target")}
                           </span>
-                          <span className="font-mono text-xs text-default-600 dark:text-zinc-400 truncate w-full text-center">
+                          <span className="font-mono text-xs text-foreground dark:text-zinc-400 truncate w-full text-center">
                             {installingTargetName}
                           </span>
                         </div>
                       )}
                     </div>
                   </div>
-                </CardBody>
+                </Card.Content>
               </Card>
             </motion.div>
           ) : (
@@ -941,53 +944,61 @@ export default function InstallPage() {
 
               {/* Basic Configuration */}
               <Card className={LAYOUT.GLASS_CARD.BASE}>
-                <CardHeader className={LAYOUT.GLASS_CARD.HEADER}>
-                  <h3 className="text-large font-medium">
+                <Card.Header className={LAYOUT.GLASS_CARD.HEADER}>
+                  <h3 className="text-lg font-medium">
                     {t("settings.tabs.general")}
                   </h3>
-                </CardHeader>
-                <CardBody className="p-6">
-                  <Input
-                    label={
-                      t(
-                        "downloadpage.install_folder.name_label",
-                      ) as unknown as string
-                    }
-                    placeholder={
-                      t(
-                        "downloadpage.install_folder.placeholder_name",
-                      ) as unknown as string
-                    }
-                    value={installName}
-                    onValueChange={setInstallName}
+                </Card.Header>
+                <Card.Content className="p-6">
+                  <TextField
                     isInvalid={!!installError}
-                    errorMessage={
-                      installError
+                    className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
+                    value={installName}
+                    onChange={setInstallName}
+                  >
+                    <Label className={COMPONENT_STYLES.input.label}>
+                      {
+                        t(
+                          "downloadpage.install_folder.name_label",
+                        ) as unknown as string
+                      }
+                    </Label>
+                    <Input
+                      placeholder={
+                        t(
+                          "downloadpage.install_folder.placeholder_name",
+                        ) as unknown as string
+                      }
+                      className={cn(
+                        COMPONENT_STYLES.input.inputWrapper,
+                        COMPONENT_STYLES.input.input,
+                        "min-h-8 text-sm",
+                      )}
+                    />
+                    <FieldError className={COMPONENT_STYLES.input.errorMessage}>
+                      {installError
                         ? resolveInstallError(installError, t, typeLabel)
-                        : undefined
-                    }
-                    variant="bordered"
-                    size="sm"
-                    classNames={COMPONENT_STYLES.input}
-                  />
-                </CardBody>
+                        : undefined}
+                    </FieldError>
+                  </TextField>
+                </Card.Content>
               </Card>
 
               {/* Advanced Options */}
               <Card className={LAYOUT.GLASS_CARD.BASE}>
-                <CardHeader className={LAYOUT.GLASS_CARD.HEADER}>
-                  <h3 className="text-large font-medium">
+                <Card.Header className={LAYOUT.GLASS_CARD.HEADER}>
+                  <h3 className="text-lg font-medium">
                     {t("settings.tabs.others")}
                   </h3>
-                </CardHeader>
-                <CardBody className="p-6 flex flex-col gap-4">
+                </Card.Header>
+                <Card.Content className="p-6 flex flex-col gap-4">
                   {!downloadResolved && (
-                    <div className="flex items-center justify-between p-3 rounded-2xl bg-default-50/50 dark:bg-default-100/10 border border-default-100 dark:border-white/5">
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
                       <div className="min-w-0">
-                        <div className="text-small font-medium">
+                        <div className="text-sm font-medium">
                           {t("downloadpage.install.custom_installer.label")}
                         </div>
-                        <div className="text-tiny text-default-500 dark:text-zinc-400">
+                        <div className="text-xs text-muted dark:text-zinc-400">
                           {customInstallerPath
                             ? customInstallerPath
                             : (t(
@@ -996,9 +1007,7 @@ export default function InstallPage() {
                         </div>
                       </div>
                       <Button
-                        variant="flat"
                         size="sm"
-                        className="bg-default-100 dark:bg-white/10"
                         onPress={async () => {
                           try {
                             const paths = await Dialogs.OpenFile({
@@ -1023,132 +1032,169 @@ export default function InstallPage() {
                             console.error(e);
                           }
                         }}
+                        variant={"secondary"}
+                        className={"bg-surface-secondary dark:bg-white/10"}
                       >
                         {t("common.browse")}
                       </Button>
                     </div>
                   )}
-
                   {isLeviLaminaSupported && (
-                    <div className="flex items-center justify-between p-3 rounded-2xl bg-default-50/50 dark:bg-default-100/10 border border-default-100 dark:border-white/5">
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
                       <div className="min-w-0">
-                        <div className="text-small font-medium">
+                        <div className="text-sm font-medium">
                           {t("downloadpage.install.levilamina_label")}
                         </div>
-                        <div className="text-tiny text-default-500 dark:text-zinc-400">
+                        <div className="text-xs text-muted dark:text-zinc-400">
                           {t("downloadpage.install.levilamina_desc")}
                         </div>
                       </div>
                       <Switch
                         isSelected={installLeviLamina}
-                        onValueChange={setInstallLeviLamina}
-                        color="success"
-                      />
+                        onChange={setInstallLeviLamina}
+                        className={"group"}
+                      >
+                        <Switch.Content>
+                          <Switch.Control>
+                            <Switch.Thumb></Switch.Thumb>
+                          </Switch.Control>
+                          <span></span>
+                        </Switch.Content>
+                      </Switch>
                     </div>
                   )}
                   {isLeviLaminaSupported && installLeviLamina && (
-                    <div className="p-3 rounded-2xl bg-default-50/50 dark:bg-default-100/10 border border-default-100 dark:border-white/5">
+                    <div className="p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
                       <Select
-                        label={
-                          t(
-                            "downloadpage.install.ll_version_label",
-                          ) as unknown as string
-                        }
                         placeholder={
                           t(
                             "downloadpage.install.ll_version_placeholder",
                           ) as unknown as string
                         }
-                        classNames={COMPONENT_STYLES.select}
-                        selectedKeys={
-                          selectedLLVersion
-                            ? new Set([selectedLLVersion])
-                            : new Set([])
+                        value={
+                          Array.from(
+                            selectedLLVersion
+                              ? new Set([selectedLLVersion])
+                              : new Set([]),
+                          )[0] ?? null
                         }
-                        onSelectionChange={(keys) => {
-                          const selected = Array.from(
-                            keys as unknown as Set<string>,
-                          )[0];
+                        onChange={(keys) => {
+                          const selected = keys;
                           setSelectedLLVersion(String(selected || ""));
                         }}
                       >
-                        {llSupportedVersions.map((version) => (
-                          <SelectItem key={version} textValue={version}>
-                            {version}
-                          </SelectItem>
-                        ))}
+                        <Label>
+                          {
+                            t(
+                              "downloadpage.install.ll_version_label",
+                            ) as unknown as string
+                          }
+                        </Label>
+                        <Select.Trigger
+                          className={COMPONENT_STYLES.select.trigger}
+                        >
+                          <Select.Value />
+                          <Select.Indicator />
+                        </Select.Trigger>
+                        <Select.Popover
+                          className={COMPONENT_STYLES.select.popoverContent}
+                        >
+                          <ListBox className={COMPONENT_STYLES.select.listbox}>
+                            {llSupportedVersions.map((version) => (
+                              <ListBox.Item
+                                key={version}
+                                id={version}
+                                textValue={version}
+                              >
+                                <Label>{version}</Label>
+                                <ListBox.ItemIndicator />
+                              </ListBox.Item>
+                            ))}
+                          </ListBox>
+                        </Select.Popover>
                       </Select>
                     </div>
                   )}
-
-                  <div className="flex items-center justify-between p-3 rounded-2xl bg-default-50/50 dark:bg-default-100/10 border border-default-100 dark:border-white/5">
+                  <div className="flex items-center justify-between p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
                     <div className="min-w-0">
-                      <div className="text-small font-medium">
+                      <div className="text-sm font-medium">
                         {t("downloadpage.install_folder.enable_isolation")}
                       </div>
-                      <div className="text-tiny text-default-500 dark:text-zinc-400">
+                      <div className="text-xs text-muted dark:text-zinc-400">
                         {t("downloadpage.install_folder.enable_isolation_desc")}
                       </div>
                     </div>
                     <Switch
                       isSelected={installIsolation}
-                      onValueChange={setInstallIsolation}
-                      color="success"
-                    />
+                      onChange={setInstallIsolation}
+                      className={"group"}
+                    >
+                      <Switch.Content>
+                        <Switch.Control>
+                          <Switch.Thumb></Switch.Thumb>
+                        </Switch.Control>
+                        <span></span>
+                      </Switch.Content>
+                    </Switch>
                   </div>
-
                   {installIsolation && (
-                    <div className="flex items-center justify-between p-3 rounded-2xl bg-default-50/50 dark:bg-default-100/10 border border-default-100 dark:border-white/5">
+                    <div className="flex items-center justify-between p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
                       <div className="min-w-0">
-                        <div className="text-small font-medium">
+                        <div className="text-sm font-medium">
                           {t("downloadpage.install_folder.inherit_label")}
                         </div>
-                        <div className="text-tiny text-default-500 dark:text-zinc-400">
+                        <div className="text-xs text-muted dark:text-zinc-400">
                           {t("downloadpage.install_folder.inherit_hint")}
                         </div>
                       </div>
                       <div className="shrink-0 min-w-[240px]">
-                        <Dropdown
-                          closeOnSelect
-                          classNames={COMPONENT_STYLES.dropdown}
-                        >
-                          <DropdownTrigger>
-                            <Button
-                              variant="flat"
-                              size="sm"
-                              className="bg-default-100 dark:bg-white/10 w-full justify-between"
-                              endContent={<FaChevronDown size={12} />}
-                            >
-                              {inheritLabel}
-                            </Button>
-                          </DropdownTrigger>
-                          <DropdownMenu
-                            aria-label="inherit-source-select"
-                            selectionMode="single"
-                            disallowEmptySelection
-                            selectedKeys={new Set([inheritSource || "none"])}
-                            className="max-h-64 overflow-y-auto min-w-[240px] no-scrollbar"
-                            items={inheritMenuItems}
-                            onSelectionChange={(keys) => {
-                              const arr = Array.from(
-                                keys as unknown as Set<string>,
-                              );
-                              const k = String(arr[0] || "");
-                              if (!k) return;
-                              setInheritSource(k === "none" ? "" : k);
-                            }}
+                        <Dropdown>
+                          <Button
+                            size="sm"
+                            variant={"secondary"}
+                            className={
+                              "bg-surface-secondary dark:bg-white/10 w-full justify-between"
+                            }
                           >
-                            {(item: { key: string; label: string }) => (
-                              <DropdownItem key={item.key}>
-                                {item.label}
-                              </DropdownItem>
-                            )}
-                          </DropdownMenu>
+                            {inheritLabel}
+                            {<FaChevronDown size={12} />}
+                          </Button>
+                          <Dropdown.Popover
+                            className={COMPONENT_STYLES.dropdown.content}
+                          >
+                            <Dropdown.Menu
+                              aria-label="inherit-source-select"
+                              selectionMode="single"
+                              disallowEmptySelection
+                              selectedKeys={new Set([inheritSource || "none"])}
+                              className="max-h-64 overflow-y-auto min-w-[240px] no-scrollbar"
+                              items={inheritMenuItems}
+                              onSelectionChange={(keys) => {
+                                const arr = Array.from(
+                                  keys as unknown as Set<string>,
+                                );
+                                const k = String(arr[0] || "");
+                                if (!k) return;
+                                setInheritSource(k === "none" ? "" : k);
+                              }}
+                            >
+                              {(item: { key: string; label: string }) => (
+                                <Dropdown.Item
+                                  key={item.key}
+                                  id={item.key}
+                                  textValue={item.label}
+                                >
+                                  <Label>{item.label}</Label>
+                                  <Dropdown.ItemIndicator />
+                                </Dropdown.Item>
+                              )}
+                            </Dropdown.Menu>
+                          </Dropdown.Popover>
                         </Dropdown>
                       </div>
                     </div>
                   )}
-                </CardBody>
+                </Card.Content>
               </Card>
             </motion.div>
           )}
@@ -1169,13 +1215,13 @@ export default function InstallPage() {
           proceedInstall();
         }}
       >
-        <div className="text-sm text-default-700 dark:text-zinc-300 space-y-2">
+        <div className="text-sm text-foreground dark:text-zinc-300 space-y-2">
           <p>
             {t("mods.rc_warning.body_1", {
               version: rcVersion,
             })}
           </p>
-          <p className="font-semibold text-warning-700">
+          <p className="font-semibold text-amber-700">
             {t("mods.rc_warning.body_2")}
           </p>
           <p>{t("mods.rc_warning.body_3")}</p>

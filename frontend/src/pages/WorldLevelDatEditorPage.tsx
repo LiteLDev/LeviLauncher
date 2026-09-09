@@ -1,17 +1,22 @@
-import React from "react";
-import { useTranslation } from "react-i18next";
 import {
   Button,
   Card,
-  CardBody,
+  Chip,
+  CloseButton,
   Input,
+  InputGroup,
+  Label,
+  ListBox,
+  Select,
   Spinner,
   Switch,
-  Select,
-  SelectItem,
-  Chip,
+  TextField,
   Tooltip,
 } from "@heroui/react";
+
+import React from "react";
+import { useTranslation } from "react-i18next";
+
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -117,22 +122,24 @@ export default function WorldLevelDatEditorPage() {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.3, delay: delay * 0.03 }}
-          className="group relative overflow-hidden rounded-2xl border border-default-200 dark:border-default-100/10 bg-white/50 dark:bg-zinc-900/50 p-4 transition-all hover:bg-default-100 dark:hover:bg-zinc-800/50 hover:shadow-lg"
+          className="group relative overflow-hidden rounded-2xl border border-border dark:border-border/10 bg-white/50 dark:bg-zinc-900/50 p-4 transition-all hover:bg-surface-secondary dark:hover:bg-zinc-800/50 hover:shadow-lg"
         >
           <div className="flex items-center justify-between mb-3">
             <div
-              className="text-sm font-semibold text-default-700 dark:text-zinc-200 truncate"
+              className="text-sm font-semibold text-foreground dark:text-zinc-200 truncate"
               title={title}
             >
               {title}
             </div>
             <Chip
               size="sm"
-              variant="flat"
+              variant="soft"
               color={chipColor(type)}
-              className="h-6 min-w-12 justify-center font-mono text-xs uppercase"
+              className={
+                "h-6 min-w-12 justify-center font-mono text-xs uppercase"
+              }
             >
-              {type}
+              <Chip.Label>{type}</Chip.Label>
             </Chip>
           </div>
           <div className="relative z-10">{children}</div>
@@ -144,68 +151,121 @@ export default function WorldLevelDatEditorPage() {
   return (
     <PageContainer>
       <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
-        <CardBody className="p-0 flex flex-col h-full overflow-hidden">
-          <div className="shrink-0 p-6 flex flex-col gap-6 border-b border-default-200 dark:border-white/10">
+        <Card.Content className="p-0 flex flex-col h-full overflow-hidden">
+          <div className="shrink-0 p-6 flex flex-col gap-6 border-b border-border dark:border-white/10">
             <PageHeader
               title={t("contentpage.world_leveldat_editor")}
               startContent={
                 <Button
                   isIconOnly
-                  radius="full"
-                  variant="light"
                   onPress={() => navigate(-1)}
+                  variant={"ghost"}
+                  className={"rounded-full"}
                 >
                   <FaArrowLeft size={20} />
                 </Button>
               }
               endContent={
                 <>
-                  <Input
-                    size="sm"
-                    radius="full"
-                    variant="flat"
-                    placeholder={t("common.search") as string}
+                  <TextField
+                    aria-label={t("common.search") as string}
+                    className={cn(
+                      "group",
+                      COMPONENT_STYLES.input.mainWrapper,
+                      "w-48 sm:w-64",
+                    )}
                     value={filterText}
-                    onValueChange={(v) => {
+                    onChange={(v) => {
                       beforeUpdate();
                       setFilterText(v);
                     }}
-                    isClearable
-                    startContent={<FaSearch className="text-default-400" />}
-                    className="w-48 sm:w-64"
-                    classNames={COMPONENT_STYLES.input}
-                  />
-                  <Tooltip content={t("common.refresh")}>
+                  >
+                    <InputGroup
+                      className={cn(
+                        COMPONENT_STYLES.input.inputWrapper,
+                        COMPONENT_STYLES.input.innerWrapper,
+                        "rounded-full",
+                        "min-h-8 text-sm",
+                      )}
+                    >
+                      <InputGroup.Prefix>
+                        {<FaSearch className="text-muted" />}
+                      </InputGroup.Prefix>
+                      <InputGroup.Input
+                        placeholder={t("common.search") as string}
+                        className={COMPONENT_STYLES.input.input}
+                      />
+                      <InputGroup.Suffix>
+                        {filterText && (
+                          <CloseButton
+                            aria-label="Clear"
+                            onPress={() =>
+                              ((v) => {
+                                beforeUpdate();
+                                setFilterText(v);
+                              })("")
+                            }
+                            className={COMPONENT_STYLES.input.clearButton}
+                          />
+                        )}
+                      </InputGroup.Suffix>
+                    </InputGroup>
+                  </TextField>
+                  <Tooltip>
                     <Button
                       isIconOnly
-                      radius="full"
-                      variant="flat"
                       onPress={load}
-                      isLoading={loading}
-                      className="bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-zinc-300"
+                      variant={"secondary"}
+                      isPending={loading}
+                      className={cn(
+                        "rounded-full",
+                        "bg-surface-secondary dark:bg-surface/20 text-foreground dark:text-zinc-300",
+                      )}
                     >
-                      <FaSync className={loading ? "animate-spin" : ""} />
+                      {({ isPending }) => (
+                        <>
+                          <Spinner
+                            size="sm"
+                            color="current"
+                            className={isPending ? "" : "hidden"}
+                          />
+                          <FaSync className={loading ? "animate-spin" : ""} />
+                        </>
+                      )}
                     </Button>
+                    <Tooltip.Content>{t("common.refresh")}</Tooltip.Content>
                   </Tooltip>
-                  <Tooltip content={t("common.save")}>
+                  <Tooltip>
                     <Button
                       isIconOnly
-                      radius="full"
-                      color="primary"
                       onPress={handleSave}
-                      isLoading={saving}
                       isDisabled={!hasBackend || loading}
-                      className="bg-primary-500 brand-primary-foreground shadow-lg shadow-primary-900/20"
+                      variant={"primary"}
+                      isPending={saving}
+                      className={cn(
+                        "rounded-full",
+                        "bg-brand-500 brand-primary-foreground shadow-lg shadow-brand-900/20",
+                      )}
                     >
-                      <FaSave className="w-4 h-4" />
+                      {({ isPending }) => (
+                        <>
+                          <Spinner
+                            size="sm"
+                            color="current"
+                            className={isPending ? "" : "hidden"}
+                          />
+                          <FaSave className="w-4 h-4" />
+                        </>
+                      )}
                     </Button>
+                    <Tooltip.Content>{t("common.save")}</Tooltip.Content>
                   </Tooltip>
                 </>
               }
             />
 
             {error && (
-              <div className="w-full p-4 rounded-2xl bg-danger-50 dark:bg-danger-900/20 border border-danger-200 dark:border-danger-800/50 text-danger flex items-center gap-2">
+              <div className="w-full p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 text-danger flex items-center gap-2">
                 <FaTimes className="w-4 h-4" />
                 <span>{t(error)}</span>
               </div>
@@ -217,8 +277,8 @@ export default function WorldLevelDatEditorPage() {
           >
             {loading ? (
               <div className="flex flex-col items-center justify-center h-64 gap-4">
-                <Spinner size="lg" color="primary" />
-                <div className="text-default-400 animate-pulse">
+                <Spinner size="lg" color={"accent"} />
+                <div className="text-muted animate-pulse">
                   {t("common.loading")}
                 </div>
               </div>
@@ -229,56 +289,71 @@ export default function WorldLevelDatEditorPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: 0.1 }}
-                  className="p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 border border-default-200 dark:border-default-100/10 backdrop-blur-md shadow-sm"
+                  className="p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 border border-border dark:border-border/10 backdrop-blur-md shadow-sm"
                 >
                   <div className="flex items-center gap-4 mb-6">
-                    <div className="w-1 h-6 rounded-full bg-linear-to-b from-primary-500 to-primary-400 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
-                    <h3 className="text-lg font-bold text-default-700 dark:text-zinc-200">
+                    <div className="w-1 h-6 rounded-full bg-linear-to-b from-brand-500 to-brand-400 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+                    <h3 className="text-lg font-bold text-foreground dark:text-zinc-200">
                       {t("contentpage.basic_info")}
                     </h3>
                   </div>
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <Input
-                      label={t("contentpage.level_name")}
-                      labelPlacement="outside"
-                      placeholder="My World"
+                    <TextField
+                      className={cn(
+                        "group",
+                        COMPONENT_STYLES.input.mainWrapper,
+                      )}
                       value={levelName}
-                      onValueChange={(v) => {
+                      onChange={(v) => {
                         beforeUpdate();
                         setLevelName(v);
                       }}
-                      variant="flat"
-                      radius="lg"
-                      classNames={COMPONENT_STYLES.input}
-                    />
+                    >
+                      <Label className={COMPONENT_STYLES.input.label}>
+                        {t("contentpage.level_name")}
+                      </Label>
+                      <Input
+                        placeholder="My World"
+                        className={cn(
+                          COMPONENT_STYLES.input.inputWrapper,
+                          COMPONENT_STYLES.input.input,
+                          "rounded-lg",
+                        )}
+                      />
+                    </TextField>
                     <div className="flex flex-col gap-2">
-                      <label className="text-sm text-default-600 dark:text-zinc-400">
+                      <label className="text-sm text-foreground dark:text-zinc-400">
                         {t("contentpage.version")}
                       </label>
-                      <div className="h-10 px-3 flex items-center rounded-lg bg-default-100 dark:bg-zinc-800/50 text-default-500 dark:text-zinc-400 text-sm font-mono border border-transparent dark:border-zinc-700/50">
+                      <div className="h-10 px-3 flex items-center rounded-lg bg-surface-secondary dark:bg-zinc-800/50 text-muted dark:text-zinc-400 text-sm font-mono border border-transparent dark:border-zinc-700/50">
                         {typedVersion}
                       </div>
                     </div>
                   </div>
                 </motion.div>
-                <div role="separator" className="h-px bg-default-200/50 my-2" />
+                <div
+                  role="separator"
+                  className="h-px bg-surface-tertiary/50 my-2"
+                />
                 {/* Add Field Section */}
                 <div className="flex flex-col gap-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-4">
-                      <div className="w-1 h-6 rounded-full bg-linear-to-b from-primary-500 to-primary-400 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
-                      <h3 className="text-lg font-bold text-default-700 dark:text-zinc-200">
+                      <div className="w-1 h-6 rounded-full bg-linear-to-b from-brand-500 to-brand-400 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
+                      <h3 className="text-lg font-bold text-foreground dark:text-zinc-200">
                         {t("contentpage.add_field")}
                       </h3>
                     </div>
                     <Button
                       size="sm"
-                      radius="full"
-                      variant="flat"
-                      className="bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-zinc-300"
                       onPress={() => setAddOpen((o) => !o)}
-                      startContent={addOpen ? <FaTimes /> : <FaPlus />}
+                      variant={"secondary"}
+                      className={cn(
+                        "rounded-full",
+                        "bg-surface-secondary dark:bg-surface/20 text-foreground dark:text-zinc-300",
+                      )}
                     >
+                      {addOpen ? <FaTimes /> : <FaPlus />}
                       {addOpen ? t("common.collapse") : t("common.expand")}
                     </Button>
                   </div>
@@ -292,88 +367,150 @@ export default function WorldLevelDatEditorPage() {
                         transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                       >
-                        <div className="p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 border border-default-200 dark:border-default-100/10 backdrop-blur-md shadow-sm transition-all">
+                        <div className="p-6 rounded-2xl bg-white/50 dark:bg-zinc-900/50 border border-border dark:border-border/10 backdrop-blur-md shadow-sm transition-all">
                           <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_100px_1fr_80px] gap-4 items-end">
                             <Select
-                              label="Target"
-                              labelPlacement="outside"
-                              size="sm"
-                              radius="lg"
-                              variant="flat"
-                              selectedKeys={new Set([addTargetKey])}
-                              onSelectionChange={(keys: any) => {
-                                const v = String(Array.from(keys)[0] || "root");
+                              value={
+                                Array.from(new Set([addTargetKey]))[0] ?? null
+                              }
+                              onChange={(keys: any) => {
+                                const v = String(keys || "root");
                                 setAddTargetKey(v);
                               }}
-                              classNames={COMPONENT_STYLES.select}
                             >
-                              {compoundTargetKeys.map((o) => (
-                                <SelectItem key={o}>{o}</SelectItem>
-                              ))}
+                              <Label>{"Target"}</Label>
+                              <Select.Trigger
+                                className={cn(
+                                  COMPONENT_STYLES.select.trigger,
+                                  "rounded-lg",
+                                  "min-h-8 text-sm",
+                                )}
+                              >
+                                <Select.Value />
+                                <Select.Indicator />
+                              </Select.Trigger>
+                              <Select.Popover
+                                className={
+                                  COMPONENT_STYLES.select.popoverContent
+                                }
+                              >
+                                <ListBox
+                                  className={COMPONENT_STYLES.select.listbox}
+                                >
+                                  {compoundTargetKeys.map((o) => (
+                                    <ListBox.Item key={o} id={o} textValue={o}>
+                                      <Label>{o}</Label>
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                  ))}
+                                </ListBox>
+                              </Select.Popover>
                             </Select>
-                            <Input
-                              label="Name"
-                              labelPlacement="outside"
-                              size="sm"
-                              radius="lg"
-                              variant="flat"
-                              placeholder={
-                                t("contentpage.field_name") as string
-                              }
+                            <TextField
+                              className={cn(
+                                "group",
+                                COMPONENT_STYLES.input.mainWrapper,
+                              )}
                               value={newUnifiedField.name}
-                              onValueChange={(v) =>
+                              onChange={(v) =>
                                 setNewUnifiedField((prev) => ({
                                   ...prev,
                                   name: v,
                                 }))
                               }
-                              classNames={COMPONENT_STYLES.input}
-                            />
+                            >
+                              <Label className={COMPONENT_STYLES.input.label}>
+                                {"Name"}
+                              </Label>
+                              <Input
+                                placeholder={
+                                  t("contentpage.field_name") as string
+                                }
+                                className={cn(
+                                  COMPONENT_STYLES.input.inputWrapper,
+                                  COMPONENT_STYLES.input.input,
+                                  "rounded-lg",
+                                  "min-h-8 text-sm",
+                                )}
+                              />
+                            </TextField>
                             <Select
-                              label="Type"
-                              labelPlacement="outside"
-                              size="sm"
-                              radius="lg"
-                              variant="flat"
-                              selectedKeys={new Set([newUnifiedField.tag])}
-                              onSelectionChange={(keys: any) => {
-                                const v = String(
-                                  Array.from(keys)[0] || "string",
-                                );
+                              value={
+                                Array.from(new Set([newUnifiedField.tag]))[0] ??
+                                null
+                              }
+                              onChange={(keys: any) => {
+                                const v = String(keys || "string");
                                 setNewUnifiedField((prev) => ({
                                   ...prev,
                                   tag: v,
                                 }));
                               }}
-                              classNames={COMPONENT_STYLES.select}
                             >
-                              {TAG_OPTIONS.map((o) => (
-                                <SelectItem key={o}>{o}</SelectItem>
-                              ))}
+                              <Label>{"Type"}</Label>
+                              <Select.Trigger
+                                className={cn(
+                                  COMPONENT_STYLES.select.trigger,
+                                  "rounded-lg",
+                                  "min-h-8 text-sm",
+                                )}
+                              >
+                                <Select.Value />
+                                <Select.Indicator />
+                              </Select.Trigger>
+                              <Select.Popover
+                                className={
+                                  COMPONENT_STYLES.select.popoverContent
+                                }
+                              >
+                                <ListBox
+                                  className={COMPONENT_STYLES.select.listbox}
+                                >
+                                  {TAG_OPTIONS.map((o) => (
+                                    <ListBox.Item key={o} id={o} textValue={o}>
+                                      <Label>{o}</Label>
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                  ))}
+                                </ListBox>
+                              </Select.Popover>
                             </Select>
-                            <Input
-                              label="Value"
-                              labelPlacement="outside"
-                              size="sm"
-                              radius="lg"
-                              variant="flat"
-                              placeholder={
-                                t("contentpage.initial_value") as string
-                              }
+                            <TextField
+                              className={cn(
+                                "group",
+                                COMPONENT_STYLES.input.mainWrapper,
+                              )}
                               value={newUnifiedField.value}
-                              onValueChange={(v) =>
+                              onChange={(v) =>
                                 setNewUnifiedField((prev) => ({
                                   ...prev,
                                   value: v,
                                 }))
                               }
-                              classNames={COMPONENT_STYLES.input}
-                            />
+                            >
+                              <Label className={COMPONENT_STYLES.input.label}>
+                                {"Value"}
+                              </Label>
+                              <Input
+                                placeholder={
+                                  t("contentpage.initial_value") as string
+                                }
+                                className={cn(
+                                  COMPONENT_STYLES.input.inputWrapper,
+                                  COMPONENT_STYLES.input.input,
+                                  "rounded-lg",
+                                  "min-h-8 text-sm",
+                                )}
+                              />
+                            </TextField>
                             <Button
                               size="sm"
-                              radius="lg"
-                              className="bg-primary-500 brand-primary-foreground shadow-lg shadow-primary-900/20"
                               onPress={addField}
+                              variant={"secondary"}
+                              className={cn(
+                                "rounded-lg",
+                                "bg-brand-500 brand-primary-foreground shadow-lg shadow-brand-900/20",
+                              )}
                             >
                               {t("common.add")}
                             </Button>
@@ -383,7 +520,10 @@ export default function WorldLevelDatEditorPage() {
                     )}
                   </AnimatePresence>
                 </div>
-                <div role="separator" className="h-px bg-default-200/50 my-2" />
+                <div
+                  role="separator"
+                  className="h-px bg-surface-tertiary/50 my-2"
+                />
                 {(() => {
                   const acc: React.ReactNode[] = [];
                   const out: React.ReactNode[] = [];
@@ -408,16 +548,16 @@ export default function WorldLevelDatEditorPage() {
                             <div className="flex flex-col gap-2">
                               <div className="flex gap-1 overflow-x-auto flex-nowrap pretty-scrollbar gutter-stable">
                                 {items.map((it, idx) => (
-                                  <Input
+                                  <TextField
                                     key={`tf-${k}-li-${idx}`}
                                     aria-label={`${k} item ${idx}`}
-                                    size="sm"
-                                    variant="flat"
-                                    radius="lg"
-                                    classNames={COMPONENT_STYLES.input}
-                                    className="w-12 shrink-0"
+                                    className={cn(
+                                      "group",
+                                      COMPONENT_STYLES.input.mainWrapper,
+                                      "w-12 shrink-0",
+                                    )}
                                     value={String(it ?? "")}
-                                    onValueChange={(v) => {
+                                    onChange={(v) => {
                                       const next = items.slice();
                                       next[idx] = v;
                                       beforeUpdate();
@@ -426,20 +566,30 @@ export default function WorldLevelDatEditorPage() {
                                         [dk]: stringifyList(next),
                                       }));
                                     }}
-                                    onBlur={() => {
-                                      const val = String(
-                                        typedDrafts[dk] ?? stringifyList(items),
-                                      );
-                                      setTypedFieldValueByName(String(k), {
-                                        valueJSON: val,
-                                      });
-                                      setTypedDrafts((prev) => {
-                                        const nn = { ...prev };
-                                        delete nn[dk];
-                                        return nn;
-                                      });
-                                    }}
-                                  />
+                                  >
+                                    <Input
+                                      onBlur={() => {
+                                        const val = String(
+                                          typedDrafts[dk] ??
+                                            stringifyList(items),
+                                        );
+                                        setTypedFieldValueByName(String(k), {
+                                          valueJSON: val,
+                                        });
+                                        setTypedDrafts((prev) => {
+                                          const nn = { ...prev };
+                                          delete nn[dk];
+                                          return nn;
+                                        });
+                                      }}
+                                      className={cn(
+                                        COMPONENT_STYLES.input.inputWrapper,
+                                        COMPONENT_STYLES.input.input,
+                                        "rounded-lg",
+                                        "min-h-8 text-sm",
+                                      )}
+                                    />
+                                  </TextField>
                                 ))}
                               </div>
                             </div>
@@ -457,18 +607,27 @@ export default function WorldLevelDatEditorPage() {
                           >
                             <div className="flex justify-end">
                               <Switch
+                                aria-label={String(k)}
                                 size="sm"
-                                color="success"
                                 isSelected={isOn}
-                                onValueChange={(c: boolean) => {
+                                onChange={(c: boolean) => {
                                   setTypedFieldValueByName(String(k), {
                                     valueString: c ? "1" : "0",
                                   });
                                 }}
-                                thumbIcon={
-                                  <span className="block w-2 h-2 bg-black rounded-full" />
-                                }
-                              />
+                                className={"group"}
+                              >
+                                <Switch.Content>
+                                  <Switch.Control>
+                                    <Switch.Thumb>
+                                      {
+                                        <span className="block w-2 h-2 bg-black rounded-full" />
+                                      }
+                                    </Switch.Thumb>
+                                  </Switch.Control>
+                                  <span></span>
+                                </Switch.Content>
+                              </Switch>
                             </div>
                           </FieldBox>,
                         );
@@ -484,30 +643,44 @@ export default function WorldLevelDatEditorPage() {
                             >
                               <Select
                                 aria-label={String(k)}
-                                size="sm"
-                                radius="lg"
-                                variant="flat"
-                                classNames={{
-                                  trigger:
-                                    "bg-default-100 dark:bg-default-50/20",
-                                }}
-                                selectedKeys={
-                                  new Set([
-                                    String((f as any).valueString || "0"),
-                                  ])
+                                value={
+                                  Array.from(
+                                    new Set([
+                                      String((f as any).valueString || "0"),
+                                    ]),
+                                  )[0] ?? null
                                 }
-                                onSelectionChange={(keys: any) => {
-                                  const v = Array.from(keys)[0] || "0";
+                                onChange={(keys: any) => {
+                                  const v = keys || "0";
                                   setTypedFieldValueByName(String(k), {
                                     valueString: String(v),
                                   });
                                 }}
                               >
-                                {opts.map((o) => (
-                                  <SelectItem key={o.value}>
-                                    {o.label}
-                                  </SelectItem>
-                                ))}
+                                <Select.Trigger
+                                  className={cn(
+                                    "bg-surface-secondary dark:bg-surface/20",
+                                    "rounded-lg",
+                                    "min-h-8 text-sm",
+                                  )}
+                                >
+                                  <Select.Value />
+                                  <Select.Indicator />
+                                </Select.Trigger>
+                                <Select.Popover>
+                                  <ListBox>
+                                    {opts.map((o) => (
+                                      <ListBox.Item
+                                        key={o.value}
+                                        id={o.value}
+                                        textValue={o.label}
+                                      >
+                                        <Label>{o.label}</Label>
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                    ))}
+                                  </ListBox>
+                                </Select.Popover>
                               </Select>
                             </FieldBox>,
                           );
@@ -523,32 +696,41 @@ export default function WorldLevelDatEditorPage() {
                               type={tag}
                               delay={i * 0.015}
                             >
-                              <Input
+                              <TextField
                                 aria-label={String(k)}
-                                size="sm"
-                                variant="flat"
-                                radius="lg"
-                                classNames={COMPONENT_STYLES.input}
+                                className={cn(
+                                  "group",
+                                  COMPONENT_STYLES.input.mainWrapper,
+                                )}
                                 value={display}
-                                onValueChange={(v) => {
+                                onChange={(v) => {
                                   beforeUpdate();
                                   setTypedDrafts((prev) => ({
                                     ...prev,
                                     [dk]: v,
                                   }));
                                 }}
-                                onBlur={() => {
-                                  const val = String(typedDrafts[dk] ?? "");
-                                  setTypedFieldValueByName(String(k), {
-                                    valueString: val,
-                                  });
-                                  setTypedDrafts((prev) => {
-                                    const next = { ...prev };
-                                    delete next[dk];
-                                    return next;
-                                  });
-                                }}
-                              />
+                              >
+                                <Input
+                                  onBlur={() => {
+                                    const val = String(typedDrafts[dk] ?? "");
+                                    setTypedFieldValueByName(String(k), {
+                                      valueString: val,
+                                    });
+                                    setTypedDrafts((prev) => {
+                                      const next = { ...prev };
+                                      delete next[dk];
+                                      return next;
+                                    });
+                                  }}
+                                  className={cn(
+                                    COMPONENT_STYLES.input.inputWrapper,
+                                    COMPONENT_STYLES.input.input,
+                                    "rounded-lg",
+                                    "min-h-8 text-sm",
+                                  )}
+                                />
+                              </TextField>
                             </FieldBox>,
                           );
                         }
@@ -575,15 +757,12 @@ export default function WorldLevelDatEditorPage() {
                     out.push(
                       <div key={`c-${k}`} className="mt-3">
                         <div className="flex items-center justify-between">
-                          <div className="text-xs text-default-500 dark:text-zinc-400">
+                          <div className="text-xs text-muted dark:text-zinc-400">
                             {String(k)}
                           </div>
                           <div className="flex items-center gap-2">
                             <Button
                               size="sm"
-                              radius="lg"
-                              variant="flat"
-                              className="bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-zinc-300"
                               onPress={() => {
                                 if (!compoundOpen[pathKey]) {
                                   const hasLocal =
@@ -605,6 +784,11 @@ export default function WorldLevelDatEditorPage() {
                                   }));
                                 }
                               }}
+                              variant={"secondary"}
+                              className={cn(
+                                "rounded-lg",
+                                "bg-surface-secondary dark:bg-surface/20 text-foreground dark:text-zinc-300",
+                              )}
                             >
                               {compoundOpen[pathKey]
                                 ? t("common.collapse")
@@ -614,7 +798,7 @@ export default function WorldLevelDatEditorPage() {
                         </div>
                         <div
                           role="separator"
-                          className="h-px bg-default-200 my-2"
+                          className="h-px bg-surface-tertiary my-2"
                         />
                         {compoundOpen[pathKey] ? (
                           <div className="grid grid-cols-[repeat(auto-fit,minmax(16rem,1fr))] gap-4">
@@ -632,32 +816,48 @@ export default function WorldLevelDatEditorPage() {
                                     >
                                       <Select
                                         aria-label={String(sf.name)}
-                                        size="sm"
-                                        radius="lg"
-                                        variant="flat"
-                                        classNames={{
-                                          trigger:
-                                            "bg-default-100/50 dark:bg-zinc-800/50 data-[hover=true]:bg-default-200/50 dark:data-[hover=true]:bg-zinc-700/50 data-[focus=true]:border-primary-600 rounded-xl",
-                                          popoverContent:
-                                            "bg-default-100/80 dark:bg-zinc-800/80 border border-default-200/50 dark:border-white/10",
-                                        }}
-                                        selectedKeys={
-                                          new Set([
-                                            String(sf.valueString || "0"),
-                                          ])
+                                        value={
+                                          Array.from(
+                                            new Set([
+                                              String(sf.valueString || "0"),
+                                            ]),
+                                          )[0] ?? null
                                         }
-                                        onSelectionChange={(keys: any) => {
-                                          const v = Array.from(keys)[0] || "0";
+                                        onChange={(keys: any) => {
+                                          const v = keys || "0";
                                           setCompoundFieldValue(pathKey, si, {
                                             valueString: String(v),
                                           });
                                         }}
                                       >
-                                        {opts.map((o) => (
-                                          <SelectItem key={o.value}>
-                                            {o.label}
-                                          </SelectItem>
-                                        ))}
+                                        <Select.Trigger
+                                          className={cn(
+                                            "bg-surface-secondary/50 dark:bg-zinc-800/50 data-[hovered]:bg-surface-tertiary/50 dark:data-[hovered]:bg-zinc-700/50 data-[focused]:border-brand-600 rounded-xl",
+                                            "rounded-lg",
+                                            "min-h-8 text-sm",
+                                          )}
+                                        >
+                                          <Select.Value />
+                                          <Select.Indicator />
+                                        </Select.Trigger>
+                                        <Select.Popover
+                                          className={
+                                            "bg-surface-secondary/80 dark:bg-zinc-800/80 border border-border/50 dark:border-white/10"
+                                          }
+                                        >
+                                          <ListBox>
+                                            {opts.map((o) => (
+                                              <ListBox.Item
+                                                key={o.value}
+                                                id={o.value}
+                                                textValue={o.label}
+                                              >
+                                                <Label>{o.label}</Label>
+                                                <ListBox.ItemIndicator />
+                                              </ListBox.Item>
+                                            ))}
+                                          </ListBox>
+                                        </Select.Popover>
                                       </Select>
                                     </FieldBox>
                                   );
@@ -673,34 +873,43 @@ export default function WorldLevelDatEditorPage() {
                                     type={stag}
                                     delay={si * 0.015}
                                   >
-                                    <Input
+                                    <TextField
                                       aria-label={String(sf.name)}
-                                      size="sm"
-                                      variant="flat"
-                                      radius="lg"
-                                      classNames={COMPONENT_STYLES.input}
+                                      className={cn(
+                                        "group",
+                                        COMPONENT_STYLES.input.mainWrapper,
+                                      )}
                                       value={display}
-                                      onValueChange={(v) => {
+                                      onChange={(v) => {
                                         beforeUpdate();
                                         setTypedDrafts((prev) => ({
                                           ...prev,
                                           [dk]: v,
                                         }));
                                       }}
-                                      onBlur={() => {
-                                        const val = String(
-                                          typedDrafts[dk] ?? "",
-                                        );
-                                        setCompoundFieldValue(pathKey, si, {
-                                          valueString: val,
-                                        });
-                                        setTypedDrafts((prev) => {
-                                          const next = { ...prev };
-                                          delete next[dk];
-                                          return next;
-                                        });
-                                      }}
-                                    />
+                                    >
+                                      <Input
+                                        onBlur={() => {
+                                          const val = String(
+                                            typedDrafts[dk] ?? "",
+                                          );
+                                          setCompoundFieldValue(pathKey, si, {
+                                            valueString: val,
+                                          });
+                                          setTypedDrafts((prev) => {
+                                            const next = { ...prev };
+                                            delete next[dk];
+                                            return next;
+                                          });
+                                        }}
+                                        className={cn(
+                                          COMPONENT_STYLES.input.inputWrapper,
+                                          COMPONENT_STYLES.input.input,
+                                          "rounded-lg",
+                                          "min-h-8 text-sm",
+                                        )}
+                                      />
+                                    </TextField>
                                   </FieldBox>
                                 );
                               }
@@ -720,16 +929,17 @@ export default function WorldLevelDatEditorPage() {
                                     <div className="flex flex-col gap-2">
                                       <div className="flex gap-1 overflow-x-auto flex-nowrap pretty-scrollbar gutter-stable">
                                         {items.map((it, idx) => (
-                                          <Input
+                                          <TextField
                                             key={`c-${k}-li-${idx}`}
                                             aria-label={`${sf.name} item ${idx}`}
-                                            size="sm"
-                                            variant="flat"
-                                            radius="lg"
-                                            classNames={COMPONENT_STYLES.input}
-                                            className="w-12 shrink-0"
+                                            className={cn(
+                                              "group",
+                                              COMPONENT_STYLES.input
+                                                .mainWrapper,
+                                              "w-12 shrink-0",
+                                            )}
                                             value={String(it ?? "")}
-                                            onValueChange={(v) => {
+                                            onChange={(v) => {
                                               const next = items.slice();
                                               next[idx] = v;
                                               beforeUpdate();
@@ -738,23 +948,33 @@ export default function WorldLevelDatEditorPage() {
                                                 [dk]: stringifyList(next),
                                               }));
                                             }}
-                                            onBlur={() => {
-                                              const val = String(
-                                                typedDrafts[dk] ??
-                                                  stringifyList(items),
-                                              );
-                                              setCompoundFieldValue(
-                                                pathKey,
-                                                si,
-                                                { valueJSON: val },
-                                              );
-                                              setTypedDrafts((prev) => {
-                                                const nn = { ...prev };
-                                                delete nn[dk];
-                                                return nn;
-                                              });
-                                            }}
-                                          />
+                                          >
+                                            <Input
+                                              onBlur={() => {
+                                                const val = String(
+                                                  typedDrafts[dk] ??
+                                                    stringifyList(items),
+                                                );
+                                                setCompoundFieldValue(
+                                                  pathKey,
+                                                  si,
+                                                  { valueJSON: val },
+                                                );
+                                                setTypedDrafts((prev) => {
+                                                  const nn = { ...prev };
+                                                  delete nn[dk];
+                                                  return nn;
+                                                });
+                                              }}
+                                              className={cn(
+                                                COMPONENT_STYLES.input
+                                                  .inputWrapper,
+                                                COMPONENT_STYLES.input.input,
+                                                "rounded-lg",
+                                                "min-h-8 text-sm",
+                                              )}
+                                            />
+                                          </TextField>
                                         ))}
                                       </div>
                                     </div>
@@ -785,18 +1005,27 @@ export default function WorldLevelDatEditorPage() {
                                     >
                                       <div className="flex justify-end">
                                         <Switch
+                                          aria-label={String(sf.name)}
                                           size="sm"
-                                          color="success"
                                           isSelected={isOn}
-                                          onValueChange={(c: boolean) => {
+                                          onChange={(c: boolean) => {
                                             setCompoundFieldValue(pathKey, si, {
                                               valueString: c ? "1" : "0",
                                             });
                                           }}
-                                          thumbIcon={
-                                            <span className="block w-2 h-2 bg-black rounded-full" />
-                                          }
-                                        />
+                                          className={"group"}
+                                        >
+                                          <Switch.Content>
+                                            <Switch.Control>
+                                              <Switch.Thumb>
+                                                {
+                                                  <span className="block w-2 h-2 bg-black rounded-full" />
+                                                }
+                                              </Switch.Thumb>
+                                            </Switch.Control>
+                                            <span></span>
+                                          </Switch.Content>
+                                        </Switch>
                                       </div>
                                     </FieldBox>
                                   );
@@ -812,34 +1041,43 @@ export default function WorldLevelDatEditorPage() {
                                     type={stag}
                                     delay={si * 0.015}
                                   >
-                                    <Input
+                                    <TextField
                                       aria-label={String(sf.name)}
-                                      size="sm"
-                                      variant="flat"
-                                      radius="lg"
-                                      classNames={COMPONENT_STYLES.input}
+                                      className={cn(
+                                        "group",
+                                        COMPONENT_STYLES.input.mainWrapper,
+                                      )}
                                       value={display}
-                                      onValueChange={(v) => {
+                                      onChange={(v) => {
                                         beforeUpdate();
                                         setTypedDrafts((prev) => ({
                                           ...prev,
                                           [dk]: v,
                                         }));
                                       }}
-                                      onBlur={() => {
-                                        const val = String(
-                                          typedDrafts[dk] ?? "",
-                                        );
-                                        setCompoundFieldValue(pathKey, si, {
-                                          valueString: val,
-                                        });
-                                        setTypedDrafts((prev) => {
-                                          const next = { ...prev };
-                                          delete next[dk];
-                                          return next;
-                                        });
-                                      }}
-                                    />
+                                    >
+                                      <Input
+                                        onBlur={() => {
+                                          const val = String(
+                                            typedDrafts[dk] ?? "",
+                                          );
+                                          setCompoundFieldValue(pathKey, si, {
+                                            valueString: val,
+                                          });
+                                          setTypedDrafts((prev) => {
+                                            const next = { ...prev };
+                                            delete next[dk];
+                                            return next;
+                                          });
+                                        }}
+                                        className={cn(
+                                          COMPONENT_STYLES.input.inputWrapper,
+                                          COMPONENT_STYLES.input.input,
+                                          "rounded-lg",
+                                          "min-h-8 text-sm",
+                                        )}
+                                      />
+                                    </TextField>
                                   </FieldBox>
                                 );
                               }
@@ -857,40 +1095,51 @@ export default function WorldLevelDatEditorPage() {
                                       String(sf.valueJSON || "");
                                     return (
                                       <>
-                                        <Input
+                                        <TextField
                                           aria-label={String(sf.name)}
-                                          size="sm"
-                                          variant="flat"
-                                          radius="lg"
-                                          classNames={COMPONENT_STYLES.input}
+                                          className={cn(
+                                            "group",
+                                            COMPONENT_STYLES.input.mainWrapper,
+                                          )}
                                           value={display}
-                                          onValueChange={(v) => {
+                                          onChange={(v) => {
                                             beforeUpdate();
                                             setTypedDrafts((prev) => ({
                                               ...prev,
                                               [dk]: v,
                                             }));
                                           }}
-                                          onBlur={() => {
-                                            const val = String(
-                                              typedDrafts[dk] ?? "",
-                                            );
-                                            setCompoundFieldValue(pathKey, si, {
-                                              valueJSON: val,
-                                            });
-                                            setTypedDrafts((prev) => {
-                                              const next = { ...prev };
-                                              delete next[dk];
-                                              return next;
-                                            });
-                                          }}
-                                        />
+                                        >
+                                          <Input
+                                            onBlur={() => {
+                                              const val = String(
+                                                typedDrafts[dk] ?? "",
+                                              );
+                                              setCompoundFieldValue(
+                                                pathKey,
+                                                si,
+                                                {
+                                                  valueJSON: val,
+                                                },
+                                              );
+                                              setTypedDrafts((prev) => {
+                                                const next = { ...prev };
+                                                delete next[dk];
+                                                return next;
+                                              });
+                                            }}
+                                            className={cn(
+                                              COMPONENT_STYLES.input
+                                                .inputWrapper,
+                                              COMPONENT_STYLES.input.input,
+                                              "rounded-lg",
+                                              "min-h-8 text-sm",
+                                            )}
+                                          />
+                                        </TextField>
                                         <div className="mt-2">
                                           <Button
                                             size="sm"
-                                            radius="lg"
-                                            variant="flat"
-                                            className="bg-default-100 dark:bg-default-50/20 text-default-600 dark:text-zinc-300"
                                             onPress={() => {
                                               const segs = pathKey.split("/");
                                               const nextPath = [
@@ -899,6 +1148,11 @@ export default function WorldLevelDatEditorPage() {
                                               ];
                                               loadCompound(nextPath);
                                             }}
+                                            variant={"secondary"}
+                                            className={cn(
+                                              "rounded-lg",
+                                              "bg-surface-secondary dark:bg-surface/20 text-foreground dark:text-zinc-300",
+                                            )}
                                           >
                                             {t("common.expand")}
                                           </Button>
@@ -929,7 +1183,7 @@ export default function WorldLevelDatEditorPage() {
               </div>
             )}
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
     </PageContainer>
   );

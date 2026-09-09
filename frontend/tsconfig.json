@@ -1,4 +1,4 @@
-﻿{
+{
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
@@ -15,7 +15,6 @@
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/*"],
-      "@heroui/react": ["./src/shims/heroui.ts"],
       "bindings/*": ["./bindings/*"]
     }
   },

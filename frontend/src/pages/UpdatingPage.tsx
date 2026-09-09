@@ -1,5 +1,7 @@
+import { Card, ProgressBar } from "@heroui/react";
+
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { Card, CardBody, Progress } from "@heroui/react";
+
 import { useTranslation } from "react-i18next";
 import { FaRocket } from "react-icons/fa";
 import { motion } from "framer-motion";
@@ -193,35 +195,33 @@ export default function UpdatingPage() {
         transition={{ duration: 0.4 }}
       >
         <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <CardBody className="p-6">
+          <Card.Content className="p-6">
             <PageHeader
               title={t("updating.title")}
               description={t("updating.body")}
               titleClassName="text-2xl"
               descriptionClassName="text-sm sm:text-base"
               startContent={
-                <div className="p-2 rounded-xl bg-primary-500/10 text-primary-600 dark:text-primary-500">
+                <div className="p-2 rounded-xl bg-brand-500/10 text-brand-600 dark:text-brand-500">
                   <FaRocket className="w-5 h-5" />
                 </div>
               }
             />
-
             <div className="mt-6 rounded-3xl border border-black/5 dark:border-white/10 bg-white/50 dark:bg-zinc-950/50 backdrop-blur-sm px-4 py-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-default-500">
+              <div className="text-xs font-semibold uppercase tracking-wide text-muted">
                 {t("common.updating")}
               </div>
-              <div className="mt-1 text-sm font-medium text-default-700 dark:text-zinc-200">
+              <div className="mt-1 text-sm font-medium text-foreground dark:text-zinc-200">
                 {statusText}
               </div>
             </div>
-
             <div className="mt-8 space-y-6 w-full pb-4">
               <div className="space-y-2">
                 <div className="flex justify-between items-end gap-4">
-                  <div className="text-small font-medium text-default-600">
+                  <div className="text-sm font-medium text-foreground">
                     {t("updating.phase.download")}
                   </div>
-                  <div className="text-tiny text-default-500 font-mono text-right">
+                  <div className="text-xs text-muted font-mono text-right">
                     {total > 0
                       ? `${(downloaded / 1024 / 1024).toFixed(1)} / ${(
                           total /
@@ -232,77 +232,89 @@ export default function UpdatingPage() {
                   </div>
                 </div>
                 {total > 0 ? (
-                  <Progress
+                  <ProgressBar
                     aria-label={t("updating.phase.download")}
-                    className="w-full"
-                    color="success"
                     size="md"
-                    radius="md"
                     value={Math.max(
                       0,
                       Math.min(100, Math.round((downloaded / total) * 100)),
                     )}
-                    classNames={{
-                      indicator:
-                        "bg-gradient-to-r from-primary-500 to-primary-400",
-                    }}
-                  />
+                    color={"success"}
+                    className={"w-full"}
+                  >
+                    <ProgressBar.Track className={"rounded-md"}>
+                      <ProgressBar.Fill
+                        className={
+                          "bg-gradient-to-r from-brand-500 to-brand-400"
+                        }
+                      />
+                    </ProgressBar.Track>
+                  </ProgressBar>
                 ) : (
-                  <Progress
+                  <ProgressBar
                     isIndeterminate={currentStatus !== "downloaded"}
                     aria-label={t("updating.phase.download")}
-                    className="w-full"
-                    color="success"
                     size="md"
-                    radius="md"
                     value={currentStatus === "downloaded" ? 100 : undefined}
-                    classNames={{
-                      indicator:
-                        "bg-gradient-to-r from-primary-500 to-primary-400",
-                    }}
-                  />
+                    color={"success"}
+                    className={"w-full"}
+                  >
+                    <ProgressBar.Track className={"rounded-md"}>
+                      <ProgressBar.Fill
+                        className={
+                          "bg-gradient-to-r from-brand-500 to-brand-400"
+                        }
+                      />
+                    </ProgressBar.Track>
+                  </ProgressBar>
                 )}
               </div>
 
               <div className="space-y-2">
                 <div className="flex justify-between items-end gap-4">
-                  <div className="text-small font-medium text-default-600">
+                  <div className="text-sm font-medium text-foreground">
                     {t("updating.phase.install")}
                   </div>
-                  <div className="text-tiny text-default-500 text-right">
+                  <div className="text-xs text-muted text-right">
                     {statusText}
                   </div>
                 </div>
                 {installBusy ? (
-                  <Progress
+                  <ProgressBar
                     isIndeterminate
                     aria-label={t("updating.phase.install")}
-                    className="w-full"
-                    color="success"
                     size="md"
-                    radius="md"
-                    classNames={{
-                      indicator:
-                        "bg-gradient-to-r from-primary-500 to-primary-400",
-                    }}
-                  />
+                    color={"success"}
+                    className={"w-full"}
+                  >
+                    <ProgressBar.Track className={"rounded-md"}>
+                      <ProgressBar.Fill
+                        className={
+                          "bg-gradient-to-r from-brand-500 to-brand-400"
+                        }
+                      />
+                    </ProgressBar.Track>
+                  </ProgressBar>
                 ) : (
-                  <Progress
+                  <ProgressBar
                     aria-label={t("updating.phase.install")}
-                    className="w-full"
-                    color="success"
                     size="md"
-                    radius="md"
                     value={currentStatus === "installed" ? 100 : 0}
-                    classNames={{
-                      indicator:
-                        "bg-gradient-to-r from-primary-500 to-primary-400",
-                    }}
-                  />
+                    color={"success"}
+                    className={"w-full"}
+                  >
+                    <ProgressBar.Track className={"rounded-md"}>
+                      <ProgressBar.Fill
+                        className={
+                          "bg-gradient-to-r from-brand-500 to-brand-400"
+                        }
+                      />
+                    </ProgressBar.Track>
+                  </ProgressBar>
                 )}
               </div>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </motion.div>
 
@@ -317,7 +329,7 @@ export default function UpdatingPage() {
         hideCloseButton
         isDismissable={false}
       >
-        <div className="text-default-700 text-sm wrap-break-word whitespace-pre-wrap">
+        <div className="text-foreground text-sm wrap-break-word whitespace-pre-wrap">
           {errorText}
         </div>
       </UnifiedModal>

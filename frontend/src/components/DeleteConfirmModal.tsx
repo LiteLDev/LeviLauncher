@@ -52,9 +52,9 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
       onCancel={() => onOpenChange(false)}
       showCancelButton={!isPending}
       confirmButtonProps={{
-        isLoading: isPending,
+        isPending: isPending,
         isDisabled: isPending || confirmDisabled,
-        className: "font-bold shadow-lg shadow-danger-500/20",
+        className: "font-bold shadow-lg shadow-rose-500/20",
       }}
       cancelButtonProps={{
         isDisabled: isPending,
@@ -62,21 +62,21 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
     >
       <div className="flex flex-col gap-3">
         {description && (
-          <div className="text-medium text-default-700 dark:text-zinc-300 font-medium whitespace-pre-wrap">
+          <div className="text-base text-foreground dark:text-zinc-300 font-medium whitespace-pre-wrap">
             {description}
           </div>
         )}
 
         {itemName && (
-          <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50">
-            <span className="font-mono text-default-800 dark:text-zinc-200 font-bold break-all text-small">
+          <div className="p-3 bg-surface-secondary/50 dark:bg-zinc-800 rounded-xl border border-border/50">
+            <span className="font-mono text-foreground dark:text-zinc-200 font-bold break-all text-sm">
               {itemName}
             </span>
           </div>
         )}
 
         {warning && (
-          <div className="text-small text-danger-700 dark:text-danger-300 font-bold flex items-center gap-2">
+          <div className="text-sm text-rose-700 dark:text-rose-300 font-bold flex items-center gap-2">
             <FiAlertTriangle className="w-4 h-4 shrink-0" />
             {warning}
           </div>
@@ -88,7 +88,7 @@ export const DeleteConfirmModal: React.FC<DeleteConfirmModalProps> = ({
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: "auto" }}
               exit={{ opacity: 0, height: 0 }}
-              className="text-small text-danger-800 dark:text-danger-200 bg-danger-100 dark:bg-danger-950/50 px-3 py-2 rounded-lg"
+              className="text-sm text-rose-800 dark:text-rose-200 bg-rose-100 dark:bg-rose-950/50 px-3 py-2 rounded-lg"
             >
               {error}
             </motion.div>

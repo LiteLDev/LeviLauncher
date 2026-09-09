@@ -1,6 +1,8 @@
+import { Button, Tooltip } from "@heroui/react";
+
 import React from "react";
 import { useLocation } from "react-router-dom";
-import { Button, Tooltip } from "@heroui/react";
+
 import {
   FaRocket,
   FaDownload,
@@ -65,7 +67,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
     <div
       className={`fixed left-0 top-14 bottom-0 z-50 flex flex-col w-14 ${LAYOUT.NAVBAR_BG}`}
     >
-      <div className="absolute right-0 top-[20px] bottom-0 w-px bg-default-200/50 dark:bg-zinc-800/50" />
+      <div className="absolute right-0 top-[20px] bottom-0 w-px bg-surface-tertiary/50 dark:bg-zinc-800/50" />
       {/* Corner Connector */}
       <div className="absolute top-0 -right-[20px] w-[20px] h-[20px] overflow-hidden pointer-events-none">
         {/* Fill the corner gap */}
@@ -85,7 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             fill="none"
             stroke="currentColor"
             strokeWidth="1"
-            className="text-default-200/50 dark:text-zinc-800/50"
+            className="text-muted/50 dark:text-zinc-800/50"
           />
         </svg>
       </div>
@@ -94,18 +96,12 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {navItems.map((item) => {
           const isActive = isRouteActive(location.pathname, item.path);
           return (
-            <Tooltip
-              key={item.key}
-              content={item.label}
-              placement="right"
-              delay={0}
-              closeDelay={0}
-            >
+            <Tooltip key={item.key} delay={0} closeDelay={0}>
               <div className="relative group">
                 {isActive && (
                   <motion.div
                     layoutId="active-pill"
-                    className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-primary-500 rounded-r-full"
+                    className="absolute -left-2 top-1/2 -translate-y-1/2 w-1 h-8 bg-brand-500 rounded-r-full"
                     transition={{
                       type: "spring",
                       stiffness: 300,
@@ -115,8 +111,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
                 )}
                 <Button
                   isIconOnly
-                  variant={isActive ? "flat" : "light"}
-                  color={isActive ? "success" : "default"}
                   aria-label={item.label}
                   isDisabled={navLocked}
                   onPress={(e) => {
@@ -125,15 +119,19 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       (e.target as HTMLElement).blur();
                     }
                   }}
+                  variant={isActive ? "secondary" : "ghost"}
                   className={`w-12 h-12 rounded-xl transition-all duration-200 ${
                     isActive
-                      ? "bg-primary-500/10 text-primary-600 dark:text-primary-400"
-                      : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-default-100 dark:hover:bg-zinc-800"
+                      ? "bg-brand-500/10 text-brand-600 dark:text-brand-400"
+                      : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary dark:hover:bg-zinc-800"
                   }`}
                 >
                   {item.icon}
                 </Button>
               </div>
+              <Tooltip.Content placement={"right"}>
+                {item.label}
+              </Tooltip.Content>
             </Tooltip>
           );
         })}
@@ -143,19 +141,17 @@ export const Sidebar: React.FC<SidebarProps> = ({
         {themeMode !== "auto" &&
           themeMode !== "schedule" &&
           themeMode !== "system" && (
-            <Tooltip
-              content={t("theme.toggle")}
-              placement="right"
-              delay={0}
-              closeDelay={0}
-            >
+            <Tooltip delay={0} closeDelay={0}>
               <div>
                 <ThemeSwitcher
                   isDisabled={navLocked}
-                  className="w-12 h-12 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-default-100 dark:hover:bg-zinc-800 transition-all duration-200"
+                  className="w-12 h-12 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary dark:hover:bg-zinc-800 transition-all duration-200"
                   iconSize={20}
                 />
               </div>
+              <Tooltip.Content placement={"right"}>
+                {t("theme.toggle")}
+              </Tooltip.Content>
             </Tooltip>
           )}
       </div>

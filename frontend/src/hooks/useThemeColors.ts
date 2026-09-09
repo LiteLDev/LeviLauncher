@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { THEMES, hexToRgb, generateTheme } from "@/constants/themes";
 
-const BRAND_PRIMARY_FOREGROUND = "0 0% 100%";
+const BRAND_PRIMARY_FOREGROUND = "#ffffff";
 
 export const useThemeColors = (resolvedTheme: string | undefined) => {
   const [themeColorsReady, setThemeColorsReady] = useState<boolean>(false);
@@ -107,10 +107,7 @@ export const useThemeColors = (resolvedTheme: string | undefined) => {
       root.style.setProperty(`--theme-${k}`, hexToRgb(theme[k]));
     });
     // Primary actions intentionally keep the original white brand foreground.
-    root.style.setProperty(
-      "--heroui-primary-foreground",
-      BRAND_PRIMARY_FOREGROUND,
-    );
+    root.style.setProperty("--accent-foreground", BRAND_PRIMARY_FOREGROUND);
     setThemeColorsReady(true);
   }, [
     resolvedTheme,

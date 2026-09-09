@@ -1,15 +1,18 @@
-import React, { useEffect, useState, useMemo } from "react";
+import { PagePagination } from "@/components/PagePagination";
 import {
   Button,
-  Chip,
-  Input,
-  Select,
-  SelectItem,
-  Pagination,
-  Skeleton,
   Card,
-  CardBody,
+  Chip,
+  InputGroup,
+  Label,
+  ListBox,
+  Select,
+  Skeleton,
+  TextField,
 } from "@heroui/react";
+
+import React, { useEffect, useState, useMemo } from "react";
+
 import { PageHeader } from "@/components/PageHeader";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -414,115 +417,226 @@ export const CurseForgePage: React.FC = () => {
         transition={{ duration: 0.4 }}
       >
         <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
-          <CardBody className="p-6 flex flex-col gap-6">
+          <Card.Content className="p-6 flex flex-col gap-6">
             <PageHeader title={t("curseforge.title")} />
-
             <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                placeholder={t("curseforge.search_placeholder")}
+              <TextField
+                aria-label={t("curseforge.search_placeholder")}
+                className={cn(
+                  "group",
+                  COMPONENT_STYLES.input.mainWrapper,
+                  "flex-1",
+                )}
                 value={query}
-                onValueChange={setQuery}
-                onKeyPress={handleKeyPress}
-                startContent={<LuSearch />}
-                className="flex-1"
-                size="sm"
-                classNames={COMPONENT_STYLES.input}
-              />
-              <Button
-                color="primary"
-                onPress={handleSearch}
-                startContent={<LuSearch />}
-                size="sm"
-                className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+                onChange={setQuery}
               >
+                <InputGroup
+                  className={cn(
+                    COMPONENT_STYLES.input.inputWrapper,
+                    COMPONENT_STYLES.input.innerWrapper,
+                    "min-h-8 text-sm",
+                  )}
+                >
+                  <InputGroup.Prefix>{<LuSearch />}</InputGroup.Prefix>
+                  <InputGroup.Input
+                    placeholder={t("curseforge.search_placeholder")}
+                    onKeyPress={handleKeyPress}
+                    className={COMPONENT_STYLES.input.input}
+                  />
+                </InputGroup>
+              </TextField>
+              <Button
+                onPress={handleSearch}
+                size="sm"
+                variant={"primary"}
+                className={
+                  "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20"
+                }
+              >
+                {<LuSearch />}
                 {t("curseforge.search")}
               </Button>
             </div>
-
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
               <Select
-                label={t("curseforge.minecraft_version")}
                 placeholder={t("curseforge.select_version")}
-                selectedKeys={[selectedMinecraftVersion]}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
+                value={Array.from([selectedMinecraftVersion])[0] ?? null}
+                onChange={(keys) => {
+                  const value = keys as string;
                   setSelectedMinecraftVersion(value || "");
                   setCurrentPage(1);
                 }}
-                size="sm"
-                classNames={COMPONENT_STYLES.select}
-                items={[
-                  { key: "", label: t("curseforge.all_versions") },
-                  ...gameVersions.map((v) => ({ key: v.name, label: v.name })),
-                ]}
               >
-                {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
+                <Label>{t("curseforge.minecraft_version")}</Label>
+                <Select.Trigger
+                  className={cn(
+                    COMPONENT_STYLES.select.trigger,
+                    "min-h-8 text-sm",
+                  )}
+                >
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover
+                  className={COMPONENT_STYLES.select.popoverContent}
+                >
+                  <ListBox
+                    items={[
+                      { key: "", label: t("curseforge.all_versions") },
+                      ...gameVersions.map((v) => ({
+                        key: v.name,
+                        label: v.name,
+                      })),
+                    ]}
+                    className={COMPONENT_STYLES.select.listbox}
+                  >
+                    {(item) => (
+                      <ListBox.Item
+                        key={item.key}
+                        id={item.key}
+                        textValue={item.label}
+                      >
+                        <Label>{item.label}</Label>
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    )}
+                  </ListBox>
+                </Select.Popover>
               </Select>
 
               <Select
-                label={t("curseforge.class")}
                 placeholder={t("curseforge.select_class")}
-                selectedKeys={
-                  selectedClass !== undefined ? [String(selectedClass)] : []
+                value={
+                  Array.from(
+                    selectedClass !== undefined ? [String(selectedClass)] : [],
+                  )[0] ?? null
                 }
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
+                onChange={(keys) => {
+                  const value = keys as string;
                   setSelectedClass(value ? parseInt(value) : 0);
                   setSelectedCategories([]);
                   setCurrentPage(1);
                 }}
-                size="sm"
-                classNames={COMPONENT_STYLES.select}
-                items={[
-                  { name: t("curseforge.all_classes"), id: 0 },
-                  ...classes,
-                ]}
               >
-                {(item) => (
-                  <SelectItem key={String(item.id)}>{item.name}</SelectItem>
-                )}
+                <Label>{t("curseforge.class")}</Label>
+                <Select.Trigger
+                  className={cn(
+                    COMPONENT_STYLES.select.trigger,
+                    "min-h-8 text-sm",
+                  )}
+                >
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover
+                  className={COMPONENT_STYLES.select.popoverContent}
+                >
+                  <ListBox
+                    items={[
+                      { name: t("curseforge.all_classes"), id: 0 },
+                      ...classes,
+                    ]}
+                    className={COMPONENT_STYLES.select.listbox}
+                  >
+                    {(item) => (
+                      <ListBox.Item
+                        key={String(item.id)}
+                        id={String(item.id)}
+                        textValue={item.name}
+                      >
+                        <Label>{item.name}</Label>
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    )}
+                  </ListBox>
+                </Select.Popover>
               </Select>
 
               <Select
-                label={t("curseforge.category")}
                 placeholder={t("curseforge.select_category")}
                 isDisabled={!selectedClass}
                 selectionMode="multiple"
-                selectedKeys={selectedCategories.map(String)}
-                onSelectionChange={(keys) => {
-                  const values = Array.from(keys)
+                value={Array.from(selectedCategories.map(String))}
+                onChange={(keys) => {
+                  const values = keys
                     .map((k) => parseInt(String(k)))
                     .filter((n) => !isNaN(n));
                   setSelectedCategories(values);
                   setCurrentPage(1);
                 }}
-                size="sm"
-                classNames={COMPONENT_STYLES.select}
               >
-                {categories.map((cat) => (
-                  <SelectItem key={String(cat.id)}>{cat.name}</SelectItem>
-                ))}
+                <Label>{t("curseforge.category")}</Label>
+                <Select.Trigger
+                  className={cn(
+                    COMPONENT_STYLES.select.trigger,
+                    "min-h-8 text-sm",
+                  )}
+                >
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover
+                  className={COMPONENT_STYLES.select.popoverContent}
+                >
+                  <ListBox className={COMPONENT_STYLES.select.listbox}>
+                    {categories.map((cat) => (
+                      <ListBox.Item
+                        key={String(cat.id)}
+                        id={String(cat.id)}
+                        textValue={cat.name}
+                      >
+                        <Label>{cat.name}</Label>
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    ))}
+                  </ListBox>
+                </Select.Popover>
               </Select>
 
               <Select
-                label={t("curseforge.sort_by")}
                 placeholder={t("curseforge.select_sort")}
-                selectedKeys={selectedSort ? [String(selectedSort)] : []}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
+                value={
+                  Array.from(selectedSort ? [String(selectedSort)] : [])[0] ??
+                  null
+                }
+                onChange={(keys) => {
+                  const value = keys as string;
                   setSelectedSort(parseInt(value));
                   setCurrentPage(1);
                 }}
-                size="sm"
-                classNames={COMPONENT_STYLES.select}
-                items={sortOptions}
               >
-                {(opt) => (
-                  <SelectItem key={String(opt.value)}>{opt.label}</SelectItem>
-                )}
+                <Label>{t("curseforge.sort_by")}</Label>
+                <Select.Trigger
+                  className={cn(
+                    COMPONENT_STYLES.select.trigger,
+                    "min-h-8 text-sm",
+                  )}
+                >
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover
+                  className={COMPONENT_STYLES.select.popoverContent}
+                >
+                  <ListBox
+                    items={sortOptions}
+                    className={COMPONENT_STYLES.select.listbox}
+                  >
+                    {(opt) => (
+                      <ListBox.Item
+                        key={String(opt.value)}
+                        id={String(opt.value)}
+                        textValue={opt.label}
+                      >
+                        <Label>{opt.label}</Label>
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    )}
+                  </ListBox>
+                </Select.Popover>
               </Select>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </motion.div>
 
@@ -533,7 +647,7 @@ export const CurseForgePage: React.FC = () => {
         transition={{ duration: 0.4, delay: 0.1 }}
       >
         <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
-          <CardBody className="p-0 overflow-hidden flex flex-col">
+          <Card.Content className="p-0 overflow-hidden flex flex-col">
             <div
               ref={scrollContainerRef}
               onScroll={(e) => {
@@ -545,8 +659,6 @@ export const CurseForgePage: React.FC = () => {
                 <div className="flex flex-col items-center justify-center h-full gap-4 text-danger">
                   <p>{error}</p>
                   <Button
-                    color="danger"
-                    variant="flat"
                     onPress={() => {
                       if (
                         gameVersions.length === 0 &&
@@ -557,6 +669,7 @@ export const CurseForgePage: React.FC = () => {
                         setSearchToken((v) => v + 1);
                       }
                     }}
+                    variant={"danger-soft"}
                   >
                     {t("common.retry")}
                   </Button>
@@ -564,7 +677,7 @@ export const CurseForgePage: React.FC = () => {
               ) : loading || !hasSearched ? (
                 <div className="flex flex-col gap-3">{renderSkeletons()}</div>
               ) : mods.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-default-500 dark:text-zinc-400">
+                <div className="flex items-center justify-center h-full text-muted dark:text-zinc-400">
                   <p>{t("curseforge.no_results")}</p>
                 </div>
               ) : (
@@ -577,7 +690,7 @@ export const CurseForgePage: React.FC = () => {
                       transition={{ duration: 0.2 }}
                     >
                       <div
-                        className="w-full p-4 bg-default-50/50 dark:bg-white/5 hover:bg-default-100/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-default-100 dark:border-white/5"
+                        className="w-full p-4 bg-surface/50 dark:bg-white/5 hover:bg-surface-secondary/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-border dark:border-white/5"
                         onClick={() => {
                           saveScrollPosition();
                           navigate(routeTo.curseForgeMod(mod.id));
@@ -587,7 +700,7 @@ export const CurseForgePage: React.FC = () => {
                           <img
                             src={mod.logo?.thumbnailUrl || mod.logo?.url || ""}
                             alt={mod.name}
-                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-content3 shadow-sm"
+                            className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-surface-tertiary shadow-sm"
                             loading="lazy"
                           />
                         </div>
@@ -597,7 +710,7 @@ export const CurseForgePage: React.FC = () => {
                             <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
                               {mod.name}
                             </h3>
-                            <span className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 truncate">
+                            <span className="text-xs sm:text-sm text-muted dark:text-zinc-400 truncate">
                               |{" "}
                               {t("curseforge.by_author", {
                                 author: mod.authors?.[0]?.name || "Unknown",
@@ -605,11 +718,11 @@ export const CurseForgePage: React.FC = () => {
                             </span>
                           </div>
 
-                          <p className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 line-clamp-2 w-full">
+                          <p className="text-xs sm:text-sm text-muted dark:text-zinc-400 line-clamp-2 w-full">
                             {mod.summary || t("curseforge.no_description")}
                           </p>
 
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-default-400 mt-1">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted mt-1">
                             <div
                               className="flex items-center gap-1"
                               title={t("curseforge.downloads")}
@@ -664,11 +777,13 @@ export const CurseForgePage: React.FC = () => {
                                   <Chip
                                     key={`class-${classCat.id}`}
                                     size="sm"
-                                    variant="flat"
-                                    radius="sm"
-                                    className="h-5 text-[10px] bg-primary/10 text-primary font-medium"
+                                    variant="soft"
+                                    className={cn(
+                                      "rounded-sm",
+                                      "h-5 text-[10px] bg-accent/10 text-accent font-medium",
+                                    )}
                                   >
-                                    {classCat.name}
+                                    <Chip.Label>{classCat.name}</Chip.Label>
                                   </Chip>
                                 );
                               }
@@ -681,11 +796,13 @@ export const CurseForgePage: React.FC = () => {
                                 <Chip
                                   key={cat.id}
                                   size="sm"
-                                  variant="flat"
-                                  radius="sm"
-                                  className="h-5 text-[10px] bg-default-100 dark:bg-zinc-800 text-default-500 dark:text-zinc-400 group-hover:bg-default-200 dark:group-hover:bg-zinc-700 transition-colors"
+                                  variant="soft"
+                                  className={cn(
+                                    "rounded-sm",
+                                    "h-5 text-[10px] bg-surface-secondary dark:bg-zinc-800 text-muted dark:text-zinc-400 group-hover:bg-surface-tertiary dark:group-hover:bg-zinc-700 transition-colors",
+                                  )}
                                 >
-                                  {cat.name}
+                                  <Chip.Label>{cat.name}</Chip.Label>
                                 </Chip>
                               ))}
                           </div>
@@ -696,28 +813,21 @@ export const CurseForgePage: React.FC = () => {
                 </div>
               )}
             </div>
-
             {totalPages > 1 && (
-              <div className="flex justify-center p-4 border-t border-default-100 dark:border-white/5 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shrink-0">
-                <Pagination
-                  total={totalPages}
-                  page={currentPage}
-                  onChange={(page) => {
+              <div className="flex justify-center p-4 border-t border-border dark:border-white/5 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shrink-0">
+                <PagePagination
+                  className="gap-2"
+                  pageCount={totalPages}
+                  currentPage={currentPage}
+                  onPageChange={(page) => {
                     setCurrentPage(page);
                     setSearchToken((v) => v + 1);
                   }}
-                  showControls
-                  color="primary"
-                  className="gap-2"
-                  radius="full"
-                  classNames={{
-                    cursor:
-                      "bg-primary-500 hover:bg-primary-500 shadow-lg shadow-primary-900/20 font-bold",
-                  }}
+                  pageClassName="rounded-full"
                 />
               </div>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
       </motion.div>
     </PageContainer>

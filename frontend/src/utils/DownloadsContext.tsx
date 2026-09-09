@@ -1,3 +1,4 @@
+import { toast } from "@heroui/react";
 import React, {
   createContext,
   useContext,
@@ -7,7 +8,7 @@ import React, {
 } from "react";
 import { Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { addToast } from "@heroui/react";
+
 import { useTranslation } from "react-i18next";
 
 export interface DownloadItem {
@@ -205,9 +206,10 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
             return next;
           });
         }
-        addToast({
+        toast(undefined, {
           description: msg,
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
       }),
     );
@@ -231,9 +233,9 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
           fileName: fname || prev.fileName,
         }));
         speedRef.current[dest] = { ts: 0, bytes: 0 };
-        addToast({
-          title: t("downloadpage.download.success_body") + " " + (fname || ""),
-          color: "success",
+        toast(t("downloadpage.download.success_body") + " " + (fname || ""), {
+          variant: "success",
+          timeout: 2000,
         });
       }),
     );
@@ -273,9 +275,10 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
     );
 
     if (isAlreadyDownloading) {
-      addToast({
+      toast(undefined, {
         description: t("downloadpage.error.already_downloading"),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       return false;
     }
@@ -309,15 +312,16 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         fileName: displayName || prev.fileName || getFileNameFromDest(key),
         url: url,
       }));
-      addToast({
-        title: t("downloadpage.mirror.download_started"),
-        color: "success",
+      toast(t("downloadpage.mirror.download_started"), {
+        variant: "success",
+        timeout: 2000,
       });
       return true;
     } catch (e) {
-      addToast({
+      toast(undefined, {
         description: String(e),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       return false;
     }

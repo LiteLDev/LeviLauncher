@@ -1,17 +1,17 @@
-import React from "react";
-import { useTranslation } from "react-i18next";
 import {
   Button,
+  Card,
+  Checkbox,
+  Modal,
   Spinner,
   Tooltip,
-  useDisclosure,
-  Card,
-  CardBody,
-  addToast,
-  Checkbox,
-  Image,
-  ModalContent,
+  toast,
+  useOverlayState,
 } from "@heroui/react";
+
+import React from "react";
+import { useTranslation } from "react-i18next";
+
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
 import { useLocation } from "react-router-dom";
@@ -80,20 +80,20 @@ export default function ScreenshotsPage() {
   );
   const {
     isOpen: delCfmOpen,
-    onOpen: delCfmOnOpen,
-    onOpenChange: delCfmOnOpenChange,
-  } = useDisclosure();
+    open: delCfmOnOpen,
+    setOpen: delCfmOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: previewOpen,
-    onOpen: previewOnOpen,
-    onOpenChange: previewOnOpenChange,
-    onClose: previewOnClose,
-  } = useDisclosure();
+    open: previewOnOpen,
+    setOpen: previewOnOpenChange,
+    close: previewOnClose,
+  } = useOverlayState();
   const {
     isOpen: delManyCfmOpen,
-    onOpen: delManyCfmOnOpen,
-    onOpenChange: delManyCfmOnOpenChange,
-  } = useDisclosure();
+    open: delManyCfmOnOpen,
+    setOpen: delManyCfmOnOpenChange,
+  } = useOverlayState();
   const [deletingOne, setDeletingOne] = React.useState(false);
   const [deletingMany, setDeletingMany] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
@@ -224,65 +224,74 @@ export default function ScreenshotsPage() {
   return (
     <PageContainer ref={scrollRef}>
       <Card className={LAYOUT.GLASS_CARD.BASE}>
-        <CardBody className="p-6 flex flex-col gap-6">
+        <Card.Content className="p-6 flex flex-col gap-6">
           <PageHeader
             title={t("contentpage.screenshots")}
             endContent={
               <div className="flex items-center gap-2">
                 <Button
-                  radius="full"
-                  variant="flat"
-                  startContent={<FaFolderOpen />}
                   onPress={() => {
                     if (screenshotsRoot) OpenPathDir(screenshotsRoot);
                   }}
                   isDisabled={!screenshotsRoot}
-                  className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
+                  variant={"secondary"}
+                  className={cn(
+                    "rounded-full",
+                    "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200 font-medium",
+                  )}
                 >
+                  {<FaFolderOpen />}
                   {t("common.open")}
                 </Button>
-                <Tooltip content={t("common.select_mode")}>
+                <Tooltip>
                   <Button
                     isIconOnly
-                    radius="full"
-                    variant="flat"
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200"
                     onPress={selection.toggleSelectMode}
+                    variant={"secondary"}
+                    className={cn(
+                      "rounded-full",
+                      "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200",
+                    )}
                   >
                     <FaCheckSquare />
                   </Button>
+                  <Tooltip.Content>{t("common.select_mode")}</Tooltip.Content>
                 </Tooltip>
-                <Tooltip content={t("common.refresh") as unknown as string}>
+                <Tooltip>
                   <Button
                     isIconOnly
-                    radius="full"
-                    variant="flat"
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200"
                     onPress={() => refreshAll()}
                     isDisabled={loading}
+                    variant={"secondary"}
+                    className={cn(
+                      "rounded-full",
+                      "bg-surface-secondary dark:bg-zinc-800 text-foreground dark:text-zinc-200",
+                    )}
                   >
                     <FaSync
                       className={loading ? "animate-spin" : ""}
                       size={18}
                     />
                   </Button>
+                  <Tooltip.Content>
+                    {t("common.refresh") as unknown as string}
+                  </Tooltip.Content>
                 </Tooltip>
               </div>
             }
           />
-
-          <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
+          <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
             <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
               {currentVersionName || t("contentpage.none")}
             </span>
-            <span className="text-default-300 dark:text-zinc-700">|</span>
+            <span className="text-muted dark:text-zinc-700">|</span>
             <span>{t("contentpage.isolation")}:</span>
-            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary dark:bg-zinc-800 px-2 py-0.5 rounded-md">
               {roots.isIsolation ? t("common.yes") : t("common.no")}
             </span>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
       <SelectionBar
@@ -296,7 +305,7 @@ export default function ScreenshotsPage() {
       {loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
-          <span className="text-default-500 dark:text-zinc-400">
+          <span className="text-muted dark:text-zinc-400">
             {t("common.loading")}
           </span>
         </div>
@@ -317,7 +326,7 @@ export default function ScreenshotsPage() {
                       ? "cursor-pointer"
                       : "cursor-default",
                     selection.isSelectMode && selection.selected[s.path]
-                      ? "ring-2 ring-primary"
+                      ? "ring-2 ring-accent"
                       : "",
                   )}
                   onClick={() => {
@@ -326,23 +335,27 @@ export default function ScreenshotsPage() {
                     }
                   }}
                 >
-                  <div className="relative aspect-video bg-default-100/50 dark:bg-zinc-800/50 flex items-center justify-center overflow-hidden">
+                  <div className="relative aspect-video bg-surface-secondary/50 dark:bg-zinc-800/50 flex items-center justify-center overflow-hidden">
                     {s.dataUrl ? (
                       <>
-                        <Image
+                        <img
                           src={s.dataUrl}
                           alt={s.name}
-                          className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]"
-                          radius="none"
+                          className={cn(
+                            "rounded-none",
+                            "w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]",
+                          )}
                         />
                         {!selection.isSelectMode && (
                           <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center bg-black/0 transition-all duration-300 group-hover:bg-black/25">
                             <Button
                               size="sm"
-                              radius="full"
-                              variant="flat"
                               onPress={() => openPreview(s)}
-                              className="pointer-events-auto flex items-center gap-2 border border-white/20 bg-black/45 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:bg-black/55"
+                              variant={"secondary"}
+                              className={cn(
+                                "rounded-full",
+                                "pointer-events-auto flex items-center gap-2 border border-white/20 bg-black/45 px-3 py-1.5 text-xs font-medium text-white opacity-0 shadow-lg backdrop-blur-md transition-all duration-300 group-hover:opacity-100 hover:bg-black/55",
+                              )}
                             >
                               <FaExpand size={12} />
                               <span>{t("contentpage.preview_screenshot")}</span>
@@ -351,7 +364,7 @@ export default function ScreenshotsPage() {
                         )}
                       </>
                     ) : (
-                      <FaCamera className="text-3xl text-default-300" />
+                      <FaCamera className="text-3xl text-muted" />
                     )}
                   </div>
 
@@ -359,39 +372,49 @@ export default function ScreenshotsPage() {
                     <div className="absolute top-2 left-2 z-20">
                       <Checkbox
                         isSelected={!!selection.selected[s.path]}
-                        onValueChange={() => selection.toggleSelect(s.path)}
-                        classNames={{
-                          wrapper:
-                            "bg-white dark:bg-zinc-900 shadow-lg scale-110",
-                        }}
-                      />
+                        onChange={() => selection.toggleSelect(s.path)}
+                        className={"group"}
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control
+                            className={
+                              "bg-white dark:bg-zinc-900 shadow-lg scale-110"
+                            }
+                          >
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                          <span></span>
+                        </Checkbox.Content>
+                      </Checkbox>
                     </div>
                   )}
 
                   <div className="p-3 flex items-center justify-between">
-                    <div className="flex items-center gap-1.5 text-xs text-default-400 dark:text-zinc-500 truncate">
+                    <div className="flex items-center gap-1.5 text-xs text-muted dark:text-zinc-500 truncate">
                       <FaClock className="shrink-0" />
                       <span className="truncate">
                         {s.captureTime ? formatDate(s.captureTime) : s.name}
                       </span>
                     </div>
                     <div className="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Tooltip content={t("common.delete")}>
+                      <Tooltip>
                         <Button
                           isIconOnly
                           size="sm"
-                          color="danger"
-                          variant="flat"
-                          radius="lg"
-                          onClick={(e) => {
-                            e.stopPropagation();
+                          variant={"danger-soft"}
+                          onClick={(event) => event.stopPropagation()}
+                          onPress={(e) => {
                             setActiveShot(s);
                             delCfmOnOpen();
                           }}
-                          className="bg-danger-50 hover:bg-danger-100 text-danger-500 dark:bg-danger-900/20 dark:hover:bg-danger-900/30"
+                          className={cn(
+                            "rounded-lg",
+                            "bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-900/20 dark:hover:bg-rose-900/30",
+                          )}
                         >
                           <FaTrash size={12} />
                         </Button>
+                        <Tooltip.Content>{t("common.delete")}</Tooltip.Content>
                       </Tooltip>
                     </div>
                   </div>
@@ -399,7 +422,7 @@ export default function ScreenshotsPage() {
               ))}
             </div>
           ) : (
-            <div className="flex flex-col items-center justify-center py-20 text-default-400 dark:text-zinc-500">
+            <div className="flex flex-col items-center justify-center py-20 text-muted dark:text-zinc-500">
               <FaCamera className="text-6xl mb-4 opacity-20" />
               <p>{t("contentpage.no_screenshots")}</p>
             </div>
@@ -427,19 +450,19 @@ export default function ScreenshotsPage() {
                 player,
                 activeShot.path,
               );
-              addToast({
-                title: t("contentpage.deleted_name", {
+              toast(
+                t("contentpage.deleted_name", {
                   name: activeShot.name,
                 }),
-                color: "success",
-              });
+                { variant: "success", timeout: 2000 },
+              );
               setActiveShot(null);
               refreshAll();
             } catch (e) {
-              addToast({
-                title: "Error",
+              toast("Error", {
                 description: String(e),
-                color: "danger",
+                variant: "danger",
+                timeout: 2000,
               });
               throw e;
             } finally {
@@ -477,9 +500,9 @@ export default function ScreenshotsPage() {
                 console.error(e);
               }
             }
-            addToast({
-              title: t("contentpage.deleted_count", { count: success }),
-              color: "success",
+            toast(t("contentpage.deleted_count", { count: success }), {
+              variant: "success",
+              timeout: 2000,
             });
             selection.clearSelection();
             refreshAll();
@@ -496,154 +519,159 @@ export default function ScreenshotsPage() {
         hideCloseButton={true}
         isDismissable={true}
         scrollBehavior="normal"
-        classNames={{
-          base: "w-[min(94vw,1040px)] max-w-[1040px] max-h-[calc(100vh-2.5rem)] overflow-hidden bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
-          wrapper: "overflow-hidden",
-        }}
+        className={
+          "w-[min(94vw,1040px)] max-w-[1040px] max-h-[calc(100vh-2.5rem)] overflow-hidden bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl"
+        }
+        containerClassName={"overflow-hidden"}
       >
-        <ModalContent className="shadow-none">
-          {(onClose) => (
-            <>
-              <BaseModalHeader className="gap-3 pb-2 pt-7 sm:pt-6">
-                <div className="flex items-start justify-between gap-4 pr-2 sm:pr-0">
-                  <div className="min-w-0">
-                    <h2 className="text-xl font-bold text-default-800 dark:text-zinc-100 truncate">
-                      {activeShot?.name || t("contentpage.screenshots")}
-                    </h2>
-                    <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-default-500 dark:text-zinc-400">
-                      <span>
-                        {activeShot?.captureTime
-                          ? formatDate(activeShot.captureTime)
-                          : t("contentpage.screenshots")}
-                      </span>
-                      {activeShotIndex >= 0 && (
-                        <>
-                          <span className="text-default-300 dark:text-zinc-700">
-                            •
-                          </span>
-                          <span>
-                            {activeShotIndex + 1} / {screenshots.length}
-                          </span>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                  <div className="shrink-0 rounded-full bg-primary-50/80 px-3 py-1 text-xs font-medium text-primary-600 dark:bg-primary-500/10 dark:text-primary-400">
-                    {t("contentpage.screenshot_viewer_hint")}
+        {({ close: onClose }) => (
+          <>
+            <BaseModalHeader className="gap-3 pb-2 pt-7 sm:pt-6">
+              <div className="flex items-start justify-between gap-4 pr-2 sm:pr-0">
+                <div className="min-w-0">
+                  <Modal.Heading className="text-xl font-bold text-foreground dark:text-zinc-100 truncate">
+                    {activeShot?.name || t("contentpage.screenshots")}
+                  </Modal.Heading>
+                  <div className="mt-1 flex flex-wrap items-center gap-2 text-sm text-muted dark:text-zinc-400">
+                    <span>
+                      {activeShot?.captureTime
+                        ? formatDate(activeShot.captureTime)
+                        : t("contentpage.screenshots")}
+                    </span>
+                    {activeShotIndex >= 0 && (
+                      <>
+                        <span className="text-muted dark:text-zinc-700">•</span>
+                        <span>
+                          {activeShotIndex + 1} / {screenshots.length}
+                        </span>
+                      </>
+                    )}
                   </div>
                 </div>
-              </BaseModalHeader>
-
-              <BaseModalBody className="overflow-hidden px-4 py-3 sm:px-5">
-                <div className="relative overflow-hidden rounded-[2rem] border border-black/5 bg-default-100/40 dark:border-white/10 dark:bg-zinc-900/40">
-                  <div className="absolute inset-y-0 left-0 z-20 hidden items-center pl-3 sm:flex sm:pl-4">
-                    <Button
-                      isIconOnly
-                      radius="full"
-                      variant="flat"
-                      onPress={() => movePreview("prev")}
-                      isDisabled={!hasPrevShot}
-                      className="bg-white/75 text-default-700 shadow-lg backdrop-blur-md disabled:opacity-30 dark:bg-zinc-900/75 dark:text-zinc-100"
-                    >
-                      <FaChevronLeft />
-                    </Button>
-                  </div>
-
-                  <div className="absolute inset-y-0 right-0 z-20 hidden items-center pr-3 sm:flex sm:pr-4">
-                    <Button
-                      isIconOnly
-                      radius="full"
-                      variant="flat"
-                      onPress={() => movePreview("next")}
-                      isDisabled={!hasNextShot}
-                      className="bg-white/75 text-default-700 shadow-lg backdrop-blur-md disabled:opacity-30 dark:bg-zinc-900/75 dark:text-zinc-100"
-                    >
-                      <FaChevronRight />
-                    </Button>
-                  </div>
-
-                  <AnimatePresence mode="wait">
-                    <motion.div
-                      key={activeShot?.path || "empty-preview"}
-                      initial={{ opacity: 0, scale: 0.985 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      exit={{ opacity: 0, scale: 0.985 }}
-                      transition={{ duration: 0.2, ease: "easeOut" }}
-                      className="flex h-[clamp(260px,52vh,560px)] items-center justify-center p-3 sm:p-4 md:p-5"
-                    >
-                      {activeShot?.dataUrl ? (
-                        <img
-                          src={activeShot.dataUrl}
-                          alt={activeShot.name}
-                          className="max-h-full w-auto max-w-full rounded-[1.5rem] object-contain shadow-[0_18px_50px_rgba(0,0,0,0.18)]"
-                        />
-                      ) : (
-                        <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-default-400 dark:text-zinc-500">
-                          <FaCamera className="text-5xl opacity-30" />
-                          <span>{t("contentpage.no_screenshots")}</span>
-                        </div>
-                      )}
-                    </motion.div>
-                  </AnimatePresence>
+                <div className="shrink-0 rounded-full bg-brand-50/80 px-3 py-1 text-xs font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                  {t("contentpage.screenshot_viewer_hint")}
                 </div>
+              </div>
+            </BaseModalHeader>
 
-                <div className="mt-3 flex items-center justify-center gap-2 sm:hidden">
+            <BaseModalBody className="overflow-hidden px-4 py-3 sm:px-5">
+              <div className="relative overflow-hidden rounded-[2rem] border border-black/5 bg-surface-secondary/40 dark:border-white/10 dark:bg-zinc-900/40">
+                <div className="absolute inset-y-0 left-0 z-20 hidden items-center pl-3 sm:flex sm:pl-4">
                   <Button
                     isIconOnly
-                    radius="full"
-                    variant="flat"
                     onPress={() => movePreview("prev")}
                     isDisabled={!hasPrevShot}
-                    className="bg-default-100/80 dark:bg-zinc-800/80 text-default-700 dark:text-zinc-100"
+                    variant={"secondary"}
+                    className={cn(
+                      "rounded-full",
+                      "bg-white/75 text-foreground shadow-lg backdrop-blur-md disabled:opacity-30 dark:bg-zinc-900/75 dark:text-zinc-100",
+                    )}
                   >
                     <FaChevronLeft />
                   </Button>
+                </div>
+
+                <div className="absolute inset-y-0 right-0 z-20 hidden items-center pr-3 sm:flex sm:pr-4">
                   <Button
                     isIconOnly
-                    radius="full"
-                    variant="flat"
                     onPress={() => movePreview("next")}
                     isDisabled={!hasNextShot}
-                    className="bg-default-100/80 dark:bg-zinc-800/80 text-default-700 dark:text-zinc-100"
+                    variant={"secondary"}
+                    className={cn(
+                      "rounded-full",
+                      "bg-white/75 text-foreground shadow-lg backdrop-blur-md disabled:opacity-30 dark:bg-zinc-900/75 dark:text-zinc-100",
+                    )}
                   >
                     <FaChevronRight />
                   </Button>
                 </div>
-              </BaseModalBody>
 
-              <BaseModalFooter className="flex flex-col items-stretch justify-between gap-3 overflow-hidden pt-2 sm:flex-row sm:items-center">
-                <div className="text-sm text-default-500 dark:text-zinc-400">
-                  {t("contentpage.screenshot_viewer_nav_hint")}
-                </div>
-                <div className="flex items-center justify-end gap-2">
-                  <Button
-                    radius="full"
-                    variant="flat"
-                    startContent={<FaFolderOpen />}
-                    onPress={() => {
-                      if (activeShot?.dir) {
-                        OpenPathDir(activeShot.dir);
-                      } else if (screenshotsRoot) {
-                        OpenPathDir(screenshotsRoot);
-                      }
-                    }}
-                    className="bg-default-100/80 dark:bg-zinc-800/80 text-default-700 dark:text-zinc-100"
+                <AnimatePresence mode="wait">
+                  <motion.div
+                    key={activeShot?.path || "empty-preview"}
+                    initial={{ opacity: 0, scale: 0.985 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    exit={{ opacity: 0, scale: 0.985 }}
+                    transition={{ duration: 0.2, ease: "easeOut" }}
+                    className="flex h-[clamp(260px,52vh,560px)] items-center justify-center p-3 sm:p-4 md:p-5"
                   >
-                    {t("common.open")}
-                  </Button>
-                  <Button
-                    radius="full"
-                    color="primary"
-                    className="font-semibold shadow-lg"
-                    onPress={onClose}
-                  >
-                    {t("common.close")}
-                  </Button>
-                </div>
-              </BaseModalFooter>
-            </>
-          )}
-        </ModalContent>
+                    {activeShot?.dataUrl ? (
+                      <img
+                        src={activeShot.dataUrl}
+                        alt={activeShot.name}
+                        className="max-h-full w-auto max-w-full rounded-[1.5rem] object-contain shadow-[0_18px_50px_rgba(0,0,0,0.18)]"
+                      />
+                    ) : (
+                      <div className="flex h-full w-full flex-col items-center justify-center gap-3 text-muted dark:text-zinc-500">
+                        <FaCamera className="text-5xl opacity-30" />
+                        <span>{t("contentpage.no_screenshots")}</span>
+                      </div>
+                    )}
+                  </motion.div>
+                </AnimatePresence>
+              </div>
+
+              <div className="mt-3 flex items-center justify-center gap-2 sm:hidden">
+                <Button
+                  isIconOnly
+                  onPress={() => movePreview("prev")}
+                  isDisabled={!hasPrevShot}
+                  variant={"secondary"}
+                  className={cn(
+                    "rounded-full",
+                    "bg-surface-secondary/80 dark:bg-zinc-800/80 text-foreground dark:text-zinc-100",
+                  )}
+                >
+                  <FaChevronLeft />
+                </Button>
+                <Button
+                  isIconOnly
+                  onPress={() => movePreview("next")}
+                  isDisabled={!hasNextShot}
+                  variant={"secondary"}
+                  className={cn(
+                    "rounded-full",
+                    "bg-surface-secondary/80 dark:bg-zinc-800/80 text-foreground dark:text-zinc-100",
+                  )}
+                >
+                  <FaChevronRight />
+                </Button>
+              </div>
+            </BaseModalBody>
+
+            <BaseModalFooter className="flex flex-col items-stretch justify-between gap-3 overflow-hidden pt-2 sm:flex-row sm:items-center">
+              <div className="text-sm text-muted dark:text-zinc-400">
+                {t("contentpage.screenshot_viewer_nav_hint")}
+              </div>
+              <div className="flex items-center justify-end gap-2">
+                <Button
+                  onPress={() => {
+                    if (activeShot?.dir) {
+                      OpenPathDir(activeShot.dir);
+                    } else if (screenshotsRoot) {
+                      OpenPathDir(screenshotsRoot);
+                    }
+                  }}
+                  variant={"secondary"}
+                  className={cn(
+                    "rounded-full",
+                    "bg-surface-secondary/80 dark:bg-zinc-800/80 text-foreground dark:text-zinc-100",
+                  )}
+                >
+                  {<FaFolderOpen />}
+                  {t("common.open")}
+                </Button>
+                <Button
+                  onPress={onClose}
+                  variant={"primary"}
+                  className={cn("rounded-full", "font-semibold shadow-lg")}
+                >
+                  {t("common.close")}
+                </Button>
+              </div>
+            </BaseModalFooter>
+          </>
+        )}
       </BaseModal>
     </PageContainer>
   );

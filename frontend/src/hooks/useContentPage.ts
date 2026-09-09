@@ -1,5 +1,6 @@
+import { useOverlayState } from "@heroui/react";
 import React from "react";
-import { useDisclosure } from "@heroui/react";
+
 import { Events } from "@wailsio/runtime";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
@@ -12,7 +13,11 @@ import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/conte
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
-import { countDirectories, getPathBaseName, normalizeDroppedFiles } from "@/utils/fs";
+import {
+  countDirectories,
+  getPathBaseName,
+  normalizeDroppedFiles,
+} from "@/utils/fs";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import * as contentService from "bindings/github.com/liteldev/LeviLauncher/contentservice";
@@ -83,28 +88,28 @@ export const useContentPage = (t: TFunc) => {
   // --- Disclosures ---
   const {
     isOpen: errOpen,
-    onOpen: errOnOpen,
-    onClose: errOnClose,
-    onOpenChange: errOnOpenChange,
-  } = useDisclosure();
+    open: errOnOpen,
+    close: errOnClose,
+    setOpen: errOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: dupOpen,
-    onOpen: dupOnOpen,
-    onClose: dupOnClose,
-    onOpenChange: dupOnOpenChange,
-  } = useDisclosure();
+    open: dupOnOpen,
+    close: dupOnClose,
+    setOpen: dupOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: playerSelectOpen,
-    onOpen: playerSelectOnOpen,
-    onClose: playerSelectOnClose,
-    onOpenChange: playerSelectOnOpenChange,
-  } = useDisclosure();
+    open: playerSelectOnOpen,
+    close: playerSelectOnClose,
+    setOpen: playerSelectOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: transferTargetOpen,
-    onOpen: transferTargetOnOpen,
-    onClose: transferTargetOnClose,
-    onOpenChange: transferTargetOnOpenChange,
-  } = useDisclosure();
+    open: transferTargetOnOpen,
+    close: transferTargetOnClose,
+    setOpen: transferTargetOnOpenChange,
+  } = useOverlayState();
 
   // --- Handlers ---
   const refreshAll = async (playerToRefresh?: string) => {

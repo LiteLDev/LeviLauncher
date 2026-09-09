@@ -95,6 +95,22 @@
   );
 }
 
+/* HeroUI reserves a horizontal border on each side of a slider so the thumb
+   can reach the track edges. Its default edge fill uses the semantic accent,
+   while launcher sliders use the palette's decorative `brand-500` fill. Keep
+   the reserved edge in the same color as the fill so a darker contrast-safe
+   accent cannot appear as a second value at the start or end of the track. */
+.slider__track[data-fill-start="true"],
+.slider__track[data-fill-end="true"] {
+  border-inline-color: transparent;
+}
+.slider__track[data-fill-start="true"] {
+  border-inline-start-color: rgb(var(--theme-500, 16, 185, 129));
+}
+.slider__track[data-fill-end="true"] {
+  border-inline-end-color: rgb(var(--theme-500, 16, 185, 129));
+}
+
 /* Do not accumulate full panel tint in nested cards, rows or table cells. */
 :where([data-wallpaper-active="true"])
   :is(.launcher-glass, .launcher-material-panel, .card:not(.bg-transparent))

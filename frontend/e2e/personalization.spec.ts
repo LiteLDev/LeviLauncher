@@ -138,6 +138,30 @@ test("material presets, keyboard sliders and theme profiles persist independentl
     })
     .click();
   await expect(slider).toHaveValue("60");
+
+  const sliderEdges = await material.locator(".slider__track").evaluateAll(
+    (tracks) =>
+      tracks.flatMap((track) => {
+        const fill = track.querySelector<HTMLElement>(
+          '[data-slot="slider-fill"]',
+        );
+        if (!fill) return [];
+        const trackStyle = getComputedStyle(track);
+        const fillColor = getComputedStyle(fill).backgroundColor;
+        const edges = [
+          track.getAttribute("data-fill-start") === "true"
+            ? trackStyle.borderInlineStartColor
+            : null,
+          track.getAttribute("data-fill-end") === "true"
+            ? trackStyle.borderInlineEndColor
+            : null,
+        ].filter((color): color is string => color !== null);
+        return edges.map((edge) => ({ edge, fill: fillColor }));
+      }),
+  );
+  expect(sliderEdges.length).toBeGreaterThan(0);
+  expect(sliderEdges.every(({ edge, fill }) => edge === fill)).toBe(true);
+
   await material.getByRole("button", { name: new RegExp(copy.solid) }).click();
   await expect(page.locator("html")).toHaveClass(/light/);
   await page.reload();

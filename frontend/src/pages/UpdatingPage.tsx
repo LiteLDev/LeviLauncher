@@ -245,7 +245,7 @@ export default function UpdatingPage() {
                     <ProgressBar.Track className={"rounded-md"}>
                       <ProgressBar.Fill
                         className={
-                          "bg-gradient-to-r from-brand-500 to-brand-400"
+                          "bg-accent"
                         }
                       />
                     </ProgressBar.Track>
@@ -262,7 +262,7 @@ export default function UpdatingPage() {
                     <ProgressBar.Track className={"rounded-md"}>
                       <ProgressBar.Fill
                         className={
-                          "bg-gradient-to-r from-brand-500 to-brand-400"
+                          "bg-accent"
                         }
                       />
                     </ProgressBar.Track>
@@ -290,7 +290,7 @@ export default function UpdatingPage() {
                     <ProgressBar.Track className={"rounded-md"}>
                       <ProgressBar.Fill
                         className={
-                          "bg-gradient-to-r from-brand-500 to-brand-400"
+                          "bg-accent"
                         }
                       />
                     </ProgressBar.Track>
@@ -306,7 +306,7 @@ export default function UpdatingPage() {
                     <ProgressBar.Track className={"rounded-md"}>
                       <ProgressBar.Fill
                         className={
-                          "bg-gradient-to-r from-brand-500 to-brand-400"
+                          "bg-accent"
                         }
                       />
                     </ProgressBar.Track>
@@ -323,15 +323,18 @@ export default function UpdatingPage() {
         isOpen={!!errorCode}
         type="error"
         title={t("updating.failed_title")}
-        confirmText={t("common.confirm")}
+        confirmText={t("audit.mods.close_update_window")}
         onConfirm={() => Window.Close()}
         showCancelButton={false}
         hideCloseButton
         isDismissable={false}
       >
-        <div className="text-foreground text-sm wrap-break-word whitespace-pre-wrap">
+        <div role="alert" className="select-text text-foreground text-sm wrap-break-word whitespace-pre-wrap">
           {errorText}
         </div>
+        <p className="mt-3 text-sm text-muted">
+          {t("audit.mods.update_recovery")}
+        </p>
       </UnifiedModal>
     </PageContainer>
   );

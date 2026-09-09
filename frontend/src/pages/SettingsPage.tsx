@@ -15,6 +15,7 @@ import {
   Switch,
   Tabs,
   TextField,
+  Tooltip,
   toast,
 } from "@heroui/react";
 
@@ -225,6 +226,51 @@ export const SettingsPage: React.FC = () => {
     resetOnOpenChange,
     resetOnClose,
   } = settings;
+  const [pathError, setPathError] = React.useState("");
+
+  React.useEffect(() => {
+    setPathError("");
+    setBaseRootWritable(true);
+  }, [newBaseRoot, setBaseRootWritable]);
+
+  const persistBasePath = async (reset = false): Promise<boolean> => {
+    if (savingBaseRoot) return false;
+    setSavingBaseRoot(true);
+    setPathError("");
+    try {
+      if (!reset && !(await CanWriteToDir(newBaseRoot))) {
+        setBaseRootWritable(false);
+        return false;
+      }
+      const error = reset ? await ResetBaseRoot() : await SetBaseRoot(newBaseRoot);
+      if (error) throw new Error(error);
+      const [root, installers, versions] = await Promise.all([
+        GetBaseRoot(),
+        GetInstallerDir(),
+        GetVersionsDir(),
+      ]);
+      setBaseRoot(String(root || ""));
+      setNewBaseRoot(String(root || ""));
+      setInstallerDir(String(installers || ""));
+      setVersionsDir(String(versions || ""));
+      setBaseRootWritable(true);
+      toast.success(
+        t(reset ? "audit.mods.path_reset_success" : "audit.mods.path_save_success"),
+      );
+      return true;
+    } catch (error) {
+      const message = error instanceof Error ? error.message : String(error);
+      setPathError(
+        t(`errors.${message}`, {
+          defaultValue: t("audit.mods.path_save_failed", { message }),
+        }),
+      );
+      return false;
+    } finally {
+      setSavingBaseRoot(false);
+    }
+  };
+
   const [instanceBackupWarningOpen, setInstanceBackupWarningOpen] =
     React.useState(false);
   const [instanceBackupWarningCountdown, setInstanceBackupWarningCountdown] =
@@ -365,7 +411,11 @@ export const SettingsPage: React.FC = () => {
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
-                          onPress={() => resetOnOpen()}
+                          onPress={() => {
+                            setPathError("");
+                            resetOnOpen();
+                          }}
+                          isDisabled={savingBaseRoot}
                           variant={"ghost"}
                           className={"rounded-full"}
                         >
@@ -373,26 +423,7 @@ export const SettingsPage: React.FC = () => {
                         </Button>
                         <Button
                           isDisabled={!newBaseRoot || !baseRootWritable}
-                          onPress={async () => {
-                            setSavingBaseRoot(true);
-                            try {
-                              const ok = await CanWriteToDir(newBaseRoot);
-                              if (!ok) {
-                                setBaseRootWritable(false);
-                              } else {
-                                const err = await SetBaseRoot(newBaseRoot);
-                                if (!err) {
-                                  const br = await GetBaseRoot();
-                                  setBaseRoot(String(br || ""));
-                                  const id = await GetInstallerDir();
-                                  setInstallerDir(String(id || ""));
-                                  const vd = await GetVersionsDir();
-                                  setVersionsDir(String(vd || ""));
-                                }
-                              }
-                            } catch {}
-                            setSavingBaseRoot(false);
-                          }}
+                          onPress={() => void persistBasePath()}
                           variant={"primary"}
                           isPending={savingBaseRoot}
                           className={cn(
@@ -421,6 +452,8 @@ export const SettingsPage: React.FC = () => {
                           COMPONENT_STYLES.input.mainWrapper,
                         )}
                         value={newBaseRoot}
+                        isInvalid={Boolean(pathError) || !baseRootWritable}
+                        isDisabled={savingBaseRoot}
                         onChange={setNewBaseRoot}
                       >
                         <Label className={COMPONENT_STYLES.input.label}>
@@ -478,11 +511,16 @@ export const SettingsPage: React.FC = () => {
                           </InputGroup.Suffix>
                         </InputGroup>
                       </TextField>
+                      {pathError && (
+                        <p role="alert" className="text-sm text-danger px-1">
+                          {pathError}
+                        </p>
+                      )}
                       {newBaseRoot &&
                       newBaseRoot !== baseRoot &&
                       baseRootWritable ? (
                         <div
-                          className="text-xs text-amber-500 px-1"
+                          className="select-text text-xs text-amber-500 px-1"
                           title={newBaseRoot}
                         >
                           {t("settings.body.paths.base_root") +
@@ -506,7 +544,7 @@ export const SettingsPage: React.FC = () => {
                             <span className="font-medium">
                               {t("settings.body.paths.installer")}:
                             </span>
-                            <span className="opacity-70">
+                            <span className="select-text opacity-70">
                               {installerDir || "-"}
                             </span>
                           </div>
@@ -520,7 +558,7 @@ export const SettingsPage: React.FC = () => {
                             <span className="font-medium">
                               {t("settings.body.paths.versions")}:
                             </span>
-                            <span className="opacity-70">
+                            <span className="select-text opacity-70">
                               {versionsDir || "-"}
                             </span>
                           </div>
@@ -1697,42 +1735,53 @@ export const SettingsPage: React.FC = () => {
                                           ? lightThemeColor === colorName
                                           : darkThemeColor === colorName;
                                       return (
-                                        <div
-                                          key={colorName}
-                                          className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
-                                            isSelected
-                                              ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
-                                              : ""
-                                          }`}
-                                          style={{
-                                            backgroundColor:
-                                              THEMES[colorName][500],
-                                          }}
-                                          onClick={() => {
-                                            if (themeSettingMode === "light") {
-                                              setLightThemeColor(colorName);
-                                              localStorage.setItem(
-                                                "app.lightThemeColor",
-                                                colorName,
+                                        <Tooltip key={colorName}>
+                                          <Button
+                                            isIconOnly
+                                            variant="ghost"
+                                            aria-pressed={isSelected}
+                                            aria-label={t("audit.mods.theme_color", {
+                                              name: t(`audit.mods.colors.${colorName}`),
+                                              hex: THEMES[colorName][500],
+                                            })}
+                                            className={`w-8 h-8 min-w-0 p-0 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus ${
+                                              isSelected
+                                                ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
+                                                : ""
+                                            }`}
+                                            style={{
+                                              backgroundColor:
+                                                THEMES[colorName][500],
+                                            }}
+                                            onPress={() => {
+                                              if (themeSettingMode === "light") {
+                                                setLightThemeColor(colorName);
+                                                localStorage.setItem(
+                                                  "app.lightThemeColor",
+                                                  colorName,
+                                                );
+                                              } else {
+                                                setDarkThemeColor(colorName);
+                                                localStorage.setItem(
+                                                  "app.darkThemeColor",
+                                                  colorName,
+                                                );
+                                              }
+                                              window.dispatchEvent(
+                                                new CustomEvent(
+                                                  "app-theme-changed",
+                                                ),
                                               );
-                                            } else {
-                                              setDarkThemeColor(colorName);
-                                              localStorage.setItem(
-                                                "app.darkThemeColor",
-                                                colorName,
-                                              );
-                                            }
-                                            window.dispatchEvent(
-                                              new CustomEvent(
-                                                "app-theme-changed",
-                                              ),
-                                            );
-                                          }}
-                                        >
-                                          {isSelected && (
-                                            <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
-                                          )}
-                                        </div>
+                                            }}
+                                          >
+                                            {isSelected && (
+                                              <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
+                                            )}
+                                          </Button>
+                                          <Tooltip.Content>
+                                            {t(`audit.mods.colors.${colorName}`)}
+                                          </Tooltip.Content>
+                                        </Tooltip>
                                       );
                                     })}
                                   </div>
@@ -1752,90 +1801,113 @@ export const SettingsPage: React.FC = () => {
                                           ? lightThemeColor === colorName
                                           : darkThemeColor === colorName;
                                       return (
-                                        <div
-                                          key={colorName}
-                                          className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 ${
-                                            isSelected
-                                              ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
-                                              : ""
-                                          }`}
-                                          style={{
-                                            backgroundColor:
-                                              THEMES[colorName][500],
-                                          }}
-                                          onClick={() => {
-                                            if (themeSettingMode === "light") {
-                                              setLightThemeColor(colorName);
-                                              localStorage.setItem(
-                                                "app.lightThemeColor",
-                                                colorName,
+                                        <Tooltip key={colorName}>
+                                          <Button
+                                            isIconOnly
+                                            variant="ghost"
+                                            aria-pressed={isSelected}
+                                            aria-label={t("audit.mods.theme_color", {
+                                              name: t(`audit.mods.colors.${colorName}`),
+                                              hex: THEMES[colorName][500],
+                                            })}
+                                            className={`w-8 h-8 min-w-0 p-0 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus ${
+                                              isSelected
+                                                ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
+                                                : ""
+                                            }`}
+                                            style={{
+                                              backgroundColor:
+                                                THEMES[colorName][500],
+                                            }}
+                                            onPress={() => {
+                                              if (themeSettingMode === "light") {
+                                                setLightThemeColor(colorName);
+                                                localStorage.setItem(
+                                                  "app.lightThemeColor",
+                                                  colorName,
+                                                );
+                                              } else {
+                                                setDarkThemeColor(colorName);
+                                                localStorage.setItem(
+                                                  "app.darkThemeColor",
+                                                  colorName,
+                                                );
+                                              }
+                                              window.dispatchEvent(
+                                                new CustomEvent(
+                                                  "app-theme-changed",
+                                                ),
                                               );
-                                            } else {
-                                              setDarkThemeColor(colorName);
-                                              localStorage.setItem(
-                                                "app.darkThemeColor",
-                                                colorName,
-                                              );
-                                            }
-                                            window.dispatchEvent(
-                                              new CustomEvent(
-                                                "app-theme-changed",
-                                              ),
-                                            );
-                                          }}
-                                        >
-                                          {isSelected && (
-                                            <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
-                                          )}
-                                        </div>
+                                            }}
+                                          >
+                                            {isSelected && (
+                                              <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
+                                            )}
+                                          </Button>
+                                          <Tooltip.Content>
+                                            {t(`audit.mods.colors.${colorName}`)}
+                                          </Tooltip.Content>
+                                        </Tooltip>
                                       );
                                     })}
-                                    <div
-                                      className={`w-8 h-8 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative overflow-hidden group ${
-                                        (
+                                    <Tooltip>
+                                      <Button
+                                        isIconOnly
+                                        variant="ghost"
+                                        aria-label={t("audit.mods.custom_color")}
+                                        aria-pressed={
                                           themeSettingMode === "light"
                                             ? lightThemeColor === "custom"
                                             : darkThemeColor === "custom"
-                                        )
-                                          ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
-                                          : "hover:shadow-md"
-                                      }`}
-                                      onClick={() => {
-                                        if (themeSettingMode === "light") {
-                                          setLightThemeColor("custom");
-                                          localStorage.setItem(
-                                            "app.lightThemeColor",
-                                            "custom",
-                                          );
-                                        } else {
-                                          setDarkThemeColor("custom");
-                                          localStorage.setItem(
-                                            "app.darkThemeColor",
-                                            "custom",
-                                          );
                                         }
-                                        window.dispatchEvent(
-                                          new CustomEvent("app-theme-changed"),
-                                        );
-                                      }}
-                                      style={{
-                                        backgroundColor: activeCustomThemeColor,
-                                      }}
-                                    >
-                                      <div className="absolute inset-0 bg-[radial-gradient(circle_at_25%_25%,_rgba(255,255,255,0.35),_transparent_55%)]" />
-                                      <LuPalette
-                                        className="relative z-10 w-4 h-4 drop-shadow-sm"
-                                        style={{ color: customThemeIconColor }}
-                                      />
+                                        className={`w-8 h-8 min-w-0 p-0 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative overflow-hidden group focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus ${
+                                          (
+                                            themeSettingMode === "light"
+                                              ? lightThemeColor === "custom"
+                                              : darkThemeColor === "custom"
+                                          )
+                                            ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
+                                            : "hover:shadow-md"
+                                        }`}
+                                        onPress={() => {
+                                          if (themeSettingMode === "light") {
+                                            setLightThemeColor("custom");
+                                            localStorage.setItem(
+                                              "app.lightThemeColor",
+                                              "custom",
+                                            );
+                                          } else {
+                                            setDarkThemeColor("custom");
+                                            localStorage.setItem(
+                                              "app.darkThemeColor",
+                                              "custom",
+                                            );
+                                          }
+                                          window.dispatchEvent(
+                                            new CustomEvent("app-theme-changed"),
+                                          );
+                                        }}
+                                        style={{
+                                          backgroundColor: activeCustomThemeColor,
+                                        }}
+                                      >
+                                        <LuPalette
+                                          className="relative z-10 w-4 h-4 drop-shadow-sm"
+                                          style={{ color: customThemeIconColor }}
+                                        />
 
-                                      {(themeSettingMode === "light"
-                                        ? lightThemeColor === "custom"
-                                        : darkThemeColor === "custom") && (
-                                        <div className="absolute inset-0 bg-black/10 z-0 flex items-center justify-center">
-                                          <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm z-20" />
-                                        </div>
-                                      )}
-                                    </div>
+                                        {(themeSettingMode === "light"
+                                          ? lightThemeColor === "custom"
+                                          : darkThemeColor === "custom") && (
+                                          <div className="absolute inset-0 bg-black/10 z-0 flex items-center justify-center">
+                                            <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm z-20" />
+                                          </div>
+                                        )}
+                                      </Button>
+                                      <Tooltip.Content>
+                                        {t("audit.mods.custom_color")}
+                                      </Tooltip.Content>
+                                    </Tooltip>
                                   </div>
 
                                   <Separator className="bg-surface-tertiary/50" />
@@ -2680,32 +2752,44 @@ export const SettingsPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center gap-1">
-                      <Button
-                        isIconOnly
-                        onPress={() =>
-                          Browser.OpenURL("https://github.com/liteldev")
-                        }
-                        variant={"ghost"}
-                        className={"rounded-full"}
-                      >
-                        <FaGithub
-                          size={20}
-                          className="text-muted dark:text-zinc-400"
-                        />
-                      </Button>
-                      <Button
-                        isIconOnly
-                        onPress={() =>
-                          Browser.OpenURL("https://discord.gg/v5R5P4vRZk")
-                        }
-                        variant={"ghost"}
-                        className={"rounded-full"}
-                      >
-                        <FaDiscord
-                          size={20}
-                          className="text-muted dark:text-zinc-400"
-                        />
-                      </Button>
+                      <Tooltip>
+                        <Button
+                          isIconOnly
+                          aria-label={t("audit.mods.github")}
+                          onPress={() =>
+                            Browser.OpenURL("https://github.com/liteldev")
+                          }
+                          variant={"ghost"}
+                          className={"rounded-full"}
+                        >
+                          <FaGithub
+                            size={20}
+                            className="text-muted dark:text-zinc-400"
+                          />
+                        </Button>
+                        <Tooltip.Content>
+                          {t("audit.mods.github")}
+                        </Tooltip.Content>
+                      </Tooltip>
+                      <Tooltip>
+                        <Button
+                          isIconOnly
+                          aria-label={t("audit.mods.discord")}
+                          onPress={() =>
+                            Browser.OpenURL("https://discord.gg/v5R5P4vRZk")
+                          }
+                          variant={"ghost"}
+                          className={"rounded-full"}
+                        >
+                          <FaDiscord
+                            size={20}
+                            className="text-muted dark:text-zinc-400"
+                          />
+                        </Button>
+                        <Tooltip.Content>
+                          {t("audit.mods.discord")}
+                        </Tooltip.Content>
+                      </Tooltip>
                     </div>
                   </div>
                 </div>
@@ -2927,47 +3011,39 @@ export const SettingsPage: React.FC = () => {
       <UnifiedModal
         size="md"
         isOpen={unsavedOpen}
-        onOpenChange={unsavedOnOpenChange}
+        onOpenChange={(open) => {
+          if (!savingBaseRoot) unsavedOnOpenChange(open);
+        }}
         type="warning"
         title={t("settings.unsaved.title")}
         cancelText={t("settings.unsaved.cancel")}
         confirmText={t("settings.unsaved.save")}
         showCancelButton
+        isDismissable={!savingBaseRoot}
+        hideCloseButton={savingBaseRoot}
+        cancelButtonProps={{ isDisabled: savingBaseRoot }}
         confirmButtonProps={{
           isPending: savingBaseRoot,
           isDisabled: !newBaseRoot || !baseRootWritable,
         }}
         onCancel={() => unsavedOnClose()}
         onConfirm={async () => {
-          setSavingBaseRoot(true);
-          try {
-            const ok = await CanWriteToDir(newBaseRoot);
-            if (!ok) {
-              setBaseRootWritable(false);
-            } else {
-              const err = await SetBaseRoot(newBaseRoot);
-              if (!err) {
-                const br = await GetBaseRoot();
-                setBaseRoot(String(br || ""));
-                const id = await GetInstallerDir();
-                setInstallerDir(String(id || ""));
-                const vd = await GetVersionsDir();
-                setVersionsDir(String(vd || ""));
-                unsavedOnClose();
-                if (pendingNavPath === "-1") {
-                  navigate(-1);
-                } else if (pendingNavPath) {
-                  navigate(pendingNavPath);
-                }
-              }
+          if (await persistBasePath()) {
+            unsavedOnClose();
+            if (typeof pendingNavPath === "number") {
+              navigate(pendingNavPath);
+            } else if (pendingNavPath) {
+              navigate(pendingNavPath);
             }
-          } catch {}
-          setSavingBaseRoot(false);
+          }
         }}
       >
         <div className="text-foreground dark:text-zinc-300 text-sm">
           {t("settings.unsaved.body")}
         </div>
+        {pathError && (
+          <p role="alert" className="text-sm text-danger mt-2">{pathError}</p>
+        )}
         {!baseRootWritable && (
           <div className="text-xs text-rose-500 mt-1">
             {t("settings.body.paths.not_writable")}
@@ -2978,32 +3054,29 @@ export const SettingsPage: React.FC = () => {
       <UnifiedModal
         size="sm"
         isOpen={resetOpen}
-        onOpenChange={resetOnOpenChange}
+        onOpenChange={(open) => {
+          if (!savingBaseRoot) resetOnOpenChange(open);
+        }}
         type="error"
         title={t("settings.reset.confirm.title")}
         cancelText={t("common.cancel")}
         confirmText={t("common.confirm")}
         showCancelButton
+        isDismissable={!savingBaseRoot}
+        hideCloseButton={savingBaseRoot}
+        confirmButtonProps={{ isPending: savingBaseRoot }}
+        cancelButtonProps={{ isDisabled: savingBaseRoot }}
         onCancel={() => resetOnClose()}
         onConfirm={async () => {
-          try {
-            const err = await ResetBaseRoot();
-            if (!err) {
-              const br = await GetBaseRoot();
-              setBaseRoot(String(br || ""));
-              setNewBaseRoot(String(br || ""));
-              const id = await GetInstallerDir();
-              setInstallerDir(String(id || ""));
-              const vd = await GetVersionsDir();
-              setVersionsDir(String(vd || ""));
-            }
-          } catch {}
-          resetOnClose();
+          if (await persistBasePath(true)) resetOnClose();
         }}
       >
         <div className="text-foreground dark:text-zinc-300 text-sm">
           {t("settings.reset.confirm.body")}
         </div>
+        {pathError && (
+          <p role="alert" className="text-sm text-danger mt-2">{pathError}</p>
+        )}
       </UnifiedModal>
     </PageContainer>
   );

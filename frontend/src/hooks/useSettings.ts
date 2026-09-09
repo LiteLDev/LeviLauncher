@@ -298,7 +298,9 @@ export const useSettings = (i18n: { language: string }) => {
     setOpen: unsavedOnOpenChange,
     close: unsavedOnClose,
   } = useOverlayState();
-  const [pendingNavPath, setPendingNavPath] = useState<string>("");
+  const [pendingNavPath, setPendingNavPath] = useState<string | number | null>(
+    null,
+  );
   const {
     isOpen: resetOpen,
     open: resetOnOpen,
@@ -452,9 +454,16 @@ export const useSettings = (i18n: { language: string }) => {
   useEffect(() => {
     const handler = (ev: any) => {
       try {
-        let targetPath = ev?.detail?.path;
-        if (targetPath === -1) targetPath = "-1";
-        targetPath = String(targetPath || "");
+        const targetPath: unknown = ev?.detail?.path;
+        if (typeof targetPath !== "string" && typeof targetPath !== "number") {
+          return;
+        }
+        if (
+          typeof targetPath === "number" &&
+          (!Number.isInteger(targetPath) || targetPath === 0)
+        ) {
+          return;
+        }
         const hasUnsaved = !!newBaseRoot && newBaseRoot !== baseRoot;
         if (!targetPath || targetPath === location.pathname) return;
         if (hasUnsaved) {
@@ -462,8 +471,8 @@ export const useSettings = (i18n: { language: string }) => {
           unsavedOnOpen();
           return;
         }
-        if (targetPath === "-1") {
-          navigate(-1);
+        if (typeof targetPath === "number") {
+          navigate(targetPath);
         } else {
           navigate(targetPath);
         }

@@ -1,4 +1,5 @@
-import { Button, ButtonProps, Spinner, Modal } from "@heroui/react";
+import { ButtonProps, Spinner, Modal } from "@heroui/react";
+import { ModalAction, MODAL_STYLES } from "./ModalPrimitives";
 import React from "react";
 
 import { motion } from "framer-motion";
@@ -9,40 +10,29 @@ import {
   FiAlertTriangle,
   FiInfo,
   FiXCircle,
-  FiHelpCircle,
 } from "react-icons/fi";
 import {
   BaseModal,
   BaseModalHeader,
   BaseModalBody,
   BaseModalFooter,
+  type BaseModalProps,
 } from "./BaseModal";
 
-type ModalActionProps = Omit<ButtonProps, "className"> & { className?: string };
+export type ModalActionProps = Omit<ButtonProps, "className"> & {
+  className?: string;
+};
 
 export type ModalType = "success" | "warning" | "error" | "info" | "primary";
 
-export interface UnifiedModalProps {
+export interface UnifiedModalProps
+  extends Omit<BaseModalProps, "children" | "isOpen"> {
   isOpen: boolean;
   onOpenChange?: (open: boolean) => void;
   type?: ModalType;
   title: React.ReactNode;
   children?: React.ReactNode;
   footer?: React.ReactNode;
-  hideCloseButton?: boolean;
-  isDismissable?: boolean;
-  size?:
-    | "xs"
-    | "sm"
-    | "md"
-    | "lg"
-    | "xl"
-    | "2xl"
-    | "3xl"
-    | "4xl"
-    | "5xl"
-    | "full";
-  scrollBehavior?: "inside" | "outside" | "normal";
   icon?: React.ReactNode;
   onConfirm?: () => void;
   confirmText?: string;
@@ -55,7 +45,6 @@ export interface UnifiedModalProps {
   hideScrollbar?: boolean;
   titleClass?: string;
   iconBgClass?: string;
-  className?: string;
 
   contentKey?: string | number;
 }
@@ -94,7 +83,7 @@ const TYPE_CONFIG: Record<
     borderClass: "border-brand-100 dark:border-brand-500/20",
   },
   primary: {
-    icon: FiHelpCircle,
+    icon: FiInfo,
     colorClass: "text-brand-500",
     bgClass: "bg-brand-50 dark:bg-brand-500/10",
     borderClass: "border-brand-100 dark:border-brand-500/20",
@@ -107,24 +96,23 @@ const CONFIRM_BUTTON_CONFIG: Record<
 > = {
   success: {
     variant: "primary",
-    className: "font-bold shadow-lg",
+    className: "font-semibold",
   },
   warning: {
     variant: "primary",
-    className:
-      "bg-warning text-warning-foreground! font-bold shadow-lg shadow-amber-500/20",
+    className: "font-semibold",
   },
   error: {
-    variant: "danger",
-    className: "font-bold shadow-lg shadow-rose-500/20",
+    variant: "primary",
+    className: "font-semibold",
   },
   info: {
     variant: "primary",
-    className: "font-bold shadow-lg",
+    className: "font-semibold",
   },
   primary: {
     variant: "primary",
-    className: "font-bold shadow-lg",
+    className: "font-semibold",
   },
 };
 
@@ -149,9 +137,8 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   title,
   children,
   footer,
-  hideCloseButton = true,
   isDismissable = false,
-  size = "md",
+  size,
   scrollBehavior = "inside",
   icon,
   onConfirm,
@@ -166,6 +153,10 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   titleClass,
   iconBgClass,
   className,
+  containerClassName,
+  backdropClassName,
+  isKeyboardDismissDisabled,
+  isPending = confirmButtonProps?.isPending ?? false,
 
   contentKey,
 }) => {
@@ -182,7 +173,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
 
   const resolvedIcon = React.useMemo(() => {
     if (!icon) {
-      return <Icon className={cn("w-6 h-6", config.colorClass)} />;
+      return <Icon className={cn("size-5", config.colorClass)} />;
     }
 
     if (!React.isValidElement<{ className?: string }>(icon)) {
@@ -190,7 +181,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
     }
 
     return React.cloneElement(icon, {
-      className: cn(icon.props.className, config.colorClass),
+      className: cn(icon.props.className, "size-5", config.colorClass),
     });
   }, [Icon, config.colorClass, icon]);
 
@@ -199,13 +190,13 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
       isOpen={isOpen}
       onOpenChange={handleOpenChange}
       size={size}
-      hideCloseButton={hideCloseButton}
       isDismissable={isDismissable}
       scrollBehavior={scrollBehavior}
-      className={cn(
-        "bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
-        className,
-      )}
+      isPending={isPending}
+      isKeyboardDismissDisabled={isKeyboardDismissDisabled}
+      className={className}
+      containerClassName={containerClassName}
+      backdropClassName={backdropClassName}
     >
       {({ close: onClose }) => (
         <>
@@ -219,7 +210,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
                 stiffness: 260,
                 damping: 20,
               }}
-              className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border ${iconBgClass || `${config.bgClass} ${config.borderClass}`}`}
+              className={`size-10 rounded-xl flex items-center justify-center shrink-0 border ${iconBgClass || `${config.bgClass} ${config.borderClass}`}`}
             >
               {resolvedIcon}
             </motion.div>
@@ -227,10 +218,10 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
               initial={{ opacity: 0, x: -10 }}
               animate={{ opacity: 1, x: 0 }}
               transition={{ duration: 0.25 }}
-              className="flex flex-col"
+              className="flex min-w-0 flex-col [overflow-wrap:anywhere]"
             >
               <Modal.Heading
-                className={`text-xl font-bold ${
+                className={`text-xl font-semibold leading-7 ${
                   titleClass || "text-foreground dark:text-zinc-100"
                 }`}
               >
@@ -240,43 +231,44 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
           </BaseModalHeader>
           <BaseModalBody className={hideScrollbar ? "no-scrollbar" : ""}>
             <motion.div
-              key={contentKey || type}
+              key={contentKey ?? type}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.25, delay: 0.1 }}
-              className="w-full"
+              className={cn("w-full", MODAL_STYLES.stack)}
             >
               {children}
             </motion.div>
           </BaseModalBody>
-          {(footer || onConfirm || (showCancelButton && onCancel)) && (
+          {(footer != null ||
+            (showConfirmButton && onConfirm) ||
+            showCancelButton) && (
             <BaseModalFooter>
-              {footer ? (
+              {footer != null ? (
                 footer
               ) : (
                 <>
                   {showCancelButton && (
-                    <Button
+                    <ModalAction
+                      {...cancelButtonProps}
                       onPress={() => {
                         onCancel?.();
                         if (!onCancel) onClose();
                       }}
-                      {...cancelButtonProps}
-                      variant={"ghost"}
-                      className={"rounded-full"}
+                      isDisabled={isPending || cancelButtonProps?.isDisabled}
+                      variant={cancelButtonProps?.variant ?? "secondary"}
                     >
                       {resolvedCancelText}
-                    </Button>
+                    </ModalAction>
                   )}
-                  {showConfirmButton && (
-                    <Button
+                  {showConfirmButton && onConfirm && (
+                    <ModalAction
                       {...confirmButtonProps}
                       onPress={onConfirm}
+                      isPending={isPending}
+                      isDisabled={isPending || confirmButtonProps?.isDisabled}
                       variant={resolvedConfirmButtonProps.variant}
-                      className={cn(
-                        "rounded-full",
-                        resolvedConfirmButtonProps.className,
-                      )}
+                      className={resolvedConfirmButtonProps.className}
                     >
                       {({ isPending }) => (
                         <>
@@ -284,7 +276,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
                           {resolvedConfirmText}
                         </>
                       )}
-                    </Button>
+                    </ModalAction>
                   )}
                 </>
               )}

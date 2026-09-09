@@ -1,3 +1,4 @@
+import { ModalAction, ModalPanel, ModalDescription } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -30,9 +31,7 @@ import { RxUpdate, RxDesktop } from "react-icons/rx";
 import {
   FaGithub,
   FaDiscord,
-  FaDownload,
-  FaCogs,
-  FaList,
+  FaDownload, FaList
 } from "react-icons/fa";
 import {
   LuHardDrive,
@@ -40,10 +39,8 @@ import {
   LuSun,
   LuMoon,
   LuMonitor,
-  LuImage,
-  LuFolderOpen,
-  LuLayers,
-  LuShield,
+  LuImage, LuLayers,
+  LuShield
 } from "react-icons/lu";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -2801,7 +2798,7 @@ export const SettingsPage: React.FC = () => {
 
       {/* Process Management Modal */}
       <UnifiedModal
-        size="2xl"
+        size="wide"
         isOpen={processModalOpen}
         onOpenChange={setProcessModalOpen}
         scrollBehavior="inside"
@@ -2816,9 +2813,9 @@ export const SettingsPage: React.FC = () => {
         }
         icon={<FaList className="w-6 h-6" />}
         footer={
-          <Button onPress={() => setProcessModalOpen(false)} variant={"ghost"}>
+          <ModalAction onPress={() => setProcessModalOpen(false)} variant="secondary">
             {t("common.close")}
-          </Button>
+          </ModalAction>
         }
       >
         <div className="flex items-center justify-end mb-4 gap-2">
@@ -2857,9 +2854,9 @@ export const SettingsPage: React.FC = () => {
           ) : (
             <div className="flex flex-col gap-2">
               {processes.map((p) => (
-                <div
+                <ModalPanel
                   key={p.pid}
-                  className="flex items-center justify-between p-3 rounded-xl bg-surface-secondary/50 dark:bg-surface-secondary/10 border border-border/50"
+                  className="flex items-center justify-between"
                 >
                   <div className="flex flex-col gap-1 overflow-hidden">
                     <div className="flex items-center gap-2">
@@ -2896,7 +2893,7 @@ export const SettingsPage: React.FC = () => {
                   >
                     {t("settings.process.kill")}
                   </Button>
-                </div>
+                </ModalPanel>
               ))}
             </div>
           )}
@@ -2904,52 +2901,45 @@ export const SettingsPage: React.FC = () => {
       </UnifiedModal>
 
       <UnifiedModal
-        size="lg"
+        size="wide"
         isOpen={instanceBackupWarningOpen}
         onOpenChange={setInstanceBackupWarningOpen}
         type="warning"
         title={t("settings.experimental.instance_backup.warning.title")}
-        hideCloseButton
         isDismissable={false}
         showConfirmButton={false}
         showCancelButton={false}
         footer={
           <div className="flex w-full justify-end gap-2">
-            <Button onPress={closeInstanceBackupWarning} variant={"ghost"}>
+            <ModalAction onPress={closeInstanceBackupWarning} variant="secondary">
               {t("common.cancel")}
-            </Button>
-            <Button
+            </ModalAction>
+            <ModalAction
               isDisabled={instanceBackupWarningCountdown > 0}
               onPress={confirmInstanceBackupWarning}
               variant={"primary"}
-              className={cn(
-                "rounded-full",
-                "bg-warning text-warning-foreground",
-                "text-warning-foreground! font-bold shadow-lg shadow-amber-500/20",
-              )}
             >
               {instanceBackupWarningCountdown > 0
                 ? `${t("settings.experimental.instance_backup.warning.confirm")} (${instanceBackupWarningCountdown}s)`
                 : t("settings.experimental.instance_backup.warning.confirm")}
-            </Button>
+            </ModalAction>
           </div>
         }
       >
-        <div className="space-y-4 text-sm leading-7 text-foreground dark:text-zinc-300">
+        <ModalDescription className="space-y-4">
           <p className="font-medium text-amber-700 dark:text-amber-400">
             {t("settings.experimental.instance_backup.warning.body_1")}
           </p>
           <p>{t("settings.experimental.instance_backup.warning.body_2")}</p>
           <p>{t("settings.experimental.instance_backup.warning.body_3")}</p>
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       {/* LIP Install Progress */}
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={lipProgressDisclosure.isOpen}
         onOpenChange={lipProgressDisclosure.setOpen}
-        hideCloseButton
         isDismissable={false}
         type={lipError ? "error" : "info"}
         title={lipError ? t("common.error") : t("settings.lip.installing")}
@@ -2959,21 +2949,20 @@ export const SettingsPage: React.FC = () => {
         footer={
           lipError ? undefined : (
             <>
-              <Button
+              <ModalAction
                 onPress={lipProgressDisclosure.close}
                 isDisabled={!installingLip}
-                variant={"ghost"}
-                className={"text-rose-700 dark:text-rose-300"}
+                variant="secondary"
               >
                 {t("common.hide")}
-              </Button>
-              <Button
+              </ModalAction>
+              <ModalAction
                 onPress={lipProgressDisclosure.close}
                 isDisabled={installingLip && !lipError}
                 variant={"primary"}
               >
                 {t("common.ok")}
-              </Button>
+              </ModalAction>
             </>
           )
         }
@@ -3009,7 +2998,7 @@ export const SettingsPage: React.FC = () => {
       </UnifiedModal>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={unsavedOpen}
         onOpenChange={(open) => {
           if (!savingBaseRoot) unsavedOnOpenChange(open);
@@ -3020,7 +3009,6 @@ export const SettingsPage: React.FC = () => {
         confirmText={t("settings.unsaved.save")}
         showCancelButton
         isDismissable={!savingBaseRoot}
-        hideCloseButton={savingBaseRoot}
         cancelButtonProps={{ isDisabled: savingBaseRoot }}
         confirmButtonProps={{
           isPending: savingBaseRoot,
@@ -3038,9 +3026,9 @@ export const SettingsPage: React.FC = () => {
           }
         }}
       >
-        <div className="text-foreground dark:text-zinc-300 text-sm">
+        <ModalDescription>
           {t("settings.unsaved.body")}
-        </div>
+        </ModalDescription>
         {pathError && (
           <p role="alert" className="text-sm text-danger mt-2">{pathError}</p>
         )}
@@ -3052,7 +3040,7 @@ export const SettingsPage: React.FC = () => {
       </UnifiedModal>
 
       <UnifiedModal
-        size="sm"
+        size="standard"
         isOpen={resetOpen}
         onOpenChange={(open) => {
           if (!savingBaseRoot) resetOnOpenChange(open);
@@ -3063,17 +3051,16 @@ export const SettingsPage: React.FC = () => {
         confirmText={t("common.confirm")}
         showCancelButton
         isDismissable={!savingBaseRoot}
-        hideCloseButton={savingBaseRoot}
-        confirmButtonProps={{ isPending: savingBaseRoot }}
+        confirmButtonProps={{ isPending: savingBaseRoot, variant: "danger" }}
         cancelButtonProps={{ isDisabled: savingBaseRoot }}
         onCancel={() => resetOnClose()}
         onConfirm={async () => {
           if (await persistBasePath(true)) resetOnClose();
         }}
       >
-        <div className="text-foreground dark:text-zinc-300 text-sm">
+        <ModalDescription>
           {t("settings.reset.confirm.body")}
-        </div>
+        </ModalDescription>
         {pathError && (
           <p role="alert" className="text-sm text-danger mt-2">{pathError}</p>
         )}

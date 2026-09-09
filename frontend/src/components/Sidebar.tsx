@@ -87,7 +87,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             fill="none"
             stroke="currentColor"
             strokeWidth="1"
-            className="text-muted/50 dark:text-zinc-800/50"
+            className="text-surface-tertiary/50 dark:text-zinc-800/50"
           />
         </svg>
       </div>

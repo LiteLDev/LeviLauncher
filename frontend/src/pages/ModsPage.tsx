@@ -1,3 +1,4 @@
+import { ModalDescription, ModalPanel, ModalAction, ModalProgress, ModalNotice, ModalDetails } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -7,13 +8,11 @@ import {
   FieldError,
   Input,
   InputGroup,
-  Label,
-  ProgressBar,
-  Spinner,
+  Label, Spinner,
   Switch,
   Tabs,
   TextField,
-  Tooltip,
+  Tooltip
 } from "@heroui/react";
 
 import React, { useMemo, useRef } from "react";
@@ -101,33 +100,19 @@ export const ModsPage: React.FC = () => {
       <FileDropOverlay isDragActive={isDragActive} text={t("mods.drop_hint")} />
 
       <UnifiedModal
+        size="wide"
         isOpen={mp.importing && !mp.dllOpen}
         title={t("mods.importing_title")}
         type="primary"
         icon={<FiUploadCloud className="w-6 h-6" />}
-        hideCloseButton
         isDismissable={false}
         showConfirmButton={false}
       >
-        <div className="py-1">
-          <ProgressBar
-            isIndeterminate
-            aria-label="importing"
-            className={"w-full"}
-          >
-            <ProgressBar.Track>
-              <ProgressBar.Fill />
-            </ProgressBar.Track>
-          </ProgressBar>
-        </div>
-        <div className="text-foreground dark:text-zinc-300 text-sm mt-2">
-          {t("mods.importing_body")}
-        </div>
-        {mp.currentFile ? (
-          <div className="mt-2 rounded-md bg-surface-secondary/60 dark:bg-zinc-800/60 border border-border dark:border-zinc-700 px-3 py-2 text-foreground dark:text-zinc-100 text-sm wrap-break-word whitespace-pre-wrap font-mono">
-            {mp.currentFile}
-          </div>
-        ) : null}
+        <ModalProgress
+          label={t("mods.importing_title")}
+          description={<> {t("mods.importing_body")} </>}
+          currentItem={mp.currentFile}
+        />
       </UnifiedModal>
 
       <ImportResultModal
@@ -160,12 +145,12 @@ export const ModsPage: React.FC = () => {
       />
 
       <UnifiedModal
+        size="wide"
         isOpen={mp.dllOpen}
         onOpenChange={mp.dllOnOpenChange}
         title={t("mods.dll_modal_title")}
         type="primary"
         icon={<FaPuzzlePiece className="w-6 h-6" />}
-        hideCloseButton
         onConfirm={() => {
           const nm = mp.dllName.trim();
           if (!nm) return;
@@ -195,11 +180,11 @@ export const ModsPage: React.FC = () => {
         cancelText={t("common.cancel")}
         confirmButtonProps={{ isDisabled: !mp.dllName.trim() }}
       >
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TextField
             isRequired
             isInvalid={!mp.dllName.trim()}
-            className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
+            className={cn("group sm:col-span-2", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.dllName}
             onChange={mp.setDllName}
           >
@@ -256,7 +241,6 @@ export const ModsPage: React.FC = () => {
         onOpenChange={mp.dupOnOpenChange}
         title={t("mods.overwrite_modal_title")}
         type="warning"
-        hideCloseButton
         onConfirm={() => {
           try {
             mp.dupResolveRef.current && mp.dupResolveRef.current(true);
@@ -275,14 +259,8 @@ export const ModsPage: React.FC = () => {
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}
       >
-        <div className="text-sm text-foreground dark:text-zinc-300">
-          {t("mods.overwrite_modal_body")}
-        </div>
-        {mp.dupNameRef.current ? (
-          <div className="mt-2 rounded-md bg-surface-secondary/60 dark:bg-zinc-800/60 border border-border dark:border-zinc-700 px-3 py-2 text-foreground dark:text-zinc-100 text-sm wrap-break-word whitespace-pre-wrap">
-            {mp.dupNameRef.current}
-          </div>
-        ) : null}
+        <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
+        {mp.dupNameRef.current ? <ModalPanel className="font-mono">{mp.dupNameRef.current}</ModalPanel> : null}
       </UnifiedModal>
 
       <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
@@ -1026,22 +1004,22 @@ export const ModsPage: React.FC = () => {
       </div>
 
       <UnifiedModal
+        size="wide"
         isOpen={mp.infoOpen}
         onOpenChange={mp.infoOnOpenChange}
         title={t("mods.details_title")}
         type="primary"
         icon={<FaPuzzlePiece className="w-6 h-6" />}
-        hideCloseButton
         showConfirmButton={false}
         showCancelButton
         cancelText={t("common.close")}
         onCancel={() => mp.infoOnClose()}
         footer={
           <>
-            <Button onPress={() => mp.infoOnClose()} variant={"ghost"}>
+            <ModalAction onPress={() => mp.infoOnClose()} variant="secondary">
               {t("common.cancel")}
-            </Button>
-            <Button
+            </ModalAction>
+            <ModalAction
               onPress={() => {
                 if (!mp.activeMod) return;
                 mp.openEditForMod(mp.activeMod);
@@ -1050,8 +1028,8 @@ export const ModsPage: React.FC = () => {
               variant={"secondary"}
             >
               {t("common.edit")}
-            </Button>
-            <Button
+            </ModalAction>
+            <ModalAction
               onPress={() => {
                 if (!mp.activeMod) return;
                 void mp.handleUpdateMod(mp.activeMod);
@@ -1064,66 +1042,28 @@ export const ModsPage: React.FC = () => {
               variant={"secondary"}
             >
               {t("mods.action_update")}
-            </Button>
-            <Button onPress={mp.delCfmOnOpen} variant={"danger"}>
+            </ModalAction>
+            <ModalAction onPress={mp.delCfmOnOpen} variant={"danger"}>
               {t("mods.action_uninstall")}
-            </Button>
+            </ModalAction>
           </>
         }
       >
         {mp.activeMod ? (
           <div className="space-y-2 text-sm dark:text-zinc-200">
-            <div>
-              <span className="text-muted dark:text-zinc-400">
-                {t("mods.field_name")}:
-              </span>
-              {mp.activeMod.name}
-            </div>
-            <div>
-              <span className="text-muted dark:text-zinc-400">
-                {t("mods.field_version")}:
-              </span>
-              {mp.activeMod.version || "-"}
-            </div>
-            <div>
-              <span className="text-muted dark:text-zinc-400">
-                {t("mods.field_type")}:
-              </span>
-              {mp.activeMod.type || "-"}
-            </div>
-            <div>
-              <span className="text-muted dark:text-zinc-400">
-                {t("mods.field_entry")}:
-              </span>
-              {mp.activeMod.entry || "-"}
-            </div>
-            {mp.activeMod.author ? (
-              <div>
-                <span className="text-muted dark:text-zinc-400">
-                  {t("mods.field_author")}:
-                </span>
-                {mp.activeMod.author}
-              </div>
-            ) : null}
-            <div>
-              <span className="text-muted dark:text-zinc-400">
-                {t("mods.action_update")}:
-              </span>
-              <span className="ml-2">
-                {(() => {
-                  const state = mp.getModLIPState(mp.activeMod);
-                  if (state.sourceType !== "unique") {
-                    return t("mods.no_update_source");
-                  }
-                  if (!state.canUpdate) {
-                    return t("mods.update_latest");
-                  }
-                  return t("mods.update_available", {
-                    version: state.targetVersion,
-                  });
-                })()}
-              </span>
-            </div>
+            <ModalDetails items={[
+              { label: t("mods.field_name"), value: mp.activeMod.name, fullWidth: true },
+              { label: t("mods.field_version"), value: mp.activeMod.version || "-", mono: true },
+              { label: t("mods.field_type"), value: mp.activeMod.type || "-" },
+              { label: t("mods.field_entry"), value: mp.activeMod.entry || "-", mono: true, fullWidth: true },
+              ...(mp.activeMod.author ? [{ label: t("mods.field_author"), value: mp.activeMod.author }] : []),
+              { label: t("mods.action_update"), value: (() => {
+                const state = mp.getModLIPState(mp.activeMod);
+                if (state.sourceType !== "unique") return t("mods.no_update_source");
+                if (!state.canUpdate) return t("mods.update_latest");
+                return t("mods.update_available", { version: state.targetVersion });
+              })() },
+            ]} />
             <div className="pt-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
@@ -1182,12 +1122,13 @@ export const ModsPage: React.FC = () => {
       </UnifiedModal>
 
       <UnifiedModal
+        size="wide"
         isOpen={mp.editOpen}
         onOpenChange={mp.editOnOpenChange}
         title={t("common.edit")}
         type="primary"
         icon={<FaPen className="w-5 h-5" />}
-        hideCloseButton
+
         showCancelButton
         confirmText={t("common.save")}
         cancelText={t("common.cancel")}
@@ -1199,11 +1140,11 @@ export const ModsPage: React.FC = () => {
         }}
         cancelButtonProps={{ isDisabled: mp.editSaving }}
       >
-        <div className="flex flex-col gap-3">
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
           <TextField
             isRequired={true}
             isInvalid={mp.editName.trim().length === 0}
-            className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
+            className={cn("group sm:col-span-2", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.editName}
             onChange={mp.setEditName}
           >
@@ -1252,7 +1193,7 @@ export const ModsPage: React.FC = () => {
             />
           </TextField>
           <TextField
-            className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
+            className={cn("group sm:col-span-2", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.editEntry}
             onChange={mp.setEditEntry}
           >
@@ -1309,13 +1250,13 @@ export const ModsPage: React.FC = () => {
         showCancelButton={false}
         onConfirm={mp.closeDemotedWarning}
       >
-        <div className="text-sm text-foreground dark:text-zinc-300 whitespace-pre-wrap">
+        <ModalDescription className="whitespace-pre-wrap">
           {t("errors.ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY")}
-        </div>
+        </ModalDescription>
         {mp.demotedWarningNames.length > 0 ? (
-          <div className="mt-3 rounded-md bg-amber-50/70 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-500/30 px-3 py-2 text-amber-700 dark:text-amber-300 text-sm whitespace-pre-wrap break-all font-mono">
+          <ModalNotice tone="warning" className="whitespace-pre-wrap break-all font-mono">
             {mp.demotedWarningNames.join("\n")}
-          </div>
+          </ModalNotice>
         ) : null}
       </UnifiedModal>
 
@@ -1332,9 +1273,9 @@ export const ModsPage: React.FC = () => {
         confirmButtonProps={{ isPending: mp.actionConfirming }}
         cancelButtonProps={{ isDisabled: mp.actionConfirming }}
       >
-        <div className="text-sm text-foreground dark:text-zinc-300 whitespace-pre-wrap">
+        <ModalDescription className="whitespace-pre-wrap">
           {mp.actionConfirmBody}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       <UnifiedModal
@@ -1350,12 +1291,12 @@ export const ModsPage: React.FC = () => {
         confirmButtonProps={{ isPending: mp.batchUpdating }}
         cancelButtonProps={{ isDisabled: mp.batchUpdating }}
       >
-        <div className="text-sm text-foreground dark:text-zinc-300 whitespace-pre-wrap">
+        <ModalDescription className="whitespace-pre-wrap">
           {t("mods.batch_update_body", {
             selected: mp.selectedItems.length,
             updatable: mp.selectedUpdatableCount,
           })}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       <UnifiedModal
@@ -1368,14 +1309,14 @@ export const ModsPage: React.FC = () => {
         cancelText={t("common.cancel")}
         onCancel={mp.batchUninstallOnClose}
         onConfirm={() => void mp.handleBatchUninstall()}
-        confirmButtonProps={{ isPending: mp.batchUninstalling }}
+        confirmButtonProps={{ isPending: mp.batchUninstalling, variant: "danger" }}
         cancelButtonProps={{ isDisabled: mp.batchUninstalling }}
       >
-        <div className="text-sm text-foreground dark:text-zinc-300 whitespace-pre-wrap">
+        <ModalDescription className="whitespace-pre-wrap">
           {t("mods.batch_uninstall_body", {
             count: mp.selectedItems.length,
           })}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
     </PageContainer>
   );

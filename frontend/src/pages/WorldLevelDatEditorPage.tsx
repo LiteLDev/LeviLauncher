@@ -1,3 +1,4 @@
+import { ModalAction } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -609,7 +610,6 @@ export default function WorldLevelDatEditorPage() {
                                     }}
                                   >
                                     <Input
-
                                       className={cn(
                                         COMPONENT_STYLES.input.inputWrapper,
                                         COMPONENT_STYLES.input.input,
@@ -740,7 +740,6 @@ export default function WorldLevelDatEditorPage() {
                                 }}
                               >
                                 <Input
-
                                   className={cn(
                                     COMPONENT_STYLES.input.inputWrapper,
                                     COMPONENT_STYLES.input.input,
@@ -907,7 +906,6 @@ export default function WorldLevelDatEditorPage() {
                                       }}
                                     >
                                       <Input
-
                                         className={cn(
                                           COMPONENT_STYLES.input.inputWrapper,
                                           COMPONENT_STYLES.input.input,
@@ -956,7 +954,6 @@ export default function WorldLevelDatEditorPage() {
                                             }}
                                           >
                                             <Input
-
                                               className={cn(
                                                 COMPONENT_STYLES.input
                                                   .inputWrapper,
@@ -1048,7 +1045,6 @@ export default function WorldLevelDatEditorPage() {
                                       }}
                                     >
                                       <Input
-
                                         className={cn(
                                           COMPONENT_STYLES.input.inputWrapper,
                                           COMPONENT_STYLES.input.input,
@@ -1090,7 +1086,6 @@ export default function WorldLevelDatEditorPage() {
                                           }}
                                         >
                                           <Input
-
                                             className={cn(
                                               COMPONENT_STYLES.input
                                                 .inputWrapper,
@@ -1155,11 +1150,11 @@ export default function WorldLevelDatEditorPage() {
         title={t("contentpage.editor_unsaved")}
         isDismissable={!saving}
         footer={<div className="flex flex-wrap justify-end gap-2">
-          <Button variant="ghost" isDisabled={saving} onPress={continueEditing}>{t("contentpage.editor_continue")}</Button>
-          <Button variant="danger-soft" isDisabled={saving} onPress={continueAction}>{t("contentpage.editor_discard")}</Button>
-          <Button variant="primary" isPending={saving} onPress={async () => {
+          <ModalAction variant="secondary" isDisabled={saving} onPress={continueEditing}>{t("contentpage.editor_continue")}</ModalAction>
+          <ModalAction variant="danger-soft" isDisabled={saving} onPress={continueAction}>{t("contentpage.editor_discard")}</ModalAction>
+          <ModalAction variant="primary" isPending={saving} onPress={async () => {
             if (await saveAll()) continueAction();
-          }}>{t(refreshPending ? "contentpage.editor_save_refresh" : "contentpage.editor_save_leave")}</Button>
+          }}>{t(refreshPending ? "contentpage.editor_save_refresh" : "contentpage.editor_save_leave")}</ModalAction>
         </div>}
       >
         <p>{t("contentpage.editor_unsaved_body")}</p>

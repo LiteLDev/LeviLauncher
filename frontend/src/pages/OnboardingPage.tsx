@@ -1,3 +1,4 @@
+import { ModalDescription } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -422,7 +423,7 @@ export default function OnboardingPage() {
       </div>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={unsavedOpen}
         onOpenChange={(open) => { if (!savingBaseRoot) unsavedOnOpenChange(open); }}
         type="warning"
@@ -468,9 +469,9 @@ export default function OnboardingPage() {
         }}
       >
         <div className="flex flex-col gap-2">
-          <div className="text-foreground dark:text-zinc-300 text-sm">
+          <ModalDescription>
             {t(keepCurrentRoot ? "audit.primary.onboarding.unapplied" : "onboarding.unsaved.body", { path: baseRoot })}
-          </div>
+          </ModalDescription>
           {!baseRootWritable && (
             <div role="alert" className="text-xs text-danger">
               {t("settings.body.paths.not_writable")}

@@ -126,7 +126,7 @@
       "mods_card": "Карточка Mods показывает включённые моды текущего экземпляра и в один клик открывает полную страницу Mods.",
       "content_counts_card": "Карточка управления контентом показывает количество миров, resource packs и behavior packs, а каждая строка открывает нужную страницу.",
       "incompatible_resource_packs": "Если найдены несовместимые resource packs, нажмите на строку предупреждения, чтобы сразу открыть их список.",
-      "content_download_sources": "Карточка загрузок даёт прямой доступ к CurseForge и lip, чтобы искать контент прямо в лаунчере.",
+      "content_download_sources": "Карточка загрузок даёт прямой доступ к CurseForge и Bedrinth, чтобы искать контент прямо в лаунчере.",
       "settings_personalize": "В настройках можно изменить тему, цвета, фон и другие параметры внешнего вида под свой стиль работы.",
       "settings_storage_path": "Пути хранения можно изменить в настройках; перед переносом или сохранением убедитесь, что целевая папка доступна для записи.",
       "download_mirror": "Если загрузка идёт медленно, попробуйте сменить зеркало или проверить сетевые параметры в настройках.",
@@ -1188,6 +1188,8 @@
     "game_all_versions": "All game versions",
     "mapping_unavailable_hint": "Сопоставление версий игры для LeviLamina сейчас недоступно. Фильтры, связанные с версиями, отключены, чтобы избежать неверных совпадений.",
     "files": {
+      "game_versions_unknown": "Подходящая версия игры не найдена",
+      "version_count": "Версий: {{count}}",
       "game_versions_label": "Game Versions",
       "game_versions_unrestricted": "No game version restriction",
       "game_versions_unavailable": "Game version mapping unavailable",
@@ -1214,7 +1216,7 @@
       "ll_missing_redirect_to_loader": "LeviLamina не установлен. Выполняется переход на вкладку Loader в настройках экземпляра.",
       "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",
       "action_failed": "Operation failed: {{error}}",
-      "tab_label": "Files",
+      "tab_label": "Версии",
       "table_aria_label": "Package files table",
       "install_success": "Installation completed successfully",
       "upgrade_success": "Обновление выполнено успешно",
@@ -1225,8 +1227,8 @@
     },
     "guide": {
       "open_button": "Руководство для разработчиков",
-      "title": "Руководство для разработчиков LIP",
-      "description": "Если вы хотите, чтобы ваш мод появился на странице LIP в LeviLauncher, публикуйте его по спецификации LIP package_manifest.",
+      "title": "Руководство для разработчиков Bedrinth",
+      "description": "Если вы хотите, чтобы ваш мод появился на странице Bedrinth в LeviLauncher, публикуйте его по спецификации LIP package_manifest.",
       "manifest_hint": "Это краткая памятка для разработчиков. Названия полей, обязательные поля, примеры и правила валидации смотрите в официальной документации.",
       "variant_hint": "Вариант будет включён в лаунчер только если его label содержит client. По умолчанию используйте \"label\": \"client\"; для подрасширений используйте \"label\": \"client_xxxx\" или \"label\": \"client\\xxxx\".",
       "docs_button": "Открыть спецификацию",
@@ -1236,7 +1238,7 @@
       "title": "lipd не установлен",
       "description": "lipd пока не установлен. Чтобы продолжить пользоваться страницами lip или установить LeviLamina, сначала откройте «Настройки > Сторонние компоненты» и установите его."
     },
-    "title": "lip Content",
+    "title": "Bedrinth",
     "sort_options": {
       "hotness": "Hotness",
       "updated": "Updated",

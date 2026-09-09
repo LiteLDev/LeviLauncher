@@ -1,3 +1,4 @@
+import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
 import {
   Button,
@@ -6,14 +7,12 @@ import {
   Dropdown,
   InputGroup,
   Label,
-  ListBox,
-  ProgressBar,
-  Select,
+  ListBox, Select,
   Spinner,
   TextField,
   Tooltip,
   toast,
-  useOverlayState,
+  useOverlayState
 } from "@heroui/react";
 
 import React from "react";
@@ -21,7 +20,6 @@ import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
 
 import {
-  FaArrowLeft,
   FaSync,
   FaFolderOpen,
   FaFilter,
@@ -29,19 +27,17 @@ import {
   FaSortAmountDown,
   FaSortAmountUp,
   FaCheckSquare,
-  FaTrash,
-  FaFont,
-  FaClock,
+  FaTrash, FaClock,
   FaTimes,
   FaBox,
   FaHdd,
   FaTag,
-  FaExchangeAlt,
+  FaExchangeAlt
 } from "react-icons/fa";
 import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
 import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
@@ -1121,35 +1117,19 @@ export default function SkinPacksPage() {
         type="primary"
         title={t("contentpage.transfer_progress_title")}
         icon={<FaExchangeAlt className="w-6 h-6" />}
-        hideCloseButton
         isDismissable={false}
         showConfirmButton={false}
         showCancelButton={false}
       >
-        <div className="flex flex-col gap-4">
-          <ProgressBar
-            isIndeterminate
-            aria-label="transferring"
-            size="sm"
-            color={"accent"}
-            className={"w-full"}
-          >
-            <ProgressBar.Track>
-              <ProgressBar.Fill />
-            </ProgressBar.Track>
-          </ProgressBar>
-          <div className="text-foreground dark:text-zinc-300 text-sm">
-            {t("contentpage.transfer_progress_body")}
-          </div>
-          {currentTransferItem ? (
-            <div className="p-3 bg-surface-secondary/50 dark:bg-zinc-800 rounded-xl border border-border/50 text-sm font-mono text-foreground dark:text-zinc-200 break-all">
-              {currentTransferItem}
-            </div>
-          ) : null}
-        </div>
+        <ModalProgress
+          label={t("contentpage.transfer_progress_title")}
+          description={<> {t("contentpage.transfer_progress_body")} </>}
+          currentItem={currentTransferItem}
+        />
       </UnifiedModal>
 
       <UnifiedModal
+        size="wide"
         isOpen={transferTargetOpen}
         onOpenChange={(open) => {
           if (!open) transferTargetOnClose();
@@ -1169,9 +1149,9 @@ export default function SkinPacksPage() {
         }}
       >
         <div className="flex flex-col gap-4">
-          <div className="text-sm text-foreground dark:text-zinc-300">
+          <ModalDescription>
             {t("contentpage.transfer_resources_body_simple")}
-          </div>
+          </ModalDescription>
 
           {transferTargets.length > 0 ? (
             <Select
@@ -1232,7 +1212,7 @@ export default function SkinPacksPage() {
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-muted dark:text-zinc-500">
               <FaExchangeAlt className="text-4xl mb-3 opacity-20" />
-              <p className="text-sm">{t("contentpage.transfer_no_targets")}</p>
+              <ModalDescription>{t("contentpage.transfer_no_targets")}</ModalDescription>
             </div>
           )}
         </div>
@@ -1270,16 +1250,8 @@ export default function SkinPacksPage() {
           dupOnClose();
         }}
       >
-        <div className="flex flex-col gap-4">
-          <div className="text-sm text-foreground dark:text-zinc-300">
-            {t("mods.overwrite_modal_body")}
-          </div>
-          {dupNameRef.current ? (
-            <div className="p-3 bg-surface-secondary/50 dark:bg-zinc-800 rounded-xl border border-border/50 text-sm font-mono text-foreground dark:text-zinc-200 break-all">
-              {dupNameRef.current}
-            </div>
-          ) : null}
-        </div>
+        <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
+        {dupNameRef.current ? <ModalPanel className="font-mono">{dupNameRef.current}</ModalPanel> : null}
       </UnifiedModal>
     </PageContainer>
   );

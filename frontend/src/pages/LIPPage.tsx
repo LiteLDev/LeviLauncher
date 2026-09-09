@@ -1,3 +1,4 @@
+import { ModalAction, ModalDescription } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
 import {
   Button,
@@ -1083,7 +1084,7 @@ const LIPPage: React.FC = () => {
       </motion.div>
 
       <UnifiedModal
-        size="lg"
+        size="wide"
         isOpen={developerGuideOpen}
         onOpenChange={setDeveloperGuideOpen}
         type="primary"
@@ -1092,35 +1093,33 @@ const LIPPage: React.FC = () => {
         isDismissable
         footer={
           <>
-            <Button
+            <ModalAction
               onPress={() => setDeveloperGuideOpen(false)}
-              variant={"ghost"}
-              className={"rounded-full"}
+              variant="secondary"
             >
               {t("lip.guide.close_button")}
-            </Button>
-            <Button
+            </ModalAction>
+            <ModalAction
               onPress={() => void Browser.OpenURL(LIP_DEVELOPER_GUIDE_URL)}
               variant={"primary"}
-              className={"rounded-full"}
             >
               {<LuExternalLink />}
               {t("lip.guide.docs_button")}
-            </Button>
+            </ModalAction>
           </>
         }
       >
         <div className="flex flex-col gap-4 text-sm leading-6 text-foreground dark:text-zinc-300">
           <p>{t("lip.guide.description")}</p>
           <p>{t("lip.guide.manifest_hint")}</p>
-          <p className="font-medium text-foreground dark:text-zinc-100">
+          <ModalDescription>
             {t("lip.guide.variant_hint")}
-          </p>
+          </ModalDescription>
         </div>
       </UnifiedModal>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={lipMissingModalOpen}
         onOpenChange={setLipMissingModalOpen}
         type="warning"

@@ -67,7 +67,9 @@ export const mockWailsRuntime = async (
     try {
       const request = route.request().postDataJSON();
       const methodID = Number(request?.args?.methodID);
-      const methodName = methodIDs.get(methodID);
+      const namedMethod = String(request?.args?.methodName || "")
+        .replace(/^main\.Minecraft\./, "minecraft.");
+      const methodName = methodIDs.get(methodID) || namedMethod;
       if (methodName && Object.hasOwn(mergedResponses, methodName)) {
         response = mergedResponses[methodName];
       }

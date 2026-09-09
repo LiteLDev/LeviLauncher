@@ -1,3 +1,4 @@
+import { ModalAction, ModalDescription } from "@/components/ModalPrimitives";
 import { Button } from "@heroui/react";
 import React from "react";
 
@@ -20,29 +21,28 @@ export const ClarityConsentModal: React.FC<ClarityConsentModalProps> = ({
 
   return (
     <UnifiedModal
-      size="lg"
+      size="wide"
       isOpen={isOpen}
       type="info"
       title={t("clarity.prompt.title")}
-      hideCloseButton
       isDismissable={false}
       showCancelButton={false}
       showConfirmButton={false}
       footer={
         <div className="flex w-full flex-wrap justify-end gap-2">
-          <Button onPress={onKeepDisabled} variant={"ghost"}>
+          <ModalAction onPress={onKeepDisabled} variant="secondary">
             {t("clarity.prompt.disable")}
-          </Button>
-          <Button onPress={onEnable} variant={"primary"}>
+          </ModalAction>
+          <ModalAction onPress={onEnable} variant={"primary"}>
             {t("clarity.prompt.enable")}
-          </Button>
+          </ModalAction>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
-        <p className="text-foreground dark:text-zinc-300 text-sm leading-6">
+        <ModalDescription>
           {t("clarity.prompt.body")}
-        </p>
+        </ModalDescription>
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"

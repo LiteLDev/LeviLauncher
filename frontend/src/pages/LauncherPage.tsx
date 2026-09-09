@@ -1,3 +1,4 @@
+import { ModalAction, ModalDescription, ModalNotice, ModalProgress } from "@/components/ModalPrimitives";
 import {
   Button,
   Tooltip,
@@ -378,14 +379,18 @@ export const LauncherPage = (args: any) => {
                       </Tooltip>
                       <Dropdown.Popover
                         placement="bottom end"
-                        className={COMPONENT_STYLES.dropdown.content}
+                        containerPadding={12}
+                        className={cn(
+                          COMPONENT_STYLES.dropdown.content,
+                          "flex min-h-0 w-96 min-w-0 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden",
+                        )}
                       >
                         {
-                          <div className="p-3 border-b border-border dark:border-border/10">
+                          <div className="shrink-0 p-3 border-b border-border dark:border-border/10">
                             <TextField
                               aria-label={t("launcherpage.search_versions")}
                               className={cn(
-                                "group",
+                                "group w-full min-w-0",
                                 COMPONENT_STYLES.input.mainWrapper,
                               )}
                               value={versionQuery}
@@ -426,7 +431,7 @@ export const LauncherPage = (args: any) => {
                           selectedKeys={
                             new Set(currentVersion ? [currentVersion] : [])
                           }
-                          className="max-h-[400px] overflow-y-auto no-scrollbar min-w-[300px]"
+                          className="min-h-0 min-w-0 shrink overflow-y-auto overflow-x-hidden overscroll-contain no-scrollbar"
                           items={versionMenuItems}
                           onSelectionChange={handleVersionSelect}
                         >
@@ -435,6 +440,7 @@ export const LauncherPage = (args: any) => {
                               key={item.key}
                               id={item.key}
                               textValue={item.name}
+                              isDisabled={item.isDisabled}
                             >
                               {
                                 <div className="w-8 h-8 shrink-0 rounded-lg bg-surface-secondary dark:bg-white/10 flex items-center justify-center overflow-hidden">
@@ -456,12 +462,12 @@ export const LauncherPage = (args: any) => {
                                   })()}
                                 </div>
                               }
-                              <Label>
-                                <div className="flex justify-between items-center gap-2">
-                                  <span className="font-semibold">
+                              <Label className="min-w-0 flex-1">
+                                <div className="flex min-w-0 justify-between items-center gap-2">
+                                  <span className="min-w-0 truncate font-semibold" title={item.name}>
                                     {item.name}
                                   </span>
-                                  <div className="flex items-center gap-1">
+                                  <div className="flex shrink-0 items-center gap-1">
                                     {item.isLeviLaminaInstalled && (
                                       <Chip
                                         size="sm"
@@ -501,13 +507,17 @@ export const LauncherPage = (args: any) => {
                                   </div>
                                 </div>
                               </Label>
-                              <Description>{item.version}</Description>
+                              {item.version && item.version !== item.name && (
+                                <Description className="shrink-0 whitespace-nowrap">
+                                  {item.version}
+                                </Description>
+                              )}
                               <Dropdown.ItemIndicator />
                             </Dropdown.Item>
                           )}
                         </Dropdown.Menu>
                         {isLoadingVersions ? (
-                          <div className="p-2 flex justify-center items-center gap-2 text-muted text-xs border-t border-border dark:border-white/5">
+                          <div className="shrink-0 p-2 flex justify-center items-center gap-2 text-muted text-xs border-t border-border dark:border-white/5">
                             <Spinner size="sm" color={"accent"} />
                             <span>{t("common.loading")}</span>
                           </div>
@@ -813,38 +823,29 @@ export const LauncherPage = (args: any) => {
           footer={
             <>
               {launchErrorCode === "ERR_GAME_ALREADY_RUNNING" && (
-                <Button
+                <ModalAction
                   onPress={handleLaunchFailedForceRun}
                   variant={"primary"}
-                  className={cn(
-                    "rounded-full",
-                    "bg-warning text-warning-foreground",
-                    "text-warning-foreground font-bold",
-                  )}
                 >
                   {t("launcherpage.launch.force_run_button")}
-                </Button>
+                </ModalAction>
               )}
-              <Button
+              <ModalAction
                 onPress={launchFailedDisclosure.close}
-                variant={"danger"}
-                className={cn(
-                  "rounded-full",
-                  "font-bold shadow-lg shadow-rose-500/20",
-                )}
+                variant="primary"
               >
                 {t("launcherpage.launch.failed.close_button")}
-              </Button>
+              </ModalAction>
             </>
           }
         >
-          <div className="flex flex-col items-center gap-3 text-center px-2">
-            <p className="text-lg font-semibold text-foreground dark:text-zinc-100">
+          <div className="flex flex-col gap-4">
+            <ModalDescription>
               {launchErrorMessage}
-            </p>
-            <p className="text-sm leading-6 text-foreground dark:text-zinc-300 max-w-[520px]">
+            </ModalDescription>
+            <ModalDescription>
               {t("launcherpage.launch.failed.content") as unknown as string}
-            </p>
+            </ModalDescription>
             {launchErrorCode && (
               <Chip
                 size="sm"
@@ -864,52 +865,9 @@ export const LauncherPage = (args: any) => {
           onOpenChange={gameInputInstallingDisclosure.setOpen}
           type="success"
           title={t("launcherpage.gameinput.installing.title")}
-          hideCloseButton
           icon={<FaDownload className="w-6 h-6" />}
         >
-          <>
-            <p className="text-foreground dark:text-zinc-300 font-medium">
-              {t("launcherpage.gameinput.installing.body")}
-            </p>
-            <div className="mt-4">
-              {giTotal > 0 ? (
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between text-sm font-bold text-foreground dark:text-zinc-300">
-                    <span>
-                      {Math.min(
-                        100,
-                        Math.floor((giDownloaded / giTotal) * 100),
-                      )}
-                      %
-                    </span>
-                    <span className="font-mono">
-                      {(giDownloaded / 1024 / 1024).toFixed(1)} /{" "}
-                      {(giTotal / 1024 / 1024).toFixed(1)} MB
-                    </span>
-                  </div>
-                  <ProgressBar
-                    aria-label="Downloading"
-                    value={(giDownloaded / giTotal) * 100}
-                    size="md"
-                    color={"accent"}
-                  >
-                    <ProgressBar.Track>
-                      <ProgressBar.Fill
-                        className={"bg-brand-500 hover:bg-brand-500"}
-                      />
-                    </ProgressBar.Track>
-                  </ProgressBar>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 text-foreground dark:text-zinc-300">
-                  <Spinner size="sm" color={"accent"} />
-                  <span>
-                    {t("launcherpage.gameinput.installing.preparing")}
-                  </span>
-                </div>
-              )}
-            </div>
-          </>
+          <ModalProgress label={t("launcherpage.gameinput.installing.title")} description={t("launcherpage.gameinput.installing.body")} value={giTotal > 0 ? Math.min(100, (giDownloaded / giTotal) * 100) : undefined} detail={giTotal > 0 ? `${(giDownloaded / 1024 / 1024).toFixed(1)} / ${(giTotal / 1024 / 1024).toFixed(1)} MB` : t("launcherpage.gameinput.installing.preparing")} />
         </UnifiedModal>
 
         {/* GameInput Missing */}
@@ -920,33 +878,24 @@ export const LauncherPage = (args: any) => {
           title={t("launcherpage.gameinput.missing.title")}
           footer={
             <>
-              <Button
+              <ModalAction
                 onPress={() => Window.Close()}
-                variant={"ghost"}
-                className={cn(
-                  "rounded-full",
-                  "text-rose-700 dark:text-rose-300",
-                )}
+                variant="secondary"
               >
                 {t("common.quit_launcher")}
-              </Button>
-              <Button
+              </ModalAction>
+              <ModalAction
                 onPress={handleGameInputInstall}
                 variant={"primary"}
-                className={cn(
-                  "rounded-full",
-                  "bg-warning text-warning-foreground",
-                  "text-warning-foreground font-bold",
-                )}
               >
                 {t("launcherpage.gameinput.missing.install_now")}
-              </Button>
+              </ModalAction>
             </>
           }
         >
-          <p className="text-foreground dark:text-zinc-300 font-medium">
+          <ModalDescription>
             {t("launcherpage.gameinput.missing.body")}
-          </p>
+          </ModalDescription>
         </UnifiedModal>
 
         {/* VCRuntime Installing */}
@@ -955,52 +904,9 @@ export const LauncherPage = (args: any) => {
           onOpenChange={vcRuntimeInstallingDisclosure.setOpen}
           type="success"
           title={t("launcherpage.vcruntime.installing.title")}
-          hideCloseButton
           icon={<FaDownload className="w-6 h-6" />}
         >
-          <>
-            <p className="text-foreground dark:text-zinc-300 font-medium">
-              {t("launcherpage.vcruntime.installing.body")}
-            </p>
-            <div className="mt-4">
-              {vcTotal > 0 ? (
-                <div className="flex flex-col gap-2">
-                  <div className="flex justify-between text-sm font-bold text-foreground dark:text-zinc-300">
-                    <span>
-                      {Math.min(
-                        100,
-                        Math.floor((vcDownloaded / vcTotal) * 100),
-                      )}
-                      %
-                    </span>
-                    <span className="font-mono">
-                      {(vcDownloaded / 1024 / 1024).toFixed(1)} /{" "}
-                      {(vcTotal / 1024 / 1024).toFixed(1)} MB
-                    </span>
-                  </div>
-                  <ProgressBar
-                    aria-label="Downloading"
-                    value={(vcDownloaded / vcTotal) * 100}
-                    size="md"
-                    color={"accent"}
-                  >
-                    <ProgressBar.Track>
-                      <ProgressBar.Fill
-                        className={"bg-brand-500 hover:bg-brand-500"}
-                      />
-                    </ProgressBar.Track>
-                  </ProgressBar>
-                </div>
-              ) : (
-                <div className="flex items-center gap-3 text-foreground dark:text-zinc-300">
-                  <Spinner size="sm" color={"accent"} />
-                  <span>
-                    {t("launcherpage.vcruntime.installing.preparing")}
-                  </span>
-                </div>
-              )}
-            </div>
-          </>
+          <ModalProgress label={t("launcherpage.vcruntime.installing.title")} description={t("launcherpage.vcruntime.installing.body")} value={vcTotal > 0 ? Math.min(100, (vcDownloaded / vcTotal) * 100) : undefined} detail={vcTotal > 0 ? `${(vcDownloaded / 1024 / 1024).toFixed(1)} / ${(vcTotal / 1024 / 1024).toFixed(1)} MB` : t("launcherpage.vcruntime.installing.preparing")} />
         </UnifiedModal>
 
         {/* VCRuntime Missing */}
@@ -1011,33 +917,24 @@ export const LauncherPage = (args: any) => {
           title={t("launcherpage.vcruntime.missing.title")}
           footer={
             <>
-              <Button
+              <ModalAction
                 onPress={() => Window.Close()}
-                variant={"ghost"}
-                className={cn(
-                  "rounded-full",
-                  "text-rose-700 dark:text-rose-300",
-                )}
+                variant="secondary"
               >
                 {t("common.quit_launcher")}
-              </Button>
-              <Button
+              </ModalAction>
+              <ModalAction
                 onPress={handleVcRuntimeInstall}
                 variant={"primary"}
-                className={cn(
-                  "rounded-full",
-                  "bg-warning text-warning-foreground",
-                  "text-warning-foreground font-bold",
-                )}
               >
                 {t("launcherpage.vcruntime.missing.install_now")}
-              </Button>
+              </ModalAction>
             </>
           }
         >
-          <p className="text-foreground dark:text-zinc-300 font-medium">
+          <ModalDescription>
             {t("launcherpage.vcruntime.missing.body")}
-          </p>
+          </ModalDescription>
         </UnifiedModal>
 
         {/* Gaming Services Missing */}
@@ -1049,37 +946,31 @@ export const LauncherPage = (args: any) => {
           icon={<FaWindows className="w-6 h-6" />}
           footer={
             <>
-              <Button
+              <ModalAction
                 onPress={() => Window.Close()}
-                variant={"ghost"}
-                className={cn(
-                  "rounded-full",
-                  "text-rose-700 dark:text-rose-300",
-                )}
+                variant="secondary"
               >
                 {t("common.quit_launcher")}
-              </Button>
-              <Button
+              </ModalAction>
+              <ModalAction
                 onPress={handleIgnoreGamingServices}
                 variant={"secondary"}
-                className={"rounded-full"}
               >
                 {t("launcherpage.gs.missing.ignore_forever")}
-              </Button>
-              <Button
+              </ModalAction>
+              <ModalAction
                 {...warningConfirmButtonProps}
                 onPress={() => handleGamingServicesInstall(Browser.OpenURL)}
                 variant={"secondary"}
-                className={"rounded-full"}
               >
                 {t("launcherpage.gs.missing.open_store")}
-              </Button>
+              </ModalAction>
             </>
           }
         >
-          <p className="text-foreground dark:text-zinc-300 font-medium">
+          <ModalDescription>
             {t("launcherpage.gs.missing.body")}
-          </p>
+          </ModalDescription>
         </UnifiedModal>
 
         {/* Install Confirm (GameInput / GamingServices) */}
@@ -1091,29 +982,24 @@ export const LauncherPage = (args: any) => {
           icon={<FaDownload className="w-6 h-6" />}
           footer={
             <>
-              <Button
+              <ModalAction
                 onPress={handleInstallConfirmContinue}
-                variant={"ghost"}
-                className={"rounded-full"}
+                variant="secondary"
               >
                 {t("launcherpage.install_confirm.continue")}
-              </Button>
-              <Button
+              </ModalAction>
+              <ModalAction
                 onPress={handleInstallConfirmCheck}
                 variant={"primary"}
-                className={cn(
-                  "rounded-full",
-                  "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20",
-                )}
               >
                 {t("launcherpage.install_confirm.done_and_check")}
-              </Button>
+              </ModalAction>
             </>
           }
         >
-          <p className="text-foreground dark:text-zinc-300 font-medium">
+          <ModalDescription>
             {t("launcherpage.install_confirm.body")}
-          </p>
+          </ModalDescription>
         </UnifiedModal>
 
         {/* VCRuntime Completing */}
@@ -1124,9 +1010,9 @@ export const LauncherPage = (args: any) => {
           title={t("launcherpage.vcruntime.completing.title")}
           icon={<FaCogs className="w-6 h-6" />}
         >
-          <p className="text-foreground dark:text-zinc-300 font-medium">
+          <ModalDescription>
             {t("launcherpage.vcruntime.completing.body")}
-          </p>
+          </ModalDescription>
         </UnifiedModal>
 
         {/* MC Launch Loading */}
@@ -1135,18 +1021,13 @@ export const LauncherPage = (args: any) => {
           onOpenChange={mcLaunchLoadingDisclosure.setOpen}
           type="success"
           title={t("launcherpage.mclaunch.loading.title")}
-          hideCloseButton
           footer={
-            <Button
+            <ModalAction
               onPress={mcLaunchLoadingDisclosure.close}
               variant={"primary"}
-              className={cn(
-                "rounded-full",
-                "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20",
-              )}
             >
               {t("common.close")}
-            </Button>
+            </ModalAction>
           }
         >
           <div className="flex flex-col gap-6">
@@ -1192,22 +1073,12 @@ export const LauncherPage = (args: any) => {
           onOpenChange={shortcutSuccessDisclosure.setOpen}
           type="success"
           title={t("launcherpage.shortcut.success.title")}
-          footer={
-            <Button
-              onPress={shortcutSuccessDisclosure.close}
-              variant={"primary"}
-              className={cn(
-                "rounded-full",
-                "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20",
-              )}
-            >
-              {t("common.close")}
-            </Button>
-          }
+          onConfirm={shortcutSuccessDisclosure.close}
+          confirmText={t("common.close")}
         >
-          <p className="text-foreground dark:text-zinc-300 font-medium">
+          <ModalDescription>
             {t("launcherpage.shortcut.success.body")}
-          </p>
+          </ModalDescription>
         </UnifiedModal>
 
         {/* Register Installing */}
@@ -1229,11 +1100,11 @@ export const LauncherPage = (args: any) => {
           }
         >
           <>
-            <p className="text-foreground dark:text-zinc-300 font-medium mb-4">
+            <ModalDescription className="mb-4">
               {registerAction === "unregister"
                 ? t("versions.edit.unregister_progress.body")
                 : t("launcherpage.register.installing.body")}
-            </p>
+            </ModalDescription>
             <ProgressBar
               size="sm"
               isIndeterminate
@@ -1263,21 +1134,17 @@ export const LauncherPage = (args: any) => {
           type="success"
           title={t("launcherpage.register.success.title")}
           footer={
-            <Button
+            <ModalAction
               onPress={registerSuccessDisclosure.close}
               variant={"primary"}
-              className={cn(
-                "rounded-full",
-                "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20",
-              )}
             >
               {t("common.close")}
-            </Button>
+            </ModalAction>
           }
         >
-          <p className="text-foreground dark:text-zinc-300 font-medium">
+          <ModalDescription>
             {t("launcherpage.register.success.body")}
-          </p>
+          </ModalDescription>
         </UnifiedModal>
 
         {/* Register Failed */}
@@ -1289,8 +1156,8 @@ export const LauncherPage = (args: any) => {
           confirmText={t("common.close")}
           onConfirm={registerFailedDisclosure.close}
         >
-          <div className="p-4 rounded-2xl bg-rose-50 dark:bg-rose-500/10 border border-rose-100 dark:border-rose-500/20 text-rose-600 dark:text-rose-400">
-            <p className="font-medium text-center">
+          <ModalNotice tone="danger">
+            <ModalDescription>
               {(() => {
                 const key = `errors.${launchErrorCode}`;
                 const translated = t(key) as unknown as string;
@@ -1300,8 +1167,8 @@ export const LauncherPage = (args: any) => {
                   "launcherpage.register.failed.body",
                 ) as unknown as string;
               })()}
-            </p>
-          </div>
+            </ModalDescription>
+          </ModalNotice>
         </UnifiedModal>
       </PageContainer>
     </>

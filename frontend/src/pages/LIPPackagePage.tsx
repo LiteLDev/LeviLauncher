@@ -1,3 +1,4 @@
+import { ModalDescription, ModalDetails } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -7,7 +8,6 @@ import {
   Select,
   Skeleton,
   Spinner,
-  Table,
   Tabs,
   Tooltip,
   toast,
@@ -29,11 +29,17 @@ import { Call, Browser } from "@wailsio/runtime";
 import { motion } from "framer-motion";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import rehypeSlug from "rehype-slug";
+import {
+  BedrinthVersionList,
+  type FileGameVersionState,
+} from "@/components/BedrinthVersionList";
 import { shouldDisableAnimations } from "@/hooks/useAnimations";
 import {
   LuClock,
   LuDownload,
-  LuFileDigit,
   LuFlame,
   LuGamepad2,
   LuGlobe,
@@ -73,15 +79,8 @@ type GithubRepoRef = {
   repo: string;
 };
 
-type HeadingTag = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 type LipRuntimeStatus = {
   installed?: boolean;
-};
-
-type FileGameVersionState = {
-  file: LIPPackageFileInfo;
-  supportedGameVersions: string[];
-  hasLLRequirement: boolean;
 };
 
 type InstanceLLState = {
@@ -168,22 +167,6 @@ const resolveMarkdownUrl = (
 const isBadgeImage = (src: string): boolean =>
   /(?:^|\/\/)img\.shields\.io\//i.test(src);
 
-const collectNodeText = (node: React.ReactNode): string => {
-  if (node === null || node === undefined || typeof node === "boolean") {
-    return "";
-  }
-  if (typeof node === "string" || typeof node === "number") return String(node);
-  if (Array.isArray(node)) {
-    return node.map((item) => collectNodeText(item)).join("");
-  }
-  if (React.isValidElement(node)) {
-    return collectNodeText(
-      (node.props as { children?: React.ReactNode }).children,
-    );
-  }
-  return "";
-};
-
 const slugifyHeading = (value: string): string => {
   const slug = value
     .trim()
@@ -193,16 +176,6 @@ const slugifyHeading = (value: string): string => {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
   return slug || "section";
-};
-
-const createHeadingSlugger = () => {
-  const used = new Map<string, number>();
-  return (text: string) => {
-    const base = slugifyHeading(text);
-    const current = used.get(base) || 0;
-    used.set(base, current + 1);
-    return current === 0 ? base : `${base}-${current}`;
-  };
 };
 
 const decodeHash = (href: string): string => {
@@ -361,32 +334,8 @@ const LIPPackagePage: React.FC = () => {
   }, [pkg?.projectUrl]);
 
   const markdownComponents = useMemo<Components>(() => {
-    const nextHeadingID = createHeadingSlugger();
-    const createHeading =
-      (tag: HeadingTag) =>
-      ({
-        children,
-        className,
-        id: headingID,
-        ...props
-      }: React.HTMLAttributes<HTMLHeadingElement> & {
-        children?: React.ReactNode;
-      }) =>
-        React.createElement(
-          tag,
-          {
-            ...props,
-            id:
-              typeof headingID === "string" && headingID.trim()
-                ? headingID
-                : nextHeadingID(collectNodeText(children)),
-            className,
-          },
-          children,
-        );
-
     return {
-      img: ({ src, alt, className, ...props }) => {
+      img: ({ src, alt, className, node: _node, ...props }) => {
         const resolvedSrc = resolveMarkdownUrl(src, githubRepoRef, "image");
         const badge = isBadgeImage(resolvedSrc);
         return (
@@ -397,15 +346,15 @@ const LIPPackagePage: React.FC = () => {
             loading="lazy"
             className={cn(
               className,
-              "max-w-full",
+              "max-w-full h-auto",
               badge
                 ? "!inline-block !align-middle !my-0 !mx-0 !rounded-none"
-                : "block my-4 rounded-xl",
+                : "inline-block align-middle rounded-lg",
             )}
           />
         );
       },
-      a: ({ href, children, className, ...props }) => {
+      a: ({ href, children, className, node: _node, ...props }) => {
         const resolvedHref = resolveMarkdownUrl(href, githubRepoRef, "link");
         const isHashAnchor = resolvedHref.startsWith("#");
         return (
@@ -428,15 +377,14 @@ const LIPPackagePage: React.FC = () => {
                   slugifyHeading(anchor),
                 ];
                 for (const candidate of candidates) {
-                  const target = document.getElementById(candidate);
+                  const target = tabsRef.current?.querySelector(
+                    `[id="${CSS.escape(candidate)}"], [id="${CSS.escape(`user-content-${candidate}`)}"]`,
+                  );
                   if (!(target instanceof HTMLElement)) continue;
                   target.scrollIntoView({
                     behavior: shouldDisableAnimations() ? "auto" : "smooth",
                     block: "start",
                   });
-                  if (window.location.hash !== `#${candidate}`) {
-                    window.history.replaceState(null, "", `#${candidate}`);
-                  }
                   break;
                 }
                 return;
@@ -451,12 +399,6 @@ const LIPPackagePage: React.FC = () => {
           </a>
         );
       },
-      h1: createHeading("h1"),
-      h2: createHeading("h2"),
-      h3: createHeading("h3"),
-      h4: createHeading("h4"),
-      h5: createHeading("h5"),
-      h6: createHeading("h6"),
     };
   }, [githubRepoRef]);
 
@@ -1369,8 +1311,8 @@ const LIPPackagePage: React.FC = () => {
                   )}
                 </div>
 
-                <div className="flex flex-col grow gap-3">
-                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground dark:text-zinc-100 pb-1">
+                <div className="flex min-w-0 flex-col grow gap-3">
+                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground dark:text-zinc-100 pb-1 break-words">
                     {pkg.name}
                   </h1>
 
@@ -1511,18 +1453,19 @@ const LIPPackagePage: React.FC = () => {
                   </Tabs.ListContainer>
 
                   <Tabs.Panel id="description">
-                    <div className="prose dark:prose-invert max-w-none">
+                    <div className="prose dark:prose-invert max-w-none min-w-0 break-words prose-pre:max-w-full prose-pre:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
                       {readmeLoading ? (
                         <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted dark:text-zinc-500">
                           <Spinner size="lg" color={"accent"} />
                           <p>{t("common.loading")}</p>
                         </div>
-                      ) : readmeContent ? (
+                      ) : readmeContent || pkg.description ? (
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeRaw, rehypeSlug, rehypeSanitize]}
                           components={markdownComponents}
                         >
-                          {readmeContent}
+                          {readmeContent || pkg.description}
                         </ReactMarkdown>
                       ) : (
                         <div className="flex flex-col items-center justify-center py-12 text-muted gap-3">
@@ -1611,230 +1554,15 @@ const LIPPackagePage: React.FC = () => {
                           </Select>
                         </div>
                       ) : null}
-                      {filesWithGameVersionState.length > 0 ? (
-                        <Table variant="secondary">
-                          <Table.ScrollContainer className="h-full">
-                            <Table.Content
-                              aria-label={t("lip.files.table_aria_label")}
-                            >
-                              <Table.Header
-                                className={cn(COMPONENT_STYLES.table.thead)}
-                              >
-                                <Table.Column
-                                  className={cn(COMPONENT_STYLES.table.th)}
-                                  isRowHeader
-                                >
-                                  {t("common.version")}
-                                </Table.Column>
-                                <Table.Column
-                                  className={cn(COMPONENT_STYLES.table.th)}
-                                >
-                                  {t("lip.files.ll_requirement")}
-                                </Table.Column>
-                                <Table.Column
-                                  className={cn(COMPONENT_STYLES.table.th)}
-                                >
-                                  {t("lip.files.dependencies")}
-                                </Table.Column>
-                                <Table.Column
-                                  className={cn(COMPONENT_STYLES.table.th)}
-                                >
-                                  {t("lip.files.game_versions_label")}
-                                </Table.Column>
-                                <Table.Column
-                                  className={cn(COMPONENT_STYLES.table.th)}
-                                >
-                                  {t("lip.files.action")}
-                                </Table.Column>
-                              </Table.Header>
-                              <Table.Body>
-                                {filesWithGameVersionState.map((fileState) => {
-                                  const { file } = fileState;
-                                  const dependencyEntries = Object.entries(
-                                    file.otherDependencies,
-                                  );
-
-                                  return (
-                                    <Table.Row
-                                      className={cn(
-                                        "group transition-colors hover:bg-surface/50 dark:hover:bg-zinc-800/30",
-                                      )}
-                                      key={file.version}
-                                      id={file.version}
-                                    >
-                                      <Table.Cell
-                                        className={cn(
-                                          "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
-                                        )}
-                                      >
-                                        <Chip
-                                          size="sm"
-                                          variant="soft"
-                                          className={"font-mono"}
-                                        >
-                                          <Chip.Label>
-                                            {file.version}
-                                          </Chip.Label>
-                                        </Chip>
-                                      </Table.Cell>
-                                      <Table.Cell
-                                        className={cn(
-                                          "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
-                                        )}
-                                      >
-                                        {file.llDependencyRanges.length > 0 ? (
-                                          <div className="text-xs text-foreground dark:text-zinc-300 break-all">
-                                            {file.llDependencyRanges.join(", ")}
-                                          </div>
-                                        ) : (
-                                          <span className="text-muted">-</span>
-                                        )}
-                                      </Table.Cell>
-                                      <Table.Cell
-                                        className={cn(
-                                          "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
-                                        )}
-                                      >
-                                        {dependencyEntries.length > 0 ? (
-                                          <Tooltip>
-                                            <span className="cursor-help text-xs text-foreground dark:text-zinc-300">
-                                              {t(
-                                                "lip.files.dependencies_count",
-                                                {
-                                                  count:
-                                                    dependencyEntries.length,
-                                                },
-                                              )}
-                                            </span>
-                                            <Tooltip.Content>
-                                              {
-                                                <div className="max-w-sm p-2 space-y-1">
-                                                  {dependencyEntries.map(
-                                                    ([key, value]) => (
-                                                      <div
-                                                        key={key}
-                                                        className="text-xs break-all"
-                                                      >
-                                                        <span className="font-semibold">
-                                                          {key}
-                                                        </span>
-                                                        : {value}
-                                                      </div>
-                                                    ),
-                                                  )}
-                                                </div>
-                                              }
-                                            </Tooltip.Content>
-                                          </Tooltip>
-                                        ) : (
-                                          <span className="text-muted">-</span>
-                                        )}
-                                      </Table.Cell>
-                                      <Table.Cell
-                                        className={cn(
-                                          "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
-                                        )}
-                                      >
-                                        {!fileState.hasLLRequirement ? (
-                                          <Chip
-                                            size="sm"
-                                            variant="soft"
-                                            color={"default"}
-                                          >
-                                            <Chip.Label>
-                                              {t(
-                                                "lip.files.game_versions_unrestricted",
-                                              )}
-                                            </Chip.Label>
-                                          </Chip>
-                                        ) : !mappingReady ? (
-                                          <Chip
-                                            size="sm"
-                                            variant="soft"
-                                            color={"default"}
-                                          >
-                                            <Chip.Label>
-                                              {t("common.loading")}
-                                            </Chip.Label>
-                                          </Chip>
-                                        ) : mappingUnavailable ? (
-                                          <Chip
-                                            size="sm"
-                                            variant="soft"
-                                            color={"warning"}
-                                          >
-                                            <Chip.Label>
-                                              {t(
-                                                "lip.files.game_versions_unavailable",
-                                              )}
-                                            </Chip.Label>
-                                          </Chip>
-                                        ) : fileState.supportedGameVersions
-                                            .length > 0 ? (
-                                          <div className="flex flex-wrap gap-1">
-                                            {fileState.supportedGameVersions.map(
-                                              (gameVersion) => (
-                                                <Chip
-                                                  key={`${file.version}-${gameVersion}`}
-                                                  size="sm"
-                                                  variant="soft"
-                                                  color={"default"}
-                                                >
-                                                  <Chip.Label>
-                                                    {gameVersion}
-                                                  </Chip.Label>
-                                                </Chip>
-                                              ),
-                                            )}
-                                          </div>
-                                        ) : (
-                                          <Chip
-                                            size="sm"
-                                            variant="soft"
-                                            color={"danger"}
-                                          >
-                                            <Chip.Label>
-                                              {t("contentpage.none")}
-                                            </Chip.Label>
-                                          </Chip>
-                                        )}
-                                      </Table.Cell>
-                                      <Table.Cell
-                                        className={cn(
-                                          "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
-                                        )}
-                                      >
-                                        <Button
-                                          size="sm"
-                                          onPress={() =>
-                                            openInstallDialog(file.version)
-                                          }
-                                          isDisabled={
-                                            instanceOptions.length === 0 ||
-                                            (fileState.hasLLRequirement &&
-                                              !mappingAvailable) ||
-                                            actionRunning
-                                          }
-                                          variant={"secondary"}
-                                        >
-                                          {t("lip.files.install")}
-                                        </Button>
-                                      </Table.Cell>
-                                    </Table.Row>
-                                  );
-                                })}
-                              </Table.Body>
-                            </Table.Content>
-                          </Table.ScrollContainer>
-                        </Table>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-12 text-muted border border-dashed border-border rounded-xl">
-                          <LuFileDigit size={48} className="mb-4 opacity-50" />
-                          <p className="text-lg font-medium">
-                            {t("common.no_results")}
-                          </p>
-                        </div>
-                      )}
+                      <BedrinthVersionList
+                        key={activePackageIdentifier}
+                        files={filesWithGameVersionState}
+                        packageName={pkg.name}
+                        mappingReady={mappingReady}
+                        mappingAvailable={mappingAvailable}
+                        installDisabled={instanceOptions.length === 0 || actionRunning}
+                        onInstall={openInstallDialog}
+                      />
                     </div>
                   </Tabs.Panel>
                 </Tabs>
@@ -1845,7 +1573,7 @@ const LIPPackagePage: React.FC = () => {
       </div>
 
       <UnifiedModal
-        size="md"
+        size="wide"
         isOpen={installDialogOpen}
         onOpenChange={(open) => {
           if (open) {
@@ -1858,48 +1586,23 @@ const LIPPackagePage: React.FC = () => {
         icon={<LuGamepad2 size={24} />}
         title={t("lip.files.select_instance_title")}
         isDismissable={!actionRunning}
-        footer={
-          <>
-            <Button
-              onPress={() => closeInstallDialog()}
-              isDisabled={actionRunning}
-              variant={"ghost"}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              onPress={() => void handleConfirmInstall()}
-              isDisabled={
-                !installDialogSelectedInstance ||
-                !installDialogTriggerVersion ||
-                dialogPackageStateLoading ||
-                !installDialogVersionInstallable ||
-                actionRunning
-              }
-              variant={"primary"}
-              isPending={actionRunning}
-              className={
-                "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20"
-              }
-            >
-              {({ isPending }) => (
-                <>
-                  <Spinner
-                    size="sm"
-                    color="current"
-                    className={isPending ? "" : "hidden"}
-                  />
-                  {t(installDialogPrimaryActionLabelKey)}
-                </>
-              )}
-            </Button>
-          </>
-        }
+        isPending={actionRunning}
+        showCancelButton
+        onCancel={closeInstallDialog}
+        onConfirm={() => void handleConfirmInstall()}
+        confirmText={t(installDialogPrimaryActionLabelKey)}
+        confirmButtonProps={{
+          isDisabled:
+            !installDialogSelectedInstance ||
+            !installDialogTriggerVersion ||
+            dialogPackageStateLoading ||
+            !installDialogVersionInstallable,
+        }}
       >
         <div className="space-y-4">
-          <p className="text-sm text-muted dark:text-zinc-400">
+          <ModalDescription>
             {t("curseforge.install.select_version_body")}
-          </p>
+          </ModalDescription>
           <Select
             placeholder={t("curseforge.install.select_version_placeholder")}
             isDisabled={actionRunning || instanceOptions.length === 0}
@@ -1958,36 +1661,12 @@ const LIPPackagePage: React.FC = () => {
               </ListBox>
             </Select.Popover>
           </Select>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-            <div className="min-w-0 text-sm leading-7 text-foreground dark:text-zinc-300">
-              <span>{t("lip.files.variant_label")}:</span>{" "}
-              <span>{activeVariantDisplayLabel || t("contentpage.none")}</span>
-            </div>
-            <div className="min-w-0 text-sm leading-7 text-foreground dark:text-zinc-300">
-              <span>{t("lip.files.installing_version_label")}:</span>{" "}
-              <span>
-                {installDialogTriggerVersion || t("contentpage.none")}
-              </span>
-            </div>
-            <div className="min-w-0 text-sm leading-7 text-foreground dark:text-zinc-300">
-              {dialogInstancePackageState?.loading ? (
-                t("lip.files.checking_current_installed_version")
-              ) : (
-                <>
-                  <span>{t("lip.files.current_installed_version_label")}:</span>{" "}
-                  <span>
-                    {dialogInstalledPackageVersion || t("contentpage.none")}
-                  </span>
-                </>
-              )}
-            </div>
-            <div className="min-w-0 text-sm leading-7 text-foreground dark:text-zinc-300">
-              <span>{t("lip.files.instance_game_version_label")}:</span>{" "}
-              <span>
-                {installDialogInstanceGameVersion || t("contentpage.none")}
-              </span>
-            </div>
-          </div>
+          <ModalDetails items={[
+            { label: t("lip.files.variant_label"), value: activeVariantDisplayLabel || t("contentpage.none") },
+            { label: t("lip.files.installing_version_label"), value: installDialogTriggerVersion || t("contentpage.none"), mono: true },
+            { label: t("lip.files.current_installed_version_label"), value: dialogInstancePackageState?.loading ? t("lip.files.checking_current_installed_version") : dialogInstalledPackageVersion || t("contentpage.none") },
+            { label: t("lip.files.instance_game_version_label"), value: installDialogInstanceGameVersion || t("contentpage.none"), mono: true },
+          ]} />
           {dialogRequiresLL && dialogLLStateLoading ? (
             <div className="text-xs text-muted dark:text-zinc-400">
               {t("lip.files.checking_ll_state")}
@@ -2028,7 +1707,7 @@ const LIPPackagePage: React.FC = () => {
       </UnifiedModal>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={lipMissingModalOpen}
         onOpenChange={setLipMissingModalOpen}
         type="warning"

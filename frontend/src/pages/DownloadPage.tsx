@@ -1,3 +1,4 @@
+import { ModalAction, ModalPanel, ModalDescription } from "@/components/ModalPrimitives";
 import {
   Button,
   ButtonGroup,
@@ -16,11 +17,11 @@ import {
   useOverlayState,
 } from "@heroui/react";
 import { PagePagination } from "@/components/PagePagination";
-
-("use client");
-import React, { useEffect, useMemo, useState, useRef } from "react";
+import React, { useEffect, useLayoutEffect, useMemo, useState, useRef } from "react";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
+
+("use client");
 
 import {
   FaDownload,
@@ -29,14 +30,9 @@ import {
   FaSearch,
   FaTrash,
   FaBoxOpen,
-  FaChevronDown,
-  FaTimes,
-  FaList,
-  FaCircleNotch,
-  FaCloudDownloadAlt,
-  FaServer,
+  FaChevronDown, FaCircleNotch,
+  FaCloudDownloadAlt
 } from "react-icons/fa";
-import { Events } from "@wailsio/runtime";
 import { createPortal } from "react-dom";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
@@ -50,6 +46,7 @@ import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import { ROUTES } from "@/constants/routes";
+import { useDownloadFilters } from "@/hooks/useDownloadFilters";
 
 type ItemType = "Preview" | "Release";
 
@@ -64,7 +61,6 @@ type VersionItem = {
 
 export const DownloadPage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const [isAnimating, setIsAnimating] = useState(true);
   const navigate = useNavigate();
   const { startDownload, isDownloading } = useDownloads();
   const [items, setItems] = useState<VersionItem[]>([]);
@@ -80,13 +76,17 @@ export const DownloadPage: React.FC = () => {
   } = useVersionStatus();
 
   const [query, setQuery] = useState("");
-  const [typeFilter, setTypeFilter] = useState<"all" | ItemType>("all");
-  const [statusFilter, setStatusFilter] = useState<
-    "all" | "downloaded" | "not_downloaded"
-  >("all");
-  const [llFilter, setLlFilter] = useState<"all" | "levilamina">("all");
+  const {
+    typeFilter,
+    setTypeFilter,
+    statusFilter,
+    setStatusFilter,
+    llFilter,
+    setLlFilter,
+  } = useDownloadFilters();
   const [rowsPerPage, setRowsPerPage] = useState<number>(6);
   const [page, setPage] = useState<number>(1);
+  const tableAreaRef = useRef<HTMLDivElement>(null);
 
   const {
     isOpen,
@@ -497,26 +497,47 @@ export const DownloadPage: React.FC = () => {
   ]);
 
   const totalPages = Math.max(1, Math.ceil(filtered.length / rowsPerPage));
-  const paged = filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage);
+  const paged = useMemo(
+    () => filtered.slice((page - 1) * rowsPerPage, page * rowsPerPage),
+    [filtered, page, rowsPerPage],
+  );
 
   useEffect(() => {
     setPage(1);
   }, [query, typeFilter, statusFilter, llFilter]);
 
-  useEffect(() => {
+  useLayoutEffect(() => {
+    const area = tableAreaRef.current;
+    if (!area) return;
+
     const calcRows = () => {
-      const rowH = 56;
-      const reserve = 280;
-      const computed = Math.max(
-        4,
-        Math.floor((window.innerHeight - reserve) / rowH),
+      const header = area.querySelector("thead");
+      const rows = Array.from(area.querySelectorAll("tbody tr"));
+      if (!header || paged.length === 0 || rows.length === 0) return;
+
+      // Measure the space left after the toolbar, warning and pagination.
+      // Actual row heights also account for font scaling and translated labels.
+      const rowHeight = Math.max(
+        ...rows.map((row) => row.getBoundingClientRect().height),
       );
-      setRowsPerPage(computed);
+      if (rowHeight <= 0) return;
+      setRowsPerPage(
+        Math.max(
+          1,
+          Math.floor(
+            (area.clientHeight - header.getBoundingClientRect().height - 1) /
+              rowHeight,
+          ),
+        ),
+      );
     };
     calcRows();
-    window.addEventListener("resize", calcRows);
-    return () => window.removeEventListener("resize", calcRows);
-  }, []);
+    const observer = new ResizeObserver(calcRows);
+    observer.observe(area);
+    const table = area.querySelector("table");
+    if (table) observer.observe(table);
+    return () => observer.disconnect();
+  }, [paged]);
 
   useEffect(() => {
     setPage(1);
@@ -566,22 +587,23 @@ export const DownloadPage: React.FC = () => {
   return (
     <>
       <PageContainer
-        className={cn("relative", isAnimating && "overflow-hidden")}
+        className="relative h-dvh min-h-0 overflow-hidden"
         animate={false}
       >
         <motion.div
+          className="shrink-0"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
-          <Card className={cn("flex-none", LAYOUT.GLASS_CARD.BASE)}>
-            <Card.Content className="p-4">
-              <div className="flex flex-col xl:flex-row gap-4 justify-between items-center">
-                <div className="flex items-center gap-3 w-full xl:max-w-md">
+          <Card className={cn("flex-none gap-0 p-0", LAYOUT.GLASS_CARD.BASE)}>
+            <Card.Content className="px-4 py-3">
+              <div className="flex flex-wrap gap-3 items-center">
+                <div className="flex min-w-0 flex-[1_1_14rem] items-center">
                   <TextField
                     aria-label={t("downloadpage.topcontent.input.placeholder")}
                     className={cn(
-                      "group",
+                      "group w-full min-w-0",
                       cn(COMPONENT_STYLES.input.mainWrapper, "h-full"),
                     )}
                     value={query}
@@ -615,7 +637,7 @@ export const DownloadPage: React.FC = () => {
                     </InputGroup>
                   </TextField>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 flex-wrap w-full xl:w-auto pb-1 xl:pb-0">
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
                   <Button
                     isDisabled={versionsLoading || refreshing}
                     onPress={async () => {
@@ -837,6 +859,7 @@ export const DownloadPage: React.FC = () => {
                   <Tooltip>
                     <Button
                       ref={tasksButtonRef}
+                      aria-label={t("download_manager.title")}
                       isIconOnly
                       onPress={() => navigate(ROUTES.downloadTasks)}
                       variant={isDownloading ? "primary" : "secondary"}
@@ -879,29 +902,26 @@ export const DownloadPage: React.FC = () => {
           animate="visible"
           variants={cardVariants}
           className="flex-1 min-h-0 flex flex-col"
-          onAnimationComplete={() => setIsAnimating(false)}
         >
-          <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
-            <Card.Content className="p-0 flex flex-col h-full overflow-hidden relative">
+          <Card className={cn("flex-1 min-h-0 gap-0 p-0 overflow-hidden", LAYOUT.GLASS_CARD.BASE)}>
+            <Card.Content className="p-0 flex flex-1 min-h-0 flex-col overflow-hidden relative">
               {versionsError && items.length > 0 && (
-                <div role="alert" className="flex items-center justify-between gap-3 p-3 text-sm bg-warning/10 text-foreground">
+                <div role="alert" className="flex shrink-0 items-center justify-between gap-3 p-3 text-sm bg-warning/10 text-foreground">
                   <span>{t("audit.primary.download.stale")}</span>
                   <Button size="sm" variant="secondary" onPress={reloadAll} isDisabled={versionsLoading}>{t("download_manager.actions.retry")}</Button>
                 </div>
               )}
               <Table
-                className={cn(
-                  "h-full",
-                  "h-full overflow-y-auto custom-scrollbar",
-                )}
+                ref={tableAreaRef}
+                className="flex-1 min-h-0 overflow-hidden"
                 variant="secondary"
               >
-                <Table.ScrollContainer className="h-full">
+                <Table.ScrollContainer className="h-full overflow-hidden">
                   <Table.Content
                     aria-label={
                       t("downloadpage.table.aria_label") as unknown as string
                     }
-                    className={"min-w-full"}
+                    className="min-w-full [&_td]:whitespace-nowrap"
                   >
                     <Table.Header
                       className={cn(
@@ -1252,7 +1272,7 @@ export const DownloadPage: React.FC = () => {
         <UnifiedModal
           isOpen={isOpen}
           onOpenChange={onOpenChange}
-          size="2xl"
+          size="wide"
           scrollBehavior="inside"
           type="primary"
           title={t("downloadpage.mirror.title")}
@@ -1262,26 +1282,22 @@ export const DownloadPage: React.FC = () => {
           showCancelButton={false}
           footer={
             <div className="flex w-full justify-end gap-2">
-              <Button
+              <ModalAction
                 onPress={onClose}
-                variant={"ghost"}
-                className={
-                  "font-medium text-muted dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-200"
-                }
+                variant="secondary"
               >
                 {t("common.cancel")}
-              </Button>
-              <Button
+              </ModalAction>
+              <ModalAction
                 onPress={() => {
                   startMirrorTests(mirrorUrls || []);
                 }}
                 variant={"secondary"}
-                className={"bg-surface-secondary dark:bg-white/10"}
               >
                 {<FaSync className={testing ? "animate-spin" : ""} />}
                 {t("downloadpage.mirror.retest")}
-              </Button>
-              <Button
+              </ModalAction>
+              <ModalAction
                 size="lg"
                 isDisabled={!selectedUrl}
                 onPress={async (e) => {
@@ -1322,21 +1338,17 @@ export const DownloadPage: React.FC = () => {
                   }
                 }}
                 variant={"secondary"}
-                className={cn(
-                  "rounded-full",
-                  "font-bold brand-primary-foreground shadow-lg shadow-brand-900/20 bg-brand-500 hover:bg-brand-500 hover:scale-[1.02] active:scale-[0.98] transition-transform",
-                )}
               >
                 {installMode ? null : <FaDownload />}
                 {installMode
                   ? t("downloadpage.mirror.install_selected")
                   : t("downloadpage.mirror.download_selected")}
-              </Button>
+              </ModalAction>
             </div>
           }
         >
           <div className="flex flex-col gap-6">
-            <div className="flex flex-col gap-4 p-4 bg-surface-secondary dark:bg-zinc-800/50 rounded-2xl border border-border/50 dark:border-white/5">
+            <ModalPanel className="flex flex-col gap-4">
               <div className="flex items-center gap-2">
                 <Chip
                   size="sm"
@@ -1392,7 +1404,7 @@ export const DownloadPage: React.FC = () => {
                   );
                 })()}
               </div>
-            </div>
+            </ModalPanel>
 
             {mirrorUrls && mirrorUrls.length > 0 ? (
               <div className="flex flex-col gap-4">
@@ -1635,9 +1647,9 @@ export const DownloadPage: React.FC = () => {
           onConfirm={installErrorDisclosure.close}
           showCancelButton={false}
         >
-          <div className="text-base text-foreground dark:text-zinc-300 font-bold">
+          <ModalDescription>
             {trErr(installError)}
-          </div>
+          </ModalDescription>
         </UnifiedModal>
 
         {/* Install progress modal */}
@@ -1647,15 +1659,14 @@ export const DownloadPage: React.FC = () => {
           type="primary"
           title={t("downloadpage.install.title")}
           icon={<Spinner size="lg" color={"accent"} />}
-          hideCloseButton
           isDismissable={false}
           showConfirmButton={false}
           showCancelButton={false}
         >
           <div className="flex flex-col gap-6">
-            <div className="text-base text-foreground dark:text-zinc-300 font-bold">
+            <ModalDescription>
               {t("downloadpage.install.hint")}
-            </div>
+            </ModalDescription>
             <div className="flex items-center gap-3">
               <ProgressBar
                 aria-label="install-progress"
@@ -1710,12 +1721,12 @@ export const DownloadPage: React.FC = () => {
               </div>
             ) : null}
             {installingTargetName ? (
-              <div className="p-3 bg-surface-secondary/50 dark:bg-zinc-800/50 rounded-xl border border-border/50 dark:border-zinc-700/50 text-sm text-foreground dark:text-zinc-400 font-medium">
+              <ModalPanel className="font-medium">
                 {t("downloadpage.install.target")}:{" "}
                 <span className="font-mono text-foreground dark:text-zinc-200 font-bold">
                   {installingTargetName}
                 </span>
-              </div>
+              </ModalPanel>
             ) : null}
           </div>
         </UnifiedModal>

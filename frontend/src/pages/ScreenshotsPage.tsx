@@ -1,3 +1,4 @@
+import { ModalDescription, ModalAction } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -567,13 +568,10 @@ export default function ScreenshotsPage() {
       <BaseModal
         isOpen={previewOpen}
         onOpenChange={previewOnOpenChange}
-        size="5xl"
-        hideCloseButton={true}
+        size="detail"
         isDismissable={true}
-        scrollBehavior="normal"
-        className={
-          "w-[min(94vw,1040px)] max-w-[1040px] max-h-[calc(100vh-2.5rem)] overflow-hidden bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl"
-        }
+        scrollBehavior="inside"
+        className="overflow-hidden"
         containerClassName={"overflow-hidden"}
       >
         {({ close: onClose }) => (
@@ -658,7 +656,7 @@ export default function ScreenshotsPage() {
                     ) : previewShot?.imageError ? (
                       <div role="alert" className="flex flex-col items-center gap-3 p-4 text-center">
                         <p>{t("contentpage.screenshot_image_failed", { name: previewShot.name })}</p>
-                        <p className="text-sm text-muted select-text">{previewShot.imageError}</p>
+                        <ModalDescription className="select-text">{previewShot.imageError}</ModalDescription>
                         <Button variant="secondary" onPress={() => void retryImage(previewShot)}>{t("common.retry")}</Button>
                       </div>
                     ) : (
@@ -706,7 +704,7 @@ export default function ScreenshotsPage() {
                 {t("contentpage.screenshot_viewer_nav_hint")}
               </div>
               <div className="flex items-center justify-end gap-2">
-                <Button
+                <ModalAction
                   onPress={() => {
                     if (activeShot?.dir) {
                       OpenPathDir(activeShot.dir);
@@ -715,21 +713,16 @@ export default function ScreenshotsPage() {
                     }
                   }}
                   variant={"secondary"}
-                  className={cn(
-                    "rounded-full",
-                    "bg-surface-secondary/80 dark:bg-zinc-800/80 text-foreground dark:text-zinc-100",
-                  )}
                 >
                   {<FaFolderOpen />}
                   {t("common.open")}
-                </Button>
-                <Button
+                </ModalAction>
+                <ModalAction
                   onPress={onClose}
                   variant={"primary"}
-                  className={cn("rounded-full", "font-semibold shadow-lg")}
                 >
                   {t("common.close")}
-                </Button>
+                </ModalAction>
               </div>
             </BaseModalFooter>
           </>

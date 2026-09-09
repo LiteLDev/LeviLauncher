@@ -20,7 +20,6 @@ import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
-import { PageHeader } from "@/components/PageHeader";
 
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
@@ -235,33 +234,30 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
         animate={false}
       >
         <motion.div
+          className="shrink-0"
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
           onAnimationComplete={() => setIsAnimating(false)}
         >
           <Card className={cn("w-full", LAYOUT.GLASS_CARD.BASE)}>
-            <Card.Header className="flex flex-col gap-6 p-6">
-              <PageHeader
-                className="w-full"
-                title={t("launcherpage.version_select.title")}
-                titleClassName="text-left pb-1"
-              />
+            <Card.Header className="px-4 py-3">
+              <h1 className="sr-only">{t("launcherpage.version_select.title")}</h1>
               <div className="flex w-full flex-wrap items-center gap-3">
                 <Tabs
                   selectedKey={activeTab}
                   onSelectionChange={(k) => setActiveTab(k as any)}
                   variant="primary"
+                  className="w-auto shrink-0"
                 >
-                  <Tabs.ListContainer>
                     <Tabs.List
                       aria-label={"Filter versions"}
-                      className={COMPONENT_STYLES.tabs.tabList}
+                      className={cn(COMPONENT_STYLES.tabs.tabList, "w-max flex-nowrap")}
                     >
                       <Tabs.Tab
                         key="all"
                         id={"all"}
-                        className={COMPONENT_STYLES.tabs.tabContent}
+                        className={cn(COMPONENT_STYLES.tabs.tabContent, "w-auto flex-none whitespace-nowrap px-3")}
                       >
                         {t("versions.tab.all")}
                         <Tabs.Indicator
@@ -271,7 +267,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                       <Tabs.Tab
                         key="release"
                         id={"release"}
-                        className={COMPONENT_STYLES.tabs.tabContent}
+                        className={cn(COMPONENT_STYLES.tabs.tabContent, "w-auto flex-none whitespace-nowrap px-3")}
                       >
                         {t("versions.tab.release")}
                         <Tabs.Indicator
@@ -281,7 +277,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                       <Tabs.Tab
                         key="preview"
                         id={"preview"}
-                        className={COMPONENT_STYLES.tabs.tabContent}
+                        className={cn(COMPONENT_STYLES.tabs.tabContent, "w-auto flex-none whitespace-nowrap px-3")}
                       >
                         {t("versions.tab.preview")}
                         <Tabs.Indicator
@@ -289,12 +285,11 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                         />
                       </Tabs.Tab>
                     </Tabs.List>
-                  </Tabs.ListContainer>
                 </Tabs>
-                <div className="flex-1 min-w-[200px]">
+                <div className="min-w-0 flex-[1_1_12rem]">
                   <TextField
                     aria-label={t("common.search_placeholder") as string}
-                    className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
+                    className={cn("group w-full min-w-0", COMPONENT_STYLES.input.mainWrapper)}
                     value={query}
                     onChange={setQuery}
                   >
@@ -325,15 +320,14 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                     </InputGroup>
                   </TextField>
                 </div>
-                <div className="flex items-center gap-2">
-                  <div className="min-w-[140px]">
+                <div className="shrink-0">
                     <Dropdown>
                       <Button
                         size="sm"
                         variant={"secondary"}
                         className={cn(
                           COMPONENT_STYLES.dropdownTriggerButton,
-                          "w-full justify-between",
+                          "whitespace-nowrap rounded-full",
                         )}
                       >
                         {sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />}
@@ -399,18 +393,14 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                         </Dropdown.Menu>
                       </Dropdown.Popover>
                     </Dropdown>
-                  </div>
                 </div>
-                <Chip variant="soft" color={"default"}>
-                  <Chip.Label>{flatItems.length}</Chip.Label>
-                </Chip>
               </div>
             </Card.Header>
           </Card>
         </motion.div>
 
         <motion.div
-          className="grid gap-4 grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4"
+          className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]"
           layout
           variants={listVariants}
           initial="hidden"
@@ -481,15 +471,15 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                   </Tooltip>
                   <div className="flex items-center justify-between gap-2 w-full min-w-0">
                     <div className="font-bold text-lg truncate min-w-0 flex-1">{it.name}</div>
-                    <div className="flex items-center gap-2">
-                      {it.isPreview ? (
+                    <div className="flex shrink-0 items-center gap-2">
+                      {activeTab === "all" && (it.isPreview ? (
                         <Chip
                           size="sm"
                           variant="soft"
                           color={"warning"}
                           className={"shrink-0"}
                         >
-                          <Chip.Label>Preview</Chip.Label>
+                          <Chip.Label>{t("versions.tab.preview")}</Chip.Label>
                         </Chip>
                       ) : (
                         <Chip
@@ -498,9 +488,9 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                           color={"success"}
                           className={"shrink-0"}
                         >
-                          <Chip.Label>Release</Chip.Label>
+                          <Chip.Label>{t("versions.tab.release")}</Chip.Label>
                         </Chip>
-                      )}
+                      ))}
                       <Button
                         isIconOnly
                         size="sm"
@@ -527,16 +517,16 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                       </Button>
                     </div>
                   </div>
-                  <div className="flex items-center gap-2 text-muted dark:text-zinc-400 shrink-0 text-sm">
+                  <div className="flex min-w-0 items-center gap-2 text-muted dark:text-zinc-400 text-sm">
                     {(() => {
                       const u = logoMap.get(it.name);
                       return u ? (
-                        <img src={u} alt="logo" className="h-4 w-4 rounded" />
+                        <img src={u} alt="" className="h-4 w-4 shrink-0 rounded" />
                       ) : (
-                        <div className="h-4 w-4 rounded bg-surface-tertiary" />
+                        <div className="h-4 w-4 shrink-0 rounded bg-surface-tertiary" />
                       );
                     })()}
-                    <span>
+                    <span className="truncate" title={it.version}>
                       Vanilla{" "}
                       {it.version || t("launcherpage.version_select.unknown")}
                     </span>

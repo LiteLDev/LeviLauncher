@@ -1,6 +1,7 @@
+import { ModalDescription } from "@/components/ModalPrimitives";
 import { Card, ProgressBar } from "@heroui/react";
 
-import React, { useEffect, useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useTranslation } from "react-i18next";
 import { FaRocket } from "react-icons/fa";
@@ -319,22 +320,21 @@ export default function UpdatingPage() {
       </motion.div>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={!!errorCode}
         type="error"
         title={t("updating.failed_title")}
         confirmText={t("audit.mods.close_update_window")}
         onConfirm={() => Window.Close()}
         showCancelButton={false}
-        hideCloseButton
         isDismissable={false}
       >
         <div role="alert" className="select-text text-foreground text-sm wrap-break-word whitespace-pre-wrap">
           {errorText}
         </div>
-        <p className="mt-3 text-sm text-muted">
+        <ModalDescription className="mt-3">
           {t("audit.mods.update_recovery")}
-        </p>
+        </ModalDescription>
       </UnifiedModal>
     </PageContainer>
   );

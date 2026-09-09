@@ -1,3 +1,4 @@
+import { ModalDescription } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -15,7 +16,7 @@ import {
   useOverlayState,
 } from "@heroui/react";
 
-import React, { useEffect, useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 
 import { useLocation, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
@@ -1194,7 +1195,7 @@ export default function InstallPage() {
         </AnimatePresence>
       </div>
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={rcOpen}
         onOpenChange={rcOnOpenChange}
         type="warning"
@@ -1208,7 +1209,7 @@ export default function InstallPage() {
           proceedInstall();
         }}
       >
-        <div className="text-sm text-foreground dark:text-zinc-300 space-y-2">
+        <ModalDescription className="space-y-2">
           <p>
             {t("mods.rc_warning.body_1", {
               version: rcVersion,
@@ -1218,7 +1219,7 @@ export default function InstallPage() {
             {t("mods.rc_warning.body_2")}
           </p>
           <p>{t("mods.rc_warning.body_3")}</p>
-        </div>
+        </ModalDescription>
       </UnifiedModal>
     </PageContainer>
   );

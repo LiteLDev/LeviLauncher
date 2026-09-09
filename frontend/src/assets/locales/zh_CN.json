@@ -132,7 +132,7 @@
       "mods_card": "Mods 卡片会显示当前实例已启用的模组，并可一键进入完整 Mods 页面。",
       "content_counts_card": "内容管理卡片会显示世界、资源包和行为包数量，点击对应行可直接进入页面。",
       "incompatible_resource_packs": "检测到不兼容资源包时，可点击警告行直接查看需要处理的项目。",
-      "content_download_sources": "下载卡片可直接进入 CurseForge 和 lip，方便在启动器内获取内容。",
+      "content_download_sources": "下载卡片可直接进入 CurseForge 和 Bedrinth，方便在启动器内获取内容。",
       "settings_personalize": "可在设置中调整主题、配色、背景等外观选项，让启动器更符合你的使用习惯。",
       "settings_storage_path": "你可以在设置中修改存储路径；迁移或保存内容前，请先确认目标目录可写。",
       "download_mirror": "如果下载速度较慢，可在设置中切换镜像源或检查相关网络选项。",
@@ -1236,6 +1236,8 @@
       "checking_ll_state": "正在检查 LeviLamina 状态...",
       "dependencies": "依赖",
       "dependencies_count": "{{count}} 个依赖",
+      "game_versions_unknown": "未找到匹配的游戏版本",
+      "version_count": "{{count}} 个版本",
       "game_versions_label": "游戏版本",
       "game_versions_unavailable": "游戏版本映射不可用",
       "game_versions_unrestricted": "无游戏版本限制",
@@ -1256,7 +1258,7 @@
       "ll_requirement": "LL 依赖",
       "select_instance_title": "选择目标实例",
       "select_version_incompatible_hint": "版本 {{version}} 与游戏版本 {{gameVersion}} 不兼容。",
-      "tab_label": "文件",
+      "tab_label": "版本",
       "table_aria_label": "包文件表格",
       "install_success": "安装成功",
       "upgrade_success": "升级成功",
@@ -1268,8 +1270,8 @@
     },
     "guide": {
       "open_button": "开发者指南",
-      "title": "LIP 开发者指南",
-      "description": "如果你希望自己的模组出现在 LeviLauncher 的 LIP 页面中，请按照 LIP 的 package_manifest 规范发布。",
+      "title": "Bedrinth 开发者指南",
+      "description": "如果你希望自己的模组出现在 LeviLauncher 的 Bedrinth 页面中，请按照 LIP 的 package_manifest 规范发布。",
       "manifest_hint": "这个弹窗只提供面向开发者的快速说明。字段命名、必填项、示例与校验细则请以官方文档为准。",
       "variant_hint": "仅当 variant 的 label 包含 client 时，才会被启动器收录。默认情况下请使用 \"label\": \"client\"；子扩展请使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
       "docs_button": "查看完整规范",
@@ -1296,7 +1298,7 @@
       "name": "名称",
       "updated": "最近更新"
     },
-    "title": "lip 内容",
+    "title": "Bedrinth",
     "package": {
       "confirm_install_title": "确认安装",
       "confirm_install_body": "确定要为实例 {{instance}} {{action}} {{package}} {{version}} 吗？"

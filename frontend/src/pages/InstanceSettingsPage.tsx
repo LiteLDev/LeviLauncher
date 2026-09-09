@@ -1,3 +1,4 @@
+import { ModalDescription, ModalPanel, ModalAction, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -32,7 +33,6 @@ import { formatBytes } from "@/utils/formatting";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import { FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   GetVersionLogoDataUrl,
   RemoveVersionLogo,
@@ -979,7 +979,7 @@ export default function InstanceSettingsPage() {
       <UnifiedModal
         isOpen={vs.backupOpen}
         onOpenChange={vs.onInstanceBackupOpenChange}
-        size="lg"
+        size="wide"
         type="primary"
         title={t("versions.edit.backup.dialog_title")}
         confirmText={t("versions.edit.backup.confirm")}
@@ -994,18 +994,18 @@ export default function InstanceSettingsPage() {
         }}
       >
         <div className="space-y-4">
-          <p className="text-sm leading-6 text-muted dark:text-zinc-400">
+          <ModalDescription>
             {t("versions.edit.backup.dialog_body")}
-          </p>
+          </ModalDescription>
           {vs.backupHasSharedScope ? (
-            <div className="rounded-2xl border border-amber-200/70 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300 dark:text-amber-300">
+            <ModalNotice tone="warning">
               {t("versions.edit.backup.shared_warning")}
-            </div>
+            </ModalNotice>
           ) : null}
           {vs.backupFullModeSelected ? (
-            <div className="rounded-2xl border border-rose-200/70 dark:border-rose-500/30 bg-rose-50/80 dark:bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+            <ModalNotice tone="danger">
               {t("versions.edit.backup.mode.full.warning")}
-            </div>
+            </ModalNotice>
           ) : null}
           <div className="flex flex-col gap-3">
             {vs.backupScopes.map((scope) => {
@@ -1119,9 +1119,9 @@ export default function InstanceSettingsPage() {
                         </Select>
                       ) : null}
                       {isSelected && selectedMode?.warning ? (
-                        <div className="rounded-2xl border border-rose-200/70 dark:border-rose-500/30 bg-rose-50/80 dark:bg-rose-500/10 px-3 py-2 text-xs text-rose-700 dark:text-rose-300">
+                        <ModalNotice tone="danger">
                           {t(selectedMode.warning)}
-                        </div>
+                        </ModalNotice>
                       ) : null}
                       {isSelected &&
                       scope.key === "mods" &&
@@ -1163,25 +1163,17 @@ export default function InstanceSettingsPage() {
 
       <UnifiedModal
         isOpen={vs.backingUpInstance}
-        hideCloseButton
         isDismissable={false}
         type="primary"
         title={t("versions.edit.backup.progress_title")}
       >
-        <div className="text-base font-medium text-foreground dark:text-zinc-300 mb-4">
-          {t("versions.edit.backup.progress_body")}
-        </div>
-        <ProgressBar size="sm" isIndeterminate aria-label="Backing up instance">
-          <ProgressBar.Track>
-            <ProgressBar.Fill className={"bg-brand-500"} />
-          </ProgressBar.Track>
-        </ProgressBar>
+        <ModalProgress label={t("versions.edit.backup.progress_title")} description={t("versions.edit.backup.progress_body")} />
       </UnifiedModal>
 
       <UnifiedModal
         isOpen={vs.restoreOpen}
         onOpenChange={vs.onInstanceRestoreOpenChange}
-        size="5xl"
+        size="detail"
         type="primary"
         title={t("versions.edit.backup.restore.dialog_title")}
         confirmText={t("versions.edit.backup.restore.confirm")}
@@ -1199,10 +1191,10 @@ export default function InstanceSettingsPage() {
         }}
       >
         <div className="space-y-4">
-          <p className="text-sm leading-6 text-muted dark:text-zinc-400">
+          <ModalDescription>
             {t("versions.edit.backup.restore.dialog_body")}
-          </p>
-          <div className="rounded-2xl bg-surface/70 dark:bg-zinc-800/80 border border-border/70 dark:border-white/10 px-4 py-3">
+          </ModalDescription>
+          <ModalPanel>
             <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-start">
               <div className="min-w-0">
                 <div className="text-xs text-muted dark:text-zinc-400 mb-1">
@@ -1212,20 +1204,20 @@ export default function InstanceSettingsPage() {
                   {vs.restoreArchiveInfo?.archiveName || "-"}
                 </div>
               </div>
-              <div className="rounded-2xl bg-surface-secondary/55 dark:bg-white/5 border border-border/60 dark:border-white/10 px-3 py-2">
+              <ModalPanel>
                 <div className="text-xs text-muted dark:text-zinc-400">
                   {t("versions.edit.backup.restore.created_at")}
                 </div>
-                <div className="text-sm font-medium text-foreground dark:text-zinc-300">
+                <ModalDescription>
                   {vs.restoreArchiveCreatedAtText || "-"}
-                </div>
-              </div>
+                </ModalDescription>
+              </ModalPanel>
             </div>
-          </div>
+          </ModalPanel>
           {vs.restoreHasHighRiskScope ? (
-            <div className="rounded-2xl border border-rose-200/70 dark:border-rose-500/30 bg-rose-50/80 dark:bg-rose-500/10 px-4 py-3 text-sm text-rose-700 dark:text-rose-300">
+            <ModalNotice tone="danger">
               {t("versions.edit.backup.mode.full.warning")}
-            </div>
+            </ModalNotice>
           ) : null}
           <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/25 dark:bg-white/5 px-4 py-4 space-y-3">
             <div className="flex flex-wrap items-center gap-2">
@@ -1305,12 +1297,12 @@ export default function InstanceSettingsPage() {
                         scope.warnings.length > 0 ? (
                           <div className="space-y-2">
                             {scope.warnings.map((warning) => (
-                              <div
+                              <ModalNotice
                                 key={`${scope.key}-${warning}`}
-                                className="rounded-2xl border border-rose-200/70 dark:border-rose-500/30 bg-rose-50/80 dark:bg-rose-500/10 px-3 py-2 text-xs text-rose-700 dark:text-rose-300"
+                                tone="danger"
                               >
                                 {t(warning)}
-                              </div>
+                              </ModalNotice>
                             ))}
                           </div>
                         ) : null}
@@ -1330,11 +1322,11 @@ export default function InstanceSettingsPage() {
               ) : null}
               {!vs.restoreConflictLoading && vs.restoreConflicts.length > 0 ? (
                 <>
-                  <div className="rounded-2xl border border-amber-200/70 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300 dark:text-amber-300">
+                  <ModalNotice tone="warning">
                     {t("versions.edit.backup.restore.conflict_summary", {
                       count: vs.restoreConflicts.length,
                     })}
-                  </div>
+                  </ModalNotice>
                   <div className="flex flex-col gap-3">
                     {restoreConflictGroups.map((group) => (
                       <div
@@ -1623,9 +1615,9 @@ export default function InstanceSettingsPage() {
                                                 "versions.edit.backup.restore.backup_side_label",
                                               )}
                                             </div>
-                                            <div className="text-sm font-medium text-foreground dark:text-zinc-100 break-all">
+                                            <ModalDescription className="break-all">
                                               {conflict.backupSummary || "-"}
-                                            </div>
+                                            </ModalDescription>
                                           </div>
                                           <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/70 dark:bg-white/5 px-3 py-3 space-y-2">
                                             <div className="text-[11px] uppercase tracking-wide text-muted dark:text-zinc-400">
@@ -1633,9 +1625,9 @@ export default function InstanceSettingsPage() {
                                                 "versions.edit.backup.restore.current_side_label",
                                               )}
                                             </div>
-                                            <div className="text-sm font-medium text-foreground dark:text-zinc-100 break-all">
+                                            <ModalDescription className="break-all">
                                               {conflict.currentSummary || "-"}
-                                            </div>
+                                            </ModalDescription>
                                           </div>
                                         </div>
                                       ) : null}
@@ -1661,7 +1653,7 @@ export default function InstanceSettingsPage() {
                                             {conflict.backupPath ||
                                             conflict.currentPath ? (
                                               <div className="grid gap-3 md:grid-cols-2">
-                                                <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface-secondary/60 dark:bg-zinc-800/70 px-3 py-3 space-y-2">
+                                                <ModalPanel className="space-y-2">
                                                   <div className="text-xs uppercase tracking-wide text-muted dark:text-zinc-400">
                                                     {t(
                                                       "versions.edit.backup.restore.backup_path_label",
@@ -1670,8 +1662,8 @@ export default function InstanceSettingsPage() {
                                                   <div className="font-mono text-xs text-foreground dark:text-zinc-300 break-all">
                                                     {conflict.backupPath || "-"}
                                                   </div>
-                                                </div>
-                                                <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface-secondary/60 dark:bg-zinc-800/70 px-3 py-3 space-y-2">
+                                                </ModalPanel>
+                                                <ModalPanel className="space-y-2">
                                                   <div className="text-xs uppercase tracking-wide text-muted dark:text-zinc-400">
                                                     {t(
                                                       "versions.edit.backup.restore.current_path_label",
@@ -1681,7 +1673,7 @@ export default function InstanceSettingsPage() {
                                                     {conflict.currentPath ||
                                                       "-"}
                                                   </div>
-                                                </div>
+                                                </ModalPanel>
                                               </div>
                                             ) : null}
                                             {Array.isArray(
@@ -1696,9 +1688,9 @@ export default function InstanceSettingsPage() {
                                                       key={`${conflict.id}-${field.key}`}
                                                       className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/40 dark:bg-white/5 px-3 py-3 space-y-2"
                                                     >
-                                                      <div className="text-xs font-semibold text-foreground dark:text-zinc-200">
+                                                      <ModalDescription>
                                                         {t(field.label)}
-                                                      </div>
+                                                      </ModalDescription>
                                                       <div className="grid gap-2 md:grid-cols-2">
                                                         <div className="rounded-xl bg-surface-secondary/80 dark:bg-white/5 px-3 py-2">
                                                           <div className="text-[11px] uppercase tracking-wide text-muted dark:text-zinc-400">
@@ -1767,35 +1759,16 @@ export default function InstanceSettingsPage() {
 
       <UnifiedModal
         isOpen={vs.restoringInstance}
-        hideCloseButton
         isDismissable={false}
         type="primary"
         title={t("versions.edit.backup.restore.progress_title")}
       >
-        <div className="space-y-4">
-          <div className="space-y-1">
-            <div className="text-base font-medium text-foreground dark:text-zinc-200">
-              {vs.restoreProgressText ||
-                t("versions.edit.backup.restore.progress_body")}
-            </div>
-            {vs.restoreProgressStepText ? (
-              <div className="text-sm text-muted dark:text-zinc-400">
-                {vs.restoreProgressStepText}
-              </div>
-            ) : null}
-          </div>
-          <ProgressBar
-            size="sm"
-            value={vs.restoreProgress ? vs.restoreProgressPercent : undefined}
-            isIndeterminate={!vs.restoreProgress}
-            aria-label="Restoring instance backup"
-          >
-            {!!vs.restoreProgress && <ProgressBar.Output />}
-            <ProgressBar.Track>
-              <ProgressBar.Fill className={"bg-brand-500"} />
-            </ProgressBar.Track>
-          </ProgressBar>
-        </div>
+        <ModalProgress
+          label={t("versions.edit.backup.restore.progress_title")}
+          description={vs.restoreProgressText || t("versions.edit.backup.restore.progress_body")}
+          detail={vs.restoreProgressStepText}
+          value={vs.restoreProgress ? vs.restoreProgressPercent : undefined}
+        />
       </UnifiedModal>
 
       <UnifiedModal
@@ -1803,56 +1776,51 @@ export default function InstanceSettingsPage() {
         onOpenChange={(open) => {
           if (!open) vs.setBackupSuccessOpen(false);
         }}
-        size="md"
+        size="standard"
         type="success"
         title={t("versions.edit.backup.success_title")}
         icon={<FiCheckCircle className="w-6 h-6" />}
         footer={
           <>
-            <Button
+            <ModalAction
               onPress={() => vs.setBackupSuccessOpen(false)}
-              variant={"ghost"}
-              className={"rounded-full"}
+              variant="secondary"
             >
               {t("launcherpage.delete.complete.close_button")}
-            </Button>
-            <Button
+            </ModalAction>
+            <ModalAction
               onPress={async () => {
                 await vs.openInstanceBackupDirectory();
                 vs.setBackupSuccessOpen(false);
               }}
               variant={"primary"}
-              className={cn(
-                "rounded-full",
-                "font-bold shadow-lg shadow-brand-500/20",
-              )}
             >
               {t("versions.edit.backup.open_dir")}
-            </Button>
+            </ModalAction>
           </>
         }
       >
-        <div className="space-y-3 text-foreground dark:text-zinc-300">
-          <p className="text-base font-medium">
+        <ModalDescription className="space-y-3">
+          <ModalDescription>
             {t("versions.edit.backup.success_body")}
-          </p>
-          <div className="rounded-2xl bg-surface-secondary/60 dark:bg-zinc-800/80 border border-border/60 dark:border-white/10 px-4 py-3">
+          </ModalDescription>
+          <ModalPanel>
             <div className="text-xs text-muted dark:text-zinc-400 mb-1">
               {t("versions.edit.backup.archive_label")}
             </div>
             <div className="font-mono text-sm break-all text-foreground dark:text-zinc-100">
               {vs.backupArchiveName || "-"}
             </div>
-          </div>
-          <div className="rounded-2xl bg-surface-secondary/60 dark:bg-zinc-800/80 border border-border/60 dark:border-white/10 px-4 py-3">
+          </ModalPanel>
+          <ModalPanel>
             <div className="text-xs text-muted dark:text-zinc-400 mb-1">
               {t("versions.edit.backup.location_label")}
             </div>
             <div className="font-mono text-sm break-all text-foreground dark:text-zinc-100">
               {vs.backupResult?.backupDir || vs.backupInfo?.backupDir || "-"}
             </div>
-          </div>
-        </div>
+          </ModalPanel>
+        </ModalDescription>
       </UnifiedModal>
 
       <UnifiedModal
@@ -1860,7 +1828,7 @@ export default function InstanceSettingsPage() {
         onOpenChange={(open) => {
           if (!open) vs.setRestoreResultOpen(false);
         }}
-        size="lg"
+        size="wide"
         type={vs.restoreResultType}
         title={t(vs.restoreResultTitleKey)}
         icon={
@@ -1871,17 +1839,16 @@ export default function InstanceSettingsPage() {
           )
         }
         footer={
-          <Button
+          <ModalAction
             onPress={() => vs.setRestoreResultOpen(false)}
-            variant={"ghost"}
-            className={"rounded-full"}
+            variant="secondary"
           >
             {t("launcherpage.delete.complete.close_button")}
-          </Button>
+          </ModalAction>
         }
       >
-        <div className="space-y-3 text-foreground dark:text-zinc-300">
-          <p className="text-base font-medium">
+        <ModalDescription className="space-y-3">
+          <ModalDescription>
             {t(
               vs.restoreResult?.status === "success"
                 ? "versions.edit.backup.restore.success_body"
@@ -1889,11 +1856,11 @@ export default function InstanceSettingsPage() {
                   ? "versions.edit.backup.restore.partial_body"
                   : "versions.edit.backup.restore.failed_body",
             )}
-          </p>
+          </ModalDescription>
           {(vs.restoreResult?.scopeResults || []).map((scopeResult) => (
-            <div
+            <ModalPanel
               key={`${scopeResult.key}-${scopeResult.mode}`}
-              className="rounded-2xl bg-surface-secondary/60 dark:bg-zinc-800/80 border border-border/60 dark:border-white/10 px-4 py-3 space-y-3"
+              className="space-y-3"
             >
               <div className="flex flex-wrap items-center gap-2">
                 <span className="font-semibold text-foreground dark:text-zinc-100">
@@ -1959,9 +1926,9 @@ export default function InstanceSettingsPage() {
                   ))}
                 </div>
               ) : null}
-            </div>
+            </ModalPanel>
           ))}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       <UnifiedModal
@@ -1969,15 +1936,14 @@ export default function InstanceSettingsPage() {
         onOpenChange={(open) => {
           if (!open) vs.setUnregisterOpen(false);
         }}
-        hideCloseButton
         isDismissable={false}
         type="warning"
         title={t("versions.edit.unregister_progress.title")}
         icon={<FiAlertTriangle className="w-6 h-6" />}
       >
-        <div className="text-base font-medium text-foreground dark:text-zinc-300 mb-4">
+        <ModalDescription className="mb-4">
           {t("versions.edit.unregister_progress.body")}
-        </div>
+        </ModalDescription>
         <ProgressBar size="sm" isIndeterminate aria-label="Unregistering">
           <ProgressBar.Track>
             <ProgressBar.Fill className={"bg-amber-500"} />
@@ -1990,7 +1956,7 @@ export default function InstanceSettingsPage() {
         onOpenChange={(open) => {
           if (!open) vs.setUnregisterSuccessOpen(false);
         }}
-        size="md"
+        size="standard"
         type="success"
         title={t("versions.edit.unregister_success.title")}
         icon={<FiCheckCircle className="w-6 h-6" />}
@@ -2000,9 +1966,9 @@ export default function InstanceSettingsPage() {
         confirmText={t("launcherpage.delete.complete.close_button")}
         showCancelButton={false}
       >
-        <div className="text-base font-medium text-foreground dark:text-zinc-300">
+        <ModalDescription>
           {t("versions.edit.unregister_success.body")}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       <UnifiedModal
@@ -2014,19 +1980,18 @@ export default function InstanceSettingsPage() {
         title={t("lip.guard.title")}
         isDismissable={false}
         footer={
-          <Button
+          <ModalAction
             {...warningConfirmButtonProps}
             onPress={vs.openLipComponentsSettings}
             variant={"secondary"}
-            className={"rounded-full"}
           >
             {t("settings.lip.startup_prompt.open_settings_button")}
-          </Button>
+          </ModalAction>
         }
       >
-        <div className="text-base font-medium text-foreground dark:text-zinc-300">
+        <ModalDescription>
           {t("lip.guard.description")}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       <UnifiedModal
@@ -2034,7 +1999,6 @@ export default function InstanceSettingsPage() {
         onOpenChange={(open) => {
           if (!open) vs.setErrorOpen(false);
         }}
-        hideCloseButton
         type="error"
         title={t("common.error")}
         icon={<FiAlertTriangle className="w-6 h-6" />}
@@ -2065,7 +2029,7 @@ export default function InstanceSettingsPage() {
         onOpenChange={(open) => {
           if (!open) vs.setDeleteSuccessOpen(open);
         }}
-        size="md"
+        size="standard"
         type="success"
         title={t("launcherpage.delete.complete.title")}
         icon={<FiCheckCircle className="w-6 h-6" />}
@@ -2076,7 +2040,7 @@ export default function InstanceSettingsPage() {
         confirmText={t("launcherpage.delete.complete.close_button")}
         showCancelButton={false}
       >
-        <div className="text-base font-medium text-foreground dark:text-zinc-300">
+        <ModalDescription>
           {t("launcherpage.delete.complete.content")}
           {vs.deleteSuccessMsg ? (
             <span className="font-mono text-foreground dark:text-zinc-200 font-bold">
@@ -2084,11 +2048,11 @@ export default function InstanceSettingsPage() {
               {vs.deleteSuccessMsg}
             </span>
           ) : null}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={vs.unsavedOpen}
         onOpenChange={vs.unsavedOnOpenChange}
         type="warning"
@@ -2104,9 +2068,9 @@ export default function InstanceSettingsPage() {
           }
         }}
       >
-        <div className="text-foreground dark:text-zinc-300 text-sm">
+        <ModalDescription>
           {t("versions.unsaved.body")}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       <DeleteConfirmModal
@@ -2140,18 +2104,18 @@ export default function InstanceSettingsPage() {
         showCancelButton={false}
         onConfirm={vs.closeDemotedWarning}
       >
-        <div className="text-sm text-foreground dark:text-zinc-300 whitespace-pre-wrap">
+        <ModalDescription className="whitespace-pre-wrap">
           {t("errors.ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY")}
-        </div>
+        </ModalDescription>
         {vs.demotedWarningNames.length > 0 ? (
-          <div className="mt-3 rounded-md bg-amber-50/70 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-500/30 px-3 py-2 text-amber-700 dark:text-amber-300 dark:text-amber-300 text-sm whitespace-pre-wrap break-all font-mono">
+          <ModalNotice tone="warning" className="whitespace-pre-wrap break-all font-mono">
             {vs.demotedWarningNames.join("\n")}
-          </div>
+          </ModalNotice>
         ) : null}
       </UnifiedModal>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={vs.llVersionSelectOpen}
         onOpenChange={vs.llVersionSelectOnOpenChange}
         type="primary"
@@ -2169,9 +2133,9 @@ export default function InstanceSettingsPage() {
         }}
       >
         <div className="space-y-3">
-          <p className="text-sm leading-6 text-muted dark:text-zinc-400">
+          <ModalDescription>
             {t("versions.edit.loader.ll_select_guidance")}
-          </p>
+          </ModalDescription>
           <Select
             placeholder={
               t(
@@ -2223,7 +2187,7 @@ export default function InstanceSettingsPage() {
       </UnifiedModal>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={vs.llInstallConfirmOpen}
         onOpenChange={(open) => {
           if (open) {
@@ -2250,18 +2214,18 @@ export default function InstanceSettingsPage() {
           isDisabled: vs.installingLL,
         }}
       >
-        <div className="text-sm text-foreground dark:text-zinc-300 whitespace-pre-wrap">
+        <ModalDescription className="whitespace-pre-wrap">
           {t("lip.package.confirm_install_body", {
             action: llInstallActionLabel,
             package: "LeviLamina",
             version: vs.resolvedLLTargetVersion || "-",
             instance: vs.targetName || "-",
           })}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={vs.rcOpen}
         onOpenChange={vs.rcOnOpenChange}
         type="warning"
@@ -2276,7 +2240,7 @@ export default function InstanceSettingsPage() {
           vs.proceedInstallLeviLamina(vs.selectedLLVersion);
         }}
       >
-        <div className="text-sm text-foreground dark:text-zinc-300 space-y-2">
+        <ModalDescription className="space-y-2">
           <p>
             {t("mods.rc_warning.body_1", {
               version: vs.rcVersion,
@@ -2286,7 +2250,7 @@ export default function InstanceSettingsPage() {
             {t("mods.rc_warning.body_2")}
           </p>
           <p>{t("mods.rc_warning.body_3")}</p>
-        </div>
+        </ModalDescription>
       </UnifiedModal>
     </PageContainer>
   );

@@ -1,6 +1,7 @@
+import { ModalNotice, ModalPanel } from "@/components/ModalPrimitives";
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { FiAlertTriangle } from "react-icons/fi";
+import { FiAlertTriangle, FiCheckCircle } from "react-icons/fi";
 import { resolveImportError } from "@/utils/importError";
 import { UnifiedModal, ModalType } from "./UnifiedModal";
 
@@ -56,10 +57,10 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
   return (
     <UnifiedModal
       isOpen={isOpen}
+      size={isPartial ? "wide" : "standard"}
       onOpenChange={onOpenChange}
       type={type}
       title={title}
-      hideCloseButton
       showCancelButton={false}
       confirmText={t("common.confirm")}
       onConfirm={() => {
@@ -67,36 +68,37 @@ export const ImportResultModal: React.FC<ImportResultModalProps> = ({
         onOpenChange(false);
       }}
     >
-      <div className="flex flex-col gap-4">
+      <div className={isPartial ? "grid grid-cols-1 gap-4 sm:grid-cols-2" : "flex flex-col gap-4"}>
         {success.length > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="text-base text-foreground dark:text-zinc-300 font-bold flex items-center gap-2">
+            <div className="text-sm text-foreground font-semibold flex items-center gap-2">
+              <FiCheckCircle aria-hidden="true" className="size-4 text-brand-600 dark:text-brand-400" />
               {resolvedSuccessLabel} ({success.length})
             </div>
-            <div className="p-3 bg-surface-secondary/50 dark:bg-zinc-800 rounded-xl border border-border/50 max-h-[150px] overflow-y-auto custom-scrollbar">
-              <div className="text-sm font-bold font-mono text-foreground dark:text-zinc-200 whitespace-pre-wrap break-all">
+            <ModalPanel className="max-h-60 overflow-y-auto custom-scrollbar">
+              <div className="text-sm font-mono text-foreground whitespace-pre-wrap [overflow-wrap:anywhere]">
                 {success.join("\n")}
               </div>
-            </div>
+            </ModalPanel>
           </div>
         )}
 
         {failed.length > 0 && (
           <div className="flex flex-col gap-2">
-            <div className="text-sm font-bold text-rose-600 dark:text-rose-500 flex items-center gap-2">
-              <FiAlertTriangle className="w-4 h-4" />
+            <div className="text-sm font-semibold text-foreground flex items-center gap-2">
+              <FiAlertTriangle aria-hidden="true" className="size-4 text-rose-600 dark:text-rose-300" />
               {resolvedFailedLabel} ({failed.length})
             </div>
-            <div className="p-3 bg-rose-50/50 dark:bg-rose-500/10 rounded-xl border border-rose-100 dark:border-rose-500/20 max-h-[150px] overflow-y-auto custom-scrollbar">
-              <div className="text-xs font-mono text-rose-700 dark:text-rose-400 whitespace-pre-wrap break-all flex flex-col gap-1">
+            <ModalNotice tone="danger" className="max-h-60 overflow-y-auto">
+              <div className="whitespace-pre-wrap [overflow-wrap:anywhere] flex flex-col gap-3">
                 {failed.map((it, idx) => (
-                  <div key={idx} className="flex gap-2">
-                    <span className="font-bold shrink-0">{it.name}:</span>
+                  <div key={idx} className="flex min-w-0 flex-col gap-1">
+                    <span className="font-mono font-medium">{it.name}</span>
                     <span>{resolveImportError(it.err, t)}</span>
                   </div>
                 ))}
               </div>
-            </div>
+            </ModalNotice>
           </div>
         )}
       </div>

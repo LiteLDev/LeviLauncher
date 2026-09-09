@@ -127,7 +127,7 @@
       "mods_card": "La scheda Mod mostra le mod attivate per l'istanza corrente e apre la pagina completa delle mod con un clic.",
       "content_counts_card": "La scheda Contenuti mostra il conteggio di mondi, pacchetti risorse e pacchetti comportamento, e ogni riga apre la pagina corrispondente.",
       "incompatible_resource_packs": "Se vengono rilevati pacchetti risorse incompatibili, clicca sulla riga di avviso per esaminarli direttamente.",
-      "content_download_sources": "Usa la scheda download per esplorare le fonti di contenuti CurseForge o lip senza uscire dal launcher.",
+      "content_download_sources": "Usa la scheda download per esplorare le fonti di contenuti CurseForge o Bedrinth senza uscire dal launcher.",
       "settings_personalize": "Le Impostazioni ti permettono di regolare tema, colore, sfondo e altre opzioni estetiche per adattarle alla tua configurazione.",
       "settings_storage_path": "Puoi cambiare i percorsi di archiviazione nelle Impostazioni. Assicurati che la directory di destinazione abbia permessi di scrittura prima di spostare contenuti.",
       "download_mirror": "Se i download sono lenti, prova a cambiare mirror o le opzioni di rete associate nelle Impostazioni.",
@@ -1183,6 +1183,8 @@
     "game_all_versions": "Tutte le versioni gioco",
     "mapping_unavailable_hint": "La mappatura tra LeviLamina e la versione di gioco non è al momento disponibile. I filtri relativi alla versione sono stati disabilitati per evitare corrispondenze errate.",
     "files": {
+      "game_versions_unknown": "Nessuna versione del gioco corrispondente",
+      "version_count": "{{count}} versioni",
       "game_versions_label": "Versioni gioco",
       "game_versions_unrestricted": "Nessuna restrizione versione gioco",
       "game_versions_unavailable": "Mappatura versione gioco non disponibile",
@@ -1209,7 +1211,7 @@
       "ll_missing_redirect_to_loader": "LeviLamina non è installato. Reindirizzamento alla scheda Loader nelle Impostazioni Istanza.",
       "ll_installed_incompatible_hint": "La versione installata di LeviLamina {{installedVersion}} è incompatibile con questo pacchetto. Regola manualmente LeviLamina prima.",
       "action_failed": "Operazione fallita: {{error}}",
-      "tab_label": "File",
+      "tab_label": "Versioni",
       "table_aria_label": "Tabella file pacchetto",
       "install_success": "Installazione completata con successo",
       "upgrade_success": "Aggiornamento completato con successo",
@@ -1220,8 +1222,8 @@
     },
     "guide": {
       "open_button": "Guida sviluppatore",
-      "title": "Guida sviluppatore LIP",
-      "description": "Se vuoi che la tua mod appaia sulla pagina LIP di LeviLauncher, pubblicala secondo le specifiche package_manifest di LIP.",
+      "title": "Guida sviluppatore Bedrinth",
+      "description": "Se vuoi che la tua mod appaia sulla pagina Bedrinth di LeviLauncher, pubblicala secondo le specifiche package_manifest di LIP.",
       "manifest_hint": "Questa finestra di dialogo è solo una rapida panoramica per gli sviluppatori. I nomi dei campi, le voci richieste, gli esempi e le regole di validazione sono definiti nella documentazione ufficiale.",
       "variant_hint": "Una variante è indicizzata dal launcher solo quando la sua etichetta contiene client. Per default usa \\\"label\\\": \\\"client\\\"; per sotto-estensioni usa \\\"label\\\": \\\"client_xxxx\\\" o \\\"label\\\": \\\"client\\\\xxxx\\\".",
       "docs_button": "Vedi specifiche complete",
@@ -1231,7 +1233,7 @@
       "title": "lipd non è installato",
       "description": "lipd non è ancora installato. Per continuare a usare le pagine relative a lip o installare LeviLamina, vai su Impostazioni > Componenti di terze parti e installalo prima."
     },
-    "title": "Contenuti lip",
+    "title": "Bedrinth",
     "sort_options": {
       "hotness": "Popolarità",
       "updated": "Aggiornato",

@@ -1,3 +1,4 @@
+import { ModalAction, ModalDescription, ModalPanel, ModalNotice, ModalProgress } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -58,7 +59,7 @@ import { motion } from "framer-motion";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 
-import { FiCheckCircle, FiAlertTriangle } from "react-icons/fi";
+import { FiCheckCircle } from "react-icons/fi";
 import {
   LuDownload,
   LuCalendar,
@@ -1189,6 +1190,7 @@ const CurseForgeModPage: React.FC = () => {
       </motion.div>
 
       <UnifiedModal
+        size="wide"
         isOpen={installModalOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -1200,11 +1202,8 @@ const CurseForgeModPage: React.FC = () => {
           }
         }}
         isDismissable={false}
-        hideCloseButton={
-          installStep === "downloading" || installStep === "importing"
-        }
         contentKey={installStep}
-        type={installStep === "error" ? "error" : "primary"}
+        type={installStep === "error" ? "error" : installStep === "success" ? "success" : "primary"}
         icon={
           installStep === "downloading" ? (
             <LuDownload size={24} />
@@ -1235,51 +1234,43 @@ const CurseForgeModPage: React.FC = () => {
         footer={
           <>
             {installStep === "downloading" && (
-              <Button onPress={handleCancelDownload} variant={"danger-soft"}>
+              <ModalAction onPress={handleCancelDownload} variant="secondary">
                 {t("common.cancel")}
-              </Button>
+              </ModalAction>
             )}
             {(installStep === "version_select" ||
               installStep === "player_select") && (
               <>
-                <Button
+                <ModalAction
                   onPress={() => setInstallModalOpen(false)}
-                  variant={"secondary"}
+                  variant="secondary"
                 >
                   {t("common.cancel")}
-                </Button>
-                <Button
+                </ModalAction>
+                <ModalAction
                   onPress={handleVersionSelectNext}
                   variant={"primary"}
-                  className={
-                    "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20"
-                  }
                 >
                   {t("curseforge.install.next")}
-                </Button>
+                </ModalAction>
               </>
             )}
             {(installStep === "success" || installStep === "error") && (
-              <Button
+              <ModalAction
                 onPress={() => setInstallModalOpen(false)}
-                variant={installStep === "error" ? "danger" : "primary"}
-                className={
-                  installStep === "error"
-                    ? "font-bold shadow-lg shadow-rose-500/20"
-                    : "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20"
-                }
+                variant="primary"
               >
                 {t("curseforge.install.close")}
-              </Button>
+              </ModalAction>
             )}
           </>
         }
       >
         {installStep === "downloading" && (
-          <div className="flex flex-col items-center gap-4 py-4 w-full">
-            <p className="text-muted dark:text-zinc-400">
+          <div className="flex flex-col gap-4 w-full">
+            <ModalDescription>
               {t("curseforge.install.downloading_body")}
-            </p>
+            </ModalDescription>
             {downloadProgress ? (
               <ProgressBar
                 aria-label="Downloading..."
@@ -1287,7 +1278,7 @@ const CurseForgeModPage: React.FC = () => {
                   (downloadProgress.downloaded / downloadProgress.total) * 100
                 }
                 color={"accent"}
-                className={"max-w-md w-full"}
+                className={"w-full"}
               >
                 {true && <ProgressBar.Output />}
                 <ProgressBar.Track>
@@ -1300,19 +1291,19 @@ const CurseForgeModPage: React.FC = () => {
               <Spinner size="lg" color={"accent"} />
             )}
             {downloadProgress && (
-              <p className="text-xs text-muted">
+              <ModalDescription>
                 {formatFileSize(downloadProgress.downloaded)} /{" "}
                 {formatFileSize(downloadProgress.total)}
-              </p>
+              </ModalDescription>
             )}
           </div>
         )}
 
         {installStep === "version_select" && (
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted dark:text-zinc-400">
+            <ModalDescription>
               {t("curseforge.install.select_version_body")}
-            </p>
+            </ModalDescription>
             <Select
               placeholder={t("curseforge.install.select_version_placeholder")}
               value={
@@ -1384,9 +1375,9 @@ const CurseForgeModPage: React.FC = () => {
 
         {installStep === "player_select" && (
           <div className="flex flex-col gap-4">
-            <p className="text-sm text-muted dark:text-zinc-400">
+            <ModalDescription>
               {t("curseforge.install.select_player_body")}
-            </p>
+            </ModalDescription>
             <Select
               placeholder={t("curseforge.install.select_player_placeholder")}
               value={
@@ -1425,54 +1416,46 @@ const CurseForgeModPage: React.FC = () => {
         )}
 
         {installStep === "importing" && (
-          <div className="flex flex-col items-center gap-4 py-4">
-            <Spinner size="lg" color={"accent"} />
-            <p className="text-muted dark:text-zinc-400">
-              {t("curseforge.install.importing_body")}
-            </p>
-          </div>
+          <ModalProgress label={t("curseforge.install.importing_title")} description={t("curseforge.install.importing_body")} />
         )}
 
         {installStep === "success" && (
-          <div className="flex flex-col items-center gap-4 py-4">
-            <div className="text-center">
-              <p className="text-xl font-bold text-foreground dark:text-white">
+          <div className="flex flex-col gap-4">
+            <div className="space-y-2">
+              <ModalDescription>
                 {t("curseforge.install.success_msg")}
-              </p>
-              <p className="text-muted dark:text-zinc-400 mt-1">
+              </ModalDescription>
+              <ModalDescription className="mt-1">
                 {t("curseforge.install.success_desc")}
-              </p>
+              </ModalDescription>
             </div>
           </div>
         )}
 
         {installStep === "error" && (
-          <div className="flex flex-col items-center gap-4 py-4">
-            <div className="text-center w-full">
-              <p className="text-xl font-bold text-rose-600 dark:text-rose-500 mb-2">
+          <div className="flex flex-col gap-4">
+            <ModalDescription>
                 {t("curseforge.install.failed_msg")}
-              </p>
-              <div className="text-muted dark:text-zinc-400 px-4 bg-surface-secondary dark:bg-zinc-800 rounded-lg py-3 font-mono text-xs break-all mx-auto max-w-[90%]">
+            </ModalDescription>
+              <ModalNotice role="alert" tone="danger" className="font-mono">
                 {installError}
-              </div>
-            </div>
+              </ModalNotice>
           </div>
         )}
       </UnifiedModal>
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={dupOpen}
         onOpenChange={(open) => {
           if (!open) {
             setDupOpen(false);
           }
         }}
-        hideCloseButton
         type="warning"
         title={t("mods.overwrite_modal_title")}
         footer={
           <>
-            <Button
+            <ModalAction
               onPress={() => {
                 try {
                   if (dupResolveRef.current) dupResolveRef.current(false);
@@ -1480,11 +1463,11 @@ const CurseForgeModPage: React.FC = () => {
                   setDupOpen(false);
                 }
               }}
-              variant={"ghost"}
+              variant="secondary"
             >
               {t("common.cancel")}
-            </Button>
-            <Button
+            </ModalAction>
+            <ModalAction
               onPress={() => {
                 try {
                   if (dupResolveRef.current) dupResolveRef.current(true);
@@ -1493,24 +1476,14 @@ const CurseForgeModPage: React.FC = () => {
                 }
               }}
               variant={"primary"}
-              className={cn(
-                "bg-warning text-warning-foreground",
-                "font-bold shadow-lg shadow-amber-500/20 text-warning-foreground",
-              )}
             >
               {t("common.confirm")}
-            </Button>
+            </ModalAction>
           </>
         }
       >
-        <div className="text-sm text-foreground dark:text-zinc-300">
-          {t("mods.overwrite_modal_body")}
-        </div>
-        {dupName ? (
-          <div className="mt-1 rounded-md bg-surface-secondary/60 dark:bg-zinc-800/60 border border-border dark:border-zinc-700 px-3 py-2 text-foreground dark:text-zinc-100 text-sm wrap-break-word whitespace-pre-wrap">
-            {dupName}
-          </div>
-        ) : null}
+        <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
+        {dupName ? <ModalPanel className="font-mono">{dupName}</ModalPanel> : null}
       </UnifiedModal>
     </PageContainer>
   );

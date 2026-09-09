@@ -1,13 +1,12 @@
+import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
   Dropdown,
   Label,
-  ListBox,
-  ProgressBar,
-  Select,
+  ListBox, Select,
   Spinner,
-  Tooltip,
+  Tooltip
 } from "@heroui/react";
 
 import React from "react";
@@ -556,36 +555,20 @@ export default function ContentPage() {
             : t("mods.importing_title")
         }
         icon={<FiUploadCloud className="w-6 h-6" />}
-        hideCloseButton
         isDismissable={false}
         showConfirmButton={false}
         showCancelButton={false}
       >
-        <div className="flex flex-col gap-4">
-          <ProgressBar
-            isIndeterminate
-            aria-label="importing"
-            size="sm"
-            color={"accent"}
-            className={"w-full"}
-          >
-            <ProgressBar.Track>
-              <ProgressBar.Fill />
-            </ProgressBar.Track>
-          </ProgressBar>
-          <div className="text-foreground dark:text-zinc-300 text-sm">
-            {cp.transferring
+        <ModalProgress
+          label={t("contentpage.transfer_progress_title")}
+          description={<> {cp.transferring
               ? t("contentpage.transfer_progress_body")
-              : t("mods.importing_body")}
-          </div>
-          {cp.currentFile ? (
-            <div className="p-3 bg-surface-secondary/50 dark:bg-zinc-800 rounded-xl border border-border/50 text-sm font-mono text-foreground dark:text-zinc-200 break-all">
-              {cp.currentFile}
-            </div>
-          ) : null}
-        </div>
+              : t("mods.importing_body")} </>}
+          currentItem={cp.currentFile}
+        />
       </UnifiedModal>
       <UnifiedModal
+        size="wide"
         isOpen={cp.transferTargetOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -604,9 +587,9 @@ export default function ContentPage() {
         }}
       >
         <div className="flex flex-col gap-4">
-          <div className="text-sm text-foreground dark:text-zinc-300">
+          <ModalDescription>
             {t("contentpage.transfer_resources_body_overview")}
-          </div>
+          </ModalDescription>
 
           {cp.transferTargets.length > 0 ? (
             <Select
@@ -667,7 +650,7 @@ export default function ContentPage() {
           ) : (
             <div className="flex flex-col items-center justify-center py-8 text-muted dark:text-zinc-500">
               <FaExchangeAlt className="text-4xl mb-3 opacity-20" />
-              <p className="text-sm">{t("contentpage.transfer_no_targets")}</p>
+              <ModalDescription>{t("contentpage.transfer_no_targets")}</ModalDescription>
             </div>
           )}
         </div>
@@ -704,18 +687,11 @@ export default function ContentPage() {
           cp.dupOnClose();
         }}
       >
-        <div className="flex flex-col gap-4">
-          <div className="text-sm text-foreground dark:text-zinc-300">
-            {t("mods.overwrite_modal_body")}
-          </div>
-          {cp.dupNameRef.current ? (
-            <div className="p-3 bg-surface-secondary/50 dark:bg-zinc-800 rounded-xl border border-border/50 text-sm font-mono text-foreground dark:text-zinc-200 break-all">
-              {cp.dupNameRef.current}
-            </div>
-          ) : null}
-        </div>
+        <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
+        {cp.dupNameRef.current ? <ModalPanel className="font-mono">{cp.dupNameRef.current}</ModalPanel> : null}
       </UnifiedModal>
       <UnifiedModal
+        size="wide"
         isOpen={cp.playerSelectOpen}
         onOpenChange={(open) => {
           if (!open) {
@@ -734,9 +710,9 @@ export default function ContentPage() {
         }}
       >
         <div className="flex flex-col gap-4">
-          <div className="text-sm text-foreground dark:text-zinc-300">
+          <ModalDescription>
             {t("contentpage.select_player_for_import")}
-          </div>
+          </ModalDescription>
           <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar p-1">
             {cp.players.length ? (
               cp.players.map((p) => (

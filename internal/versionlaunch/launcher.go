@@ -13,9 +13,9 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/utils"
-	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/sys/windows"
@@ -86,7 +86,10 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		return "ERR_NOT_FOUND_EXE"
 	}
 	application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
-	_ = vcruntime.EnsureForVersion(ctx, dir)
+	if _, err := leviloader.PatchAndActivate(ctx, dir); err != nil {
+		log.Printf("Failed to activate loader for %s: %v", exe, err)
+		return "ERR_LAUNCH_GAME"
+	}
 
 	var args []string
 	var envs []string

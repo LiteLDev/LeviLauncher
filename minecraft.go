@@ -20,6 +20,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/gameinput"
 	"github.com/liteldev/LeviLauncher/internal/lang"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	lipclient "github.com/liteldev/LeviLauncher/internal/lip/client"
 	liptypes "github.com/liteldev/LeviLauncher/internal/lip/client/types"
@@ -413,6 +414,15 @@ func (a *Minecraft) IsGameInputInstalled() bool { return gameinput.IsInstalled()
 func (a *Minecraft) EnsureVcRuntimeInteractive() { go vcruntime.EnsureInteractive(a.ctx) }
 
 func (a *Minecraft) IsVcRuntimeInstalled() bool { return vcruntime.IsInstalled() }
+
+func (a *Minecraft) NeedsLoaderMigration() bool { return leviloader.NeedsMigration() }
+
+func (a *Minecraft) RunLoaderMigration() string {
+	if _, err := leviloader.RunMigration(a.ctx); err != nil {
+		return err.Error()
+	}
+	return ""
+}
 
 func (a *Minecraft) IsGamingServicesInstalled() bool {
 	if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err == nil {

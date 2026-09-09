@@ -29,6 +29,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
@@ -518,6 +519,11 @@ func init() {
 	application.RegisterEvent[struct{}](vcruntime.EventEnsureStart)
 	application.RegisterEvent[vcruntime.EnsureProgress](vcruntime.EventEnsureProgress)
 	application.RegisterEvent[bool](vcruntime.EventEnsureDone)
+	// loader migration
+	application.RegisterEvent[struct{}](leviloader.EventMigrateStart)
+	application.RegisterEvent[leviloader.MigrateProgress](leviloader.EventMigrateProgress)
+	application.RegisterEvent[int](leviloader.EventMigrateDone)
+	application.RegisterEvent[string](leviloader.EventMigrateError)
 	// app update
 	application.RegisterEvent[string](update.EventAppUpdateStatus)
 	application.RegisterEvent[update.AppUpdateProgress](update.EventAppUpdateProgress)

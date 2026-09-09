@@ -85,6 +85,7 @@ export const useLauncher = (args: any) => {
   const registerInstallingDisclosure = useOverlayState();
   const registerSuccessDisclosure = useOverlayState();
   const registerFailedDisclosure = useOverlayState();
+  const loaderMigrationDisclosure = useOverlayState();
 
   const hasBackend = minecraft !== undefined;
   const navigate = useNavigate();
@@ -100,6 +101,9 @@ export const useLauncher = (args: any) => {
   const [giDownloaded, setGiDownloaded] = React.useState<number>(0);
   const [vcTotal, setVcTotal] = React.useState<number>(0);
   const [vcDownloaded, setVcDownloaded] = React.useState<number>(0);
+  const [migrateTotal, setMigrateTotal] = React.useState<number>(0);
+  const [migrateDone, setMigrateDone] = React.useState<number>(0);
+  const [migrateError, setMigrateError] = React.useState("");
   const [pendingInstallCheck, setPendingInstallCheck] = React.useState<
     "gi" | "gs" | "vc" | null
   >(null);
@@ -623,6 +627,50 @@ export const useLauncher = (args: any) => {
     gamingServicesMissingDisclosure,
     vcRuntimeMissingDisclosure,
   ]);
+
+  useEffect(() => {
+    if (!hasBackend) return;
+    let cancelled = false;
+
+    const unlistenMigrateStart = Events.On("leviloader.migrate.start", () => {
+      setMigrateDone(0);
+      setMigrateError("");
+      loaderMigrationDisclosure.open();
+    });
+    const unlistenMigrateProgress = Events.On(
+      "leviloader.migrate.progress",
+      (event) => {
+        const progress = event.data as { done: number; total: number };
+        setMigrateTotal(progress.total);
+        setMigrateDone(progress.done);
+      },
+    );
+    (async () => {
+      try {
+        const need = await minecraft.NeedsLoaderMigration();
+        if (cancelled || !need) return;
+        loaderMigrationDisclosure.open();
+        const error = await minecraft.RunLoaderMigration();
+        if (cancelled) return;
+        if (error) {
+          setMigrateError(error);
+        } else {
+          loaderMigrationDisclosure.close();
+        }
+      } catch (error) {
+        if (cancelled) return;
+        setMigrateError(String(error));
+        loaderMigrationDisclosure.open();
+      }
+    })();
+
+    return () => {
+      cancelled = true;
+      unlistenMigrateStart();
+      unlistenMigrateProgress();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [hasBackend]);
 
   useEffect(() => {
     const unlistenGiStart = Events.On("gameinput.ensure.start", () => {
@@ -1233,6 +1281,9 @@ export const useLauncher = (args: any) => {
     giDownloaded,
     vcTotal,
     vcDownloaded,
+    migrateTotal,
+    migrateDone,
+    migrateError,
     pendingInstallCheck,
     logoDataUrl,
     versionQuery,
@@ -1257,6 +1308,7 @@ export const useLauncher = (args: any) => {
     registerInstallingDisclosure,
     registerSuccessDisclosure,
     registerFailedDisclosure,
+    loaderMigrationDisclosure,
 
     // Navigation
     navigate,

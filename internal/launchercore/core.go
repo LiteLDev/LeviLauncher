@@ -2,7 +2,6 @@ package launchercore
 
 import (
 	"bytes"
-	"context"
 	"crypto/sha256"
 	_ "embed"
 	"fmt"
@@ -14,7 +13,6 @@ import (
 	"syscall"
 	"unsafe"
 
-	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"golang.org/x/sys/windows"
 )
 
@@ -114,7 +112,6 @@ func prepareDLL() (string, error) {
 	if _, err := writeIfChanged("libHttpClient.dll", embeddedLibHttpClientDLL); err != nil {
 		return "", err
 	}
-	_ = vcruntime.EnsureForVersion(context.Background(), dir)
 	return corePath, nil
 }
 
@@ -161,7 +158,7 @@ func EnsureCoreLoaded() error {
 		}
 
 		if strings.TrimSpace(dllDir) != "" {
-			for _, dep := range []string{"vcruntime140_1.dll", "libHttpClient.dll"} {
+			for _, dep := range []string{"libHttpClient.dll"} {
 				depPath := filepath.Join(dllDir, dep)
 				if _, err := os.Stat(depPath); err == nil {
 					_, _ = windows.LoadLibrary(depPath)
@@ -233,7 +230,7 @@ func EnsureApiLoaded() error {
 		}
 
 		if strings.TrimSpace(dllDir) != "" {
-			for _, dep := range []string{"vcruntime140_1.dll", "libHttpClient.dll"} {
+			for _, dep := range []string{"libHttpClient.dll"} {
 				depPath := filepath.Join(dllDir, dep)
 				if _, err := os.Stat(depPath); err == nil {
 					_, _ = windows.LoadLibrary(depPath)

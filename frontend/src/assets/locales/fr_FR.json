@@ -73,6 +73,11 @@
         "install_now": "Installer maintenant"
       }
     },
+    "loader_migration": {
+      "title": "Migration du chargeur",
+      "body": "Adaptation des versions installées au nouveau chargeur LeviLauncher (suppression de l'ancienne vcruntime140_1.dll et mise à jour de la table d'importation du jeu). Cette opération n'a lieu qu'une fois, veuillez patienter…",
+      "preparing": "Préparation de la migration..."
+    },
     "mclaunch": {
       "loading": {
         "title": "Démarrage de Minecraft",

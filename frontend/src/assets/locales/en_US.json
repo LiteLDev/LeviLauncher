@@ -79,6 +79,11 @@
         "install_now": "Install Now"
       }
     },
+    "loader_migration": {
+      "title": "Migrating loader",
+      "body": "Adapting installed versions to the new LeviLauncher loader (removing the legacy vcruntime140_1.dll and updating the game's import table). This runs once, please wait…",
+      "preparing": "Preparing migration..."
+    },
     "mclaunch": {
       "loading": {
         "title": "Launching Minecraft",

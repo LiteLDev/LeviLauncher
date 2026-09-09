@@ -13,10 +13,10 @@ import (
 	"github.com/Microsoft/go-winio"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/extractor"
+	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
-	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -30,8 +30,8 @@ type VersionStatus struct {
 func StartMsixvcDownload(ctx context.Context, url string, md5sum string) string {
 	return msixvc.StartDownload(ctx, url, md5sum)
 }
-func ResumeMsixvcDownload() { msixvc.Resume() }
-func CancelMsixvcDownload() { msixvc.Cancel() }
+func ResumeMsixvcDownload()                { msixvc.Resume() }
+func CancelMsixvcDownload()                { msixvc.Cancel() }
 func CancelMsixvcDownloadTask(dest string) { msixvc.CancelTask(dest) }
 
 func InstallExtractMsixvc(ctx context.Context, name string, folderName string, isPreview bool) string {
@@ -104,7 +104,10 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 		_ = os.RemoveAll(outDir)
 		return msg
 	}
-	_ = vcruntime.EnsureForVersion(ctx, outDir)
+	if err := leviloader.EnsureForVersion(ctx, outDir); err != nil {
+		application.Get().Event.Emit(EventExtractError, err.Error())
+		return err.Error()
+	}
 	application.Get().Event.Emit(EventExtractDone, outDir)
 	return ""
 }

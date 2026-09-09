@@ -84,8 +84,8 @@ func ScanVersions(versionsRoot string) ([]VersionMeta, error) {
 	return out, nil
 }
 
-func ComputeVCRuntimeHash(versionDir string) (string, error) {
-	path := filepath.Join(versionDir, "vcruntime140_1.dll")
+func ComputeLoaderHash(versionDir string) (string, error) {
+	path := filepath.Join(versionDir, "LeviLauncher.dll")
 	f, err := os.Open(path)
 	if err != nil {
 		return "", err

@@ -89,6 +89,9 @@ export const LauncherPage = (args: any) => {
     giDownloaded,
     vcTotal,
     vcDownloaded,
+    migrateTotal,
+    migrateDone,
+    migrateError,
     logoDataUrl,
     versionQuery,
     setVersionQuery,
@@ -111,6 +114,7 @@ export const LauncherPage = (args: any) => {
     registerInstallingDisclosure,
     registerSuccessDisclosure,
     registerFailedDisclosure,
+    loaderMigrationDisclosure,
 
     // Navigation
     navigate,
@@ -1010,6 +1014,39 @@ export const LauncherPage = (args: any) => {
           <ModalDescription>
             {t("launcherpage.vcruntime.completing.body")}
           </ModalDescription>
+        </UnifiedModal>
+
+        {/* Loader Migration */}
+        <UnifiedModal
+          isOpen={loaderMigrationDisclosure.isOpen}
+          onOpenChange={loaderMigrationDisclosure.setOpen}
+          type={migrateError ? "error" : "success"}
+          title={t(
+            migrateError ? "common.error" : "launcherpage.loader_migration.title",
+          )}
+          isPending={!migrateError}
+          onConfirm={migrateError ? loaderMigrationDisclosure.close : undefined}
+          confirmText={t("common.close")}
+          icon={<FaCogs className="w-6 h-6" />}
+        >
+          {migrateError ? (
+            <ModalDescription>{migrateError}</ModalDescription>
+          ) : (
+            <ModalProgress
+              label={t("launcherpage.loader_migration.title")}
+              description={t("launcherpage.loader_migration.body")}
+              value={
+                migrateTotal > 0
+                  ? Math.min(100, (migrateDone / migrateTotal) * 100)
+                  : undefined
+              }
+              detail={
+                migrateTotal > 0
+                  ? `${migrateDone} / ${migrateTotal}`
+                  : t("launcherpage.loader_migration.preparing")
+              }
+            />
+          )}
         </UnifiedModal>
 
         {/* MC Launch Loading */}

@@ -79,6 +79,11 @@
         "install_now": "立即安装"
       }
     },
+    "loader_migration": {
+      "title": "正在迁移加载器",
+      "body": "正在将已安装的版本适配到新的 LeviLauncher 加载器（移除旧的 vcruntime140_1.dll 并更新游戏导入表）。此操作仅执行一次，请稍候…",
+      "preparing": "正在准备迁移…"
+    },
     "mclaunch": {
       "loading": {
         "title": "正在启动 Minecraft",

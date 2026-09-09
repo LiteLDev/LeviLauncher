@@ -73,6 +73,11 @@
         "install_now": "지금 설치"
       }
     },
+    "loader_migration": {
+      "title": "로더 마이그레이션 중",
+      "body": "설치된 버전을 새로운 LeviLauncher 로더에 맞게 조정하고 있습니다(기존 vcruntime140_1.dll 제거 및 게임 가져오기 테이블 업데이트). 이 작업은 한 번만 실행됩니다. 잠시만 기다려 주세요…",
+      "preparing": "마이그레이션 준비 중…"
+    },
     "mclaunch": {
       "loading": {
         "title": "Minecraft 시작 중",

@@ -73,6 +73,11 @@
         "install_now": "今すぐインストール"
       }
     },
+    "loader_migration": {
+      "title": "ローダーを移行しています",
+      "body": "インストール済みのバージョンを新しい LeviLauncher ローダーに適合させています（従来の vcruntime140_1.dll を削除し、ゲームのインポートテーブルを更新します）。この処理は一度だけ実行されます。お待ちください…",
+      "preparing": "移行を準備しています…"
+    },
     "mclaunch": {
       "loading": {
         "title": "Minecraftを起動中",

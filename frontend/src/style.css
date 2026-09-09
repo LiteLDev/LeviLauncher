@@ -303,13 +303,8 @@ select {
   color: var(--action-foreground);
 }
 
-/* Brand labels adapt to the selected fill; danger labels remain independent. */
-:is(.button--primary, .button.bg-brand-500, .pagination__link.bg-accent) {
-  --button-fg: var(--accent-foreground);
-  color: var(--accent-foreground);
-}
-
-.button--danger {
+/* Filled actions keep white labels and currentColor icons for every palette. */
+:is(.button--primary, .button--danger, .button.bg-brand-500, .pagination__link.bg-accent) {
   --button-fg: var(--action-solid-foreground);
   color: var(--action-solid-foreground);
 }
@@ -318,6 +313,12 @@ select {
   --button-bg: var(--action-accent);
   --button-bg-hover: var(--action-accent-hover);
   --button-bg-pressed: var(--action-accent-hover);
+}
+
+/* Switch thumbs stay light on the selected track instead of inheriting the
+   adaptive text color that turns pastel themes' enabled thumbs nearly black. */
+.switch {
+  --accent-foreground: var(--action-solid-foreground);
 }
 
 :is(.button.bg-brand-500, .pagination__link.bg-accent) {

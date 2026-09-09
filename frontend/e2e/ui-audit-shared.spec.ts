@@ -83,10 +83,9 @@ for (const theme of ["light", "dark"] as const) {
         label: element.getAttribute("aria-label") || element.textContent?.trim(),
         color: getComputedStyle(element).color,
         solid: element.matches(".button--primary, .button--danger, .button.bg-brand-500, .pagination__link.bg-accent"),
-        danger: element.matches(".button--danger"),
       })));
       counts[name] = colors.length;
-      expect(colors.filter(action => action.color !== (action.danger ? "rgb(244, 244, 245)" : action.solid ? "rgb(24, 24, 27)" : expected)), name).toEqual([]);
+      expect(colors.filter(action => action.color !== (action.solid ? "rgb(244, 244, 245)" : expected)), name).toEqual([]);
     };
     for (const route of [ROUTES.home, ROUTES.instances, ROUTES.download, ROUTES.downloadTasks,
       ROUTES.mods, ROUTES.curseForge, ROUTES.lip, ROUTES.content, ROUTES.contentWorlds,
@@ -109,7 +108,7 @@ for (const theme of ["light", "dark"] as const) {
   });
 
   for (const color of ["emerald", "amber", "pink", "custom", "custom_black", "custom_pink"]) {
-    test(`primary action has readable neutral labels in ${theme}/${color}`, async ({ page }) => {
+    test(`primary action keeps white labels and icons without changing the fill in ${theme}/${color}`, async ({ page }) => {
       await mockWailsRuntime(page);
       await seedCompletedSetup(page);
       await page.emulateMedia({ reducedMotion: "reduce" });
@@ -122,21 +121,16 @@ for (const theme of ["light", "dark"] as const) {
       await page.goto(`/#${ROUTES.home}`);
       const launch = page.getByTestId("primary-launch-button");
       await expect(launch).toBeVisible();
-      const foreground = color === "custom_black" ? [255, 255, 255] : [24, 24, 27];
+      const foreground = [244, 244, 245];
       await expect(launch).toHaveCSS("color", `rgb(${foreground.join(", ")})`);
       const base = color === "custom_black" ? "#000000" : color === "custom_pink" ? "#ffb6c1" : color === "custom" ? "#ffffff" : THEMES[color][500];
       const baseChannels = [1, 3, 5].map(offset => parseInt(base.slice(offset, offset + 2), 16));
       await expect(launch).toHaveCSS("background-color", `rgb(${baseChannels.join(", ")})`);
       for (const hover of [false, true]) {
         if (hover) await launch.hover();
-        const background = await launch.evaluate((element) => {
-          // Normalize rgb(), oklch() and color(srgb ...) through the browser.
-          const context = document.createElement("canvas").getContext("2d")!;
-          context.fillStyle = getComputedStyle(element).backgroundColor;
-          context.fillRect(0, 0, 1, 1);
-          return Array.from(context.getImageData(0, 0, 1, 1).data).slice(0, 3);
-        });
-        expect(contrast(background, foreground)).toBeGreaterThanOrEqual(4.5);
+        await expect(launch).toHaveCSS("color", `rgb(${foreground.join(", ")})`);
+        await expect(launch.locator("svg:visible").first()).toHaveCSS("color", `rgb(${foreground.join(", ")})`);
+        await expect(launch.locator("svg:visible").first()).toHaveCSS("fill", `rgb(${foreground.join(", ")})`);
       }
       if (color === "pink" || color === "custom_pink") {
         await page.mouse.move(0, 0);

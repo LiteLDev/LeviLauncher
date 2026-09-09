@@ -59,6 +59,40 @@ const openSettings = async (page: Page) => {
 };
 
 for (const theme of ["light", "dark"] as const) {
+  test(`${theme} pink switches keep a light thumb when enabled and toggled`, async ({ page }) => {
+    await setup(page, fixture("white"), {
+      "app.backgroundImage": "",
+      "app.themeMode": theme,
+      [`app.${theme}ThemeColor`]: "pink",
+    });
+    await page.emulateMedia({ reducedMotion: "reduce" });
+    await page.addInitScript(() => {
+      history.replaceState({ usr: { mirrorVersion: "1.26.45.01", mirrorType: "Release" }, idx: 0, key: "switch-preview" }, "");
+    });
+    await page.goto("/#" + ROUTES.install);
+    const toggle = page.getByRole("switch", {
+      name: en.downloadpage.install_folder.enable_isolation,
+      exact: true,
+    });
+    const thumb = page.locator(".switch__thumb");
+    const track = page.locator(".switch__control");
+    await expect(toggle).toBeChecked();
+    await expect(thumb).toHaveCSS("background-color", "rgb(244, 244, 245)");
+    await expect(track).toHaveCSS("background-color", "rgb(255, 107, 139)");
+    await track.hover();
+    await expect(thumb).toHaveCSS("background-color", "rgb(244, 244, 245)");
+    await track.click();
+    await expect(toggle).not.toBeChecked();
+    await expect(thumb).toHaveCSS("background-color", "rgb(255, 255, 255)");
+    await toggle.press("Space");
+    await expect(toggle).toBeChecked();
+    await expect(thumb).toHaveCSS("background-color", "rgb(244, 244, 245)");
+    await page.mouse.move(0, 0);
+    await page.screenshot({ path: `.artifacts/personalization/${theme}-pink-switch.png` });
+  });
+}
+
+for (const theme of ["light", "dark"] as const) {
   for (const [name, image, brightness, blur] of [
     ["white", fixture("white"), "200", "0"],
     ["black", fixture("black"), "0", "0"],

@@ -22,6 +22,8 @@ import React, {
 } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useRouteTitle } from "@/hooks/useRouteTitle";
+import { ProjectShareButton } from "@/components/ProjectShareButton";
 
 import { Call, Browser } from "@wailsio/runtime";
 import { motion } from "framer-motion";
@@ -35,7 +37,6 @@ import {
   LuFlame,
   LuGamepad2,
   LuGlobe,
-  LuShare2,
   LuTag,
   LuUser,
 } from "react-icons/lu";
@@ -305,6 +306,13 @@ const LIPPackagePage: React.FC = () => {
       return raw;
     }
   }, [id]);
+  useRouteTitle(
+    !loading &&
+      !error &&
+      pkg?.identifier.toLowerCase() === identifier.split("#")[0].toLowerCase()
+      ? pkg?.name
+      : undefined,
+  );
 
   const openLipSettings = useCallback(() => {
     setLipMissingModalOpen(false);
@@ -1394,7 +1402,9 @@ const LIPPackagePage: React.FC = () => {
                     ))}
                     <Chip size="sm" variant="secondary">
                       {<LuGamepad2 size={12} />}
-                      <Chip.Label>ID: {pkg.identifier}</Chip.Label>
+                      <Chip.Label className="select-text">
+                        ID: {pkg.identifier}
+                      </Chip.Label>
                     </Chip>
                   </div>
 
@@ -1427,18 +1437,21 @@ const LIPPackagePage: React.FC = () => {
                   </Button>
                   <div className="flex gap-2 justify-center">
                     {pkg.projectUrl && (
-                      <Button
-                        onPress={() => Browser.OpenURL(pkg.projectUrl)}
-                        isIconOnly
-                        aria-label="Project Page"
-                        variant={"secondary"}
-                      >
-                        <LuGlobe size={20} />
-                      </Button>
+                      <Tooltip>
+                        <Button
+                          onPress={() => Browser.OpenURL(pkg.projectUrl)}
+                          isIconOnly
+                          aria-label={t("audit.mods.project_page")}
+                          variant={"secondary"}
+                        >
+                          <LuGlobe size={20} />
+                        </Button>
+                        <Tooltip.Content>
+                          {t("audit.mods.project_page")}
+                        </Tooltip.Content>
+                      </Tooltip>
                     )}
-                    <Button isIconOnly aria-label="Share" variant={"secondary"}>
-                      <LuShare2 size={20} />
-                    </Button>
+                    <ProjectShareButton url={pkg.projectUrl} />
                   </div>
                 </div>
               </div>
@@ -1476,7 +1489,7 @@ const LIPPackagePage: React.FC = () => {
                         {t("common.details")}
                         <Tabs.Indicator
                           className={
-                            "w-full bg-linear-to-r from-brand-500 to-brand-400 h-[3px]"
+                            "w-full bg-accent h-[3px]"
                           }
                         />
                       </Tabs.Tab>
@@ -1490,7 +1503,7 @@ const LIPPackagePage: React.FC = () => {
                         {t("lip.files.tab_label")}
                         <Tabs.Indicator
                           className={
-                            "w-full bg-linear-to-r from-brand-500 to-brand-400 h-[3px]"
+                            "w-full bg-accent h-[3px]"
                           }
                         />
                       </Tabs.Tab>

@@ -14,7 +14,7 @@ import {
 import React, { useEffect, useState, useMemo } from "react";
 
 import { PageHeader } from "@/components/PageHeader";
-import { useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -70,7 +70,6 @@ const getLatestSupportedVersion = (mod: ModData) => {
 
 export const CurseForgePage: React.FC = () => {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const {
     query,
     setQuery,
@@ -689,12 +688,11 @@ export const CurseForgePage: React.FC = () => {
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <div
-                        className="w-full p-4 bg-surface/50 dark:bg-white/5 hover:bg-surface-secondary/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-border dark:border-white/5"
-                        onClick={() => {
-                          saveScrollPosition();
-                          navigate(routeTo.curseForgeMod(mod.id));
-                        }}
+                      <Link
+                        className="w-full p-4 bg-surface/50 dark:bg-white/5 hover:bg-surface-secondary/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-border dark:border-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        to={routeTo.curseForgeMod(mod.id)}
+                        aria-label={t("audit.mods.view_details", { name: mod.name })}
+                        onClick={saveScrollPosition}
                       >
                         <div className="shrink-0">
                           <img
@@ -807,7 +805,7 @@ export const CurseForgePage: React.FC = () => {
                               ))}
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     </motion.div>
                   ))}
                 </div>

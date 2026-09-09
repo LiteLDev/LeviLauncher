@@ -21,7 +21,7 @@ import React, {
 
 import { PageHeader } from "@/components/PageHeader";
 import { UnifiedModal } from "@/components/UnifiedModal";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -966,6 +966,16 @@ const LIPPage: React.FC = () => {
             >
               {loading ? (
                 <div className="flex flex-col gap-3">{renderSkeletons()}</div>
+              ) : error && currentPageItems.length === 0 ? (
+                <div className="flex flex-col gap-3 items-center justify-center h-full text-muted">
+                  <p>{t("audit.mods.catalog_load_failed")}</p>
+                  <Button
+                    variant="secondary"
+                    onPress={() => void loadPackages(true)}
+                  >
+                    {t("common.retry")}
+                  </Button>
+                </div>
               ) : currentPageItems.length === 0 ? (
                 <div className="flex items-center justify-center h-full text-muted dark:text-zinc-400">
                   <p>{t("common.no_results")}</p>
@@ -979,11 +989,10 @@ const LIPPage: React.FC = () => {
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <div
-                        className="w-full p-4 bg-surface/50 dark:bg-white/5 hover:bg-surface-secondary/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-border dark:border-white/5"
-                        onClick={() =>
-                          navigate(routeTo.lipPackage(pkg.identifier))
-                        }
+                      <Link
+                        className="w-full p-4 bg-surface/50 dark:bg-white/5 hover:bg-surface-secondary/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-border dark:border-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        to={routeTo.lipPackage(pkg.identifier)}
+                        aria-label={t("audit.mods.view_details", { name: pkg.name })}
                       >
                         <div className="shrink-0">
                           {pkg.avatarUrl ? (
@@ -1049,7 +1058,7 @@ const LIPPage: React.FC = () => {
                             ))}
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     </motion.div>
                   ))}
                 </div>

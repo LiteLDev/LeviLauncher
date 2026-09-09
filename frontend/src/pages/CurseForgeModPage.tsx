@@ -19,6 +19,8 @@ import { cn } from "@/utils/cn";
 import React, { useEffect, useState, useRef } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
+import { useRouteTitle } from "@/hooks/useRouteTitle";
+import { ProjectShareButton } from "@/components/ProjectShareButton";
 import {
   GetCurseForgeModsByIDs,
   GetCurseForgeModDescription,
@@ -64,7 +66,6 @@ import {
   LuGlobe,
   LuGithub,
   LuBug,
-  LuShare2,
   LuGamepad2,
   LuUser,
 } from "react-icons/lu";
@@ -82,7 +83,16 @@ const CurseForgeModPage: React.FC = () => {
   const { t } = useTranslation();
 
   const [mod, setMod] = useState<any | null>(null);
+  useRouteTitle(mod?.id === Number(id) ? mod?.name : undefined);
   const [description, setDescription] = useState<string>("");
+  const [loadError, setLoadError] = useState(false);
+  const [descriptionLoading, setDescriptionLoading] = useState(true);
+  const [descriptionError, setDescriptionError] = useState(false);
+  const [filesLoading, setFilesLoading] = useState(true);
+  const [filesError, setFilesError] = useState(false);
+  const [detailRetry, setDetailRetry] = useState(0);
+  const [descriptionRetry, setDescriptionRetry] = useState(0);
+  const [filesRetry, setFilesRetry] = useState(0);
   const [files, setFiles] = useState<ModFile[]>([]);
   const [loading, setLoading] = useState(true);
   const [selectedGameVersion, setSelectedGameVersion] = useState<string>("all");
@@ -443,30 +453,79 @@ const CurseForgeModPage: React.FC = () => {
   }, [files, selectedGameVersion]);
 
   useEffect(() => {
-    if (!id) return;
-    const modId = parseInt(id);
-    if (isNaN(modId)) return;
-
+    let cancelled = false;
+    const modId = Number(id);
+    setMod(null);
+    setLoadError(false);
     setLoading(true);
-    Promise.all([
-      GetCurseForgeModsByIDs([modId]),
-      GetCurseForgeModDescription(modId),
-      GetCurseForgeModFiles(modId),
-    ])
-      .then(([modRes, descRes, filesRes]) => {
-        if (modRes?.data && modRes.data.length > 0) {
-          setMod(modRes.data[0]);
-        }
-        if (descRes?.data) {
-          setDescription(descRes.data);
-        }
-        if (filesRes?.data) {
-          setFiles(filesRes.data);
-        }
+    if (!Number.isSafeInteger(modId) || modId <= 0) {
+      setLoading(false);
+      return;
+    }
+    GetCurseForgeModsByIDs([modId])
+      .then((result) => {
+        if (!cancelled) setMod(result?.data?.[0] ?? null);
       })
-      .catch(console.error)
-      .finally(() => setLoading(false));
-  }, [id]);
+      .catch(() => {
+        if (!cancelled) setLoadError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, detailRetry]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const modId = Number(id);
+    setDescription("");
+    setDescriptionError(false);
+    setDescriptionLoading(true);
+    if (!Number.isSafeInteger(modId) || modId <= 0) {
+      setDescriptionLoading(false);
+      return;
+    }
+    GetCurseForgeModDescription(modId)
+      .then((result) => {
+        if (!cancelled) setDescription(result?.data ?? "");
+      })
+      .catch(() => {
+        if (!cancelled) setDescriptionError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setDescriptionLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, descriptionRetry]);
+
+  useEffect(() => {
+    let cancelled = false;
+    const modId = Number(id);
+    setFiles([]);
+    setFilesError(false);
+    setFilesLoading(true);
+    if (!Number.isSafeInteger(modId) || modId <= 0) {
+      setFilesLoading(false);
+      return;
+    }
+    GetCurseForgeModFiles(modId)
+      .then((result) => {
+        if (!cancelled) setFiles(result?.data ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setFilesError(true);
+      })
+      .finally(() => {
+        if (!cancelled) setFilesLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [id, filesRetry]);
 
   const handleDescriptionClick = (e: React.MouseEvent<HTMLDivElement>) => {
     const target = (e.target as HTMLElement).closest("a");
@@ -571,7 +630,21 @@ const CurseForgeModPage: React.FC = () => {
       <div className="w-full h-full min-h-0 flex flex-col p-4 sm:p-6 gap-4 items-center justify-center">
         <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl p-8">
           <Card.Content className="flex flex-col items-center gap-4">
-            <p className="text-xl font-bold">{t("curseforge.mod_not_found")}</p>
+            <p role={loadError ? "alert" : "status"} className="text-xl font-bold">
+              {t(
+                loadError
+                  ? "audit.mods.detail_load_failed"
+                  : "curseforge.mod_not_found",
+              )}
+            </p>
+            {loadError && (
+              <Button
+                variant="primary"
+                onPress={() => setDetailRetry((value) => value + 1)}
+              >
+                {t("common.retry")}
+              </Button>
+            )}
             <Button
               onPress={() => navigate(-1)}
               variant={"primary"}
@@ -727,13 +800,7 @@ const CurseForgeModPage: React.FC = () => {
                       <LuBug size={20} />
                     </Button>
                   )}
-                  <Button
-                    isIconOnly
-                    aria-label={t("curseforge.share")}
-                    variant={"secondary"}
-                  >
-                    <LuShare2 size={20} />
-                  </Button>
+                  <ProjectShareButton url={mod.links?.websiteUrl} />
                 </div>
               </div>
             </div>
@@ -772,7 +839,7 @@ const CurseForgeModPage: React.FC = () => {
                       {t("curseforge.mod_tabs.description")}
                       <Tabs.Indicator
                         className={
-                          "w-full bg-linear-to-r from-brand-500 to-brand-400 h-[3px]"
+                          "w-full bg-accent h-[3px]"
                         }
                       />
                     </Tabs.Tab>
@@ -786,7 +853,7 @@ const CurseForgeModPage: React.FC = () => {
                       {t("curseforge.mod_tabs.files")}
                       <Tabs.Indicator
                         className={
-                          "w-full bg-linear-to-r from-brand-500 to-brand-400 h-[3px]"
+                          "w-full bg-accent h-[3px]"
                         }
                       />
                     </Tabs.Tab>
@@ -795,15 +862,38 @@ const CurseForgeModPage: React.FC = () => {
 
                 <Tabs.Panel id="description">
                   <div className="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-brand-600 dark:prose-a:text-brand-500">
-                    {description ? (
+                    {descriptionLoading ? (
+                      <div
+                        role="status"
+                        className="flex flex-col items-center justify-center py-12 text-muted gap-3"
+                      >
+                        <Spinner color="accent" />
+                        <p>{t("curseforge.loading_description")}</p>
+                      </div>
+                    ) : descriptionError ? (
+                      <div
+                        role="alert"
+                        className="flex flex-col items-center justify-center py-12 gap-3"
+                      >
+                        <p>{t("audit.mods.description_load_failed")}</p>
+                        <Button
+                          variant="secondary"
+                          onPress={() => setDescriptionRetry((value) => value + 1)}
+                        >
+                          {t("common.retry")}
+                        </Button>
+                      </div>
+                    ) : description.trim() ? (
                       <div
                         dangerouslySetInnerHTML={{ __html: description }}
                         onClick={handleDescriptionClick}
                       />
                     ) : (
-                      <div className="flex flex-col items-center justify-center py-12 text-muted gap-3">
-                        <Spinner color={"accent"} />
-                        <p>{t("curseforge.loading_description")}</p>
+                      <div
+                        role="status"
+                        className="flex flex-col items-center justify-center py-12 text-muted gap-3"
+                      >
+                        <p>{t("curseforge.no_description")}</p>
                       </div>
                     )}
                   </div>
@@ -864,7 +954,28 @@ const CurseForgeModPage: React.FC = () => {
                       </div>
                     </div>
 
-                    {filteredFiles.length > 0 ? (
+                    {filesLoading ? (
+                      <div
+                        role="status"
+                        className="flex flex-col items-center py-12 gap-3"
+                      >
+                        <Spinner color="accent" />
+                        <p>{t("common.loading")}</p>
+                      </div>
+                    ) : filesError ? (
+                      <div
+                        role="alert"
+                        className="flex flex-col items-center py-12 gap-3"
+                      >
+                        <p>{t("audit.mods.files_load_failed")}</p>
+                        <Button
+                          variant="secondary"
+                          onPress={() => setFilesRetry((value) => value + 1)}
+                        >
+                          {t("common.retry")}
+                        </Button>
+                      </div>
+                    ) : filteredFiles.length > 0 ? (
                       <Table variant="secondary">
                         <Table.ScrollContainer className="h-full">
                           <Table.Content
@@ -1032,17 +1143,27 @@ const CurseForgeModPage: React.FC = () => {
                                         "py-3 border-b border-border/50 dark:border-white/5 group-last:border-0",
                                       )}
                                     >
-                                      <Button
-                                        isIconOnly
-                                        size="sm"
-                                        onPress={() => handleInstall(file)}
-                                        variant={"ghost"}
-                                        className={
-                                          "text-muted dark:text-zinc-400 hover:text-accent"
-                                        }
-                                      >
-                                        <LuDownload size={20} />
-                                      </Button>
+                                      <Tooltip>
+                                        <Button
+                                          isIconOnly
+                                          aria-label={t("audit.mods.install_file", {
+                                            name: file.displayName || file.fileName,
+                                          })}
+                                          size="sm"
+                                          onPress={() => handleInstall(file)}
+                                          variant={"ghost"}
+                                          className={
+                                            "text-muted dark:text-zinc-400 hover:text-accent"
+                                          }
+                                        >
+                                          <LuDownload size={20} />
+                                        </Button>
+                                        <Tooltip.Content>
+                                          {t("audit.mods.install_file", {
+                                            name: file.displayName || file.fileName,
+                                          })}
+                                        </Tooltip.Content>
+                                      </Tooltip>
                                     </Table.Cell>
                                   </Table.Row>
                                 );

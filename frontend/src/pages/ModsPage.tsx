@@ -4,6 +4,7 @@ import {
   Checkbox,
   Chip,
   Dropdown,
+  FieldError,
   Input,
   InputGroup,
   Label,
@@ -12,6 +13,7 @@ import {
   Switch,
   Tabs,
   TextField,
+  Tooltip,
 } from "@heroui/react";
 
 import React, { useMemo, useRef } from "react";
@@ -191,9 +193,12 @@ export const ModsPage: React.FC = () => {
         showCancelButton
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}
+        confirmButtonProps={{ isDisabled: !mp.dllName.trim() }}
       >
         <div className="flex flex-col gap-3">
           <TextField
+            isRequired
+            isInvalid={!mp.dllName.trim()}
             className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.dllName}
             onChange={mp.setDllName}
@@ -209,6 +214,7 @@ export const ModsPage: React.FC = () => {
                 "min-h-8 text-sm",
               )}
             />
+            <FieldError>{t("audit.mods.name_required")}</FieldError>
           </TextField>
           <TextField
             className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
@@ -369,7 +375,12 @@ export const ModsPage: React.FC = () => {
               />
               <InputGroup.Suffix>
                 {mp.query && (
-                  <button onClick={() => mp.setQuery("")}>
+                  <button
+                    type="button"
+                    aria-label={t("audit.mods.clear_search")}
+                    title={t("audit.mods.clear_search")}
+                    onClick={() => mp.setQuery("")}
+                  >
                     <FaTimes className="text-muted hover:text-foreground" />
                   </button>
                 )}
@@ -594,9 +605,27 @@ export const ModsPage: React.FC = () => {
               <p>{t("common.loading")}</p>
             </div>
           ) : mp.visibleItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted gap-2">
+            <div role="status" className="flex flex-col items-center justify-center h-full text-muted gap-2">
               <FaPuzzlePiece className="w-8 h-8 opacity-50" />
-              <p>{t("moddedcard.content.none")}</p>
+              <p>
+                {t(
+                  mp.hasInstalledItems
+                    ? "audit.mods.no_filtered_results"
+                    : "moddedcard.content.none",
+                )}
+              </p>
+              {mp.hasInstalledItems && (
+                <Button
+                  variant="secondary"
+                  onPress={() => {
+                    mp.setQuery("");
+                    mp.setOnlyEnabled(false);
+                    mp.setTabKey("all");
+                  }}
+                >
+                  {t("audit.mods.clear_filters")}
+                </Button>
+              )}
             </div>
           ) : (
             mp.visibleItems.map((item, idx) => {
@@ -714,14 +743,22 @@ export const ModsPage: React.FC = () => {
                       </Switch>
 
                       <Dropdown>
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          variant={"ghost"}
-                          className={"text-muted"}
-                        >
-                          <FaEllipsisVertical />
-                        </Button>
+                        <Tooltip>
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant={"ghost"}
+                            className={"text-muted"}
+                            aria-label={t("audit.mods.more_actions", {
+                              name: mod.name,
+                            })}
+                          >
+                            <FaEllipsisVertical />
+                          </Button>
+                          <Tooltip.Content>
+                            {t("audit.mods.more_actions", { name: mod.name })}
+                          </Tooltip.Content>
+                        </Tooltip>
                         <Dropdown.Popover
                           className={COMPONENT_STYLES.dropdown.content}
                         >
@@ -901,14 +938,24 @@ export const ModsPage: React.FC = () => {
                     </Switch>
 
                     <Dropdown>
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        variant={"ghost"}
-                        className={"text-muted"}
-                      >
-                        <FaEllipsisVertical />
-                      </Button>
+                      <Tooltip>
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          variant={"ghost"}
+                          className={"text-muted"}
+                          aria-label={t("audit.mods.more_actions", {
+                            name: lipItem.packageName,
+                          })}
+                        >
+                          <FaEllipsisVertical />
+                        </Button>
+                        <Tooltip.Content>
+                          {t("audit.mods.more_actions", {
+                            name: lipItem.packageName,
+                          })}
+                        </Tooltip.Content>
+                      </Tooltip>
                       <Dropdown.Popover
                         className={COMPONENT_STYLES.dropdown.content}
                       >

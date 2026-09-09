@@ -2439,6 +2439,7 @@ export const useModsPage = (
     normalItems,
     lipGroupItems,
     visibleItems,
+    hasInstalledItems: baseNormalItems.length > 0 || allLipGroupItems.length > 0,
     modsByFolder,
 
     refreshAll,

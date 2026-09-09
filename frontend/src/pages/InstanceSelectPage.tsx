@@ -8,10 +8,13 @@ import {
   Label,
   Tabs,
   TextField,
+  Spinner,
+  Tooltip,
   toast,
 } from "@heroui/react";
 
 import React from "react";
+import { Button as AriaButton } from "react-aria-components";
 import { getPlayerGamertagMap } from "@/utils/content";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -51,6 +54,9 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
     "all" | "release" | "preview"
   >("all");
   const [query, setQuery] = React.useState("");
+  const [loading, setLoading] = React.useState(true);
+  const [loadError, setLoadError] = React.useState(false);
+  const [loadAttempt, setLoadAttempt] = React.useState(0);
   const [sortBy, setSortBy] = React.useState<"version" | "name">("version");
   const [sortAsc, setSortAsc] = React.useState<boolean>(false);
   const [logoMap, setLogoMap] = React.useState<Map<string, string>>(new Map());
@@ -60,10 +66,14 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
   const hasBackend = minecraft !== undefined;
 
   React.useEffect(() => {
+    let cancelled = false;
+    setLoading(true);
+    setLoadError(false);
     if (hasBackend) {
       const listFn = ListVersionMetas as any;
       if (typeof listFn === "function") {
         listFn().then((metas: any[]) => {
+          if (cancelled) return;
           const newLocalVersionMap = new Map();
           const newLocalVersionsMap = new Map();
           metas?.forEach((m: any) => {
@@ -108,14 +118,14 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
               const names = Array.from(newLocalVersionMap.keys());
               Promise.all(
                 names.map((n) =>
-                  getter(n).then((u: string) => [n, String(u || "")] as const),
+                  getter(n).then((u: string) => [n, String(u || "")] as const).catch(() => [n, ""] as const),
                 ),
               ).then((entries) => {
                 const m = new Map<string, string>();
                 entries.forEach(([n, u]) => {
                   if (u) m.set(n, u);
                 });
-                setLogoMap(m);
+                if (!cancelled) setLogoMap(m);
               });
             } else {
               setLogoMap(new Map());
@@ -123,10 +133,21 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
           } catch {
             setLogoMap(new Map());
           }
+        }).catch((error: unknown) => {
+          console.error("Failed to load instances", error);
+          if (!cancelled) setLoadError(true);
+        }).finally(() => {
+          if (!cancelled) setLoading(false);
         });
+      } else {
+        setLoading(false);
+        setLoadError(true);
       }
+    } else {
+      setLoading(false);
     }
-  }, [hasBackend]);
+    return () => { cancelled = true; };
+  }, [hasBackend, loadAttempt]);
 
   const flatItems = React.useMemo(() => {
     const list = (
@@ -295,7 +316,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                       <InputGroup.Suffix>
                         {query && (
                           <CloseButton
-                            aria-label="Clear"
+                            aria-label={t("audit.primary.clear_search")}
                             onPress={() => setQuery("")}
                             className={COMPONENT_STYLES.input.clearButton}
                           />
@@ -400,7 +421,30 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
             layout: { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] },
           }}
         >
-          {flatItems.map((it) => (
+          {(loading || loadError || flatItems.length === 0) && (
+            <Card className={cn(LAYOUT.GLASS_CARD.BASE, "col-span-full")}>
+              <Card.Content className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+                {loading && <Spinner />}
+                <p role={loadError ? "alert" : "status"} className="font-semibold text-foreground">
+                  {t(loading ? "common.loading" : loadError ? "audit.primary.instances.failed" : localVersionMap.size === 0 ? "audit.primary.instances.empty" : "audit.primary.instances.no_matches")}
+                </p>
+                {!loading && (loadError ? (
+                  <Button variant="secondary" onPress={() => setLoadAttempt((attempt) => attempt + 1)}>{t("download_manager.actions.retry")}</Button>
+                ) : localVersionMap.size === 0 ? (
+                  <>
+                    <p className="text-sm text-muted">{t("audit.primary.instances.empty_description")}</p>
+                    <div className="flex flex-wrap justify-center gap-2">
+                      <Button variant="primary" onPress={() => navigate(ROUTES.download)}>{t("audit.primary.download_minecraft")}</Button>
+                      <Button variant="secondary" onPress={() => navigate(ROUTES.install, { state: { returnTo: ROUTES.instances } })}>{t("audit.primary.local_install")}</Button>
+                    </div>
+                  </>
+                ) : (
+                  <Button variant="secondary" onPress={() => { setQuery(""); setActiveTab("all"); }}>{t("audit.primary.clear_filters")}</Button>
+                ))}
+              </Card.Content>
+            </Card>
+          )}
+          {!loading && !loadError && flatItems.map((it) => (
             <motion.div
               key={it.name}
               layout
@@ -425,15 +469,18 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                 )}
               >
                 <Card.Content className="p-4 flex flex-col gap-1">
-                  <button
+                  <Tooltip>
+                  <AriaButton
                     type="button"
                     aria-label={it.name}
                     aria-pressed={selectedVersionName === it.name}
                     className="absolute inset-0 z-10 cursor-pointer rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
-                    onClick={() => handleSelectVersion(it.name)}
+                    onPress={() => handleSelectVersion(it.name)}
                   />
-                  <div className="flex items-center justify-between w-full">
-                    <div className="font-bold text-lg truncate">{it.name}</div>
+                  <Tooltip.Content>{it.name}</Tooltip.Content>
+                  </Tooltip>
+                  <div className="flex items-center justify-between gap-2 w-full min-w-0">
+                    <div className="font-bold text-lg truncate min-w-0 flex-1">{it.name}</div>
                     <div className="flex items-center gap-2">
                       {it.isPreview ? (
                         <Chip
@@ -460,7 +507,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                         onPress={() => {
                           openEditFor(it.name);
                         }}
-                        aria-label="settings"
+                        aria-label={t("audit.primary.instances.settings", { name: it.name })}
                         variant={"ghost"}
                         className={"relative z-20 shrink-0"}
                       >

@@ -284,7 +284,7 @@ export const useLauncher = (args: any) => {
       }
     } else {
       launchRequestActiveRef.current = false;
-      navigate(ROUTES.instances);
+      navigate(ROUTES.download);
     }
   }, [
     currentVersion,

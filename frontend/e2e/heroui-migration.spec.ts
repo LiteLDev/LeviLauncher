@@ -145,7 +145,7 @@ test("input clearing and dropdown keyboard selection remain functional", async (
   const search = page.getByRole("textbox");
   await search.fill("migration-test");
   await expect(search).toHaveValue("migration-test");
-  await page.getByRole("button", { name: "Clear", exact: true }).click();
+  await page.getByRole("button", { name: "Clear search", exact: true }).click();
   await expect(search).toHaveValue("");
 
   await page.goto(`/#${ROUTES.onboarding}`);
@@ -270,7 +270,7 @@ test("instance card selection emits a toast and keeps its settings action separa
     }),
   ).toBeVisible();
   await expect(page.locator("button button")).toHaveCount(0);
-  await page.getByRole("button", { name: "settings", exact: true }).click();
+  await page.getByRole("button", { name: `Settings for ${instance.name}`, exact: true }).click();
   await expect(page).toHaveURL(new RegExp(`${ROUTES.instanceSettings}$`));
   expect(errors).toEqual([]);
 });

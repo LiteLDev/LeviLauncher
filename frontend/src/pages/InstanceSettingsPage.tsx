@@ -998,7 +998,7 @@ export default function InstanceSettingsPage() {
             {t("versions.edit.backup.dialog_body")}
           </p>
           {vs.backupHasSharedScope ? (
-            <div className="rounded-2xl border border-amber-200/70 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+            <div className="rounded-2xl border border-amber-200/70 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300 dark:text-amber-300">
               {t("versions.edit.backup.shared_warning")}
             </div>
           ) : null}
@@ -1330,7 +1330,7 @@ export default function InstanceSettingsPage() {
               ) : null}
               {!vs.restoreConflictLoading && vs.restoreConflicts.length > 0 ? (
                 <>
-                  <div className="rounded-2xl border border-amber-200/70 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300">
+                  <div className="rounded-2xl border border-amber-200/70 dark:border-amber-500/30 bg-amber-50/80 dark:bg-amber-500/10 px-4 py-3 text-sm text-amber-700 dark:text-amber-300 dark:text-amber-300">
                     {t("versions.edit.backup.restore.conflict_summary", {
                       count: vs.restoreConflicts.length,
                     })}
@@ -2144,7 +2144,7 @@ export default function InstanceSettingsPage() {
           {t("errors.ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY")}
         </div>
         {vs.demotedWarningNames.length > 0 ? (
-          <div className="mt-3 rounded-md bg-amber-50/70 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-500/30 px-3 py-2 text-amber-700 dark:text-amber-300 text-sm whitespace-pre-wrap break-all font-mono">
+          <div className="mt-3 rounded-md bg-amber-50/70 dark:bg-amber-500/10 border border-amber-200/70 dark:border-amber-500/30 px-3 py-2 text-amber-700 dark:text-amber-300 dark:text-amber-300 text-sm whitespace-pre-wrap break-all font-mono">
             {vs.demotedWarningNames.join("\n")}
           </div>
         ) : null}
@@ -2282,7 +2282,7 @@ export default function InstanceSettingsPage() {
               version: vs.rcVersion,
             })}
           </p>
-          <p className="font-semibold text-amber-700">
+          <p className="font-semibold text-amber-700 dark:text-amber-300">
             {t("mods.rc_warning.body_2")}
           </p>
           <p>{t("mods.rc_warning.body_3")}</p>

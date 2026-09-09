@@ -26,6 +26,7 @@ import {
   FaDownload,
   FaCopy,
   FaSync,
+  FaSearch,
   FaTrash,
   FaBoxOpen,
   FaChevronDown,
@@ -67,6 +68,8 @@ export const DownloadPage: React.FC = () => {
   const navigate = useNavigate();
   const { startDownload, isDownloading } = useDownloads();
   const [items, setItems] = useState<VersionItem[]>([]);
+  const [versionsLoading, setVersionsLoading] = useState(true);
+  const [versionsError, setVersionsError] = useState(false);
   const {
     map: versionStatusMap,
     refreshAll,
@@ -332,6 +335,8 @@ export const DownloadPage: React.FC = () => {
 
   useEffect(() => {
     const fetchData = async () => {
+      setVersionsLoading(true);
+      setVersionsError(false);
       try {
         let data: any;
         if (
@@ -370,6 +375,9 @@ export const DownloadPage: React.FC = () => {
         } catch {}
       } catch (e) {
         console.error("Failed to fetch versions", e);
+        setVersionsError(true);
+      } finally {
+        setVersionsLoading(false);
       }
     };
     try {
@@ -383,6 +391,9 @@ export const DownloadPage: React.FC = () => {
   }, []);
 
   const reloadAll = async () => {
+    if (versionsLoading) return;
+    setVersionsLoading(true);
+    setVersionsError(false);
     refreshLLDB();
     try {
       let data: any;
@@ -425,6 +436,9 @@ export const DownloadPage: React.FC = () => {
       } catch {}
     } catch (e) {
       console.error("reloadAll failed", e);
+      setVersionsError(true);
+    } finally {
+      setVersionsLoading(false);
     }
   };
 
@@ -562,8 +576,8 @@ export const DownloadPage: React.FC = () => {
         >
           <Card className={cn("flex-none", LAYOUT.GLASS_CARD.BASE)}>
             <Card.Content className="p-4">
-              <div className="flex flex-col sm:flex-row gap-4 justify-between items-center">
-                <div className="flex items-center gap-3 w-full sm:max-w-md">
+              <div className="flex flex-col xl:flex-row gap-4 justify-between items-center">
+                <div className="flex items-center gap-3 w-full xl:max-w-md">
                   <TextField
                     aria-label={t("downloadpage.topcontent.input.placeholder")}
                     className={cn(
@@ -581,7 +595,7 @@ export const DownloadPage: React.FC = () => {
                       )}
                     >
                       <InputGroup.Prefix>
-                        {<FaSync size={14} className="text-muted" />}
+                        {<FaSearch size={14} className="text-muted" />}
                       </InputGroup.Prefix>
                       <InputGroup.Input
                         placeholder={t(
@@ -592,7 +606,7 @@ export const DownloadPage: React.FC = () => {
                       <InputGroup.Suffix>
                         {query && (
                           <CloseButton
-                            aria-label="Clear"
+                            aria-label={t("audit.primary.clear_search")}
                             onPress={() => setQuery("")}
                             className={COMPONENT_STYLES.input.clearButton}
                           />
@@ -601,14 +615,14 @@ export const DownloadPage: React.FC = () => {
                     </InputGroup>
                   </TextField>
                 </div>
-                <div className="flex items-center gap-2 shrink-0 overflow-x-auto w-full sm:w-auto pb-1 sm:pb-0">
+                <div className="flex items-center gap-2 shrink-0 flex-wrap w-full xl:w-auto pb-1 xl:pb-0">
                   <Button
-                    isDisabled={items.length === 0}
+                    isDisabled={versionsLoading || refreshing}
                     onPress={async () => {
                       await reloadAll();
                     }}
                     variant={"secondary"}
-                    isPending={refreshing}
+                    isPending={versionsLoading || refreshing}
                     className={cn(
                       "rounded-full",
                       "bg-surface-secondary/50 dark:bg-zinc-800/50 text-foreground dark:text-zinc-200 font-medium hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 transition-colors",
@@ -647,7 +661,7 @@ export const DownloadPage: React.FC = () => {
                       "bg-surface-secondary/50 dark:bg-zinc-800/50 text-foreground dark:text-zinc-200 font-medium hover:bg-surface-tertiary/50 dark:hover:bg-zinc-700/50 transition-colors",
                     )}
                   >
-                    {t("downloadpage.customappx.button")}
+                    {t("audit.primary.local_install")}
                   </Button>
                   <Dropdown>
                     <Button
@@ -869,6 +883,12 @@ export const DownloadPage: React.FC = () => {
         >
           <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
             <Card.Content className="p-0 flex flex-col h-full overflow-hidden relative">
+              {versionsError && items.length > 0 && (
+                <div role="alert" className="flex items-center justify-between gap-3 p-3 text-sm bg-warning/10 text-foreground">
+                  <span>{t("audit.primary.download.stale")}</span>
+                  <Button size="sm" variant="secondary" onPress={reloadAll} isDisabled={versionsLoading}>{t("download_manager.actions.retry")}</Button>
+                </div>
+              )}
               <Table
                 className={cn(
                   "h-full",
@@ -936,8 +956,13 @@ export const DownloadPage: React.FC = () => {
                     <Table.Body
                       renderEmptyState={() => (
                         <div className="flex flex-col items-center justify-center h-40 text-muted gap-2">
-                          <FaBoxOpen className="w-10 h-10 opacity-20" />
-                          <p>{t("downloadpage.table.empty")}</p>
+                          {versionsLoading ? <Spinner /> : <FaBoxOpen className="w-10 h-10 opacity-20" />}
+                          <p role={versionsError ? "alert" : "status"}>{t(versionsLoading ? "common.loading" : versionsError ? "audit.primary.download.failed" : items.length > 0 ? "audit.primary.download.no_matches" : "downloadpage.table.empty")}</p>
+                          {!versionsLoading && (versionsError || items.length === 0 ? (
+                            <Button size="sm" variant="secondary" onPress={reloadAll}>{t("download_manager.actions.retry")}</Button>
+                          ) : (
+                            <Button size="sm" variant="secondary" onPress={() => { setQuery(""); setTypeFilter("all"); setStatusFilter("all"); setLlFilter("all"); }}>{t("audit.primary.clear_filters")}</Button>
+                          ))}
                         </div>
                       )}
                     >
@@ -1207,7 +1232,7 @@ export const DownloadPage: React.FC = () => {
               </Table>
               {/* Footer Pagination */}
               <div className="flex items-center justify-between px-4 py-3 border-t border-border dark:border-white/10 bg-transparent shrink-0 z-10">
-                <div className="text-sm text-muted dark:text-zinc-400">
+                <div className="text-sm text-muted dark:text-zinc-400 shrink-0 whitespace-nowrap">
                   {t("downloadpage.bottomcontent.total", {
                     count: filtered.length,
                   })}
@@ -1647,7 +1672,7 @@ export const DownloadPage: React.FC = () => {
                 {!!extractInfo?.totalBytes && <ProgressBar.Output />}
                 <ProgressBar.Track className={"bg-surface-secondary"}>
                   <ProgressBar.Fill
-                    className={"bg-gradient-to-r from-brand-500 to-brand-400"}
+                    className={"bg-brand-500"}
                   />
                 </ProgressBar.Track>
               </ProgressBar>

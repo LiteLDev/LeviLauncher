@@ -1,5 +1,6 @@
 import {
   Button,
+  Tooltip,
   Card,
   Chip,
   Description,
@@ -247,7 +248,7 @@ export const LauncherPage = (args: any) => {
                 <div className="flex flex-col gap-1 min-w-0">
                   <div className="flex items-center gap-3">
                     <motion.h1
-                      className="text-4xl sm:text-5xl font-black tracking-tight text-transparent bg-clip-text bg-gradient-to-r from-brand-600 to-brand-400 dark:from-brand-400 dark:to-brand-600 truncate pb-2"
+                      className="text-4xl sm:text-5xl font-black tracking-tight text-brand-700 dark:text-brand-300 truncate pb-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -333,6 +334,7 @@ export const LauncherPage = (args: any) => {
                   {/* Version Selector */}
                   <div className="flex items-center gap-3 p-1.5 rounded-2xl">
                     <Dropdown>
+                      <Tooltip>
                       <Button
                         variant={"ghost"}
                         className={
@@ -372,6 +374,8 @@ export const LauncherPage = (args: any) => {
                           />
                         </div>
                       </Button>
+                      <Tooltip.Content>{displayName || t("launcherpage.currentVersion_none")}</Tooltip.Content>
+                      </Tooltip>
                       <Dropdown.Popover
                         placement="bottom end"
                         className={COMPONENT_STYLES.dropdown.content}
@@ -530,7 +534,9 @@ export const LauncherPage = (args: any) => {
                       <Dropdown.Popover
                         className={COMPONENT_STYLES.dropdown.content}
                       >
+                        {!currentVersion && <p className="px-3 py-2 text-xs text-muted">{t("audit.primary.select_instance_first")}</p>}
                         <Dropdown.Menu
+                          disabledKeys={currentVersion ? [] : ["shortcut", "folder", "register"]}
                           aria-label={t("launcherpage.tip.quick_actions_menu")}
                         >
                           <Dropdown.Item
@@ -630,7 +636,7 @@ export const LauncherPage = (args: any) => {
                           {t(
                             currentVersion
                               ? "launcherpage.launch_button"
-                              : "launcherpage.manage_versions",
+                              : "audit.primary.download_minecraft",
                           )}
                         </>
                       )}

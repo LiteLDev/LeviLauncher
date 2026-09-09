@@ -25,6 +25,12 @@ export interface DownloadItem {
   url?: string;
 }
 
+export const isDownloadActive = (status: string): boolean =>
+  ["starting", "started", "resumed", "verifying"].includes(status);
+
+export const isDownloadTerminal = (status: string): boolean =>
+  ["done", "cancelled", "error"].includes(status);
+
 interface DownloadsContextType {
   downloads: DownloadItem[];
   startDownload: (
@@ -366,6 +372,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const removeDownload = (dest: string) => {
+    if (!isDownloadTerminal(downloadsRef.current[dest]?.status || "")) return;
     cancelledRef.current.add(dest);
     setDownloadsMap((prev) => {
       const next = { ...prev };
@@ -409,12 +416,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const downloads = Object.values(downloadsMap);
-  const isDownloading = downloads.some(
-    (dl) =>
-      dl.status === "started" ||
-      dl.status === "resumed" ||
-      dl.status === "starting",
-  );
+  const isDownloading = downloads.some((dl) => isDownloadActive(dl.status));
 
   return (
     <DownloadsContext.Provider

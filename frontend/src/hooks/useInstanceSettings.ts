@@ -715,7 +715,7 @@ export const useInstanceSettings = () => {
     close: unsavedOnClose,
     setOpen: unsavedOnOpenChange,
   } = useOverlayState();
-  const [pendingNavPath, setPendingNavPath] = React.useState<string>("");
+  const [pendingNavPath, setPendingNavPath] = React.useState<string | number>("");
 
   // LeviLamina
   const {
@@ -978,9 +978,9 @@ export const useInstanceSettings = () => {
   React.useEffect(() => {
     const handler = (ev: any) => {
       try {
-        let targetPath = ev?.detail?.path;
-        if (targetPath === -1) targetPath = "-1";
-        targetPath = String(targetPath || "");
+        const targetPath: unknown = ev?.detail?.path;
+        if (typeof targetPath !== "string" && typeof targetPath !== "number") return;
+        if (typeof targetPath === "number" && (!Number.isInteger(targetPath) || targetPath === 0)) return;
         const hasUnsaved =
           (newName && newName !== targetName) ||
           enableIsolation !== originalIsolation ||
@@ -997,8 +997,8 @@ export const useInstanceSettings = () => {
           unsavedOnOpen();
           return;
         }
-        if (targetPath === "-1") {
-          navigate(-1);
+        if (typeof targetPath === "number") {
+          navigate(targetPath);
         } else {
           navigate(targetPath);
         }
@@ -1019,6 +1019,10 @@ export const useInstanceSettings = () => {
     originalRenderDragon,
     enableCtrlRReloadResources,
     originalCtrlRReloadResources,
+    envVars,
+    originalEnvVars,
+    launchArgs,
+    originalLaunchArgs,
     navigate,
     location.pathname,
     unsavedOnOpen,
@@ -1926,7 +1930,7 @@ export const useInstanceSettings = () => {
 
   // Save handler
   const onSave = React.useCallback(
-    async (destPath?: string) => {
+    async (destPath?: string | number) => {
       if (!hasBackend || !targetName) {
         navigate(-1);
         return false;
@@ -1989,8 +1993,8 @@ export const useInstanceSettings = () => {
         }
       } catch {}
 
-      if (destPath === "-1") {
-        navigate(-1);
+      if (typeof destPath === "number") {
+        navigate(destPath);
       } else {
         navigate(typeof destPath === "string" ? destPath : returnToPath);
       }

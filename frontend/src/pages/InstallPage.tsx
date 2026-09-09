@@ -25,6 +25,7 @@ import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { resolveInstallError } from "@/utils/installError";
+import { saveCurrentVersionName } from "@/utils/currentVersion";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Dialogs, Events } from "@wailsio/runtime";
@@ -86,6 +87,7 @@ export default function InstallPage() {
   const [inheritMetas, setInheritMetas] = useState<any[]>([]);
   const [inheritCandidates, setInheritCandidates] = useState<string[]>([]);
   const [installError, setInstallError] = useState<string>("");
+  const [failureDetails, setFailureDetails] = useState("");
   const [installing, setInstalling] = useState<boolean>(false);
   const [installingVersion, setInstallingVersion] = useState<string>("");
   const [installingTargetName, setInstallingTargetName] = useState<string>("");
@@ -358,7 +360,18 @@ export default function InstallPage() {
     return t("downloadpage.install_folder.confirm_title") as unknown as string;
   }, [installing, resultMsg, t]);
 
+  const reportInstallFailure = (details: string) => {
+    const raw = String(details || "ERR_INSTALL_FAILED");
+    setFailureDetails(raw);
+    toast(t("common.error"), {
+      description: resolveInstallError(raw, t, typeLabel),
+      variant: "danger",
+      timeout: 5000,
+    });
+  };
+
   const proceedInstall = async () => {
+    setFailureDetails("");
     setInstallError("");
     setResultMsg("");
 
@@ -366,11 +379,7 @@ export default function InstallPage() {
       try {
         const lipInstalled = await minecraft.IsLipInstalled();
         if (!lipInstalled) {
-          toast(t("common.error"), {
-            description: resolveInstallError("ERR_LIP_NOT_INSTALLED", t),
-            variant: "danger",
-            timeout: 2000,
-          });
+          reportInstallFailure("ERR_LIP_NOT_INSTALLED");
           return;
         }
       } catch {}
@@ -424,11 +433,7 @@ export default function InstallPage() {
         } catch {}
       }
       if (!fname) {
-        toast(t("common.error"), {
-          description: resolveInstallError("ERR_MSIXVC_NOT_SPECIFIED", t),
-          variant: "danger",
-          timeout: 2000,
-        });
+        reportInstallFailure("ERR_MSIXVC_NOT_SPECIFIED");
         return;
       }
 
@@ -446,11 +451,7 @@ export default function InstallPage() {
       if (typeof install === "function") {
         const err: string = await install(fname, name, isPrev);
         if (err) {
-          toast(t("common.error"), {
-            description: resolveInstallError(err, t),
-            variant: "danger",
-            timeout: 2000,
-          });
+          reportInstallFailure(err);
           setInstalling(false);
           return;
         }
@@ -458,7 +459,7 @@ export default function InstallPage() {
       }
 
       if (typeof saveMeta === "function") {
-        await saveMeta(
+        const metaError: string = await saveMeta(
           name,
           mirrorVersion || name,
           String(mirrorType || "Release").toLowerCase(),
@@ -470,6 +471,7 @@ export default function InstallPage() {
           "",
           "",
         );
+        if (metaError) throw new Error(metaError);
       }
 
       if (installIsolation && inheritSource) {
@@ -483,27 +485,15 @@ export default function InstallPage() {
               copyErr = await copyFromVersion(inheritSource, name);
           }
           if (copyErr) {
-            toast(t("common.error"), {
-              description: resolveInstallError(copyErr, t),
-              variant: "danger",
-              timeout: 2000,
-            });
-            setInstalling(false);
+            reportInstallFailure(copyErr);
             await rollback();
+            setInstalling(false);
             return;
           }
         } catch (e: any) {
-          toast(t("common.error"), {
-            description: resolveInstallError(
-              String(e?.message || e || ""),
-              t,
-              typeLabel,
-            ),
-            variant: "danger",
-            timeout: 2000,
-          });
-          setInstalling(false);
+          reportInstallFailure(String(e?.message || e || ""));
           await rollback();
+          setInstalling(false);
           return;
         }
       }
@@ -514,13 +504,9 @@ export default function InstallPage() {
             selectedLLVersion || getLatestLLVersion(mirrorVersion),
           ).trim();
           if (!installVersion) {
-            toast(t("common.error"), {
-              description: resolveInstallError("ERR_LL_VERSION_UNSUPPORTED", t),
-              variant: "danger",
-              timeout: 2000,
-            });
-            setInstalling(false);
+            reportInstallFailure("ERR_LL_VERSION_UNSUPPORTED");
             await rollback();
+            setInstalling(false);
             return;
           }
           const installLL = (minecraft as any)?.InstallLeviLamina;
@@ -545,17 +531,9 @@ export default function InstallPage() {
             );
           }
         } catch (e: any) {
-          toast(t("common.error"), {
-            description: resolveInstallError(
-              String(e?.message || e || ""),
-              t,
-              typeLabel,
-            ),
-            variant: "danger",
-            timeout: 2000,
-          });
-          setInstalling(false);
+          reportInstallFailure(String(e?.message || e || ""));
           await rollback();
+          setInstalling(false);
           return;
         }
       }
@@ -590,17 +568,9 @@ export default function InstallPage() {
       setInstalledFolderName(name);
       setInstalling(false);
     } catch (e: any) {
-      toast(t("common.error"), {
-        description: resolveInstallError(
-          String(e?.message || e || ""),
-          t,
-          typeLabel,
-        ),
-        variant: "danger",
-        timeout: 2000,
-      });
-      setInstalling(false);
+      reportInstallFailure(String(e?.message || e || ""));
       await rollback();
+      setInstalling(false);
     }
   };
 
@@ -610,11 +580,7 @@ export default function InstallPage() {
         selectedLLVersion || getLatestLLVersion(mirrorVersion),
       ).trim();
       if (!targetLLVersion) {
-        toast(t("common.error"), {
-          description: resolveInstallError("ERR_LL_VERSION_UNSUPPORTED", t),
-          variant: "danger",
-          timeout: 2000,
-        });
+        reportInstallFailure("ERR_LL_VERSION_UNSUPPORTED");
         return;
       }
 
@@ -706,15 +672,19 @@ export default function InstallPage() {
                       >
                         {t("common.open_folder")}
                       </Button>
+                      <Button onPress={() => navigate(returnTo)} variant="ghost">{t("common.back")}</Button>
                       <Button
-                        onPress={() => navigate(returnTo)}
+                        onPress={() => {
+                          saveCurrentVersionName(installedFolderName, "install-complete");
+                          navigate(ROUTES.home);
+                        }}
                         variant={"secondary"}
                         className={cn(
                           "rounded-full",
                           "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20",
                         )}
                       >
-                        {t("common.back")}
+                        {t("audit.primary.install.go_launch")}
                       </Button>
                     </div>
                   )}
@@ -779,7 +749,7 @@ export default function InstallPage() {
                         <div className="h-1.5 w-full rounded-full bg-surface-tertiary/50 dark:bg-zinc-700/50 overflow-hidden border border-border dark:border-white/5 relative">
                           {extractInfo?.totalBytes ? (
                             <motion.div
-                              className="h-full bg-gradient-to-r from-brand-500 to-brand-400 rounded-full"
+                              className="h-full bg-brand-500 rounded-full"
                               initial={{ width: 0 }}
                               animate={{
                                 width: `${Math.min(
@@ -877,7 +847,7 @@ export default function InstallPage() {
                           damping: 20,
                           delay: 0.1,
                         }}
-                        className="w-16 h-16 rounded-full bg-linear-to-br from-brand-400 to-brand-600 flex items-center justify-center shadow-lg shadow-brand-900/20"
+                        className="w-16 h-16 rounded-full bg-accent flex items-center justify-center shadow-lg shadow-brand-900/20"
                       >
                         <svg
                           viewBox="0 0 24 24"
@@ -901,7 +871,7 @@ export default function InstallPage() {
                     </div>
 
                     <div className="flex flex-col items-center gap-1 text-center">
-                      <h2 className="text-2xl font-black bg-linear-to-br from-brand-600 to-brand-400 dark:from-brand-500 dark:to-brand-300 bg-clip-text text-transparent">
+                      <h2 className="text-2xl font-black text-brand-700 dark:text-brand-300">
                         {t("downloadpage.install.success_title")}
                       </h2>
                       {installingVersion && (
@@ -940,7 +910,28 @@ export default function InstallPage() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
             >
-              {/* Removed global error card */}
+              {failureDetails && (
+                <Card className={cn(LAYOUT.GLASS_CARD.BASE, "border-danger/30")}>
+                  <Card.Content className="space-y-3 p-5">
+                    <div role="alert" className="space-y-2">
+                      <h3 className="font-semibold text-danger">{t("audit.primary.install.failed")}</h3>
+                      <p className="text-sm text-foreground">{resolveInstallError(failureDetails, t, typeLabel)}</p>
+                      <pre className="whitespace-pre-wrap break-all text-xs text-muted select-text">{failureDetails}</pre>
+                    </div>
+                    <div className="flex flex-wrap gap-2">
+                      <Button variant="secondary" size="sm" onPress={async () => {
+                        try {
+                          await navigator.clipboard.writeText(failureDetails);
+                          toast(t("audit.primary.install.copied"), { variant: "success" });
+                        } catch {
+                          toast(t("audit.primary.install.copy_failed"), { variant: "danger" });
+                        }
+                      }}>{t("audit.primary.install.copy_details")}</Button>
+                      <Button variant="primary" size="sm" onPress={handleInstall}>{t("download_manager.actions.retry")}</Button>
+                    </div>
+                  </Card.Content>
+                </Card>
+              )}
 
               {/* Basic Configuration */}
               <Card className={LAYOUT.GLASS_CARD.BASE}>
@@ -1050,6 +1041,7 @@ export default function InstallPage() {
                         </div>
                       </div>
                       <Switch
+                        aria-label={t("downloadpage.install.levilamina_label")}
                         isSelected={installLeviLamina}
                         onChange={setInstallLeviLamina}
                         className={"group"}
@@ -1125,6 +1117,7 @@ export default function InstallPage() {
                       </div>
                     </div>
                     <Switch
+                      aria-label={t("downloadpage.install_folder.enable_isolation")}
                       isSelected={installIsolation}
                       onChange={setInstallIsolation}
                       className={"group"}
@@ -1221,7 +1214,7 @@ export default function InstallPage() {
               version: rcVersion,
             })}
           </p>
-          <p className="font-semibold text-amber-700">
+          <p className="font-semibold text-amber-700 dark:text-amber-300">
             {t("mods.rc_warning.body_2")}
           </p>
           <p>{t("mods.rc_warning.body_3")}</p>

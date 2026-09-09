@@ -13,7 +13,6 @@ const expectNoUnexpectedAccessibilityViolations = async (page: Page) => {
 
   const contrastResults = await new AxeBuilder({ page })
     .withRules(["color-contrast"])
-    .exclude(".brand-primary-foreground")
     .analyze();
   expect(contrastResults.violations).toEqual([]);
 };
@@ -48,7 +47,7 @@ test("onboarding keeps a complete keyboard navigation path", async ({
   }
 
   for (const name of [
-    "Skip",
+    "Continue with current directory",
     "Finish",
     "Reset",
     "Base Root",
@@ -60,7 +59,7 @@ test("onboarding keeps a complete keyboard navigation path", async ({
 
   await page.getByRole("button", { name: "Finish" }).focus();
   await page.keyboard.press("Shift+Tab");
-  await expect(page.getByRole("button", { name: "Skip" })).toBeFocused();
+  await expect(page.getByRole("button", { name: "Continue with current directory" })).toBeFocused();
 });
 
 test("startup shell prevents focus from entering the hidden application", async ({

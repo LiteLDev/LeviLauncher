@@ -51,6 +51,7 @@ export default function OnboardingPage() {
   const [baseRootWritable, setBaseRootWritable] = React.useState<boolean>(true);
   const [savingBaseRoot, setSavingBaseRoot] = React.useState<boolean>(false);
   const [errorKey, setErrorKey] = React.useState<OnboardingErrorKey>(null);
+  const [finishWithCurrentRoot, setFinishWithCurrentRoot] = React.useState(false);
   const {
     isOpen: unsavedOpen,
     open: unsavedOnOpen,
@@ -93,12 +94,26 @@ export default function OnboardingPage() {
   };
 
   const requestFinish = () => {
-    if (newBaseRoot && newBaseRoot !== baseRoot && baseRootWritable) {
+    if (savingBaseRoot) return;
+    setFinishWithCurrentRoot(false);
+    if (newBaseRoot !== baseRoot) {
       unsavedOnOpen();
       return;
     }
     proceedHome();
   };
+
+  const requestKeepCurrentRoot = () => {
+    if (savingBaseRoot) return;
+    if (newBaseRoot !== baseRoot) {
+      setFinishWithCurrentRoot(true);
+      unsavedOnOpen();
+      return;
+    }
+    proceedHome();
+  };
+
+  const keepCurrentRoot = finishWithCurrentRoot || !baseRootWritable || !newBaseRoot.trim();
 
   return (
     <PageContainer>
@@ -132,14 +147,16 @@ export default function OnboardingPage() {
               endContent={
                 <div className="flex items-center gap-3">
                   <Button
-                    onPress={requestFinish}
+                    onPress={requestKeepCurrentRoot}
+                    isDisabled={savingBaseRoot}
                     variant={"ghost"}
                     className={cn("rounded-full", "font-bold text-muted px-6")}
                   >
-                    {t("onboarding.skip")}
+                    {t("audit.primary.onboarding.keep_current")}
                   </Button>
                   <Button
                     onPress={requestFinish}
+                    isDisabled={savingBaseRoot}
                     variant={"primary"}
                     className={cn(
                       "rounded-full",
@@ -175,6 +192,7 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-2">
                     <Button
                       size="md"
+                      isDisabled={savingBaseRoot}
                       onPress={async () => {
                         setErrorKey(null);
                         try {
@@ -200,6 +218,7 @@ export default function OnboardingPage() {
                     <Button
                       size="md"
                       isDisabled={
+                        savingBaseRoot ||
                         !newBaseRoot ||
                         !baseRootWritable ||
                         newBaseRoot === baseRoot
@@ -219,6 +238,7 @@ export default function OnboardingPage() {
 
                             const br = await GetBaseRoot();
                             setBaseRoot(String(br || ""));
+                            setNewBaseRoot(String(br || ""));
                           }
                         } catch (error) {
                           console.error("Failed to save base root", error);
@@ -248,6 +268,7 @@ export default function OnboardingPage() {
 
               <div className="space-y-4">
                 <TextField
+                  isDisabled={savingBaseRoot}
                   isInvalid={!baseRootWritable}
                   className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
                   value={newBaseRoot}
@@ -271,6 +292,7 @@ export default function OnboardingPage() {
                       {
                         <Button
                           size="sm"
+                          isDisabled={savingBaseRoot}
                           onPress={async () => {
                             try {
                               const options: any = {
@@ -402,18 +424,24 @@ export default function OnboardingPage() {
       <UnifiedModal
         size="md"
         isOpen={unsavedOpen}
-        onOpenChange={unsavedOnOpenChange}
+        onOpenChange={(open) => { if (!savingBaseRoot) unsavedOnOpenChange(open); }}
         type="warning"
         title={t("onboarding.unsaved.title")}
         cancelText={t("onboarding.unsaved.cancel")}
-        confirmText={t("onboarding.unsaved.save")}
+        confirmText={t(keepCurrentRoot ? "audit.primary.onboarding.keep_current" : "onboarding.unsaved.save")}
         showCancelButton
         confirmButtonProps={{
           isPending: savingBaseRoot,
-          isDisabled: !newBaseRoot || !baseRootWritable,
+          isDisabled: savingBaseRoot,
         }}
+        cancelButtonProps={{ isDisabled: savingBaseRoot }}
         onCancel={() => unsavedOnClose()}
         onConfirm={async () => {
+          if (keepCurrentRoot) {
+            unsavedOnClose();
+            proceedHome();
+            return;
+          }
           setErrorKey(null);
           setSavingBaseRoot(true);
           try {
@@ -441,10 +469,10 @@ export default function OnboardingPage() {
       >
         <div className="flex flex-col gap-2">
           <div className="text-foreground dark:text-zinc-300 text-sm">
-            {t("onboarding.unsaved.body")}
+            {t(keepCurrentRoot ? "audit.primary.onboarding.unapplied" : "onboarding.unsaved.body", { path: baseRoot })}
           </div>
           {!baseRootWritable && (
-            <div className="text-xs text-rose-500">
+            <div role="alert" className="text-xs text-danger">
               {t("settings.body.paths.not_writable")}
             </div>
           )}

@@ -2,7 +2,7 @@ import { Button, Card, Chip, ProgressBar, Tooltip } from "@heroui/react";
 
 import React from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { useDownloads } from "@/utils/DownloadsContext";
+import { isDownloadActive, isDownloadTerminal, useDownloads } from "@/utils/DownloadsContext";
 import { useTranslation } from "react-i18next";
 
 import { motion } from "framer-motion";
@@ -17,7 +17,6 @@ import {
   FaExclamationCircle,
   FaBoxOpen,
   FaRedo,
-  FaTrash,
 } from "react-icons/fa";
 
 export const DownloadManagerPage: React.FC = () => {
@@ -45,17 +44,16 @@ export const DownloadManagerPage: React.FC = () => {
         )}
 
         {downloads.map((task) => {
-          const active =
-            task.status === "started" ||
-            task.status === "resumed" ||
-            task.status === "starting";
+          const active = isDownloadActive(task.status);
+          const verifying = task.status === "verifying";
+          const terminal = isDownloadTerminal(task.status);
           return (
             <motion.div
               key={task.dest}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className="rounded-4xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm overflow-hidden">
+              <Card className={cn(LAYOUT.GLASS_CARD.BASE, "overflow-hidden")}>
                 <Card.Content className="p-4 sm:p-6">
                   <div className="flex flex-col gap-4">
                     <div className="flex items-start justify-between">
@@ -86,11 +84,11 @@ export const DownloadManagerPage: React.FC = () => {
                             ) : (
                               <Chip size="sm" variant="soft" color={"accent"}>
                                 <Chip.Label>
-                                  {t("common.downloading")}
+                                  {t(verifying ? "audit.primary.download.verifying" : "common.downloading")}
                                 </Chip.Label>
                               </Chip>
                             )}
-                            {active && (
+                            {active && !verifying && (
                               <>
                                 <span>•</span>
                                 <span className="font-mono">
@@ -102,8 +100,10 @@ export const DownloadManagerPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {active && (
+                      {active && !verifying && (
+                        <Tooltip>
                         <Button
+                          aria-label={t("audit.primary.download.cancel")}
                           isIconOnly
                           onPress={() => cancelDownload(task.dest)}
                           variant={"danger-soft"}
@@ -111,8 +111,10 @@ export const DownloadManagerPage: React.FC = () => {
                         >
                           <FaTimes />
                         </Button>
+                        <Tooltip.Content>{t("audit.primary.download.cancel")}</Tooltip.Content>
+                        </Tooltip>
                       )}
-                      {!active && (
+                      {terminal && (
                         <div className="flex gap-2">
                           {(task.status === "cancelled" ||
                             task.status === "error") &&
@@ -120,6 +122,7 @@ export const DownloadManagerPage: React.FC = () => {
                               <Tooltip>
                                 <Button
                                   isIconOnly
+                                  aria-label={t("download_manager.actions.retry")}
                                   onPress={() =>
                                     startDownload(task.url!, task.fileName)
                                   }
@@ -136,6 +139,7 @@ export const DownloadManagerPage: React.FC = () => {
                           <Tooltip>
                             <Button
                               isIconOnly
+                              aria-label={t("audit.primary.download.remove")}
                               onPress={() => removeDownload(task.dest)}
                               variant={"ghost"}
                               className={cn(
@@ -146,7 +150,7 @@ export const DownloadManagerPage: React.FC = () => {
                               <FaTimes />
                             </Button>
                             <Tooltip.Content>
-                              {t("download_manager.actions.delete")}
+                              {t("audit.primary.download.remove_hint")}
                             </Tooltip.Content>
                           </Tooltip>
                         </div>
@@ -167,7 +171,7 @@ export const DownloadManagerPage: React.FC = () => {
                         </span>
                       </div>
                       <ProgressBar
-                        aria-label="Download progress"
+                        aria-label={t("audit.primary.download.progress", { name: task.fileName })}
                         value={
                           task.progress && task.progress.total > 0
                             ? (task.progress.downloaded / task.progress.total) *
@@ -176,14 +180,14 @@ export const DownloadManagerPage: React.FC = () => {
                         }
                         size="md"
                         isIndeterminate={
-                          active &&
-                          (!task.progress || task.progress.total === 0)
+                          verifying || (active &&
+                          (!task.progress || task.progress.total === 0))
                         }
                       >
                         <ProgressBar.Track>
                           <ProgressBar.Fill
                             className={
-                              "bg-gradient-to-r from-brand-500 to-brand-400"
+                              "bg-brand-500"
                             }
                           />
                         </ProgressBar.Track>

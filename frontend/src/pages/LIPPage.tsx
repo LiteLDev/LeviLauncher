@@ -52,8 +52,8 @@ import { compareVersions } from "@/utils/version";
 import {
   GetVersionMeta,
   ListVersionMetas,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { GetLipStatus } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import { GetLipStatus } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { ROUTES, routeTo } from "@/constants/routes";
 
 const PAGE_SIZE = 20;

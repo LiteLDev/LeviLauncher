@@ -6,7 +6,7 @@ import { useEffect, useMemo, useRef, useState } from "react";
 import { useTranslation } from "react-i18next";
 import { FaRocket } from "react-icons/fa";
 import { motion } from "framer-motion";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { Events, Window } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageContainer } from "@/components/PageContainer";

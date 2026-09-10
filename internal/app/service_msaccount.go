@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -13,7 +13,9 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-const microsoftAccountChanged = "microsoft-account-changed"
+// EventMicrosoftAccountChanged carries a MicrosoftAccountStatus to the frontend
+// whenever sign-in state changes.
+const EventMicrosoftAccountChanged = "microsoft-account-changed"
 
 type MicrosoftAccountStatus struct {
 	Phase       string `json:"phase"`
@@ -37,7 +39,11 @@ func NewMicrosoftAccountService(browserPath string) *MicrosoftAccountService {
 	return &MicrosoftAccountService{cacheDir: filepath.Join(apppath.ConfigDir(), "microsoft-account"), browserPath: browserPath, status: MicrosoftAccountStatus{Phase: "restoring"}}
 }
 
-func (s *MicrosoftAccountService) attach(window *application.WebviewWindow) {
+// Attach binds the service to the window it emits status events on and starts
+// restoring the previously signed-in account.
+//
+//wails:ignore
+func (s *MicrosoftAccountService) Attach(window *application.WebviewWindow) {
 	s.window = window
 	application.Get().OnShutdown(func() { s.CancelLogin() })
 	go func() {
@@ -162,7 +168,7 @@ func (s *MicrosoftAccountService) setAccountLocked(account nativeinstall.Account
 }
 func (s *MicrosoftAccountService) publish() {
 	if s.window != nil {
-		s.window.EmitEvent(microsoftAccountChanged, s.GetStatus())
+		s.window.EmitEvent(EventMicrosoftAccountChanged, s.GetStatus())
 	}
 }
 func accountError(err error) string {

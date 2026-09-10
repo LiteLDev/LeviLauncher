@@ -1,5 +1,5 @@
 import React from "react";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 
 export interface TypedField {
   name: string;

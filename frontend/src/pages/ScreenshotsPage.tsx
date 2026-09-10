@@ -32,12 +32,12 @@ import {
 } from "react-icons/fa";
 import {
   GetImageURL,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
-import * as contentService from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
+import * as contentService from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";

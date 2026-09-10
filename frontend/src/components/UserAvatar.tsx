@@ -12,7 +12,7 @@ import {
   FaSkull,
   FaRoad,
 } from "react-icons/fa";
-import * as userService from "bindings/github.com/liteldev/LeviLauncher/userservice";
+import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { useStartupInteractive } from "@/utils/startupState";
 
 export const UserAvatar = () => {

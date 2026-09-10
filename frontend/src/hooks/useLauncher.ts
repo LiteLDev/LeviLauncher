@@ -9,16 +9,16 @@ import {
   readCurrentVersionName,
   saveCurrentVersionName,
 } from "@/utils/currentVersion";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   EnsureGameInputInteractive,
   EnsureVcRuntimeInteractive,
   ListDir,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as contentService from "bindings/github.com/liteldev/LeviLauncher/contentservice";
-import * as modsService from "bindings/github.com/liteldev/LeviLauncher/modsservice";
-import * as versionService from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import * as userService from "bindings/github.com/liteldev/LeviLauncher/userservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import * as contentService from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
+import * as modsService from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
+import * as versionService from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import { ROUTES } from "@/constants/routes";
 

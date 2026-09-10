@@ -38,7 +38,7 @@ import {
   RemoveVersionLogo,
   SaveVersionLogoFromPath,
   UnregisterVersionByName,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { PageHeader } from "@/components/PageHeader";
 import LeviLaminaIcon from "@/assets/images/LeviLamina.png";
 import { useInstanceSettings } from "@/hooks/useInstanceSettings";

@@ -44,15 +44,15 @@ import {
   GetVersionMeta,
   GetVersionLogoDataUrl,
   ListVersionMetas,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import {
   GetContentRoots,
   ListPacksForVersion,
   DeletePack,
   GetPackInfo,
   TransferPackToVersion,
-} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
@@ -61,7 +61,7 @@ import {
   listPlayers,
   resolvePlayerDisplayName,
 } from "@/utils/content";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { renderMcText } from "@/utils/mcformat";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";

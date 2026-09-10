@@ -7,9 +7,9 @@ import {
   GetVersionMeta,
   ListVersionMetas,
   GetVersionLogoDataUrl,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
-import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
+import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
@@ -19,8 +19,8 @@ import {
   normalizeDroppedFiles,
 } from "@/utils/fs";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as contentService from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import * as contentService from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 
 type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 type TransferTargetVersion = {

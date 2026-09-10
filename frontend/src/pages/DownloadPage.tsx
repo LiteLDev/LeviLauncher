@@ -40,7 +40,7 @@ import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useTranslation } from "react-i18next";
 import { motion, Variants } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { useDownloads } from "@/utils/DownloadsContext";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";

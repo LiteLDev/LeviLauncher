@@ -54,13 +54,13 @@ import {
   SetEnableBetaUpdates,
   ResetBaseRoot,
   InstallLip,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   GetInstallerDir,
   GetVersionsDir,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { Browser, Dialogs } from "@wailsio/runtime";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";

@@ -31,11 +31,11 @@ import {
   readCurrentVersionName,
   saveCurrentVersionName,
 } from "@/utils/currentVersion";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   GetVersionLogoDataUrl,
   ListVersionMetas,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 
 export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
   props,

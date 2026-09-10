@@ -1,4 +1,4 @@
-package main
+package app
 
 import (
 	"context"
@@ -11,9 +11,8 @@ import (
 	"strings"
 	"time"
 
-	_ "embed"
-
 	"github.com/liteldev/LeviLauncher/internal/contentmgr"
+	"github.com/liteldev/LeviLauncher/internal/curseforge"
 	"github.com/liteldev/LeviLauncher/internal/curseforge/client"
 	cursetypes "github.com/liteldev/LeviLauncher/internal/curseforge/client/types"
 	"github.com/liteldev/LeviLauncher/internal/downloader"
@@ -35,9 +34,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
-
-//go:embed assets/curseforge.key
-var curseForgeApiKey []byte
 
 const (
 	EventGameInputEnsureStart      = "gameinput.ensure.start"
@@ -277,7 +273,7 @@ func NewMinecraft() *Minecraft {
 func NewMinecraftWithDeps(deps MinecraftDeps) *Minecraft {
 	curseClient := deps.CurseClient
 	if curseClient == nil {
-		curseClient = client.NewCurseClient(resolveCurseForgeAPIKey())
+		curseClient = client.NewCurseClient(curseforge.APIKey())
 	}
 	lipClient := deps.LIPClient
 	if lipClient == nil {
@@ -309,22 +305,6 @@ func NewMinecraftWithDeps(deps MinecraftDeps) *Minecraft {
 		contentManager: contentManager,
 		localImages:    newLocalImageRegistry(),
 	}
-}
-
-func resolveCurseForgeAPIKey() string {
-	apiKey := os.Getenv("CURSEFORGE_API_KEY")
-	if apiKey == "" {
-		deobfuscated := make([]byte, len(curseForgeApiKey))
-		for i, b := range curseForgeApiKey {
-			deobfuscated[i] = b ^ 0xAF
-		}
-
-		decoded, err := base64.StdEncoding.DecodeString(string(deobfuscated))
-		if err == nil {
-			apiKey = string(decoded)
-		}
-	}
-	return apiKey
 }
 
 func (a *Minecraft) SearchLIPPackages(q string, perPage int, page int, sort string, order string) (*liptypes.SearchPackagesResponse, error) {
@@ -395,7 +375,12 @@ func (a *Minecraft) UpdateResourceRules() string {
 	return ""
 }
 
-func (a *Minecraft) startupEssential() {
+// StartupEssential binds the Wails application context and anchors the working
+// directory to the executable, so relative paths resolve regardless of how the
+// launcher was started.
+//
+//wails:ignore
+func (a *Minecraft) StartupEssential() {
 	a.ctx = application.Get().Context()
 
 	exePath, _ := os.Executable()
@@ -403,9 +388,20 @@ func (a *Minecraft) startupEssential() {
 	os.Chdir(exeDir)
 }
 
-func (a *Minecraft) startupDeferred() {
+// StartupDeferred runs the startup work that may block, after the window is up.
+//
+//wails:ignore
+func (a *Minecraft) StartupDeferred() {
 	launch.EnsureGamingServicesInstalled(a.ctx)
 	mcservice.ReconcileRegisteredFlags()
+}
+
+// LocalImageMiddleware serves images registered through GetImageURL over the
+// asset server.
+//
+//wails:ignore
+func (a *Minecraft) LocalImageMiddleware(next http.Handler) http.Handler {
+	return a.localImages.middleware(next)
 }
 
 func (a *Minecraft) EnsureGameInputInteractive() { go gameinput.EnsureInteractive(a.ctx) }

@@ -31,7 +31,7 @@ import {
   GetCurseForgeGameVersions,
   SearchCurseForgeMods,
   GetCurseForgeCategories,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { ModData } from "bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
 import { useCurseForge } from "@/utils/CurseForgeContext";
 import {

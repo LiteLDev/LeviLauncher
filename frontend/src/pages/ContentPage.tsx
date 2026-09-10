@@ -30,7 +30,7 @@ import {
   FaExchangeAlt,
 } from "react-icons/fa";
 import { resolvePlayerDisplayName } from "@/utils/content";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { FiUploadCloud } from "react-icons/fi";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";

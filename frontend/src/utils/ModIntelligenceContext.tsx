@@ -8,11 +8,11 @@ import React, {
   useState,
 } from "react";
 import { Events } from "@wailsio/runtime";
-import { GetLIPPackageInstallStates } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import { GetLIPPackageInstallStates } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   GetMods,
   IsModEnabled,
-} from "bindings/github.com/liteldev/LeviLauncher/modsservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
   fetchLIPPackagesIndex,

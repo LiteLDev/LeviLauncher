@@ -3,8 +3,8 @@ import { Button, Spinner } from "@heroui/react";
 import { Events } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 import { FaMicrosoft } from "react-icons/fa";
-import * as account from "bindings/github.com/liteldev/LeviLauncher/microsoftaccountservice";
-import type { MicrosoftAccountStatus } from "bindings/github.com/liteldev/LeviLauncher/models";
+import * as account from "bindings/github.com/liteldev/LeviLauncher/internal/app/microsoftaccountservice";
+import type { MicrosoftAccountStatus } from "bindings/github.com/liteldev/LeviLauncher/internal/app/models";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { ModalDescription } from "@/components/ModalPrimitives";
 

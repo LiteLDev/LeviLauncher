@@ -15,14 +15,14 @@ import {
   ListMinecraftProcesses,
   KillProcess,
   KillAllMinecraftProcesses,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   GetInstallerDir,
   GetVersionsDir,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { persistClarityChoice } from "@/utils/clarityConsent";
 import {
   EXPERIMENTAL_FEATURES_EVENT_NAME,

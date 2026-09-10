@@ -35,8 +35,8 @@ import {
   FaTag,
 } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { motion } from "framer-motion";
 import {

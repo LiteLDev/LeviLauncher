@@ -1,6 +1,6 @@
 import { listDirectories } from "./fs";
 import { compareVersions } from "./version";
-import { GetUserGamertagMap } from "bindings/github.com/liteldev/LeviLauncher/userservice";
+import { GetUserGamertagMap } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 
 export async function listPlayers(usersRoot: string, throwOnError = false): Promise<string[]> {
   if (!usersRoot) return [];

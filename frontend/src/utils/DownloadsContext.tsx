@@ -7,7 +7,7 @@ import React, {
   useState,
 } from "react";
 import { Events } from "@wailsio/runtime";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 
 import { useTranslation } from "react-i18next";
 

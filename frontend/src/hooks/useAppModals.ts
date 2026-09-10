@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback, useRef } from "react";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import {
   hasClarityChoiceMade,

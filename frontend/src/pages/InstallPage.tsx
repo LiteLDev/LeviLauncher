@@ -31,7 +31,7 @@ import { saveCurrentVersionName } from "@/utils/currentVersion";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { Clipboard, Dialogs, Events } from "@wailsio/runtime";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   CopyVersionDataFromGDK,
   CopyVersionDataFromVersion,
@@ -42,7 +42,7 @@ import {
   ListVersionMetas,
   SaveVersionMeta,
   ValidateVersionFolderName,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";

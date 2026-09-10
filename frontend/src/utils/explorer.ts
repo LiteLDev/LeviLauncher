@@ -1,7 +1,7 @@
 import { toast } from "@heroui/react";
 import i18n from "@/i18n";
-import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { OpenModsExplorer } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
+import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import { OpenModsExplorer } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 
 export function showDirectoryOpenError(error: unknown): void {
   const message = error instanceof Error ? error.message : String(error ?? "");

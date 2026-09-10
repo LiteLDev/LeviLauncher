@@ -21,8 +21,8 @@ function setup(invoke) {
   const dependencies = {
     "@heroui/react": { toast: { danger: (...args) => notifications.push(args) } },
     "@/i18n": { __esModule: true, default: { t: (key) => key } },
-    "bindings/github.com/liteldev/LeviLauncher/minecraft": { OpenPathDir: bind("directory") },
-    "bindings/github.com/liteldev/LeviLauncher/modsservice": { OpenModsExplorer: bind("mods") },
+    "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft": { OpenPathDir: bind("directory") },
+    "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice": { OpenModsExplorer: bind("mods") },
   };
   const exports = {};
   runInNewContext(outputText, {

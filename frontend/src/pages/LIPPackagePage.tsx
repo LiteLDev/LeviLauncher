@@ -49,12 +49,12 @@ import {
 import {
   GetVersionLogoDataUrl,
   ListVersionMetas,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import {
   GetLipStatus,
   GetLIPPackageReadme,
   InstallLIPPackage,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { PageContainer } from "@/components/PageContainer";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";

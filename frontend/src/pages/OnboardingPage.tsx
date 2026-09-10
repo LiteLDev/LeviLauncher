@@ -31,7 +31,7 @@ import {
   SetBaseRoot,
   ResetBaseRoot,
   CanWriteToDir,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { Dialogs } from "@wailsio/runtime";
 import { LuHardDrive, LuLanguages } from "react-icons/lu";

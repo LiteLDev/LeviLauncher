@@ -1,6 +1,6 @@
 //go:build mcp
 
-package main
+package app
 
 func (s *MicrosoftAccountService) GetLoginDiagnostics() map[string]any {
 	s.mu.Lock()

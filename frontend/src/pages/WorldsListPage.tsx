@@ -46,17 +46,17 @@ import {
   GetPathModTime,
   BackupWorld,
   BackupWorldWithVersion,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   GetContentRoots,
   DeleteWorld,
   TransferWorldToVersion,
-} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import {
   GetVersionLogoDataUrl,
   ListVersionMetas,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";

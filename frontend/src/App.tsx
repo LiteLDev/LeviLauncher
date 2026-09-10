@@ -13,7 +13,7 @@ import { useTranslation } from "react-i18next";
 import { VersionStatusProvider } from "@/utils/VersionStatusContext";
 import { CurseForgeProvider } from "@/utils/CurseForgeContext";
 import { LeviLaminaProvider } from "@/utils/LeviLaminaContext";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { useTheme } from "next-themes";
 import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
 import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";

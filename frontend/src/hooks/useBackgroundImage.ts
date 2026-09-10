@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { useStartupInteractive } from "@/utils/startupState";
 import { clampNumber } from "@/utils/backgroundAppearance";
 

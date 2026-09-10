@@ -4,8 +4,8 @@ import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import { Dialogs, Events } from "@wailsio/runtime";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 import {
   BackupInstance,
   DeleteVersionFolder,
@@ -19,7 +19,7 @@ import {
   SaveVersionLogoDataUrl,
   SaveVersionMeta,
   ValidateVersionFolderName,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import {
   clearCurrentVersionName,

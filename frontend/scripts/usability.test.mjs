@@ -22,12 +22,12 @@ function loadUtility(path, dependencies) {
 
 function setup(listDir) {
   const filesystem = loadUtility("../src/utils/fs.ts", {
-    "bindings/github.com/liteldev/LeviLauncher/minecraft": { ListDir: listDir },
+    "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft": { ListDir: listDir },
   });
   const content = loadUtility("../src/utils/content.ts", {
     "./fs": filesystem,
     "./version": {},
-    "bindings/github.com/liteldev/LeviLauncher/userservice": {},
+    "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice": {},
   });
   return { ...filesystem, ...content };
 }

@@ -81,7 +81,16 @@ export const useSettings = (i18n: { language: string }) => {
   ] = useState<boolean>(() => readExperimentalInstanceBackupEnabled());
 
   // Tabs
-  const [selectedTab, setSelectedTab] = useState<string>("general");
+  const [selectedTab, setSelectedTab] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem("app.settingsTab") || "";
+      if (["general", "personalization", "components", "others", "privacy", "updates", "about"].includes(saved)) return saved;
+    } catch {}
+    return "general";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("app.settingsTab", selectedTab); } catch {}
+  }, [selectedTab]);
 
   // Layout mode
   const [layoutMode, setLayoutMode] = useState<"navbar" | "sidebar">(() => {

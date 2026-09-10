@@ -1504,7 +1504,25 @@
       "root_load_failed": "The current content folder could not be verified. Retry, or choose a writable folder and apply it before continuing.",
       "content_load_failed": "Content could not be loaded. Its contents cannot be confirmed yet. Please retry.",
       "worlds_partial": "Information for {{count}} worlds could not be read. These folders are missing from the list:",
-      "choose_player": "Select a player first. If none are available, create or sign in to a player profile in the game."
+      "choose_player": "Select a player first. If none are available, create or sign in to a player profile in the game.",
+      "appearance_theme": "Theme and colors",
+      "appearance_layout": "Layout and motion",
+      "appearance_wallpaper": "Wallpaper",
+      "appearance_material": "Materials and readability",
+      "search_settings": "Search settings",
+      "search_count": "{{count}} settings sections found",
+      "browse_downloads": "Browse downloads",
+      "download_filters": "Filter download tasks",
+      "download_all": "All tasks",
+      "download_active": "In progress",
+      "download_done": "Completed",
+      "download_failed": "Failed / cancelled",
+      "install_download": "Install this version",
+      "collapse_nav": "Collapse navigation",
+      "expand_nav": "Expand navigation",
+      "main_nav": "Main navigation",
+      "active_downloads": "{{count}} active downloads",
+      "browse_content": "Browse content"
     }
   }
 }

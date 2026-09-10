@@ -1503,7 +1503,25 @@
       "root_load_failed": "无法确认当前内容目录。请重试，或选择可写入的目录并应用后继续。",
       "content_load_failed": "读取失败，暂时无法确认这里的内容。请重试。",
       "worlds_partial": "有 {{count}} 个存档的信息读取失败，以下文件夹未显示在列表中：",
-      "choose_player": "请先选择玩家。如果没有可选玩家，请先在游戏中创建或登录玩家档案。"
+      "choose_player": "请先选择玩家。如果没有可选玩家，请先在游戏中创建或登录玩家档案。",
+      "appearance_theme": "主题与配色",
+      "appearance_layout": "布局与动效",
+      "appearance_wallpaper": "壁纸",
+      "appearance_material": "材质与可读性",
+      "search_settings": "搜索设置",
+      "search_count": "找到 {{count}} 个设置分区",
+      "browse_downloads": "前往下载",
+      "download_filters": "筛选下载任务",
+      "download_all": "全部任务",
+      "download_active": "进行中",
+      "download_done": "已完成",
+      "download_failed": "失败 / 已取消",
+      "install_download": "安装此版本",
+      "collapse_nav": "收起导航",
+      "expand_nav": "展开导航",
+      "main_nav": "主导航",
+      "active_downloads": "{{count}} 个下载正在进行",
+      "browse_content": "浏览资源"
     }
   }
 }

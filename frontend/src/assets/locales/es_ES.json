@@ -154,8 +154,7 @@
     "no_downloads": "No hay tareas de descarga activas",
     "unknown_file": "Archivo desconocido",
     "actions": {
-      "retry": "Reintentar",
-      "delete": "Eliminar"
+      "retry": "Reintentar"
     }
   },
   "updating": {
@@ -289,7 +288,6 @@
       "title": "Instalar"
     },
     "customappx": {
-      "button": "Personalizado",
       "modal": {
         "1": {
           "header": "Información de versión",
@@ -309,12 +307,9 @@
   "onboarding": {
     "title": "Configuración del primer inicio",
     "subtitle": "Por favor establezca primero la ruta de contenido y el idioma",
-    "skip": "Omitir",
-    "finish": "Finalizar",
     "unsaved": {
       "title": "Cambios no guardados",
       "body": "Tiene cambios no guardados en la ruta de contenido. ¿Desea guardar antes de finalizar?",
-      "cancel": "Cancelar",
       "save": "Guardar y finalizar"
     }
   },
@@ -476,7 +471,6 @@
       }
     },
     "appearance": {
-      "global_config": "Configuración global",
       "mode_config": "Configuración específica del modo",
       "edit_mode_desc": "La configuración de personalización (colores, opacidad, etc.) se guarda independientemente para los modos Claro y Oscuro. Cambie de pestaña a la derecha para configurar cada modo.",
       "theme_mode": "Modo de tema",
@@ -495,7 +489,6 @@
       "theme_color_desc": "El color de acento principal de la aplicación",
       "theme_standard": "Colores preestablecidos",
       "theme_generated": "Más colores",
-      "hue": "Tono",
       "custom_color": "Color personalizado",
       "background_image": "Imagen de fondo",
       "background_image_desc": "Seleccionar una carpeta para elegir imágenes como fondo",
@@ -711,7 +704,6 @@
     "delete_warning": "¡Esta acción no se puede deshacer!",
     "delete_selected_confirm": "¿Está seguro de que desea eliminar los {{count}} elementos seleccionados?",
     "deleted_name": "{{name}} eliminado",
-    "deleted_count": "{{count}} elementos eliminados",
     "delete_world_confirm": "¿Está seguro de que desea eliminar el mundo {{name}}?",
     "basic_info": "Información básica",
     "level_name": "Nombre del nivel",
@@ -1122,7 +1114,6 @@
     "website": "Sitio web",
     "source": "Fuente",
     "issues": "Issues",
-    "share": "Compartir",
     "no_download_url": "No hay URL de descarga disponible",
     "no_files_found": "No se encontraron archivos",
     "sort": {
@@ -1193,9 +1184,6 @@
       "game_versions_label": "Versiones del juego",
       "game_versions_unrestricted": "Sin restricción de versión del juego",
       "game_versions_unavailable": "Mapeo de versión del juego no disponible",
-      "ll_requirement": "Requisito LL",
-      "dependencies": "Dependencias",
-      "action": "Acción",
       "dependencies_count": "{{count}} dependencias",
       "install": "Instalar",
       "upgrade": "Actualizar",

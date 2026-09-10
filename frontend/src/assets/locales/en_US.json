@@ -159,8 +159,7 @@
     "no_downloads": "No active download tasks",
     "unknown_file": "Unknown File",
     "actions": {
-      "retry": "Retry",
-      "delete": "Delete"
+      "retry": "Retry"
     }
   },
   "updating": {
@@ -294,7 +293,6 @@
       "title": "Install"
     },
     "customappx": {
-      "button": "Custom",
       "modal": {
         "1": {
           "header": "Version Information",
@@ -314,12 +312,9 @@
   "onboarding": {
     "title": "First Launch Setup",
     "subtitle": "Please set content path and language first",
-    "skip": "Skip",
-    "finish": "Finish",
     "unsaved": {
       "title": "Unsaved Changes",
       "body": "You have unsaved changes to the content path. Do you want to save before finishing?",
-      "cancel": "Cancel",
       "save": "Save and Finish"
     }
   },
@@ -486,7 +481,6 @@
       }
     },
     "appearance": {
-      "global_config": "Global Configuration",
       "mode_config": "Mode-Specific Configuration",
       "edit_mode_desc": "Personalization settings (colors, opacity, etc.) are saved independently for Light and Dark modes. Switch tabs on the right to configure each mode.",
       "theme_mode": "Theme Mode",
@@ -505,7 +499,6 @@
       "theme_color_desc": "The primary accent color of the application",
       "theme_standard": "Preset Colors",
       "theme_generated": "More Colors",
-      "hue": "Hue",
       "custom_color": "Custom Color",
       "background_image": "Background Image",
       "background_image_desc": "Select a folder to pick images from as background",
@@ -748,7 +741,6 @@
     "delete_warning": "This action cannot be undone!",
     "delete_selected_confirm": "Are you sure you want to delete the selected {{count}} items?",
     "deleted_name": "Deleted {{name}}",
-    "deleted_count": "Deleted {{count}} items",
     "delete_world_confirm": "Are you sure you want to delete world {{name}}?",
     "basic_info": "Basic Info",
     "level_name": "Level Name",
@@ -1201,7 +1193,6 @@
     "website": "Website",
     "source": "Source",
     "issues": "Issues",
-    "share": "Share",
     "no_download_url": "No download URL available",
     "no_files_found": "No files found",
     "sort": {
@@ -1268,14 +1259,10 @@
     "mapping_unavailable_hint": "LeviLamina game version mapping is unavailable. Version-related filters have been disabled to avoid incorrect matches.",
     "files": {
       "game_versions_unknown": "No matching game version",
-      "version_count_one": "{{count}} version",
       "version_count": "{{count}} versions",
       "game_versions_label": "Game Versions",
       "game_versions_unrestricted": "No game version restriction",
       "game_versions_unavailable": "Game version mapping unavailable",
-      "ll_requirement": "LL Requirement",
-      "dependencies": "Dependencies",
-      "action": "Action",
       "dependencies_count": "{{count}} dependencies",
       "install": "Install",
       "upgrade": "Upgrade",
@@ -1424,8 +1411,7 @@
         "go_launch": "Select and go to launch"
       },
       "onboarding": {
-        "keep_current": "Continue with current directory",
-        "unapplied": "The new directory has not been applied. Continuing will use {{path}}. You can return to edit it."
+        "keep_current": "Continue with current directory"
       },
       "clear_search": "Clear search"
     },

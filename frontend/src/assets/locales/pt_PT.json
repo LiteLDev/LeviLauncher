@@ -154,8 +154,7 @@
     "no_downloads": "Nenhuma tarefa de transferência ativa",
     "unknown_file": "Ficheiro desconhecido",
     "actions": {
-      "retry": "Tentar novamente",
-      "delete": "Eliminar"
+      "retry": "Tentar novamente"
     }
   },
   "updating": {
@@ -289,7 +288,6 @@
       "title": "Instalar"
     },
     "customappx": {
-      "button": "Personalizado",
       "modal": {
         "1": {
           "header": "Info da versão",
@@ -309,12 +307,9 @@
   "onboarding": {
     "title": "Configuração do primeiro arranque",
     "subtitle": "Defina primeiro o caminho do conteúdo e o idioma",
-    "skip": "Saltar",
-    "finish": "Terminar",
     "unsaved": {
       "title": "Alterações não guardadas",
       "body": "Tem alterações não guardadas no caminho do conteúdo. Deseja guardar antes de terminar?",
-      "cancel": "Cancelar",
       "save": "Guardar e terminar"
     }
   },
@@ -476,7 +471,6 @@
       }
     },
     "appearance": {
-      "global_config": "Configuração global",
       "mode_config": "Configuração específica do modo",
       "edit_mode_desc": "As definições de personalização (cores, opacidade, etc.) são guardadas independentemente para os modos Claro e Escuro. Mude de separador à direita para configurar cada modo.",
       "theme_mode": "Modo do tema",
@@ -495,7 +489,6 @@
       "theme_color_desc": "A cor de destaque principal da aplicação",
       "theme_standard": "Cores predefinidas",
       "theme_generated": "Mais cores",
-      "hue": "Matiz",
       "custom_color": "Cor personalizada",
       "background_image": "Imagem de fundo",
       "background_image_desc": "Selecionar uma pasta para escolher imagens como fundo",
@@ -711,7 +704,6 @@
     "delete_warning": "Esta ação é irreversível!",
     "delete_selected_confirm": "Tem a certeza de que deseja eliminar os {{count}} itens selecionados?",
     "deleted_name": "{{name}} eliminado",
-    "deleted_count": "{{count}} itens eliminados",
     "delete_world_confirm": "Tem a certeza de que deseja eliminar o mundo {{name}}?",
     "basic_info": "Info básica",
     "level_name": "Nome do nível",
@@ -1122,7 +1114,6 @@
     "website": "Site web",
     "source": "Fonte",
     "issues": "Issues",
-    "share": "Partilhar",
     "no_download_url": "Nenhum URL de transferência disponível",
     "no_files_found": "Nenhum ficheiro encontrado",
     "sort": {
@@ -1193,9 +1184,6 @@
       "game_versions_label": "Versões do jogo",
       "game_versions_unrestricted": "Sem restrição de versão do jogo",
       "game_versions_unavailable": "Mapeamento de versão do jogo não disponível",
-      "ll_requirement": "Requisito LL",
-      "dependencies": "Dependências",
-      "action": "Ação",
       "dependencies_count": "{{count}} dependências",
       "install": "Instalar",
       "upgrade": "Atualizar",

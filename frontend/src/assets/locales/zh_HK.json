@@ -178,8 +178,7 @@
     "no_downloads": "目前沒有活動的下載任務",
     "unknown_file": "未知檔案",
     "actions": {
-      "retry": "重試",
-      "delete": "刪除"
+      "retry": "重試"
     }
   },
   "downloadpage": {
@@ -288,7 +287,6 @@
       "title": "安裝"
     },
     "customappx": {
-      "button": "自訂",
       "modal": {
         "1": {
           "header": "版本資訊",
@@ -460,7 +458,6 @@
       }
     },
     "appearance": {
-      "global_config": "全域配置",
       "mode_config": "模式特定配置",
       "edit_mode_desc": "個性化設置（顏色、透明度等）將按日間/夜間模式獨立保存。切換右側標籤頁以配置不同模式。",
       "theme_mode": "外觀模式",
@@ -479,7 +476,6 @@
       "theme_color_desc": "應用的主要強調顏色",
       "theme_standard": "預设顏色",
       "theme_generated": "更多顏色",
-      "hue": "色相",
       "custom_color": "自定義顏色",
       "background_image": "背景圖片",
       "background_image_desc": "為當前模式設置個性化背景",
@@ -722,7 +718,6 @@
     "delete_warning": "此操作無法復原！",
     "delete_selected_confirm": "確定要刪除選中的 {{count}} 個項目嗎？",
     "deleted_name": "已刪除 {{name}}",
-    "deleted_count": "已刪除 {{count}} 個項目",
     "delete_world_confirm": "確定要刪除存檔 {{name}} 嗎？",
     "basic_info": "基本資訊",
     "level_name": "存檔名稱",
@@ -1109,12 +1104,9 @@
   "onboarding": {
     "title": "首次啟動引導",
     "subtitle": "請先設定內容路徑與語言",
-    "skip": "略過",
-    "finish": "完成",
     "unsaved": {
       "title": "未儲存修改",
       "body": "您更改了內容路徑但尚未儲存。是否儲存後完成引導？",
-      "cancel": "取消",
       "save": "儲存並完成"
     }
   },
@@ -1154,7 +1146,6 @@
     "website": "官網",
     "source": "源碼",
     "issues": "反饋",
-    "share": "分享",
     "no_download_url": "無下載連結",
     "no_files_found": "未找到檔案",
     "sort": {
@@ -1236,10 +1227,8 @@
     },
     "by_author_inline": "| 作者 {{author}}",
     "files": {
-      "action": "操作",
       "action_failed": "操作失敗：{{error}}",
       "checking_ll_state": "正在檢查 LeviLamina 狀態...",
-      "dependencies": "依賴",
       "dependencies_count": "{{count}} 個依賴",
       "game_versions_unknown": "找不到相符的遊戲版本",
       "version_count": "{{count}} 個版本",
@@ -1260,7 +1249,6 @@
       "mapping_unavailable_blocked_hint": "目前無法校驗 LeviLamina 與遊戲版本映射，已阻止此次安裝以避免錯誤安裝。",
       "ll_missing_redirect_hint": "此實例尚未安裝 LeviLamina。點擊轉跳後將開啟實例設定的載入器頁面，請先手動安裝 LeviLamina。",
       "ll_missing_redirect_to_loader": "未檢測到 LeviLamina，正在跳轉到實例設定的載入器頁面。",
-      "ll_requirement": "LL 依賴",
       "select_instance_title": "選擇目標實例",
       "select_version_incompatible_hint": "版本 {{version}} 與遊戲版本 {{gameVersion}} 不相容。",
       "tab_label": "版本",

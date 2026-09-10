@@ -153,8 +153,7 @@
     "no_downloads": "アクティブなダウンロードタスクはありません",
     "unknown_file": "不明なファイル",
     "actions": {
-      "retry": "再試行",
-      "delete": "削除"
+      "retry": "再試行"
     }
   },
   "updating": {
@@ -288,7 +287,6 @@
       "title": "インストール"
     },
     "customappx": {
-      "button": "カスタム",
       "modal": {
         "1": {
           "header": "バージョン情報",
@@ -460,7 +458,6 @@
       }
     },
     "appearance": {
-      "global_config": "グローバル設定",
       "mode_config": "モード別設定",
       "edit_mode_desc": "パーソナライズ設定（色、不透明度など）は、ライトモードとダークモードで独立して保存されます。右側のタブを切り替えて各モードを構成してください。",
       "theme_light": "ライトモード",
@@ -469,7 +466,6 @@
       "theme_color_desc": "アプリケーションの主要なアクセントカラー",
       "theme_standard": "プリセットカラー",
       "theme_generated": "その他の色",
-      "hue": "色相",
       "custom_color": "カスタムカラー",
       "background_image": "背景画像",
       "background_image_desc": "現在のモードにパーソナライズされた背景を設定します",
@@ -683,7 +679,6 @@
     "delete_warning": "この操作は取り消せません！",
     "delete_selected_confirm": "選択した {{count}} 個の項目を削除してもよろしいですか？",
     "deleted_name": "{{name}} を削除しました",
-    "deleted_count": "{{count}} 個の項目を削除しました",
     "delete_world_confirm": "本当にワールド {{name}} を削除しますか？",
     "basic_info": "基本情報",
     "level_name": "ワールド名",
@@ -1082,12 +1077,9 @@
   "onboarding": {
     "title": "ようこそ",
     "subtitle": "コンテンツパスと言語を設定してください",
-    "skip": "スキップ",
-    "finish": "完了",
     "unsaved": {
       "title": "保存されていない変更",
       "body": "コンテンツパスに未保存の変更があります。保存して終了しますか？",
-      "cancel": "キャンセル",
       "save": "保存して完了"
     }
   },
@@ -1127,7 +1119,6 @@
     "website": "ウェブサイト",
     "source": "ソース",
     "issues": "問題",
-    "share": "共有",
     "no_download_url": "ダウンロードURLがありません",
     "no_files_found": "ファイルが見つかりません",
     "sort": {
@@ -1198,9 +1189,6 @@
       "game_versions_label": "ゲームバージョン",
       "game_versions_unrestricted": "ゲームバージョン制限なし",
       "game_versions_unavailable": "ゲームバージョン対応表を利用できません",
-      "ll_requirement": "LL 必要条件",
-      "dependencies": "依存関係",
-      "action": "アクション",
       "dependencies_count": "{{count}} 個の依存関係",
       "install": "インストール",
       "upgrade": "アップグレード",

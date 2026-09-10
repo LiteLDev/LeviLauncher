@@ -154,8 +154,7 @@
     "no_downloads": "Keine aktiven Download-Aufgaben",
     "unknown_file": "Unbekannte Datei",
     "actions": {
-      "retry": "Wiederholen",
-      "delete": "Löschen"
+      "retry": "Wiederholen"
     }
   },
   "updating": {
@@ -289,7 +288,6 @@
       "title": "Installieren"
     },
     "customappx": {
-      "button": "Benutzerdefiniert",
       "modal": {
         "1": {
           "header": "Versionsinformationen",
@@ -309,12 +307,9 @@
   "onboarding": {
     "title": "Einrichtung beim ersten Start",
     "subtitle": "Bitte legen Sie zuerst Inhaltspfad und Sprache fest",
-    "skip": "Überspringen",
-    "finish": "Abschließen",
     "unsaved": {
       "title": "Ungespeicherte Änderungen",
       "body": "Sie haben ungespeicherte Änderungen am Inhaltspfad. Möchten Sie vor dem Abschließen speichern?",
-      "cancel": "Abbrechen",
       "save": "Speichern und abschließen"
     }
   },
@@ -476,7 +471,6 @@
       }
     },
     "appearance": {
-      "global_config": "Globale Konfiguration",
       "mode_config": "Modusspezifische Konfiguration",
       "edit_mode_desc": "Personalisierungseinstellungen (Farben, Deckkraft usw.) werden unabhängig für Hell- und Dunkelmodus gespeichert. Wechseln Sie rechts zwischen den Registerkarten, um jeden Modus zu konfigurieren.",
       "theme_mode": "Design-Modus",
@@ -495,7 +489,6 @@
       "theme_color_desc": "Die primäre Akzentfarbe der Anwendung",
       "theme_standard": "Voreingestellte Farben",
       "theme_generated": "Weitere Farben",
-      "hue": "Farbton",
       "custom_color": "Benutzerdefinierte Farbe",
       "background_image": "Hintergrundbild",
       "background_image_desc": "Ordner auswählen, um Bilder als Hintergrund auszuwählen",
@@ -711,7 +704,6 @@
     "delete_warning": "Diese Aktion kann nicht rückgängig gemacht werden!",
     "delete_selected_confirm": "Möchten Sie die ausgewählten {{count}} Elemente wirklich löschen?",
     "deleted_name": "{{name}} gelöscht",
-    "deleted_count": "{{count}} Elemente gelöscht",
     "delete_world_confirm": "Möchten Sie die Welt {{name}} wirklich löschen?",
     "basic_info": "Grundlegende Informationen",
     "level_name": "Level-Name",
@@ -1122,7 +1114,6 @@
     "website": "Website",
     "source": "Quelle",
     "issues": "Issues",
-    "share": "Teilen",
     "no_download_url": "Keine Download-URL verfügbar",
     "no_files_found": "Keine Dateien gefunden",
     "sort": {
@@ -1193,9 +1184,6 @@
       "game_versions_label": "Spielversionen",
       "game_versions_unrestricted": "Keine Spielversionseinschränkung",
       "game_versions_unavailable": "Spielversion-Zuordnung nicht verfügbar",
-      "ll_requirement": "LL-Anforderung",
-      "dependencies": "Abhängigkeiten",
-      "action": "Aktion",
       "dependencies_count": "{{count}} Abhängigkeiten",
       "install": "Installieren",
       "upgrade": "Aktualisieren",

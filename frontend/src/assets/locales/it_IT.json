@@ -154,8 +154,7 @@
     "no_downloads": "Nessuna attività di download attiva",
     "unknown_file": "File sconosciuto",
     "actions": {
-      "retry": "Riprova",
-      "delete": "Elimina"
+      "retry": "Riprova"
     }
   },
   "updating": {
@@ -289,7 +288,6 @@
       "title": "Installa"
     },
     "customappx": {
-      "button": "Personalizzato",
       "modal": {
         "1": {
           "header": "Info versione",
@@ -309,12 +307,9 @@
   "onboarding": {
     "title": "Configurazione primo avvio",
     "subtitle": "Imposta prima il percorso dei contenuti e la lingua",
-    "skip": "Salta",
-    "finish": "Fine",
     "unsaved": {
       "title": "Modifiche non salvate",
       "body": "Hai modifiche non salvate nel percorso dei contenuti. Vuoi salvare prima di finire?",
-      "cancel": "Annulla",
       "save": "Salva e finisci"
     }
   },
@@ -476,7 +471,6 @@
       }
     },
     "appearance": {
-      "global_config": "Configurazione globale",
       "mode_config": "Configurazione specifica modalità",
       "edit_mode_desc": "Le impostazioni di personalizzazione (colori, opacità, ecc.) sono salvate indipendentemente per le modalità Chiara e Scura. Cambia scheda a destra per configurare ogni modalità.",
       "theme_mode": "Modalità tema",
@@ -495,7 +489,6 @@
       "theme_color_desc": "Il colore di accentuazione principale dell'applicazione",
       "theme_standard": "Colori predefiniti",
       "theme_generated": "Più colori",
-      "hue": "Tonalità",
       "custom_color": "Colore personalizzato",
       "background_image": "Immagine sfondo",
       "background_image_desc": "Seleziona una cartella per scegliere immagini come sfondo",
@@ -711,7 +704,6 @@
     "delete_warning": "Questa azione è irreversibile!",
     "delete_selected_confirm": "Sei sicuro di voler eliminare i {{count}} elementi selezionati?",
     "deleted_name": "{{name}} eliminato",
-    "deleted_count": "{{count}} elementi eliminati",
     "delete_world_confirm": "Sei sicuro di voler eliminare il mondo {{name}}?",
     "basic_info": "Info base",
     "level_name": "Nome livello",
@@ -1122,7 +1114,6 @@
     "website": "Sito web",
     "source": "Sorgente",
     "issues": "Issue",
-    "share": "Condividi",
     "no_download_url": "Nessun URL download disponibile",
     "no_files_found": "Nessun file trovato",
     "sort": {
@@ -1193,9 +1184,6 @@
       "game_versions_label": "Versioni gioco",
       "game_versions_unrestricted": "Nessuna restrizione versione gioco",
       "game_versions_unavailable": "Mappatura versione gioco non disponibile",
-      "ll_requirement": "Requisito LL",
-      "dependencies": "Dipendenze",
-      "action": "Azione",
       "dependencies_count": "{{count}} dipendenze",
       "install": "Installa",
       "upgrade": "Aggiorna",

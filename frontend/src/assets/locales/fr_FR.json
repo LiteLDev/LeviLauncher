@@ -154,8 +154,7 @@
     "no_downloads": "Aucune tâche de téléchargement active",
     "unknown_file": "Fichier inconnu",
     "actions": {
-      "retry": "Réessayer",
-      "delete": "Supprimer"
+      "retry": "Réessayer"
     }
   },
   "updating": {
@@ -289,7 +288,6 @@
       "title": "Installer"
     },
     "customappx": {
-      "button": "Personnalisé",
       "modal": {
         "1": {
           "header": "Informations sur la version",
@@ -309,12 +307,9 @@
   "onboarding": {
     "title": "Configuration du premier lancement",
     "subtitle": "Veuillez d'abord définir le chemin du contenu et la langue",
-    "skip": "Passer",
-    "finish": "Terminer",
     "unsaved": {
       "title": "Modifications non enregistrées",
       "body": "Vous avez des modifications non enregistrées dans le chemin du contenu. Voulez-vous enregistrer avant de terminer ?",
-      "cancel": "Annuler",
       "save": "Enregistrer et terminer"
     }
   },
@@ -476,7 +471,6 @@
       }
     },
     "appearance": {
-      "global_config": "Configuration globale",
       "mode_config": "Configuration spécifique au mode",
       "edit_mode_desc": "Les paramètres de personnalisation (couleurs, opacité, etc.) sont enregistrés indépendamment pour les modes Clair et Sombre. Changez d'onglet à droite pour configurer chaque mode.",
       "theme_mode": "Mode du thème",
@@ -495,7 +489,6 @@
       "theme_color_desc": "La couleur d'accentuation principale de l'application",
       "theme_standard": "Couleurs prédéfinies",
       "theme_generated": "Plus de couleurs",
-      "hue": "Teinte",
       "custom_color": "Couleur personnalisée",
       "background_image": "Image d'arrière-plan",
       "background_image_desc": "Sélectionner un dossier pour choisir des images comme arrière-plan",
@@ -711,7 +704,6 @@
     "delete_warning": "Cette action est irréversible !",
     "delete_selected_confirm": "Voulez-vous vraiment supprimer les {{count}} éléments sélectionnés ?",
     "deleted_name": "{{name}} supprimé",
-    "deleted_count": "{{count}} éléments supprimés",
     "delete_world_confirm": "Voulez-vous vraiment supprimer le monde {{name}} ?",
     "basic_info": "Informations de base",
     "level_name": "Nom du niveau",
@@ -1122,7 +1114,6 @@
     "website": "Site web",
     "source": "Source",
     "issues": "Issues",
-    "share": "Partager",
     "no_download_url": "Aucune URL de téléchargement disponible",
     "no_files_found": "Aucun fichier trouvé",
     "sort": {
@@ -1193,9 +1184,6 @@
       "game_versions_label": "Versions du jeu",
       "game_versions_unrestricted": "Aucune restriction de version du jeu",
       "game_versions_unavailable": "Mappage de version du jeu non disponible",
-      "ll_requirement": "Exigence LL",
-      "dependencies": "Dépendances",
-      "action": "Action",
       "dependencies_count": "{{count}} dépendances",
       "install": "Installer",
       "upgrade": "Mettre à niveau",

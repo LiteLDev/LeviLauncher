@@ -153,8 +153,7 @@
     "no_downloads": "Нет активных задач загрузки",
     "unknown_file": "Неизвестный файл",
     "actions": {
-      "retry": "Повторить",
-      "delete": "Удалить"
+      "retry": "Повторить"
     }
   },
   "updating": {
@@ -288,7 +287,6 @@
       "title": "Установить"
     },
     "customappx": {
-      "button": "Пользовательский",
       "modal": {
         "1": {
           "header": "Информация о версии",
@@ -460,7 +458,6 @@
       }
     },
     "appearance": {
-      "global_config": "Глобальная конфигурация",
       "mode_config": "Конфигурация для режима",
       "edit_mode_desc": "Настройки персонализации (цвета, непрозрачность и т. д.) сохраняются независимо для светлого и темного режимов. Переключайте вкладки справа, чтобы настроить каждый режим.",
       "theme_light": "Светлая тема",
@@ -469,7 +466,6 @@
       "theme_color_desc": "Основной акцентный цвет приложения",
       "theme_standard": "Стандартные цвета",
       "theme_generated": "Больше цветов",
-      "hue": "Оттенок",
       "custom_color": "Пользовательский цвет",
       "background_image": "Фоновое изображение",
       "background_image_desc": "Установите персонализированный фон для текущего режима",
@@ -683,7 +679,6 @@
     "delete_warning": "Это действие нельзя отменить!",
     "delete_selected_confirm": "Вы уверены, что хотите удалить выбранные элементы ({{count}})?",
     "deleted_name": "Удалено: {{name}}",
-    "deleted_count": "Удалено элементов: {{count}}",
     "delete_world_confirm": "Вы уверены, что хотите удалить мир {{name}}?",
     "basic_info": "Основная информация",
     "level_name": "Название мира",
@@ -1082,12 +1077,9 @@
   "onboarding": {
     "title": "Добро пожаловать",
     "subtitle": "Пожалуйста, настройте пути к контенту и язык",
-    "skip": "Пропустить",
-    "finish": "Готово",
     "unsaved": {
       "title": "Несохранённые изменения",
       "body": "У вас есть несохранённые изменения пути к контенту. Сохранить перед завершением?",
-      "cancel": "Отмена",
       "save": "Сохранить и завершить"
     }
   },
@@ -1127,7 +1119,6 @@
     "website": "Веб-сайт",
     "source": "Исходный код",
     "issues": "Проблемы",
-    "share": "Поделиться",
     "no_download_url": "Нет ссылки для скачивания",
     "no_files_found": "Файлы не найдены",
     "sort": {
@@ -1198,9 +1189,6 @@
       "game_versions_label": "Game Versions",
       "game_versions_unrestricted": "No game version restriction",
       "game_versions_unavailable": "Game version mapping unavailable",
-      "ll_requirement": "LL Requirement",
-      "dependencies": "Dependencies",
-      "action": "Action",
       "dependencies_count": "{{count}} dependencies",
       "install": "Install",
       "upgrade": "Обновить",

@@ -2,9 +2,9 @@ import { listDirectories } from "./fs";
 import { compareVersions } from "./version";
 import { GetUserGamertagMap } from "bindings/github.com/liteldev/LeviLauncher/userservice";
 
-export async function listPlayers(usersRoot: string): Promise<string[]> {
+export async function listPlayers(usersRoot: string, throwOnError = false): Promise<string[]> {
   if (!usersRoot) return [];
-  const entries = await listDirectories(usersRoot);
+  const entries = await listDirectories(usersRoot, throwOnError);
   return entries
     .map((e) => e.name)
     .filter((n) => n && n !== "9556213259376595538");

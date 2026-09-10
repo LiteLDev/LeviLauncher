@@ -17,13 +17,14 @@ export function normalizeDroppedFiles(files: unknown): string[] {
     .filter(Boolean);
 }
 
-export async function listDirectories(path: string): Promise<DirEntry[]> {
+export async function listDirectories(path: string, throwOnError = false): Promise<DirEntry[]> {
   try {
     const list = await ListDir(path);
     return (list || [])
       .filter((e: any) => e.isDir)
       .map((e: any) => ({ name: e.name, path: e.path }));
-  } catch {
+  } catch (error) {
+    if (throwOnError) throw error;
     return [];
   }
 }

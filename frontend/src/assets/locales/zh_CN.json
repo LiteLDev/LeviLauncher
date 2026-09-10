@@ -1498,7 +1498,12 @@
       "process_success": "已结束 Minecraft 进程。",
       "process_failed": "进程操作未完成：{{message}}",
       "continue_editing": "继续编辑",
-      "discard_leave": "放弃修改并离开"
+      "discard_leave": "放弃修改并离开",
+      "start_using": "开始使用",
+      "root_load_failed": "无法确认当前内容目录。请重试，或选择可写入的目录并应用后继续。",
+      "content_load_failed": "读取失败，暂时无法确认这里的内容。请重试。",
+      "worlds_partial": "有 {{count}} 个存档的信息读取失败，以下文件夹未显示在列表中：",
+      "choose_player": "请先选择玩家。如果没有可选玩家，请先在游戏中创建或登录玩家档案。"
     }
   }
 }

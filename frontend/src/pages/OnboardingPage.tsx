@@ -1,4 +1,4 @@
-import { ModalDescription } from "@/components/ModalPrimitives";
+import { ModalAction, ModalDescription, ModalNotice } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -52,13 +52,36 @@ export default function OnboardingPage() {
   const [baseRootWritable, setBaseRootWritable] = React.useState<boolean>(true);
   const [savingBaseRoot, setSavingBaseRoot] = React.useState<boolean>(false);
   const [errorKey, setErrorKey] = React.useState<OnboardingErrorKey>(null);
-  const [finishWithCurrentRoot, setFinishWithCurrentRoot] = React.useState(false);
+  const [rootStatus, setRootStatus] = React.useState<"loading" | "ready" | "error">("loading");
+  const rootGeneration = React.useRef(0);
   const {
     isOpen: unsavedOpen,
     open: unsavedOnOpen,
     close: unsavedOnClose,
     setOpen: unsavedOnOpenChange,
   } = useOverlayState();
+
+  const readConfiguredRoot = async () => {
+    const path = String(await GetBaseRoot() || "").trim();
+    if (!path || !(await CanWriteToDir(path))) throw new Error("ERR_WRITE_TARGET");
+    return path;
+  };
+
+  const loadBaseRoot = React.useCallback(async () => {
+    const generation = ++rootGeneration.current;
+    setRootStatus("loading");
+    try {
+      const path = await readConfiguredRoot();
+      if (generation !== rootGeneration.current) return;
+      setBaseRoot(path);
+      setNewBaseRoot(path);
+      setRootStatus("ready");
+    } catch (error) {
+      if (generation !== rootGeneration.current) return;
+      console.error("Failed to load base root", error);
+      setRootStatus("error");
+    }
+  }, []);
 
   React.useEffect(() => {
     GetLanguageNames()
@@ -67,27 +90,43 @@ export default function OnboardingPage() {
         console.error("Failed to load language names", error);
         setErrorKey("common.load_failed");
       });
-
     setSelectedLang(normalizeLanguage(i18n.language));
-    (async () => {
-      try {
-        if (hasBackend) {
-          const br = await GetBaseRoot();
-          setBaseRoot(String(br || ""));
-          setNewBaseRoot(String(br || ""));
-        }
-      } catch (error) {
-        console.error("Failed to load base root", error);
-        setErrorKey("common.load_failed");
-      }
-    })();
-  }, []);
+    void loadBaseRoot();
+    return () => { rootGeneration.current++; };
+  }, [loadBaseRoot]);
 
   React.useEffect(() => {
     setBaseRootWritable(true);
   }, [newBaseRoot]);
 
-  const proceedHome = () => {
+  const persistRoot = async (reset = false): Promise<string | null> => {
+    if (savingBaseRoot || rootStatus === "loading") return null;
+    setErrorKey(null);
+    setSavingBaseRoot(true);
+    try {
+      if (!reset && (!newBaseRoot.trim() || !(await CanWriteToDir(newBaseRoot)))) {
+        setBaseRootWritable(false);
+        return null;
+      }
+      const error = reset ? await ResetBaseRoot() : await SetBaseRoot(newBaseRoot);
+      if (error) throw new Error(error);
+      const path = await readConfiguredRoot();
+      setBaseRoot(path);
+      setNewBaseRoot(path);
+      setBaseRootWritable(true);
+      setRootStatus("ready");
+      return path;
+    } catch (error) {
+      console.error("Failed to save base root", error);
+      setErrorKey("common.save_failed");
+      return null;
+    } finally {
+      setSavingBaseRoot(false);
+    }
+  };
+
+  const proceedHome = (verifiedRoot: string) => {
+    if (!verifiedRoot.trim()) return;
     try {
       localStorage.setItem("ll.onboarded", "1");
     } catch {}
@@ -95,26 +134,13 @@ export default function OnboardingPage() {
   };
 
   const requestFinish = () => {
-    if (savingBaseRoot) return;
-    setFinishWithCurrentRoot(false);
+    if (savingBaseRoot || rootStatus !== "ready") return;
     if (newBaseRoot !== baseRoot) {
       unsavedOnOpen();
       return;
     }
-    proceedHome();
+    proceedHome(baseRoot);
   };
-
-  const requestKeepCurrentRoot = () => {
-    if (savingBaseRoot) return;
-    if (newBaseRoot !== baseRoot) {
-      setFinishWithCurrentRoot(true);
-      unsavedOnOpen();
-      return;
-    }
-    proceedHome();
-  };
-
-  const keepCurrentRoot = finishWithCurrentRoot || !baseRootWritable || !newBaseRoot.trim();
 
   return (
     <PageContainer>
@@ -148,23 +174,15 @@ export default function OnboardingPage() {
               endContent={
                 <div className="flex items-center gap-3">
                   <Button
-                    onPress={requestKeepCurrentRoot}
-                    isDisabled={savingBaseRoot}
-                    variant={"ghost"}
-                    className={cn("rounded-full", "font-bold text-muted px-6")}
-                  >
-                    {t("audit.primary.onboarding.keep_current")}
-                  </Button>
-                  <Button
                     onPress={requestFinish}
-                    isDisabled={savingBaseRoot}
+                    isDisabled={savingBaseRoot || rootStatus !== "ready"}
                     variant={"primary"}
                     className={cn(
                       "rounded-full",
                       "font-black px-10 h-12 text-lg brand-primary-foreground shadow-lg shadow-brand-500/20",
                     )}
                   >
-                    {t("onboarding.finish")}
+                    {t("audit.usability.start_using")}
                   </Button>
                 </div>
               }
@@ -175,6 +193,13 @@ export default function OnboardingPage() {
         {/* Content Card */}
         <Card className={LAYOUT.GLASS_CARD.BASE}>
           <Card.Content className="p-6 space-y-8">
+            {rootStatus === "loading" && <div role="status" className="flex items-center gap-2 text-sm text-muted"><Spinner size="sm" />{t("common.loading")}</div>}
+            {rootStatus === "error" && (
+              <ModalNotice role="alert" tone="danger">
+                <p>{t("audit.usability.root_load_failed")}</p>
+                <Button className="mt-3" size="sm" variant="secondary" isDisabled={savingBaseRoot} onPress={() => void loadBaseRoot()}>{t("common.retry")}</Button>
+              </ModalNotice>
+            )}
             {errorKey ? (
               <p
                 aria-atomic="true"
@@ -193,24 +218,8 @@ export default function OnboardingPage() {
                   <div className="flex items-center gap-2">
                     <Button
                       size="md"
-                      isDisabled={savingBaseRoot}
-                      onPress={async () => {
-                        setErrorKey(null);
-                        try {
-                          const err = await ResetBaseRoot();
-                          if (err) {
-                            throw new Error(err);
-                          }
-
-                          const br = await GetBaseRoot();
-                          setBaseRoot(String(br || ""));
-                          setNewBaseRoot(String(br || ""));
-                          setBaseRootWritable(true);
-                        } catch (error) {
-                          console.error("Failed to reset base root", error);
-                          setErrorKey("common.save_failed");
-                        }
-                      }}
+                      isDisabled={savingBaseRoot || rootStatus === "loading"}
+                      onPress={() => void persistRoot(true)}
                       variant={"ghost"}
                       className={cn("rounded-full", "font-bold px-4")}
                     >
@@ -219,35 +228,12 @@ export default function OnboardingPage() {
                     <Button
                       size="md"
                       isDisabled={
-                        savingBaseRoot ||
-                        !newBaseRoot ||
+                        savingBaseRoot || rootStatus === "loading" ||
+                        !newBaseRoot.trim() ||
                         !baseRootWritable ||
                         newBaseRoot === baseRoot
                       }
-                      onPress={async () => {
-                        setErrorKey(null);
-                        setSavingBaseRoot(true);
-                        try {
-                          const ok = await CanWriteToDir(newBaseRoot);
-                          if (!ok) {
-                            setBaseRootWritable(false);
-                          } else {
-                            const err = await SetBaseRoot(newBaseRoot);
-                            if (err) {
-                              throw new Error(err);
-                            }
-
-                            const br = await GetBaseRoot();
-                            setBaseRoot(String(br || ""));
-                            setNewBaseRoot(String(br || ""));
-                          }
-                        } catch (error) {
-                          console.error("Failed to save base root", error);
-                          setErrorKey("common.save_failed");
-                        } finally {
-                          setSavingBaseRoot(false);
-                        }
-                      }}
+                      onPress={() => void persistRoot()}
                       variant={"primary"}
                       isPending={savingBaseRoot}
                       className={cn("rounded-full", "font-bold px-6")}
@@ -269,7 +255,7 @@ export default function OnboardingPage() {
 
               <div className="space-y-4">
                 <TextField
-                  isDisabled={savingBaseRoot}
+                  isDisabled={savingBaseRoot || rootStatus === "loading"}
                   isInvalid={!baseRootWritable}
                   className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
                   value={newBaseRoot}
@@ -293,7 +279,7 @@ export default function OnboardingPage() {
                       {
                         <Button
                           size="sm"
-                          isDisabled={savingBaseRoot}
+                          isDisabled={savingBaseRoot || rootStatus === "loading"}
                           onPress={async () => {
                             try {
                               const options: any = {
@@ -428,56 +414,21 @@ export default function OnboardingPage() {
         onOpenChange={(open) => { if (!savingBaseRoot) unsavedOnOpenChange(open); }}
         type="warning"
         title={t("onboarding.unsaved.title")}
-        cancelText={t("onboarding.unsaved.cancel")}
-        confirmText={t(keepCurrentRoot ? "audit.primary.onboarding.keep_current" : "onboarding.unsaved.save")}
-        showCancelButton
-        confirmButtonProps={{
-          isPending: savingBaseRoot,
-          isDisabled: savingBaseRoot,
-        }}
-        cancelButtonProps={{ isDisabled: savingBaseRoot }}
-        onCancel={() => unsavedOnClose()}
-        onConfirm={async () => {
-          if (keepCurrentRoot) {
-            unsavedOnClose();
-            proceedHome();
-            return;
-          }
-          setErrorKey(null);
-          setSavingBaseRoot(true);
-          try {
-            const ok = await CanWriteToDir(newBaseRoot);
-            if (!ok) {
-              setBaseRootWritable(false);
-            } else {
-              const err = await SetBaseRoot(newBaseRoot);
-              if (err) {
-                throw new Error(err);
-              }
-
-              const br = await GetBaseRoot();
-              setBaseRoot(String(br || ""));
-              unsavedOnClose();
-              proceedHome();
-            }
-          } catch (error) {
-            console.error("Failed to save base root before finishing", error);
-            setErrorKey("common.save_failed");
-          } finally {
-            setSavingBaseRoot(false);
-          }
-        }}
+        isPending={savingBaseRoot}
+        footer={
+          <div className="flex w-full flex-wrap justify-end gap-2">
+            <ModalAction variant="secondary" isDisabled={savingBaseRoot} onPress={unsavedOnClose}>{t("audit.usability.continue_editing")}</ModalAction>
+            <ModalAction variant="secondary" isDisabled={savingBaseRoot || rootStatus !== "ready"} onPress={() => proceedHome(baseRoot)}>{t("audit.primary.onboarding.keep_current")}</ModalAction>
+            <ModalAction variant="primary" isPending={savingBaseRoot} isDisabled={!newBaseRoot.trim() || !baseRootWritable} onPress={async () => {
+              const path = await persistRoot();
+              if (path) proceedHome(path);
+            }}>{t("onboarding.unsaved.save")}</ModalAction>
+          </div>
+        }
       >
-        <div className="flex flex-col gap-2">
-          <ModalDescription>
-            {t(keepCurrentRoot ? "audit.primary.onboarding.unapplied" : "onboarding.unsaved.body", { path: baseRoot })}
-          </ModalDescription>
-          {!baseRootWritable && (
-            <div role="alert" className="text-xs text-danger">
-              {t("settings.body.paths.not_writable")}
-            </div>
-          )}
-        </div>
+        <ModalDescription>{t("onboarding.unsaved.body")}</ModalDescription>
+        {errorKey && <ModalNotice role="alert" tone="danger">{t(errorKey)}</ModalNotice>}
+        {!baseRootWritable && <p role="alert" className="text-sm text-danger">{t("settings.body.paths.not_writable")}</p>}
       </UnifiedModal>
     </PageContainer>
   );

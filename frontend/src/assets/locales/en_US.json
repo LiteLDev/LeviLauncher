@@ -1499,7 +1499,12 @@
       "process_success": "Minecraft processes ended.",
       "process_failed": "The process operation could not be completed: {{message}}",
       "continue_editing": "Continue editing",
-      "discard_leave": "Discard and leave"
+      "discard_leave": "Discard and leave",
+      "start_using": "Start using LeviLauncher",
+      "root_load_failed": "The current content folder could not be verified. Retry, or choose a writable folder and apply it before continuing.",
+      "content_load_failed": "Content could not be loaded. Its contents cannot be confirmed yet. Please retry.",
+      "worlds_partial": "Information for {{count}} worlds could not be read. These folders are missing from the list:",
+      "choose_player": "Select a player first. If none are available, create or sign in to a player profile in the game."
     }
   }
 }

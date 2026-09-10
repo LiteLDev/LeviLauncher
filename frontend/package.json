@@ -12,6 +12,7 @@
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
     "test:explorer": "node --test scripts/explorer.test.mjs",
+    "test:usability": "node --test scripts/usability.test.mjs",
     "styles:check": "node ./scripts/check-materials.mjs"
   },
   "dependencies": {

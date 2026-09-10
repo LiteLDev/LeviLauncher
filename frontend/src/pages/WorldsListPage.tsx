@@ -1,5 +1,5 @@
 import { openDirectory } from "@/utils/explorer";
-import { ModalDescription, ModalProgress } from "@/components/ModalPrimitives";
+import { ModalDescription, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
 import {
   Button,
@@ -118,6 +118,11 @@ export default function WorldsListPage() {
   const [worlds, setWorlds] = useState<WorldInfo[]>([]);
   const worldsLoadGeneration = React.useRef(0);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [failedWorlds, setFailedWorlds] = useState<string[]>([]);
+  const [playerLoadError, setPlayerLoadError] = useState("");
+  const [playersLoading, setPlayersLoading] = useState(true);
+  const [playerRefresh, setPlayerRefresh] = useState(0);
   const [roots, setRoots] = useState<any>({});
 
   const [deletingOne, setDeletingOne] = useState<boolean>(false);
@@ -189,14 +194,17 @@ export default function WorldsListPage() {
   useEffect(() => {
     let cancelled = false;
     const fetchPlayers = async () => {
+      setPlayersLoading(true);
+      setPlayerLoadError("");
       try {
         const r = await GetContentRoots(currentVersionName || "");
         if (cancelled) return;
         setRoots(r);
         if (r.usersRoot) {
-          const pList = await listPlayers(r.usersRoot);
+          const pList = await listPlayers(r.usersRoot, true);
           if (cancelled) return;
           setPlayers(pList);
+          if (pList.length === 0) setSelectedPlayer("");
 
           let defaultP = "";
           if (!pList.includes(selectedPlayerRef.current) && pList.length > 0) {
@@ -230,22 +238,28 @@ export default function WorldsListPage() {
           })();
         } else {
           setPlayers([]);
+          setSelectedPlayer("");
           setPlayerGamertagMap({});
         }
       } catch (e) {
         if (cancelled) return;
         console.error("Failed to list players", e);
+        setPlayerLoadError(String(e));
         setPlayers([]);
         setPlayerGamertagMap({});
+      } finally {
+        if (!cancelled) setPlayersLoading(false);
       }
     };
     fetchPlayers();
     return () => { cancelled = true; };
-  }, [currentVersionName]);
+  }, [currentVersionName, playerRefresh]);
 
   const refreshAll = useCallback(() => {
     const generation = ++worldsLoadGeneration.current;
     setLoading(true);
+    setLoadError("");
+    setFailedWorlds([]);
 
     const fetchWorlds = async () => {
       try {
@@ -272,6 +286,7 @@ export default function WorldsListPage() {
         }
 
         const list: WorldInfo[] = [];
+        const failed: string[] = [];
         await Promise.all(
           entries.map(async (e) => {
             if (!e.isDir) return;
@@ -290,19 +305,19 @@ export default function WorldsListPage() {
               });
             } catch (err) {
               console.error("Error reading world info", e.path, err);
+              failed.push(e.name);
             }
           }),
         );
 
-        if (generation === worldsLoadGeneration.current) setWorlds(list);
+        if (generation === worldsLoadGeneration.current) {
+          setWorlds(list);
+          setFailedWorlds(failed);
+        }
       } catch (err: any) {
         if (generation !== worldsLoadGeneration.current) return;
         console.error(err);
-        toast(undefined, {
-          description: String(err),
-          variant: "danger",
-          timeout: 2000,
-        });
+        setLoadError(String(err));
       } finally {
         if (generation === worldsLoadGeneration.current) setLoading(false);
       }
@@ -808,14 +823,33 @@ export default function WorldsListPage() {
         }
       />
 
-      {loading && worlds.length === 0 ? (
+      {(loadError || playerLoadError) && (
+        <ModalNotice role="alert" tone="danger">
+          <p>{t("audit.usability.content_load_failed")}</p>
+          <p className="mt-1 text-xs select-text">{playerLoadError || loadError}</p>
+          <Button className="mt-3" variant="secondary" size="sm" isDisabled={loading || playersLoading} onPress={() => {
+            setPlayerRefresh((value) => value + 1);
+            void refreshAll();
+          }}>{t("common.retry")}</Button>
+        </ModalNotice>
+      )}
+      {failedWorlds.length > 0 && (
+        <ModalNotice role="alert" tone="warning">
+          <p>{t("audit.usability.worlds_partial", { count: failedWorlds.length })}</p>
+          <p className="mt-1 text-xs select-text">{failedWorlds.join("、")}</p>
+          <Button className="mt-3" variant="secondary" size="sm" isDisabled={loading} onPress={() => void refreshAll()}>{t("common.retry")}</Button>
+        </ModalNotice>
+      )}
+      {loading || playersLoading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
           <span className="text-muted dark:text-zinc-400">
             {t("common.loading")}
           </span>
         </div>
-      ) : sort.filtered.length === 0 ? (
+      ) : loadError || playerLoadError ? null : !selectedPlayer ? (
+        <div role="status" className="py-16 text-center text-muted">{t("audit.usability.choose_player")}</div>
+      ) : sort.filtered.length === 0 && failedWorlds.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted">
           <FaBox className="text-6xl mb-4 opacity-20" />
           <p>

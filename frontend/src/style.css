@@ -315,9 +315,10 @@ select {
   --button-bg-pressed: var(--action-accent-hover);
 }
 
-/* Switch thumbs stay light on the selected track instead of inheriting the
-   adaptive text color that turns pastel themes' enabled thumbs nearly black. */
-.switch {
+/* Control thumbs stay light on the selected track instead of inheriting the
+   adaptive text color that turns pastel themes' thumbs nearly black. */
+.switch,
+.slider__thumb {
   --accent-foreground: var(--action-solid-foreground);
 }
 

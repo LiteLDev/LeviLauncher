@@ -53,6 +53,7 @@ tasks:
           PRODUCTION: "true"
     cmds:
       - wails3 generate webview2bootstrapper -dir "{{.ROOT_DIR}}/build/windows/inno"
+      - node "{{.ROOT_DIR}}/build/windows/download-vcredist.mjs" "{{.ARCH}}" "{{.ROOT_DIR}}/build/windows/inno"
       - |
         {{if eq OS "windows"}}
         iscc /DAppName="{{.APP_NAME}}" /DAppPublisher="{{.APP_COMPANY}}" /DAppArch="{{.ARCH}}" /DAppBinaryPath="{{.ROOT_DIR}}\{{.BIN_DIR}}\{{.APP_NAME}}.exe" project.iss

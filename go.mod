@@ -9,8 +9,8 @@ require (
 	github.com/goccy/go-json v0.10.5
 	github.com/joho/godotenv v1.5.1
 	github.com/mouuff/go-rocket-update v1.5.6
-	github.com/wailsapp/wails/v3 v3.0.0-beta.3
-	golang.org/x/sys v0.45.0
+	github.com/wailsapp/wails/v3 v3.0.0-beta.19
+	golang.org/x/sys v0.46.0
 	gopkg.in/natefinch/npipe.v2 v2.0.0-20160621034901-c1b8fa8bdcce
 )
 

@@ -24,6 +24,7 @@ tasks:
     dir: "{{.TASKFILE_DIR}}/inno"
     cmds:
       - wails3 generate webview2bootstrapper -dir "{{.TASKFILE_DIR}}/inno"
+      - node "{{.TASKFILE_DIR}}/download-vcredist.mjs" "{{.ARCH}}" "{{.TASKFILE_DIR}}/inno"
       - |
         {{if eq OS "windows"}}
         iscc /DAppName="{{.APP_NAME}}" /DAppPublisher="{{.APP_COMPANY}}" /DAppArch="{{.ARCH}}" /DAppBinaryPath="{{.EXE_PATH_WINDOWS}}" project.iss

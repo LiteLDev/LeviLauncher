@@ -1326,6 +1326,7 @@ export const DownloadPage: React.FC = () => {
                         selectedUrl,
                         desired,
                         md5sum,
+                        { version: mirrorVersion, type: mirrorType || "Release", isLeviLaminaSupported: isLLSupported(mirrorVersion) },
                       );
                       if (success) {
                         triggerAnimation(e);

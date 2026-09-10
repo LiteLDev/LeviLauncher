@@ -95,7 +95,7 @@ export default function InstallPage() {
   const [installingTargetName, setInstallingTargetName] = useState<string>("");
   const [installedFolderName, setInstalledFolderName] = useState<string>("");
   const [resultMsg, setResultMsg] = useState<string>("");
-  const [customInstallerPath, setCustomInstallerPath] = useState<string>("");
+  const [customInstallerPath, setCustomInstallerPath] = useState<string>(() => String(location?.state?.installerPath || ""));
   const [installerDir, setInstallerDir] = useState<string>("");
   const [downloadResolved, setDownloadResolved] = useState<boolean>(false);
   const { getSupportedLLVersions, getLatestLLVersion } = useLeviLamina();

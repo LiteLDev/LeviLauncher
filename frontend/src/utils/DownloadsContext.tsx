@@ -23,6 +23,8 @@ export interface DownloadItem {
   error: string;
   fileName: string;
   url?: string;
+  md5sum?: string;
+  installer?: { version: string; type: string; isLeviLaminaSupported: boolean };
 }
 
 export const isDownloadActive = (status: string): boolean =>
@@ -37,6 +39,7 @@ interface DownloadsContextType {
     url: string,
     filename?: string,
     md5sum?: string,
+    installer?: DownloadItem["installer"],
   ) => Promise<boolean>;
   cancelDownload: (dest?: string) => void;
   removeDownload: (dest: string) => void;
@@ -255,6 +258,7 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
     url: string,
     filename?: string,
     md5sum?: string,
+    installer?: DownloadItem["installer"],
   ): Promise<boolean> => {
     if (typeof minecraft === "undefined") return false;
 
@@ -317,6 +321,8 @@ export const DownloadsProvider: React.FC<{ children: React.ReactNode }> = ({
         speed: 0,
         fileName: displayName || prev.fileName || getFileNameFromDest(key),
         url: url,
+        md5sum,
+        installer,
       }));
       toast(t("downloadpage.mirror.download_started"), {
         variant: "success",

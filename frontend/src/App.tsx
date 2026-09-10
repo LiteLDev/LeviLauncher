@@ -159,6 +159,9 @@ function App() {
 
   // Extracted hooks
   const { layoutMode } = useLayoutMode();
+  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
+    try { return localStorage.getItem("app.sidebarExpanded") === "true"; } catch { return false; }
+  });
   useAnimations();
   const { themeColorsReady } = useThemeColors(resolvedTheme);
   const background = useBackgroundImage();
@@ -279,10 +282,11 @@ function App() {
                         data-readability={appearance.readability ? "true" : undefined}
                         style={
                           {
-                            "--content-pt": "4.5rem",
+                             "--content-pt": "4.5rem",
+                             "--sidebar-width": sidebarExpanded ? "12rem" : "3.5rem",
                           } as React.CSSProperties
                         }
-                        className={`app-backdrop relative isolate w-full min-h-dvh flex ${
+                        className={`app-backdrop relative isolate w-full h-dvh flex ${
                           layoutMode === "sidebar" ? "flex-row" : "flex-col"
                         } overflow-x-hidden bg-background text-foreground ${updateOpen ? "overflow-y-hidden" : ""}`}
                       >
@@ -298,6 +302,11 @@ function App() {
                         ) : (
                           <>
                             <Sidebar
+                              expanded={sidebarExpanded}
+                              onExpandedChange={(expanded) => {
+                                setSidebarExpanded(expanded);
+                                try { localStorage.setItem("app.sidebarExpanded", String(expanded)); } catch {}
+                              }}
                               navLocked={effectiveNavLocked}
                               themeMode={themeMode}
                               tryNavigate={tryNavigate}
@@ -314,7 +323,7 @@ function App() {
                           id="main-content"
                           tabIndex={-1}
                           className={`w-full flex-1 min-h-0 overflow-hidden ${
-                            layoutMode === "sidebar" ? "pl-14" : ""
+                            layoutMode === "sidebar" ? "pl-[var(--sidebar-width)]" : ""
                           }`}
                         >
                           <Suspense

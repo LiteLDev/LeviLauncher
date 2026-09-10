@@ -32,7 +32,6 @@ import {
   ResetBaseRoot,
   CanWriteToDir,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { Dialogs } from "@wailsio/runtime";
 import { LuHardDrive, LuLanguages } from "react-icons/lu";
@@ -42,7 +41,6 @@ type OnboardingErrorKey = "common.load_failed" | "common.save_failed" | null;
 export default function OnboardingPage() {
   const { t, i18n } = useTranslation();
   const navigate = useNavigate();
-  const hasBackend = minecraft !== undefined;
   const [langNames, setLangNames] = React.useState<
     Array<{ language: string; code: string }>
   >([]);

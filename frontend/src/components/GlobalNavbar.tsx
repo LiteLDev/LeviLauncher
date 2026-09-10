@@ -15,12 +15,14 @@ import {
   FaEllipsisH,
   FaList,
   FaInfoCircle,
+  FaCube, FaPuzzlePiece, FaTasks,
 } from "react-icons/fa";
 import { IoArrowBack } from "react-icons/io5";
 import { useTranslation } from "react-i18next";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { ROUTES, isRouteActive } from "@/constants/routes";
+import { isDownloadActive, useDownloads } from "@/utils/DownloadsContext";
 
 interface GlobalNavbarProps {
   isBeta: boolean;
@@ -39,6 +41,8 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
 }) => {
   const { t } = useTranslation();
   const location = useLocation();
+  const { downloads } = useDownloads();
+  const activeDownloads = downloads.filter((task) => isDownloadActive(task.status)).length;
 
   const navItems = [
     {
@@ -80,6 +84,9 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
       icon: <FaCog size={18} />,
       navbarClass: "flex",
     },
+    { key: "content", label: t("launcherpage.content_manage"), path: ROUTES.content, icon: <FaCube size={18} />, navbarClass: "hidden", menuClass: "flex" },
+    { key: "mods", label: t("moddedcard.title"), path: ROUTES.mods, icon: <FaPuzzlePiece size={18} />, navbarClass: "hidden", menuClass: "flex" },
+    { key: "tasks", label: `${t("download_manager.title")}${activeDownloads ? ` (${activeDownloads})` : ""}`, path: ROUTES.downloadTasks, icon: <FaTasks size={18} />, navbarClass: "hidden", menuClass: "flex" },
   ];
 
   const extraItems = navItems.filter((item) => item.menuClass);
@@ -144,7 +151,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
 
         <div className="flex-1 flex items-center justify-center gap-1 sm:gap-2 whitespace-nowrap overflow-x-auto px-2 scrollbar-hide">
           {navItems.map((item) => {
-            const isActive = isRouteActive(location.pathname, item.path);
+            const isActive = item.path === ROUTES.download ? location.pathname === ROUTES.download : isRouteActive(location.pathname, item.path);
             return (
               <Tooltip key={item.key} delay={500} closeDelay={0}>
                 <Button
@@ -173,7 +180,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             );
           })}
 
-          <div className="lg:hidden">
+          <div>
             <Dropdown>
               <Button
                 aria-label={t("nav.more")}

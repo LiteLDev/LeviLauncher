@@ -7,7 +7,8 @@ import {
   Label,
   ListBox, Select,
   Spinner,
-  Tooltip
+  Tooltip,
+  toast,
 } from "@heroui/react";
 
 import React from "react";
@@ -47,6 +48,22 @@ export default function ContentPage() {
   const isDragActive = useFileDrag(scrollRef as React.RefObject<HTMLElement>);
   const cp = useContentPage(t as any);
 
+  const importContent = async () => {
+    try {
+      const paths = await Dialogs.OpenFile({
+        Title: t("contentpage.import_button"),
+        Filters: [{ DisplayName: "Content Files", Pattern: "*.mcworld;*.mcpack;*.mcaddon" }],
+        AllowsMultipleSelection: true,
+      });
+      if (Array.isArray(paths) && paths.length > 0) {
+        await cp.doImportFromPaths(paths);
+      }
+    } catch (error) {
+      console.error(error);
+      toast.danger(t("common.load_failed"));
+    }
+  };
+
   return (
     <PageContainer
       ref={scrollRef}
@@ -70,15 +87,15 @@ export default function ContentPage() {
         <Card className={LAYOUT.GLASS_CARD.BASE}>
           <Card.Content className="p-6">
             <div className="flex flex-col gap-6">
-              <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-                <div>
+              <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
+                <div className="min-w-0 w-full xl:flex-1">
                   <div className="flex items-center gap-3">
                     <PageHeader
                       title={t("launcherpage.content_manage")}
                       titleClassName="pb-1"
                     />
                   </div>
-                  <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
+                  <div className="mt-3 rounded-2xl border border-border bg-surface-secondary px-4 py-3 text-sm flex flex-wrap items-center gap-x-3 gap-y-2">
                     <span>{t("contentpage.current_version")}:</span>
                     <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
                       {cp.currentVersionName || t("contentpage.none")}
@@ -162,27 +179,9 @@ export default function ContentPage() {
                     )}
                   </div>
                 </div>
-                <div className="flex items-center gap-2">
+                <div className="flex flex-wrap items-center gap-2">
                   <Button
-                    onPress={async () => {
-                      try {
-                        const paths = await Dialogs.OpenFile({
-                          Title: t("contentpage.import_button"),
-                          Filters: [
-                            {
-                              DisplayName: "Content Files",
-                              Pattern: "*.mcworld;*.mcpack;*.mcaddon",
-                            },
-                          ],
-                          AllowsMultipleSelection: true,
-                        });
-                        if (paths && Array.isArray(paths) && paths.length > 0) {
-                          cp.doImportFromPaths(paths);
-                        }
-                      } catch (e) {
-                        console.error(e);
-                      }
-                    }}
+                    onPress={importContent}
                     isDisabled={cp.importing}
                     variant={"secondary"}
                     className={cn(
@@ -229,6 +228,7 @@ export default function ContentPage() {
                   <Tooltip>
                     <Button
                       isIconOnly
+                      aria-label={t("common.refresh")}
                       onPress={() => cp.refreshAll()}
                       isDisabled={cp.loading}
                       variant={"ghost"}
@@ -307,6 +307,10 @@ export default function ContentPage() {
               </div>
             </Card.Content>
           </button>
+                  {!cp.loading && !cp.error && cp.worldsCount === 0 && <Card.Footer className="flex flex-wrap gap-2 px-6 pb-4 pt-0">
+            <Button size="sm" variant="secondary" isDisabled={cp.importing || !cp.hasBackend} onPress={importContent}>{t("contentpage.import_button")}</Button>
+            <Button size="sm" variant="ghost" onPress={() => cp.navigate(ROUTES.curseForge)}>{t("audit.usability.browse_content")}</Button>
+          </Card.Footer>}
         </Card>
 
         <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
@@ -352,6 +356,10 @@ export default function ContentPage() {
               </div>
             </Card.Content>
           </button>
+                  {!cp.loading && !cp.error && cp.resCount === 0 && <Card.Footer className="flex flex-wrap gap-2 px-6 pb-4 pt-0">
+            <Button size="sm" variant="secondary" isDisabled={cp.importing || !cp.hasBackend} onPress={importContent}>{t("contentpage.import_button")}</Button>
+            <Button size="sm" variant="ghost" onPress={() => cp.navigate(ROUTES.curseForge)}>{t("audit.usability.browse_content")}</Button>
+          </Card.Footer>}
         </Card>
 
         <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
@@ -397,6 +405,10 @@ export default function ContentPage() {
               </div>
             </Card.Content>
           </button>
+                  {!cp.loading && !cp.error && cp.bpCount === 0 && <Card.Footer className="flex flex-wrap gap-2 px-6 pb-4 pt-0">
+            <Button size="sm" variant="secondary" isDisabled={cp.importing || !cp.hasBackend} onPress={importContent}>{t("contentpage.import_button")}</Button>
+            <Button size="sm" variant="ghost" onPress={() => cp.navigate(ROUTES.curseForge)}>{t("audit.usability.browse_content")}</Button>
+          </Card.Footer>}
         </Card>
 
         <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
@@ -446,6 +458,10 @@ export default function ContentPage() {
               </div>
             </Card.Content>
           </button>
+                  {!cp.loading && !cp.error && cp.skinCount === 0 && <Card.Footer className="flex flex-wrap gap-2 px-6 pb-4 pt-0">
+            <Button size="sm" variant="secondary" isDisabled={cp.importing || !cp.hasBackend} onPress={importContent}>{t("contentpage.import_button")}</Button>
+            <Button size="sm" variant="ghost" onPress={() => cp.navigate(ROUTES.curseForge)}>{t("audit.usability.browse_content")}</Button>
+          </Card.Footer>}
         </Card>
 
         <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>

@@ -5,6 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite",
+    "dev:ui-review": "vite --config e2e/support/ui-preview.config.mjs",
     "build:dev": "npm run styles:check && tsc --noEmit && vite build --minify false --mode development",
     "build": "npm run styles:check && tsc --noEmit && vite build --mode production && node ./scripts/check-bundle.mjs",
     "build:analyze": "npm run styles:check && tsc --noEmit && vite build --mode analyze && node ./scripts/check-bundle.mjs",

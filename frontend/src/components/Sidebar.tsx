@@ -9,26 +9,34 @@ import {
   FaCog,
   FaList,
   FaInfoCircle,
+  FaCube, FaPuzzlePiece, FaTasks, FaBars,
 } from "react-icons/fa";
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { LAYOUT } from "@/constants/layout";
 import { ROUTES, isRouteActive } from "@/constants/routes";
+import { isDownloadActive, useDownloads } from "@/utils/DownloadsContext";
 
 interface SidebarProps {
+  expanded: boolean;
+  onExpandedChange: (expanded: boolean) => void;
   navLocked: boolean;
   themeMode: string;
   tryNavigate: (path: string | number) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
+  expanded,
+  onExpandedChange,
   navLocked,
   themeMode,
   tryNavigate,
 }) => {
   const { t } = useTranslation();
   const location = useLocation();
+  const { downloads } = useDownloads();
+  const activeDownloads = downloads.filter((task) => isDownloadActive(task.status)).length;
 
   const navItems = [
     {
@@ -50,6 +58,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
       icon: <FaList size={20} />,
     },
     {
+      key: "content", label: t("launcherpage.content_manage"), path: ROUTES.content, icon: <FaCube size={20} />,
+    },
+    {
+      key: "mods", label: t("moddedcard.title"), path: ROUTES.mods, icon: <FaPuzzlePiece size={20} />,
+    },
+    {
+      key: "tasks", label: t("download_manager.title"), path: ROUTES.downloadTasks, icon: <FaTasks size={20} />,
+    },
+    {
       key: "about",
       label: t("nav.about"),
       path: ROUTES.about,
@@ -65,7 +82,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div
-      className={`fixed left-0 top-14 bottom-0 z-50 flex flex-col w-14 ${LAYOUT.NAVBAR_BG}`}
+      className={`fixed left-0 top-14 bottom-0 z-50 flex flex-col w-[var(--sidebar-width)] ${LAYOUT.NAVBAR_BG}`}
     >
       <div className="absolute right-0 top-[20px] bottom-0 w-px bg-surface-tertiary/50 dark:bg-surface-secondary/50" />
       {/* Corner Connector */}
@@ -92,12 +109,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
         </svg>
       </div>
 
-      <div className="flex-1 flex flex-col items-center gap-4 w-full px-2 overflow-y-auto scrollbar-hide py-4">
+      <Button isIconOnly={!expanded} variant="ghost" aria-label={t(expanded ? "audit.usability.collapse_nav" : "audit.usability.expand_nav")} aria-expanded={expanded} onPress={() => onExpandedChange(!expanded)} className="m-2 shrink-0 rounded-xl">
+        <FaBars aria-hidden="true" />{expanded && <span>{t("audit.usability.collapse_nav")}</span>}
+      </Button>
+      <nav aria-label={t("audit.usability.main_nav")} className="flex-1 min-h-0 flex flex-col items-center gap-2 w-full px-2 overflow-y-auto overflow-x-hidden py-2">
         {navItems.map((item) => {
-          const isActive = isRouteActive(location.pathname, item.path);
+          const isActive = item.path === ROUTES.download ? location.pathname === ROUTES.download : isRouteActive(location.pathname, item.path);
           return (
-            <Tooltip key={item.key} delay={0} closeDelay={0}>
-              <div className="relative group">
+            <Tooltip key={item.key} isDisabled={expanded} delay={0} closeDelay={0}>
+              <div className={`relative group ${expanded ? "w-full" : ""}`}>
                 {isActive && (
                   <motion.div
                     layoutId="active-pill"
@@ -110,8 +130,9 @@ export const Sidebar: React.FC<SidebarProps> = ({
                   />
                 )}
                 <Button
-                  isIconOnly
+                  isIconOnly={!expanded}
                   aria-label={item.label}
+                  aria-current={isActive ? "page" : undefined}
                   isDisabled={navLocked}
                   onPress={(e) => {
                     tryNavigate(item.path);
@@ -120,13 +141,15 @@ export const Sidebar: React.FC<SidebarProps> = ({
                     }
                   }}
                   variant={isActive ? "secondary" : "ghost"}
-                  className={`w-12 h-12 rounded-xl transition-all duration-200 ${
+                  className={`${expanded ? "w-full justify-start px-3" : "w-12"} h-11 rounded-xl transition-colors duration-200 ${
                     isActive
                       ? "bg-brand-500/10 text-brand-600 dark:text-brand-400"
                       : "text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary "
                   }`}
                 >
                   {item.icon}
+                  {expanded && <span className="min-w-0 flex-1 truncate text-left text-sm">{item.label}</span>}
+                  {item.key === "tasks" && activeDownloads > 0 && <span aria-label={t("audit.usability.active_downloads", { count: activeDownloads })} className={`${expanded ? "" : "absolute right-0 top-0"} rounded-full bg-accent px-1.5 text-xs text-accent-foreground tabular-nums`}>{activeDownloads}</span>}
                 </Button>
               </div>
               <Tooltip.Content placement={"right"}>
@@ -135,7 +158,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
             </Tooltip>
           );
         })}
-      </div>
+      </nav>
 
       <div className="flex flex-col items-center gap-4 pb-6 w-full px-2">
         {themeMode !== "auto" &&

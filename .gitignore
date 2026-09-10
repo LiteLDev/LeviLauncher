@@ -21,6 +21,10 @@ go.work
 
 build/bin
 build/versions
+# `wails3 update build-assets` regenerates these on every build; the launcher targets Windows.
+build/darwin/
+build/ios/
+build/linux/
 logs
 bin
 native

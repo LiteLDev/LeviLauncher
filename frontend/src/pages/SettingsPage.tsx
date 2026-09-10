@@ -745,7 +745,7 @@ export const SettingsPage: React.FC = () => {
               )}
               {selectedTab === "personalization" && (
                 <div className="flex flex-col gap-6">
-                  <nav aria-label={t("settings.tabs.personalization")} className="sticky top-14 z-20 flex flex-wrap gap-2 rounded-xl bg-surface p-2 launcher-material-panel">
+                  <nav aria-label={t("settings.tabs.personalization")} className="flex flex-wrap gap-2 rounded-xl bg-surface p-2 launcher-material-panel">
                     {APPEARANCE_SECTIONS.map((section) => (
                       <Button key={section} size="sm" aria-pressed={appearanceSection === section} variant={appearanceSection === section ? "primary" : "secondary"} onPress={() => setAppearanceSection(section)}>{t(`audit.usability.appearance_${section}`)}</Button>
                     ))}

@@ -1,3 +1,4 @@
+import { MicrosoftAccountBar } from "@/components/MicrosoftAccountBar";
 import { ModalAction, ModalPanel, ModalDescription } from "@/components/ModalPrimitives";
 import {
   Button,
@@ -599,6 +600,7 @@ export const DownloadPage: React.FC = () => {
         >
           <Card className={cn("flex-none gap-0 p-0", LAYOUT.GLASS_CARD.BASE)}>
             <Card.Content className="px-4 py-3">
+              <MicrosoftAccountBar />
               <div className="flex flex-wrap gap-3 items-center">
                 <div className="flex min-w-0 flex-[1_1_14rem] items-center">
                   <TextField

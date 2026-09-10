@@ -27,7 +27,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
-	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/lip"
@@ -489,6 +488,7 @@ func ensureSingleInstance(autoLaunchVersion string, postUpdateRestart bool) bool
 }
 
 func init() {
+	application.RegisterEvent[MicrosoftAccountStatus](microsoftAccountChanged)
 
 	//minecraft
 	application.RegisterEvent[struct{}](EventGameInputEnsureStart)
@@ -615,6 +615,7 @@ func main() {
 	modsService := NewModsService(mc)
 	userService := NewUserService(mc)
 	versionService := NewVersionService(mc)
+	microsoftAccount := NewMicrosoftAccountService(webView2Options.BrowserExecutableFolder)
 
 	assets, err := fs.Sub(assets, "frontend/dist")
 	if err != nil {
@@ -644,6 +645,7 @@ func main() {
 			application.NewService(modsService),
 			application.NewService(userService),
 			application.NewService(versionService),
+			application.NewService(microsoftAccount),
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),
@@ -683,6 +685,7 @@ func main() {
 		_ = config.Save(c)
 	}
 	windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:      "main",
 		Title:     "LeviLauncher",
 		Width:     w,
 		Height:    h,
@@ -699,6 +702,7 @@ func main() {
 		URL:            initialURL,
 		EnableFileDrop: true,
 	})
+	microsoftAccount.attach(windows)
 	startup.Mark("window created")
 	reapplyWindowMinConstraints := func() {
 		windows.SetMinSize(minWindowWidth, minWindowHeight)
@@ -767,12 +771,6 @@ func main() {
 				go func() {
 					defer wg.Done()
 					mc.startupDeferred()
-				}()
-
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					extractor.Init()
 				}()
 
 				wg.Add(1)

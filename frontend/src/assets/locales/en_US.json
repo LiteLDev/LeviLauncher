@@ -1045,7 +1045,27 @@
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Full Minecraft Bedrock backups can only be restored into an empty target directory",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Some lip-managed packages failed to install",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Some lip-managed packages were not restored",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Some lip-managed package versions do not match the backup"
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Some lip-managed package versions do not match the backup",
+    "ERR_AUTH_FAILED": "Microsoft sign-in failed. Please try again.",
+    "ERR_AUTH_SERVICE": "The account service is unavailable. Please try again.",
+    "ERR_AUTH_CANCELED": "Sign-in canceled. You can sign in again at any time.",
+    "ERR_AUTH_TIMEOUT": "Sign-in timed out. Please try again.",
+    "ERR_AUTH_ACCOUNT_CACHE": "Account authorization could not be restored. Please sign in again.",
+    "ERR_AUTH_DEVICE_CACHE": "The device authorization cache could not be read. Check the Windows user and file permissions.",
+    "ERR_AUTH_DEVICE_BUSY": "The account is in use by another operation. Please try again later.",
+    "ERR_AUTH_DEVICE_PROVISION": "Device authorization failed. Check your connection and try again.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "The two authorization steps used different accounts. Please sign in again.",
+    "ERR_AUTH_INTERACTION_REQUIRED": "Sign in with Microsoft on the download page. Existing authorization may need to be renewed.",
+    "ERR_LICENSE_NOT_ENTITLED": "This account does not have an entitlement for this version.",
+    "ERR_LICENSE_FULL_REQUIRED": "Microsoft returned a trial license. Check your account and purchase, then sign in again.",
+    "ERR_LICENSE_HTTP": "Could not obtain a Microsoft content license. Check your connection and try again.",
+    "ERR_LICENSE_MISSING_KEY": "The content license does not contain the key required by this package.",
+    "ERR_LICENSE_UNSUPPORTED": "Microsoft returned an unsupported license type.",
+    "ERR_MSIXVC_UNSUPPORTED_FORMAT": "Unsupported package format. Use a complete Windows x64 package.",
+    "ERR_NATIVE_MSIXVC": "Package validation or extraction failed.",
+    "ERR_TARGET_EXISTS": "The target version directory already exists. Choose a different name.",
+    "ERR_INVALID_FOLDER_NAME": "Invalid version folder name.",
+    "ERR_CANCELED": "Operation canceled."
   },
   "filemanager": {
     "sort": {
@@ -1521,5 +1541,18 @@
       "main_nav": "Main navigation",
       "browse_content": "Browse content"
     }
+  },
+  "microsoft_account": {
+    "title": "Microsoft account",
+    "sign_in": "Sign in",
+    "sign_out": "Sign out",
+    "switch_account": "Switch account",
+    "show_window": "Show sign-in window",
+    "signing_in": "Complete sign-in in the Microsoft window",
+    "restoring": "Loading account…",
+    "signed_out": "Not signed in",
+    "later": "Not now",
+    "prompt_title": "Sign in with Microsoft",
+    "prompt_description": "Sign in with the Microsoft account that owns Minecraft for Windows to install downloaded versions. A separate Microsoft window will open. You can continue browsing and sign in later."
   }
 }

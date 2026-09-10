@@ -8,6 +8,14 @@ localStorage.setItem('ll.termsAccepted', 'fixture');
 localStorage.setItem('ll.currentVersionName', 'UI test instance');
 localStorage.setItem('app.backgroundImage', scenario === 'wallpaper' ? 'C:\\Fixture\\wallpapers' : '');
 if (scenario === 'root-error') localStorage.removeItem('ll.onboarded'); else localStorage.setItem('ll.onboarded','fixture');
+state.catalogPackages = Array.from({ length: 45 }, (_, index) => ({
+  identifier: `fixture/package-${index + 1}`,
+  name: `Preview package ${String(index + 1).padStart(2, '0')}`,
+  description: 'A sample package used to check search, scrolling and pagination in a small launcher window.',
+  author: 'Preview author', avatarUrl: '', projectUrl: '', hotness: 100 - index,
+  updated: '2026-09-08', tags: ['platform:levilamina', 'type:mod'],
+  versions: ['1.0.0'], llDependencyRanges: ['>=0.1.0'], variants: [], preferredVariantKey: '',
+}));
 state.call = async (name, ...args) => {
  await new Promise(resolve => setTimeout(resolve, 80));
  if (/^(Set|Reset|Kill|Open|Start)/.test(name)) {
@@ -38,7 +46,15 @@ state.call = async (name, ...args) => {
  if (name==='ListMinecraftProcesses') return state.processes;
  if (name==='KillProcess'||name==='KillAllMinecraftProcesses') {if(scenario==='process-error'&&!state.recovered)return 'Fixture: Access is denied';state.processes=[];return '';}
  if (name==='CheckUpdate') return {isUpdate:false};
- if (name==='GetLipStatus') return {installed:false,upToDate:false,currentVersion:'',latestVersion:''};
+ if (name==='GetLipStatus') return {installed:scenario.startsWith('catalog'),upToDate:true,currentVersion:'1.0.0',latestVersion:'1.0.0'};
+ if (scenario.startsWith('catalog') && name==='FetchLeviLaminaVersionDB') return {'1.21.0':['0.1.0','0.2.0']};
+ if (scenario.startsWith('catalog') && name==='GetCurseForgeGameVersions') return [{id:1,name:'1.21.0'},{id:2,name:'1.20.0'}];
+ if (scenario.startsWith('catalog') && name==='GetCurseForgeCategories') return [];
+ if (scenario.startsWith('catalog') && name==='SearchCurseForgeMods') {
+  const matches = state.catalogPackages.filter(pkg => pkg.name.toLowerCase().includes(String(args[4] || '').toLowerCase()));
+  const index = Number(args[8] || 0), pageSize = Number(args[7] || 20);
+  return {data:matches.slice(index,index+pageSize).map(pkg=>({id:Number(pkg.identifier.split('-').pop()),name:pkg.name,summary:pkg.description,authors:[{name:pkg.author}],logo:{thumbnailUrl:'/src/assets/images/LeviLamina.png',url:'/src/assets/images/LeviLamina.png'},downloadCount:pkg.hotness,dateModified:pkg.updated,dateCreated:pkg.updated,categories:[],latestFiles:[],latestFilesIndexes:[]})),pagination:{index,pageSize,totalCount:matches.length}};
+ }
  if (name==='GetResourceRulesStatus') return {installed:false,upToDate:false};
  if (name==='ListVersionMetas') return [{name:'UI test instance',gameVersion:'1.21.0',type:'Release',enableIsolation:true}];
  if (name==='GetVersionMeta') return {name:'UI test instance',gameVersion:'1.21.0',type:'Release',enableIsolation:true};

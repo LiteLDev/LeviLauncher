@@ -1,6 +1,6 @@
 import { cn } from "@/utils/cn";
 import { Button } from "@heroui/react";
-import React, { useCallback, useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 
 import {
   IoRemoveOutline,
@@ -27,22 +27,15 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
   const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
 
-  const syncMaximizedState = useCallback(async () => {
-    try {
-      const maximized = await Window.IsMaximised();
-      setIsMaximized(maximized);
-    } catch {
-      // ignore runtime sync errors
-    }
-  }, []);
-
   useEffect(() => {
     let disposed = false;
+    let revision = 0;
     const safeSync = async () => {
       if (disposed) return;
+      const currentRevision = ++revision;
       try {
         const maximized = await Window.IsMaximised();
-        if (!disposed) {
+        if (!disposed && currentRevision === revision) {
           setIsMaximized(maximized);
         }
       } catch {
@@ -50,21 +43,17 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
       }
     };
 
-    void safeSync();
-
     const windowStateEvents = [
-      "common:WindowMaximise",
-      "common:WindowUnMaximise",
-      "common:WindowRestore",
-      "windows:WindowMaximise",
-      "windows:WindowUnMaximise",
-      "windows:WindowRestore",
+      Events.Types.Common.WindowMaximise,
+      Events.Types.Common.WindowUnMaximise,
+      Events.Types.Common.WindowRestore,
     ];
     const offFns = windowStateEvents.map((eventName) =>
       Events.On(eventName, () => {
         void safeSync();
       }),
     );
+    void safeSync();
 
     return () => {
       disposed = true;
@@ -74,10 +63,9 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
 
   const handleToggleMaximize = () => {
     if (navLocked && !isOnboardingMode) return;
-    void (async () => {
-      await Window.ToggleMaximise();
-      await syncMaximizedState();
-    })();
+    void Window.ToggleMaximise().catch((error) => {
+      console.warn("Failed to toggle window maximization", error);
+    });
   };
 
   return (

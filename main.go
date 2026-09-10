@@ -734,9 +734,13 @@ func main() {
 		files := event.Context().DroppedFiles()
 		details := event.Context().DropTargetDetails()
 		if len(files) > 0 {
+			target := ""
+			if details != nil {
+				target = details.ElementID
+			}
 			windows.EmitEvent("files-dropped", types.FilesDroppedEvent{
 				Files:  files,
-				Target: details.ElementID,
+				Target: target,
 			})
 		}
 	})

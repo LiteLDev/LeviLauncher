@@ -133,6 +133,12 @@ const CurseForgeModPage: React.FC = () => {
   const dupResolveRef = useRef<((overwrite: boolean) => void) | null>(null);
   const isCancelling = useRef(false);
   const cleanupRef = useRef<() => void>(() => {});
+  const downloadAttemptRef = useRef(0);
+
+  useEffect(() => () => {
+    downloadAttemptRef.current++;
+    cleanupRef.current();
+  }, []);
 
   React.useLayoutEffect(() => {
     setIsEntering(true);
@@ -170,6 +176,7 @@ const CurseForgeModPage: React.FC = () => {
 
   const handleCancelDownload = async () => {
     isCancelling.current = true;
+    downloadAttemptRef.current++;
     cleanupRef.current();
     try {
       await CancelFileDownload();
@@ -192,26 +199,29 @@ const CurseForgeModPage: React.FC = () => {
     setDownloadProgress(null);
     isCancelling.current = false;
 
+    cleanupRef.current();
+    const attempt = ++downloadAttemptRef.current;
+    const isCurrentAttempt = () => downloadAttemptRef.current === attempt;
+    const subscriptions: (() => void)[] = [];
+    const cleanup = () => {
+      subscriptions.splice(0).forEach((off) => off());
+    };
+    cleanupRef.current = cleanup;
+
     try {
-      const dest = await StartFileDownload(file.downloadUrl, file.fileName);
-
-      const cleanup = () => {
-        Events.Off("file.download.progress");
-        Events.Off("file.download.done");
-        Events.Off("file.download.error");
-      };
-      cleanupRef.current = cleanup;
-
-      Events.On("file.download.progress", (event: any) => {
+      subscriptions.push(Events.On("file.download.progress", (event) => {
+        if (!isCurrentAttempt()) return;
         const data = event.data || {};
         setDownloadProgress({
           downloaded: Number(data.Downloaded || 0),
           total: Number(data.Total || 0),
         });
-      });
+      }));
 
-      Events.On("file.download.done", async () => {
+      subscriptions.push(Events.On("file.download.done", async (event) => {
+        if (!isCurrentAttempt()) return;
         cleanup();
+        const dest = event.data;
         try {
           let type = "unknown";
           const lowerName = file.fileName.toLowerCase();
@@ -221,9 +231,11 @@ const CurseForgeModPage: React.FC = () => {
             type = (await IsMcpackSkinPackPath(dest)) ? "skin_pack" : "mcpack";
           }
 
+          if (!isCurrentAttempt()) return;
           setInstallFile({ name: file.fileName, path: dest, type });
 
           const metas = await ListVersionMetasWithRegistered();
+          if (!isCurrentAttempt()) return;
           if (metas) {
             metas.sort((a, b) => {
               const cmp = compareVersions(
@@ -254,24 +266,32 @@ const CurseForgeModPage: React.FC = () => {
                 }
               }),
             );
+            if (!isCurrentAttempt()) return;
             setVersionLogos(logoMap);
           }
 
           setInstallStep("version_select");
         } catch (e: any) {
+          if (!isCurrentAttempt()) return;
           setInstallError(e.message || "Detection failed");
           setInstallStep("error");
         }
-      });
+      }));
 
-      Events.On("file.download.error", (event: any) => {
+      subscriptions.push(Events.On("file.download.error", (event) => {
+        if (!isCurrentAttempt()) return;
         cleanup();
         if (isCancelling.current) return;
         const err = event.data;
         setInstallError(err || "Download failed");
         setInstallStep("error");
-      });
+      }));
+
+      // Register first: small downloads may finish before the binding resolves.
+      await StartFileDownload(file.downloadUrl, file.fileName);
     } catch (e: any) {
+      cleanup();
+      if (!isCurrentAttempt()) return;
       if (isCancelling.current) return;
       setInstallError(e.message || "Download start failed");
       setInstallStep("error");

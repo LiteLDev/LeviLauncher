@@ -159,9 +159,6 @@ function App() {
 
   // Extracted hooks
   const { layoutMode } = useLayoutMode();
-  const [sidebarExpanded, setSidebarExpanded] = useState(() => {
-    try { return localStorage.getItem("app.sidebarExpanded") === "true"; } catch { return false; }
-  });
   useAnimations();
   const { themeColorsReady } = useThemeColors(resolvedTheme);
   const background = useBackgroundImage();
@@ -283,7 +280,6 @@ function App() {
                         style={
                           {
                              "--content-pt": "4.5rem",
-                             "--sidebar-width": sidebarExpanded ? "12rem" : "3.5rem",
                           } as React.CSSProperties
                         }
                         className={`app-backdrop relative isolate w-full h-dvh flex ${
@@ -302,11 +298,6 @@ function App() {
                         ) : (
                           <>
                             <Sidebar
-                              expanded={sidebarExpanded}
-                              onExpandedChange={(expanded) => {
-                                setSidebarExpanded(expanded);
-                                try { localStorage.setItem("app.sidebarExpanded", String(expanded)); } catch {}
-                              }}
                               navLocked={effectiveNavLocked}
                               themeMode={themeMode}
                               tryNavigate={tryNavigate}
@@ -323,7 +314,7 @@ function App() {
                           id="main-content"
                           tabIndex={-1}
                           className={`w-full flex-1 min-h-0 overflow-hidden ${
-                            layoutMode === "sidebar" ? "pl-[var(--sidebar-width)]" : ""
+                            layoutMode === "sidebar" ? "pl-14" : ""
                           }`}
                         >
                           <Suspense

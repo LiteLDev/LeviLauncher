@@ -1517,10 +1517,7 @@
       "download_done": "已完成",
       "download_failed": "失败 / 已取消",
       "install_download": "安装此版本",
-      "collapse_nav": "收起导航",
-      "expand_nav": "展开导航",
       "main_nav": "主导航",
-      "active_downloads": "{{count}} 个下载正在进行",
       "browse_content": "浏览资源"
     }
   }

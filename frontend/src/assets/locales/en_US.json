@@ -1518,10 +1518,7 @@
       "download_done": "Completed",
       "download_failed": "Failed / cancelled",
       "install_download": "Install this version",
-      "collapse_nav": "Collapse navigation",
-      "expand_nav": "Expand navigation",
       "main_nav": "Main navigation",
-      "active_downloads": "{{count}} active downloads",
       "browse_content": "Browse content"
     }
   }

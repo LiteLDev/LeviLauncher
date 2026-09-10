@@ -1,3 +1,4 @@
+import { openDirectory } from "@/utils/explorer";
 import { ModalAction, ModalPanel, ModalDescription } from "@/components/ModalPrimitives";
 import {
   Button,
@@ -1113,7 +1114,7 @@ export const SettingsPage: React.FC = () => {
                                     onPress={async () => {
                                       const path = backgroundImage;
                                       if (path) {
-                                        await (minecraft as any).OpenPathDir(
+                                        await openDirectory(
                                           path,
                                         );
                                       }

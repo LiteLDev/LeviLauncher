@@ -1,3 +1,4 @@
+import { openDirectory, showDirectoryOpenError } from "@/utils/explorer";
 import {
   Button,
   Card,
@@ -34,7 +35,6 @@ import {
 } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { motion } from "framer-motion";
@@ -248,10 +248,14 @@ export default function ServersPage() {
 
   const handleOpenFolder = async () => {
     if (!selectedPlayer) return;
-    const r = await GetContentRoots(currentVersionName || "");
-    if (r.usersRoot) {
-      const path = `${r.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\minecraftpe`;
-      OpenPathDir(path);
+    try {
+      const r = await GetContentRoots(currentVersionName || "");
+      if (r.usersRoot) {
+        const path = `${r.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\minecraftpe`;
+        await openDirectory(path);
+      }
+    } catch (error) {
+      showDirectoryOpenError(error);
     }
   };
 

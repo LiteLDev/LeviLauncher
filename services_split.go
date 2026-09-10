@@ -6,6 +6,7 @@ import (
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/contentmgr"
+	"github.com/liteldev/LeviLauncher/internal/explorer"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/packages"
@@ -333,6 +334,6 @@ func (s *ModsService) UpdateModManifest(name string, modFolder string, modName s
 	return mods.UpdateModManifest(name, modFolder, modName, version, modType, entry, author)
 }
 
-func (s *ModsService) OpenModsExplorer(name string) {
-	mcservice.OpenModsExplorer(name)
+func (s *ModsService) OpenModsExplorer(name string) error {
+	return explorer.OpenMods(name)
 }

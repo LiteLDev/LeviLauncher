@@ -626,6 +626,7 @@
     "disable": "비활성화",
     "enable": "활성화",
     "open_folder": "폴더 열기",
+    "open_folder_failed": "폴더를 열 수 없습니다",
     "remove": "제거",
     "tip": "팁",
     "feature_unavailable": "이 기능은 일시적으로 사용할 수 없습니다",

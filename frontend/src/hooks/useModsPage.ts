@@ -1,3 +1,4 @@
+import { openDirectory, openModsDirectory } from "@/utils/explorer";
 import { toast, useOverlayState } from "@heroui/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
@@ -6,7 +7,6 @@ import { Events } from "@wailsio/runtime";
 import {
   InstallLIPPackage,
   ListDir,
-  OpenPathDir,
   UninstallLIPPackage,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
@@ -14,7 +14,6 @@ import {
   GetVersionsDir,
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
 import {
-  OpenModsExplorer,
   DeleteMod,
   EnableMod,
   DisableMod,
@@ -2224,7 +2223,7 @@ export const useModsPage = (
       navigate(ROUTES.instances);
       return;
     }
-    OpenModsExplorer(name);
+    void openModsDirectory(name);
   };
 
   const openModFolder = async (mod: types.ModInfo) => {
@@ -2234,20 +2233,17 @@ export const useModsPage = (
     const folder = resolveModFolder(mod);
     if (!folder) return;
 
+    let modPath: string;
     try {
       const versionsDir = await GetVersionsDir();
       const sep = versionsDir.includes("\\") ? "\\" : "/";
-      const modPath = `${versionsDir}${sep}${name}${sep}mods${sep}${folder}`;
-
-      try {
-        await ListDir(modPath);
-        await OpenPathDir(modPath);
-      } catch {
-        OpenModsExplorer(name);
-      }
+      modPath = `${versionsDir}${sep}${name}${sep}mods${sep}${folder}`;
+      await ListDir(modPath);
     } catch {
-      OpenModsExplorer(name);
+      await openModsDirectory(name);
+      return;
     }
+    await openDirectory(modPath);
   };
 
   const toggleModEnabled = async (modFolder: string, val: boolean) => {

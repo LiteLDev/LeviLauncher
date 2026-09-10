@@ -618,6 +618,7 @@
     "disable": "無効",
     "enable": "有効",
     "open_folder": "フォルダを開く",
+    "open_folder_failed": "フォルダーを開けませんでした",
     "remove": "削除",
     "tip": "ヒント",
     "feature_unavailable": "この機能は一時的に利用できません",

@@ -626,6 +626,7 @@
     "disable": "Deaktivieren",
     "enable": "Aktivieren",
     "open_folder": "Ordner öffnen",
+    "open_folder_failed": "Der Ordner konnte nicht geöffnet werden",
     "remove": "Entfernen",
     "tip": "Tipp",
     "feature_unavailable": "Diese Funktion ist vorübergehend nicht verfügbar",

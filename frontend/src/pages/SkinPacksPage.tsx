@@ -1,3 +1,4 @@
+import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
 import {
@@ -39,7 +40,6 @@ import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   GetVersionMeta,
   GetVersionLogoDataUrl,
@@ -671,7 +671,7 @@ export default function SkinPacksPage() {
                       if (selectedPlayer && roots.usersRoot && !isSharedMode) {
                         sp = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\skin_packs`;
                       }
-                      await OpenPathDir(sp);
+                      await openDirectory(sp);
                     }}
                     isDisabled={!roots.resourcePacks || !hasBackend}
                     variant={"secondary"}
@@ -981,7 +981,7 @@ export default function SkinPacksPage() {
                                 variant={"secondary"}
                                 onClick={(event) => event.stopPropagation()}
                                 onPress={(e) => {
-                                  OpenPathDir(p.path);
+                                  openDirectory(p.path);
                                 }}
                                 className={cn(
                                   "rounded-full",

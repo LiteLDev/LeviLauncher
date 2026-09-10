@@ -1,3 +1,4 @@
+import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalProgress } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
 import {
@@ -45,7 +46,6 @@ import {
   GetPathModTime,
   BackupWorld,
   BackupWorldWithVersion,
-  OpenPathDir,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   GetContentRoots,
@@ -620,7 +620,7 @@ export default function WorldsListPage() {
                 </Dropdown>
                 <Button
                   onPress={() => {
-                    if (currentWorldsPath) OpenPathDir(currentWorldsPath);
+                    if (currentWorldsPath) openDirectory(currentWorldsPath);
                   }}
                   isDisabled={!currentWorldsPath}
                   variant={"secondary"}
@@ -920,7 +920,7 @@ export default function WorldsListPage() {
                             variant={"secondary"}
                             onClick={(event) => event.stopPropagation()}
                             onPress={(e) => {
-                              OpenPathDir(w.Path);
+                              openDirectory(w.Path);
                             }}
                             className={cn(
                               "rounded-full",

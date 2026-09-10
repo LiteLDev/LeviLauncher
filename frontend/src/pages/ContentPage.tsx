@@ -1,3 +1,4 @@
+import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
 import {
   Button,
@@ -208,7 +209,7 @@ export default function ContentPage() {
                     <Button
                       onPress={() => {
                         if (cp.roots.usersRoot) {
-                          (minecraft as any)?.OpenPathDir(cp.roots.usersRoot);
+                          openDirectory(cp.roots.usersRoot);
                         }
                       }}
                       isDisabled={!cp.hasBackend || !cp.roots.usersRoot}

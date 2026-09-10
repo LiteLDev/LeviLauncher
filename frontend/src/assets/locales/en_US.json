@@ -663,6 +663,7 @@
     "disable": "Disable",
     "enable": "Enable",
     "open_folder": "Open Folder",
+    "open_folder_failed": "Could not open the folder",
     "remove": "Remove",
     "tip": "Tip",
     "feature_unavailable": "This feature is temporarily unavailable",

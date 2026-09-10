@@ -1,3 +1,4 @@
+import { openDirectory, showDirectoryOpenError } from "@/utils/explorer";
 import { ModalDescription } from "@/components/ModalPrimitives";
 import {
   Button,
@@ -599,9 +600,9 @@ export default function InstallPage() {
       const vdir = await GetVersionsDir();
       const sep = vdir.includes("\\") ? "\\" : "/";
       const path = `${vdir}${sep}${installedFolderName}`;
-      await minecraft.OpenPathDir(path);
+      await openDirectory(path);
     } catch (e) {
-      console.error(e);
+      showDirectoryOpenError(e);
     }
   };
 

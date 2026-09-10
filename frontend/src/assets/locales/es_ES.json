@@ -626,6 +626,7 @@
     "disable": "Desactivar",
     "enable": "Activar",
     "open_folder": "Abrir carpeta",
+    "open_folder_failed": "No se pudo abrir la carpeta",
     "remove": "Eliminar",
     "tip": "Consejo",
     "feature_unavailable": "Esta función no está disponible temporalmente",

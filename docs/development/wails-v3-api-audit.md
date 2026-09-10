@@ -38,6 +38,23 @@ Wails 的 [Manager API](https://v3.wails.io/concepts/manager-api/) 提供目录/
 | 游戏下载、安装、备份、LIP 和 GDK/注册表操作 | Wails bindings/events | 属于应用业务或 Windows/GDK 能力，Wails 负责通信与生命周期，不能替代这些业务实现。 |
 | 应用自更新 | Wails Updater | 值得单独迁移。需要把当前 release 来源、镜像策略、校验、提权和重启流程映射到 provider 与更新生命周期；涉及发布协议和已有用户升级路径。参见 [Updater 文档](https://v3.wails.io/guides/updater/)。 |
 
+## 目录打开接口的错误传播
+
+目录打开链路已进一步收敛：
+
+```text
+openDirectory(path) → Minecraft.OpenPathDir(path) → explorer.OpenPath(path) → app.Browser.OpenFile(path)
+openModsDirectory(name) → ModsService.OpenModsExplorer(name) → explorer.OpenMods(name) → explorer.OpenPath(path)
+```
+
+移除 `mcservice.OpenPathDir`、`mcservice.OpenModsExplorer` 两个纯转发函数，以及没有调用方的 `OpenWorlds`、`OpenInstallers`、`OpenVersionsDir` 辅助函数。世界目录的玩家选择和兼容路径解析继续留在 `mcservice`。
+
+`OpenPathDir`、`OpenModsExplorer`、`OpenWorldsExplorer`、`OpenGameDataExplorer` 均返回标准 Go `error`；空路径、目录准备失败、应用尚未就绪和系统处理器启动失败沿绑定传递为 Promise rejection。错误使用 `%w` 保留底层原因，并附带操作与目录信息。成功意味着系统打开请求已提交，Wails 不会等待文件管理器窗口出现。
+
+前端统一由 `frontend/src/utils/explorer.ts` 接收错误并显示本地化提示及具体原因。界面调用 `openDirectory` 或 `openModsDirectory`，成功返回 `true`，失败在显示提示后返回 `false`；这样不等待结果的按钮也不会留下未处理的 rejection。路径查询本身抛出的错误使用相同的提示函数。目录错误标题覆盖全部 11 种现有语言。
+
+`npm run test:explorer` 使用 Node 内置测试运行器测试实际前端工具模块，替换系统绑定和提示投递，共覆盖 6 个成功、等待、失败、重试及路径解析场景；不依赖新增测试框架，也不会打开用户目录。后端测试同时检查原始文件系统错误和处理器错误没有被丢弃。
+
 ## 后续优先级
 
 1. 为文件下载事件统一增加任务标识。当前 `file.download.error` 只有错误文本，多个任务并行时缺少精确关联依据；本次局部注销解决订阅所有权，不构成完整的多任务事件协议。

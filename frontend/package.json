@@ -11,6 +11,7 @@
     "bundle:check": "node ./scripts/check-bundle.mjs",
     "preview": "vite preview",
     "type-check": "tsc --noEmit",
+    "test:explorer": "node --test scripts/explorer.test.mjs",
     "styles:check": "node ./scripts/check-materials.mjs"
   },
   "dependencies": {

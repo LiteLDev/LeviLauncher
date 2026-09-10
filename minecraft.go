@@ -17,6 +17,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/curseforge/client"
 	cursetypes "github.com/liteldev/LeviLauncher/internal/curseforge/client/types"
 	"github.com/liteldev/LeviLauncher/internal/downloader"
+	"github.com/liteldev/LeviLauncher/internal/explorer"
 	"github.com/liteldev/LeviLauncher/internal/gameinput"
 	"github.com/liteldev/LeviLauncher/internal/lang"
 	"github.com/liteldev/LeviLauncher/internal/launch"
@@ -452,13 +453,15 @@ func (a *Minecraft) DeleteDownloadedMsixvc(version string, versionType string) s
 	return mcservice.DeleteDownloadedMsixvc(version, versionType)
 }
 
-func (a *Minecraft) OpenWorldsExplorer(name string, isPreview bool) {
-	mcservice.OpenWorldsExplorer(name, isPreview)
+func (a *Minecraft) OpenWorldsExplorer(name string, isPreview bool) error {
+	return mcservice.OpenWorldsExplorer(name, isPreview)
 }
 
-func (a *Minecraft) OpenPathDir(dir string) { mcservice.OpenPathDir(dir) }
+func (a *Minecraft) OpenPathDir(dir string) error { return explorer.OpenPath(dir) }
 
-func (a *Minecraft) OpenGameDataExplorer(isPreview bool) { mcservice.OpenGameDataExplorer(isPreview) }
+func (a *Minecraft) OpenGameDataExplorer(isPreview bool) error {
+	return mcservice.OpenGameDataExplorer(isPreview)
+}
 
 func (a *Minecraft) ListDrives() []string { return mcservice.ListDrives() }
 

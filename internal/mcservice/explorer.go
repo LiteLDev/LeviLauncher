@@ -8,9 +8,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
-func OpenModsExplorer(name string) { _ = explorer.OpenMods(name) }
-
-func OpenWorldsExplorer(name string, isPreview bool) {
+func OpenWorldsExplorer(name string, isPreview bool) error {
 	roots := GetContentRoots(name)
 	users := strings.TrimSpace(roots.UsersRoot)
 	if users != "" {
@@ -28,28 +26,18 @@ func OpenWorldsExplorer(name string, isPreview bool) {
 		if firstPlayer != "" {
 			wp := filepath.Join(users, firstPlayer, "games", "com.mojang", "minecraftWorlds")
 			if utils.DirExists(wp) {
-				_ = explorer.OpenPath(wp)
-				return
+				return explorer.OpenPath(wp)
 			}
 		}
 		if utils.DirExists(users) {
-			_ = explorer.OpenPath(users)
-			return
+			return explorer.OpenPath(users)
 		}
 	}
 	legacy := filepath.Join(utils.GetMinecraftGDKDataPath(isPreview), "worlds")
-	_ = explorer.OpenPath(legacy)
+	return explorer.OpenPath(legacy)
 }
 
-func OpenPathDir(dir string) {
-	d := strings.TrimSpace(dir)
-	if d == "" {
-		return
-	}
-	_ = explorer.OpenPath(d)
-}
-
-func OpenGameDataExplorer(isPreview bool) {
+func OpenGameDataExplorer(isPreview bool) error {
 	base := utils.GetMinecraftGDKDataPath(isPreview)
-	_ = explorer.OpenPath(base)
+	return explorer.OpenPath(base)
 }

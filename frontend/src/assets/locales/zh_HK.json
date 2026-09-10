@@ -645,6 +645,7 @@
     "disable": "停用",
     "enable": "啟用",
     "open_folder": "開啟資料夾",
+    "open_folder_failed": "無法開啟資料夾",
     "remove": "移除",
     "tip": "提示",
     "feature_unavailable": "該功能暫時不可用",

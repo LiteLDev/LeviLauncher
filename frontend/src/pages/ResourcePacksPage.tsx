@@ -1,3 +1,4 @@
+import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalPanel, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
 import {
@@ -39,7 +40,6 @@ import {
   FaMagic,
   FaExchangeAlt
 } from "react-icons/fa";
-import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   GetContentRoots,
   ListPacksForVersion,
@@ -602,7 +602,7 @@ export default function ResourcePacksPage() {
             endContent={
               <div className="flex items-center gap-2">
                 <Button
-                  onPress={() => OpenPathDir(roots.resourcePacks)}
+                  onPress={() => openDirectory(roots.resourcePacks)}
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
@@ -981,7 +981,7 @@ export default function ResourcePacksPage() {
                               variant={"secondary"}
                               onClick={(event) => event.stopPropagation()}
                               onPress={(e) => {
-                                OpenPathDir(p.path);
+                                openDirectory(p.path);
                               }}
                               className={cn(
                                 "rounded-full",

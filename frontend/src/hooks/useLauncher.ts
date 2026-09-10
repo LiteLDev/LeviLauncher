@@ -1,3 +1,4 @@
+import { openDirectory, showDirectoryOpenError } from "@/utils/explorer";
 import { useOverlayState } from "@heroui/react";
 import React, { useEffect, useRef } from "react";
 
@@ -353,9 +354,9 @@ export const useLauncher = (args: any) => {
       const vdir = await versionService.GetVersionsDir();
       if (!vdir) return;
       const path = vdir + "\\" + currentVersion;
-      await minecraft.OpenPathDir(path);
+      await openDirectory(path);
     } catch (e) {
-      console.error(e);
+      showDirectoryOpenError(e);
     }
   }, [currentVersion]);
 

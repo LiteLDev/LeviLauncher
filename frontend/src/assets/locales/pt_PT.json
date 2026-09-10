@@ -626,6 +626,7 @@
     "disable": "Desativar",
     "enable": "Ativar",
     "open_folder": "Abrir pasta",
+    "open_folder_failed": "Não foi possível abrir a pasta",
     "remove": "Remover",
     "tip": "Dica",
     "feature_unavailable": "Esta funcionalidade está temporariamente indisponível",

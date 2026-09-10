@@ -626,6 +626,7 @@
     "disable": "Disabilita",
     "enable": "Abilita",
     "open_folder": "Apri cartella",
+    "open_folder_failed": "Impossibile aprire la cartella",
     "remove": "Rimuovi",
     "tip": "Suggerimento",
     "feature_unavailable": "Questa funzionalità è temporaneamente non disponibile",

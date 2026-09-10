@@ -1,3 +1,4 @@
+import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalAction } from "@/components/ModalPrimitives";
 import {
   Button,
@@ -30,7 +31,6 @@ import {
   FaChevronRight,
 } from "react-icons/fa";
 import {
-  OpenPathDir,
   GetImageURL,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
@@ -269,7 +269,7 @@ export default function ScreenshotsPage() {
               <div className="flex items-center gap-2">
                 <Button
                   onPress={() => {
-                    if (screenshotsRoot) OpenPathDir(screenshotsRoot);
+                    if (screenshotsRoot) openDirectory(screenshotsRoot);
                   }}
                   isDisabled={!screenshotsRoot}
                   variant={"secondary"}
@@ -361,7 +361,7 @@ export default function ScreenshotsPage() {
           <p className="text-sm text-muted select-text break-all">{loadError}</p>
           <div className="flex gap-2">
             <Button variant="primary" onPress={() => void refreshAll()}>{t("common.retry")}</Button>
-            <Button variant="secondary" isDisabled={!screenshotsRoot} onPress={() => { if (screenshotsRoot) void OpenPathDir(screenshotsRoot); }}>{t("common.open")}</Button>
+            <Button variant="secondary" isDisabled={!screenshotsRoot} onPress={() => { if (screenshotsRoot) void openDirectory(screenshotsRoot); }}>{t("common.open")}</Button>
           </div>
         </div>
       ) : (
@@ -707,9 +707,9 @@ export default function ScreenshotsPage() {
                 <ModalAction
                   onPress={() => {
                     if (activeShot?.dir) {
-                      OpenPathDir(activeShot.dir);
+                      openDirectory(activeShot.dir);
                     } else if (screenshotsRoot) {
-                      OpenPathDir(screenshotsRoot);
+                      openDirectory(screenshotsRoot);
                     }
                   }}
                   variant={"secondary"}

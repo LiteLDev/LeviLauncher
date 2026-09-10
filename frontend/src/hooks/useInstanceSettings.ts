@@ -1,3 +1,4 @@
+import { openDirectory } from "@/utils/explorer";
 import { toast, useOverlayState } from "@heroui/react";
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
@@ -1605,11 +1606,7 @@ export const useInstanceSettings = () => {
       backupResult?.backupDir || backupInfo?.backupDir || "",
     ).trim();
     if (!dir) return;
-    try {
-      await (minecraft as any)?.OpenPathDir?.(dir);
-    } catch (error) {
-      console.warn("Failed to open backup directory", error);
-    }
+    await openDirectory(dir);
   }, [backupInfo, backupResult]);
 
   const confirmInstanceBackup = React.useCallback(async () => {

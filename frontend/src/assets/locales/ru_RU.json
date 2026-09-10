@@ -736,7 +736,6 @@
       "enable_isolation": "Включить изоляцию",
       "enable_console": "Включить консоль",
       "enable_render_dragon": "Загрузить шейдеры RenderDragon",
-      "enable_ctrl_r_reload_resources": "Ctrl+R: перезагрузка ресурсов",
       "enable_editor_mode": "Включить режим редактора",
       "launch_args": "Аргументы запуска",
       "launch_args_placeholder": "Аргументы запуска (например: -Editor true)",

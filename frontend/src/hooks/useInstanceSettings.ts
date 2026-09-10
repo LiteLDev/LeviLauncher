@@ -627,8 +627,6 @@ export const useInstanceSettings = () => {
     React.useState<boolean>(false);
   const [enableRenderDragon, setEnableRenderDragon] =
     React.useState<boolean>(false);
-  const [enableCtrlRReloadResources, setEnableCtrlRReloadResources] =
-    React.useState<boolean>(false);
   const [envVars, setEnvVars] = React.useState<string>("");
   const [launchArgs, setLaunchArgs] = React.useState<string>("");
   const [isRegistered, setIsRegistered] = React.useState<boolean>(false);
@@ -643,8 +641,6 @@ export const useInstanceSettings = () => {
   const [originalEditorMode, setOriginalEditorMode] =
     React.useState<boolean>(false);
   const [originalRenderDragon, setOriginalRenderDragon] =
-    React.useState<boolean>(false);
-  const [originalCtrlRReloadResources, setOriginalCtrlRReloadResources] =
     React.useState<boolean>(false);
   const [originalEnvVars, setOriginalEnvVars] = React.useState<string>("");
   const [originalLaunchArgs, setOriginalLaunchArgs] =
@@ -941,8 +937,6 @@ export const useInstanceSettings = () => {
             setOriginalEditorMode(!!meta?.enableEditorMode);
             setEnableRenderDragon(!!meta?.enableRenderDragon);
             setOriginalRenderDragon(!!meta?.enableRenderDragon);
-            setEnableCtrlRReloadResources(!!meta?.enableCtrlRReloadResources);
-            setOriginalCtrlRReloadResources(!!meta?.enableCtrlRReloadResources);
             setEnvVars(String(meta?.envVars || ""));
             setOriginalEnvVars(String(meta?.envVars || ""));
             setLaunchArgs(String(meta?.launchArgs || ""));
@@ -987,7 +981,6 @@ export const useInstanceSettings = () => {
           enableConsole !== originalConsole ||
           enableEditorMode !== originalEditorMode ||
           enableRenderDragon !== originalRenderDragon ||
-          enableCtrlRReloadResources !== originalCtrlRReloadResources ||
           envVars !== originalEnvVars ||
           launchArgs !== originalLaunchArgs;
 
@@ -1017,8 +1010,6 @@ export const useInstanceSettings = () => {
     originalEditorMode,
     enableRenderDragon,
     originalRenderDragon,
-    enableCtrlRReloadResources,
-    originalCtrlRReloadResources,
     envVars,
     originalEnvVars,
     launchArgs,
@@ -1974,7 +1965,6 @@ export const useInstanceSettings = () => {
           !!enableConsole,
           !!enableEditorMode,
           !!enableRenderDragon,
-          !!enableCtrlRReloadResources,
           launchArgs,
           envVars,
         );
@@ -2010,7 +2000,6 @@ export const useInstanceSettings = () => {
       enableConsole,
       enableEditorMode,
       enableRenderDragon,
-      enableCtrlRReloadResources,
       logoDataUrl,
       returnToPath,
       navigate,
@@ -2341,8 +2330,6 @@ export const useInstanceSettings = () => {
     setEnableEditorMode,
     enableRenderDragon,
     setEnableRenderDragon,
-    enableCtrlRReloadResources,
-    setEnableCtrlRReloadResources,
     envVars,
     setEnvVars,
     launchArgs,

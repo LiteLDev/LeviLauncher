@@ -468,7 +468,6 @@ export default function InstallPage() {
           false,
           false,
           false,
-          false,
           "",
           "",
         );

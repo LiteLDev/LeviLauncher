@@ -741,7 +741,6 @@
       "enable_isolation": "Activer l'isolement",
       "enable_console": "Activer la console",
       "enable_render_dragon": "Charger les shaders RenderDragon",
-      "enable_ctrl_r_reload_resources": "Ctrl+R Rechargement rapide des ressources",
       "enable_editor_mode": "Activer le mode éditeur",
       "launch_args": "Arguments de lancement",
       "launch_args_placeholder": "Arguments de lancement (ex. -Editor true)",

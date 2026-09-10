@@ -741,7 +741,6 @@
       "enable_isolation": "격리 활성화",
       "enable_console": "콘솔 활성화",
       "enable_render_dragon": "RenderDragon 셰이더 로드",
-      "enable_ctrl_r_reload_resources": "Ctrl+R 빠른 리소스 다시 로드",
       "enable_editor_mode": "편집기 모드 활성화",
       "launch_args": "실행 인수",
       "launch_args_placeholder": "실행 인수 (예: -Editor true)",

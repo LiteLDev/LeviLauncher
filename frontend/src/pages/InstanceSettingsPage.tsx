@@ -773,29 +773,6 @@ export default function InstanceSettingsPage() {
                   </div>
                   <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-base font-medium">
-                      {t("versions.edit.enable_ctrl_r_reload_resources")}
-                    </div>
-                    <Switch
-                      aria-label={t(
-                        "versions.edit.enable_ctrl_r_reload_resources",
-                      )}
-                      size="md"
-                      isSelected={vs.enableCtrlRReloadResources}
-                      onChange={vs.setEnableCtrlRReloadResources}
-                      className={"group"}
-                    >
-                      <Switch.Content>
-                        <Switch.Control
-                          className={"group-data-[selected]:bg-brand-500"}
-                        >
-                          <Switch.Thumb></Switch.Thumb>
-                        </Switch.Control>
-                        <span></span>
-                      </Switch.Content>
-                    </Switch>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-xl">
-                    <div className="text-base font-medium">
                       {t("versions.edit.enable_editor_mode")}
                     </div>
                     <Switch

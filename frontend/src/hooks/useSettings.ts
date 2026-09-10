@@ -1,5 +1,5 @@
 import { useOverlayState } from "@heroui/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import {
@@ -291,6 +291,9 @@ export const useSettings = (i18n: { language: string }) => {
   const [processModalOpen, setProcessModalOpen] = useState(false);
   const [processes, setProcesses] = useState<types.ProcessInfo[]>([]);
   const [scanningProcesses, setScanningProcesses] = useState(false);
+  const [processError, setProcessError] = useState("");
+  const [terminatingProcess, setTerminatingProcess] = useState<number | "all" | null>(null);
+  const terminatingRef = useRef(false);
 
   // Sun times loading
   const [loadingSunTimes, setLoadingSunTimes] = useState(false);
@@ -331,27 +334,46 @@ export const useSettings = (i18n: { language: string }) => {
 
   const refreshProcesses = async () => {
     setScanningProcesses(true);
+    setProcessError("");
     try {
       const list = await ListMinecraftProcesses();
       setProcesses(list || []);
+      return true;
+    } catch (error) {
+      setProcessError(error instanceof Error ? error.message : String(error));
+      return false;
     } finally {
       setScanningProcesses(false);
     }
   };
 
-  const handleKillProcess = async (pid: number) => {
+  const terminateProcesses = async (pid?: number) => {
+    if (terminatingRef.current) return false;
+    terminatingRef.current = true;
+    setTerminatingProcess(pid ?? "all");
+    setProcessError("");
     try {
-      await KillProcess(pid);
-      await refreshProcesses();
-    } catch {}
+      const error = pid === undefined
+        ? await KillAllMinecraftProcesses()
+        : await KillProcess(pid);
+      // A bulk termination can partially succeed. Always refresh its survivors.
+      const refreshed = await refreshProcesses();
+      if (error) {
+        setProcessError(error);
+        return false;
+      }
+      return refreshed;
+    } catch (error) {
+      setProcessError(error instanceof Error ? error.message : String(error));
+      return false;
+    } finally {
+      terminatingRef.current = false;
+      setTerminatingProcess(null);
+    }
   };
 
-  const handleKillAllProcesses = async () => {
-    try {
-      await KillAllMinecraftProcesses();
-      await refreshProcesses();
-    } catch {}
-  };
+  const handleKillProcess = (pid: number) => terminateProcesses(pid);
+  const handleKillAllProcesses = () => terminateProcesses();
 
   const onCheckUpdate = async () => {
     setCheckingUpdate(true);
@@ -461,7 +483,7 @@ export const useSettings = (i18n: { language: string }) => {
         ) {
           return;
         }
-        const hasUnsaved = !!newBaseRoot && newBaseRoot !== baseRoot;
+        const hasUnsaved = newBaseRoot !== baseRoot;
         if (!targetPath || targetPath === location.pathname) return;
         if (hasUnsaved) {
           setPendingNavPath(targetPath);
@@ -798,6 +820,8 @@ export const useSettings = (i18n: { language: string }) => {
     setProcessModalOpen,
     processes,
     scanningProcesses,
+    processError,
+    terminatingProcess,
     refreshProcesses,
     handleKillProcess,
     handleKillAllProcesses,

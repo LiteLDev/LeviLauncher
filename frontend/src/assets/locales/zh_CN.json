@@ -1490,6 +1490,15 @@
       "rgb_red": "红色（R）",
       "rgb_green": "绿色（G）",
       "rgb_blue": "蓝色（B）"
+    },
+    "usability": {
+      "process_all": "全部 {{count}} 个 Minecraft 进程",
+      "process_confirm": "结束 Minecraft 进程？",
+      "process_warning": "即将强制结束 {{target}}。尚未保存的游戏进度可能丢失，是否继续？",
+      "process_success": "已结束 Minecraft 进程。",
+      "process_failed": "进程操作未完成：{{message}}",
+      "continue_editing": "继续编辑",
+      "discard_leave": "放弃修改并离开"
     }
   }
 }

@@ -1,5 +1,5 @@
 import { openDirectory } from "@/utils/explorer";
-import { ModalAction, ModalPanel, ModalDescription } from "@/components/ModalPrimitives";
+import { ModalAction, ModalPanel, ModalDescription, ModalNotice } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -9,6 +9,7 @@ import {
   InputGroup,
   Label,
   ListBox,
+  NumberField,
   ProgressBar,
   Select,
   Separator,
@@ -88,6 +89,27 @@ const getColorLuminance = (hexColor: string) => {
   const b = parseInt(color.slice(5, 7), 16);
   return (0.299 * r + 0.587 * g + 0.114 * b) / 255;
 };
+
+const AppearanceNumberField = ({ label, value, min, max, onChange }: {
+  label: string;
+  value: number;
+  min: number;
+  max: number;
+  onChange: (value: number) => void;
+}) => (
+  <NumberField
+    aria-label={label}
+    value={value}
+    minValue={min}
+    maxValue={max}
+    step={1}
+    onChange={(next) => { if (Number.isFinite(next)) onChange(next); }}
+  >
+    <NumberField.Group className="h-8 min-h-8 rounded-lg bg-field">
+      <NumberField.Input className="w-16 rounded-lg px-2 text-right text-sm tabular-nums focus-visible:outline-2 focus-visible:outline-focus" />
+    </NumberField.Group>
+  </NumberField>
+);
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
@@ -213,6 +235,8 @@ export const SettingsPage: React.FC = () => {
     setProcessModalOpen,
     processes,
     scanningProcesses,
+    processError,
+    terminatingProcess,
     refreshProcesses,
     handleKillProcess,
     handleKillAllProcesses,
@@ -226,6 +250,12 @@ export const SettingsPage: React.FC = () => {
     resetOnClose,
   } = settings;
   const [pathError, setPathError] = React.useState("");
+  const [killTarget, setKillTarget] = React.useState<{ pid?: number; label: string } | null>(null);
+  const continuePendingNavigation = () => {
+    unsavedOnClose();
+    if (typeof pendingNavPath === "number") navigate(pendingNavPath);
+    else if (pendingNavPath) navigate(pendingNavPath);
+  };
 
   React.useEffect(() => {
     setPathError("");
@@ -1443,26 +1473,15 @@ export const SettingsPage: React.FC = () => {
                                       {t("settings.appearance.background_blur")}
                                     </p>
                                     <div className="flex items-center">
-                                      <input
-                                        type="number"
-                                        className="w-10 bg-transparent text-xs font-mono text-brand-500 text-right outline-none border-none p-0 [appearance:textfield]"
+                                      <AppearanceNumberField
+                                        label={t("settings.appearance.background_blur")}
                                         value={backgroundBlur}
-                                        onChange={(e) => {
-                                          const val = Math.min(
-                                            50,
-                                            Math.max(
-                                              0,
-                                              parseInt(e.target.value) || 0,
-                                            ),
-                                          );
+                                        min={0}
+                                        max={50}
+                                        onChange={(val) => {
                                           setBackgroundBlur(val);
-                                          localStorage.setItem(
-                                            "app.backgroundBlur",
-                                            String(val),
-                                          );
-                                          window.dispatchEvent(
-                                            new CustomEvent("app-blur-changed"),
-                                          );
+                                          localStorage.setItem("app.backgroundBlur", String(val));
+                                          window.dispatchEvent(new CustomEvent("app-blur-changed"));
                                         }}
                                       />
                                       <span className="text-xs font-mono text-brand-500 ml-0.5">
@@ -1508,28 +1527,15 @@ export const SettingsPage: React.FC = () => {
                                       )}
                                     </p>
                                     <div className="flex items-center">
-                                      <input
-                                        type="number"
-                                        className="w-10 bg-transparent text-xs font-mono text-brand-500 text-right outline-none border-none p-0 [appearance:textfield]"
+                                      <AppearanceNumberField
+                                        label={t("settings.appearance.background_brightness")}
                                         value={backgroundBrightness}
-                                        onChange={(e) => {
-                                          const val = Math.min(
-                                            100,
-                                            Math.max(
-                                              20,
-                                              parseInt(e.target.value) || 0,
-                                            ),
-                                          );
+                                        min={20}
+                                        max={100}
+                                        onChange={(val) => {
                                           setBackgroundBrightness(val);
-                                          localStorage.setItem(
-                                            "app.backgroundBrightness",
-                                            String(val),
-                                          );
-                                          window.dispatchEvent(
-                                            new CustomEvent(
-                                              "app-brightness-changed",
-                                            ),
-                                          );
+                                          localStorage.setItem("app.backgroundBrightness", String(val));
+                                          window.dispatchEvent(new CustomEvent("app-brightness-changed"));
                                         }}
                                       />
                                       <span className="text-xs font-mono text-brand-500 ml-0.5">
@@ -1577,28 +1583,15 @@ export const SettingsPage: React.FC = () => {
                                       )}
                                     </p>
                                     <div className="flex items-center">
-                                      <input
-                                        type="number"
-                                        className="w-10 bg-transparent text-xs font-mono text-brand-500 text-right outline-none border-none p-0 [appearance:textfield]"
+                                      <AppearanceNumberField
+                                        label={t("settings.appearance.background_opacity")}
                                         value={backgroundOpacity}
-                                        onChange={(e) => {
-                                          const val = Math.min(
-                                            100,
-                                            Math.max(
-                                              0,
-                                              parseInt(e.target.value) || 0,
-                                            ),
-                                          );
+                                        min={0}
+                                        max={100}
+                                        onChange={(val) => {
                                           setBackgroundOpacity(val);
-                                          localStorage.setItem(
-                                            "app.backgroundOpacity",
-                                            String(val),
-                                          );
-                                          window.dispatchEvent(
-                                            new CustomEvent(
-                                              "app-opacity-changed",
-                                            ),
-                                          );
+                                          localStorage.setItem("app.backgroundOpacity", String(val));
+                                          window.dispatchEvent(new CustomEvent("app-opacity-changed"));
                                         }}
                                       />
                                       <span className="text-xs font-mono text-brand-500 ml-0.5">
@@ -2802,7 +2795,10 @@ export const SettingsPage: React.FC = () => {
       <UnifiedModal
         size="wide"
         isOpen={processModalOpen}
-        onOpenChange={setProcessModalOpen}
+        onOpenChange={(open) => {
+          if (terminatingProcess === null) setProcessModalOpen(open);
+        }}
+        isDismissable={terminatingProcess === null}
         scrollBehavior="inside"
         type="primary"
         title={
@@ -2815,7 +2811,7 @@ export const SettingsPage: React.FC = () => {
         }
         icon={<FaList className="w-6 h-6" />}
         footer={
-          <ModalAction onPress={() => setProcessModalOpen(false)} variant="secondary">
+          <ModalAction isDisabled={terminatingProcess !== null} onPress={() => setProcessModalOpen(false)} variant="secondary">
             {t("common.close")}
           </ModalAction>
         }
@@ -2823,7 +2819,8 @@ export const SettingsPage: React.FC = () => {
         <div className="flex items-center justify-end mb-4 gap-2">
           <Button
             size="sm"
-            onPress={refreshProcesses}
+            onPress={() => void refreshProcesses()}
+            isDisabled={terminatingProcess !== null}
             variant={"secondary"}
             isPending={scanningProcesses}
           >
@@ -2841,15 +2838,19 @@ export const SettingsPage: React.FC = () => {
           {processes.length > 0 && (
             <Button
               size="sm"
-              onPress={handleKillAllProcesses}
+              onPress={() => setKillTarget({ label: t("audit.usability.process_all", { count: processes.length }) })}
+              isDisabled={scanningProcesses || terminatingProcess !== null}
               variant={"danger-soft"}
             >
               {t("settings.process.kill_all")}
             </Button>
           )}
         </div>
-        <div className="flex flex-col gap-4">
-          {processes.length === 0 ? (
+        {processError && <ModalNotice role="alert" tone="danger">{t("audit.usability.process_failed", { message: processError })}</ModalNotice>}
+        <div className="flex flex-col gap-4" aria-busy={scanningProcesses}>
+          {scanningProcesses && processes.length === 0 ? (
+            <div role="status" className="flex justify-center gap-2 py-8"><Spinner size="sm" />{t("common.loading")}</div>
+          ) : processes.length === 0 && !processError ? (
             <div className="text-center py-8 text-muted dark:text-zinc-400">
               {t("settings.process.no_process")}
             </div>
@@ -2889,7 +2890,8 @@ export const SettingsPage: React.FC = () => {
                   </div>
                   <Button
                     size="sm"
-                    onPress={() => handleKillProcess(p.pid)}
+                    onPress={() => setKillTarget({ pid: p.pid, label: `${p.versionName || "Minecraft.Windows.exe"} (PID ${p.pid})` })}
+                    isDisabled={scanningProcesses || terminatingProcess !== null}
                     variant={"ghost"}
                     className={"text-rose-700 dark:text-rose-300"}
                   >
@@ -3001,32 +3003,51 @@ export const SettingsPage: React.FC = () => {
 
       <UnifiedModal
         size="standard"
+        isOpen={killTarget !== null}
+        onOpenChange={(open) => { if (!open && terminatingProcess === null) setKillTarget(null); }}
+        isDismissable={terminatingProcess === null}
+        type="warning"
+        title={t("audit.usability.process_confirm")}
+        showCancelButton
+        cancelText={t("common.cancel")}
+        confirmText={t("settings.process.kill")}
+        confirmButtonProps={{ variant: "danger", isPending: terminatingProcess !== null }}
+        cancelButtonProps={{ isDisabled: terminatingProcess !== null }}
+        onCancel={() => setKillTarget(null)}
+        onConfirm={async () => {
+          if (!killTarget) return;
+          const ok = killTarget.pid === undefined
+            ? await handleKillAllProcesses()
+            : await handleKillProcess(killTarget.pid);
+          setKillTarget(null);
+          if (ok) toast.success(t("audit.usability.process_success"));
+        }}
+      >
+        <ModalDescription>{t("audit.usability.process_warning", { target: killTarget?.label })}</ModalDescription>
+      </UnifiedModal>
+
+      <UnifiedModal
+        size="standard"
         isOpen={unsavedOpen}
         onOpenChange={(open) => {
           if (!savingBaseRoot) unsavedOnOpenChange(open);
         }}
         type="warning"
         title={t("settings.unsaved.title")}
-        cancelText={t("settings.unsaved.cancel")}
-        confirmText={t("settings.unsaved.save")}
-        showCancelButton
         isDismissable={!savingBaseRoot}
-        cancelButtonProps={{ isDisabled: savingBaseRoot }}
-        confirmButtonProps={{
-          isPending: savingBaseRoot,
-          isDisabled: !newBaseRoot || !baseRootWritable,
-        }}
-        onCancel={() => unsavedOnClose()}
-        onConfirm={async () => {
-          if (await persistBasePath()) {
-            unsavedOnClose();
-            if (typeof pendingNavPath === "number") {
-              navigate(pendingNavPath);
-            } else if (pendingNavPath) {
-              navigate(pendingNavPath);
-            }
-          }
-        }}
+        footer={
+          <div className="flex w-full flex-wrap justify-end gap-2">
+            <ModalAction variant="secondary" isDisabled={savingBaseRoot} onPress={unsavedOnClose}>{t("audit.usability.continue_editing")}</ModalAction>
+            <ModalAction variant="danger-soft" isDisabled={savingBaseRoot} onPress={() => {
+              setNewBaseRoot(baseRoot);
+              setPathError("");
+              continuePendingNavigation();
+            }}>{t("audit.usability.discard_leave")}</ModalAction>
+            <ModalAction variant="primary" isPending={savingBaseRoot} isDisabled={!newBaseRoot.trim() || !baseRootWritable} onPress={async () => {
+              if (await persistBasePath()) continuePendingNavigation();
+            }}>{t("settings.unsaved.save")}</ModalAction>
+          </div>
+        }
       >
         <ModalDescription>
           {t("settings.unsaved.body")}

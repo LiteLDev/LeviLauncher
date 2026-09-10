@@ -1491,6 +1491,15 @@
       "rgb_red": "Red (R)",
       "rgb_green": "Green (G)",
       "rgb_blue": "Blue (B)"
+    },
+    "usability": {
+      "process_all": "all {{count}} Minecraft processes",
+      "process_confirm": "End Minecraft processes?",
+      "process_warning": "This will forcibly end {{target}}. Unsaved game progress may be lost. Continue?",
+      "process_success": "Minecraft processes ended.",
+      "process_failed": "The process operation could not be completed: {{message}}",
+      "continue_editing": "Continue editing",
+      "discard_leave": "Discard and leave"
     }
   }
 }

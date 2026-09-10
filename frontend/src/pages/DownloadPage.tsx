@@ -47,6 +47,7 @@ import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import { ROUTES } from "@/constants/routes";
 import { useDownloadFilters } from "@/hooks/useDownloadFilters";
+import { Clipboard } from "@wailsio/runtime";
 
 type ItemType = "Preview" | "Release";
 
@@ -1391,7 +1392,14 @@ export const DownloadPage: React.FC = () => {
                       </div>
                       <Button
                         size="sm"
-                        onPress={() => navigator.clipboard?.writeText(target)}
+                        onPress={async () => {
+                          try {
+                            await Clipboard.SetText(target);
+                            toast.success(t("audit.mods.link_copied"));
+                          } catch {
+                            toast.danger(t("audit.mods.copy_failed"));
+                          }
+                        }}
                         variant={"secondary"}
                         className={
                           "h-7 min-w-20 bg-surface-tertiary/50 dark:bg-surface/10"

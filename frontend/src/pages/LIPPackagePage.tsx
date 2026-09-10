@@ -25,7 +25,7 @@ import { useTranslation } from "react-i18next";
 import { useRouteTitle } from "@/hooks/useRouteTitle";
 import { ProjectShareButton } from "@/components/ProjectShareButton";
 
-import { Call, Browser } from "@wailsio/runtime";
+import { Browser } from "@wailsio/runtime";
 import { motion } from "framer-motion";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -50,7 +50,11 @@ import {
   GetVersionLogoDataUrl,
   ListVersionMetas,
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { GetLipStatus } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import {
+  GetLipStatus,
+  GetLIPPackageReadme,
+  InstallLIPPackage,
+} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { PageContainer } from "@/components/PageContainer";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -436,12 +440,6 @@ const LIPPackagePage: React.FC = () => {
     [],
   );
 
-  const callMinecraftByName = useCallback(
-    async <T,>(method: string, ...args: unknown[]): Promise<T> =>
-      (await Call.ByName(`main.Minecraft.${method}`, ...args)) as T,
-    [],
-  );
-
   const queryInstanceLLState = useCallback(
     async (instanceName: string): Promise<InstanceLLState> => {
       const normalizedName = String(instanceName || "").trim();
@@ -554,10 +552,7 @@ const LIPPackagePage: React.FC = () => {
 
     const fetchReadme = async () => {
       try {
-        const text = await callMinecraftByName<string>(
-          "GetLIPPackageReadme",
-          pkg.projectUrl,
-        );
+        const text = await GetLIPPackageReadme(pkg.projectUrl);
         if (cancelled) return;
         setReadmeContent(String(text || ""));
         return;
@@ -579,7 +574,7 @@ const LIPPackagePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [callMinecraftByName, pkg?.projectUrl]);
+  }, [pkg?.projectUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1116,8 +1111,7 @@ const LIPPackagePage: React.FC = () => {
             `${t(installDialogActionLabelKey)} ${activePackageIdentifier}@${installDialogTriggerVersion}`,
           );
 
-          const err = await callMinecraftByName<string>(
-            "InstallLIPPackage",
+          const err = await InstallLIPPackage(
             installDialogSelectedInstance,
             activePackageIdentifier,
             installDialogTriggerVersion,
@@ -1169,7 +1163,6 @@ const LIPPackagePage: React.FC = () => {
     }
   }, [
     activePackageIdentifier,
-    callMinecraftByName,
     dialogLLInstalled,
     dialogLLStateLoading,
     dialogPackageStateLoading,

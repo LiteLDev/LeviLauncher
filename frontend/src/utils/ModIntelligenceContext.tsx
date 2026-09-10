@@ -7,7 +7,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Call, Events } from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
+import { GetLIPPackageInstallStates } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   GetMods,
   IsModEnabled,
@@ -266,8 +267,7 @@ export const ModIntelligenceProvider: React.FC<{
       }
 
       try {
-        const raw = await Call.ByName(
-          "main.Minecraft.GetLIPPackageInstallStates",
+        const raw = await GetLIPPackageInstallStates(
           normalizedName,
           requestIdentifiers,
         );

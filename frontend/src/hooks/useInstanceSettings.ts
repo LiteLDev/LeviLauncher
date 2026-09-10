@@ -2,14 +2,19 @@ import { toast, useOverlayState } from "@heroui/react";
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
-import { Call, Dialogs, Events } from "@wailsio/runtime";
+import { Dialogs, Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
 import {
+  BackupInstance,
   DeleteVersionFolder,
+  GetInstanceBackupInfo,
   GetVersionLogoDataUrl,
   GetVersionMeta,
+  InspectInstanceBackupArchive,
+  PreviewInstanceBackupRestoreConflicts,
   RenameVersionFolder,
+  RestoreInstanceBackup,
   SaveVersionLogoDataUrl,
   SaveVersionMeta,
   ValidateVersionFolderName,
@@ -169,7 +174,6 @@ type InstanceBackupRestoreProgress = {
   ts: number;
 };
 
-const VERSION_SERVICE_NAME = "main.VersionService";
 const LEVILAMINA_BACKUP_IDENTIFIER = "LiteLDev/LeviLamina";
 const LEVILAMINA_MOD_NAME = "levilamina";
 const EVENT_INSTANCE_BACKUP_RESTORE_PROGRESS =
@@ -460,16 +464,6 @@ export const useInstanceSettings = () => {
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS";
   const ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE =
     "ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE";
-
-  const callVersionService = React.useCallback(
-    async <T>(method: string, ...args: unknown[]): Promise<T> => {
-      return (await Call.ByName(
-        `${VERSION_SERVICE_NAME}.${method}`,
-        ...args,
-      )) as T;
-    },
-    [],
-  );
 
   const buildBackupLipPackagesFromSnapshot = React.useCallback(
     (
@@ -1382,8 +1376,7 @@ export const useInstanceSettings = () => {
     void (async () => {
       try {
         const preview = toInstanceBackupRestoreConflictInfo(
-          await callVersionService<unknown>(
-            "PreviewInstanceBackupRestoreConflicts",
+          await PreviewInstanceBackupRestoreConflicts(
             targetName,
             {
               archivePath: restoreArchiveInfo.archivePath,
@@ -1429,7 +1422,6 @@ export const useInstanceSettings = () => {
       cancelled = true;
     };
   }, [
-    callVersionService,
     restoreArchiveInfo,
     restoreOpen,
     selectedRestoreScopes,
@@ -1457,7 +1449,7 @@ export const useInstanceSettings = () => {
     setBackupSuccessOpen(false);
     try {
       const info = toInstanceBackupInfo(
-        await callVersionService<unknown>("GetInstanceBackupInfo", targetName),
+        await GetInstanceBackupInfo(targetName),
       );
       const errorCode = String(info?.errorCode || "").trim();
       if (errorCode) {
@@ -1548,7 +1540,6 @@ export const useInstanceSettings = () => {
     }
   }, [
     buildBackupLipPackagesFromSnapshot,
-    callVersionService,
     ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE,
     getInstanceSnapshot,
     isBackupModsSnapshotReady,
@@ -1657,11 +1648,7 @@ export const useInstanceSettings = () => {
         modsLipPackages: backupPreparedLipPackages,
       };
       const resolvedResult = toInstanceBackupResult(
-        await callVersionService<unknown>(
-          "BackupInstance",
-          targetName,
-          request,
-        ),
+        await BackupInstance(targetName, request),
       );
       const errorCode = String(resolvedResult?.errorCode || "").trim();
       if (errorCode) {
@@ -1685,7 +1672,6 @@ export const useInstanceSettings = () => {
     backupPreparedLipPackages,
     backupScopeModes,
     backupScopes,
-    callVersionService,
     instanceBackupExperimentalEnabled,
     selectedBackupScopes,
     t,
@@ -1721,10 +1707,7 @@ export const useInstanceSettings = () => {
       setRestoreConflictChoices({});
       setRestoreProgress(null);
       const info = toInstanceBackupArchiveInfo(
-        await callVersionService<unknown>(
-          "InspectInstanceBackupArchive",
-          archivePath,
-        ),
+        await InspectInstanceBackupArchive(archivePath),
       );
       const errorCode = String(info.errorCode || "").trim();
       if (errorCode) {
@@ -1749,7 +1732,6 @@ export const useInstanceSettings = () => {
       setRestoreInfoLoading(false);
     }
   }, [
-    callVersionService,
     instanceBackupExperimentalEnabled,
     resolveToastText,
     t,
@@ -1867,8 +1849,7 @@ export const useInstanceSettings = () => {
         conflictResolutions,
       };
       const resolvedResult = toInstanceBackupRestoreResult(
-        await callVersionService<unknown>(
-          "RestoreInstanceBackup",
+        await RestoreInstanceBackup(
           targetName,
           request,
         ),
@@ -1907,7 +1888,6 @@ export const useInstanceSettings = () => {
       setRestoringInstance(false);
     }
   }, [
-    callVersionService,
     instanceBackupExperimentalEnabled,
     restoreConflictChoices,
     restoreConflictLoading,

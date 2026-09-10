@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
 
 import {
+  CacheClean,
   GetAppVersion,
   CheckUpdate,
   GetLanguageNames,
@@ -19,7 +20,7 @@ import {
   GetInstallerDir,
   GetVersionsDir,
 } from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { Call, Events } from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import { persistClarityChoice } from "@/utils/clarityConsent";
@@ -322,13 +323,6 @@ export const useSettings = (i18n: { language: string }) => {
     persistExperimentalInstanceBackupEnabled(enabled);
   };
 
-  const callMinecraftByName = async <T>(
-    method: string,
-    ...args: unknown[]
-  ): Promise<T> => {
-    return (await Call.ByName(`main.Minecraft.${method}`, ...args)) as T;
-  };
-
   const refreshSunTimes = async () => {
     setLoadingSunTimes(true);
     await fetchSunTimes();
@@ -403,7 +397,7 @@ export const useSettings = (i18n: { language: string }) => {
   const cleanLipCache = async (): Promise<string> => {
     setCleaningLipCache(true);
     try {
-      const err = await callMinecraftByName<string>("CacheClean");
+      const err = await CacheClean();
       return String(err || "");
     } catch (e: any) {
       return String(e?.data || e?.message || e || "ERR_LIP_CACHE_CLEAN_FAILED");

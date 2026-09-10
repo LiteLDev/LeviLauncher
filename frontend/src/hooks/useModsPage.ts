@@ -2,10 +2,12 @@ import { toast, useOverlayState } from "@heroui/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
 
 import { useNavigate, useBlocker } from "react-router-dom";
-import { Call, Events } from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
 import {
+  InstallLIPPackage,
   ListDir,
   OpenPathDir,
+  UninstallLIPPackage,
 } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   GetVersionMeta,
@@ -498,13 +500,6 @@ export const useModsPage = (
       }
     };
   }, [importing]);
-
-  const callMinecraftByName = async <T>(
-    method: string,
-    ...args: unknown[]
-  ): Promise<T> => {
-    return (await Call.ByName(`main.Minecraft.${method}`, ...args)) as T;
-  };
 
   const resolveLIPIdentifierForRequest = (
     identifier: string,
@@ -1302,8 +1297,7 @@ export const useModsPage = (
 
     try {
       onLog?.("info", t("lip.task_console.stage_install_pkg"));
-      const err = await callMinecraftByName<string>(
-        "InstallLIPPackage",
+      const err = await InstallLIPPackage(
         name,
         requestIdentifier,
         targetVersion,
@@ -1382,8 +1376,7 @@ export const useModsPage = (
       if (!requestIdentifier) return "ERR_LIP_PACKAGE_INVALID_IDENTIFIER";
       try {
         onLog?.("info", t("mods.action_uninstall"));
-        const uninstallErr = await callMinecraftByName<string>(
-          "UninstallLIPPackage",
+        const uninstallErr = await UninstallLIPPackage(
           name,
           requestIdentifier,
         );
@@ -1416,8 +1409,7 @@ export const useModsPage = (
 
     try {
       onLog?.("info", t("mods.action_uninstall"));
-      const uninstallErr = await callMinecraftByName<string>(
-        "UninstallLIPPackage",
+      const uninstallErr = await UninstallLIPPackage(
         name,
         requestIdentifier,
       );
@@ -1972,8 +1964,7 @@ export const useModsPage = (
             "info",
             `${t("mods.action_promote_install")}: ${group.packageName}@${version}`,
           );
-          const err = await callMinecraftByName<string>(
-            "InstallLIPPackage",
+          const err = await InstallLIPPackage(
             name,
             requestIdentifier,
             version,

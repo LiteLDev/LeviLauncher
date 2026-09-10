@@ -11,7 +11,7 @@ import React, {
   useState,
 } from "react";
 
-import { Events } from "@wailsio/runtime";
+import { Clipboard, Events } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 import { LuTerminal } from "react-icons/lu";
 import { UnifiedModal } from "@/components/UnifiedModal";
@@ -600,7 +600,7 @@ export const LipTaskConsoleProvider: React.FC<{
     }
 
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
+      await Clipboard.SetText(lines.join("\n"));
       toast(t("common.success"), {
         variant: "success",
         description: t("lip.task_console.copy_success"),

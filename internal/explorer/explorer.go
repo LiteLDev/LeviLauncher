@@ -10,21 +10,27 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/utils"
+	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 func OpenPath(dir string) bool {
+	app := application.Get()
+	if app == nil {
+		return false
+	}
+	return openPath(dir, app.Browser.OpenFile)
+}
+
+func openPath(dir string, open func(string) error) bool {
 	d := strings.TrimSpace(dir)
 	if d == "" {
 		return false
 	}
-	if !utils.DirExists(d) {
-		if err := os.MkdirAll(d, 0755); err != nil {
-			return false
-		}
+	// MkdirAll also rejects existing files: OpenFile must only receive directories here.
+	if err := os.MkdirAll(d, 0755); err != nil {
+		return false
 	}
-	cmd := exec.Command("powershell", "explorer \""+d+"\"")
-	cmd.SysProcAttr = &syscall.SysProcAttr{HideWindow: true}
-	if err := cmd.Run(); err != nil {
+	if err := open(d); err != nil {
 		log.Println("explorer.OpenPath error:", err)
 		return false
 	}

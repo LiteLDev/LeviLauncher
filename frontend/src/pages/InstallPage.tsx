@@ -29,7 +29,7 @@ import { resolveInstallError } from "@/utils/installError";
 import { saveCurrentVersionName } from "@/utils/currentVersion";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Dialogs, Events } from "@wailsio/runtime";
+import { Clipboard, Dialogs, Events } from "@wailsio/runtime";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   CopyVersionDataFromGDK,
@@ -921,7 +921,7 @@ export default function InstallPage() {
                     <div className="flex flex-wrap gap-2">
                       <Button variant="secondary" size="sm" onPress={async () => {
                         try {
-                          await navigator.clipboard.writeText(failureDetails);
+                          await Clipboard.SetText(failureDetails);
                           toast(t("audit.primary.install.copied"), { variant: "success" });
                         } catch {
                           toast(t("audit.primary.install.copy_failed"), { variant: "danger" });

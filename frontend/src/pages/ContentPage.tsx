@@ -307,10 +307,6 @@ export default function ContentPage() {
               </div>
             </Card.Content>
           </button>
-                  {!cp.loading && !cp.error && cp.worldsCount === 0 && <Card.Footer className="flex flex-wrap gap-2 px-6 pb-4 pt-0">
-            <Button size="sm" variant="secondary" isDisabled={cp.importing || !cp.hasBackend} onPress={importContent}>{t("contentpage.import_button")}</Button>
-            <Button size="sm" variant="ghost" onPress={() => cp.navigate(ROUTES.curseForge)}>{t("audit.usability.browse_content")}</Button>
-          </Card.Footer>}
         </Card>
 
         <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
@@ -356,10 +352,6 @@ export default function ContentPage() {
               </div>
             </Card.Content>
           </button>
-                  {!cp.loading && !cp.error && cp.resCount === 0 && <Card.Footer className="flex flex-wrap gap-2 px-6 pb-4 pt-0">
-            <Button size="sm" variant="secondary" isDisabled={cp.importing || !cp.hasBackend} onPress={importContent}>{t("contentpage.import_button")}</Button>
-            <Button size="sm" variant="ghost" onPress={() => cp.navigate(ROUTES.curseForge)}>{t("audit.usability.browse_content")}</Button>
-          </Card.Footer>}
         </Card>
 
         <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
@@ -405,10 +397,6 @@ export default function ContentPage() {
               </div>
             </Card.Content>
           </button>
-                  {!cp.loading && !cp.error && cp.bpCount === 0 && <Card.Footer className="flex flex-wrap gap-2 px-6 pb-4 pt-0">
-            <Button size="sm" variant="secondary" isDisabled={cp.importing || !cp.hasBackend} onPress={importContent}>{t("contentpage.import_button")}</Button>
-            <Button size="sm" variant="ghost" onPress={() => cp.navigate(ROUTES.curseForge)}>{t("audit.usability.browse_content")}</Button>
-          </Card.Footer>}
         </Card>
 
         <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
@@ -458,10 +446,6 @@ export default function ContentPage() {
               </div>
             </Card.Content>
           </button>
-                  {!cp.loading && !cp.error && cp.skinCount === 0 && <Card.Footer className="flex flex-wrap gap-2 px-6 pb-4 pt-0">
-            <Button size="sm" variant="secondary" isDisabled={cp.importing || !cp.hasBackend} onPress={importContent}>{t("contentpage.import_button")}</Button>
-            <Button size="sm" variant="ghost" onPress={() => cp.navigate(ROUTES.curseForge)}>{t("audit.usability.browse_content")}</Button>
-          </Card.Footer>}
         </Card>
 
         <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>

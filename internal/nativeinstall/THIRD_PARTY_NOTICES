@@ -14,7 +14,7 @@ THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLI
 
 XML canonicalization: github.com/russellhaering/goxmldsig v1.6.1 (Apache-2.0) and github.com/beevik/etree v1.8.0 (BSD-2-Clause); retain the licenses distributed with those modules.
 
-Microsoft InlineLogin host protocol also adapts Xodus 0670e25a. Window lifetime is managed by Wails v3; the isolated authentication control uses github.com/wailsapp/go-webview2 v1.0.23 (MIT), including its public COM bridge and pure Go loader. Retain the license distributed with that module.
+The launcher UI uses Wails v3 and github.com/wailsapp/go-webview2 v1.0.23 (MIT). Retain the license distributed with that module.
 
 MIT License
 

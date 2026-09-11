@@ -626,17 +626,21 @@
     "unknown": "Sconosciuto"
   },
   "useravatar": {
-    "no_login_retry": "Login Xbox non rilevato (clicca per riprovare)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Aggiorna sessione Xbox",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "Tempo di gioco",
-      "blocks_broken": "Blocchi rotti",
-      "mobs_defeated": "Mob sconfitti",
-      "distance_travelled": "Distanza percorsa",
-      "time_format": "{{days}}g {{hours}}h {{minutes}}m"
-    }
+    "authorization": {
+      "title": "Licenze del gioco",
+      "checking": "Verifica in corso",
+      "authorized": "Autorizzato",
+      "trial": "Solo prova",
+      "not_entitled": "Non autorizzato",
+      "error": "Verifica non riuscita",
+      "description": "Le licenze Release e Preview vengono richieste dopo l’accesso. Aggiorna per verificare di nuovo."
+    },
+    "sign_in": "Accedi con Microsoft",
+    "switch_account": "Cambia account",
+    "signin_failed": "Accesso Microsoft non riuscito"
   },
   "content": {
     "count": {
@@ -979,7 +983,10 @@
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "I backup completi di Minecraft Bedrock possono essere ripristinati solo in una directory di destinazione vuota",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Alcuni pacchetti gestiti da lip non sono stati installati",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Alcuni pacchetti gestiti da lip non sono stati ripristinati",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Alcune versioni di pacchetti gestiti da lip non corrispondono al backup"
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Alcune versioni di pacchetti gestiti da lip non corrispondono al backup",
+    "ERR_AUTH_INTERACTION_REQUIRED": "Accedi a Windows con l’account Microsoft che possiede questo gioco, quindi aggiorna l’account tramite l’avatar del launcher e riprova.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "L’account Microsoft è cambiato. Aggiorna l’account tramite l’avatar del launcher e riprova.",
+    "ERR_AUTH_FAILED": "Impossibile autorizzare i download per l’account corrente. Controlla la connessione, aggiorna l’account tramite l’avatar del launcher e riprova."
   },
   "filemanager": {
     "sort": {

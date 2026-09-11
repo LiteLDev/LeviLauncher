@@ -626,17 +626,21 @@
     "unknown": "Desconhecido"
   },
   "useravatar": {
-    "no_login_retry": "Login Xbox não detetado (clique para tentar novamente)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Atualizar sessão Xbox",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "Tempo de jogo",
-      "blocks_broken": "Blocos partidos",
-      "mobs_defeated": "Mobs derrotados",
-      "distance_travelled": "Distância percorrida",
-      "time_format": "{{days}}d {{hours}}h {{minutes}}m"
-    }
+    "authorization": {
+      "title": "Licenças do jogo",
+      "checking": "A verificar",
+      "authorized": "Autorizado",
+      "trial": "Apenas avaliação",
+      "not_entitled": "Sem autorização",
+      "error": "Falha na verificação",
+      "description": "As licenças Release e Preview são pedidas após iniciar sessão. Atualize para verificar novamente."
+    },
+    "sign_in": "Iniciar sessão com a Microsoft",
+    "switch_account": "Mudar de conta",
+    "signin_failed": "Falha ao iniciar sessão na Microsoft"
   },
   "content": {
     "count": {
@@ -979,7 +983,10 @@
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Backups completos do Minecraft Bedrock só podem ser restaurados num diretório de destino vazio",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Alguns pacotes geridos por lip não puderam ser instalados",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Alguns pacotes geridos por lip não foram restaurados",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Algumas versões de pacotes geridos por lip não correspondem ao backup"
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Algumas versões de pacotes geridos por lip não correspondem ao backup",
+    "ERR_AUTH_INTERACTION_REQUIRED": "Inicie sessão no Windows com a conta Microsoft que possui este jogo, atualize a conta através do avatar do iniciador e tente novamente.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "A conta Microsoft foi alterada. Atualize a conta através do avatar do iniciador e tente novamente.",
+    "ERR_AUTH_FAILED": "Não foi possível autorizar as transferências para a conta atual. Verifique a ligação, atualize a conta através do avatar do iniciador e tente novamente."
   },
   "filemanager": {
     "sort": {

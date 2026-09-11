@@ -626,17 +626,21 @@
     "unknown": "Inconnu"
   },
   "useravatar": {
-    "no_login_retry": "Connexion Xbox non détectée (cliquez pour réessayer)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Actualiser la session Xbox",
     "xuid": "XUID : {{xuid}}",
-    "stats": {
-      "minutes_played": "Temps de jeu",
-      "blocks_broken": "Blocs cassés",
-      "mobs_defeated": "Mobs vaincus",
-      "distance_travelled": "Distance parcourue",
-      "time_format": "{{days}}j {{hours}}h {{minutes}}m"
-    }
+    "authorization": {
+      "title": "Licences du jeu",
+      "checking": "Vérification",
+      "authorized": "Autorisé",
+      "trial": "Essai uniquement",
+      "not_entitled": "Non autorisé",
+      "error": "Échec de vérification",
+      "description": "Les licences Release et Preview sont demandées après connexion. Actualisez pour vérifier à nouveau."
+    },
+    "sign_in": "Se connecter avec Microsoft",
+    "switch_account": "Changer de compte",
+    "signin_failed": "Échec de la connexion Microsoft"
   },
   "content": {
     "count": {
@@ -979,7 +983,10 @@
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Les sauvegardes complètes de Minecraft Bedrock ne peuvent être restaurées que dans un répertoire cible vide",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Certains paquets gérés par lip n'ont pas pu être installés",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Certains paquets gérés par lip n'ont pas été restaurés",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Certaines versions de paquets gérés par lip ne correspondent pas à la sauvegarde"
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Certaines versions de paquets gérés par lip ne correspondent pas à la sauvegarde",
+    "ERR_AUTH_INTERACTION_REQUIRED": "Connectez-vous à Windows avec le compte Microsoft qui possède ce jeu, puis actualisez votre compte depuis l’avatar du lanceur et réessayez.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "Le compte Microsoft a changé. Actualisez votre compte depuis l’avatar du lanceur, puis réessayez.",
+    "ERR_AUTH_FAILED": "Impossible d’autoriser les téléchargements pour le compte actuel. Vérifiez votre connexion, actualisez le compte depuis l’avatar du lanceur et réessayez."
   },
   "filemanager": {
     "sort": {

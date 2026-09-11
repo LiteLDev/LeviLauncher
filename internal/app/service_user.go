@@ -1,20 +1,26 @@
 package app
 
 import (
+	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
+	"github.com/wailsapp/wails/v3/pkg/application"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	"github.com/liteldev/LeviLauncher/internal/config"
-	"github.com/liteldev/LeviLauncher/internal/launchercore"
+	"github.com/liteldev/LeviLauncher/internal/nativeinstall"
+	"github.com/liteldev/LeviLauncher/internal/xbox"
 )
 
-type UserService struct{}
+type UserService struct{ window *application.WebviewWindow }
 
 func NewUserService(_ *Minecraft) *UserService {
+	// Restore identity before any avatar or installation request can select a default account.
+	_ = nativeinstall.RestoreSharedAccount(context.Background(), filepath.Join(config.ConfigDir(), "microsoft-account"))
 	return &UserService{}
 }
 
@@ -23,7 +29,7 @@ func (s *UserService) GetGamertagByXuid(xuidStr string) string {
 	if err != nil {
 		return ""
 	}
-	tag, err := launchercore.GetGamertagByXuid(xuid)
+	tag, err := xbox.GetGamertagByXuid(xuid)
 	if err != nil {
 		return ""
 	}
@@ -31,7 +37,7 @@ func (s *UserService) GetGamertagByXuid(xuidStr string) string {
 }
 
 func (s *UserService) GetLocalUserId() string {
-	id, err := launchercore.GetLocalUserId()
+	id, err := xbox.GetLocalUserId()
 	if err != nil {
 		return ""
 	}
@@ -39,7 +45,7 @@ func (s *UserService) GetLocalUserId() string {
 }
 
 func (s *UserService) GetLocalUserGamertag() string {
-	tag, err := launchercore.GetLocalUserGamertag()
+	tag, err := xbox.GetLocalUserGamertag()
 	if err != nil {
 		return ""
 	}
@@ -47,7 +53,7 @@ func (s *UserService) GetLocalUserGamertag() string {
 }
 
 func (s *UserService) GetLocalUserGamerPicture(size int) string {
-	bin, err := launchercore.GetLocalUserGamerPicture(size)
+	bin, err := xbox.GetLocalUserGamerPicture(size)
 	if err != nil {
 		return ""
 	}
@@ -127,7 +133,7 @@ func (s *UserService) GetUserGamertagMap(usersRoot string) map[string]string {
 			continue
 		}
 
-		raw, err := launchercore.GetGamertagByXuid(xuid)
+		raw, err := xbox.GetGamertagByXuid(xuid)
 		if err != nil {
 			continue
 		}
@@ -165,40 +171,46 @@ func (s *UserService) GetUserGamertagMap(usersRoot string) map[string]string {
 }
 
 func (s *UserService) ResetSession() string {
-	if err := launchercore.ResetSession(); err != nil {
+	if err := xbox.ResetSession(); err != nil {
 		return err.Error()
 	}
 	return ""
 }
 
 func (s *UserService) XUserGetState() int {
-	state, err := launchercore.XUserGetState()
+	state, err := xbox.XUserGetState()
 	if err != nil {
 		return 1
 	}
 	return int(state)
 }
 
-type UserStatistics struct {
-	MinutesPlayed     int64   `json:"minutesPlayed"`
-	BlockBroken       int64   `json:"blockBroken"`
-	MobKilled         int64   `json:"mobKilled"`
-	DistanceTravelled float64 `json:"distanceTravelled"`
+func (s *UserService) CheckGameLicenses(ctx context.Context, xuid string) nativeinstall.GameLicenses {
+	return nativeinstall.CheckGameLicenses(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), xuid)
 }
 
-func (s *UserService) GetAggregatedUserStatistics(xuidStr string) UserStatistics {
-	xuid, err := strconv.ParseUint(xuidStr, 10, 64)
-	if err != nil {
-		return UserStatistics{}
+// Attach connects native authentication dialogs to the main window.
+//
+//wails:ignore
+func (s *UserService) Attach(window *application.WebviewWindow) { s.window = window }
+
+func (s *UserService) SignIn(ctx context.Context) string {
+	if s.window == nil {
+		return "ERR_AUTH_FAILED"
 	}
-	mp, bb, mk, dt, err := launchercore.GetAggregatedUserStatisticsByXuid(xuid)
-	if err != nil {
-		return UserStatistics{}
+	err := nativeinstall.SignInSharedAccount(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), uintptr(s.window.NativeWindow()), application.InvokeSync)
+	if err == nil {
+		return ""
 	}
-	return UserStatistics{
-		MinutesPlayed:     mp,
-		BlockBroken:       bb,
-		MobKilled:         mk,
-		DistanceTravelled: dt,
+	if errors.Is(err, context.Canceled) {
+		return "ERR_CANCELED"
 	}
+	if errors.Is(err, context.DeadlineExceeded) {
+		return "ERR_AUTH_TIMEOUT"
+	}
+	var failure *nativeinstall.Error
+	if errors.As(err, &failure) {
+		return failure.Code
+	}
+	return "ERR_AUTH_FAILED"
 }

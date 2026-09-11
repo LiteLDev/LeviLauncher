@@ -68,7 +68,7 @@ func encryptedRSTFixture(t *testing.T) (*etree.Document, []byte) {
 	return doc, secret
 }
 
-func TestUserRSTDecryptsBothEncryptedPPAndBody(t *testing.T) {
+func TestRSTDecryptsBothEncryptedPPAndBody(t *testing.T) {
 	doc, secret := encryptedRSTFixture(t)
 	decryptRST(doc, secret)
 	if len(walk(doc.Root(), "EncryptedPP")) != 0 || len(walk(doc.Root(), "EncryptedData")) != 0 {
@@ -82,7 +82,7 @@ func TestUserRSTDecryptsBothEncryptedPPAndBody(t *testing.T) {
 	}
 }
 
-func TestUserRSTRejectsCiphertextTamperingBeforeDecrypting(t *testing.T) {
+func TestRSTRejectsCiphertextTamperingBeforeDecrypting(t *testing.T) {
 	doc, secret := encryptedRSTFixture(t)
 	value := walk(doc.Root(), "CipherValue")[0]
 	data := decode64(value.Text())
@@ -90,26 +90,5 @@ func TestUserRSTRejectsCiphertextTamperingBeforeDecrypting(t *testing.T) {
 	value.SetText(base64.StdEncoding.EncodeToString(data))
 	if caught(func() { decryptRST(doc, secret) }) == nil {
 		t.Fatal("tampered signed payload was accepted")
-	}
-}
-
-func TestSecondUserRSTRequestsLegacySTSWithDeviceContext(t *testing.T) {
-	deviceLegacy = `<EncryptedData xmlns="http://www.w3.org/2001/04/xmlenc#"><CipherData/></EncryptedData>`
-	deviceProof = bytes.Repeat([]byte{42}, 32)
-	defer func() { deviceLegacy = ""; clear(deviceProof); deviceProof = nil }()
-	doc := makeUserRST(map[string]string{"sDAToken": `<EncryptedData xmlns="http://www.w3.org/2001/04/xmlenc#"><CipherData/></EncryptedData>`, "sSigninName": "player@example.test", "sSTSInlineFlowToken": ""}, true, false)
-	multiple := only(doc.Root(), "RequestMultipleSecurityTokens")
-	requests := walk(multiple, "RequestSecurityToken")
-	if len(requests) != 2 || only(requests[1], "Address").Text() != "http://Passport.NET/tb" {
-		t.Fatal("second-stage legacy scope missing")
-	}
-	if only(doc.Root(), "UsernameHint").Text() != "player@example.test" {
-		t.Fatal("account hint missing")
-	}
-	if only(doc.Root(), "InlineFT").Text() != "" {
-		t.Fatal("empty inline flow token must remain valid")
-	}
-	if only(doc.Root(), "BinarySecurityToken").SelectAttrValue("id", "") != "DeviceDAToken" {
-		t.Fatal("same-device signing context missing")
 	}
 }

@@ -2,7 +2,7 @@
 
 // SPDX-License-Identifier: GPL-3.0-only
 // Package nativeinstall installs complete segmented MSIXVC packages using
-// the shared development key or an application-owned Microsoft account/device
+// the shared development key or a Windows Microsoft account and an application-owned device
 // and online Store licenses for retail packages.
 // It never reads system or other applications' private credential stores.
 package nativeinstall
@@ -17,6 +17,7 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/liteldev/LeviLauncher/internal/xbox"
 	"golang.org/x/sys/windows"
 )
 
@@ -141,9 +142,12 @@ func Install(ctx context.Context, sourcePath, outputPath string, options Options
 			failCode("ERR_AUTH_DEVICE_BUSY", "another installation is using this device cache")
 		}
 		defer windows.CloseHandle(lock)
+		if err := RestoreSharedAccount(ctx, active.options.CacheDir); err != nil {
+			panic(err)
+		}
 		ensureDevice()
 		ticket := ownDeviceTicket()
-		acquireUserTicket()
+		acquireUserTicket(ctx, xbox.GetStoreTicket)
 		license(ticket, active.report.ContentID)
 	}
 	checkCanceled()

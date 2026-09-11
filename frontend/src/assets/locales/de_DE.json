@@ -626,17 +626,21 @@
     "unknown": "Unbekannt"
   },
   "useravatar": {
-    "no_login_retry": "Xbox-Login nicht erkannt (zum Wiederholen klicken)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Xbox-Sitzung aktualisieren",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "Gespielte Zeit",
-      "blocks_broken": "Blöcke abgebaut",
-      "mobs_defeated": "Mobs besiegt",
-      "distance_travelled": "Zurückgelegte Distanz",
-      "time_format": "{{days}}T {{hours}}Std {{minutes}}Min"
-    }
+    "authorization": {
+      "title": "Spiellizenzen",
+      "checking": "Wird geprüft",
+      "authorized": "Autorisiert",
+      "trial": "Nur Testversion",
+      "not_entitled": "Nicht autorisiert",
+      "error": "Prüfung fehlgeschlagen",
+      "description": "Release- und Preview-Lizenzen werden nach der Anmeldung angefordert. Zum erneuten Prüfen aktualisieren."
+    },
+    "sign_in": "Mit Microsoft anmelden",
+    "switch_account": "Konto wechseln",
+    "signin_failed": "Microsoft-Anmeldung fehlgeschlagen"
   },
   "content": {
     "count": {
@@ -979,7 +983,10 @@
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Vollständige Minecraft Bedrock-Backups können nur in ein leeres Zielverzeichnis wiederhergestellt werden",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Einige von lip verwaltete Pakete konnten nicht installiert werden",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Einige von lip verwaltete Pakete wurden nicht wiederhergestellt",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Einige Versionen von lip-verwalteten Paketen stimmen nicht mit dem Backup überein"
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Einige Versionen von lip-verwalteten Paketen stimmen nicht mit dem Backup überein",
+    "ERR_AUTH_INTERACTION_REQUIRED": "Melde dich in Windows mit dem Microsoft-Konto an, dem dieses Spiel gehört. Aktualisiere dann dein Konto über den Launcher-Avatar und versuche es erneut.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "Das Microsoft-Konto hat sich geändert. Aktualisiere dein Konto über den Launcher-Avatar und versuche es erneut.",
+    "ERR_AUTH_FAILED": "Die Download-Autorisierung für das aktuelle Konto ist fehlgeschlagen. Prüfe die Verbindung, aktualisiere das Konto über den Launcher-Avatar und versuche es erneut."
   },
   "filemanager": {
     "sort": {

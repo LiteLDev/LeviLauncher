@@ -621,17 +621,21 @@
     "unknown": "不明"
   },
   "useravatar": {
-    "no_login_retry": "Xbox ログインが検出されませんでした（クリックして再試行）",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Xbox セッションを更新",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "プレイ時間",
-      "blocks_broken": "破壊したブロック",
-      "mobs_defeated": "倒したモブ",
-      "distance_travelled": "移動距離",
-      "time_format": "{{days}}日 {{hours}}時間 {{minutes}}分"
-    }
+    "authorization": {
+      "title": "ゲームライセンス",
+      "checking": "確認中",
+      "authorized": "認証済み",
+      "trial": "体験版のみ",
+      "not_entitled": "ライセンスなし",
+      "error": "確認失敗",
+      "description": "ログイン後に Release と Preview のライセンスを取得します。更新ボタンで再確認できます。"
+    },
+    "sign_in": "Microsoft アカウントでサインイン",
+    "switch_account": "アカウントを切り替え",
+    "signin_failed": "Microsoft サインインに失敗しました"
   },
   "content": {
     "count": {
@@ -975,7 +979,10 @@
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "lip パッケージのアンインストールに失敗しました",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "lip パッケージの状態の照会に失敗しました",
     "ERR_LIP_CACHE_CLEAN_FAILED": "lip キャッシュの削除に失敗しました",
-    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina はバージョン設定でのみ管理できます"
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina はバージョン設定でのみ管理できます",
+    "ERR_AUTH_INTERACTION_REQUIRED": "このゲームを所有する Microsoft アカウントで Windows にサインインし、ランチャーのアバターからアカウントを更新して再試行してください。",
+    "ERR_AUTH_ACCOUNT_CHANGED": "Microsoft アカウントが変更されました。ランチャーのアバターからアカウントを更新して再試行してください。",
+    "ERR_AUTH_FAILED": "現在のアカウントでダウンロードを認証できませんでした。接続を確認し、ランチャーのアバターからアカウントを更新して再試行してください。"
   },
   "filemanager": {
     "sort": {

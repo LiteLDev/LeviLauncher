@@ -648,17 +648,21 @@
     "unknown": "未知"
   },
   "useravatar": {
-    "no_login_retry": "未偵測到 Xbox 登入（點擊以重試）",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "重新整理 Xbox 工作階段",
     "xuid": "XUID：{{xuid}}",
-    "stats": {
-      "minutes_played": "遊玩時間",
-      "blocks_broken": "破壞方塊",
-      "mobs_defeated": "擊敗生物",
-      "distance_travelled": "移動距離",
-      "time_format": "{{days}}天 {{hours}}小時 {{minutes}}分鐘"
-    }
+    "authorization": {
+      "title": "遊戲授權",
+      "checking": "正在檢查",
+      "authorized": "已授權",
+      "trial": "僅試用",
+      "not_entitled": "未獲授權",
+      "error": "檢查失敗",
+      "description": "登入後自動請求 Release 和 Preview 的目前授權。按重新整理可再次檢查。"
+    },
+    "sign_in": "登入 Microsoft 帳戶",
+    "switch_account": "切換帳戶",
+    "signin_failed": "Microsoft 帳戶登入失敗"
   },
   "content": {
     "count": {
@@ -1002,7 +1006,10 @@
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
     "ERR_LIP_CACHE_CLEAN_FAILED": "清理 lip 快取失敗",
-    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings",
+    "ERR_AUTH_INTERACTION_REQUIRED": "請先在 Windows 登入擁有此遊戲的 Microsoft 帳戶，然後透過啟動器頭像重新整理帳戶並重試。",
+    "ERR_AUTH_ACCOUNT_CHANGED": "目前的 Microsoft 帳戶已變更。請透過啟動器頭像重新整理帳戶，然後重試。",
+    "ERR_AUTH_FAILED": "無法取得目前帳戶的下載授權。請檢查網路，並透過啟動器頭像重新整理帳戶後重試。"
   },
   "filemanager": {
     "sort": {

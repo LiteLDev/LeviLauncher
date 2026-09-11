@@ -626,17 +626,21 @@
     "unknown": "Desconocido"
   },
   "useravatar": {
-    "no_login_retry": "Inicio de sesión de Xbox no detectado (haga clic para reintentar)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Actualizar sesión de Xbox",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "Tiempo jugado",
-      "blocks_broken": "Bloques rotos",
-      "mobs_defeated": "Mobs derrotados",
-      "distance_travelled": "Distancia recorrida",
-      "time_format": "{{days}}d {{hours}}h {{minutes}}m"
-    }
+    "authorization": {
+      "title": "Licencias del juego",
+      "checking": "Comprobando",
+      "authorized": "Autorizado",
+      "trial": "Solo prueba",
+      "not_entitled": "Sin autorización",
+      "error": "Error de comprobación",
+      "description": "Las licencias de Release y Preview se solicitan al iniciar sesión. Actualiza para comprobar de nuevo."
+    },
+    "sign_in": "Iniciar sesión con Microsoft",
+    "switch_account": "Cambiar de cuenta",
+    "signin_failed": "Error al iniciar sesión con Microsoft"
   },
   "content": {
     "count": {
@@ -979,7 +983,10 @@
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Las copias de seguridad completas de Minecraft Bedrock solo se pueden restaurar en un directorio objetivo vacío",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Algunos paquetes gestionados por lip fallaron al instalarse",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Algunos paquetes gestionados por lip no fueron restaurados",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Algunas versiones de paquetes gestionados por lip no coinciden con la copia de seguridad"
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Algunas versiones de paquetes gestionados por lip no coinciden con la copia de seguridad",
+    "ERR_AUTH_INTERACTION_REQUIRED": "Inicia sesión en Windows con la cuenta de Microsoft que posee este juego. Después, actualiza la cuenta desde el avatar del lanzador y vuelve a intentarlo.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "La cuenta de Microsoft ha cambiado. Actualízala desde el avatar del lanzador y vuelve a intentarlo.",
+    "ERR_AUTH_FAILED": "No se pudieron autorizar las descargas para la cuenta actual. Comprueba la conexión, actualiza la cuenta desde el avatar del lanzador y vuelve a intentarlo."
   },
   "filemanager": {
     "sort": {

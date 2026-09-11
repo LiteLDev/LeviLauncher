@@ -489,8 +489,6 @@ func ensureSingleInstance(autoLaunchVersion string, postUpdateRestart bool) bool
 }
 
 func init() {
-	application.RegisterEvent[app.MicrosoftAccountStatus](app.EventMicrosoftAccountChanged)
-
 	//minecraft
 	application.RegisterEvent[struct{}](app.EventGameInputEnsureStart)
 	application.RegisterEvent[struct{}](app.EventGameInputEnsureDone)
@@ -616,7 +614,6 @@ func main() {
 	modsService := app.NewModsService(mc)
 	userService := app.NewUserService(mc)
 	versionService := app.NewVersionService(mc)
-	microsoftAccount := app.NewMicrosoftAccountService(webView2Options.BrowserExecutableFolder)
 
 	assets, err := fs.Sub(assets, "frontend/dist")
 	if err != nil {
@@ -646,7 +643,6 @@ func main() {
 			application.NewService(modsService),
 			application.NewService(userService),
 			application.NewService(versionService),
-			application.NewService(microsoftAccount),
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),
@@ -703,7 +699,7 @@ func main() {
 		URL:            initialURL,
 		EnableFileDrop: true,
 	})
-	microsoftAccount.Attach(windows)
+	userService.Attach(windows)
 	startup.Mark("window created")
 	reapplyWindowMinConstraints := func() {
 		windows.SetMinSize(minWindowWidth, minWindowHeight)

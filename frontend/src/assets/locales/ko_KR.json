@@ -626,17 +626,21 @@
     "unknown": "알 수 없음"
   },
   "useravatar": {
-    "no_login_retry": "Xbox 로그인이 감지되지 않음 (클릭하여 다시 시도)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Xbox 세션 새로고침",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "플레이 시간",
-      "blocks_broken": "깨진 블록",
-      "mobs_defeated": "처치한 몹",
-      "distance_travelled": "이동 거리",
-      "time_format": "{{days}}일 {{hours}}시간 {{minutes}}분"
-    }
+    "authorization": {
+      "title": "게임 라이선스",
+      "checking": "확인 중",
+      "authorized": "인증됨",
+      "trial": "체험판만",
+      "not_entitled": "인증되지 않음",
+      "error": "확인 실패",
+      "description": "로그인 후 Release 및 Preview 라이선스를 요청합니다. 새로고침하여 다시 확인할 수 있습니다."
+    },
+    "sign_in": "Microsoft 계정으로 로그인",
+    "switch_account": "계정 전환",
+    "signin_failed": "Microsoft 로그인 실패"
   },
   "content": {
     "count": {
@@ -979,7 +983,10 @@
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "완전한 Minecraft Bedrock 백업은 빈 대상 디렉토리로만 복원할 수 있습니다",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "일부 lip 관리 패키지를 설치하지 못했습니다",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "일부 lip 관리 패키지가 복원되지 않았습니다",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "일부 lip 관리 패키지 버전이 백업과 일치하지 않습니다"
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "일부 lip 관리 패키지 버전이 백업과 일치하지 않습니다",
+    "ERR_AUTH_INTERACTION_REQUIRED": "이 게임을 소유한 Microsoft 계정으로 Windows에 로그인한 후 런처 아바타에서 계정을 새로 고치고 다시 시도하세요.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "Microsoft 계정이 변경되었습니다. 런처 아바타에서 계정을 새로 고친 후 다시 시도하세요.",
+    "ERR_AUTH_FAILED": "현재 계정의 다운로드를 인증할 수 없습니다. 연결을 확인하고 런처 아바타에서 계정을 새로 고친 후 다시 시도하세요."
   },
   "filemanager": {
     "sort": {

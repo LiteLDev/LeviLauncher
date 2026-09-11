@@ -621,17 +621,21 @@
     "unknown": "Неизвестно"
   },
   "useravatar": {
-    "no_login_retry": "Вход Xbox не обнаружен (нажмите, чтобы повторить)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Обновить сеанс Xbox",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "Время в игре",
-      "blocks_broken": "Разрушено блоков",
-      "mobs_defeated": "Убито мобов",
-      "distance_travelled": "Пройденное расстояние",
-      "time_format": "{{days}}д {{hours}}ч {{minutes}}м"
-    }
+    "authorization": {
+      "title": "Лицензии игры",
+      "checking": "Проверка",
+      "authorized": "Авторизовано",
+      "trial": "Только пробная",
+      "not_entitled": "Нет авторизации",
+      "error": "Ошибка проверки",
+      "description": "Лицензии Release и Preview запрашиваются после входа. Обновите для повторной проверки."
+    },
+    "sign_in": "Войти через Microsoft",
+    "switch_account": "Сменить учётную запись",
+    "signin_failed": "Не удалось войти через Microsoft"
   },
   "content": {
     "count": {
@@ -975,7 +979,10 @@
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
     "ERR_LIP_CACHE_CLEAN_FAILED": "Failed to clean lip cache",
-    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings",
+    "ERR_AUTH_INTERACTION_REQUIRED": "Войдите в Windows с учётной записью Microsoft, которой принадлежит эта игра, затем обновите учётную запись через аватар лаунчера и повторите попытку.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "Учётная запись Microsoft изменилась. Обновите её через аватар лаунчера и повторите попытку.",
+    "ERR_AUTH_FAILED": "Не удалось авторизовать загрузки для текущей учётной записи. Проверьте соединение, обновите учётную запись через аватар лаунчера и повторите попытку."
   },
   "filemanager": {
     "sort": {

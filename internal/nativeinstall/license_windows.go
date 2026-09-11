@@ -28,7 +28,15 @@ func boundedBody(r io.Reader, max int64) []byte {
 	return b
 }
 
-func license(device, contentID string) {
+type contentLicenseResponse struct {
+	License             *struct{ Keys []struct{ Value string } }
+	SatisfactionFailure *struct {
+		Code        int64
+		Description string
+	}
+}
+
+func requestContentLicense(device, contentID string) contentLicenseResponse {
 	challenge := base64.StdEncoding.EncodeToString([]byte("<?xml version=\"1.0\" encoding=\"utf-8\"?><ClientChallenge xmlns=\"http://schemas.microsoft.com/onestore/security/mkms/LicReq/v1\" Version=\"2\"><LicenseProtocolVersion>5</LicenseProtocolVersion><SigningKeyVersion>1</SigningKeyVersion><ClientVersion>2</ClientVersion></ClientChallenge>"))
 	body := map[string]any{
 		"clientChallenge": challenge, "concurrencyMode": "Rude", "contentId": contentID,
@@ -55,14 +63,13 @@ func license(device, contentID string) {
 	if res.StatusCode != http.StatusOK {
 		failCode("ERR_LICENSE_HTTP", "content license HTTP request failed")
 	}
-	var parsed struct {
-		License             *struct{ Keys []struct{ Value string } }
-		SatisfactionFailure *struct {
-			Code        int64
-			Description string
-		}
-	}
+	var parsed contentLicenseResponse
 	must(json.Unmarshal(data, &parsed))
+	return parsed
+}
+
+func license(device, contentID string) {
+	parsed := requestContentLicense(device, contentID)
 	if parsed.SatisfactionFailure != nil {
 		failCode("ERR_LICENSE_NOT_ENTITLED", "account has no entitlement for this package")
 	}

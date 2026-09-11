@@ -1,4 +1,4 @@
-import { Avatar, Button, Chip, Popover, Spinner, Tooltip } from "@heroui/react";
+import { Avatar, Button, Popover, Spinner, Tooltip, toast } from "@heroui/react";
 import { cn } from "@/utils/cn";
 
 import React, { useEffect, useState } from "react";
@@ -6,14 +6,19 @@ import { useTranslation } from "react-i18next";
 
 import {
   FaSync,
-  FaXbox,
-  FaClock,
-  FaCube,
-  FaSkull,
-  FaRoad,
+  FaUser,
+  FaQuestionCircle,
+  FaCheckCircle,
+  FaExclamationCircle,
+  FaShieldAlt,
 } from "react-icons/fa";
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { useStartupInteractive } from "@/utils/startupState";
+
+type LicenseState = "checking" | "authorized" | "trial" | "not_entitled" | "error";
+type LicenseResult = { xuid: string; release: LicenseState; preview: LicenseState };
+const licenseState = (value: string): LicenseState =>
+  ["authorized", "trial", "not_entitled"].includes(value) ? value as LicenseState : "error";
 
 export const UserAvatar = () => {
   const { t } = useTranslation();
@@ -21,18 +26,41 @@ export const UserAvatar = () => {
   const [gamertag, setGamertag] = useState("");
   const [xuid, setXuid] = useState("");
   const [avatar, setAvatar] = useState("");
-  const [stats, setStats] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [reloadNonce, setReloadNonce] = useState(0);
   const [refreshing, setRefreshing] = useState(false);
   const [open, setOpen] = useState(false);
 
+  const [signingIn, setSigningIn] = useState(false);
+  const [licenses, setLicenses] = useState<LicenseResult | null>(null);
+
   const clearUserState = React.useCallback(() => {
     setGamertag("");
     setXuid("");
     setAvatar("");
-    setStats(null);
+    setLicenses(null);
   }, []);
+
+  const signIn = async () => {
+    if (signingIn) return;
+    setSigningIn(true);
+    try {
+      const code = await userService.SignIn();
+      if (code === "ERR_CANCELED") return;
+      if (code) {
+        toast.danger(t("useravatar.signin_failed"), { description: t(`errors.${code}`) });
+        return;
+      }
+      setOpen(false);
+      clearUserState();
+      setLoading(true);
+      setReloadNonce((v) => v + 1);
+    } catch {
+      toast.danger(t("useravatar.signin_failed"));
+    } finally {
+      setSigningIn(false);
+    }
+  };
 
   const refreshSessionIfNeeded = React.useCallback(async (force = false) => {
     try {
@@ -95,7 +123,6 @@ export const UserAvatar = () => {
         setXuid(id);
         setGamertag(String(tag || ""));
         setAvatar(pic ? `data:image/png;base64,${pic}` : "");
-        setStats(null);
       } catch (e) {
         console.error("[UserAvatar] fetchUser error", e);
       } finally {
@@ -111,6 +138,31 @@ export const UserAvatar = () => {
     };
   }, [clearUserState, refreshSessionIfNeeded, reloadNonce, startupInteractive]);
 
+  // Check immediately after identity resolves, independently of opening the popover.
+  useEffect(() => {
+    if (!startupInteractive || !xuid || signingIn) {
+      setLicenses(null);
+      return;
+    }
+    let cancelled = false;
+    setLicenses({ xuid, release: "checking", preview: "checking" });
+    const request = userService.CheckGameLicenses(xuid);
+    void request.then((result) => {
+      if (cancelled) return;
+      setLicenses({
+        xuid,
+        release: result.xuid === xuid ? licenseState(result.release) : "error",
+        preview: result.xuid === xuid ? licenseState(result.preview) : "error",
+      });
+    }).catch(() => {
+      if (!cancelled) setLicenses({ xuid, release: "error", preview: "error" });
+    });
+    return () => {
+      cancelled = true;
+      request.cancel();
+    };
+  }, [reloadNonce, signingIn, startupInteractive, xuid]);
+
   useEffect(() => {
     if (!startupInteractive) return;
     if (!open) return;
@@ -119,16 +171,6 @@ export const UserAvatar = () => {
     let cancelled = false;
 
     const fetchDetails = async () => {
-      try {
-        const getStats = (userService as any)?.GetAggregatedUserStatistics;
-        if (typeof getStats === "function") {
-          const nextStats = await getStats(xuid);
-          if (!cancelled && nextStats) {
-            setStats(nextStats);
-          }
-        }
-      } catch {}
-
       try {
         const pic = await userService.GetLocalUserGamerPicture(1);
         if (!cancelled && pic) {
@@ -147,7 +189,7 @@ export const UserAvatar = () => {
 
   if (!startupInteractive || loading) {
     return (
-      <div className="flex items-center gap-2">
+      <div className="flex size-10 shrink-0 items-center justify-center">
         <Avatar
           size="sm"
           className={cn(
@@ -169,34 +211,19 @@ export const UserAvatar = () => {
           <Button
             isIconOnly
             size="sm"
-            aria-label={t("useravatar.no_login_retry")}
-            onPress={() => {
-              setLoading(true);
-              clearUserState();
-              setReloadNonce((v) => v + 1);
-            }}
+            aria-label={t("useravatar.sign_in")}
+            onPress={() => void signIn()}
+            isPending={signingIn}
             variant={"ghost"}
+            className="size-10 shrink-0 rounded-full p-0 wails-no-drag"
           >
-            <FaXbox size={24} />
+            <FaUser size={20} />
           </Button>
-          <Tooltip.Content>{t("useravatar.no_login_retry")}</Tooltip.Content>
+          <Tooltip.Content>{t("useravatar.sign_in")}</Tooltip.Content>
         </Tooltip>
       </div>
     );
   }
-
-  const formatPlayTime = (totalMinutes: number) => {
-    if (!totalMinutes && totalMinutes !== 0) return "0m";
-    const days = Math.floor(totalMinutes / (24 * 60));
-    const hours = Math.floor((totalMinutes % (24 * 60)) / 60);
-    const minutes = Math.floor(totalMinutes % 60);
-
-    return t("useravatar.stats.time_format", {
-      days,
-      hours,
-      minutes,
-    });
-  };
 
   return (
     <Popover
@@ -218,9 +245,10 @@ export const UserAvatar = () => {
       }}
     >
       <Button
+        isIconOnly
         variant="ghost"
         aria-label={gamertag}
-        className="flex items-center gap-2 cursor-pointer transition-transform hover:scale-105 active:scale-95"
+        className="size-10 shrink-0 rounded-full p-0 wails-no-drag cursor-pointer transition-transform hover:scale-105 active:scale-95"
       >
         <Avatar
           size="sm"
@@ -231,63 +259,22 @@ export const UserAvatar = () => {
         </Avatar>
       </Button>
       <Popover.Content
-        className="p-1 bg-overlay border border-border/70 dark:border-zinc-700/60 shadow-2xl rounded-2xl"
+        className="p-0 bg-overlay border border-border/70 dark:border-zinc-700/60 shadow-2xl rounded-2xl"
         placement="bottom end"
       >
         <Popover.Arrow />
-        <Popover.Dialog aria-label={gamertag}>
-          <div className="px-4 py-3 w-64">
-            <div className="flex items-center justify-between mb-3">
-              <Chip
-                size="sm"
-                variant="soft"
-                color={"accent"}
-                className={
-                  "bg-brand-100/70 dark:bg-brand-900/25 text-brand-700 dark:text-brand-400"
-                }
-              >
-                {<FaXbox className="text-brand-600" />}
-                <Chip.Label>{t("useravatar.xbox_live")}</Chip.Label>
-              </Chip>
-              <Button
-                isIconOnly
-                size="sm"
-                aria-label={t("useravatar.refresh_session_aria")}
-                onPress={async () => {
-                  setRefreshing(true);
-                  await refreshSessionIfNeeded(true);
-                  setReloadNonce((v) => v + 1);
-                  setRefreshing(false);
-                }}
-                variant={"ghost"}
-                isPending={refreshing}
-              >
-                {({ isPending }) => (
-                  <>
-                    <Spinner
-                      size="sm"
-                      color="current"
-                      className={isPending ? "" : "hidden"}
-                    />
-                    <FaSync
-                      size={14}
-                      className={refreshing ? "animate-spin" : ""}
-                    />
-                  </>
-                )}
-              </Button>
-            </div>
-
-            <div className="inline-flex items-center justify-start gap-4">
+        <Popover.Dialog aria-label={gamertag} className="p-0">
+          <div className="w-80 max-w-[calc(100vw-2rem)] max-h-[calc(100dvh-6rem)] overflow-y-auto p-4">
+            <div className="flex items-center gap-3">
               <Avatar
                 size="lg"
-                className="w-14 h-14 bg-transparent ring-2 ring-accent"
+                className="w-12 h-12 shrink-0 bg-transparent ring-2 ring-accent"
               >
                 <Avatar.Image src={avatar} alt={gamertag} />
                 <Avatar.Fallback>{gamertag.slice(0, 2)}</Avatar.Fallback>
               </Avatar>
-              <div className="flex flex-col items-start">
-                <div className="text-lg">
+              <div className="min-w-0 flex flex-col items-start">
+                <div className="w-full break-words text-lg">
                   {
                     <span className="font-bold text-lg text-brand-700 dark:text-brand-300">
                       {gamertag}
@@ -296,7 +283,7 @@ export const UserAvatar = () => {
                 </div>
                 {
                   <div className="flex flex-col gap-1">
-                    <span className="text-xs text-muted dark:text-zinc-400">
+                    <span className="break-all text-xs text-muted">
                       {t("useravatar.xuid", {
                         xuid,
                       })}
@@ -306,66 +293,60 @@ export const UserAvatar = () => {
               </div>
             </div>
 
-            {stats && (
-              <div className="mt-4 pt-3 border-t border-border dark:border-white/10">
-                <div className="flex flex-col gap-4">
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-blue-100/50 dark:bg-blue-900/20 text-blue-600 dark:text-blue-400">
-                      <FaClock size={12} />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-muted tracking-wider font-semibold whitespace-nowrap">
-                        {t("useravatar.stats.minutes_played")}
-                      </span>
-                      <span className="text-xs font-bold text-foreground dark:text-zinc-200">
-                        {formatPlayTime(stats.minutesPlayed)}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-orange-100/50 dark:bg-orange-900/20 text-orange-600 dark:text-orange-400">
-                      <FaCube size={12} />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-muted tracking-wider font-semibold whitespace-nowrap">
-                        {t("useravatar.stats.blocks_broken")}
-                      </span>
-                      <span className="text-xs font-bold text-foreground dark:text-zinc-200">
-                        {stats.blockBroken?.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-red-100/50 dark:bg-red-900/20 text-red-600 dark:text-red-400">
-                      <FaSkull size={12} />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-muted tracking-wider font-semibold whitespace-nowrap">
-                        {t("useravatar.stats.mobs_defeated")}
-                      </span>
-                      <span className="text-xs font-bold text-foreground dark:text-zinc-200">
-                        {stats.mobKilled?.toLocaleString()}
-                      </span>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <div className="p-1.5 rounded-lg bg-purple-100/50 dark:bg-purple-900/20 text-purple-600 dark:text-purple-400">
-                      <FaRoad size={12} />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-[10px] text-muted tracking-wider font-semibold whitespace-nowrap">
-                        {t("useravatar.stats.distance_travelled")}
-                      </span>
-                      <span className="text-xs font-bold text-foreground dark:text-zinc-200">
-                        {(stats.distanceTravelled / 1000).toFixed(1)} km
-                      </span>
-                    </div>
-                  </div>
-                </div>
+            <section className="mt-3 border-t border-border pt-2" aria-labelledby="account-authorization-heading">
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <h2 id="account-authorization-heading" className="flex items-center gap-2 text-sm font-semibold">
+                  <FaShieldAlt className="text-accent" aria-hidden="true" />
+                  {t("useravatar.authorization.title")}
+                </h2>
+                <Tooltip>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    className="shrink-0"
+                    aria-label={t("common.refresh")}
+                    onPress={async () => {
+                      setRefreshing(true);
+                      await refreshSessionIfNeeded(true);
+                      setReloadNonce((v) => v + 1);
+                      setRefreshing(false);
+                    }}
+                    variant="ghost"
+                    isPending={refreshing}
+                    isDisabled={signingIn}
+                  >
+                    {({ isPending }) => isPending
+                      ? <Spinner size="sm" color="current" />
+                      : <FaSync size={14} aria-hidden="true" />}
+                  </Button>
+                  <Tooltip.Content>{t("common.refresh")}</Tooltip.Content>
+                </Tooltip>
               </div>
-            )}
+              <dl className="divide-y divide-border rounded-xl bg-surface-secondary px-3">
+                {(["release", "preview"] as const).map((channel) => {
+                  const state = licenses?.xuid === xuid ? licenses[channel] : "checking";
+                  const StatusIcon = state === "authorized" ? FaCheckCircle :
+                    state === "error" ? FaExclamationCircle : FaQuestionCircle;
+                  return (
+                  <div key={channel} className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 py-2.5">
+                    <dt className="text-sm font-medium">{channel === "release" ? "Release" : "Preview"}</dt>
+                    <dd role="status" className={cn("flex items-center gap-1.5 text-xs font-medium", state === "authorized" ? "text-success" : "text-muted")}>
+                      {state === "checking" ? <Spinner size="sm" /> : <StatusIcon aria-hidden="true" />}
+                      {t(`useravatar.authorization.${state}`)}
+                    </dd>
+                  </div>
+                );})}
+              </dl>
+              <p className="mt-2 text-xs leading-relaxed text-muted">
+                {t("useravatar.authorization.description")}
+              </p>
+            </section>
 
-            <div className="mt-3 pt-3 border-t border-border flex justify-end" />
+            <div className="mt-3 flex justify-end">
+              <Button size="sm" variant="secondary" isPending={signingIn} onPress={() => void signIn()}>
+                {t("useravatar.switch_account")}
+              </Button>
+            </div>
           </div>
         </Popover.Dialog>
       </Popover.Content>

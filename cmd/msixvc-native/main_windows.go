@@ -17,7 +17,7 @@ import (
 )
 
 func main() {
-	cache := flag.String("cache", "", "LeviLauncher Microsoft account cache directory (required)")
+	cache := flag.String("cache", "", "LeviLauncher device authorization cache directory (required; account comes from Windows)")
 	market := flag.String("market", "US", "Two-letter Store market")
 	full := flag.Bool("require-full", true, "Reject trial licenses")
 	flag.Parse()

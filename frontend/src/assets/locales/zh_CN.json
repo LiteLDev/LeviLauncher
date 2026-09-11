@@ -663,17 +663,21 @@
     "unknown": "未知"
   },
   "useravatar": {
-    "no_login_retry": "未检测到 Xbox 登录（点击重试）",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "刷新 Xbox 会话",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "游戏时间",
-      "blocks_broken": "打破的方块",
-      "mobs_defeated": "已击败的生物",
-      "distance_travelled": "行动距离",
-      "time_format": "{{days}}天 {{hours}} 小时 {{minutes}} 分"
-    }
+    "authorization": {
+      "title": "游戏授权",
+      "checking": "正在检查",
+      "authorized": "已授权",
+      "trial": "仅试用",
+      "not_entitled": "未获授权",
+      "error": "检查失败",
+      "description": "登录后自动请求 Release 和 Preview 的当前许可证。点击刷新可重新检查。"
+    },
+    "sign_in": "登录微软账户",
+    "switch_account": "切换账户",
+    "signin_failed": "微软账户登录失败"
   },
   "content": {
     "count": {
@@ -1038,18 +1042,15 @@
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
     "ERR_LIP_CACHE_CLEAN_FAILED": "清理 lip 缓存失败",
     "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings",
-    "ERR_AUTH_FAILED": "微软登录失败，请重试。",
-    "ERR_AUTH_SERVICE": "无法连接账户服务，请重试。",
-    "ERR_AUTH_CANCELED": "已取消登录，可随时重新登录。",
+    "ERR_AUTH_FAILED": "微软账户登录或授权失败，请检查网络后重试。",
     "ERR_AUTH_TIMEOUT": "登录已超时，请重试。",
-    "ERR_AUTH_ACCOUNT_CACHE": "无法恢复账户授权，请重新登录。",
     "ERR_AUTH_DEVICE_CACHE": "无法读取设备授权缓存，请检查当前 Windows 用户和文件权限。",
     "ERR_AUTH_DEVICE_BUSY": "账户正在用于另一项操作，请稍后重试。",
     "ERR_AUTH_DEVICE_PROVISION": "设备授权失败，请检查网络后重试。",
-    "ERR_AUTH_ACCOUNT_CHANGED": "两次授权使用了不同账户，请重新登录。",
-    "ERR_AUTH_INTERACTION_REQUIRED": "请先在下载页面登录微软账户；已有授权可能需要重新登录。",
+    "ERR_AUTH_ACCOUNT_CHANGED": "当前微软账户已变更。请通过启动器头像刷新账户，然后重试。",
+    "ERR_AUTH_INTERACTION_REQUIRED": "请通过启动器头像登录拥有此游戏的微软账户，然后重试。",
     "ERR_LICENSE_NOT_ENTITLED": "该账户没有此版本的安装权益。",
-    "ERR_LICENSE_FULL_REQUIRED": "微软返回了试用许可证，请确认账户及购买授权后重新登录。",
+    "ERR_LICENSE_FULL_REQUIRED": "微软仅返回了试用许可证，无法安装正式版。请通过启动器头像选择拥有游戏的账户后重试。",
     "ERR_LICENSE_HTTP": "无法取得微软内容许可证，请检查网络后重试。",
     "ERR_LICENSE_MISSING_KEY": "内容许可证不包含此安装包所需的密钥。",
     "ERR_LICENSE_UNSUPPORTED": "微软返回了不支持的许可证类型。",
@@ -1057,7 +1058,8 @@
     "ERR_NATIVE_MSIXVC": "安装包验证或提取失败。",
     "ERR_TARGET_EXISTS": "目标版本目录已存在，请使用其他名称。",
     "ERR_INVALID_FOLDER_NAME": "版本目录名称无效。",
-    "ERR_CANCELED": "操作已取消。"
+    "ERR_CANCELED": "操作已取消。",
+    "ERR_AUTH_ACCOUNT_SELECTION": "无法恢复启动器已选择的微软账户。请检查当前 Windows 用户和账户配置文件的读取权限。"
   },
   "filemanager": {
     "sort": {
@@ -1527,18 +1529,5 @@
       "main_nav": "主导航",
       "browse_content": "浏览资源"
     }
-  },
-  "microsoft_account": {
-    "title": "微软账户",
-    "sign_in": "登录",
-    "sign_out": "退出登录",
-    "switch_account": "切换账户",
-    "show_window": "显示登录窗口",
-    "signing_in": "请在微软窗口中完成登录",
-    "restoring": "正在读取账户…",
-    "signed_out": "尚未登录",
-    "later": "稍后再说",
-    "prompt_title": "登录微软账户",
-    "prompt_description": "安装已下载的版本前，请登录拥有 Minecraft for Windows 的微软账户。登录将在独立的微软窗口中完成，你也可以先浏览版本，稍后再登录。"
   }
 }

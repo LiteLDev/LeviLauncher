@@ -13,7 +13,6 @@ import {
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
-import { LAYOUT } from "@/constants/layout";
 import { ROUTES, isRouteActive } from "@/constants/routes";
 
 interface SidebarProps {
@@ -65,33 +64,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
   return (
     <div
-      className={`fixed left-0 top-14 bottom-0 z-50 flex flex-col w-14 ${LAYOUT.NAVBAR_BG}`}
+      className="fixed left-0 top-14 bottom-0 z-50 flex flex-col w-14"
     >
-      <div className="absolute right-0 top-[20px] bottom-0 w-px bg-surface-tertiary/50 dark:bg-surface-secondary/50" />
-      {/* Corner Connector */}
-      <div className="absolute top-0 -right-[20px] w-[20px] h-[20px] overflow-hidden pointer-events-none">
-        {/* Fill the corner gap */}
-        <div
-          className={`absolute top-0 left-0 w-full h-full ${LAYOUT.NAVBAR_BG}`}
-          style={{ clipPath: "path('M 0 20 Q 0 0 20 0 L 0 0 Z')" }}
-        />
-        {/* Border Stroke */}
-        <svg
-          width="20"
-          height="20"
-          viewBox="0 0 20 20"
-          className="absolute top-0 left-0 w-full h-full"
-        >
-          <path
-            d="M 0 20 Q 0 0 20 0"
-            fill="none"
-            stroke="currentColor"
-            strokeWidth="1"
-            className="text-surface-tertiary/50 dark:text-zinc-800/50"
-          />
-        </svg>
-      </div>
-
       <nav aria-label={t("audit.usability.main_nav")} className="flex-1 flex flex-col items-center gap-4 w-full px-2 overflow-y-auto overflow-x-hidden scrollbar-hide py-4">
         {navItems.map((item) => {
           const isActive = isRouteActive(location.pathname, item.path);

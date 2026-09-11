@@ -10,7 +10,6 @@ import { useLocation, Link } from "react-router-dom";
 import { LeviIcon } from "@/icons/LeviIcon";
 import { useTranslation } from "react-i18next";
 import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
-import { LAYOUT } from "@/constants/layout";
 import { ROUTES } from "@/constants/routes";
 import { getRouteLabelKey, ROUTE_LABEL_KEYS } from "@/constants/routeLabels";
 
@@ -39,9 +38,8 @@ export const TopBar: React.FC<TopBarProps> = ({
     <>
       <div
         id="wails-draggable"
-        className={`fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4 ${LAYOUT.NAVBAR_BG}`}
+        className="fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4"
       >
-        <div className="absolute bottom-0 right-0 left-[calc(3.5rem+20px)] h-px bg-surface-tertiary/50 dark:bg-surface-secondary/50" />
         <div className="flex items-center gap-2 overflow-hidden">
           <div className="w-14 shrink-0 flex items-center justify-center">
             <LeviIcon width={32} height={32} />

@@ -7,6 +7,7 @@ import React, { useEffect, useState, Suspense, lazy } from "react";
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
+import { NavigationFrame } from "@/components/NavigationFrame";
 import { TermsModal } from "@/components/TermsModal";
 import { ClarityConsentModal } from "@/components/ClarityConsentModal";
 import { useTranslation } from "react-i18next";
@@ -297,6 +298,7 @@ function App() {
                           />
                         ) : (
                           <>
+                            <NavigationFrame />
                             <Sidebar
                               navLocked={effectiveNavLocked}
                               themeMode={themeMode}

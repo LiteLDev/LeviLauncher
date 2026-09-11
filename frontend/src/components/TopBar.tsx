@@ -194,7 +194,6 @@ export const TopBar: React.FC<TopBarProps> = ({
             navLocked={navLocked}
             isOnboardingMode={isOnboardingMode}
             hideSeparator
-            className="text-foreground dark:text-zinc-300 [&_button]:text-foreground dark:[&_button]:text-zinc-300 [&_button:hover]:text-foreground dark:[&_button:hover]:text-zinc-100"
           />
         </div>
       </div>

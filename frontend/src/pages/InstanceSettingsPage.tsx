@@ -300,6 +300,7 @@ export default function InstanceSettingsPage() {
     <PageContainer className="relative" animate={false}>
       <div className="flex flex-col gap-4">
         <motion.div
+          data-material-motion
           initial={{ y: -20, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
           transition={{ duration: 0.4 }}
@@ -407,6 +408,7 @@ export default function InstanceSettingsPage() {
         </motion.div>
 
         <motion.div
+          data-material-motion
           key={vs.selectedTab}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

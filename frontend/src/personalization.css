@@ -70,6 +70,79 @@
   backdrop-filter: var(--material-filter, blur(12px));
 }
 
+/* Opacity (including will-change: opacity) on an ancestor creates a backdrop
+   root, hiding the wallpaper from its glass descendants until the fade ends.
+   Material hosts keep their translation/scale/stagger animations; fades remain
+   on content and on surfaces that apply their own backdrop-filter. The explicit
+   marker avoids overriding hidden or disabled content globally. */
+:where([data-wallpaper-active="true"]) [data-material-motion] {
+  opacity: 1 !important;
+  will-change: auto !important;
+}
+
+/* The modal backdrop is also an ancestor of its dialog. Paint and fade its
+   scrim separately so neither blur nor opacity isolates the dialog. Preserve
+   React Aria's animation timing and the backdrop's outside-click target. */
+:where([data-wallpaper-active="true"]) .modal__backdrop {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  opacity: 1 !important;
+  will-change: auto;
+}
+:where([data-wallpaper-active="true"]) .modal__backdrop::before {
+  /* tw-animate's registered properties do not inherit into pseudo-elements. */
+  --tw-enter-opacity: 0;
+  --tw-exit-opacity: 0;
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  animation: inherit;
+}
+:where([data-wallpaper-active="true"])
+  :is(.modal__backdrop--opaque, .modal__backdrop--blur)::before {
+  background: var(--backdrop);
+}
+:where([data-wallpaper-active="true"]) .modal__backdrop--blur::before {
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  backdrop-filter: blur(var(--blur-md));
+}
+:where([data-wallpaper-active="true"]) .modal__container {
+  opacity: 1 !important;
+  will-change: auto;
+}
+
+/* Fade the filtered surface itself while the positioning container scales. */
+@keyframes material-dialog-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes material-dialog-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :where([data-wallpaper-active="true"])
+    .modal__container[data-entering="true"] .modal__dialog {
+    animation: inherit;
+    animation-name: material-dialog-enter;
+  }
+  :where([data-wallpaper-active="true"])
+    .modal__container[data-exiting="true"] .modal__dialog {
+    animation: inherit;
+    animation-name: material-dialog-exit;
+  }
+}
+
 /* Large surfaces get one blur pass. Neutral controls use the already blurred
    parent. Brand/action/status fills retain their own semantic colors. */
 :where([data-wallpaper-active="true"])

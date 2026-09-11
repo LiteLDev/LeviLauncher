@@ -43,6 +43,7 @@ export default function AboutPage() {
       animate={false}
     >
       <motion.div
+        data-material-motion
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
@@ -60,6 +61,7 @@ export default function AboutPage() {
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
         {/* Authors Section */}
         <motion.div
+          data-material-motion
           custom={0}
           initial="hidden"
           animate="visible"
@@ -133,6 +135,7 @@ export default function AboutPage() {
 
         {/* Special Thanks Section */}
         <motion.div
+          data-material-motion
           custom={1}
           initial="hidden"
           animate="visible"
@@ -174,6 +177,7 @@ export default function AboutPage() {
 
         {/* Sponsors Section */}
         <motion.div
+          data-material-motion
           custom={2}
           initial="hidden"
           animate="visible"
@@ -197,6 +201,7 @@ export default function AboutPage() {
 
         {/* Source Code Section */}
         <motion.div
+          data-material-motion
           custom={3}
           initial="hidden"
           animate="visible"

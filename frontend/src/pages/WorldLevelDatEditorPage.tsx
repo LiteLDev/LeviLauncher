@@ -403,6 +403,7 @@ export default function WorldLevelDatEditorPage() {
                   <AnimatePresence>
                     {addOpen && (
                       <motion.div
+                        data-material-motion
                         initial={{ height: 0, opacity: 0 }}
                         animate={{ height: "auto", opacity: 1 }}
                         exit={{ height: 0, opacity: 0 }}

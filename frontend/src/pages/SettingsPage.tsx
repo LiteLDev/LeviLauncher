@@ -394,6 +394,7 @@ export const SettingsPage: React.FC = () => {
       <div className="flex flex-col gap-4">
         {/* Header Card */}
         <motion.div
+          data-material-motion
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
@@ -470,6 +471,7 @@ export const SettingsPage: React.FC = () => {
 
         {/* Content Card */}
         <motion.div
+          data-material-motion
           key={selectedTab}
           initial={{ opacity: 0, y: 10 }}
           animate={{ opacity: 1, y: 0 }}

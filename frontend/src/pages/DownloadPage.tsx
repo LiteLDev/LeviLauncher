@@ -592,6 +592,7 @@ export const DownloadPage: React.FC = () => {
         animate={false}
       >
         <motion.div
+          data-material-motion
           className="shrink-0"
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
@@ -898,6 +899,7 @@ export const DownloadPage: React.FC = () => {
         </motion.div>
 
         <motion.div
+          data-material-motion
           custom={0}
           initial="hidden"
           animate="visible"

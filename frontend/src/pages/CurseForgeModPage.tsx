@@ -688,8 +688,9 @@ const CurseForgeModPage: React.FC = () => {
     >
       {/* Header Card */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        data-material-motion
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
         <Card className={LAYOUT.GLASS_CARD.BASE}>
@@ -831,8 +832,9 @@ const CurseForgeModPage: React.FC = () => {
 
       {/* Content Card */}
       <motion.div
-        initial={{ opacity: 0 }}
-        animate={{ opacity: 1 }}
+        data-material-motion
+        initial={{ opacity: 0, y: 8 }}
+        animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
         <Card className={`${LAYOUT.GLASS_CARD.BASE} min-h-[500px]`}>

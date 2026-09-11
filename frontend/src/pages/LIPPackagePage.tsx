@@ -1281,6 +1281,7 @@ const LIPPackagePage: React.FC = () => {
     <PageContainer animate={false} className="min-h-0 no-scrollbar">
       <div className="max-w-7xl mx-auto w-full">
         <motion.div
+          data-material-motion
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
@@ -1395,6 +1396,7 @@ const LIPPackagePage: React.FC = () => {
         </motion.div>
 
         <motion.div
+          data-material-motion
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}

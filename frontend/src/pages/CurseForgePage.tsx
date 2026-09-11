@@ -411,6 +411,7 @@ export const CurseForgePage: React.FC = () => {
       animate={false}
     >
       <motion.div
+        data-material-motion
         className="shrink-0"
         data-testid="catalog-toolbar"
         initial={{ opacity: 0, y: -20 }}
@@ -644,6 +645,7 @@ export const CurseForgePage: React.FC = () => {
       </motion.div>
 
       <motion.div
+        data-material-motion
         className="flex-1 min-h-0 flex flex-col"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}

@@ -37,6 +37,7 @@ export const SelectionBar: React.FC<SelectionBarProps> = ({
     <AnimatePresence>
       {isSelectMode && (
         <motion.div
+          data-material-motion
           initial={{ opacity: 0, y: 50 }}
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: 50 }}

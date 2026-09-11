@@ -611,6 +611,7 @@ export default function InstallPage() {
       <div className="flex flex-col gap-4 w-full">
         {/* Header Card */}
         <motion.div
+          data-material-motion
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
@@ -699,6 +700,7 @@ export default function InstallPage() {
         <AnimatePresence mode="wait">
           {installing ? (
             <motion.div
+              data-material-motion
               key="installing"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -830,6 +832,7 @@ export default function InstallPage() {
             </motion.div>
           ) : resultMsg ? (
             <motion.div
+              data-material-motion
               key="success"
               initial={{ opacity: 0, scale: 0.95 }}
               animate={{ opacity: 1, scale: 1 }}
@@ -905,6 +908,7 @@ export default function InstallPage() {
             </motion.div>
           ) : (
             <motion.div
+              data-material-motion
               key="input"
               className="flex flex-col gap-4"
               initial={{ opacity: 0, y: 10 }}

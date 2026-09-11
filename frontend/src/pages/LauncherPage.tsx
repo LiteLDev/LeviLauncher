@@ -239,6 +239,7 @@ export const LauncherPage = (args: any) => {
       >
         {/* Hero Launch Card */}
         <motion.div
+          data-material-motion
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, ease: "easeOut" }}
@@ -679,6 +680,7 @@ export const LauncherPage = (args: any) => {
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-4 items-stretch">
           {/* Mod Card */}
           <motion.div
+            data-material-motion
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
@@ -692,6 +694,7 @@ export const LauncherPage = (args: any) => {
 
           {/* Content Management */}
           <motion.div
+            data-material-motion
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
@@ -803,6 +806,7 @@ export const LauncherPage = (args: any) => {
 
           {/* Content Download */}
           <motion.div
+            data-material-motion
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}

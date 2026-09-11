@@ -337,9 +337,6 @@ export const UserAvatar = () => {
                   </div>
                 );})}
               </dl>
-              <p className="mt-2 text-xs leading-relaxed text-muted">
-                {t("useravatar.authorization.description")}
-              </p>
             </section>
 
             <div className="mt-3 flex justify-end">

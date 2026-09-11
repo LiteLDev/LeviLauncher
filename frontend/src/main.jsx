@@ -46,11 +46,7 @@ if (shouldRedirectToOnboarding) {
 
 const startupLanguage = (() => {
   try {
-    return (
-      localStorage.getItem("i18nextLng") ||
-      navigator.language ||
-      "en-US"
-    );
+    return localStorage.getItem("i18nextLng") || navigator.language || "en-US";
   } catch {
     return navigator.language || "en-US";
   }
@@ -102,8 +98,7 @@ const StartupShell = ({
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        background:
-          "linear-gradient(180deg, rgba(248,250,252,1) 0%, rgba(241,245,249,1) 100%)",
+        background: "#f8fafc",
         color: "#0f172a",
         fontFamily:
           '"MiSans", "Segoe UI Variable", "Segoe UI", "Microsoft YaHei UI", sans-serif',
@@ -256,7 +251,6 @@ const bootstrapApp = async () => {
       { default: i18n, i18nReady },
       { I18nextProvider },
       { ThemeProvider: NextThemesProvider },
-      { HeroUIProvider },
       { createHashRouter, RouterProvider, createRoutesFromElements, Route },
       { CLARITY_ENABLED_KEY, CLARITY_EVENT_NAME },
     ] = await Promise.all([
@@ -264,7 +258,6 @@ const bootstrapApp = async () => {
       import("./i18n"),
       import("react-i18next"),
       import("next-themes"),
-      import("./providers/HeroUIProvider"),
       import("react-router-dom"),
       import("./utils/clarityConsent"),
     ]);
@@ -342,24 +335,22 @@ const bootstrapApp = async () => {
     startTransition(() => {
       root.render(
         <AppErrorBoundary>
-          <HeroUIProvider>
-            <NextThemesProvider
-              attribute="class"
-              defaultTheme="light"
-              enableSystem
-            >
-              <I18nextProvider i18n={i18n}>
-                <React.StrictMode>
-                  <StartupLifecycle>
-                    <BootRoot
-                      router={router}
-                      RouterProviderComponent={RouterProvider}
-                    />
-                  </StartupLifecycle>
-                </React.StrictMode>
-              </I18nextProvider>
-            </NextThemesProvider>
-          </HeroUIProvider>
+          <NextThemesProvider
+            attribute="class"
+            defaultTheme="light"
+            enableSystem
+          >
+            <I18nextProvider i18n={i18n}>
+              <React.StrictMode>
+                <StartupLifecycle>
+                  <BootRoot
+                    router={router}
+                    RouterProviderComponent={RouterProvider}
+                  />
+                </StartupLifecycle>
+              </React.StrictMode>
+            </I18nextProvider>
+          </NextThemesProvider>
         </AppErrorBoundary>,
       );
     });

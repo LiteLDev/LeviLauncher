@@ -29,7 +29,7 @@ export const FileDropOverlay: React.FC<FileDropOverlayProps> = ({
               transition: { duration: 0.3, ease: "easeOut" },
             }}
             exit={{ opacity: 0, transition: { duration: 0.2, ease: "easeIn" } }}
-            className="absolute inset-0 backdrop-blur-md backdrop-saturate-150 bg-black/30"
+            className="absolute inset-0 launcher-material-blur backdrop-saturate-150 bg-black/30"
           />
 
           <div className="absolute inset-0 flex items-center justify-center p-4">
@@ -43,11 +43,11 @@ export const FileDropOverlay: React.FC<FileDropOverlayProps> = ({
                 "p-8 flex flex-col items-center gap-4 text-center max-w-sm mx-4 border border-white/20 dark:border-white/10",
               )}
             >
-              <div className="p-4 rounded-full bg-primary-500/10 text-primary-500 ring-1 ring-primary-500/20">
+              <div className="p-4 rounded-full bg-brand-500/10 text-brand-500 ring-1 ring-brand-500/20">
                 <FiUploadCloud className="w-10 h-10" />
               </div>
               <div className="space-y-2">
-                <div className="text-xl font-bold text-default-900 dark:text-white">
+                <div className="text-xl font-bold text-foreground dark:text-white">
                   {text}
                 </div>
               </div>

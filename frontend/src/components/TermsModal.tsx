@@ -1,5 +1,6 @@
+import { ModalAction, ModalDescription } from "@/components/ModalPrimitives";
 import React from "react";
-import { Button } from "@heroui/react";
+
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { useTranslation } from "react-i18next";
 import { Window } from "@wailsio/runtime";
@@ -19,35 +20,38 @@ export const TermsModal: React.FC<TermsModalProps> = ({
 
   return (
     <UnifiedModal
-      size="lg"
+      size="wide"
       isOpen={isOpen}
       type="primary"
       title={t("terms.title")}
-      hideCloseButton
       isDismissable={false}
       showConfirmButton={false}
       showCancelButton={false}
       footer={
         <div className="flex w-full justify-end gap-2">
-          <Button
-            variant="light"
+          <ModalAction
             onPress={() => {
               Window.Close();
             }}
+            variant="secondary"
           >
             {t("terms.decline")}
-          </Button>
-          <Button color="primary" isDisabled={countdown > 0} onPress={onAccept}>
+          </ModalAction>
+          <ModalAction
+            isDisabled={countdown > 0}
+            onPress={onAccept}
+            variant={"primary"}
+          >
             {countdown > 0
               ? `${t("terms.agree")} (${countdown}s)`
               : t("terms.agree")}
-          </Button>
+          </ModalAction>
         </div>
       }
     >
-      <div className="text-[15px] sm:text-[16px] leading-7 text-default-900 dark:text-zinc-100 font-medium antialiased whitespace-pre-wrap wrap-break-word max-h-[56vh] overflow-y-auto pr-2 custom-scrollbar">
+      <ModalDescription className="whitespace-pre-wrap">
         {t("terms.body")}
-      </div>
+      </ModalDescription>
     </UnifiedModal>
   );
 };

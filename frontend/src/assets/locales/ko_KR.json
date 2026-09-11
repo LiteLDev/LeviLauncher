@@ -73,6 +73,11 @@
         "install_now": "지금 설치"
       }
     },
+    "loader_migration": {
+      "title": "로더 마이그레이션 중",
+      "body": "설치된 버전을 새로운 LeviLauncher 로더에 맞게 조정하고 있습니다(기존 vcruntime140_1.dll 제거 및 게임 가져오기 테이블 업데이트). 이 작업은 한 번만 실행됩니다. 잠시만 기다려 주세요…",
+      "preparing": "마이그레이션 준비 중…"
+    },
     "mclaunch": {
       "loading": {
         "title": "Minecraft 시작 중",
@@ -127,7 +132,7 @@
       "mods_card": "모드 카드는 현재 인스턴스에 활성화된 모드를 표시하며, 클릭 한 번으로 전체 모드 페이지를 엽니다.",
       "content_counts_card": "콘텐츠 카드는 월드, 리소스 팩, 행동 팩의 수를 표시하며, 각 행은 해당 페이지를 엽니다.",
       "incompatible_resource_packs": "호환되지 않는 리소스 팩이 감지되면 경고 행을 클릭하여 직접 확인하세요.",
-      "content_download_sources": "다운로드 카드를 사용하여 런처를 벗어나지 않고 CurseForge 또는 lip 콘텐츠 소스를 탐색하세요.",
+      "content_download_sources": "다운로드 카드를 사용하여 런처를 벗어나지 않고 CurseForge 또는 Bedrinth 콘텐츠 소스를 탐색하세요.",
       "settings_personalize": "설정에서 테마, 색상, 배경 및 기타 모양 옵션을 조정하여 설정에 맞게 맞춤화할 수 있습니다.",
       "settings_storage_path": "설정에서 저장 경로를 변경할 수 있습니다. 콘텐츠를 이동하기 전에 대상 디렉토리에 쓰기 권한이 있는지 확인하세요.",
       "download_mirror": "다운로드가 느린 경우, 설정에서 미러 서버 또는 관련 네트워크 옵션을 변경해 보세요.",
@@ -144,13 +149,18 @@
     "manage": "모드 관리"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "다운로드 완료",
+      "description": "“{{name}}” 다운로드가 완료되었습니다. 지금 설치하시겠습니까?",
+      "confirm": "지금 설치",
+      "later": "나중에"
+    },
     "title": "다운로드 관리자",
     "description": "현재 다운로드 작업 보기 및 관리",
     "no_downloads": "활성 다운로드 작업 없음",
     "unknown_file": "알 수 없는 파일",
     "actions": {
-      "retry": "다시 시도",
-      "delete": "삭제"
+      "retry": "다시 시도"
     }
   },
   "updating": {
@@ -284,7 +294,6 @@
       "title": "설치"
     },
     "customappx": {
-      "button": "사용자 지정",
       "modal": {
         "1": {
           "header": "버전 정보",
@@ -304,12 +313,9 @@
   "onboarding": {
     "title": "첫 실행 설정",
     "subtitle": "먼저 콘텐츠 경로와 언어를 설정해 주세요",
-    "skip": "건너뛰기",
-    "finish": "완료",
     "unsaved": {
       "title": "저장되지 않은 변경 사항",
       "body": "콘텐츠 경로에 저장되지 않은 변경 사항이 있습니다. 완료 전에 저장하시겠습니까?",
-      "cancel": "취소",
       "save": "저장하고 완료"
     }
   },
@@ -471,7 +477,6 @@
       }
     },
     "appearance": {
-      "global_config": "전역 구성",
       "mode_config": "모드별 구성",
       "edit_mode_desc": "개인화 설정 (색상, 불투명도 등) 은 밝음 모드와 어두움 모드에 대해 독립적으로 저장됩니다. 오른쪽 탭을 전환하여 각 모드를 구성하세요.",
       "theme_mode": "테마 모드",
@@ -490,7 +495,6 @@
       "theme_color_desc": "애플리케이션의 주요 강조 색상",
       "theme_standard": "사전 설정 색상",
       "theme_generated": "추가 색상",
-      "hue": "색조",
       "custom_color": "사용자 지정 색상",
       "background_image": "배경 이미지",
       "background_image_desc": "배경으로 사용할 이미지를 선택할 폴더 선택",
@@ -621,23 +625,28 @@
     "disable": "비활성화",
     "enable": "활성화",
     "open_folder": "폴더 열기",
+    "open_folder_failed": "폴더를 열 수 없습니다",
     "remove": "제거",
     "tip": "팁",
     "feature_unavailable": "이 기능은 일시적으로 사용할 수 없습니다",
     "unknown": "알 수 없음"
   },
   "useravatar": {
-    "no_login_retry": "Xbox 로그인이 감지되지 않음 (클릭하여 다시 시도)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Xbox 세션 새로고침",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "플레이 시간",
-      "blocks_broken": "깨진 블록",
-      "mobs_defeated": "처치한 몹",
-      "distance_travelled": "이동 거리",
-      "time_format": "{{days}}일 {{hours}}시간 {{minutes}}분"
-    }
+    "authorization": {
+      "title": "게임 라이선스",
+      "checking": "확인 중",
+      "authorized": "인증됨",
+      "trial": "체험판만",
+      "not_entitled": "인증되지 않음",
+      "error": "확인 실패",
+      "description": "로그인 후 Release 및 Preview 라이선스를 요청합니다. 새로고침하여 다시 확인할 수 있습니다."
+    },
+    "sign_in": "Microsoft 계정으로 로그인",
+    "switch_account": "계정 전환",
+    "signin_failed": "Microsoft 로그인 실패"
   },
   "content": {
     "count": {
@@ -705,7 +714,6 @@
     "delete_warning": "이 작업은 되돌릴 수 없습니다!",
     "delete_selected_confirm": "정말로 선택한 {{count}} 개의 항목을 삭제하시겠습니까?",
     "deleted_name": "{{name}} 삭제됨",
-    "deleted_count": "{{count}} 개 항목 삭제됨",
     "delete_world_confirm": "정말로 월드 {{name}} 을 (를) 삭제하시겠습니까?",
     "basic_info": "기본 정보",
     "level_name": "레벨 이름",
@@ -736,7 +744,6 @@
       "enable_isolation": "격리 활성화",
       "enable_console": "콘솔 활성화",
       "enable_render_dragon": "RenderDragon 셰이더 로드",
-      "enable_ctrl_r_reload_resources": "Ctrl+R 빠른 리소스 다시 로드",
       "enable_editor_mode": "편집기 모드 활성화",
       "launch_args": "실행 인수",
       "launch_args_placeholder": "실행 인수 (예: -Editor true)",
@@ -982,7 +989,10 @@
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "완전한 Minecraft Bedrock 백업은 빈 대상 디렉토리로만 복원할 수 있습니다",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "일부 lip 관리 패키지를 설치하지 못했습니다",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "일부 lip 관리 패키지가 복원되지 않았습니다",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "일부 lip 관리 패키지 버전이 백업과 일치하지 않습니다"
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "일부 lip 관리 패키지 버전이 백업과 일치하지 않습니다",
+    "ERR_AUTH_INTERACTION_REQUIRED": "이 게임을 소유한 Microsoft 계정으로 Windows에 로그인한 후 런처 아바타에서 계정을 새로 고치고 다시 시도하세요.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "Microsoft 계정이 변경되었습니다. 런처 아바타에서 계정을 새로 고친 후 다시 시도하세요.",
+    "ERR_AUTH_FAILED": "현재 계정의 다운로드를 인증할 수 없습니다. 연결을 확인하고 런처 아바타에서 계정을 새로 고친 후 다시 시도하세요."
   },
   "filemanager": {
     "sort": {
@@ -1117,7 +1127,6 @@
     "website": "웹사이트",
     "source": "소스",
     "issues": "이슈",
-    "share": "공유",
     "no_download_url": "사용 가능한 다운로드 URL 이 없음",
     "no_files_found": "파일을 찾을 수 없음",
     "sort": {
@@ -1183,12 +1192,11 @@
     "game_all_versions": "모든 게임 버전",
     "mapping_unavailable_hint": "현재 LeviLamina 게임 버전 매핑을 사용할 수 없어 잘못된 매칭을 방지하기 위해 버전 관련 필터를 비활성화했습니다.",
     "files": {
+      "game_versions_unknown": "일치하는 게임 버전 없음",
+      "version_count": "버전 {{count}}개",
       "game_versions_label": "게임 버전",
       "game_versions_unrestricted": "게임 버전 제한 없음",
       "game_versions_unavailable": "게임 버전 매핑을 사용할 수 없음",
-      "ll_requirement": "LL 요구 사항",
-      "dependencies": "의존성",
-      "action": "작업",
       "dependencies_count": "{{count}} 개 의존성",
       "install": "설치",
       "upgrade": "업그레이드",
@@ -1209,7 +1217,7 @@
       "ll_missing_redirect_to_loader": "LeviLamina 가 설치되어 있지 않습니다. 인스턴스 설정의 로더 탭으로 리디렉션합니다.",
       "ll_installed_incompatible_hint": "설치된 LeviLamina 버전 {{installedVersion}} 은 이 패키지와 호환되지 않습니다. 먼저 LeviLamina 를 수동으로 조정해 주세요.",
       "action_failed": "작업 실패: {{error}}",
-      "tab_label": "파일",
+      "tab_label": "버전",
       "table_aria_label": "패키지 파일 표",
       "install_success": "설치가 성공적으로 완료되었습니다",
       "upgrade_success": "업그레이드가 성공적으로 완료되었습니다",
@@ -1220,8 +1228,8 @@
     },
     "guide": {
       "open_button": "개발자 가이드",
-      "title": "LIP 개발자 가이드",
-      "description": "모드가 LeviLauncher 의 LIP 페이지에 나타나도록 하려면 LIP package_manifest 사양에 따라 게시하세요.",
+      "title": "Bedrinth 개발자 가이드",
+      "description": "모드가 LeviLauncher 의 Bedrinth 페이지에 나타나도록 하려면 LIP package_manifest 사양에 따라 게시하세요.",
       "manifest_hint": "이 대화 상자는 개발자를 위한 빠른 개요일 뿐입니다. 필드 이름, 필수 엔트리, 예제 및 유효성 검사 규칙은 공식 문서에 정의되어 있습니다.",
       "variant_hint": "변형은 레이블에 client 가 포함된 경우에만 런처에서 인덱싱됩니다. 기본적으로 \\\"label\\\": \\\"client\\\"를 사용하세요; 하위 확장용으로는 \\\"label\\\": \\\"client_xxxx\\\" 또는 \\\"label\\\": \\\"client\\\\xxxx\\\"를 사용하세요.",
       "docs_button": "전체 사양 보기",
@@ -1231,7 +1239,7 @@
       "title": "lipd 가 설치되어 있지 않습니다",
       "description": "lipd 가 아직 설치되어 있지 않습니다. lip 관련 페이지를 계속 사용하거나 LeviLamina 를 설치하려면 설정 > 타사 구성 요소로 이동하여 먼저 설치하세요."
     },
-    "title": "lip 콘텐츠",
+    "title": "Bedrinth",
     "sort_options": {
       "hotness": "인기도",
       "updated": "업데이트됨",

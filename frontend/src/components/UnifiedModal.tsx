@@ -1,5 +1,7 @@
+import { ButtonProps, Spinner, Modal } from "@heroui/react";
+import { ModalAction, MODAL_STYLES } from "./ModalPrimitives";
 import React from "react";
-import { ModalContent, Button, ButtonProps } from "@heroui/react";
+
 import { motion } from "framer-motion";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/utils/cn";
@@ -8,52 +10,42 @@ import {
   FiAlertTriangle,
   FiInfo,
   FiXCircle,
-  FiHelpCircle,
 } from "react-icons/fi";
 import {
   BaseModal,
   BaseModalHeader,
   BaseModalBody,
   BaseModalFooter,
+  type BaseModalProps,
 } from "./BaseModal";
+
+export type ModalActionProps = Omit<ButtonProps, "className"> & {
+  className?: string;
+};
 
 export type ModalType = "success" | "warning" | "error" | "info" | "primary";
 
-export interface UnifiedModalProps {
+export interface UnifiedModalProps
+  extends Omit<BaseModalProps, "children" | "isOpen"> {
   isOpen: boolean;
   onOpenChange?: (open: boolean) => void;
   type?: ModalType;
   title: React.ReactNode;
   children?: React.ReactNode;
   footer?: React.ReactNode;
-  hideCloseButton?: boolean;
-  isDismissable?: boolean;
-  size?:
-    | "xs"
-    | "sm"
-    | "md"
-    | "lg"
-    | "xl"
-    | "2xl"
-    | "3xl"
-    | "4xl"
-    | "5xl"
-    | "full";
-  scrollBehavior?: "inside" | "outside" | "normal";
   icon?: React.ReactNode;
   onConfirm?: () => void;
   confirmText?: string;
   onCancel?: () => void;
   cancelText?: string;
-  confirmButtonProps?: ButtonProps;
-  cancelButtonProps?: ButtonProps;
+  confirmButtonProps?: ModalActionProps;
+  cancelButtonProps?: ModalActionProps;
   showCancelButton?: boolean;
   showConfirmButton?: boolean;
   hideScrollbar?: boolean;
   titleClass?: string;
   iconBgClass?: string;
-  classNames?: Record<string, string>;
-  motionProps?: any;
+
   contentKey?: string | number;
 }
 
@@ -68,71 +60,70 @@ const TYPE_CONFIG: Record<
 > = {
   success: {
     icon: FiCheckCircle,
-    colorClass: "text-primary-500",
-    bgClass: "bg-primary-50 dark:bg-primary-500/10",
-    borderClass: "border-primary-100 dark:border-primary-500/20",
+    colorClass: "text-brand-500",
+    bgClass: "bg-brand-50 dark:bg-brand-500/10",
+    borderClass: "border-brand-100 dark:border-brand-500/20",
   },
   warning: {
     icon: FiAlertTriangle,
-    colorClass: "text-warning-500",
-    bgClass: "bg-warning-50 dark:bg-warning-500/10",
-    borderClass: "border-warning-100 dark:border-warning-500/20",
+    colorClass: "text-amber-500",
+    bgClass: "bg-amber-50 dark:bg-amber-500/10",
+    borderClass: "border-amber-100 dark:border-amber-500/20",
   },
   error: {
     icon: FiXCircle,
-    colorClass: "text-danger-500",
-    bgClass: "bg-danger-50 dark:bg-danger-500/10",
-    borderClass: "border-danger-100 dark:border-danger-500/20",
+    colorClass: "text-rose-500",
+    bgClass: "bg-rose-50 dark:bg-rose-500/10",
+    borderClass: "border-rose-100 dark:border-rose-500/20",
   },
   info: {
     icon: FiInfo,
-    colorClass: "text-primary-500",
-    bgClass: "bg-primary-50 dark:bg-primary-500/10",
-    borderClass: "border-primary-100 dark:border-primary-500/20",
+    colorClass: "text-brand-500",
+    bgClass: "bg-brand-50 dark:bg-brand-500/10",
+    borderClass: "border-brand-100 dark:border-brand-500/20",
   },
   primary: {
-    icon: FiHelpCircle,
-    colorClass: "text-primary-500",
-    bgClass: "bg-primary-50 dark:bg-primary-500/10",
-    borderClass: "border-primary-100 dark:border-primary-500/20",
+    icon: FiInfo,
+    colorClass: "text-brand-500",
+    bgClass: "bg-brand-50 dark:bg-brand-500/10",
+    borderClass: "border-brand-100 dark:border-brand-500/20",
   },
 };
 
 const CONFIRM_BUTTON_CONFIG: Record<
   ModalType,
-  Pick<ButtonProps, "color" | "className">
+  Pick<ModalActionProps, "variant" | "className">
 > = {
   success: {
-    color: "primary",
-    className: "font-bold shadow-lg",
+    variant: "primary",
+    className: "font-semibold",
   },
   warning: {
-    color: "warning",
-    className:
-      "text-warning-foreground! font-bold shadow-lg shadow-warning-500/20",
+    variant: "primary",
+    className: "font-semibold",
   },
   error: {
-    color: "danger",
-    className: "font-bold shadow-lg shadow-danger-500/20",
+    variant: "primary",
+    className: "font-semibold",
   },
   info: {
-    color: "primary",
-    className: "font-bold shadow-lg",
+    variant: "primary",
+    className: "font-semibold",
   },
   primary: {
-    color: "primary",
-    className: "font-bold shadow-lg",
+    variant: "primary",
+    className: "font-semibold",
   },
 };
 
 export const getUnifiedModalConfirmButtonProps = (
   type: ModalType,
-  overrides?: Pick<ButtonProps, "color" | "className">,
-): Pick<ButtonProps, "color" | "className"> => {
+  overrides?: Pick<ModalActionProps, "variant" | "className">,
+): Pick<ModalActionProps, "variant" | "className"> => {
   const defaults = CONFIRM_BUTTON_CONFIG[type];
 
   return {
-    color: overrides?.color ?? defaults.color,
+    variant: overrides?.variant ?? defaults.variant,
     className: overrides?.className
       ? cn(defaults.className, overrides.className)
       : defaults.className,
@@ -146,9 +137,8 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   title,
   children,
   footer,
-  hideCloseButton = true,
   isDismissable = false,
-  size = "md",
+  size,
   scrollBehavior = "inside",
   icon,
   onConfirm,
@@ -162,8 +152,12 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   hideScrollbar,
   titleClass,
   iconBgClass,
-  classNames,
-  motionProps,
+  className,
+  containerClassName,
+  backdropClassName,
+  isKeyboardDismissDisabled,
+  isPending = confirmButtonProps?.isPending ?? false,
+
   contentKey,
 }) => {
   const { t } = useTranslation();
@@ -173,13 +167,13 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   const resolvedConfirmText = confirmText ?? t("common.confirm");
   const resolvedCancelText = cancelText ?? t("common.cancel");
   const resolvedConfirmButtonProps = getUnifiedModalConfirmButtonProps(type, {
-    color: confirmButtonProps?.color,
+    variant: confirmButtonProps?.variant,
     className: confirmButtonProps?.className,
   });
 
   const resolvedIcon = React.useMemo(() => {
     if (!icon) {
-      return <Icon className={cn("w-6 h-6", config.colorClass)} />;
+      return <Icon className={cn("size-5", config.colorClass)} />;
     }
 
     if (!React.isValidElement<{ className?: string }>(icon)) {
@@ -187,7 +181,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
     }
 
     return React.cloneElement(icon, {
-      className: cn(icon.props.className, config.colorClass),
+      className: cn(icon.props.className, "size-5", config.colorClass),
     });
   }, [Icon, config.colorClass, icon]);
 
@@ -196,96 +190,100 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
       isOpen={isOpen}
       onOpenChange={handleOpenChange}
       size={size}
-      hideCloseButton={hideCloseButton}
       isDismissable={isDismissable}
       scrollBehavior={scrollBehavior}
-      classNames={{
-        base: "bg-white/80! dark:bg-zinc-900/80! backdrop-blur-2xl border-white/40! dark:border-zinc-700/50! shadow-2xl rounded-4xl",
-        ...classNames,
-      }}
-      motionProps={motionProps}
+      isPending={isPending}
+      isKeyboardDismissDisabled={isKeyboardDismissDisabled}
+      className={className}
+      containerClassName={containerClassName}
+      backdropClassName={backdropClassName}
     >
-      <ModalContent className="shadow-none">
-        {(onClose) => (
-          <>
-            <BaseModalHeader className="flex flex-row items-center gap-3">
-              <motion.div
-                key={type}
-                initial={{ scale: 0 }}
-                animate={{ scale: 1 }}
-                transition={{
-                  type: "spring",
-                  stiffness: 260,
-                  damping: 20,
-                }}
-                className={`w-12 h-12 rounded-full flex items-center justify-center shrink-0 border ${iconBgClass || `${config.bgClass} ${config.borderClass}`}`}
+      {({ close: onClose }) => (
+        <>
+          <BaseModalHeader className="flex flex-row items-center gap-3">
+            <motion.div
+              key={type}
+              initial={{ scale: 0 }}
+              animate={{ scale: 1 }}
+              transition={{
+                type: "spring",
+                stiffness: 260,
+                damping: 20,
+              }}
+              className={`size-10 rounded-xl flex items-center justify-center shrink-0 border ${iconBgClass || `${config.bgClass} ${config.borderClass}`}`}
+            >
+              {resolvedIcon}
+            </motion.div>
+            <motion.div
+              initial={{ opacity: 0, x: -10 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.25 }}
+              className="flex min-w-0 flex-col [overflow-wrap:anywhere]"
+            >
+              <Modal.Heading
+                className={`text-xl font-semibold leading-7 ${
+                  titleClass || "text-foreground dark:text-zinc-100"
+                }`}
               >
-                {resolvedIcon}
-              </motion.div>
-              <motion.div
-                initial={{ opacity: 0, x: -10 }}
-                animate={{ opacity: 1, x: 0 }}
-                transition={{ duration: 0.25 }}
-                className="flex flex-col"
-              >
-                <h2
-                  className={`text-xl font-bold ${
-                    titleClass ||
-                    "text-default-900 dark:text-zinc-100"
-                  }`}
-                >
-                  {title}
-                </h2>
-              </motion.div>
-            </BaseModalHeader>
-            <BaseModalBody className={hideScrollbar ? "no-scrollbar" : ""}>
-              <motion.div
-                key={contentKey || type}
-                initial={{ opacity: 0, y: 10 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.25, delay: 0.1 }}
-                className="w-full"
-              >
-                {children}
-              </motion.div>
-            </BaseModalBody>
-            {(footer || onConfirm || (showCancelButton && onCancel)) && (
-              <BaseModalFooter>
-                {footer ? (
-                  footer
-                ) : (
-                  <>
-                    {showCancelButton && (
-                      <Button
-                        variant="light"
-                        radius="full"
-                        onPress={() => {
-                          onCancel?.();
-                          if (!onCancel) onClose();
-                        }}
-                        {...cancelButtonProps}
-                      >
-                        {resolvedCancelText}
-                      </Button>
-                    )}
-                    {showConfirmButton && (
-                      <Button
-                        {...confirmButtonProps}
-                        color={resolvedConfirmButtonProps.color}
-                        radius="full"
-                        className={resolvedConfirmButtonProps.className}
-                        onPress={onConfirm}
-                      >
-                        {resolvedConfirmText}
-                      </Button>
-                    )}
-                  </>
-                )}
-              </BaseModalFooter>
-            )}
-          </>
-        )}
-      </ModalContent>
+                {title}
+              </Modal.Heading>
+            </motion.div>
+          </BaseModalHeader>
+          <BaseModalBody className={hideScrollbar ? "no-scrollbar" : ""}>
+            <motion.div
+              key={contentKey ?? type}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.25, delay: 0.1 }}
+              className={cn("w-full", MODAL_STYLES.stack)}
+            >
+              {children}
+            </motion.div>
+          </BaseModalBody>
+          {(footer != null ||
+            (showConfirmButton && onConfirm) ||
+            showCancelButton) && (
+            <BaseModalFooter>
+              {footer != null ? (
+                footer
+              ) : (
+                <>
+                  {showCancelButton && (
+                    <ModalAction
+                      {...cancelButtonProps}
+                      onPress={() => {
+                        onCancel?.();
+                        if (!onCancel) onClose();
+                      }}
+                      isDisabled={isPending || cancelButtonProps?.isDisabled}
+                      variant={cancelButtonProps?.variant ?? "secondary"}
+                    >
+                      {resolvedCancelText}
+                    </ModalAction>
+                  )}
+                  {showConfirmButton && onConfirm && (
+                    <ModalAction
+                      {...confirmButtonProps}
+                      onPress={onConfirm}
+                      isPending={isPending}
+                      isDisabled={isPending || confirmButtonProps?.isDisabled}
+                      variant={resolvedConfirmButtonProps.variant}
+                      className={resolvedConfirmButtonProps.className}
+                    >
+                      {({ isPending }) => (
+                        <>
+                          {isPending && <Spinner size="sm" color="current" />}
+                          {resolvedConfirmText}
+                        </>
+                      )}
+                    </ModalAction>
+                  )}
+                </>
+              )}
+            </BaseModalFooter>
+          )}
+        </>
+      )}
     </BaseModal>
   );
 };

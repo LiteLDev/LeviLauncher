@@ -18,18 +18,17 @@ var _ = reflect.TypeOf(VersionMeta{})
 var _ = reflect.TypeOf(metaFileName)
 
 type VersionMeta struct {
-	Name                       string    `json:"name"        `
-	GameVersion                string    `json:"gameVersion"`
-	Type                       string    `json:"type"       `
-	EnableIsolation            bool      `json:"enableIsolation"`
-	EnableConsole              bool      `json:"enableConsole"`
-	EnableEditorMode           bool      `json:"enableEditorMode"`
-	EnableRenderDragon         bool      `json:"enableRenderDragon"`
-	EnableCtrlRReloadResources bool      `json:"enableCtrlRReloadResources"`
-	LaunchArgs                 string    `json:"launchArgs"`
-	EnvVars                    string    `json:"envVars"`
-	CreatedAt                  time.Time `json:"createdAt"`
-	Registered                 bool      `json:"registered,omitempty"`
+	Name               string    `json:"name"        `
+	GameVersion        string    `json:"gameVersion"`
+	Type               string    `json:"type"       `
+	EnableIsolation    bool      `json:"enableIsolation"`
+	EnableConsole      bool      `json:"enableConsole"`
+	EnableEditorMode   bool      `json:"enableEditorMode"`
+	EnableRenderDragon bool      `json:"enableRenderDragon"`
+	LaunchArgs         string    `json:"launchArgs"`
+	EnvVars            string    `json:"envVars"`
+	CreatedAt          time.Time `json:"createdAt"`
+	Registered         bool      `json:"registered,omitempty"`
 }
 
 const metaFileName = "version.json"
@@ -91,8 +90,8 @@ func ScanVersions(versionsRoot string) ([]VersionMeta, error) {
 	return out, nil
 }
 
-func ComputeVCRuntimeHash(versionDir string) (string, error) {
-	path := filepath.Join(versionDir, "vcruntime140_1.dll")
+func ComputeLoaderHash(versionDir string) (string, error) {
+	path := filepath.Join(versionDir, "LeviLauncher.dll")
 	f, err := os.Open(path)
 	if err != nil {
 		return "", err

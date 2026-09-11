@@ -1,3 +1,6 @@
+import { ModalAction, ModalDescription, ModalNotice } from "@/components/ModalPrimitives";
+import { Chip, ProgressBar, toast } from "@heroui/react";
+
 import React, {
   createContext,
   useCallback,
@@ -7,8 +10,8 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Button, Chip, Progress, addToast } from "@heroui/react";
-import { Events } from "@wailsio/runtime";
+
+import { Clipboard, Events } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
 import { LuTerminal } from "react-icons/lu";
 import { UnifiedModal } from "@/components/UnifiedModal";
@@ -597,17 +600,17 @@ export const LipTaskConsoleProvider: React.FC<{
     }
 
     try {
-      await navigator.clipboard.writeText(lines.join("\n"));
-      addToast({
-        color: "success",
-        title: t("common.success"),
+      await Clipboard.SetText(lines.join("\n"));
+      toast(t("common.success"), {
+        variant: "success",
         description: t("lip.task_console.copy_success"),
+        timeout: 2000,
       });
     } catch {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("common.error"),
+        timeout: 2000,
       });
     }
   }, [errorText, logs, statusText, t, target]);
@@ -623,7 +626,7 @@ export const LipTaskConsoleProvider: React.FC<{
     <LipTaskConsoleContext.Provider value={contextValue}>
       {children}
       <UnifiedModal
-        size="xl"
+        size="wide"
         isOpen={open}
         onOpenChange={(nextOpen) => {
           if (nextOpen) {
@@ -639,69 +642,83 @@ export const LipTaskConsoleProvider: React.FC<{
         isDismissable={!running}
         footer={
           <>
-            <Button variant="flat" onPress={() => void handleCopyLogs()}>
+            <ModalAction onPress={() => void handleCopyLogs()} variant={"secondary"}>
               {t("lip.task_console.copy_logs")}
-            </Button>
-            <Button
-              color={closeButtonColor}
+            </ModalAction>
+            <ModalAction
               onPress={() => closeConsole()}
               isDisabled={running}
+              variant="primary"
             >
               {t("lip.task_console.close")}
-            </Button>
+            </ModalAction>
           </>
         }
       >
         <div className="flex h-[min(44vh,26rem)] min-h-[15rem] flex-col gap-3">
           <div className="shrink-0 space-y-3">
-            <div className="flex items-center gap-2 text-small">
-              <span className="text-default-500 dark:text-zinc-400">
+            <div className="flex items-center gap-2 text-sm">
+              <span className="text-muted dark:text-zinc-400">
                 {t("lip.task_console.target_label")}:
               </span>
               <span className="font-mono">{target || "-"}</span>
-              <Chip size="sm" variant="flat" color={statusChipColor}>
-                {statusText}
+              <Chip
+                size="sm"
+                variant="soft"
+                color={
+                  statusChipColor === "primary" ? "accent" : statusChipColor
+                }
+              >
+                <Chip.Label>{statusText}</Chip.Label>
               </Chip>
             </div>
 
             <div className="space-y-1">
-              <div className="text-xs text-default-500 dark:text-zinc-400">
+              <div className="text-xs text-muted dark:text-zinc-400">
                 {t("lip.task_console.progress_label")}
                 {progress?.message ? ` - ${progress.message}` : ""}
               </div>
               {running ? (
-                <Progress
+                <ProgressBar
                   aria-label={t("lip.task_console.progress_label") as string}
                   value={progress ? progress.percentage : undefined}
                   isIndeterminate={!progress}
-                  color={status === "failed" ? "danger" : "primary"}
-                />
+                  color={status === "failed" ? "danger" : "accent"}
+                >
+                  <ProgressBar.Track>
+                    <ProgressBar.Fill />
+                  </ProgressBar.Track>
+                </ProgressBar>
               ) : progress ? (
-                <Progress
+                <ProgressBar
                   aria-label={t("lip.task_console.progress_label") as string}
                   value={progress.percentage}
                   color={status === "failed" ? "danger" : "success"}
-                />
+                >
+                  <ProgressBar.Track>
+                    <ProgressBar.Fill />
+                  </ProgressBar.Track>
+                </ProgressBar>
               ) : null}
             </div>
 
             {errorText ? (
-              <div className="rounded-xl border border-danger-300/60 bg-danger-50/60 dark:border-danger-500/30 dark:bg-danger-500/10 px-3 py-2 text-xs text-danger-700 dark:text-danger-300 whitespace-pre-wrap break-all">
+              <ModalNotice tone="danger" className="whitespace-pre-wrap break-all">
                 {errorText}
-              </div>
+              </ModalNotice>
             ) : null}
           </div>
 
           <div className="min-h-0 flex flex-1 flex-col space-y-1">
-            <div className="text-xs font-semibold text-default-600 dark:text-zinc-300">
+            <ModalDescription>
               {t("lip.task_console.log_title")}
-            </div>
+            </ModalDescription>
             <div
               ref={logContainerRef}
-              className="min-h-0 flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-default-200 dark:border-zinc-700 bg-default-100/50 dark:bg-zinc-800/60 px-3 py-2"
+              className="min-h-0 flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-border dark:border-zinc-700 bg-surface-secondary/50 dark:bg-surface-secondary/60 px-3 py-2"
             >
               {logs.length === 0 ? (
-                <div className="text-xs text-default-400 dark:text-zinc-500">
+                <div className="text-xs text-muted dark:text-zinc-500">
                   {t("lip.task_console.no_output")}
                 </div>
               ) : (
@@ -711,12 +728,12 @@ export const LipTaskConsoleProvider: React.FC<{
                       key={item.id}
                       className={`text-xs font-mono whitespace-pre-wrap break-all ${
                         item.level === "error"
-                          ? "text-danger-600 dark:text-danger-400"
+                          ? "text-rose-600 dark:text-rose-400"
                           : item.level === "warning"
-                            ? "text-warning-600 dark:text-warning-400"
+                            ? "text-amber-600 dark:text-amber-400"
                             : item.level === "success"
-                              ? "text-success-600 dark:text-success-400"
-                              : "text-default-700 dark:text-zinc-200"
+                              ? "text-green-600 dark:text-green-400"
+                              : "text-foreground dark:text-zinc-200"
                       }`}
                     >
                       [{new Date(item.timestamp).toLocaleTimeString()}]{" "}

@@ -8,7 +8,13 @@
     "about": "About",
     "back": "Back",
     "forward": "Forward",
-    "breadcrumb": "Breadcrumb"
+    "breadcrumb": "Breadcrumb",
+    "home": "Home",
+    "local_install": "Local Install",
+    "mods": "Mods",
+    "mod_details": "Mod Details",
+    "package_details": "Package Details",
+    "updating": "Launcher Update"
   },
   "theme": {
     "toggle": "Toggle Theme"
@@ -73,6 +79,11 @@
         "install_now": "Install Now"
       }
     },
+    "loader_migration": {
+      "title": "Migrating loader",
+      "body": "Adapting installed versions to the new LeviLauncher loader (removing the legacy vcruntime140_1.dll and updating the game's import table). This runs once, please wait…",
+      "preparing": "Preparing migration..."
+    },
     "mclaunch": {
       "loading": {
         "title": "Launching Minecraft",
@@ -126,7 +137,7 @@
       "mods_card": "The Mods card shows enabled mods for the current instance and opens the full Mods page in one click.",
       "content_counts_card": "The Content card shows world, resource pack, and behavior pack counts, and each row opens the matching page.",
       "incompatible_resource_packs": "If incompatible resource packs are detected, click the warning row to review them directly.",
-      "content_download_sources": "Use the download card to browse CurseForge or lip content sources without leaving the launcher.",
+      "content_download_sources": "Use the download card to browse CurseForge or Bedrinth content sources without leaving the launcher.",
       "settings_personalize": "Settings lets you adjust theme, color, background, and other appearance options to match your setup.",
       "settings_storage_path": "You can change storage paths in Settings. Make sure the target directory is writable before moving content.",
       "download_mirror": "If downloads are slow, try switching mirrors or related network options in Settings.",
@@ -143,13 +154,18 @@
     "manage": "Manage Mods"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "Download complete",
+      "description": "“{{name}}” has finished downloading. Would you like to install it now?",
+      "confirm": "Install now",
+      "later": "Later"
+    },
     "title": "Download Manager",
     "description": "View and manage current download tasks",
     "no_downloads": "No active download tasks",
     "unknown_file": "Unknown File",
     "actions": {
-      "retry": "Retry",
-      "delete": "Delete"
+      "retry": "Retry"
     }
   },
   "updating": {
@@ -283,7 +299,6 @@
       "title": "Install"
     },
     "customappx": {
-      "button": "Custom",
       "modal": {
         "1": {
           "header": "Version Information",
@@ -303,12 +318,9 @@
   "onboarding": {
     "title": "First Launch Setup",
     "subtitle": "Please set content path and language first",
-    "skip": "Skip",
-    "finish": "Finish",
     "unsaved": {
       "title": "Unsaved Changes",
       "body": "You have unsaved changes to the content path. Do you want to save before finishing?",
-      "cancel": "Cancel",
       "save": "Save and Finish"
     }
   },
@@ -475,7 +487,6 @@
       }
     },
     "appearance": {
-      "global_config": "Global Configuration",
       "mode_config": "Mode-Specific Configuration",
       "edit_mode_desc": "Personalization settings (colors, opacity, etc.) are saved independently for Light and Dark modes. Switch tabs on the right to configure each mode.",
       "theme_mode": "Theme Mode",
@@ -494,7 +505,6 @@
       "theme_color_desc": "The primary accent color of the application",
       "theme_standard": "Preset Colors",
       "theme_generated": "More Colors",
-      "hue": "Hue",
       "custom_color": "Custom Color",
       "background_image": "Background Image",
       "background_image_desc": "Select a folder to pick images from as background",
@@ -527,7 +537,34 @@
       "calculating": "Calculating...",
       "sunrise_time": "Sunrise Today",
       "sunset_time": "Sunset Today",
-      "sun_fetch_failed": "Failed to fetch sunrise/sunset times"
+      "sun_fetch_failed": "Failed to fetch sunrise/sunset times",
+      "material": {
+        "title": "Interface material",
+        "description": "One material system for navigation, cards, tabs, controls and popups. Light and dark profiles are saved separately and follow the theme.",
+        "edit_mode": "Edit material for theme",
+        "preview": "Live preview",
+        "preview_label": "Wallpaper, text and card material preview for the selected theme",
+        "preview_action": "Launch",
+        "preview_text": "Text and controls stay in front; your wallpaper sets the atmosphere.",
+        "no_image": "Choose a working image folder and set image opacity above 0 to see the effect. Your material settings are saved for later.",
+        "presets": "Material presets",
+        "balanced": "Balanced",
+        "balanced_desc": "Soft glass, readable content",
+        "clear": "Clear",
+        "clear_desc": "More wallpaper, less protection",
+        "solid": "Solid",
+        "solid_desc": "Opaque panels, no blur",
+        "opacity": "Interface opacity",
+        "blur": "Interface blur",
+        "overlay": "Wallpaper overlay",
+        "readability": "Readability protection",
+        "readability_desc": "Sets a minimum surface tint for the theme, image brightness and blur, and strengthens secondary text. Controls and popups use the same material with their own visual hierarchy.",
+        "protected_opacity": "Protection is active: effective interface opacity is {{value}}%.",
+        "protected": "Readability protection is on.",
+        "unprotected": "Protection is off. Busy images may make text harder to read.",
+        "reset": "Reset this theme",
+        "next_image": "Next image"
+      }
     },
     "privacy": {
       "analytics": {
@@ -625,23 +662,28 @@
     "disable": "Disable",
     "enable": "Enable",
     "open_folder": "Open Folder",
+    "open_folder_failed": "Could not open the folder",
     "remove": "Remove",
     "tip": "Tip",
     "feature_unavailable": "This feature is temporarily unavailable",
     "unknown": "Unknown"
   },
   "useravatar": {
-    "no_login_retry": "Xbox login not detected (click to retry)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Refresh Xbox Session",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "Time Played",
-      "blocks_broken": "Blocks Broken",
-      "mobs_defeated": "Mobs Defeated",
-      "distance_travelled": "Distance Travelled",
-      "time_format": "{{days}}d {{hours}}h {{minutes}}m"
-    }
+    "authorization": {
+      "title": "Game licenses",
+      "checking": "Checking",
+      "authorized": "Authorized",
+      "trial": "Trial only",
+      "not_entitled": "Not authorized",
+      "error": "Check failed",
+      "description": "Release and Preview licenses are requested after sign-in. Refresh to check again."
+    },
+    "sign_in": "Sign in with Microsoft",
+    "switch_account": "Switch account",
+    "signin_failed": "Microsoft sign-in failed"
   },
   "content": {
     "count": {
@@ -709,7 +751,6 @@
     "delete_warning": "This action cannot be undone!",
     "delete_selected_confirm": "Are you sure you want to delete the selected {{count}} items?",
     "deleted_name": "Deleted {{name}}",
-    "deleted_count": "Deleted {{count}} items",
     "delete_world_confirm": "Are you sure you want to delete world {{name}}?",
     "basic_info": "Basic Info",
     "level_name": "Level Name",
@@ -718,7 +759,27 @@
     "delete_screenshot_confirm": "Are you sure you want to delete screenshot {{name}}?",
     "preview_screenshot": "View larger",
     "screenshot_viewer_hint": "Large preview",
-    "screenshot_viewer_nav_hint": "Use ← / → keys or buttons to switch screenshots"
+    "screenshot_viewer_nav_hint": "Use ← / → keys or buttons to switch screenshots",
+    "editor_unsaved": "Unsaved changes",
+    "editor_unsaved_body": "Save your changes before continuing, or discard them to use the saved world data.",
+    "editor_continue": "Continue editing",
+    "editor_discard": "Discard changes",
+    "editor_save_refresh": "Save and refresh",
+    "editor_save_leave": "Save and leave",
+    "selected_outside_filter": "Includes {{count}} outside this filter",
+    "delete_result": "Deleted {{success}}; failed {{failed}}",
+    "delete_retry_failed": "Failed items remain selected. Review the reasons below and retry.",
+    "delete_scope": "Instance: {{instance}} · Player: {{player}}",
+    "screenshot_load_failed": "Unable to load screenshots",
+    "screenshot_image_failed": "Unable to read {{name}}",
+    "screenshot_select_player": "Choose a player in Content before viewing screenshots.",
+    "screenshot_no_instance": "Choose an instance before viewing screenshots.",
+    "select_item": "Select {{name}}",
+    "servers_read_only": "Servers added in the game are shown here.",
+    "sort_old_new": "Oldest first",
+    "sort_new_old": "Newest first",
+    "previous_screenshot": "Previous screenshot",
+    "next_screenshot": "Next screenshot"
   },
   "versions": {
     "info": {
@@ -740,7 +801,6 @@
       "enable_isolation": "Enable Isolation",
       "enable_console": "Enable Console",
       "enable_render_dragon": "Load RenderDragon Shaders",
-      "enable_ctrl_r_reload_resources": "Ctrl+R Hot Reload Resources",
       "enable_editor_mode": "Enable Editor Mode",
       "launch_args": "Launch Arguments",
       "launch_args_placeholder": "Launch arguments (e.g. -Editor true)",
@@ -987,7 +1047,25 @@
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "Full Minecraft Bedrock backups can only be restored into an empty target directory",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Some lip-managed packages failed to install",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Some lip-managed packages were not restored",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Some lip-managed package versions do not match the backup"
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Some lip-managed package versions do not match the backup",
+    "ERR_AUTH_FAILED": "Microsoft sign-in or authorization failed. Check your connection and retry.",
+    "ERR_AUTH_TIMEOUT": "Sign-in timed out. Please try again.",
+    "ERR_AUTH_DEVICE_CACHE": "The device authorization cache could not be read. Check the Windows user and file permissions.",
+    "ERR_AUTH_DEVICE_BUSY": "The account is in use by another operation. Please try again later.",
+    "ERR_AUTH_DEVICE_PROVISION": "Device authorization failed. Check your connection and try again.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "The Microsoft account has changed. Refresh your account using the launcher avatar, then retry.",
+    "ERR_AUTH_INTERACTION_REQUIRED": "Sign in to the Microsoft account that owns this game using the launcher avatar, then retry.",
+    "ERR_LICENSE_NOT_ENTITLED": "This account does not have an entitlement for this version.",
+    "ERR_LICENSE_FULL_REQUIRED": "Microsoft returned only a trial license. Select an account that owns the game using the launcher avatar and retry.",
+    "ERR_LICENSE_HTTP": "Could not obtain a Microsoft content license. Check your connection and try again.",
+    "ERR_LICENSE_MISSING_KEY": "The content license does not contain the key required by this package.",
+    "ERR_LICENSE_UNSUPPORTED": "Microsoft returned an unsupported license type.",
+    "ERR_MSIXVC_UNSUPPORTED_FORMAT": "Unsupported package format. Use a complete Windows x64 package.",
+    "ERR_NATIVE_MSIXVC": "Package validation or extraction failed.",
+    "ERR_TARGET_EXISTS": "The target version directory already exists. Choose a different name.",
+    "ERR_INVALID_FOLDER_NAME": "Invalid version folder name.",
+    "ERR_CANCELED": "Operation canceled.",
+    "ERR_AUTH_ACCOUNT_SELECTION": "The selected Microsoft account could not be restored. Check the current Windows user and access to the account preference file."
   },
   "filemanager": {
     "sort": {
@@ -1078,7 +1156,8 @@
     "lip_children_summary": "Includes: {{children}} (+{{count}})",
     "lip_open_package": "Open Package",
     "lip_sync_loading": "Local mods are ready. Completing lip information...",
-    "lip_sync_error": "lip information is temporarily unavailable. Showing local mods only."
+    "lip_sync_error": "lip information is temporarily unavailable. Showing local mods only.",
+    "overwrite_and_import": "Overwrite and import"
   },
   "terms": {
     "title": "LeviLauncher License Agreement",
@@ -1122,7 +1201,6 @@
     "website": "Website",
     "source": "Source",
     "issues": "Issues",
-    "share": "Share",
     "no_download_url": "No download URL available",
     "no_files_found": "No files found",
     "sort": {
@@ -1188,12 +1266,11 @@
     "game_all_versions": "All game versions",
     "mapping_unavailable_hint": "LeviLamina game version mapping is unavailable. Version-related filters have been disabled to avoid incorrect matches.",
     "files": {
+      "game_versions_unknown": "No matching game version",
+      "version_count": "{{count}} versions",
       "game_versions_label": "Game Versions",
       "game_versions_unrestricted": "No game version restriction",
       "game_versions_unavailable": "Game version mapping unavailable",
-      "ll_requirement": "LL Requirement",
-      "dependencies": "Dependencies",
-      "action": "Action",
       "dependencies_count": "{{count}} dependencies",
       "install": "Install",
       "upgrade": "Upgrade",
@@ -1214,7 +1291,7 @@
       "ll_missing_redirect_to_loader": "LeviLamina is not installed. Redirecting to the Loader tab in Instance Settings.",
       "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",
       "action_failed": "Operation failed: {{error}}",
-      "tab_label": "Files",
+      "tab_label": "Versions",
       "table_aria_label": "Package files table",
       "install_success": "Installation completed successfully",
       "upgrade_success": "Upgrade completed successfully",
@@ -1225,8 +1302,8 @@
     },
     "guide": {
       "open_button": "Developer Guide",
-      "title": "LIP Developer Guide",
-      "description": "If you want your mod to appear on LeviLauncher's LIP page, publish it according to the LIP package_manifest specification.",
+      "title": "Bedrinth Developer Guide",
+      "description": "If you want your mod to appear on LeviLauncher's Bedrinth page, publish it according to the LIP package_manifest specification.",
       "manifest_hint": "This dialog is only a quick overview for developers. Field names, required entries, examples, and validation rules are defined in the official documentation.",
       "variant_hint": "A variant is indexed by the launcher only when its label contains client. By default, use \"label\": \"client\"; for sub-extensions, use \"label\": \"client_xxxx\" or \"label\": \"client\\xxxx\".",
       "docs_button": "View Full Spec",
@@ -1236,7 +1313,7 @@
       "title": "lipd is not installed",
       "description": "lipd is not installed yet. To continue using lip-related pages or install LeviLamina, go to Settings > Third-party Components and install it first."
     },
-    "title": "lip Content",
+    "title": "Bedrinth",
     "sort_options": {
       "hotness": "Hotness",
       "updated": "Updated",
@@ -1309,6 +1386,154 @@
       "disable": "Not Now",
       "clarity_terms": "Clarity Terms",
       "microsoft_privacy": "Microsoft Privacy Statement"
+    }
+  },
+  "audit": {
+    "primary": {
+      "local_install": "Local install",
+      "download_minecraft": "Download Minecraft",
+      "select_instance_first": "Select an instance to use these actions.",
+      "clear_filters": "Clear search and filters",
+      "download": {
+        "verifying": "Verifying package integrity",
+        "cancel": "Cancel download",
+        "remove": "Remove record",
+        "remove_hint": "Remove record; the downloaded file is kept",
+        "progress": "Download progress for {{name}}",
+        "failed": "Could not load versions. Check your connection and try again.",
+        "stale": "Could not refresh versions. Showing the saved list.",
+        "no_matches": "No versions match your search or filters."
+      },
+      "instances": {
+        "failed": "Could not load instances. Try again.",
+        "empty": "No instances installed yet",
+        "empty_description": "Download Minecraft or import a local installer to create your first instance.",
+        "no_matches": "No instances match your search or filters.",
+        "settings": "Settings for {{name}}"
+      },
+      "install": {
+        "failed": "Installation failed",
+        "copy_details": "Copy error details",
+        "copied": "Error details copied",
+        "copy_failed": "Could not copy. Select and copy the error text above.",
+        "go_launch": "Select and go to launch"
+      },
+      "onboarding": {
+        "keep_current": "Continue with current directory"
+      },
+      "clear_search": "Clear search"
+    },
+    "mods": {
+      "name_required": "Enter a mod name before importing.",
+      "clear_search": "Clear search",
+      "clear_filters": "Clear filters",
+      "no_filtered_results": "No installed mods match the current search or filters.",
+      "more_actions": "More actions for {{name}}",
+      "view_details": "View details for {{name}}",
+      "copy_project_link": "Copy project link",
+      "link_copied": "Project link copied",
+      "copy_failed": "Could not copy the link. Please try again.",
+      "project_page": "Open project page",
+      "detail_load_failed": "Could not load this project. Check your connection and try again.",
+      "description_load_failed": "Could not load the description. The project and files are still available.",
+      "files_load_failed": "Could not load the files. Please try again.",
+      "catalog_load_failed": "The package catalog could not be loaded. Please retry the connection.",
+      "install_file": "Install {{name}}",
+      "path_save_success": "Storage path saved",
+      "path_reset_success": "Default storage path restored",
+      "path_save_failed": "Could not update the storage path: {{message}}",
+      "close_update_window": "Close update window",
+      "update_recovery": "Close this update window, then reopen LeviLauncher and check for updates again. If the problem persists, download the latest installer from the official project page.",
+      "theme_color": "{{name}} ({{hex}})",
+      "custom_color": "Custom theme color",
+      "github": "Open LiteLDev on GitHub",
+      "discord": "Join the Discord community",
+      "colors": {
+        "emerald": "Emerald",
+        "blue": "Blue",
+        "violet": "Violet",
+        "amber": "Amber",
+        "pink": "Pink",
+        "cyan": "Cyan",
+        "win_yellow": "Windows yellow",
+        "win_orange": "Windows orange",
+        "win_red": "Windows red",
+        "win_blue": "Windows blue",
+        "win_green": "Windows green",
+        "win_purple": "Windows purple",
+        "win_teal": "Windows teal",
+        "win_pink_red": "Windows pink red",
+        "win_light_orange": "Light orange",
+        "win_orange_red": "Orange red",
+        "win_red_orange": "Red orange",
+        "win_light_red": "Light red",
+        "win_bright_red": "Bright red",
+        "win_deep_red": "Deep red",
+        "win_rose": "Rose",
+        "win_dark_rose": "Dark rose",
+        "win_magenta": "Magenta",
+        "win_dark_magenta": "Dark magenta",
+        "win_orchid": "Orchid",
+        "win_dark_orchid": "Dark orchid",
+        "win_dark_blue": "Dark blue",
+        "win_light_purple": "Light purple",
+        "win_medium_purple": "Medium purple",
+        "win_dark_purple": "Dark purple",
+        "win_light_magenta": "Light magenta",
+        "win_deep_purple": "Deep purple",
+        "win_dark_teal": "Dark teal",
+        "win_cyan": "Windows cyan",
+        "win_dark_cyan": "Dark cyan",
+        "win_green_blue": "Green blue",
+        "win_dark_green_blue": "Dark green blue",
+        "win_light_green": "Light green",
+        "win_gray": "Gray",
+        "win_dark_gray": "Dark gray",
+        "win_blue_gray": "Blue gray",
+        "win_dark_blue_gray": "Dark blue gray",
+        "win_green_gray": "Green gray",
+        "win_dark_green_gray": "Dark green gray",
+        "win_olive": "Olive",
+        "win_dark_green": "Dark green",
+        "win_medium_gray": "Medium gray",
+        "win_darker_gray": "Charcoal gray",
+        "win_slate_gray": "Slate gray"
+      },
+      "color_preview": "Color preview: {{hex}}",
+      "invalid_hex": "Enter six hexadecimal digits, for example #10B981.",
+      "invalid_rgb": "Enter a whole number from 0 to 255.",
+      "rgb_red": "Red (R)",
+      "rgb_green": "Green (G)",
+      "rgb_blue": "Blue (B)"
+    },
+    "usability": {
+      "process_all": "all {{count}} Minecraft processes",
+      "process_confirm": "End Minecraft processes?",
+      "process_warning": "This will forcibly end {{target}}. Unsaved game progress may be lost. Continue?",
+      "process_success": "Minecraft processes ended.",
+      "process_failed": "The process operation could not be completed: {{message}}",
+      "continue_editing": "Continue editing",
+      "discard_leave": "Discard and leave",
+      "start_using": "Start using LeviLauncher",
+      "root_load_failed": "The current content folder could not be verified. Retry, or choose a writable folder and apply it before continuing.",
+      "content_load_failed": "Content could not be loaded. Its contents cannot be confirmed yet. Please retry.",
+      "worlds_partial": "Information for {{count}} worlds could not be read. These folders are missing from the list:",
+      "choose_player": "Select a player first. If none are available, create or sign in to a player profile in the game.",
+      "appearance_theme": "Theme and colors",
+      "appearance_layout": "Layout and motion",
+      "appearance_wallpaper": "Wallpaper",
+      "appearance_material": "Materials and readability",
+      "search_settings": "Search settings",
+      "search_count": "{{count}} settings sections found",
+      "browse_downloads": "Browse downloads",
+      "download_filters": "Filter download tasks",
+      "download_all": "All tasks",
+      "download_active": "In progress",
+      "download_done": "Completed",
+      "download_failed": "Failed / cancelled",
+      "install_download": "Install this version",
+      "main_nav": "Main navigation",
+      "browse_content": "Browse content"
     }
   }
 }

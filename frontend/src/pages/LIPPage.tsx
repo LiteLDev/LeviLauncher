@@ -1,3 +1,17 @@
+import { ModalAction, ModalDescription } from "@/components/ModalPrimitives";
+import { PagePagination } from "@/components/PagePagination";
+import {
+  Button,
+  Card,
+  Chip,
+  InputGroup,
+  Label,
+  ListBox,
+  Select,
+  Skeleton,
+  TextField,
+} from "@heroui/react";
+
 import React, {
   useCallback,
   useEffect,
@@ -5,20 +19,10 @@ import React, {
   useRef,
   useState,
 } from "react";
-import {
-  Button,
-  Input,
-  Pagination,
-  Skeleton,
-  Card,
-  CardBody,
-  Chip,
-  Select,
-  SelectItem,
-} from "@heroui/react";
+
 import { PageHeader } from "@/components/PageHeader";
 import { UnifiedModal } from "@/components/UnifiedModal";
-import { useNavigate } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -48,8 +52,8 @@ import { compareVersions } from "@/utils/version";
 import {
   GetVersionMeta,
   ListVersionMetas,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { GetLipStatus } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import { GetLipStatus } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { ROUTES, routeTo } from "@/constants/routes";
 
 const PAGE_SIZE = 20;
@@ -537,7 +541,8 @@ const LIPPage: React.FC = () => {
   ]);
 
   const llCandidatesByGame = useMemo(() => {
-    if (!mappingAvailable || selectedGameVersion === ALL_GAME_VERSION) return [];
+    if (!mappingAvailable || selectedGameVersion === ALL_GAME_VERSION)
+      return [];
     return gameToLLVersions[selectedGameVersion] || [];
   }, [gameToLLVersions, mappingAvailable, selectedGameVersion]);
 
@@ -679,172 +684,308 @@ const LIPPage: React.FC = () => {
   return (
     <PageContainer
       ref={pageRootRef}
-      className="min-h-0 !overflow-hidden"
+      className={LAYOUT.CATALOG.PAGE}
       animate={false}
     >
       <motion.div
+        data-material-motion
+        className="shrink-0"
+        data-testid="catalog-toolbar"
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
       >
         <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
-          <CardBody className="p-6 flex flex-col gap-6">
-            <PageHeader title={t("lip.title")} />
-
-            <div className="flex flex-col sm:flex-row gap-3">
-              <Input
-                placeholder={t("lip.search_placeholder")}
-                value={queryInput}
-                onValueChange={setQueryInput}
-                onKeyDown={handleKeyDown}
-                startContent={<LuSearch />}
-                className="flex-1"
-                size="sm"
-                classNames={COMPONENT_STYLES.input}
-              />
-              <Button
-                color="primary"
-                onPress={handleSearch}
-                startContent={<LuSearch />}
-                size="sm"
-                className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
-              >
-                {t("common.search")}
-              </Button>
-              <Button
-                variant="flat"
-                size="sm"
-                onPress={() => {
-                  setPage(1);
-                  void loadPackages(true);
-                }}
-                isDisabled={loading}
-              >
-                {t("common.refresh")}
-              </Button>
-              <Button
-                variant="flat"
-                size="sm"
-                startContent={<LuBookOpen />}
-                onPress={() => setDeveloperGuideOpen(true)}
-              >
-                {t("lip.guide.open_button")}
-              </Button>
+          <Card.Content className={LAYOUT.CATALOG.HEADER_BODY}>
+            <div className={LAYOUT.CATALOG.HEADER_ROW}>
+              <PageHeader className="shrink-0" title={t("lip.title")} />
+              <div className={LAYOUT.CATALOG.SEARCH_ROW}>
+                <TextField
+                  aria-label={t("lip.search_placeholder")}
+                  className={cn(
+                    "group",
+                    COMPONENT_STYLES.input.mainWrapper,
+                    "min-w-0 flex-[1_1_11rem]",
+                  )}
+                  value={queryInput}
+                  onChange={setQueryInput}
+                >
+                  <InputGroup
+                    className={cn(
+                      COMPONENT_STYLES.input.inputWrapper,
+                      COMPONENT_STYLES.input.innerWrapper,
+                      "min-h-8 text-sm",
+                    )}
+                  >
+                    <InputGroup.Prefix>{<LuSearch />}</InputGroup.Prefix>
+                    <InputGroup.Input
+                      placeholder={t("lip.search_placeholder")}
+                      onKeyDown={handleKeyDown}
+                      className={COMPONENT_STYLES.input.input}
+                    />
+                  </InputGroup>
+                </TextField>
+                <Button
+                  onPress={handleSearch}
+                  size="sm"
+                  variant={"primary"}
+                  className={
+                    "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20"
+                  }
+                >
+                  {<LuSearch />}
+                  {t("common.search")}
+                </Button>
+                <Button
+                  size="sm"
+                  onPress={() => {
+                    setPage(1);
+                    void loadPackages(true);
+                  }}
+                  isDisabled={loading}
+                  variant={"secondary"}
+                >
+                  {t("common.refresh")}
+                </Button>
+                <Button
+                  size="sm"
+                  onPress={() => setDeveloperGuideOpen(true)}
+                  variant={"secondary"}
+                >
+                  {<LuBookOpen />}
+                  {t("lip.guide.open_button")}
+                </Button>
+              </div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div data-testid="catalog-filters" className={LAYOUT.CATALOG.FILTERS}>
               <Select
-                label={t("lip.game_version_label")}
                 placeholder={t("lip.game_version_placeholder")}
-                selectedKeys={[selectedGameVersion]}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
+                isDisabled={!versionFiltersEnabled}
+                value={Array.from([selectedGameVersion])[0] ?? null}
+                onChange={(keys) => {
+                  const value = keys as string;
                   setSelectedGameVersion(value || ALL_GAME_VERSION);
                   setPage(1);
                 }}
-                size="sm"
-                classNames={COMPONENT_STYLES.select}
-                isDisabled={!versionFiltersEnabled}
-                items={[
-                  { key: ALL_GAME_VERSION, label: t("lip.game_all_versions") },
-                  ...gameVersionOptions.map((version) => ({
-                    key: version,
-                    label: version,
-                  })),
-                ]}
               >
-                {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
+                <Label>{t("lip.game_version_label")}</Label>
+                <Select.Trigger
+                  className={cn(
+                    COMPONENT_STYLES.select.trigger,
+                    "min-h-8 text-sm",
+                  )}
+                >
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover
+                  className={COMPONENT_STYLES.select.popoverContent}
+                >
+                  <ListBox
+                    items={[
+                      {
+                        key: ALL_GAME_VERSION,
+                        label: t("lip.game_all_versions"),
+                      },
+                      ...gameVersionOptions.map((version) => ({
+                        key: version,
+                        label: version,
+                      })),
+                    ]}
+                    className={COMPONENT_STYLES.select.listbox}
+                  >
+                    {(item) => (
+                      <ListBox.Item
+                        key={item.key}
+                        id={item.key}
+                        textValue={item.label}
+                      >
+                        <Label>{item.label}</Label>
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    )}
+                  </ListBox>
+                </Select.Popover>
               </Select>
 
               <Select
-                label={t("lip.ll_version_label")}
                 placeholder={t("lip.ll_version_placeholder")}
-                selectedKeys={[selectedLLVersion]}
-                onSelectionChange={(keys) => {
-                  const value = Array.from(keys)[0] as string;
+                isDisabled={!versionFiltersEnabled}
+                value={Array.from([selectedLLVersion])[0] ?? null}
+                onChange={(keys) => {
+                  const value = keys as string;
                   setSelectedLLVersion(value || ALL_LL_VERSION);
                   setPage(1);
                 }}
-                size="sm"
-                classNames={COMPONENT_STYLES.select}
-                isDisabled={!versionFiltersEnabled}
-                items={[
-                  { key: ALL_LL_VERSION, label: t("lip.ll_all_versions") },
-                  ...llVersionOptions.map((version) => ({
-                    key: version,
-                    label: version,
-                  })),
-                ]}
               >
-                {(item) => <SelectItem key={item.key}>{item.label}</SelectItem>}
+                <Label>{t("lip.ll_version_label")}</Label>
+                <Select.Trigger
+                  className={cn(
+                    COMPONENT_STYLES.select.trigger,
+                    "min-h-8 text-sm",
+                  )}
+                >
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover
+                  className={COMPONENT_STYLES.select.popoverContent}
+                >
+                  <ListBox
+                    items={[
+                      { key: ALL_LL_VERSION, label: t("lip.ll_all_versions") },
+                      ...llVersionOptions.map((version) => ({
+                        key: version,
+                        label: version,
+                      })),
+                    ]}
+                    className={COMPONENT_STYLES.select.listbox}
+                  >
+                    {(item) => (
+                      <ListBox.Item
+                        key={item.key}
+                        id={item.key}
+                        textValue={item.label}
+                      >
+                        <Label>{item.label}</Label>
+                        <ListBox.ItemIndicator />
+                      </ListBox.Item>
+                    )}
+                  </ListBox>
+                </Select.Popover>
               </Select>
 
               <Select
-                label={t("lip.sort_by")}
                 placeholder={t("lip.select_sort")}
-                selectedKeys={[sort]}
-                onChange={(e) => handleSortChange(e.target.value as LIPSortKey)}
-                size="sm"
-                classNames={COMPONENT_STYLES.select}
+                value={Array.from([sort])[0] ?? null}
+                onChange={(e) => handleSortChange(e as LIPSortKey)}
               >
-                <SelectItem key="hotness">
-                  {t("lip.sort_options.hotness")}
-                </SelectItem>
-                <SelectItem key="updated">
-                  {t("lip.sort_options.updated")}
-                </SelectItem>
-                <SelectItem key="name">{t("lip.sort_options.name")}</SelectItem>
+                <Label>{t("lip.sort_by")}</Label>
+                <Select.Trigger
+                  className={cn(
+                    COMPONENT_STYLES.select.trigger,
+                    "min-h-8 text-sm",
+                  )}
+                >
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover
+                  className={COMPONENT_STYLES.select.popoverContent}
+                >
+                  <ListBox className={COMPONENT_STYLES.select.listbox}>
+                    <ListBox.Item
+                      key="hotness"
+                      id={"hotness"}
+                      textValue={t("lip.sort_options.hotness")}
+                    >
+                      <Label>{t("lip.sort_options.hotness")}</Label>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    <ListBox.Item
+                      key="updated"
+                      id={"updated"}
+                      textValue={t("lip.sort_options.updated")}
+                    >
+                      <Label>{t("lip.sort_options.updated")}</Label>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    <ListBox.Item
+                      key="name"
+                      id={"name"}
+                      textValue={t("lip.sort_options.name")}
+                    >
+                      <Label>{t("lip.sort_options.name")}</Label>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
               </Select>
 
               <Select
-                label={t("lip.order_by")}
                 placeholder={t("lip.select_order")}
-                selectedKeys={[order]}
+                value={Array.from([order])[0] ?? null}
                 onChange={(e) => {
-                  setOrder(e.target.value as LIPOrderKey);
+                  setOrder(e as LIPOrderKey);
                   setPage(1);
                 }}
-                size="sm"
-                classNames={COMPONENT_STYLES.select}
               >
-                <SelectItem key="desc">
-                  {t("lip.order_options.desc")}
-                </SelectItem>
-                <SelectItem key="asc">{t("lip.order_options.asc")}</SelectItem>
+                <Label>{t("lip.order_by")}</Label>
+                <Select.Trigger
+                  className={cn(
+                    COMPONENT_STYLES.select.trigger,
+                    "min-h-8 text-sm",
+                  )}
+                >
+                  <Select.Value />
+                  <Select.Indicator />
+                </Select.Trigger>
+                <Select.Popover
+                  className={COMPONENT_STYLES.select.popoverContent}
+                >
+                  <ListBox className={COMPONENT_STYLES.select.listbox}>
+                    <ListBox.Item
+                      key="desc"
+                      id={"desc"}
+                      textValue={t("lip.order_options.desc")}
+                    >
+                      <Label>{t("lip.order_options.desc")}</Label>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                    <ListBox.Item
+                      key="asc"
+                      id={"asc"}
+                      textValue={t("lip.order_options.asc")}
+                    >
+                      <Label>{t("lip.order_options.asc")}</Label>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  </ListBox>
+                </Select.Popover>
               </Select>
             </div>
-
             {showMappingUnavailableHint ? (
-              <div className="text-sm text-warning-600" role="status">
+              <div className="text-sm text-amber-600" role="status">
                 {t("lip.mapping_unavailable_hint")}
               </div>
             ) : null}
-
             {error ? (
-              <div className="text-sm text-danger-500" role="alert">
+              <div className="text-sm text-rose-500" role="alert">
                 {error}
               </div>
             ) : null}
-          </CardBody>
+          </Card.Content>
         </Card>
       </motion.div>
 
       <motion.div
+        data-material-motion
         className="flex-1 min-h-0 flex flex-col"
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
-          <CardBody className="p-0 overflow-hidden flex flex-col">
+        <Card className={cn("flex-1 min-h-0 overflow-hidden", LAYOUT.GLASS_CARD.BASE)}>
+          <Card.Content className={LAYOUT.CATALOG.RESULTS_BODY}>
             <div
               ref={scrollContainerRef}
-              className="flex-1 overflow-y-auto p-4 relative [&::-webkit-scrollbar]:hidden [-ms-overflow-style:none] [scrollbar-width:none]"
+              data-testid="catalog-results"
+              className={LAYOUT.CATALOG.RESULTS_SCROLL}
             >
               {loading ? (
                 <div className="flex flex-col gap-3">{renderSkeletons()}</div>
+              ) : error && currentPageItems.length === 0 ? (
+                <div className="flex flex-col gap-3 items-center justify-center h-full text-muted">
+                  <p>{t("audit.mods.catalog_load_failed")}</p>
+                  <Button
+                    variant="secondary"
+                    onPress={() => void loadPackages(true)}
+                  >
+                    {t("common.retry")}
+                  </Button>
+                </div>
               ) : currentPageItems.length === 0 ? (
-                <div className="flex items-center justify-center h-full text-default-500 dark:text-zinc-400">
+                <div className="flex items-center justify-center h-full text-muted dark:text-zinc-400">
                   <p>{t("common.no_results")}</p>
                 </div>
               ) : (
@@ -856,22 +997,21 @@ const LIPPage: React.FC = () => {
                       animate={{ opacity: 1 }}
                       transition={{ duration: 0.2 }}
                     >
-                      <div
-                        className="w-full p-4 bg-default-50/50 dark:bg-white/5 hover:bg-default-100/50 dark:hover:bg-white/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-default-100 dark:border-white/5"
-                        onClick={() =>
-                          navigate(routeTo.lipPackage(pkg.identifier))
-                        }
+                      <Link
+                        className="w-full p-4 bg-surface/50 dark:bg-surface/5 hover:bg-surface-secondary/50 dark:hover:bg-surface/10 transition-all cursor-pointer rounded-2xl flex gap-4 group shadow-sm hover:shadow-md border border-border dark:border-white/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-focus"
+                        to={routeTo.lipPackage(pkg.identifier)}
+                        aria-label={t("audit.mods.view_details", { name: pkg.name })}
                       >
                         <div className="shrink-0">
                           {pkg.avatarUrl ? (
                             <img
                               src={pkg.avatarUrl}
                               alt={pkg.name}
-                              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-content3 shadow-sm"
+                              className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl object-cover bg-surface-tertiary shadow-sm"
                               loading="lazy"
                             />
                           ) : (
-                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-content3 shadow-sm flex items-center justify-center text-default-300">
+                            <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-surface-tertiary shadow-sm flex items-center justify-center text-muted">
                               <LuDownload size={24} />
                             </div>
                           )}
@@ -882,18 +1022,18 @@ const LIPPage: React.FC = () => {
                             <h3 className="text-base sm:text-lg font-bold text-foreground truncate">
                               {pkg.name}
                             </h3>
-                            <span className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 truncate">
+                            <span className="text-xs sm:text-sm text-muted dark:text-zinc-400 truncate">
                               {t("lip.by_author_inline", {
                                 author: pkg.author || t("common.unknown"),
                               })}
                             </span>
                           </div>
 
-                          <p className="text-xs sm:text-sm text-default-500 dark:text-zinc-400 line-clamp-2 w-full">
+                          <p className="text-xs sm:text-sm text-muted dark:text-zinc-400 line-clamp-2 w-full">
                             {pkg.description || t("lip.no_description")}
                           </p>
 
-                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-default-400 mt-1">
+                          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-muted mt-1">
                             <div
                               className="flex items-center gap-1"
                               title={t("lip.sort_options.hotness")}
@@ -915,48 +1055,43 @@ const LIPPage: React.FC = () => {
                               <Chip
                                 key={tag}
                                 size="sm"
-                                variant="flat"
-                                radius="sm"
-                                className="h-5 text-[10px] bg-default-100 dark:bg-zinc-800 text-default-500 dark:text-zinc-400 group-hover:bg-default-200 dark:group-hover:bg-zinc-700 transition-colors"
+                                variant="soft"
+                                className={cn(
+                                  "rounded-sm",
+                                  "h-5 text-[10px] bg-surface-secondary text-muted dark:text-zinc-400 group-hover:bg-surface-tertiary dark:group-hover:bg-surface-tertiary transition-colors",
+                                )}
                               >
-                                {tag}
+                                <Chip.Label>{tag}</Chip.Label>
                               </Chip>
                             ))}
                           </div>
                         </div>
-                      </div>
+                      </Link>
                     </motion.div>
                   ))}
                 </div>
               )}
             </div>
-
             {totalPages > 1 && (
-              <div className="flex justify-center p-4 border-t border-default-100 dark:border-white/5 bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md shrink-0">
-                <Pagination
-                  total={totalPages}
-                  page={page}
-                  onChange={(p) => {
+              <div data-testid="catalog-pagination" className={LAYOUT.CATALOG.FOOTER}>
+                <PagePagination
+                  className="gap-2"
+                  pageCount={totalPages}
+                  currentPage={page}
+                  onPageChange={(p) => {
                     scheduleScrollReset();
                     setPage(p);
                   }}
-                  showControls
-                  color="primary"
-                  className="gap-2"
-                  radius="full"
-                  classNames={{
-                    cursor:
-                      "bg-primary-500 hover:bg-primary-500 shadow-lg shadow-primary-900/20 font-bold",
-                  }}
+                  pageClassName="rounded-full"
                 />
               </div>
             )}
-          </CardBody>
+          </Card.Content>
         </Card>
       </motion.div>
 
       <UnifiedModal
-        size="lg"
+        size="wide"
         isOpen={developerGuideOpen}
         onOpenChange={setDeveloperGuideOpen}
         type="primary"
@@ -965,35 +1100,33 @@ const LIPPage: React.FC = () => {
         isDismissable
         footer={
           <>
-            <Button
-              variant="light"
-              radius="full"
+            <ModalAction
               onPress={() => setDeveloperGuideOpen(false)}
+              variant="secondary"
             >
               {t("lip.guide.close_button")}
-            </Button>
-            <Button
-              color="primary"
-              radius="full"
-              startContent={<LuExternalLink />}
+            </ModalAction>
+            <ModalAction
               onPress={() => void Browser.OpenURL(LIP_DEVELOPER_GUIDE_URL)}
+              variant={"primary"}
             >
+              {<LuExternalLink />}
               {t("lip.guide.docs_button")}
-            </Button>
+            </ModalAction>
           </>
         }
       >
-        <div className="flex flex-col gap-4 text-sm leading-6 text-default-600 dark:text-zinc-300">
+        <div className="flex flex-col gap-4 text-sm leading-6 text-foreground dark:text-zinc-300">
           <p>{t("lip.guide.description")}</p>
           <p>{t("lip.guide.manifest_hint")}</p>
-          <p className="font-medium text-default-800 dark:text-zinc-100">
+          <ModalDescription>
             {t("lip.guide.variant_hint")}
-          </p>
+          </ModalDescription>
         </div>
       </UnifiedModal>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={lipMissingModalOpen}
         onOpenChange={setLipMissingModalOpen}
         type="warning"
@@ -1002,7 +1135,7 @@ const LIPPage: React.FC = () => {
         confirmText={t("settings.lip.startup_prompt.open_settings_button")}
         onConfirm={openLipSettings}
       >
-        <div className="flex flex-col gap-3 text-sm leading-6 text-default-600 dark:text-zinc-300">
+        <div className="flex flex-col gap-3 text-sm leading-6 text-foreground dark:text-zinc-300">
           <p>{t("lip.guard.description")}</p>
         </div>
       </UnifiedModal>

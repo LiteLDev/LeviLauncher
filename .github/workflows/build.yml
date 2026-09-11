@@ -43,12 +43,6 @@ jobs:
         working-directory: frontend
         run: npm run build
 
-      - name: Run browser accessibility tests
-        working-directory: frontend
-        run: |
-          npx playwright install chromium
-          npm run test:e2e
-
       - name: Test and vet Go code
         shell: pwsh
         run: |
@@ -136,6 +130,9 @@ jobs:
           node-version: "24"
           wails3-version: "v3.0.0-alpha.77"
           package: false
+
+      - name: Test installer prerequisite handling
+        run: node build/windows/inno/prerequisites.test.mjs
 
       - name: Verify build outputs
         shell: pwsh

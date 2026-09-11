@@ -73,6 +73,11 @@
         "install_now": "今すぐインストール"
       }
     },
+    "loader_migration": {
+      "title": "ローダーを移行しています",
+      "body": "インストール済みのバージョンを新しい LeviLauncher ローダーに適合させています（従来の vcruntime140_1.dll を削除し、ゲームのインポートテーブルを更新します）。この処理は一度だけ実行されます。お待ちください…",
+      "preparing": "移行を準備しています…"
+    },
     "mclaunch": {
       "loading": {
         "title": "Minecraftを起動中",
@@ -126,7 +131,7 @@
       "mods_card": "Mods カードには現在のインスタンスで有効な Mod が表示され、ワンクリックで Mods ページを開けます。",
       "content_counts_card": "コンテンツ管理カードにはワールド、リソースパック、ビヘイビアパックの数が表示され、各行から対応ページを直接開けます。",
       "incompatible_resource_packs": "互換性のないリソースパックが検出された場合は、警告行をクリックして対象をすぐ確認できます。",
-      "content_download_sources": "ダウンロードカードから CurseForge と lip に直接移動でき、ランチャー内でコンテンツを探せます。",
+      "content_download_sources": "ダウンロードカードから CurseForge と Bedrinth に直接移動でき、ランチャー内でコンテンツを探せます。",
       "settings_personalize": "設定ではテーマ、配色、背景などの外観オプションを調整でき、使い方に合わせてランチャーを整えられます。",
       "settings_storage_path": "保存先パスは設定から変更できます。移動や保存の前に、対象フォルダーが書き込み可能か確認してください。",
       "download_mirror": "ダウンロードが遅い場合は、設定でミラーや関連するネットワーク項目を見直してみてください。",
@@ -143,13 +148,18 @@
     "manage": "Mod管理"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "ダウンロード完了",
+      "description": "「{{name}}」のダウンロードが完了しました。今すぐインストールしますか？",
+      "confirm": "今すぐインストール",
+      "later": "後で"
+    },
     "title": "ダウンロード管理",
     "description": "現在のダウンロードタスクを表示および管理します",
     "no_downloads": "アクティブなダウンロードタスクはありません",
     "unknown_file": "不明なファイル",
     "actions": {
-      "retry": "再試行",
-      "delete": "削除"
+      "retry": "再試行"
     }
   },
   "updating": {
@@ -283,7 +293,6 @@
       "title": "インストール"
     },
     "customappx": {
-      "button": "カスタム",
       "modal": {
         "1": {
           "header": "バージョン情報",
@@ -455,7 +464,6 @@
       }
     },
     "appearance": {
-      "global_config": "グローバル設定",
       "mode_config": "モード別設定",
       "edit_mode_desc": "パーソナライズ設定（色、不透明度など）は、ライトモードとダークモードで独立して保存されます。右側のタブを切り替えて各モードを構成してください。",
       "theme_light": "ライトモード",
@@ -464,7 +472,6 @@
       "theme_color_desc": "アプリケーションの主要なアクセントカラー",
       "theme_standard": "プリセットカラー",
       "theme_generated": "その他の色",
-      "hue": "色相",
       "custom_color": "カスタムカラー",
       "background_image": "背景画像",
       "background_image_desc": "現在のモードにパーソナライズされた背景を設定します",
@@ -613,23 +620,28 @@
     "disable": "無効",
     "enable": "有効",
     "open_folder": "フォルダを開く",
+    "open_folder_failed": "フォルダーを開けませんでした",
     "remove": "削除",
     "tip": "ヒント",
     "feature_unavailable": "この機能は一時的に利用できません",
     "unknown": "不明"
   },
   "useravatar": {
-    "no_login_retry": "Xbox ログインが検出されませんでした（クリックして再試行）",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Xbox セッションを更新",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "プレイ時間",
-      "blocks_broken": "破壊したブロック",
-      "mobs_defeated": "倒したモブ",
-      "distance_travelled": "移動距離",
-      "time_format": "{{days}}日 {{hours}}時間 {{minutes}}分"
-    }
+    "authorization": {
+      "title": "ゲームライセンス",
+      "checking": "確認中",
+      "authorized": "認証済み",
+      "trial": "体験版のみ",
+      "not_entitled": "ライセンスなし",
+      "error": "確認失敗",
+      "description": "ログイン後に Release と Preview のライセンスを取得します。更新ボタンで再確認できます。"
+    },
+    "sign_in": "Microsoft アカウントでサインイン",
+    "switch_account": "アカウントを切り替え",
+    "signin_failed": "Microsoft サインインに失敗しました"
   },
   "content": {
     "count": {
@@ -677,7 +689,6 @@
     "delete_warning": "この操作は取り消せません！",
     "delete_selected_confirm": "選択した {{count}} 個の項目を削除してもよろしいですか？",
     "deleted_name": "{{name}} を削除しました",
-    "deleted_count": "{{count}} 個の項目を削除しました",
     "delete_world_confirm": "本当にワールド {{name}} を削除しますか？",
     "basic_info": "基本情報",
     "level_name": "ワールド名",
@@ -731,7 +742,6 @@
       "enable_isolation": "隔離 (Isolation) を有効化",
       "enable_console": "コンソールを有効化",
       "enable_render_dragon": "RenderDragon シェーダーを読み込む",
-      "enable_ctrl_r_reload_resources": "Ctrl+R でリソース再読み込み",
       "enable_editor_mode": "エディターモードを有効化",
       "launch_args": "起動引数",
       "launch_args_placeholder": "起動引数 (例: -Editor true)",
@@ -975,7 +985,10 @@
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "lip パッケージのアンインストールに失敗しました",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "lip パッケージの状態の照会に失敗しました",
     "ERR_LIP_CACHE_CLEAN_FAILED": "lip キャッシュの削除に失敗しました",
-    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina はバージョン設定でのみ管理できます"
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina はバージョン設定でのみ管理できます",
+    "ERR_AUTH_INTERACTION_REQUIRED": "このゲームを所有する Microsoft アカウントで Windows にサインインし、ランチャーのアバターからアカウントを更新して再試行してください。",
+    "ERR_AUTH_ACCOUNT_CHANGED": "Microsoft アカウントが変更されました。ランチャーのアバターからアカウントを更新して再試行してください。",
+    "ERR_AUTH_FAILED": "現在のアカウントでダウンロードを認証できませんでした。接続を確認し、ランチャーのアバターからアカウントを更新して再試行してください。"
   },
   "filemanager": {
     "sort": {
@@ -1077,12 +1090,9 @@
   "onboarding": {
     "title": "ようこそ",
     "subtitle": "コンテンツパスと言語を設定してください",
-    "skip": "スキップ",
-    "finish": "完了",
     "unsaved": {
       "title": "保存されていない変更",
       "body": "コンテンツパスに未保存の変更があります。保存して終了しますか？",
-      "cancel": "キャンセル",
       "save": "保存して完了"
     }
   },
@@ -1122,7 +1132,6 @@
     "website": "ウェブサイト",
     "source": "ソース",
     "issues": "問題",
-    "share": "共有",
     "no_download_url": "ダウンロードURLがありません",
     "no_files_found": "ファイルが見つかりません",
     "sort": {
@@ -1188,12 +1197,11 @@
     "game_all_versions": "すべてのゲームバージョン",
     "mapping_unavailable_hint": "LeviLamina のゲームバージョン対応表を現在利用できないため、誤った一致を避ける目的でバージョン関連のフィルターを無効化しました。",
     "files": {
+      "game_versions_unknown": "対応するゲームバージョンがありません",
+      "version_count": "{{count}} バージョン",
       "game_versions_label": "ゲームバージョン",
       "game_versions_unrestricted": "ゲームバージョン制限なし",
       "game_versions_unavailable": "ゲームバージョン対応表を利用できません",
-      "ll_requirement": "LL 必要条件",
-      "dependencies": "依存関係",
-      "action": "アクション",
       "dependencies_count": "{{count}} 個の依存関係",
       "install": "インストール",
       "upgrade": "アップグレード",
@@ -1214,7 +1222,7 @@
       "ll_missing_redirect_to_loader": "LeviLamina がインストールされていないため、インスタンス設定の Loader タブへ移動します。",
       "ll_installed_incompatible_hint": "インストール済みの LeviLamina バージョン {{installedVersion}} はこのパッケージと互換性がありません。先に LeviLamina を手動で調整してください。",
       "action_failed": "操作に失敗しました：{{error}}",
-      "tab_label": "ファイル",
+      "tab_label": "バージョン",
       "table_aria_label": "パッケージファイル一覧",
       "install_success": "インストールが正常に完了しました",
       "upgrade_success": "アップグレードが完了しました",
@@ -1225,8 +1233,8 @@
     },
     "guide": {
       "open_button": "開発者ガイド",
-      "title": "LIP 開発者ガイド",
-      "description": "自分の Mod を LeviLauncher の LIP ページに掲載したい場合は、LIP の package_manifest 仕様に従って公開してください。",
+      "title": "Bedrinth 開発者ガイド",
+      "description": "自分の Mod を LeviLauncher の Bedrinth ページに掲載したい場合は、LIP の package_manifest 仕様に従って公開してください。",
       "manifest_hint": "このダイアログは開発者向けの簡易案内です。フィールド名、必須項目、例、検証ルールの詳細は公式ドキュメントを参照してください。",
       "variant_hint": "variant の label に client を含む場合に限り、ランチャーに収録されます。デフォルトでは \"label\": \"client\" を使用し、サブ拡張は \"label\": \"client_xxxx\" または \"label\": \"client\\xxxx\" を使用してください。",
       "docs_button": "完全な仕様を見る",
@@ -1236,7 +1244,7 @@
       "title": "lipd が見つかりません",
       "description": "lipd がまだインストールされていません。lip 関連ページを引き続き利用する場合や LeviLamina をインストールする場合は、まず「設定 > サードパーティ製コンポーネント」でインストールしてください。"
     },
-    "title": "lip コンテンツ",
+    "title": "Bedrinth",
     "sort_options": {
       "hotness": "人気度",
       "updated": "更新順",

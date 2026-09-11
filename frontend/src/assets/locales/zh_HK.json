@@ -73,6 +73,11 @@
         "install_now": "立即安裝"
       }
     },
+    "loader_migration": {
+      "title": "正在遷移載入器",
+      "body": "正在將已安裝的版本適配到新的 LeviLauncher 載入器（移除舊的 vcruntime140_1.dll 並更新遊戲匯入表）。此操作只會執行一次，請稍候…",
+      "preparing": "正在準備遷移…"
+    },
     "mclaunch": {
       "loading": {
         "title": "正在啟動 Minecraft",
@@ -126,7 +131,7 @@
       "mods_card": "Mods 卡片會顯示目前實例已啟用的模組，並可一鍵進入完整 Mods 頁面。",
       "content_counts_card": "內容管理卡片會顯示世界、資源包和行為包數量，點擊對應列可直接進入頁面。",
       "incompatible_resource_packs": "偵測到不相容資源包時，可點擊警告列直接查看需要處理的項目。",
-      "content_download_sources": "下載卡片可直接進入 CurseForge 和 lip，方便在啟動器內取得內容。",
+      "content_download_sources": "下載卡片可直接進入 CurseForge 和 Bedrinth，方便在啟動器內取得內容。",
       "settings_personalize": "可在設定中調整主題、配色、背景等外觀選項，讓啟動器更符合你的使用習慣。",
       "settings_storage_path": "你可以在設定中修改儲存路徑；遷移或保存內容前，請先確認目標目錄可寫。",
       "download_mirror": "如果下載速度較慢，可在設定中切換鏡像源或檢查相關網路選項。",
@@ -168,13 +173,18 @@
     "manage": "管理模組"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "下載完成",
+      "description": "「{{name}}」已下載完成，是否立即安裝？",
+      "confirm": "立即安裝",
+      "later": "稍後再說"
+    },
     "title": "下載管理",
     "description": "檢視和管理目前的下載任務",
     "no_downloads": "目前沒有活動的下載任務",
     "unknown_file": "未知檔案",
     "actions": {
-      "retry": "重試",
-      "delete": "刪除"
+      "retry": "重試"
     }
   },
   "downloadpage": {
@@ -283,7 +293,6 @@
       "title": "安裝"
     },
     "customappx": {
-      "button": "自訂",
       "modal": {
         "1": {
           "header": "版本資訊",
@@ -455,7 +464,6 @@
       }
     },
     "appearance": {
-      "global_config": "全域配置",
       "mode_config": "模式特定配置",
       "edit_mode_desc": "個性化設置（顏色、透明度等）將按日間/夜間模式獨立保存。切換右側標籤頁以配置不同模式。",
       "theme_mode": "外觀模式",
@@ -474,7 +482,6 @@
       "theme_color_desc": "應用的主要強調顏色",
       "theme_standard": "預设顏色",
       "theme_generated": "更多顏色",
-      "hue": "色相",
       "custom_color": "自定義顏色",
       "background_image": "背景圖片",
       "background_image_desc": "為當前模式設置個性化背景",
@@ -507,7 +514,34 @@
       "calculating": "正在計算...",
       "sunrise_time": "今日日出",
       "sunset_time": "今日日落",
-      "sun_fetch_failed": "獲取日出日落時間失敗"
+      "sun_fetch_failed": "獲取日出日落時間失敗",
+      "material": {
+        "title": "介面材質",
+        "description": "統一控制導覽列、卡片、分頁、控制項和浮層。日間與夜間分別儲存，隨主題自動套用。",
+        "edit_mode": "編輯主題材質",
+        "preview": "即時預覽",
+        "preview_label": "所選主題下背景圖片、文字與卡片材質的疊加預覽",
+        "preview_action": "啟動",
+        "preview_text": "文字與操作清晰在前，背景圖片自然呈現。",
+        "no_image": "選擇有效的圖片資料夾，並將圖片不透明度設為大於 0 後即可查看效果。材質設定會保留。",
+        "presets": "材質預設",
+        "balanced": "均衡",
+        "balanced_desc": "柔和磨砂，兼顧清晰",
+        "clear": "通透",
+        "clear_desc": "更多背景，降低保護",
+        "solid": "純色",
+        "solid_desc": "面板不透明，關閉磨砂",
+        "opacity": "介面不透明度",
+        "blur": "介面磨砂",
+        "overlay": "背景遮罩",
+        "readability": "可讀性保護",
+        "readability_desc": "根據日夜主題、圖片亮度和模糊量設定底色下限，並加強次要文字。控制項與浮層共用材質參數，同時保留清晰的層次。",
+        "protected_opacity": "保護已生效：介面實際不透明度為 {{value}}%。",
+        "protected": "已啟用可讀性保護。",
+        "unprotected": "保護已關閉，複雜圖片可能影響文字辨認。",
+        "reset": "重設目前主題",
+        "next_image": "換一張"
+      }
     },
     "process": {
       "title": "進程管理",
@@ -613,23 +647,28 @@
     "disable": "停用",
     "enable": "啟用",
     "open_folder": "開啟資料夾",
+    "open_folder_failed": "無法開啟資料夾",
     "remove": "移除",
     "tip": "提示",
     "feature_unavailable": "該功能暫時不可用",
     "unknown": "未知"
   },
   "useravatar": {
-    "no_login_retry": "未偵測到 Xbox 登入（點擊以重試）",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "重新整理 Xbox 工作階段",
     "xuid": "XUID：{{xuid}}",
-    "stats": {
-      "minutes_played": "遊玩時間",
-      "blocks_broken": "破壞方塊",
-      "mobs_defeated": "擊敗生物",
-      "distance_travelled": "移動距離",
-      "time_format": "{{days}}天 {{hours}}小時 {{minutes}}分鐘"
-    }
+    "authorization": {
+      "title": "遊戲授權",
+      "checking": "正在檢查",
+      "authorized": "已授權",
+      "trial": "僅試用",
+      "not_entitled": "未獲授權",
+      "error": "檢查失敗",
+      "description": "登入後自動請求 Release 和 Preview 的目前授權。按重新整理可再次檢查。"
+    },
+    "sign_in": "登入 Microsoft 帳戶",
+    "switch_account": "切換帳戶",
+    "signin_failed": "Microsoft 帳戶登入失敗"
   },
   "content": {
     "count": {
@@ -689,7 +728,6 @@
     "delete_warning": "此操作無法復原！",
     "delete_selected_confirm": "確定要刪除選中的 {{count}} 個項目嗎？",
     "deleted_name": "已刪除 {{name}}",
-    "deleted_count": "已刪除 {{count}} 個項目",
     "delete_world_confirm": "確定要刪除存檔 {{name}} 嗎？",
     "basic_info": "基本資訊",
     "level_name": "存檔名稱",
@@ -731,7 +769,6 @@
       "enable_isolation": "啟用實例隔離",
       "enable_console": "啟用主控台",
       "enable_render_dragon": "啟用 Render Dragon 光影載入",
-      "enable_ctrl_r_reload_resources": "Ctrl+R 熱重載資源",
       "enable_editor_mode": "啟用編輯器模式",
       "launch_args": "啟動參數",
       "launch_args_placeholder": "啟動參數 (例如: -Editor true)",
@@ -975,7 +1012,10 @@
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
     "ERR_LIP_CACHE_CLEAN_FAILED": "清理 lip 快取失敗",
-    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings",
+    "ERR_AUTH_INTERACTION_REQUIRED": "請先在 Windows 登入擁有此遊戲的 Microsoft 帳戶，然後透過啟動器頭像重新整理帳戶並重試。",
+    "ERR_AUTH_ACCOUNT_CHANGED": "目前的 Microsoft 帳戶已變更。請透過啟動器頭像重新整理帳戶，然後重試。",
+    "ERR_AUTH_FAILED": "無法取得目前帳戶的下載授權。請檢查網路，並透過啟動器頭像重新整理帳戶後重試。"
   },
   "filemanager": {
     "sort": {
@@ -1077,12 +1117,9 @@
   "onboarding": {
     "title": "首次啟動引導",
     "subtitle": "請先設定內容路徑與語言",
-    "skip": "略過",
-    "finish": "完成",
     "unsaved": {
       "title": "未儲存修改",
       "body": "您更改了內容路徑但尚未儲存。是否儲存後完成引導？",
-      "cancel": "取消",
       "save": "儲存並完成"
     }
   },
@@ -1122,7 +1159,6 @@
     "website": "官網",
     "source": "源碼",
     "issues": "反饋",
-    "share": "分享",
     "no_download_url": "無下載連結",
     "no_files_found": "未找到檔案",
     "sort": {
@@ -1204,11 +1240,11 @@
     },
     "by_author_inline": "| 作者 {{author}}",
     "files": {
-      "action": "操作",
       "action_failed": "操作失敗：{{error}}",
       "checking_ll_state": "正在檢查 LeviLamina 狀態...",
-      "dependencies": "依賴",
       "dependencies_count": "{{count}} 個依賴",
+      "game_versions_unknown": "找不到相符的遊戲版本",
+      "version_count": "{{count}} 個版本",
       "game_versions_label": "遊戲版本",
       "game_versions_unavailable": "遊戲版本映射不可用",
       "game_versions_unrestricted": "無遊戲版本限制",
@@ -1226,10 +1262,9 @@
       "mapping_unavailable_blocked_hint": "目前無法校驗 LeviLamina 與遊戲版本映射，已阻止此次安裝以避免錯誤安裝。",
       "ll_missing_redirect_hint": "此實例尚未安裝 LeviLamina。點擊轉跳後將開啟實例設定的載入器頁面，請先手動安裝 LeviLamina。",
       "ll_missing_redirect_to_loader": "未檢測到 LeviLamina，正在跳轉到實例設定的載入器頁面。",
-      "ll_requirement": "LL 依賴",
       "select_instance_title": "選擇目標實例",
       "select_version_incompatible_hint": "版本 {{version}} 與遊戲版本 {{gameVersion}} 不相容。",
-      "tab_label": "檔案",
+      "tab_label": "版本",
       "table_aria_label": "套件檔案表格",
       "install_success": "安裝成功",
       "upgrade_success": "升級成功",
@@ -1241,8 +1276,8 @@
     },
     "guide": {
       "open_button": "開發者指南",
-      "title": "LIP 開發者指南",
-      "description": "如果你希望自己的模組出現在 LeviLauncher 的 LIP 頁面中，請按照 LIP 的 package_manifest 規範發佈。",
+      "title": "Bedrinth 開發者指南",
+      "description": "如果你希望自己的模組出現在 LeviLauncher 的 Bedrinth 頁面中，請按照 LIP 的 package_manifest 規範發佈。",
       "manifest_hint": "這個彈窗只提供面向開發者的快速說明。欄位命名、必填項、示例與校驗細則請以官方文件為準。",
       "variant_hint": "僅當 variant 的 label 包含 client 時，才會被啟動器收錄。預設情況下請使用 \"label\": \"client\"；子擴展請使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
       "docs_button": "查看完整規範",
@@ -1269,7 +1304,7 @@
       "name": "名稱",
       "updated": "最近更新"
     },
-    "title": "lip 內容",
+    "title": "Bedrinth",
     "package": {
       "confirm_install_title": "確認安裝",
       "confirm_install_body": "確定要為實例 {{instance}} {{action}} {{package}} {{version}} 嗎？"

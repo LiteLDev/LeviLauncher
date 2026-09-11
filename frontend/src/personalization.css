@@ -1,0 +1,299 @@
+/* Material recipes live here. Components consume semantic tokens, never a
+   private opacity floor. The document scope includes React Aria body portals;
+   the preview establishes its own light/dark scope without changing the app. */
+[data-material-scope][data-wallpaper-active="true"] {
+  --material-opacity: var(--wallpaper-surface-opacity);
+  --material-control-opacity: calc(var(--material-opacity) * 0.45);
+  --material-hover-opacity: min(1, calc(var(--material-opacity) * 0.6 + 0.08));
+  --material-selected-opacity: min(
+    1,
+    calc(var(--material-opacity) * 0.8 + 0.12)
+  );
+  --material-overlay-opacity: calc(
+    var(--material-opacity) + (1 - var(--material-opacity)) * 0.12
+  );
+  --material-panel: rgb(var(--wallpaper-surface-rgb) / var(--material-opacity));
+  --material-inset: rgb(
+    var(--wallpaper-surface-rgb) / var(--material-control-opacity)
+  );
+  --material-filter: blur(var(--wallpaper-surface-blur));
+
+  /* HeroUI defaults and Tailwind semantic utilities share these values. */
+  --surface: var(--material-panel);
+  --surface-secondary: rgb(
+    var(--wallpaper-control-rgb) / var(--material-control-opacity)
+  );
+  --surface-tertiary: rgb(
+    var(--wallpaper-control-rgb) / var(--material-hover-opacity)
+  );
+  --surface-quaternary: rgb(
+    var(--wallpaper-control-rgb) / var(--material-selected-opacity)
+  );
+  --surface-hover: var(--surface-tertiary);
+  --default: var(--surface-secondary);
+  --default-hover: var(--surface-tertiary);
+  --default-soft: var(--surface-secondary);
+  --default-soft-hover: var(--surface-tertiary);
+  --segment: rgb(
+    var(--wallpaper-surface-rgb) / var(--material-selected-opacity)
+  );
+  --field-background: var(--surface-secondary);
+  --field-hover: var(--surface-tertiary);
+  --field-focus: var(--segment);
+  --overlay: rgb(
+    var(--wallpaper-surface-rgb) / var(--material-overlay-opacity)
+  );
+}
+
+[data-material-scope][data-wallpaper-active="true"][data-readability="true"] {
+  --muted: var(--wallpaper-muted);
+}
+
+.wallpaper-layers {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  overflow: hidden;
+  pointer-events: none;
+  background: var(--background);
+}
+.app-backdrop > .wallpaper-layers {
+  position: fixed;
+}
+.wallpaper-scrim {
+  background: rgb(var(--wallpaper-surface-rgb));
+  opacity: var(--wallpaper-overlay-opacity);
+}
+
+.launcher-material-blur {
+  -webkit-backdrop-filter: var(--material-filter, blur(12px));
+  backdrop-filter: var(--material-filter, blur(12px));
+}
+
+/* Opacity (including will-change: opacity) on an ancestor creates a backdrop
+   root, hiding the wallpaper from its glass descendants until the fade ends.
+   Material hosts keep their translation/scale/stagger animations; fades remain
+   on content and on surfaces that apply their own backdrop-filter. The explicit
+   marker avoids overriding hidden or disabled content globally. */
+:where([data-wallpaper-active="true"]) [data-material-motion] {
+  opacity: 1 !important;
+  will-change: auto !important;
+}
+
+/* The modal backdrop is also an ancestor of its dialog. Paint and fade its
+   scrim separately so neither blur nor opacity isolates the dialog. Preserve
+   React Aria's animation timing and the backdrop's outside-click target. */
+:where([data-wallpaper-active="true"]) .modal__backdrop {
+  background: transparent;
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+  opacity: 1 !important;
+  will-change: auto;
+}
+:where([data-wallpaper-active="true"]) .modal__backdrop::before {
+  /* tw-animate's registered properties do not inherit into pseudo-elements. */
+  --tw-enter-opacity: 0;
+  --tw-exit-opacity: 0;
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  animation: inherit;
+}
+:where([data-wallpaper-active="true"])
+  :is(.modal__backdrop--opaque, .modal__backdrop--blur)::before {
+  background: var(--backdrop);
+}
+:where([data-wallpaper-active="true"]) .modal__backdrop--blur::before {
+  -webkit-backdrop-filter: blur(var(--blur-md));
+  backdrop-filter: blur(var(--blur-md));
+}
+:where([data-wallpaper-active="true"]) .modal__container {
+  opacity: 1 !important;
+  will-change: auto;
+}
+
+/* Fade the filtered surface itself while the positioning container scales. */
+@keyframes material-dialog-enter {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+@keyframes material-dialog-exit {
+  from {
+    opacity: 1;
+  }
+  to {
+    opacity: 0;
+  }
+}
+@media (prefers-reduced-motion: no-preference) {
+  :where([data-wallpaper-active="true"])
+    .modal__container[data-entering="true"] .modal__dialog {
+    animation: inherit;
+    animation-name: material-dialog-enter;
+  }
+  :where([data-wallpaper-active="true"])
+    .modal__container[data-exiting="true"] .modal__dialog {
+    animation: inherit;
+    animation-name: material-dialog-exit;
+  }
+}
+
+/* A single L-shaped backdrop joins the top bar, rail and rounded inner corner.
+   Controls remain siblings so clipping cannot hide focus rings or popovers. */
+.launcher-navigation-frame {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  pointer-events: none;
+}
+.launcher-navigation-outline {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  fill: none;
+  stroke: color-mix(in srgb, var(--border) 50%, transparent);
+}
+
+/* Large surfaces get one blur pass. Neutral controls use the already blurred
+   parent. Brand/action/status fills retain their own semantic colors. */
+:where([data-wallpaper-active="true"])
+  :is(
+    .launcher-glass,
+    .launcher-chrome,
+    .launcher-material-panel,
+    .card:not(.bg-transparent)
+  ) {
+  background-color: var(--material-panel);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+  border-color: rgb(var(--wallpaper-surface-rgb) / 0.3);
+}
+:where([data-wallpaper-active="true"]) .launcher-glass-list {
+  background-color: var(--material-panel);
+}
+:where([data-wallpaper-active="true"]) .launcher-glass-list:hover {
+  background-color: color-mix(
+    in srgb,
+    var(--material-panel) 90%,
+    var(--segment)
+  );
+}
+
+/* HeroUI reserves a horizontal border on each side of a slider so the thumb
+   can reach the track edges. Its default edge fill uses the semantic accent,
+   while launcher sliders use the palette's decorative `brand-500` fill. Keep
+   the reserved edge in the same color as the fill so a darker contrast-safe
+   accent cannot appear as a second value at the start or end of the track. */
+.slider__track[data-fill-start="true"],
+.slider__track[data-fill-end="true"] {
+  border-inline-color: transparent;
+}
+.slider__track[data-fill-start="true"] {
+  border-inline-start-color: rgb(var(--theme-500, 16, 185, 129));
+}
+.slider__track[data-fill-end="true"] {
+  border-inline-end-color: rgb(var(--theme-500, 16, 185, 129));
+}
+
+/* Do not accumulate full panel tint in nested cards, rows or table cells. */
+:where([data-wallpaper-active="true"])
+  :is(.launcher-glass, .launcher-material-panel, .card:not(.bg-transparent))
+  :is(
+    .launcher-glass,
+    .launcher-glass-list,
+    .launcher-material-panel,
+    .card:not(.bg-transparent),
+    .table__cell
+  ) {
+  background-color: var(--material-inset);
+  -webkit-backdrop-filter: none;
+  backdrop-filter: none;
+}
+
+/* A tabs list container already paints the track; the inner list must not add
+   another background. The segment token controls the selected tab separately. */
+:where([data-wallpaper-active="true"]) .tabs__list {
+  background-color: transparent;
+}
+
+:where([data-wallpaper-active="true"])
+  :is(
+    .modal__dialog,
+    .popover,
+    .dropdown__popover,
+    .select__popover,
+    .tooltip,
+    .toast
+  ) {
+  background-color: var(--overlay);
+  -webkit-backdrop-filter: var(--material-filter);
+  backdrop-filter: var(--material-filter);
+}
+
+/* Previous page-level dark text utilities must not weaken protected captions. */
+:where([data-wallpaper-active="true"][data-readability="true"])
+  :is(.text-muted, .dark\:text-zinc-400, .dark\:text-zinc-500) {
+  color: var(--muted);
+}
+
+.appearance-preview {
+  position: relative;
+  isolation: isolate;
+  overflow: hidden;
+  border-radius: 1rem;
+  border: 1px solid var(--border);
+  color: var(--wallpaper-ink);
+  min-height: 13rem;
+}
+/* Preview cards are siblings of their own wallpaper, even inside Settings' card. */
+[data-material-scope].appearance-preview .launcher-glass {
+  background-color: var(--material-panel, var(--surface));
+  -webkit-backdrop-filter: var(--material-filter, none);
+  backdrop-filter: var(--material-filter, none);
+}
+
+/* Accessibility changes the recipes themselves, covering every consuming
+   component (including portals) rather than maintaining a fallback allowlist. */
+@media (prefers-reduced-transparency: reduce), (prefers-contrast: more) {
+  [data-material-scope][data-wallpaper-active="true"] {
+    --material-opacity: 1;
+    --material-control-opacity: 1;
+    --material-hover-opacity: 1;
+    --material-selected-opacity: 1;
+    --material-filter: none;
+  }
+}
+@supports not (
+  (backdrop-filter: blur(1px)) or (-webkit-backdrop-filter: blur(1px))
+) {
+  [data-material-scope][data-wallpaper-active="true"] {
+    --material-opacity: 1;
+    --material-control-opacity: 1;
+    --material-hover-opacity: 1;
+    --material-selected-opacity: 1;
+    --material-filter: none;
+  }
+}
+@media (forced-colors: active) {
+  .wallpaper-layers {
+    display: none;
+  }
+  [data-material-scope][data-wallpaper-active="true"] {
+    --material-panel: Canvas;
+    --material-inset: Canvas;
+    --surface-secondary: Canvas;
+    --surface-tertiary: Canvas;
+    --surface-quaternary: Canvas;
+    --segment: Highlight;
+    --segment-foreground: HighlightText;
+    --overlay: Canvas;
+    --muted: CanvasText;
+    --material-filter: none;
+  }
+}

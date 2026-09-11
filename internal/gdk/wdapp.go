@@ -131,6 +131,12 @@ type microsoftGameDesktopRegistration struct {
 
 type microsoftGameDependencyList struct {
 	KnownDependencies []microsoftGameKnownDependency `xml:"KnownDependency"`
+	Dependencies      []microsoftGameDependency      `xml:"Dependency"`
+}
+
+type microsoftGameDependency struct {
+	Name       string `xml:"Name,attr"`
+	MinVersion string `xml:"MinVersion,attr"`
 }
 
 type microsoftGameKnownDependency struct {
@@ -260,7 +266,7 @@ func architectureForManifest() string {
 }
 
 func packageDependenciesFromConfig(cfg *microsoftGameConfig) []appxPackageDependency {
-	deps := make([]appxPackageDependency, 0, len(cfg.DesktopRegistration.DependencyList.KnownDependencies))
+	deps := make([]appxPackageDependency, 0, len(cfg.DesktopRegistration.DependencyList.KnownDependencies)+len(cfg.DesktopRegistration.DependencyList.Dependencies))
 	for _, dependency := range cfg.DesktopRegistration.DependencyList.KnownDependencies {
 		switch strings.TrimSpace(dependency.Name) {
 		case "VC14":
@@ -273,6 +279,13 @@ func packageDependenciesFromConfig(cfg *microsoftGameConfig) []appxPackageDepend
 		default:
 			log.Printf("gdk.generateAppxManifest: ignoring unsupported known dependency %q", dependency.Name)
 		}
+	}
+	for _, dependency := range cfg.DesktopRegistration.DependencyList.Dependencies {
+		deps = append(deps, appxPackageDependency{
+			Name:       strings.TrimSpace(dependency.Name),
+			MinVersion: strings.TrimSpace(dependency.MinVersion),
+			Publisher:  "CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US",
+		})
 	}
 	return deps
 }

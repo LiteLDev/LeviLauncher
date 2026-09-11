@@ -2,20 +2,59 @@ package mcservice
 
 import (
 	"fmt"
+	"os"
 	"path/filepath"
 	"strings"
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/types"
+	"github.com/liteldev/LeviLauncher/internal/utils"
 	"golang.org/x/sys/windows"
 )
 
-func normalizeProcPath(p string) string {
+func normalizePath(p string) string {
 	s := strings.ToLower(filepath.Clean(strings.TrimSpace(p)))
 	s = strings.TrimPrefix(s, `\\?\`)
 	s = strings.TrimPrefix(s, `\??\`)
 	return s
+}
+
+// linkedVersionRoots maps the resolved location of every junction-backed
+// version folder to its version name. Windows reports the resolved image path
+// for a running process, so a linked version's game does not appear under the
+// versions directory.
+func linkedVersionRoots(versionsDir string) map[string]string {
+	if strings.TrimSpace(versionsDir) == "" {
+		return nil
+	}
+	entries, err := os.ReadDir(versionsDir)
+	if err != nil {
+		return nil
+	}
+	roots := map[string]string{}
+	for _, e := range entries {
+		if e.IsDir() {
+			continue
+		}
+		dir := filepath.Join(versionsDir, e.Name())
+		if !utils.ResolvesToDir(dir) {
+			continue
+		}
+		if resolved := canonicalPath(dir); resolved != "" && resolved != normalizePath(dir) {
+			roots[resolved] = e.Name()
+		}
+	}
+	return roots
+}
+
+func matchLinkedVersion(roots map[string]string, cleanPath string) (string, bool) {
+	for root, name := range roots {
+		if strings.HasPrefix(cleanPath, root+string(filepath.Separator)) {
+			return name, true
+		}
+	}
+	return "", false
 }
 
 func ListMinecraftProcesses() []types.ProcessInfo {
@@ -32,8 +71,9 @@ func ListMinecraftProcesses() []types.ProcessInfo {
 	}
 
 	versionsDir, _ := apppath.VersionsDir()
+	linkedRoots := linkedVersionRoots(versionsDir)
 	if versionsDir != "" {
-		versionsDir = normalizeProcPath(versionsDir)
+		versionsDir = normalizePath(versionsDir)
 	}
 
 	var processes []types.ProcessInfo
@@ -45,7 +85,7 @@ func ListMinecraftProcesses() []types.ProcessInfo {
 				size := uint32(len(buf))
 				if err := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); err == nil && size > 0 {
 					exePath := windows.UTF16ToString(buf[:size])
-					cleanPath := normalizeProcPath(exePath)
+					cleanPath := normalizePath(exePath)
 
 					isLauncher := false
 					versionName := ""
@@ -58,6 +98,9 @@ func ListMinecraftProcesses() []types.ProcessInfo {
 								versionName = parts[0]
 							}
 						}
+					} else if name, ok := matchLinkedVersion(linkedRoots, cleanPath); ok {
+						isLauncher = true
+						versionName = name
 					}
 
 					processes = append(processes, types.ProcessInfo{

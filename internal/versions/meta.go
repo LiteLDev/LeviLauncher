@@ -71,15 +71,10 @@ func ScanVersions(versionsRoot string) ([]VersionMeta, error) {
 	var out []VersionMeta
 	for _, e := range entries {
 		dir := filepath.Join(versionsRoot, e.Name())
-		// os.ReadDir reports junctions and directory symlinks as not-a-dir
-		// (they carry the reparse/symlink bit). Resolve through the link so
-		// version folders that are junctions backed by an external directory
-		// are still recognized.
-		if !e.IsDir() {
-			fi, err := os.Stat(dir)
-			if err != nil || !fi.IsDir() {
-				continue
-			}
+		// A version folder may be a junction into an external game directory,
+		// which os.ReadDir reports as not-a-dir.
+		if !e.IsDir() && !utils.ResolvesToDir(dir) {
+			continue
 		}
 		m, err := ReadMeta(dir)
 		if err != nil {

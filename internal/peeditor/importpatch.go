@@ -72,7 +72,7 @@ func parsePE(data []byte) (*peView, error) {
 	numSections := int(binary.LittleEndian.Uint16(data[coff+2 : coff+4]))
 	sizeOfOptional := int(binary.LittleEndian.Uint16(data[coff+16 : coff+18]))
 	opt := coff + 20
-	if opt+2 > len(data) {
+	if sizeOfOptional < 112 || opt+sizeOfOptional > len(data) {
 		return nil, fmt.Errorf("truncated optional header")
 	}
 	magic := binary.LittleEndian.Uint16(data[opt : opt+2])
@@ -95,11 +95,17 @@ func parsePE(data []byte) (*peView, error) {
 		numRvaAndSizes: binary.LittleEndian.Uint32(data[opt+108 : opt+112]),
 		dataDir:        opt + 112,
 	}
-	if v.fileAlign == 0 || v.sectionAlign == 0 {
+	if v.fileAlign == 0 || v.sectionAlign < v.fileAlign || v.fileAlign&(v.fileAlign-1) != 0 || v.sectionAlign&(v.sectionAlign-1) != 0 {
 		return nil, fmt.Errorf("invalid alignment (file=%d section=%d)", v.fileAlign, v.sectionAlign)
+	}
+	if v.numRvaAndSizes > uint32((sizeOfOptional-112)/8) {
+		return nil, fmt.Errorf("data directories exceed optional header")
 	}
 
 	secTableOff := opt + sizeOfOptional
+	if numSections == 0 || numSections > 96 || uint64(v.sizeOfHeaders) > uint64(len(data)) || uint64(secTableOff+numSections*40) > uint64(v.sizeOfHeaders) {
+		return nil, fmt.Errorf("invalid PE headers or section count")
+	}
 	for i := 0; i < numSections; i++ {
 		h := secTableOff + i*40
 		if h+40 > len(data) {
@@ -118,13 +124,13 @@ func parsePE(data []byte) (*peView, error) {
 func (v *peView) sectionHeaderTableOffset() int { return v.opt + v.sizeOfOptional }
 
 func (v *peView) rvaToOffset(rva uint32) (int, bool) {
+	if rva < v.sizeOfHeaders {
+		return int(rva), true
+	}
 	for _, s := range v.secs {
-		size := s.rawSize
-		if s.vsize > size {
-			size = s.vsize
-		}
-		if rva >= s.vaddr && rva < s.vaddr+size {
-			return int(s.rawPtr + (rva - s.vaddr)), true
+		// Only initialized, file-backed bytes have a file offset.
+		if s.rawSize != 0 && rva >= s.vaddr && uint64(rva)-uint64(s.vaddr) < uint64(s.rawSize) {
+			return int(uint64(s.rawPtr) + uint64(rva-s.vaddr)), true
 		}
 	}
 	return 0, false
@@ -183,7 +189,9 @@ func dllIsImported(data []byte, dllName string) (bool, error) {
 // loader loads dllName (and runs its DllMain) while snapping the executable's
 // imports. It works by appending a new writable section that carries a rebuilt
 // copy of the import descriptor table plus the thunk/name data for the new
-// entry, then repointing the import data directory at the copy.
+// entry, then repointing the import data directory at the copy. Like PeEditor's
+// pe_bliss rebuild_pe flow, it rebuilds the file layout and checksum, growing
+// SizeOfHeaders and relocating raw section data while keeping existing RVAs.
 //
 // The operation is idempotent: if dllName is already imported it returns
 // (false, nil) and leaves the file untouched. Only PE32+ (x64) images are
@@ -203,6 +211,9 @@ func EnsureImportedDLL(exePath, dllName, funcName string) (bool, error) {
 	v, err := parsePE(data)
 	if err != nil {
 		return false, err
+	}
+	if v.numRvaAndSizes <= 1 {
+		return false, fmt.Errorf("optional header has no import directory slot")
 	}
 
 	// Collect the existing descriptors verbatim; their OriginalFirstThunk,
@@ -232,7 +243,10 @@ func EnsureImportedDLL(exePath, dllName, funcName string) (bool, error) {
 
 	// Lay out the new section:
 	//   [existing descriptors][new descriptor][null descriptor][ILT][IAT][hint+name][dll name]
-	newVA := align32(v.sizeOfImage, v.sectionAlign)
+	newVA, err := nextSectionRVA(v)
+	if err != nil {
+		return false, err
+	}
 
 	descArraySize := uint32((nExisting + 2) * 20)
 	iltOff := align32(descArraySize, 8)
@@ -266,44 +280,19 @@ func EnsureImportedDLL(exePath, dllName, funcName string) (bool, error) {
 	copy(blob[hintOff:], hintName)
 	copy(blob[dllNameOff:], dllNameBytes)
 
-	// Reserve a new section-header slot within the existing headers region.
-	newHeaderOff := v.sectionHeaderTableOffset() + v.numSections*40
-	if uint32(newHeaderOff+40) > v.sizeOfHeaders {
-		return false, fmt.Errorf("no room for a new section header (need up to %d, headers end at %d)", newHeaderOff+40, v.sizeOfHeaders)
+	data, err = rebuildWithImportSection(data, v, blob, newVA)
+	if err != nil {
+		return false, err
 	}
-
-	rawPtr := align32(uint32(len(data)), v.fileAlign)
-	rawSize := align32(blobSize, v.fileAlign)
-	if uint32(len(data)) < rawPtr {
-		data = append(data, make([]byte, rawPtr-uint32(len(data)))...)
-	}
-	sectionRaw := make([]byte, rawSize)
-	copy(sectionRaw, blob)
-	data = append(data, sectionRaw...)
-
-	// Write the new section header.
-	var name [8]byte
-	copy(name[:], ".levildr")
-	copy(data[newHeaderOff:newHeaderOff+8], name[:])
-	binary.LittleEndian.PutUint32(data[newHeaderOff+8:], blobSize) // VirtualSize
-	binary.LittleEndian.PutUint32(data[newHeaderOff+12:], newVA)   // VirtualAddress
-	binary.LittleEndian.PutUint32(data[newHeaderOff+16:], rawSize) // SizeOfRawData
-	binary.LittleEndian.PutUint32(data[newHeaderOff+20:], rawPtr)  // PointerToRawData
-	binary.LittleEndian.PutUint32(data[newHeaderOff+24:], 0)       // PointerToRelocations
-	binary.LittleEndian.PutUint32(data[newHeaderOff+28:], 0)       // PointerToLinenumbers
-	binary.LittleEndian.PutUint16(data[newHeaderOff+32:], 0)       // NumberOfRelocations
-	binary.LittleEndian.PutUint16(data[newHeaderOff+34:], 0)       // NumberOfLinenumbers
-	binary.LittleEndian.PutUint32(data[newHeaderOff+36:], imageScnCntInitializedData|imageScnMemRead|imageScnMemWrite)
 
 	// Patch header fields.
-	binary.LittleEndian.PutUint16(data[v.coff+2:], uint16(v.numSections+1))                 // NumberOfSections
-	binary.LittleEndian.PutUint32(data[v.opt+56:], newVA+align32(blobSize, v.sectionAlign)) // SizeOfImage
-	binary.LittleEndian.PutUint32(data[v.dataDir+8:], newVA)                                // import dir RVA
-	binary.LittleEndian.PutUint32(data[v.dataDir+12:], uint32((nExisting+2)*20))            // import dir size
-	if v.numRvaAndSizes > 11 {                                                              // zero the bound-import directory
+	binary.LittleEndian.PutUint32(data[v.dataDir+8:], newVA)                     // import dir RVA
+	binary.LittleEndian.PutUint32(data[v.dataDir+12:], uint32((nExisting+2)*20)) // import dir size
+	if v.numRvaAndSizes > 11 {                                                   // zero the bound-import directory
 		binary.LittleEndian.PutUint32(data[v.dataDir+11*8:], 0)
 		binary.LittleEndian.PutUint32(data[v.dataDir+11*8+4:], 0)
 	}
+	binary.LittleEndian.PutUint32(data[v.opt+64:], peChecksum(data, v.opt+64))
 
 	if ok, err := dllIsImported(data, dllName); err != nil {
 		return false, fmt.Errorf("post-patch verification failed to parse: %w", err)

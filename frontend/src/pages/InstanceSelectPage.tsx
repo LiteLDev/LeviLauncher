@@ -21,7 +21,7 @@ import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 
-import { motion } from "framer-motion";
+import { motion, useReducedMotion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { compareVersions } from "@/utils/version";
@@ -59,7 +59,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
   const [sortBy, setSortBy] = React.useState<"version" | "name">("version");
   const [sortAsc, setSortAsc] = React.useState<boolean>(false);
   const [logoMap, setLogoMap] = React.useState<Map<string, string>>(new Map());
-  const [isAnimating, setIsAnimating] = React.useState(true);
+  const reduceMotion = useReducedMotion();
   const navigate = useNavigate();
   const { t } = useTranslation();
   const hasBackend = minecraft !== undefined;
@@ -184,24 +184,6 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
     return list;
   }, [localVersionMap, activeTab, query, sortBy, sortAsc, compareVersions]);
 
-  const listVariants = React.useMemo(
-    () => ({
-      hidden: {},
-      show: {
-        transition: { staggerChildren: 0.05, delayChildren: 0.05 },
-      },
-    }),
-    [],
-  );
-
-  const itemVariants = React.useMemo(
-    () => ({
-      hidden: { opacity: 0, y: 6 },
-      show: { opacity: 1, y: 0 },
-    }),
-    [],
-  );
-
   const handleSelectVersion = (name: string) => {
     if (name) {
       saveCurrentVersionName(name);
@@ -230,15 +212,15 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
   return (
     <>
       <PageContainer
-        className={cn("relative", isAnimating && "overflow-hidden")}
+        className="relative min-h-0 overflow-hidden"
         animate={false}
       >
         <motion.div
+          data-material-motion
           className="shrink-0"
-          initial={{ y: -20, opacity: 0 }}
+          initial={reduceMotion ? false : { y: -8, opacity: 0 }}
           animate={{ y: 0, opacity: 1 }}
-          transition={{ duration: 0.4, ease: "easeOut" }}
-          onAnimationComplete={() => setIsAnimating(false)}
+          transition={{ duration: reduceMotion ? 0 : 0.2, ease: "easeOut" }}
         >
           <Card className={cn("w-full", LAYOUT.GLASS_CARD.BASE)}>
             <Card.Header className="px-4 py-3">
@@ -399,142 +381,139 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
           </Card>
         </motion.div>
 
+        {/* Keep the scroll viewport stable while cards move inside it. */}
         <motion.div
-          className="grid gap-3 grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))]"
-          layout
-          variants={listVariants}
-          initial="hidden"
-          animate="show"
-          onLayoutAnimationStart={() => setIsAnimating(true)}
-          onLayoutAnimationComplete={() => setIsAnimating(false)}
-          transition={{
-            layout: { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] },
-          }}
+          layoutScroll
+          className="-m-1 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain no-scrollbar"
         >
-          {(loading || loadError || flatItems.length === 0) && (
-            <Card className={cn(LAYOUT.GLASS_CARD.BASE, "col-span-full")}>
-              <Card.Content className="flex flex-col items-center gap-3 px-6 py-12 text-center">
-                {loading && <Spinner />}
-                <p role={loadError ? "alert" : "status"} className="font-semibold text-foreground">
-                  {t(loading ? "common.loading" : loadError ? "audit.primary.instances.failed" : localVersionMap.size === 0 ? "audit.primary.instances.empty" : "audit.primary.instances.no_matches")}
-                </p>
-                {!loading && (loadError ? (
-                  <Button variant="secondary" onPress={() => setLoadAttempt((attempt) => attempt + 1)}>{t("download_manager.actions.retry")}</Button>
-                ) : localVersionMap.size === 0 ? (
-                  <>
-                    <p className="text-sm text-muted">{t("audit.primary.instances.empty_description")}</p>
-                    <div className="flex flex-wrap justify-center gap-2">
-                      <Button variant="primary" onPress={() => navigate(ROUTES.download)}>{t("audit.primary.download_minecraft")}</Button>
-                      <Button variant="secondary" onPress={() => navigate(ROUTES.install, { state: { returnTo: ROUTES.instances } })}>{t("audit.primary.local_install")}</Button>
-                    </div>
-                  </>
-                ) : (
-                  <Button variant="secondary" onPress={() => { setQuery(""); setActiveTab("all"); }}>{t("audit.primary.clear_filters")}</Button>
-                ))}
-              </Card.Content>
-            </Card>
-          )}
-          {!loading && !loadError && flatItems.map((it) => (
-            <motion.div
-              key={it.name}
-              layout
-              variants={itemVariants}
-              initial="hidden"
-              animate="show"
-              transition={{
-                layout: { duration: 0.35, ease: [0.22, 0.61, 0.36, 1] },
-              }}
-              whileHover={{ scale: 1.02 }}
-              whileTap={{ scale: 0.98 }}
-              className="w-full min-w-0"
-            >
-              <Card
-                className={cn(
-                  "relative w-full h-full transition-all",
-                  LAYOUT.GLASS_CARD.BASE,
-                  "border-2 border-solid",
-                  selectedVersionName === it.name
-                    ? "border-brand-600 dark:border-brand-500 bg-brand-500/5 dark:bg-brand-500/10 shadow-brand-500/20"
-                    : "border-transparent hover:border-border dark:hover:border-zinc-700",
-                )}
-              >
-                <Card.Content className="p-4 flex flex-col gap-1">
-                  <Tooltip>
-                  <AriaButton
-                    type="button"
-                    aria-label={it.name}
-                    aria-pressed={selectedVersionName === it.name}
-                    className="absolute inset-0 z-10 cursor-pointer rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
-                    onPress={() => handleSelectVersion(it.name)}
-                  />
-                  <Tooltip.Content>{it.name}</Tooltip.Content>
-                  </Tooltip>
-                  <div className="flex items-center justify-between gap-2 w-full min-w-0">
-                    <div className="font-bold text-lg truncate min-w-0 flex-1">{it.name}</div>
-                    <div className="flex shrink-0 items-center gap-2">
-                      {activeTab === "all" && (it.isPreview ? (
-                        <Chip
-                          size="sm"
-                          variant="soft"
-                          color={"warning"}
-                          className={"shrink-0"}
-                        >
-                          <Chip.Label>{t("versions.tab.preview")}</Chip.Label>
-                        </Chip>
-                      ) : (
-                        <Chip
-                          size="sm"
-                          variant="soft"
-                          color={"success"}
-                          className={"shrink-0"}
-                        >
-                          <Chip.Label>{t("versions.tab.release")}</Chip.Label>
-                        </Chip>
-                      ))}
-                      <Button
-                        isIconOnly
-                        size="sm"
-                        onPress={() => {
-                          openEditFor(it.name);
-                        }}
-                        aria-label={t("audit.primary.instances.settings", { name: it.name })}
-                        variant={"ghost"}
-                        className={"relative z-20 shrink-0"}
-                      >
-                        <svg
-                          width="18"
-                          height="18"
-                          viewBox="0 0 24 24"
-                          fill="none"
-                          stroke="currentColor"
-                          strokeWidth="2"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        >
-                          <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
-                          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                        </svg>
-                      </Button>
-                    </div>
-                  </div>
-                  <div className="flex min-w-0 items-center gap-2 text-muted dark:text-zinc-400 text-sm">
-                    {(() => {
-                      const u = logoMap.get(it.name);
-                      return u ? (
-                        <img src={u} alt="" className="h-4 w-4 shrink-0 rounded" />
-                      ) : (
-                        <div className="h-4 w-4 shrink-0 rounded bg-surface-tertiary" />
-                      );
-                    })()}
-                    <span className="truncate" title={it.version}>
-                      Vanilla{" "}
-                      {it.version || t("launcherpage.version_select.unknown")}
-                    </span>
-                  </div>
+          {/* Clip outgoing positions to the new grid bounds during filtering. */}
+          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-3 overflow-hidden p-1">
+            {(loading || loadError || flatItems.length === 0) && (
+              <Card className={cn(LAYOUT.GLASS_CARD.BASE, "col-span-full")}>
+                <Card.Content className="flex flex-col items-center gap-3 px-6 py-12 text-center">
+                  {loading && <Spinner />}
+                  <p role={loadError ? "alert" : "status"} className="font-semibold text-foreground">
+                    {t(loading ? "common.loading" : loadError ? "audit.primary.instances.failed" : localVersionMap.size === 0 ? "audit.primary.instances.empty" : "audit.primary.instances.no_matches")}
+                  </p>
+                  {!loading && (loadError ? (
+                    <Button variant="secondary" onPress={() => setLoadAttempt((attempt) => attempt + 1)}>{t("download_manager.actions.retry")}</Button>
+                  ) : localVersionMap.size === 0 ? (
+                    <>
+                      <p className="text-sm text-muted">{t("audit.primary.instances.empty_description")}</p>
+                      <div className="flex flex-wrap justify-center gap-2">
+                        <Button variant="primary" onPress={() => navigate(ROUTES.download)}>{t("audit.primary.download_minecraft")}</Button>
+                        <Button variant="secondary" onPress={() => navigate(ROUTES.install, { state: { returnTo: ROUTES.instances } })}>{t("audit.primary.local_install")}</Button>
+                      </div>
+                    </>
+                  ) : (
+                    <Button variant="secondary" onPress={() => { setQuery(""); setActiveTab("all"); }}>{t("audit.primary.clear_filters")}</Button>
+                  ))}
                 </Card.Content>
               </Card>
-            </motion.div>
-          ))}
+            )}
+            {!loading && !loadError && flatItems.map((it) => (
+              <motion.div
+                data-material-motion
+                key={it.name}
+                layout={reduceMotion ? false : "position"}
+                layoutDependency={flatItems}
+                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                transition={{
+                  duration: reduceMotion ? 0 : 0.18,
+                  ease: "easeOut",
+                  layout: { duration: 0.22, ease: [0.22, 0.61, 0.36, 1] },
+                }}
+                className="w-full min-w-0"
+              >
+                <Card
+                  className={cn(
+                    "relative w-full h-full transition-colors duration-150 motion-reduce:transition-none",
+                    LAYOUT.GLASS_CARD.BASE,
+                    "border-2 border-solid",
+                    selectedVersionName === it.name
+                      ? "border-brand-600 dark:border-brand-500 bg-brand-500/5 dark:bg-brand-500/10 shadow-brand-500/20"
+                      : "border-transparent hover:border-border dark:hover:border-zinc-700",
+                  )}
+                >
+                  <Card.Content className="p-4 flex flex-col gap-1">
+                    <Tooltip>
+                    <AriaButton
+                      type="button"
+                      aria-label={it.name}
+                      aria-pressed={selectedVersionName === it.name}
+                      className="absolute inset-0 z-10 cursor-pointer rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
+                      onPress={() => handleSelectVersion(it.name)}
+                    />
+                    <Tooltip.Content className="pointer-events-none">{it.name}</Tooltip.Content>
+                    </Tooltip>
+                    <div className="flex items-center justify-between gap-2 w-full min-w-0">
+                      <div className="font-bold text-lg truncate min-w-0 flex-1">{it.name}</div>
+                      <div className="flex shrink-0 items-center gap-2">
+                        {activeTab === "all" && (it.isPreview ? (
+                          <Chip
+                            size="sm"
+                            variant="soft"
+                            color={"warning"}
+                            className={"shrink-0"}
+                          >
+                            <Chip.Label>{t("versions.tab.preview")}</Chip.Label>
+                          </Chip>
+                        ) : (
+                          <Chip
+                            size="sm"
+                            variant="soft"
+                            color={"success"}
+                            className={"shrink-0"}
+                          >
+                            <Chip.Label>{t("versions.tab.release")}</Chip.Label>
+                          </Chip>
+                        ))}
+                        <Button
+                          isIconOnly
+                          size="sm"
+                          onPress={() => {
+                            openEditFor(it.name);
+                          }}
+                          aria-label={t("audit.primary.instances.settings", { name: it.name })}
+                          variant={"ghost"}
+                          className={"relative z-20 shrink-0"}
+                        >
+                          <svg
+                            width="18"
+                            height="18"
+                            viewBox="0 0 24 24"
+                            fill="none"
+                            stroke="currentColor"
+                            strokeWidth="2"
+                            strokeLinecap="round"
+                            strokeLinejoin="round"
+                          >
+                            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
+                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+                          </svg>
+                        </Button>
+                      </div>
+                    </div>
+                    <div className="flex min-w-0 items-center gap-2 text-muted dark:text-zinc-400 text-sm">
+                      {(() => {
+                        const u = logoMap.get(it.name);
+                        return u ? (
+                          <img src={u} alt="" className="h-4 w-4 shrink-0 rounded" />
+                        ) : (
+                          <div className="h-4 w-4 shrink-0 rounded bg-surface-tertiary" />
+                        );
+                      })()}
+                      <span className="truncate" title={it.version}>
+                        Vanilla{" "}
+                        {it.version || t("launcherpage.version_select.unknown")}
+                      </span>
+                    </div>
+                  </Card.Content>
+                </Card>
+              </motion.div>
+            ))}
+          </div>
         </motion.div>
       </PageContainer>
     </>

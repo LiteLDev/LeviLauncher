@@ -173,6 +173,12 @@
     "manage": "管理模組"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "下載完成",
+      "description": "「{{name}}」已下載完成，是否立即安裝？",
+      "confirm": "立即安裝",
+      "later": "稍後再說"
+    },
     "title": "下載管理",
     "description": "檢視和管理目前的下載任務",
     "no_downloads": "目前沒有活動的下載任務",

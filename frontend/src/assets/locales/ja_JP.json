@@ -148,6 +148,12 @@
     "manage": "Mod管理"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "ダウンロード完了",
+      "description": "「{{name}}」のダウンロードが完了しました。今すぐインストールしますか？",
+      "confirm": "今すぐインストール",
+      "later": "後で"
+    },
     "title": "ダウンロード管理",
     "description": "現在のダウンロードタスクを表示および管理します",
     "no_downloads": "アクティブなダウンロードタスクはありません",

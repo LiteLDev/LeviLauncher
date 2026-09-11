@@ -149,6 +149,12 @@
     "manage": "Gérer les mods"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "Téléchargement terminé",
+      "description": "« {{name}} » a été téléchargé. Voulez-vous l’installer maintenant ?",
+      "confirm": "Installer maintenant",
+      "later": "Plus tard"
+    },
     "title": "Gestionnaire de téléchargement",
     "description": "Afficher et gérer les tâches de téléchargement actuelles",
     "no_downloads": "Aucune tâche de téléchargement active",

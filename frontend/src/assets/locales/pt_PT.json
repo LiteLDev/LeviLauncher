@@ -149,6 +149,12 @@
     "manage": "Gerir mods"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "Transferência concluída",
+      "description": "A transferência de «{{name}}» foi concluída. Pretendes instalá-lo agora?",
+      "confirm": "Instalar agora",
+      "later": "Mais tarde"
+    },
     "title": "Gestor de transferências",
     "description": "Ver e gerir tarefas de transferência atuais",
     "no_downloads": "Nenhuma tarefa de transferência ativa",

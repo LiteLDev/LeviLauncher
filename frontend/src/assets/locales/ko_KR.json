@@ -149,6 +149,12 @@
     "manage": "모드 관리"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "다운로드 완료",
+      "description": "“{{name}}” 다운로드가 완료되었습니다. 지금 설치하시겠습니까?",
+      "confirm": "지금 설치",
+      "later": "나중에"
+    },
     "title": "다운로드 관리자",
     "description": "현재 다운로드 작업 보기 및 관리",
     "no_downloads": "활성 다운로드 작업 없음",

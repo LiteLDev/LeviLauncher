@@ -149,6 +149,12 @@
     "manage": "Mods verwalten"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "Download abgeschlossen",
+      "description": "„{{name}}“ wurde heruntergeladen. Möchtest du es jetzt installieren?",
+      "confirm": "Jetzt installieren",
+      "later": "Später"
+    },
     "title": "Download-Manager",
     "description": "Aktuelle Download-Aufgaben anzeigen und verwalten",
     "no_downloads": "Keine aktiven Download-Aufgaben",

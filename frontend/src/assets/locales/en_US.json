@@ -154,6 +154,12 @@
     "manage": "Manage Mods"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "Download complete",
+      "description": "“{{name}}” has finished downloading. Would you like to install it now?",
+      "confirm": "Install now",
+      "later": "Later"
+    },
     "title": "Download Manager",
     "description": "View and manage current download tasks",
     "no_downloads": "No active download tasks",

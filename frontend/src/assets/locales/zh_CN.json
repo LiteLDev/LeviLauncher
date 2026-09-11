@@ -179,6 +179,12 @@
     "manage": "管理模组"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "下载完成",
+      "description": "“{{name}}”已下载完成，是否立即安装？",
+      "confirm": "立即安装",
+      "later": "稍后再说"
+    },
     "title": "下载管理",
     "description": "查看和管理当前的下载任务",
     "no_downloads": "当前没有活动的下载任务",

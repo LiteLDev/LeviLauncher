@@ -149,6 +149,12 @@
     "manage": "Gestisci mod"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "Download completato",
+      "description": "Il download di «{{name}}» è terminato. Vuoi installarlo ora?",
+      "confirm": "Installa ora",
+      "later": "Più tardi"
+    },
     "title": "Gestore download",
     "description": "Visualizza e gestisci le attività di download correnti",
     "no_downloads": "Nessuna attività di download attiva",

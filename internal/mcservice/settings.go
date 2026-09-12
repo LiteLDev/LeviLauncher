@@ -6,6 +6,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
+	"github.com/liteldev/LeviLauncher/internal/tray"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
@@ -110,6 +111,18 @@ func SetGameExitBehavior(behavior string) string {
 	if err := config.Save(c); err != nil {
 		return "ERR_WRITE_FILE"
 	}
+	return ""
+}
+
+// SetTrayLabels retranslates the tray menu. The launcher language is resolved
+// in the frontend, which pushes the rendered labels down whenever it changes.
+func SetTrayLabels(show, exit string) string {
+	show = strings.TrimSpace(show)
+	exit = strings.TrimSpace(exit)
+	if show == "" || exit == "" {
+		return "ERR_INVALID_PARAM"
+	}
+	tray.SetLabels(show, exit)
 	return ""
 }
 

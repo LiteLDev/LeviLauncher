@@ -638,6 +638,7 @@
     "error": "Error",
     "refresh": "Refresh",
     "quit_launcher": "Quit Launcher",
+    "show_launcher": "Show Launcher",
     "confirm": "Confirm",
     "success": "Success",
     "delete": "Delete",

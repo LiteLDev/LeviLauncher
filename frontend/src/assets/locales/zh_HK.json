@@ -634,6 +634,7 @@
     "no": "否",
     "close": "關閉",
     "quit_launcher": "退出啟動器",
+    "show_launcher": "顯示啟動器",
     "confirm": "確定",
     "success": "操作成功",
     "delete": "刪除",

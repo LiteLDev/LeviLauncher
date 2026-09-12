@@ -589,6 +589,10 @@ func (a *Minecraft) SetMinimizeToTray(enable bool) string {
 	return mcservice.SetMinimizeToTray(enable)
 }
 
+func (a *Minecraft) SetTrayLabels(show string, exit string) string {
+	return mcservice.SetTrayLabels(show, exit)
+}
+
 func (a *Minecraft) QuitLauncher() { launch.QuitLauncher() }
 
 func (a *Minecraft) ResetBaseRoot() string { return mcservice.ResetBaseRoot() }

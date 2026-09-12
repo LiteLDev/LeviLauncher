@@ -649,6 +649,7 @@
     "no": "否",
     "close": "关闭",
     "quit_launcher": "退出启动器",
+    "show_launcher": "显示启动器",
     "confirm": "确定",
     "success": "操作成功",
     "delete": "删除",

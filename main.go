@@ -35,6 +35,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/resourcerules"
+	"github.com/liteldev/LeviLauncher/internal/tray"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
@@ -447,49 +448,6 @@ func startSingleInstanceServer(versionService *app.VersionService) {
 	}()
 }
 
-func getTrayLabels() (showLabel, exitLabel string) {
-	if procGetUserDefaultUILanguage != nil && procGetUserDefaultUILanguage.Find() == nil {
-		langID, _, _ := procGetUserDefaultUILanguage.Call()
-		primaryLang := langID & 0x3ff
-		switch primaryLang {
-		case 0x19: // Russian (LANG_RUSSIAN)
-			return "Открыть LeviLauncher", "Выход"
-		case 0x04: // Chinese (LANG_CHINESE)
-			return "打开 LeviLauncher", "退出"
-		}
-	}
-	return "Show LeviLauncher", "Exit"
-}
-
-func setupSystemTray(app *application.App) *application.SystemTray {
-	tray := app.SystemTray.New()
-	if len(appIcon) > 0 {
-		tray.SetIcon(appIcon)
-	}
-	tray.SetTooltip("LeviLauncher")
-
-	showLabel, exitLabel := getTrayLabels()
-
-	menu := app.NewMenu()
-	menu.Add(showLabel).OnClick(func(_ *application.Context) {
-		launch.RestoreLauncherWindow()
-	})
-	menu.AddSeparator()
-	menu.Add(exitLabel).OnClick(func(_ *application.Context) {
-		launch.QuitLauncher()
-	})
-	tray.SetMenu(menu)
-
-	tray.OnClick(func() {
-		launch.RestoreLauncherWindow()
-	})
-	tray.OnDoubleClick(func() {
-		launch.RestoreLauncherWindow()
-	})
-
-	return tray
-}
-
 func ensureSingleInstance(autoLaunchVersion string, postUpdateRestart bool) bool {
 	name, err := win.UTF16PtrFromString("Global\\LeviLauncher_SingleInstance")
 	if err != nil {
@@ -702,7 +660,7 @@ func main() {
 	if len(appIcon) > 0 {
 		wailsApp.SetIcon(appIcon)
 	}
-	setupSystemTray(wailsApp)
+	tray.Setup(wailsApp, appIcon)
 	mc.StartupEssential()
 	startSingleInstanceServer(versionService)
 

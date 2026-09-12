@@ -158,6 +158,13 @@ function App() {
   const hasBackend = minecraft !== undefined;
   const { themeMode } = useThemeManager();
 
+  // The tray menu is built in Go, which has no access to the resolved
+  // language, so the rendered labels are pushed down on every change.
+  useEffect(() => {
+    if (!hasBackend) return;
+    minecraft.SetTrayLabels(t("common.show_launcher"), t("common.quit_launcher"));
+  }, [hasBackend, t]);
+
   // Extracted hooks
   const { layoutMode } = useLayoutMode();
   useAnimations();

@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"strings"
+	"sync"
 	"sync/atomic"
 	"syscall"
 	"time"
@@ -33,6 +34,12 @@ var (
 var (
 	quitRequested   atomic.Bool
 	userHidLauncher atomic.Bool
+
+	// activeMonitors keys the running monitors by version directory. Force
+	// launches skip the already-running check, so the same game can be asked
+	// to start twice; a second monitor would apply the launch and exit
+	// behaviors a second time.
+	activeMonitors sync.Map
 )
 
 // QuitRequested reports whether the current shutdown was asked for through
@@ -206,6 +213,11 @@ func waitForGameWindow(ctx context.Context, versionDir string, timeout time.Dura
 }
 
 func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
+	if _, running := activeMonitors.LoadOrStore(versionDir, struct{}{}); running {
+		return
+	}
+	defer activeMonitors.Delete(versionDir)
+
 	var pid uint32
 	if launchPID > 0 {
 		pid = uint32(launchPID)

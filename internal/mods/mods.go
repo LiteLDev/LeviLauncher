@@ -475,14 +475,28 @@ func validateModArchive(zr *zip.Reader) (string, types.ModManifestJson, string) 
 	if !valid || entryPath == "" {
 		return "", manifest, "ERR_INVALID_MANIFEST"
 	}
+	manifestCount := 0
+	entryFound := false
 	for _, file := range zr.File {
 		relative, selected, valid := modArchiveRelativePath(file.Name, manifestDir)
 		if !valid {
 			return "", manifest, "ERR_INVALID_PACKAGE"
 		}
-		if selected && !file.FileInfo().IsDir() && strings.EqualFold(relative, entryPath) {
-			return manifestDir, manifest, ""
+		if !selected || file.FileInfo().IsDir() {
+			continue
 		}
+		if strings.EqualFold(strings.TrimRight(relative, ". "), "manifest.json") {
+			manifestCount++
+			if manifestCount > 1 {
+				return "", manifest, "ERR_INVALID_MANIFEST"
+			}
+		}
+		if strings.EqualFold(relative, entryPath) {
+			entryFound = true
+		}
+	}
+	if entryFound {
+		return manifestDir, manifest, ""
 	}
 	return "", manifest, "ERR_MANIFEST_ENTRY_NOT_FOUND"
 }

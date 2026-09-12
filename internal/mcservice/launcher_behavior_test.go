@@ -1,27 +1,23 @@
 package mcservice
 
 import (
-	"os"
 	"testing"
 
-	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 )
 
 func TestGameBehaviorSettings(t *testing.T) {
-	tempDir, err := os.MkdirTemp("", "levilauncher-behavior-test-*")
-	if err != nil {
-		t.Fatalf("failed to create temp dir: %v", err)
+	// Registered before t.Setenv so that cleanups run in the right order:
+	// APPDATA is back to its real value by the time this reload rebuilds the
+	// cached config and the base-root override the rest of the package reads.
+	t.Cleanup(func() {
+		_, _ = config.Reload()
+	})
+	t.Setenv("APPDATA", t.TempDir())
+
+	if _, err := config.Reload(); err != nil {
+		t.Fatalf("config.Reload() = %v", err)
 	}
-	defer os.RemoveAll(tempDir)
-
-	origBaseRoot := apppath.BaseRoot()
-	apppath.SetBaseRootOverride(tempDir)
-	defer apppath.SetBaseRootOverride(origBaseRoot)
-	t.Setenv("APPDATA", tempDir)
-
-	// Reload config to ensure clean state
-	_, _ = config.Reload()
 
 	// 1. Defaults
 	defaultLaunch := GetGameLaunchBehavior()
@@ -82,19 +78,19 @@ func TestGameBehaviorSettings(t *testing.T) {
 	}
 
 	// 6. Minimize to tray settings
-	if GetMinimizeToTray() != false {
+	if GetMinimizeToTray() {
 		t.Errorf("default GetMinimizeToTray() = true; want false")
 	}
 	if err := SetMinimizeToTray(true); err != "" {
 		t.Errorf("SetMinimizeToTray(true) failed: %s", err)
 	}
-	if GetMinimizeToTray() != true {
+	if !GetMinimizeToTray() {
 		t.Errorf("GetMinimizeToTray() = false; want true")
 	}
 	if err := SetMinimizeToTray(false); err != "" {
 		t.Errorf("SetMinimizeToTray(false) failed: %s", err)
 	}
-	if GetMinimizeToTray() != false {
+	if GetMinimizeToTray() {
 		t.Errorf("GetMinimizeToTray() = true; want false")
 	}
 }

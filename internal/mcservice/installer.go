@@ -14,6 +14,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/nativeinstall"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
+	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -22,6 +23,7 @@ type VersionStatus struct {
 	IsInstalled  bool   `json:"isInstalled"`
 	IsDownloaded bool   `json:"isDownloaded"`
 	Type         string `json:"type"`
+	PackageType  string `json:"packageType"`
 }
 
 func StartMsixvcDownload(ctx context.Context, url string, md5sum string) string {
@@ -110,7 +112,8 @@ func ResolveDownloadedMsixvc(version string, versionType string) string {
 		v := strings.TrimSpace(version)
 		bl := strings.ToLower(b)
 		vl := strings.ToLower(v)
-		if vl == bl {
+		channel := strings.ToLower(strings.TrimSpace(versionType))
+		if vl == bl || ((channel == "release" || channel == "preview") && (bl == channel+" "+vl || bl == "minecraft-"+channel+"-"+vl)) {
 			return name
 		}
 	}
@@ -159,15 +162,33 @@ func GetVersionsDir() string {
 }
 
 func GetVersionStatus(version string, versionType string) VersionStatus {
-	status := VersionStatus{Version: version, Type: versionType, IsInstalled: false, IsDownloaded: false}
-	if name := ResolveDownloadedMsixvc(version, versionType); strings.TrimSpace(name) != "" {
-		status.IsDownloaded = true
+	return GetVersionStatusForPackage(version, versionType, "gdk")
+}
+
+func GetVersionStatusForPackage(version, channel, packageType string) VersionStatus {
+	return versionStatusForPackage(version, channel, packageType, ListVersionMetas())
+}
+
+func versionStatusForPackage(version, channel, packageType string, metas []versions.VersionMeta) VersionStatus {
+	platform := versions.NormalizePackageType(packageType)
+	status := VersionStatus{Version: version, Type: channel, PackageType: platform}
+	if platform == "uwp" {
+		status.IsDownloaded = ResolveDownloadedUWP(version, strings.ToLower(channel)) != ""
+	} else {
+		status.IsDownloaded = ResolveDownloadedMsixvc(version, channel) != ""
+	}
+	for _, meta := range metas {
+		if meta.GameVersion == version && strings.EqualFold(meta.Type, channel) && versions.NormalizePackageType(meta.PackageType) == platform {
+			status.IsInstalled = true
+			break
+		}
 	}
 	return status
 }
 
 func GetAllVersionsStatus(versionsList []map[string]interface{}) []VersionStatus {
 	var results []VersionStatus
+	metas := ListVersionMetas()
 	for _, versionData := range versionsList {
 		version, ok := versionData["version"].(string)
 		if !ok {
@@ -180,7 +201,8 @@ func GetAllVersionsStatus(versionsList []map[string]interface{}) []VersionStatus
 		if !ok {
 			versionType = "release"
 		}
-		status := GetVersionStatus(version, versionType)
+		packageType, _ := versionData["packageType"].(string)
+		status := versionStatusForPackage(version, versionType, packageType, metas)
 		results = append(results, status)
 	}
 	return results

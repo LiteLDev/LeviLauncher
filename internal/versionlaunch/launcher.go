@@ -16,6 +16,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/utils"
+	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/sys/windows"
@@ -80,6 +81,34 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	dir, errCode := resolveVersionDir(name)
 	if errCode != "" {
 		return errCode
+	}
+	meta, _ := versions.ReadMeta(dir)
+	if versions.DetectPackageType(dir, meta) == versions.PackageTypeUWP {
+		manifest, err := uwp.ReadManifest(dir)
+		if err != nil {
+			return uwp.ErrorCode(err)
+		}
+		exe := filepath.Join(dir, manifest.Applications[0].Executable)
+		if !utils.FileExists(exe) {
+			return "ERR_NOT_FOUND_EXE"
+		}
+		if checkRunning && isProcessRunningAtPath(exe) {
+			return "ERR_GAME_ALREADY_RUNNING"
+		}
+		application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
+		pid, err := uwp.Launch(ctx, dir)
+		if err != nil {
+			log.Printf("UWP launch failed for %s: %v", name, err)
+			return uwp.ErrorMessage(err)
+		}
+		meta.Registered = true
+		meta.PackageType = versions.PackageTypeUWP
+		if meta.Name != "" {
+			_ = versions.WriteMeta(dir, meta)
+		}
+		discord.SetPlayingVersion(strings.TrimSpace(meta.GameVersion))
+		go launch.MonitorGameProcess(ctx, dir, pid)
+		return ""
 	}
 	exe := filepath.Join(dir, "Minecraft.Windows.exe")
 	if !utils.FileExists(exe) {

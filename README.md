@@ -1,6 +1,6 @@
 # LeviLauncher
 
-A desktop launcher for **Minecraft Bedrock Edition (GDK)** on **Windows**.
+A desktop launcher for **Minecraft Bedrock Edition (GDK / UWP)** on **Windows**.
 
 LeviLauncher helps you install, manage, isolate, mod, and launch Release or Preview builds while keeping content and tooling easier to organize.
 
@@ -17,8 +17,9 @@ LeviLauncher helps you install, manage, isolate, mod, and launch Release or Prev
 ## Requirements
 
 - Windows 10/11
-- A legitimate licensed copy of Minecraft Bedrock Edition (GDK)
-- Microsoft Gaming Services and Microsoft GameInput available on the system
+- A legitimate licensed copy of Minecraft Bedrock Edition
+- GDK: Microsoft Gaming Services and Microsoft GameInput available on the system
+- UWP: Windows Developer Mode and the UWP framework dependencies required by the package manifest
 
 ## Community
 

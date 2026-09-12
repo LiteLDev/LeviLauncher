@@ -1,3 +1,4 @@
+import { EMPTY_CONTENT_ROOTS } from "@/utils/content";
 import { useOverlayState } from "@heroui/react";
 import React from "react";
 
@@ -40,14 +41,7 @@ export const useContentPage = (t: TFunc) => {
   const [error, setError] = React.useState<string>("");
   const [currentVersionName, setCurrentVersionName] =
     React.useState<string>("");
-  const [roots, setRoots] = React.useState<types.ContentRoots>({
-    base: "",
-    usersRoot: "",
-    resourcePacks: "",
-    behaviorPacks: "",
-    isIsolation: false,
-    isPreview: false,
-  });
+  const [roots, setRoots] = React.useState<types.ContentRoots>(EMPTY_CONTENT_ROOTS);
   const [players, setPlayers] = React.useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = React.useState<string>("");
   const [isSharedMode, setIsSharedMode] = React.useState<boolean>(false);
@@ -119,14 +113,7 @@ export const useContentPage = (t: TFunc) => {
     setCurrentVersionName(name);
     try {
       if (!hasBackend || !name) {
-        setRoots({
-          base: "",
-          usersRoot: "",
-          resourcePacks: "",
-          behaviorPacks: "",
-          isIsolation: false,
-          isPreview: false,
-        });
+        setRoots(EMPTY_CONTENT_ROOTS);
         setPlayers([]);
         setSelectedPlayer("");
         setPlayerGamertagMap({});
@@ -136,14 +123,7 @@ export const useContentPage = (t: TFunc) => {
         setScreenshotsCount(0);
       } else {
         const r = await GetContentRoots(name);
-        const safe = r || {
-          base: "",
-          usersRoot: "",
-          resourcePacks: "",
-          behaviorPacks: "",
-          isIsolation: false,
-          isPreview: false,
-        };
+        const safe = r || EMPTY_CONTENT_ROOTS;
         setRoots(safe);
 
         let isShared = false;
@@ -152,9 +132,24 @@ export const useContentPage = (t: TFunc) => {
           isShared =
             meta.gameVersion && compareVersions(meta.gameVersion, "1.26.0") > 0;
         } catch {}
+        isShared = isShared || safe.packageType === "uwp";
         setIsSharedMode(isShared);
 
-        if (safe.usersRoot) {
+        if (safe.packageType === "uwp") {
+          setPlayers([]);
+          setSelectedPlayer("");
+          setPlayerGamertagMap({});
+          const [worlds, skins, servers, screenshots] = await Promise.all([
+            countDirectories(safe.worlds || ""),
+            countDirectories(safe.skinPacks || ""),
+            minecraft.ListServers(name, ""),
+            contentService.ListScreenshots(name, ""),
+          ]);
+          setWorldsCount(worlds);
+          setSkinCount(skins);
+          setServersCount(servers?.length || 0);
+          setScreenshotsCount(screenshots?.length || 0);
+        } else if (safe.usersRoot) {
           const names = await listPlayers(safe.usersRoot);
           setPlayers(names);
 
@@ -341,7 +336,7 @@ export const useContentPage = (t: TFunc) => {
       }
       let chosenPlayer = "";
 
-      const needsPlayer = hasWorld || (hasSkin && !isSharedMode);
+      const needsPlayer = roots.packageType !== "uwp" && (hasWorld || (hasSkin && !isSharedMode));
 
       if (needsPlayer) {
         pendingImportPathsRef.current = normalizedPaths;
@@ -510,7 +505,7 @@ export const useContentPage = (t: TFunc) => {
           succFiles.push(base);
         } else if (lower.endsWith(".mcworld")) {
           const base = getPathBaseName(p);
-          if (!playerToUse) {
+          if (!playerToUse && roots.packageType !== "uwp") {
             errPairs.push({ name: base, err: "ERR_NO_PLAYER" });
             continue;
           }
@@ -587,7 +582,7 @@ export const useContentPage = (t: TFunc) => {
             m &&
             typeof m.name === "string" &&
             m.name &&
-            m.enableIsolation &&
+            (m.packageType === "uwp" ? roots.packageType !== "uwp" || (m.type === "preview") !== roots.isPreview : m.enableIsolation) &&
             m.name !== name,
         )
         .sort((a: any, b: any) => {

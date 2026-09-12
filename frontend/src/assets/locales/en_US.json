@@ -1054,7 +1054,34 @@
     "ERR_TARGET_EXISTS": "The target version directory already exists. Choose a different name.",
     "ERR_INVALID_FOLDER_NAME": "Invalid version folder name.",
     "ERR_CANCELED": "Operation canceled.",
-    "ERR_AUTH_ACCOUNT_SELECTION": "The selected Microsoft account could not be restored. Check the current Windows user and access to the account preference file."
+    "ERR_AUTH_ACCOUNT_SELECTION": "The selected Microsoft account could not be restored. Check the current Windows user and access to the account preference file.",
+    "ERR_UWP_NOT_SPECIFIED": "Choose a UWP installer or download this version first.",
+    "ERR_INSTANCE_BACKUP_PACKAGE_TYPE_MISMATCH": "The backup and target instance use incompatible package types. Choose an instance with the same package type.",
+    "ERR_UWP_UNSUPPORTED_FEATURE": "This GDK feature is unavailable for UWP instances.",
+    "ERR_UWP_INVALID_VERSION": "The UWP version information is invalid. Refresh the version list and retry.",
+    "ERR_UWP_DOWNLOAD_URL": "Unable to obtain a UWP download URL from Windows Update. Check your connection and retry.",
+    "ERR_UWP_QUERY": "Unable to read Windows app registrations. Review the error details and retry.",
+    "ERR_UWP_DEPENDENCY": "A UWP framework dependency required by the package manifest is missing. Install the matching architecture and version of dependencies such as Microsoft.VCLibs, then retry. The desktop Visual C++ runtime does not replace UWP framework packages.",
+    "ERR_UWP_SYSTEM_VERSION": "This UWP package requires a newer Windows version. Update Windows or choose a compatible game version.",
+    "ERR_UWP_DEVELOPER_MODE": "Windows blocked development package registration. Enable Developer Mode in Windows Settings and retry.",
+    "ERR_UWP_PACKAGE_CONFLICT": "A conflicting Minecraft app registration already exists. The launcher preserves Store and externally installed registrations. Back up your game content, resolve the conflict through Windows Settings, then retry.",
+    "ERR_UWP_REGISTER": "UWP game package registration failed. Review the Windows error details and retry.",
+    "ERR_UWP_UNREGISTER": "UWP game package unregistration failed. Review the Windows error details and retry.",
+    "ERR_UWP_REGISTER_ROLLBACK": "Registration failed and the previous registration could not be restored. Game files remain in place. Review the error details and repair the registration through Windows Settings.",
+    "ERR_UWP_LAUNCH": "Windows app activation could not launch the UWP game. Check its package registration and the error details.",
+    "ERR_UWP_MANIFEST": "The UWP package manifest is missing or invalid. Choose a complete Minecraft installer.",
+    "ERR_UWP_UNSAFE_ARCHIVE": "The UWP archive contains unsafe or conflicting file paths. Installation was stopped.",
+    "ERR_UWP_ARCHITECTURE": "This UWP installer does not contain an application compatible with the current system architecture.",
+    "ERR_UWP_ARCHIVE": "The UWP archive is damaged or exceeds extraction limits. Download a complete installer again.",
+    "ERR_UWP_INSTALL": "UWP installation failed. Review the error details and retry.",
+    "ERR_UWP_NOT_MINECRAFT": "The application identity or publisher does not match a supported Minecraft UWP package.",
+    "ERR_UWP_PACKAGE_NOT_FOUND": "The UWP installer was not found. Refresh the version status or download it again.",
+    "ERR_UWP_PACKAGE_NOT_SPECIFIED": "Choose a UWP installer or download this version first.",
+    "ERR_UWP_CHANNEL": "The UWP package does not match the selected channel. Choose the matching channel or import the local installer again.",
+    "ERR_UWP_RESOURCE_BUNDLE": "UWP bundles containing separate resource packages are not supported. Choose a standalone Appx or a bundle without resource subpackages.",
+    "ERR_UWP_INTEGRITY": "The installer failed its integrity check. Download it again.",
+    "ERR_UWP_NOT_REGISTERED": "This UWP instance is not registered with Windows. Select Register first, then launch it after registration succeeds.",
+    "ERR_UWP_PREPARE": "Unable to prepare UWP development package registration. Check the instance folder permissions and signature backup, then retry."
   },
   "filemanager": {
     "sort": {
@@ -1524,5 +1551,22 @@
       "main_nav": "Main navigation",
       "browse_content": "Browse content"
     }
+  },
+  "uwp": {
+    "register_button": "Register",
+    "registering": "Registering…",
+    "unregistering": "Unregistering…",
+    "launching": "Launching…",
+    "local_installer": "Choose a local installer",
+    "package_type": "Game package type",
+    "beta": "Beta",
+    "install_description": "Install a UWP game package. These instances launch through Windows app registration and share content within the same app channel. GDK data isolation and LeviLamina are unavailable.",
+    "launch_options_unavailable": "UWP launches through Windows app activation. GDK data isolation, console, launch arguments and environment variables are unavailable.",
+    "loader_unavailable": "The current LeviLamina loader supports GDK game packages only.",
+    "editor_unavailable": "The launcher editor mode is unavailable for UWP instances.",
+    "shared_content": "UWP content is shared by versions in the same app channel",
+    "open_content_dir": "Open UWP content folder",
+    "not_specified": "Choose a UWP installer or download this version first.",
+    "resolving_download": "Resolving…"
   }
 }

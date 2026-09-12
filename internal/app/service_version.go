@@ -14,6 +14,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
+	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 )
@@ -261,9 +262,21 @@ func (s *VersionService) RegisterVersionWithWdapp(name string, isPreview bool) s
 	}
 	folder := filepath.Join(vdir, trimmedName)
 	defer mcservice.ReconcileRegisteredFlags()
+	meta, _ := versions.ReadMeta(folder)
+	if versions.DetectPackageType(folder, meta) == versions.PackageTypeUWP {
+		if code := versionlaunch.ValidateLaunchName(trimmedName); code != "" {
+			return code
+		}
+		if err := uwp.Register(s.launchContext(), folder); err != nil {
+			log.Printf("UWP registration failed for %s: %v", trimmedName, err)
+			return uwp.ErrorMessage(err)
+		}
+		return ""
+	}
 	log.Printf("VersionService.RegisterVersionWithWdapp: start name=%s isPreview=%t folder=%s", trimmedName, isPreview, folder)
 	if unregisterMsg := gdk.UnregisterIfExists(isPreview); unregisterMsg != "" {
 		log.Printf("VersionService.RegisterVersionWithWdapp: pre-unregister returned %s for name=%s isPreview=%t", unregisterMsg, trimmedName, isPreview)
+		return unregisterMsg
 	}
 	msg := gdk.RegisterVersionFolder(folder)
 	if msg != "" {
@@ -305,6 +318,17 @@ func (s *VersionService) UnregisterVersionByName(name string) string {
 	}
 	folder := filepath.Join(vdir, trimmedName)
 	defer mcservice.ReconcileRegisteredFlags()
+	meta, _ := versions.ReadMeta(folder)
+	if versions.DetectPackageType(folder, meta) == versions.PackageTypeUWP {
+		if code := versionlaunch.ValidateLaunchName(trimmedName); code != "" {
+			return code
+		}
+		if err := uwp.Unregister(s.launchContext(), folder); err != nil {
+			log.Printf("UWP unregistration failed for %s: %v", trimmedName, err)
+			return uwp.ErrorMessage(err)
+		}
+		return ""
+	}
 	log.Printf("VersionService.UnregisterVersionByName: start name=%s folder=%s", trimmedName, folder)
 	msg := gdk.UnregisterVersionFolder(folder)
 	if msg != "" {
@@ -326,6 +350,7 @@ type VersionStatus struct {
 	IsInstalled  bool   `json:"isInstalled"`
 	IsDownloaded bool   `json:"isDownloaded"`
 	Type         string `json:"type"`
+	PackageType  string `json:"packageType"`
 }
 
 func (s *VersionService) GetInstallerDir() string {
@@ -337,12 +362,17 @@ func (s *VersionService) GetVersionsDir() string {
 }
 
 func (s *VersionService) GetVersionStatus(version string, versionType string) VersionStatus {
-	st := mcservice.GetVersionStatus(version, versionType)
+	return s.GetVersionStatusForPackage(version, versionType, "gdk")
+}
+
+func (s *VersionService) GetVersionStatusForPackage(version, versionType, packageType string) VersionStatus {
+	st := mcservice.GetVersionStatusForPackage(version, versionType, packageType)
 	return VersionStatus{
 		Version:      st.Version,
 		IsInstalled:  st.IsInstalled,
 		IsDownloaded: st.IsDownloaded,
 		Type:         st.Type,
+		PackageType:  st.PackageType,
 	}
 }
 
@@ -355,6 +385,7 @@ func (s *VersionService) GetAllVersionsStatus(versionsData []map[string]interfac
 			IsInstalled:  st.IsInstalled,
 			IsDownloaded: st.IsDownloaded,
 			Type:         st.Type,
+			PackageType:  st.PackageType,
 		})
 	}
 	return out

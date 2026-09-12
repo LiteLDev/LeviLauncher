@@ -306,6 +306,19 @@ const CurseForgeModPage: React.FC = () => {
       return;
     }
 
+    try {
+      const contentRoots = await GetContentRoots(selectedVersion);
+      if (contentRoots.packageType === "uwp") {
+        setSelectedPlayer("");
+        await executeImport("");
+        return;
+      }
+    } catch (error) {
+      setInstallError(error instanceof Error ? error.message : String(error));
+      setInstallStep("error");
+      return;
+    }
+
     let skipPlayerSelect = false;
     if (installFile.type === "skin_pack") {
       const targetMeta = availableVersions.find(
@@ -364,7 +377,7 @@ const CurseForgeModPage: React.FC = () => {
     }
   };
 
-  const executeImport = async () => {
+  const executeImport = async (playerOverride?: string) => {
     if (!installFile || !selectedVersion) return;
 
     setInstallStep("importing");
@@ -372,24 +385,26 @@ const CurseForgeModPage: React.FC = () => {
 
     try {
       const { name, path, type } = installFile;
+      const targetRoots = await GetContentRoots(selectedVersion);
+      const player = targetRoots.packageType === "uwp" ? "" : playerOverride ?? selectedPlayer;
       const runImport = async (overwrite: boolean): Promise<string> => {
         if (type === "mcworld") {
-          if (!selectedPlayer) throw new Error("No player selected");
+          if (!player && targetRoots.packageType !== "uwp") throw new Error("No player selected");
           return String(
             await ImportMcworldPath(
               selectedVersion,
-              selectedPlayer,
+              player,
               path,
               overwrite,
             ),
           );
         }
         if (type === "mcaddon") {
-          if (selectedPlayer) {
+          if (player) {
             return String(
               await ImportMcaddonPathWithPlayer(
                 selectedVersion,
-                selectedPlayer,
+                player,
                 path,
                 overwrite,
               ),
@@ -399,15 +414,12 @@ const CurseForgeModPage: React.FC = () => {
             await ImportMcaddonPath(selectedVersion, path, overwrite),
           );
         }
-        if (selectedPlayer) {
-          if (type === "skin_pack" && !selectedPlayer) {
-            throw new Error("No player selected for skin pack");
-          }
+        if (player) {
           if (type === "skin_pack") {
             return String(
               await ImportMcpackPathWithPlayer(
                 selectedVersion,
-                selectedPlayer,
+                player,
                 path,
                 overwrite,
               ),

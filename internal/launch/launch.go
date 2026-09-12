@@ -15,6 +15,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/versions"
 	"golang.org/x/sys/windows"
 )
 
@@ -108,7 +109,7 @@ func isGameRunning(versionDir string) bool {
 	}
 
 	for {
-		if strings.EqualFold(windows.UTF16ToString(entry.ExeFile[:]), "Minecraft.Windows.exe") {
+		if versions.IsMinecraftExecutable(windows.UTF16ToString(entry.ExeFile[:])) {
 			h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, entry.ProcessID)
 			if err == nil {
 				buf := make([]uint16, 1024)
@@ -116,7 +117,7 @@ func isGameRunning(versionDir string) bool {
 				if err := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); err == nil && size > 0 {
 					p := normalizeProcessPath(windows.UTF16ToString(buf[:size]))
 					_ = windows.CloseHandle(h)
-					if strings.HasPrefix(p, cleanVerDir) {
+					if strings.HasPrefix(p, cleanVerDir+string(filepath.Separator)) {
 						return true
 					}
 				} else {
@@ -132,7 +133,8 @@ func isGameRunning(versionDir string) bool {
 }
 
 func isGameWindowVisible() bool {
-	return FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview")
+	return FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview") ||
+		FindWindowByTitleExact("Minecraft: Windows 10 Edition") || FindWindowByTitleExact("Minecraft: Windows 10 Edition Beta")
 }
 
 func isProcessAlive(pid uint32) bool {

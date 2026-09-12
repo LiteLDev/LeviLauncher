@@ -10,6 +10,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
+	"github.com/liteldev/LeviLauncher/internal/versions"
 	"golang.org/x/sys/windows"
 )
 
@@ -78,7 +79,7 @@ func ListMinecraftProcesses() []types.ProcessInfo {
 
 	var processes []types.ProcessInfo
 	for {
-		if strings.EqualFold(windows.UTF16ToString(entry.ExeFile[:]), "Minecraft.Windows.exe") {
+		if versions.IsMinecraftExecutable(windows.UTF16ToString(entry.ExeFile[:])) {
 			h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, entry.ProcessID)
 			if err == nil {
 				buf := make([]uint16, 1024)
@@ -89,7 +90,7 @@ func ListMinecraftProcesses() []types.ProcessInfo {
 
 					isLauncher := false
 					versionName := ""
-					if versionsDir != "" && strings.HasPrefix(cleanPath, versionsDir) {
+					if versionsDir != "" && strings.HasPrefix(cleanPath, versionsDir+string(filepath.Separator)) {
 						isLauncher = true
 						rel, err := filepath.Rel(versionsDir, cleanPath)
 						if err == nil {

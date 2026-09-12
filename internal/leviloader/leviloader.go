@@ -15,6 +15,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/utils"
+	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -79,6 +80,10 @@ func EnsureForVersion(ctx context.Context, versionDir string) error {
 	dir := strings.TrimSpace(versionDir)
 	if dir == "" {
 		return fmt.Errorf("version directory is empty")
+	}
+	meta, _ := versions.ReadMeta(dir)
+	if versions.DetectPackageType(dir, meta) == versions.PackageTypeUWP {
+		return fmt.Errorf("ERR_UWP_UNSUPPORTED_FEATURE")
 	}
 
 	dest := filepath.Join(dir, LoaderDLLName)
@@ -176,6 +181,10 @@ func RunMigration(ctx context.Context) (migrated int, err error) {
 		// A version folder may be a junction into an external game directory,
 		// which os.ReadDir reports as not-a-dir.
 		if !e.IsDir() && !utils.ResolvesToDir(dir) {
+			continue
+		}
+		meta, _ := versions.ReadMeta(dir)
+		if versions.DetectPackageType(dir, meta) == versions.PackageTypeUWP {
 			continue
 		}
 		if fileExists(filepath.Join(dir, minecraftExeName)) {

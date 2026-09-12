@@ -10,6 +10,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/versions"
 )
 
 func writeTestVersion(t *testing.T, dir string) {
@@ -23,6 +24,60 @@ func writeTestVersion(t *testing.T, dir string) {
 	}
 	if err := os.WriteFile(filepath.Join(dir, legacyProxyName), []byte("legacy proxy"), 0644); err != nil {
 		t.Fatal(err)
+	}
+}
+
+func TestUWPCannotReceiveGDKLoader(t *testing.T) {
+	for _, metadata := range []bool{false, true} {
+		dir := t.TempDir()
+		writeTestVersion(t, dir)
+		if metadata {
+			if err := versions.WriteMeta(dir, versions.VersionMeta{Name: "uwp", PackageType: "uwp"}); err != nil {
+				t.Fatal(err)
+			}
+		} else if err := os.WriteFile(filepath.Join(dir, "AppxManifest.xml"), []byte("legacy UWP manifest"), 0600); err != nil {
+			t.Fatal(err)
+		}
+		if _, err := PatchAndActivate(context.Background(), dir); err == nil {
+			t.Fatal("UWP loader activation succeeded")
+		}
+		if fileExists(filepath.Join(dir, LoaderDLLName)) {
+			t.Fatal("UWP received GDK loader")
+		}
+		if data, err := os.ReadFile(filepath.Join(dir, minecraftExeName)); err != nil || !bytes.Equal(data, embeddedLoader) {
+			t.Fatal("UWP executable changed")
+		}
+		if !fileExists(filepath.Join(dir, legacyProxyName)) {
+			t.Fatal("UWP runtime DLL removed")
+		}
+	}
+}
+
+func TestRunMigrationSkipsUWP(t *testing.T) {
+	t.Setenv("APPDATA", t.TempDir())
+	c, err := config.Reload()
+	if err != nil {
+		t.Fatal(err)
+	}
+	c.BaseRoot = t.TempDir()
+	if err := config.Save(c); err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { config.Reload() })
+	dir := filepath.Join(c.BaseRoot, "versions", "uwp")
+	writeTestVersion(t, dir)
+	if err := versions.WriteMeta(dir, versions.VersionMeta{Name: "uwp", PackageType: "uwp"}); err != nil {
+		t.Fatal(err)
+	}
+	count, err := RunMigration(context.Background())
+	if err != nil || count != 0 {
+		t.Fatalf("UWP migration count=%d error=%v", count, err)
+	}
+	if fileExists(filepath.Join(dir, LoaderDLLName)) {
+		t.Fatal("migration wrote UWP loader")
+	}
+	if data, err := os.ReadFile(filepath.Join(dir, minecraftExeName)); err != nil || !bytes.Equal(data, embeddedLoader) {
+		t.Fatal("migration changed UWP executable")
 	}
 }
 

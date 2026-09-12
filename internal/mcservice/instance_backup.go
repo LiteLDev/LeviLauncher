@@ -21,6 +21,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
+	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -84,6 +85,7 @@ var instanceBackupSafeBedrockRoots = []string{
 }
 
 type instanceBackupContext struct {
+	packageType     string
 	info            types.InstanceBackupInfo
 	gameVersion     string
 	versionType     string
@@ -95,6 +97,7 @@ type instanceBackupContext struct {
 }
 
 type instanceBackupManifest struct {
+	PackageType           string                               `json:"packageType,omitempty"`
 	FormatVersion         int                                  `json:"formatVersion"`
 	Name                  string                               `json:"name"`
 	GameVersion           string                               `json:"gameVersion"`
@@ -228,6 +231,7 @@ func BackupInstance(name string, request types.InstanceBackupRequest) types.Inst
 	}()
 
 	manifest := instanceBackupManifest{
+		PackageType:           ctx.packageType,
 		FormatVersion:         instanceBackupFormatVersion,
 		Name:                  ctx.info.Name,
 		GameVersion:           ctx.gameVersion,
@@ -266,7 +270,7 @@ func BackupInstance(name string, request types.InstanceBackupRequest) types.Inst
 				result.ErrorCode = mapInstanceBackupErrorCode(err)
 				return result
 			}
-			entries, _, err := collectInstanceBackupSafeGameDataEntries(ctx.gameDataPath)
+			entries, _, err := collectInstanceBackupSafeGameDataEntries(ctx.gameDataPath, ctx.packageType)
 			if err != nil {
 				_ = zw.Close()
 				zipClosed = true
@@ -386,6 +390,10 @@ func PreviewInstanceBackupRestoreConflicts(name string, request types.InstanceBa
 		info.ErrorCode = mapInstanceBackupArchiveErrorCode(err)
 		return info
 	}
+	if versions.NormalizePackageType(archive.manifest.PackageType) != versions.NormalizePackageType(target.packageType) {
+		info.ErrorCode = "ERR_INSTANCE_BACKUP_PACKAGE_TYPE_MISMATCH"
+		return info
+	}
 
 	selectedScopes, errCode := normalizeInstanceBackupRestoreScopes(request.Scopes, archive.info.IncludedScopes)
 	if errCode != "" {
@@ -445,6 +453,10 @@ func RestoreInstanceBackup(ctx context.Context, name string, request types.Insta
 	_ = reader.Close()
 	if err != nil {
 		result.ErrorCode = mapInstanceBackupArchiveErrorCode(err)
+		return result
+	}
+	if versions.NormalizePackageType(archive.manifest.PackageType) != versions.NormalizePackageType(target.packageType) {
+		result.ErrorCode = "ERR_INSTANCE_BACKUP_PACKAGE_TYPE_MISMATCH"
 		return result
 	}
 
@@ -595,6 +607,7 @@ func buildInstanceBackupContext(name string) instanceBackupContext {
 
 	meta := GetVersionMeta(trimmedName)
 	roots := GetContentRoots(trimmedName)
+	ctx.packageType = versions.NormalizePackageType(meta.PackageType)
 	ctx.gameVersion = strings.TrimSpace(meta.GameVersion)
 	ctx.versionType = normalizeInstanceBackupVersionType(meta.Type, roots.IsPreview)
 	ctx.enableIsolation = roots.IsIsolation
@@ -604,12 +617,15 @@ func buildInstanceBackupContext(name string) instanceBackupContext {
 
 	gameDataExists := ctx.gameDataPath != "" && utils.DirExists(ctx.gameDataPath)
 	safePath := filepath.Join(ctx.gameDataPath, "Users")
+	if ctx.packageType == "uwp" {
+		safePath = roots.ComMojangRoot
+	}
 	safeExists := gameDataExists && utils.DirExists(safePath)
 	fullSize := int64(0)
 	safeSize := int64(0)
 	if gameDataExists {
 		fullSize = utils.DirSize(ctx.gameDataPath)
-		if _, size, err := collectInstanceBackupSafeGameDataEntries(ctx.gameDataPath); err == nil {
+		if _, size, err := collectInstanceBackupSafeGameDataEntries(ctx.gameDataPath, ctx.packageType); err == nil {
 			safeSize = size
 		}
 	}
@@ -618,7 +634,7 @@ func buildInstanceBackupContext(name string) instanceBackupContext {
 		defaultMode = instanceBackupModeFull
 	}
 
-	modsExists := utils.DirExists(ctx.modsPath)
+	modsExists := ctx.packageType != "uwp" && utils.DirExists(ctx.modsPath)
 	modsSize := int64(0)
 	if modsExists {
 		modsSize = utils.DirSize(ctx.modsPath)
@@ -905,6 +921,9 @@ func inspectInstanceBackupArchive(archivePath string, files []*zip.File) (instan
 	if manifest.FormatVersion != instanceBackupFormatVersion {
 		return instanceBackupArchive{}, wrapInstanceBackupInvalidError(os.ErrInvalid)
 	}
+	if manifest.PackageType != "" && manifest.PackageType != "gdk" && manifest.PackageType != "uwp" {
+		return instanceBackupArchive{}, wrapInstanceBackupInvalidError(os.ErrInvalid)
+	}
 	selectedScopes, hasInvalid := normalizeInstanceBackupScopes(manifest.SelectedScopes)
 	if hasInvalid || len(selectedScopes) == 0 {
 		return instanceBackupArchive{}, wrapInstanceBackupInvalidError(os.ErrInvalid)
@@ -954,10 +973,13 @@ func buildInstanceBackupArchiveInfo(archivePath string, archive instanceBackupAr
 	return info
 }
 
-func collectInstanceBackupSafeGameDataEntries(gameDataPath string) ([]instanceBackupSourceEntry, int64, error) {
+func collectInstanceBackupSafeGameDataEntries(gameDataPath string, packageTypes ...string) ([]instanceBackupSourceEntry, int64, error) {
 	base := strings.TrimSpace(gameDataPath)
 	if base == "" {
 		return nil, 0, wrapInstanceBackupReadError(os.ErrNotExist)
+	}
+	if len(packageTypes) > 0 && packageTypes[0] == "uwp" {
+		return collectUWPSafeGameDataEntries(filepath.Join(base, "games", "com.mojang"))
 	}
 	usersRoot := filepath.Join(base, "Users")
 	if !utils.DirExists(usersRoot) {
@@ -1592,6 +1614,9 @@ func collectInstanceBackupModsRestoreConflicts(
 
 func matchInstanceBackupGameDataPackRoot(relativePath string) (string, bool) {
 	segments := splitInstanceBackupRestorePath(relativePath)
+	if len(segments) == 3 && strings.EqualFold(segments[0], "games") && strings.EqualFold(segments[1], "com.mojang") {
+		return segments[2], isInstanceBackupPackRootName(segments[2])
+	}
 	if len(segments) != 5 {
 		return "", false
 	}
@@ -1608,6 +1633,9 @@ func matchInstanceBackupGameDataPackRoot(relativePath string) (string, bool) {
 
 func isInstanceBackupGameDataWorldRoot(relativePath string) bool {
 	segments := splitInstanceBackupRestorePath(relativePath)
+	if len(segments) == 3 && strings.EqualFold(segments[0], "games") && strings.EqualFold(segments[1], "com.mojang") {
+		return strings.EqualFold(segments[2], "minecraftWorlds")
+	}
 	return len(segments) == 5 &&
 		strings.EqualFold(segments[0], "Users") &&
 		strings.EqualFold(segments[2], "games") &&
@@ -2145,7 +2173,7 @@ func restoreInstanceBackupGameData(
 	if len(resolutionByID) > 0 {
 		err = restoreInstanceBackupGameDataWithResolutions(sourceRoot, targetRoot, "", resolutionByID)
 	} else {
-		err = restoreInstanceBackupSafeGameData(sourceRoot, targetRoot)
+		err = restoreInstanceBackupSafeGameData(sourceRoot, targetRoot, target.packageType)
 	}
 	if err != nil {
 		result.ErrorCode = "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET"
@@ -2155,7 +2183,22 @@ func restoreInstanceBackupGameData(
 	return result
 }
 
-func restoreInstanceBackupSafeGameData(sourceRoot string, targetRoot string) error {
+func restoreInstanceBackupSafeGameData(sourceRoot string, targetRoot string, packageTypes ...string) error {
+	if len(packageTypes) > 0 && packageTypes[0] == "uwp" {
+		mojangRoot := filepath.Join(sourceRoot, "games", "com.mojang")
+		for _, rootName := range instanceBackupSafeBedrockRoots {
+			src := filepath.Join(mojangRoot, rootName)
+			if _, err := os.Stat(src); errors.Is(err, os.ErrNotExist) {
+				continue
+			} else if err != nil {
+				return wrapInstanceBackupWriteTargetError(err)
+			}
+			if err := restoreInstanceBackupSafeRoot(src, filepath.Join(targetRoot, "games", "com.mojang", rootName), rootName); err != nil {
+				return err
+			}
+		}
+		return nil
+	}
 	usersRoot := filepath.Join(sourceRoot, "Users")
 	if !utils.DirExists(usersRoot) {
 		return nil
@@ -2499,6 +2542,10 @@ func restoreInstanceBackupMods(
 		Key:    instanceBackupScopeMods,
 		Label:  instanceBackupScopeMods,
 		Status: "failed",
+	}
+	if target.packageType == "uwp" {
+		result.ErrorCode = "ERR_UWP_UNSUPPORTED_FEATURE"
+		return result
 	}
 	if err := utils.CreateDir(target.modsPath); err != nil {
 		result.ErrorCode = "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET"

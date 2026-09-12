@@ -1,3 +1,4 @@
+import { resolveContentPath } from "@/utils/content";
 import { openDirectory, showDirectoryOpenError } from "@/utils/explorer";
 import {
   Button,
@@ -238,7 +239,7 @@ export default function ServersPage() {
       const r = await GetContentRoots(currentVersionName || "");
       if (generation !== loadGeneration.current) return;
       setRoots(r);
-      if (!selectedPlayer) {
+      if (!selectedPlayer && r.packageType !== "uwp") {
         setServers([]);
         return;
       }
@@ -257,11 +258,10 @@ export default function ServersPage() {
   }, [currentVersionName, selectedPlayer]);
 
   const handleOpenFolder = async () => {
-    if (!selectedPlayer) return;
     try {
       const r = await GetContentRoots(currentVersionName || "");
-      if (r.usersRoot) {
-        const path = `${r.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\minecraftpe`;
+      const path = resolveContentPath(r, "minecraftpe", selectedPlayer);
+      if (path) {
         await openDirectory(path);
       }
     } catch (error) {
@@ -341,7 +341,7 @@ export default function ServersPage() {
             description={t("contentpage.servers_read_only")}
             endContent={
               <div className="flex items-center gap-2">
-                <Dropdown>
+                {roots.packageType !== "uwp" && <Dropdown>
                   <Button
                     isDisabled={!players.length}
                     variant={"secondary"}
@@ -399,11 +399,11 @@ export default function ServersPage() {
                       )}
                     </Dropdown.Menu>
                   </Dropdown.Popover>
-                </Dropdown>
+                </Dropdown>}
 
                 <Button
                   onPress={handleOpenFolder}
-                  isDisabled={!selectedPlayer}
+                  isDisabled={!selectedPlayer && roots.packageType !== "uwp"}
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
@@ -577,7 +577,7 @@ export default function ServersPage() {
             {t("common.loading")}
           </span>
         </div>
-      ) : loadError || playerLoadError ? null : !selectedPlayer ? (
+      ) : loadError || playerLoadError ? null : !selectedPlayer && roots.packageType !== "uwp" ? (
         <div role="status" className="py-16 text-center text-muted">{t("audit.usability.choose_player")}</div>
       ) : filteredServers.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted">

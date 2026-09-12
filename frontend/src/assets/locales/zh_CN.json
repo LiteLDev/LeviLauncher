@@ -1054,7 +1054,34 @@
     "ERR_TARGET_EXISTS": "目标版本目录已存在，请使用其他名称。",
     "ERR_INVALID_FOLDER_NAME": "版本目录名称无效。",
     "ERR_CANCELED": "操作已取消。",
-    "ERR_AUTH_ACCOUNT_SELECTION": "无法恢复启动器已选择的微软账户。请检查当前 Windows 用户和账户配置文件的读取权限。"
+    "ERR_AUTH_ACCOUNT_SELECTION": "无法恢复启动器已选择的微软账户。请检查当前 Windows 用户和账户配置文件的读取权限。",
+    "ERR_UWP_NOT_SPECIFIED": "请选择 UWP 安装包，或先下载对应版本。",
+    "ERR_INSTANCE_BACKUP_PACKAGE_TYPE_MISMATCH": "备份与目标实例的包类型不兼容，请选择相同包类型的实例。",
+    "ERR_UWP_UNSUPPORTED_FEATURE": "此 UWP 实例不支持该 GDK 功能。",
+    "ERR_UWP_INVALID_VERSION": "UWP 版本信息无效，请刷新版本列表后重试。",
+    "ERR_UWP_DOWNLOAD_URL": "未能从 Windows Update 获取 UWP 下载地址，请检查网络后重试。",
+    "ERR_UWP_QUERY": "无法读取 Windows 应用注册信息，请查看详细错误后重试。",
+    "ERR_UWP_DEPENDENCY": "缺少安装清单要求的 UWP 框架依赖。请安装与包架构和版本匹配的 Microsoft.VCLibs 等 UWP 依赖包，然后重试；普通 VC++ 桌面运行库不能替代这些依赖。",
+    "ERR_UWP_SYSTEM_VERSION": "当前 Windows 版本不满足此 UWP 包的最低要求，请更新 Windows 或选择兼容的游戏版本。",
+    "ERR_UWP_DEVELOPER_MODE": "Windows 阻止了 UWP 开发包注册，请在系统设置中启用开发者模式后重试。",
+    "ERR_UWP_PACKAGE_CONFLICT": "Windows 中已有冲突的 Minecraft 应用注册。启动器保留商店或外部安装的现有注册；请先备份游戏内容，再通过 Windows 系统设置自行处理冲突后重试。",
+    "ERR_UWP_REGISTER": "UWP 游戏包注册失败，请查看 Windows 返回的详细错误并重试。",
+    "ERR_UWP_UNREGISTER": "UWP 游戏包注销失败，请查看 Windows 返回的详细错误并重试。",
+    "ERR_UWP_REGISTER_ROLLBACK": "新实例注册失败，且未能恢复原实例注册。游戏文件仍保留，请查看详细错误并通过系统设置修复注册状态。",
+    "ERR_UWP_LAUNCH": "无法通过 Windows 应用激活启动 UWP 游戏，请检查包注册状态和详细错误。",
+    "ERR_UWP_MANIFEST": "UWP 安装清单缺失或无效，请选择完整的 Minecraft 安装包。",
+    "ERR_UWP_UNSAFE_ARCHIVE": "UWP 安装包包含不安全或冲突的文件路径，已停止安装。",
+    "ERR_UWP_ARCHITECTURE": "此 UWP 安装包不包含适合当前系统架构的游戏程序。",
+    "ERR_UWP_ARCHIVE": "UWP 安装包损坏或超出解压限制，请重新下载完整安装包。",
+    "ERR_UWP_INSTALL": "UWP 安装失败，请查看详细错误后重试。",
+    "ERR_UWP_NOT_MINECRAFT": "此安装包的应用标识或发布者与受支持的 Minecraft UWP 包不符。",
+    "ERR_UWP_PACKAGE_NOT_FOUND": "未找到对应的 UWP 安装包，请刷新版本状态或重新下载。",
+    "ERR_UWP_PACKAGE_NOT_SPECIFIED": "请选择 UWP 安装包，或先下载对应版本。",
+    "ERR_UWP_CHANNEL": "UWP 安装包与所选渠道不匹配，请选择对应渠道或重新导入本地安装包。",
+    "ERR_UWP_RESOURCE_BUNDLE": "暂不支持含独立资源子包的 UWP bundle，请选择独立 Appx 或不含资源子包的 bundle。",
+    "ERR_UWP_INTEGRITY": "安装包完整性校验失败，请重新下载。",
+    "ERR_UWP_NOT_REGISTERED": "此 UWP 实例尚未注册到系统。请先点击“注册”，成功后再启动。",
+    "ERR_UWP_PREPARE": "无法准备 UWP 开发包注册，请检查实例目录权限和签名备份后重试。"
   },
   "filemanager": {
     "sort": {
@@ -1524,5 +1551,22 @@
       "main_nav": "主导航",
       "browse_content": "浏览资源"
     }
+  },
+  "uwp": {
+    "register_button": "注册",
+    "registering": "注册中…",
+    "unregistering": "取消注册中…",
+    "launching": "启动中…",
+    "local_installer": "选择本地安装包",
+    "package_type": "游戏包类型",
+    "beta": "Beta 测试版",
+    "install_description": "安装 UWP 游戏包。此类实例使用 Windows 应用注册启动，并共享同一应用渠道的内容；不支持 GDK 数据隔离和 LeviLamina。",
+    "launch_options_unavailable": "UWP 使用 Windows 应用启动方式，不支持 GDK 的数据隔离、控制台、启动参数或环境变量。",
+    "loader_unavailable": "当前 LeviLamina 加载器仅支持 GDK 游戏包。",
+    "editor_unavailable": "UWP 实例不支持此启动器的编辑器模式。",
+    "shared_content": "UWP 内容由同一应用渠道的所有版本共享",
+    "open_content_dir": "打开 UWP 内容目录",
+    "not_specified": "请选择 UWP 安装包，或先下载对应版本。",
+    "resolving_download": "获取下载地址…"
   }
 }

@@ -49,8 +49,9 @@ import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
+import { isAppxInstaller, normalizePackageType, normalizeVersionChannel, type VersionChannel } from "@/utils/packageType";
 
-type ItemType = "Preview" | "Release";
+type ItemType = VersionChannel;
 
 const INSTALL_ISOLATION_PREFERENCE_KEY = "ll.install.enableIsolation";
 
@@ -71,14 +72,11 @@ export default function InstallPage() {
   const { refreshAll } = useVersionStatus();
 
   const mirrorVersion: string = String(location?.state?.mirrorVersion || "");
-  const mirrorType: ItemType = String(
-    location?.state?.mirrorType || "Release",
-  ) as ItemType;
-  const typeLabel: string = (mirrorType === "Preview"
+  const mirrorType = normalizeVersionChannel(location?.state?.mirrorType);
+  const typeLabel: string = (mirrorType === "Beta" ? t("uwp.beta") : mirrorType === "Preview"
     ? (t("common.preview") as unknown as string)
     : (t("common.release") as unknown as string)) as unknown as string;
   const returnTo: string = String(location?.state?.returnTo || ROUTES.download);
-  const isLeviLaminaSupported = Boolean(location?.state?.isLeviLaminaSupported);
 
   const [installName, setInstallName] = useState<string>(mirrorVersion || "");
   const [installIsolation, setInstallIsolation] = useState<boolean>(() =>
@@ -96,6 +94,11 @@ export default function InstallPage() {
   const [installedFolderName, setInstalledFolderName] = useState<string>("");
   const [resultMsg, setResultMsg] = useState<string>("");
   const [customInstallerPath, setCustomInstallerPath] = useState<string>(() => String(location?.state?.installerPath || ""));
+  const packageType = customInstallerPath
+    ? isAppxInstaller(customInstallerPath) ? "uwp" : "gdk"
+    : normalizePackageType(location?.state?.packageType);
+  const isUWP = packageType === "uwp";
+  const isLeviLaminaSupported = !isUWP && Boolean(location?.state?.isLeviLaminaSupported);
   const [installerDir, setInstallerDir] = useState<string>("");
   const [downloadResolved, setDownloadResolved] = useState<boolean>(false);
   const { getSupportedLLVersions, getLatestLLVersion } = useLeviLamina();
@@ -117,13 +120,14 @@ export default function InstallPage() {
   } | null>(null);
 
   useEffect(() => {
+    if (isUWP) return;
     try {
       localStorage.setItem(
         INSTALL_ISOLATION_PREFERENCE_KEY,
         installIsolation ? "true" : "false",
       );
     } catch {}
-  }, [installIsolation]);
+  }, [installIsolation, isUWP]);
 
   useEffect(() => {
     if (!installing) {
@@ -210,7 +214,7 @@ export default function InstallPage() {
   }, [installName]);
 
   useEffect(() => {
-    if (!installIsolation) {
+    if (isUWP || !installIsolation) {
       setInheritMetas([]);
       setInheritSource("");
       return;
@@ -230,10 +234,10 @@ export default function InstallPage() {
     } catch {
       setInheritMetas([]);
     }
-  }, [installIsolation]);
+  }, [installIsolation, isUWP]);
 
   useEffect(() => {
-    if (!installIsolation) {
+    if (isUWP || !installIsolation) {
       setInheritCandidates([]);
       return;
     }
@@ -253,7 +257,7 @@ export default function InstallPage() {
     } catch {
       setInheritCandidates([]);
     }
-  }, [installIsolation, mirrorType]);
+  }, [installIsolation, mirrorType, isUWP]);
 
   const inheritOptions = useMemo(() => {
     const type = String(mirrorType || "Release").toLowerCase();
@@ -263,6 +267,7 @@ export default function InstallPage() {
     return (inheritMetas || [])
       .filter(
         (m: any) =>
+          normalizePackageType(m?.packageType) === "gdk" &&
           Boolean(m?.enableIsolation) &&
           String(m?.type || "").toLowerCase() === type &&
           allowed.has(String(m?.name || "")),
@@ -323,10 +328,10 @@ export default function InstallPage() {
         return;
       }
       try {
-        const resolver = minecraft?.ResolveDownloadedMsixvc;
+        const resolver = isUWP ? minecraft.ResolveDownloadedUWP : minecraft.ResolveDownloadedMsixvc;
         if (typeof resolver === "function") {
           const name = await resolver(
-            `${mirrorType || "Release"} ${mirrorVersion}`,
+            isUWP ? mirrorVersion : `${mirrorType || "Release"} ${mirrorVersion}`,
             String(mirrorType || "Release").toLowerCase(),
           );
           setDownloadResolved(Boolean(name));
@@ -338,10 +343,10 @@ export default function InstallPage() {
       }
     };
     checkResolved();
-  }, [mirrorVersion, mirrorType]);
+  }, [mirrorVersion, mirrorType, isUWP]);
 
   useEffect(() => {
-    if (!installLeviLamina) {
+    if (isUWP || !installLeviLamina) {
       setLLSupportedVersions([]);
       setSelectedLLVersion("");
       return;
@@ -352,7 +357,7 @@ export default function InstallPage() {
       if (prev && versions.includes(prev)) return prev;
       return versions[0] || "";
     });
-  }, [installLeviLamina, mirrorVersion, getSupportedLLVersions]);
+  }, [installLeviLamina, mirrorVersion, getSupportedLLVersions, isUWP]);
 
   const headerTitle = useMemo(() => {
     if (installing)
@@ -377,7 +382,7 @@ export default function InstallPage() {
     setInstallError("");
     setResultMsg("");
 
-    if (installLeviLamina) {
+    if (!isUWP && installLeviLamina) {
       try {
         const lipInstalled = await minecraft.IsLipInstalled();
         if (!lipInstalled) {
@@ -415,11 +420,10 @@ export default function InstallPage() {
     } catch {}
 
     try {
-      const install = minecraft?.InstallExtractMsixvc;
       const saveMeta = SaveVersionMeta as any;
       const copyFromGDK = CopyVersionDataFromGDK as any;
       const copyFromVersion = CopyVersionDataFromVersion as any;
-      const resolver = minecraft?.ResolveDownloadedMsixvc;
+      const resolver = isUWP ? minecraft.ResolveDownloadedUWP : minecraft.ResolveDownloadedMsixvc;
       const isPrev = (mirrorType || "Release") === "Preview";
       let fname = "";
       if (customInstallerPath && customInstallerPath.trim().length > 0) {
@@ -427,22 +431,20 @@ export default function InstallPage() {
       } else if (typeof resolver === "function") {
         try {
           fname = await resolver(
-            (mirrorType || "Release") +
-              " " +
-              (mirrorVersion || installName || ""),
+            isUWP ? mirrorVersion : (mirrorType || "Release") + " " + (mirrorVersion || installName || ""),
             String(mirrorType || "Release").toLowerCase(),
           );
         } catch {}
       }
       if (!fname) {
-        reportInstallFailure("ERR_MSIXVC_NOT_SPECIFIED");
+        reportInstallFailure(isUWP ? "ERR_UWP_NOT_SPECIFIED" : "ERR_MSIXVC_NOT_SPECIFIED");
         return;
       }
 
       setInstalling(true);
       setInstallingVersion(mirrorVersion || installName || "");
       try {
-        const disp = fname?.toLowerCase().endsWith(".msixvc")
+        const disp = /\.(msixvc|appx|msix|appxbundle|msixbundle)$/i.test(fname)
           ? fname
           : `${fname}.msixvc`;
         setInstallingTargetName(disp);
@@ -450,8 +452,10 @@ export default function InstallPage() {
         setInstallingTargetName(fname);
       }
 
-      if (typeof install === "function") {
-        const err: string = await install(fname, name, isPrev);
+      {
+        const err = isUWP
+          ? await minecraft.InstallExtractAppx(fname, name, mirrorType.toLowerCase())
+          : await minecraft.InstallExtractMsixvc(fname, name, isPrev);
         if (err) {
           reportInstallFailure(err);
           setInstalling(false);
@@ -460,13 +464,12 @@ export default function InstallPage() {
         installationCreated = true;
       }
 
-      if (typeof saveMeta === "function") {
+      if (!isUWP && typeof saveMeta === "function") {
         const metaError: string = await saveMeta(
           name,
           mirrorVersion || name,
           String(mirrorType || "Release").toLowerCase(),
           installIsolation,
-          false,
           false,
           false,
           "",
@@ -475,7 +478,7 @@ export default function InstallPage() {
         if (metaError) throw new Error(metaError);
       }
 
-      if (installIsolation && inheritSource) {
+      if (!isUWP && installIsolation && inheritSource) {
         try {
           let copyErr: string = "";
           if (inheritSource === "gdk") {
@@ -499,7 +502,7 @@ export default function InstallPage() {
         }
       }
 
-      if (installLeviLamina) {
+      if (!isUWP && installLeviLamina) {
         try {
           const installVersion = String(
             selectedLLVersion || getLatestLLVersion(mirrorVersion),
@@ -540,7 +543,7 @@ export default function InstallPage() {
       }
 
       try {
-        let cachedItems: { version: string; short: string; type: ItemType }[] =
+        let cachedItems: { version: string; short: string; type: ItemType; packageType: "gdk" | "uwp" }[] =
           [];
         try {
           const raw = localStorage.getItem("ll.version_items");
@@ -549,7 +552,8 @@ export default function InstallPage() {
             cachedItems = parsed.map((it: any) => ({
               version: String(it?.version || it?.short || ""),
               short: String(it?.short || it?.version || ""),
-              type: String(it?.type || "Release") as ItemType,
+              type: normalizeVersionChannel(it?.type),
+              packageType: normalizePackageType(it?.packageType),
             }));
           }
         } catch {}
@@ -560,7 +564,8 @@ export default function InstallPage() {
                 {
                   version: String(mirrorVersion || installName || ""),
                   short: String(mirrorVersion || installName || ""),
-                  type: (mirrorType || "Release") as ItemType,
+                  type: mirrorType,
+                  packageType,
                 },
               ];
         await refreshAll(itemsToRefresh as any);
@@ -576,7 +581,7 @@ export default function InstallPage() {
   };
 
   const handleInstall = async () => {
-    if (installLeviLamina && mirrorVersion) {
+    if (!isUWP && installLeviLamina && mirrorVersion) {
       const targetLLVersion = String(
         selectedLLVersion || getLatestLLVersion(mirrorVersion),
       ).trim();
@@ -988,11 +993,12 @@ export default function InstallPage() {
                   </h3>
                 </Card.Header>
                 <Card.Content className="p-6 flex flex-col gap-4">
+                  {isUWP && <p className="text-sm text-muted">{t("uwp.install_description")}</p>}
                   {!downloadResolved && (
                     <div className="flex items-center justify-between p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
                       <div className="min-w-0">
                         <div className="text-sm font-medium">
-                          {t("downloadpage.install.custom_installer.label")}
+                          {t("uwp.local_installer")}
                         </div>
                         <div className="text-xs text-muted dark:text-zinc-400">
                           {customInstallerPath
@@ -1013,7 +1019,7 @@ export default function InstallPage() {
                               Filters: [
                                 {
                                   DisplayName: "Installer Files",
-                                  Pattern: "*.msixvc",
+                                  Pattern: "*.msixvc;*.appx;*.msix;*.appxbundle;*.msixbundle",
                                 },
                               ],
                               AllowsMultipleSelection: false,
@@ -1112,7 +1118,7 @@ export default function InstallPage() {
                       </Select>
                     </div>
                   )}
-                  <div className="flex items-center justify-between p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
+                  {!isUWP && <div className="flex items-center justify-between p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
                     <div className="min-w-0">
                       <div className="text-sm font-medium">
                         {t("downloadpage.install_folder.enable_isolation")}
@@ -1134,8 +1140,8 @@ export default function InstallPage() {
                         <span></span>
                       </Switch.Content>
                     </Switch>
-                  </div>
-                  {installIsolation && (
+                  </div>}
+                  {!isUWP && installIsolation && (
                     <div className="flex items-center justify-between p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
                       <div className="min-w-0">
                         <div className="text-sm font-medium">

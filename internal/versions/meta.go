@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"reflect"
+	"strings"
 	"time"
 
 	json "github.com/goccy/go-json"
@@ -21,6 +22,7 @@ type VersionMeta struct {
 	Name             string    `json:"name"        `
 	GameVersion      string    `json:"gameVersion"`
 	Type             string    `json:"type"       `
+	PackageType      string    `json:"packageType"`
 	EnableIsolation  bool      `json:"enableIsolation"`
 	EnableConsole    bool      `json:"enableConsole"`
 	EnableEditorMode bool      `json:"enableEditorMode"`
@@ -31,6 +33,34 @@ type VersionMeta struct {
 }
 
 const metaFileName = "version.json"
+
+const (
+	PackageTypeGDK = "gdk"
+	PackageTypeUWP = "uwp"
+)
+
+// NormalizePackageType keeps metadata written before UWP support compatible.
+func NormalizePackageType(value string) string {
+	if strings.EqualFold(strings.TrimSpace(value), PackageTypeUWP) {
+		return PackageTypeUWP
+	}
+	return PackageTypeGDK
+}
+
+// DetectPackageType also recognizes imported loose UWP folders. GDK registration
+// generates an AppxManifest too, so MicrosoftGame.config takes precedence.
+func DetectPackageType(versionDir string, meta VersionMeta) string {
+	if strings.TrimSpace(meta.PackageType) != "" {
+		return NormalizePackageType(meta.PackageType)
+	}
+	if _, err := os.Stat(filepath.Join(versionDir, "MicrosoftGame.config")); err == nil {
+		return PackageTypeGDK
+	}
+	if _, err := os.Stat(filepath.Join(versionDir, "AppxManifest.xml")); err == nil {
+		return PackageTypeUWP
+	}
+	return PackageTypeGDK
+}
 
 func metaPath(versionDir string) string { return filepath.Join(versionDir, metaFileName) }
 
@@ -59,6 +89,9 @@ func ReadMeta(versionDir string) (VersionMeta, error) {
 	defer f.Close()
 	dec := json.NewDecoder(f)
 	err = dec.Decode(&m)
+	if err == nil {
+		m.PackageType = DetectPackageType(versionDir, m)
+	}
 	return m, err
 }
 

@@ -2,6 +2,7 @@ package gdk
 
 import (
 	"bytes"
+	"context"
 	"encoding/xml"
 	"fmt"
 	"log"
@@ -15,6 +16,8 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/utils"
+	"github.com/liteldev/LeviLauncher/internal/uwp"
+	"github.com/liteldev/LeviLauncher/internal/versions"
 )
 
 var appxManifestTemplate = template.Must(template.New("appxManifest").Funcs(template.FuncMap{
@@ -549,10 +552,19 @@ func UnregisterIfExists(isPreview bool) string {
 	}
 	log.Printf("gdk.UnregisterIfExists: checking existing package=%s", pkg)
 	if info, err := registry.GetAppxInfo(pkg); err == nil && info != nil {
+		// UWP stores worlds in LocalState. The legacy GDK removal only
+		// preserves roaming data, so delegate to the data-preserving UWP path.
+		meta, _ := versions.ReadMeta(info.InstallLocation)
+		if versions.DetectPackageType(info.InstallLocation, meta) == versions.PackageTypeUWP {
+			if err := uwp.Unregister(context.Background(), info.InstallLocation); err != nil {
+				return uwp.ErrorCode(err)
+			}
+			return ""
+		}
 		pf := strings.TrimSpace(info.PackageFullName)
 		log.Printf("gdk.UnregisterIfExists: found package=%s fullName=%s installLocation=%s", pkg, pf, strings.TrimSpace(info.InstallLocation))
 		if pf != "" {
-			cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "Remove-AppxPackage -Package '"+pf+"' -PreserveRoamableApplicationData")
+			cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "Remove-AppxPackage -Package '"+strings.ReplaceAll(pf, "'", "''")+"' -PreserveApplicationData")
 			log.Printf("gdk.UnregisterIfExists: removing package=%s fullName=%s", pkg, pf)
 			if er := runHiddenCommand("gdk.UnregisterIfExists: Remove-AppxPackage", cmd); er != nil {
 				return "ERR_UNREGISTER_FAILED"
@@ -568,6 +580,10 @@ func UnregisterIfExists(isPreview bool) string {
 
 func UnregisterVersionFolder(folder string) string {
 	folder = filepath.Clean(strings.TrimSpace(folder))
+	meta, _ := versions.ReadMeta(folder)
+	if versions.DetectPackageType(folder, meta) == versions.PackageTypeUWP {
+		return uwp.ErrorCode(uwp.Unregister(context.Background(), folder))
+	}
 	log.Printf("gdk.UnregisterVersionFolder: start folder=%s", folder)
 	if folder == "" {
 		log.Printf("gdk.UnregisterVersionFolder: target folder is empty")
@@ -598,7 +614,7 @@ func UnregisterVersionFolder(folder string) string {
 		log.Printf("gdk.UnregisterVersionFolder: folder=%s is not registered to system", folder)
 		return "ERR_NOT_REGISTERED_THIS_VERSION"
 	}
-	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "Remove-AppxPackage -Package '"+pf+"' -PreserveRoamableApplicationData")
+	cmd := exec.Command("powershell", "-NoProfile", "-NonInteractive", "-Command", "Remove-AppxPackage -Package '"+strings.ReplaceAll(pf, "'", "''")+"' -PreserveApplicationData")
 	log.Printf("gdk.UnregisterVersionFolder: removing fullName=%s", pf)
 	if er := runHiddenCommand("gdk.UnregisterVersionFolder: Remove-AppxPackage", cmd); er != nil {
 		return "ERR_UNREGISTER_FAILED"

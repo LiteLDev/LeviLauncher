@@ -1,6 +1,6 @@
 # LeviLauncher
 
-一个面向 **Windows** 的 **Minecraft Bedrock Edition (GDK)** 桌面启动器。
+一个面向 **Windows** 的 **Minecraft Bedrock Edition（GDK / UWP）** 桌面启动器。
 
 LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版或预览版环境，同时让内容与工具链更容易整理。
 
@@ -17,8 +17,9 @@ LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版�
 ## 使用要求
 
 - Windows 10/11
-- 拥有 Minecraft Bedrock Edition (GDK) 的正版授权
-- 系统中可用的 Microsoft Gaming Services 与 Microsoft GameInput
+- 拥有 Minecraft Bedrock Edition 的正版授权
+- GDK：系统中可用的 Microsoft Gaming Services 与 Microsoft GameInput
+- UWP：Windows 开发者模式，以及游戏包清单要求的 UWP 框架依赖
 
 ## 社区
 

@@ -128,10 +128,34 @@ func compareVersions(v1, v2 string) int {
 }
 
 func (m *Manager) versionSkinDir(versionName string, roots types.ContentRoots) string {
+	if roots.PackageType == "uwp" {
+		return roots.SkinPacks
+	}
 	if compareVersions(m.getVersionGameInfo(versionName), "1.26.0.0") > 0 {
 		return filepath.Join(filepath.Dir(roots.ResourcePacks), "skin_packs")
 	}
 	return ""
+}
+
+// playerContentDir resolves flat UWP data without manufacturing a GDK player.
+// Validate GDK player segments before accepting them as filesystem input.
+func playerContentDir(roots types.ContentRoots, player, kind string) string {
+	if roots.PackageType == "uwp" {
+		switch kind {
+		case "minecraftWorlds":
+			return roots.Worlds
+		case "skin_packs":
+			return roots.SkinPacks
+		case "Screenshots":
+			return roots.Screenshots
+		}
+		return ""
+	}
+	player = strings.TrimSpace(player)
+	if strings.TrimSpace(roots.UsersRoot) == "" || player == "" || player == "." || player == ".." || strings.ContainsAny(player, "/\\:") {
+		return ""
+	}
+	return filepath.Join(roots.UsersRoot, player, "games", "com.mojang", kind)
 }
 
 func zipDirToBytes(srcDir string) ([]byte, error) {
@@ -291,11 +315,7 @@ func (m *Manager) ImportMcaddonPath(name string, path string, overwrite bool) st
 
 func (m *Manager) ImportMcaddonWithPlayer(name string, player string, data []byte, overwrite bool) string {
 	roots := m.getContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	skinDir := ""
-	if users != "" && strings.TrimSpace(player) != "" {
-		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-	}
+	skinDir := playerContentDir(roots, player, "skin_packs")
 	return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
@@ -308,21 +328,13 @@ func (m *Manager) ImportMcaddonPathWithPlayer(name string, player string, path s
 		return "ERR_OPEN_ZIP"
 	}
 	roots := m.getContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	skinDir := ""
-	if users != "" && strings.TrimSpace(player) != "" {
-		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-	}
+	skinDir := playerContentDir(roots, player, "skin_packs")
 	return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (m *Manager) ImportMcpackWithPlayer(name string, player string, fileName string, data []byte, overwrite bool) string {
 	roots := m.getContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	skinDir := ""
-	if users != "" && strings.TrimSpace(player) != "" {
-		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-	}
+	skinDir := playerContentDir(roots, player, "skin_packs")
 	return content.ImportMcpackToDirs2(data, fileName, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
@@ -335,11 +347,7 @@ func (m *Manager) ImportMcpackPathWithPlayer(name string, player string, path st
 		return "ERR_OPEN_ZIP"
 	}
 	roots := m.getContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	skinDir := ""
-	if users != "" && strings.TrimSpace(player) != "" {
-		skinDir = filepath.Join(users, player, "games", "com.mojang", "skin_packs")
-	}
+	skinDir := playerContentDir(roots, player, "skin_packs")
 	return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
@@ -360,11 +368,10 @@ func (m *Manager) IsMcpackSkinPack(data []byte) bool {
 
 func (m *Manager) ImportMcworld(name string, player string, fileName string, data []byte, overwrite bool) string {
 	roots := m.getContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	if users == "" || strings.TrimSpace(player) == "" {
+	wp := playerContentDir(roots, player, "minecraftWorlds")
+	if wp == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
-	wp := filepath.Join(users, player, "games", "com.mojang", "minecraftWorlds")
 	return content.ImportMcworldToDir(data, fileName, wp, overwrite)
 }
 
@@ -377,11 +384,10 @@ func (m *Manager) ImportMcworldPath(name string, player string, path string, ove
 		return "ERR_OPEN_ZIP"
 	}
 	roots := m.getContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	if users == "" || strings.TrimSpace(player) == "" {
+	wp := playerContentDir(roots, player, "minecraftWorlds")
+	if wp == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
-	wp := filepath.Join(users, player, "games", "com.mojang", "minecraftWorlds")
 	return content.ImportMcworldToDir(b, filepath.Base(path), wp, overwrite)
 }
 
@@ -441,7 +447,7 @@ func (m *Manager) DeletePack(name string, path string) string {
 		return "ERR_INVALID_PATH"
 	}
 	roots := m.getContentRoots(name)
-	allowed := []string{strings.TrimSpace(roots.ResourcePacks), strings.TrimSpace(roots.BehaviorPacks)}
+	allowed := []string{strings.TrimSpace(roots.ResourcePacks), strings.TrimSpace(roots.BehaviorPacks), strings.TrimSpace(roots.SkinPacks)}
 	usersRoot := strings.TrimSpace(roots.UsersRoot)
 	if usersRoot != "" {
 		ents := m.listDir(usersRoot)
@@ -491,7 +497,7 @@ func (m *Manager) DeleteWorld(name string, path string) string {
 	}
 	roots := m.getContentRoots(name)
 	usersRoot := strings.TrimSpace(roots.UsersRoot)
-	allowed := []string{}
+	allowed := []string{strings.TrimSpace(roots.Worlds)}
 	if usersRoot != "" {
 		ents := m.listDir(usersRoot)
 		for _, e := range ents {
@@ -535,7 +541,7 @@ func (m *Manager) TransferWorldToVersion(sourceVersionName string, sourcePlayer 
 	srcPlayer := strings.TrimSpace(sourcePlayer)
 	dstPlayer := strings.TrimSpace(targetPlayer)
 	srcWorld := filepath.Clean(strings.TrimSpace(sourceWorldPath))
-	if srcVer == "" || dstVer == "" || srcPlayer == "" || dstPlayer == "" || srcWorld == "" {
+	if srcVer == "" || dstVer == "" || srcWorld == "" {
 		return "ERR_INVALID_PATH"
 	}
 
@@ -546,18 +552,16 @@ func (m *Manager) TransferWorldToVersion(sourceVersionName string, sourcePlayer 
 
 	srcRoots := m.getContentRoots(srcVer)
 	dstRoots := m.getContentRoots(dstVer)
-	srcUsersRoot := strings.TrimSpace(srcRoots.UsersRoot)
-	dstUsersRoot := strings.TrimSpace(dstRoots.UsersRoot)
-	if srcUsersRoot == "" || dstUsersRoot == "" {
+	sourceWorldsRoot := playerContentDir(srcRoots, srcPlayer, "minecraftWorlds")
+	targetWorldsRoot := playerContentDir(dstRoots, dstPlayer, "minecraftWorlds")
+	if sourceWorldsRoot == "" || targetWorldsRoot == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
 
-	sourceWorldsRoot := filepath.Join(srcUsersRoot, srcPlayer, "games", "com.mojang", "minecraftWorlds")
 	if !isChildOfPath(srcWorld, sourceWorldsRoot) {
 		return "ERR_INVALID_PATH"
 	}
 
-	targetWorldsRoot := filepath.Join(dstUsersRoot, dstPlayer, "games", "com.mojang", "minecraftWorlds")
 	if err := os.MkdirAll(targetWorldsRoot, 0755); err != nil {
 		return "ERR_CREATE_TARGET_DIR"
 	}
@@ -584,12 +588,10 @@ type screenshotMeta struct {
 
 func (m *Manager) ListScreenshots(versionName string, player string) []ScreenshotInfo {
 	roots := m.getContentRoots(versionName)
-	usersRoot := strings.TrimSpace(roots.UsersRoot)
-	p := strings.TrimSpace(player)
-	if usersRoot == "" || p == "" {
+	screenshotsRoot := playerContentDir(roots, player, "Screenshots")
+	if screenshotsRoot == "" {
 		return []ScreenshotInfo{}
 	}
-	screenshotsRoot := filepath.Join(usersRoot, p, "games", "com.mojang", "Screenshots")
 	if !utils.DirExists(screenshotsRoot) {
 		return []ScreenshotInfo{}
 	}
@@ -598,11 +600,13 @@ func (m *Manager) ListScreenshots(versionName string, player string) []Screensho
 	if err != nil {
 		return []ScreenshotInfo{}
 	}
+	directories := []string{screenshotsRoot}
 	for _, sub := range subDirs {
-		if !sub.IsDir() {
-			continue
+		if sub.IsDir() {
+			directories = append(directories, filepath.Join(screenshotsRoot, sub.Name()))
 		}
-		subPath := filepath.Join(screenshotsRoot, sub.Name())
+	}
+	for _, subPath := range directories {
 		entries, err := os.ReadDir(subPath)
 		if err != nil {
 			continue
@@ -626,6 +630,11 @@ func (m *Manager) ListScreenshots(versionName string, player string) []Screensho
 					captureTime = meta.CaptureTime
 				}
 			}
+			if captureTime == 0 {
+				if info, err := e.Info(); err == nil {
+					captureTime = info.ModTime().Unix()
+				}
+			}
 			result = append(result, ScreenshotInfo{
 				Name:        baseName,
 				Path:        imgPath,
@@ -646,12 +655,10 @@ func (m *Manager) DeleteScreenshot(versionName string, player string, path strin
 		return "ERR_INVALID_PATH"
 	}
 	roots := m.getContentRoots(versionName)
-	usersRoot := strings.TrimSpace(roots.UsersRoot)
-	pl := strings.TrimSpace(player)
-	if usersRoot == "" || pl == "" {
+	screenshotsRoot := playerContentDir(roots, player, "Screenshots")
+	if screenshotsRoot == "" {
 		return "ERR_INVALID_PATH"
 	}
-	screenshotsRoot := filepath.Join(usersRoot, pl, "games", "com.mojang", "Screenshots")
 	if !isChildOfPath(p, screenshotsRoot) {
 		return "ERR_INVALID_PATH"
 	}

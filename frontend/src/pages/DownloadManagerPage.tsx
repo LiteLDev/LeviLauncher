@@ -4,6 +4,7 @@ import React from "react";
 import { useNavigate } from "react-router-dom";
 import { ROUTES } from "@/constants/routes";
 import { openDirectory } from "@/utils/explorer";
+import { resolveInstallError } from "@/utils/installError";
 import { PageHeader } from "@/components/PageHeader";
 import { isDownloadActive, isDownloadTerminal, useDownloads } from "@/utils/DownloadsContext";
 import { useTranslation } from "react-i18next";
@@ -139,6 +140,7 @@ export const DownloadManagerPage: React.FC = () => {
                               {task.installer && <Button variant="primary" onPress={() => navigate(ROUTES.install, { state: {
                                 mirrorVersion: task.installer!.version,
                                 mirrorType: task.installer!.type,
+                                packageType: task.installer!.packageType,
                                 isLeviLaminaSupported: task.installer!.isLeviLaminaSupported,
                                 installerPath: task.dest,
                                 returnTo: ROUTES.downloadTasks,
@@ -229,7 +231,7 @@ export const DownloadManagerPage: React.FC = () => {
 
                     {task.error && (
                       <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 p-3 rounded-2xl">
-                        {task.error}
+                        {task.error.includes("ERR_UWP_") ? resolveInstallError(task.error, t) : task.error}
                       </div>
                     )}
                   </div>

@@ -107,6 +107,7 @@ export default function ContentPage() {
                       {cp.roots.isIsolation ? t("common.yes") : t("common.no")}
                     </span>
                     <span className="text-muted dark:text-zinc-600">|</span>
+                    {cp.roots.packageType !== "uwp" && <>
                     <span>{t("contentpage.select_player")}:</span>
                     <Dropdown>
                       <Button
@@ -178,6 +179,8 @@ export default function ContentPage() {
                         ({t("contentpage.require_player_for_world_import")})
                       </span>
                     )}
+                    </>}
+                    {cp.roots.packageType === "uwp" && <span>{t("uwp.shared_content")}</span>}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
@@ -208,11 +211,12 @@ export default function ContentPage() {
                   <Tooltip>
                     <Button
                       onPress={() => {
-                        if (cp.roots.usersRoot) {
-                          openDirectory(cp.roots.usersRoot);
+                        const path = cp.roots.comMojangRoot || cp.roots.usersRoot;
+                        if (path) {
+                          openDirectory(path);
                         }
                       }}
-                      isDisabled={!cp.hasBackend || !cp.roots.usersRoot}
+                      isDisabled={!cp.hasBackend || !(cp.roots.comMojangRoot || cp.roots.usersRoot)}
                       variant={"secondary"}
                       className={cn(
                         "rounded-full",
@@ -223,7 +227,7 @@ export default function ContentPage() {
                       {t("common.open")}
                     </Button>
                     <Tooltip.Content>
-                      {t("contentpage.open_users_dir") as unknown as string}
+                      {t(cp.roots.packageType === "uwp" ? "uwp.open_content_dir" : "contentpage.open_users_dir") as unknown as string}
                     </Tooltip.Content>
                   </Tooltip>
                   <Tooltip>

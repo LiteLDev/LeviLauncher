@@ -48,8 +48,9 @@ import { cn } from "@/utils/cn";
 import { ROUTES } from "@/constants/routes";
 import { useDownloadFilters } from "@/hooks/useDownloadFilters";
 import { Clipboard } from "@wailsio/runtime";
+import { normalizeVersionChannel, versionStatusKey, type PackageType, type VersionChannel } from "@/utils/packageType";
 
-type ItemType = "Preview" | "Release";
+type ItemType = VersionChannel;
 
 type VersionItem = {
   version: string;
@@ -58,6 +59,8 @@ type VersionItem = {
   short: string;
   timestamp?: number;
   md5?: string;
+  packageType: PackageType;
+  uuid?: string;
 };
 
 export const DownloadPage: React.FC = () => {
@@ -67,12 +70,12 @@ export const DownloadPage: React.FC = () => {
   const [items, setItems] = useState<VersionItem[]>([]);
   const [versionsLoading, setVersionsLoading] = useState(true);
   const [versionsError, setVersionsError] = useState(false);
+  const [resolvingUWP, setResolvingUWP] = useState<Set<string>>(new Set());
   const {
     map: versionStatusMap,
     refreshAll,
     refreshOne,
     markDownloaded,
-    setCurrentDownloadingInfo,
     refreshing,
   } = useVersionStatus();
 
@@ -84,6 +87,8 @@ export const DownloadPage: React.FC = () => {
     setStatusFilter,
     llFilter,
     setLlFilter,
+    packageFilter,
+    setPackageFilter,
   } = useDownloadFilters();
   const [rowsPerPage, setRowsPerPage] = useState<number>(6);
   const [page, setPage] = useState<number>(1);
@@ -109,7 +114,6 @@ export const DownloadPage: React.FC = () => {
   const [mirrorResults, setMirrorResults] = useState<
     { url: string; label: string; latencyMs: number | null; ok: boolean }[]
   >([]);
-  const initialStatusFetchedRef = useRef(false);
   const [testing, setTesting] = useState<boolean>(false);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
   const [installMode, setInstallMode] = useState<boolean>(false);
@@ -146,6 +150,7 @@ export const DownloadPage: React.FC = () => {
     short: string;
     type: ItemType;
     fileName: string;
+    packageType: PackageType;
   } | null>(null);
   const [deleteError, setDeleteError] = useState<string>("");
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
@@ -334,126 +339,78 @@ export const DownloadPage: React.FC = () => {
     }
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      setVersionsLoading(true);
-      setVersionsError(false);
-      try {
-        let data: any;
-        if (
-          hasBackend &&
-          typeof minecraft?.FetchHistoricalVersions === "function"
-        ) {
-          data = await minecraft.FetchHistoricalVersions(Boolean(isChinaUser));
-        } else {
-          data = { previewVersions: [], releaseVersions: [] };
-        }
-        const preview: VersionItem[] = (data.previewVersions || []).map(
-          (v: any) => ({
-            version: v.version,
-            urls: normalizeUrls(v.urls ?? v.url),
-            type: "Preview",
-            short: String(v.version).replace(/^Preview\s*/, ""),
-            timestamp: v.timestamp,
-            md5: v.md5,
-          }),
-        );
-        const release: VersionItem[] = (data.releaseVersions || []).map(
-          (v: any) => ({
-            version: v.version,
-            urls: normalizeUrls(v.urls ?? v.url),
-            type: "Release",
-            short: String(v.version).replace(/^Release\s*/, ""),
-            timestamp: v.timestamp,
-            md5: v.md5,
-          }),
-        );
-        const newItems = [...preview, ...release];
-        setItems(newItems);
-        try {
-          (window as any).__llVersionItemsCache = newItems;
-          localStorage.setItem("ll.version_items", JSON.stringify(newItems));
-        } catch {}
-      } catch (e) {
-        console.error("Failed to fetch versions", e);
-        setVersionsError(true);
-      } finally {
-        setVersionsLoading(false);
-      }
-    };
+  const fetchVersionItems = async (): Promise<VersionItem[]> => {
+    if (packageFilter === "uwp") {
+      const data = await minecraft.FetchUWPVersions();
+      return (data || []).map((v) => ({
+        version: v.version, short: v.version,
+        type: normalizeVersionChannel(v.type), packageType: "uwp", uuid: v.uuid, urls: [],
+      }));
+    }
+    const data = await minecraft.FetchHistoricalVersions(Boolean(isChinaUser));
+    return (["Preview", "Release"] as const).flatMap((type) =>
+      ((type === "Preview" ? data.previewVersions : data.releaseVersions) || []).map((v: any) => ({
+        version: v.version,
+        short: String(v.version).replace(/^(?:Preview|Release)\s*/, ""),
+        type, packageType: "gdk" as const, urls: normalizeUrls(v.urls ?? v.url), timestamp: v.timestamp, md5: v.md5,
+      })),
+    );
+  };
+
+  const cacheItems = (newItems: VersionItem[]) => {
     try {
-      const raw = localStorage.getItem("ll.version_items");
-      const cached: VersionItem[] = raw ? JSON.parse(raw) : [];
-      if (cached && Array.isArray(cached) && cached.length > 0) {
-        setItems(cached);
-      }
+      (window as any).__llVersionItemsCache = newItems;
+      localStorage.setItem("ll.version_items", JSON.stringify(newItems));
+      localStorage.setItem(`ll.version_items.${packageFilter}`, JSON.stringify(newItems));
     } catch {}
-    fetchData();
-  }, []);
+  };
+
+  useEffect(() => {
+    let cancelled = false;
+    setVersionsLoading(true);
+    setVersionsError(false);
+    setItems([]);
+    setPage(1);
+    try {
+      const cached = JSON.parse(localStorage.getItem(`ll.version_items.${packageFilter}`) || "[]");
+      if (Array.isArray(cached)) setItems(cached);
+    } catch {}
+    void fetchVersionItems().then((newItems) => {
+      if (cancelled) return;
+      setItems(newItems);
+      cacheItems(newItems);
+      void refreshAll(newItems);
+    }).catch((error) => {
+      if (cancelled) return;
+      console.error("Failed to fetch versions", error);
+      setVersionsError(true);
+    }).finally(() => {
+      if (!cancelled) setVersionsLoading(false);
+    });
+    return () => { cancelled = true; };
+  }, [packageFilter]);
 
   const reloadAll = async () => {
     if (versionsLoading) return;
     setVersionsLoading(true);
     setVersionsError(false);
-    refreshLLDB();
+    if (packageFilter === "gdk") refreshLLDB();
     try {
-      let data: any;
-      if (
-        hasBackend &&
-        typeof minecraft?.FetchHistoricalVersions === "function"
-      ) {
-        data = await minecraft.FetchHistoricalVersions(Boolean(isChinaUser));
-      } else {
-        data = { previewVersions: [], releaseVersions: [] };
-      }
-      const preview: VersionItem[] = (data.previewVersions || []).map(
-        (v: any) => ({
-          version: v.version,
-          urls: normalizeUrls(v.urls ?? v.url),
-          type: "Preview",
-          short: String(v.version).replace(/^Preview\s*/, ""),
-          timestamp: v.timestamp,
-          md5: v.md5,
-        }),
-      );
-      const release: VersionItem[] = (data.releaseVersions || []).map(
-        (v: any) => ({
-          version: v.version,
-          urls: normalizeUrls(v.urls ?? v.url),
-          type: "Release",
-          short: String(v.version).replace(/^Release\s*/, ""),
-          timestamp: v.timestamp,
-          md5: v.md5,
-        }),
-      );
-      const newItems = [...preview, ...release];
+      const newItems = await fetchVersionItems();
       setItems(newItems);
-      try {
-        (window as any).__llVersionItemsCache = newItems;
-        localStorage.setItem("ll.version_items", JSON.stringify(newItems));
-      } catch {}
-      try {
-        await refreshAll(newItems as any);
-      } catch {}
-    } catch (e) {
-      console.error("reloadAll failed", e);
+      cacheItems(newItems);
+      await refreshAll(newItems);
+    } catch (error) {
+      console.error("reloadAll failed", error);
       setVersionsError(true);
     } finally {
       setVersionsLoading(false);
     }
   };
 
-  useEffect(() => {
-    if (!hasBackend) return;
-    if (!initialStatusFetchedRef.current && items.length > 0) {
-      initialStatusFetchedRef.current = true;
-      refreshAll(items as any);
-    }
-  }, [hasBackend, items]);
-
   const itemsWithStatus = useMemo(
     () =>
-      items.map((it) => ({ ...it, _status: versionStatusMap.get(it.short) })),
+      items.map((it) => ({ ...it, _status: versionStatusMap.get(versionStatusKey(it.short, it.type, it.packageType)) })),
     [items, versionStatusMap],
   );
 
@@ -472,7 +429,7 @@ export const DownloadPage: React.FC = () => {
         llFilter === "all"
           ? true
           : llFilter === "levilamina"
-            ? isLLSupported(it.short)
+            ? it.packageType === "gdk" && isLLSupported(it.short)
             : true,
       )
       .filter((it) =>
@@ -546,7 +503,7 @@ export const DownloadPage: React.FC = () => {
 
   const getVersionStatus = (it: VersionItem) => {
     return (
-      versionStatusMap.get(it.short) || {
+      versionStatusMap.get(versionStatusKey(it.short, it.type, it.packageType)) || {
         version: it.short,
         isInstalled: false,
         isDownloaded: false,
@@ -554,7 +511,7 @@ export const DownloadPage: React.FC = () => {
       }
     );
   };
-  const hasStatus = (it: VersionItem) => versionStatusMap.has(it.short);
+  const hasStatus = (it: VersionItem) => versionStatusMap.has(versionStatusKey(it.short, it.type, it.packageType));
 
   const isDownloaded = (it: VersionItem) => getVersionStatus(it).isDownloaded;
   const isInstalled = (it: VersionItem) => getVersionStatus(it).isInstalled;
@@ -675,6 +632,7 @@ export const DownloadPage: React.FC = () => {
                         state: {
                           mirrorVersion: "",
                           mirrorType: "Release",
+                          packageType: packageFilter,
                           returnTo: ROUTES.download,
                         },
                       })
@@ -687,6 +645,26 @@ export const DownloadPage: React.FC = () => {
                   >
                     {t("audit.primary.local_install")}
                   </Button>
+                  <Dropdown>
+                    <Button variant="secondary" className="rounded-full" aria-label={t("uwp.package_type")} isDisabled={versionsLoading}>
+                      {packageFilter.toUpperCase()}
+                    </Button>
+                    <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
+                      <Dropdown.Menu selectionMode="single" disallowEmptySelection selectedKeys={[packageFilter]}
+                        onSelectionChange={(keys) => {
+                          if (versionsLoading) return;
+                          const next = Array.from(keys)[0];
+                          if (next === "gdk" || next === "uwp") {
+                            setPackageFilter(next);
+                            if (next === "uwp") setLlFilter("all");
+                            if (next === "gdk" && typeFilter === "Beta") setTypeFilter("Release");
+                          }
+                        }}>
+                        <Dropdown.Item id="gdk" textValue="GDK"><Label>GDK</Label><Dropdown.ItemIndicator /></Dropdown.Item>
+                        <Dropdown.Item id="uwp" textValue="UWP"><Label>UWP</Label><Dropdown.ItemIndicator /></Dropdown.Item>
+                      </Dropdown.Menu>
+                    </Dropdown.Popover>
+                  </Dropdown>
                   <Dropdown>
                     <Button
                       variant={"secondary"}
@@ -732,6 +710,9 @@ export const DownloadPage: React.FC = () => {
                             )}
                           </Label>
                           <Dropdown.ItemIndicator />
+                        </Dropdown.Item>
+                        <Dropdown.Item id="Beta" textValue={t("uwp.beta")} isDisabled={packageFilter !== "uwp"}>
+                          <Label>{t("uwp.beta")}</Label><Dropdown.ItemIndicator />
                         </Dropdown.Item>
                         <Dropdown.Item
                           key="Preview"
@@ -848,6 +829,7 @@ export const DownloadPage: React.FC = () => {
                           key="levilamina"
                           id={"levilamina"}
                           textValue={"LeviLamina"}
+                          isDisabled={packageFilter === "uwp"}
                         >
                           <Label>LeviLamina</Label>
                           <Dropdown.ItemIndicator />
@@ -994,8 +976,8 @@ export const DownloadPage: React.FC = () => {
                           className={cn(
                             "group transition-colors hover:bg-surface/50 dark:hover:bg-surface-secondary/30",
                           )}
-                          key={`${item.type}-${item.short}`}
-                          id={`${item.type}-${item.short}`}
+                          key={versionStatusKey(item.short, item.type, item.packageType)}
+                          id={versionStatusKey(item.short, item.type, item.packageType)}
                         >
                           <Table.Cell
                             className={cn(
@@ -1033,7 +1015,7 @@ export const DownloadPage: React.FC = () => {
                                 className={"font-medium"}
                               >
                                 <Chip.Label>
-                                  {item.type === "Release"
+                                  {item.type === "Beta" ? t("uwp.beta") : item.type === "Release"
                                     ? t("downloadpage.table.type.release")
                                     : t("downloadpage.table.type.preview")}
                                 </Chip.Label>
@@ -1094,7 +1076,7 @@ export const DownloadPage: React.FC = () => {
                               animate="visible"
                               variants={rowVariants}
                             >
-                              {isLLSupported(item.short) ? (
+                              {item.packageType === "gdk" && isLLSupported(item.short) ? (
                                 <div className="flex items-center gap-1.5 text-brand-600 dark:text-brand-400 bg-brand-100/50 dark:bg-brand-900/20 px-2 py-1 rounded-lg w-fit">
                                   <span className="text-sm">LeviLamina</span>
                                 </div>
@@ -1132,10 +1114,9 @@ export const DownloadPage: React.FC = () => {
                                         state: {
                                           mirrorVersion: item.short,
                                           mirrorType: item.type,
+                                          packageType: item.packageType,
                                           returnTo: ROUTES.download,
-                                          isLeviLaminaSupported: isLLSupported(
-                                            item.short,
-                                          ),
+                                          isLeviLaminaSupported: item.packageType === "gdk" && isLLSupported(item.short),
                                         },
                                       });
                                     }}
@@ -1176,8 +1157,9 @@ export const DownloadPage: React.FC = () => {
                                               typeof minecraft?.ResolveDownloadedMsixvc ===
                                                 "function"
                                             ) {
-                                              fname =
-                                                await minecraft.ResolveDownloadedMsixvc(
+                                              fname = item.packageType === "uwp"
+                                                ? await minecraft.ResolveDownloadedUWP(item.short, item.type.toLowerCase())
+                                                : await minecraft.ResolveDownloadedMsixvc(
                                                   `${item.type} ${item.short}`,
                                                   String(
                                                     item.type,
@@ -1188,6 +1170,7 @@ export const DownloadPage: React.FC = () => {
                                           setDeleteItem({
                                             short: item.short,
                                             type: item.type,
+                                            packageType: item.packageType,
                                             fileName:
                                               fname ||
                                               `${item.type} ${item.short}`,
@@ -1218,18 +1201,28 @@ export const DownloadPage: React.FC = () => {
                               ) : (
                                 <Button
                                   size="sm"
-                                  isDisabled={!hasStatus(item) && refreshing}
-                                  onPress={() => {
+                                  isDisabled={(!hasStatus(item) && refreshing) || resolvingUWP.has(versionStatusKey(item.short, item.type, item.packageType))}
+                                  isPending={resolvingUWP.has(versionStatusKey(item.short, item.type, item.packageType))}
+                                  aria-label={`${t("downloadmodal.download_button")} ${item.type} ${item.short} ${item.packageType.toUpperCase()}`}
+                                  onPress={async () => {
+                                    if (item.packageType === "uwp") {
+                                      const key = versionStatusKey(item.short, item.type, item.packageType);
+                                      setResolvingUWP((previous) => new Set(previous).add(key));
+                                      try {
+                                        await startDownload(`uwp:${item.uuid}`, `Minecraft-UWP-${item.type}-${item.short}.appx`, "", {
+                                          version: item.short, type: item.type, packageType: "uwp", uuid: item.uuid, isLeviLaminaSupported: false,
+                                        });
+                                      } finally {
+                                        setResolvingUWP((previous) => { const next = new Set(previous); next.delete(key); return next; });
+                                      }
+                                      return;
+                                    }
                                     const urls = item.urls || [];
                                     setMirrorUrls(urls);
                                     setMirrorVersion(item.short);
                                     setMirrorType(item.type);
                                     setSelectedUrl(null);
                                     setInstallMode(false);
-                                    setCurrentDownloadingInfo(
-                                      item.short,
-                                      item.type,
-                                    );
                                     onOpen();
                                     startMirrorTests(urls);
                                   }}
@@ -1240,7 +1233,9 @@ export const DownloadPage: React.FC = () => {
                                   )}
                                 >
                                   {<FaDownload size={14} />}
-                                  {!hasStatus(item) && refreshing
+                                   {resolvingUWP.has(versionStatusKey(item.short, item.type, item.packageType))
+                                     ? t("uwp.resolving_download")
+                                     : !hasStatus(item) && refreshing
                                     ? t("downloadpage.status.checking")
                                     : t("downloadmodal.download_button")}
                                 </Button>
@@ -1578,9 +1573,9 @@ export const DownloadPage: React.FC = () => {
           title={t("downloadpage.delete.title")}
           description={t("downloadpage.delete.body")}
           itemName={
-            deleteItem?.fileName?.toLowerCase()?.endsWith(".msixvc")
+            /\.(msixvc|appx|msix|appxbundle|msixbundle)$/i.test(deleteItem?.fileName || "")
               ? deleteItem?.fileName
-              : `${deleteItem?.fileName || ""}.msixvc`
+              : `${deleteItem?.fileName || ""}.${deleteItem?.packageType === "uwp" ? "appx" : "msixvc"}`
           }
           warning={t("downloadpage.delete.warning")}
           isPending={deleteLoading}
@@ -1598,7 +1593,9 @@ export const DownloadPage: React.FC = () => {
                 setDeleteLoading(false);
                 throw new Error("Function not found");
               }
-              const msg: string = await minecraft.DeleteDownloadedMsixvc(
+              const msg: string = deleteItem?.packageType === "uwp"
+                ? await minecraft.DeleteDownloadedUWP(deleteItem.short, deleteItem.type.toLowerCase())
+                : await minecraft.DeleteDownloadedMsixvc(
                 `${String(deleteItem?.type)} ${String(deleteItem?.short)}`,
                 String(deleteItem?.type).toLowerCase(),
               );
@@ -1612,14 +1609,13 @@ export const DownloadPage: React.FC = () => {
                 await refreshOne(
                   String(deleteItem?.short || ""),
                   String(deleteItem?.type || "release").toLowerCase(),
+                  deleteItem?.packageType,
                 );
               } catch {}
               try {
-                const disp = deleteItem?.fileName
-                  ?.toLowerCase()
-                  ?.endsWith(".msixvc")
+                const disp = /\.(msixvc|appx|msix|appxbundle|msixbundle)$/i.test(deleteItem?.fileName || "")
                   ? deleteItem?.fileName
-                  : `${deleteItem?.fileName}.msixvc`;
+                  : `${deleteItem?.fileName}.${deleteItem?.packageType === "uwp" ? "appx" : "msixvc"}`;
                 toast(
                   t("downloadpage.delete.success_body") + " " + (disp || ""),
                   { variant: "success", timeout: 2000 },

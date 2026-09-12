@@ -1,3 +1,4 @@
+import { EMPTY_CONTENT_ROOTS } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
@@ -86,14 +87,7 @@ export default function ResourcePacksPage() {
   const [error, setError] = React.useState<string>("");
   const [currentVersionName, setCurrentVersionName] =
     React.useState<string>("");
-  const [roots, setRoots] = React.useState<types.ContentRoots>({
-    base: "",
-    usersRoot: "",
-    resourcePacks: "",
-    behaviorPacks: "",
-    isIsolation: false,
-    isPreview: false,
-  });
+  const [roots, setRoots] = React.useState<types.ContentRoots>(EMPTY_CONTENT_ROOTS);
   const [entries, setEntries] = React.useState<
     { name: string; path: string }[]
   >([]);
@@ -179,14 +173,7 @@ export default function ResourcePacksPage() {
       setCurrentVersionName(name);
       try {
         if (!hasBackend || !name) {
-          setRoots({
-            base: "",
-            usersRoot: "",
-            resourcePacks: "",
-            behaviorPacks: "",
-            isIsolation: false,
-            isPreview: false,
-          });
+          setRoots(EMPTY_CONTENT_ROOTS);
           setEntries([]);
           setPacks([]);
         } else {
@@ -194,14 +181,7 @@ export default function ResourcePacksPage() {
             GetContentRoots(name),
             ListPacksForVersion(name, ""),
           ]);
-          const safe = r || {
-            base: "",
-            usersRoot: "",
-            resourcePacks: "",
-            behaviorPacks: "",
-            isIsolation: false,
-            isPreview: false,
-          };
+          const safe = r || EMPTY_CONTENT_ROOTS;
           setRoots(safe);
           setEntries([]);
 
@@ -334,7 +314,7 @@ export default function ResourcePacksPage() {
             m &&
             typeof m.name === "string" &&
             m.name &&
-            m.enableIsolation &&
+            (m.packageType === "uwp" ? roots.packageType !== "uwp" || (m.type === "preview") !== roots.isPreview : m.enableIsolation) &&
             m.name !== sourceVersionName,
         )
         .sort((a: any, b: any) => {
@@ -376,6 +356,8 @@ export default function ResourcePacksPage() {
     t,
     transferring,
     transferTargetOnOpen,
+    roots.packageType,
+    roots.isPreview,
   ]);
 
   const transferSelectedPacksToTargets = React.useCallback(async () => {

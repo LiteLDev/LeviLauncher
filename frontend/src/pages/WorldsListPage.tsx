@@ -1,3 +1,4 @@
+import { resolveContentPath } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
@@ -266,14 +267,11 @@ export default function WorldsListPage() {
         const r = await GetContentRoots(currentVersionName || "");
         if (generation !== worldsLoadGeneration.current) return;
         setRoots(r);
-        let worldsPath = "";
-        if (r.usersRoot && selectedPlayer) {
-          worldsPath = `${r.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\minecraftWorlds`;
-        } else {
-          if (!selectedPlayer) {
-            setWorlds([]);
-            return;
-          }
+        const worldsPath = resolveContentPath(r, "minecraftWorlds", selectedPlayer);
+        if (!worldsPath) {
+          setCurrentWorldsPath("");
+          setWorlds([]);
+          return;
         }
 
         setCurrentWorldsPath(worldsPath);
@@ -411,7 +409,7 @@ export default function WorldsListPage() {
       });
       return;
     }
-    if (!selectedPlayer) {
+    if (!selectedPlayer && roots.packageType !== "uwp") {
       toast(t("contentpage.require_player_for_world_import") as string, {
         variant: "danger",
         timeout: 2000,
@@ -428,7 +426,7 @@ export default function WorldsListPage() {
             m &&
             typeof m.name === "string" &&
             m.name &&
-            m.enableIsolation &&
+            (m.packageType === "uwp" ? roots.packageType !== "uwp" || (m.type === "preview") !== roots.isPreview : m.enableIsolation) &&
             m.name !== sourceVersionName,
         )
         .sort((a: any, b: any) => {
@@ -469,6 +467,8 @@ export default function WorldsListPage() {
     selection.selectedCount,
     currentVersionName,
     selectedPlayer,
+    roots.packageType,
+    roots.isPreview,
     t,
     transferTargetOnOpen,
   ]);
@@ -477,7 +477,7 @@ export default function WorldsListPage() {
     if (transferring) return;
 
     const sourceVersionName = currentVersionName || readCurrentVersionName();
-    if (!sourceVersionName || !selectedPlayer) {
+    if (!sourceVersionName || (!selectedPlayer && roots.packageType !== "uwp")) {
       toast(t("contentpage.require_player_for_world_import") as string, {
         variant: "danger",
         timeout: 2000,
@@ -506,6 +506,13 @@ export default function WorldsListPage() {
       setCurrentTransferItem("");
 
       for (const targetName of targetNames) {
+        const targetRoots = await GetContentRoots(targetName);
+        let targetPlayer = "";
+        if (targetRoots.packageType !== "uwp") {
+          const targetPlayers = (await listPlayers(targetRoots.usersRoot, true))
+            .filter((player) => player.toLowerCase() !== "shared");
+          targetPlayer = targetPlayers.includes(selectedPlayer) ? selectedPlayer : targetPlayers[0] || "";
+        }
         for (const worldPath of selectedWorldPaths) {
           const worldName =
             worldNameMap.get(worldPath) ||
@@ -519,7 +526,7 @@ export default function WorldsListPage() {
             selectedPlayer,
             worldPath,
             targetName,
-            selectedPlayer,
+            targetPlayer,
           );
           if (err) {
             errPairs.push({ name: itemLabel, err: String(err) });
@@ -551,6 +558,7 @@ export default function WorldsListPage() {
     transferring,
     currentVersionName,
     selectedPlayer,
+    roots.packageType,
     t,
     selection,
     selectedTransferTargets,
@@ -567,7 +575,7 @@ export default function WorldsListPage() {
             title={t("contentpage.worlds_list")}
             endContent={
               <div className="flex items-center gap-2">
-                <Dropdown>
+                {roots.packageType !== "uwp" && <Dropdown>
                   <Button
                     isDisabled={!players.length}
                     variant={"secondary"}
@@ -632,7 +640,7 @@ export default function WorldsListPage() {
                       )}
                     </Dropdown.Menu>
                   </Dropdown.Popover>
-                </Dropdown>
+                </Dropdown>}
                 <Button
                   onPress={() => {
                     if (currentWorldsPath) openDirectory(currentWorldsPath);
@@ -819,7 +827,7 @@ export default function WorldsListPage() {
         isSelectMode={selection.isSelectMode}
         onTransfer={openTransferTargetModal}
         isTransferDisabled={
-          !selectedPlayer || selection.selectedCount === 0 || transferring
+          (!selectedPlayer && roots.packageType !== "uwp") || selection.selectedCount === 0 || transferring
         }
       />
 
@@ -847,7 +855,7 @@ export default function WorldsListPage() {
             {t("common.loading")}
           </span>
         </div>
-      ) : loadError || playerLoadError ? null : !selectedPlayer ? (
+      ) : loadError || playerLoadError ? null : !selectedPlayer && roots.packageType !== "uwp" ? (
         <div role="status" className="py-16 text-center text-muted">{t("audit.usability.choose_player")}</div>
       ) : sort.filtered.length === 0 && failedWorlds.length === 0 ? (
         <div className="flex flex-col items-center justify-center py-20 text-muted">

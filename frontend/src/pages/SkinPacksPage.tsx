@@ -1,3 +1,4 @@
+import { EMPTY_CONTENT_ROOTS } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
@@ -94,14 +95,7 @@ export default function SkinPacksPage() {
   const [error, setError] = React.useState<string>("");
   const [currentVersionName, setCurrentVersionName] =
     React.useState<string>("");
-  const [roots, setRoots] = React.useState<types.ContentRoots>({
-    base: "",
-    usersRoot: "",
-    resourcePacks: "",
-    behaviorPacks: "",
-    isIsolation: false,
-    isPreview: false,
-  });
+  const [roots, setRoots] = React.useState<types.ContentRoots>(EMPTY_CONTENT_ROOTS);
   const [players, setPlayers] = React.useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = React.useState<string>("");
   const playerWasChosen = React.useRef(Boolean(location.state?.player));
@@ -191,14 +185,7 @@ export default function SkinPacksPage() {
       setCurrentVersionName(name);
       try {
         if (!hasBackend || !name) {
-          setRoots({
-            base: "",
-            usersRoot: "",
-            resourcePacks: "",
-            behaviorPacks: "",
-            isIsolation: false,
-            isPreview: false,
-          });
+          setRoots(EMPTY_CONTENT_ROOTS);
           setPlayers([]);
           setSelectedPlayer("");
           setPlayerGamertagMap({});
@@ -206,14 +193,7 @@ export default function SkinPacksPage() {
         } else {
           const r = await GetContentRoots(name);
           if (generation !== packsLoadGeneration.current) return;
-          const safe = r || {
-            base: "",
-            usersRoot: "",
-            resourcePacks: "",
-            behaviorPacks: "",
-            isIsolation: false,
-            isPreview: false,
-          };
+          const safe = r || EMPTY_CONTENT_ROOTS;
           setRoots(safe);
 
           let meta: any = {};
@@ -222,7 +202,7 @@ export default function SkinPacksPage() {
           } catch {}
           if (generation !== packsLoadGeneration.current) return;
           const isShared =
-            meta.gameVersion && compareVersions(meta.gameVersion, "1.26.0") > 0;
+            safe.packageType === "uwp" || (meta.gameVersion && compareVersions(meta.gameVersion, "1.26.0") > 0);
           setIsSharedMode(isShared);
 
           let nextPlayer = forcePlayer;
@@ -421,7 +401,7 @@ export default function SkinPacksPage() {
             m &&
             typeof m.name === "string" &&
             m.name &&
-            m.enableIsolation &&
+            (m.packageType === "uwp" ? roots.packageType !== "uwp" || (m.type === "preview") !== roots.isPreview : m.enableIsolation) &&
             m.name !== sourceVersionName,
         )
         .sort((a: any, b: any) => {
@@ -464,6 +444,8 @@ export default function SkinPacksPage() {
     currentVersionName,
     t,
     transferTargetOnOpen,
+    roots.packageType,
+    roots.isPreview,
   ]);
 
   const transferSelectedPacksToTargets = React.useCallback(async () => {

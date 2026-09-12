@@ -1,11 +1,13 @@
 (() => {
 const scenario = new URLSearchParams(location.search).get('scenario') || 'normal';
+const isUWP = scenario.startsWith('uwp');
 const state = window.__audit = { recovered: false, baseRoot: 'C:\\Fixture', scenario, processes: [{pid: 4242, exePath: 'C:\\Fixture\\Minecraft.Windows.exe', isLauncher: true, versionName: 'UI test instance'}] };
 localStorage.setItem('i18nextLng', 'zh_CN');
 localStorage.setItem('ll.clarity.enabled', 'false');
 localStorage.setItem('ll.clarity.choiceMade', 'fixture');
 localStorage.setItem('ll.termsAccepted', 'fixture');
-localStorage.setItem('ll.currentVersionName', 'UI test instance');
+localStorage.setItem('ll.currentVersionName', isUWP ? 'UWP release instance' : 'UI test instance');
+if(isUWP) localStorage.setItem('download.filters', JSON.stringify({packageType:'uwp',type:'all',status:'all',loader:'all'}));
 localStorage.setItem('app.backgroundImage', scenario === 'wallpaper' ? 'C:\\Fixture\\wallpapers' : '');
 if (scenario === 'root-error') localStorage.removeItem('ll.onboarded'); else localStorage.setItem('ll.onboarded','fixture');
 state.catalogPackages = Array.from({ length: 45 }, (_, index) => ({
@@ -16,8 +18,65 @@ state.catalogPackages = Array.from({ length: 45 }, (_, index) => ({
   updated: '2026-09-08', tags: ['platform:levilamina', 'type:mod'],
   versions: ['1.0.0'], llDependencyRanges: ['>=0.1.0'], variants: [], preferredVariantKey: '',
 }));
+state.uwpVersions = Array.from({length: 24}, (_, index) => ({version: `1.21.${100-index}.0`, uuid:`00000000-0000-4000-8000-${String(index).padStart(12,'0')}`,type: ['release','beta','preview'][index%3], packageType:'uwp'}));
+state.uwpMetas = ['release','beta','preview'].map((type,index)=>({name:`UWP ${type} instance`,gameVersion:state.uwpVersions[index].version,type,packageType:'uwp',enableIsolation:false,registered:index===0}));
+if (['uwp-unregistered','uwp-register-fail','uwp-register-unconfirmed','uwp-stale-register'].includes(scenario)) state.uwpMetas.forEach(meta=>{meta.registered=false;});
+state.uwpRoots = {base:'C:\\Fixture\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang', usersRoot:'',isIsolation:false,isPreview:false,packageType:'uwp'};
+Object.assign(state.uwpRoots, {comMojangRoot:state.uwpRoots.base,worlds:state.uwpRoots.base+'\\minecraftWorlds',resourcePacks:state.uwpRoots.base+'\\resource_packs',behaviorPacks:state.uwpRoots.base+'\\behavior_packs',skinPacks:state.uwpRoots.base+'\\skin_packs',screenshots:state.uwpRoots.base+'\\Screenshots'});
 state.call = async (name, ...args) => {
+  state.calls = [...(state.calls || []), {name,args}];
+  if (/^(Set|Reset|Kill|Open|Start|Install|Register)/.test(name)) {
+    const output = document.getElementById('audit-calls');
+    if(output) output.textContent = name + ': ' + JSON.stringify(args);
+  }
  await new Promise(resolve => setTimeout(resolve, 80));
+  if (isUWP) {
+    if(name==='RegisterVersionWithWdapp') {
+      await new Promise(resolve=>setTimeout(resolve,900));
+      if(scenario==='uwp-register-fail'&&!state.recovered)return 'ERR_UWP_QUERY: Fixture registration query failed';
+      if(scenario!=='uwp-register-unconfirmed') {
+        const target=state.uwpMetas.find(meta=>meta.name===args[0]);
+        state.uwpMetas.forEach(meta=>{if((meta.type==='preview')===(target?.type==='preview'))meta.registered=meta.name===args[0];});
+      }
+      state.registrationChanged=true;
+      return 'success';
+    }
+    if(name==='UnregisterVersionByName') {state.uwpMetas.forEach(meta=>{if(meta.name===args[0])meta.registered=false;});return '';}
+    if(name==='GetVersionMenuDetails') {
+      const details=state.uwpMetas.map(meta=>({name:meta.name,registered:meta.registered,leviLaminaInstalled:false,logoDataUrl:''}));
+      if(scenario==='uwp-stale-register')await new Promise(resolve=>setTimeout(resolve,5000));
+      return details;
+    }
+    if(name==='LaunchVersionByName') {
+      await new Promise(resolve=>setTimeout(resolve,700));
+      const registered=state.uwpMetas.find(meta=>meta.name===args[0])?.registered;
+      return scenario==='uwp-registration-lost'||!registered ? 'ERR_UWP_NOT_REGISTERED: register the selected UWP instance first' : '';
+    }
+    if(name==='FetchUWPVersions') {if(scenario==='uwp-error'&&!state.recovered)throw new Error('Fixture: UWP version database unavailable');return state.uwpVersions;}
+    if(name==='FetchHistoricalVersions') return {releaseVersions:[{version:'Release 1.26.0',urls:['https://example.com/game.msixvc']}],previewVersions:[]};
+    if(name==='GetContentRoots') return state.uwpRoots;
+    if(name==='ListVersionMetas'||name==='ListVersionMetasWithRegistered') {
+      if(name==='ListVersionMetasWithRegistered'&&state.registrationChanged)await new Promise(resolve=>setTimeout(resolve,600));
+      return state.uwpMetas.map(meta=>({...meta}));
+    }
+    if(name==='GetVersionMeta') {
+      const meta={...(state.uwpMetas.find(meta=>meta.name===args[0]) || state.uwpMetas[0])};
+      if(scenario==='uwp-stale-register')await new Promise(resolve=>setTimeout(resolve,5000));
+      return meta;
+    }
+    if(name==='GetLocalVersionNames') return state.uwpMetas.map(meta=>meta.name);
+    if(name==='GetAllVersionsStatus') return args[0].map(item=>({version:item.short,type:item.type,packageType:item.packageType,isDownloaded:item.short===state.uwpVersions[0].version,isInstalled:false}));
+    if(name==='GetVersionStatusForPackage') return {version:args[0],type:args[1],packageType:args[2],isDownloaded:false,isInstalled:false};
+    if(name==='ResolveDownloadedUWP') return args[0]===state.uwpVersions[0].version ? 'C:\\Fixture\\installers\\Minecraft-UWP-Release-'+args[0]+'.appx' : '';
+    if(name==='StartUWPDownload') {if(scenario==='uwp-download-error'&&!state.recovered)throw new Error('ERR_UWP_DOWNLOAD_URL: Fixture: Windows Update link unavailable');const channel=String(args[2]);return 'C:\\Fixture\\installers\\Minecraft-UWP-'+channel[0].toUpperCase()+channel.slice(1)+'-'+args[0]+'.appx';}
+    if(name==='InstallExtractAppx') return scenario==='uwp-install-error'&&!state.recovered ? 'ERR_UWP_REGISTER: Fixture registration failure' : '';
+    if(name==='ValidateVersionFolderName') return '';
+  }
+ if(scenario==='gdk-launch') {
+   if(name==='IsGameInputInstalled'||name==='IsGamingServicesInstalled'||name==='IsVcRuntimeInstalled') return true;
+   if(name==='GetVersionMenuDetails') return [{name:'UI test instance',registered:false,leviLaminaInstalled:false,logoDataUrl:''}];
+   if(name==='LaunchVersionByName') {await new Promise(resolve=>setTimeout(resolve,700));return '';}
+ }
  if (/^(Set|Reset|Kill|Open|Start)/.test(name)) {
    const output = document.getElementById('audit-calls');
    if(output) output.textContent = name + ': ' + JSON.stringify(args);
@@ -66,7 +125,10 @@ state.call = async (name, ...args) => {
  if (name.startsWith('Is')||name.startsWith('Can')||name.startsWith('GetEnable')||name.startsWith('GetDisable')) return false;
  return '';
 };
-state.downloads = scenario==='downloads' ? {
+state.downloads = scenario==='uwp-downloads' ? {
+  'C:\\Fixture\\installers\\Minecraft-UWP-Release-1.21.100.0.appx': {dest:'C:\\Fixture\\installers\\Minecraft-UWP-Release-1.21.100.0.appx',fileName:'Minecraft-UWP-Release-1.21.100.0.appx',status:'done',error:'',speed:0,progress:{downloaded:2048,total:2048},installer:{version:'1.21.100.0',type:'Release',packageType:'uwp',uuid:state.uwpVersions[0].uuid,isLeviLaminaSupported:false}},
+  'C:\\Fixture\\installers\\Minecraft-UWP-Beta-1.21.99.0.appx': {dest:'C:\\Fixture\\installers\\Minecraft-UWP-Beta-1.21.99.0.appx',fileName:'Minecraft-UWP-Beta-1.21.99.0.appx',status:'error',error:'Fixture: network unavailable',speed:0,progress:null,url:'uwp:'+state.uwpVersions[1].uuid,installer:{version:'1.21.99.0',type:'Beta',packageType:'uwp',uuid:state.uwpVersions[1].uuid,isLeviLaminaSupported:false}}
+} : scenario==='downloads' ? {
  'C:\\Fixture\\installers\\Release 1.21.0.msixvc': {dest:'C:\\Fixture\\installers\\Release 1.21.0.msixvc',fileName:'Release 1.21.0.msixvc',status:'done',error:'',speed:0,progress:{downloaded:2048,total:2048},installer:{version:'1.21.0',type:'Release',isLeviLaminaSupported:false}},
  'C:\\Fixture\\installers\\retry.msixvc': {dest:'C:\\Fixture\\installers\\retry.msixvc',fileName:'retry.msixvc',status:'error',error:'Fixture: network unavailable',speed:0,progress:null,url:'https://example.com/game.msixvc',md5sum:'fixture-checksum',installer:{version:'1.21.1',type:'Release',isLeviLaminaSupported:false}},
  'active.msixvc':{dest:'active.msixvc',fileName:'active.msixvc',status:'started',error:'',speed:1024,progress:{downloaded:512,total:4096}}

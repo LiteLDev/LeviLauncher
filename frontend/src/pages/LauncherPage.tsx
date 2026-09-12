@@ -50,6 +50,7 @@ import { ROUTES } from "@/constants/routes";
 import { useLauncher } from "@/hooks/useLauncher";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
+import { resolveInstallError } from "@/utils/installError";
 
 const LAUNCH_TIP_KEYS = [
   "version_selector",
@@ -98,6 +99,9 @@ export const LauncherPage = (args: any) => {
     logoByName,
     isLoadingVersions,
     registerAction,
+    registrationPendingAction,
+    launchPending,
+    requiresUWPRegistration,
     tipIndex,
 
     // Disclosures
@@ -127,7 +131,7 @@ export const LauncherPage = (args: any) => {
     stopTipTimer,
 
     // Handlers
-    doLaunch,
+    doPrimaryAction,
     doCreateShortcut,
     doOpenFolder,
     doRegister,
@@ -161,7 +165,7 @@ export const LauncherPage = (args: any) => {
   }, [launchTips.length, startTipTimer, stopTipTimer]);
 
   useEffect(() => {
-    if (!currentVersionName || !currentVersionInfo?.isLeviLaminaInstalled) {
+    if (!currentVersionName || currentVersionInfo?.packageType === "uwp" || !currentVersionInfo?.isLeviLaminaInstalled) {
       return;
     }
     void ensureInstanceHydrated(currentVersionName, {
@@ -170,6 +174,7 @@ export const LauncherPage = (args: any) => {
     });
   }, [
     currentVersionInfo?.isLeviLaminaInstalled,
+    currentVersionInfo?.packageType,
     currentVersionName,
     ensureInstanceHydrated,
   ]);
@@ -178,6 +183,7 @@ export const LauncherPage = (args: any) => {
   const resourceLabel = t("content.count.resource_packs") as string;
   const behaviorLabel = t("content.count.behavior_packs") as string;
   const launchErrorMessage = useMemo(() => {
+    if (launchErrorCode.includes("ERR_UWP_")) return resolveInstallError(launchErrorCode, t);
     const key = `errors.${launchErrorCode}`;
     const translated = t(key) as unknown as string;
     if (launchErrorCode && translated && translated !== key) return translated;
@@ -198,7 +204,7 @@ export const LauncherPage = (args: any) => {
   );
   const isCurrentVersionRegistered = Boolean(currentVersionInfo?.isRegistered);
   const currentVersionHasLeviLamina = Boolean(
-    currentVersionInfo?.isLeviLaminaInstalled,
+    currentVersionInfo?.packageType !== "uwp" && currentVersionInfo?.isLeviLaminaInstalled,
   );
   const currentGameVersion = String(currentVersionInfo?.version || "").trim();
   const currentLeviLaminaVersion = String(
@@ -406,7 +412,7 @@ export const LauncherPage = (args: any) => {
                         containerPadding={12}
                         className={cn(
                           COMPONENT_STYLES.dropdown.content,
-                          "flex min-h-0 w-96 min-w-0 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden",
+                          "flex min-h-0 w-80 min-w-0 max-w-[calc(100vw-1.5rem)] flex-col overflow-hidden",
                         )}
                       >
                         {
@@ -455,7 +461,7 @@ export const LauncherPage = (args: any) => {
                           selectedKeys={
                             new Set(currentVersion ? [currentVersion] : [])
                           }
-                          className="min-h-0 min-w-0 shrink overflow-y-auto overflow-x-hidden overscroll-contain no-scrollbar"
+                          className="min-h-0 min-w-0 shrink gap-0.5 overflow-y-auto overflow-x-hidden overscroll-contain no-scrollbar"
                           items={versionMenuItems}
                           onSelectionChange={handleVersionSelect}
                         >
@@ -465,6 +471,7 @@ export const LauncherPage = (args: any) => {
                               id={item.key}
                               textValue={item.name}
                               isDisabled={item.isDisabled}
+                              className="min-w-0 shrink-0 gap-3 rounded-lg py-1.25 data-[selected=true]:bg-accent/10"
                             >
                               {
                                 <div className="w-8 h-8 shrink-0 rounded-lg bg-surface-secondary dark:bg-surface/10 flex items-center justify-center overflow-hidden">
@@ -486,24 +493,32 @@ export const LauncherPage = (args: any) => {
                                   })()}
                                 </div>
                               }
-                              <Label className="min-w-0 flex-1">
-                                <div className="flex min-w-0 justify-between items-center gap-2">
-                                  <span className="min-w-0 truncate font-semibold" title={item.name}>
-                                    {item.name}
-                                  </span>
-                                  <div className="flex shrink-0 items-center gap-1">
-                                    {item.isLeviLaminaInstalled && (
+                              <div className="flex min-w-0 flex-1 flex-col gap-0.75" title={item.name}>
+                                <Label className="block max-w-full truncate text-sm font-semibold leading-5">
+                                  {item.name}
+                                </Label>
+                                {!item.isDisabled && (
+                                  <Description className="flex min-w-0 flex-wrap items-center gap-x-2 gap-y-1 text-xs leading-5">
+                                    <span className="shrink-0 rounded bg-default px-1.5 text-[10px] font-medium leading-5 text-muted">
+                                      {String(item.packageType || "gdk").toUpperCase()}
+                                    </span>
+                                    {item.version && (
+                                      <span className="shrink-0 tabular-nums text-muted">
+                                        {item.version}
+                                      </span>
+                                    )}
+                                    {item.packageType !== "uwp" && item.isLeviLaminaInstalled && (
                                       <Chip
                                         size="sm"
                                         variant="soft"
                                         color={"accent"}
                                         className={
-                                          "bg-brand-500/10 border border-brand-500/20 h-5 px-1"
+                                          "bg-brand-500/10 border border-brand-500/20 h-5 shrink-0 px-1.5"
                                         }
                                       >
                                         <Chip.Label
                                           className={
-                                            "text-brand-600 dark:text-brand-500 font-bold text-[10px]"
+                                            "text-brand-600 dark:text-brand-500 font-medium text-[10px]"
                                           }
                                         >
                                           LeviLamina
@@ -516,27 +531,22 @@ export const LauncherPage = (args: any) => {
                                         variant="soft"
                                         color={"accent"}
                                         className={
-                                          "bg-brand-500/10 border border-brand-500/20 h-5 px-1"
+                                          "bg-brand-500/10 border border-brand-500/20 h-5 shrink-0 px-1.5"
                                         }
                                       >
                                         <Chip.Label
                                           className={
-                                            "text-brand-600 dark:text-brand-500 font-bold text-[10px]"
+                                            "text-brand-600 dark:text-brand-500 font-medium text-[10px]"
                                           }
                                         >
                                           {t("launcherpage.registered_tip")}
                                         </Chip.Label>
                                       </Chip>
                                     )}
-                                  </div>
-                                </div>
-                              </Label>
-                              {item.version && item.version !== item.name && (
-                                <Description className="shrink-0 whitespace-nowrap">
-                                  {item.version}
-                                </Description>
-                              )}
-                              <Dropdown.ItemIndicator />
+                                  </Description>
+                                )}
+                              </div>
+                              <Dropdown.ItemIndicator className="text-accent" />
                             </Dropdown.Item>
                           )}
                         </Dropdown.Menu>
@@ -623,7 +633,8 @@ export const LauncherPage = (args: any) => {
                                 ? t("versions.edit.unregister_button")
                                 : t("launcherpage.register_system_button")
                             }
-                            onAction={doRegister}
+                            onAction={() => void doRegister()}
+                            isDisabled={registrationPendingAction !== null || launchPending}
                           >
                             {<FaWindows />}
                             <Label>
@@ -645,9 +656,10 @@ export const LauncherPage = (args: any) => {
                     <Button
                       data-testid="primary-launch-button"
                       size="lg"
-                      onPress={doLaunch}
+                      onPress={doPrimaryAction}
                       variant={"secondary"}
-                      isPending={mcLaunchLoadingDisclosure.isOpen}
+                      isPending={registrationPendingAction !== null || launchPending || mcLaunchLoadingDisclosure.isOpen}
+                      isDisabled={registrationPendingAction !== null || launchPending || (Boolean(currentVersion) && !currentVersionInfo)}
                       className={
                         "h-14 px-8 text-lg font-bold brand-primary-foreground shadow-brand-900/20 shadow-lg bg-brand-500 hover:bg-brand-500 rounded-2xl w-full sm:w-auto"
                       }
@@ -659,15 +671,25 @@ export const LauncherPage = (args: any) => {
                             color="current"
                             className={isPending ? "" : "hidden"}
                           />
-                          {currentVersion ? (
+                          {requiresUWPRegistration ? (
+                            <FaWindows className="mb-0.5" />
+                          ) : currentVersion ? (
                             <FaRocket className="mb-0.5" />
                           ) : (
                             <FaList className="mb-0.5" />
                           )}
                           {t(
-                            currentVersion
-                              ? "launcherpage.launch_button"
-                              : "audit.primary.download_minecraft",
+                            registrationPendingAction === "register"
+                              ? "uwp.registering"
+                              : registrationPendingAction === "unregister"
+                                ? "uwp.unregistering"
+                                : launchPending || mcLaunchLoadingDisclosure.isOpen
+                                  ? "uwp.launching"
+                                    : requiresUWPRegistration
+                                      ? "uwp.register_button"
+                                      : currentVersion
+                                        ? "launcherpage.launch_button"
+                                        : "audit.primary.download_minecraft",
                           )}
                         </>
                       )}
@@ -827,6 +849,7 @@ export const LauncherPage = (args: any) => {
             <>
               {launchErrorCode === "ERR_GAME_ALREADY_RUNNING" && (
                 <ModalAction
+                  isDisabled={currentVersionInfo?.packageType === "uwp"}
                   onPress={handleLaunchFailedForceRun}
                   variant={"primary"}
                 >
@@ -1121,6 +1144,8 @@ export const LauncherPage = (args: any) => {
         <UnifiedModal
           isOpen={registerInstallingDisclosure.isOpen}
           onOpenChange={registerInstallingDisclosure.setOpen}
+          isDismissable={registrationPendingAction === null}
+          showConfirmButton={false}
           type={registerAction === "unregister" ? "warning" : "success"}
           title={
             registerAction === "unregister"
@@ -1195,6 +1220,7 @@ export const LauncherPage = (args: any) => {
           <ModalNotice tone="danger">
             <ModalDescription>
               {(() => {
+                if (launchErrorCode.includes("ERR_UWP_")) return resolveInstallError(launchErrorCode, t);
                 const key = `errors.${launchErrorCode}`;
                 const translated = t(key) as unknown as string;
                 if (launchErrorCode && translated && translated !== key)

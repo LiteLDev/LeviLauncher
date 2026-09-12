@@ -1,3 +1,4 @@
+import { EMPTY_CONTENT_ROOTS } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
@@ -86,14 +87,7 @@ export default function BehaviorPacksPage() {
   const [error, setError] = React.useState<string>("");
   const [currentVersionName, setCurrentVersionName] =
     React.useState<string>("");
-  const [roots, setRoots] = React.useState<types.ContentRoots>({
-    base: "",
-    usersRoot: "",
-    resourcePacks: "",
-    behaviorPacks: "",
-    isIsolation: false,
-    isPreview: false,
-  });
+  const [roots, setRoots] = React.useState<types.ContentRoots>(EMPTY_CONTENT_ROOTS);
   const [packs, setPacks] = React.useState<any[]>([]);
   const [activePack, setActivePack] = React.useState<any | null>(null);
 
@@ -175,28 +169,14 @@ export default function BehaviorPacksPage() {
       setCurrentVersionName(name);
       try {
         if (!hasBackend || !name) {
-          setRoots({
-            base: "",
-            usersRoot: "",
-            resourcePacks: "",
-            behaviorPacks: "",
-            isIsolation: false,
-            isPreview: false,
-          });
+          setRoots(EMPTY_CONTENT_ROOTS);
           setPacks([]);
         } else {
           const [r, allPacks] = await Promise.all([
             GetContentRoots(name),
             ListPacksForVersion(name, ""),
           ]);
-          const safe = r || {
-            base: "",
-            usersRoot: "",
-            resourcePacks: "",
-            behaviorPacks: "",
-            isIsolation: false,
-            isPreview: false,
-          };
+          const safe = r || EMPTY_CONTENT_ROOTS;
           setRoots(safe);
 
           const filtered = (allPacks || []).filter(
@@ -360,7 +340,7 @@ export default function BehaviorPacksPage() {
             m &&
             typeof m.name === "string" &&
             m.name &&
-            m.enableIsolation &&
+            (m.packageType === "uwp" ? roots.packageType !== "uwp" || (m.type === "preview") !== roots.isPreview : m.enableIsolation) &&
             m.name !== sourceVersionName,
         )
         .sort((a: any, b: any) => {
@@ -402,6 +382,8 @@ export default function BehaviorPacksPage() {
     t,
     transferring,
     transferTargetOnOpen,
+    roots.packageType,
+    roots.isPreview,
   ]);
 
   const transferSelectedPacksToTargets = React.useCallback(async () => {

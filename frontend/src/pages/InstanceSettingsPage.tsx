@@ -312,6 +312,7 @@ export default function InstanceSettingsPage() {
                 titleClassName="text-left pb-1"
                 description={
                   <div className="mt-1 text-xs text-muted dark:text-zinc-400 truncate text-left">
+                    <span className="mr-2 font-medium">{vs.packageType.toUpperCase()}</span>
                     {t("versions.edit.mc_version")}:{" "}
                     <span className="text-foreground dark:text-zinc-200 font-medium">
                       {vs.loading ? (
@@ -541,7 +542,8 @@ export default function InstanceSettingsPage() {
                   </div>
                 </div>
               )}
-              {vs.selectedTab === "launch" && (
+              {vs.selectedTab === "launch" && vs.isUWP && <p className="text-sm text-muted">{t("uwp.launch_options_unavailable")}</p>}
+              {vs.selectedTab === "launch" && !vs.isUWP && (
                 <div className="flex flex-col gap-6">
                   <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-base font-medium">
@@ -662,7 +664,8 @@ export default function InstanceSettingsPage() {
                   </div>
                 </div>
               )}
-              {vs.selectedTab === "loader" && (
+              {vs.selectedTab === "loader" && vs.isUWP && <p className="text-sm text-muted">{t("uwp.loader_unavailable")}</p>}
+              {vs.selectedTab === "loader" && !vs.isUWP && (
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
                     <div className="flex items-center gap-4">
@@ -750,7 +753,8 @@ export default function InstanceSettingsPage() {
                   </div>
                 </div>
               )}
-              {vs.selectedTab === "features" && (
+              {vs.selectedTab === "features" && vs.isUWP && <p className="text-sm text-muted">{t("uwp.editor_unavailable")}</p>}
+              {vs.selectedTab === "features" && !vs.isUWP && (
                 <div className="flex flex-col gap-5">
                   <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-base font-medium">

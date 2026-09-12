@@ -1,3 +1,4 @@
+import { normalizePackageType } from "@/utils/packageType";
 import {
   Button,
   Card,
@@ -50,7 +51,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
     React.useState<string>("");
   const [persistedName, setPersistedName] = React.useState<string>("");
   const [activeTab, setActiveTab] = React.useState<
-    "all" | "release" | "preview"
+    "all" | "release" | "preview" | "beta"
   >("all");
   const [query, setQuery] = React.useState("");
   const [loading, setLoading] = React.useState(true);
@@ -87,7 +88,8 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
               name,
               version: gameVersion,
               isPreview,
-              type,
+              type: type.toLowerCase(),
+              packageType: normalizePackageType(m?.packageType),
               enableIsolation,
               enableConsole,
               enableEditorMode,
@@ -154,11 +156,14 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
         name: string;
         version: string;
         isPreview: boolean;
+        type: string;
+        packageType: "gdk" | "uwp";
       }>
     )
       .filter((it) => {
-        if (activeTab === "release") return !it.isPreview;
+        if (activeTab === "release") return it.type === "release";
         if (activeTab === "preview") return it.isPreview;
+        if (activeTab === "beta") return it.type === "beta";
         return true;
       })
       .filter((it) => {
@@ -166,9 +171,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
         const q = query.trim().toLowerCase();
         return (
           it.name.toLowerCase().includes(q) ||
-          String(it.version || "")
-            .toLowerCase()
-            .includes(q)
+          String(it.version || "").toLowerCase().includes(q) || it.packageType.includes(q) || it.type.includes(q)
         );
       })
       .sort((a, b) => {
@@ -255,6 +258,9 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                         <Tabs.Indicator
                           className={COMPONENT_STYLES.tabs.cursor}
                         />
+                      </Tabs.Tab>
+                      <Tabs.Tab id="beta" className={cn(COMPONENT_STYLES.tabs.tabContent, "w-auto flex-none whitespace-nowrap px-3")}>
+                        {t("uwp.beta")}<Tabs.Indicator className={COMPONENT_STYLES.tabs.cursor} />
                       </Tabs.Tab>
                       <Tabs.Tab
                         key="preview"
@@ -450,6 +456,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                     <div className="flex items-center justify-between gap-2 w-full min-w-0">
                       <div className="font-bold text-lg truncate min-w-0 flex-1">{it.name}</div>
                       <div className="flex shrink-0 items-center gap-2">
+                        <Chip size="sm" variant="soft"><Chip.Label>{it.packageType.toUpperCase()}</Chip.Label></Chip>
                         {activeTab === "all" && (it.isPreview ? (
                           <Chip
                             size="sm"
@@ -466,7 +473,7 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                             color={"success"}
                             className={"shrink-0"}
                           >
-                            <Chip.Label>{t("versions.tab.release")}</Chip.Label>
+                            <Chip.Label>{it.type === "beta" ? t("uwp.beta") : t("versions.tab.release")}</Chip.Label>
                           </Chip>
                         ))}
                         <Button

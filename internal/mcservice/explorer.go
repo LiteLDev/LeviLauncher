@@ -10,6 +10,9 @@ import (
 
 func OpenWorldsExplorer(name string, isPreview bool) error {
 	roots := GetContentRoots(name)
+	if roots.Worlds != "" {
+		return explorer.OpenPath(roots.Worlds)
+	}
 	users := strings.TrimSpace(roots.UsersRoot)
 	if users != "" {
 		ents := ListDir(users)

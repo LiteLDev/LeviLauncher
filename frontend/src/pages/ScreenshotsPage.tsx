@@ -1,3 +1,5 @@
+import { EMPTY_CONTENT_ROOTS } from "@/utils/content";
+import { resolveContentPath } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalAction } from "@/components/ModalPrimitives";
 import {
@@ -74,14 +76,7 @@ export default function ScreenshotsPage() {
   const [screenshots, setScreenshots] = React.useState<ScreenshotItem[]>([]);
   const [currentVersionName, setCurrentVersionName] =
     React.useState<string>("");
-  const [roots, setRoots] = React.useState<types.ContentRoots>({
-    base: "",
-    usersRoot: "",
-    resourcePacks: "",
-    behaviorPacks: "",
-    isIsolation: false,
-    isPreview: false,
-  });
+  const [roots, setRoots] = React.useState<types.ContentRoots>(EMPTY_CONTENT_ROOTS);
   const [activeShot, setActiveShot] = React.useState<ScreenshotItem | null>(
     null,
   );
@@ -121,9 +116,8 @@ export default function ScreenshotsPage() {
     activeShotIndex >= 0 && activeShotIndex < screenshots.length - 1;
 
   const screenshotsRoot = React.useMemo(() => {
-    if (!roots.usersRoot || !player) return "";
-    return `${roots.usersRoot}\\${player}\\games\\com.mojang\\Screenshots`;
-  }, [roots.usersRoot, player]);
+    return resolveContentPath(roots, "Screenshots", player);
+  }, [roots, player]);
 
   const refreshAll = React.useCallback(async () => {
     const generation = ++loadGeneration.current;
@@ -132,21 +126,18 @@ export default function ScreenshotsPage() {
     const name = readCurrentVersionName();
     setCurrentVersionName(name);
     try {
-      if (!hasBackend || !name || !player) {
+      if (!hasBackend || !name) {
         setScreenshots([]);
         return;
       }
       const r = await GetContentRoots(name);
       if (generation !== loadGeneration.current) return;
-      const safe = r || {
-        base: "",
-        usersRoot: "",
-        resourcePacks: "",
-        behaviorPacks: "",
-        isIsolation: false,
-        isPreview: false,
-      };
+      const safe = r || EMPTY_CONTENT_ROOTS;
       setRoots(safe);
+      if (!player && safe.packageType !== "uwp") {
+        setScreenshots([]);
+        return;
+      }
 
       const list: any[] = await (contentService as any)?.ListScreenshots?.(
         name,
@@ -343,7 +334,7 @@ export default function ScreenshotsPage() {
         isSelectMode={selection.isSelectMode}
       />
 
-      {!player || (!loading && !currentVersionName) ? (
+      {(!player && roots.packageType !== "uwp") || (!loading && !currentVersionName) ? (
         <div role="status" className="flex flex-col items-center gap-4 py-16 text-muted">
           <p>{t(!player ? "contentpage.screenshot_select_player" : "contentpage.screenshot_no_instance")}</p>
           <Button variant="secondary" onPress={() => navigate(ROUTES.content)}>{t("common.back")}</Button>

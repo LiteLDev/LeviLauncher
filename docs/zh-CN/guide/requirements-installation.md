@@ -1,13 +1,15 @@
 # 系统要求与安装
 
-这一页说明 LeviLauncher 正常安装与管理 Minecraft Bedrock (GDK) 版本前，需要满足哪些条件。
+这一页说明 LeviLauncher 正常安装与管理 Minecraft Bedrock（GDK / UWP）版本前，需要满足哪些条件。
+
+UWP 版本需启用 Windows 开发者模式，并安装包清单要求的 UWP 框架依赖（例如 Microsoft.VCLibs）。下文 Gaming Services、GameInput 与隔离实例的要求适用于 GDK。UWP 使用系统包的共享 LocalState，不支持当前 GDK 隔离和 LeviLamina。
 
 ## 系统要求
 
 | 项目 | 要求 |
 | --- | --- |
 | 操作系统 | Windows 10 或 Windows 11 |
-| 游戏版本 | Minecraft Bedrock Edition (GDK) |
+| 游戏版本 | Minecraft Bedrock Edition（GDK / UWP） |
 | 授权 | 绑定在 Microsoft 账号下的正版授权 |
 | 网络 | 用于下载版本、获取元数据、测速镜像与检查更新 |
 

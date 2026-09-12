@@ -21,6 +21,7 @@ import * as versionService from "bindings/github.com/liteldev/LeviLauncher/inter
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import { ROUTES } from "@/constants/routes";
+import { normalizePackageType } from "@/utils/packageType";
 
 const IGNORE_GS_KEY = "ll.ignore.gs";
 const DEPENDENCY_CHECK_SESSION_KEYS = {
@@ -73,6 +74,10 @@ export const useLauncher = (args: any) => {
     Map<string, any>
   >(new Map());
 
+  const currentPackageType = localVersionMap.has(currentVersion)
+    ? normalizePackageType(localVersionMap.get(currentVersion)?.packageType)
+    : undefined;
+
   const launchFailedDisclosure = useOverlayState();
   const gameInputInstallingDisclosure = useOverlayState();
   const gameInputMissingDisclosure = useOverlayState();
@@ -119,8 +124,13 @@ export const useLauncher = (args: any) => {
   const [tipIndex, setTipIndex] = React.useState<number>(0);
   const tipTimerRef = React.useRef<number | null>(null);
   const launchRequestActiveRef = React.useRef<boolean>(false);
+  const [launchPending, setLaunchPending] = React.useState(false);
+  const [registrationPendingAction, setRegistrationPendingAction] = React.useState<"register" | "unregister" | null>(null);
+  const registrationRequestActiveRef = React.useRef(false);
+  const registrationRevisionRef = React.useRef(0);
 
   useEffect(() => {
+    const registrationRevision = registrationRevisionRef.current;
     try {
       const saved = readCurrentVersionName();
       if (!saved) return;
@@ -142,8 +152,12 @@ export const useLauncher = (args: any) => {
               map.set(saved, {
                 name: saved,
                 version: ver,
+                packageType: normalizePackageType(m?.packageType),
+                type: String(m?.type || "release").toLowerCase(),
                 isPreview: String(m?.type || "").toLowerCase() === "preview",
-                isRegistered: Boolean(m?.registered),
+                isRegistered: registrationRevision === registrationRevisionRef.current
+                  ? Boolean(m?.registered)
+                  : Boolean(prevInfo?.isRegistered),
                 isLaunched: false,
                 isPreLoader: false,
                 isLeviLaminaInstalled: knownLeviLaminaStatus,
@@ -248,6 +262,8 @@ export const useLauncher = (args: any) => {
         key: name,
         name,
         version: String(localVersionMap.get(name)?.version || ""),
+        packageType: normalizePackageType(localVersionMap.get(name)?.packageType),
+        type: String(localVersionMap.get(name)?.type || "release"),
         isRegistered: Boolean(localVersionMap.get(name)?.isRegistered),
         isLeviLaminaInstalled: Boolean(
           localVersionMap.get(name)?.isLeviLaminaInstalled,
@@ -260,16 +276,27 @@ export const useLauncher = (args: any) => {
   );
 
   const doLaunch = React.useCallback(() => {
+    if (launchRequestActiveRef.current || registrationRequestActiveRef.current) return;
     const name = currentVersion;
     if (name) {
       saveCurrentVersionName(name);
       launchRequestActiveRef.current = true;
+      setLaunchPending(true);
       const launch = versionService?.LaunchVersionByName;
       if (typeof launch === "function") {
         launch(name)
           .then((err: string) => {
             const s = String(err || "");
             if (s) {
+              if (s.startsWith("ERR_UWP_NOT_REGISTERED")) {
+                registrationRevisionRef.current += 1;
+                setLocalVersionMap((previous) => {
+                  const next = new Map(previous);
+                  const current = next.get(name);
+                  if (current) next.set(name, { ...current, isRegistered: false });
+                  return next;
+                });
+              }
               launchRequestActiveRef.current = false;
               mcLaunchLoadingDisclosure.close();
               setLaunchErrorCode(s);
@@ -281,9 +308,12 @@ export const useLauncher = (args: any) => {
             mcLaunchLoadingDisclosure.close();
             setLaunchErrorCode("ERR_LAUNCH_GAME");
             launchFailedDisclosure.open();
+          }).finally(() => {
+            setLaunchPending(false);
           });
       } else {
         launchRequestActiveRef.current = false;
+        setLaunchPending(false);
       }
     } else {
       launchRequestActiveRef.current = false;
@@ -358,12 +388,13 @@ export const useLauncher = (args: any) => {
     }
   }, [currentVersion]);
 
-  const syncRegisteredFlags = React.useCallback(async (): Promise<boolean> => {
-    const listFn = (versionService as any)?.ListVersionMetasWithRegistered;
-    if (typeof listFn !== "function") return false;
+  const syncRegisteredFlags = React.useCallback(async () => {
+    const registrationRevision = registrationRevisionRef.current;
+    const listFn = versionService.ListVersionMetasWithRegistered;
+    if (typeof listFn !== "function") return null;
     try {
-      const metas = ((await listFn()) || []) as any[];
-      if (!Array.isArray(metas)) return false;
+      const metas = (await listFn()) || [];
+      if (!Array.isArray(metas) || registrationRevision !== registrationRevisionRef.current) return null;
       setLocalVersionMap((prev) => {
         const next = new Map(prev);
         let changed = false;
@@ -379,6 +410,8 @@ export const useLauncher = (args: any) => {
             next.set(name, {
               name,
               version,
+              packageType: normalizePackageType(m?.packageType),
+              type: String(m?.type || "release").toLowerCase(),
               isPreview,
               isRegistered,
               isLaunched: false,
@@ -396,6 +429,8 @@ export const useLauncher = (args: any) => {
             next.set(name, {
               ...existing,
               version,
+              packageType: normalizePackageType(m?.packageType),
+              type: String(m?.type || "release").toLowerCase(),
               isPreview,
               isRegistered,
             });
@@ -404,9 +439,9 @@ export const useLauncher = (args: any) => {
         });
         return changed ? next : prev;
       });
-      return true;
+      return metas;
     } catch {
-      return false;
+      return null;
     }
   }, []);
 
@@ -419,6 +454,7 @@ export const useLauncher = (args: any) => {
       const next = new Map(prev);
       let changed = false;
       next.forEach((info, key) => {
+        // GDK and UWP share the Windows package identity; Beta uses Release.
         if (Boolean(info?.isPreview) !== targetIsPreview) return;
         const shouldRegistered = key === name;
         if (Boolean(info?.isRegistered) !== shouldRegistered) {
@@ -441,11 +477,41 @@ export const useLauncher = (args: any) => {
     });
   }, []);
 
-  const doRegister = React.useCallback(async () => {
-    if (!currentVersion) return;
+  const doRegister = React.useCallback(async (registerOnly = false) => {
+    if (!currentVersion || registrationRequestActiveRef.current || launchRequestActiveRef.current) return;
     const isCurrentlyRegistered = Boolean(
       localVersionMap.get(currentVersion)?.isRegistered,
     );
+    if (currentPackageType === "uwp") {
+      const action = isCurrentlyRegistered && !registerOnly ? "unregister" : "register";
+      registrationRequestActiveRef.current = true;
+      registrationRevisionRef.current += 1;
+      setRegistrationPendingAction(action);
+      setRegisterAction(action);
+      registerInstallingDisclosure.open();
+      try {
+        const result = action === "register"
+          ? await versionService.RegisterVersionWithWdapp(currentVersion, Boolean(localVersionMap.get(currentVersion)?.isPreview))
+          : await versionService.UnregisterVersionByName(currentVersion);
+        if (result !== "success" && result !== "") throw new Error(result);
+        const metas = await syncRegisteredFlags();
+        if (!metas) throw new Error("ERR_UWP_QUERY");
+        const registered = Boolean(metas.find((meta) => meta.name === currentVersion)?.registered);
+        if (action === "register" && !registered) throw new Error("ERR_UWP_NOT_REGISTERED");
+        if (action === "unregister" && registered) throw new Error("ERR_UWP_UNREGISTER");
+        if (action === "register") registerSuccessDisclosure.open();
+      } catch (error) {
+        // A failed registration must never enable the launch action optimistically.
+        if (action === "register") applyOptimisticUnregisterState(currentVersion);
+        setLaunchErrorCode(String(error instanceof Error ? error.message : error));
+        registerFailedDisclosure.open();
+      } finally {
+        registerInstallingDisclosure.close();
+        registrationRequestActiveRef.current = false;
+        setRegistrationPendingAction(null);
+      }
+      return;
+    }
     if (isCurrentlyRegistered) {
       setRegisterAction("unregister");
       registerInstallingDisclosure.open();
@@ -527,6 +593,7 @@ export const useLauncher = (args: any) => {
   }, [
     args,
     currentVersion,
+    currentPackageType,
     localVersionMap,
     navigate,
     applyOptimisticRegisterState,
@@ -537,8 +604,14 @@ export const useLauncher = (args: any) => {
     syncRegisteredFlags,
   ]);
 
+  const requiresUWPRegistration = currentPackageType === "uwp" && !Boolean(localVersionMap.get(currentVersion)?.isRegistered);
+  const doPrimaryAction = React.useCallback(() => {
+    if (requiresUWPRegistration) void doRegister(true);
+    else doLaunch();
+  }, [requiresUWPRegistration, doRegister, doLaunch]);
+
   useEffect(() => {
-    if (!hasBackend) return;
+    if (!hasBackend || currentPackageType !== "gdk") return;
     let disposed = false;
     let vcRuntimeRetryTimer: number | null = null;
 
@@ -586,6 +659,7 @@ export const useLauncher = (args: any) => {
         markSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.gameInput);
         try {
           minecraft?.IsGameInputInstalled?.().then((ok: boolean) => {
+            if (disposed) return;
             if (!ok) {
               gameInputMissingDisclosure.open();
             }
@@ -604,6 +678,7 @@ export const useLauncher = (args: any) => {
           const ig = String(localStorage.getItem(IGNORE_GS_KEY) || "") === "1";
           if (!ig) {
             minecraft?.IsGamingServicesInstalled?.().then((ok: boolean) => {
+              if (disposed) return;
               if (!ok) {
                 gamingServicesMissingDisclosure.open();
               }
@@ -622,6 +697,7 @@ export const useLauncher = (args: any) => {
     };
   }, [
     hasBackend,
+    currentPackageType,
     gameInputMissingDisclosure,
     gamingServicesMissingDisclosure,
     vcRuntimeMissingDisclosure,
@@ -843,6 +919,11 @@ export const useLauncher = (args: any) => {
         bp = await countDir(safe.behaviorPacks);
       } catch {}
 
+      if (roots?.packageType === "uwp") {
+        worlds = roots.worlds ? await countDir(roots.worlds) : 0;
+        setContentCounts({ worlds, resourcePacks: res, behaviorPacks: bp });
+        return;
+      }
       if (safe.usersRoot) {
         try {
           const players = await listPlayers(safe.usersRoot);
@@ -934,6 +1015,7 @@ export const useLauncher = (args: any) => {
 
   useEffect(() => {
     if (hasBackend) {
+      const registrationRevision = registrationRevisionRef.current;
       setIsLoadingVersions(true);
 
       const processMetas = (metas: any[]) => {
@@ -947,6 +1029,8 @@ export const useLauncher = (args: any) => {
           const lv: any = {
             name,
             version: gameVersion,
+            packageType: normalizePackageType(m?.packageType),
+            type: type.toLowerCase(),
             isPreview,
             isRegistered: Boolean(m?.registered),
             isLaunched: false,
@@ -967,6 +1051,9 @@ export const useLauncher = (args: any) => {
             const known = prev.get(name)?.isLeviLaminaInstalled;
             merged.set(name, {
               ...info,
+              isRegistered: registrationRevision === registrationRevisionRef.current
+                ? info.isRegistered
+                : Boolean(prev.get(name)?.isRegistered),
               isLeviLaminaInstalled:
                 typeof known === "boolean" ? known : undefined,
             });
@@ -1020,7 +1107,9 @@ export const useLauncher = (args: any) => {
             if (!current) return;
             next.set(name, {
               ...current,
-              isRegistered: Boolean(detail?.registered),
+              isRegistered: registrationRevision === registrationRevisionRef.current
+                ? Boolean(detail?.registered)
+                : Boolean(current?.isRegistered),
               isLeviLaminaInstalled: Boolean(detail?.leviLaminaInstalled),
             });
           });
@@ -1254,6 +1343,9 @@ export const useLauncher = (args: any) => {
     logoByName,
     isLoadingVersions,
     registerAction,
+    registrationPendingAction,
+    launchPending,
+    requiresUWPRegistration,
     tipIndex,
     hasBackend,
 
@@ -1285,6 +1377,7 @@ export const useLauncher = (args: any) => {
 
     // Handlers
     doLaunch,
+    doPrimaryAction,
     doForceLaunch,
     doCreateShortcut,
     doOpenFolder,

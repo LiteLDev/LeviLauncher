@@ -1,3 +1,4 @@
+import { normalizePackageType, type PackageType } from "@/utils/packageType";
 import { openDirectory } from "@/utils/explorer";
 import { toast, useOverlayState } from "@heroui/react";
 import React from "react";
@@ -613,6 +614,8 @@ export const useInstanceSettings = () => {
   const [targetName, setTargetName] = React.useState<string>(initialName);
   const [selectedTab, setSelectedTab] = React.useState<string>(initialTab);
   const [newName, setNewName] = React.useState<string>(initialName);
+  const [packageType, setPackageType] = React.useState<PackageType>("gdk");
+  const isUWP = packageType === "uwp";
   const [gameVersion, setGameVersion] = React.useState<string>("");
   const [versionType, setVersionType] = React.useState<string>("");
   const [isPreview, setIsPreview] = React.useState<boolean>(false);
@@ -848,7 +851,7 @@ export const useInstanceSettings = () => {
 
   // Load LL install status
   React.useEffect(() => {
-    if (selectedTab !== "loader" || !targetName) return;
+    if (isUWP || selectedTab !== "loader" || !targetName) return;
     let cancelled = false;
     const run = async () => {
       try {
@@ -878,6 +881,7 @@ export const useInstanceSettings = () => {
     ensureInstanceHydrated,
     getInstanceSnapshot,
     selectedTab,
+    isUWP,
     snapshotRevision,
     targetName,
     installingLL,
@@ -885,8 +889,8 @@ export const useInstanceSettings = () => {
   ]);
 
   React.useEffect(() => {
-    setLLSupportedVersions(getSupportedLLVersions(gameVersion));
-  }, [gameVersion, getSupportedLLVersions]);
+    setLLSupportedVersions(isUWP ? [] : getSupportedLLVersions(gameVersion));
+  }, [gameVersion, getSupportedLLVersions, isUWP]);
 
   React.useEffect(() => {
     setSelectedLLVersion((prev) => {
@@ -928,6 +932,7 @@ export const useInstanceSettings = () => {
         if (typeof getMeta === "function") {
           const meta: any = await getMeta(targetName);
           if (meta) {
+            setPackageType(normalizePackageType(meta?.packageType));
             setGameVersion(String(meta?.gameVersion || ""));
             const type = String(meta?.type || "release").toLowerCase();
             setVersionType(type);
@@ -1941,11 +1946,11 @@ export const useInstanceSettings = () => {
           nn,
           gameVersion,
           type,
-          !!enableIsolation,
-          !!enableConsole,
-          !!enableEditorMode,
-          launchArgs,
-          envVars,
+          !isUWP && !!enableIsolation,
+          !isUWP && !!enableConsole,
+          !isUWP && !!enableEditorMode,
+          isUWP ? "" : launchArgs,
+          isUWP ? "" : envVars,
         );
         if (err2) {
           setError(err2);
@@ -1976,6 +1981,7 @@ export const useInstanceSettings = () => {
       gameVersion,
       isPreview,
       enableIsolation,
+      isUWP,
       enableConsole,
       enableEditorMode,
       logoDataUrl,
@@ -2292,6 +2298,8 @@ export const useInstanceSettings = () => {
     returnToPath,
 
     // Form state
+    packageType,
+    isUWP,
     targetName,
     selectedTab,
     setSelectedTab,

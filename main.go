@@ -840,25 +840,34 @@ func main() {
 			}()
 		})
 	})
-	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+	persistWindowSize := func() {
 		w := windows.Width()
 		h := windows.Height()
+		if w <= 0 || h <= 0 {
+			return
+		}
+		if w < minWindowWidth {
+			w = minWindowWidth
+		}
+		if h < minWindowHeight {
+			h = minWindowHeight
+		}
 
 		c, err := config.Load()
 		if err != nil {
-			log.Printf("config.Load failed during window close: %v", err)
+			log.Printf("config.Load failed while persisting window size: %v", err)
+			return
 		}
-		if w > 0 && h > 0 {
-			if w < minWindowWidth {
-				w = minWindowWidth
-			}
-			if h < minWindowHeight {
-				h = minWindowHeight
-			}
-			c.WindowWidth = w
-			c.WindowHeight = h
-			_ = config.Save(c)
-		}
+		c.WindowWidth = w
+		c.WindowHeight = h
+		_ = config.Save(c)
+	}
+	// Quitting never reaches the WindowClosing hook: Wails drops its window
+	// registry before the close event is dispatched, so the hook is looked up
+	// against an empty map. Shutdown tasks still run while the window is alive.
+	wailsApp.OnShutdown(persistWindowSize)
+	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		persistWindowSize()
 
 		if config.GetMinimizeToTray() && !launch.QuitRequested() {
 			event.Cancel()

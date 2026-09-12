@@ -10,12 +10,12 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
-	"syscall"
 	"time"
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
+	"github.com/liteldev/LeviLauncher/internal/oslang"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	win "golang.org/x/sys/windows"
 	winreg "golang.org/x/sys/windows/registry"
@@ -87,8 +87,6 @@ const (
 var (
 	user32MessageBox             = win.NewLazySystemDLL("user32.dll")
 	procVcRuntimeMessageBoxW     = user32MessageBox.NewProc("MessageBoxW")
-	kernel32Locale               = win.NewLazySystemDLL("kernel32.dll")
-	procGetUserDefaultUILanguage = kernel32Locale.NewProc("GetUserDefaultUILanguage")
 )
 
 type vcRuntimeDownloadCallbacks struct {
@@ -201,59 +199,50 @@ func messageBox(title, message string, flags uint32) int32 {
 	return int32(r)
 }
 
-func isChineseWindowsUI() bool {
-	langID, _, err := procGetUserDefaultUILanguage.Call()
-	if langID == 0 || err != nil && err != syscall.Errno(0) {
-		return false
-	}
-	primaryLangID := uint16(langID) & 0x03ff
-	return primaryLangID == 0x04
-}
-
 func vcStartupRequiredTitle() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher - 需要 Visual C++ Runtime"
 	}
 	return "LeviLauncher - Visual C++ Runtime Required"
 }
 
 func vcStartupDownloadTitle() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher - 正在下载 Runtime"
 	}
 	return "LeviLauncher - Downloading Runtime"
 }
 
 func vcStartupInstallPromptMessage() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher 需要 Microsoft Visual C++ 2015-2022 Redistributable (x64) 才能正常启动。\n\n点击“确定”下载并打开 Microsoft 安装程序。安装完成后，请重新启动 LeviLauncher。"
 	}
 	return "LeviLauncher requires Microsoft Visual C++ 2015-2022 Redistributable (x64) to start correctly.\n\nClick OK to download and open the Microsoft installer. After the installation finishes, restart LeviLauncher."
 }
 
 func vcStartupDownloadMessage() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher 将下载 Microsoft Visual C++ 2015-2022 Redistributable (x64) 安装程序。请稍候，下载完成后会打开安装程序窗口。"
 	}
 	return "LeviLauncher will download the Microsoft Visual C++ 2015-2022 Redistributable (x64) installer now. Please wait; another installer window will open when the download finishes."
 }
 
 func vcStartupDownloadFailedMessage(err error) string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return fmt.Sprintf("下载 Microsoft Visual C++ 2015-2022 Redistributable (x64) 失败。\n\n错误:\n%v", err)
 	}
 	return fmt.Sprintf("Failed to download Microsoft Visual C++ 2015-2022 Redistributable (x64).\n\nError:\n%v", err)
 }
 
 func vcStartupOpenInstallerFailedMessage(installerPath string, err error) string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return fmt.Sprintf("打开 Microsoft Visual C++ 安装程序失败。\n\n安装程序路径:\n%s\n\n错误:\n%v", installerPath, err)
 	}
 	return fmt.Sprintf("Failed to open the Microsoft Visual C++ installer.\n\nInstaller path:\n%s\n\nError:\n%v", installerPath, err)
 }
 
 func vcStartupInstallerOpenedMessage() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "Microsoft Visual C++ 安装程序已打开。请完成安装，然后重新启动 LeviLauncher。"
 	}
 	return "The Microsoft Visual C++ installer has been opened. Finish the installation, then restart LeviLauncher."

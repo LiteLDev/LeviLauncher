@@ -10,11 +10,11 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"syscall"
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
+	"github.com/liteldev/LeviLauncher/internal/oslang"
 	win "golang.org/x/sys/windows"
 	winreg "golang.org/x/sys/windows/registry"
 )
@@ -75,8 +75,6 @@ var (
 
 	user32MessageBox             = win.NewLazySystemDLL("user32.dll")
 	procWebView2MessageBoxW      = user32MessageBox.NewProc("MessageBoxW")
-	kernel32Locale               = win.NewLazySystemDLL("kernel32.dll")
-	procGetUserDefaultUILanguage = kernel32Locale.NewProc("GetUserDefaultUILanguage")
 )
 
 func messageBox(title, message string, flags uint32) int32 {
@@ -99,66 +97,57 @@ func messageBox(title, message string, flags uint32) int32 {
 	return int32(r)
 }
 
-func isChineseWindowsUI() bool {
-	langID, _, err := procGetUserDefaultUILanguage.Call()
-	if langID == 0 || err != nil && err != syscall.Errno(0) {
-		return false
-	}
-	primaryLangID := uint16(langID) & 0x03ff
-	return primaryLangID == 0x04
-}
-
 func webView2StartupRequiredTitle() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher - 需要 WebView2 Runtime"
 	}
 	return "LeviLauncher - WebView2 Runtime Required"
 }
 
 func webView2StartupDownloadTitle() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher - 正在下载 WebView2 Runtime"
 	}
 	return "LeviLauncher - Downloading WebView2 Runtime"
 }
 
 func webView2StartupInstallPromptMessage() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher 需要 Microsoft Edge WebView2 Runtime 才能正常启动。\n\n点击“确定”下载并打开 Microsoft 安装程序。安装完成后，请重新启动 LeviLauncher。"
 	}
 	return "LeviLauncher requires Microsoft Edge WebView2 Runtime to start correctly.\n\nClick OK to download and open the Microsoft installer. After the installation finishes, restart LeviLauncher."
 }
 
 func webView2StartupDownloadMessage() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher 将下载 Microsoft Edge WebView2 Runtime 安装程序。请稍候，下载完成后会打开安装程序窗口。"
 	}
 	return "LeviLauncher will download the Microsoft Edge WebView2 Runtime installer now. Please wait; another installer window will open when the download finishes."
 }
 
 func webView2StartupDownloadFailedMessage(err error) string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return fmt.Sprintf("下载 Microsoft Edge WebView2 Runtime 失败。\n\n错误:\n%v", err)
 	}
 	return fmt.Sprintf("Failed to download Microsoft Edge WebView2 Runtime.\n\nError:\n%v", err)
 }
 
 func webView2StartupOpenInstallerFailedMessage(installerPath string, err error) string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return fmt.Sprintf("打开 Microsoft Edge WebView2 安装程序失败。\n\n安装程序路径:\n%s\n\n错误:\n%v", installerPath, err)
 	}
 	return fmt.Sprintf("Failed to open the Microsoft Edge WebView2 installer.\n\nInstaller path:\n%s\n\nError:\n%v", installerPath, err)
 }
 
 func webView2StartupInstallerOpenedMessage() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "Microsoft Edge WebView2 安装程序已打开。请完成安装，然后重新启动 LeviLauncher。"
 	}
 	return "The Microsoft Edge WebView2 installer has been opened. Finish the installation, then restart LeviLauncher."
 }
 
 func webView2StartupConfigurationErrorMessage(configPath string, err error) string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return fmt.Sprintf(
 			"自定义 WebView2 Runtime 配置无效。\n\n配置文件:\n%s\n\n也可以通过 --webview2-runtime-dir <目录> 指定 Fixed Version Runtime。\n\n错误:\n%v",
 			configPath,

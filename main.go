@@ -16,7 +16,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
 	"unsafe"
 
@@ -33,6 +32,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
+	"github.com/liteldev/LeviLauncher/internal/oslang"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/resourcerules"
 	"github.com/liteldev/LeviLauncher/internal/tray"
@@ -72,7 +72,6 @@ var (
 	kernel32                     = win.NewLazySystemDLL("kernel32.dll")
 	procAttachConsole            = kernel32.NewProc("AttachConsole")
 	procAllocConsole             = kernel32.NewProc("AllocConsole")
-	procGetUserDefaultUILanguage = kernel32.NewProc("GetUserDefaultUILanguage")
 	procSetConsoleOutputCP       = kernel32.NewProc("SetConsoleOutputCP")
 	procSetConsoleCP             = kernel32.NewProc("SetConsoleCP")
 	user32                       = win.NewLazySystemDLL("user32.dll")
@@ -228,17 +227,8 @@ func (s *startupDiagnostics) logError(source string, err error) {
 	log.Printf("[startup] %s: %v", source, err)
 }
 
-func isChineseWindowsUI() bool {
-	langID, _, err := procGetUserDefaultUILanguage.Call()
-	if langID == 0 || err != nil && err != syscall.Errno(0) {
-		return false
-	}
-	primaryLangID := uint16(langID) & 0x03ff
-	return primaryLangID == 0x04
-}
-
 func startupFailureDialogTitle() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher - 启动失败"
 	}
 	return "LeviLauncher - Startup Failed"
@@ -249,7 +239,7 @@ func buildStartupFailureDialogMessage(logPath string, debugMode bool) string {
 		logPath = "Unavailable"
 	}
 	if debugMode {
-		if isChineseWindowsUI() {
+		if oslang.IsChineseUI() {
 			return fmt.Sprintf(
 				"LeviLauncher 启动失败。\n\n调试模式已启用。请复制当前控制台输出，并在提交 GitHub issue 时附上 startup.log。\n\n日志路径:\n%s",
 				logPath,
@@ -260,7 +250,7 @@ func buildStartupFailureDialogMessage(logPath string, debugMode bool) string {
 			logPath,
 		)
 	}
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher 启动失败。\n\n请从 PowerShell 或 Windows Terminal 使用 --debug 重新启动，以捕获控制台日志。\n\n命令行示例:\n.\\LeviLauncher.exe --debug\n\n也可以在快捷方式目标末尾追加 --debug。支持参数: debug, --debug, -debug, /debug。\n\n如果仍然失败，请在 GitHub issue 中附上控制台输出。"
 	}
 	return "LeviLauncher failed to start.\n\nRestart it from PowerShell or Windows Terminal with --debug to capture console logs.\n\nCommand-line example:\n.\\LeviLauncher.exe --debug\n\nYou can also append --debug to the shortcut Target. Supported arguments: debug, --debug, -debug, /debug.\n\nIf it still fails, attach the console output when opening a GitHub issue."

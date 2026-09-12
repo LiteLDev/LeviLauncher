@@ -4,6 +4,7 @@ import (
 	"context"
 	"path/filepath"
 	"strings"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
@@ -31,6 +32,24 @@ var (
 	procShowWindow          = user32.NewProc("ShowWindow")
 	procSetForegroundWindow = user32.NewProc("SetForegroundWindow")
 )
+
+var quitRequested atomic.Bool
+
+// QuitRequested reports whether the current shutdown was asked for through
+// QuitLauncher. The window-close hook relies on this to tell an explicit quit
+// apart from the user pressing the close button: if it hid the window on an
+// explicit quit, the launcher would stay alive in the tray forever.
+func QuitRequested() bool {
+	return quitRequested.Load()
+}
+
+// QuitLauncher terminates the launcher regardless of the minimise-to-tray
+// setting. Every "quit" affordance outside the window close button goes
+// through here.
+func QuitLauncher() {
+	quitRequested.Store(true)
+	application.Get().Quit()
+}
 
 func FindWindowByTitleExact(title string) bool {
 	t, err := syscall.UTF16PtrFromString(title)
@@ -223,9 +242,7 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 	launchBehavior := config.GetOnGameLaunch()
 	switch launchBehavior {
 	case config.OnGameLaunchClose:
-		if app := application.Get(); app != nil {
-			app.Quit()
-		}
+		QuitLauncher()
 		return
 	case config.OnGameLaunchHide:
 		if w := GetMainWindow(); w != nil {
@@ -256,9 +273,7 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 				exitBehavior := config.GetOnGameExit()
 				switch exitBehavior {
 				case config.OnGameExitClose:
-					if app := application.Get(); app != nil {
-						app.Quit()
-					}
+					QuitLauncher()
 				case config.OnGameExitKeep:
 					// keep launcher as-is
 				case config.OnGameExitReopen:

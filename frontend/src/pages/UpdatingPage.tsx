@@ -7,7 +7,7 @@ import { useTranslation } from "react-i18next";
 import { FaRocket } from "react-icons/fa";
 import { motion } from "framer-motion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
-import { Events, Window } from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageContainer } from "@/components/PageContainer";
 import { PageHeader } from "@/components/PageHeader";
@@ -326,7 +326,7 @@ export default function UpdatingPage() {
         type="error"
         title={t("updating.failed_title")}
         confirmText={t("audit.mods.close_update_window")}
-        onConfirm={() => Window.Close()}
+        onConfirm={() => minecraft.QuitLauncher()}
         showCancelButton={false}
         isDismissable={false}
       >

@@ -476,7 +476,7 @@ func setupSystemTray(app *application.App) *application.SystemTray {
 	})
 	menu.AddSeparator()
 	menu.Add(exitLabel).OnClick(func(_ *application.Context) {
-		app.Quit()
+		launch.QuitLauncher()
 	})
 	tray.SetMenu(menu)
 
@@ -860,7 +860,7 @@ func main() {
 			_ = config.Save(c)
 		}
 
-		if config.GetMinimizeToTray() {
+		if config.GetMinimizeToTray() && !launch.QuitRequested() {
 			event.Cancel()
 			windows.Hide()
 		}

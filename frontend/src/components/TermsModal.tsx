@@ -3,7 +3,7 @@ import React from "react";
 
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { useTranslation } from "react-i18next";
-import { Window } from "@wailsio/runtime";
+import { QuitLauncher } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 
 interface TermsModalProps {
   isOpen: boolean;
@@ -31,7 +31,7 @@ export const TermsModal: React.FC<TermsModalProps> = ({
         <div className="flex w-full justify-end gap-2">
           <ModalAction
             onPress={() => {
-              Window.Close();
+              QuitLauncher();
             }}
             variant="secondary"
           >

@@ -35,7 +35,8 @@ import {
 } from "react-icons/fa";
 import { ModCard } from "@/components/ModdedCard";
 import { ContentDownloadCard } from "@/components/ContentDownloadCard";
-import { Window, Browser } from "@wailsio/runtime";
+import { Browser } from "@wailsio/runtime";
+import { QuitLauncher } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   UnifiedModal,
@@ -884,7 +885,7 @@ export const LauncherPage = (args: any) => {
           footer={
             <>
               <ModalAction
-                onPress={() => Window.Close()}
+                onPress={() => QuitLauncher()}
                 variant="secondary"
               >
                 {t("common.quit_launcher")}
@@ -923,7 +924,7 @@ export const LauncherPage = (args: any) => {
           footer={
             <>
               <ModalAction
-                onPress={() => Window.Close()}
+                onPress={() => QuitLauncher()}
                 variant="secondary"
               >
                 {t("common.quit_launcher")}
@@ -952,7 +953,7 @@ export const LauncherPage = (args: any) => {
           footer={
             <>
               <ModalAction
-                onPress={() => Window.Close()}
+                onPress={() => QuitLauncher()}
                 variant="secondary"
               >
                 {t("common.quit_launcher")}

@@ -765,7 +765,7 @@ export const SettingsPage: React.FC = () => {
                     <Select
                       aria-label={t("settings.game_behavior.on_launch_title")}
                       className="w-56"
-                      value={gameLaunchBehavior || "minimize"}
+                      value={gameLaunchBehavior}
                       onChange={(key) => {
                         const val = key as string;
                         if (!val) return;
@@ -846,7 +846,7 @@ export const SettingsPage: React.FC = () => {
                       aria-label={t("settings.game_behavior.on_exit_title")}
                       isDisabled={gameLaunchBehavior === "close"}
                       className="w-56"
-                      value={gameExitBehavior || "reopen"}
+                      value={gameExitBehavior}
                       onChange={(key) => {
                         const val = key as string;
                         if (!val) return;

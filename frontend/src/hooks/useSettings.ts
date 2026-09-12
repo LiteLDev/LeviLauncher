@@ -349,25 +349,29 @@ export const useSettings = (i18n: { language: string }) => {
     persistExperimentalInstanceBackupEnabled(enabled);
   };
 
+  // The Go setters report failure as a non-empty error code rather than by
+  // rejecting, so the optimistic state has to be rolled back explicitly.
   const setGameLaunchBehavior = async (behavior: string) => {
+    const previous = gameLaunchBehavior;
     setGameLaunchBehaviorState(behavior);
-    try {
-      await SetGameLaunchBehavior(behavior);
-    } catch {}
+    if (await SetGameLaunchBehavior(behavior)) {
+      setGameLaunchBehaviorState(previous);
+    }
   };
 
   const setGameExitBehavior = async (behavior: string) => {
+    const previous = gameExitBehavior;
     setGameExitBehaviorState(behavior);
-    try {
-      await SetGameExitBehavior(behavior);
-    } catch {}
+    if (await SetGameExitBehavior(behavior)) {
+      setGameExitBehaviorState(previous);
+    }
   };
 
   const setMinimizeToTray = async (enable: boolean) => {
     setMinimizeToTrayState(enable);
-    try {
-      await SetMinimizeToTray(enable);
-    } catch {}
+    if (await SetMinimizeToTray(enable)) {
+      setMinimizeToTrayState(!enable);
+    }
   };
 
   const refreshSunTimes = async () => {
@@ -581,18 +585,15 @@ export const useSettings = (i18n: { language: string }) => {
               const enabled = await GetEnableBetaUpdates();
               setEnableBetaUpdatesState(enabled);
             } catch {}
-            try {
-              const launchBehavior = await GetGameLaunchBehavior();
-              if (launchBehavior) setGameLaunchBehaviorState(launchBehavior);
-            } catch {}
-            try {
-              const exitBehavior = await GetGameExitBehavior();
-              if (exitBehavior) setGameExitBehaviorState(exitBehavior);
-            } catch {}
-            try {
-              const trayEnabled = await GetMinimizeToTray();
-              setMinimizeToTrayState(trayEnabled);
-            } catch {}
+            const [launchBehavior, exitBehavior, trayEnabled] =
+              await Promise.all([
+                GetGameLaunchBehavior(),
+                GetGameExitBehavior(),
+                GetMinimizeToTray(),
+              ]);
+            setGameLaunchBehaviorState(launchBehavior);
+            setGameExitBehaviorState(exitBehavior);
+            setMinimizeToTrayState(trayEnabled);
           }
         } catch {}
       })

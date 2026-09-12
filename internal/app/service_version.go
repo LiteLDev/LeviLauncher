@@ -140,8 +140,8 @@ func (s *VersionService) CreateDesktopShortcut(name string) string {
 	return mcservice.CreateDesktopShortcut(name)
 }
 
-func (s *VersionService) SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, enableRenderDragon bool, launchArgs string, envVars string) string {
-	return mcservice.SaveVersionMeta(name, gameVersion, typeStr, enableIsolation, enableConsole, enableEditorMode, enableRenderDragon, launchArgs, envVars)
+func (s *VersionService) SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, launchArgs string, envVars string) string {
+	return mcservice.SaveVersionMeta(name, gameVersion, typeStr, enableIsolation, enableConsole, enableEditorMode, launchArgs, envVars)
 }
 
 func (s *VersionService) ListVersionMetas() []versions.VersionMeta {

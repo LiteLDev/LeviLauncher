@@ -228,7 +228,7 @@ func GetContentCounts(name string) ContentCounts {
 	return ContentCounts{Worlds: worlds, ResourcePacks: res, BehaviorPacks: bp}
 }
 
-func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, enableRenderDragon bool, launchArgs string, envVars string) string {
+func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, launchArgs string, envVars string) string {
 	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
@@ -255,16 +255,15 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 	oldMeta, _ := versions.ReadMeta(dir)
 
 	meta := versions.VersionMeta{
-		Name:               n,
-		GameVersion:        strings.TrimSpace(gv),
-		Type:               strings.TrimSpace(typeStr),
-		EnableIsolation:    enableIsolation,
-		EnableConsole:      enableConsole,
-		EnableEditorMode:   enableEditorMode,
-		EnableRenderDragon: enableRenderDragon,
-		LaunchArgs:         launchArgs,
-		EnvVars:            envVars,
-		CreatedAt:          time.Now(),
+		Name:             n,
+		GameVersion:      strings.TrimSpace(gv),
+		Type:             strings.TrimSpace(typeStr),
+		EnableIsolation:  enableIsolation,
+		EnableConsole:    enableConsole,
+		EnableEditorMode: enableEditorMode,
+		LaunchArgs:       launchArgs,
+		EnvVars:          envVars,
+		CreatedAt:        time.Now(),
 	}
 	if !oldMeta.CreatedAt.IsZero() {
 		meta.CreatedAt = oldMeta.CreatedAt

@@ -27,7 +27,8 @@ build/ios/
 build/linux/
 logs
 bin
-native
+/native/*
+!/native/levilauncher/
 nda
 
 .idea

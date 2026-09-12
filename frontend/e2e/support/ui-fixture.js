@@ -55,8 +55,9 @@ state.call = async (name, ...args) => {
   const index = Number(args[8] || 0), pageSize = Number(args[7] || 20);
   return {data:matches.slice(index,index+pageSize).map(pkg=>({id:Number(pkg.identifier.split('-').pop()),name:pkg.name,summary:pkg.description,authors:[{name:pkg.author}],logo:{thumbnailUrl:'/src/assets/images/LeviLamina.png',url:'/src/assets/images/LeviLamina.png'},downloadCount:pkg.hotness,dateModified:pkg.updated,dateCreated:pkg.updated,categories:[],latestFiles:[],latestFilesIndexes:[]})),pagination:{index,pageSize,totalCount:matches.length}};
  }
- if (name==='GetResourceRulesStatus') return {installed:false,upToDate:false};
  if (name==='ListVersionMetas') return [{name:'UI test instance',gameVersion:'1.21.0',type:'Release',enableIsolation:true}];
+ if (name==='ListPacksForVersion' && scenario==='resource-packs') return Array.from({length:24},(_,index)=>({name:'Resource pack '+String(index+1).padStart(2,'0'),path:'C:/Fixture/resource_packs/pack-'+(index+1),manifest:{pack_type:6,name:'Resource pack '+String(index+1).padStart(2,'0'),description:'A sample resource pack.',identity:{version:{major:1,minor:0,patch:0}}}}));
+ if (name==='GetPackInfo' && scenario==='resource-packs') return {name:'Resource pack '+String(args[0]).split('-').pop().padStart(2,'0'),description:'A sample resource pack for checking search, sorting, and pagination.',version:'1.0.0',iconDataUrl:''};
  if (name==='GetVersionMeta') return {name:'UI test instance',gameVersion:'1.21.0',type:'Release',enableIsolation:true};
  if (name==='GetLocalVersionNames') return ['UI test instance'];
  if (name==='GetSunTimes') return {};

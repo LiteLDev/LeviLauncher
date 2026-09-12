@@ -96,8 +96,6 @@ export const useLauncher = (args: any) => {
     resourcePacks: number;
     behaviorPacks: number;
   }>({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
-  const [incompatibleShaderCount, setIncompatibleShaderCount] =
-    React.useState<number>(0);
   const [giTotal, setGiTotal] = React.useState<number>(0);
   const [giDownloaded, setGiDownloaded] = React.useState<number>(0);
   const [vcTotal, setVcTotal] = React.useState<number>(0);
@@ -837,48 +835,13 @@ export const useLauncher = (args: any) => {
 
       let res = 0;
       let bp = 0;
-      let incompatibleCount = 0;
       try {
         const resEntries = await ListDir(safe.resourcePacks);
         const resDirs = (resEntries || []).filter((e: any) => e.isDir);
         res = resDirs.length;
 
-        const packPaths = resDirs.map((dir: any) => String(dir.path || ""));
-        const batchCheck = (contentService as any)
-          .CheckResourcePackMaterialCompatibilityBatch;
-        let compatibilityResults: any[] = [];
-
-        if (typeof batchCheck === "function") {
-          try {
-            compatibilityResults = await batchCheck(name, packPaths);
-          } catch {}
-        }
-        if (
-          !Array.isArray(compatibilityResults) ||
-          compatibilityResults.length !== packPaths.length
-        ) {
-          compatibilityResults = await Promise.all(
-            packPaths.map(async (packPath: string) => {
-              try {
-                return await contentService.CheckResourcePackMaterialCompatibility(
-                  name,
-                  packPath,
-                );
-              } catch {
-                return null;
-              }
-            }),
-          );
-        }
-        incompatibleCount = compatibilityResults.reduce(
-          (count: number, compat: any) =>
-            count + (compat?.hasMaterialBin && !compat?.compatible ? 1 : 0),
-          0,
-        );
-
         bp = await countDir(safe.behaviorPacks);
       } catch {}
-      setIncompatibleShaderCount(incompatibleCount);
 
       if (safe.usersRoot) {
         try {
@@ -1277,7 +1240,6 @@ export const useLauncher = (args: any) => {
     localVersionMap,
     launchErrorCode,
     contentCounts,
-    incompatibleShaderCount,
     giTotal,
     giDownloaded,
     vcTotal,

@@ -620,8 +620,6 @@ export const useInstanceSettings = () => {
   const [enableConsole, setEnableConsole] = React.useState<boolean>(false);
   const [enableEditorMode, setEnableEditorMode] =
     React.useState<boolean>(false);
-  const [enableRenderDragon, setEnableRenderDragon] =
-    React.useState<boolean>(false);
   const [envVars, setEnvVars] = React.useState<string>("");
   const [launchArgs, setLaunchArgs] = React.useState<string>("");
   const [isRegistered, setIsRegistered] = React.useState<boolean>(false);
@@ -634,8 +632,6 @@ export const useInstanceSettings = () => {
     React.useState<boolean>(false);
   const [originalConsole, setOriginalConsole] = React.useState<boolean>(false);
   const [originalEditorMode, setOriginalEditorMode] =
-    React.useState<boolean>(false);
-  const [originalRenderDragon, setOriginalRenderDragon] =
     React.useState<boolean>(false);
   const [originalEnvVars, setOriginalEnvVars] = React.useState<string>("");
   const [originalLaunchArgs, setOriginalLaunchArgs] =
@@ -942,8 +938,6 @@ export const useInstanceSettings = () => {
             setOriginalConsole(!!meta?.enableConsole);
             setEnableEditorMode(!!meta?.enableEditorMode);
             setOriginalEditorMode(!!meta?.enableEditorMode);
-            setEnableRenderDragon(!!meta?.enableRenderDragon);
-            setOriginalRenderDragon(!!meta?.enableRenderDragon);
             setEnvVars(String(meta?.envVars || ""));
             setOriginalEnvVars(String(meta?.envVars || ""));
             setLaunchArgs(String(meta?.launchArgs || ""));
@@ -987,7 +981,6 @@ export const useInstanceSettings = () => {
           enableIsolation !== originalIsolation ||
           enableConsole !== originalConsole ||
           enableEditorMode !== originalEditorMode ||
-          enableRenderDragon !== originalRenderDragon ||
           envVars !== originalEnvVars ||
           launchArgs !== originalLaunchArgs;
 
@@ -1015,8 +1008,6 @@ export const useInstanceSettings = () => {
     originalConsole,
     enableEditorMode,
     originalEditorMode,
-    enableRenderDragon,
-    originalRenderDragon,
     envVars,
     originalEnvVars,
     launchArgs,
@@ -1953,7 +1944,6 @@ export const useInstanceSettings = () => {
           !!enableIsolation,
           !!enableConsole,
           !!enableEditorMode,
-          !!enableRenderDragon,
           launchArgs,
           envVars,
         );
@@ -1988,7 +1978,6 @@ export const useInstanceSettings = () => {
       enableIsolation,
       enableConsole,
       enableEditorMode,
-      enableRenderDragon,
       logoDataUrl,
       returnToPath,
       navigate,
@@ -2317,8 +2306,6 @@ export const useInstanceSettings = () => {
     setEnableConsole,
     enableEditorMode,
     setEnableEditorMode,
-    enableRenderDragon,
-    setEnableRenderDragon,
     envVars,
     setEnvVars,
     launchArgs,

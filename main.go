@@ -34,7 +34,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/oslang"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
-	"github.com/liteldev/LeviLauncher/internal/resourcerules"
 	"github.com/liteldev/LeviLauncher/internal/tray"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
@@ -784,12 +783,6 @@ func main() {
 				go func() {
 					defer wg.Done()
 					mc.StartupDeferred()
-				}()
-
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					_ = resourcerules.EnsureLatestWithError(context.Background())
 				}()
 
 				if !config.GetDiscordRPCDisabled() {

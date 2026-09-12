@@ -754,27 +754,6 @@ export default function InstanceSettingsPage() {
                 <div className="flex flex-col gap-5">
                   <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-base font-medium">
-                      {t("versions.edit.enable_render_dragon")}
-                    </div>
-                    <Switch
-                      aria-label={t("versions.edit.enable_render_dragon")}
-                      size="md"
-                      isSelected={vs.enableRenderDragon}
-                      onChange={vs.setEnableRenderDragon}
-                      className={"group"}
-                    >
-                      <Switch.Content>
-                        <Switch.Control
-                          className={"group-data-[selected]:bg-brand-500"}
-                        >
-                          <Switch.Thumb></Switch.Thumb>
-                        </Switch.Control>
-                        <span></span>
-                      </Switch.Content>
-                    </Switch>
-                  </div>
-                  <div className="flex items-center justify-between p-2 rounded-xl">
-                    <div className="text-base font-medium">
                       {t("versions.edit.enable_editor_mode")}
                     </div>
                     <Switch

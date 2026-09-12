@@ -27,7 +27,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/registry"
-	"github.com/liteldev/LeviLauncher/internal/resourcerules"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
@@ -153,26 +152,6 @@ type ContentCounts struct {
 	BehaviorPacks int `json:"behaviorPacks"`
 }
 
-type ResourcePackMaterialCompatResult struct {
-	HasMaterialBin      bool   `json:"hasMaterialBin"`
-	Compatible          bool   `json:"compatible"`
-	NeedsUpdate         bool   `json:"needsUpdate"`
-	PackMaterialPath    string `json:"packMaterialPath"`
-	PackMaterialVersion uint64 `json:"packMaterialVersion"`
-	GameMaterialPath    string `json:"gameMaterialPath"`
-	GameMaterialVersion uint64 `json:"gameMaterialVersion"`
-	Error               string `json:"error"`
-}
-
-type ResourcePackMaterialUpdateResult struct {
-	HasMaterialBin bool   `json:"hasMaterialBin"`
-	TotalCount     int    `json:"totalCount"`
-	UpdatedCount   int    `json:"updatedCount"`
-	SkippedCount   int    `json:"skippedCount"`
-	FailedCount    int    `json:"failedCount"`
-	Error          string `json:"error"`
-}
-
 type ScreenshotInfo struct {
 	Name        string `json:"name"`
 	Path        string `json:"path"`
@@ -250,8 +229,6 @@ type contentService interface {
 	TransferPackToVersion(sourceVersionName string, sourcePackPath string, targetVersionName string, overwrite bool) string
 	TransferWorldToVersion(sourceVersionName string, sourcePlayer string, sourceWorldPath string, targetVersionName string, targetPlayer string) string
 	GetPackInfo(dir string) types.PackInfo
-	UpdateResourcePackMaterialBins(versionName string, packPath string) contentmgr.MaterialUpdateResult
-	CheckResourcePackMaterialCompatibility(versionName string, packPath string) contentmgr.MaterialCompatResult
 	DeletePack(name string, path string) string
 	DeleteWorld(name string, path string) string
 	ListScreenshots(versionName string, player string) []contentmgr.ScreenshotInfo
@@ -353,26 +330,6 @@ func (a *Minecraft) GetLipStatus() map[string]interface{} {
 		"latestVersion":  st.LatestVersion,
 		"error":          st.Error,
 	}
-}
-
-func (a *Minecraft) GetResourceRulesStatus() map[string]interface{} {
-	st := resourcerules.CheckStatus(context.Background())
-	return map[string]interface{}{
-		"path":       st.Path,
-		"installed":  st.Installed,
-		"upToDate":   st.UpToDate,
-		"localSha":   st.LocalSHA,
-		"remoteSha":  st.RemoteSHA,
-		"canCompare": st.CanCompare,
-		"error":      st.Error,
-	}
-}
-
-func (a *Minecraft) UpdateResourceRules() string {
-	if err := resourcerules.EnsureLatestWithError(context.Background()); err != nil {
-		return err.Error()
-	}
-	return ""
 }
 
 // StartupEssential binds the Wails application context and anchors the working

@@ -85,7 +85,6 @@ export const LauncherPage = (args: any) => {
     localVersionMap,
     launchErrorCode,
     contentCounts,
-    incompatibleShaderCount,
     giTotal,
     giDownloaded,
     vcTotal,
@@ -749,27 +748,6 @@ export const LauncherPage = (args: any) => {
                 </Button>
               </Card.Header>
               <Card.Content className="p-3 gap-2 relative">
-                {incompatibleShaderCount > 0 && (
-                  <button
-                    type="button"
-                    className="group/hint flex w-full items-center justify-between p-2 text-left rounded-xl bg-amber-500/10 hover:bg-amber-500/20 text-amber-600 dark:text-amber-400 cursor-pointer transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
-                    onClick={() =>
-                      navigate(ROUTES.contentResourcePacks, {
-                        state: { showIncompatible: true },
-                      })
-                    }
-                  >
-                    <div className="flex items-center gap-3">
-                      <FaExclamationTriangle size={16} />
-                      <span className="font-medium text-sm">
-                        {t("contentpage.only_show_updates")}
-                      </span>
-                    </div>
-                    <span className="font-bold text-sm">
-                      {incompatibleShaderCount}
-                    </span>
-                  </button>
-                )}
                 {[
                   {
                     label: worldsLabel,

@@ -231,15 +231,6 @@ export const SettingsPage: React.FC = () => {
     lipProgressDisclosure,
     refreshLipStatus,
     cleanLipCache,
-    resourceRulesInstalled,
-    resourceRulesUpToDate,
-    resourceRulesLocalSha,
-    resourceRulesRemoteSha,
-    resourceRulesError,
-    resourceRulesChecking,
-    resourceRulesUpdating,
-    refreshResourceRulesStatus,
-    onUpdateResourceRules,
     processModalOpen,
     setProcessModalOpen,
     processes,
@@ -277,7 +268,7 @@ export const SettingsPage: React.FC = () => {
     { tab: "personalization", section: "layout", keys: ["audit.usability.appearance_layout", "settings.layout.title_navbar", "settings.appearance.disable_animations"] },
     { tab: "personalization", section: "wallpaper", keys: ["audit.usability.appearance_wallpaper", "settings.appearance.background_image", "settings.appearance.background_blur", "settings.appearance.background_brightness", "settings.appearance.background_opacity"] },
     { tab: "personalization", section: "material", keys: ["audit.usability.appearance_material"] },
-    { tab: "components", keys: ["settings.tabs.components", "settings.lip.title", "settings.resource_rules.title"] },
+    { tab: "components", keys: ["settings.tabs.components", "settings.lip.title"] },
     { tab: "others", keys: ["settings.process.title", "settings.experimental.title", "settings.experimental.instance_backup.title"] },
     { tab: "privacy", keys: ["settings.tabs.privacy", "settings.privacy.analytics.title"] },
     { tab: "updates", keys: ["settings.tabs.updates", "settings.beta_updates.title"] },
@@ -2567,97 +2558,6 @@ export const SettingsPage: React.FC = () => {
                     </div>
                   </div>
 
-                  <Separator className="bg-surface-tertiary/50" />
-
-                  {/* resource_pack_rules.bin */}
-                  <div className="flex items-center justify-between gap-4">
-                    <div className="flex flex-col gap-1 min-w-0">
-                      <p className="font-medium">
-                        {t("settings.resource_rules.title")}
-                      </p>
-                      <p className="text-xs text-muted dark:text-zinc-400">
-                        {resourceRulesChecking
-                          ? t("settings.resource_rules.status.checking")
-                          : resourceRulesError
-                            ? t("settings.resource_rules.status.check_failed", {
-                                error: resourceRulesError,
-                              })
-                            : resourceRulesInstalled
-                              ? resourceRulesUpToDate
-                                ? t("settings.resource_rules.status.up_to_date")
-                                : t("settings.resource_rules.status.outdated")
-                              : t("settings.resource_rules.status.missing")}
-                      </p>
-                      {resourceRulesLocalSha || resourceRulesRemoteSha ? (
-                        <p
-                          className="text-xs font-mono text-muted dark:text-zinc-500 truncate"
-                          title={`local: ${resourceRulesLocalSha || "-"} | remote: ${resourceRulesRemoteSha || "-"}`}
-                        >
-                          {`local: ${resourceRulesLocalSha ? `${resourceRulesLocalSha.slice(0, 12)}...` : "-"} | remote: ${resourceRulesRemoteSha ? `${resourceRulesRemoteSha.slice(0, 12)}...` : "-"}`}
-                        </p>
-                      ) : null}
-                    </div>
-                    <div className="flex items-center gap-2 shrink-0">
-                      <Chip
-                        variant="soft"
-                        color={
-                          resourceRulesUpToDate
-                            ? "success"
-                            : resourceRulesInstalled
-                              ? "warning"
-                              : "default"
-                        }
-                      >
-                        <Chip.Label>
-                          {resourceRulesUpToDate
-                            ? t("settings.resource_rules.latest_label")
-                            : resourceRulesInstalled
-                              ? t("settings.resource_rules.outdated_label")
-                              : t("settings.resource_rules.missing_label")}
-                        </Chip.Label>
-                      </Chip>
-                      <Button
-                        size="sm"
-                        isDisabled={resourceRulesUpdating}
-                        onPress={refreshResourceRulesStatus}
-                        variant={"outline"}
-                        isPending={resourceRulesChecking}
-                        className={"rounded-full"}
-                      >
-                        {({ isPending }) => (
-                          <>
-                            <Spinner
-                              size="sm"
-                              color="current"
-                              className={isPending ? "" : "hidden"}
-                            />
-                            {t("settings.resource_rules.check_button")}
-                          </>
-                        )}
-                      </Button>
-                      {!resourceRulesUpToDate && (
-                        <Button
-                          size="sm"
-                          isDisabled={resourceRulesChecking}
-                          onPress={onUpdateResourceRules}
-                          variant={"outline"}
-                          isPending={resourceRulesUpdating}
-                          className={"rounded-full"}
-                        >
-                          {({ isPending }) => (
-                            <>
-                              <Spinner
-                                size="sm"
-                                color="current"
-                                className={isPending ? "" : "hidden"}
-                              />
-                              {t("settings.resource_rules.update_button")}
-                            </>
-                          )}
-                        </Button>
-                      )}
-                    </div>
-                  </div>
                 </div>
               )}
               {selectedTab === "others" && (

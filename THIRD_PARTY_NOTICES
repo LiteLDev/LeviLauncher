@@ -1,0 +1,111 @@
+LeviLauncher third-party notices
+
+LeviLauncher is licensed under GPL-3.0-only; the full text is in COPYING. The
+components listed below are distributed with the launcher under the terms
+stated for each of them.
+
+
+== Copyleft components ==
+
+internal/nativeinstall
+  The Store device, RST, licensing, CLEP challenge and segmented XVD format
+  implementation references and adapts Xodus commit
+  0670e25aeb0e0e9f800f8f2f4968ae3b681842a7
+  (https://github.com/xodus-gaming/xodus), licensed under GNU GPL version 3.
+
+github.com/axrona/go-discordrpc v1.1.0-1
+  GNU GPL version 3. Used by internal/discord.
+
+These components require the launcher as a whole to be conveyed under
+GPL version 3.
+
+
+== Go modules ==
+
+  github.com/Masterminds/semver/v3 v3.4.0                MIT
+  github.com/adrg/xdg v0.5.3                             MIT
+  github.com/beevik/etree v1.8.0                         BSD-2-Clause
+  github.com/coder/websocket v1.8.14                     ISC
+  github.com/go-ole/go-ole v1.3.0                        MIT
+  github.com/goccy/go-json v0.10.5                       MIT
+  github.com/godbus/dbus/v5 v5.2.2                       BSD-2-Clause
+  github.com/jchv/go-winloader                            ISC
+  github.com/joho/godotenv v1.5.1                        MIT
+  github.com/jonboulle/clockwork v0.5.0                  Apache-2.0
+  github.com/mattn/go-colorable v0.1.14                  MIT
+  github.com/mattn/go-isatty v0.0.20                     MIT
+  github.com/mouuff/go-rocket-update v1.5.6              MIT
+  github.com/russellhaering/goxmldsig v1.6.1             Apache-2.0
+  github.com/saltosystems/winrt-go                        MIT
+  github.com/wailsapp/wails/v3 v3.0.0-beta.19            MIT
+  golang.org/x/crypto v0.53.0                            BSD-3-Clause
+  golang.org/x/sys v0.46.0                               BSD-3-Clause
+  gopkg.in/natefinch/npipe.v2                             MIT
+
+Retain the license files distributed with those modules.
+
+The WebView2 loader bindings inside github.com/wailsapp/wails/v3
+(internal/webview2/webviewloader) are covered by the ISC license of John
+Chadwick (2020) and the Wails Project Developers (2022).
+
+
+== Frontend packages ==
+
+The web UI bundles npm packages licensed under MIT, Apache-2.0, ISC,
+BSD-2-Clause, BSD-3-Clause, MPL-2.0 and 0BSD. The authoritative per-package
+data is in frontend/package-lock.json.
+
+
+== Native loader ==
+
+native/levilauncher links nlohmann/json v3.11.3 (MIT). Its license text is in
+native/levilauncher/LICENSES/nlohmann-json.MIT.txt.
+
+
+== CikExtractor ==
+
+The CLEP schedule and SPLicense encoding work credits the MIT-licensed
+CikExtractor work of LukeFZ (2022), as documented by Xodus. The following
+notice applies to that work:
+
+Copyright (c) 2022 LukeFZ
+
+Permission is hereby granted, free of charge, to any person obtaining a copy of
+this software and associated documentation files (the "Software"), to deal in
+the Software without restriction, including without limitation the rights to
+use, copy, modify, merge, publish, distribute, sublicense, and/or sell copies of
+the Software, and to permit persons to whom the Software is furnished to do so,
+subject to the following conditions:
+
+The above copyright notice and this permission notice shall be included in all
+copies or substantial portions of the Software.
+
+THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, FITNESS
+FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR
+COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER
+IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN
+CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
+
+
+== Components under their own terms ==
+
+The following files are bundled with the launcher and are licensed by their
+respective owners. The GPL-3.0-only grant covers LeviLauncher's own code and
+does not extend to them.
+
+internal/gameinput/GameInputRedist.msi
+  GameInput redistributable, Copyright (c) Microsoft Corporation. Redistributed
+  under the Microsoft license accompanying the GameInput package.
+
+frontend/src/assets/fonts/MiSans-Medium.woff2
+  MiSans, Copyright (c) Xiaomi Inc., used under the MiSans Font Intellectual
+  Property License Agreement (https://hyperos.mi.com/font/). This software uses
+  the MiSans font.
+
+frontend/src/assets/images/world-preview-default.jpg
+  Minecraft screenshot, Copyright (c) Mojang Studios and Microsoft Corporation.
+
+Minecraft is a trademark of Mojang Studios. LeviLauncher is an unofficial tool
+and is not affiliated with, endorsed by or sponsored by Mojang Studios or
+Microsoft Corporation.

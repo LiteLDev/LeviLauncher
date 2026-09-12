@@ -419,21 +419,6 @@
       "unknown_version": "Unbekannt",
       "update_button": "Aktualisieren"
     },
-    "resource_rules": {
-      "title": "Launcher-Laufzeitdaten",
-      "check_button": "Auf Update prüfen",
-      "update_button": "Aktualisieren",
-      "latest_label": "Neueste",
-      "outdated_label": "Veraltet",
-      "missing_label": "Fehlt",
-      "status": {
-        "checking": "SHA256 wird geprüft...",
-        "up_to_date": "SHA256 stimmt mit Remote-Release überein",
-        "outdated": "SHA256 unterscheidet sich vom Remote-Release",
-        "missing": "Lokale Datei nicht gefunden",
-        "check_failed": "Prüfung fehlgeschlagen: {{error}}"
-      }
-    },
     "header": {
       "title": "Einstellungen",
       "content": "Allgemeine Launcher-Optionen konfigurieren"
@@ -583,7 +568,8 @@
     "patreon": "Patreon",
     "github_repo": "GitHub · LeviLauncher",
     "github_org": "LiteLDev Organisation",
-    "license.tip": "Siehe LICENSE im Repository für Lizenzdetails.",
+    "license.tip": "LeviLauncher steht unter GPL-3.0-only. Den vollständigen Text finden Sie in COPYING im Repository.",
+    "third_party": "Diese Software verwendet die Schriftart MiSans und enthält Komponenten Dritter unter deren eigenen Lizenzen; siehe THIRD_PARTY_NOTICES.",
     "website": "Website",
     "issue": "Issue",
     "star_fork": "Star / Fork",
@@ -687,18 +673,6 @@
     "no_behavior_packs": "Keine Verhaltenspakete",
     "skin_packs": "Skin-Pakete",
     "no_skin_packs": "Keine Skin-Pakete",
-    "shader_chip": "Shader",
-    "only_show_updates": "Inkompatible Shader",
-    "update_material_bin": ".material.bin aktualisieren",
-    "update_material_bin_desc": "Update für Kompatibilität erforderlich",
-    "update_material_bin_modal_title": ".material.bin aktualisieren",
-    "update_material_bin_modal_content": "Dies aktualisiert den .material.bin-Header im Shader-Paket, damit Minecraft es korrekt laden kann.",
-    "update_material_bin_risk_title": "Risikowarnung:",
-    "update_material_bin_risk_content": "Das aktualisierte Ressourcenpaket funktioniert möglicherweise nicht ordnungsgemäß in älteren Versionen von Minecraft. Es wird empfohlen, Ihre Welten zu sichern oder das Ressourcenpaket zuerst zu exportieren.",
-    "update_material_bin_success": "Material-Update abgeschlossen",
-    "update_material_bin_failed": "Material-Update fehlgeschlagen",
-    "update_material_bin_stat_updated": "Aktualisiert: {{count}}",
-    "update_material_bin_stat_failed": "Fehlgeschlagen: {{count}}",
     "servers": "Server",
     "error_resolve_paths": "Auflösen der Inhaltspfade fehlgeschlagen.",
     "open_users_dir": "Speicherverzeichnis öffnen",
@@ -759,7 +733,6 @@
       "hint": "Nur den Ordner umbenennen. Spielversion und Typ bleiben unberührt.",
       "enable_isolation": "Isolierung aktivieren",
       "enable_console": "Konsole aktivieren",
-      "enable_render_dragon": "RenderDragon-Shader laden",
       "enable_editor_mode": "Editor-Modus aktivieren",
       "launch_args": "Startargumente",
       "launch_args_placeholder": "Startargumente (z.B. -Editor true)",

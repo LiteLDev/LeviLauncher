@@ -429,21 +429,6 @@
       "unknown_version": "未知",
       "update_button": "更新"
     },
-    "resource_rules": {
-      "title": "启动器运行数据",
-      "check_button": "检查更新",
-      "update_button": "更新",
-      "latest_label": "最新",
-      "outdated_label": "需更新",
-      "missing_label": "未安装",
-      "status": {
-        "checking": "正在校验 SHA256...",
-        "up_to_date": "SHA256 与远端一致",
-        "outdated": "SHA256 与远端不一致",
-        "missing": "未找到本地文件",
-        "check_failed": "检查失败：{{error}}"
-      }
-    },
     "header": {
       "title": "设置",
       "content": "配置启动器常用选项"
@@ -620,7 +605,8 @@
     "patreon": "Patreon",
     "github_repo": "GitHub · LeviLauncher",
     "github_org": "LiteLDev 组织",
-    "license.tip": "许可证与详细信息请参见仓库中的 LICENSE 文件。",
+    "license.tip": "LeviLauncher 使用 GPL-3.0-only 许可，完整文本见仓库中的 COPYING 文件。",
+    "third_party": "本软件使用了 MiSans 字体，并随附遵循各自许可的第三方组件，详见 THIRD_PARTY_NOTICES。",
     "website": "官网",
     "issue": "Issue",
     "star_fork": "Star / Fork",
@@ -724,18 +710,6 @@
     "no_behavior_packs": "暂无行为包",
     "skin_packs": "皮肤包",
     "no_skin_packs": "暂无皮肤包",
-    "shader_chip": "着色器",
-    "only_show_updates": "与当前版本不兼容的着色器",
-    "update_material_bin": "更新 .material.bin",
-    "update_material_bin_desc": "需要更新以便兼容当前版本",
-    "update_material_bin_modal_title": "更新 .material.bin",
-    "update_material_bin_modal_content": "此操作将更新着色器包中的 .material.bin 文件头部，以便 Minecraft 可以正确加载它。",
-    "update_material_bin_risk_title": "风险提示：",
-    "update_material_bin_risk_content": "更新后的材质包可能在旧版本 Minecraft 中无法正常工作。建议您先备份存档或导出资源包。",
-    "update_material_bin_success": "材质更新完成",
-    "update_material_bin_failed": "材质更新失败",
-    "update_material_bin_stat_updated": "已更新: {{count}}",
-    "update_material_bin_stat_failed": "失败: {{count}}",
     "servers": "服务器",
     "error_resolve_paths": "无法解析内容路径。",
     "open_users_dir": "打开存储目录",
@@ -816,7 +790,6 @@
       "hint": "仅修改文件夹名称，不影响游戏版本与类型。",
       "enable_isolation": "启用实例隔离",
       "enable_console": "启用控制台",
-      "enable_render_dragon": "启用渲染龙光影加载",
       "enable_editor_mode": "启用编辑器模式",
       "launch_args": "启动参数",
       "launch_args_placeholder": "启动参数 (例如: -Editor true)",

@@ -10,6 +10,7 @@ import {
   FaCode,
   FaPatreon,
   FaStar,
+  FaBalanceScale,
 } from "react-icons/fa";
 import { Browser } from "@wailsio/runtime";
 import { motion, Variants } from "framer-motion";
@@ -23,6 +24,7 @@ export default function AboutPage() {
 
   const repoUrl = "https://github.com/LiteLDev/LeviLauncher";
   const orgUrl = "https://github.com/LiteLDev";
+  const licenseUrl = `${repoUrl}/blob/HEAD/COPYING`;
 
   const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
@@ -236,9 +238,20 @@ export default function AboutPage() {
                       {<FaGithub className="text-lg" />}
                       {t("about.github_org")}
                     </Button>
+                    <Button
+                      onPress={() => Browser.OpenURL(licenseUrl)}
+                      variant={"secondary"}
+                      className={"bg-surface-secondary dark:bg-surface/10"}
+                    >
+                      {<FaBalanceScale className="text-lg" />}
+                      GPL-3.0-only
+                    </Button>
                   </div>
                   <p className="text-sm text-muted dark:text-zinc-400">
                     {t("about.license.tip")}
+                  </p>
+                  <p className="mt-2 text-sm text-muted dark:text-zinc-400">
+                    {t("about.third_party")}
                   </p>
                 </div>
 

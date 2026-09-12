@@ -414,21 +414,6 @@
       "unknown_version": "不明",
       "update_button": "更新"
     },
-    "resource_rules": {
-      "title": "ランチャー実行データ",
-      "check_button": "更新を確認",
-      "update_button": "更新",
-      "latest_label": "最新",
-      "outdated_label": "要更新",
-      "missing_label": "未インストール",
-      "status": {
-        "checking": "SHA256 を確認中...",
-        "up_to_date": "SHA256 はリモートと一致しています",
-        "outdated": "SHA256 がリモートと一致しません",
-        "missing": "ローカルファイルが見つかりません",
-        "check_failed": "確認に失敗しました: {{error}}"
-      }
-    },
     "header": {
       "title": "設定",
       "content": "ランチャーの一般的なオプション設定"
@@ -578,7 +563,8 @@
     "patreon": "Patreon",
     "github_repo": "GitHub · LeviLauncher",
     "github_org": "LiteLDev Organization",
-    "license.tip": "ライセンスの詳細はリポジトリの LICENSE をご覧ください。",
+    "license.tip": "LeviLauncher は GPL-3.0-only でライセンスされています。全文はリポジトリの COPYING をご覧ください。",
+    "third_party": "本ソフトウェアは MiSans フォントを使用し、それぞれのライセンスに従うサードパーティコンポーネントを同梱しています。詳細は THIRD_PARTY_NOTICES をご覧ください。",
     "website": "ウェブサイト",
     "issue": "Issue",
     "star_fork": "Star / Fork",
@@ -708,18 +694,6 @@
     "delete_world_confirm": "本当にワールド {{name}} を削除しますか？",
     "basic_info": "基本情報",
     "level_name": "ワールド名",
-    "shader_chip": "シェーダー",
-    "only_show_updates": "互換性のないシェーダー",
-    "update_material_bin": ".material.bin を更新",
-    "update_material_bin_desc": "現在のバージョンとの互換性のために更新が必要です",
-    "update_material_bin_modal_title": ".material.bin を更新",
-    "update_material_bin_modal_content": "この操作は、Minecraft が正しく読み込めるようにシェーダーパック内の .material.bin ヘッダーを更新します。",
-    "update_material_bin_risk_title": "リスク警告：",
-    "update_material_bin_risk_content": "更新されたリソースパックは、古いバージョンのMinecraftで正しく動作しない可能性があります。ワールドをバックアップするか、リソースパックをエクスポートすることをお勧めします。",
-    "update_material_bin_success": "マテリアル更新完了",
-    "update_material_bin_failed": "マテリアル更新失敗",
-    "update_material_bin_stat_updated": "更新済み: {{count}}",
-    "update_material_bin_stat_failed": "失敗: {{count}}",
     "screenshots": "スクリーンショット",
     "no_screenshots": "スクリーンショットがありません",
     "delete_screenshot_confirm": "スクリーンショット {{name}} を削除しますか？",
@@ -757,7 +731,6 @@
       "hint": "フォルダ名のみ変更されます。ゲームバージョンとタイプには影響しません。",
       "enable_isolation": "隔離 (Isolation) を有効化",
       "enable_console": "コンソールを有効化",
-      "enable_render_dragon": "RenderDragon シェーダーを読み込む",
       "enable_editor_mode": "エディターモードを有効化",
       "launch_args": "起動引数",
       "launch_args_placeholder": "起動引数 (例: -Editor true)",

@@ -429,21 +429,6 @@
       "unknown_version": "Unknown",
       "update_button": "Update"
     },
-    "resource_rules": {
-      "title": "Launcher Runtime Data",
-      "check_button": "Check Update",
-      "update_button": "Update",
-      "latest_label": "Latest",
-      "outdated_label": "Outdated",
-      "missing_label": "Missing",
-      "status": {
-        "checking": "Checking SHA256...",
-        "up_to_date": "SHA256 matches remote release",
-        "outdated": "SHA256 differs from remote release",
-        "missing": "Local file not found",
-        "check_failed": "Check failed: {{error}}"
-      }
-    },
     "header": {
       "title": "Settings",
       "content": "Configure common launcher options"
@@ -620,7 +605,8 @@
     "patreon": "Patreon",
     "github_repo": "GitHub · LeviLauncher",
     "github_org": "LiteLDev Organization",
-    "license.tip": "See LICENSE in the repository for license details.",
+    "license.tip": "LeviLauncher is licensed under GPL-3.0-only. See COPYING in the repository for the full text.",
+    "third_party": "This software uses the MiSans font and bundles third-party components under their own licenses; see THIRD_PARTY_NOTICES.",
     "website": "Website",
     "issue": "Issue",
     "star_fork": "Star / Fork",
@@ -724,18 +710,6 @@
     "no_behavior_packs": "No behavior packs",
     "skin_packs": "Skin Packs",
     "no_skin_packs": "No skin packs",
-    "shader_chip": "Shader",
-    "only_show_updates": "Incompatible Shaders",
-    "update_material_bin": "Update .material.bin",
-    "update_material_bin_desc": "Update required for compatibility",
-    "update_material_bin_modal_title": "Update .material.bin",
-    "update_material_bin_modal_content": "This will update the .material.bin header in the shader pack so Minecraft can load it correctly.",
-    "update_material_bin_risk_title": "Risk Warning:",
-    "update_material_bin_risk_content": "The updated resource pack may not work properly in older versions of Minecraft. It is recommended to backup your worlds or export the resource pack first.",
-    "update_material_bin_success": "Material Update Completed",
-    "update_material_bin_failed": "Material Update Failed",
-    "update_material_bin_stat_updated": "Updated: {{count}}",
-    "update_material_bin_stat_failed": "Failed: {{count}}",
     "servers": "Servers",
     "error_resolve_paths": "Failed to resolve content paths.",
     "open_users_dir": "Open Storage Directory",
@@ -816,7 +790,6 @@
       "hint": "Only rename the folder. Game version and type are unaffected.",
       "enable_isolation": "Enable Isolation",
       "enable_console": "Enable Console",
-      "enable_render_dragon": "Load RenderDragon Shaders",
       "enable_editor_mode": "Enable Editor Mode",
       "launch_args": "Launch Arguments",
       "launch_args_placeholder": "Launch arguments (e.g. -Editor true)",

@@ -43,4 +43,4 @@ npm run docs:dev
 
 ## 许可证
 
-本项目的非闭源部分使用 LGPL-3.0 License。详情见 `COPYING` 与 `COPYING.LESSER`。
+本项目使用 GPL-3.0-only 许可。完整许可文本见 `COPYING`，随附的第三方组件见 `THIRD_PARTY_NOTICES`。

@@ -43,6 +43,9 @@ AppName={#AppName}
 AppVersion={#AppVersion}
 AppPublisher={#AppPublisher}
 AppCopyright=(c) 2024-2026, LeviMC
+; GPLv3 section 9 grants the right to run the program without accepting the
+; license, so the text is shown for information instead of as an install gate.
+InfoBeforeFile=..\..\..\COPYING
 DefaultDirName={code:GetDefaultInstallDir|{autopf64}\{#AppPublisher}\{#AppName}}
 DefaultGroupName={#AppName}
 PrivilegesRequired=admin

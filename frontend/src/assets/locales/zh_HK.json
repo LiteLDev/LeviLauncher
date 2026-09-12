@@ -414,21 +414,6 @@
       "unknown_version": "未知",
       "update_button": "更新"
     },
-    "resource_rules": {
-      "title": "啟動器執行資料",
-      "check_button": "檢查更新",
-      "update_button": "更新",
-      "latest_label": "最新",
-      "outdated_label": "需更新",
-      "missing_label": "未安裝",
-      "status": {
-        "checking": "正在校驗 SHA256...",
-        "up_to_date": "SHA256 與遠端一致",
-        "outdated": "SHA256 與遠端不一致",
-        "missing": "未找到本地檔案",
-        "check_failed": "檢查失敗：{{error}}"
-      }
-    },
     "header": {
       "title": "設定",
       "content": "設定啟動器常用選項"
@@ -605,7 +590,8 @@
     "patreon": "Patreon",
     "github_repo": "GitHub · LeviLauncher",
     "github_org": "LiteLDev 組織",
-    "license.tip": "授權與詳細資訊請參見倉庫中的 LICENSE 檔案。",
+    "license.tip": "LeviLauncher 採用 GPL-3.0-only 授權，完整文本見倉庫中的 COPYING 檔案。",
+    "third_party": "本軟體使用了 MiSans 字型，並隨附遵循各自授權的第三方元件，詳見 THIRD_PARTY_NOTICES。",
     "website": "官網",
     "issue": "Issue",
     "star_fork": "Star / Fork",
@@ -709,18 +695,6 @@
     "no_behavior_packs": "暫無行為包",
     "skin_packs": "皮膚包",
     "no_skin_packs": "暫無皮膚包",
-    "shader_chip": "著色器",
-    "only_show_updates": "與目前版本不相容的著色器",
-    "update_material_bin": "更新 .material.bin",
-    "update_material_bin_desc": "需要更新以便相容目前版本",
-    "update_material_bin_modal_title": "更新 .material.bin",
-    "update_material_bin_modal_content": "此操作將更新著色器包中的 .material.bin 檔案頭部，以便 Minecraft 可以正確載入它。",
-    "update_material_bin_risk_title": "風險提示：",
-    "update_material_bin_risk_content": "更新後的材質包可能在舊版本 Minecraft 中無法正常工作。建議您先備份存檔或匯出資源包。",
-    "update_material_bin_success": "材質更新完成",
-    "update_material_bin_failed": "材質更新失敗",
-    "update_material_bin_stat_updated": "已更新: {{count}}",
-    "update_material_bin_stat_failed": "失敗: {{count}}",
     "servers": "伺服器",
     "error_resolve_paths": "無法解析內容路徑。",
     "open_users_dir": "開啟儲存目錄",
@@ -784,7 +758,6 @@
       "hint": "僅修改資料夾名稱，不影響遊戲版本與類型。",
       "enable_isolation": "啟用實例隔離",
       "enable_console": "啟用主控台",
-      "enable_render_dragon": "啟用 Render Dragon 光影載入",
       "enable_editor_mode": "啟用編輯器模式",
       "launch_args": "啟動參數",
       "launch_args_placeholder": "啟動參數 (例如: -Editor true)",

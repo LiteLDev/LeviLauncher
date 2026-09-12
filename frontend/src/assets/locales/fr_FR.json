@@ -419,21 +419,6 @@
       "unknown_version": "Inconnu",
       "update_button": "Mettre à jour"
     },
-    "resource_rules": {
-      "title": "Données d'exécution du lanceur",
-      "check_button": "Vérifier la mise à jour",
-      "update_button": "Mettre à jour",
-      "latest_label": "Dernière version",
-      "outdated_label": "Obsolète",
-      "missing_label": "Manquant",
-      "status": {
-        "checking": "Vérification du SHA256...",
-        "up_to_date": "Le SHA256 correspond à la version distante",
-        "outdated": "Le SHA256 diffère de la version distante",
-        "missing": "Fichier local introuvable",
-        "check_failed": "Échec de la vérification : {{error}}"
-      }
-    },
     "header": {
       "title": "Paramètres",
       "content": "Configurer les options courantes du lanceur"
@@ -583,7 +568,8 @@
     "patreon": "Patreon",
     "github_repo": "GitHub · LeviLauncher",
     "github_org": "Organisation LiteLDev",
-    "license.tip": "Consultez LICENSE dans le dépôt pour les détails de la licence.",
+    "license.tip": "LeviLauncher est distribué sous GPL-3.0-only. Consultez COPYING dans le dépôt pour le texte complet.",
+    "third_party": "Ce logiciel utilise la police MiSans et intègre des composants tiers sous leurs propres licences ; voir THIRD_PARTY_NOTICES.",
     "website": "Site web",
     "issue": "Issue",
     "star_fork": "Star / Fork",
@@ -687,18 +673,6 @@
     "no_behavior_packs": "Aucun pack de comportement",
     "skin_packs": "Packs de skins",
     "no_skin_packs": "Aucun pack de skins",
-    "shader_chip": "Shader",
-    "only_show_updates": "Shaders incompatibles",
-    "update_material_bin": "Mettre à jour .material.bin",
-    "update_material_bin_desc": "Mise à jour requise pour la compatibilité",
-    "update_material_bin_modal_title": "Mettre à jour .material.bin",
-    "update_material_bin_modal_content": "Cela mettra à jour l'en-tête .material.bin dans le pack de shaders pour que Minecraft puisse le charger correctement.",
-    "update_material_bin_risk_title": "Avertissement de risque :",
-    "update_material_bin_risk_content": "Le pack de ressources mis à jour peut ne pas fonctionner correctement dans les anciennes versions de Minecraft. Il est recommandé de sauvegarder vos mondes ou d'exporter le pack de ressources d'abord.",
-    "update_material_bin_success": "Mise à jour du matériau terminée",
-    "update_material_bin_failed": "Échec de la mise à jour du matériau",
-    "update_material_bin_stat_updated": "Mis à jour : {{count}}",
-    "update_material_bin_stat_failed": "Échecs : {{count}}",
     "servers": "Serveurs",
     "error_resolve_paths": "Échec de la résolution des chemins de contenu.",
     "open_users_dir": "Ouvrir le répertoire de stockage",
@@ -759,7 +733,6 @@
       "hint": "Renomme uniquement le dossier. La version et le type du jeu ne sont pas affectés.",
       "enable_isolation": "Activer l'isolement",
       "enable_console": "Activer la console",
-      "enable_render_dragon": "Charger les shaders RenderDragon",
       "enable_editor_mode": "Activer le mode éditeur",
       "launch_args": "Arguments de lancement",
       "launch_args_placeholder": "Arguments de lancement (ex. -Editor true)",

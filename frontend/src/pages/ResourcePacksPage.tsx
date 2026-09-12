@@ -1,5 +1,5 @@
 import { openDirectory } from "@/utils/explorer";
-import { ModalDescription, ModalPanel, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
+import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
 import {
   Button,
@@ -23,7 +23,7 @@ import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion } from "framer-motion";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useNavigate } from "react-router-dom";
 import {
   FaSync,
   FaFolderOpen,
@@ -37,7 +37,6 @@ import {
   FaClock,
   FaHdd,
   FaTag,
-  FaMagic,
   FaExchangeAlt
 } from "react-icons/fa";
 import {
@@ -45,8 +44,6 @@ import {
   ListPacksForVersion,
   DeletePack,
   GetPackInfo,
-  CheckResourcePackMaterialCompatibility,
-  UpdateResourcePackMaterialBins,
   TransferPackToVersion,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
@@ -84,7 +81,6 @@ import { SelectionBar } from "@/components/SelectionBar";
 export default function ResourcePacksPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
-  const location = useLocation();
   const hasBackend = minecraft !== undefined;
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string>("");
@@ -119,11 +115,6 @@ export default function ResourcePacksPage() {
     setOpen: delManyCfmOnOpenChange,
   } = useOverlayState();
   const {
-    isOpen: updateCfmOpen,
-    open: updateCfmOnOpen,
-    setOpen: updateCfmOnOpenChange,
-  } = useOverlayState();
-  const {
     isOpen: transferTargetOpen,
     open: transferTargetOnOpen,
     close: transferTargetOnClose,
@@ -142,7 +133,6 @@ export default function ResourcePacksPage() {
   } = useOverlayState();
   const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
-  const [packToUpdate, setPackToUpdate] = React.useState<any | null>(null);
   const [transferring, setTransferring] = React.useState<boolean>(false);
   const [currentTransferItem, setCurrentTransferItem] =
     React.useState<string>("");
@@ -162,43 +152,18 @@ export default function ResourcePacksPage() {
     null,
   );
   const dupNameRef = React.useRef<string>("");
-  const [updatingMaterialByPath, setUpdatingMaterialByPath] = React.useState<
-    Record<string, boolean>
-  >({});
-  const [onlyShowUpdates, setOnlyShowUpdates] = React.useState<boolean>(
-    location.state?.showIncompatible || false,
-  );
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
 
-  const hasIncompatibleShaders = React.useMemo(() => {
-    return packs.some(
-      (p) => p.materialCompat?.hasMaterialBin && p.materialCompat?.needsUpdate,
-    );
-  }, [packs]);
-
-  const displayedPacks = React.useMemo(() => {
-    if (!onlyShowUpdates) return packs;
-    return packs.filter(
-      (p) => p.materialCompat?.hasMaterialBin && p.materialCompat?.needsUpdate,
-    );
-  }, [packs, onlyShowUpdates]);
-
-  React.useEffect(() => {
-    if (!loading && !hasIncompatibleShaders && onlyShowUpdates) {
-      setOnlyShowUpdates(false);
-    }
-  }, [loading, hasIncompatibleShaders, onlyShowUpdates]);
-
   const sort = useContentSort(
     "content.resource.sort",
-    displayedPacks,
+    packs,
     getNameFn,
     getTimeFn,
   );
   const { lastScrollTopRef, restorePendingRef } = useScrollManager(
     scrollRef,
-    [displayedPacks],
+    [packs],
     [sort.currentPage],
   );
   const contentScope = currentVersionName;
@@ -332,24 +297,6 @@ export default function ResourcePacksPage() {
                 writeCache(cache);
               }
 
-              for (let i = 0; i < items.length; i += limit) {
-                const chunk = items.slice(i, i + limit);
-                await Promise.all(
-                  chunk.map(async (p: any) => {
-                    const key = p.path;
-                    let materialCompat: any = null;
-                    try {
-                      materialCompat =
-                        await CheckResourcePackMaterialCompatibility(name, key);
-                    } catch {}
-                    setPacks((prev) =>
-                      prev.map((it: any) =>
-                        it.path === key ? { ...it, materialCompat } : it,
-                      ),
-                    );
-                  }),
-                );
-              }
             })
             .catch(() => {});
         }
@@ -365,56 +312,6 @@ export default function ResourcePacksPage() {
   React.useEffect(() => {
     refreshAll();
   }, []);
-
-  const updateMaterialBinsForPack = React.useCallback(
-    async (packPath: string) => {
-      const p = String(packPath || "").trim();
-      if (!p || !currentVersionName) return;
-      if (updatingMaterialByPath[p]) return;
-      setUpdatingMaterialByPath((prev) => ({ ...prev, [p]: true }));
-      try {
-        let result: any = null;
-        try {
-          result = await UpdateResourcePackMaterialBins(currentVersionName, p);
-        } catch {}
-        if (!result) {
-          toast(t("contentpage.update_material_bin_failed") as string, {
-            variant: "danger",
-            timeout: 2000,
-          });
-          return;
-        }
-        if (result.error) {
-          toast(t("contentpage.update_material_bin_failed") as string, {
-            description: String(result.error),
-            variant: "danger",
-            timeout: 2000,
-          });
-          return;
-        }
-        const updated = Number(result.updatedCount || 0);
-        const failed = Number(result.failedCount || 0);
-        toast(t("contentpage.update_material_bin_success") as string, {
-          description:
-            t("contentpage.update_material_bin_stat_updated", {
-              count: updated,
-            }) +
-            (failed > 0
-              ? ", " +
-                t("contentpage.update_material_bin_stat_failed", {
-                  count: failed,
-                })
-              : ""),
-          variant: failed > 0 ? "warning" : "success",
-          timeout: 2000,
-        });
-        await refreshAll(true);
-      } finally {
-        setUpdatingMaterialByPath((prev) => ({ ...prev, [p]: false }));
-      }
-    },
-    [currentVersionName, refreshAll, updatingMaterialByPath],
-  );
 
   const openTransferTargetModal = React.useCallback(async () => {
     if (transferring || selection.selectedCount === 0) return;
@@ -687,26 +584,6 @@ export default function ResourcePacksPage() {
             </TextField>
 
             <div className="flex items-center gap-3">
-              {hasIncompatibleShaders && (
-                <Checkbox
-                  isSelected={onlyShowUpdates}
-                  onChange={setOnlyShowUpdates}
-                  className={"group"}
-                >
-                  <Checkbox.Content>
-                    <Checkbox.Control
-                      className={cn("after:bg-warning", "rounded-full")}
-                    >
-                      <Checkbox.Indicator />
-                    </Checkbox.Control>
-                    <span>
-                      <span className="text-sm text-foreground">
-                        {t("contentpage.only_show_updates")}
-                      </span>
-                    </span>
-                  </Checkbox.Content>
-                </Checkbox>
-              )}
 
               <Dropdown>
                 <Button
@@ -900,54 +777,6 @@ export default function ResourcePacksPage() {
                       >
                         {renderMcText(p.description || "")}
                       </p>
-                      {p.materialCompat?.hasMaterialBin &&
-                        p.materialCompat?.needsUpdate && (
-                          <div
-                            className="mb-3 rounded-xl border border-amber-200/50 bg-amber-50/50 p-3 dark:border-amber-900/30 dark:bg-amber-900/10 launcher-material-blur"
-                            onClick={(e) => e.stopPropagation()}
-                          >
-                            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-                              <div className="flex items-center gap-2 text-amber-600 dark:text-amber-400">
-                                <FaSync
-                                  className={
-                                    updatingMaterialByPath[p.path]
-                                      ? "animate-spin"
-                                      : ""
-                                  }
-                                />
-                                <span className="text-sm font-medium">
-                                  {t("contentpage.update_material_bin_desc")}
-                                </span>
-                              </div>
-                              <Button
-                                size="sm"
-                                onPress={(e) => {
-                                  // e.stopPropagation() is handled by parent div onClick
-                                  setPackToUpdate(p);
-                                  updateCfmOnOpen();
-                                }}
-                                variant={"primary"}
-                                isPending={!!updatingMaterialByPath[p.path]}
-                                className={cn(
-                                  "rounded-full",
-                                  "bg-warning text-warning-foreground",
-                                  "font-medium text-warning-foreground shadow-amber-500/20 shrink-0",
-                                )}
-                              >
-                                {({ isPending }) => (
-                                  <>
-                                    <Spinner
-                                      size="sm"
-                                      color="current"
-                                      className={isPending ? "" : "hidden"}
-                                    />
-                                    {t("contentpage.update_material_bin")}
-                                  </>
-                                )}
-                              </Button>
-                            </div>
-                          </div>
-                        )}
                       <div className="flex items-end justify-between mt-auto">
                         <div className="flex flex-wrap items-center gap-4 text-xs text-muted dark:text-zinc-500">
                           <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
@@ -962,12 +791,6 @@ export default function ResourcePacksPage() {
                             <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
                               <FaTag className="text-muted" />
                               <span>v{p.version}</span>
-                            </div>
-                          )}
-                          {p.materialCompat?.hasMaterialBin && (
-                            <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
-                              <FaMagic className="text-muted" />
-                              <span>{t("contentpage.shader_chip")}</span>
                             </div>
                           )}
                         </div>
@@ -1256,32 +1079,6 @@ export default function ResourcePacksPage() {
         {dupNameRef.current ? <ModalPanel className="font-mono">{dupNameRef.current}</ModalPanel> : null}
       </UnifiedModal>
 
-      {/* Update Confirmation Modal */}
-      <UnifiedModal
-        isOpen={updateCfmOpen}
-        onOpenChange={updateCfmOnOpenChange}
-        type="warning"
-        title={t("contentpage.update_material_bin_modal_title")}
-        confirmText={t("common.confirm")}
-        cancelText={t("common.cancel")}
-        showCancelButton
-        onConfirm={() => {
-          if (packToUpdate) {
-            void updateMaterialBinsForPack(packToUpdate.path);
-          }
-          updateCfmOnOpenChange(false);
-        }}
-      >
-        <p>{t("contentpage.update_material_bin_modal_content")}</p>
-        <ModalNotice tone="warning">
-          <p className="text-amber-600 dark:text-amber-500 text-sm font-medium">
-            {t("contentpage.update_material_bin_risk_title")}
-          </p>
-          <p className="text-amber-600 dark:text-amber-500 text-sm mt-1">
-            {t("contentpage.update_material_bin_risk_content")}
-          </p>
-        </ModalNotice>
-      </UnifiedModal>
     </PageContainer>
   );
 }

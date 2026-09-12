@@ -70,10 +70,12 @@ func ScanVersions(versionsRoot string) ([]VersionMeta, error) {
 	}
 	var out []VersionMeta
 	for _, e := range entries {
-		if !e.IsDir() {
+		dir := filepath.Join(versionsRoot, e.Name())
+		// A version folder may be a junction into an external game directory,
+		// which os.ReadDir reports as not-a-dir.
+		if !e.IsDir() && !utils.ResolvesToDir(dir) {
 			continue
 		}
-		dir := filepath.Join(versionsRoot, e.Name())
 		m, err := ReadMeta(dir)
 		if err != nil {
 			continue

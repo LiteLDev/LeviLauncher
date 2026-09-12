@@ -14,6 +14,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
+	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -171,10 +172,12 @@ func RunMigration(ctx context.Context) (migrated int, err error) {
 	}
 	var dirs []string
 	for _, e := range entries {
-		if !e.IsDir() {
+		dir := filepath.Join(root, e.Name())
+		// A version folder may be a junction into an external game directory,
+		// which os.ReadDir reports as not-a-dir.
+		if !e.IsDir() && !utils.ResolvesToDir(dir) {
 			continue
 		}
-		dir := filepath.Join(root, e.Name())
 		if fileExists(filepath.Join(dir, minecraftExeName)) {
 			dirs = append(dirs, dir)
 		}

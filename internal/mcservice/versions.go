@@ -320,23 +320,15 @@ func ReconcileRegisteredFlags() {
 	}
 	getLoc := func(name string) string {
 		if info, e := registry.GetAppxInfo(name); e == nil && info != nil {
-			return strings.ToLower(filepath.Clean(strings.TrimSpace(info.InstallLocation)))
+			return canonicalPath(info.InstallLocation)
 		}
 		return ""
 	}
 	releaseLoc := getLoc("MICROSOFT.MINECRAFTUWP")
 	previewLoc := getLoc("Microsoft.MinecraftWindowsBeta")
-	normalize := func(p string) string {
-		s := strings.ToLower(filepath.Clean(strings.TrimSpace(p)))
-		s = strings.TrimPrefix(s, `\\?\`)
-		s = strings.TrimPrefix(s, `\??\`)
-		return s
-	}
-	releaseLoc = normalize(releaseLoc)
-	previewLoc = normalize(previewLoc)
 	for _, m := range metas {
 		isPreview := strings.EqualFold(strings.TrimSpace(m.Type), "preview")
-		dir := normalize(filepath.Join(vdir, strings.TrimSpace(m.Name)))
+		dir := canonicalPath(filepath.Join(vdir, strings.TrimSpace(m.Name)))
 		want := releaseLoc
 		if isPreview {
 			want = previewLoc
@@ -606,7 +598,9 @@ func ValidateVersionFolderName(name string) string {
 		return "ERR_READ_VERSIONS_DIR"
 	}
 	for _, e := range entries {
-		if !e.IsDir() {
+		// A junction-backed version folder occupies its name just like a real
+		// directory, and os.ReadDir reports it as not-a-dir.
+		if !e.IsDir() && !utils.ResolvesToDir(filepath.Join(vdir, e.Name())) {
 			continue
 		}
 		if strings.EqualFold(e.Name(), n) {
@@ -653,8 +647,50 @@ func RenameVersionFolder(oldName string, newName string) string {
 	return ""
 }
 
+// canonicalPath normalizes path for comparison, resolving junctions and
+// symlinks to the location Windows itself reports. A version folder may be a
+// junction into an external game directory while the OS reports the resolved
+// path for running processes and registered packages, so both sides of such a
+// comparison go through this.
+func canonicalPath(path string) string {
+	s := strings.TrimSpace(path)
+	if s == "" {
+		return ""
+	}
+	if resolved, err := resolveFinalPath(s); err == nil {
+		s = resolved
+	}
+	return normalizePath(s)
+}
+
+func resolveFinalPath(path string) (string, error) {
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return "", err
+	}
+	h, err := windows.CreateFile(p, 0,
+		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
+		nil, windows.OPEN_EXISTING, windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	if err != nil {
+		return "", err
+	}
+	defer windows.CloseHandle(h)
+	buf := make([]uint16, windows.MAX_PATH)
+	n, err := windows.GetFinalPathNameByHandle(h, &buf[0], uint32(len(buf)), 0)
+	if err != nil {
+		return "", err
+	}
+	if int(n) > len(buf) {
+		buf = make([]uint16, n)
+		if n, err = windows.GetFinalPathNameByHandle(h, &buf[0], uint32(len(buf)), 0); err != nil {
+			return "", err
+		}
+	}
+	return windows.UTF16ToString(buf[:n]), nil
+}
+
 func IsProcessRunningAtPath(exePath string) bool {
-	p := strings.ToLower(filepath.Clean(strings.TrimSpace(exePath)))
+	p := canonicalPath(exePath)
 	if p == "" {
 		return false
 	}
@@ -677,10 +713,8 @@ func IsProcessRunningAtPath(exePath string) bool {
 			if e := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); e == nil && size > 0 {
 				path := windows.UTF16ToString(buf[:size])
 				_ = windows.CloseHandle(h)
-				norm := strings.ToLower(filepath.Clean(strings.TrimSpace(path)))
-				norm = strings.TrimPrefix(norm, `\\?\`)
-				norm = strings.TrimPrefix(norm, `\??\`)
-				if norm == p {
+				// The OS already reports a resolved image path here.
+				if normalizePath(path) == p {
 					return true
 				}
 			} else {
@@ -711,7 +745,7 @@ func DeleteVersionFolder(name string) string {
 	if utils.FileExists(exe) && IsProcessRunningAtPath(exe) {
 		return "ERR_GAME_ALREADY_RUNNING"
 	}
-	if err := os.RemoveAll(dir); err != nil {
+	if err := utils.RemoveDir(dir); err != nil {
 		return "ERR_DELETE_FAILED"
 	}
 	return ""

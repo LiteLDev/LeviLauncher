@@ -245,8 +245,7 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 	// launcher out of the way then would leave the user with neither a game
 	// window nor the launcher that could tell them what went wrong.
 	if visible {
-		launchBehavior := config.GetOnGameLaunch()
-		switch launchBehavior {
+		switch config.GetOnGameLaunch() {
 		case config.OnGameLaunchClose:
 			QuitLauncher()
 			return
@@ -255,10 +254,8 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 				w.Hide()
 			}
 		case config.OnGameLaunchKeep:
-			// keep launcher open, do nothing
-		case config.OnGameLaunchMinimize:
-			fallthrough
-		default:
+			// leave the launcher where it is
+		default: // config.OnGameLaunchMinimize
 			if w := GetMainWindow(); w != nil {
 				w.Minimise()
 			}
@@ -276,15 +273,12 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 			if !isGameRunning(versionDir) {
 				discord.SetLauncherIdle()
 
-				exitBehavior := config.GetOnGameExit()
-				switch exitBehavior {
+				switch config.GetOnGameExit() {
 				case config.OnGameExitClose:
 					QuitLauncher()
 				case config.OnGameExitKeep:
-					// keep launcher as-is
-				case config.OnGameExitReopen:
-					fallthrough
-				default:
+					// leave the launcher where it is
+				default: // config.OnGameExitReopen
 					if !userHidLauncher.Load() {
 						RestoreLauncherWindow()
 					}
@@ -295,19 +289,15 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 	}
 }
 
+// GetMainWindow returns the launcher window, or nil while it does not exist
+// yet: a monitor started from the single-instance pipe can run before the
+// window is created.
 func GetMainWindow() application.Window {
-	app := application.Get()
-	if app == nil || app.Window == nil {
+	w, ok := application.Get().Window.GetByName("main")
+	if !ok {
 		return nil
 	}
-	if w, ok := app.Window.GetByName("main"); ok && w != nil {
-		return w
-	}
-	all := app.Window.GetAll()
-	if len(all) > 0 {
-		return all[0]
-	}
-	return nil
+	return w
 }
 
 // MarkLauncherHiddenByUser records that the user themselves sent the launcher

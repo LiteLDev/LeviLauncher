@@ -26,11 +26,9 @@ const (
 )
 
 var (
-	user32                  = syscall.NewLazyDLL("user32.dll")
-	procFindWindowW         = user32.NewProc("FindWindowW")
-	procIsWindowVisible     = user32.NewProc("IsWindowVisible")
-	procShowWindow          = user32.NewProc("ShowWindow")
-	procSetForegroundWindow = user32.NewProc("SetForegroundWindow")
+	user32              = syscall.NewLazyDLL("user32.dll")
+	procFindWindowW     = user32.NewProc("FindWindowW")
+	procIsWindowVisible = user32.NewProc("IsWindowVisible")
 )
 
 var quitRequested atomic.Bool
@@ -302,29 +300,16 @@ func GetMainWindow() application.Window {
 	return nil
 }
 
-func FocusLauncherWindowWin32() {
-	title, err := syscall.UTF16PtrFromString("LeviLauncher")
-	if err != nil {
-		return
-	}
-	hwnd, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(title)))
-	if hwnd != 0 {
-		const swRestore = 9
-		_, _, _ = procShowWindow.Call(hwnd, uintptr(swRestore))
-		_, _, _ = procSetForegroundWindow.Call(hwnd)
-	}
-}
-
+// RestoreLauncherWindow brings the launcher back to the foreground, keeping
+// whatever size state it had. UnMinimise is the only restore step: Restore and
+// the raw SW_RESTORE both drop a maximised window back to its pre-maximised
+// size, so a maximised launcher would shrink on every game exit and tray click.
 func RestoreLauncherWindow() {
 	w := GetMainWindow()
-	if w != nil {
-		w.Show()
-		if w.IsMinimised() {
-			w.UnMinimise()
-		} else {
-			w.Restore()
-		}
-		w.Focus()
+	if w == nil {
+		return
 	}
-	FocusLauncherWindowWin32()
+	w.Show()
+	w.UnMinimise()
+	w.Focus()
 }

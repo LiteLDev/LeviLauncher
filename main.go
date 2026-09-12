@@ -683,9 +683,10 @@ func main() {
 		}
 	}
 	if c.WindowWidth == 0 || c.WindowHeight == 0 {
-		c.WindowWidth = w
-		c.WindowHeight = h
-		_ = config.Save(c)
+		_ = config.Update(func(c *config.AppConfig) {
+			c.WindowWidth = w
+			c.WindowHeight = h
+		})
 	}
 	windows := wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:      "main",
@@ -808,14 +809,12 @@ func main() {
 			h = minWindowHeight
 		}
 
-		c, err := config.Load()
-		if err != nil {
-			log.Printf("config.Load failed while persisting window size: %v", err)
-			return
+		if err := config.Update(func(c *config.AppConfig) {
+			c.WindowWidth = w
+			c.WindowHeight = h
+		}); err != nil {
+			log.Printf("failed to persist window size: %v", err)
 		}
-		c.WindowWidth = w
-		c.WindowHeight = h
-		_ = config.Save(c)
 	}
 	// Quitting never reaches the WindowClosing hook: Wails drops its window
 	// registry before the close event is dispatched, so the hook is looked up

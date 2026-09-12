@@ -20,23 +20,18 @@ func SetBaseRoot(root string) string {
 	if err := utils.CreateDir(r); err != nil {
 		return "ERR_CREATE_TARGET_DIR"
 	}
-	c, _ := config.Load()
-	c.BaseRoot = r
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.BaseRoot = r }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""
 }
 
 func ResetBaseRoot() string {
-	c, _ := config.Load()
-	c.BaseRoot = ""
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.BaseRoot = "" }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
-	br := apppath.BaseRoot()
-	c.BaseRoot = strings.TrimSpace(br)
-	if err := config.Save(c); err != nil {
+	br := strings.TrimSpace(apppath.BaseRoot())
+	if err := config.Update(func(c *config.AppConfig) { c.BaseRoot = br }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""
@@ -49,9 +44,7 @@ func GetDisableDiscordRPC() bool {
 }
 
 func SetDisableDiscordRPC(disable bool) string {
-	c, _ := config.Load()
-	c.DisableDiscordRPC = disable
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.DisableDiscordRPC = disable }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	if disable {
@@ -68,9 +61,7 @@ func GetEnableBetaUpdates() bool {
 }
 
 func SetEnableBetaUpdates(enable bool) string {
-	c, _ := config.Load()
-	c.EnableBetaUpdates = enable
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.EnableBetaUpdates = enable }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""
@@ -87,9 +78,7 @@ func SetGameLaunchBehavior(behavior string) string {
 	default:
 		return "ERR_INVALID_PARAM"
 	}
-	c, _ := config.Load()
-	c.OnGameLaunch = behavior
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.OnGameLaunch = behavior }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""
@@ -106,9 +95,7 @@ func SetGameExitBehavior(behavior string) string {
 	default:
 		return "ERR_INVALID_PARAM"
 	}
-	c, _ := config.Load()
-	c.OnGameExit = behavior
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.OnGameExit = behavior }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""
@@ -131,9 +118,7 @@ func GetMinimizeToTray() bool {
 }
 
 func SetMinimizeToTray(enable bool) string {
-	c, _ := config.Load()
-	c.MinimizeToTray = enable
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.MinimizeToTray = enable }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""

@@ -56,6 +56,29 @@ func Reload() (AppConfig, error) {
 	configMutex.Lock()
 	defer configMutex.Unlock()
 
+	return reloadLocked()
+}
+
+// Update applies mutate to the current config and writes the result back,
+// holding the write lock throughout. Read-modify-write through Load and Save
+// leaves a window in which a concurrent writer's change is read back stale and
+// then overwritten.
+func Update(mutate func(*AppConfig)) error {
+	configMutex.Lock()
+	defer configMutex.Unlock()
+
+	c := cachedConfig
+	if !isLoaded {
+		var err error
+		if c, err = reloadLocked(); err != nil {
+			return err
+		}
+	}
+	mutate(&c)
+	return saveLocked(c)
+}
+
+func reloadLocked() (AppConfig, error) {
 	var c AppConfig
 	p := apppath.ConfigPath()
 	if b, err := os.ReadFile(p); err == nil {
@@ -91,6 +114,10 @@ func Save(c AppConfig) error {
 	configMutex.Lock()
 	defer configMutex.Unlock()
 
+	return saveLocked(c)
+}
+
+func saveLocked(c AppConfig) error {
 	p := apppath.ConfigPath()
 	b, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {

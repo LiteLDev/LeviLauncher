@@ -901,6 +901,12 @@ export const useInstanceSettings = () => {
         return prev;
       }
       if (
+        latestLLVersion &&
+        compareLLVersions(latestLLVersion, currentLLVersion) > 0
+      ) {
+        return latestLLVersion;
+      }
+      if (
         isLLInstalled &&
         currentLLVersion &&
         llSupportedVersions.includes(currentLLVersion)
@@ -909,7 +915,13 @@ export const useInstanceSettings = () => {
       }
       return latestLLVersion;
     });
-  }, [llSupportedVersions, isLLInstalled, currentLLVersion, latestLLVersion]);
+  }, [
+    llSupportedVersions,
+    isLLInstalled,
+    currentLLVersion,
+    latestLLVersion,
+    compareLLVersions,
+  ]);
 
   // Load version metadata
   React.useEffect(() => {

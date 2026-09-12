@@ -301,7 +301,26 @@ export const LauncherPage = (args: any) => {
                           damping: 30,
                         }}
                       >
-                        <Chip
+                        <Chip<"button">
+                          render={
+                            hasLeviLaminaUpdateAvailable
+                              ? (props) => (
+                                  <button
+                                    {...props}
+                                    type="button"
+                                    onClick={() =>
+                                      navigate(ROUTES.instanceSettings, {
+                                        state: {
+                                          name: currentVersionName,
+                                          tab: "loader",
+                                          returnTo: ROUTES.home,
+                                        },
+                                      })
+                                    }
+                                  />
+                                )
+                              : undefined
+                          }
                           variant="soft"
                           color={
                             hasLeviLaminaUpdateAvailable ? "warning" : "accent"
@@ -309,7 +328,7 @@ export const LauncherPage = (args: any) => {
                           className={cn(
                             "hidden sm:flex border",
                             hasLeviLaminaUpdateAvailable
-                              ? "bg-amber-500/10 border-amber-500/20"
+                              ? "bg-amber-500/10 border-amber-500/20 cursor-pointer transition-colors hover:bg-amber-500/20 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-500"
                               : "bg-brand-500/10 border-brand-500/20",
                           )}
                         >

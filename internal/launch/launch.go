@@ -265,7 +265,7 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 		}
 	}
 
-	ticker := time.NewTicker(2 * time.Second)
+	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()
 
 	for {

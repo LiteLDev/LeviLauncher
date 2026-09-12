@@ -1,8 +1,13 @@
+import { Button, Card, Chip, ProgressBar, Tooltip } from "@heroui/react";
+
 import React from "react";
+import { useNavigate } from "react-router-dom";
+import { ROUTES } from "@/constants/routes";
+import { openDirectory } from "@/utils/explorer";
 import { PageHeader } from "@/components/PageHeader";
-import { useDownloads } from "@/utils/DownloadsContext";
+import { isDownloadActive, isDownloadTerminal, useDownloads } from "@/utils/DownloadsContext";
 import { useTranslation } from "react-i18next";
-import { Card, CardBody, Progress, Button, Chip, Tooltip } from "@heroui/react";
+
 import { motion } from "framer-motion";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -15,86 +20,93 @@ import {
   FaExclamationCircle,
   FaBoxOpen,
   FaRedo,
-  FaTrash,
 } from "react-icons/fa";
 
 export const DownloadManagerPage: React.FC = () => {
   const { t } = useTranslation();
+  const navigate = useNavigate();
+  const [filter, setFilter] = React.useState("all");
   const { downloads, cancelDownload, removeDownload, startDownload } =
     useDownloads();
+  const matchesFilter = (status: string, value: string) => value === "all" ||
+    (value === "active" ? isDownloadActive(status) : value === "done" ? status === "done" : ["error", "cancelled"].includes(status));
+  const visibleDownloads = downloads.filter((task) => matchesFilter(task.status, filter));
 
   return (
     <PageContainer>
       <Card className={cn("flex-none", LAYOUT.GLASS_CARD.BASE)}>
-        <CardBody className="p-6">
+        <Card.Content className="p-6">
           <PageHeader
             title={t("download_manager.title")}
             description={t("download_manager.description")}
+            endContent={<Button variant="primary" onPress={() => navigate(ROUTES.download)}>{t("audit.usability.browse_downloads")}</Button>}
           />
-        </CardBody>
+          <nav aria-label={t("audit.usability.download_filters")} className="mt-4 flex flex-wrap gap-2">
+            {["all", "active", "done", "failed"].map((value) => (
+              <Button key={value} size="sm" variant={filter === value ? "primary" : "secondary"} aria-pressed={filter === value} onPress={() => setFilter(value)}>
+                {t(`audit.usability.download_${value}`)} ({downloads.filter((task) => matchesFilter(task.status, value)).length})
+              </Button>
+            ))}
+          </nav>
+        </Card.Content>
       </Card>
 
       <div className="flex flex-col gap-4">
-        {downloads.length === 0 && (
-          <div className="flex flex-col items-center justify-center py-20 text-default-400 opacity-60">
+        {visibleDownloads.length === 0 && (
+          <div role="status" className="flex flex-col items-center justify-center gap-4 py-20 text-muted">
             <FaDownload size={48} className="mb-4" />
-            <p>{t("download_manager.no_downloads")}</p>
+            <p>{t(downloads.length === 0 ? "download_manager.no_downloads" : "common.no_results")}</p>
+            {downloads.length === 0 ? <Button variant="primary" onPress={() => navigate(ROUTES.download)}>{t("audit.usability.browse_downloads")}</Button> : <Button variant="secondary" onPress={() => setFilter("all")}>{t("audit.usability.download_all")}</Button>}
           </div>
         )}
 
-        {downloads.map((task) => {
-          const active =
-            task.status === "started" ||
-            task.status === "resumed" ||
-            task.status === "starting";
+        {visibleDownloads.map((task) => {
+          const active = isDownloadActive(task.status);
+          const verifying = task.status === "verifying";
+          const terminal = isDownloadTerminal(task.status);
           return (
             <motion.div
+              data-material-motion
               key={task.dest}
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
             >
-              <Card className="rounded-4xl bg-white/50 dark:bg-zinc-900/50 backdrop-blur-md border border-white/40 dark:border-white/5 shadow-sm overflow-hidden">
-                <CardBody className="p-4 sm:p-6">
+              <Card className={cn(LAYOUT.GLASS_CARD.BASE, "overflow-hidden")}>
+                <Card.Content className="p-4 sm:p-6">
                   <div className="flex flex-col gap-4">
-                    <div className="flex items-start justify-between">
-                      <div className="flex items-center gap-4">
-                        <div className="p-3 rounded-2xl bg-primary-500 brand-primary-foreground shadow-lg shadow-primary-500/20">
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div className="flex min-w-0 flex-1 items-center gap-4">
+                        <div className="p-3 rounded-2xl bg-brand-500 brand-primary-foreground shadow-lg shadow-brand-500/20">
                           <FaBoxOpen size={24} />
                         </div>
-                        <div>
-                          <h3 className="text-lg font-bold text-default-900 dark:text-zinc-100 line-clamp-1">
+                        <div className="min-w-0">
+                          <h3 title={task.fileName} className="text-lg font-bold text-foreground dark:text-zinc-100 truncate">
                             {task.fileName ||
                               t("download_manager.unknown_file")}
                           </h3>
-                          <div className="flex items-center gap-2 text-small text-default-500 dark:text-zinc-400">
+                          <div className="flex items-center gap-2 text-sm text-muted dark:text-zinc-400">
                             {task.status === "done" ? (
-                              <Chip
-                                color="success"
-                                size="sm"
-                                variant="flat"
-                                startContent={<FaCheckCircle />}
-                              >
-                                {t("common.completed")}
+                              <Chip size="sm" variant="soft" color={"success"}>
+                                {<FaCheckCircle />}
+                                <Chip.Label>{t("common.completed")}</Chip.Label>
                               </Chip>
                             ) : task.status === "cancelled" ? (
-                              <Chip color="warning" size="sm" variant="flat">
-                                {t("common.cancelled")}
+                              <Chip size="sm" variant="soft" color={"warning"}>
+                                <Chip.Label>{t("common.cancelled")}</Chip.Label>
                               </Chip>
                             ) : task.error ? (
-                              <Chip
-                                color="danger"
-                                size="sm"
-                                variant="flat"
-                                startContent={<FaExclamationCircle />}
-                              >
-                                {t("common.error")}
+                              <Chip size="sm" variant="soft" color={"danger"}>
+                                {<FaExclamationCircle />}
+                                <Chip.Label>{t("common.error")}</Chip.Label>
                               </Chip>
                             ) : (
-                              <Chip color="primary" size="sm" variant="flat">
-                                {t("common.downloading")}
+                              <Chip size="sm" variant="soft" color={"accent"}>
+                                <Chip.Label>
+                                  {t(verifying ? "audit.primary.download.verifying" : "common.downloading")}
+                                </Chip.Label>
                               </Chip>
                             )}
-                            {active && (
+                            {active && !verifying && (
                               <>
                                 <span>•</span>
                                 <span className="font-mono">
@@ -106,58 +118,80 @@ export const DownloadManagerPage: React.FC = () => {
                         </div>
                       </div>
 
-                      {active && (
+                      {active && !verifying && (
+                        <Tooltip>
                         <Button
+                          aria-label={t("audit.primary.download.cancel")}
                           isIconOnly
-                          color="danger"
-                          variant="flat"
-                          radius="full"
                           onPress={() => cancelDownload(task.dest)}
+                          variant={"danger-soft"}
+                          className={"rounded-full"}
                         >
                           <FaTimes />
                         </Button>
+                        <Tooltip.Content>{t("audit.primary.download.cancel")}</Tooltip.Content>
+                        </Tooltip>
                       )}
-                      {!active && (
-                        <div className="flex gap-2">
+                      {terminal && (
+                        <div className="flex shrink-0 flex-wrap gap-2">
+                          {task.status === "done" && (
+                            <>
+                              {task.installer && <Button variant="primary" onPress={() => navigate(ROUTES.install, { state: {
+                                mirrorVersion: task.installer!.version,
+                                mirrorType: task.installer!.type,
+                                isLeviLaminaSupported: task.installer!.isLeviLaminaSupported,
+                                installerPath: task.dest,
+                                returnTo: ROUTES.downloadTasks,
+                              } })}>{t("audit.usability.install_download")}</Button>}
+                              <Button variant="secondary" isDisabled={!/[\\/]/.test(task.dest)} onPress={() => {
+                                const directory = task.dest.slice(0, Math.max(task.dest.lastIndexOf("/"), task.dest.lastIndexOf("\\")) + 1);
+                                if (directory) void openDirectory(directory);
+                              }}>{t("common.open_folder")}</Button>
+                            </>
+                          )}
                           {(task.status === "cancelled" ||
                             task.status === "error") &&
                             task.url && (
-                              <Tooltip
-                                content={t("download_manager.actions.retry")}
-                              >
+                              <Tooltip>
                                 <Button
                                   isIconOnly
-                                  color="primary"
-                                  variant="flat"
-                                  radius="full"
+                                  aria-label={t("download_manager.actions.retry")}
                                   onPress={() =>
-                                    startDownload(task.url!, task.fileName)
+                                    startDownload(task.url!, task.fileName, task.md5sum, task.installer)
                                   }
+                                  variant={"secondary"}
+                                  className={"rounded-full"}
                                 >
                                   <FaRedo />
                                 </Button>
+                                <Tooltip.Content>
+                                  {t("download_manager.actions.retry")}
+                                </Tooltip.Content>
                               </Tooltip>
                             )}
-                          <Tooltip
-                            content={t("download_manager.actions.delete")}
-                          >
+                          <Tooltip>
                             <Button
                               isIconOnly
-                              color="default"
-                              variant="light"
-                              radius="full"
-                              className="text-default-400 hover:text-danger hover:bg-danger/10"
+                              aria-label={t("audit.primary.download.remove")}
                               onPress={() => removeDownload(task.dest)}
+                              variant={"ghost"}
+                              className={cn(
+                                "rounded-full",
+                                "text-muted hover:text-danger hover:bg-danger/10",
+                              )}
                             >
                               <FaTimes />
                             </Button>
+                            <Tooltip.Content>
+                              {t("audit.primary.download.remove_hint")}
+                            </Tooltip.Content>
                           </Tooltip>
                         </div>
                       )}
                     </div>
 
                     <div className="flex flex-col gap-2">
-                      <div className="flex justify-between text-tiny text-default-500 dark:text-zinc-400 font-medium">
+                      <div className="flex justify-between text-xs text-muted dark:text-zinc-400 font-medium">
                         <span>
                           {task.progress
                             ? formatBytes(task.progress.downloaded)
@@ -169,33 +203,37 @@ export const DownloadManagerPage: React.FC = () => {
                             : "0 B"}
                         </span>
                       </div>
-                      <Progress
-                        aria-label="Download progress"
+                      <ProgressBar
+                        aria-label={t("audit.primary.download.progress", { name: task.fileName })}
                         value={
                           task.progress && task.progress.total > 0
                             ? (task.progress.downloaded / task.progress.total) *
                               100
                             : 0
                         }
-                        classNames={{
-                          indicator:
-                            "bg-gradient-to-r from-primary-500 to-primary-400",
-                        }}
                         size="md"
                         isIndeterminate={
-                          active &&
-                          (!task.progress || task.progress.total === 0)
+                          verifying || (active &&
+                          (!task.progress || task.progress.total === 0))
                         }
-                      />
+                      >
+                        <ProgressBar.Track>
+                          <ProgressBar.Fill
+                            className={
+                              "bg-brand-500"
+                            }
+                          />
+                        </ProgressBar.Track>
+                      </ProgressBar>
                     </div>
 
                     {task.error && (
-                      <div className="text-small text-danger-500 bg-danger-50 dark:bg-danger-900/20 p-3 rounded-2xl">
+                      <div className="text-sm text-rose-500 bg-rose-50 dark:bg-rose-900/20 p-3 rounded-2xl">
                         {task.error}
                       </div>
                     )}
                   </div>
-                </CardBody>
+                </Card.Content>
               </Card>
             </motion.div>
           );

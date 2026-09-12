@@ -23,6 +23,7 @@ type AppConfig struct {
 	WindowHeight      int    `json:"window_height"`
 	DisableDiscordRPC bool   `json:"disable_discord_rpc"`
 	EnableBetaUpdates bool   `json:"enable_beta_updates"`
+	LoaderMigratedV1  bool   `json:"loader_migrated_v1"`
 	OnGameLaunch      string `json:"on_game_launch,omitempty"`
 	OnGameExit        string `json:"on_game_exit,omitempty"`
 	MinimizeToTray    bool   `json:"minimize_to_tray,omitempty"`
@@ -95,10 +96,13 @@ func Save(c AppConfig) error {
 	if err != nil {
 		return err
 	}
+	if err := os.WriteFile(p, b, 0o644); err != nil {
+		return err
+	}
 	cachedConfig = c
 	isLoaded = true
 	apppath.SetBaseRootOverride(c.BaseRoot)
-	return os.WriteFile(p, b, 0o644)
+	return nil
 }
 
 func ConfigDir() string {

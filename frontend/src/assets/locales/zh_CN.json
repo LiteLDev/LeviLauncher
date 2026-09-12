@@ -8,7 +8,13 @@
     "about": "关于",
     "back": "返回",
     "forward": "前进",
-    "breadcrumb": "面包屑导航"
+    "breadcrumb": "面包屑导航",
+    "home": "首页",
+    "local_install": "本地安装",
+    "mods": "模组",
+    "mod_details": "模组详情",
+    "package_details": "软件包详情",
+    "updating": "启动器更新"
   },
   "theme": {
     "toggle": "切换主题"
@@ -73,6 +79,11 @@
         "install_now": "立即安装"
       }
     },
+    "loader_migration": {
+      "title": "正在迁移加载器",
+      "body": "正在将已安装的版本适配到新的 LeviLauncher 加载器（移除旧的 vcruntime140_1.dll 并更新游戏导入表）。此操作仅执行一次，请稍候…",
+      "preparing": "正在准备迁移…"
+    },
     "mclaunch": {
       "loading": {
         "title": "正在启动 Minecraft",
@@ -126,7 +137,7 @@
       "mods_card": "Mods 卡片会显示当前实例已启用的模组，并可一键进入完整 Mods 页面。",
       "content_counts_card": "内容管理卡片会显示世界、资源包和行为包数量，点击对应行可直接进入页面。",
       "incompatible_resource_packs": "检测到不兼容资源包时，可点击警告行直接查看需要处理的项目。",
-      "content_download_sources": "下载卡片可直接进入 CurseForge 和 lip，方便在启动器内获取内容。",
+      "content_download_sources": "下载卡片可直接进入 CurseForge 和 Bedrinth，方便在启动器内获取内容。",
       "settings_personalize": "可在设置中调整主题、配色、背景等外观选项，让启动器更符合你的使用习惯。",
       "settings_storage_path": "你可以在设置中修改存储路径；迁移或保存内容前，请先确认目标目录可写。",
       "download_mirror": "如果下载速度较慢，可在设置中切换镜像源或检查相关网络选项。",
@@ -168,13 +179,18 @@
     "manage": "管理模组"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "下载完成",
+      "description": "“{{name}}”已下载完成，是否立即安装？",
+      "confirm": "立即安装",
+      "later": "稍后再说"
+    },
     "title": "下载管理",
     "description": "查看和管理当前的下载任务",
     "no_downloads": "当前没有活动的下载任务",
     "unknown_file": "未知文件",
     "actions": {
-      "retry": "重试",
-      "delete": "删除"
+      "retry": "重试"
     }
   },
   "downloadpage": {
@@ -283,7 +299,6 @@
       "title": "安装"
     },
     "customappx": {
-      "button": "自定义",
       "modal": {
         "1": {
           "header": "版本信息",
@@ -303,12 +318,9 @@
   "onboarding": {
     "title": "首次启动引导",
     "subtitle": "请先设置内容路径与语言",
-    "skip": "跳过",
-    "finish": "完成",
     "unsaved": {
       "title": "未保存修改",
       "body": "您更改了内容路径但尚未保存。是否保存后完成引导？",
-      "cancel": "取消",
       "save": "保存并完成"
     }
   },
@@ -467,7 +479,6 @@
       }
     },
     "appearance": {
-      "global_config": "全局配置",
       "mode_config": "模式特定配置",
       "edit_mode_desc": "个性化设置（颜色、透明度等）将按日间/夜间模式独立保存。切换右侧标签页以配置不同模式。",
       "theme_mode": "外观模式",
@@ -486,7 +497,6 @@
       "theme_color_desc": "应用的主要强调颜色",
       "theme_standard": "预设颜色",
       "theme_generated": "更多颜色",
-      "hue": "色相",
       "custom_color": "自定义颜色",
       "background_image": "背景图片",
       "background_image_desc": "选择一个文件夹，从中挑选图片作为背景",
@@ -519,7 +529,34 @@
       "calculating": "正在计算...",
       "sunrise_time": "今日日出",
       "sunset_time": "今日日落",
-      "sun_fetch_failed": "获取日出日落时间失败"
+      "sun_fetch_failed": "获取日出日落时间失败",
+      "material": {
+        "title": "界面材质",
+        "description": "统一控制导航栏、卡片、标签页、控件和浮层。日间与夜间分别保存，随主题自动应用。",
+        "edit_mode": "编辑主题材质",
+        "preview": "实时预览",
+        "preview_label": "所选主题下背景图片、文字与卡片材质的叠加预览",
+        "preview_action": "启动",
+        "preview_text": "文字与操作清晰在前，背景图片自然呈现。",
+        "no_image": "选择有效的图片文件夹，并将图片不透明度设为大于 0 后即可查看效果。材质设置会保留。",
+        "presets": "材质预设",
+        "balanced": "均衡",
+        "balanced_desc": "柔和磨砂，兼顾清晰",
+        "clear": "通透",
+        "clear_desc": "更多背景，降低保护",
+        "solid": "纯色",
+        "solid_desc": "面板不透明，关闭磨砂",
+        "opacity": "界面不透明度",
+        "blur": "界面磨砂",
+        "overlay": "背景遮罩",
+        "readability": "可读性保护",
+        "readability_desc": "根据日夜主题、图片亮度和模糊量设置底色下限，并加强次要文字。控件与浮层共用材质参数，同时保留清晰的层次。",
+        "protected_opacity": "保护已生效：界面实际不透明度为 {{value}}%。",
+        "protected": "已启用可读性保护。",
+        "unprotected": "保护已关闭，复杂图片可能影响文字辨认。",
+        "reset": "重置当前主题",
+        "next_image": "换一张"
+      }
     },
     "process": {
       "title": "进程管理",
@@ -641,23 +678,28 @@
     "disable": "禁用",
     "enable": "启用",
     "open_folder": "打开文件夹",
+    "open_folder_failed": "无法打开文件夹",
     "remove": "移除",
     "tip": "提示",
     "feature_unavailable": "该功能暂时不可用",
     "unknown": "未知"
   },
   "useravatar": {
-    "no_login_retry": "未检测到 Xbox 登录（点击重试）",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "刷新 Xbox 会话",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "游戏时间",
-      "blocks_broken": "打破的方块",
-      "mobs_defeated": "已击败的生物",
-      "distance_travelled": "行动距离",
-      "time_format": "{{days}}天 {{hours}} 小时 {{minutes}} 分"
-    }
+    "authorization": {
+      "title": "游戏授权",
+      "checking": "正在检查",
+      "authorized": "已授权",
+      "trial": "仅试用",
+      "not_entitled": "未获授权",
+      "error": "检查失败",
+      "description": "登录后自动请求 Release 和 Preview 的当前许可证。点击刷新可重新检查。"
+    },
+    "sign_in": "登录微软账户",
+    "switch_account": "切换账户",
+    "signin_failed": "微软账户登录失败"
   },
   "content": {
     "count": {
@@ -725,7 +767,6 @@
     "delete_warning": "此操作无法撤销！",
     "delete_selected_confirm": "确定要删除选中的 {{count}} 个项目吗？",
     "deleted_name": "已删除 {{name}}",
-    "deleted_count": "已删除 {{count}} 个项目",
     "delete_world_confirm": "确定要删除存档 {{name}} 吗？",
     "basic_info": "基本信息",
     "level_name": "存档名称",
@@ -734,7 +775,27 @@
     "delete_screenshot_confirm": "确定要删除截图 {{name}} 吗？",
     "preview_screenshot": "查看大图",
     "screenshot_viewer_hint": "大图预览",
-    "screenshot_viewer_nav_hint": "可使用 ← / → 键或两侧按钮切换截图"
+    "screenshot_viewer_nav_hint": "可使用 ← / → 键或两侧按钮切换截图",
+    "editor_unsaved": "有未保存修改",
+    "editor_unsaved_body": "继续前请保存修改，或放弃修改并使用已保存的世界数据。",
+    "editor_continue": "继续编辑",
+    "editor_discard": "放弃修改",
+    "editor_save_refresh": "保存并刷新",
+    "editor_save_leave": "保存并离开",
+    "selected_outside_filter": "包含当前筛选外的 {{count}} 项",
+    "delete_result": "已删除 {{success}} 项，失败 {{failed}} 项",
+    "delete_retry_failed": "已保留失败项的选择。请查看下方原因后重试。",
+    "delete_scope": "实例：{{instance}} · 玩家：{{player}}",
+    "screenshot_load_failed": "读取截图失败",
+    "screenshot_image_failed": "无法读取 {{name}}",
+    "screenshot_select_player": "请先在内容管理中选择玩家，再查看截图。",
+    "screenshot_no_instance": "请先选择实例，再查看截图。",
+    "select_item": "选择 {{name}}",
+    "servers_read_only": "此处显示游戏内已添加的服务器。",
+    "sort_old_new": "从旧到新",
+    "sort_new_old": "从新到旧",
+    "previous_screenshot": "上一张截图",
+    "next_screenshot": "下一张截图"
   },
   "versions": {
     "info": {
@@ -756,7 +817,6 @@
       "enable_isolation": "启用实例隔离",
       "enable_console": "启用控制台",
       "enable_render_dragon": "启用渲染龙光影加载",
-      "enable_ctrl_r_reload_resources": "Ctrl+R热重载资源",
       "enable_editor_mode": "启用编辑器模式",
       "launch_args": "启动参数",
       "launch_args_placeholder": "启动参数 (例如: -Editor true)",
@@ -1003,7 +1063,25 @@
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
     "ERR_LIP_CACHE_CLEAN_FAILED": "清理 lip 缓存失败",
-    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings",
+    "ERR_AUTH_FAILED": "微软账户登录或授权失败，请检查网络后重试。",
+    "ERR_AUTH_TIMEOUT": "登录已超时，请重试。",
+    "ERR_AUTH_DEVICE_CACHE": "无法读取设备授权缓存，请检查当前 Windows 用户和文件权限。",
+    "ERR_AUTH_DEVICE_BUSY": "账户正在用于另一项操作，请稍后重试。",
+    "ERR_AUTH_DEVICE_PROVISION": "设备授权失败，请检查网络后重试。",
+    "ERR_AUTH_ACCOUNT_CHANGED": "当前微软账户已变更。请通过启动器头像刷新账户，然后重试。",
+    "ERR_AUTH_INTERACTION_REQUIRED": "请通过启动器头像登录拥有此游戏的微软账户，然后重试。",
+    "ERR_LICENSE_NOT_ENTITLED": "该账户没有此版本的安装权益。",
+    "ERR_LICENSE_FULL_REQUIRED": "微软仅返回了试用许可证，无法安装正式版。请通过启动器头像选择拥有游戏的账户后重试。",
+    "ERR_LICENSE_HTTP": "无法取得微软内容许可证，请检查网络后重试。",
+    "ERR_LICENSE_MISSING_KEY": "内容许可证不包含此安装包所需的密钥。",
+    "ERR_LICENSE_UNSUPPORTED": "微软返回了不支持的许可证类型。",
+    "ERR_MSIXVC_UNSUPPORTED_FORMAT": "不支持此安装包格式，请使用完整的 Windows x64 安装包。",
+    "ERR_NATIVE_MSIXVC": "安装包验证或提取失败。",
+    "ERR_TARGET_EXISTS": "目标版本目录已存在，请使用其他名称。",
+    "ERR_INVALID_FOLDER_NAME": "版本目录名称无效。",
+    "ERR_CANCELED": "操作已取消。",
+    "ERR_AUTH_ACCOUNT_SELECTION": "无法恢复启动器已选择的微软账户。请检查当前 Windows 用户和账户配置文件的读取权限。"
   },
   "filemanager": {
     "sort": {
@@ -1094,7 +1172,8 @@
     "action_promote_install_success": "{{name}} 已转为主动安装",
     "action_promote_install_failed_no_version": "未找到该包的已安装版本",
     "lip_sync_loading": "本地模组已加载，正在补全 lip 信息...",
-    "lip_sync_error": "lip 信息暂时不可用，当前仅显示本地模组。"
+    "lip_sync_error": "lip 信息暂时不可用，当前仅显示本地模组。",
+    "overwrite_and_import": "覆盖并导入"
   },
   "terms": {
     "title": "LeviLauncher 用户协议",
@@ -1138,7 +1217,6 @@
     "website": "官网",
     "source": "源码",
     "issues": "反馈",
-    "share": "分享",
     "no_download_url": "无下载链接",
     "no_files_found": "未找到文件",
     "sort": {
@@ -1220,11 +1298,11 @@
     },
     "by_author_inline": "| 作者 {{author}}",
     "files": {
-      "action": "操作",
       "action_failed": "操作失败：{{error}}",
       "checking_ll_state": "正在检查 LeviLamina 状态...",
-      "dependencies": "依赖",
       "dependencies_count": "{{count}} 个依赖",
+      "game_versions_unknown": "未找到匹配的游戏版本",
+      "version_count": "{{count}} 个版本",
       "game_versions_label": "游戏版本",
       "game_versions_unavailable": "游戏版本映射不可用",
       "game_versions_unrestricted": "无游戏版本限制",
@@ -1242,10 +1320,9 @@
       "mapping_unavailable_blocked_hint": "当前无法校验 LeviLamina 与游戏版本映射，已阻止此安装以避免错误安装。",
       "ll_missing_redirect_hint": "该实例尚未安装 LeviLamina。点击转跳后将打开实例设置的加载器页面，请先手动安装 LeviLamina。",
       "ll_missing_redirect_to_loader": "未检测到 LeviLamina，正在跳转到实例设置的加载器页面。",
-      "ll_requirement": "LL 依赖",
       "select_instance_title": "选择目标实例",
       "select_version_incompatible_hint": "版本 {{version}} 与游戏版本 {{gameVersion}} 不兼容。",
-      "tab_label": "文件",
+      "tab_label": "版本",
       "table_aria_label": "包文件表格",
       "install_success": "安装成功",
       "upgrade_success": "升级成功",
@@ -1257,8 +1334,8 @@
     },
     "guide": {
       "open_button": "开发者指南",
-      "title": "LIP 开发者指南",
-      "description": "如果你希望自己的模组出现在 LeviLauncher 的 LIP 页面中，请按照 LIP 的 package_manifest 规范发布。",
+      "title": "Bedrinth 开发者指南",
+      "description": "如果你希望自己的模组出现在 LeviLauncher 的 Bedrinth 页面中，请按照 LIP 的 package_manifest 规范发布。",
       "manifest_hint": "这个弹窗只提供面向开发者的快速说明。字段命名、必填项、示例与校验细则请以官方文档为准。",
       "variant_hint": "仅当 variant 的 label 包含 client 时，才会被启动器收录。默认情况下请使用 \"label\": \"client\"；子扩展请使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
       "docs_button": "查看完整规范",
@@ -1285,7 +1362,7 @@
       "name": "名称",
       "updated": "最近更新"
     },
-    "title": "lip 内容",
+    "title": "Bedrinth",
     "package": {
       "confirm_install_title": "确认安装",
       "confirm_install_body": "确定要为实例 {{instance}} {{action}} {{package}} {{version}} 吗？"
@@ -1325,6 +1402,154 @@
       "disable": "暂不开启",
       "clarity_terms": "Clarity 服务条款",
       "microsoft_privacy": "Microsoft 隐私声明"
+    }
+  },
+  "audit": {
+    "primary": {
+      "local_install": "本地安装",
+      "download_minecraft": "下载 Minecraft",
+      "select_instance_first": "请先选择实例，再使用这些操作。",
+      "clear_filters": "清除搜索和筛选",
+      "download": {
+        "verifying": "正在校验安装包完整性",
+        "cancel": "取消下载",
+        "remove": "移除记录",
+        "remove_hint": "移除记录，保留已下载的文件",
+        "progress": "{{name}} 的下载进度",
+        "failed": "版本列表加载失败，请检查网络后重试。",
+        "stale": "版本列表刷新失败，正在显示已保存的列表。",
+        "no_matches": "没有符合搜索或筛选条件的版本。"
+      },
+      "instances": {
+        "failed": "实例列表加载失败，请重试。",
+        "empty": "尚未安装实例",
+        "empty_description": "下载 Minecraft 或导入本地安装包，创建第一个实例。",
+        "no_matches": "没有符合搜索或筛选条件的实例。",
+        "settings": "{{name}} 的设置"
+      },
+      "install": {
+        "failed": "安装失败",
+        "copy_details": "复制错误详情",
+        "copied": "已复制错误详情",
+        "copy_failed": "复制失败，请选中上方错误文本手动复制。",
+        "go_launch": "选择实例并前往启动"
+      },
+      "onboarding": {
+        "keep_current": "保留当前目录继续"
+      },
+      "clear_search": "清除搜索"
+    },
+    "mods": {
+      "name_required": "请输入模组名称后再导入。",
+      "clear_search": "清除搜索",
+      "clear_filters": "清除筛选",
+      "no_filtered_results": "已安装的模组中没有符合当前搜索或筛选条件的内容。",
+      "more_actions": "{{name}} 的更多操作",
+      "view_details": "查看 {{name}} 的详情",
+      "copy_project_link": "复制项目链接",
+      "link_copied": "已复制项目链接",
+      "copy_failed": "复制链接失败，请重试。",
+      "project_page": "打开项目主页",
+      "detail_load_failed": "项目加载失败，请检查网络连接后重试。",
+      "description_load_failed": "说明加载失败，仍可查看项目信息和文件。",
+      "files_load_failed": "文件列表加载失败，请重试。",
+      "catalog_load_failed": "软件包目录加载失败，请重试连接。",
+      "install_file": "安装 {{name}}",
+      "path_save_success": "已保存存储路径",
+      "path_reset_success": "已恢复默认存储路径",
+      "path_save_failed": "无法更新存储路径：{{message}}",
+      "close_update_window": "关闭更新窗口",
+      "update_recovery": "关闭此更新窗口后，重新打开 LeviLauncher 并再次检查更新。如果问题持续，请从官方项目主页下载最新安装程序。",
+      "theme_color": "{{name}}（{{hex}}）",
+      "custom_color": "自定义主题颜色",
+      "github": "在 GitHub 上查看 LiteLDev",
+      "discord": "加入 Discord 社区",
+      "colors": {
+        "emerald": "翡翠绿",
+        "blue": "蓝色",
+        "violet": "紫罗兰",
+        "amber": "琥珀色",
+        "pink": "粉色",
+        "cyan": "青色",
+        "win_yellow": "Windows 黄色",
+        "win_orange": "Windows 橙色",
+        "win_red": "Windows 红色",
+        "win_blue": "Windows 蓝色",
+        "win_green": "Windows 绿色",
+        "win_purple": "Windows 紫色",
+        "win_teal": "Windows 蓝绿色",
+        "win_pink_red": "Windows 粉红色",
+        "win_light_orange": "浅橙色",
+        "win_orange_red": "橙红色",
+        "win_red_orange": "红橙色",
+        "win_light_red": "浅红色",
+        "win_bright_red": "亮红色",
+        "win_deep_red": "绯红色",
+        "win_rose": "玫瑰色",
+        "win_dark_rose": "深玫瑰色",
+        "win_magenta": "品红色",
+        "win_dark_magenta": "深品红色",
+        "win_orchid": "兰花紫",
+        "win_dark_orchid": "深兰花紫",
+        "win_dark_blue": "深蓝色",
+        "win_light_purple": "浅紫色",
+        "win_medium_purple": "中紫色",
+        "win_dark_purple": "暗紫色",
+        "win_light_magenta": "浅品红色",
+        "win_deep_purple": "深紫色",
+        "win_dark_teal": "深蓝绿色",
+        "win_cyan": "Windows 青色",
+        "win_dark_cyan": "深青色",
+        "win_green_blue": "绿蓝色",
+        "win_dark_green_blue": "深绿蓝色",
+        "win_light_green": "浅绿色",
+        "win_gray": "灰色",
+        "win_dark_gray": "深灰色",
+        "win_blue_gray": "蓝灰色",
+        "win_dark_blue_gray": "深蓝灰色",
+        "win_green_gray": "绿灰色",
+        "win_dark_green_gray": "深绿灰色",
+        "win_olive": "橄榄色",
+        "win_dark_green": "深绿色",
+        "win_medium_gray": "中灰色",
+        "win_darker_gray": "炭灰色",
+        "win_slate_gray": "石板灰"
+      },
+      "color_preview": "颜色预览：{{hex}}",
+      "invalid_hex": "请输入六位十六进制颜色，例如 #10B981。",
+      "invalid_rgb": "请输入 0 至 255 的整数。",
+      "rgb_red": "红色（R）",
+      "rgb_green": "绿色（G）",
+      "rgb_blue": "蓝色（B）"
+    },
+    "usability": {
+      "process_all": "全部 {{count}} 个 Minecraft 进程",
+      "process_confirm": "结束 Minecraft 进程？",
+      "process_warning": "即将强制结束 {{target}}。尚未保存的游戏进度可能丢失，是否继续？",
+      "process_success": "已结束 Minecraft 进程。",
+      "process_failed": "进程操作未完成：{{message}}",
+      "continue_editing": "继续编辑",
+      "discard_leave": "放弃修改并离开",
+      "start_using": "开始使用",
+      "root_load_failed": "无法确认当前内容目录。请重试，或选择可写入的目录并应用后继续。",
+      "content_load_failed": "读取失败，暂时无法确认这里的内容。请重试。",
+      "worlds_partial": "有 {{count}} 个存档的信息读取失败，以下文件夹未显示在列表中：",
+      "choose_player": "请先选择玩家。如果没有可选玩家，请先在游戏中创建或登录玩家档案。",
+      "appearance_theme": "主题与配色",
+      "appearance_layout": "布局与动效",
+      "appearance_wallpaper": "壁纸",
+      "appearance_material": "材质与可读性",
+      "search_settings": "搜索设置",
+      "search_count": "找到 {{count}} 个设置分区",
+      "browse_downloads": "前往下载",
+      "download_filters": "筛选下载任务",
+      "download_all": "全部任务",
+      "download_active": "进行中",
+      "download_done": "已完成",
+      "download_failed": "失败 / 已取消",
+      "install_download": "安装此版本",
+      "main_nav": "主导航",
+      "browse_content": "浏览资源"
     }
   }
 }

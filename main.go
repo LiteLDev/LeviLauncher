@@ -24,11 +24,12 @@ import (
 	"gopkg.in/natefinch/npipe.v2"
 
 	"github.com/joho/godotenv"
+	"github.com/liteldev/LeviLauncher/internal/app"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
-	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
@@ -406,7 +407,7 @@ func sendLaunchToExistingInstance(version string) bool {
 	return false
 }
 
-func startSingleInstanceServer(versionService *VersionService) {
+func startSingleInstanceServer(versionService *app.VersionService) {
 	ln, err := npipe.Listen(singleInstancePipe)
 	if err != nil {
 		return
@@ -534,14 +535,13 @@ func ensureSingleInstance(autoLaunchVersion string, postUpdateRestart bool) bool
 }
 
 func init() {
-
 	//minecraft
-	application.RegisterEvent[struct{}](EventGameInputEnsureStart)
-	application.RegisterEvent[struct{}](EventGameInputEnsureDone)
-	application.RegisterEvent[int64](EventGameInputDownloadStart)
-	application.RegisterEvent[GameInputDownloadProgress](EventGameInputDownloadProgress)
-	application.RegisterEvent[struct{}](EventGameInputDownloadDone)
-	application.RegisterEvent[string](EventGameInputDownloadError)
+	application.RegisterEvent[struct{}](app.EventGameInputEnsureStart)
+	application.RegisterEvent[struct{}](app.EventGameInputEnsureDone)
+	application.RegisterEvent[int64](app.EventGameInputDownloadStart)
+	application.RegisterEvent[app.GameInputDownloadProgress](app.EventGameInputDownloadProgress)
+	application.RegisterEvent[struct{}](app.EventGameInputDownloadDone)
+	application.RegisterEvent[string](app.EventGameInputDownloadError)
 	application.RegisterEvent[string](mcservice.EventExtractError)
 	application.RegisterEvent[string](mcservice.EventExtractDone)
 	application.RegisterEvent[types.ExtractProgress](mcservice.EventExtractProgress)
@@ -565,6 +565,11 @@ func init() {
 	application.RegisterEvent[struct{}](vcruntime.EventEnsureStart)
 	application.RegisterEvent[vcruntime.EnsureProgress](vcruntime.EventEnsureProgress)
 	application.RegisterEvent[bool](vcruntime.EventEnsureDone)
+	// loader migration
+	application.RegisterEvent[struct{}](leviloader.EventMigrateStart)
+	application.RegisterEvent[leviloader.MigrateProgress](leviloader.EventMigrateProgress)
+	application.RegisterEvent[int](leviloader.EventMigrateDone)
+	application.RegisterEvent[string](leviloader.EventMigrateError)
 	// app update
 	application.RegisterEvent[string](update.EventAppUpdateStatus)
 	application.RegisterEvent[update.AppUpdateProgress](update.EventAppUpdateProgress)
@@ -651,11 +656,11 @@ func main() {
 	}
 	update.Init()
 	startup.Mark("config loaded")
-	mc := NewMinecraft()
-	contentService := NewContentService(mc)
-	modsService := NewModsService(mc)
-	userService := NewUserService(mc)
-	versionService := NewVersionService(mc)
+	mc := app.NewMinecraft()
+	contentService := app.NewContentService(mc)
+	modsService := app.NewModsService(mc)
+	userService := app.NewUserService(mc)
+	versionService := app.NewVersionService(mc)
 
 	assets, err := fs.Sub(assets, "frontend/dist")
 	if err != nil {
@@ -663,7 +668,7 @@ func main() {
 		return
 	}
 
-	app := application.New(application.Options{
+	wailsApp := application.New(application.Options{
 		Name:        "LeviLauncher",
 		Description: "A Minecraft Launcher",
 		Logger:      diagnostics.Logger(),
@@ -688,17 +693,17 @@ func main() {
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),
-			Middleware: mc.localImages.middleware,
+			Middleware: mc.LocalImageMiddleware,
 		},
 		Windows: application.WindowsOptions{
 			WebviewBrowserPath: webView2Options.BrowserExecutableFolder,
 		},
 	})
 	if len(appIcon) > 0 {
-		app.SetIcon(appIcon)
+		wailsApp.SetIcon(appIcon)
 	}
-	setupSystemTray(app)
-	mc.startupEssential()
+	setupSystemTray(wailsApp)
+	mc.StartupEssential()
 	startSingleInstanceServer(versionService)
 
 	if strings.TrimSpace(autoLaunchVersion) != "" && initialURL == "/" {
@@ -727,7 +732,7 @@ func main() {
 		c.WindowHeight = h
 		_ = config.Save(c)
 	}
-	windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
+	windows := wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:      "main",
 		Title:     "LeviLauncher",
 		Width:     w,
@@ -745,6 +750,7 @@ func main() {
 		URL:            initialURL,
 		EnableFileDrop: true,
 	})
+	userService.Attach(windows)
 	startup.Mark("window created")
 	reapplyWindowMinConstraints := func() {
 		windows.SetMinSize(minWindowWidth, minWindowHeight)
@@ -780,9 +786,13 @@ func main() {
 		files := event.Context().DroppedFiles()
 		details := event.Context().DropTargetDetails()
 		if len(files) > 0 {
+			target := ""
+			if details != nil {
+				target = details.ElementID
+			}
 			windows.EmitEvent("files-dropped", types.FilesDroppedEvent{
 				Files:  files,
-				Target: details.ElementID,
+				Target: target,
 			})
 		}
 	})
@@ -808,13 +818,7 @@ func main() {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					mc.startupDeferred()
-				}()
-
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					extractor.Init()
+					mc.StartupDeferred()
 				}()
 
 				wg.Add(1)
@@ -861,10 +865,10 @@ func main() {
 			windows.Hide()
 		}
 	})
-	err = app.Run()
+	err = wailsApp.Run()
 
 	if err != nil {
-		diagnostics.HandleError("app.Run failed", err)
+		diagnostics.HandleError("wailsApp.Run failed", err)
 		return
 	}
 

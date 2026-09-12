@@ -73,6 +73,11 @@
         "install_now": "Установить сейчас"
       }
     },
+    "loader_migration": {
+      "title": "Миграция загрузчика",
+      "body": "Адаптация установленных версий к новому загрузчику LeviLauncher (удаление старой vcruntime140_1.dll и обновление таблицы импорта игры). Это выполняется один раз, подождите…",
+      "preparing": "Подготовка миграции…"
+    },
     "mclaunch": {
       "loading": {
         "title": "Запуск Minecraft",
@@ -126,7 +131,7 @@
       "mods_card": "Карточка Mods показывает включённые моды текущего экземпляра и в один клик открывает полную страницу Mods.",
       "content_counts_card": "Карточка управления контентом показывает количество миров, resource packs и behavior packs, а каждая строка открывает нужную страницу.",
       "incompatible_resource_packs": "Если найдены несовместимые resource packs, нажмите на строку предупреждения, чтобы сразу открыть их список.",
-      "content_download_sources": "Карточка загрузок даёт прямой доступ к CurseForge и lip, чтобы искать контент прямо в лаунчере.",
+      "content_download_sources": "Карточка загрузок даёт прямой доступ к CurseForge и Bedrinth, чтобы искать контент прямо в лаунчере.",
       "settings_personalize": "В настройках можно изменить тему, цвета, фон и другие параметры внешнего вида под свой стиль работы.",
       "settings_storage_path": "Пути хранения можно изменить в настройках; перед переносом или сохранением убедитесь, что целевая папка доступна для записи.",
       "download_mirror": "Если загрузка идёт медленно, попробуйте сменить зеркало или проверить сетевые параметры в настройках.",
@@ -143,13 +148,18 @@
     "manage": "Управление модами"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "Загрузка завершена",
+      "description": "«{{name}}» загружен. Установить сейчас?",
+      "confirm": "Установить сейчас",
+      "later": "Позже"
+    },
     "title": "Менеджер загрузок",
     "description": "Просмотр и управление текущими задачами загрузки",
     "no_downloads": "Нет активных задач загрузки",
     "unknown_file": "Неизвестный файл",
     "actions": {
-      "retry": "Повторить",
-      "delete": "Удалить"
+      "retry": "Повторить"
     }
   },
   "updating": {
@@ -283,7 +293,6 @@
       "title": "Установить"
     },
     "customappx": {
-      "button": "Пользовательский",
       "modal": {
         "1": {
           "header": "Информация о версии",
@@ -455,7 +464,6 @@
       }
     },
     "appearance": {
-      "global_config": "Глобальная конфигурация",
       "mode_config": "Конфигурация для режима",
       "edit_mode_desc": "Настройки персонализации (цвета, непрозрачность и т. д.) сохраняются независимо для светлого и темного режимов. Переключайте вкладки справа, чтобы настроить каждый режим.",
       "theme_light": "Светлая тема",
@@ -464,7 +472,6 @@
       "theme_color_desc": "Основной акцентный цвет приложения",
       "theme_standard": "Стандартные цвета",
       "theme_generated": "Больше цветов",
-      "hue": "Оттенок",
       "custom_color": "Пользовательский цвет",
       "background_image": "Фоновое изображение",
       "background_image_desc": "Установите персонализированный фон для текущего режима",
@@ -629,23 +636,28 @@
     "disable": "Отключить",
     "enable": "Включить",
     "open_folder": "Открыть папку",
+    "open_folder_failed": "Не удалось открыть папку",
     "remove": "Удалить",
     "tip": "Подсказка",
     "feature_unavailable": "Эта функция временно недоступна",
     "unknown": "Неизвестно"
   },
   "useravatar": {
-    "no_login_retry": "Вход Xbox не обнаружен (нажмите, чтобы повторить)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Обновить сеанс Xbox",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "Время в игре",
-      "blocks_broken": "Разрушено блоков",
-      "mobs_defeated": "Убито мобов",
-      "distance_travelled": "Пройденное расстояние",
-      "time_format": "{{days}}д {{hours}}ч {{minutes}}м"
-    }
+    "authorization": {
+      "title": "Лицензии игры",
+      "checking": "Проверка",
+      "authorized": "Авторизовано",
+      "trial": "Только пробная",
+      "not_entitled": "Нет авторизации",
+      "error": "Ошибка проверки",
+      "description": "Лицензии Release и Preview запрашиваются после входа. Обновите для повторной проверки."
+    },
+    "sign_in": "Войти через Microsoft",
+    "switch_account": "Сменить учётную запись",
+    "signin_failed": "Не удалось войти через Microsoft"
   },
   "content": {
     "count": {
@@ -693,7 +705,6 @@
     "delete_warning": "Это действие нельзя отменить!",
     "delete_selected_confirm": "Вы уверены, что хотите удалить выбранные элементы ({{count}})?",
     "deleted_name": "Удалено: {{name}}",
-    "deleted_count": "Удалено элементов: {{count}}",
     "delete_world_confirm": "Вы уверены, что хотите удалить мир {{name}}?",
     "basic_info": "Основная информация",
     "level_name": "Название мира",
@@ -747,7 +758,6 @@
       "enable_isolation": "Включить изоляцию",
       "enable_console": "Включить консоль",
       "enable_render_dragon": "Загрузить шейдеры RenderDragon",
-      "enable_ctrl_r_reload_resources": "Ctrl+R: перезагрузка ресурсов",
       "enable_editor_mode": "Включить режим редактора",
       "launch_args": "Аргументы запуска",
       "launch_args_placeholder": "Аргументы запуска (например: -Editor true)",
@@ -991,7 +1001,10 @@
     "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
     "ERR_LIP_CACHE_CLEAN_FAILED": "Failed to clean lip cache",
-    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings"
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings",
+    "ERR_AUTH_INTERACTION_REQUIRED": "Войдите в Windows с учётной записью Microsoft, которой принадлежит эта игра, затем обновите учётную запись через аватар лаунчера и повторите попытку.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "Учётная запись Microsoft изменилась. Обновите её через аватар лаунчера и повторите попытку.",
+    "ERR_AUTH_FAILED": "Не удалось авторизовать загрузки для текущей учётной записи. Проверьте соединение, обновите учётную запись через аватар лаунчера и повторите попытку."
   },
   "filemanager": {
     "sort": {
@@ -1093,12 +1106,9 @@
   "onboarding": {
     "title": "Добро пожаловать",
     "subtitle": "Пожалуйста, настройте пути к контенту и язык",
-    "skip": "Пропустить",
-    "finish": "Готово",
     "unsaved": {
       "title": "Несохранённые изменения",
       "body": "У вас есть несохранённые изменения пути к контенту. Сохранить перед завершением?",
-      "cancel": "Отмена",
       "save": "Сохранить и завершить"
     }
   },
@@ -1138,7 +1148,6 @@
     "website": "Веб-сайт",
     "source": "Исходный код",
     "issues": "Проблемы",
-    "share": "Поделиться",
     "no_download_url": "Нет ссылки для скачивания",
     "no_files_found": "Файлы не найдены",
     "sort": {
@@ -1204,12 +1213,11 @@
     "game_all_versions": "All game versions",
     "mapping_unavailable_hint": "Сопоставление версий игры для LeviLamina сейчас недоступно. Фильтры, связанные с версиями, отключены, чтобы избежать неверных совпадений.",
     "files": {
+      "game_versions_unknown": "Подходящая версия игры не найдена",
+      "version_count": "Версий: {{count}}",
       "game_versions_label": "Game Versions",
       "game_versions_unrestricted": "No game version restriction",
       "game_versions_unavailable": "Game version mapping unavailable",
-      "ll_requirement": "LL Requirement",
-      "dependencies": "Dependencies",
-      "action": "Action",
       "dependencies_count": "{{count}} dependencies",
       "install": "Install",
       "upgrade": "Обновить",
@@ -1230,7 +1238,7 @@
       "ll_missing_redirect_to_loader": "LeviLamina не установлен. Выполняется переход на вкладку Loader в настройках экземпляра.",
       "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",
       "action_failed": "Operation failed: {{error}}",
-      "tab_label": "Files",
+      "tab_label": "Версии",
       "table_aria_label": "Package files table",
       "install_success": "Installation completed successfully",
       "upgrade_success": "Обновление выполнено успешно",
@@ -1241,8 +1249,8 @@
     },
     "guide": {
       "open_button": "Руководство для разработчиков",
-      "title": "Руководство для разработчиков LIP",
-      "description": "Если вы хотите, чтобы ваш мод появился на странице LIP в LeviLauncher, публикуйте его по спецификации LIP package_manifest.",
+      "title": "Руководство для разработчиков Bedrinth",
+      "description": "Если вы хотите, чтобы ваш мод появился на странице Bedrinth в LeviLauncher, публикуйте его по спецификации LIP package_manifest.",
       "manifest_hint": "Это краткая памятка для разработчиков. Названия полей, обязательные поля, примеры и правила валидации смотрите в официальной документации.",
       "variant_hint": "Вариант будет включён в лаунчер только если его label содержит client. По умолчанию используйте \"label\": \"client\"; для подрасширений используйте \"label\": \"client_xxxx\" или \"label\": \"client\\xxxx\".",
       "docs_button": "Открыть спецификацию",
@@ -1252,7 +1260,7 @@
       "title": "lipd не установлен",
       "description": "lipd пока не установлен. Чтобы продолжить пользоваться страницами lip или установить LeviLamina, сначала откройте «Настройки > Сторонние компоненты» и установите его."
     },
-    "title": "lip Content",
+    "title": "Bedrinth",
     "sort_options": {
       "hotness": "Hotness",
       "updated": "Updated",

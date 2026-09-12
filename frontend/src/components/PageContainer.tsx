@@ -22,6 +22,7 @@ export const PageContainer = forwardRef<HTMLDivElement, PageContainerProps>(
 
     return (
       <motion.div
+        data-material-motion
         ref={ref}
         className={styles}
         initial={LAYOUT.PAGE.ANIMATION.initial}

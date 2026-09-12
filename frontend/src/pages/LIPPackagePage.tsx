@@ -1,3 +1,18 @@
+import { ModalDescription, ModalDetails } from "@/components/ModalPrimitives";
+import {
+  Button,
+  Card,
+  Chip,
+  Label,
+  ListBox,
+  Select,
+  Skeleton,
+  Spinner,
+  Tabs,
+  Tooltip,
+  toast,
+} from "@heroui/react";
+
 import React, {
   useCallback,
   useEffect,
@@ -7,48 +22,39 @@ import React, {
 } from "react";
 import { useLocation, useNavigate, useParams } from "react-router-dom";
 import { useTranslation } from "react-i18next";
-import {
-  addToast,
-  Button,
-  Card,
-  CardBody,
-  Chip,
-  Image,
-  Select,
-  SelectItem,
-  Spinner,
-  Skeleton,
-  Tab,
-  Table,
-  TableBody,
-  TableCell,
-  TableColumn,
-  TableHeader,
-  TableRow,
-  Tabs,
-  Tooltip,
-} from "@heroui/react";
-import { Call, Browser } from "@wailsio/runtime";
+import { useRouteTitle } from "@/hooks/useRouteTitle";
+import { ProjectShareButton } from "@/components/ProjectShareButton";
+
+import { Browser } from "@wailsio/runtime";
 import { motion } from "framer-motion";
 import ReactMarkdown, { type Components } from "react-markdown";
 import remarkGfm from "remark-gfm";
+import rehypeRaw from "rehype-raw";
+import rehypeSanitize from "rehype-sanitize";
+import rehypeSlug from "rehype-slug";
+import {
+  BedrinthVersionList,
+  type FileGameVersionState,
+} from "@/components/BedrinthVersionList";
 import { shouldDisableAnimations } from "@/hooks/useAnimations";
 import {
   LuClock,
   LuDownload,
-  LuFileDigit,
   LuFlame,
   LuGamepad2,
   LuGlobe,
-  LuShare2,
   LuTag,
   LuUser,
 } from "react-icons/lu";
 import {
   GetVersionLogoDataUrl,
   ListVersionMetas,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { GetLipStatus } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import {
+  GetLipStatus,
+  GetLIPPackageReadme,
+  InstallLIPPackage,
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { PageContainer } from "@/components/PageContainer";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -77,15 +83,8 @@ type GithubRepoRef = {
   repo: string;
 };
 
-type HeadingTag = "h1" | "h2" | "h3" | "h4" | "h5" | "h6";
 type LipRuntimeStatus = {
   installed?: boolean;
-};
-
-type FileGameVersionState = {
-  file: LIPPackageFileInfo;
-  supportedGameVersions: string[];
-  hasLLRequirement: boolean;
 };
 
 type InstanceLLState = {
@@ -172,22 +171,6 @@ const resolveMarkdownUrl = (
 const isBadgeImage = (src: string): boolean =>
   /(?:^|\/\/)img\.shields\.io\//i.test(src);
 
-const collectNodeText = (node: React.ReactNode): string => {
-  if (node === null || node === undefined || typeof node === "boolean") {
-    return "";
-  }
-  if (typeof node === "string" || typeof node === "number") return String(node);
-  if (Array.isArray(node)) {
-    return node.map((item) => collectNodeText(item)).join("");
-  }
-  if (React.isValidElement(node)) {
-    return collectNodeText(
-      (node.props as { children?: React.ReactNode }).children,
-    );
-  }
-  return "";
-};
-
 const slugifyHeading = (value: string): string => {
   const slug = value
     .trim()
@@ -197,16 +180,6 @@ const slugifyHeading = (value: string): string => {
     .replace(/-+/g, "-")
     .replace(/^-|-$/g, "");
   return slug || "section";
-};
-
-const createHeadingSlugger = () => {
-  const used = new Map<string, number>();
-  return (text: string) => {
-    const base = slugifyHeading(text);
-    const current = used.get(base) || 0;
-    used.set(base, current + 1);
-    return current === 0 ? base : `${base}-${current}`;
-  };
 };
 
 const decodeHash = (href: string): string => {
@@ -310,6 +283,13 @@ const LIPPackagePage: React.FC = () => {
       return raw;
     }
   }, [id]);
+  useRouteTitle(
+    !loading &&
+      !error &&
+      pkg?.identifier.toLowerCase() === identifier.split("#")[0].toLowerCase()
+      ? pkg?.name
+      : undefined,
+  );
 
   const openLipSettings = useCallback(() => {
     setLipMissingModalOpen(false);
@@ -358,32 +338,8 @@ const LIPPackagePage: React.FC = () => {
   }, [pkg?.projectUrl]);
 
   const markdownComponents = useMemo<Components>(() => {
-    const nextHeadingID = createHeadingSlugger();
-    const createHeading =
-      (tag: HeadingTag) =>
-      ({
-        children,
-        className,
-        id: headingID,
-        ...props
-      }: React.HTMLAttributes<HTMLHeadingElement> & {
-        children?: React.ReactNode;
-      }) =>
-        React.createElement(
-          tag,
-          {
-            ...props,
-            id:
-              typeof headingID === "string" && headingID.trim()
-                ? headingID
-                : nextHeadingID(collectNodeText(children)),
-            className,
-          },
-          children,
-        );
-
     return {
-      img: ({ src, alt, className, ...props }) => {
+      img: ({ src, alt, className, node: _node, ...props }) => {
         const resolvedSrc = resolveMarkdownUrl(src, githubRepoRef, "image");
         const badge = isBadgeImage(resolvedSrc);
         return (
@@ -394,15 +350,15 @@ const LIPPackagePage: React.FC = () => {
             loading="lazy"
             className={cn(
               className,
-              "max-w-full",
+              "max-w-full h-auto",
               badge
                 ? "!inline-block !align-middle !my-0 !mx-0 !rounded-none"
-                : "block my-4 rounded-xl",
+                : "inline-block align-middle rounded-lg",
             )}
           />
         );
       },
-      a: ({ href, children, className, ...props }) => {
+      a: ({ href, children, className, node: _node, ...props }) => {
         const resolvedHref = resolveMarkdownUrl(href, githubRepoRef, "link");
         const isHashAnchor = resolvedHref.startsWith("#");
         return (
@@ -411,7 +367,7 @@ const LIPPackagePage: React.FC = () => {
             href={resolvedHref || href}
             target={isHashAnchor ? undefined : "_blank"}
             rel={isHashAnchor ? undefined : "noreferrer"}
-            className={cn(className, "text-primary-600 dark:text-primary-500")}
+            className={cn(className, "text-brand-600 dark:text-brand-500")}
             onClick={(event) => {
               if (!resolvedHref) return;
               if (isHashAnchor) {
@@ -425,15 +381,14 @@ const LIPPackagePage: React.FC = () => {
                   slugifyHeading(anchor),
                 ];
                 for (const candidate of candidates) {
-                  const target = document.getElementById(candidate);
+                  const target = tabsRef.current?.querySelector(
+                    `[id="${CSS.escape(candidate)}"], [id="${CSS.escape(`user-content-${candidate}`)}"]`,
+                  );
                   if (!(target instanceof HTMLElement)) continue;
                   target.scrollIntoView({
                     behavior: shouldDisableAnimations() ? "auto" : "smooth",
                     block: "start",
                   });
-                  if (window.location.hash !== `#${candidate}`) {
-                    window.history.replaceState(null, "", `#${candidate}`);
-                  }
                   break;
                 }
                 return;
@@ -448,12 +403,6 @@ const LIPPackagePage: React.FC = () => {
           </a>
         );
       },
-      h1: createHeading("h1"),
-      h2: createHeading("h2"),
-      h3: createHeading("h3"),
-      h4: createHeading("h4"),
-      h5: createHeading("h5"),
-      h6: createHeading("h6"),
     };
   }, [githubRepoRef]);
 
@@ -488,12 +437,6 @@ const LIPPackagePage: React.FC = () => {
       error: String(value?.error || "").trim(),
       loading,
     }),
-    [],
-  );
-
-  const callMinecraftByName = useCallback(
-    async <T,>(method: string, ...args: unknown[]): Promise<T> =>
-      (await Call.ByName(`main.Minecraft.${method}`, ...args)) as T,
     [],
   );
 
@@ -609,10 +552,7 @@ const LIPPackagePage: React.FC = () => {
 
     const fetchReadme = async () => {
       try {
-        const text = await callMinecraftByName<string>(
-          "GetLIPPackageReadme",
-          pkg.projectUrl,
-        );
+        const text = await GetLIPPackageReadme(pkg.projectUrl);
         if (cancelled) return;
         setReadmeContent(String(text || ""));
         return;
@@ -634,7 +574,7 @@ const LIPPackagePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [callMinecraftByName, pkg?.projectUrl]);
+  }, [pkg?.projectUrl]);
 
   useEffect(() => {
     let cancelled = false;
@@ -1099,10 +1039,10 @@ const LIPPackagePage: React.FC = () => {
 
       setInstallDialogOpen(false);
       setInstallDialogTriggerVersion("");
-      addToast({
-        color: "warning",
-        title: t("common.tip"),
+      toast(t("common.tip"), {
+        variant: "warning",
         description: t("lip.files.ll_missing_redirect_to_loader"),
+        timeout: 2000,
       });
       navigate(ROUTES.instanceSettings, {
         state: {
@@ -1171,8 +1111,7 @@ const LIPPackagePage: React.FC = () => {
             `${t(installDialogActionLabelKey)} ${activePackageIdentifier}@${installDialogTriggerVersion}`,
           );
 
-          const err = await callMinecraftByName<string>(
-            "InstallLIPPackage",
+          const err = await InstallLIPPackage(
             installDialogSelectedInstance,
             activePackageIdentifier,
             installDialogTriggerVersion,
@@ -1183,10 +1122,10 @@ const LIPPackagePage: React.FC = () => {
         },
       );
 
-      addToast({
-        color: "success",
-        title: t("common.success"),
+      toast(t("common.success"), {
+        variant: "success",
         description: t(installDialogSuccessKey),
+        timeout: 2000,
       });
       await refreshInstance(
         installDialogSelectedInstance,
@@ -1212,19 +1151,18 @@ const LIPPackagePage: React.FC = () => {
       setInstallDialogOpen(false);
       setInstallDialogTriggerVersion("");
     } catch (actionError) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("lip.files.action_failed", {
           error: resolveErrorText(actionError),
         }),
+        timeout: 2000,
       });
     } finally {
       setActionRunning(false);
     }
   }, [
     activePackageIdentifier,
-    callMinecraftByName,
     dialogLLInstalled,
     dialogLLStateLoading,
     dialogPackageStateLoading,
@@ -1249,7 +1187,7 @@ const LIPPackagePage: React.FC = () => {
     return (
       <PageContainer animate={false} className="min-h-0 no-scrollbar">
         <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <CardBody className="p-6">
+          <Card.Content className="p-6">
             <div className="flex flex-col md:flex-row gap-6">
               <div className="flex items-start gap-4 flex-1">
                 <Skeleton className="w-24 h-24 rounded-2xl shrink-0" />
@@ -1274,11 +1212,11 @@ const LIPPackagePage: React.FC = () => {
                 </div>
               </div>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <Card className={cn(LAYOUT.GLASS_CARD.BASE, "mt-6 min-h-[300px]")}>
-          <CardBody className="p-6">
+          <Card.Content className="p-6">
             <div className="flex gap-6 mb-6">
               <Skeleton className="h-8 w-24 rounded-lg" />
               <Skeleton className="h-8 w-24 rounded-lg" />
@@ -1288,7 +1226,7 @@ const LIPPackagePage: React.FC = () => {
               <Skeleton className="h-4 w-full rounded-md" />
               <Skeleton className="h-4 w-3/4 rounded-md" />
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
       </PageContainer>
     );
@@ -1297,20 +1235,22 @@ const LIPPackagePage: React.FC = () => {
   if (error) {
     return (
       <div className="w-full h-full min-h-0 flex flex-col p-4 sm:p-6 gap-4 items-center justify-center">
-        <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl p-8">
-          <CardBody className="flex flex-col items-center gap-4">
-            <p className="text-xl font-bold text-danger-500">{error}</p>
+        <Card className="bg-surface/50 dark:bg-surface/40 launcher-material-blur rounded-4xl p-8">
+          <Card.Content className="flex flex-col items-center gap-4">
+            <p className="text-xl font-bold text-rose-500">{error}</p>
             <Button
               onPress={() => void loadPackage(identifier, true)}
-              color="primary"
-              className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+              variant={"primary"}
+              className={
+                "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20"
+              }
             >
               {t("common.retry")}
             </Button>
-            <Button onPress={() => navigate(-1)} variant="light">
+            <Button onPress={() => navigate(-1)} variant={"ghost"}>
               {t("common.back")}
             </Button>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
     );
@@ -1319,17 +1259,19 @@ const LIPPackagePage: React.FC = () => {
   if (!pkg) {
     return (
       <div className="w-full h-full min-h-0 flex flex-col p-4 sm:p-6 gap-4 items-center justify-center">
-        <Card className="bg-white/50 dark:bg-zinc-900/40 backdrop-blur-md rounded-4xl p-8">
-          <CardBody className="flex flex-col items-center gap-4">
+        <Card className="bg-surface/50 dark:bg-surface/40 launcher-material-blur rounded-4xl p-8">
+          <Card.Content className="flex flex-col items-center gap-4">
             <p className="text-xl font-bold">{t("common.empty")}</p>
             <Button
               onPress={() => navigate(-1)}
-              color="primary"
-              className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
+              variant={"primary"}
+              className={
+                "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20"
+              }
             >
               {t("common.back")}
             </Button>
-          </CardBody>
+          </Card.Content>
         </Card>
       </div>
     );
@@ -1339,45 +1281,48 @@ const LIPPackagePage: React.FC = () => {
     <PageContainer animate={false} className="min-h-0 no-scrollbar">
       <div className="max-w-7xl mx-auto w-full">
         <motion.div
+          data-material-motion
           initial={{ opacity: 0, y: -20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4 }}
         >
           <Card className={cn(LAYOUT.GLASS_CARD.BASE, "mb-6")}>
-            <CardBody className="p-6">
+            <Card.Content className="p-6">
               <div className="flex flex-col md:flex-row gap-6">
                 <div className="shrink-0">
                   {pkg.avatarUrl ? (
-                    <Image
+                    <img
                       src={pkg.avatarUrl}
                       alt={pkg.name}
-                      className="w-32 h-32 object-cover rounded-2xl shadow-lg bg-content2"
+                      className={
+                        "w-32 h-32 object-cover rounded-2xl shadow-lg bg-surface-secondary"
+                      }
                     />
                   ) : (
-                    <div className="w-32 h-32 rounded-2xl bg-content2 shadow-lg flex items-center justify-center text-default-300">
+                    <div className="w-32 h-32 rounded-2xl bg-surface-secondary shadow-lg flex items-center justify-center text-muted">
                       <LuDownload size={36} />
                     </div>
                   )}
                 </div>
 
-                <div className="flex flex-col grow gap-3">
-                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-default-900 dark:text-zinc-100 pb-1">
+                <div className="flex min-w-0 flex-col grow gap-3">
+                  <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground dark:text-zinc-100 pb-1 break-words">
                     {pkg.name}
                   </h1>
 
-                  <div className="flex items-center gap-3 text-default-500 dark:text-zinc-400 text-sm flex-wrap">
+                  <div className="flex items-center gap-3 text-muted dark:text-zinc-400 text-sm flex-wrap">
                     <div className="flex items-center gap-1">
                       <LuUser size={14} />
-                      <span className="font-medium text-default-700 dark:text-zinc-200">
+                      <span className="font-medium text-foreground dark:text-zinc-200">
                         {pkg.author || t("common.unknown")}
                       </span>
                     </div>
-                    <span className="w-1 h-1 rounded-full bg-default-300"></span>
+                    <span className="w-1 h-1 rounded-full bg-surface-quaternary"></span>
                     <div className="flex items-center gap-1">
                       <LuClock size={14} />
                       <span>{formatDateStr(pkg.updated)}</span>
                     </div>
-                    <span className="w-1 h-1 rounded-full bg-default-300"></span>
+                    <span className="w-1 h-1 rounded-full bg-surface-quaternary"></span>
                     <div className="flex items-center gap-1">
                       <LuFlame size={14} className="text-orange-500" />
                       <span>{pkg.hotness}</span>
@@ -1386,33 +1331,26 @@ const LIPPackagePage: React.FC = () => {
 
                   <div className="flex flex-wrap gap-2 mt-1">
                     {pkg.tags.map((tag) => (
-                      <Chip
-                        key={tag}
-                        variant="flat"
-                        size="sm"
-                        startContent={<LuTag size={12} />}
-                      >
-                        {tag}
+                      <Chip key={tag} size="sm" variant="soft">
+                        {<LuTag size={12} />}
+                        <Chip.Label>{tag}</Chip.Label>
                       </Chip>
                     ))}
-                    <Chip
-                      size="sm"
-                      variant="bordered"
-                      startContent={<LuGamepad2 size={12} />}
-                    >
-                      ID: {pkg.identifier}
+                    <Chip size="sm" variant="secondary">
+                      {<LuGamepad2 size={12} />}
+                      <Chip.Label className="select-text">
+                        ID: {pkg.identifier}
+                      </Chip.Label>
                     </Chip>
                   </div>
 
-                  <p className="text-default-500 dark:text-zinc-400 mt-4 text-sm leading-relaxed max-w-4xl">
+                  <p className="text-muted dark:text-zinc-400 mt-4 text-sm leading-relaxed max-w-4xl">
                     {pkg.description || t("lip.no_description")}
                   </p>
                 </div>
 
-                <div className="flex flex-col gap-3 min-w-[240px] md:border-l md:border-default-100 md:pl-8 justify-center">
+                <div className="flex flex-col gap-3 min-w-[240px] md:border-l md:border-border md:pl-8 justify-center">
                   <Button
-                    className="w-full font-semibold shadow-md shadow-primary-900/20 brand-primary-foreground bg-primary-500 hover:bg-primary-500"
-                    startContent={<LuDownload size={20} />}
                     size="lg"
                     onPress={() => {
                       setSelectedTab("files");
@@ -1425,306 +1363,212 @@ const LIPPackagePage: React.FC = () => {
                         });
                       }, 100);
                     }}
+                    variant={"secondary"}
+                    className={
+                      "w-full font-semibold shadow-md shadow-brand-900/20 brand-primary-foreground bg-brand-500 hover:bg-brand-500"
+                    }
                   >
+                    {<LuDownload size={20} />}
                     {t("lip.files.install")}
                   </Button>
                   <div className="flex gap-2 justify-center">
                     {pkg.projectUrl && (
-                      <Button
-                        onPress={() => Browser.OpenURL(pkg.projectUrl)}
-                        isIconOnly
-                        variant="flat"
-                        aria-label="Project Page"
-                      >
-                        <LuGlobe size={20} />
-                      </Button>
+                      <Tooltip>
+                        <Button
+                          onPress={() => Browser.OpenURL(pkg.projectUrl)}
+                          isIconOnly
+                          aria-label={t("audit.mods.project_page")}
+                          variant={"secondary"}
+                        >
+                          <LuGlobe size={20} />
+                        </Button>
+                        <Tooltip.Content>
+                          {t("audit.mods.project_page")}
+                        </Tooltip.Content>
+                      </Tooltip>
                     )}
-                    <Button isIconOnly variant="flat" aria-label="Share">
-                      <LuShare2 size={20} />
-                    </Button>
+                    <ProjectShareButton url={pkg.projectUrl} />
                   </div>
                 </div>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         </motion.div>
 
         <motion.div
+          data-material-motion
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ duration: 0.4, delay: 0.1 }}
         >
           <Card className={cn(LAYOUT.GLASS_CARD.BASE, "min-h-[500px]")}>
-            <CardBody className="p-6 overflow-hidden">
+            <Card.Content className="p-6 overflow-hidden">
               <div ref={tabsRef} className="flex w-full flex-col scroll-mt-24">
                 <Tabs
-                  aria-label={t("lip.package_details_aria_label")}
-                  variant="underlined"
-                  color="primary"
                   selectedKey={selectedTab}
                   onSelectionChange={(key) => setSelectedTab(key as string)}
-                  classNames={{
-                    tabList:
-                      "gap-6 w-full relative rounded-none p-0 border-b border-default-200 mb-6",
-                    cursor:
-                      "w-full bg-linear-to-r from-primary-500 to-primary-400 h-[3px]",
-                    tab: "max-w-fit px-0 h-12 text-base font-medium text-default-500 dark:text-zinc-400",
-                    tabContent:
-                      "group-data-[selected=true]:text-primary-600 dark:group-data-[selected=true]:text-primary-500 font-bold",
-                  }}
+                  variant="secondary"
                 >
-                  <Tab key="description" title={t("common.details")}>
-                    <div className="prose dark:prose-invert max-w-none">
+                  <Tabs.ListContainer>
+                    <Tabs.List
+                      aria-label={t("lip.package_details_aria_label")}
+                      className={
+                        "gap-6 w-full relative rounded-none p-0 border-b border-border mb-6"
+                      }
+                    >
+                      <Tabs.Tab
+                        key="description"
+                        id={"description"}
+                        className={
+                          "group-data-[selected]:text-brand-600 dark:group-data-[selected]:text-brand-500 font-bold"
+                        }
+                      >
+                        {t("common.details")}
+                        <Tabs.Indicator
+                          className={
+                            "w-full bg-accent h-[3px]"
+                          }
+                        />
+                      </Tabs.Tab>
+                      <Tabs.Tab
+                        key="files"
+                        id={"files"}
+                        className={
+                          "group-data-[selected]:text-brand-600 dark:group-data-[selected]:text-brand-500 font-bold"
+                        }
+                      >
+                        {t("lip.files.tab_label")}
+                        <Tabs.Indicator
+                          className={
+                            "w-full bg-accent h-[3px]"
+                          }
+                        />
+                      </Tabs.Tab>
+                    </Tabs.List>
+                  </Tabs.ListContainer>
+
+                  <Tabs.Panel id="description">
+                    <div className="prose dark:prose-invert max-w-none min-w-0 break-words prose-pre:max-w-full prose-pre:overflow-x-auto [&_table]:block [&_table]:max-w-full [&_table]:overflow-x-auto">
                       {readmeLoading ? (
-                        <div className="flex flex-col items-center justify-center py-12 gap-3 text-default-400 dark:text-zinc-500">
-                          <Spinner color="primary" size="lg" />
+                        <div className="flex flex-col items-center justify-center py-12 gap-3 text-muted dark:text-zinc-500">
+                          <Spinner size="lg" color={"accent"} />
                           <p>{t("common.loading")}</p>
                         </div>
-                      ) : readmeContent ? (
+                      ) : readmeContent || pkg.description ? (
                         <ReactMarkdown
                           remarkPlugins={[remarkGfm]}
+                          rehypePlugins={[rehypeRaw, rehypeSlug, rehypeSanitize]}
                           components={markdownComponents}
                         >
-                          {readmeContent}
+                          {readmeContent || pkg.description}
                         </ReactMarkdown>
                       ) : (
-                        <div className="flex flex-col items-center justify-center py-12 text-default-400 gap-3">
+                        <div className="flex flex-col items-center justify-center py-12 text-muted gap-3">
                           <p>{t("lip.no_description")}</p>
                         </div>
                       )}
                     </div>
-                  </Tab>
+                  </Tabs.Panel>
 
-                  <Tab key="files" title={t("lip.files.tab_label")}>
+                  <Tabs.Panel id="files">
                     <div className="flex flex-col gap-4">
                       {visiblePackageVariants.length > 1 ? (
                         <div className="max-w-sm">
                           <Select
-                            label={
-                              <div className="flex items-center gap-2">
-                                <span>{t("lip.files.variant_label")}</span>
-                                <span className="text-tiny font-normal text-default-400 dark:text-zinc-500">
-                                  {t("lip.files.variant_hint_keep_default")}
-                                </span>
-                              </div>
-                            }
                             placeholder={t("lip.files.variant_placeholder")}
-                            selectedKeys={
-                              activePackageIdentifier
-                                ? [activePackageIdentifier]
-                                : []
+                            isDisabled={actionRunning}
+                            value={
+                              Array.from(
+                                activePackageIdentifier
+                                  ? [activePackageIdentifier]
+                                  : [],
+                              )[0] ?? null
                             }
                             onChange={(e) =>
                               setSelectedVariantIdentifier(
-                                String(e.target.value || "").trim(),
+                                String(e || "").trim(),
                               )
                             }
-                            size="sm"
-                            classNames={COMPONENT_STYLES.select}
-                            isDisabled={actionRunning}
                           >
-                            {visiblePackageVariants.map((variant) => {
-                              const label = getVariantDisplayLabel(
-                                variant,
-                                t("lip.files.variant_default"),
-                              );
-                              return (
-                                <SelectItem
-                                  key={variant.packageIdentifier}
-                                  textValue={label}
-                                >
-                                  <div className="flex flex-col">
-                                    <span className="text-small">{label}</span>
-                                    <span className="text-tiny text-default-400 font-mono">
-                                      {variant.key
-                                        ? variant.packageIdentifier
-                                        : String(pkg?.identifier || "").trim()}
-                                    </span>
-                                  </div>
-                                </SelectItem>
-                              );
-                            })}
+                            <Label>
+                              {
+                                <div className="flex items-center gap-2">
+                                  <span>{t("lip.files.variant_label")}</span>
+                                  <span className="text-xs font-normal text-muted dark:text-zinc-500">
+                                    {t("lip.files.variant_hint_keep_default")}
+                                  </span>
+                                </div>
+                              }
+                            </Label>
+                            <Select.Trigger
+                              className={cn(
+                                COMPONENT_STYLES.select.trigger,
+                                "min-h-8 text-sm",
+                              )}
+                            >
+                              <Select.Value />
+                              <Select.Indicator />
+                            </Select.Trigger>
+                            <Select.Popover
+                              className={COMPONENT_STYLES.select.popoverContent}
+                            >
+                              <ListBox
+                                className={COMPONENT_STYLES.select.listbox}
+                              >
+                                {visiblePackageVariants.map((variant) => {
+                                  const label = getVariantDisplayLabel(
+                                    variant,
+                                    t("lip.files.variant_default"),
+                                  );
+                                  return (
+                                    <ListBox.Item
+                                      key={variant.packageIdentifier}
+                                      id={variant.packageIdentifier}
+                                      textValue={label}
+                                    >
+                                      <Label>
+                                        <div className="flex flex-col">
+                                          <span className="text-sm">
+                                            {label}
+                                          </span>
+                                          <span className="text-xs text-muted font-mono">
+                                            {variant.key
+                                              ? variant.packageIdentifier
+                                              : String(
+                                                  pkg?.identifier || "",
+                                                ).trim()}
+                                          </span>
+                                        </div>
+                                      </Label>
+                                      <ListBox.ItemIndicator />
+                                    </ListBox.Item>
+                                  );
+                                })}
+                              </ListBox>
+                            </Select.Popover>
                           </Select>
                         </div>
                       ) : null}
-                      {filesWithGameVersionState.length > 0 ? (
-                        <Table
-                          aria-label={t("lip.files.table_aria_label")}
-                          removeWrapper
-                          classNames={COMPONENT_STYLES.table}
-                        >
-                          <TableHeader>
-                            <TableColumn>{t("common.version")}</TableColumn>
-                            <TableColumn>
-                              {t("lip.files.ll_requirement")}
-                            </TableColumn>
-                            <TableColumn>
-                              {t("lip.files.dependencies")}
-                            </TableColumn>
-                            <TableColumn>
-                              {t("lip.files.game_versions_label")}
-                            </TableColumn>
-                            <TableColumn>{t("lip.files.action")}</TableColumn>
-                          </TableHeader>
-                          <TableBody>
-                            {filesWithGameVersionState.map((fileState) => {
-                              const { file } = fileState;
-                              const dependencyEntries = Object.entries(
-                                file.otherDependencies,
-                              );
-
-                              return (
-                                <TableRow key={file.version}>
-                                  <TableCell>
-                                    <Chip
-                                      size="sm"
-                                      variant="flat"
-                                      className="font-mono"
-                                    >
-                                      {file.version}
-                                    </Chip>
-                                  </TableCell>
-                                  <TableCell>
-                                    {file.llDependencyRanges.length > 0 ? (
-                                      <div className="text-xs text-default-700 dark:text-zinc-300 break-all">
-                                        {file.llDependencyRanges.join(", ")}
-                                      </div>
-                                    ) : (
-                                      <span className="text-default-400">
-                                        -
-                                      </span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    {dependencyEntries.length > 0 ? (
-                                      <Tooltip
-                                        content={
-                                          <div className="max-w-sm p-2 space-y-1">
-                                            {dependencyEntries.map(
-                                              ([key, value]) => (
-                                                <div
-                                                  key={key}
-                                                  className="text-xs break-all"
-                                                >
-                                                  <span className="font-semibold">
-                                                    {key}
-                                                  </span>
-                                                  : {value}
-                                                </div>
-                                              ),
-                                            )}
-                                          </div>
-                                        }
-                                      >
-                                        <span className="cursor-help text-xs text-default-700 dark:text-zinc-300">
-                                          {t("lip.files.dependencies_count", {
-                                            count: dependencyEntries.length,
-                                          })}
-                                        </span>
-                                      </Tooltip>
-                                    ) : (
-                                      <span className="text-default-400">
-                                        -
-                                      </span>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    {!fileState.hasLLRequirement ? (
-                                      <Chip
-                                        size="sm"
-                                        variant="flat"
-                                        color="default"
-                                      >
-                                        {t(
-                                          "lip.files.game_versions_unrestricted",
-                                        )}
-                                      </Chip>
-                                    ) : !mappingReady ? (
-                                      <Chip
-                                        size="sm"
-                                        variant="flat"
-                                        color="default"
-                                      >
-                                        {t("common.loading")}
-                                      </Chip>
-                                    ) : mappingUnavailable ? (
-                                      <Chip
-                                        size="sm"
-                                        variant="flat"
-                                        color="warning"
-                                      >
-                                        {t(
-                                          "lip.files.game_versions_unavailable",
-                                        )}
-                                      </Chip>
-                                    ) : fileState.supportedGameVersions.length >
-                                      0 ? (
-                                      <div className="flex flex-wrap gap-1">
-                                        {fileState.supportedGameVersions.map(
-                                          (gameVersion) => (
-                                            <Chip
-                                              key={`${file.version}-${gameVersion}`}
-                                              size="sm"
-                                              variant="flat"
-                                              color="default"
-                                            >
-                                              {gameVersion}
-                                            </Chip>
-                                          ),
-                                        )}
-                                      </div>
-                                    ) : (
-                                      <Chip
-                                        size="sm"
-                                        variant="flat"
-                                        color="danger"
-                                      >
-                                        {t("contentpage.none")}
-                                      </Chip>
-                                    )}
-                                  </TableCell>
-                                  <TableCell>
-                                    <Button
-                                      size="sm"
-                                      color="primary"
-                                      variant="flat"
-                                      onPress={() =>
-                                        openInstallDialog(file.version)
-                                      }
-                                      isDisabled={
-                                        instanceOptions.length === 0 ||
-                                        (fileState.hasLLRequirement &&
-                                          !mappingAvailable) ||
-                                        actionRunning
-                                      }
-                                    >
-                                      {t("lip.files.install")}
-                                    </Button>
-                                  </TableCell>
-                                </TableRow>
-                              );
-                            })}
-                          </TableBody>
-                        </Table>
-                      ) : (
-                        <div className="flex flex-col items-center justify-center py-12 text-default-400 border border-dashed border-default-200 rounded-xl">
-                          <LuFileDigit size={48} className="mb-4 opacity-50" />
-                          <p className="text-lg font-medium">
-                            {t("common.no_results")}
-                          </p>
-                        </div>
-                      )}
+                      <BedrinthVersionList
+                        key={activePackageIdentifier}
+                        files={filesWithGameVersionState}
+                        packageName={pkg.name}
+                        mappingReady={mappingReady}
+                        mappingAvailable={mappingAvailable}
+                        installDisabled={instanceOptions.length === 0 || actionRunning}
+                        onInstall={openInstallDialog}
+                      />
                     </div>
-                  </Tab>
+                  </Tabs.Panel>
                 </Tabs>
               </div>
-            </CardBody>
+            </Card.Content>
           </Card>
         </motion.div>
       </div>
 
       <UnifiedModal
-        size="md"
+        size="wide"
         isOpen={installDialogOpen}
         onOpenChange={(open) => {
           if (open) {
@@ -1737,118 +1581,99 @@ const LIPPackagePage: React.FC = () => {
         icon={<LuGamepad2 size={24} />}
         title={t("lip.files.select_instance_title")}
         isDismissable={!actionRunning}
-        footer={
-          <>
-            <Button
-              variant="light"
-              onPress={() => closeInstallDialog()}
-              isDisabled={actionRunning}
-            >
-              {t("common.cancel")}
-            </Button>
-            <Button
-              color="primary"
-              onPress={() => void handleConfirmInstall()}
-              className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground font-bold shadow-lg shadow-primary-900/20"
-              isLoading={actionRunning}
-              isDisabled={
-                !installDialogSelectedInstance ||
-                !installDialogTriggerVersion ||
-                dialogPackageStateLoading ||
-                !installDialogVersionInstallable ||
-                actionRunning
-              }
-            >
-              {t(installDialogPrimaryActionLabelKey)}
-            </Button>
-          </>
-        }
+        isPending={actionRunning}
+        showCancelButton
+        onCancel={closeInstallDialog}
+        onConfirm={() => void handleConfirmInstall()}
+        confirmText={t(installDialogPrimaryActionLabelKey)}
+        confirmButtonProps={{
+          isDisabled:
+            !installDialogSelectedInstance ||
+            !installDialogTriggerVersion ||
+            dialogPackageStateLoading ||
+            !installDialogVersionInstallable,
+        }}
       >
         <div className="space-y-4">
-          <p className="text-small text-default-500 dark:text-zinc-400">
+          <ModalDescription>
             {t("curseforge.install.select_version_body")}
-          </p>
+          </ModalDescription>
           <Select
-            label={t("curseforge.install.local_installation")}
             placeholder={t("curseforge.install.select_version_placeholder")}
-            selectedKeys={
-              installDialogSelectedInstance
-                ? [installDialogSelectedInstance]
-                : []
-            }
-            onChange={(e) => setInstallDialogSelectedInstance(e.target.value)}
-            size="sm"
-            classNames={COMPONENT_STYLES.select}
             isDisabled={actionRunning || instanceOptions.length === 0}
+            value={
+              Array.from(
+                installDialogSelectedInstance
+                  ? [installDialogSelectedInstance]
+                  : [],
+              )[0] ?? null
+            }
+            onChange={(e) => setInstallDialogSelectedInstance(String(e ?? ""))}
           >
-            {instanceOptions.map((instanceName) => (
-              <SelectItem key={instanceName} textValue={instanceName}>
-                <div className="flex gap-2 items-center">
-                  <div className="w-8 h-8 rounded bg-default-200 flex items-center justify-center overflow-hidden">
-                    <img
-                      src={
-                        instanceLogos[instanceName] ||
-                        "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
-                      }
-                      alt="icon"
-                      className="w-full h-full object-cover"
-                      onError={(e) => (e.currentTarget.style.display = "none")}
-                    />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="text-small">{instanceName}</span>
-                    <span className="text-tiny text-default-400">
-                      {normalizeGameVersion(
-                        instanceGameVersions[instanceName],
-                      ) || t("contentpage.none")}
-                    </span>
-                  </div>
-                </div>
-              </SelectItem>
-            ))}
+            <Label>{t("curseforge.install.local_installation")}</Label>
+            <Select.Trigger
+              className={cn(COMPONENT_STYLES.select.trigger, "min-h-8 text-sm")}
+            >
+              <Select.Value />
+              <Select.Indicator />
+            </Select.Trigger>
+            <Select.Popover className={COMPONENT_STYLES.select.popoverContent}>
+              <ListBox className={COMPONENT_STYLES.select.listbox}>
+                {instanceOptions.map((instanceName) => (
+                  <ListBox.Item
+                    key={instanceName}
+                    id={instanceName}
+                    textValue={instanceName}
+                  >
+                    <Label>
+                      <div className="flex gap-2 items-center">
+                        <div className="w-8 h-8 rounded bg-surface-tertiary flex items-center justify-center overflow-hidden">
+                          <img
+                            src={
+                              instanceLogos[instanceName] ||
+                              "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                            }
+                            alt="icon"
+                            className="w-full h-full object-cover"
+                            onError={(e) =>
+                              (e.currentTarget.style.display = "none")
+                            }
+                          />
+                        </div>
+                        <div className="flex flex-col">
+                          <span className="text-sm">{instanceName}</span>
+                          <span className="text-xs text-muted">
+                            {normalizeGameVersion(
+                              instanceGameVersions[instanceName],
+                            ) || t("contentpage.none")}
+                          </span>
+                        </div>
+                      </div>
+                    </Label>
+                    <ListBox.ItemIndicator />
+                  </ListBox.Item>
+                ))}
+              </ListBox>
+            </Select.Popover>
           </Select>
-          <div className="grid grid-cols-2 gap-x-8 gap-y-3">
-            <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
-              <span>{t("lip.files.variant_label")}:</span>{" "}
-              <span>{activeVariantDisplayLabel || t("contentpage.none")}</span>
-            </div>
-            <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
-              <span>{t("lip.files.installing_version_label")}:</span>{" "}
-              <span>
-                {installDialogTriggerVersion || t("contentpage.none")}
-              </span>
-            </div>
-            <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
-              {dialogInstancePackageState?.loading ? (
-                t("lip.files.checking_current_installed_version")
-              ) : (
-                <>
-                  <span>{t("lip.files.current_installed_version_label")}:</span>{" "}
-                  <span>
-                    {dialogInstalledPackageVersion || t("contentpage.none")}
-                  </span>
-                </>
-              )}
-            </div>
-            <div className="min-w-0 text-small leading-7 text-default-600 dark:text-zinc-300">
-              <span>{t("lip.files.instance_game_version_label")}:</span>{" "}
-              <span>
-                {installDialogInstanceGameVersion || t("contentpage.none")}
-              </span>
-            </div>
-          </div>
+          <ModalDetails items={[
+            { label: t("lip.files.variant_label"), value: activeVariantDisplayLabel || t("contentpage.none") },
+            { label: t("lip.files.installing_version_label"), value: installDialogTriggerVersion || t("contentpage.none"), mono: true },
+            { label: t("lip.files.current_installed_version_label"), value: dialogInstancePackageState?.loading ? t("lip.files.checking_current_installed_version") : dialogInstalledPackageVersion || t("contentpage.none") },
+            { label: t("lip.files.instance_game_version_label"), value: installDialogInstanceGameVersion || t("contentpage.none"), mono: true },
+          ]} />
           {dialogRequiresLL && dialogLLStateLoading ? (
-            <div className="text-xs text-default-500 dark:text-zinc-400">
+            <div className="text-xs text-muted dark:text-zinc-400">
               {t("lip.files.checking_ll_state")}
             </div>
           ) : null}
           {dialogRequiresLL && mappingUnavailable ? (
-            <div className="text-xs text-warning-600 dark:text-warning-400">
+            <div className="text-xs text-amber-600 dark:text-amber-400">
               {t("lip.files.mapping_unavailable_blocked_hint")}
             </div>
           ) : null}
           {dialogRequiresLL && !dialogLLStateLoading && !dialogLLInstalled ? (
-            <div className="text-xs text-warning-600 dark:text-warning-400">
+            <div className="text-xs text-amber-600 dark:text-amber-400">
               {t("lip.files.ll_missing_redirect_hint")}
             </div>
           ) : null}
@@ -1856,7 +1681,7 @@ const LIPPackagePage: React.FC = () => {
           !dialogLLStateLoading &&
           dialogLLInstalled &&
           !dialogInstalledLLCompatible ? (
-            <div className="text-xs text-danger-500">
+            <div className="text-xs text-rose-500">
               {t("lip.files.ll_installed_incompatible_hint", {
                 installedVersion: dialogLLVersion || t("contentpage.none"),
               })}
@@ -1865,7 +1690,7 @@ const LIPPackagePage: React.FC = () => {
           {installDialogFileState?.hasLLRequirement &&
           mappingReady &&
           !installDialogGameVersionCompatible ? (
-            <div className="text-xs text-danger-500">
+            <div className="text-xs text-rose-500">
               {t("lip.files.select_version_incompatible_hint", {
                 version: installDialogTriggerVersion || t("contentpage.none"),
                 gameVersion:
@@ -1877,7 +1702,7 @@ const LIPPackagePage: React.FC = () => {
       </UnifiedModal>
 
       <UnifiedModal
-        size="md"
+        size="standard"
         isOpen={lipMissingModalOpen}
         onOpenChange={setLipMissingModalOpen}
         type="warning"
@@ -1886,7 +1711,7 @@ const LIPPackagePage: React.FC = () => {
         confirmText={t("settings.lip.startup_prompt.open_settings_button")}
         onConfirm={openLipSettings}
       >
-        <div className="flex flex-col gap-3 text-sm leading-6 text-default-600 dark:text-zinc-300">
+        <div className="flex flex-col gap-3 text-sm leading-6 text-foreground dark:text-zinc-300">
           <p>{t("lip.guard.description")}</p>
         </div>
       </UnifiedModal>

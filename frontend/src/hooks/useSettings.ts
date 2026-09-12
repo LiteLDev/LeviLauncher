@@ -1,7 +1,9 @@
-import { useEffect, useState } from "react";
+import { useOverlayState } from "@heroui/react";
+import { useEffect, useRef, useState } from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDisclosure } from "@heroui/react";
+
 import {
+  CacheClean,
   GetAppVersion,
   CheckUpdate,
   GetLanguageNames,
@@ -19,14 +21,14 @@ import {
   ListMinecraftProcesses,
   KillProcess,
   KillAllMinecraftProcesses,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   GetInstallerDir,
   GetVersionsDir,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { Call, Events } from "@wailsio/runtime";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import { Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { persistClarityChoice } from "@/utils/clarityConsent";
 import {
   EXPERIMENTAL_FEATURES_EVENT_NAME,
@@ -36,10 +38,13 @@ import {
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { useThemeManager, ThemeMode } from "@/utils/useThemeManager";
 import { ROUTES } from "@/constants/routes";
+import { useCurrentBackground } from "@/utils/BackgroundContext";
+import { clampNumber } from "@/utils/backgroundAppearance";
 
 export type { ThemeMode };
 
 export const useSettings = (i18n: { language: string }) => {
+  const currentBackground = useCurrentBackground();
   const hasBackend = minecraft !== undefined;
   const navigate = useNavigate();
   const location = useLocation();
@@ -90,7 +95,16 @@ export const useSettings = (i18n: { language: string }) => {
     useState<boolean>(false);
 
   // Tabs
-  const [selectedTab, setSelectedTab] = useState<string>("general");
+  const [selectedTab, setSelectedTab] = useState<string>(() => {
+    try {
+      const saved = localStorage.getItem("app.settingsTab") || "";
+      if (["general", "personalization", "components", "others", "privacy", "updates", "about"].includes(saved)) return saved;
+    } catch {}
+    return "general";
+  });
+  useEffect(() => {
+    try { localStorage.setItem("app.settingsTab", selectedTab); } catch {}
+  }, [selectedTab]);
 
   // Layout mode
   const [layoutMode, setLayoutMode] = useState<"navbar" | "sidebar">(() => {
@@ -172,19 +186,19 @@ export const useSettings = (i18n: { language: string }) => {
   );
 
   const [backgroundBlur, setBackgroundBlur] = useState<number>(() =>
-    Number(localStorage.getItem("app.backgroundBlur") || "0"),
+    clampNumber(localStorage.getItem("app.backgroundBlur"), 0, 0, 50),
   );
 
   const [backgroundBrightness, setBackgroundBrightness] = useState<number>(
     () => {
       const item = localStorage.getItem("app.backgroundBrightness");
-      return item !== null ? Number(item) : 100;
+      return clampNumber(item, 100, 0, 200);
     },
   );
 
   const [backgroundOpacity, setBackgroundOpacity] = useState<number>(() => {
     const item = localStorage.getItem("app.backgroundOpacity");
-    return item !== null ? Number(item) : 100;
+    return clampNumber(item, 100, 0, 100);
   });
 
   const [backgroundPlayOrder, setBackgroundPlayOrder] = useState<
@@ -223,13 +237,13 @@ export const useSettings = (i18n: { language: string }) => {
   const [lightBackgroundBaseOpacity, setLightBackgroundBaseOpacity] =
     useState<number>(() => {
       const item = localStorage.getItem("app.lightBackgroundBaseOpacity");
-      return item !== null ? Number(item) : 50;
+      return clampNumber(item, 50, 0, 100);
     });
 
   const [darkBackgroundBaseOpacity, setDarkBackgroundBaseOpacity] =
     useState<number>(() => {
       const item = localStorage.getItem("app.darkBackgroundBaseOpacity");
-      return item !== null ? Number(item) : 50;
+      return clampNumber(item, 50, 0, 100);
     });
 
   // Theme manager
@@ -261,7 +275,7 @@ export const useSettings = (i18n: { language: string }) => {
   // Background image preview
   const [backgroundImageError, setBackgroundImageError] = useState(false);
   const [backgroundImageCount, setBackgroundImageCount] = useState<number>(0);
-  const [previewBgData, setPreviewBgData] = useState<string>("");
+  const previewBgData = currentBackground?.bgData || "";
 
   // Lip
   const [lipInstalled, setLipInstalled] = useState<boolean>(false);
@@ -279,7 +293,7 @@ export const useSettings = (i18n: { language: string }) => {
     total: number;
   }>({ percentage: 0, current: 0, total: 0 });
   const [lipError, setLipError] = useState<string>("");
-  const lipProgressDisclosure = useDisclosure();
+  const lipProgressDisclosure = useOverlayState();
 
   // resource_pack_rules.bin
   const [resourceRulesInstalled, setResourceRulesInstalled] =
@@ -300,6 +314,9 @@ export const useSettings = (i18n: { language: string }) => {
   const [processModalOpen, setProcessModalOpen] = useState(false);
   const [processes, setProcesses] = useState<types.ProcessInfo[]>([]);
   const [scanningProcesses, setScanningProcesses] = useState(false);
+  const [processError, setProcessError] = useState("");
+  const [terminatingProcess, setTerminatingProcess] = useState<number | "all" | null>(null);
+  const terminatingRef = useRef(false);
 
   // Sun times loading
   const [loadingSunTimes, setLoadingSunTimes] = useState(false);
@@ -307,17 +324,19 @@ export const useSettings = (i18n: { language: string }) => {
   // Unsaved changes / navigation
   const {
     isOpen: unsavedOpen,
-    onOpen: unsavedOnOpen,
-    onOpenChange: unsavedOnOpenChange,
-    onClose: unsavedOnClose,
-  } = useDisclosure();
-  const [pendingNavPath, setPendingNavPath] = useState<string>("");
+    open: unsavedOnOpen,
+    setOpen: unsavedOnOpenChange,
+    close: unsavedOnClose,
+  } = useOverlayState();
+  const [pendingNavPath, setPendingNavPath] = useState<string | number | null>(
+    null,
+  );
   const {
     isOpen: resetOpen,
-    onOpen: resetOnOpen,
-    onOpenChange: resetOnOpenChange,
-    onClose: resetOnClose,
-  } = useDisclosure();
+    open: resetOnOpen,
+    setOpen: resetOnOpenChange,
+    close: resetOnClose,
+  } = useOverlayState();
 
   // --- Handlers ---
   const setClarityEnabled = (enabled: boolean) => {
@@ -351,13 +370,6 @@ export const useSettings = (i18n: { language: string }) => {
     } catch {}
   };
 
-  const callMinecraftByName = async <T>(
-    method: string,
-    ...args: unknown[]
-  ): Promise<T> => {
-    return (await Call.ByName(`main.Minecraft.${method}`, ...args)) as T;
-  };
-
   const refreshSunTimes = async () => {
     setLoadingSunTimes(true);
     await fetchSunTimes();
@@ -366,27 +378,46 @@ export const useSettings = (i18n: { language: string }) => {
 
   const refreshProcesses = async () => {
     setScanningProcesses(true);
+    setProcessError("");
     try {
       const list = await ListMinecraftProcesses();
       setProcesses(list || []);
+      return true;
+    } catch (error) {
+      setProcessError(error instanceof Error ? error.message : String(error));
+      return false;
     } finally {
       setScanningProcesses(false);
     }
   };
 
-  const handleKillProcess = async (pid: number) => {
+  const terminateProcesses = async (pid?: number) => {
+    if (terminatingRef.current) return false;
+    terminatingRef.current = true;
+    setTerminatingProcess(pid ?? "all");
+    setProcessError("");
     try {
-      await KillProcess(pid);
-      await refreshProcesses();
-    } catch {}
+      const error = pid === undefined
+        ? await KillAllMinecraftProcesses()
+        : await KillProcess(pid);
+      // A bulk termination can partially succeed. Always refresh its survivors.
+      const refreshed = await refreshProcesses();
+      if (error) {
+        setProcessError(error);
+        return false;
+      }
+      return refreshed;
+    } catch (error) {
+      setProcessError(error instanceof Error ? error.message : String(error));
+      return false;
+    } finally {
+      terminatingRef.current = false;
+      setTerminatingProcess(null);
+    }
   };
 
-  const handleKillAllProcesses = async () => {
-    try {
-      await KillAllMinecraftProcesses();
-      await refreshProcesses();
-    } catch {}
-  };
+  const handleKillProcess = (pid: number) => terminateProcesses(pid);
+  const handleKillAllProcesses = () => terminateProcesses();
 
   const onCheckUpdate = async () => {
     setCheckingUpdate(true);
@@ -432,7 +463,7 @@ export const useSettings = (i18n: { language: string }) => {
   const cleanLipCache = async (): Promise<string> => {
     setCleaningLipCache(true);
     try {
-      const err = await callMinecraftByName<string>("CacheClean");
+      const err = await CacheClean();
       return String(err || "");
     } catch (e: any) {
       return String(e?.data || e?.message || e || "ERR_LIP_CACHE_CLEAN_FAILED");
@@ -486,18 +517,25 @@ export const useSettings = (i18n: { language: string }) => {
   useEffect(() => {
     const handler = (ev: any) => {
       try {
-        let targetPath = ev?.detail?.path;
-        if (targetPath === -1) targetPath = "-1";
-        targetPath = String(targetPath || "");
-        const hasUnsaved = !!newBaseRoot && newBaseRoot !== baseRoot;
+        const targetPath: unknown = ev?.detail?.path;
+        if (typeof targetPath !== "string" && typeof targetPath !== "number") {
+          return;
+        }
+        if (
+          typeof targetPath === "number" &&
+          (!Number.isInteger(targetPath) || targetPath === 0)
+        ) {
+          return;
+        }
+        const hasUnsaved = newBaseRoot !== baseRoot;
         if (!targetPath || targetPath === location.pathname) return;
         if (hasUnsaved) {
           setPendingNavPath(targetPath);
           unsavedOnOpen();
           return;
         }
-        if (targetPath === "-1") {
-          navigate(-1);
+        if (typeof targetPath === "number") {
+          navigate(targetPath);
         } else {
           navigate(targetPath);
         }
@@ -567,7 +605,7 @@ export const useSettings = (i18n: { language: string }) => {
 
   useEffect(() => {
     setBackgroundImageError(false);
-  }, [backgroundImage]);
+  }, [backgroundImage, previewBgData]);
 
   useEffect(() => {
     const handleExperimentalFeaturesChange = () => {
@@ -586,29 +624,20 @@ export const useSettings = (i18n: { language: string }) => {
       );
   }, []);
 
-  // Background image preview loading
+  // The preview shares the decoded image with App; only enumerate folder size here.
   useEffect(() => {
     const folderPath = backgroundImage;
-
+    let cancelled = false;
     if (!folderPath) {
-      setPreviewBgData("");
       setBackgroundImageCount(0);
       return;
     }
 
     const loadPreview = async () => {
       try {
-        // Try to get current image from App.tsx first
-        const currentPath = localStorage.getItem("app.currentBackgroundImage");
-
-        let previewPath = "";
-        if (currentPath && currentPath.startsWith(folderPath)) {
-          previewPath = currentPath;
-        }
-
         const entries = await (minecraft as any).ListDir(folderPath);
+        if (cancelled) return;
         if (!entries || entries.length === 0) {
-          setPreviewBgData("");
           setBackgroundImageCount(0);
           return;
         }
@@ -625,40 +654,15 @@ export const useSettings = (i18n: { language: string }) => {
           );
         });
         setBackgroundImageCount(images.length);
-
-        if (images.length === 0) {
-          setPreviewBgData("");
-          return;
-        }
-
-        if (!previewPath) {
-          // Use the first image for preview in settings if no current image
-          previewPath = images[0].path;
-        }
-
-        const res = await (minecraft as any).GetImageBase64?.(previewPath);
-        if (res) {
-          setPreviewBgData(res);
-          setBackgroundImageError(false);
-        } else {
-          // Fallback to first image if current fails
-          const fallbackPath = images[0].path;
-          const fallbackRes = await (minecraft as any).GetImageBase64?.(
-            fallbackPath,
-          );
-          if (fallbackRes) {
-            setPreviewBgData(fallbackRes);
-            setBackgroundImageError(false);
-          } else {
-            setBackgroundImageError(true);
-          }
-        }
       } catch {
+        if (cancelled) return;
+        setBackgroundImageCount(0);
         setBackgroundImageError(true);
       }
     };
 
-    loadPreview();
+    void loadPreview();
+    return () => { cancelled = true; };
   }, [backgroundImage]);
 
   // Tab from location state
@@ -880,6 +884,8 @@ export const useSettings = (i18n: { language: string }) => {
     setProcessModalOpen,
     processes,
     scanningProcesses,
+    processError,
+    terminatingProcess,
     refreshProcesses,
     handleKillProcess,
     handleKillAllProcesses,

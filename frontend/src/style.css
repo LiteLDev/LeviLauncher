@@ -1,6 +1,17 @@
 @import "tailwindcss";
+@import "./heroui.css";
+@import "./personalization.css";
 @plugin "@tailwindcss/typography";
-@plugin "./hero.ts";
+
+@theme inline {
+  --color-surface-quaternary: var(--surface-quaternary);
+  --color-brand-heading: var(--brand-heading);
+  --color-brand-foreground: var(--brand-foreground);
+}
+
+@utility text-accent {
+  color: var(--brand-foreground);
+}
 
 @font-face {
   font-family: "MiSans";
@@ -10,24 +21,24 @@
   font-display: swap;
 }
 
-@source "../node_modules/@heroui/theme/dist/**/*.{js,ts,jsx,tsx}";
-
 @theme {
   --font-sans: "MiSans", sans-serif;
-  --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", "MiSans", sans-serif;
+  --font-mono:
+    ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", "MiSans", sans-serif;
 
-  --color-primary-50: rgb(var(--theme-50, 236, 253, 245));
-  --color-primary-100: rgb(var(--theme-100, 209, 250, 229));
-  --color-primary-200: rgb(var(--theme-200, 167, 243, 208));
-  --color-primary-300: rgb(var(--theme-300, 110, 231, 183));
-  --color-primary-400: rgb(var(--theme-400, 52, 211, 153));
-  --color-primary-500: rgb(var(--theme-500, 16, 185, 129));
-  --color-primary-600: rgb(var(--theme-600, 5, 150, 105));
-  --color-primary-700: rgb(var(--theme-700, 4, 120, 87));
-  --color-primary-800: rgb(var(--theme-800, 6, 95, 70));
-  --color-primary-900: rgb(var(--theme-900, 6, 78, 59));
-  --color-primary-950: rgb(var(--theme-950, 2, 44, 34));
-  --color-primary: rgb(var(--theme-500, 16, 185, 129));
+  --color-brand-50: rgb(var(--theme-50, 236, 253, 245));
+  --color-brand-100: rgb(var(--theme-100, 209, 250, 229));
+  --color-brand-200: rgb(var(--theme-200, 167, 243, 208));
+  --color-brand-300: rgb(var(--theme-300, 110, 231, 183));
+  --color-brand-400: rgb(var(--theme-400, 52, 211, 153));
+  --color-brand-500: rgb(var(--theme-500, 16, 185, 129));
+  --color-brand-600: rgb(var(--theme-600, 5, 150, 105));
+  --color-brand-700: rgb(var(--theme-700, 4, 120, 87));
+  --color-brand-800: rgb(var(--theme-800, 6, 95, 70));
+  --color-brand-900: rgb(var(--theme-900, 6, 78, 59));
+  --color-brand-950: rgb(var(--theme-950, 2, 44, 34));
+  --color-brand: rgb(var(--theme-500, 16, 185, 129));
 
   --animate-fadeInUp: fadeInUp 1s ease-out;
   --animate-fadeInUp2: fadeInUp 1.5s ease-out;
@@ -111,30 +122,6 @@
     }
   }
 
-  @keyframes gradient {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-
-  @keyframes text-gradient-move {
-    0% {
-      background-position: 0% 50%;
-    }
-    50% {
-      background-position: 100% 50%;
-    }
-    100% {
-      background-position: 0% 50%;
-    }
-  }
-
   @keyframes dropAndBounce {
     0% {
       transform: translateY(-1000px);
@@ -201,8 +188,6 @@
   }
 
   --animate-spin: spin 5s linear infinite;
-  --animate-gradient: gradient 10s ease infinite;
-  --animate-text-gradient: text-gradient-move 4s ease-in-out infinite;
   --animate-drop-and-bounce: dropAndBounce 1.5s ease-in-out;
   --animate-fade-out: fadeOut 1.25s forwards 1.25s;
   --animate-fadeInMove: fadeInMove 0.6s ease-out both;
@@ -215,6 +200,83 @@
 
 @variant dark (&:is(.dark *));
 
+/* Launcher palettes are application-owned; HeroUI consumes the semantic tokens. */
+:root,
+.light {
+  --background: rgba(250, 250, 250, 0.9);
+  --foreground: #27272a;
+  --muted: #52525b;
+  --surface: #ffffff;
+  --surface-quaternary: #d4d4d8;
+  --overlay: #ffffff;
+  --accent: var(--theme-solid, #10b981);
+  --accent-hover: var(--theme-solid-hover, #23bf8b);
+  --accent-foreground: var(--theme-solid-foreground, #18181b);
+  --brand-foreground: var(--theme-text-light, #047857);
+  --brand-heading: var(--theme-heading-light, #059669);
+  --accent-soft-foreground: var(--brand-foreground);
+  --focus: var(--brand-foreground);
+  --danger-foreground: #000000;
+  --warning-foreground: #27272a;
+  --action-foreground: #3f3f46;
+  --action-solid-foreground: #f4f4f5;
+  --action-accent: var(--accent);
+  --action-accent-hover: var(--accent-hover);
+  --action-danger: #c52f3b;
+  --action-danger-hover: color-mix(in srgb, var(--action-danger) 90%, #000);
+  --action-warning: #925f00;
+}
+
+.dark {
+  --action-foreground: #f4f4f5;
+  --background: #000000;
+  --foreground: #fafafa;
+  --muted: #a1a1aa;
+  --surface: #18181b;
+  --surface-quaternary: #52525b;
+  --overlay: #18181b;
+  --accent: var(--theme-solid, #10b981);
+  --accent-hover: var(--theme-solid-hover, #23bf8b);
+  --accent-foreground: var(--theme-solid-foreground, #18181b);
+  --brand-foreground: var(--theme-text-dark, #34d399);
+  --brand-heading: var(--theme-heading-dark, #10b981);
+  --accent-soft-foreground: var(--brand-foreground);
+  --focus: rgb(var(--theme-300, 110, 231, 183));
+  --danger-foreground: #000000;
+}
+
+/* Match the launcher's existing content layout while using v3 compound parts. */
+@layer components {
+  /* Ordinary actions use pill corners. Explicit utilities retain the shape of
+     launcher, navigation and window controls; grouped buttons keep joined edges. */
+  .button,
+  .pagination__link {
+    @apply rounded-full;
+  }
+  .card {
+    padding: 0;
+    gap: 0;
+  }
+  .card__content {
+    display: flex;
+    flex-direction: column;
+    padding: 0.75rem;
+  }
+  .card__header {
+    display: flex;
+    flex-direction: row;
+    align-items: center;
+    padding: 0.75rem;
+  }
+  .table__column {
+    background: var(--surface-secondary);
+    color: var(--muted);
+  }
+  .table__cell {
+    border-bottom: 1px solid var(--border);
+  }
+}
+
 body,
 html,
 button,
@@ -225,7 +287,61 @@ select {
 }
 
 .brand-primary-foreground {
-  color: #fff !important;
+  color: var(--accent-foreground);
+}
+
+/* Filled brand surfaces and their labels use the same selected color pair. */
+.brand-primary-foreground.bg-brand-500 {
+  background-color: var(--accent);
+}
+
+/* Ordinary action labels follow the theme in every interaction state. Keep this
+   outside Tailwind layers so page-level legacy color utilities cannot tint them.
+   Do not reset descendants: logos, badges and color previews retain their colors. */
+:is(button, [role="button"], .button, .pagination__link) {
+  --button-fg: var(--action-foreground);
+  color: var(--action-foreground);
+}
+
+/* Filled actions keep white labels and currentColor icons for every palette. */
+:is(.button--primary, .button--danger, .button.bg-brand-500, .pagination__link.bg-accent) {
+  --button-fg: var(--action-solid-foreground);
+  color: var(--action-solid-foreground);
+}
+
+.button--primary {
+  --button-bg: var(--action-accent);
+  --button-bg-hover: var(--action-accent-hover);
+  --button-bg-pressed: var(--action-accent-hover);
+}
+
+/* Control thumbs stay light on the selected track instead of inheriting the
+   adaptive text color that turns pastel themes' thumbs nearly black. */
+.switch,
+.slider__thumb {
+  --accent-foreground: var(--action-solid-foreground);
+}
+
+:is(.button.bg-brand-500, .pagination__link.bg-accent) {
+  background-color: var(--action-accent);
+  &:is(:hover, :active, [data-hovered="true"], [data-pressed="true"]) {
+    background-color: var(--action-accent-hover);
+  }
+}
+
+.button--danger {
+  --button-bg: var(--action-danger);
+  --button-bg-hover: var(--action-danger-hover);
+  --button-bg-pressed: var(--action-danger-hover);
+}
+
+/* Solid warning actions need a deeper amber behind soft white text. */
+.button.bg-warning {
+  color: var(--action-solid-foreground);
+  background-color: var(--action-warning);
+  &:is(:hover, :active, [data-hovered="true"], [data-pressed="true"]) {
+    background-color: color-mix(in srgb, var(--action-warning) 90%, #000);
+  }
 }
 
 body,
@@ -245,6 +361,15 @@ html {
 img {
   -webkit-user-drag: none;
   user-drag: none;
+}
+
+/* Keep the window chrome non-selectable, while supporting copy in information areas. */
+:is(main, [role="dialog"], [role="alertdialog"]) :is(p, pre, code, .prose),
+[role="alert"],
+[role="status"],
+.select-text {
+  -webkit-user-select: text;
+  user-select: text;
 }
 
 /* Make root fill viewport and disable window-level scroll; internal panes should manage their own scrolling */
@@ -275,30 +400,16 @@ body::-webkit-scrollbar,
   --wails-draggable: no-drag;
 }
 
-.gradient-text {
-  background: linear-gradient(90deg, #fbbf24, #10b981);
-  background-size: 200% 200%;
-  animation: var(--animate-gradient);
-  -webkit-background-clip: text;
-  -webkit-text-fill-color: transparent;
+/* Loading placeholders and scroll edges use solid surfaces as well. */
+.skeleton--shimmer::before,
+.skeleton--shimmer::after {
+  background-image: none;
+  content: none;
 }
 
-/* Branded, higher-contrast animated gradient for header title */
-.brand-text-gradient {
-  background-image: linear-gradient(
-    90deg,
-    #22c55e 0%,
-    #06b6d4 50%,
-    #f59e0b 100%
-  );
-}
-.dark .brand-text-gradient {
-  background-image: linear-gradient(
-    90deg,
-    #34d399 0%,
-    #60a5fa 50%,
-    #fbbf24 100%
-  );
+.scroll-shadow {
+  -webkit-mask-image: none;
+  mask-image: none;
 }
 
 /* Global Scrollbar overrides to match .pretty-scrollbar style */

@@ -73,6 +73,11 @@
         "install_now": "Installa ora"
       }
     },
+    "loader_migration": {
+      "title": "Migrazione del loader",
+      "body": "Adattamento delle versioni installate al nuovo loader LeviLauncher (rimozione della vecchia vcruntime140_1.dll e aggiornamento della tabella di importazione del gioco). Questa operazione viene eseguita una sola volta, attendere…",
+      "preparing": "Preparazione della migrazione..."
+    },
     "mclaunch": {
       "loading": {
         "title": "Avvio di Minecraft",
@@ -127,7 +132,7 @@
       "mods_card": "La scheda Mod mostra le mod attivate per l'istanza corrente e apre la pagina completa delle mod con un clic.",
       "content_counts_card": "La scheda Contenuti mostra il conteggio di mondi, pacchetti risorse e pacchetti comportamento, e ogni riga apre la pagina corrispondente.",
       "incompatible_resource_packs": "Se vengono rilevati pacchetti risorse incompatibili, clicca sulla riga di avviso per esaminarli direttamente.",
-      "content_download_sources": "Usa la scheda download per esplorare le fonti di contenuti CurseForge o lip senza uscire dal launcher.",
+      "content_download_sources": "Usa la scheda download per esplorare le fonti di contenuti CurseForge o Bedrinth senza uscire dal launcher.",
       "settings_personalize": "Le Impostazioni ti permettono di regolare tema, colore, sfondo e altre opzioni estetiche per adattarle alla tua configurazione.",
       "settings_storage_path": "Puoi cambiare i percorsi di archiviazione nelle Impostazioni. Assicurati che la directory di destinazione abbia permessi di scrittura prima di spostare contenuti.",
       "download_mirror": "Se i download sono lenti, prova a cambiare mirror o le opzioni di rete associate nelle Impostazioni.",
@@ -144,13 +149,18 @@
     "manage": "Gestisci mod"
   },
   "download_manager": {
+    "install_prompt": {
+      "title": "Download completato",
+      "description": "Il download di «{{name}}» è terminato. Vuoi installarlo ora?",
+      "confirm": "Installa ora",
+      "later": "Più tardi"
+    },
     "title": "Gestore download",
     "description": "Visualizza e gestisci le attività di download correnti",
     "no_downloads": "Nessuna attività di download attiva",
     "unknown_file": "File sconosciuto",
     "actions": {
-      "retry": "Riprova",
-      "delete": "Elimina"
+      "retry": "Riprova"
     }
   },
   "updating": {
@@ -284,7 +294,6 @@
       "title": "Installa"
     },
     "customappx": {
-      "button": "Personalizzato",
       "modal": {
         "1": {
           "header": "Info versione",
@@ -304,12 +313,9 @@
   "onboarding": {
     "title": "Configurazione primo avvio",
     "subtitle": "Imposta prima il percorso dei contenuti e la lingua",
-    "skip": "Salta",
-    "finish": "Fine",
     "unsaved": {
       "title": "Modifiche non salvate",
       "body": "Hai modifiche non salvate nel percorso dei contenuti. Vuoi salvare prima di finire?",
-      "cancel": "Annulla",
       "save": "Salva e finisci"
     }
   },
@@ -471,7 +477,6 @@
       }
     },
     "appearance": {
-      "global_config": "Configurazione globale",
       "mode_config": "Configurazione specifica modalità",
       "edit_mode_desc": "Le impostazioni di personalizzazione (colori, opacità, ecc.) sono salvate indipendentemente per le modalità Chiara e Scura. Cambia scheda a destra per configurare ogni modalità.",
       "theme_mode": "Modalità tema",
@@ -490,7 +495,6 @@
       "theme_color_desc": "Il colore di accentuazione principale dell'applicazione",
       "theme_standard": "Colori predefiniti",
       "theme_generated": "Più colori",
-      "hue": "Tonalità",
       "custom_color": "Colore personalizzato",
       "background_image": "Immagine sfondo",
       "background_image_desc": "Seleziona una cartella per scegliere immagini come sfondo",
@@ -637,23 +641,28 @@
     "disable": "Disabilita",
     "enable": "Abilita",
     "open_folder": "Apri cartella",
+    "open_folder_failed": "Impossibile aprire la cartella",
     "remove": "Rimuovi",
     "tip": "Suggerimento",
     "feature_unavailable": "Questa funzionalità è temporaneamente non disponibile",
     "unknown": "Sconosciuto"
   },
   "useravatar": {
-    "no_login_retry": "Login Xbox non rilevato (clicca per riprovare)",
     "xbox_live": "Xbox Live",
     "refresh_session_aria": "Aggiorna sessione Xbox",
     "xuid": "XUID: {{xuid}}",
-    "stats": {
-      "minutes_played": "Tempo di gioco",
-      "blocks_broken": "Blocchi rotti",
-      "mobs_defeated": "Mob sconfitti",
-      "distance_travelled": "Distanza percorsa",
-      "time_format": "{{days}}g {{hours}}h {{minutes}}m"
-    }
+    "authorization": {
+      "title": "Licenze del gioco",
+      "checking": "Verifica in corso",
+      "authorized": "Autorizzato",
+      "trial": "Solo prova",
+      "not_entitled": "Non autorizzato",
+      "error": "Verifica non riuscita",
+      "description": "Le licenze Release e Preview vengono richieste dopo l’accesso. Aggiorna per verificare di nuovo."
+    },
+    "sign_in": "Accedi con Microsoft",
+    "switch_account": "Cambia account",
+    "signin_failed": "Accesso Microsoft non riuscito"
   },
   "content": {
     "count": {
@@ -721,7 +730,6 @@
     "delete_warning": "Questa azione è irreversibile!",
     "delete_selected_confirm": "Sei sicuro di voler eliminare i {{count}} elementi selezionati?",
     "deleted_name": "{{name}} eliminato",
-    "deleted_count": "{{count}} elementi eliminati",
     "delete_world_confirm": "Sei sicuro di voler eliminare il mondo {{name}}?",
     "basic_info": "Info base",
     "level_name": "Nome livello",
@@ -752,7 +760,6 @@
       "enable_isolation": "Abilita isolamento",
       "enable_console": "Abilita console",
       "enable_render_dragon": "Carica shader RenderDragon",
-      "enable_ctrl_r_reload_resources": "Ctrl+R Ricaricamento rapido risorse",
       "enable_editor_mode": "Abilita modalità editor",
       "launch_args": "Argomenti avvio",
       "launch_args_placeholder": "Argomenti avvio (es. -Editor true)",
@@ -998,7 +1005,10 @@
     "ERR_INSTANCE_BACKUP_RESTORE_FULL_REQUIRES_EMPTY_TARGET": "I backup completi di Minecraft Bedrock possono essere ripristinati solo in una directory di destinazione vuota",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "Alcuni pacchetti gestiti da lip non sono stati installati",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "Alcuni pacchetti gestiti da lip non sono stati ripristinati",
-    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Alcune versioni di pacchetti gestiti da lip non corrispondono al backup"
+    "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "Alcune versioni di pacchetti gestiti da lip non corrispondono al backup",
+    "ERR_AUTH_INTERACTION_REQUIRED": "Accedi a Windows con l’account Microsoft che possiede questo gioco, quindi aggiorna l’account tramite l’avatar del launcher e riprova.",
+    "ERR_AUTH_ACCOUNT_CHANGED": "L’account Microsoft è cambiato. Aggiorna l’account tramite l’avatar del launcher e riprova.",
+    "ERR_AUTH_FAILED": "Impossibile autorizzare i download per l’account corrente. Controlla la connessione, aggiorna l’account tramite l’avatar del launcher e riprova."
   },
   "filemanager": {
     "sort": {
@@ -1133,7 +1143,6 @@
     "website": "Sito web",
     "source": "Sorgente",
     "issues": "Issue",
-    "share": "Condividi",
     "no_download_url": "Nessun URL download disponibile",
     "no_files_found": "Nessun file trovato",
     "sort": {
@@ -1199,12 +1208,11 @@
     "game_all_versions": "Tutte le versioni gioco",
     "mapping_unavailable_hint": "La mappatura tra LeviLamina e la versione di gioco non è al momento disponibile. I filtri relativi alla versione sono stati disabilitati per evitare corrispondenze errate.",
     "files": {
+      "game_versions_unknown": "Nessuna versione del gioco corrispondente",
+      "version_count": "{{count}} versioni",
       "game_versions_label": "Versioni gioco",
       "game_versions_unrestricted": "Nessuna restrizione versione gioco",
       "game_versions_unavailable": "Mappatura versione gioco non disponibile",
-      "ll_requirement": "Requisito LL",
-      "dependencies": "Dipendenze",
-      "action": "Azione",
       "dependencies_count": "{{count}} dipendenze",
       "install": "Installa",
       "upgrade": "Aggiorna",
@@ -1225,7 +1233,7 @@
       "ll_missing_redirect_to_loader": "LeviLamina non è installato. Reindirizzamento alla scheda Loader nelle Impostazioni Istanza.",
       "ll_installed_incompatible_hint": "La versione installata di LeviLamina {{installedVersion}} è incompatibile con questo pacchetto. Regola manualmente LeviLamina prima.",
       "action_failed": "Operazione fallita: {{error}}",
-      "tab_label": "File",
+      "tab_label": "Versioni",
       "table_aria_label": "Tabella file pacchetto",
       "install_success": "Installazione completata con successo",
       "upgrade_success": "Aggiornamento completato con successo",
@@ -1236,8 +1244,8 @@
     },
     "guide": {
       "open_button": "Guida sviluppatore",
-      "title": "Guida sviluppatore LIP",
-      "description": "Se vuoi che la tua mod appaia sulla pagina LIP di LeviLauncher, pubblicala secondo le specifiche package_manifest di LIP.",
+      "title": "Guida sviluppatore Bedrinth",
+      "description": "Se vuoi che la tua mod appaia sulla pagina Bedrinth di LeviLauncher, pubblicala secondo le specifiche package_manifest di LIP.",
       "manifest_hint": "Questa finestra di dialogo è solo una rapida panoramica per gli sviluppatori. I nomi dei campi, le voci richieste, gli esempi e le regole di validazione sono definiti nella documentazione ufficiale.",
       "variant_hint": "Una variante è indicizzata dal launcher solo quando la sua etichetta contiene client. Per default usa \\\"label\\\": \\\"client\\\"; per sotto-estensioni usa \\\"label\\\": \\\"client_xxxx\\\" o \\\"label\\\": \\\"client\\\\xxxx\\\".",
       "docs_button": "Vedi specifiche complete",
@@ -1247,7 +1255,7 @@
       "title": "lipd non è installato",
       "description": "lipd non è ancora installato. Per continuare a usare le pagine relative a lip o installare LeviLamina, vai su Impostazioni > Componenti di terze parti e installalo prima."
     },
-    "title": "Contenuti lip",
+    "title": "Bedrinth",
     "sort_options": {
       "hotness": "Popolarità",
       "updated": "Aggiornato",

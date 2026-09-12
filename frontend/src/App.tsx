@@ -1,17 +1,20 @@
+import { Spinner, ToastProvider } from "@heroui/react";
+
 import "./polyfills/wails";
 import { Navigate, Route, Routes } from "react-router-dom";
 import React, { useEffect, useState, Suspense, lazy } from "react";
-import { ToastProvider, Spinner } from "@heroui/react";
+
 import { GlobalNavbar } from "@/components/GlobalNavbar";
 import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
+import { NavigationFrame } from "@/components/NavigationFrame";
 import { TermsModal } from "@/components/TermsModal";
 import { ClarityConsentModal } from "@/components/ClarityConsentModal";
 import { useTranslation } from "react-i18next";
 import { VersionStatusProvider } from "@/utils/VersionStatusContext";
 import { CurseForgeProvider } from "@/utils/CurseForgeContext";
 import { LeviLaminaProvider } from "@/utils/LeviLaminaContext";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { useTheme } from "next-themes";
 import { KeybindingProvider, useKeybinding } from "@/utils/KeybindingContext";
 import { NavigationHistoryProvider } from "@/utils/NavigationHistoryContext";
@@ -22,7 +25,11 @@ import { CurrentVersionProvider } from "@/utils/CurrentVersionContext";
 import { ModIntelligenceProvider } from "@/utils/ModIntelligenceContext";
 import { useLayoutMode } from "@/hooks/useLayoutMode";
 import { useAnimations } from "@/hooks/useAnimations";
-import { useBackgroundImage, getFitStyles } from "@/hooks/useBackgroundImage";
+import { useBackgroundImage } from "@/hooks/useBackgroundImage";
+import { useBackgroundAppearance } from "@/hooks/useBackgroundAppearance";
+import { BackgroundLayers } from "@/components/BackgroundLayers";
+import { BackgroundContext } from "@/utils/BackgroundContext";
+import { useDocumentAppearance } from "@/hooks/useDocumentAppearance";
 import { useThemeColors } from "@/hooks/useThemeColors";
 import { useAppNavigation } from "@/hooks/useAppNavigation";
 import { useAppModals } from "@/hooks/useAppModals";
@@ -84,10 +91,13 @@ const ModalLoadingFallback = ({ label }: { label: string }) => (
   <div
     aria-atomic="true"
     aria-live="polite"
-    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 backdrop-blur-sm"
+    className="fixed inset-0 z-[100] flex items-center justify-center bg-black/20 launcher-material-blur"
     role="status"
   >
-    <Spinner label={label} />
+    <div className="flex flex-col items-center gap-2">
+      <Spinner />
+      <span>{label}</span>
+    </div>
   </div>
 );
 
@@ -152,20 +162,13 @@ function App() {
   const { layoutMode } = useLayoutMode();
   useAnimations();
   const { themeColorsReady } = useThemeColors(resolvedTheme);
-  const {
-    bgData,
-    backgroundReady,
-    backgroundFitMode,
-    backgroundBlur,
-    backgroundBrightness,
-    backgroundOpacity,
-    lightBackgroundBaseMode,
-    darkBackgroundBaseMode,
-    lightBackgroundBaseColor,
-    darkBackgroundBaseColor,
-    lightBackgroundBaseOpacity,
-    darkBackgroundBaseOpacity,
-  } = useBackgroundImage();
+  const background = useBackgroundImage();
+  const { backgroundReady } = background;
+  const { profiles } = useBackgroundAppearance();
+  const appearanceMode = resolvedTheme === "dark" ? "dark" : "light";
+  const appearance = profiles[appearanceMode];
+  const hasWallpaper = Boolean(background.bgData) && background.backgroundOpacity > 0;
+  useDocumentAppearance(hasWallpaper, appearance, appearanceMode, background.backgroundBrightness, background.backgroundBlur, background.backgroundOpacity);
 
   const {
     navLocked,
@@ -256,6 +259,7 @@ function App() {
   const effectiveNavLocked = navLocked || isUpdatingMode || isOnboardingMode;
 
   return (
+    <BackgroundContext.Provider value={background}>
     <KeybindingProvider>
       <CurrentVersionProvider>
         <ModIntelligenceProvider>
@@ -267,71 +271,23 @@ function App() {
                   <NavigationHistoryProvider>
                     <LipTaskConsoleProvider>
                       <ToastProvider
-                        placement="top-center"
-                        toastOffset={80}
-                        regionProps={{ className: "wails-no-drag z-[120]" }}
-                        toastProps={{
-                          timeout: 2000,
-                          classNames: {
-                            motionDiv: "wails-no-drag z-[120]",
-                            base: "wails-no-drag",
-                            closeButton: "wails-no-drag",
-                          },
-                        }}
+                        placement="top"
+                        className="wails-no-drag z-[120] top-20"
                       />
 
-                      {(resolvedTheme === "light"
-                        ? lightBackgroundBaseMode
-                        : darkBackgroundBaseMode) !== "none" && (
-                        <div
-                          className="fixed inset-0 z-[-2] pointer-events-none"
-                          style={{
-                            backgroundColor:
-                              (resolvedTheme === "light"
-                                ? lightBackgroundBaseMode
-                                : darkBackgroundBaseMode) === "theme"
-                                ? resolvedTheme === "light"
-                                  ? "rgb(var(--theme-50))"
-                                  : "rgb(var(--theme-900))"
-                                : resolvedTheme === "light"
-                                  ? lightBackgroundBaseColor
-                                  : darkBackgroundBaseColor,
-                            opacity:
-                              (resolvedTheme === "light"
-                                ? lightBackgroundBaseOpacity
-                                : darkBackgroundBaseOpacity) / 100,
-                          }}
-                        />
-                      )}
-                      {bgData && (
-                        <div
-                          className="fixed inset-0 z-[-1]"
-                          style={{
-                            backgroundImage: `url("${bgData}")`,
-                            ...getFitStyles(backgroundFitMode),
-                            filter: `blur(${backgroundBlur}px) brightness(${backgroundBrightness}%)`,
-                            opacity: backgroundOpacity / 100,
-                          }}
-                        />
-                      )}
-
                       <div
+                        data-wallpaper-active={hasWallpaper ? "true" : undefined}
+                        data-readability={appearance.readability ? "true" : undefined}
                         style={
                           {
-                            "--content-pt": "4.5rem",
+                             "--content-pt": "4.5rem",
                           } as React.CSSProperties
                         }
-                        className={`w-full min-h-dvh flex ${
+                        className={`app-backdrop relative isolate w-full h-dvh flex ${
                           layoutMode === "sidebar" ? "flex-row" : "flex-col"
-                        } overflow-x-hidden ${
-                          bgData ||
-                          (resolvedTheme === "light"
-                            ? lightBackgroundBaseMode
-                            : darkBackgroundBaseMode) !== "none"
-                            ? "bg-transparent"
-                            : "bg-background"
-                        } text-foreground ${updateOpen ? "overflow-y-hidden" : ""}`}
+                        } overflow-x-hidden bg-background text-foreground ${updateOpen ? "overflow-y-hidden" : ""}`}
                       >
+                        <BackgroundLayers background={background} mode={appearanceMode} />
                         {layoutMode === "navbar" ? (
                           <GlobalNavbar
                             isBeta={isBeta}
@@ -342,6 +298,7 @@ function App() {
                           />
                         ) : (
                           <>
+                            <NavigationFrame />
                             <Sidebar
                               navLocked={effectiveNavLocked}
                               themeMode={themeMode}
@@ -405,7 +362,10 @@ function App() {
                                 path={ROUTES.instanceSettings}
                                 element={<InstanceSettingsPage />}
                               />
-                              <Route path={ROUTES.mods} element={<ModsPage />} />
+                              <Route
+                                path={ROUTES.mods}
+                                element={<ModsPage />}
+                              />
                               <Route
                                 path={ROUTES.curseForge}
                                 element={<CurseForgePage />}
@@ -465,9 +425,7 @@ function App() {
                               />
                               <Route
                                 path="*"
-                                element={
-                                  <Navigate to={ROUTES.home} replace />
-                                }
+                                element={<Navigate to={ROUTES.home} replace />}
                               />
                             </Routes>
                             <StartupContentReady
@@ -494,9 +452,7 @@ function App() {
                           onKeepDisabled={declineClarity}
                         />
 
-                        {updateOpen &&
-                        !isOnboardingMode &&
-                        !isUpdatingMode ? (
+                        {updateOpen && !isOnboardingMode && !isUpdatingMode ? (
                           <Suspense
                             fallback={
                               <ModalLoadingFallback
@@ -579,6 +535,7 @@ function App() {
         </ModIntelligenceProvider>
       </CurrentVersionProvider>
     </KeybindingProvider>
+    </BackgroundContext.Provider>
   );
 }
 

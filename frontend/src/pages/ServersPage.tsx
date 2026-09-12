@@ -1,20 +1,22 @@
-import React, { useState, useEffect, useCallback, useMemo } from "react";
-import { useTranslation } from "react-i18next";
-import { PageHeader } from "@/components/PageHeader";
+import { openDirectory, showDirectoryOpenError } from "@/utils/explorer";
 import {
   Button,
   Card,
-  CardBody,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Input,
-  Tooltip,
-  Spinner,
   Chip,
-  addToast,
+  Dropdown,
+  InputGroup,
+  Label,
+  Spinner,
+  TextField,
+  Tooltip,
+  toast,
 } from "@heroui/react";
+
+import React, { useState, useEffect, useCallback, useMemo } from "react";
+import { useTranslation } from "react-i18next";
+import { PageHeader } from "@/components/PageHeader";
+import { ModalNotice } from "@/components/ModalPrimitives";
+
 import {
   FaServer,
   FaSync,
@@ -33,9 +35,8 @@ import {
   FaTag,
 } from "react-icons/fa";
 import { useNavigate, useLocation } from "react-router-dom";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { motion } from "framer-motion";
 import {
@@ -107,11 +108,11 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
     <div
       className={cn(
         COMPONENT_STYLES.contentListItem,
-        "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
+        "w-full p-5 flex gap-5 group cursor-default relative overflow-hidden",
       )}
     >
       <div className="relative shrink-0">
-        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-default-100/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-surface-secondary/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
           <FaServer className="text-4xl text-blue-500/80" />
         </div>
       </div>
@@ -119,7 +120,7 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
         <div className="flex justify-between items-start gap-2 mb-1">
           <div className="flex items-center gap-2 truncate">
             <h3
-              className="text-lg font-bold text-default-900 dark:text-white truncate"
+              className="text-lg font-bold text-foreground dark:text-white truncate"
               title={server.name}
             >
               {server.name}
@@ -127,59 +128,59 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
             {info?.status === "online" && (
               <Chip
                 size="sm"
-                variant="flat"
-                color="success"
-                className="bg-success-50 dark:bg-success-900/20"
+                variant="soft"
+                color={"success"}
+                className={"bg-green-50 dark:bg-green-900/20"}
               >
-                {t("server.online")}
+                <Chip.Label>{t("server.online")}</Chip.Label>
               </Chip>
             )}
             {info?.status !== "online" && !loading && (
               <Chip
                 size="sm"
-                variant="flat"
-                color="danger"
-                className="bg-danger-50 dark:bg-danger-900/20"
+                variant="soft"
+                color={"danger"}
+                className={"bg-rose-50 dark:bg-rose-900/20"}
               >
-                {t("server.offline")}
+                <Chip.Label>{t("server.offline")}</Chip.Label>
               </Chip>
             )}
           </div>
         </div>
 
         {info?.motd && (
-          <div className="text-sm text-default-500 dark:text-zinc-400 line-clamp-1 w-full font-mono mb-1">
+          <div className="text-sm text-muted dark:text-zinc-400 line-clamp-1 w-full font-mono mb-1">
             <McText text={info.motd} />
           </div>
         )}
 
-        <p className="text-sm text-default-400 dark:text-zinc-500 mb-3">
+        <p className="text-sm text-muted dark:text-zinc-500 mb-3">
           {server.ip}:{server.port}
         </p>
 
-        <div className="flex flex-wrap items-center gap-4 text-xs text-default-400 dark:text-zinc-500 mt-auto">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-muted dark:text-zinc-500 mt-auto">
           {info?.status === "online" && (
             <>
               <div
-                className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
+                className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg"
                 title={t("server.version")}
               >
-                <FaTag className="text-default-400" />
+                <FaTag className="text-muted" />
                 <span>
                   <McText text={info.version} />
                 </span>
               </div>
               <div
-                className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
+                className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg"
                 title={t("server.players")}
               >
-                <FaGamepad className="text-default-400" />
+                <FaGamepad className="text-muted" />
                 <span>
                   {info.online}/{info.max}
                 </span>
               </div>
               <div
-                className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
+                className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg"
                 title={t("server.delay")}
               >
                 <FaSignal className={`text-${delayColor}-500`} />
@@ -192,10 +193,10 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
             </>
           )}
           <div
-            className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg"
+            className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg"
             title={t("common.date")}
           >
-            <FaClock className="text-default-400" />
+            <FaClock className="text-muted" />
             <span>{new Date(server.timestamp * 1000).toLocaleString()}</span>
           </div>
         </div>
@@ -217,6 +218,11 @@ export default function ServersPage() {
   >({});
   const [servers, setServers] = useState<Server[]>([]);
   const [loading, setLoading] = useState(false);
+  const [loadError, setLoadError] = useState("");
+  const [playerLoadError, setPlayerLoadError] = useState("");
+  const [playersLoading, setPlayersLoading] = useState(true);
+  const [playerRefresh, setPlayerRefresh] = useState(0);
+  const loadGeneration = React.useRef(0);
   const [roots, setRoots] = useState<any>({});
   const [query, setQuery] = useState("");
   const [sortKey, setSortKey] = useState<"name" | "time">("name");
@@ -225,55 +231,85 @@ export default function ServersPage() {
     location.state?.versionName || readCurrentVersionName();
 
   const refreshAll = useCallback(async () => {
+    const generation = ++loadGeneration.current;
     setLoading(true);
+    setLoadError("");
     try {
       const r = await GetContentRoots(currentVersionName || "");
+      if (generation !== loadGeneration.current) return;
       setRoots(r);
+      if (!selectedPlayer) {
+        setServers([]);
+        return;
+      }
       const srvList = await (minecraft as any)?.ListServers?.(
         currentVersionName || "",
         selectedPlayer,
       );
-      setServers(srvList || []);
+      if (generation === loadGeneration.current) setServers(srvList || []);
     } catch (err) {
+      if (generation !== loadGeneration.current) return;
       console.error(err);
-      addToast({ description: String(err), color: "danger" });
+      setLoadError(String(err));
     } finally {
-      setLoading(false);
+      if (generation === loadGeneration.current) setLoading(false);
     }
   }, [currentVersionName, selectedPlayer]);
 
   const handleOpenFolder = async () => {
     if (!selectedPlayer) return;
-    const r = await GetContentRoots(currentVersionName || "");
-    if (r.usersRoot) {
-      const path = `${r.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\minecraftpe`;
-      OpenPathDir(path);
+    try {
+      const r = await GetContentRoots(currentVersionName || "");
+      if (r.usersRoot) {
+        const path = `${r.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\minecraftpe`;
+        await openDirectory(path);
+      }
+    } catch (error) {
+      showDirectoryOpenError(error);
     }
   };
 
   useEffect(() => {
+    let cancelled = false;
     const fetchPlayers = async () => {
+      setPlayersLoading(true);
+      setPlayerLoadError("");
       try {
         const r = await GetContentRoots(currentVersionName || "");
+        if (cancelled) return;
         setRoots(r);
         if (r.usersRoot) {
-          const pList = await listPlayers(r.usersRoot);
+          const pList = await listPlayers(r.usersRoot, true);
+          if (cancelled) return;
           setPlayers(pList);
-          const map = await getPlayerGamertagMap(r.usersRoot);
+          setSelectedPlayer((current) => pList.includes(current) ? current : pList[0] || "");
+          const map = await getPlayerGamertagMap(r.usersRoot).catch(() => ({}));
+          if (cancelled) return;
           setPlayerGamertagMap(map);
         } else {
           setPlayers([]);
+          setSelectedPlayer("");
           setPlayerGamertagMap({});
         }
       } catch (e) {
+        if (cancelled) return;
         console.error("Failed to list players", e);
+        setPlayerLoadError(String(e));
         setPlayers([]);
         setPlayerGamertagMap({});
+      } finally {
+        if (!cancelled) setPlayersLoading(false);
       }
     };
     fetchPlayers();
-    refreshAll();
-  }, [currentVersionName, refreshAll]);
+    return () => { cancelled = true; };
+  }, [currentVersionName, playerRefresh]);
+
+  useEffect(() => {
+    setServers([]);
+    void refreshAll();
+    return () => { loadGeneration.current++; };
+  }, [refreshAll]);
 
   const filteredServers = useMemo(() => {
     let list = [...servers];
@@ -299,191 +335,252 @@ export default function ServersPage() {
   return (
     <PageContainer>
       <Card className={LAYOUT.GLASS_CARD.BASE}>
-        <CardBody className="p-6 flex flex-col gap-6">
+        <Card.Content className="p-6 flex flex-col gap-6">
           <PageHeader
             title={t("contentpage.servers")}
+            description={t("contentpage.servers_read_only")}
             endContent={
               <div className="flex items-center gap-2">
-                <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                  <DropdownTrigger>
-                    <Button
-                      radius="full"
-                      variant="flat"
-                      className="w-full sm:w-auto sm:min-w-[200px] bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
-                      isDisabled={!players.length}
-                      startContent={<FaUser />}
-                    >
-                      {selectedPlayer
-                        ? resolvePlayerDisplayName(
-                            selectedPlayer,
-                            playerGamertagMap,
-                          )
-                        : t("contentpage.select_player")}
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu
-                    selectionMode="single"
-                    selectedKeys={new Set([selectedPlayer])}
-                    onSelectionChange={(keys) => {
-                      const arr = Array.from(keys as unknown as Set<string>);
-                      const next = arr[0] || "";
-                      if (typeof next === "string") setSelectedPlayer(next);
-                    }}
-                  >
-                    {players.length ? (
-                      players.map((p) => (
-                        <DropdownItem
-                          key={p}
-                          textValue={resolvePlayerDisplayName(
-                            p,
-                            playerGamertagMap,
-                          )}
-                        >
-                          {resolvePlayerDisplayName(p, playerGamertagMap)}
-                        </DropdownItem>
-                      ))
-                    ) : (
-                      <DropdownItem key="none" isDisabled>
-                        {t("contentpage.no_players")}
-                      </DropdownItem>
+                <Dropdown>
+                  <Button
+                    isDisabled={!players.length}
+                    variant={"secondary"}
+                    className={cn(
+                      "rounded-full",
+                      "w-full sm:w-auto sm:min-w-[200px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                     )}
-                  </DropdownMenu>
+                  >
+                    {<FaUser />}
+                    {selectedPlayer
+                      ? resolvePlayerDisplayName(
+                          selectedPlayer,
+                          playerGamertagMap,
+                        )
+                      : t("contentpage.select_player")}
+                  </Button>
+                  <Dropdown.Popover
+                    className={COMPONENT_STYLES.dropdown.content}
+                  >
+                    <Dropdown.Menu
+                      selectionMode="single"
+                      selectedKeys={new Set([selectedPlayer])}
+                      onSelectionChange={(keys) => {
+                        const arr = Array.from(keys as unknown as Set<string>);
+                        const next = arr[0] || "";
+                        if (typeof next === "string") setSelectedPlayer(next);
+                      }}
+                    >
+                      {players.length ? (
+                        players.map((p) => (
+                          <Dropdown.Item
+                            key={p}
+                            id={p}
+                            textValue={resolvePlayerDisplayName(
+                              p,
+                              playerGamertagMap,
+                            )}
+                          >
+                            <Label>
+                              {resolvePlayerDisplayName(p, playerGamertagMap)}
+                            </Label>
+                            <Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                        ))
+                      ) : (
+                        <Dropdown.Item
+                          key="none"
+                          isDisabled
+                          id={"none"}
+                          textValue={t("contentpage.no_players")}
+                        >
+                          <Label>{t("contentpage.no_players")}</Label>
+                          <Dropdown.ItemIndicator />
+                        </Dropdown.Item>
+                      )}
+                    </Dropdown.Menu>
+                  </Dropdown.Popover>
                 </Dropdown>
 
                 <Button
-                  radius="full"
-                  variant="flat"
-                  startContent={<FaFolderOpen />}
                   onPress={handleOpenFolder}
                   isDisabled={!selectedPlayer}
-                  className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
+                  variant={"secondary"}
+                  className={cn(
+                    "rounded-full",
+                    "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
+                  )}
                 >
+                  {<FaFolderOpen />}
                   {t("common.open")}
                 </Button>
 
-                <Tooltip content={t("common.refresh") as string}>
+                <Tooltip>
                   <Button
                     isIconOnly
-                    radius="full"
-                    variant="flat"
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200"
+                    aria-label={t("common.refresh")}
                     onPress={refreshAll}
                     isDisabled={loading}
+                    variant={"secondary"}
+                    className={cn(
+                      "rounded-full",
+                      "bg-surface-secondary text-foreground dark:text-zinc-200",
+                    )}
                   >
                     <FaSync
                       className={loading ? "animate-spin" : ""}
                       size={18}
                     />
                   </Button>
+                  <Tooltip.Content>
+                    {t("common.refresh") as string}
+                  </Tooltip.Content>
                 </Tooltip>
               </div>
             }
           />
-
           <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
-            <Input
-              placeholder={t("common.search_placeholder")}
+            <TextField
+              aria-label={t("common.search_placeholder")}
+              className={cn(
+                "group",
+                COMPONENT_STYLES.input.mainWrapper,
+                "w-full md:max-w-xs",
+              )}
               value={query}
-              onValueChange={setQuery}
-              startContent={<FaFilter className="text-default-400" />}
-              endContent={
-                query && (
-                  <button onClick={() => setQuery("")}>
-                    <FaTimes className="text-default-400 hover:text-default-600" />
-                  </button>
-                )
-              }
-              radius="full"
-              variant="flat"
-              className="w-full md:max-w-xs"
-              classNames={COMPONENT_STYLES.input}
-            />
+              onChange={setQuery}
+            >
+              <InputGroup
+                className={cn(
+                  COMPONENT_STYLES.input.inputWrapper,
+                  COMPONENT_STYLES.input.innerWrapper,
+                  "rounded-full",
+                )}
+              >
+                <InputGroup.Prefix>
+                  {<FaFilter className="text-muted" />}
+                </InputGroup.Prefix>
+                <InputGroup.Input
+                  placeholder={t("common.search_placeholder")}
+                  className={COMPONENT_STYLES.input.input}
+                />
+                <InputGroup.Suffix>
+                  {query && (
+                    <button onClick={() => setQuery("")}>
+                      <FaTimes />
+                    </button>
+                  )}
+                </InputGroup.Suffix>
+              </InputGroup>
+            </TextField>
 
             <div className="flex items-center gap-3">
-              <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                <DropdownTrigger>
-                  <Button
-                    variant="flat"
-                    radius="full"
-                    className="min-w-[120px] bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
-                    startContent={
-                      sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
-                    }
-                  >
-                    {sortKey === "name"
-                      ? t("filemanager.sort.name")
-                      : t("contentpage.sort_time")}
-                    {" / "}
-                    {sortAsc
-                      ? t("contentpage.sort_asc")
-                      : t("contentpage.sort_desc")}
-                  </Button>
-                </DropdownTrigger>
-                <DropdownMenu
-                  selectionMode="single"
-                  selectedKeys={
-                    new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])
-                  }
-                  onSelectionChange={(keys) => {
-                    const val = Array.from(keys as unknown as Set<string>);
-                    const item = val[0] || "name-asc";
-                    const [k, order] = item.split("-");
-                    setSortKey(k as "name" | "time");
-                    setSortAsc(order === "asc");
-                  }}
+              <Dropdown>
+                <Button
+                  variant={"secondary"}
+                  className={cn(
+                    "rounded-full",
+                    "min-w-[120px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
+                  )}
                 >
-                  <DropdownItem
-                    key="name-asc"
-                    startContent={<FaSortAmountDown />}
+                  {sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />}
+                  {sortKey === "name"
+                    ? t("filemanager.sort.name")
+                    : t("contentpage.sort_time")}
+                  {" / "}
+                  {sortAsc
+                    ? t("contentpage.sort_asc")
+                    : t("contentpage.sort_desc")}
+                </Button>
+                <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
+                  <Dropdown.Menu
+                    selectionMode="single"
+                    selectedKeys={
+                      new Set([`${sortKey}-${sortAsc ? "asc" : "desc"}`])
+                    }
+                    onSelectionChange={(keys) => {
+                      const val = Array.from(keys as unknown as Set<string>);
+                      const item = val[0] || "name-asc";
+                      const [k, order] = item.split("-");
+                      setSortKey(k as "name" | "time");
+                      setSortAsc(order === "asc");
+                    }}
                   >
-                    {t("filemanager.sort.name")} (A-Z)
-                  </DropdownItem>
-                  <DropdownItem
-                    key="name-desc"
-                    startContent={<FaSortAmountUp />}
-                  >
-                    {t("filemanager.sort.name")} (Z-A)
-                  </DropdownItem>
-                  <DropdownItem
-                    key="time-asc"
-                    startContent={<FaSortAmountDown />}
-                  >
-                    {t("contentpage.sort_time")} (Old-New)
-                  </DropdownItem>
-                  <DropdownItem
-                    key="time-desc"
-                    startContent={<FaSortAmountUp />}
-                  >
-                    {t("contentpage.sort_time")} (New-Old)
-                  </DropdownItem>
-                </DropdownMenu>
+                    <Dropdown.Item
+                      key="name-asc"
+                      id={"name-asc"}
+                      textValue={String("name-asc")}
+                    >
+                      {<FaSortAmountDown />}
+                      <Label>{t("filemanager.sort.name")}(A-Z)</Label>
+                      <Dropdown.ItemIndicator />
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      key="name-desc"
+                      id={"name-desc"}
+                      textValue={String("name-desc")}
+                    >
+                      {<FaSortAmountUp />}
+                      <Label>{t("filemanager.sort.name")}(Z-A)</Label>
+                      <Dropdown.ItemIndicator />
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      key="time-asc"
+                      id={"time-asc"}
+                      textValue={String("time-asc")}
+                    >
+                      {<FaSortAmountDown />}
+                      <Label>{t("contentpage.sort_old_new")}</Label>
+                      <Dropdown.ItemIndicator />
+                    </Dropdown.Item>
+                    <Dropdown.Item
+                      key="time-desc"
+                      id={"time-desc"}
+                      textValue={String("time-desc")}
+                    >
+                      {<FaSortAmountUp />}
+                      <Label>{t("contentpage.sort_new_old")}</Label>
+                      <Dropdown.ItemIndicator />
+                    </Dropdown.Item>
+                  </Dropdown.Menu>
+                </Dropdown.Popover>
               </Dropdown>
             </div>
           </div>
-
-          <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
+          <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
             <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
               {currentVersionName || t("contentpage.none")}
             </span>
-            <span className="text-default-300">|</span>
+            <span className="text-muted">|</span>
             <span>{t("contentpage.isolation")}:</span>
-            <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
               {roots.isIsolation ? t("common.yes") : t("common.no")}
             </span>
           </div>
-        </CardBody>
+        </Card.Content>
       </Card>
 
-      {loading ? (
+      {(loadError || playerLoadError) && (
+        <ModalNotice role="alert" tone="danger">
+          <p>{t("audit.usability.content_load_failed")}</p>
+          <p className="mt-1 text-xs select-text">{playerLoadError || loadError}</p>
+          <Button className="mt-3" variant="secondary" size="sm" isDisabled={loading || playersLoading} onPress={() => {
+            setPlayerRefresh((value) => value + 1);
+            void refreshAll();
+          }}>{t("common.retry")}</Button>
+        </ModalNotice>
+      )}
+      {loading || playersLoading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
-          <span className="text-default-500 dark:text-zinc-400">
+          <span className="text-muted dark:text-zinc-400">
             {t("common.loading")}
           </span>
         </div>
+      ) : loadError || playerLoadError ? null : !selectedPlayer ? (
+        <div role="status" className="py-16 text-center text-muted">{t("audit.usability.choose_player")}</div>
       ) : filteredServers.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-default-400">
+        <div className="flex flex-col items-center justify-center py-20 text-muted">
           <FaBox className="text-6xl mb-4 opacity-20" />
           <p>{query ? t("common.no_results") : t("contentpage.no_items")}</p>
         </div>

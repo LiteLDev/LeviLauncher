@@ -23,10 +23,18 @@
 
 #if AppArch == "amd64"
   #define AllowedArchitectures "x64compatible"
+  #define VCRuntimeArch "x64"
 #elif AppArch == "arm64"
   #define AllowedArchitectures "arm64"
+  #define VCRuntimeArch "arm64"
 #else
   #error "Unsupported AppArch. Use amd64 or arm64."
+#endif
+
+#define VCRuntimeFile "vc_redist." + VCRuntimeArch + ".exe"
+#define VCRuntimeVersion GetVersionNumbersString(VCRuntimeFile)
+#if VCRuntimeVersion == ""
+  #error "The VC++ Runtime installer must have a valid file version."
 #endif
 
 [Setup]
@@ -64,6 +72,15 @@ Name: "simpchinese"; MessagesFile: "compiler:Languages\ChineseSimplified.isl"
 Name: "japanese"; MessagesFile: "compiler:Languages\Japanese.isl"
 
 [CustomMessages]
+english.InstallVCRuntime=Installing Microsoft Visual C++ Runtime...
+simpchinese.InstallVCRuntime=正在安装 Microsoft Visual C++ 运行库...
+japanese.InstallVCRuntime=Microsoft Visual C++ ランタイムをインストールしています...
+english.RuntimeInstallFailed=Could not install %1 (error %2). Check your Internet connection and system installation policy, then retry.
+simpchinese.RuntimeInstallFailed=无法安装 %1（错误 %2）。请检查网络连接及系统安装策略后重试。
+japanese.RuntimeInstallFailed=%1 をインストールできませんでした（エラー %2）。ネットワーク接続とシステムのインストールポリシーを確認し、再試行してください。
+english.RuntimeNotDetected=%1 is still unavailable after installation. Restart Windows if required, then run setup again.
+simpchinese.RuntimeNotDetected=安装后仍未检测到可用的 %1。如需重启，请重启 Windows 后重新运行安装程序。
+japanese.RuntimeNotDetected=インストール後も %1 が見つかりません。必要に応じて Windows を再起動し、セットアップを再実行してください。
 english.InstallWebView2=Installing WebView2 Runtime...
 simpchinese.InstallWebView2=正在安装 WebView2 运行时...
 japanese.InstallWebView2=WebView2 ランタイムをインストールしています...
@@ -115,20 +132,15 @@ Name: "desktopicon"; Description: "{cm:CreateDesktopIcon}"; Flags: checkedonce
 
 [Files]
 Source: "{#AppBinaryPath}"; DestDir: "{app}"; DestName: "{#AppExeName}"; Flags: ignoreversion
-Source: "MicrosoftEdgeWebview2Setup.exe"; DestDir: "{tmp}"; Flags: deleteafterinstall; Check: NeedsWebView2Runtime
+Source: "MicrosoftEdgeWebview2Setup.exe"; Flags: dontcopy
+Source: "{#VCRuntimeFile}"; Flags: dontcopy
 
 [Icons]
 Name: "{group}\{#AppName}"; Filename: "{app}\{#AppExeName}"
 Name: "{autodesktop}\{#AppName}"; Filename: "{app}\{#AppExeName}"; Tasks: desktopicon
 
-[Run]
-Filename: "{tmp}\MicrosoftEdgeWebview2Setup.exe"; Parameters: "/silent /install"; Flags: runhidden waituntilterminated; StatusMsg: "{cm:InstallWebView2}"; Check: NeedsWebView2Runtime
-
 [Code]
 const
-  WebView2ClientId = '{F3017226-FE2A-4295-8BDF-00C3A9A7E4C5}';
-  WebView2HklmPath = 'SOFTWARE\WOW6432Node\Microsoft\EdgeUpdate\Clients\' + WebView2ClientId;
-  WebView2HkcuPath = 'Software\Microsoft\EdgeUpdate\Clients\' + WebView2ClientId;
   CurrentInnoUninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\org.levimc.launcher_is1';
   LegacyNsisUninstallKey = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppPublisher}{#AppName}';
   LegacyNsisUninstallKeyAlt = 'Software\Microsoft\Windows\CurrentVersion\Uninstall\{#AppName}';
@@ -141,24 +153,7 @@ var
   CurrentInnoInstallDir: string;
   LegacyNsisInstallDir: string;
 
-function NeedsWebView2Runtime: Boolean;
-var
-  Version: string;
-begin
-  if RegQueryStringValue(HKLM64, WebView2HklmPath, 'pv', Version) and (Trim(Version) <> '') then
-  begin
-    Result := False;
-    exit;
-  end;
-
-  if RegQueryStringValue(HKCU, WebView2HkcuPath, 'pv', Version) and (Trim(Version) <> '') then
-  begin
-    Result := False;
-    exit;
-  end;
-
-  Result := True;
-end;
+#include "prerequisites.iss"
 
 function ExtractPathFromCommand(const CommandValue: string): string;
 var

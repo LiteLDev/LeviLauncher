@@ -1,22 +1,19 @@
 package mcservice
 
 import (
-	"bufio"
 	"context"
-	"encoding/json"
-	"fmt"
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	"github.com/Microsoft/go-winio"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
-	"github.com/liteldev/LeviLauncher/internal/extractor"
+	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
+	"github.com/liteldev/LeviLauncher/internal/nativeinstall"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
-	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
@@ -30,8 +27,8 @@ type VersionStatus struct {
 func StartMsixvcDownload(ctx context.Context, url string, md5sum string) string {
 	return msixvc.StartDownload(ctx, url, md5sum)
 }
-func ResumeMsixvcDownload() { msixvc.Resume() }
-func CancelMsixvcDownload() { msixvc.Cancel() }
+func ResumeMsixvcDownload()                { msixvc.Resume() }
+func CancelMsixvcDownload()                { msixvc.Cancel() }
 func CancelMsixvcDownloadTask(dest string) { msixvc.CancelTask(dest) }
 
 func InstallExtractMsixvc(ctx context.Context, name string, folderName string, isPreview bool) string {
@@ -53,58 +50,34 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
-	outDir := filepath.Join(vdir, strings.TrimSpace(folderName))
-	if err := os.MkdirAll(outDir, 0755); err != nil {
-		return "ERR_CREATE_TARGET_DIR"
+	folder := strings.TrimSpace(folderName)
+	if folder == "" || folder == "." || folder == ".." || filepath.Base(folder) != folder || strings.ContainsAny(folder, "<>:\"/\\|?*") {
+		return "ERR_INVALID_FOLDER_NAME"
 	}
-	pipeName := fmt.Sprintf(`\\.\pipe\levi_msixvc_progress_%d`, time.Now().UnixNano())
-	ln, err := winio.ListenPipe(pipeName, nil)
+	outDir := filepath.Join(vdir, folder)
+	_, err = nativeinstall.Install(ctx, inPath, outDir, nativeinstall.Options{
+		CacheDir:           filepath.Join(apppath.ConfigDir(), "microsoft-account"),
+		RequireFullLicense: true,
+		Prepare:            func(staging string) error { return leviloader.EnsureForVersion(ctx, staging) },
+		Progress: func(p nativeinstall.Progress) {
+			application.Get().Event.Emit(EventExtractProgress, types.ExtractProgress{
+				Dir: outDir, Bytes: p.FileCurrent, TotalBytes: p.FileTotal,
+				GlobalCurrent: p.Current, GlobalTotal: p.Total, CurrentFile: p.File, Ts: time.Now().UnixMilli(),
+			})
+		},
+	})
 	if err != nil {
-		return "ERR_CREATE_PIPE"
+		code := "ERR_NATIVE_MSIXVC"
+		var failure *nativeinstall.Error
+		if errors.As(err, &failure) {
+			code = failure.Code
+		}
+		if errors.Is(err, context.Canceled) {
+			code = "ERR_CANCELED"
+		}
+		application.Get().Event.Emit(EventExtractError, code)
+		return code
 	}
-	defer ln.Close()
-
-	go func() {
-		conn, err := ln.Accept()
-		if err != nil {
-			return
-		}
-		defer conn.Close()
-		scanner := bufio.NewScanner(conn)
-		for scanner.Scan() {
-			text := scanner.Text()
-			text = strings.ReplaceAll(text, "\\", "/")
-			var p struct {
-				File          string `json:"file"`
-				Current       int64  `json:"current"`
-				Total         int64  `json:"total"`
-				GlobalCurrent int64  `json:"global_current"`
-				GlobalTotal   int64  `json:"global_total"`
-			}
-			if err := json.Unmarshal([]byte(text), &p); err == nil {
-				application.Get().Event.Emit(EventExtractProgress, types.ExtractProgress{
-					Dir:           outDir,
-					Bytes:         p.Current,
-					TotalBytes:    p.Total,
-					GlobalCurrent: p.GlobalCurrent,
-					GlobalTotal:   p.GlobalTotal,
-					CurrentFile:   p.File,
-					Ts:            time.Now().UnixMilli(),
-				})
-			}
-		}
-	}()
-
-	rc, msg := extractor.GetWithPipe(inPath, outDir, pipeName)
-	if rc != 0 {
-		application.Get().Event.Emit(EventExtractError, msg)
-		if strings.TrimSpace(msg) == "" {
-			msg = "ERR_APPX_INSTALL_FAILED"
-		}
-		_ = os.RemoveAll(outDir)
-		return msg
-	}
-	_ = vcruntime.EnsureForVersion(ctx, outDir)
 	application.Get().Event.Emit(EventExtractDone, outDir)
 	return ""
 }

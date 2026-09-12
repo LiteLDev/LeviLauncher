@@ -10,11 +10,15 @@ tasks:
   install:frontend:deps:
     summary: Install frontend dependencies
     dir: frontend
+    # Reuse the completed install across common: and windows:common: calls.
+    method: timestamp
     sources:
       - package.json
       - package-lock.json
     generates:
-      - node_modules
+      - node_modules/.package-lock.json
+    status:
+      - test -f node_modules/.package-lock.json
     preconditions:
       - sh: npm version
         msg: "Looks like npm isn't installed. Npm is part of the Node installer: https://nodejs.org/en/download/"
@@ -61,15 +65,14 @@ tasks:
       - wails3 generate bindings -f '{{.BUILD_FLAGS}}' -clean=true
 
   generate:icons:
-    summary: Generates Windows `.ico` and Mac `.icns` files from an image
+    summary: Generates the Windows `.ico` file from an image
     dir: build
     sources:
       - "appicon.png"
     generates:
-      - "darwin/icons.icns"
       - "windows/icon.ico"
     cmds:
-      - wails3 generate icons -input appicon.png -macfilename darwin/icons.icns -windowsfilename windows/icon.ico
+      - wails3 generate icons -input appicon.png -windowsfilename windows/icon.ico
 
   dev:frontend:
     summary: Runs the frontend in development mode
@@ -77,7 +80,8 @@ tasks:
     deps:
       - task: install:frontend:deps
     cmds:
-      - npm run dev -- --port {{.VITE_PORT}} --strictPort
+      # The Wails development asset proxy connects to localhost over IPv4.
+      - npm run dev -- --host 127.0.0.1 --port {{.VITE_PORT}} --strictPort
 
   update:build-assets:
     summary: Updates the build assets

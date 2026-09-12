@@ -1,29 +1,26 @@
+import { openDirectory } from "@/utils/explorer";
+import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
+import { PagePagination } from "@/components/PagePagination";
+import {
+  Button,
+  Card,
+  Checkbox,
+  Dropdown,
+  InputGroup,
+  Label,
+  ListBox, Select,
+  Spinner,
+  TextField,
+  Tooltip,
+  toast,
+  useOverlayState
+} from "@heroui/react";
+
 import React from "react";
 import { useTranslation } from "react-i18next";
 import { PageHeader } from "@/components/PageHeader";
+
 import {
-  Button,
-  Chip,
-  Image,
-  Spinner,
-  Tooltip,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Checkbox,
-  Pagination,
-  Card,
-  CardBody,
-  Input,
-  useDisclosure,
-  addToast,
-  Select,
-  SelectItem,
-  Progress,
-} from "@heroui/react";
-import {
-  FaArrowLeft,
   FaSync,
   FaFolderOpen,
   FaFilter,
@@ -31,33 +28,31 @@ import {
   FaSortAmountDown,
   FaSortAmountUp,
   FaCheckSquare,
-  FaTrash,
-  FaFont,
-  FaClock,
+  FaTrash, FaClock,
   FaTimes,
   FaBox,
   FaHdd,
   FaTag,
-  FaExchangeAlt,
+  FaExchangeAlt
 } from "react-icons/fa";
+import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion } from "framer-motion";
 import { useNavigate, useLocation } from "react-router-dom";
-import { OpenPathDir } from "bindings/github.com/liteldev/LeviLauncher/minecraft";
 import {
   GetVersionMeta,
   GetVersionLogoDataUrl,
   ListVersionMetas,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import {
   GetContentRoots,
   ListPacksForVersion,
   DeletePack,
   GetPackInfo,
   TransferPackToVersion,
-} from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
@@ -66,7 +61,7 @@ import {
   listPlayers,
   resolvePlayerDisplayName,
 } from "@/utils/content";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { renderMcText } from "@/utils/mcformat";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -109,10 +104,12 @@ export default function SkinPacksPage() {
   });
   const [players, setPlayers] = React.useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = React.useState<string>("");
+  const playerWasChosen = React.useRef(Boolean(location.state?.player));
   const [playerGamertagMap, setPlayerGamertagMap] = React.useState<
     Record<string, string>
   >({});
   const [packs, setPacks] = React.useState<any[]>([]);
+  const packsLoadGeneration = React.useRef(0);
   const [resultSuccess, setResultSuccess] = React.useState<string[]>([]);
   const [resultFailed, setResultFailed] = React.useState<
     Array<{ name: string; err: string }>
@@ -120,37 +117,37 @@ export default function SkinPacksPage() {
   const [activePack, setActivePack] = React.useState<any | null>(null);
   const {
     isOpen: delOpen,
-    onOpen: delOnOpen,
-    onOpenChange: delOnOpenChange,
-  } = useDisclosure();
+    open: delOnOpen,
+    setOpen: delOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: delCfmOpen,
-    onOpen: delCfmOnOpen,
-    onOpenChange: delCfmOnOpenChange,
-  } = useDisclosure();
+    open: delCfmOnOpen,
+    setOpen: delCfmOnOpenChange,
+  } = useOverlayState();
   const [isSharedMode, setIsSharedMode] = React.useState<boolean>(false);
   const {
     isOpen: delManyCfmOpen,
-    onOpen: delManyCfmOnOpen,
-    onOpenChange: delManyCfmOnOpenChange,
-  } = useDisclosure();
+    open: delManyCfmOnOpen,
+    setOpen: delManyCfmOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: transferTargetOpen,
-    onOpen: transferTargetOnOpen,
-    onClose: transferTargetOnClose,
-    onOpenChange: transferTargetOnOpenChange,
-  } = useDisclosure();
+    open: transferTargetOnOpen,
+    close: transferTargetOnClose,
+    setOpen: transferTargetOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: transferResultOpen,
-    onOpen: transferResultOnOpen,
-    onOpenChange: transferResultOnOpenChange,
-  } = useDisclosure();
+    open: transferResultOnOpen,
+    setOpen: transferResultOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: dupOpen,
-    onOpen: dupOnOpen,
-    onClose: dupOnClose,
-    onOpenChange: dupOnOpenChange,
-  } = useDisclosure();
+    open: dupOnOpen,
+    close: dupOnClose,
+    setOpen: dupOnOpenChange,
+  } = useOverlayState();
   const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
   const [transferring, setTransferring] = React.useState<boolean>(false);
@@ -174,10 +171,20 @@ export default function SkinPacksPage() {
     [packs],
     [sort.currentPage],
   );
-  const selection = useSelectionMode(sort.filtered);
+  const contentScope = JSON.stringify([currentVersionName, selectedPlayer]);
+  const contentScopeRef = React.useRef(contentScope);
+  contentScopeRef.current = contentScope;
+  const selection = useSelectionMode(sort.filtered, (item) => item.path, JSON.stringify([currentVersionName, selectedPlayer]), packs);
+  React.useEffect(() => {
+    delCfmOnOpenChange(false);
+    delManyCfmOnOpenChange(false);
+    setActivePack(null);
+  }, [currentVersionName, selectedPlayer]);
+
 
   const refreshAll = React.useCallback(
     async (silent?: boolean, forcePlayer?: string) => {
+      const generation = ++packsLoadGeneration.current;
       if (!silent) setLoading(true);
       setError("");
       const name = readCurrentVersionName();
@@ -198,6 +205,7 @@ export default function SkinPacksPage() {
           setPacks([]);
         } else {
           const r = await GetContentRoots(name);
+          if (generation !== packsLoadGeneration.current) return;
           const safe = r || {
             base: "",
             usersRoot: "",
@@ -212,6 +220,7 @@ export default function SkinPacksPage() {
           try {
             meta = await GetVersionMeta(name);
           } catch {}
+          if (generation !== packsLoadGeneration.current) return;
           const isShared =
             meta.gameVersion && compareVersions(meta.gameVersion, "1.26.0") > 0;
           setIsSharedMode(isShared);
@@ -226,6 +235,7 @@ export default function SkinPacksPage() {
             nextPlayer = "";
           } else {
             names = safe.usersRoot ? await listPlayers(safe.usersRoot) : [];
+            if (generation !== packsLoadGeneration.current) return;
             setPlayers(names);
 
             if (nextPlayer === undefined) {
@@ -242,16 +252,18 @@ export default function SkinPacksPage() {
             (async () => {
               if (safe.usersRoot) {
                 const map = await getPlayerGamertagMap(safe.usersRoot);
+                if (generation !== packsLoadGeneration.current) return;
                 setPlayerGamertagMap(map);
 
-                if (forcePlayer === undefined) {
+                if (forcePlayer === undefined && !playerWasChosen.current) {
                   try {
                     const tag = await GetLocalUserGamertag();
+                    if (generation !== packsLoadGeneration.current || playerWasChosen.current) return;
                     if (tag) {
                       for (const p of names) {
                         if (map[p] === tag) {
                           if (p !== nextPlayer) {
-                            refreshAll(false, p);
+                            setSelectedPlayer(p);
                           }
                           break;
                         }
@@ -266,6 +278,7 @@ export default function SkinPacksPage() {
           }
 
           const allPacks = await ListPacksForVersion(name, nextPlayer || "");
+          if (generation !== packsLoadGeneration.current) return;
 
           const filtered = (allPacks || []).filter(
             (p) => p.manifest.pack_type === 7,
@@ -301,6 +314,7 @@ export default function SkinPacksPage() {
               return { ...p, modTime };
             }),
           );
+          if (generation !== packsLoadGeneration.current) return;
           setPacks(withTime);
           Promise.resolve()
             .then(async () => {
@@ -322,6 +336,7 @@ export default function SkinPacksPage() {
               const limit = 4;
               const items = withTime.slice();
               for (let i = 0; i < items.length; i += limit) {
+                if (generation !== packsLoadGeneration.current) return;
                 const chunk = items.slice(i, i + limit);
                 await Promise.all(
                   chunk.map(async (p: any) => {
@@ -346,6 +361,7 @@ export default function SkinPacksPage() {
                           size = await (minecraft as any).GetPathSize(key);
                         }
                       } catch {}
+                      if (generation !== packsLoadGeneration.current) return;
                       cache[key] = { modTime: p.modTime || 0, size };
                       setPacks((prev) =>
                         prev.map((it: any) =>
@@ -361,9 +377,10 @@ export default function SkinPacksPage() {
             .catch(() => {});
         }
       } catch (e: any) {
+        if (generation !== packsLoadGeneration.current) return;
         setError(e.toString());
       } finally {
-        if (!silent) setLoading(false);
+        if (!silent && generation === packsLoadGeneration.current) setLoading(false);
       }
     },
     [hasBackend, location?.state?.player, selectedPlayer],
@@ -375,11 +392,12 @@ export default function SkinPacksPage() {
     if (selectedPlayer) {
       localStorage.setItem("content.selectedPlayer", selectedPlayer);
     }
+    return () => { packsLoadGeneration.current++; };
   }, [refreshAll, selectedPlayer]);
 
   const onChangePlayer = async (player: string) => {
+    playerWasChosen.current = true;
     setSelectedPlayer(player);
-    await refreshAll(false, player);
   };
 
   const openTransferTargetModal = React.useCallback(async () => {
@@ -387,9 +405,9 @@ export default function SkinPacksPage() {
 
     const sourceVersionName = currentVersionName || readCurrentVersionName();
     if (!sourceVersionName) {
-      addToast({
-        title: t("launcherpage.currentVersion_none") as string,
-        color: "danger",
+      toast(t("launcherpage.currentVersion_none") as string, {
+        variant: "danger",
+        timeout: 2000,
       });
       return;
     }
@@ -433,10 +451,10 @@ export default function SkinPacksPage() {
       setSelectedTransferTargets(targets.length > 0 ? [targets[0].name] : []);
       transferTargetOnOpen();
     } catch (e) {
-      addToast({
-        title: "Error",
+      toast("Error", {
         description: String(e),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
     }
   }, [
@@ -453,9 +471,9 @@ export default function SkinPacksPage() {
 
     const sourceVersionName = currentVersionName || readCurrentVersionName();
     if (!sourceVersionName) {
-      addToast({
-        title: t("launcherpage.currentVersion_none") as string,
-        color: "danger",
+      toast(t("launcherpage.currentVersion_none") as string, {
+        variant: "danger",
+        timeout: 2000,
       });
       return;
     }
@@ -538,10 +556,10 @@ export default function SkinPacksPage() {
         await refreshAll(true);
       }
     } catch (e) {
-      addToast({
-        title: "Error",
+      toast("Error", {
         description: String(e),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
     } finally {
       setTransferring(false);
@@ -565,67 +583,81 @@ export default function SkinPacksPage() {
     <PageContainer ref={scrollRef}>
       <div className="w-full max-w-none pb-12 flex flex-col gap-6">
         <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <CardBody className="p-6 flex flex-col gap-6">
+          <Card.Content className="p-6 flex flex-col gap-6">
             <PageHeader
               title={t("contentpage.skin_packs")}
               endContent={
                 <div className="flex items-center gap-2">
                   {!isSharedMode && (
-                    <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                      <DropdownTrigger>
-                        <Button
-                          radius="full"
-                          variant="flat"
-                          className="w-full sm:w-auto sm:min-w-[200px] bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
-                          isDisabled={!players.length}
-                          startContent={<FaUser />}
-                        >
-                          {selectedPlayer
-                            ? resolvePlayerDisplayName(
-                                selectedPlayer,
-                                playerGamertagMap,
-                              )
-                            : t("contentpage.select_player")}
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu
-                        aria-label={
-                          t("contentpage.players_aria") as unknown as string
-                        }
-                        selectionMode="single"
-                        selectedKeys={new Set([selectedPlayer])}
-                        onSelectionChange={(keys) => {
-                          const arr = Array.from(
-                            keys as unknown as Set<string>,
-                          );
-                          const next = arr[0] || "";
-                          if (typeof next === "string") onChangePlayer(next);
-                        }}
-                      >
-                        {players.length ? (
-                          players.map((p) => (
-                            <DropdownItem
-                              key={p}
-                              textValue={resolvePlayerDisplayName(
-                                p,
-                                playerGamertagMap,
-                              )}
-                            >
-                              {resolvePlayerDisplayName(p, playerGamertagMap)}
-                            </DropdownItem>
-                          ))
-                        ) : (
-                          <DropdownItem key="none" isDisabled>
-                            {t("contentpage.no_players")}
-                          </DropdownItem>
+                    <Dropdown>
+                      <Button
+                        isDisabled={!players.length}
+                        variant={"secondary"}
+                        className={cn(
+                          "rounded-full",
+                          "w-full sm:w-auto sm:min-w-[200px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                         )}
-                      </DropdownMenu>
+                      >
+                        {<FaUser />}
+                        {selectedPlayer
+                          ? resolvePlayerDisplayName(
+                              selectedPlayer,
+                              playerGamertagMap,
+                            )
+                          : t("contentpage.select_player")}
+                      </Button>
+                      <Dropdown.Popover
+                        className={COMPONENT_STYLES.dropdown.content}
+                      >
+                        <Dropdown.Menu
+                          aria-label={
+                            t("contentpage.players_aria") as unknown as string
+                          }
+                          selectionMode="single"
+                          selectedKeys={new Set([selectedPlayer])}
+                          onSelectionChange={(keys) => {
+                            const arr = Array.from(
+                              keys as unknown as Set<string>,
+                            );
+                            const next = arr[0] || "";
+                            if (typeof next === "string") onChangePlayer(next);
+                          }}
+                        >
+                          {players.length ? (
+                            players.map((p) => (
+                              <Dropdown.Item
+                                key={p}
+                                id={p}
+                                textValue={resolvePlayerDisplayName(
+                                  p,
+                                  playerGamertagMap,
+                                )}
+                              >
+                                <Label>
+                                  {resolvePlayerDisplayName(
+                                    p,
+                                    playerGamertagMap,
+                                  )}
+                                </Label>
+                                <Dropdown.ItemIndicator />
+                              </Dropdown.Item>
+                            ))
+                          ) : (
+                            <Dropdown.Item
+                              key="none"
+                              isDisabled
+                              id={"none"}
+                              textValue={t("contentpage.no_players")}
+                            >
+                              <Label>{t("contentpage.no_players")}</Label>
+                              <Dropdown.ItemIndicator />
+                            </Dropdown.Item>
+                          )}
+                        </Dropdown.Menu>
+                      </Dropdown.Popover>
                     </Dropdown>
                   )}
                   <Button
-                    radius="full"
-                    variant="flat"
-                    startContent={<FaFolderOpen />}
                     onPress={async () => {
                       if (!hasBackend || !roots.resourcePacks) return;
                       const dir = roots.resourcePacks.replace(
@@ -639,140 +671,183 @@ export default function SkinPacksPage() {
                       if (selectedPlayer && roots.usersRoot && !isSharedMode) {
                         sp = `${roots.usersRoot}\\${selectedPlayer}\\games\\com.mojang\\skin_packs`;
                       }
-                      await OpenPathDir(sp);
+                      await openDirectory(sp);
                     }}
                     isDisabled={!roots.resourcePacks || !hasBackend}
-                    className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
+                    variant={"secondary"}
+                    className={cn(
+                      "rounded-full",
+                      "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
+                    )}
                   >
+                    {<FaFolderOpen />}
                     {t("common.open")}
                   </Button>
-                  <Tooltip content={t("common.select_mode")}>
+                  <Tooltip>
                     <Button
                       isIconOnly
-                      radius="full"
-                      variant="flat"
-                      className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200"
+                    aria-label={t("common.select_mode")}
                       onPress={selection.toggleSelectMode}
+                      variant={"secondary"}
+                      className={cn(
+                        "rounded-full",
+                        "bg-surface-secondary text-foreground dark:text-zinc-200",
+                      )}
                     >
                       <FaCheckSquare />
                     </Button>
+                    <Tooltip.Content>{t("common.select_mode")}</Tooltip.Content>
                   </Tooltip>
-                  <Tooltip content={t("common.refresh") as unknown as string}>
+                  <Tooltip>
                     <Button
                       isIconOnly
-                      radius="full"
-                      variant="flat"
-                      className="bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200"
+                    aria-label={t("common.refresh")}
                       onPress={() => refreshAll()}
                       isDisabled={loading}
+                      variant={"secondary"}
+                      className={cn(
+                        "rounded-full",
+                        "bg-surface-secondary text-foreground dark:text-zinc-200",
+                      )}
                     >
                       <FaSync
                         className={loading ? "animate-spin" : ""}
                         size={18}
                       />
                     </Button>
+                    <Tooltip.Content>
+                      {t("common.refresh") as unknown as string}
+                    </Tooltip.Content>
                   </Tooltip>
                 </div>
               }
             />
-
             <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
-              <Input
-                placeholder={t("common.search_placeholder")}
+              <TextField
+                aria-label={t("common.search_placeholder")}
+                className={cn(
+                  "group",
+                  COMPONENT_STYLES.input.mainWrapper,
+                  "w-full md:max-w-xs",
+                )}
                 value={sort.query}
-                onValueChange={sort.setQuery}
-                startContent={<FaFilter className="text-default-400" />}
-                endContent={
-                  sort.query && (
-                    <button onClick={() => sort.setQuery("")}>
-                      <FaTimes className="text-default-400 hover:text-default-600" />
-                    </button>
-                  )
-                }
-                radius="full"
-                variant="flat"
-                className="w-full md:max-w-xs"
-                classNames={COMPONENT_STYLES.input}
-              />
+                onChange={sort.setQuery}
+              >
+                <InputGroup
+                  className={cn(
+                    COMPONENT_STYLES.input.inputWrapper,
+                    COMPONENT_STYLES.input.innerWrapper,
+                    "rounded-full",
+                  )}
+                >
+                  <InputGroup.Prefix>
+                    {<FaFilter className="text-muted" />}
+                  </InputGroup.Prefix>
+                  <InputGroup.Input
+                    placeholder={t("common.search_placeholder")}
+                    className={COMPONENT_STYLES.input.input}
+                  />
+                  <InputGroup.Suffix>
+                    {sort.query && (
+                      <button onClick={() => sort.setQuery("")}>
+                      <FaTimes />
+                      </button>
+                    )}
+                  </InputGroup.Suffix>
+                </InputGroup>
+              </TextField>
 
               <div className="flex items-center gap-3">
                 <Dropdown>
-                  <DropdownTrigger>
-                    <Button
-                      variant="flat"
-                      radius="full"
-                      startContent={
-                        sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />
-                      }
-                      className="min-w-[120px] bg-default-100 dark:bg-zinc-800 text-default-600 dark:text-zinc-200 font-medium"
-                    >
-                      {sort.sortKey === "name"
-                        ? (t("filemanager.sort.name") as string)
-                        : (t("contentpage.sort_time") as string)}
-                      {" / "}
-                      {sort.sortAsc
-                        ? t("contentpage.sort_asc")
-                        : t("contentpage.sort_desc")}
-                    </Button>
-                  </DropdownTrigger>
-                  <DropdownMenu
-                    selectionMode="single"
-                    selectedKeys={
-                      new Set([
-                        `${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`,
-                      ])
-                    }
-                    onSelectionChange={(keys) => {
-                      const val = Array.from(keys)[0] as string;
-                      const [k, order] = val.split("-");
-                      sort.setSortKey(k as "name" | "time");
-                      sort.setSortAsc(order === "asc");
-                    }}
+                  <Button
+                    variant={"secondary"}
+                    className={cn(
+                      "rounded-full",
+                      "min-w-[120px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
+                    )}
                   >
-                    <DropdownItem
-                      key="name-asc"
-                      startContent={<FaSortAmountDown />}
+                    {sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />}
+                    {sort.sortKey === "name"
+                      ? (t("filemanager.sort.name") as string)
+                      : (t("contentpage.sort_time") as string)}
+                    {" / "}
+                    {sort.sortAsc
+                      ? t("contentpage.sort_asc")
+                      : t("contentpage.sort_desc")}
+                  </Button>
+                  <Dropdown.Popover>
+                    <Dropdown.Menu
+                      selectionMode="single"
+                      selectedKeys={
+                        new Set([
+                          `${sort.sortKey}-${sort.sortAsc ? "asc" : "desc"}`,
+                        ])
+                      }
+                      onSelectionChange={(keys) => {
+                        const val = Array.from(keys)[0] as string;
+                        const [k, order] = val.split("-");
+                        sort.setSortKey(k as "name" | "time");
+                        sort.setSortAsc(order === "asc");
+                      }}
                     >
-                      {t("filemanager.sort.name")} (A-Z)
-                    </DropdownItem>
-                    <DropdownItem
-                      key="name-desc"
-                      startContent={<FaSortAmountUp />}
-                    >
-                      {t("filemanager.sort.name")} (Z-A)
-                    </DropdownItem>
-                    <DropdownItem
-                      key="time-asc"
-                      startContent={<FaSortAmountDown />}
-                    >
-                      {t("contentpage.sort_time")} (Old-New)
-                    </DropdownItem>
-                    <DropdownItem
-                      key="time-desc"
-                      startContent={<FaSortAmountUp />}
-                    >
-                      {t("contentpage.sort_time")} (New-Old)
-                    </DropdownItem>
-                  </DropdownMenu>
+                      <Dropdown.Item
+                        key="name-asc"
+                        id={"name-asc"}
+                        textValue={String("name-asc")}
+                      >
+                        {<FaSortAmountDown />}
+                        <Label>{t("filemanager.sort.name")}(A-Z)</Label>
+                        <Dropdown.ItemIndicator />
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        key="name-desc"
+                        id={"name-desc"}
+                        textValue={String("name-desc")}
+                      >
+                        {<FaSortAmountUp />}
+                        <Label>{t("filemanager.sort.name")}(Z-A)</Label>
+                        <Dropdown.ItemIndicator />
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        key="time-asc"
+                        id={"time-asc"}
+                        textValue={String("time-asc")}
+                      >
+                        {<FaSortAmountDown />}
+                        <Label>{t("contentpage.sort_old_new")}</Label>
+                        <Dropdown.ItemIndicator />
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        key="time-desc"
+                        id={"time-desc"}
+                        textValue={String("time-desc")}
+                      >
+                        {<FaSortAmountUp />}
+                        <Label>{t("contentpage.sort_new_old")}</Label>
+                        <Dropdown.ItemIndicator />
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown.Popover>
                 </Dropdown>
               </div>
             </div>
-            <div className="mt-2 text-default-500 dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
+            <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
               <span>{t("contentpage.current_version")}:</span>
-              <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+              <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
                 {currentVersionName || t("contentpage.none")}
               </span>
-              <span className="text-default-300">|</span>
+              <span className="text-muted">|</span>
               <span>{t("contentpage.isolation")}:</span>
-              <span className="font-medium text-default-700 dark:text-zinc-200 bg-default-100 dark:bg-zinc-800 px-2 py-0.5 rounded-md">
+              <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
                 {roots.isIsolation ? t("common.yes") : t("common.no")}
               </span>
             </div>
-          </CardBody>
+          </Card.Content>
         </Card>
 
         <SelectionBar
-          selectedCount={selection.selectedCount}
+          hiddenSelectedCount={selection.hiddenSelectedCount}
+        selectedCount={selection.selectedCount}
           totalCount={sort.filtered.length}
           onSelectAll={selection.selectAll}
           onDelete={delManyCfmOnOpen}
@@ -789,7 +864,7 @@ export default function SkinPacksPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-20 gap-4">
             <Spinner size="lg" />
-            <span className="text-default-500 dark:text-zinc-400">
+            <span className="text-muted dark:text-zinc-400">
               {t("common.loading")}
             </span>
           </div>
@@ -807,9 +882,10 @@ export default function SkinPacksPage() {
                     <div
                       className={cn(
                         COMPONENT_STYLES.contentListItem,
-                        "w-full p-5 flex gap-5 group cursor-pointer relative overflow-hidden",
+                        "w-full p-5 flex gap-5 group relative overflow-hidden",
+                    selection.isSelectMode ? "cursor-pointer" : "cursor-default",
                         selection.isSelectMode && selection.selected[p.path]
-                          ? "ring-2 ring-primary bg-primary/5"
+                          ? "ring-2 ring-accent bg-accent/5"
                           : "",
                       )}
                       onClick={() => {
@@ -818,18 +894,20 @@ export default function SkinPacksPage() {
                       }}
                     >
                       <div className="relative shrink-0">
-                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-default-100/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+                        <div className="w-24 h-24 sm:w-28 sm:h-28 rounded-2xl bg-surface-secondary/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
                           {p.iconDataUrl ? (
-                            <Image
+                            <img
                               src={p.iconDataUrl}
                               alt={p.name || p.path}
-                              className="w-full h-full object-cover"
-                              radius="none"
+                              className={cn(
+                                "rounded-none",
+                                "w-full h-full object-cover",
+                              )}
                             />
                           ) : (
                             <div className="flex flex-col items-center gap-2">
-                              <FaFolderOpen className="text-4xl text-default-300" />
-                              <span className="text-[10px] text-default-400 font-medium uppercase tracking-wider">
+                              <FaFolderOpen className="text-4xl text-muted" />
+                              <span className="text-[10px] text-muted font-medium uppercase tracking-wider">
                                 No Icon
                               </span>
                             </div>
@@ -838,15 +916,23 @@ export default function SkinPacksPage() {
                         {selection.isSelectMode && (
                           <div className="absolute -top-2 -left-2 z-20">
                             <Checkbox
+                              aria-label={t("contentpage.select_item", { name: p.name })}
+                          onClick={(event) => event.stopPropagation()}
                               isSelected={!!selection.selected[p.path]}
-                              onValueChange={() =>
-                                selection.toggleSelect(p.path)
-                              }
-                              classNames={{
-                                wrapper:
-                                  "bg-white dark:bg-zinc-900 shadow-lg scale-110",
-                              }}
-                            />
+                              onChange={() => selection.toggleSelect(p.path)}
+                              className={"group"}
+                            >
+                              <Checkbox.Content>
+                                <Checkbox.Control
+                                  className={
+                                    "bg-surface shadow-lg scale-110"
+                                  }
+                                >
+                                  <Checkbox.Indicator />
+                                </Checkbox.Control>
+                                <span></span>
+                              </Checkbox.Content>
+                            </Checkbox>
                           </div>
                         )}
                       </div>
@@ -854,7 +940,7 @@ export default function SkinPacksPage() {
                       <div className="flex flex-col flex-1 min-w-0">
                         <div className="flex justify-between items-start gap-2 mb-1">
                           <h3
-                            className="text-lg font-bold text-default-900 dark:text-white truncate"
+                            className="text-lg font-bold text-foreground dark:text-white truncate"
                             title={p.name}
                           >
                             {renderMcText(p.name || getPathBaseName(p.path))}
@@ -862,62 +948,73 @@ export default function SkinPacksPage() {
                         </div>
 
                         <p
-                          className="text-sm text-default-500 dark:text-zinc-400 line-clamp-2 w-full mb-3"
+                          className="text-sm text-muted dark:text-zinc-400 line-clamp-2 w-full mb-3"
                           title={p.description}
                         >
                           {renderMcText(p.description || "")}
                         </p>
 
                         <div className="flex items-end justify-between mt-auto">
-                          <div className="flex flex-wrap items-center gap-4 text-xs text-default-400 dark:text-zinc-500">
-                            <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
-                              <FaHdd className="text-default-400" />
+                          <div className="flex flex-wrap items-center gap-4 text-xs text-muted dark:text-zinc-500">
+                            <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
+                              <FaHdd className="text-muted" />
                               <span>{formatBytes(p.size)}</span>
                             </div>
-                            <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
-                              <FaClock className="text-default-400" />
+                            <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
+                              <FaClock className="text-muted" />
                               <span>{formatDate(p.modTime)}</span>
                             </div>
                             {p.version && (
-                              <div className="flex items-center gap-1.5 bg-default-100/50 dark:bg-zinc-800/50 px-2 py-1 rounded-lg">
-                                <FaTag className="text-default-400" />
+                              <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
+                                <FaTag className="text-muted" />
                                 <span>v{p.version}</span>
                               </div>
                             )}
                           </div>
 
-                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 transition-opacity ml-4">
-                            <Tooltip content={t("common.open")}>
+                          <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity ml-4">
+                            <Tooltip>
                               <Button
                                 isIconOnly
+                    aria-label={t("common.open")}
                                 size="sm"
-                                variant="flat"
-                                radius="lg"
-                                onClick={(e) => {
-                                  e.stopPropagation();
-                                  OpenPathDir(p.path);
+                                variant={"secondary"}
+                                onClick={(event) => event.stopPropagation()}
+                                onPress={(e) => {
+                                  openDirectory(p.path);
                                 }}
-                                className="bg-default-100 hover:bg-default-200 text-default-600 dark:bg-zinc-800 dark:hover:bg-zinc-700 dark:text-zinc-200"
+                                className={cn(
+                                  "rounded-full",
+                                  "bg-surface-secondary hover:bg-surface-tertiary text-foreground dark:text-zinc-200",
+                                )}
                               >
                                 <FaFolderOpen size={14} />
                               </Button>
+                              <Tooltip.Content>
+                                {t("common.open")}
+                              </Tooltip.Content>
                             </Tooltip>
-                            <Tooltip content={t("common.delete")}>
+                            <Tooltip>
                               <Button
                                 isIconOnly
+                    aria-label={t("common.delete")}
                                 size="sm"
-                                color="danger"
-                                variant="flat"
-                                radius="lg"
-                                onClick={(e) => {
-                                  e.stopPropagation();
+                                variant={"danger-soft"}
+                                onClick={(event) => event.stopPropagation()}
+                                onPress={(e) => {
                                   setActivePack(p);
                                   delCfmOnOpen();
                                 }}
-                                className="bg-danger-50 hover:bg-danger-100 text-danger-500 dark:bg-danger-900/20 dark:hover:bg-danger-900/30"
+                                className={cn(
+                                  "rounded-full",
+                                  "bg-rose-50 hover:bg-rose-100 text-rose-500 dark:bg-rose-900/20 dark:hover:bg-rose-900/30",
+                                )}
                               >
                                 <FaTrash size={14} />
                               </Button>
+                              <Tooltip.Content>
+                                {t("common.delete")}
+                              </Tooltip.Content>
                             </Tooltip>
                           </div>
                         </div>
@@ -927,7 +1024,7 @@ export default function SkinPacksPage() {
                 ))}
               </div>
             ) : (
-              <div className="flex flex-col items-center justify-center py-20 text-default-400 dark:text-zinc-500">
+              <div className="flex flex-col items-center justify-center py-20 text-muted dark:text-zinc-500">
                 <FaBox className="text-6xl mb-4 opacity-20" />
                 <p>
                   {sort.query
@@ -939,12 +1036,11 @@ export default function SkinPacksPage() {
 
             {sort.totalPages > 1 && (
               <div className="flex justify-center pb-4">
-                <Pagination
-                  total={sort.totalPages}
-                  page={sort.currentPage}
-                  onChange={sort.setCurrentPage}
-                  showControls
+                <PagePagination
                   size="sm"
+                  pageCount={sort.totalPages}
+                  currentPage={sort.currentPage}
+                  onPageChange={sort.setCurrentPage}
                 />
               </div>
             )}
@@ -971,19 +1067,20 @@ export default function SkinPacksPage() {
           lastScrollTopRef.current = pos;
           restorePendingRef.current = true;
           try {
-            await DeletePack(currentVersionName, activePack.path);
-            refreshAll();
-            addToast({
-              title: t("contentpage.deleted_name", {
+            const result = await DeletePack(currentVersionName, activePack.path);
+            if (result) throw new Error(result);
+            if (contentScopeRef.current === contentScope) refreshAll();
+            toast(
+              t("contentpage.deleted_name", {
                 name: activePack.name,
               }),
-              color: "success",
-            });
+              { variant: "success", timeout: 2000 },
+            );
           } catch (err) {
-            addToast({
-              title: "Error",
+            toast("Error", {
               description: String(err),
-              color: "danger",
+              variant: "danger",
+              timeout: 2000,
             });
             throw err;
           } finally {
@@ -996,44 +1093,22 @@ export default function SkinPacksPage() {
         isOpen={delManyCfmOpen}
         onOpenChange={delManyCfmOnOpenChange}
         title={t("common.confirm_delete")}
+        scopeLabel={t("contentpage.delete_scope", { instance: currentVersionName, player: selectedPlayer || t("contentpage.select_player") })}
+        itemNames={packs.filter((item) => selection.selected[item.path]).map((item) => item.name || item.path)}
+        confirmDisabled={selection.selectedCount === 0}
         description={t("contentpage.delete_selected_confirm", {
           count: Object.values(selection.selected).filter(Boolean).length,
         })}
         isPending={deletingMany}
         onConfirm={async () => {
           const targets = selection.getSelectedKeys();
-          if (targets.length === 0) return;
-
-          const pos =
-            scrollRef.current?.scrollTop ??
-            (document.scrollingElement as any)?.scrollTop ??
-            0;
-          setDeletingMany(true);
-          lastScrollTopRef.current = pos;
-          restorePendingRef.current = true;
-
-          try {
-            let success = 0;
-            for (const p of targets) {
-              try {
-                await DeletePack(currentVersionName, p);
-                success++;
-              } catch (e) {
-                console.error(e);
-              }
-            }
-
-            addToast({
-              title: t("contentpage.deleted_count", {
-                count: success,
-              }),
-              color: "success",
-            });
-            selection.clearSelection();
-            refreshAll();
-          } finally {
-            setDeletingMany(false);
-          }
+    if (!targets.length) return false;
+    setDeletingMany(true);
+    try {
+      return await deleteContentItems(targets, (path) => DeletePack(currentVersionName, path), selection.retainSelection, () => refreshAll(), t, () => contentScopeRef.current === contentScope);
+    } finally {
+      setDeletingMany(false);
+    }
         }}
       />
 
@@ -1042,31 +1117,19 @@ export default function SkinPacksPage() {
         type="primary"
         title={t("contentpage.transfer_progress_title")}
         icon={<FaExchangeAlt className="w-6 h-6" />}
-        hideCloseButton
         isDismissable={false}
         showConfirmButton={false}
         showCancelButton={false}
       >
-        <div className="flex flex-col gap-4">
-          <Progress
-            isIndeterminate
-            aria-label="transferring"
-            className="w-full"
-            size="sm"
-            color="primary"
-          />
-          <div className="text-default-600 dark:text-zinc-300 text-sm">
-            {t("contentpage.transfer_progress_body")}
-          </div>
-          {currentTransferItem ? (
-            <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
-              {currentTransferItem}
-            </div>
-          ) : null}
-        </div>
+        <ModalProgress
+          label={t("contentpage.transfer_progress_title")}
+          description={<> {t("contentpage.transfer_progress_body")} </>}
+          currentItem={currentTransferItem}
+        />
       </UnifiedModal>
 
       <UnifiedModal
+        size="wide"
         isOpen={transferTargetOpen}
         onOpenChange={(open) => {
           if (!open) transferTargetOnClose();
@@ -1086,52 +1149,70 @@ export default function SkinPacksPage() {
         }}
       >
         <div className="flex flex-col gap-4">
-          <div className="text-sm text-default-700 dark:text-zinc-300">
+          <ModalDescription>
             {t("contentpage.transfer_resources_body_simple")}
-          </div>
+          </ModalDescription>
 
           {transferTargets.length > 0 ? (
             <Select
-              items={transferTargets}
-              label={t("mirror.target") || "Target Instance"}
               placeholder={t("contentpage.transfer_target_placeholder")}
-              selectedKeys={new Set(selectedTransferTargets)}
-              onSelectionChange={(keys) => {
-                const selected = Array.from(keys).map(String);
+              value={Array.from(new Set(selectedTransferTargets))[0] ?? null}
+              onChange={(keys) => {
+                const selected = [keys].map(String);
                 setSelectedTransferTargets(selected);
               }}
-              classNames={COMPONENT_STYLES.select}
             >
-              {(item) => (
-                <SelectItem key={item.name} textValue={item.name}>
-                  <div className="flex gap-2 items-center">
-                    <div className="w-8 h-8 rounded bg-default-200 flex items-center justify-center overflow-hidden">
-                      <img
-                        src={
-                          item.icon ||
-                          "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
-                        }
-                        alt="icon"
-                        className="w-full h-full object-cover"
-                        onError={(e) =>
-                          (e.currentTarget.style.display = "none")
-                        }
-                      />
-                    </div>
-                    <div className="flex flex-col">
-                      <span className="text-small">{item.name}</span>
-                      <span className="text-tiny text-default-400">
-                        {item.gameVersion}
-                      </span>
-                    </div>
-                  </div>
-                </SelectItem>
-              )}
+              <Label>{t("mirror.target") || "Target Instance"}</Label>
+              <Select.Trigger className={COMPONENT_STYLES.select.trigger}>
+                <Select.Value />
+                <Select.Indicator />
+              </Select.Trigger>
+              <Select.Popover
+                className={COMPONENT_STYLES.select.popoverContent}
+              >
+                <ListBox
+                  items={transferTargets}
+                  className={COMPONENT_STYLES.select.listbox}
+                >
+                  {(item) => (
+                    <ListBox.Item
+                      key={item.name}
+                      id={item.name}
+                      textValue={item.name}
+                    >
+                      <Label>
+                        <div className="flex gap-2 items-center">
+                          <div className="w-8 h-8 rounded bg-surface-tertiary flex items-center justify-center overflow-hidden">
+                            <img
+                              src={
+                                item.icon ||
+                                "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
+                              }
+                              alt="icon"
+                              className="w-full h-full object-cover"
+                              onError={(e) =>
+                                (e.currentTarget.style.display = "none")
+                              }
+                            />
+                          </div>
+                          <div className="flex flex-col">
+                            <span className="text-sm">{item.name}</span>
+                            <span className="text-xs text-muted">
+                              {item.gameVersion}
+                            </span>
+                          </div>
+                        </div>
+                      </Label>
+                      <ListBox.ItemIndicator />
+                    </ListBox.Item>
+                  )}
+                </ListBox>
+              </Select.Popover>
             </Select>
           ) : (
-            <div className="flex flex-col items-center justify-center py-8 text-default-400 dark:text-zinc-500">
+            <div className="flex flex-col items-center justify-center py-8 text-muted dark:text-zinc-500">
               <FaExchangeAlt className="text-4xl mb-3 opacity-20" />
-              <p className="text-sm">{t("contentpage.transfer_no_targets")}</p>
+              <ModalDescription>{t("contentpage.transfer_no_targets")}</ModalDescription>
             </div>
           )}
         </div>
@@ -1169,16 +1250,8 @@ export default function SkinPacksPage() {
           dupOnClose();
         }}
       >
-        <div className="flex flex-col gap-4">
-          <div className="text-sm text-default-700 dark:text-zinc-300">
-            {t("mods.overwrite_modal_body")}
-          </div>
-          {dupNameRef.current ? (
-            <div className="p-3 bg-default-100/50 dark:bg-zinc-800 rounded-xl border border-default-200/50 text-small font-mono text-default-800 dark:text-zinc-200 break-all">
-              {dupNameRef.current}
-            </div>
-          ) : null}
-        </div>
+        <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
+        {dupNameRef.current ? <ModalPanel className="font-mono">{dupNameRef.current}</ModalPanel> : null}
       </UnifiedModal>
     </PageContainer>
   );

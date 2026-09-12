@@ -21,7 +21,6 @@ const (
 	EventMcLaunchStart         = "mc.launch.start"
 	EventMcLaunchDone          = "mc.launch.done"
 	EventMcLaunchFailed        = "mc.launch.failed"
-	EventMcLaunchStopped       = "mc.launch.stopped"
 	EventGamingServicesMissing = "gamingservices.missing"
 )
 
@@ -273,7 +272,6 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 		case <-ticker.C:
 			if !isGameRunning(versionDir) {
 				discord.SetLauncherIdle()
-				application.Get().Event.Emit(EventMcLaunchStopped, struct{}{})
 
 				exitBehavior := config.GetOnGameExit()
 				switch exitBehavior {

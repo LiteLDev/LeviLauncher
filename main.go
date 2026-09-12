@@ -507,7 +507,6 @@ func init() {
 	// launch
 	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
 	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)
-	application.RegisterEvent[struct{}](launch.EventMcLaunchStopped)
 	application.RegisterEvent[string](launch.EventMcLaunchFailed)
 	application.RegisterEvent[struct{}](launch.EventGamingServicesMissing)
 	//msixvc

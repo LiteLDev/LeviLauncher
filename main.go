@@ -49,7 +49,7 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
-//go:embed build/appicon.png
+//go:embed build/windows/icon.ico
 var appIcon []byte
 
 var singleInstanceGuard win.Handle
@@ -629,6 +629,7 @@ func main() {
 	wailsApp := application.New(application.Options{
 		Name:        "LeviLauncher",
 		Description: "A Minecraft Launcher",
+		Icon:        appIcon,
 		Logger:      diagnostics.Logger(),
 		LogLevel:    slog.LevelDebug,
 		ErrorHandler: func(err error) {
@@ -657,9 +658,6 @@ func main() {
 			WebviewBrowserPath: webView2Options.BrowserExecutableFolder,
 		},
 	})
-	if len(appIcon) > 0 {
-		wailsApp.SetIcon(appIcon)
-	}
 	tray.Setup(wailsApp, appIcon)
 	mc.StartupEssential()
 	startSingleInstanceServer(versionService)

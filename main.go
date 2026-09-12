@@ -59,6 +59,7 @@ const singleInstancePipe = `\\.\pipe\LeviLauncher_SingleInstance_Pipe`
 const (
 	ATTACH_PARENT_PROCESS = ^uint32(0)
 	CP_UTF8               = 65001
+	SW_SHOW               = 5
 	SW_RESTORE            = 9
 	MB_OK                 = 0x00000000
 	MB_ICONERROR          = 0x00000010
@@ -79,6 +80,7 @@ var (
 	procMessageBoxW              = user32.NewProc("MessageBoxW")
 	procShowWindow               = user32.NewProc("ShowWindow")
 	procSetForegroundWindow      = user32.NewProc("SetForegroundWindow")
+	procIsIconic                 = user32.NewProc("IsIconic")
 )
 
 type startupLogger struct {
@@ -282,13 +284,21 @@ func showStartupFailureDialog(title string, message string) {
 	)
 }
 
+// focusExistingWindow is the fallback for when the running launcher has not
+// opened its pipe yet. SW_RESTORE is reserved for a minimised window: on a
+// maximised one it would drop the window back to its pre-maximised size.
 func focusExistingWindow() {
 	title, _ := win.UTF16PtrFromString("LeviLauncher")
-	r1, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(title)))
-	if r1 != 0 {
-		_, _, _ = procShowWindow.Call(r1, uintptr(SW_RESTORE))
-		_, _, _ = procSetForegroundWindow.Call(r1)
+	hwnd, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(title)))
+	if hwnd == 0 {
+		return
 	}
+	showCmd := SW_SHOW
+	if iconic, _, _ := procIsIconic.Call(hwnd); iconic != 0 {
+		showCmd = SW_RESTORE
+	}
+	_, _, _ = procShowWindow.Call(hwnd, uintptr(showCmd))
+	_, _, _ = procSetForegroundWindow.Call(hwnd)
 }
 
 func isDebugArg(arg string) bool {
@@ -379,17 +389,20 @@ func parseArgs() (initialURL string, autoLaunchVersion string, postUpdateRestart
 	return initialURL, autoLaunchVersion, postUpdateRestart, debugMode
 }
 
-func sendLaunchToExistingInstance(version string) bool {
-	v := strings.TrimSpace(version)
-	if v == "" {
-		return false
+// sendToExistingInstance hands the command line over to the launcher that
+// already holds the single-instance mutex. Going through the pipe lets that
+// process act on its own window handle instead of this one guessing at it.
+func sendToExistingInstance(version string) bool {
+	command := "focus\t1\n"
+	if v := strings.TrimSpace(version); v != "" {
+		command = "launch\t" + v + "\n"
 	}
 	for i := 0; i < 8; i++ {
 		conn, err := npipe.DialTimeout(singleInstancePipe, 200*time.Millisecond)
 		if err == nil && conn != nil {
 			func() {
 				defer conn.Close()
-				_, _ = conn.Write([]byte("launch\t" + v + "\n"))
+				_, _ = conn.Write([]byte(command))
 			}()
 			return true
 		}
@@ -423,7 +436,13 @@ func startSingleInstanceServer(versionService *app.VersionService) {
 					}
 					cmd := strings.TrimSpace(parts[0])
 					payload := strings.TrimSpace(parts[1])
-					if cmd == "launch" && payload != "" {
+					switch cmd {
+					case "focus":
+						go launch.RestoreLauncherWindow()
+					case "launch":
+						if payload == "" {
+							continue
+						}
 						if errCode := versionlaunch.ValidateLaunchName(payload); errCode != "" {
 							log.Printf("Rejected single-instance launch payload %q: %s", payload, errCode)
 							continue
@@ -470,7 +489,7 @@ func ensureSingleInstance(autoLaunchVersion string, postUpdateRestart bool) bool
 				}
 			}
 		}
-		if !sendLaunchToExistingInstance(autoLaunchVersion) {
+		if !sendToExistingInstance(autoLaunchVersion) {
 			focusExistingWindow()
 		}
 		return false

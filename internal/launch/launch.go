@@ -30,7 +30,10 @@ var (
 	procIsWindowVisible = user32.NewProc("IsWindowVisible")
 )
 
-var quitRequested atomic.Bool
+var (
+	quitRequested   atomic.Bool
+	userHidLauncher atomic.Bool
+)
 
 // QuitRequested reports whether the current shutdown was asked for through
 // QuitLauncher. The window-close hook relies on this to tell an explicit quit
@@ -282,7 +285,9 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 				case config.OnGameExitReopen:
 					fallthrough
 				default:
-					RestoreLauncherWindow()
+					if !userHidLauncher.Load() {
+						RestoreLauncherWindow()
+					}
 				}
 				return
 			}
@@ -305,11 +310,20 @@ func GetMainWindow() application.Window {
 	return nil
 }
 
+// MarkLauncherHiddenByUser records that the user themselves sent the launcher
+// to the tray. A finishing game must not drag it back out, which would override
+// an explicit decision and cover whatever the user moved on to.
+func MarkLauncherHiddenByUser() {
+	userHidLauncher.Store(true)
+}
+
 // RestoreLauncherWindow brings the launcher back to the foreground, keeping
 // whatever size state it had. UnMinimise is the only restore step: Restore and
 // the raw SW_RESTORE both drop a maximised window back to its pre-maximised
 // size, so a maximised launcher would shrink on every game exit and tray click.
 func RestoreLauncherWindow() {
+	userHidLauncher.Store(false)
+
 	w := GetMainWindow()
 	if w == nil {
 		return

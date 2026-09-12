@@ -827,6 +827,7 @@ func main() {
 		if config.GetMinimizeToTray() && !launch.QuitRequested() {
 			event.Cancel()
 			windows.Hide()
+			launch.MarkLauncherHiddenByUser()
 		}
 	})
 	err = wailsApp.Run()

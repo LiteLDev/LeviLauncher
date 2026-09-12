@@ -224,7 +224,8 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 		return
 	}
 
-	found, _, canceled = waitForGameWindow(ctx, versionDir, 60*time.Second)
+	var visible bool
+	found, visible, canceled = waitForGameWindow(ctx, versionDir, 60*time.Second)
 	if canceled {
 		return
 	}
@@ -237,22 +238,28 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 
 	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
 
-	launchBehavior := config.GetOnGameLaunch()
-	switch launchBehavior {
-	case config.OnGameLaunchClose:
-		QuitLauncher()
-		return
-	case config.OnGameLaunchHide:
-		if w := GetMainWindow(); w != nil {
-			w.Hide()
-		}
-	case config.OnGameLaunchKeep:
-		// keep launcher open, do nothing
-	case config.OnGameLaunchMinimize:
-		fallthrough
-	default:
-		if w := GetMainWindow(); w != nil {
-			w.Minimise()
+	// waitForGameWindow reports found without visible when it times out: the
+	// game process is alive but never put a window on screen. Getting the
+	// launcher out of the way then would leave the user with neither a game
+	// window nor the launcher that could tell them what went wrong.
+	if visible {
+		launchBehavior := config.GetOnGameLaunch()
+		switch launchBehavior {
+		case config.OnGameLaunchClose:
+			QuitLauncher()
+			return
+		case config.OnGameLaunchHide:
+			if w := GetMainWindow(); w != nil {
+				w.Hide()
+			}
+		case config.OnGameLaunchKeep:
+			// keep launcher open, do nothing
+		case config.OnGameLaunchMinimize:
+			fallthrough
+		default:
+			if w := GetMainWindow(); w != nil {
+				w.Minimise()
+			}
 		}
 	}
 

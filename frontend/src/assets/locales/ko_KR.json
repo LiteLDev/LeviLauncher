@@ -540,7 +540,6 @@
       }
     },
     "game_behavior": {
-      "title": "게임 실행 동작",
       "on_launch_title": "Minecraft 실행 시",
       "on_launch_desc": "Minecraft 실행 후 런처의 동작",
       "on_launch_minimize": "런처 최소화",

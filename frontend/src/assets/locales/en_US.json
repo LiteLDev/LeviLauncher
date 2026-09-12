@@ -577,7 +577,6 @@
       }
     },
     "game_behavior": {
-      "title": "Game Lifecycle",
       "on_launch_title": "On Game Launch",
       "on_launch_desc": "Action to perform with the launcher when Minecraft starts",
       "on_launch_minimize": "Minimize launcher",

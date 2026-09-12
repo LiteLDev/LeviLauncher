@@ -562,7 +562,6 @@
       }
     },
     "game_behavior": {
-      "title": "遊戲運行行為",
       "on_launch_title": "Minecraft 啟動時",
       "on_launch_desc": "Minecraft 啟動後啟動器的行為",
       "on_launch_minimize": "最小化啟動器",

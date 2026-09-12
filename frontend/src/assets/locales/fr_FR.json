@@ -540,7 +540,6 @@
       }
     },
     "game_behavior": {
-      "title": "Cycle de vie du jeu",
       "on_launch_title": "Au lancement de Minecraft",
       "on_launch_desc": "Action à effectuer avec le lanceur lorsque Minecraft démarre",
       "on_launch_minimize": "Minimiser le lanceur",

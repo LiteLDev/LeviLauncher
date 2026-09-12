@@ -577,7 +577,6 @@
       }
     },
     "game_behavior": {
-      "title": "游戏运行行为",
       "on_launch_title": "Minecraft 启动时",
       "on_launch_desc": "Minecraft 启动后启动器的行为",
       "on_launch_minimize": "最小化启动器",

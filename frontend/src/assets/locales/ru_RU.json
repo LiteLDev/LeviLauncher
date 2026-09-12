@@ -535,7 +535,6 @@
       }
     },
     "game_behavior": {
-      "title": "Поведение лаунчера",
       "on_launch_title": "При запуске Minecraft",
       "on_launch_desc": "Действие с лаунчером при старте игры",
       "on_launch_minimize": "Сворачивать лаунчер",

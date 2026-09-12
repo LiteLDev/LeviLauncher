@@ -535,7 +535,6 @@
       }
     },
     "game_behavior": {
-      "title": "ゲームの動作設定",
       "on_launch_title": "Minecraft 起動時",
       "on_launch_desc": "Minecraft 起動後のランチャーの動作",
       "on_launch_minimize": "ランチャーを最小化",

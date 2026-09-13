@@ -137,21 +137,24 @@ jobs:
 
           Write-Host "Using Inno Setup compiler: $isccPath"
 
+          # Supply every language file project.iss declares that this Inno Setup
+          # build does not ship, so adding a [Languages] entry cannot break CI.
           $innoDir = Split-Path -Path $isccPath -Parent
-          $langDir = Join-Path $innoDir "Languages"
-          $chineseSimplifiedPath = Join-Path $langDir "ChineseSimplified.isl"
-          $chineseSimplifiedUrl = "https://raw.githubusercontent.com/jrsoftware/issrc/6ef32198ef1f7b7b375cd4b6b90896c2a58eb4c2/Files/Languages/ChineseSimplified.isl"
+          $sourceRoot = "https://raw.githubusercontent.com/jrsoftware/issrc/6ef32198ef1f7b7b375cd4b6b90896c2a58eb4c2/Files"
+          $script = Get-Content -Path "build/windows/inno/project.iss" -Raw
+          $references = [regex]::Matches($script, 'MessagesFile: "compiler:([^"]+)"') |
+            ForEach-Object { $_.Groups[1].Value } | Sort-Object -Unique
 
-          if (-not (Test-Path $langDir)) {
-            New-Item -ItemType Directory -Path $langDir -Force | Out-Null
-          }
-
-          if (-not (Test-Path $chineseSimplifiedPath)) {
-            Write-Host "ChineseSimplified.isl not found. Downloading from: $chineseSimplifiedUrl"
-            Invoke-WebRequest -Uri $chineseSimplifiedUrl -OutFile $chineseSimplifiedPath -ErrorAction Stop
-            Write-Host "Downloaded language file to: $chineseSimplifiedPath"
-          } else {
-            Write-Host "Language file already exists: $chineseSimplifiedPath"
+          foreach ($reference in $references) {
+            $target = Join-Path $innoDir $reference
+            if (Test-Path $target) {
+              Write-Host "Language file already present: $reference"
+              continue
+            }
+            $url = "$sourceRoot/$($reference -replace '\\', '/')"
+            Write-Host "Downloading missing language file: $url"
+            New-Item -ItemType Directory -Path (Split-Path -Path $target -Parent) -Force | Out-Null
+            Invoke-WebRequest -Uri $url -OutFile $target -ErrorAction Stop
           }
 
       - uses: ToQuery/wails3-build-action@v3-alpha.14
@@ -164,6 +167,9 @@ jobs:
 
       - name: Test installer prerequisite handling
         run: node build/windows/inno/prerequisites.test.mjs
+
+      - name: Test installer wizard layout
+        run: node build/windows/inno/wizard-ui.test.mjs
 
       - name: Verify build outputs
         shell: pwsh

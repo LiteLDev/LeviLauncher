@@ -286,8 +286,9 @@ select {
   font-family: var(--font-sans);
 }
 
+/* Filled brand icon containers use the same white foreground as solid actions. */
 .brand-primary-foreground {
-  color: var(--accent-foreground);
+  color: var(--action-solid-foreground);
 }
 
 /* Filled brand surfaces and their labels use the same selected color pair. */

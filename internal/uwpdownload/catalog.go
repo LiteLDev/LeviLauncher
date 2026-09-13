@@ -1,21 +1,18 @@
 package uwpdownload
 
 import (
-	"context"
+	_ "embed"
 	"encoding/json"
 	"fmt"
 	"io"
-	"net/http"
 	"regexp"
 	"sort"
 	"strconv"
 	"strings"
-	"time"
-
-	"github.com/liteldev/LeviLauncher/internal/httpx"
 )
 
-const CatalogURL = "https://raw.githubusercontent.com/LiteLDev/mc-w10-versiondb-auto-update/refs/heads/master/versions.json.min"
+//go:embed versions.json
+var catalogJSON string
 
 var versionPattern = regexp.MustCompile(`^\d{1,5}\.\d{1,5}\.\d{1,5}\.\d{1,5}$`)
 var updateIDPattern = regexp.MustCompile(`(?i)^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$`)
@@ -83,19 +80,6 @@ func ParseCatalog(r io.Reader) ([]Version, error) {
 	return result, nil
 }
 
-func FetchCatalog(ctx context.Context) ([]Version, error) {
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, CatalogURL, nil)
-	if err != nil {
-		return nil, err
-	}
-	req.Header.Set("Accept", "application/json")
-	resp, err := httpx.NewClient(20 * time.Second).Do(req)
-	if err != nil {
-		return nil, err
-	}
-	defer resp.Body.Close()
-	if resp.StatusCode != http.StatusOK {
-		return nil, fmt.Errorf("UWP catalog HTTP %d", resp.StatusCode)
-	}
-	return ParseCatalog(resp.Body)
+func LoadCatalog() ([]Version, error) {
+	return ParseCatalog(strings.NewReader(catalogJSON))
 }

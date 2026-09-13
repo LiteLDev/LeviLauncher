@@ -15,7 +15,7 @@ func (a *Minecraft) uwpContext() context.Context {
 }
 
 func (a *Minecraft) FetchUWPVersions() ([]uwpdownload.Version, error) {
-	return mcservice.FetchUWPVersions(a.uwpContext())
+	return mcservice.FetchUWPVersions()
 }
 
 func (a *Minecraft) StartUWPDownload(version, updateID, channel string) (string, error) {

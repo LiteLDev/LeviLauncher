@@ -7,6 +7,32 @@ import (
 
 const testID = "985D1EE4-0E9D-49DE-9A99-E208ADC08D0C"
 
+func TestEmbeddedCatalog(t *testing.T) {
+	entries, err := LoadCatalog()
+	if err != nil {
+		t.Fatal(err)
+	}
+	counts := map[string]int{}
+	for _, entry := range entries {
+		counts[entry.Type]++
+		if entry.PackageType != "uwp" {
+			t.Fatalf("unexpected package type: %+v", entry)
+		}
+	}
+	for channel, want := range map[string]int{"release": 148, "beta": 135, "preview": 156} {
+		if counts[channel] != want {
+			t.Errorf("%s: got %d versions, want %d", channel, counts[channel], want)
+		}
+	}
+	// Callers must not be able to modify subsequent reads of the built-in data.
+	original := entries[0]
+	entries[0].UUID = "modified"
+	again, err := LoadCatalog()
+	if err != nil || len(again) == 0 || again[0] != original {
+		t.Fatalf("catalog changed between reads: %v", err)
+	}
+}
+
 func TestCatalogChannelsAndNumericOrder(t *testing.T) {
 	input := `[["1.9.0.0","` + testID + `",0],["1.10.0.0","` + testID + `",1],["1.10.0.0","` + testID + `",2]]`
 	got, err := ParseCatalog(strings.NewReader(input))

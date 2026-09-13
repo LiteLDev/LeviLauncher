@@ -11,8 +11,8 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/uwpdownload"
 )
 
-func FetchUWPVersions(ctx context.Context) ([]uwpdownload.Version, error) {
-	return uwpdownload.FetchCatalog(ctx)
+func FetchUWPVersions() ([]uwpdownload.Version, error) {
+	return uwpdownload.LoadCatalog()
 }
 
 func StartUWPDownload(ctx context.Context, version, updateID, channel string) (string, error) {

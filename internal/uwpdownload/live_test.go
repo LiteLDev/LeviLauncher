@@ -11,15 +11,15 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/httpx"
 )
 
-// This probe fetches metadata, a signed URL and four archive-header bytes. It
+// This probe uses the embedded catalog to fetch a signed URL and four archive-header bytes. It
 // never downloads the full game or installs it. Normal tests stay offline.
 func TestLiveCatalogAndResolution(t *testing.T) {
 	if os.Getenv("LEVILAUNCHER_UWP_NETWORK_TEST") != "1" {
-		t.Skip("set LEVILAUNCHER_UWP_NETWORK_TEST=1 to query the catalog and Windows Update")
+		t.Skip("set LEVILAUNCHER_UWP_NETWORK_TEST=1 to query Windows Update")
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Minute)
 	defer cancel()
-	entries, err := FetchCatalog(ctx)
+	entries, err := LoadCatalog()
 	if err != nil || len(entries) == 0 {
 		t.Fatalf("catalog: count=%d error=%v", len(entries), err)
 	}

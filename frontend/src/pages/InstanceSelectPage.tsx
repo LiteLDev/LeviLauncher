@@ -433,12 +433,13 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                 className="w-full min-w-0"
               >
                 <Card
+                  data-selected={selectedVersionName === it.name}
                   className={cn(
-                    "relative w-full h-full transition-colors duration-150 motion-reduce:transition-none",
+                    "instance-selection-card relative w-full h-full transition-colors duration-150 motion-reduce:transition-none",
                     LAYOUT.GLASS_CARD.BASE,
                     "border-2 border-solid",
                     selectedVersionName === it.name
-                      ? "border-brand-600 dark:border-brand-500 bg-brand-500/5 dark:bg-brand-500/10 shadow-brand-500/20"
+                      ? "border-accent"
                       : "border-transparent hover:border-border dark:hover:border-zinc-700",
                   )}
                 >

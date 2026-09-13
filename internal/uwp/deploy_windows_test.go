@@ -136,6 +136,18 @@ func TestRegisterFailedSwitchRollsBack(t *testing.T) {
 		if strings.HasPrefix(script, "Add-AppxPackage") {
 			addCalls++
 			finalAdd = script
+			registrationDir := dir
+			if addCalls == 3 {
+				registrationDir = oldDir
+			}
+			data, err := os.ReadFile(filepath.Join(registrationDir, "AppxManifest.xml"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertFullTrustManifest(t, data)
+			if _, err := os.Stat(filepath.Join(registrationDir, "CustomCapability.SCCD")); err != nil {
+				t.Fatalf("registration descriptor missing: %v", err)
+			}
 			if addCalls == 1 {
 				return []byte("0x80073CFB"), errors.New("conflict")
 			}
@@ -150,6 +162,42 @@ func TestRegisterFailedSwitchRollsBack(t *testing.T) {
 	}
 	if addCalls != 3 || !strings.Contains(finalAdd, oldDir) {
 		t.Fatalf("original registration not restored: %d %s", addCalls, finalAdd)
+	}
+	for _, registrationDir := range []string{dir, oldDir} {
+		if data, err := os.ReadFile(filepath.Join(registrationDir, "AppxManifest.xml")); err != nil || string(data) != testManifest("neutral") {
+			t.Fatalf("manifest not restored after rollback: %s, %v", data, err)
+		}
+		if _, err := os.Stat(filepath.Join(registrationDir, "CustomCapability.SCCD")); !os.IsNotExist(err) {
+			t.Fatalf("descriptor not removed after rollback: %v", err)
+		}
+	}
+}
+
+func TestRegisterExistingInstanceAppliesFullTrust(t *testing.T) {
+	_, dir := setupDeployment(t)
+	addCalls, queries := 0, 0
+	runPowerShell = func(_ context.Context, script string) ([]byte, error) {
+		switch {
+		case strings.HasPrefix(script, "Get-AppxPackage"):
+			queries++
+			return packageJSON(t, dir, true), nil
+		case strings.HasPrefix(script, "Add-AppxPackage"):
+			addCalls++
+			data, err := os.ReadFile(filepath.Join(dir, "AppxManifest.xml"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			assertFullTrustManifest(t, data)
+		default:
+			t.Fatalf("unexpected command: %s", script)
+		}
+		return nil, nil
+	}
+	if err := Register(context.Background(), dir); err != nil {
+		t.Fatal(err)
+	}
+	if addCalls != 1 || queries != 2 {
+		t.Fatalf("existing instance skipped full trust registration: adds=%d queries=%d", addCalls, queries)
 	}
 }
 

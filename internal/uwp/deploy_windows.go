@@ -165,11 +165,13 @@ func addPackage(ctx context.Context, dir string) error {
 	// Register the loose files in development mode. ForceUpdateFromAnyVersion
 	// permits downgrades through the Windows deployment transaction, preserving
 	// the existing package data without first uninstalling a Store package.
-	out, err := runPowerShell(ctx, "Add-AppxPackage -Register "+psQuote(filepath.Join(dir, "AppxManifest.xml"))+" -ForceUpdateFromAnyVersion")
-	if err != nil {
-		return deploymentError("ERR_UWP_REGISTER", out, err)
-	}
-	return nil
+	return withFullTrustManifest(dir, func() error {
+		out, err := runPowerShell(ctx, "Add-AppxPackage -Register "+psQuote(filepath.Join(dir, "AppxManifest.xml"))+" -ForceUpdateFromAnyVersion")
+		if err != nil {
+			return deploymentError("ERR_UWP_REGISTER", out, err)
+		}
+		return nil
+	})
 }
 
 func removeDevelopmentPackage(ctx context.Context, pkg *registeredPackage) error {
@@ -193,9 +195,8 @@ func registerLocked(ctx context.Context, dir string, manifest Manifest) (*regist
 	if existing != nil && !strings.EqualFold(existing.PackageFamilyName, manifest.FamilyName()) {
 		return nil, failure("ERR_UWP_PACKAGE_CONFLICT", fmt.Errorf("existing package publisher does not match Minecraft"))
 	}
-	if existing != nil && samePath(existing.InstallLocation, dir) {
-		return existing, nil
-	}
+	// Explicit registration also upgrades an already registered instance from
+	// AppContainer to full trust; its install location alone cannot prove that.
 	if err := prepareLooseRegistration(dir); err != nil {
 		return nil, err
 	}

@@ -21,7 +21,7 @@ export const LAYOUT = {
     FILTERS: "grid grid-cols-2 min-[900px]:grid-cols-4 gap-3 [&>*]:min-w-0",
     RESULTS_BODY: "p-0 min-h-0 flex-1 overflow-hidden flex flex-col",
     RESULTS_SCROLL: "min-h-0 flex-1 overflow-y-auto overflow-x-hidden p-3 min-[1200px]:p-4 relative",
-    FOOTER: "flex shrink-0 justify-center px-4 py-2 border-t border-border dark:border-white/5 bg-surface/50 launcher-material-blur",
+    FOOTER: "flex shrink-0 justify-center px-4 py-2 border-t border-border dark:border-white/5 bg-surface/50 launcher-material-panel",
   },
   NAVBAR_BG: "launcher-chrome bg-surface/85 backdrop-blur-sm",
 };

@@ -2,37 +2,57 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v0.3.14] - 2026-08-05
+## [v1.0.0] - 2026-09-13
 
 ### Added
 
-- Added support for selecting a custom WebView2 Fixed Version Runtime through `--webview2-runtime-dir` or a `webview2.json` file next to the launcher executable ([#118](https://github.com/LiteLDev/LeviLauncher/issues/118)).
-- Added automated accessibility coverage for core launcher workflows.
+- Added UWP support for Minecraft Bedrock Edition.
+- Added Microsoft account sign-in, showing your Xbox profile and your Release and Preview entitlements, and used for version downloads.
+- Added configurable launcher behavior on game launch and exit, together with a system tray icon.
+- Added interface material personalization, with presets, opacity, blur, wallpaper overlay, and readability protection saved separately for the light and dark themes.
+- Added search in Settings.
+- Added an installation prompt when an installer download finishes.
+- Added support for a custom WebView2 Fixed Version Runtime through `--webview2-runtime-dir` or a `webview2.json` file next to the launcher executable ([#118](https://github.com/LiteLDev/LeviLauncher/issues/118)).
+- Added recognition of version folders backed by junctions or symbolic links ([#127](https://github.com/LiteLDev/LeviLauncher/issues/127)).
 
 ### Changed
 
-- Streamlined frontend startup, routing, animations, and state initialization while improving keyboard and screen-reader accessibility.
-- Batched backend metadata requests and streamed local image assets to reduce startup and content-management overhead.
+- Game versions now load mods through the game's import table.
+- Refreshed the launcher interface, including navigation, package pages, and dialogs.
+- Renamed the LIP content surface to Bedrinth.
+- Rewrote user-facing copy in plain language and completed all eleven languages.
+- Sped up launcher startup and content management.
+- Bundled the required Windows runtime components with the installer.
+- Licensed the project under GPL-3.0-only.
+
+### Removed
+
+- Removed the RenderDragon shader settings.
+- Removed the Ctrl+R resource reload instance setting.
 
 ### Fixed
 
-- Validated imported mod manifests and entry files before extraction, and made archive replacement transactional so invalid packages cannot overwrite existing mods ([#114](https://github.com/LiteLDev/LeviLauncher/issues/114)).
-- Serialized downloader task lifecycle transitions to prevent duplicate terminal events and inconsistent task state.
-- Restored the bundled MiSans font and its required typography fallbacks.
-- Restored readable white foregrounds for primary buttons across custom themes.
+- An invalid or duplicated mod manifest can no longer overwrite an existing mod during archive import ([#114](https://github.com/LiteLDev/LeviLauncher/issues/114)).
+- Generated GDK manifests now declare the runtime packages the game needs ([#121](https://github.com/LiteLDev/LeviLauncher/issues/121)).
+- The update badge now opens the latest compatible LeviLamina version ([#123](https://github.com/LiteLDev/LeviLauncher/issues/123)).
+- Starting a second copy now brings the running launcher to the front instead of an unrelated window with the same title.
+- The launcher icon now appears on the window and in the tray.
+- Downloads no longer end up in an inconsistent state.
+- Settings that fail to save now report the failure instead of showing the new value.
+- The world `level.dat` editor now warns before discarding unsaved edits.
+- Content pages now keep selections within their own category, and a failed load stays visible instead of showing an empty list.
 
 ### CI
 
-- Enforced backend tests, frontend production bundle limits, and accessibility checks in the build workflow.
-- Restored complete cross-platform optional dependency metadata in the frontend lockfile so clean `npm ci` installs remain reproducible.
+- Enforced backend tests, frontend bundle limits, and accessibility checks in the build workflow.
 
 ### Docs
 
-- Documented custom WebView2 Fixed Version Runtime configuration for English and Simplified Chinese users.
+- Documented the UWP requirements, the custom WebView2 Fixed Version Runtime, and the interface material settings in English and Simplified Chinese.
 
 ### Chore
 
-- Bumped version to `0.3.14`.
+- Bumped version to `1.0.0`.
 
 ## [v0.3.13] - 2026-06-26
 

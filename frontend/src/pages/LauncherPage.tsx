@@ -635,7 +635,7 @@ export const LauncherPage = (args: any) => {
                                 : t("launcherpage.register_system_button")
                             }
                             onAction={() => void doRegister()}
-                            isDisabled={registrationPendingAction !== null || launchPending}
+                            isDisabled={!currentVersion || registrationPendingAction !== null || launchPending}
                           >
                             {<FaWindows />}
                             <Label>

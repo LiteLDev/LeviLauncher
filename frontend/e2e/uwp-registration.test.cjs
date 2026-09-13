@@ -22,6 +22,20 @@ async function runScenario(viewport, scenario) {
     const primary = page.getByTestId('primary-launch-button');
     await primary.waitFor();
     await page.waitForTimeout(2200);
+    await page.getByRole('button', { name: '启动按钮旁的菜单提供实例设置、桌面快捷方式、游戏目录和系统注册等操作。', exact: true }).click();
+    const registrationItem = page.getByRole('menuitem', { name: /^(注册到系统|取消注册)$/ });
+    await registrationItem.waitFor();
+    assert.equal(await registrationItem.isDisabled(), scenario === 'no-instances');
+    await takeScreenshot('quick-actions');
+    await page.keyboard.press('Escape');
+    if (scenario === 'no-instances') {
+      assert.ok((await primary.innerText()).includes('下载 Minecraft'));
+      assert.deepEqual(pageErrors, []);
+      const calls = await page.evaluate(() => window.__audit.calls);
+      assert.equal(calls.some(call => /^(RegisterVersion|UnregisterVersion)/.test(call.name)), false);
+      report.push({ viewport, scenario, status: 'passed', pageErrors });
+      return;
+    }
     if (scenario.startsWith('uwp')) {
       const checks = await page.evaluate(() => window.__audit.calls);
       assert.ok(checks.some(call => call.name === 'IsVcRuntimeInstalled'));
@@ -101,9 +115,9 @@ async function runScenario(viewport, scenario) {
 
 (async () => {
   if (outputDir) fs.mkdirSync(outputDir, { recursive: true });
-  browser = await chromium.launch({ channel: 'msedge', headless: true });
+  browser = await chromium.launch({ channel: process.env.PLAYWRIGHT_CHANNEL || 'msedge', headless: true });
   for (const viewport of [{ width: 960, height: 600 }, { width: 1024, height: 640 }]) {
-    for (const scenario of process.env.UI_REVIEW_SCENARIOS?.split(',') || ['uwp-unregistered', 'uwp-register-fail', 'uwp-register-unconfirmed', 'uwp-stale-register', 'uwp', 'uwp-registration-lost', 'gdk-launch']) {
+    for (const scenario of process.env.UI_REVIEW_SCENARIOS?.split(',') || ['no-instances', 'uwp-unregistered', 'uwp-register-fail', 'uwp-register-unconfirmed', 'uwp-stale-register', 'uwp', 'uwp-registration-lost', 'gdk-launch']) {
       await runScenario(viewport, scenario);
       console.log(`PASS ${viewport.width}x${viewport.height} ${scenario}`);
     }

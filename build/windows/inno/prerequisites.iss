@@ -14,6 +14,7 @@ const
 
 var
   RuntimeRestartRequired: Boolean;
+  RuntimeRestartComponents: string;
   PreparingProgress: TNewProgressBar;
   PreparingLabelHeight: Integer;
 
@@ -43,7 +44,11 @@ begin
   WizardForm.PreparingLabel.Update;
   if PreparingProgress <> nil then
   begin
+    // Inno hides PreparingLabel before calling PrepareToInstall. Updating its
+    // caption alone leaves the component name invisible during installation.
+    WizardForm.PreparingLabel.Visible := True;
     WizardForm.PreparingLabel.AdjustHeight;
+    WizardForm.PreparingLabel.Update;
     PreparingProgress.Top := WizardForm.PreparingLabel.Top + WizardForm.PreparingLabel.Height + ScaleY(16);
     PreparingProgress.Visible := not WizardSilent;
     PreparingProgress.Update;
@@ -56,8 +61,20 @@ begin
   begin
     PreparingProgress.Visible := False;
     // Inno owns the failure/reboot layout after PrepareToInstall returns.
+    WizardForm.PreparingLabel.Visible := False;
     WizardForm.PreparingLabel.Height := PreparingLabelHeight;
   end;
+end;
+
+procedure ShowRuntimeRestartNotice;
+begin
+  if not RuntimeRestartRequired or not WizardForm.YesRadio.Visible then
+    exit;
+  WizardForm.FinishedLabel.Caption := FmtMessage(CustomMessage('RuntimeRestartNotice'), [RuntimeRestartComponents]);
+  WizardForm.FinishedLabel.AdjustHeight;
+  WizardForm.YesRadio.Top := WizardForm.FinishedLabel.Top + WizardForm.FinishedLabel.Height + ScaleY(12);
+  WizardForm.NoRadio.Top := WizardForm.YesRadio.Top + WizardForm.YesRadio.Height + ScaleY(4);
+  WizardForm.NoRadio.Checked := True;
 end;
 
 function HasWebView2Runtime(RootKey: Integer): Boolean;
@@ -106,7 +123,7 @@ begin
   Result := not (HasVCRuntime(HKLM32) or HasVCRuntime(HKLM64));
 end;
 
-procedure WaitForBusyInstaller(RemainingAttempts: Integer);
+procedure WaitForBusyInstaller(const StatusMessage: string; RemainingAttempts: Integer);
 var
   Elapsed, RemainingSeconds: Integer;
 begin
@@ -114,7 +131,8 @@ begin
   while Elapsed < BusyInstallerRetryDelayMs do
   begin
     RemainingSeconds := ((RemainingAttempts * BusyInstallerRetryDelayMs) - Elapsed) div 1000;
-    SetPreparingStatus(FmtMessage(CustomMessage('RuntimeInstallerBusy'), [IntToStr(RemainingSeconds)]));
+    SetPreparingStatus(StatusMessage + #13#10 +
+      FmtMessage(CustomMessage('RuntimeInstallerBusy'), [IntToStr(RemainingSeconds)]));
     Sleep(BusyInstallerPollMs);
     Elapsed := Elapsed + BusyInstallerPollMs;
   end;
@@ -134,7 +152,7 @@ begin
       exit;
     Log(Format('%s is waiting for another installation to finish (attempt %d)', [FileName, Attempt + 1]));
     if Attempt < BusyInstallerRetryLimit then
-      WaitForBusyInstaller(BusyInstallerRetryLimit - Attempt);
+      WaitForBusyInstaller(StatusMessage, BusyInstallerRetryLimit - Attempt);
   end;
 end;
 
@@ -154,7 +172,16 @@ begin
   end;
   Log(Format('%s installer exit code: %d', [DisplayName, ResultCode]));
   if (ResultCode = ErrorSuccessRebootRequired) or (ResultCode = ErrorSuccessRebootInitiated) then
-    RuntimeRestartRequired := True
+  begin
+    RuntimeRestartRequired := True;
+    // Keep the original source across retries, without duplicating a component.
+    if Pos(DisplayName, RuntimeRestartComponents) = 0 then
+    begin
+      if RuntimeRestartComponents <> '' then
+        RuntimeRestartComponents := RuntimeRestartComponents + #13#10;
+      RuntimeRestartComponents := RuntimeRestartComponents + DisplayName;
+    end;
+  end
   else if ResultCode <> 0 then
     Result := FmtMessage(CustomMessage('RuntimeInstallFailed'), [DisplayName, IntToStr(ResultCode)]);
 end;

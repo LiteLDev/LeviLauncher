@@ -58,6 +58,8 @@ var
   Metrics: string;
   PreparingProgress: TNewProgressBar;
   PreparingLabelHeight: Integer;
+  RuntimeRestartRequired: Boolean;
+  RuntimeRestartComponents: string;
 
 ${prerequisites.slice(prerequisites.indexOf("procedure InitializePreparingProgress;"), prerequisites.indexOf("function HasWebView2Runtime("))}
 
@@ -134,14 +136,28 @@ begin
     WizardForm.WelcomeLabel2.AdjustHeight;
     AssertTrue(WizardForm.WelcomeLabel2.Height <= WelcomeHeight, 'Welcome description clipped');
     InitializePreparingProgress;
+    // Reproduce Inno's actual entry state: the built-in label starts hidden.
+    WizardForm.PreparingLabel.Visible := False;
     SetPreparingStatus(CustomMessage('CheckingRuntimes'));
+    AssertTrue(WizardForm.PreparingLabel.Visible, 'Runtime component status must be visible');
     AssertTrue(PreparingProgress.Top + PreparingProgress.Height <= WizardForm.PreparingPage.ClientHeight, 'Preparing progress outside page');
-    SetPreparingStatus(FmtMessage(CustomMessage('RuntimeInstallerBusy'), ['60']));
+    SetPreparingStatus(CustomMessage('InstallWebView2') + #13#10 + FmtMessage(CustomMessage('RuntimeInstallerBusy'), ['60']));
     AssertTrue(PreparingProgress.Top >= WizardForm.PreparingLabel.Top + WizardForm.PreparingLabel.Height, 'Progress overlaps status');
     AssertTrue(PreparingProgress.Top + PreparingProgress.Height <= WizardForm.PreparingPage.ClientHeight, 'Waiting progress outside page');
     StopPreparingProgress;
     AssertTrue(not PreparingProgress.Visible, 'Progress must stop on exit');
+    AssertTrue(not WizardForm.PreparingLabel.Visible, 'Return status visibility to Inno');
     AssertTrue(WizardForm.PreparingLabel.Height = PreparingLabelHeight, 'Restore native error layout');
+    RuntimeRestartRequired := True;
+    RuntimeRestartComponents := 'Microsoft Visual C++ Runtime' + #13#10 + 'WebView2 Runtime';
+    WizardForm.YesRadio.Visible := True;
+    WizardForm.NoRadio.Visible := True;
+    WizardForm.YesRadio.Checked := True;
+    ShowRuntimeRestartNotice;
+    AssertTrue(WizardForm.NoRadio.Checked and not WizardForm.YesRadio.Checked, 'Default to restarting later');
+    AssertTrue(Pos(RuntimeRestartComponents, WizardForm.FinishedLabel.Caption) > 0, 'Show components that requested restart');
+    AssertTrue(WizardForm.YesRadio.Top >= WizardForm.FinishedLabel.Top + WizardForm.FinishedLabel.Height, 'Restart options overlap notice');
+    AssertTrue(WizardForm.NoRadio.Top + WizardForm.NoRadio.Height <= WizardForm.FinishedPage.ClientHeight, 'Restart options outside page');
     CurrentInnoInstallDir := '';
     LegacyNsisInstallDir := '';
     AssertTrue(not ShouldSkipPage(wpWelcome), 'Fresh install needs welcome');

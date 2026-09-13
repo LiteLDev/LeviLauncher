@@ -45,6 +45,7 @@ PreparingEnvironment=Checking environment
 PreparingLauncher=Preparing launcher
 CheckingRuntimes=Checking runtimes
 RuntimesReady=Runtimes ready
+RuntimeRestartNotice=Restart requested by %1
 [Code]
 var
   WVVersion, WVUserVersion, VCVersion, VC64Version: string;
@@ -143,6 +144,7 @@ begin
   RegisterRuntime := True;
   ExtractionFails := False;
   RuntimeRestartRequired := False;
+  RuntimeRestartComponents := '';
 end;
 
 function InitializeSetup: Boolean;
@@ -242,6 +244,22 @@ begin
     ExecCode := 3010;
     Error := PrepareToInstall(Restart);
     AssertTrue((Error = '') and NeedRestart() and not Restart, '3010 schedules final reboot');
+    AssertTrue(RuntimeRestartComponents = 'Microsoft Visual C++ Runtime' + #13#10 + 'WebView2 Runtime', 'identify both reboot sources');
+
+    Reset;
+    WVVersion := '140.0.1.0';
+    ExecCode := 3010;
+    Error := PrepareToInstall(Restart);
+    AssertTrue((Error = '') and (RuntimeRestartComponents = 'Microsoft Visual C++ Runtime'), 'VC reboot must not be attributed to WebView2');
+    Error := InstallRuntime('{#VCRuntimeFile}', '/install /quiet /norestart', 'Microsoft Visual C++ Runtime', CustomMessage('InstallVCRuntime'));
+    AssertTrue((Error = '') and (RuntimeRestartComponents = 'Microsoft Visual C++ Runtime'), 'deduplicate reboot source on retry');
+
+    Reset;
+    VCInstalled := 1;
+    VCVersion := 'v{#MockVCRuntimeVersion}';
+    ExecCode := 3010;
+    Error := PrepareToInstall(Restart);
+    AssertTrue((Error = '') and (RuntimeRestartComponents = 'WebView2 Runtime'), 'identify a WebView2-only reboot');
 
     Reset;
     ExecCode := 1641;

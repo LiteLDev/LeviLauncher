@@ -1023,6 +1023,7 @@ const LIPPage: React.FC = () => {
                               {pkg.name}
                             </h3>
                             <span className="text-xs sm:text-sm text-muted dark:text-zinc-400 truncate">
+                              <span aria-hidden="true">|</span>{" "}
                               {t("lip.by_author_inline", {
                                 author: pkg.author || t("common.unknown"),
                               })}

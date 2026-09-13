@@ -24,7 +24,7 @@
     "content_manage": "Content Management",
     "go_version_settings": "Instance Settings",
     "manage_versions": "Instances",
-    "search_versions": "Search instances or names",
+    "search_versions": "Search by instance name or game version",
     "open_exe_dir": "Open Game Installation Directory",
     "register_system_button": "Register to System",
     "registered_tip": "Registered",
@@ -57,7 +57,7 @@
     "launch": {
       "failed": {
         "title": "Launch Error",
-        "content": "Check instance files and required runtimes, and make sure there are no incompatible mods/add-ons/resource packs before trying again.",
+        "content": "Check that the instance files and required runtimes are complete, and remove any incompatible mods, add-ons, or resource packs, then try again.",
         "close_button": "Close"
       },
       "force_run_button": "Force Launch"
@@ -65,13 +65,13 @@
     "currentVersion": "Current Instance",
     "vcruntime": {
       "completing": {
-        "title": "Completing missing DLL",
-        "body": "Downloading and completing vcruntime140_1.dll, please wait…"
+        "title": "Repairing game files",
+        "body": "Downloading a missing runtime file. Please wait…"
       },
       "installing": {
         "title": "Installing Visual C++ Runtime",
         "body": "Downloading and installing Microsoft Visual C++ Runtime, please wait…",
-        "preparing": "Preparing download..."
+        "preparing": "Preparing download…"
       },
       "missing": {
         "title": "Visual C++ Runtime Missing",
@@ -80,9 +80,9 @@
       }
     },
     "loader_migration": {
-      "title": "Migrating loader",
-      "body": "Adapting installed versions to the new LeviLauncher loader (removing the legacy vcruntime140_1.dll and updating the game's import table). This runs once, please wait…",
-      "preparing": "Preparing migration..."
+      "title": "Updating the loader",
+      "body": "Updating your installed instances to work with the new LeviLauncher loader. This runs only once. Please wait…",
+      "preparing": "Preparing update…"
     },
     "mclaunch": {
       "loading": {
@@ -101,7 +101,7 @@
       "installing": {
         "title": "Installing GameInput",
         "body": "Downloading and starting the installer. Follow system prompts to complete.",
-        "preparing": "Preparing download..."
+        "preparing": "Preparing download…"
       },
       "missing": {
         "title": "GameInput Component Missing",
@@ -112,14 +112,14 @@
     "gs": {
       "missing": {
         "title": "Microsoft Gaming Services Missing",
-        "body": "Microsoft Gaming Services was not detected. This dependency is required for Minecraft.",
+        "body": "Microsoft Gaming Services was not detected. Minecraft requires this component to run.",
         "open_store": "Open Store to Install",
         "ignore_forever": "Ignore and don’t remind again"
       }
     },
     "install_confirm": {
       "title": "Installation Completed?",
-      "body": "After finishing installation, click 'Done, Recheck'. Otherwise continue installing.",
+      "body": "Once the installer has finished, select \"Done, Recheck\". If it is still running, continue installing.",
       "continue": "Continue Installing",
       "done_and_check": "Done, Recheck"
     },
@@ -129,11 +129,11 @@
       "unknown": "Unknown"
     },
     "tip": {
-      "version_selector": "Use the version dropdown to switch the current instance quickly.",
+      "version_selector": "Use the instance dropdown to switch the current instance quickly.",
       "version_search": "Search by instance name or game version before selecting from the dropdown list.",
-      "manage_versions": "Click \"Manage Versions\" in the dropdown panel to install, import, or organize instances.",
+      "manage_versions": "Select \"Instances\" in the dropdown panel to install, import, or organize instances.",
       "quick_actions_menu": "The menu next to the launch button provides instance settings, desktop shortcut, game folder, and system registration actions.",
-      "launch_dependencies": "If GameInput, VC++ Runtime, or Gaming Services are missing, LeviLauncher guides you through installing them before launch.",
+      "launch_dependencies": "If GameInput, the Visual C++ Runtime, or Gaming Services are missing, LeviLauncher guides you through installing them before launch.",
       "mods_card": "The Mods card shows enabled mods for the current instance and opens the full Mods page in one click.",
       "content_counts_card": "The Content card shows world, resource pack, and behavior pack counts, and each row opens the matching page.",
       "incompatible_resource_packs": "If incompatible resource packs are detected, click the warning row to review them directly.",
@@ -149,7 +149,7 @@
   "moddedcard": {
     "title": "Mods",
     "content": {
-      "none": "0 mods found"
+      "none": "No mods installed"
     },
     "manage": "Manage Mods"
   },
@@ -185,8 +185,8 @@
     "errors": {
       "generic": "The update could not be completed. Please try again later.",
       "update_admin_required": "Administrator permission is required to continue the update.",
-      "update_asset_missing": "The required update package is missing or named incorrectly.",
-      "update_release_unavailable": "Update metadata is currently unavailable.",
+      "update_asset_missing": "The update package is missing or has an unexpected name.",
+      "update_release_unavailable": "Update information is currently unavailable. Please try again later.",
       "update_verify_failed": "Update package verification failed.",
       "update_download_failed": "Failed to download the update package.",
       "update_install_failed": "Failed to install the update package.",
@@ -229,7 +229,7 @@
       "status_not_downloaded": "Not downloaded",
       "loader": "Loader",
       "input": {
-        "placeholder": "Search by version..."
+        "placeholder": "Search by version…"
       }
     },
     "actions": {
@@ -240,20 +240,20 @@
     },
     "install_folder": {
       "confirm_title": "Install Instance",
-      "name_label": "Version Name",
-      "placeholder_name": "Please enter version name",
-      "enable_isolation": "Version isolation",
-      "enable_isolation_desc": "Redirect game data (worlds, settings, caches, etc.) to versions/<name>/ instead of storing in AppData.",
+      "name_label": "Instance Name",
+      "placeholder_name": "Enter an instance name",
+      "enable_isolation": "Instance isolation",
+      "enable_isolation_desc": "Keep this instance's game data (worlds, settings, and caches) in its own folder instead of sharing the system-wide Minecraft data.",
       "inherit_label": "Inherit From",
-      "inherit_hint": "Copy data from an isolated version with matching type",
+      "inherit_hint": "Copy data from another isolated instance of the same type",
       "inherit_none": "No Inheritance",
-      "inherit_gdk": "Inherit from GDK directory"
+      "inherit_gdk": "Inherit from the shared game data"
     },
     "mirror": {
       "no_recommended": "No recommended mirror",
-      "download_started": "Download started...",
+      "download_started": "Download started…",
       "title": "Select Download Mirror",
-      "target": "Target",
+      "target": "Download target",
       "testing": "Testing…",
       "unselected": "Unselected",
       "copy_link": "Copy Link",
@@ -263,9 +263,9 @@
       "no_mirrors": "No mirrors available for this version.",
       "filename_fallback": "(file)",
       "retest": "Retest",
-      "download_selected": "Download Selected",
+      "download_selected": "Download from Selected Mirror",
       "install_button": "Install",
-      "install_selected": "Install Selected"
+      "install_selected": "Install from Selected Mirror"
     },
     "progress": {
       "unknown_error": "Unknown error"
@@ -274,7 +274,7 @@
       "success_body": "File downloaded: "
     },
     "delete": {
-      "title": "Confirm deletion",
+      "title": "Delete installer?",
       "body": "This will delete installer: ",
       "warning": "This action cannot be undone.",
       "success_body": "Installer deleted: "
@@ -286,14 +286,14 @@
       "ll_version_label": "LeviLamina Version",
       "ll_version_placeholder": "Select a LeviLamina version",
       "hint": "Please wait, this process may take a while…",
-      "estimated_size": "Written size (estimated)",
+      "estimated_size": "Installed size (estimated)",
       "target": "Install Target",
       "success_title": "Install Complete",
       "success": "Installation completed successfully.",
       "progress": "Installation Progress",
       "custom_installer": {
         "label": "Choose local installer (.msixvc)",
-        "hint": "Defaults to using files in the installers directory"
+        "hint": "By default, LeviLauncher uses the files already in your installers folder"
       },
       "levilamina_unsupported": "LeviLamina is not supported for this game version",
       "title": "Install"
@@ -363,9 +363,9 @@
         "desc": "Enable backup and restore actions in instance settings. This feature is still experimental.",
         "warning": {
           "title": "Enable experimental instance backup?",
-          "body_1": "This feature is intended for developers and testers only. Do not use production data casually.",
+          "body_1": "This feature is intended for developers and testers. Do not use it with data you cannot afford to lose.",
           "body_2": "Backup format, included scope, and restore compatibility may change in future builds, and forward compatibility is not guaranteed.",
-          "body_3": "Please make sure you understand the risks, and decide whether to enable it only after reading this warning in full for 10 seconds.",
+          "body_3": "Read this warning in full before deciding. The confirm button becomes available after 10 seconds.",
           "confirm": "I understand the risks"
         }
       }
@@ -381,21 +381,21 @@
       "install_button": "Install",
       "check_button": "Check",
       "cache_clean_button": "Clean Cache",
-      "cache_cleaning": "Cleaning Cache...",
+      "cache_cleaning": "Cleaning Cache…",
       "cache_clean_success": "lip cache cleaned",
-      "installing": "Installing lip...",
+      "installing": "Installing lip…",
       "latest_label": "Latest",
       "outdated_label": "Update Available",
       "missing_label": "Missing",
       "status": {
-        "checking": "Checking lip status...",
-        "checking_runtime": "Checking .NET 10 runtime...",
-        "preparing": "Preparing download...",
-        "installing_runtime": "Installing .NET 10 runtime...",
-        "downloading": "Downloading lip archive...",
-        "extracting": "Extracting lipd.exe...",
-        "writing": "Writing lipd.exe...",
-        "verifying": "Verifying installation...",
+        "checking": "Checking lip status…",
+        "checking_runtime": "Checking .NET 10 runtime…",
+        "preparing": "Preparing download…",
+        "installing_runtime": "Installing .NET 10 runtime…",
+        "downloading": "Downloading lip archive…",
+        "extracting": "Extracting lipd.exe…",
+        "writing": "Writing lipd.exe…",
+        "verifying": "Verifying installation…",
         "up_to_date": "Current version is up to date",
         "outdated": "A newer version is available",
         "missing": "lip is not installed",
@@ -419,7 +419,7 @@
       "version_label": "Current: {{currentVersion}} / Latest: {{latestVersion}}",
       "startup_prompt": {
         "title": "lip update available",
-        "description": "A newer lip version is available ({{currentVersion}} -> {{latestVersion}}). LeviLauncher will not update it automatically. Go to Settings > Components to update it manually.",
+        "description": "A newer lip version is available ({{currentVersion}} -> {{latestVersion}}). LeviLauncher will not update it automatically. Go to Settings > Third-party Components to update it manually.",
         "later_button": "Later",
         "ignore_button": "Ignore this version",
         "open_settings_button": "Open Settings",
@@ -472,7 +472,7 @@
       }
     },
     "appearance": {
-      "mode_config": "Mode-Specific Configuration",
+      "mode_config": "Per-Mode Settings",
       "edit_mode_desc": "Personalization settings (colors, opacity, etc.) are saved independently for Light and Dark modes. Switch tabs on the right to configure each mode.",
       "theme_mode": "Theme Mode",
       "theme_mode_desc": "Choose the application theme",
@@ -519,31 +519,31 @@
       "background_base_opacity": "Base Opacity",
       "disable_animations": "Disable Animations",
       "disable_animations_desc": "Turn off interface transition animations to improve performance",
-      "calculating": "Calculating...",
+      "calculating": "Calculating…",
       "sunrise_time": "Sunrise Today",
       "sunset_time": "Sunset Today",
       "sun_fetch_failed": "Failed to fetch sunrise/sunset times",
       "material": {
         "title": "Interface material",
-        "description": "One material system for navigation, cards, tabs, controls and popups. Light and dark profiles are saved separately and follow the theme.",
+        "description": "One material system for navigation, cards, tabs, controls, and popups. Light and dark profiles are saved separately and follow the theme.",
         "edit_mode": "Edit material for theme",
         "preview": "Live preview",
         "preview_label": "Wallpaper, text and card material preview for the selected theme",
         "preview_action": "Launch",
         "preview_text": "Text and controls stay in front; your wallpaper sets the atmosphere.",
-        "no_image": "Choose a working image folder and set image opacity above 0 to see the effect. Your material settings are saved for later.",
+        "no_image": "Choose an image folder and set image opacity above 0 to see the effect. Your material settings are kept either way.",
         "presets": "Material presets",
         "balanced": "Balanced",
         "balanced_desc": "Soft glass, readable content",
         "clear": "Clear",
-        "clear_desc": "More wallpaper, less protection",
+        "clear_desc": "More wallpaper, less text protection",
         "solid": "Solid",
         "solid_desc": "Opaque panels, no blur",
         "opacity": "Interface opacity",
         "blur": "Interface blur",
         "overlay": "Wallpaper overlay",
         "readability": "Readability protection",
-        "readability_desc": "Sets a minimum surface tint for the theme, image brightness and blur, and strengthens secondary text. Controls and popups use the same material with their own visual hierarchy.",
+        "readability_desc": "Keeps text legible by setting a minimum surface tint and strengthening secondary text, based on the theme, image brightness, and blur. Controls and popups follow the same material.",
         "protected_opacity": "Protection is active: effective interface opacity is {{value}}%.",
         "protected": "Readability protection is on.",
         "unprotected": "Protection is off. Busy images may make text harder to read.",
@@ -586,7 +586,7 @@
   },
   "aboutcard": {
     "title": "About",
-    "description": " 2024-2026 {{name}} All rights reserved",
+    "description": "© 2024-2026 {{name}} All rights reserved",
     "font": "This software uses the {{name}} font"
   },
   "about": {
@@ -628,7 +628,7 @@
     "success": "Success",
     "delete": "Delete",
     "search": "Search",
-    "search_placeholder": "Search...",
+    "search_placeholder": "Search…",
     "open": "Open",
     "select_mode": "Select mode",
     "select_all": "Select all",
@@ -641,10 +641,10 @@
     "no": "No",
     "close": "Close",
     "empty": "No data",
-    "browse": "Browse...",
-    "processing": "Processing...",
+    "browse": "Browse…",
+    "processing": "Processing…",
     "done": "Done",
-    "wait": "Please wait...",
+    "wait": "Please wait…",
     "updating": "Updating",
     "expand": "Expand",
     "collapse": "Collapse",
@@ -681,7 +681,7 @@
       "trial": "Trial only",
       "not_entitled": "Not authorized",
       "error": "Check failed",
-      "description": "Release and Preview licenses are requested after sign-in. Refresh to check again."
+      "description": "Release and Preview licenses are checked after you sign in. Select refresh to check again."
     },
     "sign_in": "Sign in with Microsoft",
     "switch_account": "Switch account",
@@ -711,7 +711,7 @@
     "skin_packs": "Skin Packs",
     "no_skin_packs": "No skin packs",
     "servers": "Servers",
-    "error_resolve_paths": "Failed to resolve content paths.",
+    "error_resolve_paths": "Could not locate the content folders.",
     "open_users_dir": "Open Storage Directory",
     "players_aria": "Players",
     "sort_time": "Time",
@@ -719,17 +719,17 @@
     "sort_desc": "Descending",
     "drop_hint": "Drag .mcworld/.mcpack/.mcaddon to import",
     "import_button": "Import",
-    "transfer_resources_button": "Transfer Resources",
-    "transfer_resources_title": "Transfer Resources to Isolated Instances",
-    "transfer_resources_body_overview": "This will transfer all resource packs, behavior packs, skin packs, and worlds from the current instance to the target instance. Please select a target instance.",
+    "transfer_resources_button": "Transfer Content",
+    "transfer_resources_title": "Transfer Content to Another Instance",
+    "transfer_resources_body_overview": "All resource packs, behavior packs, skin packs, and worlds from the current instance will be copied to the target instance. Choose a target instance.",
     "transfer_resources_body_simple": "Please select a target instance to transfer to.",
     "transfer_no_targets": "No other isolated instances available",
     "transfer_target_placeholder": "Select target instance",
-    "transfer_progress_title": "Transferring Resources...",
-    "transfer_progress_body": "Please wait while resources are transferred to selected instances.",
+    "transfer_progress_title": "Transferring content…",
+    "transfer_progress_body": "Please wait while your content is transferred to the selected instance.",
     "require_player_for_world_import": "Select a player before importing a world (.mcworld)",
     "no_player_selected": "No player selected",
-    "world_leveldat_editor": "World level.dat editor",
+    "world_leveldat_editor": "World properties",
     "version": "Version",
     "add_field": "Add Field",
     "field_name": "Name",
@@ -787,7 +787,7 @@
       "mc_version": "Game Version",
       "new_name": "New Name",
       "placeholder": "Enter new name",
-      "hint": "Only rename the folder. Game version and type are unaffected.",
+      "hint": "Renames the instance folder only. The game version and type are unchanged.",
       "enable_isolation": "Enable Isolation",
       "enable_console": "Enable Console",
       "enable_editor_mode": "Enable Editor Mode",
@@ -803,7 +803,7 @@
       "backup": {
         "title": "Instance Backup",
         "hint": "Create a backup for this instance before changing settings, installing mods, or trying something new",
-        "section_body": "Choose the game content and mods you want to keep together; the launcher app itself is not included",
+        "section_body": "Only the game content and mods you select are included in the backup",
         "experimental_badge": "Experimental",
         "experimental_disabled": "Enable this in {{settingsPath}} before using instance backup and restore.",
         "button": "Back up instance",
@@ -814,11 +814,11 @@
         "shared_tag": "Shared content",
         "missing_tag": "Not found",
         "empty_tag": "Currently empty",
-        "shared_warning": "This instance shares the same game data as the system default install, so including game data will back up that shared content too",
+        "shared_warning": "This instance does not use isolation, so including game data will also back up the shared system-wide game data",
         "no_scope_selected": "Please choose at least one item to back up",
         "confirm": "Start backup",
         "progress_title": "Backing up instance",
-        "progress_body": "Packaging the selected scopes. Please wait...",
+        "progress_body": "Packaging the selected scopes. Please wait…",
         "success_title": "Instance backup complete",
         "success_body": "Your backup file is ready",
         "archive_label": "Backup file",
@@ -843,7 +843,7 @@
           "scope_section_title": "Restore scopes",
           "created_at": "Created at",
           "lip_summary": "Detected {{count}} lip-managed packages. Restore will try to reinstall them automatically.",
-          "conflict_loading": "Scanning restore conflicts. Please wait...",
+          "conflict_loading": "Scanning restore conflicts. Please wait…",
           "conflict_summary": "{{count}} conflicts were found with the current instance. Choose whether to keep the backup version or the current version for each item.",
           "conflict_empty": "No conflicts were found for the selected scopes. You can restore directly.",
           "conflict_choice_placeholder": "Choose how to resolve this conflict",
@@ -858,7 +858,7 @@
           "conflict_unresolved": "Please choose how to resolve every conflict before restoring.",
           "conflict_details_toggle": "View paths and detailed differences",
           "conflict_item_fallback": "Unnamed content",
-          "identity_key_label": "Conflict identity",
+          "identity_key_label": "Matched by",
           "backup_side_label": "Backup version",
           "current_side_label": "Current version",
           "backup_path_label": "Backup path",
@@ -896,11 +896,11 @@
             "type": "Type"
           },
           "progress_title": "Restoring instance backup",
-          "progress_body": "Applying backup contents. Please wait...",
-          "progress_preparing": "Preparing restore content...",
-          "progress_extracting": "Extracting backup contents...",
-          "progress_scope": "Restoring {{scope}}...",
-          "progress_finalizing": "Finalizing restore results...",
+          "progress_body": "Applying backup contents. Please wait…",
+          "progress_preparing": "Preparing restore content…",
+          "progress_extracting": "Extracting backup contents…",
+          "progress_scope": "Restoring {{scope}}…",
+          "progress_finalizing": "Finalizing restore results…",
           "progress_step": "Step {{current}} / {{total}}",
           "success_title": "Instance restore complete",
           "partial_title": "Instance restore partially complete",
@@ -936,10 +936,10 @@
       }
     },
     "logo": {
-      "title": "Custom Icon (square required)",
+      "title": "Custom Icon (must be square)",
       "change": "Click to change",
       "clear": "Clear",
-      "hint": "Will be saved as LargeLogo.png under the version folder. Click the icon to change."
+      "hint": "Saved in the instance folder. Select the icon to change it."
     },
     "unsaved": {
       "body": "You have unsaved changes to instance settings. Do you want to save before leaving?"
@@ -963,23 +963,23 @@
     "ERR_GAME_ALREADY_RUNNING": "Detected the current instance of Minecraft is already running. Please close it before launching or switch to another instance.",
     "ERR_TARGET_DIR_NOT_SPECIFIED": "Target directory not specified",
     "ERR_CREATE_TARGET_DIR": "Failed to create target directory",
-    "ERR_NOT_FOUND_GAME_DIR": "Game content directory not found",
-    "ERR_NOT_FOUND_EXE": "Executable not found",
-    "ERR_WRITE_TARGET": "Failed to write target config",
-    "ERR_LAUNCH_GAME": "Game failed to start properly",
+    "ERR_NOT_FOUND_GAME_DIR": "Game files not found",
+    "ERR_NOT_FOUND_EXE": "The game executable was not found",
+    "ERR_WRITE_TARGET": "Could not write to the instance folder",
+    "ERR_LAUNCH_GAME": "The game did not start correctly",
     "ERR_GAME_CRASH_DURING_LAUNCH": "Game crashed during launch",
-    "ERR_WAIT_KERNEL_TIMEOUT": "Kernel preparation timed out",
-    "ERR_COPY_WALK": "Failed to traverse files",
+    "ERR_WAIT_KERNEL_TIMEOUT": "Timed out waiting for the game to start",
+    "ERR_COPY_WALK": "Could not read the files to copy",
     "ERR_COPY_FAILED": "Copy failed",
     "ERR_NAME_REQUIRED": "Name is required",
     "ERR_NAME_TOO_LONG": "Name is too long",
     "ERR_NAME_TRAILING_DOT_SPACE": "Name cannot end with a dot or space",
     "ERR_NAME_INVALID_CHAR": "Name contains invalid characters: <>:\"/\\|?*",
     "ERR_NAME_CONTROL_CHAR": "Name contains control characters",
-    "ERR_NAME_RESERVED": "Name is a Windows reserved word",
-    "ERR_ACCESS_VERSIONS_DIR": "Cannot access versions directory",
-    "ERR_ACCESS_INSTALLERS_DIR": "Cannot access installers directory",
-    "ERR_READ_VERSIONS_DIR": "Failed to read versions directory",
+    "ERR_NAME_RESERVED": "This name is reserved by Windows (for example CON, PRN, or NUL). Choose another name.",
+    "ERR_ACCESS_VERSIONS_DIR": "Cannot access the instances folder",
+    "ERR_ACCESS_INSTALLERS_DIR": "Cannot access the installers folder",
+    "ERR_READ_VERSIONS_DIR": "Could not read the instances folder",
     "ERR_LL_VERSION_UNSUPPORTED": "Selected LeviLamina version is not supported for this game version",
     "ERR_LL_NOT_SUPPORTED": "LeviLamina is not supported for this game version",
     "ERR_FETCH_LL_DB": "Failed to fetch LeviLamina version database",
@@ -995,17 +995,17 @@
     "ERR_MSIXVC_NOT_FOUND": "Installer package not found",
     "ERR_APPX_UNINSTALL_FAILED": "Failed to uninstall existing game",
     "ERR_APPX_INSTALL_FAILED": "Install failed. Please retry.",
-    "ERR_MC_NOT_AUTHORIZED": "Please ensure you own the legitimate {{typeLabel}} Minecraft license. Sign in with an account that owns the product or purchase it and retry.",
-    "ERR_INHERIT_SOURCE_NOT_FOUND": "Inherit source version not found",
+    "ERR_MC_NOT_AUTHORIZED": "This account does not own {{typeLabel}} Minecraft. Sign in with an account that owns it, or buy the game, then try again.",
+    "ERR_INHERIT_SOURCE_NOT_FOUND": "The instance to inherit from was not found",
     "ERR_DELETE_FAILED": "Delete failed, possibly in use or permission denied",
-    "ERR_INHERIT_TARGET_NOT_FOUND": "Target version not found",
-    "ERR_INHERIT_TYPE_MISMATCH": "Type mismatch, cannot inherit",
+    "ERR_INHERIT_TARGET_NOT_FOUND": "The target instance was not found",
+    "ERR_INHERIT_TYPE_MISMATCH": "The instances are different types, so data cannot be inherited",
     "ERR_INHERIT_COPY_FAILED": "Failed to copy inherited data",
     "ERR_NO_GAME_DATA": "No game data found for the selected source",
-    "ERR_VCRUNTIME_MISSING": "Runtime dependency missing. Please install Microsoft Visual C++ Runtime and retry",
+    "ERR_VCRUNTIME_MISSING": "A required runtime is missing. Install the Microsoft Visual C++ Runtime, then try again.",
     "ERR_SHORTCUT_CREATE_FAILED": "Failed to create desktop shortcut",
     "ERR_UNREGISTER_FAILED": "Unregister failed",
-    "ERR_NOT_REGISTERED_THIS_VERSION": "This version is not registered",
+    "ERR_NOT_REGISTERED_THIS_VERSION": "This instance is not registered with the system",
     "ERR_DEV_MODE_REQUIRED": "Developer Mode is not enabled, and auto-enable failed. Please enable Developer Mode manually and retry.",
     "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Invalid lip package identifier",
     "ERR_LIP_PACKAGE_VERSION_REQUIRED": "lip package version is required",
@@ -1014,9 +1014,9 @@
     "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
     "ERR_LIP_CACHE_CLEAN_FAILED": "Failed to clean lip cache",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "This package is required by other installed mods and cannot be uninstalled now",
-    "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "This package is still required by other installed mods, so it cannot be fully uninstalled. It has been automatically switched to dependency install mode.",
-    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings",
-    "ERR_LIP_NOT_INSTALLED": "lip is not installed. Go to Settings > Components to install or update it manually.",
+    "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "This package is still required by other installed mods, so it cannot be fully uninstalled. It is now kept only as a dependency and will be removed once nothing needs it.",
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Instance Settings",
+    "ERR_LIP_NOT_INSTALLED": "lip is not installed. Go to Settings > Third-party Components to install or update it.",
     "ERR_INSTANCE_BACKUP_INSTANCE_NOT_FOUND": "The instance to back up was not found",
     "ERR_INSTANCE_BACKUP_NO_SCOPE": "Please select at least one backup scope",
     "ERR_INSTANCE_BACKUP_INVALID_SCOPE": "The request includes an invalid backup scope",
@@ -1028,7 +1028,7 @@
     "ERR_INSTANCE_BACKUP_WRITE_ARCHIVE": "Failed to write the instance backup archive",
     "ERR_INSTANCE_BACKUP_ARCHIVE_OPEN": "Failed to open the instance backup archive",
     "ERR_INSTANCE_BACKUP_INVALID_ARCHIVE": "The instance backup archive format is invalid",
-    "ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE": "Mods/LIP state could not be verified. Refresh the instance state and try backing up again.",
+    "ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE": "The mod list could not be verified. Refresh the instance and try backing up again.",
     "ERR_INSTANCE_BACKUP_RESTORE_EXTRACT_ARCHIVE": "Failed to extract the instance backup archive",
     "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET": "Failed to restore backup contents into the target instance",
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "Some restore conflicts are still unresolved. Finish choosing a resolution for each conflict first.",
@@ -1044,24 +1044,24 @@
     "ERR_AUTH_DEVICE_PROVISION": "Device authorization failed. Check your connection and try again.",
     "ERR_AUTH_ACCOUNT_CHANGED": "The Microsoft account has changed. Refresh your account using the launcher avatar, then retry.",
     "ERR_AUTH_INTERACTION_REQUIRED": "Sign in to the Microsoft account that owns this game using the launcher avatar, then retry.",
-    "ERR_LICENSE_NOT_ENTITLED": "This account does not have an entitlement for this version.",
+    "ERR_LICENSE_NOT_ENTITLED": "This account does not own this version.",
     "ERR_LICENSE_FULL_REQUIRED": "Microsoft returned only a trial license. Select an account that owns the game using the launcher avatar and retry.",
     "ERR_LICENSE_HTTP": "Could not obtain a Microsoft content license. Check your connection and try again.",
-    "ERR_LICENSE_MISSING_KEY": "The content license does not contain the key required by this package.",
+    "ERR_LICENSE_MISSING_KEY": "The license from Microsoft does not cover this package.",
     "ERR_LICENSE_UNSUPPORTED": "Microsoft returned an unsupported license type.",
     "ERR_MSIXVC_UNSUPPORTED_FORMAT": "Unsupported package format. Use a complete Windows x64 package.",
     "ERR_NATIVE_MSIXVC": "Package validation or extraction failed.",
-    "ERR_TARGET_EXISTS": "The target version directory already exists. Choose a different name.",
-    "ERR_INVALID_FOLDER_NAME": "Invalid version folder name.",
+    "ERR_TARGET_EXISTS": "An instance folder with this name already exists. Choose a different name.",
+    "ERR_INVALID_FOLDER_NAME": "Invalid instance folder name.",
     "ERR_CANCELED": "Operation canceled.",
     "ERR_AUTH_ACCOUNT_SELECTION": "The selected Microsoft account could not be restored. Check the current Windows user and access to the account preference file.",
     "ERR_UWP_NOT_SPECIFIED": "Choose a UWP installer or download this version first.",
     "ERR_INSTANCE_BACKUP_PACKAGE_TYPE_MISMATCH": "The backup and target instance use incompatible package types. Choose an instance with the same package type.",
-    "ERR_UWP_UNSUPPORTED_FEATURE": "This GDK feature is unavailable for UWP instances.",
+    "ERR_UWP_UNSUPPORTED_FEATURE": "This feature is unavailable for Microsoft Store (UWP) instances.",
     "ERR_UWP_INVALID_VERSION": "The UWP version information is invalid. Refresh the version list and retry.",
     "ERR_UWP_DOWNLOAD_URL": "Unable to obtain a UWP download URL from Windows Update. Check your connection and retry.",
     "ERR_UWP_QUERY": "Unable to read Windows app registrations. Review the error details and retry.",
-    "ERR_UWP_DEPENDENCY": "A UWP framework dependency required by the package manifest is missing. Install the matching architecture and version of dependencies such as Microsoft.VCLibs, then retry. The desktop Visual C++ runtime does not replace UWP framework packages.",
+    "ERR_UWP_DEPENDENCY": "A Windows framework package required by this installer is missing. Install the matching version of dependencies such as Microsoft.VCLibs for your system, then try again. The desktop Visual C++ runtime is a different component and does not replace it.",
     "ERR_UWP_SYSTEM_VERSION": "This UWP package requires a newer Windows version. Update Windows or choose a compatible game version.",
     "ERR_UWP_DEVELOPER_MODE": "Windows blocked development package registration. Enable Developer Mode in Windows Settings and retry.",
     "ERR_UWP_PACKAGE_CONFLICT": "A conflicting Minecraft app registration already exists. The launcher preserves Store and externally installed registrations. Back up your game content, resolve the conflict through Windows Settings, then retry.",
@@ -1075,13 +1075,13 @@
     "ERR_UWP_ARCHIVE": "The UWP archive is damaged or exceeds extraction limits. Download a complete installer again.",
     "ERR_UWP_INSTALL": "UWP installation failed. Review the error details and retry.",
     "ERR_UWP_NOT_MINECRAFT": "The application identity or publisher does not match a supported Minecraft UWP package.",
-    "ERR_UWP_PACKAGE_NOT_FOUND": "The UWP installer was not found. Refresh the version status or download it again.",
+    "ERR_UWP_PACKAGE_NOT_FOUND": "The UWP installer was not found. Refresh the version list or download it again.",
     "ERR_UWP_PACKAGE_NOT_SPECIFIED": "Choose a UWP installer or download this version first.",
     "ERR_UWP_CHANNEL": "The UWP package does not match the selected channel. Choose the matching channel or import the local installer again.",
-    "ERR_UWP_RESOURCE_BUNDLE": "UWP bundles containing separate resource packages are not supported. Choose a standalone Appx or a bundle without resource subpackages.",
+    "ERR_UWP_RESOURCE_BUNDLE": "This installer bundles separate resource packages, which are not supported. Choose a standalone installer instead.",
     "ERR_UWP_INTEGRITY": "The installer failed its integrity check. Download it again.",
-    "ERR_UWP_NOT_REGISTERED": "This UWP instance is not registered with Windows. Select Register first, then launch it after registration succeeds.",
-    "ERR_UWP_PREPARE": "Unable to prepare UWP development package registration. Check the instance folder permissions and signature backup, then retry."
+    "ERR_UWP_NOT_REGISTERED": "This instance is not registered with Windows. Select Register first, then launch it once registration succeeds.",
+    "ERR_UWP_PREPARE": "Could not prepare this instance for registration with Windows. Check the instance folder permissions, then try again."
   },
   "filemanager": {
     "sort": {
@@ -1105,7 +1105,7 @@
   },
   "mods": {
     "import_button": "Import .zip/.dll",
-    "importing_title": "Importing...",
+    "importing_title": "Importing…",
     "importing_body": "Please wait while processing selected files.",
     "summary_title_done": "Import Completed",
     "summary_title_partial": "Import Completed (Partial Failures)",
@@ -1118,32 +1118,32 @@
     "field_entry": "Entry",
     "field_author": "Author",
     "confirm_delete_body": "Are you sure you want to delete this {{type}}? This action cannot be undone.",
-    "dll_modal_title": "Import DLL Plugin",
-    "dll_name": "Plugin Name",
+    "dll_modal_title": "Import DLL Mod",
+    "dll_name": "Mod Name",
     "dll_type": "Type",
     "dll_version": "Version",
-    "err_invalid_name": "Invalid version or module name",
-    "err_access_versions_dir": "Cannot access versions directory",
+    "err_invalid_name": "Invalid instance or mod name",
+    "err_access_versions_dir": "Cannot access the instances folder",
     "err_create_target_dir": "Failed to create target directory",
     "err_open_zip": "Cannot open ZIP file",
-    "err_manifest_not_found": "manifest.json not found",
-    "err_invalid_manifest": "manifest.json is invalid or missing required fields",
+    "err_manifest_not_found": "This archive has no manifest.json, so it is not a valid mod package",
+    "err_invalid_manifest": "The manifest.json in this archive is invalid or missing required fields",
     "err_manifest_entry_not_found": "The entry file declared by manifest.json was not found",
-    "err_invalid_package": "Invalid package structure",
-    "err_duplicate_folder": "Module folder with same name exists",
-    "err_read_zip_entry": "Failed to read ZIP entry",
+    "err_invalid_package": "This archive is not a valid mod package",
+    "err_duplicate_folder": "A mod folder with this name already exists",
+    "err_read_zip_entry": "Could not read a file inside the archive",
     "err_write_file": "Failed to write file",
     "err_unknown": "Unknown error",
     "overwrite_modal_title": "Duplicate Detected",
-    "overwrite_modal_body": "A module folder with the same name exists. Overwrite (update)?",
+    "overwrite_modal_body": "A mod with this name is already installed. Overwrite it?",
     "toggle_label": "Enable Mod",
     "toggle_on": "Enabled",
     "toggle_off": "Disabled",
     "toggle_desc_on": "Mod is enabled and will load when the game starts.",
     "toggle_desc_off": "Mod is disabled and will not load when the game starts.",
     "only_enabled": "Only show enabled mods",
-    "drop_hint": "Drop .zip or .dll to import mods/plugins",
-    "err_lip_install_failed_suggestion": "Installation failed, please try reinstalling Minecraft",
+    "drop_hint": "Drop .zip or .dll files here to import mods",
+    "err_lip_install_failed_suggestion": "Installation failed. Check that the instance and LeviLamina are installed correctly, then try again.",
     "rc_warning": {
       "title": "Experimental Version Warning",
       "body_1": "The LeviLamina version ({{version}}) you are about to install is a Release Candidate (RC).",
@@ -1152,17 +1152,17 @@
     },
     "action_update": "Update",
     "action_uninstall": "Uninstall",
-    "action_promote_install": "Promote to Explicit Install",
-    "action_promote_install_success": "{{name}} has been promoted to explicit install",
-    "action_promote_install_failed_no_version": "No installed version found for this package",
+    "action_promote_install": "Mark as manually installed",
+    "action_promote_install_success": "{{name}} is now marked as manually installed and will not be removed automatically",
+    "action_promote_install_failed_no_version": "No installed version was found for this package",
     "batch_update_title": "Batch Update Mods",
-    "batch_update_body": "Selected {{selected}} mods. {{updatable}} mod(s) can be updated from lip. Continue?",
+    "batch_update_body": "{{selected}} mods selected, {{updatable}} of which can be updated. Continue?",
     "batch_uninstall_title": "Batch Uninstall Mods",
     "batch_uninstall_body": "You are about to uninstall {{count}} mod(s). Continue?",
     "update_available": "Update to {{version}}",
     "update_latest": "Already latest",
-    "no_update_source": "No lip update source",
-    "err_ll_managed_in_version_settings": "LeviLamina can only be managed in Version Settings",
+    "no_update_source": "No update source",
+    "err_ll_managed_in_version_settings": "LeviLamina can only be managed in Instance Settings",
     "action_result_title_done": "Operation Completed",
     "action_result_title_partial": "Operation Completed (Partial Failures)",
     "action_result_title_failed": "Operation Failed",
@@ -1171,13 +1171,13 @@
     "tab_lip": "lip Mods",
     "lip_children_summary": "Includes: {{children}} (+{{count}})",
     "lip_open_package": "Open Package",
-    "lip_sync_loading": "Local mods are ready. Completing lip information...",
-    "lip_sync_error": "lip information is temporarily unavailable. Showing local mods only.",
+    "lip_sync_loading": "Local mods are ready. Loading online details…",
+    "lip_sync_error": "Online details are temporarily unavailable. Showing local mods only.",
     "overwrite_and_import": "Overwrite and import"
   },
   "terms": {
     "title": "LeviLauncher License Agreement",
-    "body": "Welcome to LeviLauncher\n\nBy using this software, you agree that:\n• This is an unofficial Minecraft launcher\n• You must own a legally licensed copy of Minecraft, otherwise the trial mode will be used automatically\n• Any form of piracy or cheating is prohibited\n• Use of mods/resource packs is at your own risk\n• No affiliation with Mojang/Microsoft\n\nContinuing to use indicates acceptance of the terms",
+    "body": "Welcome to LeviLauncher\n\nBy using this software, you agree that:\n• This is an unofficial Minecraft launcher\n• You must own a legally licensed copy of Minecraft; otherwise the game runs in trial mode\n• Any form of piracy or cheating is prohibited\n• Use of mods and resource packs is at your own risk\n• LeviLauncher is not affiliated with Mojang or Microsoft\n\nContinuing to use this software indicates acceptance of these terms",
     "agree": "Agree and Continue",
     "decline": "Decline and Exit"
   },
@@ -1186,13 +1186,13 @@
   },
   "curseforge": {
     "title": "CurseForge",
-    "search_placeholder": "Search game resources...",
+    "search_placeholder": "Search game resources…",
     "search": "Search",
     "minecraft_version": "Minecraft Version",
     "select_version": "Select version",
     "all_versions": "All Versions",
-    "load_error": "Failed to load data, please retry",
-    "search_error": "Search failed, please retry",
+    "load_error": "Could not load data. Please try again.",
+    "search_error": "Search failed. Please try again.",
     "class": "Class",
     "select_class": "Select class",
     "all_classes": "All classes",
@@ -1217,7 +1217,7 @@
     "website": "Website",
     "source": "Source",
     "issues": "Issues",
-    "no_download_url": "No download URL available",
+    "no_download_url": "No download link available",
     "no_files_found": "No files found",
     "sort": {
       "featured": "Featured",
@@ -1233,7 +1233,7 @@
       "importing_title": "Importing Content",
       "success_title": "Success",
       "error_title": "Error",
-      "downloading_body": "Downloading file...",
+      "downloading_body": "Downloading file…",
       "select_version_body": "Please select the game instance to import to:",
       "local_installation": "Local Instance",
       "select_version_placeholder": "Select an instance",
@@ -1241,7 +1241,7 @@
       "select_player_body": "This content requires selecting a player:",
       "player_label": "Player",
       "select_player_placeholder": "Select a player",
-      "importing_body": "Importing content...",
+      "importing_body": "Importing content…",
       "success_msg": "Import Successful",
       "success_desc": "The content has been successfully imported to the selected instance.",
       "failed_msg": "Import Failed",
@@ -1249,7 +1249,7 @@
       "close": "Close"
     },
     "mod_details_aria_label": "Mod Details",
-    "loading_description": "Loading description...",
+    "loading_description": "Loading description…",
     "mod_tabs": {
       "description": "Description",
       "files": "Files"
@@ -1268,7 +1268,7 @@
     }
   },
   "lip": {
-    "search_placeholder": "Search packages...",
+    "search_placeholder": "Search packages…",
     "sort_by": "Sort by",
     "select_sort": "Select sort",
     "order_by": "Order",
@@ -1280,13 +1280,13 @@
     "game_version_label": "Game version",
     "game_version_placeholder": "Select game version",
     "game_all_versions": "All game versions",
-    "mapping_unavailable_hint": "LeviLamina game version mapping is unavailable. Version-related filters have been disabled to avoid incorrect matches.",
+    "mapping_unavailable_hint": "Game version compatibility information is unavailable, so version filters are turned off to avoid incorrect matches.",
     "files": {
       "game_versions_unknown": "No matching game version",
       "version_count": "{{count}} versions",
       "game_versions_label": "Game Versions",
       "game_versions_unrestricted": "No game version restriction",
-      "game_versions_unavailable": "Game version mapping unavailable",
+      "game_versions_unavailable": "Compatibility unknown",
       "dependencies_count": "{{count}} dependencies",
       "install": "Install",
       "upgrade": "Upgrade",
@@ -1297,12 +1297,12 @@
       "select_instance_title": "Select Target Instance",
       "installing_version_label": "Installing package version",
       "variant_label": "Variant",
-      "variant_hint_keep_default": "Usually no change needed",
+      "variant_hint_keep_default": "Most packages have only one variant. Keep the default unless the author says otherwise.",
       "variant_placeholder": "Select a variant",
       "variant_default": "default",
       "select_version_incompatible_hint": "Version {{version}} is not compatible with game version {{gameVersion}}.",
-      "checking_ll_state": "Checking LeviLamina status...",
-      "mapping_unavailable_blocked_hint": "LeviLamina-to-game-version mapping is unavailable, so this installation has been blocked to avoid installing the wrong package.",
+      "checking_ll_state": "Checking LeviLamina status…",
+      "mapping_unavailable_blocked_hint": "Compatibility information for LeviLamina and this game version is unavailable, so installation is blocked to avoid installing the wrong package.",
       "ll_missing_redirect_hint": "LeviLamina is not installed for this instance. Clicking Go to Loader will open the Loader tab in Instance Settings so you can install it manually first.",
       "ll_missing_redirect_to_loader": "LeviLamina is not installed. Redirecting to the Loader tab in Instance Settings.",
       "ll_installed_incompatible_hint": "Installed LeviLamina version {{installedVersion}} is incompatible with this package. Please adjust LeviLamina manually first.",
@@ -1314,7 +1314,7 @@
       "downgrade_success": "Downgrade completed successfully",
       "reinstall_success": "Reinstallation completed successfully",
       "current_installed_version_label": "Current installed version",
-      "checking_current_installed_version": "Checking currently installed version..."
+      "checking_current_installed_version": "Checking currently installed version…"
     },
     "guide": {
       "open_button": "Developer Guide",
@@ -1326,7 +1326,7 @@
       "close_button": "Close"
     },
     "guard": {
-      "title": "lipd is not installed",
+      "title": "lip is not installed",
       "description": "lipd is not installed yet. To continue using lip-related pages or install LeviLamina, go to Settings > Third-party Components and install it first."
     },
     "title": "Bedrinth",
@@ -1336,10 +1336,10 @@
       "name": "Name"
     },
     "order_options": {
-      "desc": "Desc",
-      "asc": "Asc"
+      "desc": "Descending",
+      "asc": "Ascending"
     },
-    "by_author_inline": "| By {{author}}",
+    "by_author_inline": "By {{author}}",
     "package_details_aria_label": "Package Details",
     "task_console": {
       "title_install": "Installing",
@@ -1356,12 +1356,12 @@
       "progress_label": "Progress",
       "log_title": "Log Output",
       "no_output": "No output yet",
-      "waiting_start": "Waiting for lipd output...",
+      "waiting_start": "Waiting for the package manager…",
       "copy_logs": "Copy Logs",
       "copy_success": "Logs copied",
       "close": "Close",
       "stage_install_pkg": "Installing target package",
-      "stage_fallback_delete": "Package uninstall unavailable, fallback to directory delete"
+      "stage_fallback_delete": "Package uninstall is unavailable; removing the folder instead"
     },
     "package": {
       "confirm_install_title": "Confirm Installation",
@@ -1369,7 +1369,7 @@
     }
   },
   "server": {
-    "offline": "Offline / Can't connect",
+    "offline": "Offline or unreachable",
     "players": "Online Players",
     "delay": "Latency",
     "online": "Online",
@@ -1377,21 +1377,21 @@
   },
   "installpage": {
     "error": {
-      "dll_dependency_missing": "VC++ Runtime missing",
+      "dll_dependency_missing": "Visual C++ Runtime missing",
       "name_required": "Name is required",
       "msixvc_not_specified": "Installer package not specified",
-      "lip_not_installed": "lip is not installed. Go to Settings > Components to install or update it manually.",
+      "lip_not_installed": "lip is not installed. Go to Settings > Third-party Components to install or update it.",
       "unknown": "Unknown error",
       "nh_err_unknown": "Unknown error",
-      "nh_err_exception": "Uncaught exception or unclassifiable error",
-      "nh_err_invalid_params": "Invalid parameters",
+      "nh_err_exception": "The installer stopped unexpectedly. Please try again.",
+      "nh_err_invalid_params": "The installer received invalid settings. Please try again.",
       "nh_err_key_not_found": "Game installer package validation failed. Please delete the installer and retry.",
       "nh_err_unauthorized_caller": "Please make sure the launcher exe name has not been changed (LeviLauncher.exe)",
-      "nh_err_pipe_open_failed": "Progress pipe open failed",
-      "nh_err_input_not_found": "Input file not found",
-      "nh_err_output_dir_invalid": "Output directory invalid",
-      "nh_err_parse_failed": "Package parsing failed",
-      "nh_err_extract_failed": "Decompression failed"
+      "nh_err_pipe_open_failed": "Could not track installation progress. Please try again.",
+      "nh_err_input_not_found": "The installer file was not found. Download it again.",
+      "nh_err_output_dir_invalid": "The install location cannot be used. Choose another folder.",
+      "nh_err_parse_failed": "The installer file could not be read. Download it again.",
+      "nh_err_extract_failed": "The installer file could not be extracted. Download it again."
     }
   },
   "clarity": {
@@ -1453,7 +1453,7 @@
       "detail_load_failed": "Could not load this project. Check your connection and try again.",
       "description_load_failed": "Could not load the description. The project and files are still available.",
       "files_load_failed": "Could not load the files. Please try again.",
-      "catalog_load_failed": "The package catalog could not be loaded. Please retry the connection.",
+      "catalog_load_failed": "Could not load the package list. Check your connection and try again.",
       "install_file": "Install {{name}}",
       "path_save_success": "Storage path saved",
       "path_reset_success": "Default storage path restored",
@@ -1532,7 +1532,7 @@
       "discard_leave": "Discard and leave",
       "start_using": "Start using LeviLauncher",
       "root_load_failed": "The current content folder could not be verified. Retry, or choose a writable folder and apply it before continuing.",
-      "content_load_failed": "Content could not be loaded. Its contents cannot be confirmed yet. Please retry.",
+      "content_load_failed": "Could not load this content. Please try again.",
       "worlds_partial": "Information for {{count}} worlds could not be read. These folders are missing from the list:",
       "choose_player": "Select a player first. If none are available, create or sign in to a player profile in the game.",
       "appearance_theme": "Theme and colors",
@@ -1560,11 +1560,11 @@
     "local_installer": "Choose a local installer",
     "package_type": "Game package type",
     "beta": "Beta",
-    "install_description": "Install a UWP game package. These instances launch through Windows app registration and share content within the same app channel. GDK data isolation and LeviLamina are unavailable.",
-    "launch_options_unavailable": "UWP launches through Windows app activation. GDK data isolation, console, launch arguments and environment variables are unavailable.",
-    "loader_unavailable": "The current LeviLamina loader supports GDK game packages only.",
-    "editor_unavailable": "The launcher editor mode is unavailable for UWP instances.",
-    "shared_content": "UWP content is shared by versions in the same app channel",
+    "install_description": "Install a Microsoft Store (UWP) game package. These instances launch through Windows app registration and share content with other instances on the same app channel. Data isolation and LeviLamina are not available.",
+    "launch_options_unavailable": "UWP instances launch through Windows app activation, so data isolation, the console, launch arguments, and environment variables are not available.",
+    "loader_unavailable": "LeviLamina is only available for desktop (GDK) game packages.",
+    "editor_unavailable": "Editor mode is not available for Microsoft Store (UWP) instances.",
+    "shared_content": "UWP content is shared by all instances on the same app channel",
     "open_content_dir": "Open UWP content folder",
     "not_specified": "Choose a UWP installer or download this version first.",
     "resolving_download": "Resolving…"

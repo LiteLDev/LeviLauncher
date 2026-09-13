@@ -8,7 +8,13 @@
     "about": "關於",
     "back": "返回",
     "forward": "前進",
-    "breadcrumb": "麵包屑導覽"
+    "breadcrumb": "麵包屑導覽",
+    "home": "首頁",
+    "local_install": "本機安裝",
+    "mods": "模組",
+    "mod_details": "模組詳情",
+    "package_details": "套件詳情",
+    "updating": "啟動器更新"
   },
   "theme": {
     "toggle": "切換主題"
@@ -18,7 +24,7 @@
     "content_manage": "內容管理",
     "go_version_settings": "實例設定",
     "manage_versions": "實例列表",
-    "search_versions": "搜尋實例或名稱",
+    "search_versions": "搜尋實例名稱或遊戲版本",
     "open_exe_dir": "開啟遊戲安裝目錄",
     "register_system_button": "註冊到系統",
     "registered_tip": "已註冊",
@@ -30,7 +36,7 @@
       },
       "success": {
         "title": "註冊完成",
-        "body": "已成功註冊到系統，您可以透過系統應用程式列表啟動。"
+        "body": "已成功註冊到系統，你可以透過系統應用程式列表啟動。"
       },
       "failed": {
         "title": "註冊失敗",
@@ -45,13 +51,13 @@
       },
       "confirm": {
         "title": "確認刪除",
-        "content": "您確定要刪除此實例嗎？此操作無法復原。"
+        "content": "你確定要刪除此實例嗎？此操作無法復原。"
       }
     },
     "launch": {
       "failed": {
         "title": "啟動錯誤",
-        "content": "請檢查實例檔案與依賴環境是否完整，並確認沒有安裝不相容的模組、資源包或行為包後重試。",
+        "content": "請檢查實例檔案與所需執行庫是否完整，並移除不相容的模組、附加包或資源包後重試。",
         "close_button": "關閉"
       },
       "force_run_button": "強制啟動"
@@ -59,13 +65,13 @@
     "currentVersion": "目前實例",
     "vcruntime": {
       "completing": {
-        "title": "正在補全缺失的 DLL",
-        "body": "正在下載並補全 vcruntime140_1.dll，請稍候…"
+        "title": "正在修復遊戲檔案",
+        "body": "正在下載缺少的執行庫檔案，請稍候…"
       },
       "installing": {
         "title": "正在安裝 Visual C++ 運行庫",
         "body": "正在下載並安裝 Microsoft Visual C++ 運行庫，請稍候…",
-        "preparing": "正在準備下載..."
+        "preparing": "正在準備下載…"
       },
       "missing": {
         "title": "缺少 Visual C++ 運行庫",
@@ -74,9 +80,9 @@
       }
     },
     "loader_migration": {
-      "title": "正在遷移載入器",
-      "body": "正在將已安裝的版本適配到新的 LeviLauncher 載入器（移除舊的 vcruntime140_1.dll 並更新遊戲匯入表）。此操作只會執行一次，請稍候…",
-      "preparing": "正在準備遷移…"
+      "title": "正在更新載入器",
+      "body": "正在將已安裝的實例適配至新版 LeviLauncher 載入器。此操作只會執行一次，請稍候…",
+      "preparing": "正在準備更新…"
     },
     "mclaunch": {
       "loading": {
@@ -95,7 +101,7 @@
       "installing": {
         "title": "正在安裝 GameInput",
         "body": "正在下載並啟動安裝程式，請根據系統提示完成安裝。",
-        "preparing": "正在準備下載..."
+        "preparing": "正在準備下載…"
       },
       "missing": {
         "title": "缺少 GameInput 元件",
@@ -106,14 +112,14 @@
     "gs": {
       "missing": {
         "title": "缺少 Microsoft Gaming Services",
-        "body": "未偵測到 Microsoft Gaming Services。此元件是 Minecraft 執行所必需的依賴項。",
+        "body": "未偵測到 Microsoft Gaming Services。執行 Minecraft 需要此元件。",
         "open_store": "開啟商店進行安裝",
         "ignore_forever": "忽略並不再提醒"
       }
     },
     "install_confirm": {
       "title": "是否已完成安裝？",
-      "body": "安裝完成後請點擊「已完成，重新偵測」。如果尚未完成，請繼續安裝。",
+      "body": "安裝程式完成後請選擇「已完成，重新偵測」。如果仍在進行，請繼續安裝。",
       "continue": "繼續安裝",
       "done_and_check": "已完成，重新偵測"
     },
@@ -123,11 +129,11 @@
       "unknown": "未知"
     },
     "tip": {
-      "version_selector": "使用版本下拉選單可快速切換目前實例。",
+      "version_selector": "使用實例下拉選單可快速切換目前實例。",
       "version_search": "在下拉清單中選擇前，可先依實例名稱或遊戲版本搜尋。",
-      "manage_versions": "點擊下拉面板裡的「實例列表」，即可安裝、匯入或整理實例。",
+      "manage_versions": "選擇下拉面板中的「實例列表」，即可安裝、匯入或整理實例。",
       "quick_actions_menu": "啟動按鈕旁的選單提供實例設定、桌面捷徑、遊戲目錄和系統註冊等操作。",
-      "launch_dependencies": "若缺少 GameInput、VC++ Runtime 或 Gaming Services，LeviLauncher 會在啟動前引導你完成安裝。",
+      "launch_dependencies": "若缺少 GameInput、Visual C++ 執行庫或 Gaming Services，LeviLauncher 會在啟動前引導你完成安裝。",
       "mods_card": "Mods 卡片會顯示目前實例已啟用的模組，並可一鍵進入完整 Mods 頁面。",
       "content_counts_card": "內容管理卡片會顯示世界、資源包和行為包數量，點擊對應列可直接進入頁面。",
       "incompatible_resource_packs": "偵測到不相容資源包時，可點擊警告列直接查看需要處理的項目。",
@@ -138,7 +144,29 @@
       "open_source": "LeviLauncher 是開源專案；遇到啟動器問題或有改進建議時，可前往 GitHub 提交回饋。",
       "backup_worlds": "在嘗試新的資源包、行為包或模組前，建議先備份重要世界。"
     },
-    "edition": "Bedrock Edition"
+    "edition": "基岩版"
+  },
+  "moddedcard": {
+    "title": "模組",
+    "content": {
+      "none": "尚未安裝模組"
+    },
+    "manage": "管理模組"
+  },
+  "download_manager": {
+    "install_prompt": {
+      "title": "下載完成",
+      "description": "「{{name}}」已下載完成，是否立即安裝？",
+      "confirm": "立即安裝",
+      "later": "稍後再說"
+    },
+    "title": "下載管理",
+    "description": "檢視和管理目前的下載任務",
+    "no_downloads": "目前沒有活動的下載任務",
+    "unknown_file": "未知檔案",
+    "actions": {
+      "retry": "重試"
+    }
   },
   "updating": {
     "title": "正在更新 LeviLauncher",
@@ -157,34 +185,12 @@
     "errors": {
       "generic": "更新時發生未知錯誤，請稍後重試。",
       "update_admin_required": "繼續更新需要管理員權限。",
-      "update_asset_missing": "所需的更新包缺失或命名不符合要求。",
-      "update_release_unavailable": "暫時無法取得更新中繼資料。",
+      "update_asset_missing": "更新套件缺失或名稱不符預期。",
+      "update_release_unavailable": "暫時無法取得更新資訊，請稍後再試。",
       "update_verify_failed": "更新包校驗失敗。",
       "update_download_failed": "下載更新包失敗。",
       "update_install_failed": "安裝更新包失敗。",
       "update_restart_failed": "更新完成後未能自動重新啟動啟動器。"
-    }
-  },
-  "moddedcard": {
-    "title": "模組",
-    "content": {
-      "none": "未找到模組"
-    },
-    "manage": "管理模組"
-  },
-  "download_manager": {
-    "install_prompt": {
-      "title": "下載完成",
-      "description": "「{{name}}」已下載完成，是否立即安裝？",
-      "confirm": "立即安裝",
-      "later": "稍後再說"
-    },
-    "title": "下載管理",
-    "description": "檢視和管理目前的下載任務",
-    "no_downloads": "目前沒有活動的下載任務",
-    "unknown_file": "未知檔案",
-    "actions": {
-      "retry": "重試"
     }
   },
   "downloadpage": {
@@ -223,7 +229,7 @@
       "status_not_downloaded": "未下載",
       "loader": "載入器",
       "input": {
-        "placeholder": "按版本搜尋..."
+        "placeholder": "按版本搜尋…"
       }
     },
     "actions": {
@@ -237,17 +243,18 @@
       "name_label": "實例名稱",
       "placeholder_name": "請輸入實例名稱",
       "enable_isolation": "實例隔離",
-      "enable_isolation_desc": "將遊戲資料（如世界、設定、快取等）重新導向至 versions/【名稱】/ 目錄下，而非存放於 AppData 中。",
+      "enable_isolation_desc": "將此實例的遊戲資料（世界、設定、快取等）儲存在實例自己的目錄中，而不是與系統中的其他 Minecraft 共用。",
       "inherit_label": "繼承來源",
-      "inherit_hint": "從已隔離實例複製資料，類型需與目前一致",
+      "inherit_hint": "從同類型的其他隔離實例複製資料",
       "inherit_none": "不繼承",
-      "inherit_gdk": "從 GDK 目錄繼承"
+      "inherit_gdk": "從共用的遊戲資料繼承"
     },
     "mirror": {
+      "no_recommended": "暫無推薦鏡像",
+      "download_started": "下載已開始…",
       "title": "選擇下載鏡像",
       "target": "下載目標",
       "testing": "測速中…",
-      "no_recommended": "暫無推薦鏡像",
       "unselected": "未選擇",
       "copy_link": "複製連結",
       "recommended": "推薦鏡像",
@@ -256,10 +263,9 @@
       "no_mirrors": "目前版本無可用鏡像。",
       "filename_fallback": "(檔案)",
       "retest": "重新測速",
-      "download_selected": "下載所選鏡像",
-      "download_started": "下載已開始...",
+      "download_selected": "以所選鏡像下載",
       "install_button": "安裝",
-      "install_selected": "安裝所選鏡像"
+      "install_selected": "以所選鏡像安裝"
     },
     "progress": {
       "unknown_error": "未知錯誤"
@@ -268,7 +274,7 @@
       "success_body": "檔案已下載："
     },
     "delete": {
-      "title": "確認刪除下載包",
+      "title": "確認刪除安裝包",
       "body": "將刪除安裝包：",
       "warning": "此操作不可復原。",
       "success_body": "已刪除安裝包："
@@ -280,14 +286,14 @@
       "ll_version_label": "LeviLamina 版本",
       "ll_version_placeholder": "請選擇 LeviLamina 版本",
       "hint": "請稍候，此過程可能需要較長時間…",
-      "estimated_size": "已寫入大小（估算）",
+      "estimated_size": "安裝容量（估算）",
       "target": "安裝目標",
       "success_title": "安裝完成",
       "success": "版本已成功安裝",
       "progress": "安裝進度",
       "custom_installer": {
         "label": "選擇本機安裝包 (.msixvc)",
-        "hint": "預設使用安裝器目錄下已下載的檔案"
+        "hint": "預設使用安裝包目錄中已下載的檔案"
       },
       "levilamina_unsupported": "此遊戲版本不支援 LeviLamina",
       "title": "安裝"
@@ -309,6 +315,15 @@
       }
     }
   },
+  "onboarding": {
+    "title": "首次啟動引導",
+    "subtitle": "請先設定內容路徑與語言",
+    "unsaved": {
+      "title": "未儲存修改",
+      "body": "你更改了內容路徑但尚未儲存。是否儲存後完成引導？",
+      "save": "儲存並完成"
+    }
+  },
   "settings": {
     "layout": {
       "title_navbar": "使用頂部導航欄",
@@ -325,7 +340,7 @@
     },
     "unsaved": {
       "title": "未儲存修改",
-      "body": "您更改了內容路徑但尚未儲存。是否儲存後離開？",
+      "body": "你更改了內容路徑但尚未儲存。是否儲存後離開？",
       "cancel": "取消",
       "save": "儲存並離開"
     },
@@ -334,7 +349,7 @@
     },
     "discord_rpc": {
       "title": "Discord 遊戲狀態",
-      "desc": "在 Discord 上顯示您的遊戲狀態"
+      "desc": "在 Discord 上顯示你的遊戲狀態"
     },
     "beta_updates": {
       "title": "接收測試版更新",
@@ -348,9 +363,9 @@
         "desc": "開啟後可在實例設定中使用備份與還原功能；此能力仍處於實驗階段。",
         "warning": {
           "title": "確認啟用實例備份實驗性功能",
-          "body_1": "此功能目前僅面向開發與測試人員開放，不建議普通使用者在正式資料環境中使用。",
+          "body_1": "此功能面向開發與測試人員，請勿用於你無法承受遺失的資料。",
           "body_2": "實例備份的格式、包含範圍與還原相容性後續都可能改變，現階段不保證未來版本持續相容。",
-          "body_3": "請確認你已理解相關風險，並在完整閱讀 10 秒後再決定是否啟用。",
+          "body_3": "請完整閱讀以上說明。確認按鈕將在 10 秒後可用。",
           "confirm": "我已知悉風險並啟用"
         }
       }
@@ -366,21 +381,21 @@
       "install_button": "安裝",
       "check_button": "檢查",
       "cache_clean_button": "清理快取",
-      "cache_cleaning": "正在清理快取...",
+      "cache_cleaning": "正在清理快取…",
       "cache_clean_success": "lip 快取清理完成",
-      "installing": "正在安裝 lip...",
+      "installing": "正在安裝 lip…",
       "latest_label": "最新",
       "outdated_label": "可更新",
       "missing_label": "缺失",
       "status": {
-        "checking": "正在檢查 lip 狀態...",
-        "checking_runtime": "正在檢查 .NET 10 執行階段...",
-        "preparing": "正在準備下載...",
-        "installing_runtime": "正在安裝 .NET 10 執行階段...",
-        "downloading": "正在下載 lip 壓縮檔...",
-        "extracting": "正在解壓 lipd.exe...",
-        "writing": "正在寫入 lipd.exe...",
-        "verifying": "正在驗證安裝...",
+        "checking": "正在檢查 lip 狀態…",
+        "checking_runtime": "正在檢查 .NET 10 執行環境…",
+        "preparing": "正在準備下載…",
+        "installing_runtime": "正在安裝 .NET 10 執行環境…",
+        "downloading": "正在下載 lip 壓縮檔…",
+        "extracting": "正在解壓 lipd.exe…",
+        "writing": "正在寫入 lipd.exe…",
+        "verifying": "正在驗證安裝…",
         "up_to_date": "目前版本已是最新",
         "outdated": "發現新版本，可前往設定更新",
         "missing": "尚未安裝 lip",
@@ -390,9 +405,9 @@
       "error": {
         "lip_fetch_release": "取得 lip 套件中繼資料失敗",
         "lip_release_asset_not_found": "最新 lip 中繼資料中未找到 Windows x64 安裝包",
-        "lip_download_dotnet_installer": "下載 .NET 10 安裝腳本失敗",
-        "lip_install_dotnet_runtime": "安裝 .NET 10 執行階段失敗",
-        "lip_verify_dotnet_runtime": "驗證 .NET 10 執行階段失敗",
+        "lip_download_dotnet_installer": "下載 .NET 10 安裝指令碼失敗",
+        "lip_install_dotnet_runtime": "安裝 .NET 10 執行環境失敗",
+        "lip_verify_dotnet_runtime": "驗證 .NET 10 執行環境失敗",
         "lip_download_archive": "下載 lip .tgz 壓縮檔失敗",
         "lip_open_archive": "打開 lip .tgz 壓縮檔失敗",
         "lip_extract_binary": "提取 win32-x64/lipd.exe 失敗",
@@ -404,7 +419,7 @@
       "version_label": "目前版本：{{currentVersion}} / 最新版本：{{latestVersion}}",
       "startup_prompt": {
         "title": "發現 lip 更新",
-        "description": "偵測到 lip 有新版本（{{currentVersion}} -> {{latestVersion}}）。LeviLauncher 不會自動更新，請前往「設定 > 組件」手動更新。",
+        "description": "偵測到 lip 有新版本（{{currentVersion}} -> {{latestVersion}}）。LeviLauncher 不會自動更新，請前往「設定 > 第三方元件」手動更新。",
         "later_button": "稍後",
         "ignore_button": "忽略此版本",
         "open_settings_button": "前往設定",
@@ -441,6 +456,14 @@
         "button": "更改"
       }
     },
+    "process": {
+      "title": "進程管理",
+      "desc": "管理執行中的 Minecraft 進程",
+      "scan": "掃描進程",
+      "kill_all": "結束所有進程",
+      "kill": "結束",
+      "no_process": "未發現執行中的 Minecraft 進程"
+    },
     "modal": {
       "2": {
         "footer": {
@@ -449,7 +472,7 @@
       }
     },
     "appearance": {
-      "mode_config": "模式特定配置",
+      "mode_config": "按模式分別設定",
       "edit_mode_desc": "個性化設置（顏色、透明度等）將按日間/夜間模式獨立保存。切換右側標籤頁以配置不同模式。",
       "theme_mode": "外觀模式",
       "theme_mode_desc": "選擇應用的主題模式",
@@ -470,6 +493,17 @@
       "custom_color": "自定義顏色",
       "background_image": "背景圖片",
       "background_image_desc": "為當前模式設置個性化背景",
+      "background_play_order": "播放順序",
+      "background_play_random": "亂序",
+      "background_play_sequential": "順序",
+      "background_fit_mode": "適應方式",
+      "background_fit_smart": "智能",
+      "background_fit_center": "居中",
+      "background_fit_fit": "適應",
+      "background_fit_stretch": "拉伸",
+      "background_fit_tile": "平鋪",
+      "background_fit_top_left": "左上",
+      "background_fit_top_right": "右上",
       "no_image_selected": "未選擇圖片",
       "select_image": "選擇圖片",
       "clear_image": "清除圖片",
@@ -483,58 +517,39 @@
       "background_base_color": "自定義顏色",
       "background_base_color_pick": "底色顏色",
       "background_base_opacity": "底色不透明度",
-      "background_fit_mode": "適應方式",
-      "background_fit_smart": "智能",
-      "background_fit_center": "居中",
-      "background_fit_fit": "適應",
-      "background_fit_stretch": "拉伸",
-      "background_fit_tile": "平鋪",
-      "background_fit_top_left": "左上",
-      "background_fit_top_right": "右上",
-      "background_play_order": "播放順序",
-      "background_play_sequential": "順序",
-      "background_play_random": "亂序",
       "disable_animations": "停用動畫",
       "disable_animations_desc": "關閉介面過渡動畫以提升效能",
-      "calculating": "正在計算...",
+      "calculating": "正在計算…",
       "sunrise_time": "今日日出",
       "sunset_time": "今日日落",
       "sun_fetch_failed": "獲取日出日落時間失敗",
       "material": {
         "title": "介面材質",
-        "description": "統一控制導覽列、卡片、分頁、控制項和浮層。日間與夜間分別儲存，隨主題自動套用。",
+        "description": "統一控制導覽列、卡片、分頁、控制項與浮層。日間與夜間分別儲存，並隨主題自動套用。",
         "edit_mode": "編輯主題材質",
         "preview": "即時預覽",
-        "preview_label": "所選主題下背景圖片、文字與卡片材質的疊加預覽",
+        "preview_label": "所選主題下背景圖片、文字與卡片材質的預覽",
         "preview_action": "啟動",
         "preview_text": "文字與操作清晰在前，背景圖片自然呈現。",
-        "no_image": "選擇有效的圖片資料夾，並將圖片不透明度設為大於 0 後即可查看效果。材質設定會保留。",
+        "no_image": "選擇圖片資料夾並將圖片不透明度調至 0 以上即可看到效果。材質設定會一直保留。",
         "presets": "材質預設",
         "balanced": "均衡",
-        "balanced_desc": "柔和磨砂，兼顧清晰",
+        "balanced_desc": "柔和毛玻璃，兼顧清晰",
         "clear": "通透",
-        "clear_desc": "更多背景，降低保護",
+        "clear_desc": "更多背景，較弱的文字保護",
         "solid": "純色",
-        "solid_desc": "面板不透明，關閉磨砂",
+        "solid_desc": "面板不透明，關閉模糊",
         "opacity": "介面不透明度",
-        "blur": "介面磨砂",
+        "blur": "介面模糊",
         "overlay": "背景遮罩",
         "readability": "可讀性保護",
-        "readability_desc": "根據日夜主題、圖片亮度和模糊量設定底色下限，並加強次要文字。控制項與浮層共用材質參數，同時保留清晰的層次。",
+        "readability_desc": "根據主題、圖片亮度與模糊程度自動設定底色深度，並加強次要文字，確保文字清晰可讀。控制項與浮層使用同一套材質。",
         "protected_opacity": "保護已生效：介面實際不透明度為 {{value}}%。",
         "protected": "已啟用可讀性保護。",
-        "unprotected": "保護已關閉，複雜圖片可能影響文字辨認。",
+        "unprotected": "保護已關閉，複雜的圖片可能影響文字辨認。",
         "reset": "重設目前主題",
         "next_image": "換一張"
       }
-    },
-    "process": {
-      "title": "進程管理",
-      "desc": "管理執行中的 Minecraft 進程",
-      "scan": "掃描進程",
-      "kill_all": "結束所有進程",
-      "kill": "結束",
-      "no_process": "未發現執行中的 Minecraft 進程"
     },
     "privacy": {
       "analytics": {
@@ -571,7 +586,7 @@
   },
   "aboutcard": {
     "title": "關於",
-    "description": " 2024-2026 {{name}} 保留所有權利",
+    "description": "© 2024-2026 {{name}} 保留所有權利",
     "font": "本軟體使用 {{name}} 字型"
   },
   "about": {
@@ -607,6 +622,13 @@
     "cancelled": "已取消",
     "error": "錯誤",
     "refresh": "重新整理",
+    "quit_launcher": "退出啟動器",
+    "show_launcher": "顯示啟動器",
+    "confirm": "確定",
+    "success": "操作成功",
+    "delete": "刪除",
+    "search": "搜尋",
+    "search_placeholder": "搜尋…",
     "open": "開啟",
     "select_mode": "選擇模式",
     "select_all": "全選",
@@ -618,22 +640,14 @@
     "yes": "是",
     "no": "否",
     "close": "關閉",
-    "quit_launcher": "退出啟動器",
-    "show_launcher": "顯示啟動器",
-    "confirm": "確定",
-    "success": "操作成功",
-    "delete": "刪除",
-    "search": "搜尋",
-    "search_placeholder": "搜尋...",
     "empty": "暫無資料",
-    "browse": "選擇...",
-    "processing": "正在處理...",
+    "browse": "選擇…",
+    "processing": "正在處理…",
     "done": "完成",
-    "wait": "請稍候...",
+    "wait": "請稍候…",
     "updating": "更新中",
     "expand": "展開",
     "collapse": "收合",
-    "hide": "隱藏",
     "save": "儲存",
     "add": "新增",
     "save_failed": "儲存失敗",
@@ -641,6 +655,7 @@
     "view_all": "檢視全部",
     "confirm_delete": "確認刪除",
     "no_results": "無搜尋結果",
+    "hide": "隱藏",
     "edit": "編輯",
     "backup": "備份",
     "date": "日期",
@@ -666,7 +681,7 @@
       "trial": "僅試用",
       "not_entitled": "未獲授權",
       "error": "檢查失敗",
-      "description": "登入後自動請求 Release 和 Preview 的目前授權。按重新整理可再次檢查。"
+      "description": "登入後會自動檢查正式版與預覽版的授權狀態。點擊重新整理可再次檢查。"
     },
     "sign_in": "登入 Microsoft 帳戶",
     "switch_account": "切換帳戶",
@@ -684,7 +699,7 @@
     "none": "無",
     "isolation": "實例隔離",
     "worlds": "世界",
-    "worlds_list": "存檔清單",
+    "worlds_list": "世界清單",
     "select_player": "選擇玩家",
     "no_players": "暫無玩家",
     "backup_success": "備份成功",
@@ -696,7 +711,7 @@
     "skin_packs": "皮膚包",
     "no_skin_packs": "暫無皮膚包",
     "servers": "伺服器",
-    "error_resolve_paths": "無法解析內容路徑。",
+    "error_resolve_paths": "無法定位內容目錄。",
     "open_users_dir": "開啟儲存目錄",
     "players_aria": "玩家清單",
     "sort_time": "時間",
@@ -704,9 +719,17 @@
     "sort_desc": "由下至上",
     "drop_hint": "拖入 .mcworld/.mcpack/.mcaddon 以匯入",
     "import_button": "匯入",
+    "transfer_resources_button": "轉移內容",
+    "transfer_resources_title": "轉移內容到其他實例",
+    "transfer_resources_body_overview": "目前實例中的全部資源包、行為包、面板包與世界都會複製到目標實例。請選擇目標實例。",
+    "transfer_resources_body_simple": "請選擇要轉移到的目標實例。",
+    "transfer_no_targets": "暫無可用的隔離實例",
+    "transfer_target_placeholder": "請選擇目標實例",
+    "transfer_progress_title": "正在轉移內容…",
+    "transfer_progress_body": "正在將內容轉移到所選實例，請稍候。",
     "require_player_for_world_import": "匯入世界 (.mcworld) 前請先選擇玩家",
     "no_player_selected": "未選擇玩家",
-    "world_leveldat_editor": "世界 level.dat 編輯",
+    "world_leveldat_editor": "世界屬性",
     "version": "版本號",
     "add_field": "新增欄位",
     "field_name": "名稱",
@@ -718,26 +741,35 @@
     "delete_warning": "此操作無法復原！",
     "delete_selected_confirm": "確定要刪除選中的 {{count}} 個項目嗎？",
     "deleted_name": "已刪除 {{name}}",
-    "delete_world_confirm": "確定要刪除存檔 {{name}} 嗎？",
+    "delete_world_confirm": "確定要刪除世界 {{name}} 嗎？",
     "basic_info": "基本資訊",
-    "level_name": "存檔名稱",
+    "level_name": "世界名稱",
     "screenshots": "螢幕截圖",
     "no_screenshots": "暫無截圖",
     "delete_screenshot_confirm": "確定要刪除截圖 {{name}} 嗎？",
     "preview_screenshot": "查看大圖",
     "screenshot_viewer_hint": "大圖預覽",
     "screenshot_viewer_nav_hint": "可使用 ← / → 鍵或兩側按鈕切換截圖",
-    "transfer_resources_button": "資源轉移",
-    "transfer_resources_title": "轉移資源到隔離實例",
-    "transfer_resources_body_overview": "將轉移目前實例中的全部資源包、行為包、皮膚包與世界到目標實例。請選擇目標實例。",
-    "transfer_resources_body_simple": "請選擇要轉移到的目標實例。",
-    "transfer_no_targets": "暫無可用的隔離實例",
-    "transfer_target_placeholder": "請選擇目標實例",
-    "transfer_progress_title": "正在轉移資源...",
-    "transfer_progress_body": "正在將資源轉移到選中的實例，請稍候。"
-  },
-  "mirror": {
-    "target": "目標實例"
+    "editor_unsaved": "有未儲存的變更",
+    "editor_unsaved_body": "請先儲存變更再繼續，或捨棄變更以使用已儲存的世界資料。",
+    "editor_continue": "繼續編輯",
+    "editor_discard": "捨棄變更",
+    "editor_save_refresh": "儲存並重新整理",
+    "editor_save_leave": "儲存並離開",
+    "selected_outside_filter": "包含目前篩選以外的 {{count}} 項",
+    "delete_result": "已刪除 {{success}} 項，失敗 {{failed}} 項",
+    "delete_retry_failed": "失敗的項目仍保持選取。請查看下方原因後重試。",
+    "delete_scope": "實例：{{instance}} · 玩家：{{player}}",
+    "screenshot_load_failed": "無法載入螢幕擷圖",
+    "screenshot_image_failed": "無法讀取 {{name}}",
+    "screenshot_select_player": "請先在內容管理中選擇玩家，再檢視螢幕擷圖。",
+    "screenshot_no_instance": "請先選擇實例，再檢視螢幕擷圖。",
+    "select_item": "選擇 {{name}}",
+    "servers_read_only": "此處顯示遊戲內已加入的伺服器。",
+    "sort_old_new": "由舊到新",
+    "sort_new_old": "由新到舊",
+    "previous_screenshot": "上一張螢幕擷圖",
+    "next_screenshot": "下一張螢幕擷圖"
   },
   "versions": {
     "info": {
@@ -755,7 +787,7 @@
       "mc_version": "遊戲版本",
       "new_name": "新名稱",
       "placeholder": "輸入新名稱",
-      "hint": "僅修改資料夾名稱，不影響遊戲版本與類型。",
+      "hint": "僅重新命名實例資料夾，不影響遊戲版本與類型。",
       "enable_isolation": "啟用實例隔離",
       "enable_console": "啟用主控台",
       "enable_editor_mode": "啟用編輯器模式",
@@ -771,7 +803,7 @@
       "backup": {
         "title": "實例備份",
         "hint": "為目前實例建立備份檔案，可在調整設定、安裝 mods 或匯入新內容前先保留一份副本",
-        "section_body": "可選擇備份遊戲資料和 mods；啟動器程式本體不會包含在備份中",
+        "section_body": "備份只包含你在下方勾選的遊戲內容與模組",
         "experimental_badge": "實驗性",
         "experimental_disabled": "前往 {{settingsPath}} 啟用後，才能使用實例備份與還原。",
         "button": "備份實例",
@@ -782,7 +814,7 @@
         "shared_tag": "共享資料",
         "missing_tag": "未找到",
         "empty_tag": "目錄為空",
-        "shared_warning": "目前實例未啟用隔離，若勾選遊戲資料，將同時備份目前使用的共享遊戲資料目錄",
+        "shared_warning": "此實例未啟用隔離，若勾選遊戲資料，將一併備份系統共用的遊戲資料",
         "no_scope_selected": "請至少選擇一項要備份的內容",
         "confirm": "開始備份",
         "progress_title": "正在備份實例",
@@ -826,7 +858,7 @@
           "conflict_unresolved": "請先為每一項衝突選擇處理方式。",
           "conflict_details_toggle": "查看路徑與詳細差異",
           "conflict_item_fallback": "未命名內容",
-          "identity_key_label": "衝突身份",
+          "identity_key_label": "比對依據",
           "backup_side_label": "備份版本",
           "current_side_label": "目前版本",
           "backup_path_label": "備份路徑",
@@ -904,13 +936,13 @@
       }
     },
     "logo": {
-      "title": "自訂圖示（要求正方形）",
+      "title": "自訂圖示（需為正方形）",
       "change": "點擊更換",
       "clear": "清除",
-      "hint": "將儲存至實例資料夾的 LargeLogo.png。點擊圖示更換。"
+      "hint": "圖示會儲存在實例資料夾中。點擊圖示即可更換。"
     },
     "unsaved": {
-      "body": "您更改了實例設定但尚未儲存。是否儲存後離開？"
+      "body": "你更改了實例設定但尚未儲存。是否儲存後離開？"
     },
     "sort": {
       "name": "名稱 (A-Z)",
@@ -924,53 +956,67 @@
       "release": "正式版"
     }
   },
+  "mirror": {
+    "target": "目標實例"
+  },
   "errors": {
     "ERR_GAME_ALREADY_RUNNING": "偵測到目前實例 Minecraft 已在執行，請先關閉再啟動或切換其他實例",
     "ERR_TARGET_DIR_NOT_SPECIFIED": "未指定目標目錄",
     "ERR_CREATE_TARGET_DIR": "無法建立目標目錄",
-    "ERR_NOT_FOUND_GAME_DIR": "未找到遊戲目錄",
-    "ERR_NOT_FOUND_EXE": "未找到可執行檔",
-    "ERR_WRITE_TARGET": "寫入目標設定失敗",
+    "ERR_NOT_FOUND_GAME_DIR": "找不到遊戲檔案",
+    "ERR_NOT_FOUND_EXE": "找不到遊戲主程式",
+    "ERR_WRITE_TARGET": "無法寫入實例目錄",
     "ERR_LAUNCH_GAME": "遊戲未能正常啟動",
     "ERR_GAME_CRASH_DURING_LAUNCH": "啟動過程中遊戲崩潰",
-    "ERR_WAIT_KERNEL_TIMEOUT": "等待核心準備逾時",
-    "ERR_COPY_WALK": "遍歷檔案失敗",
+    "ERR_WAIT_KERNEL_TIMEOUT": "等待遊戲啟動逾時",
+    "ERR_COPY_WALK": "無法讀取要複製的檔案",
     "ERR_COPY_FAILED": "複製失敗",
     "ERR_NAME_REQUIRED": "名稱不能為空",
     "ERR_NAME_TOO_LONG": "名稱過長",
     "ERR_NAME_TRAILING_DOT_SPACE": "名稱不能以空格或句點結尾",
     "ERR_NAME_INVALID_CHAR": "名稱包含非法字元: <>:\"/\\|?*",
     "ERR_NAME_CONTROL_CHAR": "名稱包含控制字元",
-    "ERR_NAME_RESERVED": "名稱為 Windows 保留名稱",
-    "ERR_ICON_DECODE": "圖示解析失敗",
-    "ERR_ICON_NOT_SQUARE": "圖示必須為正方形",
-    "ERR_ACCESS_VERSIONS_DIR": "無法存取版本目錄",
+    "ERR_NAME_RESERVED": "此名稱為 Windows 保留名稱（例如 CON、PRN、NUL），請改用其他名稱",
+    "ERR_ACCESS_VERSIONS_DIR": "無法存取實例目錄",
     "ERR_ACCESS_INSTALLERS_DIR": "無法存取安裝包目錄",
-    "ERR_READ_VERSIONS_DIR": "無法讀取版本目錄",
+    "ERR_READ_VERSIONS_DIR": "無法讀取實例目錄",
     "ERR_LL_VERSION_UNSUPPORTED": "所選 LeviLamina 版本不受目前遊戲版本支援",
+    "ERR_LL_NOT_SUPPORTED": "目前的遊戲版本不支援 LeviLamina",
+    "ERR_FETCH_LL_DB": "取得 LeviLamina 版本資料失敗",
+    "ERR_INVALID_VERSION_FORMAT": "遊戲版本格式無效",
+    "ERR_LIP_INSTALL_FAILED": "透過 lip 安裝 LeviLamina 失敗",
     "ERR_NAME_EXISTS": "名稱已存在",
     "ERR_INVALID_NAME": "無效的名稱",
+    "ERR_ICON_DECODE": "圖示解析失敗",
+    "ERR_ICON_NOT_SQUARE": "圖示必須為正方形",
     "ERR_NOT_FOUND_OLD": "未找到原目錄",
     "ERR_RENAME_FAILED": "重新命名失敗，可能已被佔用或無權限",
     "ERR_MSIXVC_NOT_SPECIFIED": "未指定安裝包",
     "ERR_MSIXVC_NOT_FOUND": "安裝包不存在",
     "ERR_APPX_UNINSTALL_FAILED": "解除安裝已安裝遊戲失敗",
     "ERR_APPX_INSTALL_FAILED": "安裝失敗，請重試。",
-    "ERR_MC_NOT_AUTHORIZED": "請確認您擁有正版 {{typeLabel}} Minecraft 授權，確保已使用擁有該產品的 Microsoft 帳戶登入或購買後重試",
-    "ERR_INHERIT_SOURCE_NOT_FOUND": "未找到繼承來源版本",
-    "ERR_INHERIT_TARGET_NOT_FOUND": "未找到目標版本",
-    "ERR_INHERIT_TYPE_MISMATCH": "類型不符，無法繼承",
+    "ERR_MC_NOT_AUTHORIZED": "目前帳戶沒有 {{typeLabel}} Minecraft 的授權。請登入擁有該遊戲的 Microsoft 帳戶，或購買後重試。",
+    "ERR_INHERIT_SOURCE_NOT_FOUND": "找不到要繼承的實例",
+    "ERR_DELETE_FAILED": "刪除失敗，可能已被佔用或無權限",
+    "ERR_INHERIT_TARGET_NOT_FOUND": "找不到目標實例",
+    "ERR_INHERIT_TYPE_MISMATCH": "兩個實例類型不同，無法繼承資料",
     "ERR_INHERIT_COPY_FAILED": "複製繼承資料失敗",
     "ERR_NO_GAME_DATA": "目前來源沒有任何遊戲資料",
-    "ERR_DELETE_FAILED": "刪除失敗，可能已被佔用或無權限",
-    "ERR_VCRUNTIME_MISSING": "缺少執行庫，安裝失敗。請確保已安裝 Microsoft Visual C++ 執行庫或重試",
+    "ERR_VCRUNTIME_MISSING": "缺少必要的執行庫。請安裝 Microsoft Visual C++ 執行庫後重試。",
     "ERR_SHORTCUT_CREATE_FAILED": "建立桌面捷徑失敗",
     "ERR_UNREGISTER_FAILED": "取消註冊失敗",
-    "ERR_NOT_REGISTERED_THIS_VERSION": "此版本未註冊到系統",
+    "ERR_NOT_REGISTERED_THIS_VERSION": "此實例尚未註冊到系統",
     "ERR_DEV_MODE_REQUIRED": "系統未開啟開發者模式，且自動開啟失敗。請手動開啟開發者模式後重試。",
+    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "lip 套件識別碼無效",
+    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "必須指定 lip 套件的版本",
+    "ERR_LIP_PACKAGE_INSTALL_FAILED": "安裝 lip 套件失敗",
+    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "解除安裝 lip 套件失敗",
+    "ERR_LIP_PACKAGE_QUERY_FAILED": "查詢 lip 套件狀態失敗",
+    "ERR_LIP_CACHE_CLEAN_FAILED": "清理 lip 快取失敗",
     "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS": "此套件被其他已安裝 mod 依賴，暫時無法卸載",
-    "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "此套件仍被其他已安裝 mod 依賴，無法完全卸載；已自動轉為依賴安裝模式。",
-    "ERR_LIP_NOT_INSTALLED": "lip 未安裝，請前往「設定 > 組件」手動安裝或更新。",
+    "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY": "此套件仍被其他已安裝的模組依賴，無法完全解除安裝；目前僅作為依賴保留，待不再被需要時會自動清理。",
+    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina 只能在實例設定中管理",
+    "ERR_LIP_NOT_INSTALLED": "lip 尚未安裝，請前往「設定 > 第三方元件」安裝或更新。",
     "ERR_INSTANCE_BACKUP_INSTANCE_NOT_FOUND": "未找到要備份的實例",
     "ERR_INSTANCE_BACKUP_NO_SCOPE": "請至少選擇一個備份範圍",
     "ERR_INSTANCE_BACKUP_INVALID_SCOPE": "包含無效的備份範圍",
@@ -982,7 +1028,7 @@
     "ERR_INSTANCE_BACKUP_WRITE_ARCHIVE": "寫入實例備份壓縮檔失敗",
     "ERR_INSTANCE_BACKUP_ARCHIVE_OPEN": "無法開啟實例備份壓縮檔",
     "ERR_INSTANCE_BACKUP_INVALID_ARCHIVE": "實例備份壓縮檔格式無效",
-    "ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE": "目前無法可靠識別 mods / lip 狀態，請重新整理實例狀態後再試一次備份。",
+    "ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE": "無法確認模組列表，請重新整理實例後再備份。",
     "ERR_INSTANCE_BACKUP_RESTORE_EXTRACT_ARCHIVE": "解壓實例備份失敗",
     "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET": "還原備份內容到目標實例失敗",
     "ERR_INSTANCE_BACKUP_RESTORE_CONFLICT_UNRESOLVED": "仍有還原衝突尚未處理，請先完成選擇。",
@@ -991,20 +1037,51 @@
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED": "部分由 lip 管理的模組套件安裝失敗",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING": "部分由 lip 管理的模組套件未能還原",
     "ERR_INSTANCE_BACKUP_RESTORE_LIP_VERSION_MISMATCH": "部分由 lip 管理的模組套件版本與備份不一致",
-    "ERR_LL_NOT_SUPPORTED": "LeviLamina is not supported for this game version",
-    "ERR_FETCH_LL_DB": "Failed to fetch LeviLamina version database",
-    "ERR_INVALID_VERSION_FORMAT": "Invalid game version format",
-    "ERR_LIP_INSTALL_FAILED": "Failed to install LeviLamina via lip",
-    "ERR_LIP_PACKAGE_INVALID_IDENTIFIER": "Invalid lip package identifier",
-    "ERR_LIP_PACKAGE_VERSION_REQUIRED": "lip package version is required",
-    "ERR_LIP_PACKAGE_INSTALL_FAILED": "Failed to install lip package",
-    "ERR_LIP_PACKAGE_UNINSTALL_FAILED": "Failed to uninstall lip package",
-    "ERR_LIP_PACKAGE_QUERY_FAILED": "Failed to query lip package state",
-    "ERR_LIP_CACHE_CLEAN_FAILED": "清理 lip 快取失敗",
-    "ERR_LL_MANAGED_IN_VERSION_SETTINGS": "LeviLamina can only be managed in Version Settings",
-    "ERR_AUTH_INTERACTION_REQUIRED": "請先在 Windows 登入擁有此遊戲的 Microsoft 帳戶，然後透過啟動器頭像重新整理帳戶並重試。",
+    "ERR_AUTH_FAILED": "無法取得目前帳戶的下載授權。請檢查網路，並透過啟動器頭像重新整理帳戶後重試。",
+    "ERR_AUTH_TIMEOUT": "登入逾時，請重試。",
+    "ERR_AUTH_DEVICE_CACHE": "無法讀取裝置授權快取，請檢查目前 Windows 使用者與檔案權限。",
+    "ERR_AUTH_DEVICE_BUSY": "帳戶正被另一項操作使用，請稍後再試。",
+    "ERR_AUTH_DEVICE_PROVISION": "裝置授權失敗，請檢查網絡後重試。",
     "ERR_AUTH_ACCOUNT_CHANGED": "目前的 Microsoft 帳戶已變更。請透過啟動器頭像重新整理帳戶，然後重試。",
-    "ERR_AUTH_FAILED": "無法取得目前帳戶的下載授權。請檢查網路，並透過啟動器頭像重新整理帳戶後重試。"
+    "ERR_AUTH_INTERACTION_REQUIRED": "請先在 Windows 登入擁有此遊戲的 Microsoft 帳戶，然後透過啟動器頭像重新整理帳戶並重試。",
+    "ERR_LICENSE_NOT_ENTITLED": "目前帳戶沒有此版本的授權。",
+    "ERR_LICENSE_FULL_REQUIRED": "Microsoft 僅回傳試用授權。請透過啟動器頭像選擇擁有該遊戲的帳戶後重試。",
+    "ERR_LICENSE_HTTP": "無法取得 Microsoft 內容授權，請檢查網絡後重試。",
+    "ERR_LICENSE_MISSING_KEY": "Microsoft 回傳的授權資訊不包含此安裝包。",
+    "ERR_LICENSE_UNSUPPORTED": "Microsoft 回傳了不支援的授權類型。",
+    "ERR_MSIXVC_UNSUPPORTED_FORMAT": "不支援此安裝包格式，請使用完整的 Windows x64 安裝包。",
+    "ERR_NATIVE_MSIXVC": "安裝包驗證或解壓失敗。",
+    "ERR_TARGET_EXISTS": "同名的實例目錄已存在，請改用其他名稱。",
+    "ERR_INVALID_FOLDER_NAME": "實例目錄名稱無效。",
+    "ERR_CANCELED": "操作已取消。",
+    "ERR_AUTH_ACCOUNT_SELECTION": "無法還原已選擇的 Microsoft 帳戶。請檢查目前 Windows 使用者與帳戶設定檔的讀取權限。",
+    "ERR_UWP_NOT_SPECIFIED": "請選擇 UWP 安裝包，或先下載對應版本。",
+    "ERR_INSTANCE_BACKUP_PACKAGE_TYPE_MISMATCH": "備份與目標實例的套件類型不相容，請選擇相同套件類型的實例。",
+    "ERR_UWP_UNSUPPORTED_FEATURE": "Microsoft Store（UWP）實例不支援此功能。",
+    "ERR_UWP_INVALID_VERSION": "UWP 版本資訊無效，請重新整理版本列表後重試。",
+    "ERR_UWP_DOWNLOAD_URL": "無法從 Windows Update 取得 UWP 下載位址，請檢查網絡後重試。",
+    "ERR_UWP_QUERY": "無法讀取 Windows 應用程式註冊資訊，請查看詳細錯誤後重試。",
+    "ERR_UWP_DEPENDENCY": "缺少此安裝包所需的 Windows 框架套件。請安裝與系統相符的 Microsoft.VCLibs 等依賴後重試；桌面版 Visual C++ 執行庫是另一個元件，無法替代它。",
+    "ERR_UWP_SYSTEM_VERSION": "此 UWP 套件需要較新的 Windows 版本。請更新 Windows 或改選相容的遊戲版本。",
+    "ERR_UWP_DEVELOPER_MODE": "Windows 封鎖了開發套件註冊。請在 Windows 設定中啟用開發人員模式後重試。",
+    "ERR_UWP_PACKAGE_CONFLICT": "系統中已有衝突的 Minecraft 應用程式註冊。啟動器會保留商店或外部安裝的註冊；請先備份遊戲內容，再透過 Windows 設定處理衝突後重試。",
+    "ERR_UWP_REGISTER": "UWP 遊戲套件註冊失敗，請查看 Windows 回報的詳細錯誤後重試。",
+    "ERR_UWP_UNREGISTER": "UWP 遊戲套件取消註冊失敗，請查看 Windows 回報的詳細錯誤後重試。",
+    "ERR_UWP_REGISTER_ROLLBACK": "註冊失敗，且未能還原先前的註冊。遊戲檔案仍保留，請查看詳細錯誤並透過 Windows 設定修復註冊狀態。",
+    "ERR_UWP_LAUNCH": "無法透過 Windows 應用程式啟用來執行 UWP 遊戲，請檢查套件註冊狀態與詳細錯誤。",
+    "ERR_UWP_MANIFEST": "UWP 套件資訊清單缺失或無效，請選擇完整的 Minecraft 安裝包。",
+    "ERR_UWP_UNSAFE_ARCHIVE": "UWP 安裝包含有不安全或衝突的檔案路徑，已停止安裝。",
+    "ERR_UWP_ARCHITECTURE": "此 UWP 安裝包不含適用於目前系統架構的應用程式。",
+    "ERR_UWP_ARCHIVE": "UWP 安裝包已損毀或超出解壓限制，請重新下載完整安裝包。",
+    "ERR_UWP_INSTALL": "UWP 安裝失敗，請查看詳細錯誤後重試。",
+    "ERR_UWP_NOT_MINECRAFT": "此安裝包的應用程式識別或發行者與支援的 Minecraft UWP 套件不符。",
+    "ERR_UWP_PACKAGE_NOT_FOUND": "找不到對應的 UWP 安裝包，請重新整理版本列表或重新下載。",
+    "ERR_UWP_PACKAGE_NOT_SPECIFIED": "請選擇 UWP 安裝包，或先下載對應版本。",
+    "ERR_UWP_CHANNEL": "UWP 安裝包與所選頻道不符，請選擇對應頻道或重新匯入本機安裝包。",
+    "ERR_UWP_RESOURCE_BUNDLE": "此安裝包附帶獨立的資源子套件，暫不支援。請改用單一獨立安裝包。",
+    "ERR_UWP_INTEGRITY": "安裝包完整性檢查失敗，請重新下載。",
+    "ERR_UWP_NOT_REGISTERED": "此實例尚未註冊到 Windows。請先選擇「註冊」，成功後再啟動。",
+    "ERR_UWP_PREPARE": "無法為此實例準備系統註冊，請檢查實例資料夾權限後重試。"
   },
   "filemanager": {
     "sort": {
@@ -1028,7 +1105,7 @@
   },
   "mods": {
     "import_button": "匯入 .zip/.dll",
-    "importing_title": "正在匯入...",
+    "importing_title": "正在匯入…",
     "importing_body": "請稍候，正在處理所選檔案。",
     "summary_title_done": "匯入完成",
     "summary_title_partial": "匯入完成（部分失敗）",
@@ -1045,44 +1122,47 @@
     "dll_name": "模組名稱",
     "dll_type": "類型",
     "dll_version": "版本",
-    "err_invalid_name": "無效的版本名或模組名",
-    "err_access_versions_dir": "無法存取版本目錄",
+    "err_invalid_name": "實例名稱或模組名稱無效",
+    "err_access_versions_dir": "無法存取實例目錄",
     "err_create_target_dir": "建立目標目錄失敗",
     "err_open_zip": "無法開啟 ZIP 檔案",
-    "err_manifest_not_found": "未找到 manifest.json",
-    "err_invalid_manifest": "manifest.json 無效或缺少必要欄位",
+    "err_manifest_not_found": "壓縮包內沒有 manifest.json，不是有效的模組套件",
+    "err_invalid_manifest": "壓縮包內的 manifest.json 無效或缺少必要欄位",
     "err_manifest_entry_not_found": "manifest.json 指定的入口檔案不存在",
-    "err_invalid_package": "無效的封裝結構",
-    "err_duplicate_folder": "同名模組資料夾已存在",
-    "err_read_zip_entry": "讀取壓縮檔項目失敗",
+    "err_invalid_package": "這不是有效的模組套件",
+    "err_duplicate_folder": "已存在同名的模組資料夾",
+    "err_read_zip_entry": "無法讀取壓縮包內的檔案",
     "err_write_file": "寫入檔案失敗",
     "err_unknown": "未知錯誤",
-    "err_lip_install_failed_suggestion": "安裝失敗，請嘗試重新安裝 Minecraft",
     "overwrite_modal_title": "偵測到重複",
-    "overwrite_modal_body": "同名模組資料夾已存在，是否覆蓋（更新）？",
+    "overwrite_modal_body": "已安裝同名模組，是否覆寫？",
     "toggle_label": "啟用模組",
     "toggle_on": "已啟用",
     "toggle_off": "已關閉",
     "toggle_desc_on": "模組已啟用，啟動遊戲時會載入。",
     "toggle_desc_off": "模組已關閉，啟動遊戲時不會載入。",
     "only_enabled": "僅顯示已啟用的模組",
-    "drop_hint": "拖入 .zip 或 .dll 以匯入模組",
+    "drop_hint": "拖入 .zip 或 .dll 檔案以匯入模組",
+    "err_lip_install_failed_suggestion": "安裝失敗。請確認實例與 LeviLamina 安裝正常後重試。",
     "rc_warning": {
       "title": "實驗性版本警告",
-      "body_1": "檢測到您即將安裝的 LeviLamina 版本 ({{version}}) 為候選發布版 (RC)。",
+      "body_1": "檢測到你即將安裝的 LeviLamina 版本 ({{version}}) 為候選發布版 (RC)。",
       "body_2": "這是一個實驗性版本，可能存在不穩定因素，僅建議開發者或高級用戶使用。",
       "body_3": "是否繼續安裝？"
     },
-    "action_uninstall": "卸載",
     "action_update": "更新",
-    "batch_uninstall_body": "你將要卸載 {{count}} 個模組，是否繼續？",
-    "batch_uninstall_title": "批次卸載模組",
-    "batch_update_body": "已選擇 {{selected}} 個模組，其中 {{updatable}} 個可從 lip 更新，是否繼續？",
+    "action_uninstall": "卸載",
+    "action_promote_install": "標記為手動安裝",
+    "action_promote_install_success": "{{name}} 已標記為手動安裝，不會被自動清理",
+    "action_promote_install_failed_no_version": "找不到此套件的已安裝版本",
     "batch_update_title": "批次更新模組",
-    "err_ll_managed_in_version_settings": "LeviLamina 只能在版本設定中管理",
-    "no_update_source": "無 lip 更新來源",
+    "batch_update_body": "已選擇 {{selected}} 個模組，其中 {{updatable}} 個可以更新，是否繼續？",
+    "batch_uninstall_title": "批次卸載模組",
+    "batch_uninstall_body": "你將要卸載 {{count}} 個模組，是否繼續？",
     "update_available": "更新到 {{version}}",
     "update_latest": "已是最新",
+    "no_update_source": "沒有可用的更新來源",
+    "err_ll_managed_in_version_settings": "LeviLamina 只能在實例設定中管理",
     "action_result_title_done": "操作完成",
     "action_result_title_partial": "操作完成（部分失敗）",
     "action_result_title_failed": "操作失敗",
@@ -1091,39 +1171,28 @@
     "tab_lip": "lip 模組",
     "lip_children_summary": "包含：{{children}}（+{{count}}）",
     "lip_open_package": "打開套件詳情",
-    "action_promote_install": "轉為主動安裝",
-    "action_promote_install_success": "{{name}} 已轉為主動安裝",
-    "action_promote_install_failed_no_version": "未找到此套件的已安裝版本",
-    "lip_sync_loading": "本地模組已載入，正在補全 lip 資訊...",
-    "lip_sync_error": "lip 資訊暫時不可用，目前僅顯示本地模組。"
+    "lip_sync_loading": "本機模組已載入，正在取得線上資訊…",
+    "lip_sync_error": "暫時無法取得線上資訊，目前僅顯示本機模組。",
+    "overwrite_and_import": "覆寫並匯入"
   },
   "terms": {
     "title": "LeviLauncher 使用者協議",
-    "body": "歡迎使用 LeviLauncher\n\n使用本軟體即表示您同意：\n• 此為非官方 Minecraft 啟動器\n• 您需擁有合法授權的 Minecraft 副本，否則自動進入試玩版\n• 禁止任何形式的盜版或作弊行為\n• 模組/資源包使用風險自負\n• 與 Mojang/Microsoft 無關聯\n\n繼續使用視為接受條款",
+    "body": "歡迎使用 LeviLauncher\n\n使用本軟件即表示你同意：\n• 這是一個非官方的 Minecraft 啟動器\n• 你需要擁有正版授權的 Minecraft，否則遊戲將以試玩模式執行\n• 禁止任何形式的盜版與作弊行為\n• 使用模組與資源包的風險由你自行承擔\n• 本軟件與 Mojang、Microsoft 無關聯\n\n繼續使用即視為接受以上條款",
     "agree": "同意並繼續",
     "decline": "不同意，退出"
-  },
-  "onboarding": {
-    "title": "首次啟動引導",
-    "subtitle": "請先設定內容路徑與語言",
-    "unsaved": {
-      "title": "未儲存修改",
-      "body": "您更改了內容路徑但尚未儲存。是否儲存後完成引導？",
-      "save": "儲存並完成"
-    }
   },
   "contentdownload": {
     "title": "內容下載"
   },
   "curseforge": {
     "title": "CurseForge",
-    "search_placeholder": "搜尋遊戲資源...",
+    "search_placeholder": "搜尋遊戲資源…",
     "search": "搜尋",
     "minecraft_version": "Minecraft 版本",
     "select_version": "選擇版本",
     "all_versions": "全部版本",
-    "load_error": "載入資料失敗，請重試",
-    "search_error": "搜尋失敗，請重試",
+    "load_error": "無法載入資料，請重試。",
+    "search_error": "搜尋失敗，請重試。",
     "class": "類型",
     "select_class": "選擇類型",
     "all_classes": "全部類型",
@@ -1148,7 +1217,7 @@
     "website": "官網",
     "source": "源碼",
     "issues": "反饋",
-    "no_download_url": "無下載連結",
+    "no_download_url": "沒有可用的下載連結",
     "no_files_found": "未找到檔案",
     "sort": {
       "featured": "精選",
@@ -1164,7 +1233,7 @@
       "importing_title": "正在匯入",
       "success_title": "成功",
       "error_title": "錯誤",
-      "downloading_body": "正在下載檔案...",
+      "downloading_body": "正在下載檔案…",
       "select_version_body": "請選擇要匯入到的遊戲實例：",
       "local_installation": "本機實例",
       "select_version_placeholder": "選擇實例",
@@ -1172,39 +1241,106 @@
       "select_player_body": "此內容需要選擇玩家：",
       "player_label": "玩家",
       "select_player_placeholder": "選擇玩家",
-      "importing_body": "正在匯入內容...",
+      "importing_body": "正在匯入內容…",
       "success_msg": "匯入成功",
       "success_desc": "內容已成功匯入至所選實例。",
       "failed_msg": "匯入失敗",
       "next": "下一步",
       "close": "關閉"
     },
-    "loading_description": "正在載入描述...",
     "mod_details_aria_label": "模組詳情",
-    "mod_files": {
-      "columns": {
-        "actions": "操作",
-        "downloads": "下載量",
-        "name": "名稱",
-        "size": "大小",
-        "type": "類型",
-        "uploaded": "上傳時間"
-      },
-      "table_aria_label": "模組檔案表格",
-      "title": "全部檔案"
-    },
+    "loading_description": "正在載入描述…",
     "mod_tabs": {
       "description": "描述",
       "files": "檔案"
+    },
+    "mod_files": {
+      "title": "全部檔案",
+      "table_aria_label": "模組檔案表格",
+      "columns": {
+        "type": "類型",
+        "name": "名稱",
+        "uploaded": "上傳時間",
+        "size": "大小",
+        "downloads": "下載量",
+        "actions": "操作"
+      }
     }
   },
   "lip": {
-    "search_placeholder": "搜尋套件...",
+    "search_placeholder": "搜尋套件…",
     "sort_by": "排序",
     "select_sort": "選擇排序",
     "order_by": "順序",
     "select_order": "選擇順序",
     "no_description": "暫無簡介",
+    "ll_version_label": "LeviLamina 版本",
+    "ll_version_placeholder": "選擇 LeviLamina 版本",
+    "ll_all_versions": "所有 LeviLamina 版本",
+    "game_version_label": "遊戲版本",
+    "game_version_placeholder": "選擇遊戲版本",
+    "game_all_versions": "所有遊戲版本",
+    "mapping_unavailable_hint": "暫時無法取得遊戲版本相容資訊，已關閉版本篩選以免比對錯誤。",
+    "files": {
+      "game_versions_unknown": "找不到相符的遊戲版本",
+      "version_count": "{{count}} 個版本",
+      "game_versions_label": "遊戲版本",
+      "game_versions_unrestricted": "無遊戲版本限制",
+      "game_versions_unavailable": "相容性未知",
+      "dependencies_count": "{{count}} 個依賴",
+      "install": "安裝",
+      "upgrade": "升級",
+      "downgrade": "降級",
+      "reinstall": "重裝",
+      "redirect": "轉跳",
+      "instance_game_version_label": "遊戲版本",
+      "select_instance_title": "選擇目標實例",
+      "installing_version_label": "安裝套件版本",
+      "variant_label": "變體",
+      "variant_hint_keep_default": "大多數套件只有一種變體，除非作者另有說明，保持預設即可。",
+      "variant_placeholder": "選擇要安裝的變體",
+      "variant_default": "預設",
+      "select_version_incompatible_hint": "版本 {{version}} 與遊戲版本 {{gameVersion}} 不相容。",
+      "checking_ll_state": "正在檢查 LeviLamina 狀態…",
+      "mapping_unavailable_blocked_hint": "暫時無法確認 LeviLamina 與遊戲版本的相容關係，已阻止本次安裝以免裝錯套件。",
+      "ll_missing_redirect_hint": "此實例尚未安裝 LeviLamina。點擊轉跳後將開啟實例設定的載入器頁面，請先手動安裝 LeviLamina。",
+      "ll_missing_redirect_to_loader": "未檢測到 LeviLamina，正在跳轉到實例設定的載入器頁面。",
+      "ll_installed_incompatible_hint": "已安裝的 LeviLamina 版本 {{installedVersion}} 與此套件不相容，請先手動調整 LeviLamina。",
+      "action_failed": "操作失敗：{{error}}",
+      "tab_label": "版本",
+      "table_aria_label": "套件檔案表格",
+      "install_success": "安裝成功",
+      "upgrade_success": "升級成功",
+      "downgrade_success": "降級成功",
+      "reinstall_success": "重裝成功",
+      "current_installed_version_label": "目前已安裝版本",
+      "checking_current_installed_version": "正在檢查目前已安裝版本…"
+    },
+    "guide": {
+      "open_button": "開發者指南",
+      "title": "Bedrinth 開發者指南",
+      "description": "如果你希望自己的模組出現在 LeviLauncher 的 Bedrinth 頁面中，請按照 LIP 的 package_manifest 規範發佈。",
+      "manifest_hint": "這個彈窗只提供面向開發者的快速說明。欄位命名、必填項、示例與校驗細則請以官方文件為準。",
+      "variant_hint": "僅當 variant 的 label 包含 client 時，才會被啟動器收錄。預設情況下請使用 \"label\": \"client\"；子擴展請使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
+      "docs_button": "查看完整規範",
+      "close_button": "關閉"
+    },
+    "guard": {
+      "title": "尚未安裝 lip",
+      "description": "目前尚未安裝 lipd。若要繼續使用 lip 相關頁面或安裝 LeviLamina，請先前往「設定 > 第三方元件」完成安裝。"
+    },
+    "title": "Bedrinth",
+    "sort_options": {
+      "hotness": "熱門",
+      "updated": "最近更新",
+      "name": "名稱"
+    },
+    "order_options": {
+      "desc": "降序",
+      "asc": "升序"
+    },
+    "by_author_inline": "作者 {{author}}",
+    "package_details_aria_label": "套件詳情",
     "task_console": {
       "title_install": "安裝中",
       "title_upgrade": "升級中",
@@ -1220,87 +1356,20 @@
       "progress_label": "進度",
       "log_title": "日誌輸出",
       "no_output": "暫無輸出",
-      "waiting_start": "等待 lipd 輸出...",
+      "waiting_start": "正在等待套件管理員…",
       "copy_logs": "複製日誌",
       "copy_success": "日誌已複製",
       "close": "關閉",
       "stage_install_pkg": "安裝目標套件",
-      "stage_fallback_delete": "套件管理卸載不可用，回退為目錄刪除"
+      "stage_fallback_delete": "無法透過套件管理解除安裝，改為直接刪除目錄"
     },
-    "by_author_inline": "| 作者 {{author}}",
-    "files": {
-      "action_failed": "操作失敗：{{error}}",
-      "checking_ll_state": "正在檢查 LeviLamina 狀態...",
-      "dependencies_count": "{{count}} 個依賴",
-      "game_versions_unknown": "找不到相符的遊戲版本",
-      "version_count": "{{count}} 個版本",
-      "game_versions_label": "遊戲版本",
-      "game_versions_unavailable": "遊戲版本映射不可用",
-      "game_versions_unrestricted": "無遊戲版本限制",
-      "install": "安裝",
-      "upgrade": "升級",
-      "downgrade": "降級",
-      "redirect": "轉跳",
-      "installing_version_label": "安裝套件版本",
-      "variant_label": "Variant",
-      "variant_hint_keep_default": "一般情況下無需改動",
-      "variant_placeholder": "選擇要安裝的 variant",
-      "variant_default": "預設",
-      "instance_game_version_label": "遊戲版本",
-      "ll_installed_incompatible_hint": "已安裝的 LeviLamina 版本 {{installedVersion}} 與此套件不相容，請先手動調整 LeviLamina。",
-      "mapping_unavailable_blocked_hint": "目前無法校驗 LeviLamina 與遊戲版本映射，已阻止此次安裝以避免錯誤安裝。",
-      "ll_missing_redirect_hint": "此實例尚未安裝 LeviLamina。點擊轉跳後將開啟實例設定的載入器頁面，請先手動安裝 LeviLamina。",
-      "ll_missing_redirect_to_loader": "未檢測到 LeviLamina，正在跳轉到實例設定的載入器頁面。",
-      "select_instance_title": "選擇目標實例",
-      "select_version_incompatible_hint": "版本 {{version}} 與遊戲版本 {{gameVersion}} 不相容。",
-      "tab_label": "版本",
-      "table_aria_label": "套件檔案表格",
-      "install_success": "安裝成功",
-      "upgrade_success": "升級成功",
-      "downgrade_success": "降級成功",
-      "reinstall_success": "重裝成功",
-      "current_installed_version_label": "目前已安裝版本",
-      "checking_current_installed_version": "正在檢查目前已安裝版本...",
-      "reinstall": "重裝"
-    },
-    "guide": {
-      "open_button": "開發者指南",
-      "title": "Bedrinth 開發者指南",
-      "description": "如果你希望自己的模組出現在 LeviLauncher 的 Bedrinth 頁面中，請按照 LIP 的 package_manifest 規範發佈。",
-      "manifest_hint": "這個彈窗只提供面向開發者的快速說明。欄位命名、必填項、示例與校驗細則請以官方文件為準。",
-      "variant_hint": "僅當 variant 的 label 包含 client 時，才會被啟動器收錄。預設情況下請使用 \"label\": \"client\"；子擴展請使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
-      "docs_button": "查看完整規範",
-      "close_button": "關閉"
-    },
-    "guard": {
-      "title": "未檢測到 lipd",
-      "description": "目前尚未安裝 lipd。若要繼續使用 lip 相關頁面或安裝 LeviLamina，請先前往「設定 > 第三方元件」完成安裝。"
-    },
-    "game_all_versions": "所有遊戲版本",
-    "game_version_label": "遊戲版本",
-    "game_version_placeholder": "選擇遊戲版本",
-    "mapping_unavailable_hint": "LeviLamina 遊戲版本映射暫不可用，已停用版本相關篩選以避免錯誤匹配。",
-    "ll_all_versions": "所有 LeviLamina 版本",
-    "ll_version_label": "LeviLamina 版本",
-    "ll_version_placeholder": "選擇 LeviLamina 版本",
-    "order_options": {
-      "asc": "遞增",
-      "desc": "遞減"
-    },
-    "package_details_aria_label": "套件詳情",
-    "sort_options": {
-      "hotness": "熱門",
-      "name": "名稱",
-      "updated": "最近更新"
-    },
-    "title": "Bedrinth",
     "package": {
       "confirm_install_title": "確認安裝",
       "confirm_install_body": "確定要為實例 {{instance}} {{action}} {{package}} {{version}} 嗎？"
     }
   },
   "server": {
-    "offline": "離線 / 無法連接",
+    "offline": "離線或無法連線",
     "players": "在線玩家",
     "delay": "延遲",
     "online": "在線",
@@ -1308,21 +1377,21 @@
   },
   "installpage": {
     "error": {
-      "dll_dependency_missing": "缺少 VC++ 運行庫",
+      "dll_dependency_missing": "缺少 Visual C++ 執行庫",
       "name_required": "名稱不能為空",
       "msixvc_not_specified": "未指定安裝包",
-      "lip_not_installed": "lip 未安裝，請前往「設定 > 組件」手動安裝或更新。",
+      "lip_not_installed": "lip 尚未安裝，請前往「設定 > 第三方元件」安裝或更新。",
       "unknown": "未知錯誤",
       "nh_err_unknown": "未知錯誤",
-      "nh_err_exception": "未捕獲異常或未知錯誤",
-      "nh_err_invalid_params": "參數無效",
+      "nh_err_exception": "安裝程式意外結束，請重試。",
+      "nh_err_invalid_params": "安裝程式收到了無效的參數，請重試。",
       "nh_err_key_not_found": "遊戲安裝包校驗失敗，請刪除安裝包後重試",
       "nh_err_unauthorized_caller": "請確保啟動器 exe 名稱未被修改（LeviLauncher.exe）",
-      "nh_err_pipe_open_failed": "進度管道打開失敗",
-      "nh_err_input_not_found": "輸入文件未找到",
-      "nh_err_output_dir_invalid": "輸出目錄無效",
-      "nh_err_parse_failed": "包解析失敗",
-      "nh_err_extract_failed": "解壓失敗"
+      "nh_err_pipe_open_failed": "無法讀取安裝進度，請重試。",
+      "nh_err_input_not_found": "找不到安裝包檔案，請重新下載。",
+      "nh_err_output_dir_invalid": "安裝位置不可用，請改選其他資料夾。",
+      "nh_err_parse_failed": "無法讀取安裝包內容，請重新下載。",
+      "nh_err_extract_failed": "安裝包解壓失敗，請重新下載。"
     }
   },
   "clarity": {
@@ -1334,5 +1403,170 @@
       "clarity_terms": "Clarity 服務條款",
       "microsoft_privacy": "Microsoft 私隱聲明"
     }
+  },
+  "audit": {
+    "primary": {
+      "local_install": "本機安裝",
+      "download_minecraft": "下載 Minecraft",
+      "select_instance_first": "請先選擇實例，再使用這些操作。",
+      "clear_filters": "清除搜尋與篩選",
+      "download": {
+        "verifying": "正在驗證安裝包完整性",
+        "cancel": "取消下載",
+        "remove": "移除記錄",
+        "remove_hint": "移除記錄，保留已下載的檔案",
+        "progress": "{{name}} 的下載進度",
+        "failed": "無法載入版本列表，請檢查網絡後重試。",
+        "stale": "無法重新整理版本列表，正在顯示已儲存的列表。",
+        "no_matches": "沒有符合搜尋或篩選條件的版本。"
+      },
+      "instances": {
+        "failed": "無法載入實例列表，請重試。",
+        "empty": "尚未安裝實例",
+        "empty_description": "下載 Minecraft 或匯入本機安裝包，建立第一個實例。",
+        "no_matches": "沒有符合搜尋或篩選條件的實例。",
+        "settings": "{{name}} 的設定"
+      },
+      "install": {
+        "failed": "安裝失敗",
+        "copy_details": "複製錯誤詳情",
+        "copied": "已複製錯誤詳情",
+        "copy_failed": "無法複製，請選取上方錯誤文字後手動複製。",
+        "go_launch": "選擇實例並前往啟動"
+      },
+      "onboarding": {
+        "keep_current": "保留目前目錄並繼續"
+      },
+      "clear_search": "清除搜尋"
+    },
+    "mods": {
+      "name_required": "請先輸入模組名稱再匯入。",
+      "clear_search": "清除搜尋",
+      "clear_filters": "清除篩選",
+      "no_filtered_results": "已安裝的模組中沒有符合目前搜尋或篩選條件的內容。",
+      "more_actions": "{{name}} 的更多操作",
+      "view_details": "檢視 {{name}} 的詳情",
+      "copy_project_link": "複製專案連結",
+      "link_copied": "已複製專案連結",
+      "copy_failed": "無法複製連結，請重試。",
+      "project_page": "開啟專案主頁",
+      "detail_load_failed": "無法載入此專案，請檢查網絡後重試。",
+      "description_load_failed": "無法載入說明，專案資訊與檔案仍可檢視。",
+      "files_load_failed": "無法載入檔案列表，請重試。",
+      "catalog_load_failed": "無法載入套件列表，請檢查網絡後重試。",
+      "install_file": "安裝 {{name}}",
+      "path_save_success": "已儲存儲存路徑",
+      "path_reset_success": "已還原預設儲存路徑",
+      "path_save_failed": "無法更新儲存路徑：{{message}}",
+      "close_update_window": "關閉更新視窗",
+      "update_recovery": "關閉此更新視窗後，重新開啟 LeviLauncher 並再次檢查更新。如果問題持續，請從官方專案主頁下載最新的安裝程式。",
+      "theme_color": "{{name}}（{{hex}}）",
+      "custom_color": "自訂主題顏色",
+      "github": "在 GitHub 上檢視 LiteLDev",
+      "discord": "加入 Discord 社群",
+      "colors": {
+        "emerald": "翡翠綠",
+        "blue": "藍色",
+        "violet": "紫羅蘭",
+        "amber": "琥珀色",
+        "pink": "粉紅色",
+        "cyan": "青色",
+        "win_yellow": "Windows 黃色",
+        "win_orange": "Windows 橙色",
+        "win_red": "Windows 紅色",
+        "win_blue": "Windows 藍色",
+        "win_green": "Windows 綠色",
+        "win_purple": "Windows 紫色",
+        "win_teal": "Windows 藍綠色",
+        "win_pink_red": "Windows 粉紅色",
+        "win_light_orange": "淺橙色",
+        "win_orange_red": "橙紅色",
+        "win_red_orange": "紅橙色",
+        "win_light_red": "淺紅色",
+        "win_bright_red": "亮紅色",
+        "win_deep_red": "緋紅色",
+        "win_rose": "玫瑰色",
+        "win_dark_rose": "深玫瑰色",
+        "win_magenta": "洋紅色",
+        "win_dark_magenta": "深洋紅色",
+        "win_orchid": "蘭花紫",
+        "win_dark_orchid": "深蘭花紫",
+        "win_dark_blue": "深藍色",
+        "win_light_purple": "淺紫色",
+        "win_medium_purple": "中紫色",
+        "win_dark_purple": "暗紫色",
+        "win_light_magenta": "淺洋紅色",
+        "win_deep_purple": "深紫色",
+        "win_dark_teal": "深藍綠色",
+        "win_cyan": "Windows 青色",
+        "win_dark_cyan": "深青色",
+        "win_green_blue": "綠藍色",
+        "win_dark_green_blue": "深綠藍色",
+        "win_light_green": "淺綠色",
+        "win_gray": "灰色",
+        "win_dark_gray": "深灰色",
+        "win_blue_gray": "藍灰色",
+        "win_dark_blue_gray": "深藍灰色",
+        "win_green_gray": "綠灰色",
+        "win_dark_green_gray": "深綠灰色",
+        "win_olive": "橄欖色",
+        "win_dark_green": "深綠色",
+        "win_medium_gray": "中灰色",
+        "win_darker_gray": "炭灰色",
+        "win_slate_gray": "石板灰"
+      },
+      "color_preview": "顏色預覽：{{hex}}",
+      "invalid_hex": "請輸入六位十六進位顏色，例如 #10B981。",
+      "invalid_rgb": "請輸入 0 至 255 的整數。",
+      "rgb_red": "紅色（R）",
+      "rgb_green": "綠色（G）",
+      "rgb_blue": "藍色（B）"
+    },
+    "usability": {
+      "process_all": "全部 {{count}} 個 Minecraft 程序",
+      "process_confirm": "結束 Minecraft 程序？",
+      "process_warning": "即將強制結束 {{target}}。尚未儲存的遊戲進度可能遺失，是否繼續？",
+      "process_success": "已結束 Minecraft 程序。",
+      "process_failed": "程序操作未能完成：{{message}}",
+      "continue_editing": "繼續編輯",
+      "discard_leave": "捨棄變更並離開",
+      "start_using": "開始使用 LeviLauncher",
+      "root_load_failed": "無法確認目前的內容資料夾。請重試，或選擇可寫入的資料夾並套用後繼續。",
+      "content_load_failed": "無法載入此內容，請重試。",
+      "worlds_partial": "有 {{count}} 個世界的資訊讀取失敗，以下資料夾未顯示在列表中：",
+      "choose_player": "請先選擇玩家。如果沒有可選玩家，請先在遊戲中建立或登入玩家檔案。",
+      "appearance_theme": "主題與配色",
+      "appearance_layout": "版面與動效",
+      "appearance_wallpaper": "桌布",
+      "appearance_material": "材質與可讀性",
+      "search_settings": "搜尋設定",
+      "search_count": "找到 {{count}} 個設定分區",
+      "browse_downloads": "前往下載",
+      "download_filters": "篩選下載任務",
+      "download_all": "全部任務",
+      "download_active": "進行中",
+      "download_done": "已完成",
+      "download_failed": "失敗 / 已取消",
+      "install_download": "安裝此版本",
+      "main_nav": "主導覽",
+      "browse_content": "瀏覽內容"
+    }
+  },
+  "uwp": {
+    "register_button": "註冊",
+    "registering": "註冊中…",
+    "unregistering": "取消註冊中…",
+    "launching": "啟動中…",
+    "local_installer": "選擇本機安裝包",
+    "package_type": "遊戲套件類型",
+    "beta": "Beta 版",
+    "install_description": "安裝 Microsoft Store（UWP）版遊戲套件。此類實例透過 Windows 應用程式註冊啟動，並與同一應用頻道的其他實例共享內容；不支援資料隔離與 LeviLamina。",
+    "launch_options_unavailable": "UWP 實例透過 Windows 應用程式啟用來執行，不支援資料隔離、主控台、啟動參數與環境變數。",
+    "loader_unavailable": "LeviLamina 僅支援桌面版（GDK）遊戲套件。",
+    "editor_unavailable": "Microsoft Store（UWP）實例不支援編輯器模式。",
+    "shared_content": "UWP 內容由同一應用頻道的所有實例共享",
+    "open_content_dir": "開啟 UWP 內容目錄",
+    "not_specified": "請選擇 UWP 安裝包，或先下載對應版本。",
+    "resolving_download": "正在取得下載位址…"
   }
 }

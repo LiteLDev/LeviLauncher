@@ -145,18 +145,34 @@ func readExeFileVersion(exePath string) (string, bool) {
 	return fmt.Sprintf("%d.%d.%d.%d", major, minor, build, rev), true
 }
 
+// isolationDirName is the per-instance data folder. UWP names it per channel
+// because the launcher owns the redirect target; GDK mirrors the game's
+// sAppName, which only distinguishes preview from release.
+func isolationDirName(packageType, channel string) string {
+	c := strings.ToLower(strings.TrimSpace(channel))
+	if strings.EqualFold(strings.TrimSpace(packageType), versions.PackageTypeUWP) && c == "beta" {
+		return "Minecraft Bedrock Beta"
+	}
+	if c == "preview" {
+		return "Minecraft Bedrock Preview"
+	}
+	return "Minecraft Bedrock"
+}
+
 func GetContentRoots(name string) types.ContentRoots {
 	roots := types.ContentRoots{Base: "", UsersRoot: "", ResourcePacks: "", BehaviorPacks: "", IsIsolation: false, IsPreview: false}
 	verName := strings.TrimSpace(name)
 	isPreview := false
 	isIsolation := false
+	channel := ""
 	packageType := "gdk"
 	if verName != "" {
 		if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
 			dir := filepath.Join(vdir, verName)
 			if m, merr := versions.ReadMeta(dir); merr == nil {
 				isIsolation = m.EnableIsolation
-				isPreview = strings.EqualFold(strings.TrimSpace(m.Type), "preview")
+				channel = strings.TrimSpace(m.Type)
+				isPreview = strings.EqualFold(channel, "preview")
 				if strings.EqualFold(strings.TrimSpace(m.PackageType), "uwp") {
 					packageType = "uwp"
 				}
@@ -167,8 +183,22 @@ func GetContentRoots(name string) types.ContentRoots {
 	roots.IsPreview = isPreview
 	roots.PackageType = packageType
 	if packageType == "uwp" {
-		// Loose UWP registration keeps the Windows package family's shared LocalState.
-		// GDK's Users/<id> layout and instance redirection do not apply to UWP.
+		// Isolated UWP redirects ApplicationData into the instance's data folder,
+		// named per channel to match GDK. Non-isolated instances share the Windows
+		// package family's LocalState.
+		if isIsolation && verName != "" {
+			if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
+				base := filepath.Join(vdir, verName, isolationDirName(packageType, channel))
+				roots.Base = base
+				roots.ComMojangRoot = filepath.Join(base, "games", "com.mojang")
+				roots.Worlds = filepath.Join(roots.ComMojangRoot, "minecraftWorlds")
+				roots.ResourcePacks = filepath.Join(roots.ComMojangRoot, "resource_packs")
+				roots.BehaviorPacks = filepath.Join(roots.ComMojangRoot, "behavior_packs")
+				roots.SkinPacks = filepath.Join(roots.ComMojangRoot, "skin_packs")
+				roots.Screenshots = filepath.Join(roots.ComMojangRoot, "Screenshots")
+				return roots
+			}
+		}
 		roots.IsIsolation = false
 		localAppData := strings.TrimSpace(os.Getenv("LOCALAPPDATA"))
 		if localAppData == "" {
@@ -286,12 +316,13 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 	oldMeta, _ := versions.ReadMeta(dir)
 	packageType := versions.DetectPackageType(dir, oldMeta)
 	if packageType == "uwp" {
-		enableIsolation, enableEditorMode = false, false
+		enableEditorMode = false
 		launchArgs, envVars = "", ""
 		if gvRaw == "" {
 			gv = oldMeta.GameVersion
 		}
 	}
+	enableIsolation = enableIsolation && versions.SupportsIsolation(packageType, gv)
 
 	meta := versions.VersionMeta{
 		Name:             n,

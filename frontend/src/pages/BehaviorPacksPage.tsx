@@ -1,4 +1,4 @@
-import { EMPTY_CONTENT_ROOTS } from "@/utils/content";
+import { EMPTY_CONTENT_ROOTS, isContentTransferTarget } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
@@ -340,7 +340,7 @@ export default function BehaviorPacksPage() {
             m &&
             typeof m.name === "string" &&
             m.name &&
-            (m.packageType === "uwp" ? roots.packageType !== "uwp" || (m.type === "preview") !== roots.isPreview : m.enableIsolation) &&
+            isContentTransferTarget(roots, m) &&
             m.name !== sourceVersionName,
         )
         .sort((a: any, b: any) => {
@@ -384,6 +384,7 @@ export default function BehaviorPacksPage() {
     transferTargetOnOpen,
     roots.packageType,
     roots.isPreview,
+    roots.isIsolation,
   ]);
 
   const transferSelectedPacksToTargets = React.useCallback(async () => {

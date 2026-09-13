@@ -37,6 +37,7 @@ import {
   CopyVersionDataFromVersion,
   DeleteVersionFolder,
   GetInstallerDir,
+  GetVersionMeta,
   GetVersionsDir,
   ListInheritableVersionNames,
   ListVersionMetas,
@@ -49,7 +50,7 @@ import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
-import { isAppxInstaller, normalizePackageType, normalizeVersionChannel, type VersionChannel } from "@/utils/packageType";
+import { isAppxInstaller, normalizePackageType, normalizeVersionChannel, supportsVersionIsolation, UWP_ISOLATION_MIN_VERSION, type VersionChannel } from "@/utils/packageType";
 
 type ItemType = VersionChannel;
 
@@ -98,6 +99,9 @@ export default function InstallPage() {
     ? isAppxInstaller(customInstallerPath) ? "uwp" : "gdk"
     : normalizePackageType(location?.state?.packageType);
   const isUWP = packageType === "uwp";
+  // Unknown local packages can request isolation; their manifest is checked after extraction.
+  const isolationSupported = (isUWP && !!customInstallerPath && !mirrorVersion.trim()) ||
+    supportsVersionIsolation(packageType, mirrorVersion);
   const isLeviLaminaSupported = !isUWP && Boolean(location?.state?.isLeviLaminaSupported);
   const [installerDir, setInstallerDir] = useState<string>("");
   const [downloadResolved, setDownloadResolved] = useState<boolean>(false);
@@ -120,14 +124,13 @@ export default function InstallPage() {
   } | null>(null);
 
   useEffect(() => {
-    if (isUWP) return;
     try {
       localStorage.setItem(
         INSTALL_ISOLATION_PREFERENCE_KEY,
         installIsolation ? "true" : "false",
       );
     } catch {}
-  }, [installIsolation, isUWP]);
+  }, [installIsolation]);
 
   useEffect(() => {
     if (!installing) {
@@ -464,12 +467,15 @@ export default function InstallPage() {
         installationCreated = true;
       }
 
-      if (!isUWP && typeof saveMeta === "function") {
+      if (typeof saveMeta === "function") {
+        // Appx manifests determine the installed version and channel, including
+        // local packages whose identity differs from the install page defaults.
+        const installedMeta = isUWP ? await GetVersionMeta(name) : null;
         const metaError: string = await saveMeta(
           name,
-          mirrorVersion || name,
-          String(mirrorType || "Release").toLowerCase(),
-          installIsolation,
+          installedMeta ? installedMeta.gameVersion : mirrorVersion || name,
+          installedMeta ? installedMeta.type : String(mirrorType || "Release").toLowerCase(),
+          installIsolation && isolationSupported && supportsVersionIsolation(packageType, installedMeta ? installedMeta.gameVersion : mirrorVersion),
           false,
           false,
           "",
@@ -1118,7 +1124,7 @@ export default function InstallPage() {
                       </Select>
                     </div>
                   )}
-                  {!isUWP && <div className="flex items-center justify-between p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
+                  <div className="flex items-center justify-between gap-3 p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
                     <div className="min-w-0">
                       <div className="text-sm font-medium">
                         {t("downloadpage.install_folder.enable_isolation")}
@@ -1126,10 +1132,14 @@ export default function InstallPage() {
                       <div className="text-xs text-muted dark:text-zinc-400">
                         {t("downloadpage.install_folder.enable_isolation_desc")}
                       </div>
+                      {isUWP && <p className="text-xs text-muted">
+                        {t("uwp.isolation_min_version", { version: UWP_ISOLATION_MIN_VERSION })}
+                      </p>}
                     </div>
                     <Switch
                       aria-label={t("downloadpage.install_folder.enable_isolation")}
-                      isSelected={installIsolation}
+                      isSelected={isolationSupported && installIsolation}
+                      isDisabled={!isolationSupported}
                       onChange={setInstallIsolation}
                       className={"group"}
                     >
@@ -1140,7 +1150,7 @@ export default function InstallPage() {
                         <span></span>
                       </Switch.Content>
                     </Switch>
-                  </div>}
+                  </div>
                   {!isUWP && installIsolation && (
                     <div className="flex items-center justify-between p-3 rounded-2xl bg-surface/50 dark:bg-surface-secondary/10 border border-border dark:border-white/5">
                       <div className="min-w-0">

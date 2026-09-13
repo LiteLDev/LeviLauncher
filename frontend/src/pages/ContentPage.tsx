@@ -180,7 +180,7 @@ export default function ContentPage() {
                       </span>
                     )}
                     </>}
-                    {cp.roots.packageType === "uwp" && <span>{t("uwp.shared_content")}</span>}
+                    {cp.roots.packageType === "uwp" && !cp.roots.isIsolation && <span>{t("uwp.shared_content")}</span>}
                   </div>
                 </div>
                 <div className="flex flex-wrap items-center gap-2">

@@ -73,11 +73,21 @@ func TestUWPSaveSettingsDoesNotPatchExecutable(t *testing.T) {
 		t.Fatal(code)
 	}
 	m, err := versions.ReadMeta(dir)
-	if err != nil || m.EnableIsolation || !m.EnableConsole || m.EnableEditorMode || m.LaunchArgs != "" || m.EnvVars != "" || m.PackageType != "uwp" {
+	if err != nil || !m.EnableIsolation || !m.EnableConsole || m.EnableEditorMode || m.LaunchArgs != "" || m.EnvVars != "" || m.PackageType != "uwp" {
 		t.Fatalf("UWP settings: %+v %v", m, err)
 	}
 	if data, err := os.ReadFile(exe); err != nil || string(data) != "untouched UWP executable" {
 		t.Fatalf("modified executable: %q %v", data, err)
+	}
+	if roots := GetContentRoots("uwp"); !roots.IsIsolation || roots.Base != filepath.Join(dir, "Minecraft Bedrock") {
+		t.Fatalf("saved isolation not applied to content roots: %+v", roots)
+	}
+	if code := SaveVersionMeta("uwp", "1.21.80.3", "release", false, true, false, "", ""); code != "" {
+		t.Fatal(code)
+	}
+	m, err = versions.ReadMeta(dir)
+	if err != nil || m.EnableIsolation || !m.EnableConsole || GetContentRoots("uwp").IsIsolation {
+		t.Fatalf("isolation did not turn off: %+v %v", m, err)
 	}
 }
 

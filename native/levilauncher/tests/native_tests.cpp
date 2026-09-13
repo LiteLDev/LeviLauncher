@@ -41,8 +41,24 @@ void test_config() {
   check(config(R"({"packageType":"UWP","enableConsole":true})").uwp,
         "case-insensitive UWP metadata");
   check(config(R"({"packageType":"uwp","enableConsole":true})").console, "UWP console");
+  check(config(R"({"packageType":"uwp","enableIsolation":true,"gameVersion":"1.19.70.2"})").isolation,
+        "UWP isolation is opt-in via metadata");
+  check(!config(R"({"packageType":"uwp"})").isolation, "UWP defaults to shared package data");
   check(!config(R"({"packageType":"uwp","enableIsolation":true})").isolation,
-        "stale UWP isolation must not redirect shared data");
+        "unknown UWP version must not isolate");
+  const struct { const char *version; bool supported; } isolation_versions[] = {
+      {"1.19.70.1", false}, {"1.19.70.2", true}, {"1.19.70.02", true},
+      {"1.19.70.3", true}, {"1.19.69.99", false}, {"1.19.70", false},
+      {"1.20", true}, {"1.9.100.0", false}, {"1.21.100.0", true},
+      {" 1.19.70.2 ", true}, {"", false}, {"unknown", false},
+      {"1.19.70.2-preview", false}, {"1.19.70.2.0", false}, {"1.19.70.4294967296", false},
+  };
+  for (const auto &entry : isolation_versions) {
+    check(levi::supports_uwp_isolation(entry.version) == entry.supported, entry.version);
+    const auto json = std::string(R"({"packageType":"uwp","enableIsolation":true,"gameVersion":")") +
+        entry.version + R"("})";
+    check(config(json.c_str()).isolation == entry.supported, "UWP config version boundary");
+  }
   check(!config(R"({"enableIsolation":false})").isolation, "boolean false");
   check(!config(R"({"enableIsolation":"FaLsE"})").isolation, "legacy string false");
   check(!config(R"({"enableIsolation":0})").isolation, "legacy numeric false");
@@ -229,6 +245,10 @@ int main() {
     smoke(scratch / L"UWP quiet", binaries,
           R"({"packageType":"uwp","enableConsole":false})", nullptr, true);
     smoke(scratch / L"UWP imported", binaries, nullptr, nullptr, true);
+    smoke(scratch / L"UWP isolation", binaries,
+          R"({"packageType":"uwp","enableIsolation":true,"gameVersion":"1.19.70.2"})", nullptr, true);
+    smoke(scratch / L"UWP unsupported isolation", binaries,
+          R"({"packageType":"uwp","enableIsolation":true,"gameVersion":"1.19.70.1"})", nullptr, true);
     smoke(scratch / L"UWP DX11", binaries,
           R"({"packageType":"uwp","enableConsole":true})", nullptr, true, true,
           L"Minecraft.Win10.DX11.exe");

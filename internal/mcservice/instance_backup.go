@@ -643,7 +643,7 @@ func buildInstanceBackupContext(name string) instanceBackupContext {
 	ctx.info.Scopes = []types.InstanceBackupScope{
 		{
 			Key:        instanceBackupScopeGameData,
-			Label:      instanceBackupGameDataLabel(roots.IsPreview),
+			Label:      isolationDirName(ctx.packageType, meta.Type),
 			Path:       ctx.gameDataPath,
 			Size:       safeSize,
 			Selectable: gameDataExists,

@@ -9,8 +9,29 @@ const { outputText } = ts.transpileModule(
   { compilerOptions: { module: ts.ModuleKind.CommonJS, target: ts.ScriptTarget.ES2022 } },
 );
 const exports = {};
-runInNewContext(outputText, { exports });
+const versionExports = {};
+runInNewContext(ts.transpileModule(
+  readFileSync(new URL("../src/utils/version.ts", import.meta.url), "utf8"),
+  { compilerOptions: { module: ts.ModuleKind.CommonJS } },
+).outputText, { exports: versionExports });
+runInNewContext(outputText, { exports, require(name) {
+  assert.equal(name, "./version");
+  return versionExports;
+} });
 const { installerIdentityFromPath, isAppxInstaller, normalizePackageType, normalizeVersionChannel, versionStatusKey } = exports;
+
+test("UWP isolation starts at 1.19.70.2 and rejects unknown or malformed versions", () => {
+  for (const [version, supported] of [
+    ["1.19.70.1", false], ["1.19.70.2", true], ["1.19.70.02", true],
+    ["1.19.70.3", true], ["1.19.69.99", false], ["1.19.70", false],
+    ["1.20", true], ["1.9.100.0", false], ["1.21.100.0", true],
+    [" 1.19.70.2 ", true], ["", false], ["unknown", false],
+    ["1.19.70.2-preview", false], ["1.19.70.2.0", false], ["1.19.70.4294967296", false],
+  ]) {
+    assert.equal(exports.supportsVersionIsolation("uwp", version), supported, version);
+    assert.equal(exports.supportsVersionIsolation("gdk", version), true, `GDK ${version}`);
+  }
+});
 
 test("version status separates package types and all three channels", () => {
   const keys = ["gdk", "uwp"].flatMap((packageType) =>

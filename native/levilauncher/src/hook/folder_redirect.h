@@ -13,11 +13,16 @@ struct RedirectPaths {
   std::wstring roaming;
   std::wstring temp_wide;
   std::string temp_ansi;
+  std::wstring local_folder;
 };
 RedirectPaths prepare_redirect_paths(const std::filesystem::path &game,
                                      const VersionConfig &config);
 // paths must outlive the process's installed import slots.
 PatchResult install_folder_redirects(const RedirectPaths &paths) noexcept;
+// Redirects ApplicationData's LocalFolder, TemporaryFolder and LocalCacheFolder
+// to the instance directory. Activates WinRT, so call outside DllMain (worker
+// thread). paths must outlive the process.
+HRESULT install_local_folder_hook(const RedirectPaths &paths) noexcept;
 HRESULT WINAPI redirected_known_folder(REFKNOWNFOLDERID id, DWORD flags, HANDLE token,
                                        PWSTR *output) noexcept;
 DWORD WINAPI redirected_temp_a(DWORD capacity, LPSTR output) noexcept;

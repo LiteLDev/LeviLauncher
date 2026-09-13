@@ -1,4 +1,4 @@
-import { resolveContentPath } from "@/utils/content";
+import { resolveContentPath, isContentTransferTarget } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
@@ -426,7 +426,7 @@ export default function WorldsListPage() {
             m &&
             typeof m.name === "string" &&
             m.name &&
-            (m.packageType === "uwp" ? roots.packageType !== "uwp" || (m.type === "preview") !== roots.isPreview : m.enableIsolation) &&
+            isContentTransferTarget(roots, m) &&
             m.name !== sourceVersionName,
         )
         .sort((a: any, b: any) => {
@@ -469,6 +469,7 @@ export default function WorldsListPage() {
     selectedPlayer,
     roots.packageType,
     roots.isPreview,
+    roots.isIsolation,
     t,
     transferTargetOnOpen,
   ]);

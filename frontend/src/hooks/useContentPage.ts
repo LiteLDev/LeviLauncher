@@ -1,4 +1,4 @@
-import { EMPTY_CONTENT_ROOTS } from "@/utils/content";
+import { EMPTY_CONTENT_ROOTS, isContentTransferTarget } from "@/utils/content";
 import { useOverlayState } from "@heroui/react";
 import React from "react";
 
@@ -582,7 +582,7 @@ export const useContentPage = (t: TFunc) => {
             m &&
             typeof m.name === "string" &&
             m.name &&
-            (m.packageType === "uwp" ? roots.packageType !== "uwp" || (m.type === "preview") !== roots.isPreview : m.enableIsolation) &&
+            isContentTransferTarget(roots, m) &&
             m.name !== name,
         )
         .sort((a: any, b: any) => {

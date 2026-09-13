@@ -91,6 +91,8 @@ func ReadMeta(versionDir string) (VersionMeta, error) {
 	err = dec.Decode(&m)
 	if err == nil {
 		m.PackageType = DetectPackageType(versionDir, m)
+		// Expose the effective setting without rewriting imported or older metadata.
+		m.EnableIsolation = m.EnableIsolation && SupportsIsolation(m.PackageType, m.GameVersion)
 	}
 	return m, err
 }

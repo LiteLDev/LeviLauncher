@@ -1,8 +1,20 @@
+import { compareVersions } from "./version";
+
 export type PackageType = "gdk" | "uwp";
 export type VersionChannel = "Release" | "Beta" | "Preview";
 
 export const normalizePackageType = (value: unknown): PackageType =>
   String(value || "").toLowerCase() === "uwp" ? "uwp" : "gdk";
+
+export const UWP_ISOLATION_MIN_VERSION = "1.19.70.2";
+
+export function supportsVersionIsolation(packageType?: string, gameVersion?: string): boolean {
+  if (normalizePackageType(packageType) !== "uwp") return true;
+  const version = String(gameVersion || "").trim();
+  return /^\d+(?:\.\d+){0,3}$/.test(version) &&
+    version.split(".").every(part => Number(part) <= 0xffffffff) &&
+    compareVersions(version, UWP_ISOLATION_MIN_VERSION) >= 0;
+}
 
 export const normalizeVersionChannel = (value: unknown): VersionChannel => {
   const channel = String(value || "").toLowerCase();

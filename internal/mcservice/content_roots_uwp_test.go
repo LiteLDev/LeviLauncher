@@ -1,6 +1,7 @@
 package mcservice
 
 import (
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -13,7 +14,7 @@ func TestContentRootsUWPChannelsAndSharedData(t *testing.T) {
 	local := t.TempDir()
 	t.Setenv("LOCALAPPDATA", local)
 	for _, channel := range []string{"release", "beta", "preview"} {
-		createTestInstance(t, versionsDir, channel, versions.VersionMeta{PackageType: "uwp", Type: channel, EnableIsolation: true})
+		createTestInstance(t, versionsDir, channel, versions.VersionMeta{PackageType: "uwp", Type: channel, EnableIsolation: false})
 		roots := GetContentRoots(channel)
 		family := "Microsoft.MinecraftUWP_8wekyb3d8bbwe"
 		if channel == "preview" {
@@ -52,5 +53,66 @@ func TestContentRootsUWPDoesNotFallBackWhenLocalAppDataMissing(t *testing.T) {
 	roots := GetContentRoots("uwp")
 	if roots.Base != "" || roots.Worlds != "" || roots.UsersRoot != "" || roots.ResourcePacks != "" {
 		t.Fatalf("unexpected fallback: %+v", roots)
+	}
+}
+
+func TestContentRootsUWPIsolationNamesFolderPerChannel(t *testing.T) {
+	_, _, versionsDir := setupInstanceBackupEnv(t)
+	cases := map[string]string{
+		"release": "Minecraft Bedrock",
+		"beta":    "Minecraft Bedrock Beta",
+		"preview": "Minecraft Bedrock Preview",
+	}
+	for channel, dirName := range cases {
+		createTestInstance(t, versionsDir, channel, versions.VersionMeta{PackageType: "uwp", GameVersion: "1.19.70.2", Type: channel, EnableIsolation: true})
+		roots := GetContentRoots(channel)
+		base := filepath.Join(versionsDir, channel, dirName)
+		comMojang := filepath.Join(base, "games", "com.mojang")
+		if !roots.IsIsolation || roots.PackageType != "uwp" || roots.Base != base || roots.ComMojangRoot != comMojang {
+			t.Fatalf("%s isolation roots: %+v", channel, roots)
+		}
+		if roots.Worlds != filepath.Join(comMojang, "minecraftWorlds") || roots.ResourcePacks != filepath.Join(comMojang, "resource_packs") {
+			t.Fatalf("%s content paths: %+v", channel, roots)
+		}
+	}
+}
+
+func TestUWPIsolationVersionBoundaryAppliesToRootsAndSavedSettings(t *testing.T) {
+	_, _, versionsDir := setupInstanceBackupEnv(t)
+	local := t.TempDir()
+	t.Setenv("LOCALAPPDATA", local)
+	for _, channel := range []string{"release", "beta", "preview"} {
+		for _, gameVersion := range []string{"1.19.70.1", "1.19.70.2", "1.19.70.3", ""} {
+			name := channel + "-" + gameVersion
+			dir := filepath.Join(versionsDir, name)
+			if err := versions.WriteMeta(dir, versions.VersionMeta{Name: name, PackageType: "uwp", GameVersion: gameVersion, Type: channel, EnableIsolation: true}); err != nil {
+				t.Fatal(err)
+			}
+			want := gameVersion == "1.19.70.2" || gameVersion == "1.19.70.3"
+			roots := GetContentRoots(name)
+			family := "Microsoft.MinecraftUWP_8wekyb3d8bbwe"
+			if channel == "preview" {
+				family = "Microsoft.MinecraftWindowsBeta_8wekyb3d8bbwe"
+			}
+			base := filepath.Join(local, "Packages", family, "LocalState")
+			if want {
+				base = filepath.Join(dir, isolationDirName("uwp", channel))
+			}
+			if roots.IsIsolation != want || roots.Base != base {
+				t.Fatalf("%s stale roots: %+v", name, roots)
+			}
+			if code := SaveVersionMeta(name, gameVersion, channel, true, false, false, "", ""); code != "" {
+				t.Fatal(code)
+			}
+			// Inspect the persisted JSON too: ReadMeta deliberately filters stale flags.
+			raw, err := os.ReadFile(filepath.Join(dir, "version.json"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var saved versions.VersionMeta
+			if err := json.Unmarshal(raw, &saved); err != nil || saved.EnableIsolation != want {
+				t.Fatalf("%s saved settings: %+v %v", name, saved, err)
+			}
+		}
 	}
 }

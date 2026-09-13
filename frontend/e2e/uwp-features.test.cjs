@@ -37,7 +37,11 @@ async function run(viewport) {
     const save = page.getByRole('button', { name: translations.common.ok, exact: true });
     await inViewport(toggle, viewport);
     await inViewport(save, viewport);
-    assert.equal(await page.getByRole('switch', { name: translations.versions.edit.enable_isolation }).count(), 0);
+    const isolation = page.getByRole('switch', { name: translations.versions.edit.enable_isolation });
+    await inViewport(isolation, viewport);
+    assert.equal(await isolation.isChecked(), false);
+    await isolation.press('Space');
+    assert.equal(await isolation.isChecked(), true);
     assert.equal(await toggle.isChecked(), false);
     await page.locator('label').filter({ has: toggle }).click();
     assert.equal(await toggle.isChecked(), true);
@@ -46,8 +50,25 @@ async function run(viewport) {
     await save.click();
     await page.waitForFunction(() => window.__audit.calls.some(call => call.name === 'SaveVersionMeta'));
     let saved = await page.evaluate(() => window.__audit.calls.filter(call => call.name === 'SaveVersionMeta').at(-1));
-    assert.deepEqual(saved.args.slice(3), [false, true, false, '', '']);
+    assert.deepEqual(saved.args.slice(3), [true, true, false, '', '']);
     await page.waitForURL(url => url.hash === `#${ROUTES.instances}`);
+    await page.evaluate(content => {
+      history.pushState({ usr: null, key: 'uwp-content', idx: 1 }, '', `#${content}`);
+      dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
+    }, ROUTES.content);
+    const openContent = page.getByRole('button', { name: translations.common.open, exact: true });
+    await openContent.waitFor();
+    await page.getByText(translations.common.yes, { exact: true }).waitFor();
+    assert.equal(await page.getByText(translations.uwp.shared_content, { exact: true }).count(), 0);
+    await openContent.click();
+    await page.waitForFunction(() => window.__audit.calls.some(call => call.name === 'OpenPathDir'));
+    assert.ok((await page.evaluate(() => window.__audit.calls.filter(call => call.name === 'OpenPathDir').at(-1).args[0])).includes('versions\\UWP release instance\\Minecraft Bedrock'));
+    if (outputDir) await page.screenshot({ path: path.join(outputDir, `uwp-isolated-content-${viewport.width}.png`) });
+    await page.getByRole('button', { name: translations.contentpage.transfer_resources_button, exact: true }).click();
+    let transfer = page.getByRole('dialog');
+    await transfer.waitFor();
+    assert.ok((await transfer.innerText()).includes('UWP beta instance'), 'an isolated Release can transfer to the Beta shared folder');
+    await transfer.getByRole('button', { name: translations.common.cancel, exact: true }).click();
     // Re-open without reloading the fixture to verify persisted metadata.
     await page.evaluate(({ settings, instances }) => {
       history.pushState({ usr: { name: 'UWP release instance', tab: 'launch', returnTo: instances }, key: 'uwp-reopen', idx: 1 }, '', `#${settings}`);
@@ -56,6 +77,8 @@ async function run(viewport) {
     await toggle.waitFor();
     await page.waitForFunction(() => document.querySelector('input[role="switch"]')?.checked === true);
     assert.equal(await toggle.isChecked(), true);
+    assert.equal(await isolation.isChecked(), true);
+    await isolation.press('Space');
     await toggle.press('Space');
     await page.getByRole('tab', { name: translations.versions.edit.tabs.loader, exact: true }).click();
     const folder = page.getByRole('button', { name: translations.downloadmodal.open_folder, exact: true });
@@ -70,8 +93,20 @@ async function run(viewport) {
     await page.waitForFunction(() => window.__audit.calls.filter(call => call.name === 'SaveVersionMeta').length === 2);
     saved = await page.evaluate(() => window.__audit.calls.filter(call => call.name === 'SaveVersionMeta').at(-1));
     assert.deepEqual(saved.args.slice(3), [false, false, false, '', '']);
+    await page.waitForURL(url => url.hash === `#${ROUTES.instances}`);
+    await page.evaluate(content => {
+      history.pushState({ usr: null, key: 'uwp-shared-content', idx: 2 }, '', `#${content}`);
+      dispatchEvent(new PopStateEvent('popstate', { state: history.state }));
+    }, ROUTES.content);
+    await page.getByText(translations.uwp.shared_content, { exact: true }).waitFor();
+    await page.getByRole('button', { name: translations.contentpage.transfer_resources_button, exact: true }).click();
+    transfer = page.getByRole('dialog');
+    await transfer.waitFor();
+    assert.ok((await transfer.innerText()).includes('UWP preview instance'));
+    assert.equal((await transfer.innerText()).includes('UWP beta instance'), false, 'shared Release and Beta point at the same folder');
+    await transfer.getByRole('button', { name: translations.common.cancel, exact: true }).click();
     assert.deepEqual(errors, []);
-    console.log(`PASS UWP console persistence and native mod controls at ${viewport.width}x${viewport.height}`);
+    console.log(`PASS UWP isolation, content paths, console persistence and native mod controls at ${viewport.width}x${viewport.height}`);
   } catch (error) {
     if (outputDir) await page.screenshot({ path: path.join(outputDir, `uwp-features-failed-${viewport.width}.png`) });
     console.error(await page.locator('body').innerText());

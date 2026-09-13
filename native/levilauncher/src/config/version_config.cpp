@@ -59,6 +59,7 @@ VersionConfig parse_version_config(std::istream &input) {
   if (const auto it = json.find("enableConsole"); it != json.end() && it->is_boolean()) {
     config.console = it->get<bool>();
   }
+  const bool has_isolation = json.find("enableIsolation") != json.end();
   if (const auto it = json.find("enableIsolation"); it != json.end()) {
     config.isolation = read_isolation(*it);
   }
@@ -68,9 +69,19 @@ VersionConfig parse_version_config(std::istream &input) {
   if (const auto it = json.find("type"); it != json.end() && it->is_string()) {
     config.channel = it->get<std::string>();
   }
-  if (config.uwp)
+  // UWP isolation redirects LocalFolder only and is opt-in; missing metadata keeps
+  // the shared package data path.
+  if (config.uwp && (!has_isolation || !supports_uwp_isolation(config.game_version)))
     config.isolation = false;
   return config;
+}
+bool supports_uwp_isolation(std::string_view game_version) {
+  const auto first = game_version.find_first_not_of(" \t\r\n");
+  if (first == std::string_view::npos)
+    return false;
+  const auto last = game_version.find_last_not_of(" \t\r\n");
+  const auto version = parse_version(game_version.substr(first, last - first + 1));
+  return version && *version >= std::array<unsigned, 4>{1, 19, 70, 2};
 }
 VersionConfig read_version_config(const std::filesystem::path &directory) {
   std::ifstream input(directory / L"version.json");
@@ -93,5 +104,17 @@ std::filesystem::path legacy_data_directory(const std::filesystem::path &game,
   if (version && *version >= std::array<unsigned, 4>{1, 26, 0, 0})
     return game;
   return game / (config.channel == "preview" ? L"Minecraft Bedrock Preview" : L"Minecraft Bedrock");
+}
+std::wstring channel_directory_name(const std::string &channel) {
+  std::string lower = channel;
+  for (char &ch : lower) {
+    if (ch >= 'A' && ch <= 'Z')
+      ch = static_cast<char>(ch + ('a' - 'A'));
+  }
+  if (lower == "preview")
+    return L"Minecraft Bedrock Preview";
+  if (lower == "beta")
+    return L"Minecraft Bedrock Beta";
+  return L"Minecraft Bedrock";
 }
 } // namespace levi

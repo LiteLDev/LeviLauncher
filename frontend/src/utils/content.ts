@@ -25,6 +25,17 @@ type ContentPathRoots = {
   screenshots?: string;
 };
 
+export function isContentTransferTarget(
+  source: { packageType?: string; isIsolation?: boolean; isPreview?: boolean },
+  target: { packageType?: string; enableIsolation?: boolean; type?: string },
+): boolean {
+  if (target.enableIsolation) return true;
+  if (target.packageType !== "uwp") return false;
+  // Release and Beta share LocalState only when both UWP instances are not isolated.
+  return source.packageType !== "uwp" || !!source.isIsolation ||
+    (String(target.type || "").trim().toLowerCase() === "preview") !== !!source.isPreview;
+}
+
 export function resolveContentPath(
   roots: ContentPathRoots,
   kind: "minecraftWorlds" | "skin_packs" | "Screenshots" | "minecraftpe",

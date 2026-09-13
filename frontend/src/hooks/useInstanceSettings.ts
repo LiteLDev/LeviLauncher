@@ -1,4 +1,4 @@
-import { normalizePackageType, type PackageType } from "@/utils/packageType";
+import { normalizePackageType, supportsVersionIsolation, type PackageType } from "@/utils/packageType";
 import { openDirectory } from "@/utils/explorer";
 import { toast, useOverlayState } from "@heroui/react";
 import React from "react";
@@ -617,6 +617,7 @@ export const useInstanceSettings = () => {
   const [packageType, setPackageType] = React.useState<PackageType>("gdk");
   const isUWP = packageType === "uwp";
   const [gameVersion, setGameVersion] = React.useState<string>("");
+  const isolationSupported = supportsVersionIsolation(packageType, gameVersion);
   const [versionType, setVersionType] = React.useState<string>("");
   const [isPreview, setIsPreview] = React.useState<boolean>(false);
   const [enableIsolation, setEnableIsolation] = React.useState<boolean>(false);
@@ -937,8 +938,9 @@ export const useInstanceSettings = () => {
             const type = String(meta?.type || "release").toLowerCase();
             setVersionType(type);
             setIsPreview(type === "preview");
-            setEnableIsolation(!!meta?.enableIsolation);
-            setOriginalIsolation(!!meta?.enableIsolation);
+            const isolation = !!meta?.enableIsolation && supportsVersionIsolation(meta?.packageType, meta?.gameVersion);
+            setEnableIsolation(isolation);
+            setOriginalIsolation(isolation);
             setEnableConsole(!!meta?.enableConsole);
             setOriginalConsole(!!meta?.enableConsole);
             setEnableEditorMode(!!meta?.enableEditorMode);
@@ -1946,7 +1948,7 @@ export const useInstanceSettings = () => {
           nn,
           gameVersion,
           type,
-          !isUWP && !!enableIsolation,
+          isolationSupported && !!enableIsolation,
           !!enableConsole,
           !isUWP && !!enableEditorMode,
           isUWP ? "" : launchArgs,
@@ -1981,6 +1983,7 @@ export const useInstanceSettings = () => {
       gameVersion,
       isPreview,
       enableIsolation,
+      isolationSupported,
       isUWP,
       enableConsole,
       enableEditorMode,
@@ -2300,6 +2303,7 @@ export const useInstanceSettings = () => {
     // Form state
     packageType,
     isUWP,
+    isolationSupported,
     targetName,
     selectedTab,
     setSelectedTab,

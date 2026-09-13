@@ -1,3 +1,4 @@
+import { UWP_ISOLATION_MIN_VERSION } from "@/utils/packageType";
 import { ModalDescription, ModalPanel, ModalAction, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
 import {
   Button,
@@ -550,29 +551,31 @@ export default function InstanceSettingsPage() {
                       {t("uwp.launch_options_description")}
                     </p>
                   )}
-                  {!vs.isUWP && (
-                    <div className="flex items-center justify-between p-2 rounded-xl">
-                      <div className="text-base font-medium">
-                        {t("versions.edit.enable_isolation")}
-                      </div>
-                      <Switch
-                        aria-label={t("versions.edit.enable_isolation")}
-                        size="md"
-                        isSelected={vs.enableIsolation}
-                        onChange={vs.setEnableIsolation}
-                        className={"group"}
-                      >
-                        <Switch.Content>
-                          <Switch.Control
-                            className={"group-data-[selected]:bg-brand-500"}
-                          >
-                            <Switch.Thumb></Switch.Thumb>
-                          </Switch.Control>
-                          <span></span>
-                        </Switch.Content>
-                      </Switch>
+                  <div className="flex items-center justify-between gap-3 p-2 rounded-xl">
+                    <div className="min-w-0">
+                      <div className="text-base font-medium">{t("versions.edit.enable_isolation")}</div>
+                      {vs.isUWP && <p className="text-xs text-muted">
+                        {t("uwp.isolation_min_version", { version: UWP_ISOLATION_MIN_VERSION })}
+                      </p>}
                     </div>
-                  )}
+                    <Switch
+                      aria-label={t("versions.edit.enable_isolation")}
+                      size="md"
+                      isSelected={vs.isolationSupported && vs.enableIsolation}
+                      isDisabled={!vs.isolationSupported}
+                      onChange={vs.setEnableIsolation}
+                      className={"group"}
+                    >
+                      <Switch.Content>
+                        <Switch.Control
+                          className={"group-data-[selected]:bg-brand-500"}
+                        >
+                          <Switch.Thumb></Switch.Thumb>
+                        </Switch.Control>
+                        <span></span>
+                      </Switch.Content>
+                    </Switch>
+                  </div>
                   <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-base font-medium">
                       {t("versions.edit.enable_console")}

@@ -19,7 +19,9 @@ state.catalogPackages = Array.from({ length: 45 }, (_, index) => ({
   versions: ['1.0.0'], llDependencyRanges: ['>=0.1.0'], variants: [], preferredVariantKey: '',
 }));
 state.uwpVersions = Array.from({length: 24}, (_, index) => ({version: `1.21.${100-index}.0`, uuid:`00000000-0000-4000-8000-${String(index).padStart(12,'0')}`,type: ['release','beta','preview'][index%3], packageType:'uwp'}));
+if(scenario.startsWith('uwp-isolation-min')) state.uwpVersions[0].version=new URLSearchParams(location.search).get('version') || '';
 state.uwpMetas = ['release','beta','preview'].map((type,index)=>({name:`UWP ${type} instance`,gameVersion:state.uwpVersions[index].version,type,packageType:'uwp',enableIsolation:false,registered:index===0}));
+if(scenario==='uwp-isolation-min-settings') state.uwpMetas[0].enableIsolation=true;
 if (['uwp-unregistered','uwp-register-fail','uwp-register-unconfirmed','uwp-stale-register'].includes(scenario)) state.uwpMetas.forEach(meta=>{meta.registered=false;});
 state.uwpRoots = {base:'C:\\Fixture\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang', usersRoot:'',isIsolation:false,isPreview:false,packageType:'uwp'};
 Object.assign(state.uwpRoots, {comMojangRoot:state.uwpRoots.base,worlds:state.uwpRoots.base+'\\minecraftWorlds',resourcePacks:state.uwpRoots.base+'\\resource_packs',behaviorPacks:state.uwpRoots.base+'\\behavior_packs',skinPacks:state.uwpRoots.base+'\\skin_packs',screenshots:state.uwpRoots.base+'\\Screenshots'});
@@ -33,6 +35,7 @@ state.call = async (name, ...args) => {
   if (isUWP) {
     if(name==='IsVcRuntimeInstalled') return true;
     if(name==='SaveVersionMeta') {
+      if(scenario==='uwp-isolation-save-error') return 'ERR_WRITE_META';
       const target=state.uwpMetas.find(meta=>meta.name===args[0]);
       if(target) Object.assign(target,{gameVersion:args[1],type:args[2],enableIsolation:args[3],enableConsole:args[4],enableEditorMode:args[5],launchArgs:args[6],envVars:args[7]});
       return '';
@@ -60,7 +63,14 @@ state.call = async (name, ...args) => {
     }
     if(name==='FetchUWPVersions') {if(scenario==='uwp-error'&&!state.recovered)throw new Error('Fixture: UWP version database unavailable');return state.uwpVersions;}
     if(name==='FetchHistoricalVersions') return {releaseVersions:[{version:'Release 1.26.0',urls:['https://example.com/game.msixvc']}],previewVersions:[]};
-    if(name==='GetContentRoots') return state.uwpRoots;
+    if(name==='GetContentRoots') {
+      const meta=state.uwpMetas.find(meta=>meta.name===args[0]);
+      const isPreview=meta?.type==='preview';
+      const folder=isPreview?'Minecraft Bedrock Preview':meta?.type==='beta'?'Minecraft Bedrock Beta':'Minecraft Bedrock';
+      const base=meta?.enableIsolation ? `C:\\Fixture\\versions\\${meta.name}\\${folder}` : `C:\\Fixture\\Packages\\${isPreview?'Microsoft.MinecraftWindowsBeta':'Microsoft.MinecraftUWP'}_8wekyb3d8bbwe\\LocalState`;
+      const comMojangRoot=base+'\\games\\com.mojang';
+      return {base,comMojangRoot,usersRoot:'',isIsolation:!!meta?.enableIsolation,isPreview,packageType:'uwp',worlds:comMojangRoot+'\\minecraftWorlds',resourcePacks:comMojangRoot+'\\resource_packs',behaviorPacks:comMojangRoot+'\\behavior_packs',skinPacks:comMojangRoot+'\\skin_packs',screenshots:comMojangRoot+'\\Screenshots'};
+    }
     if(name==='ListVersionMetas'||name==='ListVersionMetasWithRegistered') {
       if(name==='ListVersionMetasWithRegistered'&&state.registrationChanged)await new Promise(resolve=>setTimeout(resolve,600));
       return state.uwpMetas.map(meta=>({...meta}));
@@ -75,7 +85,12 @@ state.call = async (name, ...args) => {
     if(name==='GetVersionStatusForPackage') return {version:args[0],type:args[1],packageType:args[2],isDownloaded:false,isInstalled:false};
     if(name==='ResolveDownloadedUWP') return args[0]===state.uwpVersions[0].version ? 'C:\\Fixture\\installers\\Minecraft-UWP-Release-'+args[0]+'.appx' : '';
     if(name==='StartUWPDownload') {if(scenario==='uwp-download-error'&&!state.recovered)throw new Error('ERR_UWP_DOWNLOAD_URL: Fixture: Windows Update link unavailable');const channel=String(args[2]);return 'C:\\Fixture\\installers\\Minecraft-UWP-'+channel[0].toUpperCase()+channel.slice(1)+'-'+args[0]+'.appx';}
-    if(name==='InstallExtractAppx') return scenario==='uwp-install-error'&&!state.recovered ? 'ERR_UWP_REGISTER: Fixture registration failure' : '';
+    if(name==='InstallExtractAppx') {
+      if(scenario==='uwp-install-error'&&!state.recovered) return 'ERR_UWP_REGISTER: Fixture registration failure';
+      const local=scenario==='uwp-isolation-local';
+      state.uwpMetas.push({name:args[1],gameVersion:local?'1.21.80.3':state.uwpVersions[0].version,type:local?'preview':args[2],packageType:'uwp',enableIsolation:false,registered:true});
+      return '';
+    }
     if(name==='ValidateVersionFolderName') return '';
   }
  if(scenario==='gdk-launch') {

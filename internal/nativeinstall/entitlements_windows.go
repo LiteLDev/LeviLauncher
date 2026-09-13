@@ -7,6 +7,7 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
+	"errors"
 	"net/http"
 	"strings"
 	"time"
@@ -21,6 +22,11 @@ type GameLicenses struct {
 	Release string `json:"release"`
 	Preview string `json:"preview"`
 }
+
+const (
+	releaseProductID = "9NBLGGH2JHXJ"
+	previewProductID = "9P5X4QVLC2XR"
+)
 
 type catalogProduct struct {
 	Product struct {
@@ -148,25 +154,74 @@ func checkChannelLicense(ctx context.Context, device, productID, family string) 
 	}()
 	defer recoverFailure(&err)
 	id := catalogContentID(ctx, productID, family)
-	return contentLicenseState(requestContentLicense(device, id))
+	parsed := requestContentLicense(device, id)
+	state = contentLicenseState(parsed)
+	checkCanceled()
+	switch state {
+	case "authorized":
+		keys := parseContentLicense(parsed, false)
+		defer clearLicensedKeys(keys)
+		cacheLicenseKeys(id, productID, keys)
+	case "trial", "not_entitled":
+		invalidateChannelKeys(productID)
+	}
+	return state
 }
 
+// CheckGameLicenses reuses verified Full keys for the selected account. Missing
+// channels are acquired online; negative and trial responses are not cached.
 func CheckGameLicenses(ctx context.Context, dir, expectedXUID string) GameLicenses {
+	return checkGameLicenses(ctx, dir, expectedXUID, false)
+}
+
+// RefreshGameLicenses explicitly checks both channels online, updating keys or
+// removing a channel's cached keys if Microsoft no longer grants a Full license.
+func RefreshGameLicenses(ctx context.Context, dir, expectedXUID string) GameLicenses {
+	return checkGameLicenses(ctx, dir, expectedXUID, true)
+}
+
+func checkGameLicenses(ctx context.Context, dir, expectedXUID string, forceRefresh bool) GameLicenses {
 	result := GameLicenses{XUID: expectedXUID, Release: "error", Preview: "error"}
 	if expectedXUID == "" {
 		return result
 	}
 	ctx, cancel := context.WithTimeout(ctx, 90*time.Second)
 	defer cancel()
-	_ = accountOperation(ctx, dir, func() {
+	var account *licenseAccount
+	err := accountOperation(ctx, dir, func() {
 		active.options.Market = "US"
+		beginLicenseAccount(ctx, expectedXUID)
+		account = active.account
+		if !forceRefresh {
+			release, preview := cachedGameLicenses()
+			if release != "" {
+				result.Release = release
+			}
+			if preview != "" {
+				result.Preview = preview
+			}
+			if release != "" && preview != "" {
+				return
+			}
+		}
 		acquireUserTicket(ctx, func(ctx context.Context) (string, string, error) {
 			return xbox.GetStoreTicketForUser(ctx, expectedXUID)
 		})
 		ensureDevice()
 		device := ownDeviceTicket()
-		result.Release = checkChannelLicense(ctx, device, "9NBLGGH2JHXJ", "Microsoft.MinecraftUWP_8wekyb3d8bbwe")
-		result.Preview = checkChannelLicense(ctx, device, "9P5X4QVLC2XR", "Microsoft.MinecraftWindowsBeta_8wekyb3d8bbwe")
+		if result.Release != "authorized" {
+			result.Release = checkChannelLicense(ctx, device, releaseProductID, "Microsoft.MinecraftUWP_8wekyb3d8bbwe")
+		}
+		if result.Preview != "authorized" {
+			result.Preview = checkChannelLicense(ctx, device, previewProductID, "Microsoft.MinecraftWindowsBeta_8wekyb3d8bbwe")
+		}
+		checkCanceled()
 	})
+	if account == nil || account.epoch != selectionEpoch.Load() || errors.Is(err, xbox.ErrAccountChanged) || ctx.Err() != nil {
+		// Never publish a cached/partial result under a stale displayed identity.
+		result.Release, result.Preview = "error", "error"
+	}
+	// An online failure for a missing channel leaves the other channel's
+	// already verified cached result available to this same account.
 	return result
 }

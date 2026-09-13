@@ -85,7 +85,13 @@ func decryptPage(page, key, tweak []byte) {
 		}
 	}
 }
-func useLicense(blob []byte, contentID, licenseType string) {
+func unpackContentKeys(blob []byte, licenseType string) (result []licensedContentKey) {
+	complete := false
+	defer func() {
+		if !complete {
+			clearLicensedKeys(result)
+		}
+	}()
 	blocks := parseSP(blob)
 	if len(ownDeviceID) != 8 || !hmac.Equal(blocks[0xd2], ownDeviceID) {
 		failCode("ERR_LICENSE_DEVICE_MISMATCH", "content license is bound to another device")
@@ -101,21 +107,16 @@ func useLicense(blob []byte, contentID, licenseType string) {
 			fail("invalid packed content key")
 		}
 		id := formatGUID(keys[pos:])
-		if strings.EqualFold(id, active.report.KeyID) {
-			if contentKey != nil {
-				fail("ambiguous duplicate content key")
-			}
-			key := unwrapKey(ownKey, keys[pos+idlen:pos+idlen+keylen])
-			if len(key) != 32 {
-				clear(key)
-				fail("invalid content key length")
-			}
-			contentKey = key
-			active.report.LicenseType = licenseType
-			emit(map[string]any{"online_content_id": contentID, "online_key_id": id, "license_type": licenseType, "device_binding_matches": true, "key_wrap_integrity_verified": true})
+		key := unwrapKey(ownKey, keys[pos+idlen:pos+idlen+keylen])
+		if len(key) != 32 {
+			clear(key)
+			fail("invalid content key length")
 		}
+		result = append(result, licensedContentKey{KeyID: id, Key: key, LicenseType: licenseType})
 		pos += idlen + keylen
 	}
+	complete = true
+	return result
 }
 
 type segmentPlan struct {

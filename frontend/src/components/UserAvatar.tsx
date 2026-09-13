@@ -146,7 +146,9 @@ export const UserAvatar = () => {
     }
     let cancelled = false;
     setLicenses({ xuid, release: "checking", preview: "checking" });
-    const request = userService.CheckGameLicenses(xuid);
+    const request = reloadNonce > 0
+      ? userService.RefreshGameLicenses(xuid)
+      : userService.CheckGameLicenses(xuid);
     void request.then((result) => {
       if (cancelled) return;
       setLicenses({

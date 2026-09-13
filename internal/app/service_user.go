@@ -189,6 +189,10 @@ func (s *UserService) CheckGameLicenses(ctx context.Context, xuid string) native
 	return nativeinstall.CheckGameLicenses(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), xuid)
 }
 
+func (s *UserService) RefreshGameLicenses(ctx context.Context, xuid string) nativeinstall.GameLicenses {
+	return nativeinstall.RefreshGameLicenses(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), xuid)
+}
+
 // Attach connects native authentication dialogs to the main window.
 //
 //wails:ignore

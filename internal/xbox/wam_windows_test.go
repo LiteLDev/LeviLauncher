@@ -20,6 +20,30 @@ func TestLicenseCheckRejectsStaleProfile(t *testing.T) {
 	}
 }
 
+func TestCachedLicenseIdentityDoesNotRequireStoreAuthentication(t *testing.T) {
+	ConfigureAccountSelection("selected", nil)
+	defer ConfigureAccountSelection("", nil)
+	id, err := GetAccountIDForUser(context.Background(), "")
+	if err != nil || id != "selected" || cached != nil {
+		t.Fatal("cached installation tried to authenticate a new session")
+	}
+	cached = &session{xuid: "current", accountID: "selected", exp: time.Now().Add(time.Hour)}
+	if id, err = GetAccountIDForUser(context.Background(), "current"); err != nil || id != "selected" {
+		t.Fatal("current profile could not access its license identity")
+	}
+	if id, err = GetAccountIDForUser(context.Background(), "previous"); !errors.Is(err, ErrAccountChanged) || id != "" {
+		t.Fatal("stale profile could access cached licenses")
+	}
+	ConfigureAccountSelection("", nil)
+	if _, err = GetAccountIDForUser(context.Background(), ""); !errors.Is(err, ErrInteractionRequired) {
+		t.Fatal("missing selection could access cached licenses")
+	}
+	ConfigureAccountSelection("selected", ErrAuthenticationFailed)
+	if _, err = GetAccountIDForUser(context.Background(), ""); !errors.Is(err, ErrAuthenticationFailed) {
+		t.Fatal("failed account restoration could access cached licenses")
+	}
+}
+
 func TestWAMRejectsDifferentOrMissingIdentity(t *testing.T) {
 	for _, tc := range []struct {
 		expected, actual, token string

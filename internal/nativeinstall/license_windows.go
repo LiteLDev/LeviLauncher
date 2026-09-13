@@ -9,6 +9,7 @@ import (
 	"github.com/beevik/etree"
 	"io"
 	"net/http"
+	"strings"
 	"time"
 )
 
@@ -68,8 +69,24 @@ func requestContentLicense(device, contentID string) contentLicenseResponse {
 	return parsed
 }
 
-func license(device, contentID string) {
-	parsed := requestContentLicense(device, contentID)
+type licensedContentKey struct {
+	KeyID, LicenseType string
+	Key                []byte
+}
+
+func clearLicensedKeys(keys []licensedContentKey) {
+	for i := range keys {
+		clear(keys[i].Key)
+	}
+}
+
+func parseContentLicense(parsed contentLicenseResponse, requireFull bool) (keys []licensedContentKey) {
+	complete := false
+	defer func() {
+		if !complete {
+			clearLicensedKeys(keys)
+		}
+	}()
 	if parsed.SatisfactionFailure != nil {
 		failCode("ERR_LICENSE_NOT_ENTITLED", "account has no entitlement for this package")
 	}
@@ -78,21 +95,53 @@ func license(device, contentID string) {
 	}
 	for _, record := range parsed.License.Keys {
 		b := decode64(record.Value)
+		defer clear(b)
 		doc := etree.NewDocument()
 		must(doc.ReadFromBytes(b))
 		clear(b)
+		if doc.Root() == nil {
+			failCode("ERR_LICENSE_UNSUPPORTED", "empty content license document")
+		}
 		kind := only(doc.Root(), "LicenseInfo").SelectAttrValue("Type", "")
 		if kind != "Full" && kind != "Trial" {
 			failCode("ERR_LICENSE_UNSUPPORTED", "unsupported content license type")
 		}
-		if active.options.RequireFullLicense && kind != "Full" {
+		if requireFull && kind != "Full" {
 			failCode("ERR_LICENSE_FULL_REQUIRED", "the service returned a trial license")
 		}
 		blob := decode64(only(doc.Root(), "SPLicenseBlock").Text())
-		useLicense(blob, contentID, kind)
-		clear(blob)
+		defer clear(blob)
+		keys = append(keys, unpackContentKeys(blob, kind)...)
+	}
+	seen := make(map[string]bool, len(keys))
+	for _, key := range keys {
+		if seen[key.KeyID] {
+			fail("ambiguous duplicate content key")
+		}
+		seen[key.KeyID] = true
+	}
+	if len(keys) == 0 || len(keys) > 256 {
+		failCode("ERR_LICENSE_MISSING_KEY", "no usable content keys returned")
+	}
+	complete = true
+	return keys
+}
+
+func license(device, contentID string) {
+	keys := parseContentLicense(requestContentLicense(device, contentID), active.options.RequireFullLicense)
+	defer clearLicensedKeys(keys)
+	checkCanceled()
+	clear(contentKey)
+	contentKey = nil
+	for _, key := range keys {
+		if strings.EqualFold(key.KeyID, active.report.KeyID) {
+			contentKey = append([]byte(nil), key.Key...)
+			active.report.LicenseType = key.LicenseType
+			emit(map[string]any{"online_content_id": contentID, "online_key_id": key.KeyID, "license_type": key.LicenseType, "device_binding_matches": true, "key_wrap_integrity_verified": true})
+		}
 	}
 	if len(contentKey) != 32 {
 		failCode("ERR_LICENSE_MISSING_KEY", "license does not contain the package KeyID")
 	}
+	cacheLicenseKeys(contentID, "", keys)
 }

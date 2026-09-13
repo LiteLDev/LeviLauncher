@@ -27,6 +27,19 @@ state.uwpRoots = {base:'C:\\Fixture\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8b
 Object.assign(state.uwpRoots, {comMojangRoot:state.uwpRoots.base,worlds:state.uwpRoots.base+'\\minecraftWorlds',resourcePacks:state.uwpRoots.base+'\\resource_packs',behaviorPacks:state.uwpRoots.base+'\\behavior_packs',skinPacks:state.uwpRoots.base+'\\skin_packs',screenshots:state.uwpRoots.base+'\\Screenshots'});
 state.call = async (name, ...args) => {
   state.calls = [...(state.calls || []), {name,args}];
+  if(scenario==='licenses') {
+    const xuid=state.licenseAccount || '101';
+    if(name==='GetLocalUserId') return xuid;
+    if(name==='GetLocalUserGamertag') return xuid==='101'?'License account A':'License account B';
+    if(name==='XUserGetState') return 0;
+    if(name==='ResetSession') return '';
+    if(name==='SignIn') {state.licenseAccount='202';return '';}
+    if(name==='CheckGameLicenses'||name==='RefreshGameLicenses') return {
+      xuid,
+      release:xuid==='202'?'not_entitled':name==='RefreshGameLicenses'?'trial':'authorized',
+      preview:'authorized',
+    };
+  }
   if (/^(Set|Reset|Kill|Open|Start|Install|Register)/.test(name)) {
     const output = document.getElementById('audit-calls');
     if(output) output.textContent = name + ': ' + JSON.stringify(args);

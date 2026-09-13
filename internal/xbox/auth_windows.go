@@ -141,6 +141,32 @@ func GetStoreTicket(ctx context.Context) (token, reference string, err error) {
 	return GetStoreTicketForUser(ctx, "")
 }
 
+// GetAccountIDForUser returns the selected identity without obtaining a Store
+// ticket. A non-empty XUID must match the authenticated profile shown by the UI.
+// Installations may use the saved selection without refreshing network tokens.
+func GetAccountIDForUser(ctx context.Context, expectedXUID string) (string, error) {
+	if err := lockSession(ctx); err != nil {
+		return "", err
+	}
+	defer func() { <-sessionGate }()
+	if accountSelectionError != nil {
+		return "", accountSelectionError
+	}
+	if preferredAccountID == "" {
+		return "", ErrInteractionRequired
+	}
+	if expectedXUID != "" {
+		s, err := ensureSessionLocked(ctx)
+		if err != nil {
+			return "", err
+		}
+		if s.xuid != expectedXUID {
+			return "", ErrAccountChanged
+		}
+	}
+	return preferredAccountID, nil
+}
+
 // GetStoreTicketForUser binds a license check to the profile shown by the UI.
 // An account switch must never produce a result for a different user.
 func GetStoreTicketForUser(ctx context.Context, expectedXUID string) (token, reference string, err error) {

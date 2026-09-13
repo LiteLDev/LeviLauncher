@@ -65,6 +65,7 @@ type installation struct {
 	source  *os.File
 	out     string
 	report  Report
+	account *licenseAccount
 }
 
 var active *installation
@@ -145,10 +146,13 @@ func Install(ctx context.Context, sourcePath, outputPath string, options Options
 		if err := RestoreSharedAccount(ctx, active.options.CacheDir); err != nil {
 			panic(err)
 		}
-		ensureDevice()
-		ticket := ownDeviceTicket()
-		acquireUserTicket(ctx, xbox.GetStoreTicket)
-		license(ticket, active.report.ContentID)
+		beginLicenseAccount(ctx, "")
+		if !restoreContentKey() {
+			acquireUserTicket(ctx, xbox.GetStoreTicket)
+			ensureDevice()
+			ticket := ownDeviceTicket()
+			license(ticket, active.report.ContentID)
+		}
 	}
 	checkCanceled()
 	fullExtract(in, contentKey, active.report.KeyID)
@@ -171,6 +175,9 @@ func checkCanceled() {
 	if active != nil {
 		if e := active.ctx.Err(); e != nil {
 			panic(&Error{Code: "ERR_CANCELED", Reason: "installation canceled", cause: e})
+		}
+		if active.account != nil && active.account.epoch != selectionEpoch.Load() {
+			accountAuthorizationFailed(xbox.ErrAccountChanged)
 		}
 	}
 }

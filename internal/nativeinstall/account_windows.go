@@ -77,22 +77,29 @@ func acquireUserTicket(ctx context.Context, acquire func(context.Context) (strin
 		err = ctx.Err()
 	}
 	if err != nil {
-		code := "ERR_AUTH_FAILED"
-		switch {
-		case errors.Is(err, context.Canceled):
-			code = "ERR_CANCELED"
-		case errors.Is(err, context.DeadlineExceeded):
-			code = "ERR_AUTH_TIMEOUT"
-		case errors.Is(err, xbox.ErrInteractionRequired):
-			code = "ERR_AUTH_INTERACTION_REQUIRED"
-		case errors.Is(err, xbox.ErrAccountChanged):
-			code = "ERR_AUTH_ACCOUNT_CHANGED"
-		}
-		panic(&Error{Code: code, Reason: "launcher account authorization failed", cause: err})
+		accountAuthorizationFailed(err)
 	}
 	if token == "" || reference == "" {
 		failCode("ERR_AUTH_FAILED", "empty launcher account authorization")
 	}
 	checkCanceled()
+	if active != nil && active.account != nil && reference != active.account.id {
+		accountAuthorizationFailed(xbox.ErrAccountChanged)
+	}
 	userTicket, userReference = token, reference
+}
+
+func accountAuthorizationFailed(err error) {
+	code := "ERR_AUTH_FAILED"
+	switch {
+	case errors.Is(err, context.Canceled):
+		code = "ERR_CANCELED"
+	case errors.Is(err, context.DeadlineExceeded):
+		code = "ERR_AUTH_TIMEOUT"
+	case errors.Is(err, xbox.ErrInteractionRequired):
+		code = "ERR_AUTH_INTERACTION_REQUIRED"
+	case errors.Is(err, xbox.ErrAccountChanged):
+		code = "ERR_AUTH_ACCOUNT_CHANGED"
+	}
+	panic(&Error{Code: code, Reason: "launcher account authorization failed", cause: err})
 }

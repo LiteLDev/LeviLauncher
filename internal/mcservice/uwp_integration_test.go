@@ -3,6 +3,7 @@ package mcservice
 import (
 	"archive/zip"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"testing"
@@ -73,7 +74,7 @@ func TestUWPSaveSettingsDoesNotPatchExecutable(t *testing.T) {
 		t.Fatal(code)
 	}
 	m, err := versions.ReadMeta(dir)
-	if err != nil || !m.EnableIsolation || !m.EnableConsole || m.EnableEditorMode || m.LaunchArgs != "" || m.EnvVars != "" || m.PackageType != "uwp" {
+	if err != nil || !m.EnableIsolation || !m.EnableConsole || !m.EnableEditorMode || m.LaunchArgs != "" || m.EnvVars != "" || m.PackageType != "uwp" {
 		t.Fatalf("UWP settings: %+v %v", m, err)
 	}
 	if data, err := os.ReadFile(exe); err != nil || string(data) != "untouched UWP executable" {
@@ -86,8 +87,40 @@ func TestUWPSaveSettingsDoesNotPatchExecutable(t *testing.T) {
 		t.Fatal(code)
 	}
 	m, err = versions.ReadMeta(dir)
-	if err != nil || m.EnableIsolation || !m.EnableConsole || GetContentRoots("uwp").IsIsolation {
+	if err != nil || m.EnableIsolation || !m.EnableConsole || m.EnableEditorMode || GetContentRoots("uwp").IsIsolation {
 		t.Fatalf("isolation did not turn off: %+v %v", m, err)
+	}
+}
+
+func TestUWPSaveEditorModeMinimumVersion(t *testing.T) {
+	_, _, versionDir := setupInstanceBackupEnv(t)
+	for _, tc := range []struct {
+		name, version, channel string
+		want                   bool
+	}{
+		{"release-before", "1.21.49.99", "release", false},
+		{"release-minimum", "1.21.50.0", "release", true},
+		{"preview-before", "1.19.80.19", "preview", false},
+		{"preview-minimum", "1.19.80.20", "preview", true},
+		{"beta-before-retail", "1.20.0.20", "beta", false},
+		{"unknown", "unknown", "preview", false},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			dir := createTestInstance(t, versionDir, tc.name, versions.VersionMeta{GameVersion: tc.version, Type: tc.channel, PackageType: "uwp", EnableEditorMode: true})
+			if code := SaveVersionMeta(tc.name, tc.version, tc.channel, false, false, true, "", ""); code != "" {
+				t.Fatal(code)
+			}
+			// Inspect persisted bytes so ReadMeta's effective-value guard cannot
+			// hide a failure to enforce the minimum during SaveVersionMeta.
+			raw, err := os.ReadFile(filepath.Join(dir, "version.json"))
+			if err != nil {
+				t.Fatal(err)
+			}
+			var saved versions.VersionMeta
+			if err := json.Unmarshal(raw, &saved); err != nil || saved.EnableEditorMode != tc.want {
+				t.Fatalf("saved editor flag: %+v %v", saved, err)
+			}
+		})
 	}
 }
 

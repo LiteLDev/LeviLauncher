@@ -19,7 +19,7 @@ func TestLaunchPreparationRequiresSelectedDevelopmentRegistration(t *testing.T) 
 			}
 			return nil, nil
 		}
-		_, err := LaunchWithPreparation(context.Background(), dir, func() error {
+		_, err := LaunchWithPreparation(context.Background(), dir, false, func() error {
 			t.Fatal("unregistered or Store instance must not be patched")
 			return nil
 		})
@@ -34,8 +34,20 @@ func TestLaunchPreparationRequiresSelectedDevelopmentRegistration(t *testing.T) 
 }
 
 func TestLaunchPreparesAfterFullTrustAndStopsOnFailure(t *testing.T) {
-	for _, fail := range []string{"", "registration", "preparation"} {
-		t.Run(fail, func(t *testing.T) {
+	for _, tc := range []struct {
+		name   string
+		editor bool
+		fail   string
+	}{
+		{"game", false, ""},
+		{"game-registration-failure", false, "registration"},
+		{"game-preparation-failure", false, "preparation"},
+		{"editor", true, ""},
+		{"editor-registration-failure", true, "registration"},
+		{"editor-preparation-failure", true, "preparation"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			fail := tc.fail
 			_, dir := setupDeployment(t)
 			registered, prepared, activated := false, false, false
 			runPowerShell = func(_ context.Context, script string) ([]byte, error) {
@@ -51,16 +63,28 @@ func TestLaunchPreparesAfterFullTrustAndStopsOnFailure(t *testing.T) {
 				registered = true
 				return nil, nil
 			}
-			oldActivate := activateApplication
-			t.Cleanup(func() { activateApplication = oldActivate })
-			activateApplication = func(id string) (int, error) {
+			oldActivate, oldProtocol := activateApplication, activateProtocol
+			t.Cleanup(func() { activateApplication, activateProtocol = oldActivate, oldProtocol })
+			checkActivation := func(id string) (int, error) {
 				if !registered || !prepared || id != ReleaseFamilyName+"!App" {
 					t.Fatalf("activation before preparation: %s", id)
 				}
 				activated = true
 				return 123, nil
 			}
-			pid, err := LaunchWithPreparation(context.Background(), dir, func() error {
+			activateApplication = func(id string) (int, error) {
+				if tc.editor {
+					t.Fatal("editor must receive protocol activation")
+				}
+				return checkActivation(id)
+			}
+			activateProtocol = func(id, uri string) (int, error) {
+				if !tc.editor || uri != "minecraft:?Editor=true" {
+					t.Fatalf("unexpected protocol activation: %s", uri)
+				}
+				return checkActivation(id)
+			}
+			pid, err := LaunchWithPreparation(context.Background(), dir, tc.editor, func() error {
 				if !registered {
 					t.Fatal("patched before full trust registration")
 				}

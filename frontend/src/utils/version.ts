@@ -1,3 +1,10 @@
+export function isVersionAtLeast(value: string | undefined, minimum: string): boolean {
+  const version = String(value || "").trim();
+  return /^\d+(?:\.\d+){0,3}$/.test(version) &&
+    version.split(".").every(part => Number(part) <= 0xffffffff) &&
+    compareVersions(version, minimum) >= 0;
+}
+
 export function compareVersions(a: string, b: string): number {
   const as = String(a || "").split(".");
   const bs = String(b || "").split(".");

@@ -20,6 +20,27 @@ runInNewContext(outputText, { exports, require(name) {
 } });
 const { installerIdentityFromPath, isAppxInstaller, normalizePackageType, normalizeVersionChannel, versionStatusKey } = exports;
 
+test("Editor uses separate retail and Preview minima and rejects unknown versions", () => {
+  for (const [version, channel, supported] of [
+    ["1.21.49.99", "release", false], ["1.21.50", "release", true],
+    ["1.21.50.0", "Release", true], ["1.21.50.00", "release", true],
+    ["1.19.80.19", "preview", false], ["1.19.80.20", "preview", true],
+    ["1.19.80", "preview", false], ["1.19.80.020", " Preview ", true],
+    ["1.20.0.20", "release", false], ["1.20.0.20", "preview", true],
+    ["1.20.0.20", "beta", false], ["1.21.50.20", "beta", true],
+    ["1.21.119.0", "release", true], ["1.21.120.0", "release", true],
+    ["1.21.120.20", "preview", true], ["1.21.120.21", "preview", true],
+    ["26.20", "release", true], [" 1.21.50 ", "", true],
+    ["", "preview", false], ["unknown", "release", false],
+    ["1.21.50.0-preview", "preview", false], ["1.21.50.0.1", "release", false],
+    ["1.21.50.4294967296", "release", false], ["1..50", "release", false],
+  ]) {
+    assert.equal(exports.supportsEditorMode(version, channel), supported, `${channel} ${version}`);
+  }
+  assert.equal(exports.editorMinVersion("preview"), "1.19.80.20");
+  assert.equal(exports.editorMinVersion("release"), "1.21.50");
+});
+
 test("UWP isolation starts at 1.19.70.2 and rejects unknown or malformed versions", () => {
   for (const [version, supported] of [
     ["1.19.70.1", false], ["1.19.70.2", true], ["1.19.70.02", true],

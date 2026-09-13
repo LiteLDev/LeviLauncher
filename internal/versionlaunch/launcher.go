@@ -111,7 +111,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 				return err
 			}
 		}
-		pid, err := uwp.LaunchWithPreparation(ctx, dir, prepareLaunch)
+		pid, err := uwp.LaunchWithPreparation(ctx, dir, meta.EnableEditorMode, prepareLaunch)
 		if err != nil {
 			log.Printf("UWP launch failed for %s: %v", name, err)
 			return uwp.ErrorMessage(err)
@@ -166,7 +166,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 			}
 			url := protocol
 			if m.EnableEditorMode {
-				url = protocol + "creator/?Editor=true"
+				url = versions.EditorLaunchURI(versions.PackageTypeGDK, m.Type)
 			}
 
 			cmd := exec.Command("cmd", "/c", "start", "", url)
@@ -183,7 +183,7 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 			return ""
 		}
 		if m.EnableEditorMode {
-			args = []string{"-Editor", "true"}
+			args = append(args, "-Editor", "true")
 		}
 		gameVer = strings.TrimSpace(m.GameVersion)
 	}

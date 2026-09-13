@@ -783,17 +783,21 @@ export default function InstanceSettingsPage() {
                   </div>
                 </div>
               )}
-              {vs.selectedTab === "features" && vs.isUWP && <p className="text-sm text-muted">{t("uwp.editor_unavailable")}</p>}
-              {vs.selectedTab === "features" && !vs.isUWP && (
+              {vs.selectedTab === "features" && (
                 <div className="flex flex-col gap-5">
-                  <div className="flex items-center justify-between p-2 rounded-xl">
-                    <div className="text-base font-medium">
-                      {t("versions.edit.enable_editor_mode")}
+                  <div className="flex items-center justify-between gap-3 p-2 rounded-xl">
+                    <div className="min-w-0">
+                      <div className="text-base font-medium">{t("versions.edit.enable_editor_mode")}</div>
+                      <p id="editor-min-version" className="text-xs text-muted">
+                        {t("versions.edit.editor_min_version", { version: vs.editorMinimumVersion })}
+                      </p>
                     </div>
                     <Switch
                       aria-label={t("versions.edit.enable_editor_mode")}
+                      aria-describedby="editor-min-version"
                       size="md"
-                      isSelected={vs.enableEditorMode}
+                      isSelected={vs.editorSupported && vs.enableEditorMode}
+                      isDisabled={vs.loading || !vs.editorSupported}
                       onChange={vs.setEnableEditorMode}
                       className={"group"}
                     >

@@ -1,4 +1,4 @@
-import { normalizePackageType, supportsVersionIsolation, type PackageType } from "@/utils/packageType";
+import { editorMinVersion, normalizePackageType, supportsEditorMode, supportsVersionIsolation, type PackageType } from "@/utils/packageType";
 import { openDirectory } from "@/utils/explorer";
 import { toast, useOverlayState } from "@heroui/react";
 import React from "react";
@@ -619,6 +619,8 @@ export const useInstanceSettings = () => {
   const [gameVersion, setGameVersion] = React.useState<string>("");
   const isolationSupported = supportsVersionIsolation(packageType, gameVersion);
   const [versionType, setVersionType] = React.useState<string>("");
+  const editorSupported = supportsEditorMode(gameVersion, versionType);
+  const editorMinimumVersion = editorMinVersion(versionType);
   const [isPreview, setIsPreview] = React.useState<boolean>(false);
   const [enableIsolation, setEnableIsolation] = React.useState<boolean>(false);
   const [enableConsole, setEnableConsole] = React.useState<boolean>(false);
@@ -943,8 +945,9 @@ export const useInstanceSettings = () => {
             setOriginalIsolation(isolation);
             setEnableConsole(!!meta?.enableConsole);
             setOriginalConsole(!!meta?.enableConsole);
-            setEnableEditorMode(!!meta?.enableEditorMode);
-            setOriginalEditorMode(!!meta?.enableEditorMode);
+            const editorMode = !!meta?.enableEditorMode && supportsEditorMode(meta?.gameVersion, type);
+            setEnableEditorMode(editorMode);
+            setOriginalEditorMode(editorMode);
             setEnvVars(String(meta?.envVars || ""));
             setOriginalEnvVars(String(meta?.envVars || ""));
             setLaunchArgs(String(meta?.launchArgs || ""));
@@ -1950,7 +1953,7 @@ export const useInstanceSettings = () => {
           type,
           isolationSupported && !!enableIsolation,
           !!enableConsole,
-          !isUWP && !!enableEditorMode,
+          editorSupported && !!enableEditorMode,
           isUWP ? "" : launchArgs,
           isUWP ? "" : envVars,
         );
@@ -1984,6 +1987,7 @@ export const useInstanceSettings = () => {
       isPreview,
       enableIsolation,
       isolationSupported,
+      editorSupported,
       isUWP,
       enableConsole,
       enableEditorMode,
@@ -2304,6 +2308,8 @@ export const useInstanceSettings = () => {
     packageType,
     isUWP,
     isolationSupported,
+    editorSupported,
+    editorMinimumVersion,
     targetName,
     selectedTab,
     setSelectedTab,

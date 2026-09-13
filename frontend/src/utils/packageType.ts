@@ -1,4 +1,4 @@
-import { compareVersions } from "./version";
+import { isVersionAtLeast } from "./version";
 
 export type PackageType = "gdk" | "uwp";
 export type VersionChannel = "Release" | "Beta" | "Preview";
@@ -8,12 +8,22 @@ export const normalizePackageType = (value: unknown): PackageType =>
 
 export const UWP_ISOLATION_MIN_VERSION = "1.19.70.2";
 
+export const EDITOR_RELEASE_MIN_VERSION = "1.21.50";
+export const EDITOR_PREVIEW_MIN_VERSION = "1.19.80.20";
+
+export function editorMinVersion(channel?: string): string {
+  return String(channel || "").trim().toLowerCase() === "preview"
+    ? EDITOR_PREVIEW_MIN_VERSION
+    : EDITOR_RELEASE_MIN_VERSION;
+}
+
+export function supportsEditorMode(gameVersion?: string, channel?: string): boolean {
+  return isVersionAtLeast(gameVersion, editorMinVersion(channel));
+}
+
 export function supportsVersionIsolation(packageType?: string, gameVersion?: string): boolean {
   if (normalizePackageType(packageType) !== "uwp") return true;
-  const version = String(gameVersion || "").trim();
-  return /^\d+(?:\.\d+){0,3}$/.test(version) &&
-    version.split(".").every(part => Number(part) <= 0xffffffff) &&
-    compareVersions(version, UWP_ISOLATION_MIN_VERSION) >= 0;
+  return isVersionAtLeast(gameVersion, UWP_ISOLATION_MIN_VERSION);
 }
 
 export const normalizeVersionChannel = (value: unknown): VersionChannel => {

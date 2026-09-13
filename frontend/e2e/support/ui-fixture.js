@@ -1,6 +1,7 @@
 (() => {
 const scenario = new URLSearchParams(location.search).get('scenario') || 'normal';
 const isUWP = scenario.startsWith('uwp');
+const isEditorMinimum = scenario === 'uwp-editor-minimum';
 const state = window.__audit = { recovered: false, baseRoot: 'C:\\Fixture', scenario, processes: [{pid: 4242, exePath: 'C:\\Fixture\\Minecraft.Windows.exe', isLauncher: true, versionName: 'UI test instance'}] };
 localStorage.setItem('i18nextLng', 'zh_CN');
 localStorage.setItem('ll.clarity.enabled', 'false');
@@ -21,6 +22,10 @@ state.catalogPackages = Array.from({ length: 45 }, (_, index) => ({
 state.uwpVersions = Array.from({length: 24}, (_, index) => ({version: `1.21.${100-index}.0`, uuid:`00000000-0000-4000-8000-${String(index).padStart(12,'0')}`,type: ['release','beta','preview'][index%3], packageType:'uwp'}));
 if(scenario.startsWith('uwp-isolation-min')) state.uwpVersions[0].version=new URLSearchParams(location.search).get('version') || '';
 state.uwpMetas = ['release','beta','preview'].map((type,index)=>({name:`UWP ${type} instance`,gameVersion:state.uwpVersions[index].version,type,packageType:'uwp',enableIsolation:false,registered:index===0}));
+if(isEditorMinimum) {
+  const params = new URLSearchParams(location.search);
+  Object.assign(state.uwpMetas[0], {gameVersion:params.get('version') || '',type:params.get('channel') || 'release',packageType:params.get('packageType') || 'uwp',enableEditorMode:params.get('enabled') === 'true'});
+}
 if(scenario==='uwp-isolation-min-settings') state.uwpMetas[0].enableIsolation=true;
 if (['uwp-unregistered','uwp-register-fail','uwp-register-unconfirmed','uwp-stale-register'].includes(scenario)) state.uwpMetas.forEach(meta=>{meta.registered=false;});
 state.uwpRoots = {base:'C:\\Fixture\\Packages\\Microsoft.MinecraftUWP_8wekyb3d8bbwe\\LocalState\\games\\com.mojang', usersRoot:'',isIsolation:false,isPreview:false,packageType:'uwp'};

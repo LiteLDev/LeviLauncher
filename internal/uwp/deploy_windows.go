@@ -16,6 +16,7 @@ import (
 	"unicode/utf16"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/versions"
 )
 
 type registeredPackage struct {
@@ -28,6 +29,7 @@ type registeredPackage struct {
 var deploymentMu sync.Mutex
 var runPowerShell = executePowerShell
 var activateApplication = activate
+var activateProtocol = activateWithURI
 
 func executePowerShell(ctx context.Context, script string) ([]byte, error) {
 	if ctx == nil {
@@ -268,17 +270,23 @@ func Unregister(ctx context.Context, dir string) error {
 }
 
 func Launch(ctx context.Context, dir string) (int, error) {
-	return LaunchWithPreparation(ctx, dir, nil)
+	return LaunchWithPreparation(ctx, dir, false, nil)
 }
 
 // LaunchWithPreparation upgrades an already registered managed instance to
 // full trust before preparing its native loader. It never registers an absent
 // instance or switches the selected package as a side effect of launching.
-func LaunchWithPreparation(ctx context.Context, dir string, prepare func() error) (int, error) {
+func LaunchWithPreparation(ctx context.Context, dir string, enableEditorMode bool, prepare func() error) (int, error) {
 	manifest, err := ReadManifest(dir)
 	if err != nil {
 		return 0, err
 	}
+	channel := "release"
+	if strings.EqualFold(manifest.Identity.Name, PreviewPackageName) {
+		channel = "preview"
+	}
+	// The actual package guards launches even if imported metadata was edited.
+	enableEditorMode = enableEditorMode && versions.SupportsEditorMode(manifest.GameVersion(), channel)
 	deploymentMu.Lock()
 	defer deploymentMu.Unlock()
 	pkg, err := queryPackage(ctx, manifest.Identity.Name)
@@ -301,7 +309,13 @@ func LaunchWithPreparation(ctx context.Context, dir string, prepare func() error
 			return 0, failure("ERR_UWP_PREPARE", err)
 		}
 	}
-	pid, err := activateApplication(pkg.PackageFamilyName + "!" + manifest.Applications[0].ID)
+	appID := pkg.PackageFamilyName + "!" + manifest.Applications[0].ID
+	var pid int
+	if enableEditorMode {
+		pid, err = activateProtocol(appID, versions.EditorLaunchURI(versions.PackageTypeUWP, channel))
+	} else {
+		pid, err = activateApplication(appID)
+	}
 	if err != nil {
 		return 0, failure("ERR_UWP_LAUNCH", err)
 	}

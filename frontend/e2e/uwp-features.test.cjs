@@ -47,10 +47,22 @@ async function run(viewport) {
     assert.equal(await toggle.isChecked(), true);
     await page.waitForTimeout(350); // Let the switch's visual transition finish.
     if (outputDir) await page.screenshot({ path: path.join(outputDir, `uwp-console-${viewport.width}.png`) });
+    await page.getByRole('tab', { name: translations.versions.edit.tabs.features, exact: true }).click();
+    const editor = page.getByRole('switch', { name: translations.versions.edit.enable_editor_mode });
+    await editor.waitFor();
+    await inViewport(editor, viewport);
+    await inViewport(save, viewport);
+    assert.equal(await editor.isChecked(), false);
+    await editor.press('Space');
+    assert.equal(await editor.isChecked(), true);
+    if (outputDir) {
+      await page.waitForTimeout(350); // Capture after the tab and switch transitions settle.
+      await page.screenshot({ path: path.join(outputDir, `uwp-editor-${viewport.width}.png`) });
+    }
     await save.click();
     await page.waitForFunction(() => window.__audit.calls.some(call => call.name === 'SaveVersionMeta'));
     let saved = await page.evaluate(() => window.__audit.calls.filter(call => call.name === 'SaveVersionMeta').at(-1));
-    assert.deepEqual(saved.args.slice(3), [true, true, false, '', '']);
+    assert.deepEqual(saved.args.slice(3), [true, true, true, '', '']);
     await page.waitForURL(url => url.hash === `#${ROUTES.instances}`);
     await page.evaluate(content => {
       history.pushState({ usr: null, key: 'uwp-content', idx: 1 }, '', `#${content}`);
@@ -80,6 +92,11 @@ async function run(viewport) {
     assert.equal(await isolation.isChecked(), true);
     await isolation.press('Space');
     await toggle.press('Space');
+    await page.getByRole('tab', { name: translations.versions.edit.tabs.features, exact: true }).click();
+    await editor.waitFor();
+    assert.equal(await editor.isChecked(), true, 'editor mode must persist after reopening settings');
+    await editor.press('Space');
+    assert.equal(await editor.isChecked(), false);
     await page.getByRole('tab', { name: translations.versions.edit.tabs.loader, exact: true }).click();
     const folder = page.getByRole('button', { name: translations.downloadmodal.open_folder, exact: true });
     await folder.waitFor();
@@ -106,7 +123,7 @@ async function run(viewport) {
     assert.equal((await transfer.innerText()).includes('UWP beta instance'), false, 'shared Release and Beta point at the same folder');
     await transfer.getByRole('button', { name: translations.common.cancel, exact: true }).click();
     assert.deepEqual(errors, []);
-    console.log(`PASS UWP isolation, content paths, console persistence and native mod controls at ${viewport.width}x${viewport.height}`);
+    console.log(`PASS UWP editor and console persistence, isolation, content paths and native mod controls at ${viewport.width}x${viewport.height}`);
   } catch (error) {
     if (outputDir) await page.screenshot({ path: path.join(outputDir, `uwp-features-failed-${viewport.width}.png`) });
     console.error(await page.locator('body').innerText());

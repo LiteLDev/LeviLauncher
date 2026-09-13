@@ -316,13 +316,13 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 	oldMeta, _ := versions.ReadMeta(dir)
 	packageType := versions.DetectPackageType(dir, oldMeta)
 	if packageType == "uwp" {
-		enableEditorMode = false
 		launchArgs, envVars = "", ""
 		if gvRaw == "" {
 			gv = oldMeta.GameVersion
 		}
 	}
 	enableIsolation = enableIsolation && versions.SupportsIsolation(packageType, gv)
+	enableEditorMode = enableEditorMode && versions.SupportsEditorMode(gv, typeStr)
 
 	meta := versions.VersionMeta{
 		Name:             n,

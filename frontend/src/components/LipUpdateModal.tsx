@@ -1,5 +1,6 @@
+import { ModalAction, ModalDescription, ModalDetails } from "@/components/ModalPrimitives";
 import React from "react";
-import { Button } from "@heroui/react";
+
 import {
   UnifiedModal,
   getUnifiedModalConfirmButtonProps,
@@ -30,7 +31,7 @@ export const LipUpdateModal: React.FC<LipUpdateModalProps> = ({
 
   return (
     <UnifiedModal
-      size="md"
+      size="standard"
       isOpen={isOpen}
       onOpenChange={(open) => {
         if (!open) {
@@ -40,40 +41,37 @@ export const LipUpdateModal: React.FC<LipUpdateModalProps> = ({
       type="warning"
       title={t("settings.lip.startup_prompt.title")}
       icon={<FaDownload className="w-5 h-5" />}
-      hideCloseButton
       showConfirmButton={false}
       showCancelButton={false}
       footer={
         <div className="flex w-full flex-wrap justify-end gap-2">
-          <Button variant="light" onPress={onDismiss}>
+          <ModalAction onPress={onDismiss} variant="secondary">
             {t("settings.lip.startup_prompt.later_button")}
-          </Button>
-          <Button variant="flat" onPress={onIgnore}>
+          </ModalAction>
+          <ModalAction onPress={onIgnore} variant={"secondary"}>
             {t("settings.lip.startup_prompt.ignore_button")}
-          </Button>
-          <Button {...warningConfirmButtonProps} onPress={onOpenSettings}>
+          </ModalAction>
+          <ModalAction
+            {...warningConfirmButtonProps}
+            onPress={onOpenSettings}
+            variant="primary"
+          >
             {t("settings.lip.startup_prompt.open_settings_button")}
-          </Button>
+          </ModalAction>
         </div>
       }
     >
       <div className="flex flex-col gap-3">
-        <p className="text-small text-default-600 dark:text-zinc-300 leading-6">
+        <ModalDescription>
           {t("settings.lip.startup_prompt.description", {
             currentVersion,
             latestVersion,
           })}
-        </p>
-        <div className="rounded-2xl border border-default-200 dark:border-zinc-700 bg-default-100/60 dark:bg-zinc-800/60 px-4 py-3 text-small text-default-600 dark:text-zinc-300">
-          <div>
-            {t("settings.lip.startup_prompt.current_version", {
-              currentVersion,
-            })}
-          </div>
-          <div>
-            {t("settings.lip.startup_prompt.latest_version", { latestVersion })}
-          </div>
-        </div>
+        </ModalDescription>
+        <ModalDetails items={[
+          { label: t("settings.lip.startup_prompt.current_version", { currentVersion: "" }).replace(/[:：]\s*$/, ""), value: currentVersion, mono: true },
+          { label: t("settings.lip.startup_prompt.latest_version", { latestVersion: "" }).replace(/[:：]\s*$/, ""), value: latestVersion, mono: true },
+        ]} />
       </div>
     </UnifiedModal>
   );

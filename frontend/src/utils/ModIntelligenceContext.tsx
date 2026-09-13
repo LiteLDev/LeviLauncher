@@ -7,11 +7,12 @@ import React, {
   useRef,
   useState,
 } from "react";
-import { Call, Events } from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
+import { GetLIPPackageInstallStates } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   GetMods,
   IsModEnabled,
-} from "bindings/github.com/liteldev/LeviLauncher/modsservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
   fetchLIPPackagesIndex,
@@ -266,8 +267,7 @@ export const ModIntelligenceProvider: React.FC<{
       }
 
       try {
-        const raw = await Call.ByName(
-          "main.Minecraft.GetLIPPackageInstallStates",
+        const raw = await GetLIPPackageInstallStates(
           normalizedName,
           requestIdentifiers,
         );

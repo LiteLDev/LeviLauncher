@@ -25,6 +25,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
+	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"golang.org/x/sys/windows"
 	winreg "golang.org/x/sys/windows/registry"
@@ -144,22 +145,78 @@ func readExeFileVersion(exePath string) (string, bool) {
 	return fmt.Sprintf("%d.%d.%d.%d", major, minor, build, rev), true
 }
 
+// isolationDirName is the per-instance data folder. UWP names it per channel
+// because the launcher owns the redirect target; GDK mirrors the game's
+// sAppName, which only distinguishes preview from release.
+func isolationDirName(packageType, channel string) string {
+	c := strings.ToLower(strings.TrimSpace(channel))
+	if strings.EqualFold(strings.TrimSpace(packageType), versions.PackageTypeUWP) && c == "beta" {
+		return "Minecraft Bedrock Beta"
+	}
+	if c == "preview" {
+		return "Minecraft Bedrock Preview"
+	}
+	return "Minecraft Bedrock"
+}
+
 func GetContentRoots(name string) types.ContentRoots {
 	roots := types.ContentRoots{Base: "", UsersRoot: "", ResourcePacks: "", BehaviorPacks: "", IsIsolation: false, IsPreview: false}
 	verName := strings.TrimSpace(name)
 	isPreview := false
 	isIsolation := false
+	channel := ""
+	packageType := "gdk"
 	if verName != "" {
 		if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
 			dir := filepath.Join(vdir, verName)
 			if m, merr := versions.ReadMeta(dir); merr == nil {
 				isIsolation = m.EnableIsolation
-				isPreview = strings.EqualFold(strings.TrimSpace(m.Type), "preview")
+				channel = strings.TrimSpace(m.Type)
+				isPreview = strings.EqualFold(channel, "preview")
+				if strings.EqualFold(strings.TrimSpace(m.PackageType), "uwp") {
+					packageType = "uwp"
+				}
 			}
 		}
 	}
 	roots.IsIsolation = isIsolation
 	roots.IsPreview = isPreview
+	roots.PackageType = packageType
+	if packageType == "uwp" {
+		// Isolated UWP redirects ApplicationData into the instance's data folder,
+		// named per channel to match GDK. Non-isolated instances share the Windows
+		// package family's LocalState.
+		if isIsolation && verName != "" {
+			if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
+				base := filepath.Join(vdir, verName, isolationDirName(packageType, channel))
+				roots.Base = base
+				roots.ComMojangRoot = filepath.Join(base, "games", "com.mojang")
+				roots.Worlds = filepath.Join(roots.ComMojangRoot, "minecraftWorlds")
+				roots.ResourcePacks = filepath.Join(roots.ComMojangRoot, "resource_packs")
+				roots.BehaviorPacks = filepath.Join(roots.ComMojangRoot, "behavior_packs")
+				roots.SkinPacks = filepath.Join(roots.ComMojangRoot, "skin_packs")
+				roots.Screenshots = filepath.Join(roots.ComMojangRoot, "Screenshots")
+				return roots
+			}
+		}
+		roots.IsIsolation = false
+		localAppData := strings.TrimSpace(os.Getenv("LOCALAPPDATA"))
+		if localAppData == "" {
+			return roots
+		}
+		family := "Microsoft.MinecraftUWP_8wekyb3d8bbwe"
+		if isPreview {
+			family = "Microsoft.MinecraftWindowsBeta_8wekyb3d8bbwe"
+		}
+		roots.Base = filepath.Join(localAppData, "Packages", family, "LocalState")
+		roots.ComMojangRoot = filepath.Join(roots.Base, "games", "com.mojang")
+		roots.Worlds = filepath.Join(roots.ComMojangRoot, "minecraftWorlds")
+		roots.ResourcePacks = filepath.Join(roots.ComMojangRoot, "resource_packs")
+		roots.BehaviorPacks = filepath.Join(roots.ComMojangRoot, "behavior_packs")
+		roots.SkinPacks = filepath.Join(roots.ComMojangRoot, "skin_packs")
+		roots.Screenshots = filepath.Join(roots.ComMojangRoot, "Screenshots")
+		return roots
+	}
 	gameDirName := "Minecraft Bedrock"
 	if isPreview {
 		gameDirName = "Minecraft Bedrock Preview"
@@ -182,6 +239,7 @@ func GetContentRoots(name string) types.ContentRoots {
 	roots.UsersRoot = users
 	roots.ResourcePacks = filepath.Join(shared, "resource_packs")
 	roots.BehaviorPacks = filepath.Join(shared, "behavior_packs")
+	roots.SkinPacks = filepath.Join(shared, "skin_packs")
 	return roots
 }
 
@@ -206,7 +264,7 @@ func GetContentCounts(name string) ContentCounts {
 	}
 	res := countDirs(roots.ResourcePacks)
 	bp := countDirs(roots.BehaviorPacks)
-	worlds := 0
+	worlds := countDirs(roots.Worlds)
 	usersRoot := strings.TrimSpace(roots.UsersRoot)
 	if usersRoot != "" {
 		ents, _ := os.ReadDir(usersRoot)
@@ -228,7 +286,10 @@ func GetContentCounts(name string) ContentCounts {
 	return ContentCounts{Worlds: worlds, ResourcePacks: res, BehaviorPacks: bp}
 }
 
-func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, enableRenderDragon bool, enableCtrlRReloadResources bool, launchArgs string, envVars string) string {
+func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsolation bool, enableConsole bool, enableEditorMode bool, launchArgs string, envVars string) string {
+	if code := versions.ValidateFolderName(name); code != "" || strings.TrimSpace(name) == "." || strings.TrimSpace(name) == ".." {
+		return "ERR_INVALID_NAME"
+	}
 	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
@@ -243,7 +304,7 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 	}
 	shouldDetect := gv == "" || (strings.EqualFold(gv, n) && !isFourPartNumericVersion(gv))
 	if shouldDetect {
-		if fv, ok := readExeFileVersion(filepath.Join(dir, "Minecraft.Windows.exe")); ok {
+		if fv, ok := readExeFileVersion(versionExecutable(dir)); ok {
 			gv = normalizeBedrockGameVersion(fv)
 		}
 		if strings.EqualFold(strings.TrimSpace(gv), n) {
@@ -253,19 +314,27 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 
 	// Try read old
 	oldMeta, _ := versions.ReadMeta(dir)
+	packageType := versions.DetectPackageType(dir, oldMeta)
+	if packageType == "uwp" {
+		enableEditorMode = false
+		launchArgs, envVars = "", ""
+		if gvRaw == "" {
+			gv = oldMeta.GameVersion
+		}
+	}
+	enableIsolation = enableIsolation && versions.SupportsIsolation(packageType, gv)
 
 	meta := versions.VersionMeta{
-		Name:                       n,
-		GameVersion:                strings.TrimSpace(gv),
-		Type:                       strings.TrimSpace(typeStr),
-		EnableIsolation:            enableIsolation,
-		EnableConsole:              enableConsole,
-		EnableEditorMode:           enableEditorMode,
-		EnableRenderDragon:         enableRenderDragon,
-		EnableCtrlRReloadResources: enableCtrlRReloadResources,
-		LaunchArgs:                 launchArgs,
-		EnvVars:                    envVars,
-		CreatedAt:                  time.Now(),
+		Name:             n,
+		PackageType:      packageType,
+		GameVersion:      strings.TrimSpace(gv),
+		Type:             strings.TrimSpace(typeStr),
+		EnableIsolation:  enableIsolation,
+		EnableConsole:    enableConsole,
+		EnableEditorMode: enableEditorMode,
+		LaunchArgs:       launchArgs,
+		EnvVars:          envVars,
+		CreatedAt:        time.Now(),
 	}
 	if !oldMeta.CreatedAt.IsZero() {
 		meta.CreatedAt = oldMeta.CreatedAt
@@ -274,8 +343,10 @@ func SaveVersionMeta(name string, gameVersion string, typeStr string, enableIsol
 		meta.Registered = true
 	}
 
-	if _, err := peeditor.PrepareExecutableForLaunch(context.Background(), dir, enableConsole); err != nil {
-		return "ERR_PREPARE_EXE"
+	if packageType != "uwp" {
+		if _, err := peeditor.PrepareExecutableForLaunch(context.Background(), dir, enableConsole); err != nil {
+			return "ERR_PREPARE_EXE"
+		}
 	}
 	if err := versions.WriteMeta(dir, meta); err != nil {
 		return "ERR_WRITE_TARGET"
@@ -321,23 +392,15 @@ func ReconcileRegisteredFlags() {
 	}
 	getLoc := func(name string) string {
 		if info, e := registry.GetAppxInfo(name); e == nil && info != nil {
-			return strings.ToLower(filepath.Clean(strings.TrimSpace(info.InstallLocation)))
+			return canonicalPath(info.InstallLocation)
 		}
 		return ""
 	}
 	releaseLoc := getLoc("MICROSOFT.MINECRAFTUWP")
 	previewLoc := getLoc("Microsoft.MinecraftWindowsBeta")
-	normalize := func(p string) string {
-		s := strings.ToLower(filepath.Clean(strings.TrimSpace(p)))
-		s = strings.TrimPrefix(s, `\\?\`)
-		s = strings.TrimPrefix(s, `\??\`)
-		return s
-	}
-	releaseLoc = normalize(releaseLoc)
-	previewLoc = normalize(previewLoc)
 	for _, m := range metas {
 		isPreview := strings.EqualFold(strings.TrimSpace(m.Type), "preview")
-		dir := normalize(filepath.Join(vdir, strings.TrimSpace(m.Name)))
+		dir := canonicalPath(filepath.Join(vdir, strings.TrimSpace(m.Name)))
 		want := releaseLoc
 		if isPreview {
 			want = previewLoc
@@ -365,6 +428,9 @@ func ListInheritableVersionNames(versionType string) []string {
 	}
 	names := make([]string, 0, len(metas))
 	for _, m := range metas {
+		if versions.DetectPackageType(filepath.Join(vdir, m.Name), m) == "uwp" {
+			continue
+		}
 		if !m.EnableIsolation {
 			continue
 		}
@@ -409,6 +475,9 @@ func CopyVersionDataFromVersion(sourceName string, targetName string) string {
 		return "ERR_INHERIT_TARGET_NOT_FOUND"
 	}
 	st := strings.ToLower(strings.TrimSpace(sm.Type))
+	if versions.DetectPackageType(sdir, sm) == "uwp" || versions.DetectPackageType(tdir, tm) == "uwp" {
+		return "ERR_INHERIT_TYPE_MISMATCH"
+	}
 	tt := strings.ToLower(strings.TrimSpace(tm.Type))
 	if st == "" || tt == "" || st != tt {
 		return "ERR_INHERIT_TYPE_MISMATCH"
@@ -444,6 +513,9 @@ func CopyVersionDataFromGDK(isPreview bool, targetName string) string {
 	tm, terr := versions.ReadMeta(tdir)
 	if terr != nil {
 		return "ERR_INHERIT_TARGET_NOT_FOUND"
+	}
+	if versions.DetectPackageType(tdir, tm) == "uwp" {
+		return "ERR_INHERIT_TYPE_MISMATCH"
 	}
 	tt := strings.ToLower(strings.TrimSpace(tm.Type))
 	if (isPreview && tt != "preview") || (!isPreview && tt != "release") {
@@ -607,7 +679,9 @@ func ValidateVersionFolderName(name string) string {
 		return "ERR_READ_VERSIONS_DIR"
 	}
 	for _, e := range entries {
-		if !e.IsDir() {
+		// A junction-backed version folder occupies its name just like a real
+		// directory, and os.ReadDir reports it as not-a-dir.
+		if !e.IsDir() && !utils.ResolvesToDir(filepath.Join(vdir, e.Name())) {
 			continue
 		}
 		if strings.EqualFold(e.Name(), n) {
@@ -621,6 +695,9 @@ func RenameVersionFolder(oldName string, newName string) string {
 	on := strings.TrimSpace(oldName)
 	nn := strings.TrimSpace(newName)
 	if on == "" || nn == "" {
+		return "ERR_INVALID_NAME"
+	}
+	if versions.ValidateFolderName(on) != "" || versions.ValidateFolderName(nn) != "" || on == "." || on == ".." || nn == "." || nn == ".." {
 		return "ERR_INVALID_NAME"
 	}
 	vdir, err := apppath.VersionsDir()
@@ -643,6 +720,14 @@ func RenameVersionFolder(oldName string, newName string) string {
 	if utils.DirExists(newPath) {
 		return "ERR_NAME_EXISTS"
 	}
+	if meta, err := versions.ReadMeta(oldPath); err == nil && versions.DetectPackageType(oldPath, meta) == "uwp" {
+		if IsProcessRunningAtPath(versionExecutable(oldPath)) {
+			return "ERR_GAME_ALREADY_RUNNING"
+		}
+		if err := uwp.Unregister(context.Background(), oldPath); err != nil {
+			return uwp.ErrorCode(err)
+		}
+	}
 	if err := os.Rename(oldPath, newPath); err != nil {
 		return "ERR_RENAME_FAILED"
 	}
@@ -654,8 +739,50 @@ func RenameVersionFolder(oldName string, newName string) string {
 	return ""
 }
 
+// canonicalPath normalizes path for comparison, resolving junctions and
+// symlinks to the location Windows itself reports. A version folder may be a
+// junction into an external game directory while the OS reports the resolved
+// path for running processes and registered packages, so both sides of such a
+// comparison go through this.
+func canonicalPath(path string) string {
+	s := strings.TrimSpace(path)
+	if s == "" {
+		return ""
+	}
+	if resolved, err := resolveFinalPath(s); err == nil {
+		s = resolved
+	}
+	return normalizePath(s)
+}
+
+func resolveFinalPath(path string) (string, error) {
+	p, err := windows.UTF16PtrFromString(path)
+	if err != nil {
+		return "", err
+	}
+	h, err := windows.CreateFile(p, 0,
+		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
+		nil, windows.OPEN_EXISTING, windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	if err != nil {
+		return "", err
+	}
+	defer windows.CloseHandle(h)
+	buf := make([]uint16, windows.MAX_PATH)
+	n, err := windows.GetFinalPathNameByHandle(h, &buf[0], uint32(len(buf)), 0)
+	if err != nil {
+		return "", err
+	}
+	if int(n) > len(buf) {
+		buf = make([]uint16, n)
+		if n, err = windows.GetFinalPathNameByHandle(h, &buf[0], uint32(len(buf)), 0); err != nil {
+			return "", err
+		}
+	}
+	return windows.UTF16ToString(buf[:n]), nil
+}
+
 func IsProcessRunningAtPath(exePath string) bool {
-	p := strings.ToLower(filepath.Clean(strings.TrimSpace(exePath)))
+	p := canonicalPath(exePath)
 	if p == "" {
 		return false
 	}
@@ -678,10 +805,8 @@ func IsProcessRunningAtPath(exePath string) bool {
 			if e := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); e == nil && size > 0 {
 				path := windows.UTF16ToString(buf[:size])
 				_ = windows.CloseHandle(h)
-				norm := strings.ToLower(filepath.Clean(strings.TrimSpace(path)))
-				norm = strings.TrimPrefix(norm, `\\?\`)
-				norm = strings.TrimPrefix(norm, `\??\`)
-				if norm == p {
+				// The OS already reports a resolved image path here.
+				if normalizePath(path) == p {
 					return true
 				}
 			} else {
@@ -700,6 +825,9 @@ func DeleteVersionFolder(name string) string {
 	if n == "" {
 		return "ERR_INVALID_NAME"
 	}
+	if versions.ValidateFolderName(n) != "" || n == "." || n == ".." {
+		return "ERR_INVALID_NAME"
+	}
 	vdir, err := apppath.VersionsDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
@@ -708,11 +836,16 @@ func DeleteVersionFolder(name string) string {
 	if !utils.DirExists(dir) {
 		return "ERR_NOT_FOUND_OLD"
 	}
-	exe := filepath.Join(dir, "Minecraft.Windows.exe")
+	exe := versionExecutable(dir)
 	if utils.FileExists(exe) && IsProcessRunningAtPath(exe) {
 		return "ERR_GAME_ALREADY_RUNNING"
 	}
-	if err := os.RemoveAll(dir); err != nil {
+	if meta, err := versions.ReadMeta(dir); err == nil && versions.DetectPackageType(dir, meta) == "uwp" {
+		if err := uwp.Unregister(context.Background(), dir); err != nil {
+			return uwp.ErrorCode(err)
+		}
+	}
+	if err := utils.RemoveDir(dir); err != nil {
 		return "ERR_DELETE_FAILED"
 	}
 	return ""
@@ -831,7 +964,7 @@ func CreateDesktopShortcut(name string) string {
 	iconPath := exePath
 	if vdir, err := apppath.VersionsDir(); err == nil && strings.TrimSpace(vdir) != "" {
 		dir := filepath.Join(vdir, n)
-		e := filepath.Join(dir, "Minecraft.Windows.exe")
+		e := versionExecutable(dir)
 		isPreview := false
 		if m, er := versions.ReadMeta(dir); er == nil {
 			isPreview = strings.EqualFold(strings.TrimSpace(m.Type), "preview")

@@ -16,7 +16,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
 	"unsafe"
 
@@ -24,16 +23,18 @@ import (
 	"gopkg.in/natefinch/npipe.v2"
 
 	"github.com/joho/godotenv"
+	"github.com/liteldev/LeviLauncher/internal/app"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
-	"github.com/liteldev/LeviLauncher/internal/extractor"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/lip"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
+	"github.com/liteldev/LeviLauncher/internal/oslang"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
-	"github.com/liteldev/LeviLauncher/internal/resourcerules"
+	"github.com/liteldev/LeviLauncher/internal/tray"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
@@ -47,6 +48,9 @@ import (
 //go:embed all:frontend/dist
 var assets embed.FS
 
+//go:embed build/windows/icon.ico
+var appIcon []byte
+
 var singleInstanceGuard win.Handle
 
 const singleInstancePipe = `\\.\pipe\LeviLauncher_SingleInstance_Pipe`
@@ -54,6 +58,7 @@ const singleInstancePipe = `\\.\pipe\LeviLauncher_SingleInstance_Pipe`
 const (
 	ATTACH_PARENT_PROCESS = ^uint32(0)
 	CP_UTF8               = 65001
+	SW_SHOW               = 5
 	SW_RESTORE            = 9
 	MB_OK                 = 0x00000000
 	MB_ICONERROR          = 0x00000010
@@ -67,7 +72,6 @@ var (
 	kernel32                     = win.NewLazySystemDLL("kernel32.dll")
 	procAttachConsole            = kernel32.NewProc("AttachConsole")
 	procAllocConsole             = kernel32.NewProc("AllocConsole")
-	procGetUserDefaultUILanguage = kernel32.NewProc("GetUserDefaultUILanguage")
 	procSetConsoleOutputCP       = kernel32.NewProc("SetConsoleOutputCP")
 	procSetConsoleCP             = kernel32.NewProc("SetConsoleCP")
 	user32                       = win.NewLazySystemDLL("user32.dll")
@@ -75,6 +79,7 @@ var (
 	procMessageBoxW              = user32.NewProc("MessageBoxW")
 	procShowWindow               = user32.NewProc("ShowWindow")
 	procSetForegroundWindow      = user32.NewProc("SetForegroundWindow")
+	procIsIconic                 = user32.NewProc("IsIconic")
 )
 
 type startupLogger struct {
@@ -223,17 +228,8 @@ func (s *startupDiagnostics) logError(source string, err error) {
 	log.Printf("[startup] %s: %v", source, err)
 }
 
-func isChineseWindowsUI() bool {
-	langID, _, err := procGetUserDefaultUILanguage.Call()
-	if langID == 0 || err != nil && err != syscall.Errno(0) {
-		return false
-	}
-	primaryLangID := uint16(langID) & 0x03ff
-	return primaryLangID == 0x04
-}
-
 func startupFailureDialogTitle() string {
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher - 启动失败"
 	}
 	return "LeviLauncher - Startup Failed"
@@ -244,7 +240,7 @@ func buildStartupFailureDialogMessage(logPath string, debugMode bool) string {
 		logPath = "Unavailable"
 	}
 	if debugMode {
-		if isChineseWindowsUI() {
+		if oslang.IsChineseUI() {
 			return fmt.Sprintf(
 				"LeviLauncher 启动失败。\n\n调试模式已启用。请复制当前控制台输出，并在提交 GitHub issue 时附上 startup.log。\n\n日志路径:\n%s",
 				logPath,
@@ -255,7 +251,7 @@ func buildStartupFailureDialogMessage(logPath string, debugMode bool) string {
 			logPath,
 		)
 	}
-	if isChineseWindowsUI() {
+	if oslang.IsChineseUI() {
 		return "LeviLauncher 启动失败。\n\n请从 PowerShell 或 Windows Terminal 使用 --debug 重新启动，以捕获控制台日志。\n\n命令行示例:\n.\\LeviLauncher.exe --debug\n\n也可以在快捷方式目标末尾追加 --debug。支持参数: debug, --debug, -debug, /debug。\n\n如果仍然失败，请在 GitHub issue 中附上控制台输出。"
 	}
 	return "LeviLauncher failed to start.\n\nRestart it from PowerShell or Windows Terminal with --debug to capture console logs.\n\nCommand-line example:\n.\\LeviLauncher.exe --debug\n\nYou can also append --debug to the shortcut Target. Supported arguments: debug, --debug, -debug, /debug.\n\nIf it still fails, attach the console output when opening a GitHub issue."
@@ -287,13 +283,21 @@ func showStartupFailureDialog(title string, message string) {
 	)
 }
 
+// focusExistingWindow is the fallback for when the running launcher has not
+// opened its pipe yet. SW_RESTORE is reserved for a minimised window: on a
+// maximised one it would drop the window back to its pre-maximised size.
 func focusExistingWindow() {
 	title, _ := win.UTF16PtrFromString("LeviLauncher")
-	r1, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(title)))
-	if r1 != 0 {
-		_, _, _ = procShowWindow.Call(r1, uintptr(SW_RESTORE))
-		_, _, _ = procSetForegroundWindow.Call(r1)
+	hwnd, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(title)))
+	if hwnd == 0 {
+		return
 	}
+	showCmd := SW_SHOW
+	if iconic, _, _ := procIsIconic.Call(hwnd); iconic != 0 {
+		showCmd = SW_RESTORE
+	}
+	_, _, _ = procShowWindow.Call(hwnd, uintptr(showCmd))
+	_, _, _ = procSetForegroundWindow.Call(hwnd)
 }
 
 func isDebugArg(arg string) bool {
@@ -384,17 +388,20 @@ func parseArgs() (initialURL string, autoLaunchVersion string, postUpdateRestart
 	return initialURL, autoLaunchVersion, postUpdateRestart, debugMode
 }
 
-func sendLaunchToExistingInstance(version string) bool {
-	v := strings.TrimSpace(version)
-	if v == "" {
-		return false
+// sendToExistingInstance hands the command line over to the launcher that
+// already holds the single-instance mutex. Going through the pipe lets that
+// process act on its own window handle instead of this one guessing at it.
+func sendToExistingInstance(version string) bool {
+	command := "focus\t1\n"
+	if v := strings.TrimSpace(version); v != "" {
+		command = "launch\t" + v + "\n"
 	}
 	for i := 0; i < 8; i++ {
 		conn, err := npipe.DialTimeout(singleInstancePipe, 200*time.Millisecond)
 		if err == nil && conn != nil {
 			func() {
 				defer conn.Close()
-				_, _ = conn.Write([]byte("launch\t" + v + "\n"))
+				_, _ = conn.Write([]byte(command))
 			}()
 			return true
 		}
@@ -403,7 +410,7 @@ func sendLaunchToExistingInstance(version string) bool {
 	return false
 }
 
-func startSingleInstanceServer(versionService *VersionService) {
+func startSingleInstanceServer(versionService *app.VersionService) {
 	ln, err := npipe.Listen(singleInstancePipe)
 	if err != nil {
 		return
@@ -428,7 +435,13 @@ func startSingleInstanceServer(versionService *VersionService) {
 					}
 					cmd := strings.TrimSpace(parts[0])
 					payload := strings.TrimSpace(parts[1])
-					if cmd == "launch" && payload != "" {
+					switch cmd {
+					case "focus":
+						go launch.RestoreLauncherWindow()
+					case "launch":
+						if payload == "" {
+							continue
+						}
 						if errCode := versionlaunch.ValidateLaunchName(payload); errCode != "" {
 							log.Printf("Rejected single-instance launch payload %q: %s", payload, errCode)
 							continue
@@ -475,7 +488,7 @@ func ensureSingleInstance(autoLaunchVersion string, postUpdateRestart bool) bool
 				}
 			}
 		}
-		if !sendLaunchToExistingInstance(autoLaunchVersion) {
+		if !sendToExistingInstance(autoLaunchVersion) {
 			focusExistingWindow()
 		}
 		return false
@@ -488,14 +501,13 @@ func ensureSingleInstance(autoLaunchVersion string, postUpdateRestart bool) bool
 }
 
 func init() {
-
 	//minecraft
-	application.RegisterEvent[struct{}](EventGameInputEnsureStart)
-	application.RegisterEvent[struct{}](EventGameInputEnsureDone)
-	application.RegisterEvent[int64](EventGameInputDownloadStart)
-	application.RegisterEvent[GameInputDownloadProgress](EventGameInputDownloadProgress)
-	application.RegisterEvent[struct{}](EventGameInputDownloadDone)
-	application.RegisterEvent[string](EventGameInputDownloadError)
+	application.RegisterEvent[struct{}](app.EventGameInputEnsureStart)
+	application.RegisterEvent[struct{}](app.EventGameInputEnsureDone)
+	application.RegisterEvent[int64](app.EventGameInputDownloadStart)
+	application.RegisterEvent[app.GameInputDownloadProgress](app.EventGameInputDownloadProgress)
+	application.RegisterEvent[struct{}](app.EventGameInputDownloadDone)
+	application.RegisterEvent[string](app.EventGameInputDownloadError)
 	application.RegisterEvent[string](mcservice.EventExtractError)
 	application.RegisterEvent[string](mcservice.EventExtractDone)
 	application.RegisterEvent[types.ExtractProgress](mcservice.EventExtractProgress)
@@ -518,6 +530,11 @@ func init() {
 	application.RegisterEvent[struct{}](vcruntime.EventEnsureStart)
 	application.RegisterEvent[vcruntime.EnsureProgress](vcruntime.EventEnsureProgress)
 	application.RegisterEvent[bool](vcruntime.EventEnsureDone)
+	// loader migration
+	application.RegisterEvent[struct{}](leviloader.EventMigrateStart)
+	application.RegisterEvent[leviloader.MigrateProgress](leviloader.EventMigrateProgress)
+	application.RegisterEvent[int](leviloader.EventMigrateDone)
+	application.RegisterEvent[string](leviloader.EventMigrateError)
 	// app update
 	application.RegisterEvent[string](update.EventAppUpdateStatus)
 	application.RegisterEvent[update.AppUpdateProgress](update.EventAppUpdateProgress)
@@ -604,11 +621,11 @@ func main() {
 	}
 	update.Init()
 	startup.Mark("config loaded")
-	mc := NewMinecraft()
-	contentService := NewContentService(mc)
-	modsService := NewModsService(mc)
-	userService := NewUserService(mc)
-	versionService := NewVersionService(mc)
+	mc := app.NewMinecraft()
+	contentService := app.NewContentService(mc)
+	modsService := app.NewModsService(mc)
+	userService := app.NewUserService(mc)
+	versionService := app.NewVersionService(mc)
 
 	assets, err := fs.Sub(assets, "frontend/dist")
 	if err != nil {
@@ -616,9 +633,10 @@ func main() {
 		return
 	}
 
-	app := application.New(application.Options{
+	wailsApp := application.New(application.Options{
 		Name:        "LeviLauncher",
 		Description: "A Minecraft Launcher",
+		Icon:        appIcon,
 		Logger:      diagnostics.Logger(),
 		LogLevel:    slog.LevelDebug,
 		ErrorHandler: func(err error) {
@@ -641,13 +659,14 @@ func main() {
 		},
 		Assets: application.AssetOptions{
 			Handler:    application.AssetFileServerFS(assets),
-			Middleware: mc.localImages.middleware,
+			Middleware: mc.LocalImageMiddleware,
 		},
 		Windows: application.WindowsOptions{
 			WebviewBrowserPath: webView2Options.BrowserExecutableFolder,
 		},
 	})
-	mc.startupEssential()
+	tray.Setup(wailsApp, appIcon)
+	mc.StartupEssential()
 	startSingleInstanceServer(versionService)
 
 	if strings.TrimSpace(autoLaunchVersion) != "" && initialURL == "/" {
@@ -672,11 +691,13 @@ func main() {
 		}
 	}
 	if c.WindowWidth == 0 || c.WindowHeight == 0 {
-		c.WindowWidth = w
-		c.WindowHeight = h
-		_ = config.Save(c)
+		_ = config.Update(func(c *config.AppConfig) {
+			c.WindowWidth = w
+			c.WindowHeight = h
+		})
 	}
-	windows := app.Window.NewWithOptions(application.WebviewWindowOptions{
+	windows := wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
+		Name:      "main",
 		Title:     "LeviLauncher",
 		Width:     w,
 		Height:    h,
@@ -693,6 +714,7 @@ func main() {
 		URL:            initialURL,
 		EnableFileDrop: true,
 	})
+	userService.Attach(windows)
 	startup.Mark("window created")
 	reapplyWindowMinConstraints := func() {
 		windows.SetMinSize(minWindowWidth, minWindowHeight)
@@ -728,9 +750,13 @@ func main() {
 		files := event.Context().DroppedFiles()
 		details := event.Context().DropTargetDetails()
 		if len(files) > 0 {
+			target := ""
+			if details != nil {
+				target = details.ElementID
+			}
 			windows.EmitEvent("files-dropped", types.FilesDroppedEvent{
 				Files:  files,
-				Target: details.ElementID,
+				Target: target,
 			})
 		}
 	})
@@ -756,19 +782,7 @@ func main() {
 				wg.Add(1)
 				go func() {
 					defer wg.Done()
-					mc.startupDeferred()
-				}()
-
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					extractor.Init()
-				}()
-
-				wg.Add(1)
-				go func() {
-					defer wg.Done()
-					_ = resourcerules.EnsureLatestWithError(context.Background())
+					mc.StartupDeferred()
 				}()
 
 				if !config.GetDiscordRPCDisabled() {
@@ -784,30 +798,43 @@ func main() {
 			}()
 		})
 	})
-	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+	persistWindowSize := func() {
 		w := windows.Width()
 		h := windows.Height()
-
-		c, err := config.Load()
-		if err != nil {
-			log.Printf("config.Load failed during window close: %v", err)
+		if w <= 0 || h <= 0 {
+			return
 		}
-		if w > 0 && h > 0 {
-			if w < minWindowWidth {
-				w = minWindowWidth
-			}
-			if h < minWindowHeight {
-				h = minWindowHeight
-			}
+		if w < minWindowWidth {
+			w = minWindowWidth
+		}
+		if h < minWindowHeight {
+			h = minWindowHeight
+		}
+
+		if err := config.Update(func(c *config.AppConfig) {
 			c.WindowWidth = w
 			c.WindowHeight = h
-			_ = config.Save(c)
+		}); err != nil {
+			log.Printf("failed to persist window size: %v", err)
+		}
+	}
+	// Quitting never reaches the WindowClosing hook: Wails drops its window
+	// registry before the close event is dispatched, so the hook is looked up
+	// against an empty map. Shutdown tasks still run while the window is alive.
+	wailsApp.OnShutdown(persistWindowSize)
+	windows.RegisterHook(events.Common.WindowClosing, func(event *application.WindowEvent) {
+		persistWindowSize()
+
+		if config.GetMinimizeToTray() && !launch.QuitRequested() {
+			event.Cancel()
+			windows.Hide()
+			launch.MarkLauncherHiddenByUser()
 		}
 	})
-	err = app.Run()
+	err = wailsApp.Run()
 
 	if err != nil {
-		diagnostics.HandleError("app.Run failed", err)
+		diagnostics.HandleError("wailsApp.Run failed", err)
 		return
 	}
 

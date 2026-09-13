@@ -23,7 +23,22 @@ type AppConfig struct {
 	WindowHeight      int    `json:"window_height"`
 	DisableDiscordRPC bool   `json:"disable_discord_rpc"`
 	EnableBetaUpdates bool   `json:"enable_beta_updates"`
+	LoaderMigratedV1  bool   `json:"loader_migrated_v1"`
+	OnGameLaunch      string `json:"on_game_launch,omitempty"`
+	OnGameExit        string `json:"on_game_exit,omitempty"`
+	MinimizeToTray    bool   `json:"minimize_to_tray,omitempty"`
 }
+
+const (
+	OnGameLaunchMinimize = "minimize"
+	OnGameLaunchHide     = "hide"
+	OnGameLaunchClose    = "close"
+	OnGameLaunchKeep     = "keep"
+
+	OnGameExitReopen = "reopen"
+	OnGameExitKeep   = "keep"
+	OnGameExitClose  = "close"
+)
 
 func Load() (AppConfig, error) {
 	configMutex.RLock()
@@ -41,6 +56,29 @@ func Reload() (AppConfig, error) {
 	configMutex.Lock()
 	defer configMutex.Unlock()
 
+	return reloadLocked()
+}
+
+// Update applies mutate to the current config and writes the result back,
+// holding the write lock throughout. Read-modify-write through Load and Save
+// leaves a window in which a concurrent writer's change is read back stale and
+// then overwritten.
+func Update(mutate func(*AppConfig)) error {
+	configMutex.Lock()
+	defer configMutex.Unlock()
+
+	c := cachedConfig
+	if !isLoaded {
+		var err error
+		if c, err = reloadLocked(); err != nil {
+			return err
+		}
+	}
+	mutate(&c)
+	return saveLocked(c)
+}
+
+func reloadLocked() (AppConfig, error) {
 	var c AppConfig
 	p := apppath.ConfigPath()
 	if b, err := os.ReadFile(p); err == nil {
@@ -76,15 +114,22 @@ func Save(c AppConfig) error {
 	configMutex.Lock()
 	defer configMutex.Unlock()
 
+	return saveLocked(c)
+}
+
+func saveLocked(c AppConfig) error {
 	p := apppath.ConfigPath()
 	b, err := json.MarshalIndent(c, "", "  ")
 	if err != nil {
 		return err
 	}
+	if err := os.WriteFile(p, b, 0o644); err != nil {
+		return err
+	}
 	cachedConfig = c
 	isLoaded = true
 	apppath.SetBaseRootOverride(c.BaseRoot)
-	return os.WriteFile(p, b, 0o644)
+	return nil
 }
 
 func ConfigDir() string {
@@ -115,4 +160,55 @@ func GetDiscordRPCDisabled() bool {
 
 	c, _ := Load()
 	return c.DisableDiscordRPC
+}
+
+func GetOnGameLaunch() string {
+	configMutex.RLock()
+	if isLoaded {
+		v := cachedConfig.OnGameLaunch
+		configMutex.RUnlock()
+		if v == "" {
+			return OnGameLaunchMinimize
+		}
+		return v
+	}
+	configMutex.RUnlock()
+
+	c, _ := Load()
+	if c.OnGameLaunch == "" {
+		return OnGameLaunchMinimize
+	}
+	return c.OnGameLaunch
+}
+
+func GetOnGameExit() string {
+	configMutex.RLock()
+	if isLoaded {
+		v := cachedConfig.OnGameExit
+		configMutex.RUnlock()
+		if v == "" {
+			return OnGameExitReopen
+		}
+		return v
+	}
+	configMutex.RUnlock()
+
+	c, _ := Load()
+	if c.OnGameExit == "" {
+		return OnGameExitReopen
+	}
+	return c.OnGameExit
+}
+
+func GetMinimizeToTray() bool {
+	configMutex.RLock()
+	if isLoaded {
+		v := cachedConfig.MinimizeToTray
+		configMutex.RUnlock()
+		return v
+	}
+	configMutex.RUnlock()
+
+	c, _ := Load()
+	return c.MinimizeToTray
 }

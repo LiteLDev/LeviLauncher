@@ -6,6 +6,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
+	"github.com/liteldev/LeviLauncher/internal/tray"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
@@ -19,23 +20,18 @@ func SetBaseRoot(root string) string {
 	if err := utils.CreateDir(r); err != nil {
 		return "ERR_CREATE_TARGET_DIR"
 	}
-	c, _ := config.Load()
-	c.BaseRoot = r
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.BaseRoot = r }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""
 }
 
 func ResetBaseRoot() string {
-	c, _ := config.Load()
-	c.BaseRoot = ""
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.BaseRoot = "" }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
-	br := apppath.BaseRoot()
-	c.BaseRoot = strings.TrimSpace(br)
-	if err := config.Save(c); err != nil {
+	br := strings.TrimSpace(apppath.BaseRoot())
+	if err := config.Update(func(c *config.AppConfig) { c.BaseRoot = br }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""
@@ -48,9 +44,7 @@ func GetDisableDiscordRPC() bool {
 }
 
 func SetDisableDiscordRPC(disable bool) string {
-	c, _ := config.Load()
-	c.DisableDiscordRPC = disable
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.DisableDiscordRPC = disable }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	if disable {
@@ -67,9 +61,64 @@ func GetEnableBetaUpdates() bool {
 }
 
 func SetEnableBetaUpdates(enable bool) string {
-	c, _ := config.Load()
-	c.EnableBetaUpdates = enable
-	if err := config.Save(c); err != nil {
+	if err := config.Update(func(c *config.AppConfig) { c.EnableBetaUpdates = enable }); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
+}
+
+func GetGameLaunchBehavior() string {
+	return config.GetOnGameLaunch()
+}
+
+func SetGameLaunchBehavior(behavior string) string {
+	switch behavior {
+	case config.OnGameLaunchMinimize, config.OnGameLaunchHide, config.OnGameLaunchClose, config.OnGameLaunchKeep:
+		// valid
+	default:
+		return "ERR_INVALID_PARAM"
+	}
+	if err := config.Update(func(c *config.AppConfig) { c.OnGameLaunch = behavior }); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
+}
+
+func GetGameExitBehavior() string {
+	return config.GetOnGameExit()
+}
+
+func SetGameExitBehavior(behavior string) string {
+	switch behavior {
+	case config.OnGameExitReopen, config.OnGameExitKeep, config.OnGameExitClose:
+		// valid
+	default:
+		return "ERR_INVALID_PARAM"
+	}
+	if err := config.Update(func(c *config.AppConfig) { c.OnGameExit = behavior }); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
+}
+
+// SetTrayLabels retranslates the tray menu. The launcher language is resolved
+// in the frontend, which pushes the rendered labels down whenever it changes.
+func SetTrayLabels(show, exit string) string {
+	show = strings.TrimSpace(show)
+	exit = strings.TrimSpace(exit)
+	if show == "" || exit == "" {
+		return "ERR_INVALID_PARAM"
+	}
+	tray.SetLabels(show, exit)
+	return ""
+}
+
+func GetMinimizeToTray() bool {
+	return config.GetMinimizeToTray()
+}
+
+func SetMinimizeToTray(enable bool) string {
+	if err := config.Update(func(c *config.AppConfig) { c.MinimizeToTray = enable }); err != nil {
 		return "ERR_WRITE_FILE"
 	}
 	return ""

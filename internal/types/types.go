@@ -78,6 +78,11 @@ type MirrorTestResult struct {
 
 type ContentRoots struct {
 	Base          string `json:"base"`
+	PackageType   string `json:"packageType,omitempty"`
+	ComMojangRoot string `json:"comMojangRoot,omitempty"`
+	Worlds        string `json:"worlds,omitempty"`
+	SkinPacks     string `json:"skinPacks,omitempty"`
+	Screenshots   string `json:"screenshots,omitempty"`
 	UsersRoot     string `json:"usersRoot"`
 	ResourcePacks string `json:"resourcePacks"`
 	BehaviorPacks string `json:"behaviorPacks"`

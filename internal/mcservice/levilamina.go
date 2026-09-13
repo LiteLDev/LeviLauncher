@@ -178,6 +178,9 @@ func FetchLeviLaminaVersionDB() (map[string][]string, error) {
 }
 
 func InstallLeviLamina(ctx context.Context, mcVersion string, targetName string, llVersion string) string {
+	if GetVersionMeta(targetName).PackageType == "uwp" {
+		return "ERR_UWP_UNSUPPORTED_FEATURE"
+	}
 	if !leviLaminaLipIsInstalled() {
 		return "ERR_LIP_NOT_INSTALLED"
 	}

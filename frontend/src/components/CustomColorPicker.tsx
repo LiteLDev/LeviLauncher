@@ -1,13 +1,5 @@
+import { FieldError, Input, Label, TextField } from "@heroui/react";
 import React, { useEffect, useState } from "react";
-import {
-  ColorPicker,
-  ColorArea,
-  ColorThumb,
-  ColorSlider,
-  SliderTrack,
-  parseColor,
-} from "react-aria-components";
-import { Input } from "@heroui/react";
 import { useTranslation } from "react-i18next";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -18,96 +10,105 @@ interface CustomColorPickerProps {
   className?: string;
 }
 
+const normalizeHex = (value: string): string | null => {
+  const match = value.trim().match(/^#?([0-9a-f]{6})$/i);
+  return match ? `#${match[1].toUpperCase()}` : null;
+};
+
+const toChannels = (hex: string): string[] =>
+  [1, 3, 5].map((offset) => String(parseInt(hex.slice(offset, offset + 2), 16)));
+
+const isValidChannel = (value: string): boolean =>
+  /^\d{1,3}$/.test(value) && Number(value) <= 255;
+
 export const CustomColorPicker: React.FC<CustomColorPickerProps> = ({
   color,
   onChange,
   className,
 }) => {
   const { t } = useTranslation();
-
-  const [hexValue, setHexValue] = useState(color);
+  const safeColor = normalizeHex(color) ?? "#000000";
+  const [hexValue, setHexValue] = useState(safeColor);
+  const [channels, setChannels] = useState(() => toChannels(safeColor));
 
   useEffect(() => {
-    if (color.toUpperCase() !== hexValue.toUpperCase()) {
-      setHexValue(color.toUpperCase());
-    }
-  }, [color]);
+    setHexValue(safeColor);
+    setChannels(toChannels(safeColor));
+  }, [safeColor]);
 
-  const safeColor = React.useMemo(() => {
-    try {
-      return parseColor(color.startsWith("#") ? color : `#${color}`).toFormat(
-        "hsb",
-      );
-    } catch {
-      return parseColor("#000000").toFormat("hsb");
-    }
-  }, [color]);
+  const handleHexChange = (value: string) => {
+    setHexValue(value);
+    const normalized = normalizeHex(value);
+    if (!normalized) return;
+    setChannels(toChannels(normalized));
+    onChange(normalized);
+  };
 
-  const handleHexChange = (val: string) => {
-    setHexValue(val);
-    if (/^#[0-9A-F]{6}$/i.test(val)) {
-      onChange(val);
-    } else if (/^[0-9A-F]{6}$/i.test(val)) {
-      onChange("#" + val);
-    }
+  const handleChannelChange = (index: number, value: string) => {
+    const next = channels.map((channel, currentIndex) =>
+      currentIndex === index ? value : channel,
+    );
+    setChannels(next);
+    if (!next.every(isValidChannel)) return;
+    const hex = `#${next
+      .map((channel) => Number(channel).toString(16).padStart(2, "0"))
+      .join("")}`.toUpperCase();
+    setHexValue(hex);
+    onChange(hex);
   };
 
   return (
-    <div className={cn(className)}>
-      <ColorPicker
-        value={safeColor}
-        onChange={(c) => {
-          const newHex = c.toString("hex");
-          onChange(newHex);
-          setHexValue(newHex.toUpperCase());
-        }}
-      >
-        <div className="flex flex-row gap-4 h-40">
-          <div className="aspect-square h-full rounded-xl overflow-hidden shadow-sm border border-default-200/50 relative group">
-            <ColorArea
-              xChannel="saturation"
-              yChannel="brightness"
-              className="w-full h-full"
-            >
-              <ColorThumb className="w-4 h-4 rounded-full border-2 border-white shadow-[0_0_10px_rgba(0,0,0,0.3)] ring-1 ring-black/20 z-10 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-transform dragging:scale-125 cursor-grab active:cursor-grabbing" />
-            </ColorArea>
-          </div>
-
-          <div className="flex flex-col gap-3 flex-1 justify-center">
-            <div className="flex flex-col gap-1">
-              <div className="flex justify-between items-center">
-                <span className="text-tiny font-bold text-default-400 uppercase tracking-wider">
-                  {t("settings.appearance.hue") || "HUE"}
-                </span>
-              </div>
-              <ColorSlider channel="hue" className="w-full touch-none">
-                <SliderTrack className="h-4 w-full rounded-lg border border-default-200/50 relative overflow-hidden ring-offset-2 ring-offset-background focus-within:ring-2 focus-within:ring-primary-500 transition-all">
-                  <ColorThumb className="top-1/2 w-4 h-4 rounded-full border-2 border-white shadow-md ring-1 ring-black/10 focus:outline-none focus:ring-2 focus:ring-primary-500 transition-transform dragging:scale-110 cursor-col-resize" />
-                </SliderTrack>
-              </ColorSlider>
-            </div>
-
-            <div className="flex gap-2 items-end pt-1">
-              <div className="flex-1">
-                <Input
-                  size="sm"
-                  variant="bordered"
-                  label="HEX"
-                  labelPlacement="outside"
-                  classNames={COMPONENT_STYLES.input}
-                  value={hexValue}
-                  onChange={(e) => handleHexChange(e.target.value)}
-                  startContent={
-                    !hexValue.startsWith("#") && (
-                      <span className="text-default-400">#</span>
-                    )
-                  }
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </ColorPicker>
+    <div className={cn("flex flex-col gap-3", className)}>
+      <div className="flex items-end gap-3">
+        <div
+          role="img"
+          aria-label={t("audit.mods.color_preview", { hex: safeColor })}
+          className="h-12 w-16 shrink-0 rounded-lg border border-border"
+          style={{ backgroundColor: safeColor }}
+        />
+        <TextField
+          value={hexValue}
+          onChange={handleHexChange}
+          isInvalid={!normalizeHex(hexValue)}
+          className={cn("group flex-1", COMPONENT_STYLES.input.mainWrapper)}
+        >
+          <Label className={COMPONENT_STYLES.input.label}>HEX</Label>
+          <Input
+            spellCheck={false}
+            className={cn(
+              COMPONENT_STYLES.input.inputWrapper,
+              COMPONENT_STYLES.input.input,
+              "min-h-8 text-sm",
+            )}
+          />
+          <FieldError>{t("audit.mods.invalid_hex")}</FieldError>
+        </TextField>
+      </div>
+      <div className="grid grid-cols-3 gap-3">
+        {(["red", "green", "blue"] as const).map((channel, index) => (
+          <TextField
+            key={channel}
+            value={channels[index]}
+            onChange={(value) => handleChannelChange(index, value)}
+            isInvalid={!isValidChannel(channels[index])}
+            className={cn("group min-w-0", COMPONENT_STYLES.input.mainWrapper)}
+          >
+            <Label className={COMPONENT_STYLES.input.label}>
+              {t(`audit.mods.rgb_${channel}`)}
+            </Label>
+            <Input
+              inputMode="numeric"
+              spellCheck={false}
+              className={cn(
+                COMPONENT_STYLES.input.inputWrapper,
+                COMPONENT_STYLES.input.input,
+                "min-h-8 text-sm",
+              )}
+            />
+            <FieldError>{t("audit.mods.invalid_rgb")}</FieldError>
+          </TextField>
+        ))}
+      </div>
     </div>
   );
 };

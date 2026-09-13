@@ -2,6 +2,7 @@ package msixvc
 
 import (
 	"context"
+	"fmt"
 	"net/url"
 	"path/filepath"
 	"strings"
@@ -72,6 +73,19 @@ func StartDownload(ctx context.Context, rawurl string, md5sum string) string {
 	fname := deriveFilename(rawurl)
 	dest := filepath.Join(dir, fname)
 	return msixMgr.Start(ctx, stripFilenameParam(rawurl), dest, md5sum)
+}
+
+// StartNamedDownload shares task controls/events with MSIXVC downloads while
+// preserving the UWP archive extension and the signed CDN URL verbatim.
+func StartNamedDownload(ctx context.Context, rawurl, filename string, verify func(string) error) (string, error) {
+	if filename == "" || filepath.Base(filename) != filename || strings.ContainsAny(filename, `<>:"/\|?*`) {
+		return "", fmt.Errorf("ERR_INVALID_NAME")
+	}
+	dir, err := apppath.InstallersDir()
+	if err != nil {
+		return "", err
+	}
+	return msixMgr.StartVerified(ctx, rawurl, filepath.Join(dir, filename), verify), nil
 }
 
 func Pause() { msixMgr.Pause() }

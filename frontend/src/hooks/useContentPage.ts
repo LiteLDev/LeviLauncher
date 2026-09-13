@@ -1,21 +1,27 @@
+import { EMPTY_CONTENT_ROOTS, isContentTransferTarget } from "@/utils/content";
+import { useOverlayState } from "@heroui/react";
 import React from "react";
-import { useDisclosure } from "@heroui/react";
+
 import { Events } from "@wailsio/runtime";
 import { useLocation, useNavigate } from "react-router-dom";
 import {
   GetVersionMeta,
   ListVersionMetas,
   GetVersionLogoDataUrl,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
-import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/userservice";
-import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
+import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
-import { countDirectories, getPathBaseName, normalizeDroppedFiles } from "@/utils/fs";
+import {
+  countDirectories,
+  getPathBaseName,
+  normalizeDroppedFiles,
+} from "@/utils/fs";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import * as contentService from "bindings/github.com/liteldev/LeviLauncher/contentservice";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import * as contentService from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 
 type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 type TransferTargetVersion = {
@@ -35,14 +41,7 @@ export const useContentPage = (t: TFunc) => {
   const [error, setError] = React.useState<string>("");
   const [currentVersionName, setCurrentVersionName] =
     React.useState<string>("");
-  const [roots, setRoots] = React.useState<types.ContentRoots>({
-    base: "",
-    usersRoot: "",
-    resourcePacks: "",
-    behaviorPacks: "",
-    isIsolation: false,
-    isPreview: false,
-  });
+  const [roots, setRoots] = React.useState<types.ContentRoots>(EMPTY_CONTENT_ROOTS);
   const [players, setPlayers] = React.useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = React.useState<string>("");
   const [isSharedMode, setIsSharedMode] = React.useState<boolean>(false);
@@ -83,28 +82,28 @@ export const useContentPage = (t: TFunc) => {
   // --- Disclosures ---
   const {
     isOpen: errOpen,
-    onOpen: errOnOpen,
-    onClose: errOnClose,
-    onOpenChange: errOnOpenChange,
-  } = useDisclosure();
+    open: errOnOpen,
+    close: errOnClose,
+    setOpen: errOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: dupOpen,
-    onOpen: dupOnOpen,
-    onClose: dupOnClose,
-    onOpenChange: dupOnOpenChange,
-  } = useDisclosure();
+    open: dupOnOpen,
+    close: dupOnClose,
+    setOpen: dupOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: playerSelectOpen,
-    onOpen: playerSelectOnOpen,
-    onClose: playerSelectOnClose,
-    onOpenChange: playerSelectOnOpenChange,
-  } = useDisclosure();
+    open: playerSelectOnOpen,
+    close: playerSelectOnClose,
+    setOpen: playerSelectOnOpenChange,
+  } = useOverlayState();
   const {
     isOpen: transferTargetOpen,
-    onOpen: transferTargetOnOpen,
-    onClose: transferTargetOnClose,
-    onOpenChange: transferTargetOnOpenChange,
-  } = useDisclosure();
+    open: transferTargetOnOpen,
+    close: transferTargetOnClose,
+    setOpen: transferTargetOnOpenChange,
+  } = useOverlayState();
 
   // --- Handlers ---
   const refreshAll = async (playerToRefresh?: string) => {
@@ -114,14 +113,7 @@ export const useContentPage = (t: TFunc) => {
     setCurrentVersionName(name);
     try {
       if (!hasBackend || !name) {
-        setRoots({
-          base: "",
-          usersRoot: "",
-          resourcePacks: "",
-          behaviorPacks: "",
-          isIsolation: false,
-          isPreview: false,
-        });
+        setRoots(EMPTY_CONTENT_ROOTS);
         setPlayers([]);
         setSelectedPlayer("");
         setPlayerGamertagMap({});
@@ -131,14 +123,7 @@ export const useContentPage = (t: TFunc) => {
         setScreenshotsCount(0);
       } else {
         const r = await GetContentRoots(name);
-        const safe = r || {
-          base: "",
-          usersRoot: "",
-          resourcePacks: "",
-          behaviorPacks: "",
-          isIsolation: false,
-          isPreview: false,
-        };
+        const safe = r || EMPTY_CONTENT_ROOTS;
         setRoots(safe);
 
         let isShared = false;
@@ -147,9 +132,24 @@ export const useContentPage = (t: TFunc) => {
           isShared =
             meta.gameVersion && compareVersions(meta.gameVersion, "1.26.0") > 0;
         } catch {}
+        isShared = isShared || safe.packageType === "uwp";
         setIsSharedMode(isShared);
 
-        if (safe.usersRoot) {
+        if (safe.packageType === "uwp") {
+          setPlayers([]);
+          setSelectedPlayer("");
+          setPlayerGamertagMap({});
+          const [worlds, skins, servers, screenshots] = await Promise.all([
+            countDirectories(safe.worlds || ""),
+            countDirectories(safe.skinPacks || ""),
+            minecraft.ListServers(name, ""),
+            contentService.ListScreenshots(name, ""),
+          ]);
+          setWorldsCount(worlds);
+          setSkinCount(skins);
+          setServersCount(servers?.length || 0);
+          setScreenshotsCount(screenshots?.length || 0);
+        } else if (safe.usersRoot) {
           const names = await listPlayers(safe.usersRoot);
           setPlayers(names);
 
@@ -336,7 +336,7 @@ export const useContentPage = (t: TFunc) => {
       }
       let chosenPlayer = "";
 
-      const needsPlayer = hasWorld || (hasSkin && !isSharedMode);
+      const needsPlayer = roots.packageType !== "uwp" && (hasWorld || (hasSkin && !isSharedMode));
 
       if (needsPlayer) {
         pendingImportPathsRef.current = normalizedPaths;
@@ -505,7 +505,7 @@ export const useContentPage = (t: TFunc) => {
           succFiles.push(base);
         } else if (lower.endsWith(".mcworld")) {
           const base = getPathBaseName(p);
-          if (!playerToUse) {
+          if (!playerToUse && roots.packageType !== "uwp") {
             errPairs.push({ name: base, err: "ERR_NO_PLAYER" });
             continue;
           }
@@ -582,7 +582,7 @@ export const useContentPage = (t: TFunc) => {
             m &&
             typeof m.name === "string" &&
             m.name &&
-            m.enableIsolation &&
+            isContentTransferTarget(roots, m) &&
             m.name !== name,
         )
         .sort((a: any, b: any) => {

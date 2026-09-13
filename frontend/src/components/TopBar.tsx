@@ -1,15 +1,17 @@
+import { Button, Tooltip } from "@heroui/react";
+import { cn } from "@/utils/cn";
+
 import React from "react";
 import { WindowControls } from "./WindowControls";
 import { UserAvatar } from "@/components/UserAvatar";
 
-import { Button, Tooltip } from "@heroui/react";
 import { IoArrowBack, IoArrowForward, IoChevronForward } from "react-icons/io5";
 import { useLocation, Link } from "react-router-dom";
 import { LeviIcon } from "@/icons/LeviIcon";
 import { useTranslation } from "react-i18next";
 import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
-import { LAYOUT } from "@/constants/layout";
 import { ROUTES } from "@/constants/routes";
+import { getRouteLabelKey, ROUTE_LABEL_KEYS } from "@/constants/routeLabels";
 
 interface TopBarProps {
   navLocked: boolean;
@@ -24,29 +26,20 @@ export const TopBar: React.FC<TopBarProps> = ({
 }) => {
   const { t } = useTranslation();
   const location = useLocation();
-  const { canGoBack, canGoForward, getBackEntry, getForwardEntry } =
+  const { canGoBack, canGoForward, getBackEntry, getForwardEntry, currentTitle } =
     useNavigationHistory();
 
   const pathnames = location.pathname.split("/").filter((x) => x);
 
-  const getName = (value: string) => {
-    try {
-      const decoded = decodeURIComponent(value);
-      return decoded.charAt(0).toUpperCase() + decoded.slice(1);
-    } catch {
-      return value.charAt(0).toUpperCase() + value.slice(1);
-    }
-  };
-
-  const NON_CLICKABLE_SEGMENTS = ["mod", "package"];
+  const getHistoryTitle = (entry: ReturnType<typeof getBackEntry>, fallback: string) =>
+    entry ? entry.title || t(getRouteLabelKey(entry.pathname)) : t(fallback);
 
   return (
     <>
       <div
         id="wails-draggable"
-        className={`fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4 ${LAYOUT.NAVBAR_BG}`}
+        className="fixed top-0 right-0 left-0 h-14 z-[60] flex items-center justify-between pr-4"
       >
-        <div className="absolute bottom-0 right-0 left-[calc(3.5rem+20px)] h-px bg-default-200/50 dark:bg-zinc-800/50" />
         <div className="flex items-center gap-2 overflow-hidden">
           <div className="w-14 shrink-0 flex items-center justify-center">
             <LeviIcon width={32} height={32} />
@@ -54,46 +47,54 @@ export const TopBar: React.FC<TopBarProps> = ({
 
           <div className="flex items-center gap-1 shrink-0">
             <Tooltip
-              content={getBackEntry()?.title || t("nav.back")}
               delay={500}
               closeDelay={0}
               isDisabled={!canGoBack || navLocked}
             >
               <Button
                 isIconOnly
-                variant="light"
                 size="sm"
-                radius="lg"
                 onPress={() => tryNavigate(-1)}
                 isDisabled={navLocked || !canGoBack}
-                className="wails-no-drag text-default-500 dark:text-zinc-400"
                 aria-label={t("nav.back")}
+                variant={"ghost"}
+                className={cn(
+                  "rounded-full",
+                  "wails-no-drag text-muted dark:text-zinc-400",
+                )}
               >
                 <IoArrowBack size={20} />
               </Button>
+              <Tooltip.Content>
+                {getHistoryTitle(getBackEntry(), "nav.back")}
+              </Tooltip.Content>
             </Tooltip>
             <Tooltip
-              content={getForwardEntry()?.title || t("nav.forward")}
               delay={500}
               closeDelay={0}
               isDisabled={!canGoForward || navLocked}
             >
               <Button
                 isIconOnly
-                variant="light"
                 size="sm"
-                radius="lg"
                 onPress={() => tryNavigate(1)}
                 isDisabled={navLocked || !canGoForward}
-                className="wails-no-drag text-default-500 dark:text-zinc-400"
                 aria-label={t("nav.forward")}
+                variant={"ghost"}
+                className={cn(
+                  "rounded-full",
+                  "wails-no-drag text-muted dark:text-zinc-400",
+                )}
               >
                 <IoArrowForward size={20} />
               </Button>
+              <Tooltip.Content>
+                {getHistoryTitle(getForwardEntry(), "nav.forward")}
+              </Tooltip.Content>
             </Tooltip>
           </div>
 
-          <div className="w-px h-5 bg-default-300/50 mx-1 shrink-0" />
+          <div className="w-px h-5 bg-surface-quaternary/50 mx-1 shrink-0" />
 
           <nav
             aria-label={t("nav.breadcrumb")}
@@ -103,11 +104,11 @@ export const TopBar: React.FC<TopBarProps> = ({
               <span
                 className={`${
                   pathnames.length === 0
-                    ? "font-bold text-lg bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent"
-                    : "text-default-500 dark:text-zinc-400"
+                    ? "font-bold text-lg text-brand-700 dark:text-brand-300"
+                    : "text-muted dark:text-zinc-400"
                 }`}
               >
-                {pathnames.length === 0 ? "LeviLauncher" : "Home"}
+                {pathnames.length === 0 ? "LeviLauncher" : t("nav.home")}
               </span>
             ) : (
               <Link
@@ -118,28 +119,30 @@ export const TopBar: React.FC<TopBarProps> = ({
                 }}
                 className={`transition-colors hover:opacity-80 ${
                   pathnames.length === 0
-                    ? "font-bold text-lg bg-gradient-to-r from-primary-600 to-primary-400 bg-clip-text text-transparent"
-                    : "text-default-500 dark:text-zinc-400 hover:text-default-900 dark:hover:text-zinc-200"
+                    ? "font-bold text-lg text-brand-700 dark:text-brand-300"
+                    : "text-muted dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-200"
                 }`}
               >
-                {pathnames.length === 0 ? "LeviLauncher" : "Home"}
+                {pathnames.length === 0 ? "LeviLauncher" : t("nav.home")}
               </Link>
             )}
-            {pathnames.map((value, index) => {
+            {pathnames.map((_, index) => {
               const to = `/${pathnames.slice(0, index + 1).join("/")}`;
               const isLast = index === pathnames.length - 1;
-              const name = getName(value);
-              const isNonClickable = NON_CLICKABLE_SEGMENTS.includes(value);
+              const name = isLast && currentTitle ? currentTitle : t(getRouteLabelKey(to));
+              const isNonClickable = !ROUTE_LABEL_KEYS[to];
 
               return (
                 <React.Fragment key={to}>
-                  <IoChevronForward className="mx-1 text-default-400 shrink-0" />
+                  <IoChevronForward className="mx-1 text-muted shrink-0" />
                   {isLast || navLocked || isNonClickable ? (
                     <span
+                      title={name}
+                      aria-current={isLast ? "page" : undefined}
                       className={`${
                         isLast
-                          ? "font-bold text-default-900 dark:text-zinc-100"
-                          : "text-default-500 dark:text-zinc-400"
+                          ? "font-bold text-foreground dark:text-zinc-100"
+                          : "text-muted dark:text-zinc-400"
                       } truncate`}
                     >
                       {name}
@@ -147,11 +150,12 @@ export const TopBar: React.FC<TopBarProps> = ({
                   ) : (
                     <Link
                       to={to}
+                      title={name}
                       onClick={(e) => {
                         e.preventDefault();
                         tryNavigate(to);
                       }}
-                      className="text-default-500 dark:text-zinc-400 hover:text-default-900 dark:hover:text-zinc-200 transition-colors truncate"
+                      className="text-muted dark:text-zinc-400 hover:text-foreground dark:hover:text-zinc-200 transition-colors truncate"
                     >
                       {name}
                     </Link>
@@ -188,7 +192,6 @@ export const TopBar: React.FC<TopBarProps> = ({
             navLocked={navLocked}
             isOnboardingMode={isOnboardingMode}
             hideSeparator
-            className="text-default-600 dark:text-zinc-300 [&_button]:text-default-600 dark:[&_button]:text-zinc-300 [&_button:hover]:text-default-900 dark:[&_button:hover]:text-zinc-100"
           />
         </div>
       </div>

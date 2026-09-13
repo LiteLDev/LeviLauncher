@@ -242,6 +242,7 @@ func TestImportZipToModsImportsValidRootAndNestedManifests(t *testing.T) {
 		name       string
 		files      map[string]string
 		wantFolder string
+		wantName   string
 	}{
 		{
 			name: "nested manifest",
@@ -250,6 +251,7 @@ func TestImportZipToModsImportsValidRootAndNestedManifests(t *testing.T) {
 				"Nested/bin/mod.dll":   "dll",
 			},
 			wantFolder: "Nested",
+			wantName:   "Display Name",
 		},
 		{
 			name: "root manifest uses manifest name",
@@ -258,6 +260,7 @@ func TestImportZipToModsImportsValidRootAndNestedManifests(t *testing.T) {
 				"mod.dll":       "dll",
 			},
 			wantFolder: "Root Mod",
+			wantName:   "Root Mod",
 		},
 	}
 
@@ -271,6 +274,9 @@ func TestImportZipToModsImportsValidRootAndNestedManifests(t *testing.T) {
 			target := filepath.Join(versionsDir, "Demo", "mods", tc.wantFolder)
 			if _, err := os.Stat(filepath.Join(target, "manifest.json")); err != nil {
 				t.Fatalf("stat imported manifest: %v", err)
+			}
+			if got := GetMods("Demo"); len(got) != 1 || got[0].Name != tc.wantName || got[0].Folder != tc.wantFolder {
+				t.Fatalf("imported mod is not correctly listed: %+v", got)
 			}
 		})
 	}
@@ -332,6 +338,84 @@ func TestImportZipToModsValidOverwriteReplacesExistingMod(t *testing.T) {
 	}
 	if string(content) != "new" {
 		t.Fatalf("entry content = %q, want new", content)
+	}
+}
+
+func TestImportZipToModsRejectsDuplicateManifests(t *testing.T) {
+	const validManifest = `{"name":"Existing","entry":"mod.dll","version":"1.0.0","type":"preload-native"}`
+	for _, prefix := range []string{"", "Existing/"} {
+		for _, duplicate := range []string{"manifest.json", "MANIFEST.JSON", "./manifest.json", "manifest.json."} {
+			for _, overwrite := range []bool{false, true} {
+				mode := "new"
+				if overwrite {
+					mode = "overwrite"
+				}
+				t.Run(prefix+duplicate+"/"+mode, func(t *testing.T) {
+					versionsDir := setupModsTestVersionsDir(t)
+					if overwrite {
+						original := makeModsTestZip(t, map[string]string{
+							"Existing/manifest.json": validManifest,
+							"Existing/mod.dll":       "original",
+						})
+						if got := ImportZipToMods("Demo", original, false); got != "" {
+							t.Fatalf("import original mod: %q", got)
+						}
+					}
+
+					// ZIP archives can contain repeated names. Keep the invalid manifest
+					// after both the valid manifest and its entry to exercise the full scan.
+					var buffer bytes.Buffer
+					writer := zip.NewWriter(&buffer)
+					for _, file := range []struct{ name, content string }{
+						{prefix + "manifest.json", validManifest},
+						{prefix + "mod.dll", "replacement"},
+						{prefix + duplicate, `{"name":`},
+					} {
+						entry, err := writer.Create(file.name)
+						if err != nil {
+							t.Fatalf("create zip entry: %v", err)
+						}
+						if _, err := entry.Write([]byte(file.content)); err != nil {
+							t.Fatalf("write zip entry: %v", err)
+						}
+					}
+					if err := writer.Close(); err != nil {
+						t.Fatalf("close zip: %v", err)
+					}
+
+					got := ImportZipToMods("Demo", buffer.Bytes(), overwrite)
+					if got != "ERR_INVALID_MANIFEST" {
+						t.Errorf("ImportZipToMods() = %q, want ERR_INVALID_MANIFEST", got)
+					}
+					modsDir := filepath.Join(versionsDir, "Demo", "mods")
+					entries, err := os.ReadDir(modsDir)
+					if err != nil {
+						t.Fatalf("read mods dir: %v", err)
+					}
+					if !overwrite {
+						if len(entries) != 0 {
+							t.Fatalf("invalid archive wrote files: %v", entries)
+						}
+						return
+					}
+					if len(entries) != 1 || entries[0].Name() != "Existing" {
+						t.Fatalf("invalid overwrite changed mods directory: %v", entries)
+					}
+					for name, want := range map[string]string{
+						"manifest.json": validManifest,
+						"mod.dll":       "original",
+					} {
+						content, err := os.ReadFile(filepath.Join(modsDir, "Existing", name))
+						if err != nil || string(content) != want {
+							t.Errorf("original %s changed: content=%q, err=%v", name, content, err)
+						}
+					}
+					if got := GetMods("Demo"); len(got) != 1 || got[0].Name != "Existing" {
+						t.Fatalf("original mod is no longer listed: %+v", got)
+					}
+				})
+			}
+		}
 	}
 }
 

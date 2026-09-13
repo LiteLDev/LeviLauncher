@@ -63,12 +63,16 @@ export const useContentSort = <T>(
     });
   }, [items, query, sortKey, sortAsc, getNameFn, getTimeFn]);
 
-  const paginatedItems = React.useMemo(() => {
-    const start = (currentPage - 1) * pageSize;
-    return filtered.slice(start, start + pageSize);
-  }, [filtered, currentPage, pageSize]);
-
   const totalPages = Math.ceil(filtered.length / pageSize);
+  const validPage = Math.max(1, Math.min(currentPage, totalPages || 1));
+  React.useEffect(() => {
+    setCurrentPage(validPage);
+  }, [validPage]);
+
+  const paginatedItems = React.useMemo(() => {
+    const start = (validPage - 1) * pageSize;
+    return filtered.slice(start, start + pageSize);
+  }, [filtered, validPage, pageSize]);
 
   const setSort = React.useCallback((key: "name" | "time", asc: boolean) => {
     setSortKey(key);
@@ -83,7 +87,7 @@ export const useContentSort = <T>(
     setSortKey,
     setSortAsc,
     setSort,
-    currentPage,
+    currentPage: validPage,
     setCurrentPage,
     filtered,
     paginatedItems,

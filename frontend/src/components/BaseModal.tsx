@@ -1,78 +1,115 @@
 import React from "react";
 import {
   Modal,
-  ModalProps,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  ModalHeaderProps,
-  ModalBodyProps,
-  ModalFooterProps,
+  type ModalBackdropProps,
+  type ModalDialogProps,
 } from "@heroui/react";
+import { cn } from "@/utils/cn";
 
-export const BaseModal: React.FC<ModalProps> = (props) => {
-  const {
-    classNames,
-    isOpen,
-    hideCloseButton = true,
-    ...rest
-  } = props;
-
-  const finalClassNames = {
-    ...classNames,
-    base: `bg-white! dark:bg-zinc-950! border border-default-200 dark:border-zinc-800 shadow-2xl rounded-[2.5rem] ${
-      classNames?.base || ""
-    }`,
-    closeButton: `absolute right-5 top-5 z-50 hover:bg-black/5 dark:hover:bg-white/5 active:bg-black/10 dark:active:bg-white/10 text-default-500 ${
-      classNames?.closeButton || ""
-    }`,
-    backdrop: `z-[70] ${classNames?.backdrop || ""}`,
-    wrapper: `z-[70] ${classNames?.wrapper || ""}`,
-  };
-
-  return (
-    <>
-      {isOpen ? (
-        <div
-          aria-hidden="true"
-          className="wails-draggable fixed inset-x-0 top-0 h-14 z-[75]"
-        />
-      ) : null}
-      <Modal
-        isOpen={isOpen}
-        hideCloseButton={hideCloseButton}
-        {...rest}
-        backdrop="blur"
-        classNames={finalClassNames}
+// Apply widths to Dialog, not the viewport-sized positioning Container.
+export const MODAL_WIDTHS = {
+  compact: "max-w-[560px]",
+  standard: "max-w-[680px]",
+  wide: "max-w-[880px]",
+  detail: "max-w-[1120px]",
+  full: "max-w-none",
+} as const;
+export type ModalSize = keyof typeof MODAL_WIDTHS;
+export interface BaseModalProps
+  extends Pick<
+    ModalBackdropProps,
+    "isOpen" | "onOpenChange" | "isDismissable" | "isKeyboardDismissDisabled"
+  > {
+  children: ModalDialogProps["children"];
+  size?: ModalSize;
+  scrollBehavior?: "inside" | "outside";
+  isPending?: boolean;
+  className?: string;
+  containerClassName?: string;
+  backdropClassName?: string;
+}
+export const BaseModal = ({
+  children,
+  size = "standard",
+  scrollBehavior = "inside",
+  className,
+  containerClassName,
+  backdropClassName,
+  isDismissable = false,
+  isKeyboardDismissDisabled = false,
+  isPending = false,
+  ...backdropProps
+}: BaseModalProps) => (
+  <>
+    {backdropProps.isOpen && (
+      <div
+        aria-hidden="true"
+        className="wails-draggable fixed inset-x-0 top-0 h-14 z-[75]"
       />
-    </>
-  );
-};
-
-export const BaseModalHeader: React.FC<ModalHeaderProps> = ({
+    )}
+    <Modal.Backdrop
+      {...backdropProps}
+      onOpenChange={(open) => {
+        if (!isPending) backdropProps.onOpenChange?.(open);
+      }}
+      isDismissable={isDismissable && !isPending}
+      isKeyboardDismissDisabled={isKeyboardDismissDisabled || isPending}
+      variant="blur"
+      className={cn("z-[70]", backdropClassName)}
+    >
+      <Modal.Container
+        size={size === "full" ? "full" : "lg"}
+        placement="center"
+        scroll={scrollBehavior}
+        className={cn("z-[70] w-full sm:w-full min-w-0", containerClassName)}
+      >
+        <Modal.Dialog
+          className={cn(
+            "w-full min-w-0 gap-0 p-0 bg-overlay border border-white/40 dark:border-zinc-700/50 shadow-2xl rounded-3xl",
+            MODAL_WIDTHS[size],
+            size === "full" && "rounded-none",
+            className,
+          )}
+        >
+          {children}
+        </Modal.Dialog>
+      </Modal.Container>
+    </Modal.Backdrop>
+  </>
+);
+export const BaseModalHeader = ({
   className,
   ...props
-}) => {
-  return (
-    <ModalHeader
-      className={`flex flex-col gap-1 px-8 pt-6 pb-2 ${className || ""}`}
-      {...props}
-    />
-  );
-};
-
-export const BaseModalBody: React.FC<ModalBodyProps> = ({
+}: React.ComponentProps<typeof Modal.Header>) => (
+  <Modal.Header
+    className={cn(
+      "flex min-w-0 shrink-0 flex-col gap-1 px-6 py-5",
+      className,
+    )}
+    {...props}
+  />
+);
+export const BaseModalBody = ({
   className,
   ...props
-}) => {
-  return <ModalBody className={`px-8 py-4 ${className || ""}`} {...props} />;
-};
-
-export const BaseModalFooter: React.FC<ModalFooterProps> = ({
+}: React.ComponentProps<typeof Modal.Body>) => (
+  <Modal.Body
+    className={cn(
+      "m-0! min-w-0 px-6 pt-0 pb-6 text-sm font-normal leading-6 text-foreground/80 dark:text-zinc-300 [overflow-wrap:anywhere]",
+      className,
+    )}
+    {...props}
+  />
+);
+export const BaseModalFooter = ({
   className,
   ...props
-}) => {
-  return (
-    <ModalFooter className={`px-8 pb-8 pt-4 ${className || ""}`} {...props} />
-  );
-};
+}: React.ComponentProps<typeof Modal.Footer>) => (
+  <Modal.Footer
+    className={cn(
+      "m-0! min-w-0 shrink-0 flex-wrap gap-2 px-6 py-4",
+      className,
+    )}
+    {...props}
+  />
+);

@@ -49,17 +49,19 @@ type Manager struct {
 }
 
 type state struct {
-	ctx         context.Context
-	url         string
-	dest        string
-	expectedMD5 string
-	retryCount  int
-	total       int64
-	downloaded  int64
-	paused      bool
-	cancelled   bool
-	running     bool
-	cancelFn    context.CancelFunc
+	ctx              context.Context
+	url              string
+	dest             string
+	expectedMD5      string
+	verify           func(string) error
+	retryCount       int
+	total            int64
+	downloaded       int64
+	paused           bool
+	cancelled        bool
+	running          bool
+	transferComplete bool
+	cancelFn         context.CancelFunc
 }
 
 func NewManager(events Events, opts Options) *Manager {
@@ -77,6 +79,16 @@ func NewManager(events Events, opts Options) *Manager {
 }
 
 func (m *Manager) Start(ctx context.Context, src string, dest string, md5sum string) string {
+	return m.start(ctx, src, dest, md5sum, nil)
+}
+
+// StartVerified publishes the final file only after a package-specific integrity
+// check. Progress and cancellation retain the same destination and event shape.
+func (m *Manager) StartVerified(ctx context.Context, src, dest string, verify func(string) error) string {
+	return m.start(ctx, src, dest, "", verify)
+}
+
+func (m *Manager) start(ctx context.Context, src, dest, md5sum string, verify func(string) error) string {
 	dir := filepath.Dir(dest)
 	if dir != "" {
 		_ = os.MkdirAll(dir, 0o755)
@@ -95,6 +107,7 @@ func (m *Manager) Start(ctx context.Context, src string, dest string, md5sum str
 		url:         src,
 		dest:        dest,
 		expectedMD5: md5sum,
+		verify:      verify,
 		running:     true,
 	}
 	m.tasks[dest] = local
@@ -147,6 +160,9 @@ func (m *Manager) Cancel() {
 			st.cancelFn()
 		}
 		if !st.running {
+			if m.opts.RemoveOnCancel {
+				_ = os.Remove(st.dest + ".download")
+			}
 			delete(m.tasks, dest)
 		}
 		m.emitStatus("cancelled", st.dest)
@@ -185,6 +201,9 @@ func (m *Manager) CancelTask(dest string) {
 			st.cancelFn()
 		}
 		if !st.running {
+			if m.opts.RemoveOnCancel {
+				_ = os.Remove(st.dest + ".download")
+			}
 			delete(m.tasks, dest)
 		}
 		m.emitStatus("cancelled", st.dest)
@@ -212,14 +231,21 @@ func (m *Manager) run(s *state) {
 	m.mu.Unlock()
 
 	for {
-		cancelled, paused, current := m.taskState(local)
-		if !current || cancelled || paused {
-			m.finishRunning(local)
+		downloadDest := local.dest + ".download"
+		if m.finishIfInterrupted(local, downloadDest) {
+			return
+		}
+		m.mu.Lock()
+		complete := local.transferComplete
+		m.mu.Unlock()
+		if complete {
+			if m.verifyAndPublish(local, downloadDest) {
+				continue
+			}
 			return
 		}
 
 		var cur int64
-		downloadDest := local.dest + ".download"
 		if m.opts.Resume {
 			if fi, err := os.Stat(downloadDest); err == nil {
 				cur = fi.Size()
@@ -361,7 +387,9 @@ func (m *Manager) run(s *state) {
 				break
 			}
 		}
-		_ = f.Close()
+		if closeErr := f.Close(); loopErr == nil {
+			loopErr = closeErr
+		}
 		resp.Body.Close()
 		contextWasCancelled := ctx.Err() == context.Canceled
 		cancel()
@@ -383,42 +411,105 @@ func (m *Manager) run(s *state) {
 			return
 		}
 
-		// Download complete, verify MD5
-		if local.expectedMD5 != "" {
-			m.emitStatus("verifying", local.dest)
-			if hash, err := calculateMD5(downloadDest); err == nil {
-				if !strings.EqualFold(hash, local.expectedMD5) {
-					// Mismatch
-					_ = os.Remove(downloadDest)
-					retryCount := m.incrementRetryCount(local)
-					if retryCount < 3 {
-						m.emitError(fmt.Sprintf("MD5 mismatch (attempt %d/3), retrying...", retryCount), local.dest)
-						m.emitStatus("started", local.dest)
-						time.Sleep(1 * time.Second)
-						continue
-					} else {
-						m.emitError("ERR_MD5_MISMATCH", local.dest)
-						m.finishRunning(local)
-						return
-					}
-				}
-			} else {
-				// Failed to calculate MD5, maybe treat as error?
-				m.emitError(fmt.Sprintf("MD5 calculation failed: %v", err), local.dest)
-				m.finishRunning(local)
-				return
-			}
+		m.mu.Lock()
+		local.transferComplete = true
+		m.mu.Unlock()
+		if m.verifyAndPublish(local, downloadDest) {
+			continue
 		}
-
-		if err := os.Rename(downloadDest, local.dest); err != nil {
-			m.emitError(err.Error(), local.dest)
-		} else {
-			m.emitProgress(m.progress(local))
-			m.emitDone(local.dest)
-		}
-		m.finishRunning(local)
 		return
 	}
+}
+
+// A pause during verification retains the complete transfer. Resuming runs all
+// integrity checks again without an invalid HTTP Range request beyond EOF.
+// A true result requests a fresh transfer after the existing MD5 retry policy.
+func (m *Manager) verifyAndPublish(local *state, downloadDest string) bool {
+	if m.finishIfInterrupted(local, downloadDest) {
+		return false
+	}
+	if local.expectedMD5 != "" {
+		m.emitStatus("verifying", local.dest)
+		digest, err := calculateMD5(downloadDest)
+		if m.finishIfInterrupted(local, downloadDest) {
+			return false
+		}
+		if err != nil {
+			m.emitError(fmt.Sprintf("MD5 calculation failed: %v", err), local.dest)
+			m.finishRunning(local)
+			return false
+		}
+		if !strings.EqualFold(digest, local.expectedMD5) {
+			_ = os.Remove(downloadDest)
+			m.mu.Lock()
+			local.transferComplete = false
+			m.mu.Unlock()
+			retryCount := m.incrementRetryCount(local)
+			if retryCount < 3 {
+				m.emitError(fmt.Sprintf("MD5 mismatch (attempt %d/3), retrying...", retryCount), local.dest)
+				m.emitStatus("started", local.dest)
+				time.Sleep(time.Second)
+				return true
+			}
+			m.emitError("ERR_MD5_MISMATCH", local.dest)
+			m.finishRunning(local)
+			return false
+		}
+	}
+	if local.verify != nil {
+		m.emitStatus("verifying", local.dest)
+		err := local.verify(downloadDest)
+		if m.finishIfInterrupted(local, downloadDest) {
+			return false
+		}
+		if err != nil {
+			_ = os.Remove(downloadDest)
+			m.emitError(err.Error(), local.dest)
+			m.finishRunning(local)
+			return false
+		}
+	}
+	// Serialize the commit with Pause/Cancel. Once the rename wins, detach the
+	// task before emitting completion so a late cancellation cannot contradict it.
+	m.mu.Lock()
+	if m.tasks[local.dest] != local || local.cancelled || local.paused || local.ctx.Err() != nil {
+		m.mu.Unlock()
+		m.finishIfInterrupted(local, downloadDest)
+		return false
+	}
+	err := os.Rename(downloadDest, local.dest)
+	progress := DownloadProgress{Downloaded: local.downloaded, Total: local.total, Dest: local.dest}
+	local.running = false
+	delete(m.tasks, local.dest)
+	m.mu.Unlock()
+	if err != nil {
+		m.emitError(err.Error(), local.dest)
+	} else {
+		m.emitProgress(progress)
+		m.emitDone(local.dest)
+	}
+	return false
+}
+
+func (m *Manager) finishIfInterrupted(local *state, downloadDest string) bool {
+	m.mu.Lock()
+	parentCancelled := local.ctx.Err() != nil
+	if parentCancelled {
+		local.cancelled = true
+	}
+	cancelled, paused, current := local.cancelled, local.paused, m.tasks[local.dest] == local
+	m.mu.Unlock()
+	if current && !cancelled && !paused {
+		return false
+	}
+	if current && cancelled && m.opts.RemoveOnCancel {
+		_ = os.Remove(downloadDest)
+	}
+	if parentCancelled {
+		m.emitStatus("cancelled", local.dest)
+	}
+	m.finishRunning(local)
+	return true
 }
 
 func calculateMD5(path string) (string, error) {

@@ -1,7 +1,12 @@
 import { useState, useEffect } from "react";
-import { THEMES, hexToRgb, generateTheme } from "@/constants/themes";
-
-const BRAND_PRIMARY_FOREGROUND = "0 0% 100%";
+import {
+  THEMES,
+  hexToRgb,
+  generateTheme,
+  getAccentForeground,
+  getAccentHover,
+  getReadableAccent,
+} from "@/constants/themes";
 
 export const useThemeColors = (resolvedTheme: string | undefined) => {
   const [themeColorsReady, setThemeColorsReady] = useState<boolean>(false);
@@ -106,11 +111,13 @@ export const useThemeColors = (resolvedTheme: string | undefined) => {
       const k = Number(key);
       root.style.setProperty(`--theme-${k}`, hexToRgb(theme[k]));
     });
-    // Primary actions intentionally keep the original white brand foreground.
-    root.style.setProperty(
-      "--heroui-primary-foreground",
-      BRAND_PRIMARY_FOREGROUND,
-    );
+    root.style.setProperty("--theme-solid", theme[500]);
+    root.style.setProperty("--theme-solid-hover", getAccentHover(theme[500]));
+    root.style.setProperty("--theme-solid-foreground", getAccentForeground(theme[500]));
+    for (const [mode, surface] of [["light", "#f4f4f5"], ["dark", "#27272a"]]) {
+      root.style.setProperty(`--theme-text-${mode}`, getReadableAccent(theme[500], surface));
+      root.style.setProperty(`--theme-heading-${mode}`, getReadableAccent(theme[500], surface, 3.1));
+    }
     setThemeColorsReady(true);
   }, [
     resolvedTheme,

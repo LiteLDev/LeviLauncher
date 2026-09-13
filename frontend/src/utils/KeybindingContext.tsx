@@ -86,7 +86,18 @@ export const KeybindingProvider: React.FC<{ children: React.ReactNode }> = ({
 
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
+      // Overlay and input handlers own keys they have already consumed.
+      if (e.defaultPrevented) return;
       const target = e.target as HTMLElement;
+      if (
+        e.key === "Escape" &&
+        (target.closest('[role="dialog"], [role="menu"], [role="listbox"]') ||
+          document.querySelector(
+            '[role="dialog"], [role="menu"], [role="listbox"]',
+          ))
+      ) {
+        return;
+      }
       const isInput = ["INPUT", "TEXTAREA", "SELECT"].includes(target.tagName);
 
       bindings.forEach((binding) => {

@@ -1,4 +1,4 @@
-﻿{
+{
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
@@ -10,13 +10,11 @@
     "forceConsistentCasingInFileNames": true,
     "module": "ESNext",
     "moduleResolution": "bundler",
-    "baseUrl": ".",
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
     "paths": {
       "@/*": ["./src/*"],
-      "@heroui/react": ["./src/shims/heroui.ts"],
       "bindings/*": ["./bindings/*"]
     }
   },

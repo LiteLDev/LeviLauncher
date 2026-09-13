@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useTheme } from "next-themes";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 
 export type ThemeMode = "light" | "dark" | "schedule" | "auto" | "system";
 

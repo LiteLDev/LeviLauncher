@@ -2,6 +2,7 @@ package versionlaunch
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -13,9 +14,11 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/launch"
+	"github.com/liteldev/LeviLauncher/internal/leviloader"
+	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/utils"
-	"github.com/liteldev/LeviLauncher/internal/vcruntime"
+	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/wailsapp/wails/v3/pkg/application"
 	"golang.org/x/sys/windows"
@@ -81,12 +84,56 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	if errCode != "" {
 		return errCode
 	}
+	meta, _ := versions.ReadMeta(dir)
+	if versions.DetectPackageType(dir, meta) == versions.PackageTypeUWP {
+		manifest, err := uwp.ReadManifest(dir)
+		if err != nil {
+			return uwp.ErrorCode(err)
+		}
+		exe := filepath.Join(dir, manifest.Applications[0].Executable)
+		if !utils.FileExists(exe) {
+			return "ERR_NOT_FOUND_EXE"
+		}
+		// UWP re-registration and import editing require the process to exit,
+		// including when the caller asks to bypass the normal running check.
+		if isProcessRunningAtPath(exe) {
+			return "ERR_GAME_ALREADY_RUNNING"
+		}
+		application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
+		prepare, err := uwpNativePreparation(dir, name, exe, meta.EnableConsole)
+		if err != nil {
+			return "ERR_UWP_PREPARE: " + err.Error()
+		}
+		var prepareLaunch func() error
+		if prepare {
+			prepareLaunch = func() error {
+				_, err := leviloader.PatchAndActivate(ctx, dir)
+				return err
+			}
+		}
+		pid, err := uwp.LaunchWithPreparation(ctx, dir, prepareLaunch)
+		if err != nil {
+			log.Printf("UWP launch failed for %s: %v", name, err)
+			return uwp.ErrorMessage(err)
+		}
+		meta.Registered = true
+		meta.PackageType = versions.PackageTypeUWP
+		if meta.Name != "" {
+			_ = versions.WriteMeta(dir, meta)
+		}
+		discord.SetPlayingVersion(strings.TrimSpace(meta.GameVersion))
+		go launch.MonitorGameProcess(ctx, dir, pid)
+		return ""
+	}
 	exe := filepath.Join(dir, "Minecraft.Windows.exe")
 	if !utils.FileExists(exe) {
 		return "ERR_NOT_FOUND_EXE"
 	}
 	application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
-	_ = vcruntime.EnsureForVersion(ctx, dir)
+	if _, err := leviloader.PatchAndActivate(ctx, dir); err != nil {
+		log.Printf("Failed to activate loader for %s: %v", exe, err)
+		return "ERR_LAUNCH_GAME"
+	}
 
 	var args []string
 	var envs []string
@@ -168,6 +215,26 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	}
 	go launch.MonitorGameProcess(ctx, dir, launchPID)
 	return ""
+}
+
+func uwpNativePreparation(dir, name, exe string, console bool) (bool, error) {
+	supported, err := leviloader.SupportsExecutable(exe)
+	if err != nil || supported {
+		return supported, err
+	}
+	// Keep vanilla x86/ARM64 UWP launches working. Desktop DLL features must
+	// report an architecture error instead of injecting an incompatible DLL.
+	needsLoader := console
+	for _, mod := range mods.GetMods(name) {
+		if mod.Type == "preload-native" && utils.FileExists(filepath.Join(dir, "mods", mod.Folder, "manifest.json")) {
+			needsLoader = true
+			break
+		}
+	}
+	if needsLoader {
+		return false, fmt.Errorf("console and native DLL mods require an x64 UWP game package")
+	}
+	return false, nil
 }
 
 func parseCommandLineArgs(input string) []string {

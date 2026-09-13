@@ -1,10 +1,59 @@
 import { listDirectories } from "./fs";
 import { compareVersions } from "./version";
-import { GetUserGamertagMap } from "bindings/github.com/liteldev/LeviLauncher/userservice";
+import { GetUserGamertagMap } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 
-export async function listPlayers(usersRoot: string): Promise<string[]> {
+export const EMPTY_CONTENT_ROOTS = {
+  base: "",
+  packageType: "",
+  comMojangRoot: "",
+  worlds: "",
+  skinPacks: "",
+  screenshots: "",
+  usersRoot: "",
+  resourcePacks: "",
+  behaviorPacks: "",
+  isIsolation: false,
+  isPreview: false,
+};
+
+type ContentPathRoots = {
+  packageType?: string;
+  usersRoot?: string;
+  comMojangRoot?: string;
+  worlds?: string;
+  skinPacks?: string;
+  screenshots?: string;
+};
+
+export function isContentTransferTarget(
+  source: { packageType?: string; isIsolation?: boolean; isPreview?: boolean },
+  target: { packageType?: string; enableIsolation?: boolean; type?: string },
+): boolean {
+  if (target.enableIsolation) return true;
+  if (target.packageType !== "uwp") return false;
+  // Release and Beta share LocalState only when both UWP instances are not isolated.
+  return source.packageType !== "uwp" || !!source.isIsolation ||
+    (String(target.type || "").trim().toLowerCase() === "preview") !== !!source.isPreview;
+}
+
+export function resolveContentPath(
+  roots: ContentPathRoots,
+  kind: "minecraftWorlds" | "skin_packs" | "Screenshots" | "minecraftpe",
+  player = "",
+): string {
+  if (roots.packageType === "uwp") {
+    const direct = kind === "minecraftWorlds" ? roots.worlds
+      : kind === "skin_packs" ? roots.skinPacks
+      : kind === "Screenshots" ? roots.screenshots : "";
+    return direct || (roots.comMojangRoot ? `${roots.comMojangRoot}\\${kind}` : "");
+  }
+  if (!roots.usersRoot || !player || player === "." || player === ".." || /[\\/:]/.test(player)) return "";
+  return `${roots.usersRoot}\\${player}\\games\\com.mojang\\${kind}`;
+}
+
+export async function listPlayers(usersRoot: string, throwOnError = false): Promise<string[]> {
   if (!usersRoot) return [];
-  const entries = await listDirectories(usersRoot);
+  const entries = await listDirectories(usersRoot, throwOnError);
   return entries
     .map((e) => e.name)
     .filter((n) => n && n !== "9556213259376595538");

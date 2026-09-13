@@ -1,0 +1,11 @@
+# Only source, tests and build documentation are published.
+/.xmake/
+/build/
+/lib/
+/.vscode/
+/.claude/
+*.dll
+*.lib
+*.exp
+*.pdb
+*.obj

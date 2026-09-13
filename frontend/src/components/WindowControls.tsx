@@ -1,13 +1,34 @@
-import React, { useCallback, useEffect, useState } from "react";
+import { cn } from "@/utils/cn";
 import { Button } from "@heroui/react";
-import {
-  IoRemoveOutline,
-  IoSquareOutline,
-  IoCopyOutline,
-  IoCloseOutline,
-} from "react-icons/io5";
+import React, { useEffect, useState } from "react";
+
 import { Events, Window } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
+
+const controlButtonClassName =
+  "wails-no-drag size-8 min-w-8 shrink-0 rounded-lg p-0 hover:bg-default data-[hovered=true]:bg-default";
+
+const WindowControlIcon = ({
+  children,
+}: {
+  children: React.ReactNode;
+}) => (
+  <svg
+    aria-hidden="true"
+    focusable="false"
+    width="16"
+    height="16"
+    viewBox="0 0 16 16"
+    fill="none"
+    stroke="currentColor"
+    strokeWidth="1.25"
+    strokeLinecap="round"
+    strokeLinejoin="round"
+    className="size-4 shrink-0"
+  >
+    {children}
+  </svg>
+);
 
 interface WindowControlsProps {
   navLocked: boolean;
@@ -25,22 +46,15 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
   const { t } = useTranslation();
   const [isMaximized, setIsMaximized] = useState(false);
 
-  const syncMaximizedState = useCallback(async () => {
-    try {
-      const maximized = await Window.IsMaximised();
-      setIsMaximized(maximized);
-    } catch {
-      // ignore runtime sync errors
-    }
-  }, []);
-
   useEffect(() => {
     let disposed = false;
+    let revision = 0;
     const safeSync = async () => {
       if (disposed) return;
+      const currentRevision = ++revision;
       try {
         const maximized = await Window.IsMaximised();
-        if (!disposed) {
+        if (!disposed && currentRevision === revision) {
           setIsMaximized(maximized);
         }
       } catch {
@@ -48,21 +62,17 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
       }
     };
 
-    void safeSync();
-
     const windowStateEvents = [
-      "common:WindowMaximise",
-      "common:WindowUnMaximise",
-      "common:WindowRestore",
-      "windows:WindowMaximise",
-      "windows:WindowUnMaximise",
-      "windows:WindowRestore",
+      Events.Types.Common.WindowMaximise,
+      Events.Types.Common.WindowUnMaximise,
+      Events.Types.Common.WindowRestore,
     ];
     const offFns = windowStateEvents.map((eventName) =>
       Events.On(eventName, () => {
         void safeSync();
       }),
     );
+    void safeSync();
 
     return () => {
       disposed = true;
@@ -72,23 +82,20 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
 
   const handleToggleMaximize = () => {
     if (navLocked && !isOnboardingMode) return;
-    void (async () => {
-      await Window.ToggleMaximise();
-      await syncMaximizedState();
-    })();
+    void Window.ToggleMaximise().catch((error) => {
+      console.warn("Failed to toggle window maximization", error);
+    });
   };
 
   return (
-    <div className={`flex items-center gap-1 ${className || ""}`}>
+    <div className={cn("flex shrink-0 items-center gap-1", className)}>
       {!hideSeparator && (
-        <div className="w-px h-6 bg-default-200 dark:bg-zinc-700 mx-2" />
+        <div className="w-px h-6 bg-surface-tertiary mx-2" />
       )}
 
       <Button
         isIconOnly
-        variant="light"
         size="sm"
-        radius="lg"
         aria-label={t("common.collapse")}
         isDisabled={navLocked && !isOnboardingMode}
         onPress={() => {
@@ -98,33 +105,38 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
             document.activeElement.blur();
           }
         }}
-        className="wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        variant={"ghost"}
+        className={controlButtonClassName}
       >
-        <IoRemoveOutline size={20} />
+        <WindowControlIcon>
+          <path d="M3 8h10" />
+        </WindowControlIcon>
       </Button>
 
       <Button
         isIconOnly
-        variant="light"
         size="sm"
-        radius="lg"
         aria-label={isMaximized ? t("common.collapse") : t("common.expand")}
         isDisabled={navLocked && !isOnboardingMode}
         onPress={handleToggleMaximize}
-        className="wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100"
+        variant={"ghost"}
+        className={controlButtonClassName}
       >
-        {isMaximized ? (
-          <IoCopyOutline size={18} />
-        ) : (
-          <IoSquareOutline size={18} />
-        )}
+        <WindowControlIcon>
+          {isMaximized ? (
+            <>
+              <path d="M5 5V3h8v8h-2" />
+              <rect x="3" y="5" width="8" height="8" rx="0.75" />
+            </>
+          ) : (
+            <rect x="3" y="3" width="10" height="10" rx="0.75" />
+          )}
+        </WindowControlIcon>
       </Button>
 
       <Button
         isIconOnly
-        variant="light"
         size="sm"
-        radius="lg"
         aria-label={t("common.close")}
         isDisabled={navLocked && !isOnboardingMode}
         onPress={() => {
@@ -134,9 +146,15 @@ export const WindowControls: React.FC<WindowControlsProps> = ({
             document.activeElement.blur();
           }
         }}
-        className="wails-no-drag min-w-8 w-8 h-8 text-zinc-500 hover:text-red-600 hover:bg-red-100 dark:text-zinc-400 dark:hover:text-red-400 dark:hover:bg-red-900/20"
+        variant={"ghost"}
+        className={cn(
+          controlButtonClassName,
+          "hover:bg-danger hover:text-(--action-solid-foreground)! data-[hovered=true]:bg-danger data-[hovered=true]:text-(--action-solid-foreground)!",
+        )}
       >
-        <IoCloseOutline size={22} />
+        <WindowControlIcon>
+          <path d="m3 3 10 10M13 3 3 13" />
+        </WindowControlIcon>
       </Button>
     </div>
   );

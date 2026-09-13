@@ -13,11 +13,15 @@ import (
 
 func ListServers(versionName string, player string) ([]types.Server, error) {
 	roots := GetContentRoots(versionName)
-	if roots.UsersRoot == "" || player == "" {
+	comMojang := roots.ComMojangRoot
+	if comMojang == "" && roots.UsersRoot != "" && player != "" && filepath.Base(player) == player && player != "." && player != ".." {
+		comMojang = filepath.Join(roots.UsersRoot, player, "games", "com.mojang")
+	}
+	if comMojang == "" {
 		return []types.Server{}, nil
 	}
 
-	serverFile := filepath.Join(roots.UsersRoot, player, "games", "com.mojang", "minecraftpe", "external_servers.txt")
+	serverFile := filepath.Join(comMojang, "minecraftpe", "external_servers.txt")
 	if !utils.FileExists(serverFile) {
 		return []types.Server{}, nil
 	}

@@ -1,24 +1,26 @@
+import { openDirectory, openModsDirectory } from "@/utils/explorer";
+import { toast, useOverlayState } from "@heroui/react";
 import React, { useEffect, useMemo, useRef, useState } from "react";
-import { addToast, useDisclosure } from "@heroui/react";
+
 import { useNavigate, useBlocker } from "react-router-dom";
-import { Call, Events } from "@wailsio/runtime";
+import { Events } from "@wailsio/runtime";
 import {
+  InstallLIPPackage,
   ListDir,
-  OpenPathDir,
-} from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+  UninstallLIPPackage,
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   GetVersionMeta,
   GetVersionsDir,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import {
-  OpenModsExplorer,
   DeleteMod,
   EnableMod,
   DisableMod,
   ImportModZipPath,
   ImportModDllPath,
   UpdateModManifest,
-} from "bindings/github.com/liteldev/LeviLauncher/modsservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
   fetchLIPPackagesIndex,
@@ -425,67 +427,67 @@ export const useModsPage = (
 
   const {
     isOpen: errOpen,
-    onOpen: errOnOpen,
-    onOpenChange: errOnOpenChange,
-    onClose: errOnClose,
-  } = useDisclosure();
+    open: errOnOpen,
+    setOpen: errOnOpenChange,
+    close: errOnClose,
+  } = useOverlayState();
   const {
     isOpen: delOpen,
-    onOpen: delOnOpen,
-    onOpenChange: delOnOpenChange,
-    onClose: delOnClose,
-  } = useDisclosure();
+    open: delOnOpen,
+    setOpen: delOnOpenChange,
+    close: delOnClose,
+  } = useOverlayState();
   const {
     isOpen: dllOpen,
-    onOpen: dllOnOpen,
-    onOpenChange: dllOnOpenChange,
-    onClose: dllOnClose,
-  } = useDisclosure();
+    open: dllOnOpen,
+    setOpen: dllOnOpenChange,
+    close: dllOnClose,
+  } = useOverlayState();
   const {
     isOpen: dupOpen,
-    onOpen: dupOnOpen,
-    onOpenChange: dupOnOpenChange,
-    onClose: dupOnClose,
-  } = useDisclosure();
+    open: dupOnOpen,
+    setOpen: dupOnOpenChange,
+    close: dupOnClose,
+  } = useOverlayState();
   const {
     isOpen: delCfmOpen,
-    onOpen: delCfmOnOpen,
-    onOpenChange: delCfmOnOpenChange,
-    onClose: delCfmOnClose,
-  } = useDisclosure();
+    open: delCfmOnOpen,
+    setOpen: delCfmOnOpenChange,
+    close: delCfmOnClose,
+  } = useOverlayState();
   const {
     isOpen: infoOpen,
-    onOpen: infoOnOpen,
-    onOpenChange: infoOnOpenChange,
-    onClose: infoOnClose,
-  } = useDisclosure();
+    open: infoOnOpen,
+    setOpen: infoOnOpenChange,
+    close: infoOnClose,
+  } = useOverlayState();
   const {
     isOpen: editOpen,
-    onOpen: editOnOpen,
-    onClose: editOnClose,
-  } = useDisclosure();
+    open: editOnOpen,
+    close: editOnClose,
+  } = useOverlayState();
   const {
     isOpen: batchUpdateOpen,
-    onOpen: batchUpdateOnOpen,
-    onOpenChange: batchUpdateOnOpenChange,
-    onClose: batchUpdateOnClose,
-  } = useDisclosure();
+    open: batchUpdateOnOpen,
+    setOpen: batchUpdateOnOpenChange,
+    close: batchUpdateOnClose,
+  } = useOverlayState();
   const {
     isOpen: batchUninstallOpen,
-    onOpen: batchUninstallOnOpen,
-    onOpenChange: batchUninstallOnOpenChange,
-    onClose: batchUninstallOnClose,
-  } = useDisclosure();
+    open: batchUninstallOnOpen,
+    setOpen: batchUninstallOnOpenChange,
+    close: batchUninstallOnClose,
+  } = useOverlayState();
   const {
     isOpen: demotedWarningOpen,
-    onOpen: demotedWarningOnOpen,
-    onClose: demotedWarningOnClose,
-  } = useDisclosure();
+    open: demotedWarningOnOpen,
+    close: demotedWarningOnClose,
+  } = useOverlayState();
   const {
     isOpen: actionConfirmOpen,
-    onOpen: actionConfirmOnOpen,
-    onClose: actionConfirmOnClose,
-  } = useDisclosure();
+    open: actionConfirmOnOpen,
+    close: actionConfirmOnClose,
+  } = useOverlayState();
 
   useBlocker(() => importing);
 
@@ -497,13 +499,6 @@ export const useModsPage = (
       }
     };
   }, [importing]);
-
-  const callMinecraftByName = async <T>(
-    method: string,
-    ...args: unknown[]
-  ): Promise<T> => {
-    return (await Call.ByName(`main.Minecraft.${method}`, ...args)) as T;
-  };
 
   const resolveLIPIdentifierForRequest = (
     identifier: string,
@@ -946,18 +941,18 @@ export const useModsPage = (
     err?: unknown,
   ) => {
     if (type === "success") {
-      addToast({
-        color: "success",
-        title: t("common.success"),
+      toast(t("common.success"), {
+        variant: "success",
         description: `${actionLabel}: ${name}`,
+        timeout: 2000,
       });
       return;
     }
 
-    addToast({
-      color: "danger",
-      title: t("common.error"),
+    toast(t("common.error"), {
+      variant: "danger",
       description: `${actionLabel}: ${resolveErrorText(t, err)}`,
+      timeout: 2000,
     });
   };
 
@@ -1019,10 +1014,10 @@ export const useModsPage = (
     const nextName = editName.trim();
 
     if (!name || !mod || !folder || !nextName) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("mods.err_invalid_name"),
+        timeout: 2000,
       });
       return;
     }
@@ -1301,8 +1296,7 @@ export const useModsPage = (
 
     try {
       onLog?.("info", t("lip.task_console.stage_install_pkg"));
-      const err = await callMinecraftByName<string>(
-        "InstallLIPPackage",
+      const err = await InstallLIPPackage(
         name,
         requestIdentifier,
         targetVersion,
@@ -1381,8 +1375,7 @@ export const useModsPage = (
       if (!requestIdentifier) return "ERR_LIP_PACKAGE_INVALID_IDENTIFIER";
       try {
         onLog?.("info", t("mods.action_uninstall"));
-        const uninstallErr = await callMinecraftByName<string>(
-          "UninstallLIPPackage",
+        const uninstallErr = await UninstallLIPPackage(
           name,
           requestIdentifier,
         );
@@ -1415,8 +1408,7 @@ export const useModsPage = (
 
     try {
       onLog?.("info", t("mods.action_uninstall"));
-      const uninstallErr = await callMinecraftByName<string>(
-        "UninstallLIPPackage",
+      const uninstallErr = await UninstallLIPPackage(
         name,
         requestIdentifier,
       );
@@ -1440,10 +1432,10 @@ export const useModsPage = (
   ) => {
     const name = activeVersionName;
     if (!name) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("launcherpage.currentVersion_none"),
+        timeout: 2000,
       });
       return;
     }
@@ -1550,10 +1542,10 @@ export const useModsPage = (
   const handleBatchUpdate = async () => {
     const name = activeVersionName;
     if (!name) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("launcherpage.currentVersion_none"),
+        timeout: 2000,
       });
       return;
     }
@@ -1638,10 +1630,10 @@ export const useModsPage = (
       if (failed.length > 0) {
         showActionResult(success, failed);
       } else if (hasSuccess) {
-        addToast({
-          color: "success",
-          title: t("common.success"),
+        toast(t("common.success"), {
+          variant: "success",
           description: `${t("mods.action_update")} x${success.length}`,
+          timeout: 2000,
         });
       }
     } finally {
@@ -1652,10 +1644,10 @@ export const useModsPage = (
   const handleBatchUninstall = async () => {
     const name = activeVersionName;
     if (!name) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("launcherpage.currentVersion_none"),
+        timeout: 2000,
       });
       return;
     }
@@ -1755,10 +1747,10 @@ export const useModsPage = (
       if (failed.length > 0) {
         showActionResult(success, failed);
       } else if (success.length > 0) {
-        addToast({
-          color: "success",
-          title: t("common.success"),
+        toast(t("common.success"), {
+          variant: "success",
           description: `${t("mods.action_uninstall")} x${success.length}`,
+          timeout: 2000,
         });
       }
       if (demoted.length > 0) {
@@ -1799,10 +1791,10 @@ export const useModsPage = (
   const executeUpdateMod = async (mod: types.ModInfo) => {
     const name = activeVersionName;
     if (!name) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("launcherpage.currentVersion_none"),
+        timeout: 2000,
       });
       return;
     }
@@ -1873,10 +1865,10 @@ export const useModsPage = (
   const executeUpdateLipGroup = async (group: LipGroupItem) => {
     const name = activeVersionName;
     if (!name) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("launcherpage.currentVersion_none"),
+        timeout: 2000,
       });
       return;
     }
@@ -1950,10 +1942,10 @@ export const useModsPage = (
   ) => {
     const name = activeVersionName;
     if (!name) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("launcherpage.currentVersion_none"),
+        timeout: 2000,
       });
       return;
     }
@@ -1971,8 +1963,7 @@ export const useModsPage = (
             "info",
             `${t("mods.action_promote_install")}: ${group.packageName}@${version}`,
           );
-          const err = await callMinecraftByName<string>(
-            "InstallLIPPackage",
+          const err = await InstallLIPPackage(
             name,
             requestIdentifier,
             version,
@@ -1991,22 +1982,22 @@ export const useModsPage = (
     }
 
     await refreshAll();
-    addToast({
-      color: "success",
-      title: t("common.success"),
+    toast(t("common.success"), {
+      variant: "success",
       description: t("mods.action_promote_install_success", {
         name: group.packageName,
       }),
+      timeout: 2000,
     });
   };
 
   const handlePromoteLipGroup = async (group: LipGroupItem) => {
     const name = activeVersionName;
     if (!name) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("launcherpage.currentVersion_none"),
+        timeout: 2000,
       });
       return;
     }
@@ -2063,10 +2054,10 @@ export const useModsPage = (
     if (!activeMod) return;
     const name = activeVersionName;
     if (!name) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("launcherpage.currentVersion_none"),
+        timeout: 2000,
       });
       return;
     }
@@ -2129,10 +2120,10 @@ export const useModsPage = (
 
     const name = activeVersionName;
     if (!name) {
-      addToast({
-        color: "danger",
-        title: t("common.error"),
+      toast(t("common.error"), {
+        variant: "danger",
         description: t("launcherpage.currentVersion_none"),
+        timeout: 2000,
       });
       return;
     }
@@ -2232,7 +2223,7 @@ export const useModsPage = (
       navigate(ROUTES.instances);
       return;
     }
-    OpenModsExplorer(name);
+    void openModsDirectory(name);
   };
 
   const openModFolder = async (mod: types.ModInfo) => {
@@ -2242,20 +2233,17 @@ export const useModsPage = (
     const folder = resolveModFolder(mod);
     if (!folder) return;
 
+    let modPath: string;
     try {
       const versionsDir = await GetVersionsDir();
       const sep = versionsDir.includes("\\") ? "\\" : "/";
-      const modPath = `${versionsDir}${sep}${name}${sep}mods${sep}${folder}`;
-
-      try {
-        await ListDir(modPath);
-        await OpenPathDir(modPath);
-      } catch {
-        OpenModsExplorer(name);
-      }
+      modPath = `${versionsDir}${sep}${name}${sep}mods${sep}${folder}`;
+      await ListDir(modPath);
     } catch {
-      OpenModsExplorer(name);
+      await openModsDirectory(name);
+      return;
     }
+    await openDirectory(modPath);
   };
 
   const toggleModEnabled = async (modFolder: string, val: boolean) => {
@@ -2438,6 +2426,7 @@ export const useModsPage = (
     normalItems,
     lipGroupItems,
     visibleItems,
+    hasInstalledItems: baseNormalItems.length > 0 || allLipGroupItems.length > 0,
     modsByFolder,
 
     refreshAll,

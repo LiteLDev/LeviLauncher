@@ -1,13 +1,15 @@
 # Requirements & Installation
 
-This page explains what LeviLauncher needs before it can install and launch Minecraft Bedrock (GDK) versions correctly.
+This page explains what LeviLauncher needs before it can install and launch Minecraft Bedrock (GDK / UWP) versions correctly.
+
+UWP versions require Windows Developer Mode and the UWP framework dependencies declared by the package (such as Microsoft.VCLibs). The Gaming Services, GameInput, and isolated-instance requirements below apply to GDK. UWP uses the package's shared LocalState and does not support the current GDK isolation or LeviLamina integration.
 
 ## System requirements
 
 | Item | Requirement |
 | --- | --- |
 | Operating system | Windows 10 or Windows 11 |
-| Game edition | Minecraft Bedrock Edition (GDK) |
+| Game edition | Minecraft Bedrock Edition (GDK / UWP) |
 | License | A legitimate licensed copy tied to your Microsoft account |
 | Network | Needed for downloads, version metadata, mirror tests, and update checks |
 

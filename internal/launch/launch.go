@@ -4,14 +4,18 @@ import (
 	"context"
 	"path/filepath"
 	"strings"
+	"sync"
+	"sync/atomic"
 	"syscall"
 	"time"
 	"unsafe"
 
 	"github.com/wailsapp/wails/v3/pkg/application"
 
+	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/versions"
 	"golang.org/x/sys/windows"
 )
 
@@ -27,6 +31,33 @@ var (
 	procFindWindowW     = user32.NewProc("FindWindowW")
 	procIsWindowVisible = user32.NewProc("IsWindowVisible")
 )
+
+var (
+	quitRequested   atomic.Bool
+	userHidLauncher atomic.Bool
+
+	// activeMonitors keys the running monitors by version directory. Force
+	// launches skip the already-running check, so the same game can be asked
+	// to start twice; a second monitor would apply the launch and exit
+	// behaviors a second time.
+	activeMonitors sync.Map
+)
+
+// QuitRequested reports whether the current shutdown was asked for through
+// QuitLauncher. The window-close hook relies on this to tell an explicit quit
+// apart from the user pressing the close button: if it hid the window on an
+// explicit quit, the launcher would stay alive in the tray forever.
+func QuitRequested() bool {
+	return quitRequested.Load()
+}
+
+// QuitLauncher terminates the launcher regardless of the minimise-to-tray
+// setting. Every "quit" affordance outside the window close button goes
+// through here.
+func QuitLauncher() {
+	quitRequested.Store(true)
+	application.Get().Quit()
+}
 
 func FindWindowByTitleExact(title string) bool {
 	t, err := syscall.UTF16PtrFromString(title)
@@ -78,7 +109,7 @@ func isGameRunning(versionDir string) bool {
 	}
 
 	for {
-		if strings.EqualFold(windows.UTF16ToString(entry.ExeFile[:]), "Minecraft.Windows.exe") {
+		if versions.IsMinecraftExecutable(windows.UTF16ToString(entry.ExeFile[:])) {
 			h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, entry.ProcessID)
 			if err == nil {
 				buf := make([]uint16, 1024)
@@ -86,7 +117,7 @@ func isGameRunning(versionDir string) bool {
 				if err := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); err == nil && size > 0 {
 					p := normalizeProcessPath(windows.UTF16ToString(buf[:size]))
 					_ = windows.CloseHandle(h)
-					if strings.HasPrefix(p, cleanVerDir) {
+					if strings.HasPrefix(p, cleanVerDir+string(filepath.Separator)) {
 						return true
 					}
 				} else {
@@ -102,7 +133,8 @@ func isGameRunning(versionDir string) bool {
 }
 
 func isGameWindowVisible() bool {
-	return FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview")
+	return FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview") ||
+		FindWindowByTitleExact("Minecraft: Windows 10 Edition") || FindWindowByTitleExact("Minecraft: Windows 10 Edition Beta")
 }
 
 func isProcessAlive(pid uint32) bool {
@@ -183,6 +215,11 @@ func waitForGameWindow(ctx context.Context, versionDir string, timeout time.Dura
 }
 
 func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
+	if _, running := activeMonitors.LoadOrStore(versionDir, struct{}{}); running {
+		return
+	}
+	defer activeMonitors.Delete(versionDir)
+
 	var pid uint32
 	if launchPID > 0 {
 		pid = uint32(launchPID)
@@ -203,7 +240,8 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 		return
 	}
 
-	found, visible, canceled := waitForGameWindow(ctx, versionDir, 60*time.Second)
+	var visible bool
+	found, visible, canceled = waitForGameWindow(ctx, versionDir, 60*time.Second)
 	if canceled {
 		return
 	}
@@ -216,10 +254,25 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 
 	application.Get().Event.Emit(EventMcLaunchDone, struct{}{})
 
+	// waitForGameWindow reports found without visible when it times out: the
+	// game process is alive but never put a window on screen. Getting the
+	// launcher out of the way then would leave the user with neither a game
+	// window nor the launcher that could tell them what went wrong.
 	if visible {
-		w := application.Get().Window.Current()
-		if w != nil {
-			w.Minimise()
+		switch config.GetOnGameLaunch() {
+		case config.OnGameLaunchClose:
+			QuitLauncher()
+			return
+		case config.OnGameLaunchHide:
+			if w := GetMainWindow(); w != nil {
+				w.Hide()
+			}
+		case config.OnGameLaunchKeep:
+			// leave the launcher where it is
+		default: // config.OnGameLaunchMinimize
+			if w := GetMainWindow(); w != nil {
+				w.Minimise()
+			}
 		}
 	}
 
@@ -233,13 +286,53 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 		case <-ticker.C:
 			if !isGameRunning(versionDir) {
 				discord.SetLauncherIdle()
-				// 似乎会出现Bug，后续修复
-				//w := application.Get().Window.Current()
-				//if w != nil {
-				//w.Restore()
-				//}
+
+				switch config.GetOnGameExit() {
+				case config.OnGameExitClose:
+					QuitLauncher()
+				case config.OnGameExitKeep:
+					// leave the launcher where it is
+				default: // config.OnGameExitReopen
+					if !userHidLauncher.Load() {
+						RestoreLauncherWindow()
+					}
+				}
 				return
 			}
 		}
 	}
+}
+
+// GetMainWindow returns the launcher window, or nil while it does not exist
+// yet: a monitor started from the single-instance pipe can run before the
+// window is created.
+func GetMainWindow() application.Window {
+	w, ok := application.Get().Window.GetByName("main")
+	if !ok {
+		return nil
+	}
+	return w
+}
+
+// MarkLauncherHiddenByUser records that the user themselves sent the launcher
+// to the tray. A finishing game must not drag it back out, which would override
+// an explicit decision and cover whatever the user moved on to.
+func MarkLauncherHiddenByUser() {
+	userHidLauncher.Store(true)
+}
+
+// RestoreLauncherWindow brings the launcher back to the foreground, keeping
+// whatever size state it had. UnMinimise is the only restore step: Restore and
+// the raw SW_RESTORE both drop a maximised window back to its pre-maximised
+// size, so a maximised launcher would shrink on every game exit and tray click.
+func RestoreLauncherWindow() {
+	userHidLauncher.Store(false)
+
+	w := GetMainWindow()
+	if w == nil {
+		return
+	}
+	w.Show()
+	w.UnMinimise()
+	w.Focus()
 }

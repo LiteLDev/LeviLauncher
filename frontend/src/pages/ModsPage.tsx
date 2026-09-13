@@ -1,21 +1,22 @@
-import React, { useMemo, useRef } from "react";
+import { ModalDescription, ModalPanel, ModalAction, ModalProgress, ModalNotice, ModalDetails } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
-  CardBody,
-  Chip,
-  Input,
-  Progress,
-  Spinner,
-  Switch,
   Checkbox,
+  Chip,
   Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
+  FieldError,
+  Input,
+  InputGroup,
+  Label, Spinner,
+  Switch,
   Tabs,
-  Tab,
+  TextField,
+  Tooltip
 } from "@heroui/react";
+
+import React, { useMemo, useRef } from "react";
+
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { ImportResultModal } from "@/components/ImportResultModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
@@ -99,25 +100,19 @@ export const ModsPage: React.FC = () => {
       <FileDropOverlay isDragActive={isDragActive} text={t("mods.drop_hint")} />
 
       <UnifiedModal
+        size="wide"
         isOpen={mp.importing && !mp.dllOpen}
         title={t("mods.importing_title")}
         type="primary"
         icon={<FiUploadCloud className="w-6 h-6" />}
-        hideCloseButton
         isDismissable={false}
         showConfirmButton={false}
       >
-        <div className="py-1">
-          <Progress isIndeterminate aria-label="importing" className="w-full" />
-        </div>
-        <div className="text-default-600 dark:text-zinc-300 text-sm mt-2">
-          {t("mods.importing_body")}
-        </div>
-        {mp.currentFile ? (
-          <div className="mt-2 rounded-md bg-default-100/60 dark:bg-zinc-800/60 border border-default-200 dark:border-zinc-700 px-3 py-2 text-default-800 dark:text-zinc-100 text-sm wrap-break-word whitespace-pre-wrap font-mono">
-            {mp.currentFile}
-          </div>
-        ) : null}
+        <ModalProgress
+          label={t("mods.importing_title")}
+          description={<> {t("mods.importing_body")} </>}
+          currentItem={mp.currentFile}
+        />
       </UnifiedModal>
 
       <ImportResultModal
@@ -150,12 +145,12 @@ export const ModsPage: React.FC = () => {
       />
 
       <UnifiedModal
+        size="wide"
         isOpen={mp.dllOpen}
         onOpenChange={mp.dllOnOpenChange}
         title={t("mods.dll_modal_title")}
         type="primary"
         icon={<FaPuzzlePiece className="w-6 h-6" />}
-        hideCloseButton
         onConfirm={() => {
           const nm = mp.dllName.trim();
           if (!nm) return;
@@ -183,30 +178,61 @@ export const ModsPage: React.FC = () => {
         showCancelButton
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}
+        confirmButtonProps={{ isDisabled: !mp.dllName.trim() }}
       >
-        <div className="flex flex-col gap-3">
-          <Input
-            label={t("mods.dll_name") as string}
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <TextField
+            isRequired
+            isInvalid={!mp.dllName.trim()}
+            className={cn("group sm:col-span-2", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.dllName}
-            onValueChange={mp.setDllName}
-            autoFocus
-            size="sm"
-            classNames={COMPONENT_STYLES.input}
-          />
-          <Input
-            label={t("mods.dll_type") as string}
+            onChange={mp.setDllName}
+          >
+            <Label className={COMPONENT_STYLES.input.label}>
+              {t("mods.dll_name") as string}
+            </Label>
+            <Input
+              autoFocus
+              className={cn(
+                COMPONENT_STYLES.input.inputWrapper,
+                COMPONENT_STYLES.input.input,
+                "min-h-8 text-sm",
+              )}
+            />
+            <FieldError>{t("audit.mods.name_required")}</FieldError>
+          </TextField>
+          <TextField
+            className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.dllType}
-            onValueChange={mp.setDllType}
-            size="sm"
-            classNames={COMPONENT_STYLES.input}
-          />
-          <Input
-            label={t("mods.dll_version") as string}
+            onChange={mp.setDllType}
+          >
+            <Label className={COMPONENT_STYLES.input.label}>
+              {t("mods.dll_type") as string}
+            </Label>
+            <Input
+              className={cn(
+                COMPONENT_STYLES.input.inputWrapper,
+                COMPONENT_STYLES.input.input,
+                "min-h-8 text-sm",
+              )}
+            />
+          </TextField>
+          <TextField
+            className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.dllVersion}
-            onValueChange={mp.setDllVersion}
-            size="sm"
-            classNames={COMPONENT_STYLES.input}
-          />
+            onChange={mp.setDllVersion}
+          >
+            <Label className={COMPONENT_STYLES.input.label}>
+              {t("mods.dll_version") as string}
+            </Label>
+            <Input
+              className={cn(
+                COMPONENT_STYLES.input.inputWrapper,
+                COMPONENT_STYLES.input.input,
+                "min-h-8 text-sm",
+              )}
+            />
+          </TextField>
         </div>
       </UnifiedModal>
 
@@ -215,7 +241,6 @@ export const ModsPage: React.FC = () => {
         onOpenChange={mp.dupOnOpenChange}
         title={t("mods.overwrite_modal_title")}
         type="warning"
-        hideCloseButton
         onConfirm={() => {
           try {
             mp.dupResolveRef.current && mp.dupResolveRef.current(true);
@@ -234,18 +259,12 @@ export const ModsPage: React.FC = () => {
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}
       >
-        <div className="text-sm text-default-700 dark:text-zinc-300">
-          {t("mods.overwrite_modal_body")}
-        </div>
-        {mp.dupNameRef.current ? (
-          <div className="mt-2 rounded-md bg-default-100/60 dark:bg-zinc-800/60 border border-default-200 dark:border-zinc-700 px-3 py-2 text-default-800 dark:text-zinc-100 text-sm wrap-break-word whitespace-pre-wrap">
-            {mp.dupNameRef.current}
-          </div>
-        ) : null}
+        <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
+        {mp.dupNameRef.current ? <ModalPanel className="font-mono">{mp.dupNameRef.current}</ModalPanel> : null}
       </UnifiedModal>
 
       <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
-        <CardBody className="p-6 flex flex-col gap-6">
+        <Card.Content className="p-6 flex flex-col gap-6">
           <PageHeader
             title={t("moddedcard.title")}
             description={
@@ -254,10 +273,12 @@ export const ModsPage: React.FC = () => {
                 {mp.modsInfo.length > 0 && (
                   <Chip
                     size="sm"
-                    variant="flat"
-                    className="h-5 text-xs bg-default-100 dark:bg-zinc-800"
+                    variant="soft"
+                    className={
+                      "h-5 text-xs bg-surface-secondary "
+                    }
                   >
-                    {mp.modsInfo.length}
+                    <Chip.Label>{mp.modsInfo.length}</Chip.Label>
                   </Chip>
                 )}
               </div>
@@ -265,10 +286,6 @@ export const ModsPage: React.FC = () => {
             endContent={
               <>
                 <Button
-                  color="primary"
-                  variant="shadow"
-                  className="bg-primary-500 hover:bg-primary-500 brand-primary-foreground shadow-lg shadow-primary-900/20"
-                  startContent={<FiUploadCloud />}
                   onPress={async () => {
                     try {
                       const result = await Dialogs.OpenFile({
@@ -286,80 +303,137 @@ export const ModsPage: React.FC = () => {
                     }
                   }}
                   isDisabled={mp.importing}
+                  variant={"primary"}
+                  className={cn(
+                    "shadow-md",
+                    "bg-brand-500 hover:bg-brand-500 brand-primary-foreground shadow-lg shadow-brand-900/20",
+                  )}
                 >
+                  {<FiUploadCloud />}
                   {t("mods.import_button")}
                 </Button>
                 <Button
-                  variant="flat"
-                  className="bg-default-100 dark:bg-zinc-800"
                   onPress={mp.openFolder}
+                  variant={"secondary"}
+                  className={"bg-surface-secondary "}
                 >
                   {t("downloadmodal.open_folder")}
                 </Button>
               </>
             }
           />
-        </CardBody>
+        </Card.Content>
       </Card>
 
       <div className="flex flex-col gap-3 px-2">
         <div className="flex flex-col sm:flex-row items-center gap-3">
-          <Input
-            placeholder={t("common.search_placeholder")}
+          <TextField
+            aria-label={t("common.search_placeholder")}
+            className={cn(
+              "group",
+              COMPONENT_STYLES.input.mainWrapper,
+              "w-full sm:max-w-xs",
+            )}
             value={mp.query}
-            onValueChange={mp.setQuery}
-            startContent={<FaFilter className="text-default-400" />}
-            endContent={
-              mp.query && (
-                <button onClick={() => mp.setQuery("")}>
-                  <FaTimes className="text-default-400 hover:text-default-600" />
-                </button>
-              )
-            }
-            radius="full"
-            variant="flat"
-            className="w-full sm:max-w-xs"
-            classNames={COMPONENT_STYLES.input}
-          />
-          <div className="w-px h-6 bg-default-200 dark:bg-white/10 hidden sm:block" />
-          <Checkbox
-            size="sm"
-            isSelected={mp.onlyEnabled}
-            onValueChange={mp.setOnlyEnabled}
-            classNames={{
-              base: "m-0",
-              label: "text-default-500 dark:text-zinc-400",
-            }}
+            onChange={mp.setQuery}
           >
-            {t("mods.only_enabled") as string}
+            <InputGroup
+              className={cn(
+                COMPONENT_STYLES.input.inputWrapper,
+                COMPONENT_STYLES.input.innerWrapper,
+                "rounded-full",
+              )}
+            >
+              <InputGroup.Prefix>
+                {<FaFilter className="text-muted" />}
+              </InputGroup.Prefix>
+              <InputGroup.Input
+                placeholder={t("common.search_placeholder")}
+                className={COMPONENT_STYLES.input.input}
+              />
+              <InputGroup.Suffix>
+                {mp.query && (
+                  <button
+                    type="button"
+                    aria-label={t("audit.mods.clear_search")}
+                    title={t("audit.mods.clear_search")}
+                    onClick={() => mp.setQuery("")}
+                  >
+                      <FaTimes />
+                  </button>
+                )}
+              </InputGroup.Suffix>
+            </InputGroup>
+          </TextField>
+          <div className="w-px h-6 bg-surface-tertiary dark:bg-surface/10 hidden sm:block" />
+          <Checkbox
+            isSelected={mp.onlyEnabled}
+            onChange={mp.setOnlyEnabled}
+            className={cn("group", "m-0")}
+          >
+            <Checkbox.Content>
+              <Checkbox.Control>
+                <Checkbox.Indicator />
+              </Checkbox.Control>
+              <span className={"text-muted dark:text-zinc-400"}>
+                {t("mods.only_enabled") as string}
+              </span>
+            </Checkbox.Content>
           </Checkbox>
         </div>
 
         <Tabs
-          aria-label="Mods Tabs"
           selectedKey={mp.tabKey}
           onSelectionChange={(key) => mp.setTabKey(key as any)}
-          classNames={COMPONENT_STYLES.tabs}
+          variant="primary"
         >
-          <Tab key="all" title={t("mods.tab_all") as string} />
-          <Tab key="normal" title={t("mods.tab_normal") as string} />
-          <Tab key="lip" title={t("mods.tab_lip") as string} />
+          <Tabs.ListContainer>
+            <Tabs.List
+              aria-label={"Mods Tabs"}
+              className={COMPONENT_STYLES.tabs.tabList}
+            >
+              <Tabs.Tab
+                key="all"
+                id={"all"}
+                className={COMPONENT_STYLES.tabs.tabContent}
+              >
+                {t("mods.tab_all") as string}
+                <Tabs.Indicator className={COMPONENT_STYLES.tabs.cursor} />
+              </Tabs.Tab>
+              <Tabs.Tab
+                key="normal"
+                id={"normal"}
+                className={COMPONENT_STYLES.tabs.tabContent}
+              >
+                {t("mods.tab_normal") as string}
+                <Tabs.Indicator className={COMPONENT_STYLES.tabs.cursor} />
+              </Tabs.Tab>
+              <Tabs.Tab
+                key="lip"
+                id={"lip"}
+                className={COMPONENT_STYLES.tabs.tabContent}
+              >
+                {t("mods.tab_lip") as string}
+                <Tabs.Indicator className={COMPONENT_STYLES.tabs.cursor} />
+              </Tabs.Tab>
+            </Tabs.List>
+          </Tabs.ListContainer>
         </Tabs>
 
         {(mp.lipInfoPending || mp.lipInfoWarning) && (
           <div
             className={cn(
-              "rounded-2xl border px-4 py-3 flex items-start gap-3 backdrop-blur-md",
+              "rounded-2xl border px-4 py-3 flex items-start gap-3 launcher-material-blur",
               mp.lipInfoWarning
-                ? "border-warning-200/60 bg-warning-50/70 dark:border-warning-900/30 dark:bg-warning-900/10"
-                : "border-primary-200/60 bg-primary-50/70 dark:border-primary-900/30 dark:bg-primary-900/10",
+                ? "border-amber-200/60 bg-amber-50/70 dark:border-amber-900/30 dark:bg-amber-900/10"
+                : "border-brand-200/60 bg-brand-50/70 dark:border-brand-900/30 dark:bg-brand-900/10",
             )}
           >
             <div className="pt-0.5 shrink-0">
               {mp.lipInfoWarning ? (
-                <FiAlertTriangle className="text-warning-600 dark:text-warning-400" />
+                <FiAlertTriangle className="text-amber-600 dark:text-amber-400" />
               ) : (
-                <Spinner size="sm" color="primary" />
+                <Spinner size="sm" color={"accent"} />
               )}
             </div>
             <div className="min-w-0">
@@ -367,8 +441,8 @@ export const ModsPage: React.FC = () => {
                 className={cn(
                   "text-sm font-medium",
                   mp.lipInfoWarning
-                    ? "text-warning-700 dark:text-warning-300"
-                    : "text-primary-700 dark:text-primary-300",
+                    ? "text-amber-700 dark:text-amber-300"
+                    : "text-brand-700 dark:text-brand-300",
                 )}
               >
                 {mp.lipInfoWarning
@@ -376,7 +450,7 @@ export const ModsPage: React.FC = () => {
                   : t("mods.lip_sync_loading")}
               </p>
               {mp.lipInfoWarning && (
-                <p className="mt-1 text-xs text-warning-700/80 dark:text-warning-300/80 font-mono break-all">
+                <p className="mt-1 text-xs text-amber-700/80 dark:text-amber-300/80 font-mono break-all">
                   {mp.lipInfoWarning}
                 </p>
               )}
@@ -386,57 +460,68 @@ export const ModsPage: React.FC = () => {
       </div>
 
       <div className="flex-1 overflow-hidden flex flex-col">
-        <div className="px-4 py-2 text-sm text-default-500 dark:text-zinc-400 font-semibold">
+        <div className="px-4 py-2 text-sm text-muted dark:text-zinc-400 font-semibold">
           {selectedCount > 0 ? (
             <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-200">
               <div className="w-8 flex justify-center">
                 <Checkbox
-                  size="sm"
-                  classNames={{ wrapper: "after:bg-primary-500" }}
+                  aria-label={t("common.select_all")}
                   isSelected={allSelected}
                   isIndeterminate={indeterminate}
-                  onValueChange={mp.onSelectAll}
-                />
+                  onChange={mp.onSelectAll}
+                  className={"group"}
+                >
+                  <Checkbox.Content>
+                    <Checkbox.Control className={"after:bg-brand-500"}>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <span></span>
+                  </Checkbox.Content>
+                </Checkbox>
               </div>
-              <Chip size="sm" variant="flat" className="h-8 px-3">
-                {selectedCountLabel}
+              <Chip size="sm" variant="soft" className={"h-8 px-3"}>
+                <Chip.Label>{selectedCountLabel}</Chip.Label>
               </Chip>
               <Button
                 size="sm"
-                color="primary"
-                variant="flat"
-                className="bg-primary-500/10 text-primary-600 dark:text-primary-400 h-8 min-w-0 px-3"
-                startContent={<FaSync />}
                 onPress={mp.openBatchUpdateConfirm}
+                variant={"secondary"}
+                className={
+                  "bg-brand-500/10 text-brand-600 dark:text-brand-400 h-8 min-w-0 px-3"
+                }
               >
+                {<FaSync />}
                 {t("mods.action_update")}
               </Button>
               <Button
                 size="sm"
-                variant="flat"
-                className="bg-default-100 dark:bg-zinc-800 h-8 min-w-0 px-3"
-                startContent={<FaCheck />}
                 onPress={mp.handleBatchEnable}
+                variant={"secondary"}
+                className={
+                  "bg-surface-secondary h-8 min-w-0 px-3"
+                }
               >
+                {<FaCheck />}
                 {t("common.enable")}
               </Button>
               <Button
                 size="sm"
-                variant="flat"
-                className="bg-default-100 dark:bg-zinc-800 h-8 min-w-0 px-3"
-                startContent={<FaBan />}
                 onPress={mp.handleBatchDisable}
+                variant={"secondary"}
+                className={
+                  "bg-surface-secondary h-8 min-w-0 px-3"
+                }
               >
+                {<FaBan />}
                 {t("common.disable")}
               </Button>
               <Button
                 size="sm"
-                color="danger"
-                variant="flat"
-                className="bg-danger-500/10 text-danger h-8 min-w-0 px-3"
-                startContent={<FaTrash />}
                 onPress={mp.openBatchUninstallConfirm}
+                variant={"danger-soft"}
+                className={"bg-rose-500/10 text-danger h-8 min-w-0 px-3"}
               >
+                {<FaTrash />}
                 {t("mods.action_uninstall")}
               </Button>
             </div>
@@ -444,16 +529,23 @@ export const ModsPage: React.FC = () => {
             <div className={cn("grid items-center gap-x-3", listGridColumns)}>
               <div className="flex justify-center">
                 <Checkbox
-                  size="sm"
-                  classNames={{ wrapper: "after:bg-primary-500" }}
+                  aria-label={t("common.select_all")}
                   isSelected={allSelected}
                   isIndeterminate={indeterminate}
-                  onValueChange={mp.onSelectAll}
-                />
+                  onChange={mp.onSelectAll}
+                  className={"group"}
+                >
+                  <Checkbox.Content>
+                    <Checkbox.Control className={"after:bg-brand-500"}>
+                      <Checkbox.Indicator />
+                    </Checkbox.Control>
+                    <span></span>
+                  </Checkbox.Content>
+                </Checkbox>
               </div>
               <button
                 type="button"
-                className="min-w-0 cursor-pointer flex items-center gap-1 hover:text-default-700 dark:hover:text-zinc-300 transition-colors select-none text-left"
+                className="min-w-0 cursor-pointer flex items-center gap-1 hover:text-foreground dark:hover:text-zinc-300 transition-colors select-none text-left"
                 onClick={() => mp.handleSort("name")}
               >
                 {t("mods.field_name")}{" "}
@@ -467,7 +559,7 @@ export const ModsPage: React.FC = () => {
               <div className="hidden md:block">{t("common.version")}</div>
               <div className="col-start-3 md:col-start-4 justify-self-end">
                 <button
-                  className="flex items-center gap-1.5 text-xs hover:text-default-700 dark:hover:text-zinc-300 transition-colors"
+                  className="flex items-center gap-1.5 text-xs hover:text-foreground dark:hover:text-zinc-300 transition-colors"
                   onClick={() => mp.refreshAll()}
                   disabled={mp.loading}
                 >
@@ -481,19 +573,37 @@ export const ModsPage: React.FC = () => {
 
         <div className="flex-1 overflow-y-auto p-2 custom-scrollbar flex flex-col gap-2">
           {!mp.currentVersionName ? (
-            <div className="flex flex-col items-center justify-center h-full text-default-400 gap-2">
+            <div className="flex flex-col items-center justify-center h-full text-muted gap-2">
               <FiAlertTriangle className="w-8 h-8 opacity-50" />
               <p>{t("launcherpage.currentVersion_none")}</p>
             </div>
           ) : mp.listHydrating ? (
-            <div className="flex flex-col items-center justify-center h-full text-default-400 gap-3">
-              <Spinner size="lg" color="primary" />
+            <div className="flex flex-col items-center justify-center h-full text-muted gap-3">
+              <Spinner size="lg" color={"accent"} />
               <p>{t("common.loading")}</p>
             </div>
           ) : mp.visibleItems.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-default-400 gap-2">
+            <div role="status" className="flex flex-col items-center justify-center h-full text-muted gap-2">
               <FaPuzzlePiece className="w-8 h-8 opacity-50" />
-              <p>{t("moddedcard.content.none")}</p>
+              <p>
+                {t(
+                  mp.hasInstalledItems
+                    ? "audit.mods.no_filtered_results"
+                    : "moddedcard.content.none",
+                )}
+              </p>
+              {mp.hasInstalledItems && (
+                <Button
+                  variant="secondary"
+                  onPress={() => {
+                    mp.setQuery("");
+                    mp.setOnlyEnabled(false);
+                    mp.setTabKey("all");
+                  }}
+                >
+                  {t("audit.mods.clear_filters")}
+                </Button>
+              )}
             </div>
           ) : (
             mp.visibleItems.map((item, idx) => {
@@ -507,11 +617,11 @@ export const ModsPage: React.FC = () => {
                   <div
                     key={item.key || `${mod.name}-${mod.version}-${idx}`}
                     className={cn(
-                      "grid rounded-2xl border transition-all p-3 bg-white/60 dark:bg-zinc-800/40 hover:bg-white/80 dark:hover:bg-zinc-800/80",
+                      "grid rounded-2xl border transition-all p-3 bg-surface/60 dark:bg-surface-secondary/40 hover:bg-surface/80 dark:hover:bg-surface-secondary/80",
                       listGridColumns,
                       "grid-rows-[auto_auto] md:grid-rows-1 gap-x-3 gap-y-2",
                       mp.selectedKeys.has(item.key)
-                        ? "border-primary-500/50 dark:border-primary-500/30 bg-primary-50/50 dark:bg-primary-900/10"
+                        ? "border-brand-500/50 dark:border-brand-500/30 bg-brand-50/50 dark:bg-brand-900/10"
                         : "border-white/40 dark:border-white/5",
                     )}
                   >
@@ -520,45 +630,54 @@ export const ModsPage: React.FC = () => {
                       onClick={(e) => e.stopPropagation()}
                     >
                       <Checkbox
-                        size="sm"
-                        color="success"
+                        aria-label={`${t("common.select_mode")}: ${item.key}`}
                         isSelected={mp.selectedKeys.has(item.key)}
-                        onValueChange={() => mp.onSelectionChange(item.key)}
-                      />
+                        onChange={() => mp.onSelectionChange(item.key)}
+                        className={"group"}
+                      >
+                        <Checkbox.Content>
+                          <Checkbox.Control>
+                            <Checkbox.Indicator />
+                          </Checkbox.Control>
+                          <span></span>
+                        </Checkbox.Content>
+                      </Checkbox>
                     </div>
 
                     <div className="col-start-2 row-span-2 md:row-span-1 min-w-0 flex items-start gap-3">
-                      <div className="w-11 h-11 rounded-xl bg-default-100 dark:bg-zinc-900 flex items-center justify-center text-default-500 dark:text-zinc-400 shrink-0">
+                      <div className="w-11 h-11 rounded-xl bg-surface-secondary dark:bg-surface flex items-center justify-center text-muted dark:text-zinc-400 shrink-0">
                         <FaPuzzlePiece className="w-5 h-5" />
                       </div>
                       <div className="min-w-0 flex flex-col justify-center">
-                        <div className="font-bold text-default-900 dark:text-zinc-100 truncate text-base">
+                        <div className="font-bold text-foreground dark:text-zinc-100 truncate text-base">
                           {mod.name}
                         </div>
-                        <div className="text-xs text-default-500 dark:text-zinc-400 truncate">
+                        <div className="text-xs text-muted dark:text-zinc-400 truncate">
                           by {mod.author || "Unknown"}
                         </div>
-                        <div className="text-xs text-default-500 dark:text-zinc-400 truncate font-mono opacity-80 mt-0.5">
+                        <div className="text-xs text-muted dark:text-zinc-400 truncate font-mono opacity-80 mt-0.5">
                           {mod.entry || mod.type}
                         </div>
                       </div>
                     </div>
 
                     <div className="col-start-3 row-start-2 md:col-start-3 md:row-start-1 min-w-0 flex flex-col justify-center items-start">
-                      <div className="text-default-700 dark:text-zinc-300 truncate text-sm">
+                      <div className="text-foreground dark:text-zinc-300 truncate text-sm">
                         {mod.version || "-"}
                       </div>
                       {lipState.sourceType === "unique" ? (
                         <div className="mt-1">
                           {lipState.canUpdate ? (
-                            <Chip size="sm" variant="flat" color="success">
-                              {t("mods.update_available", {
-                                version: lipState.targetVersion,
-                              })}
+                            <Chip size="sm" variant="soft" color={"success"}>
+                              <Chip.Label>
+                                {t("mods.update_available", {
+                                  version: lipState.targetVersion,
+                                })}
+                              </Chip.Label>
                             </Chip>
                           ) : (
-                            <Chip size="sm" variant="flat">
-                              {t("mods.update_latest")}
+                            <Chip size="sm" variant="soft">
+                              <Chip.Label>{t("mods.update_latest")}</Chip.Label>
                             </Chip>
                           )}
                         </div>
@@ -574,10 +693,10 @@ export const ModsPage: React.FC = () => {
                         <Button
                           isIconOnly
                           size="sm"
-                          variant="light"
-                          className="text-primary-600 dark:text-primary-400"
                           onPress={() => void mp.handleUpdateMod(mod)}
                           aria-label={t("mods.action_update") as string}
+                          variant={"ghost"}
+                          className={"text-brand-600 dark:text-brand-400"}
                         >
                           <LuDownload />
                         </Button>
@@ -585,68 +704,100 @@ export const ModsPage: React.FC = () => {
                       <Switch
                         size="sm"
                         isSelected={!!mp.enabledByFolder.get(folder)}
-                        classNames={{
-                          wrapper: "group-data-[selected=true]:bg-primary-500",
-                        }}
-                        onValueChange={(value: boolean) => {
+                        aria-label={t("mods.toggle_label") as string}
+                        onChange={(value: boolean) => {
                           mp.toggleModEnabled(folder, value);
                         }}
-                        aria-label={t("mods.toggle_label") as string}
-                      />
+                        className={"group"}
+                      >
+                        <Switch.Content>
+                          <Switch.Control
+                            className={"group-data-[selected]:bg-brand-500"}
+                          >
+                            <Switch.Thumb></Switch.Thumb>
+                          </Switch.Control>
+                          <span></span>
+                        </Switch.Content>
+                      </Switch>
 
-                      <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                        <DropdownTrigger>
+                      <Dropdown>
+                        <Tooltip>
                           <Button
                             isIconOnly
                             size="sm"
-                            variant="light"
-                            className="text-default-400"
+                            variant={"ghost"}
+                            className={"text-muted"}
+                            aria-label={t("audit.mods.more_actions", {
+                              name: mod.name,
+                            })}
                           >
                             <FaEllipsisVertical />
                           </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu aria-label="mod actions">
-                          <DropdownItem
-                            key="uninstall"
-                            color="danger"
-                            startContent={<FaTrash />}
-                            onPress={() => mp.openDeleteForMod(mod)}
-                          >
-                            {t("mods.action_uninstall")}
-                          </DropdownItem>
-                          <DropdownItem
-                            key="update"
-                            startContent={<FaSync />}
-                            onPress={() => void mp.handleUpdateMod(mod)}
-                            isDisabled={
-                              lipState.sourceType !== "unique" ||
-                              !lipState.canUpdate
-                            }
-                          >
-                            {t("mods.action_update")}
-                          </DropdownItem>
-                          <DropdownItem
-                            key="edit"
-                            startContent={<FaPen />}
-                            onPress={() => mp.openEditForMod(mod)}
-                          >
-                            {t("common.edit")}
-                          </DropdownItem>
-                          <DropdownItem
-                            key="folder"
-                            startContent={<FaFolderOpen />}
-                            onPress={() => mp.openModFolder(mod)}
-                          >
-                            {t("common.open_folder")}
-                          </DropdownItem>
-                          <DropdownItem
-                            key="details"
-                            startContent={<FaInfoCircle />}
-                            onPress={() => mp.openDetails(mod)}
-                          >
-                            {t("common.details")}
-                          </DropdownItem>
-                        </DropdownMenu>
+                          <Tooltip.Content>
+                            {t("audit.mods.more_actions", { name: mod.name })}
+                          </Tooltip.Content>
+                        </Tooltip>
+                        <Dropdown.Popover
+                          className={COMPONENT_STYLES.dropdown.content}
+                        >
+                          <Dropdown.Menu aria-label="mod actions">
+                            <Dropdown.Item
+                              key="uninstall"
+                              id={"uninstall"}
+                              textValue={t("mods.action_uninstall")}
+                              onAction={() => mp.openDeleteForMod(mod)}
+                              variant="danger"
+                            >
+                              {<FaTrash />}
+                              <Label>{t("mods.action_uninstall")}</Label>
+                              <Dropdown.ItemIndicator />
+                            </Dropdown.Item>
+                            <Dropdown.Item
+                              key="update"
+                              isDisabled={
+                                lipState.sourceType !== "unique" ||
+                                !lipState.canUpdate
+                              }
+                              id={"update"}
+                              textValue={t("mods.action_update")}
+                              onAction={() => void mp.handleUpdateMod(mod)}
+                            >
+                              {<FaSync />}
+                              <Label>{t("mods.action_update")}</Label>
+                              <Dropdown.ItemIndicator />
+                            </Dropdown.Item>
+                            <Dropdown.Item
+                              key="edit"
+                              id={"edit"}
+                              textValue={t("common.edit")}
+                              onAction={() => mp.openEditForMod(mod)}
+                            >
+                              {<FaPen />}
+                              <Label>{t("common.edit")}</Label>
+                              <Dropdown.ItemIndicator />
+                            </Dropdown.Item>
+                            <Dropdown.Item
+                              key="folder"
+                              id={"folder"}
+                              textValue={t("common.open_folder")}
+                              onAction={() => mp.openModFolder(mod)}
+                            >
+                              {<FaFolderOpen />}
+                              <Label>{t("common.open_folder")}</Label>
+                              <Dropdown.ItemIndicator />
+                            </Dropdown.Item>
+                            <Dropdown.Item
+                              key="details"
+                              id={"details"}
+                              textValue={t("common.details")}
+                              onAction={() => mp.openDetails(mod)}
+                            >
+                              {<FaInfoCircle />}
+                              <Label>{t("common.details")}</Label>
+                              <Dropdown.ItemIndicator />
+                            </Dropdown.Item>
+                          </Dropdown.Menu>
+                        </Dropdown.Popover>
                       </Dropdown>
                     </div>
                   </div>
@@ -664,11 +815,11 @@ export const ModsPage: React.FC = () => {
                 <div
                   key={item.key || `${lipItem.identifier}-${idx}`}
                   className={cn(
-                    "grid rounded-2xl border transition-all p-3 bg-white/60 dark:bg-zinc-800/40 hover:bg-white/80 dark:hover:bg-zinc-800/80",
+                    "grid rounded-2xl border transition-all p-3 bg-surface/60 dark:bg-surface-secondary/40 hover:bg-surface/80 dark:hover:bg-surface-secondary/80",
                     listGridColumns,
                     "grid-rows-[auto_auto] md:grid-rows-1 gap-x-3 gap-y-2",
                     mp.selectedKeys.has(item.key)
-                      ? "border-primary-500/50 dark:border-primary-500/30 bg-primary-50/50 dark:bg-primary-900/10"
+                      ? "border-brand-500/50 dark:border-brand-500/30 bg-brand-50/50 dark:bg-brand-900/10"
                       : "border-white/40 dark:border-white/5",
                   )}
                 >
@@ -677,44 +828,53 @@ export const ModsPage: React.FC = () => {
                     onClick={(e) => e.stopPropagation()}
                   >
                     <Checkbox
-                      size="sm"
-                      color="success"
+                      aria-label={`${t("common.select_mode")}: ${item.key}`}
                       isSelected={mp.selectedKeys.has(item.key)}
-                      onValueChange={() => mp.onSelectionChange(item.key)}
-                    />
+                      onChange={() => mp.onSelectionChange(item.key)}
+                      className={"group"}
+                    >
+                      <Checkbox.Content>
+                        <Checkbox.Control>
+                          <Checkbox.Indicator />
+                        </Checkbox.Control>
+                        <span></span>
+                      </Checkbox.Content>
+                    </Checkbox>
                   </div>
 
                   <div className="col-start-2 row-span-2 md:row-span-1 min-w-0 flex items-start gap-3">
-                    <div className="w-11 h-11 rounded-xl bg-default-100 dark:bg-zinc-900 flex items-center justify-center text-default-500 dark:text-zinc-400 shrink-0">
+                    <div className="w-11 h-11 rounded-xl bg-surface-secondary dark:bg-surface flex items-center justify-center text-muted dark:text-zinc-400 shrink-0">
                       <FaBoxOpen className="w-5 h-5" />
                     </div>
                     <div className="min-w-0 flex flex-col justify-center">
-                      <div className="font-bold text-default-900 dark:text-zinc-100 truncate text-base">
+                      <div className="font-bold text-foreground dark:text-zinc-100 truncate text-base">
                         {lipItem.packageName}
                       </div>
-                      <div className="text-xs text-default-500 dark:text-zinc-400 truncate font-mono">
+                      <div className="text-xs text-muted dark:text-zinc-400 truncate font-mono">
                         {lipItem.displayIdentifier}
                       </div>
-                      <div className="text-xs text-default-500 dark:text-zinc-400 truncate mt-0.5">
+                      <div className="text-xs text-muted dark:text-zinc-400 truncate mt-0.5">
                         {childrenSummary}
                       </div>
                     </div>
                   </div>
 
                   <div className="col-start-3 row-start-2 md:col-start-3 md:row-start-1 min-w-0 flex flex-col justify-center items-start">
-                    <div className="text-default-700 dark:text-zinc-300 truncate text-sm">
+                    <div className="text-foreground dark:text-zinc-300 truncate text-sm">
                       {lipItem.installedVersion || "-"}
                     </div>
                     <div className="mt-1">
                       {lipState.canUpdate ? (
-                        <Chip size="sm" variant="flat" color="success">
-                          {t("mods.update_available", {
-                            version: lipState.targetVersion,
-                          })}
+                        <Chip size="sm" variant="soft" color={"success"}>
+                          <Chip.Label>
+                            {t("mods.update_available", {
+                              version: lipState.targetVersion,
+                            })}
+                          </Chip.Label>
                         </Chip>
                       ) : (
-                        <Chip size="sm" variant="flat">
-                          {t("mods.update_latest")}
+                        <Chip size="sm" variant="soft">
+                          <Chip.Label>{t("mods.update_latest")}</Chip.Label>
                         </Chip>
                       )}
                     </div>
@@ -728,10 +888,10 @@ export const ModsPage: React.FC = () => {
                       <Button
                         isIconOnly
                         size="sm"
-                        variant="light"
-                        className="text-primary-600 dark:text-primary-400"
                         onPress={() => void mp.handleUpdateLipGroup(lipItem)}
                         aria-label={t("mods.action_update") as string}
+                        variant={"ghost"}
+                        className={"text-brand-600 dark:text-brand-400"}
                       >
                         <LuDownload />
                       </Button>
@@ -739,66 +899,101 @@ export const ModsPage: React.FC = () => {
                     <Switch
                       size="sm"
                       isSelected={lipItem.allEnabled}
-                      classNames={{
-                        wrapper: "group-data-[selected=true]:bg-primary-500",
-                      }}
-                      onValueChange={(value: boolean) => {
+                      aria-label={t("mods.toggle_label") as string}
+                      onChange={(value: boolean) => {
                         void mp.toggleLipGroupEnabled(lipItem, value);
                       }}
-                      aria-label={t("mods.toggle_label") as string}
-                    />
+                      className={"group"}
+                    >
+                      <Switch.Content>
+                        <Switch.Control
+                          className={"group-data-[selected]:bg-brand-500"}
+                        >
+                          <Switch.Thumb></Switch.Thumb>
+                        </Switch.Control>
+                        <span></span>
+                      </Switch.Content>
+                    </Switch>
 
-                    <Dropdown classNames={COMPONENT_STYLES.dropdown}>
-                      <DropdownTrigger>
+                    <Dropdown>
+                      <Tooltip>
                         <Button
                           isIconOnly
                           size="sm"
-                          variant="light"
-                          className="text-default-400"
+                          variant={"ghost"}
+                          className={"text-muted"}
+                          aria-label={t("audit.mods.more_actions", {
+                            name: lipItem.packageName,
+                          })}
                         >
                           <FaEllipsisVertical />
                         </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu aria-label="lip actions">
-                        <DropdownItem
-                          key="uninstall"
-                          color="danger"
-                          startContent={<FaTrash />}
-                          onPress={() => void mp.openDeleteForLipGroup(lipItem)}
-                        >
-                          {t("mods.action_uninstall")}
-                        </DropdownItem>
-                        {mp.isLipGroupPromotable(lipItem) ? (
-                          <DropdownItem
-                            key="promote"
-                            startContent={<LuDownload />}
-                            onPress={() =>
-                              void mp.handlePromoteLipGroup(lipItem)
+                        <Tooltip.Content>
+                          {t("audit.mods.more_actions", {
+                            name: lipItem.packageName,
+                          })}
+                        </Tooltip.Content>
+                      </Tooltip>
+                      <Dropdown.Popover
+                        className={COMPONENT_STYLES.dropdown.content}
+                      >
+                        <Dropdown.Menu aria-label="lip actions">
+                          <Dropdown.Item
+                            key="uninstall"
+                            id={"uninstall"}
+                            textValue={t("mods.action_uninstall")}
+                            onAction={() =>
+                              void mp.openDeleteForLipGroup(lipItem)
+                            }
+                            variant="danger"
+                          >
+                            {<FaTrash />}
+                            <Label>{t("mods.action_uninstall")}</Label>
+                            <Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                          {mp.isLipGroupPromotable(lipItem) ? (
+                            <Dropdown.Item
+                              key="promote"
+                              id={"promote"}
+                              textValue={t("mods.action_promote_install")}
+                              onAction={() =>
+                                void mp.handlePromoteLipGroup(lipItem)
+                              }
+                            >
+                              {<LuDownload />}
+                              <Label>{t("mods.action_promote_install")}</Label>
+                              <Dropdown.ItemIndicator />
+                            </Dropdown.Item>
+                          ) : null}
+                          <Dropdown.Item
+                            key="update"
+                            isDisabled={!lipState.canUpdate}
+                            id={"update"}
+                            textValue={t("mods.action_update")}
+                            onAction={() =>
+                              void mp.handleUpdateLipGroup(lipItem)
                             }
                           >
-                            {t("mods.action_promote_install")}
-                          </DropdownItem>
-                        ) : null}
-                        <DropdownItem
-                          key="update"
-                          startContent={<FaSync />}
-                          onPress={() => void mp.handleUpdateLipGroup(lipItem)}
-                          isDisabled={!lipState.canUpdate}
-                        >
-                          {t("mods.action_update")}
-                        </DropdownItem>
-                        <DropdownItem
-                          key="openLip"
-                          startContent={<FaInfoCircle />}
-                          onPress={() =>
-                            mp.openLIPPackageDetails(
-                              lipItem.displayIdentifier || lipItem.identifier,
-                            )
-                          }
-                        >
-                          {t("mods.lip_open_package")}
-                        </DropdownItem>
-                      </DropdownMenu>
+                            {<FaSync />}
+                            <Label>{t("mods.action_update")}</Label>
+                            <Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                          <Dropdown.Item
+                            key="openLip"
+                            id={"openLip"}
+                            textValue={t("mods.lip_open_package")}
+                            onAction={() =>
+                              mp.openLIPPackageDetails(
+                                lipItem.displayIdentifier || lipItem.identifier,
+                              )
+                            }
+                          >
+                            {<FaInfoCircle />}
+                            <Label>{t("mods.lip_open_package")}</Label>
+                            <Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                        </Dropdown.Menu>
+                      </Dropdown.Popover>
                     </Dropdown>
                   </div>
                 </div>
@@ -809,34 +1004,32 @@ export const ModsPage: React.FC = () => {
       </div>
 
       <UnifiedModal
+        size="wide"
         isOpen={mp.infoOpen}
         onOpenChange={mp.infoOnOpenChange}
         title={t("mods.details_title")}
         type="primary"
         icon={<FaPuzzlePiece className="w-6 h-6" />}
-        hideCloseButton
         showConfirmButton={false}
         showCancelButton
         cancelText={t("common.close")}
         onCancel={() => mp.infoOnClose()}
         footer={
           <>
-            <Button variant="light" onPress={() => mp.infoOnClose()}>
+            <ModalAction onPress={() => mp.infoOnClose()} variant="secondary">
               {t("common.cancel")}
-            </Button>
-            <Button
-              variant="flat"
+            </ModalAction>
+            <ModalAction
               onPress={() => {
                 if (!mp.activeMod) return;
                 mp.openEditForMod(mp.activeMod);
               }}
               isDisabled={!mp.activeMod}
+              variant={"secondary"}
             >
               {t("common.edit")}
-            </Button>
-            <Button
-              color="primary"
-              variant="flat"
+            </ModalAction>
+            <ModalAction
               onPress={() => {
                 if (!mp.activeMod) return;
                 void mp.handleUpdateMod(mp.activeMod);
@@ -846,105 +1039,79 @@ export const ModsPage: React.FC = () => {
                 mp.getModLIPState(mp.activeMod).sourceType !== "unique" ||
                 !mp.getModLIPState(mp.activeMod).canUpdate
               }
+              variant={"secondary"}
             >
               {t("mods.action_update")}
-            </Button>
-            <Button color="danger" onPress={mp.delCfmOnOpen}>
+            </ModalAction>
+            <ModalAction onPress={mp.delCfmOnOpen} variant={"danger"}>
               {t("mods.action_uninstall")}
-            </Button>
+            </ModalAction>
           </>
         }
       >
         {mp.activeMod ? (
           <div className="space-y-2 text-sm dark:text-zinc-200">
-            <div>
-              <span className="text-default-500 dark:text-zinc-400">
-                {t("mods.field_name")}:
-              </span>
-              {mp.activeMod.name}
-            </div>
-            <div>
-              <span className="text-default-500 dark:text-zinc-400">
-                {t("mods.field_version")}:
-              </span>
-              {mp.activeMod.version || "-"}
-            </div>
-            <div>
-              <span className="text-default-500 dark:text-zinc-400">
-                {t("mods.field_type")}:
-              </span>
-              {mp.activeMod.type || "-"}
-            </div>
-            <div>
-              <span className="text-default-500 dark:text-zinc-400">
-                {t("mods.field_entry")}:
-              </span>
-              {mp.activeMod.entry || "-"}
-            </div>
-            {mp.activeMod.author ? (
-              <div>
-                <span className="text-default-500 dark:text-zinc-400">
-                  {t("mods.field_author")}:
-                </span>
-                {mp.activeMod.author}
-              </div>
-            ) : null}
-            <div>
-              <span className="text-default-500 dark:text-zinc-400">
-                {t("mods.action_update")}:
-              </span>
-              <span className="ml-2">
-                {(() => {
-                  const state = mp.getModLIPState(mp.activeMod);
-                  if (state.sourceType !== "unique") {
-                    return t("mods.no_update_source");
-                  }
-                  if (!state.canUpdate) {
-                    return t("mods.update_latest");
-                  }
-                  return t("mods.update_available", {
-                    version: state.targetVersion,
-                  });
-                })()}
-              </span>
-            </div>
+            <ModalDetails items={[
+              { label: t("mods.field_name"), value: mp.activeMod.name, fullWidth: true },
+              { label: t("mods.field_version"), value: mp.activeMod.version || "-", mono: true },
+              { label: t("mods.field_type"), value: mp.activeMod.type || "-" },
+              { label: t("mods.field_entry"), value: mp.activeMod.entry || "-", mono: true, fullWidth: true },
+              ...(mp.activeMod.author ? [{ label: t("mods.field_author"), value: mp.activeMod.author }] : []),
+              { label: t("mods.action_update"), value: (() => {
+                const state = mp.getModLIPState(mp.activeMod);
+                if (state.sourceType !== "unique") return t("mods.no_update_source");
+                if (!state.canUpdate) return t("mods.update_latest");
+                return t("mods.update_available", { version: state.targetVersion });
+              })() },
+            ]} />
             <div className="pt-2">
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-2">
-                  <span className="text-default-500 dark:text-zinc-400">
+                  <span className="text-muted dark:text-zinc-400">
                     {t("mods.toggle_label")}
                   </span>
                   <Chip
                     size="sm"
-                    variant="flat"
+                    variant="soft"
                     color={
                       mp.enabledByFolder.get(mp.resolveModFolder(mp.activeMod!))
                         ? "success"
                         : "warning"
                     }
                   >
-                    {mp.enabledByFolder.get(mp.resolveModFolder(mp.activeMod!))
-                      ? (t("mods.toggle_on") as string)
-                      : (t("mods.toggle_off") as string)}
+                    <Chip.Label>
+                      {mp.enabledByFolder.get(
+                        mp.resolveModFolder(mp.activeMod!),
+                      )
+                        ? (t("mods.toggle_on") as string)
+                        : (t("mods.toggle_off") as string)}
+                    </Chip.Label>
                   </Chip>
                 </div>
                 <Switch
                   isSelected={
                     !!mp.enabledByFolder.get(mp.resolveModFolder(mp.activeMod!))
                   }
-                  classNames={{
-                    wrapper: "group-data-[selected=true]:bg-primary-500",
-                  }}
-                  onValueChange={(value: boolean) =>
+                  aria-label={t("mods.toggle_label") as string}
+                  onChange={(value: boolean) =>
                     mp.toggleModEnabled(
                       mp.resolveModFolder(mp.activeMod!),
                       value,
                     )
                   }
-                  aria-label={t("mods.toggle_label") as string}
-                />
+                  className={"group"}
+                >
+                  <Switch.Content>
+                    <Switch.Control
+                      className={"group-data-[selected]:bg-brand-500"}
+                    >
+                      <Switch.Thumb></Switch.Thumb>
+                    </Switch.Control>
+                    <span></span>
+                  </Switch.Content>
+                </Switch>
               </div>
-              <div className="text-default-500 dark:text-zinc-400 text-xs mt-1">
+              <div className="text-muted dark:text-zinc-400 text-xs mt-1">
                 {mp.enabledByFolder.get(mp.resolveModFolder(mp.activeMod!))
                   ? (t("mods.toggle_desc_on") as string)
                   : (t("mods.toggle_desc_off") as string)}
@@ -955,62 +1122,108 @@ export const ModsPage: React.FC = () => {
       </UnifiedModal>
 
       <UnifiedModal
+        size="wide"
         isOpen={mp.editOpen}
         onOpenChange={mp.editOnOpenChange}
         title={t("common.edit")}
         type="primary"
         icon={<FaPen className="w-5 h-5" />}
-        hideCloseButton
+
         showCancelButton
         confirmText={t("common.save")}
         cancelText={t("common.cancel")}
         onCancel={mp.editOnClose}
         onConfirm={() => void mp.handleSaveModEdit()}
         confirmButtonProps={{
-          isLoading: mp.editSaving,
+          isPending: mp.editSaving,
           isDisabled: !mp.editFormValid,
         }}
         cancelButtonProps={{ isDisabled: mp.editSaving }}
       >
-        <div className="flex flex-col gap-3">
-          <Input
-            label={t("mods.field_name") as string}
-            value={mp.editName}
-            onValueChange={mp.setEditName}
-            autoFocus
-            size="sm"
-            isRequired
+        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+          <TextField
+            isRequired={true}
             isInvalid={mp.editName.trim().length === 0}
-            classNames={COMPONENT_STYLES.input}
-          />
-          <Input
-            label={t("mods.field_version") as string}
+            className={cn("group sm:col-span-2", COMPONENT_STYLES.input.mainWrapper)}
+            value={mp.editName}
+            onChange={mp.setEditName}
+          >
+            <Label className={COMPONENT_STYLES.input.label}>
+              {t("mods.field_name") as string}
+            </Label>
+            <Input
+              autoFocus
+              className={cn(
+                COMPONENT_STYLES.input.inputWrapper,
+                COMPONENT_STYLES.input.input,
+                "min-h-8 text-sm",
+              )}
+            />
+          </TextField>
+          <TextField
+            className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.editVersion}
-            onValueChange={mp.setEditVersion}
-            size="sm"
-            classNames={COMPONENT_STYLES.input}
-          />
-          <Input
-            label={t("mods.field_type") as string}
+            onChange={mp.setEditVersion}
+          >
+            <Label className={COMPONENT_STYLES.input.label}>
+              {t("mods.field_version") as string}
+            </Label>
+            <Input
+              className={cn(
+                COMPONENT_STYLES.input.inputWrapper,
+                COMPONENT_STYLES.input.input,
+                "min-h-8 text-sm",
+              )}
+            />
+          </TextField>
+          <TextField
+            className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.editType}
-            onValueChange={mp.setEditType}
-            size="sm"
-            classNames={COMPONENT_STYLES.input}
-          />
-          <Input
-            label={t("mods.field_entry") as string}
+            onChange={mp.setEditType}
+          >
+            <Label className={COMPONENT_STYLES.input.label}>
+              {t("mods.field_type") as string}
+            </Label>
+            <Input
+              className={cn(
+                COMPONENT_STYLES.input.inputWrapper,
+                COMPONENT_STYLES.input.input,
+                "min-h-8 text-sm",
+              )}
+            />
+          </TextField>
+          <TextField
+            className={cn("group sm:col-span-2", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.editEntry}
-            onValueChange={mp.setEditEntry}
-            size="sm"
-            classNames={COMPONENT_STYLES.input}
-          />
-          <Input
-            label={t("mods.field_author") as string}
+            onChange={mp.setEditEntry}
+          >
+            <Label className={COMPONENT_STYLES.input.label}>
+              {t("mods.field_entry") as string}
+            </Label>
+            <Input
+              className={cn(
+                COMPONENT_STYLES.input.inputWrapper,
+                COMPONENT_STYLES.input.input,
+                "min-h-8 text-sm",
+              )}
+            />
+          </TextField>
+          <TextField
+            className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
             value={mp.editAuthor}
-            onValueChange={mp.setEditAuthor}
-            size="sm"
-            classNames={COMPONENT_STYLES.input}
-          />
+            onChange={mp.setEditAuthor}
+          >
+            <Label className={COMPONENT_STYLES.input.label}>
+              {t("mods.field_author") as string}
+            </Label>
+            <Input
+              className={cn(
+                COMPONENT_STYLES.input.inputWrapper,
+                COMPONENT_STYLES.input.input,
+                "min-h-8 text-sm",
+              )}
+            />
+          </TextField>
         </div>
       </UnifiedModal>
 
@@ -1037,13 +1250,13 @@ export const ModsPage: React.FC = () => {
         showCancelButton={false}
         onConfirm={mp.closeDemotedWarning}
       >
-        <div className="text-sm text-default-700 dark:text-zinc-300 whitespace-pre-wrap">
+        <ModalDescription className="whitespace-pre-wrap">
           {t("errors.ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY")}
-        </div>
+        </ModalDescription>
         {mp.demotedWarningNames.length > 0 ? (
-          <div className="mt-3 rounded-md bg-warning-50/70 dark:bg-warning-500/10 border border-warning-200/70 dark:border-warning-500/30 px-3 py-2 text-warning-700 dark:text-warning-300 text-sm whitespace-pre-wrap break-all font-mono">
+          <ModalNotice tone="warning" className="whitespace-pre-wrap break-all font-mono">
             {mp.demotedWarningNames.join("\n")}
-          </div>
+          </ModalNotice>
         ) : null}
       </UnifiedModal>
 
@@ -1057,12 +1270,12 @@ export const ModsPage: React.FC = () => {
         cancelText={t("common.cancel")}
         onCancel={mp.actionConfirmOnClose}
         onConfirm={() => void mp.confirmPendingAction()}
-        confirmButtonProps={{ isLoading: mp.actionConfirming }}
+        confirmButtonProps={{ isPending: mp.actionConfirming }}
         cancelButtonProps={{ isDisabled: mp.actionConfirming }}
       >
-        <div className="text-sm text-default-700 dark:text-zinc-300 whitespace-pre-wrap">
+        <ModalDescription className="whitespace-pre-wrap">
           {mp.actionConfirmBody}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       <UnifiedModal
@@ -1075,15 +1288,15 @@ export const ModsPage: React.FC = () => {
         cancelText={t("common.cancel")}
         onCancel={mp.batchUpdateOnClose}
         onConfirm={() => void mp.handleBatchUpdate()}
-        confirmButtonProps={{ isLoading: mp.batchUpdating }}
+        confirmButtonProps={{ isPending: mp.batchUpdating }}
         cancelButtonProps={{ isDisabled: mp.batchUpdating }}
       >
-        <div className="text-sm text-default-700 dark:text-zinc-300 whitespace-pre-wrap">
+        <ModalDescription className="whitespace-pre-wrap">
           {t("mods.batch_update_body", {
             selected: mp.selectedItems.length,
             updatable: mp.selectedUpdatableCount,
           })}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
 
       <UnifiedModal
@@ -1096,14 +1309,14 @@ export const ModsPage: React.FC = () => {
         cancelText={t("common.cancel")}
         onCancel={mp.batchUninstallOnClose}
         onConfirm={() => void mp.handleBatchUninstall()}
-        confirmButtonProps={{ isLoading: mp.batchUninstalling }}
+        confirmButtonProps={{ isPending: mp.batchUninstalling, variant: "danger" }}
         cancelButtonProps={{ isDisabled: mp.batchUninstalling }}
       >
-        <div className="text-sm text-default-700 dark:text-zinc-300 whitespace-pre-wrap">
+        <ModalDescription className="whitespace-pre-wrap">
           {t("mods.batch_uninstall_body", {
             count: mp.selectedItems.length,
           })}
-        </div>
+        </ModalDescription>
       </UnifiedModal>
     </PageContainer>
   );

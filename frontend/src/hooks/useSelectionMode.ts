@@ -8,9 +8,25 @@ export const useSelectionMode = <T extends { path?: string; Path?: string }>(
   filteredItems: T[],
   getKey: (item: T) => string = (item) =>
     (item as any).path || (item as any).Path || "",
+  scopeKey = "",
+  allItems: T[] = filteredItems,
 ) => {
-  const [selected, setSelected] = React.useState<Record<string, boolean>>({});
-  const [isSelectMode, setIsSelectMode] = React.useState<boolean>(false);
+  const [selectionScope, setSelectionScope] = React.useState(scopeKey);
+  const [storedSelected, setSelected] = React.useState<Record<string, boolean>>({});
+  const [storedSelectMode, setIsSelectMode] = React.useState<boolean>(false);
+  const validKeys = new Set(allItems.map(getKey));
+  const selected = Object.fromEntries(
+    Object.entries(selectionScope === scopeKey ? storedSelected : {}).filter(
+      ([key, value]) => value && validKeys.has(key),
+    ),
+  );
+  const isSelectMode = selectionScope === scopeKey && storedSelectMode;
+
+  React.useEffect(() => {
+    setSelectionScope(scopeKey);
+    setSelected({});
+    setIsSelectMode(false);
+  }, [scopeKey]);
 
   const selectedCount = React.useMemo(
     () => Object.keys(selected).filter((k) => selected[k]).length,
@@ -54,14 +70,22 @@ export const useSelectionMode = <T extends { path?: string; Path?: string }>(
     return Object.keys(selected).filter((k) => selected[k]);
   }, [selected]);
 
+  const retainSelection = React.useCallback((keys: string[]) => {
+    setSelected(Object.fromEntries(keys.map((key) => [key, true])));
+  }, []);
+  const visibleSelectedCount = filteredItems.filter((item) => selected[getKey(item)]).length;
+
   return {
     selected,
     isSelectMode,
     selectedCount,
+    hiddenSelectedCount: selectedCount - visibleSelectedCount,
+    visibleSelectedCount,
     toggleSelect,
     selectAll,
     toggleSelectMode,
     clearSelection,
+    retainSelection,
     getSelectedKeys,
   };
 };

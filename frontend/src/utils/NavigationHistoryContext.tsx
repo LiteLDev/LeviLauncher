@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useContext, useEffect, useState, useCallback } from "react";
 import {
   useLocation,
   useNavigationType,
@@ -18,6 +18,8 @@ interface NavigationHistoryContextType {
   canGoForward: boolean;
   getBackEntry: () => HistoryEntry | null;
   getForwardEntry: () => HistoryEntry | null;
+  currentTitle: string;
+  setCurrentTitle: (title: string) => void;
 }
 
 const NavigationHistoryContext = createContext<NavigationHistoryContextType>({
@@ -27,6 +29,8 @@ const NavigationHistoryContext = createContext<NavigationHistoryContextType>({
   canGoForward: false,
   getBackEntry: () => null,
   getForwardEntry: () => null,
+  currentTitle: "",
+  setCurrentTitle: () => {},
 });
 
 export const useNavigationHistory = () => useContext(NavigationHistoryContext);
@@ -36,34 +40,23 @@ export const NavigationHistoryProvider: React.FC<{
 }> = ({ children }) => {
   const location = useLocation();
   const navType = useNavigationType();
+  const [titles, setTitles] = useState<Record<string, string>>({});
+  const setCurrentTitle = useCallback((title: string) => {
+    setTitles((previous) => previous[location.key] === title
+      ? previous
+      : { ...previous, [location.key]: title });
+  }, [location.key]);
 
   const [state, setState] = useState<{ stack: HistoryEntry[]; index: number }>({
     stack: [],
     index: -1,
   });
 
-  const getTitleFromPath = (pathname: string) => {
-    if (pathname === "/" || pathname === "") return "Home";
-    const segments = pathname.split("/").filter(Boolean);
-    if (segments.length === 0) return "Home";
-
-    // Capitalize last segment and decode URI
-    const last = segments[segments.length - 1];
-    try {
-      const decoded = decodeURIComponent(last);
-      // Basic capitalization for now.
-      // In TopBar, it just does this. Real i18n would be better but this matches existing "breadcumb" style.
-      return decoded.charAt(0).toUpperCase() + decoded.slice(1);
-    } catch {
-      return last.charAt(0).toUpperCase() + last.slice(1);
-    }
-  };
-
   useEffect(() => {
     const entry: HistoryEntry = {
       key: location.key,
       pathname: location.pathname,
-      title: getTitleFromPath(location.pathname),
+      title: "",
     };
 
     setState((prevState) => {
@@ -110,9 +103,10 @@ export const NavigationHistoryProvider: React.FC<{
   const canGoBack = state.index > 0;
   const canGoForward = state.index < state.stack.length - 1;
 
-  const getBackEntry = () => (canGoBack ? state.stack[state.index - 1] : null);
+  const withTitle = (entry: HistoryEntry) => ({ ...entry, title: titles[entry.key] || "" });
+  const getBackEntry = () => (canGoBack ? withTitle(state.stack[state.index - 1]) : null);
   const getForwardEntry = () =>
-    canGoForward ? state.stack[state.index + 1] : null;
+    canGoForward ? withTitle(state.stack[state.index + 1]) : null;
 
   return (
     <NavigationHistoryContext.Provider
@@ -123,6 +117,8 @@ export const NavigationHistoryProvider: React.FC<{
         canGoForward,
         getBackEntry,
         getForwardEntry,
+        currentTitle: titles[location.key] || "",
+        setCurrentTitle,
       }}
     >
       {children}

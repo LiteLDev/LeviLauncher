@@ -32,7 +32,6 @@ export default defineConfig(({ mode }) => {
       alias: {
         "@": resolve(__dirname, "./src"),
         bindings: resolve(__dirname, "./bindings"),
-        "@heroui/react": resolve(__dirname, "./src/shims/heroui.ts"),
       },
     },
     build: {

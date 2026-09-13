@@ -1,18 +1,26 @@
+import { normalizePackageType, supportsVersionIsolation, type PackageType } from "@/utils/packageType";
+import { openDirectory } from "@/utils/explorer";
+import { toast, useOverlayState } from "@heroui/react";
 import React from "react";
 import { useNavigate, useLocation } from "react-router-dom";
-import { useDisclosure, addToast } from "@heroui/react";
-import { Call, Dialogs, Events } from "@wailsio/runtime";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
-import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/modsservice";
+
+import { Dialogs, Events } from "@wailsio/runtime";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import { GetMods } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 import {
+  BackupInstance,
   DeleteVersionFolder,
+  GetInstanceBackupInfo,
   GetVersionLogoDataUrl,
   GetVersionMeta,
+  InspectInstanceBackupArchive,
+  PreviewInstanceBackupRestoreConflicts,
   RenameVersionFolder,
+  RestoreInstanceBackup,
   SaveVersionLogoDataUrl,
   SaveVersionMeta,
   ValidateVersionFolderName,
-} from "bindings/github.com/liteldev/LeviLauncher/versionservice";
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import {
   clearCurrentVersionName,
@@ -168,7 +176,6 @@ type InstanceBackupRestoreProgress = {
   ts: number;
 };
 
-const VERSION_SERVICE_NAME = "main.VersionService";
 const LEVILAMINA_BACKUP_IDENTIFIER = "LiteLDev/LeviLamina";
 const LEVILAMINA_MOD_NAME = "levilamina";
 const EVENT_INSTANCE_BACKUP_RESTORE_PROGRESS =
@@ -460,16 +467,6 @@ export const useInstanceSettings = () => {
   const ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE =
     "ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE";
 
-  const callVersionService = React.useCallback(
-    async <T>(method: string, ...args: unknown[]): Promise<T> => {
-      return (await Call.ByName(
-        `${VERSION_SERVICE_NAME}.${method}`,
-        ...args,
-      )) as T;
-    },
-    [],
-  );
-
   const buildBackupLipPackagesFromSnapshot = React.useCallback(
     (
       snapshot: any,
@@ -617,16 +614,15 @@ export const useInstanceSettings = () => {
   const [targetName, setTargetName] = React.useState<string>(initialName);
   const [selectedTab, setSelectedTab] = React.useState<string>(initialTab);
   const [newName, setNewName] = React.useState<string>(initialName);
+  const [packageType, setPackageType] = React.useState<PackageType>("gdk");
+  const isUWP = packageType === "uwp";
   const [gameVersion, setGameVersion] = React.useState<string>("");
+  const isolationSupported = supportsVersionIsolation(packageType, gameVersion);
   const [versionType, setVersionType] = React.useState<string>("");
   const [isPreview, setIsPreview] = React.useState<boolean>(false);
   const [enableIsolation, setEnableIsolation] = React.useState<boolean>(false);
   const [enableConsole, setEnableConsole] = React.useState<boolean>(false);
   const [enableEditorMode, setEnableEditorMode] =
-    React.useState<boolean>(false);
-  const [enableRenderDragon, setEnableRenderDragon] =
-    React.useState<boolean>(false);
-  const [enableCtrlRReloadResources, setEnableCtrlRReloadResources] =
     React.useState<boolean>(false);
   const [envVars, setEnvVars] = React.useState<string>("");
   const [launchArgs, setLaunchArgs] = React.useState<string>("");
@@ -640,10 +636,6 @@ export const useInstanceSettings = () => {
     React.useState<boolean>(false);
   const [originalConsole, setOriginalConsole] = React.useState<boolean>(false);
   const [originalEditorMode, setOriginalEditorMode] =
-    React.useState<boolean>(false);
-  const [originalRenderDragon, setOriginalRenderDragon] =
-    React.useState<boolean>(false);
-  const [originalCtrlRReloadResources, setOriginalCtrlRReloadResources] =
     React.useState<boolean>(false);
   const [originalEnvVars, setOriginalEnvVars] = React.useState<string>("");
   const [originalLaunchArgs, setOriginalLaunchArgs] =
@@ -710,11 +702,11 @@ export const useInstanceSettings = () => {
   // Unsaved changes modal
   const {
     isOpen: unsavedOpen,
-    onOpen: unsavedOnOpen,
-    onClose: unsavedOnClose,
-    onOpenChange: unsavedOnOpenChange,
-  } = useDisclosure();
-  const [pendingNavPath, setPendingNavPath] = React.useState<string>("");
+    open: unsavedOnOpen,
+    close: unsavedOnClose,
+    setOpen: unsavedOnOpenChange,
+  } = useOverlayState();
+  const [pendingNavPath, setPendingNavPath] = React.useState<string | number>("");
 
   // LeviLamina
   const {
@@ -730,31 +722,31 @@ export const useInstanceSettings = () => {
   >([]);
   const {
     isOpen: llVersionSelectOpen,
-    onOpen: llVersionSelectOnOpen,
-    onOpenChange: llVersionSelectOnOpenChange,
-    onClose: llVersionSelectOnClose,
-  } = useDisclosure();
+    open: llVersionSelectOnOpen,
+    setOpen: llVersionSelectOnOpenChange,
+    close: llVersionSelectOnClose,
+  } = useOverlayState();
   const {
     isOpen: llInstallConfirmOpen,
-    onOpen: llInstallConfirmOnOpen,
-    onClose: llInstallConfirmOnClose,
-  } = useDisclosure();
+    open: llInstallConfirmOnOpen,
+    close: llInstallConfirmOnClose,
+  } = useOverlayState();
   const {
     isOpen: llUninstallConfirmOpen,
-    onOpen: llUninstallConfirmOnOpen,
-    onClose: llUninstallConfirmOnClose,
-  } = useDisclosure();
+    open: llUninstallConfirmOnOpen,
+    close: llUninstallConfirmOnClose,
+  } = useOverlayState();
   const {
     isOpen: rcOpen,
-    onOpen: rcOnOpen,
-    onOpenChange: rcOnOpenChange,
-    onClose: rcOnClose,
-  } = useDisclosure();
+    open: rcOnOpen,
+    setOpen: rcOnOpenChange,
+    close: rcOnClose,
+  } = useOverlayState();
   const {
     isOpen: demotedWarningOpen,
-    onOpen: demotedWarningOnOpen,
-    onClose: demotedWarningOnClose,
-  } = useDisclosure();
+    open: demotedWarningOnOpen,
+    close: demotedWarningOnClose,
+  } = useOverlayState();
   const [rcVersion, setRcVersion] = React.useState("");
   const [isLLInstalled, setIsLLInstalled] = React.useState(false);
   const [llExplicitInstalled, setLLExplicitInstalled] = React.useState(false);
@@ -860,7 +852,7 @@ export const useInstanceSettings = () => {
 
   // Load LL install status
   React.useEffect(() => {
-    if (selectedTab !== "loader" || !targetName) return;
+    if (isUWP || selectedTab !== "loader" || !targetName) return;
     let cancelled = false;
     const run = async () => {
       try {
@@ -890,6 +882,7 @@ export const useInstanceSettings = () => {
     ensureInstanceHydrated,
     getInstanceSnapshot,
     selectedTab,
+    isUWP,
     snapshotRevision,
     targetName,
     installingLL,
@@ -897,8 +890,8 @@ export const useInstanceSettings = () => {
   ]);
 
   React.useEffect(() => {
-    setLLSupportedVersions(getSupportedLLVersions(gameVersion));
-  }, [gameVersion, getSupportedLLVersions]);
+    setLLSupportedVersions(isUWP ? [] : getSupportedLLVersions(gameVersion));
+  }, [gameVersion, getSupportedLLVersions, isUWP]);
 
   React.useEffect(() => {
     setSelectedLLVersion((prev) => {
@@ -909,6 +902,12 @@ export const useInstanceSettings = () => {
         return prev;
       }
       if (
+        latestLLVersion &&
+        compareLLVersions(latestLLVersion, currentLLVersion) > 0
+      ) {
+        return latestLLVersion;
+      }
+      if (
         isLLInstalled &&
         currentLLVersion &&
         llSupportedVersions.includes(currentLLVersion)
@@ -917,7 +916,13 @@ export const useInstanceSettings = () => {
       }
       return latestLLVersion;
     });
-  }, [llSupportedVersions, isLLInstalled, currentLLVersion, latestLLVersion]);
+  }, [
+    llSupportedVersions,
+    isLLInstalled,
+    currentLLVersion,
+    latestLLVersion,
+    compareLLVersions,
+  ]);
 
   // Load version metadata
   React.useEffect(() => {
@@ -928,20 +933,18 @@ export const useInstanceSettings = () => {
         if (typeof getMeta === "function") {
           const meta: any = await getMeta(targetName);
           if (meta) {
+            setPackageType(normalizePackageType(meta?.packageType));
             setGameVersion(String(meta?.gameVersion || ""));
             const type = String(meta?.type || "release").toLowerCase();
             setVersionType(type);
             setIsPreview(type === "preview");
-            setEnableIsolation(!!meta?.enableIsolation);
-            setOriginalIsolation(!!meta?.enableIsolation);
+            const isolation = !!meta?.enableIsolation && supportsVersionIsolation(meta?.packageType, meta?.gameVersion);
+            setEnableIsolation(isolation);
+            setOriginalIsolation(isolation);
             setEnableConsole(!!meta?.enableConsole);
             setOriginalConsole(!!meta?.enableConsole);
             setEnableEditorMode(!!meta?.enableEditorMode);
             setOriginalEditorMode(!!meta?.enableEditorMode);
-            setEnableRenderDragon(!!meta?.enableRenderDragon);
-            setOriginalRenderDragon(!!meta?.enableRenderDragon);
-            setEnableCtrlRReloadResources(!!meta?.enableCtrlRReloadResources);
-            setOriginalCtrlRReloadResources(!!meta?.enableCtrlRReloadResources);
             setEnvVars(String(meta?.envVars || ""));
             setOriginalEnvVars(String(meta?.envVars || ""));
             setLaunchArgs(String(meta?.launchArgs || ""));
@@ -977,16 +980,14 @@ export const useInstanceSettings = () => {
   React.useEffect(() => {
     const handler = (ev: any) => {
       try {
-        let targetPath = ev?.detail?.path;
-        if (targetPath === -1) targetPath = "-1";
-        targetPath = String(targetPath || "");
+        const targetPath: unknown = ev?.detail?.path;
+        if (typeof targetPath !== "string" && typeof targetPath !== "number") return;
+        if (typeof targetPath === "number" && (!Number.isInteger(targetPath) || targetPath === 0)) return;
         const hasUnsaved =
           (newName && newName !== targetName) ||
           enableIsolation !== originalIsolation ||
           enableConsole !== originalConsole ||
           enableEditorMode !== originalEditorMode ||
-          enableRenderDragon !== originalRenderDragon ||
-          enableCtrlRReloadResources !== originalCtrlRReloadResources ||
           envVars !== originalEnvVars ||
           launchArgs !== originalLaunchArgs;
 
@@ -996,8 +997,8 @@ export const useInstanceSettings = () => {
           unsavedOnOpen();
           return;
         }
-        if (targetPath === "-1") {
-          navigate(-1);
+        if (typeof targetPath === "number") {
+          navigate(targetPath);
         } else {
           navigate(targetPath);
         }
@@ -1014,10 +1015,10 @@ export const useInstanceSettings = () => {
     originalConsole,
     enableEditorMode,
     originalEditorMode,
-    enableRenderDragon,
-    originalRenderDragon,
-    enableCtrlRReloadResources,
-    originalCtrlRReloadResources,
+    envVars,
+    originalEnvVars,
+    launchArgs,
+    originalLaunchArgs,
     navigate,
     location.pathname,
     unsavedOnOpen,
@@ -1386,8 +1387,7 @@ export const useInstanceSettings = () => {
     void (async () => {
       try {
         const preview = toInstanceBackupRestoreConflictInfo(
-          await callVersionService<unknown>(
-            "PreviewInstanceBackupRestoreConflicts",
+          await PreviewInstanceBackupRestoreConflicts(
             targetName,
             {
               archivePath: restoreArchiveInfo.archivePath,
@@ -1433,7 +1433,6 @@ export const useInstanceSettings = () => {
       cancelled = true;
     };
   }, [
-    callVersionService,
     restoreArchiveInfo,
     restoreOpen,
     selectedRestoreScopes,
@@ -1461,13 +1460,14 @@ export const useInstanceSettings = () => {
     setBackupSuccessOpen(false);
     try {
       const info = toInstanceBackupInfo(
-        await callVersionService<unknown>("GetInstanceBackupInfo", targetName),
+        await GetInstanceBackupInfo(targetName),
       );
       const errorCode = String(info?.errorCode || "").trim();
       if (errorCode) {
-        addToast({
+        toast(undefined, {
           description: resolveToastText(errorCode),
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
         return false;
       }
@@ -1551,7 +1551,6 @@ export const useInstanceSettings = () => {
     }
   }, [
     buildBackupLipPackagesFromSnapshot,
-    callVersionService,
     ERR_INSTANCE_BACKUP_MODS_STATE_UNAVAILABLE,
     getInstanceSnapshot,
     isBackupModsSnapshotReady,
@@ -1617,11 +1616,7 @@ export const useInstanceSettings = () => {
       backupResult?.backupDir || backupInfo?.backupDir || "",
     ).trim();
     if (!dir) return;
-    try {
-      await (minecraft as any)?.OpenPathDir?.(dir);
-    } catch (error) {
-      console.warn("Failed to open backup directory", error);
-    }
+    await openDirectory(dir);
   }, [backupInfo, backupResult]);
 
   const confirmInstanceBackup = React.useCallback(async () => {
@@ -1660,11 +1655,7 @@ export const useInstanceSettings = () => {
         modsLipPackages: backupPreparedLipPackages,
       };
       const resolvedResult = toInstanceBackupResult(
-        await callVersionService<unknown>(
-          "BackupInstance",
-          targetName,
-          request,
-        ),
+        await BackupInstance(targetName, request),
       );
       const errorCode = String(resolvedResult?.errorCode || "").trim();
       if (errorCode) {
@@ -1673,9 +1664,9 @@ export const useInstanceSettings = () => {
       }
       setBackupResult(resolvedResult);
       setBackupSuccessOpen(true);
-      addToast({
-        title: t("versions.edit.backup.success_title") as string,
-        color: "success",
+      toast(t("versions.edit.backup.success_title") as string, {
+        variant: "success",
+        timeout: 2000,
       });
       return true;
     } catch (e: any) {
@@ -1688,7 +1679,6 @@ export const useInstanceSettings = () => {
     backupPreparedLipPackages,
     backupScopeModes,
     backupScopes,
-    callVersionService,
     instanceBackupExperimentalEnabled,
     selectedBackupScopes,
     t,
@@ -1724,16 +1714,14 @@ export const useInstanceSettings = () => {
       setRestoreConflictChoices({});
       setRestoreProgress(null);
       const info = toInstanceBackupArchiveInfo(
-        await callVersionService<unknown>(
-          "InspectInstanceBackupArchive",
-          archivePath,
-        ),
+        await InspectInstanceBackupArchive(archivePath),
       );
       const errorCode = String(info.errorCode || "").trim();
       if (errorCode) {
-        addToast({
+        toast(undefined, {
           description: resolveToastText(errorCode),
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
         return false;
       }
@@ -1751,7 +1739,6 @@ export const useInstanceSettings = () => {
       setRestoreInfoLoading(false);
     }
   }, [
-    callVersionService,
     instanceBackupExperimentalEnabled,
     resolveToastText,
     t,
@@ -1869,8 +1856,7 @@ export const useInstanceSettings = () => {
         conflictResolutions,
       };
       const resolvedResult = toInstanceBackupRestoreResult(
-        await callVersionService<unknown>(
-          "RestoreInstanceBackup",
+        await RestoreInstanceBackup(
           targetName,
           request,
         ),
@@ -1881,21 +1867,24 @@ export const useInstanceSettings = () => {
       }
       setRestoreResult(resolvedResult);
       setRestoreResultOpen(true);
-      addToast({
-        title: t(
+      toast(
+        t(
           resolvedResult.status === "success"
             ? "versions.edit.backup.restore.success_title"
             : resolvedResult.status === "partial"
               ? "versions.edit.backup.restore.partial_title"
               : "versions.edit.backup.restore.failed_title",
         ) as string,
-        color:
-          resolvedResult.status === "success"
-            ? "success"
-            : resolvedResult.status === "partial"
-              ? "warning"
-              : "danger",
-      });
+        {
+          variant:
+            resolvedResult.status === "success"
+              ? "success"
+              : resolvedResult.status === "partial"
+                ? "warning"
+                : "danger",
+          timeout: 2000,
+        },
+      );
       return resolvedResult.status === "success";
     } catch (e: any) {
       setError(
@@ -1906,7 +1895,6 @@ export const useInstanceSettings = () => {
       setRestoringInstance(false);
     }
   }, [
-    callVersionService,
     instanceBackupExperimentalEnabled,
     restoreConflictChoices,
     restoreConflictLoading,
@@ -1920,7 +1908,7 @@ export const useInstanceSettings = () => {
 
   // Save handler
   const onSave = React.useCallback(
-    async (destPath?: string) => {
+    async (destPath?: string | number) => {
       if (!hasBackend || !targetName) {
         navigate(-1);
         return false;
@@ -1960,13 +1948,11 @@ export const useInstanceSettings = () => {
           nn,
           gameVersion,
           type,
-          !!enableIsolation,
+          isolationSupported && !!enableIsolation,
           !!enableConsole,
-          !!enableEditorMode,
-          !!enableRenderDragon,
-          !!enableCtrlRReloadResources,
-          launchArgs,
-          envVars,
+          !isUWP && !!enableEditorMode,
+          isUWP ? "" : launchArgs,
+          isUWP ? "" : envVars,
         );
         if (err2) {
           setError(err2);
@@ -1983,8 +1969,8 @@ export const useInstanceSettings = () => {
         }
       } catch {}
 
-      if (destPath === "-1") {
-        navigate(-1);
+      if (typeof destPath === "number") {
+        navigate(destPath);
       } else {
         navigate(typeof destPath === "string" ? destPath : returnToPath);
       }
@@ -1997,10 +1983,10 @@ export const useInstanceSettings = () => {
       gameVersion,
       isPreview,
       enableIsolation,
+      isolationSupported,
+      isUWP,
       enableConsole,
       enableEditorMode,
-      enableRenderDragon,
-      enableCtrlRReloadResources,
       logoDataUrl,
       returnToPath,
       navigate,
@@ -2052,9 +2038,10 @@ export const useInstanceSettings = () => {
         forcedVersion || resolvedLLTargetVersion || "",
       ).trim();
       if (!installVersion) {
-        addToast({
+        toast(undefined, {
           description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
         return false;
       }
@@ -2088,9 +2075,9 @@ export const useInstanceSettings = () => {
           setIsLLInstalled(true);
           setLLExplicitInstalled(true);
           setCurrentLLVersion(installVersion);
-          addToast({
-            title: t(llInstallSuccessKey) as string,
-            color: "success",
+          toast(t(llInstallSuccessKey) as string, {
+            variant: "success",
+            timeout: 2000,
           });
           return true;
         }
@@ -2101,9 +2088,10 @@ export const useInstanceSettings = () => {
         if (rawError.includes("ERR_LIP_INSTALL_FAILED")) {
           toastKeyOrMsg = "mods.err_lip_install_failed_suggestion";
         }
-        addToast({
+        toast(undefined, {
           description: resolveToastText(toastKeyOrMsg),
-          color: "danger",
+          variant: "danger",
+          timeout: 2000,
         });
         return false;
       } finally {
@@ -2131,9 +2119,10 @@ export const useInstanceSettings = () => {
 
     const targetLLVersion = resolvedLLTargetVersion;
     if (!targetLLVersion) {
-      addToast({
+      toast(undefined, {
         description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       return false;
     }
@@ -2179,9 +2168,10 @@ export const useInstanceSettings = () => {
 
   const confirmLeviLaminaVersionSelect = React.useCallback(async () => {
     if (!resolvedLLTargetVersion) {
-      addToast({
+      toast(undefined, {
         description: resolveToastText("ERR_LL_VERSION_UNSUPPORTED"),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       return false;
     }
@@ -2227,9 +2217,10 @@ export const useInstanceSettings = () => {
   const confirmUninstallLL = React.useCallback(async (): Promise<boolean> => {
     if (!targetName) return false;
     if (llUninstallBlocked) {
-      addToast({
+      toast(undefined, {
         description: resolveToastText(ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       return false;
     }
@@ -2268,7 +2259,10 @@ export const useInstanceSettings = () => {
       setIsLLInstalled(false);
       setLLExplicitInstalled(false);
       setCurrentLLVersion("");
-      addToast({ title: t("common.success") as string, color: "success" });
+      toast(t("common.success") as string, {
+        variant: "success",
+        timeout: 2000,
+      });
       return true;
     } catch (e) {
       const errCode = String((e as any)?.message || e || "").trim();
@@ -2278,9 +2272,10 @@ export const useInstanceSettings = () => {
       ) {
         await refreshLLStateForUninstall();
       }
-      addToast({
+      toast(undefined, {
         description: resolveToastText(errCode),
-        color: "danger",
+        variant: "danger",
+        timeout: 2000,
       });
       return false;
     } finally {
@@ -2306,6 +2301,9 @@ export const useInstanceSettings = () => {
     returnToPath,
 
     // Form state
+    packageType,
+    isUWP,
+    isolationSupported,
     targetName,
     selectedTab,
     setSelectedTab,
@@ -2320,10 +2318,6 @@ export const useInstanceSettings = () => {
     setEnableConsole,
     enableEditorMode,
     setEnableEditorMode,
-    enableRenderDragon,
-    setEnableRenderDragon,
-    enableCtrlRReloadResources,
-    setEnableCtrlRReloadResources,
     envVars,
     setEnvVars,
     launchArgs,

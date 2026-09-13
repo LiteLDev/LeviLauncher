@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { ROUTES } from "@/constants/routes";
 
 type NavLockListener = (locked: boolean) => void;

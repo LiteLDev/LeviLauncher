@@ -14,6 +14,14 @@ func CreateDir(path string) error {
 	return os.MkdirAll(path, 0755)
 }
 
+// ResolvesToDir reports whether path is a directory, following junctions and
+// directory symlinks. os.ReadDir reports a reparse point as not-a-dir, so
+// callers enumerating folders that may be links resolve through the link.
+func ResolvesToDir(path string) bool {
+	fi, err := os.Stat(path)
+	return err == nil && fi.IsDir()
+}
+
 func RemoveDir(path string) error {
 	return os.RemoveAll(path)
 }

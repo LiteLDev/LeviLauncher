@@ -6,7 +6,7 @@ import React, {
   useMemo,
   useState,
 } from "react";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/minecraft";
+import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { useStartupInteractive } from "@/utils/startupState";
 
 type LeviLaminaDB = Record<string, string[]>;

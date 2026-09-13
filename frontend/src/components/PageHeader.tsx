@@ -26,13 +26,13 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
           {startContent}
           <div>
             <h1
-              className={`text-left text-3xl font-black tracking-tight text-primary-600 dark:text-primary-500 pb-1 ${titleClassName}`}
+              className={`text-left text-3xl font-black tracking-tight text-brand-600 dark:text-brand-500 pb-1 ${titleClassName}`}
             >
               {title}
             </h1>
             {description && (
               <div
-                className={`mt-1 text-base sm:text-lg font-medium text-default-500 dark:text-zinc-400 ${descriptionClassName}`}
+                className={`mt-1 text-base sm:text-lg font-medium text-muted dark:text-zinc-400 ${descriptionClassName}`}
               >
                 {description}
               </div>
@@ -62,7 +62,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
   icon,
   action,
   className = "",
-  iconWrapperClassName = "bg-primary-500/10 text-primary-600 dark:text-primary-500",
+  iconWrapperClassName = "bg-brand-500/10 text-brand-600 dark:text-brand-500",
 }) => {
   return (
     <div className={`flex flex-col gap-1 ${className}`}>
@@ -73,7 +73,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
               {icon}
             </div>
           )}
-          <h2 className="text-xl font-bold text-default-800 dark:text-zinc-100">
+          <h2 className="text-xl font-bold text-foreground dark:text-zinc-100">
             {title}
           </h2>
         </div>
@@ -81,7 +81,7 @@ export const SectionHeader: React.FC<SectionHeaderProps> = ({
       </div>
       {description && (
         <p
-          className={`text-sm text-default-500 dark:text-zinc-400 ${icon ? "ml-12" : ""}`}
+          className={`text-sm text-muted dark:text-zinc-400 ${icon ? "ml-12" : ""}`}
         >
           {description}
         </p>

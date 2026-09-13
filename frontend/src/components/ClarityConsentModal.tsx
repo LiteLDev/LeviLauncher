@@ -1,5 +1,7 @@
-import React from "react";
+import { ModalAction, ModalDescription } from "@/components/ModalPrimitives";
 import { Button } from "@heroui/react";
+import React from "react";
+
 import { useTranslation } from "react-i18next";
 import { Browser } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
@@ -19,47 +21,46 @@ export const ClarityConsentModal: React.FC<ClarityConsentModalProps> = ({
 
   return (
     <UnifiedModal
-      size="lg"
+      size="wide"
       isOpen={isOpen}
       type="info"
       title={t("clarity.prompt.title")}
-      hideCloseButton
       isDismissable={false}
       showCancelButton={false}
       showConfirmButton={false}
       footer={
         <div className="flex w-full flex-wrap justify-end gap-2">
-          <Button variant="light" onPress={onKeepDisabled}>
+          <ModalAction onPress={onKeepDisabled} variant="secondary">
             {t("clarity.prompt.disable")}
-          </Button>
-          <Button color="primary" onPress={onEnable}>
+          </ModalAction>
+          <ModalAction onPress={onEnable} variant={"primary"}>
             {t("clarity.prompt.enable")}
-          </Button>
+          </ModalAction>
         </div>
       }
     >
       <div className="flex flex-col gap-4">
-        <p className="text-default-700 dark:text-zinc-300 text-sm leading-6">
+        <ModalDescription>
           {t("clarity.prompt.body")}
-        </p>
+        </ModalDescription>
         <div className="flex flex-wrap gap-2">
           <Button
             size="sm"
-            radius="full"
-            variant="flat"
             onPress={() =>
               Browser.OpenURL("https://clarity.microsoft.com/terms")
             }
+            variant={"secondary"}
+            className={"rounded-full"}
           >
             {t("clarity.prompt.clarity_terms")}
           </Button>
           <Button
             size="sm"
-            radius="full"
-            variant="light"
             onPress={() =>
               Browser.OpenURL("https://privacy.microsoft.com/privacystatement")
             }
+            variant={"ghost"}
+            className={"rounded-full"}
           >
             {t("clarity.prompt.microsoft_privacy")}
           </Button>

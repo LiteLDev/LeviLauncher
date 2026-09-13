@@ -32,12 +32,13 @@ import {
   FaArrowRight,
   FaDownload,
   FaExclamationTriangle,
+  FaRegLightbulb,
 } from "react-icons/fa";
 import { ModCard } from "@/components/ModdedCard";
 import { ContentDownloadCard } from "@/components/ContentDownloadCard";
 import { Browser } from "@wailsio/runtime";
 import { QuitLauncher } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
-import { motion, AnimatePresence } from "framer-motion";
+import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
 import {
   UnifiedModal,
   getUnifiedModalConfirmButtonProps,
@@ -71,6 +72,7 @@ const LAUNCH_TIP_KEYS = [
 
 export const LauncherPage = (args: any) => {
   const { t } = useTranslation();
+  const prefersReducedMotion = useReducedMotion();
   const warningConfirmButtonProps =
     getUnifiedModalConfirmButtonProps("warning");
   const { ensureInstanceHydrated, getInstanceSnapshot, snapshotRevision } =
@@ -253,7 +255,7 @@ export const LauncherPage = (args: any) => {
           <Card
             className={cn("relative overflow-hidden", LAYOUT.GLASS_CARD.BASE)}
           >
-            <Card.Content className="p-6 relative flex flex-col gap-6">
+            <Card.Content className="p-6 pb-4 relative flex flex-col gap-4">
               {/* Main Layout */}
               <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
                 {/* Left: Title & Info */}
@@ -697,20 +699,36 @@ export const LauncherPage = (args: any) => {
                   </motion.div>
                 </div>
               </div>
-              {/* Tips (Bottom) */}
-              <div className="w-full rounded-xl px-4 py-2 flex items-center gap-2">
-                <span className="text-lg">💡</span>
-                <div className="flex-1 overflow-hidden h-[20px] relative">
-                  <AnimatePresence mode="wait">
-                    <motion.div
+              {/* Reserve the tallest translated tip so rotation never shifts the cards below. */}
+              <div
+                role="note"
+                className="flex min-w-0 items-start gap-2 border-t border-border/60 pt-3 text-sm leading-5 text-muted"
+              >
+                <FaRegLightbulb
+                  aria-hidden="true"
+                  className="mt-0.5 size-4 shrink-0"
+                />
+                <div className="grid min-w-0 flex-1">
+                  {launchTips.map((tip, index) => (
+                    <p
+                      key={LAUNCH_TIP_KEYS[index]}
+                      aria-hidden="true"
+                      className="invisible col-start-1 row-start-1 select-none wrap-anywhere"
+                    >
+                      {tip}
+                    </p>
+                  ))}
+                  <AnimatePresence initial={false} mode="wait">
+                    <motion.p
                       key={tipIndex}
-                      initial={{ opacity: 0, y: 10 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -10 }}
-                      className="text-sm text-foreground dark:text-zinc-300 font-medium truncate absolute inset-0"
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      exit={{ opacity: 0 }}
+                      transition={{ duration: prefersReducedMotion ? 0 : 0.2 }}
+                      className="col-start-1 row-start-1 wrap-anywhere"
                     >
                       {currentLaunchTip}
-                    </motion.div>
+                    </motion.p>
                   </AnimatePresence>
                 </div>
               </div>

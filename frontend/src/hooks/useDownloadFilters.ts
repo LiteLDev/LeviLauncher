@@ -3,7 +3,7 @@ import { normalizePackageType, type PackageType } from "@/utils/packageType";
 
 type DownloadFilters = {
   type: "all" | "Release" | "Preview" | "Beta";
-  packageType: PackageType;
+  packageType: PackageType | "all";
   status: "all" | "downloaded" | "not_downloaded";
   loader: "all" | "levilamina";
 };
@@ -18,7 +18,7 @@ function readFilters(): DownloadFilters {
   return {
     type:
       saved.type === "all" || saved.type === "Preview" || saved.type === "Beta" ? saved.type : "Release",
-    packageType: normalizePackageType(saved.packageType),
+    packageType: saved.packageType === "all" ? "all" : normalizePackageType(saved.packageType),
     status:
       saved.status === "downloaded" || saved.status === "not_downloaded"
         ? saved.status

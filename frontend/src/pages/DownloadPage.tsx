@@ -339,8 +339,12 @@ export const DownloadPage: React.FC = () => {
     }
   };
 
-  const fetchVersionItems = async (): Promise<VersionItem[]> => {
-    if (packageFilter === "uwp") {
+  const fetchVersionItems = async (packageType = packageFilter): Promise<VersionItem[]> => {
+    if (packageType === "all") {
+      const catalogs = await Promise.all([fetchVersionItems("gdk"), fetchVersionItems("uwp")]);
+      return catalogs.flat();
+    }
+    if (packageType === "uwp") {
       const data = await minecraft.FetchUWPVersions();
       return (data || []).map((v) => ({
         version: v.version, short: v.version,
@@ -394,7 +398,7 @@ export const DownloadPage: React.FC = () => {
     if (versionsLoading) return;
     setVersionsLoading(true);
     setVersionsError(false);
-    if (packageFilter === "gdk") refreshLLDB();
+    if (packageFilter !== "uwp") refreshLLDB();
     try {
       const newItems = await fetchVersionItems();
       setItems(newItems);
@@ -632,7 +636,7 @@ export const DownloadPage: React.FC = () => {
                         state: {
                           mirrorVersion: "",
                           mirrorType: "Release",
-                          packageType: packageFilter,
+                          packageType: packageFilter === "uwp" ? "uwp" : "gdk",
                           returnTo: ROUTES.download,
                         },
                       })
@@ -647,19 +651,20 @@ export const DownloadPage: React.FC = () => {
                   </Button>
                   <Dropdown>
                     <Button variant="secondary" className="rounded-full" aria-label={t("uwp.package_type")} isDisabled={versionsLoading}>
-                      {packageFilter.toUpperCase()}
+                      {packageFilter === "all" ? t("downloadpage.topcontent.types_all") : packageFilter.toUpperCase()}
                     </Button>
                     <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
                       <Dropdown.Menu selectionMode="single" disallowEmptySelection selectedKeys={[packageFilter]}
                         onSelectionChange={(keys) => {
                           if (versionsLoading) return;
                           const next = Array.from(keys)[0];
-                          if (next === "gdk" || next === "uwp") {
+                          if (next === "all" || next === "gdk" || next === "uwp") {
                             setPackageFilter(next);
                             if (next === "uwp") setLlFilter("all");
                             if (next === "gdk" && typeFilter === "Beta") setTypeFilter("Release");
                           }
                         }}>
+                        <Dropdown.Item id="all" textValue={t("downloadpage.topcontent.types_all")}><Label>{t("downloadpage.topcontent.types_all")}</Label><Dropdown.ItemIndicator /></Dropdown.Item>
                         <Dropdown.Item id="gdk" textValue="GDK"><Label>GDK</Label><Dropdown.ItemIndicator /></Dropdown.Item>
                         <Dropdown.Item id="uwp" textValue="UWP"><Label>UWP</Label><Dropdown.ItemIndicator /></Dropdown.Item>
                       </Dropdown.Menu>
@@ -711,7 +716,7 @@ export const DownloadPage: React.FC = () => {
                           </Label>
                           <Dropdown.ItemIndicator />
                         </Dropdown.Item>
-                        <Dropdown.Item id="Beta" textValue={t("uwp.beta")} isDisabled={packageFilter !== "uwp"}>
+                        <Dropdown.Item id="Beta" textValue={t("uwp.beta")} isDisabled={packageFilter === "gdk"}>
                           <Label>{t("uwp.beta")}</Label><Dropdown.ItemIndicator />
                         </Dropdown.Item>
                         <Dropdown.Item

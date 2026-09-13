@@ -739,46 +739,8 @@ func RenameVersionFolder(oldName string, newName string) string {
 	return ""
 }
 
-// canonicalPath normalizes path for comparison, resolving junctions and
-// symlinks to the location Windows itself reports. A version folder may be a
-// junction into an external game directory while the OS reports the resolved
-// path for running processes and registered packages, so both sides of such a
-// comparison go through this.
 func canonicalPath(path string) string {
-	s := strings.TrimSpace(path)
-	if s == "" {
-		return ""
-	}
-	if resolved, err := resolveFinalPath(s); err == nil {
-		s = resolved
-	}
-	return normalizePath(s)
-}
-
-func resolveFinalPath(path string) (string, error) {
-	p, err := windows.UTF16PtrFromString(path)
-	if err != nil {
-		return "", err
-	}
-	h, err := windows.CreateFile(p, 0,
-		windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
-		nil, windows.OPEN_EXISTING, windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
-	if err != nil {
-		return "", err
-	}
-	defer windows.CloseHandle(h)
-	buf := make([]uint16, windows.MAX_PATH)
-	n, err := windows.GetFinalPathNameByHandle(h, &buf[0], uint32(len(buf)), 0)
-	if err != nil {
-		return "", err
-	}
-	if int(n) > len(buf) {
-		buf = make([]uint16, n)
-		if n, err = windows.GetFinalPathNameByHandle(h, &buf[0], uint32(len(buf)), 0); err != nil {
-			return "", err
-		}
-	}
-	return windows.UTF16ToString(buf[:n]), nil
+	return utils.CanonicalWindowsPath(path)
 }
 
 func IsProcessRunningAtPath(exePath string) bool {

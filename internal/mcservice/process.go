@@ -15,10 +15,7 @@ import (
 )
 
 func normalizePath(p string) string {
-	s := strings.ToLower(filepath.Clean(strings.TrimSpace(p)))
-	s = strings.TrimPrefix(s, `\\?\`)
-	s = strings.TrimPrefix(s, `\??\`)
-	return s
+	return utils.NormalizeWindowsPath(p)
 }
 
 // linkedVersionRoots maps the resolved location of every junction-backed

@@ -15,6 +15,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/registry"
+	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"golang.org/x/sys/windows"
 )
@@ -82,15 +83,9 @@ func EnsureGamingServicesInstalled(ctx context.Context) bool {
 	return true
 }
 
-func normalizeProcessPath(p string) string {
-	s := strings.ToLower(filepath.Clean(strings.TrimSpace(p)))
-	s = strings.TrimPrefix(s, `\\?\`)
-	s = strings.TrimPrefix(s, `\??\`)
-	return s
-}
-
 func isGameRunning(versionDir string) bool {
-	if versionDir == "" {
+	cleanVerDir := utils.CanonicalWindowsPath(versionDir)
+	if cleanVerDir == "" {
 		return false
 	}
 
@@ -99,8 +94,6 @@ func isGameRunning(versionDir string) bool {
 		return false
 	}
 	defer windows.CloseHandle(snapshot)
-
-	cleanVerDir := normalizeProcessPath(versionDir)
 
 	var entry windows.ProcessEntry32
 	entry.Size = uint32(unsafe.Sizeof(entry))
@@ -115,7 +108,7 @@ func isGameRunning(versionDir string) bool {
 				buf := make([]uint16, 1024)
 				size := uint32(len(buf))
 				if err := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); err == nil && size > 0 {
-					p := normalizeProcessPath(windows.UTF16ToString(buf[:size]))
+					p := utils.NormalizeWindowsPath(windows.UTF16ToString(buf[:size]))
 					_ = windows.CloseHandle(h)
 					if strings.HasPrefix(p, cleanVerDir+string(filepath.Separator)) {
 						return true
@@ -215,6 +208,8 @@ func waitForGameWindow(ctx context.Context, versionDir string, timeout time.Dura
 }
 
 func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
+	// Different linked folder names can refer to the same running game.
+	versionDir = utils.CanonicalWindowsPath(versionDir)
 	if _, running := activeMonitors.LoadOrStore(versionDir, struct{}{}); running {
 		return
 	}

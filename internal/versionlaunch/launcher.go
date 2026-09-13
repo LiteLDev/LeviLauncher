@@ -264,7 +264,7 @@ func parseCommandLineArgs(input string) []string {
 }
 
 func isProcessRunningAtPath(exePath string) bool {
-	normalizedTarget := strings.ToLower(filepath.Clean(strings.TrimSpace(exePath)))
+	normalizedTarget := utils.CanonicalWindowsPath(exePath)
 	if normalizedTarget == "" {
 		return false
 	}
@@ -288,9 +288,7 @@ func isProcessRunningAtPath(exePath string) bool {
 			if e := windows.QueryFullProcessImageName(h, 0, &buf[0], &size); e == nil && size > 0 {
 				processPath := windows.UTF16ToString(buf[:size])
 				_ = windows.CloseHandle(h)
-				normalizedProcessPath := strings.ToLower(filepath.Clean(strings.TrimSpace(processPath)))
-				normalizedProcessPath = strings.TrimPrefix(normalizedProcessPath, `\\?\`)
-				normalizedProcessPath = strings.TrimPrefix(normalizedProcessPath, `\??\`)
+				normalizedProcessPath := utils.NormalizeWindowsPath(processPath)
 				if normalizedProcessPath == normalizedTarget {
 					return true
 				}

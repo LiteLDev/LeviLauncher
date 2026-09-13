@@ -76,6 +76,15 @@ func TestGameRunningThroughLinkedVersion(t *testing.T) {
 							t.Errorf("waitForGameProcess(%s, pid=%d) = (%v, %v, %v)", kind, pid, found, exited, canceled)
 						}
 					}
+					found, visible, canceled := waitForGameWindow(context.Background(), dir, time.Millisecond)
+					if !found || visible || canceled {
+						t.Errorf("process without a game window = (%v, %v, %v)", found, visible, canceled)
+					}
+					ctx, cancel := context.WithCancel(context.Background())
+					cancel()
+					if _, _, canceled := waitForGameWindow(ctx, dir, time.Second); !canceled {
+						t.Error("canceled window wait did not stop")
+					}
 				})
 			}
 			for _, dir := range []string{"", "  ", filepath.Join(root, "external"), filepath.Join(root, "other version")} {

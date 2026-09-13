@@ -47,10 +47,10 @@ func TestEditorLaunchTargetsRegisteredPackage(t *testing.T) {
 				}
 				return 4321, nil
 			}
-			if pid, err := LaunchWithPreparation(context.Background(), dir, true, nil); err != nil || pid != 4321 || calls != 1 {
+			if pid, err := LaunchWithPreparation(context.Background(), dir, true, nil, nil); err != nil || pid != 4321 || calls != 1 {
 				t.Fatalf("editor launch: pid=%d err=%v calls=%d", pid, err, calls)
 			}
-			if pid, err := LaunchWithPreparation(context.Background(), dir, true, nil); pid != 0 || ErrorCode(err) != "ERR_UWP_LAUNCH" || !errors.Is(err, activationErr) {
+			if pid, err := LaunchWithPreparation(context.Background(), dir, true, nil, nil); pid != 0 || ErrorCode(err) != "ERR_UWP_LAUNCH" || !errors.Is(err, activationErr) {
 				t.Fatalf("activation failure lost: pid=%d err=%v", pid, err)
 			}
 		})
@@ -82,7 +82,7 @@ func TestEditorLaunchRequiresSelectedRegistration(t *testing.T) {
 		pid, err := LaunchWithPreparation(context.Background(), dir, true, func() error {
 			t.Fatal("unregistered editor must not prepare another package")
 			return nil
-		})
+		}, nil)
 		if pid != 0 || ErrorCode(err) != "ERR_UWP_NOT_REGISTERED" {
 			t.Fatalf("unregistered editor launch: pid=%d err=%v", pid, err)
 		}
@@ -125,7 +125,7 @@ func TestEditorLaunchEnforcesManifestMinimumVersion(t *testing.T) {
 				}
 				return 321, nil
 			}
-			if pid, err := LaunchWithPreparation(context.Background(), dir, true, nil); err != nil || pid != 321 {
+			if pid, err := LaunchWithPreparation(context.Background(), dir, true, nil, nil); err != nil || pid != 321 {
 				t.Fatalf("launch: pid=%d err=%v", pid, err)
 			}
 		})

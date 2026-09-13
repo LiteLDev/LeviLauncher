@@ -270,13 +270,15 @@ func Unregister(ctx context.Context, dir string) error {
 }
 
 func Launch(ctx context.Context, dir string) (int, error) {
-	return LaunchWithPreparation(ctx, dir, false, nil)
+	return LaunchWithPreparation(ctx, dir, false, nil, nil)
 }
 
 // LaunchWithPreparation upgrades an already registered managed instance to
 // full trust before preparing its native loader. It never registers an absent
 // instance or switches the selected package as a side effect of launching.
-func LaunchWithPreparation(ctx context.Context, dir string, enableEditorMode bool, prepare func() error) (int, error) {
+// beforeActivate runs only after preparation succeeds, just before Windows
+// activation. It lets callers observe a window before the activation API returns.
+func LaunchWithPreparation(ctx context.Context, dir string, enableEditorMode bool, prepare func() error, beforeActivate func()) (int, error) {
 	manifest, err := ReadManifest(dir)
 	if err != nil {
 		return 0, err
@@ -310,6 +312,12 @@ func LaunchWithPreparation(ctx context.Context, dir string, enableEditorMode boo
 		}
 	}
 	appID := pkg.PackageFamilyName + "!" + manifest.Applications[0].ID
+	if err := ctx.Err(); err != nil {
+		return 0, err
+	}
+	if beforeActivate != nil {
+		beforeActivate()
+	}
 	var pid int
 	if enableEditorMode {
 		pid, err = activateProtocol(appID, versions.EditorLaunchURI(versions.PackageTypeUWP, channel))

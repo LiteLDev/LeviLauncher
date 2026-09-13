@@ -22,7 +22,7 @@ func TestLaunchPreparationRequiresSelectedDevelopmentRegistration(t *testing.T) 
 		_, err := LaunchWithPreparation(context.Background(), dir, false, func() error {
 			t.Fatal("unregistered or Store instance must not be patched")
 			return nil
-		})
+		}, func() { t.Fatal("observer started before registration validation") })
 		want := "ERR_UWP_NOT_REGISTERED"
 		if registered {
 			want = "ERR_UWP_PACKAGE_CONFLICT"
@@ -49,7 +49,7 @@ func TestLaunchPreparesAfterFullTrustAndStopsOnFailure(t *testing.T) {
 		t.Run(tc.name, func(t *testing.T) {
 			fail := tc.fail
 			_, dir := setupDeployment(t)
-			registered, prepared, activated := false, false, false
+			registered, prepared, observed, activated := false, false, false, false
 			runPowerShell = func(_ context.Context, script string) ([]byte, error) {
 				if strings.HasPrefix(script, "Get-AppxPackage") {
 					return packageJSON(t, dir, true), nil
@@ -66,7 +66,7 @@ func TestLaunchPreparesAfterFullTrustAndStopsOnFailure(t *testing.T) {
 			oldActivate, oldProtocol := activateApplication, activateProtocol
 			t.Cleanup(func() { activateApplication, activateProtocol = oldActivate, oldProtocol })
 			checkActivation := func(id string) (int, error) {
-				if !registered || !prepared || id != ReleaseFamilyName+"!App" {
+				if !registered || !prepared || !observed || id != ReleaseFamilyName+"!App" {
 					t.Fatalf("activation before preparation: %s", id)
 				}
 				activated = true
@@ -93,6 +93,11 @@ func TestLaunchPreparesAfterFullTrustAndStopsOnFailure(t *testing.T) {
 					return errors.New("cannot patch executable")
 				}
 				return nil
+			}, func() {
+				if !registered || !prepared || activated || fail != "" {
+					t.Fatal("observer must start after successful preparation and before activation")
+				}
+				observed = true
 			})
 			if fail == "" {
 				if err != nil || pid != 123 || !activated {
@@ -106,7 +111,7 @@ func TestLaunchPreparesAfterFullTrustAndStopsOnFailure(t *testing.T) {
 						t.Fatal("registration failure did not stop preparation")
 					}
 				}
-				if ErrorCode(err) != want || pid != 0 || activated {
+				if ErrorCode(err) != want || pid != 0 || activated || observed {
 					t.Fatalf("failed launch: pid=%d error=%v activated=%v", pid, err, activated)
 				}
 			}

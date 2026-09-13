@@ -6,7 +6,6 @@ import (
 	"strings"
 	"sync"
 	"sync/atomic"
-	"syscall"
 	"time"
 	"unsafe"
 
@@ -25,12 +24,6 @@ const (
 	EventMcLaunchDone          = "mc.launch.done"
 	EventMcLaunchFailed        = "mc.launch.failed"
 	EventGamingServicesMissing = "gamingservices.missing"
-)
-
-var (
-	user32              = syscall.NewLazyDLL("user32.dll")
-	procFindWindowW     = user32.NewProc("FindWindowW")
-	procIsWindowVisible = user32.NewProc("IsWindowVisible")
 )
 
 var (
@@ -60,21 +53,6 @@ func QuitLauncher() {
 	application.Get().Quit()
 }
 
-func FindWindowByTitleExact(title string) bool {
-	t, err := syscall.UTF16PtrFromString(title)
-	if err != nil {
-		return false
-	}
-
-	hwnd, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(t)))
-	if hwnd == 0 {
-		return false
-	}
-
-	isVisible, _, _ := procIsWindowVisible.Call(hwnd)
-	return isVisible != 0
-}
-
 func EnsureGamingServicesInstalled(ctx context.Context) bool {
 	if _, err := registry.GetAppxInfo("Microsoft.GamingServices"); err != nil {
 		application.Get().Event.Emit(EventGamingServicesMissing, struct{}{})
@@ -84,23 +62,28 @@ func EnsureGamingServicesInstalled(ctx context.Context) bool {
 }
 
 func isGameRunning(versionDir string) bool {
+	return len(gameProcessIDs(versionDir)) != 0
+}
+
+func gameProcessIDs(versionDir string) map[uint32]struct{} {
 	cleanVerDir := utils.CanonicalWindowsPath(versionDir)
 	if cleanVerDir == "" {
-		return false
+		return nil
 	}
 
 	snapshot, err := windows.CreateToolhelp32Snapshot(windows.TH32CS_SNAPPROCESS, 0)
 	if err != nil {
-		return false
+		return nil
 	}
 	defer windows.CloseHandle(snapshot)
 
 	var entry windows.ProcessEntry32
 	entry.Size = uint32(unsafe.Sizeof(entry))
 	if err := windows.Process32First(snapshot, &entry); err != nil {
-		return false
+		return nil
 	}
 
+	pids := make(map[uint32]struct{})
 	for {
 		if versions.IsMinecraftExecutable(windows.UTF16ToString(entry.ExeFile[:])) {
 			h, err := windows.OpenProcess(windows.PROCESS_QUERY_LIMITED_INFORMATION, false, entry.ProcessID)
@@ -111,7 +94,7 @@ func isGameRunning(versionDir string) bool {
 					p := utils.NormalizeWindowsPath(windows.UTF16ToString(buf[:size]))
 					_ = windows.CloseHandle(h)
 					if strings.HasPrefix(p, cleanVerDir+string(filepath.Separator)) {
-						return true
+						pids[entry.ProcessID] = struct{}{}
 					}
 				} else {
 					_ = windows.CloseHandle(h)
@@ -122,12 +105,7 @@ func isGameRunning(versionDir string) bool {
 			break
 		}
 	}
-	return false
-}
-
-func isGameWindowVisible() bool {
-	return FindWindowByTitleExact("Minecraft") || FindWindowByTitleExact("Minecraft Preview") ||
-		FindWindowByTitleExact("Minecraft: Windows 10 Edition") || FindWindowByTitleExact("Minecraft: Windows 10 Edition Beta")
+	return pids
 }
 
 func isProcessAlive(pid uint32) bool {
@@ -151,6 +129,9 @@ func isProcessAlive(pid uint32) bool {
 }
 
 func waitForGameProcess(ctx context.Context, versionDir string, launchPID uint32, timeout time.Duration) (bool, bool, bool) {
+	if ctx.Err() != nil {
+		return false, false, true
+	}
 	if isGameRunning(versionDir) {
 		return true, false, false
 	}
@@ -176,33 +157,27 @@ func waitForGameProcess(ctx context.Context, versionDir string, launchPID uint32
 }
 
 func waitForGameWindow(ctx context.Context, versionDir string, timeout time.Duration) (bool, bool, bool) {
-	if isGameWindowVisible() {
-		return true, true, false
-	}
-	if !isGameRunning(versionDir) {
-		return false, false, false
-	}
-	ticker := time.NewTicker(500 * time.Millisecond)
+	ticker := time.NewTicker(250 * time.Millisecond)
 	defer ticker.Stop()
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
-	lastRunningCheck := time.Now()
 	for {
+		if ctx.Err() != nil {
+			return false, false, true
+		}
+		pids := gameProcessIDs(versionDir)
+		if len(pids) == 0 {
+			return false, false, false
+		}
+		if isGameWindowVisible(pids) {
+			return true, true, false
+		}
 		select {
 		case <-ctx.Done():
 			return false, false, true
 		case <-timer.C:
-			return true, false, false
+			return isGameRunning(versionDir), false, false
 		case <-ticker.C:
-			if isGameWindowVisible() {
-				return true, true, false
-			}
-			if time.Since(lastRunningCheck) >= 2*time.Second {
-				lastRunningCheck = time.Now()
-				if !isGameRunning(versionDir) {
-					return false, false, false
-				}
-			}
 		}
 	}
 }
@@ -213,6 +188,11 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 	if _, running := activeMonitors.LoadOrStore(versionDir, struct{}{}); running {
 		return
 	}
+	monitorGameProcess(ctx, versionDir, launchPID, false)
+}
+
+// The caller owns the activeMonitors entry, including during UWP activation.
+func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, launchBehaviorApplied bool) {
 	defer activeMonitors.Delete(versionDir)
 
 	var pid uint32
@@ -226,6 +206,9 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 	}
 
 	if !found {
+		if launchBehaviorApplied && !userHidLauncher.Load() {
+			RestoreLauncherWindow()
+		}
 		if launchExited {
 			application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
 		} else {
@@ -235,13 +218,20 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 		return
 	}
 
-	var visible bool
-	found, visible, canceled = waitForGameWindow(ctx, versionDir, 60*time.Second)
+	// An early observer already saw this instance's window. The user may
+	// have minimized the game since then; do not wait for it to reappear.
+	visible := launchBehaviorApplied
+	if !visible {
+		found, visible, canceled = waitForGameWindow(ctx, versionDir, 60*time.Second)
+	}
 	if canceled {
 		return
 	}
 
 	if !found {
+		if launchBehaviorApplied && !userHidLauncher.Load() {
+			RestoreLauncherWindow()
+		}
 		application.Get().Event.Emit(EventMcLaunchFailed, "ERR_LAUNCH_GAME")
 		discord.SetLauncherIdle()
 		return
@@ -253,23 +243,19 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 	// game process is alive but never put a window on screen. Getting the
 	// launcher out of the way then would leave the user with neither a game
 	// window nor the launcher that could tell them what went wrong.
-	if visible {
-		switch config.GetOnGameLaunch() {
-		case config.OnGameLaunchClose:
+	if visible && !launchBehaviorApplied {
+		if config.GetOnGameLaunch() == config.OnGameLaunchClose {
 			QuitLauncher()
 			return
-		case config.OnGameLaunchHide:
-			if w := GetMainWindow(); w != nil {
-				w.Hide()
-			}
-		case config.OnGameLaunchKeep:
-			// leave the launcher where it is
-		default: // config.OnGameLaunchMinimize
-			if w := GetMainWindow(); w != nil {
-				w.Minimise()
-			}
 		}
+		applyReversibleLaunchBehavior()
 	}
+
+	// Presence updates may involve IPC. Keep them after the window action and
+	// on this monitor so a slow update cannot postpone minimizing the launcher
+	// or race with this instance's failure/exit presence update.
+	meta, _ := versions.ReadMeta(versionDir)
+	discord.SetPlayingVersion(strings.TrimSpace(meta.GameVersion))
 
 	ticker := time.NewTicker(3 * time.Second)
 	defer ticker.Stop()

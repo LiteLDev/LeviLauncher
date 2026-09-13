@@ -12,7 +12,6 @@ import (
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
-	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/mods"
@@ -111,7 +110,11 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 				return err
 			}
 		}
-		pid, err := uwp.LaunchWithPreparation(ctx, dir, meta.EnableEditorMode, prepareLaunch)
+		var monitor *launch.GameLaunchMonitor
+		pid, err := uwp.LaunchWithPreparation(ctx, dir, meta.EnableEditorMode, prepareLaunch, func() {
+			monitor = launch.BeginGameLaunch(ctx, dir)
+		})
+		monitor.Finish(pid, err)
 		if err != nil {
 			log.Printf("UWP launch failed for %s: %v", name, err)
 			return uwp.ErrorMessage(err)
@@ -121,8 +124,6 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		if meta.Name != "" {
 			_ = versions.WriteMeta(dir, meta)
 		}
-		discord.SetPlayingVersion(strings.TrimSpace(meta.GameVersion))
-		go launch.MonitorGameProcess(ctx, dir, pid)
 		return ""
 	}
 	exe := filepath.Join(dir, "Minecraft.Windows.exe")
@@ -138,7 +139,6 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	var args []string
 	var envs []string
 	toRun := exe
-	var gameVer string
 	var enableConsole bool
 	if m, err := versions.ReadMeta(dir); err == nil {
 		if m.EnvVars != "" {
@@ -177,15 +177,12 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 				log.Printf("Launch protocol failed for %s: %v", name, err)
 				return "ERR_LAUNCH_GAME"
 			}
-			gameVer = strings.TrimSpace(m.GameVersion)
-			discord.SetPlayingVersion(gameVer)
 			go launch.MonitorGameProcess(ctx, dir, 0)
 			return ""
 		}
 		if m.EnableEditorMode {
 			args = append(args, "-Editor", "true")
 		}
-		gameVer = strings.TrimSpace(m.GameVersion)
 	}
 
 	if checkRunning {
@@ -208,7 +205,6 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		log.Printf("Launch executable failed for %s: %v", name, err)
 		return "ERR_LAUNCH_GAME"
 	}
-	discord.SetPlayingVersion(gameVer)
 	launchPID := 0
 	if cmd.Process != nil {
 		launchPID = cmd.Process.Pid

@@ -1947,7 +1947,7 @@ export const useInstanceSettings = () => {
           gameVersion,
           type,
           !isUWP && !!enableIsolation,
-          !isUWP && !!enableConsole,
+          !!enableConsole,
           !isUWP && !!enableEditorMode,
           isUWP ? "" : launchArgs,
           isUWP ? "" : envVars,

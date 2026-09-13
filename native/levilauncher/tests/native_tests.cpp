@@ -37,6 +37,12 @@ void write(const fs::path &path, const char *text) {
 }
 void test_config() {
   check(config("{}").isolation, "missing flag defaults to isolation");
+  check(!config("{}").console, "console is opt-in");
+  check(config(R"({"packageType":"UWP","enableConsole":true})").uwp,
+        "case-insensitive UWP metadata");
+  check(config(R"({"packageType":"uwp","enableConsole":true})").console, "UWP console");
+  check(!config(R"({"packageType":"uwp","enableIsolation":true})").isolation,
+        "stale UWP isolation must not redirect shared data");
   check(!config(R"({"enableIsolation":false})").isolation, "boolean false");
   check(!config(R"({"enableIsolation":"FaLsE"})").isolation, "legacy string false");
   check(!config(R"({"enableIsolation":0})").isolation, "legacy numeric false");
@@ -157,23 +163,29 @@ void test_mods(const fs::path &root, const fs::path &binaries) {
         "external preloader owns Mods");
 }
 void smoke(const fs::path &directory, const fs::path &binaries, const char *metadata,
-           const wchar_t *data_subdirectory) {
+           const wchar_t *data_subdirectory, bool uwp = false, bool console = false,
+           const wchar_t *executable = L"Minecraft.Windows.exe") {
   fs::create_directories(directory);
-  fs::copy_file(binaries / L"Minecraft.Windows.exe", directory / L"Minecraft.Windows.exe");
+  fs::copy_file(binaries / L"Minecraft.Windows.exe", directory / executable);
   fs::copy_file(binaries / L"LeviLauncher.dll", directory / L"LeviLauncher.dll");
   if (metadata)
     write(directory / L"version.json", metadata);
+  if (uwp)
+    write(directory / L"AppxManifest.xml", "<Package/>");
   write(directory / L"mods" / L"test" / L"manifest.json",
         R"({"type":"preload-native","entry":"native_fixture.dll"})");
   fs::copy_file(binaries / L"native_fixture.dll",
                 directory / L"mods" / L"test" / L"native_fixture.dll");
-  auto command = L"\"" + (directory / L"Minecraft.Windows.exe").wstring() + L"\" " +
+  auto command = L"\"" + (directory / executable).wstring() + L"\" " +
                  (data_subdirectory ? L"on" : L"off") + L" \"" +
                  (data_subdirectory ? data_subdirectory : L"") + L"\"";
+  if (uwp)
+    command += console ? L" uwp console" : L" uwp quiet";
   STARTUPINFOW startup{};
   startup.cb = sizeof(startup);
   PROCESS_INFORMATION process{};
-  check(CreateProcessW(nullptr, command.data(), nullptr, nullptr, FALSE, CREATE_NO_WINDOW, nullptr,
+  check(CreateProcessW(nullptr, command.data(), nullptr, nullptr, FALSE,
+                       uwp ? DETACHED_PROCESS : CREATE_NO_WINDOW, nullptr,
                        directory.c_str(), &startup, &process) != FALSE,
         "start smoke host");
   CloseHandle(process.hThread);
@@ -185,7 +197,9 @@ void smoke(const fs::path &directory, const fs::path &binaries, const char *meta
   DWORD code = 99;
   GetExitCodeProcess(process.hProcess, &code);
   CloseHandle(process.hProcess);
-  check(wait == WAIT_OBJECT_0 && code == 0, "DLL attach, folder hooks and async Mod smoke");
+  if (wait != WAIT_OBJECT_0 || code != 0)
+    throw std::runtime_error("Native smoke " + levi::to_utf8(directory.filename().wstring()) +
+                             " failed: exit=" + std::to_string(code) + " wait=" + std::to_string(wait));
 }
 } // namespace
 
@@ -209,6 +223,15 @@ int main() {
     smoke(scratch / L"特殊 preview", binaries, R"({"gameVersion":"1.26.0.24"})",
           L"Minecraft Bedrock Preview");
     smoke(scratch / L"缺少 metadata", binaries, nullptr, L"");
+    smoke(scratch / L"UWP console", binaries,
+          R"({"packageType":"uwp","enableIsolation":true,"enableConsole":true})",
+          nullptr, true, true);
+    smoke(scratch / L"UWP quiet", binaries,
+          R"({"packageType":"uwp","enableConsole":false})", nullptr, true);
+    smoke(scratch / L"UWP imported", binaries, nullptr, nullptr, true);
+    smoke(scratch / L"UWP DX11", binaries,
+          R"({"packageType":"uwp","enableConsole":true})", nullptr, true, true,
+          L"Minecraft.Win10.DX11.exe");
     test_mods(scratch / L"mods-unit", binaries);
     // Release only the test fixture so Windows allows removal of the scratch tree.
     if (auto module = GetModuleHandleW(L"native_fixture.dll"))

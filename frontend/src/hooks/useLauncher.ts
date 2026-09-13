@@ -611,7 +611,7 @@ export const useLauncher = (args: any) => {
   }, [requiresUWPRegistration, doRegister, doLaunch]);
 
   useEffect(() => {
-    if (!hasBackend || currentPackageType !== "gdk") return;
+    if (!hasBackend) return;
     let disposed = false;
     let vcRuntimeRetryTimer: number | null = null;
 
@@ -653,6 +653,9 @@ export const useLauncher = (args: any) => {
           runVcRuntimeDependencyCheck(0);
         } catch {}
       }
+      // The native DLL loader needs the desktop VC runtime on UWP too.
+      // GameInput and Gaming Services remain GDK-specific dependencies.
+      if (currentPackageType !== "gdk") return;
       if (
         !hasSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.gameInput)
       ) {

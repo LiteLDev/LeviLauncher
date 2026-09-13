@@ -22,6 +22,11 @@ async function runScenario(viewport, scenario) {
     const primary = page.getByTestId('primary-launch-button');
     await primary.waitFor();
     await page.waitForTimeout(2200);
+    if (scenario.startsWith('uwp')) {
+      const checks = await page.evaluate(() => window.__audit.calls);
+      assert.ok(checks.some(call => call.name === 'IsVcRuntimeInstalled'));
+      assert.equal(checks.some(call => call.name === 'IsGameInputInstalled' || call.name === 'IsGamingServicesInstalled'), false);
+    }
     const initiallyRegistered = ['uwp', 'uwp-registration-lost', 'gdk-launch'].includes(scenario);
     assert.equal((await primary.innerText()).trim(), initiallyRegistered ? '启动' : '注册');
     await takeScreenshot('initial');

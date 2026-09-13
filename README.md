@@ -21,6 +21,8 @@ LeviLauncher helps you install, manage, isolate, mod, and launch Release or Prev
 - GDK: Microsoft Gaming Services and Microsoft GameInput available on the system
 - UWP: Windows Developer Mode and the UWP framework dependencies required by the package manifest
 
+UWP x64 instances support the console toggle under **Instance settings → Launch options** and compatible `preload-native` DLL mods imported through mod management. Installation deploys the loader; launching a registered instance prepares native loading while preserving Windows app activation and the app channel's shared `LocalState` content. The native loader also requires the desktop Visual C++ runtime, which the launcher checks and offers to install. Vanilla x86/ARM64 packages can still launch, but the bundled native loader currently supports x64 only. Automatic LeviLamina installation remains limited to supported GDK versions.
+
 ## Community
 
 - **Discord:** https://discord.gg/v5R5P4vRZk

@@ -57,10 +57,11 @@ func TestInstallExtractAppxWritesManifestChannelAndMetadata(t *testing.T) {
 			if m.Type != tc.want || m.PackageType != versions.PackageTypeUWP || m.GameVersion != "1.21.93.1" || m.Registered || m.EnableIsolation || m.EnableConsole {
 				t.Fatalf("unexpected metadata: %+v", m)
 			}
-			for _, file := range []string{"LeviLauncher.dll", "Minecraft.Windows.original.exe"} {
-				if _, err := os.Stat(filepath.Join(dir, file)); !os.IsNotExist(err) {
-					t.Fatalf("GDK artifact created: %s", file)
-				}
+			if info, err := os.Stat(filepath.Join(dir, "LeviLauncher.dll")); err != nil || info.Size() == 0 {
+				t.Fatalf("native loader missing: %v", err)
+			}
+			if data, err := os.ReadFile(filepath.Join(dir, "Minecraft.Windows.exe")); err != nil || string(data) != files["Minecraft.Windows.exe"] {
+				t.Fatalf("installation patched executable before registration: %v", err)
 			}
 		})
 	}

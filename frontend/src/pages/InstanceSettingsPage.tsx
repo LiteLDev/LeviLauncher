@@ -42,6 +42,7 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import LeviLaminaIcon from "@/assets/images/LeviLamina.png";
 import { useInstanceSettings } from "@/hooks/useInstanceSettings";
+import { OpenModsExplorer } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 
 type RestoreConflictDiffField = {
   key: string;
@@ -542,30 +543,36 @@ export default function InstanceSettingsPage() {
                   </div>
                 </div>
               )}
-              {vs.selectedTab === "launch" && vs.isUWP && <p className="text-sm text-muted">{t("uwp.launch_options_unavailable")}</p>}
-              {vs.selectedTab === "launch" && !vs.isUWP && (
+              {vs.selectedTab === "launch" && (
                 <div className="flex flex-col gap-6">
-                  <div className="flex items-center justify-between p-2 rounded-xl">
-                    <div className="text-base font-medium">
-                      {t("versions.edit.enable_isolation")}
+                  {vs.isUWP && (
+                    <p className="text-sm text-muted">
+                      {t("uwp.launch_options_description")}
+                    </p>
+                  )}
+                  {!vs.isUWP && (
+                    <div className="flex items-center justify-between p-2 rounded-xl">
+                      <div className="text-base font-medium">
+                        {t("versions.edit.enable_isolation")}
+                      </div>
+                      <Switch
+                        aria-label={t("versions.edit.enable_isolation")}
+                        size="md"
+                        isSelected={vs.enableIsolation}
+                        onChange={vs.setEnableIsolation}
+                        className={"group"}
+                      >
+                        <Switch.Content>
+                          <Switch.Control
+                            className={"group-data-[selected]:bg-brand-500"}
+                          >
+                            <Switch.Thumb></Switch.Thumb>
+                          </Switch.Control>
+                          <span></span>
+                        </Switch.Content>
+                      </Switch>
                     </div>
-                    <Switch
-                      aria-label={t("versions.edit.enable_isolation")}
-                      size="md"
-                      isSelected={vs.enableIsolation}
-                      onChange={vs.setEnableIsolation}
-                      className={"group"}
-                    >
-                      <Switch.Content>
-                        <Switch.Control
-                          className={"group-data-[selected]:bg-brand-500"}
-                        >
-                          <Switch.Thumb></Switch.Thumb>
-                        </Switch.Control>
-                        <span></span>
-                      </Switch.Content>
-                    </Switch>
-                  </div>
+                  )}
                   <div className="flex items-center justify-between p-2 rounded-xl">
                     <div className="text-base font-medium">
                       {t("versions.edit.enable_console")}
@@ -587,84 +594,104 @@ export default function InstanceSettingsPage() {
                       </Switch.Content>
                     </Switch>
                   </div>
-                  <div className="flex flex-col gap-3">
-                    <label className="text-sm font-medium text-foreground dark:text-zinc-200 block">
-                      {t("versions.edit.launch_args")}
-                    </label>
-                    <TextField
-                      aria-label={
-                        t(
-                          "versions.edit.launch_args_placeholder",
-                        ) as unknown as string
-                      }
-                      className={cn(
-                        "group",
-                        COMPONENT_STYLES.input.mainWrapper,
-                      )}
-                      value={vs.launchArgs}
-                      onChange={(v) => {
-                        vs.setLaunchArgs(v);
-                        if (vs.error) vs.setError("");
-                      }}
-                    >
-                      <Input
-                        placeholder={
-                          t(
-                            "versions.edit.launch_args_placeholder",
-                          ) as unknown as string
-                        }
-                        className={cn(
-                          COMPONENT_STYLES.input.inputWrapper,
-                          COMPONENT_STYLES.input.input,
-                          "rounded-lg",
-                        )}
-                      />
-                    </TextField>
-                    <p className="text-xs text-muted">
-                      {t("versions.edit.launch_args_hint")}
-                    </p>
-                  </div>
-                  <div className="flex flex-col gap-3">
-                    <label className="text-sm font-medium text-foreground dark:text-zinc-200 block">
-                      {t("versions.edit.env_vars")}
-                    </label>
-                    <TextField
-                      aria-label={
-                        t(
-                          "versions.edit.env_vars_placeholder",
-                        ) as unknown as string
-                      }
-                      className={cn(
-                        "group",
-                        COMPONENT_STYLES.input.mainWrapper,
-                      )}
-                      value={vs.envVars}
-                      onChange={(v) => {
-                        vs.setEnvVars(v);
-                        if (vs.error) vs.setError("");
-                      }}
-                    >
-                      <TextArea
-                        placeholder={
-                          t(
-                            "versions.edit.env_vars_placeholder",
-                          ) as unknown as string
-                        }
-                        rows={3}
-                        className={cn(
-                          COMPONENT_STYLES.input.inputWrapper,
-                          COMPONENT_STYLES.input.input,
-                          "rounded-lg",
-                        )}
-                      />
-                    </TextField>
-                    <p className="text-xs text-muted">
-                      {t("versions.edit.env_vars_hint")}
-                    </p>
-                  </div>
+                  {!vs.isUWP && (
+                    <>
+                      <div className="flex flex-col gap-3">
+                        <label className="text-sm font-medium text-foreground dark:text-zinc-200 block">
+                          {t("versions.edit.launch_args")}
+                        </label>
+                        <TextField
+                          aria-label={
+                            t(
+                              "versions.edit.launch_args_placeholder",
+                            ) as unknown as string
+                          }
+                          className={cn(
+                            "group",
+                            COMPONENT_STYLES.input.mainWrapper,
+                          )}
+                          value={vs.launchArgs}
+                          onChange={(v) => {
+                            vs.setLaunchArgs(v);
+                            if (vs.error) vs.setError("");
+                          }}
+                        >
+                          <Input
+                            placeholder={
+                              t(
+                                "versions.edit.launch_args_placeholder",
+                              ) as unknown as string
+                            }
+                            className={cn(
+                              COMPONENT_STYLES.input.inputWrapper,
+                              COMPONENT_STYLES.input.input,
+                              "rounded-lg",
+                            )}
+                          />
+                        </TextField>
+                        <p className="text-xs text-muted">
+                          {t("versions.edit.launch_args_hint")}
+                        </p>
+                      </div>
+                      <div className="flex flex-col gap-3">
+                        <label className="text-sm font-medium text-foreground dark:text-zinc-200 block">
+                          {t("versions.edit.env_vars")}
+                        </label>
+                        <TextField
+                          aria-label={
+                            t(
+                              "versions.edit.env_vars_placeholder",
+                            ) as unknown as string
+                          }
+                          className={cn(
+                            "group",
+                            COMPONENT_STYLES.input.mainWrapper,
+                          )}
+                          value={vs.envVars}
+                          onChange={(v) => {
+                            vs.setEnvVars(v);
+                            if (vs.error) vs.setError("");
+                          }}
+                        >
+                          <TextArea
+                            placeholder={
+                              t(
+                                "versions.edit.env_vars_placeholder",
+                              ) as unknown as string
+                            }
+                            rows={3}
+                            className={cn(
+                              COMPONENT_STYLES.input.inputWrapper,
+                              COMPONENT_STYLES.input.input,
+                              "rounded-lg",
+                            )}
+                          />
+                        </TextField>
+                        <p className="text-xs text-muted">
+                          {t("versions.edit.env_vars_hint")}
+                        </p>
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
-              {vs.selectedTab === "loader" && vs.isUWP && <p className="text-sm text-muted">{t("uwp.loader_unavailable")}</p>}
+              {vs.selectedTab === "loader" && vs.isUWP && (
+                <div className="flex flex-col items-start gap-4">
+                  <p className="text-sm text-muted">
+                    {t("uwp.loader_description")}
+                  </p>
+                  <Button
+                    variant="secondary"
+                    onPress={() => {
+                      void OpenModsExplorer(vs.targetName).catch((error: unknown) =>
+                        vs.setError(String(error)),
+                      );
+                    }}
+                  >
+                    {t("downloadmodal.open_folder")}
+                  </Button>
+                </div>
+              )}
               {vs.selectedTab === "loader" && !vs.isUWP && (
                 <div className="flex flex-col gap-6">
                   <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

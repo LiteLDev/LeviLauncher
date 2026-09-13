@@ -268,6 +268,13 @@ func Unregister(ctx context.Context, dir string) error {
 }
 
 func Launch(ctx context.Context, dir string) (int, error) {
+	return LaunchWithPreparation(ctx, dir, nil)
+}
+
+// LaunchWithPreparation upgrades an already registered managed instance to
+// full trust before preparing its native loader. It never registers an absent
+// instance or switches the selected package as a side effect of launching.
+func LaunchWithPreparation(ctx context.Context, dir string, prepare func() error) (int, error) {
 	manifest, err := ReadManifest(dir)
 	if err != nil {
 		return 0, err
@@ -280,6 +287,19 @@ func Launch(ctx context.Context, dir string) (int, error) {
 	}
 	if pkg == nil || !samePath(pkg.InstallLocation, dir) || !strings.EqualFold(pkg.PackageFamilyName, manifest.FamilyName()) {
 		return 0, failure("ERR_UWP_NOT_REGISTERED", fmt.Errorf("register the selected UWP instance before launching it"))
+	}
+	if prepare != nil {
+		if !isManagedDevelopmentPackage(pkg) {
+			return 0, failure("ERR_UWP_PACKAGE_CONFLICT", fmt.Errorf("native loading requires a managed development registration"))
+		}
+		// Re-apply registration so instances registered by older launchers do
+		// not attempt to load desktop DLLs inside an AppContainer.
+		if pkg, err = registerLocked(ctx, dir, manifest); err != nil {
+			return 0, err
+		}
+		if err := prepare(); err != nil {
+			return 0, failure("ERR_UWP_PREPARE", err)
+		}
 	}
 	pid, err := activateApplication(pkg.PackageFamilyName + "!" + manifest.Applications[0].ID)
 	if err != nil {

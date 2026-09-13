@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"context"
 	"crypto/sha256"
+	"debug/pe"
 	_ "embed"
 	"fmt"
 	"io"
@@ -15,12 +16,13 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/utils"
+	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
 const (
-	// LoaderDLLName is the injected loader dropped next to Minecraft.Windows.exe.
+	// LoaderDLLName is the injected loader dropped next to the game executable.
 	LoaderDLLName = "LeviLauncher.dll"
 	// LoaderEntryName is the anchor export referenced by the import descriptor
 	// added to Minecraft.Windows.exe.
@@ -81,11 +83,6 @@ func EnsureForVersion(ctx context.Context, versionDir string) error {
 	if dir == "" {
 		return fmt.Errorf("version directory is empty")
 	}
-	meta, _ := versions.ReadMeta(dir)
-	if versions.DetectPackageType(dir, meta) == versions.PackageTypeUWP {
-		return fmt.Errorf("ERR_UWP_UNSUPPORTED_FEATURE")
-	}
-
 	dest := filepath.Join(dir, LoaderDLLName)
 	needWrite := true
 	if fi, err := os.Stat(dest); err == nil && fi.Size() > 0 {
@@ -118,21 +115,53 @@ func removeLegacyProxy(dir string) error {
 	return nil
 }
 
-// PatchAndActivate deploys LeviLauncher.dll and adds its import to the version's
-// Minecraft.Windows.exe and, once that import is confirmed present, removes the
-// legacy vcruntime140_1.dll proxy so only one loader initializes. When patching
-// fails the proxy is left untouched as a fallback. It is idempotent.
+// SupportsExecutable checks the architecture against the bundled native DLL.
+func SupportsExecutable(exe string) (bool, error) {
+	image, err := pe.Open(exe)
+	if err != nil {
+		return false, err
+	}
+	defer image.Close()
+	return image.Machine == pe.IMAGE_FILE_MACHINE_AMD64, nil
+}
+
+// PatchAndActivate deploys LeviLauncher.dll and adds its import to the game
+// executable (from the manifest for UWP). For GDK, it then removes the legacy
+// vcruntime140_1.dll proxy so only one loader initializes. UWP runtime DLLs are
+// preserved. Failed patching leaves the proxy untouched. It is idempotent.
 func PatchAndActivate(ctx context.Context, versionDir string) (bool, error) {
+	meta, _ := versions.ReadMeta(versionDir)
+	isUWP := versions.DetectPackageType(versionDir, meta) == versions.PackageTypeUWP
+	exe := filepath.Join(versionDir, minecraftExeName)
+	if isUWP {
+		manifest, err := uwp.ReadManifest(versionDir)
+		if err != nil {
+			return false, err
+		}
+		exe = filepath.Join(versionDir, manifest.Applications[0].Executable)
+	}
+	// The bundled native loader is x64. Reject incompatible images before
+	// deploying a DLL or editing the executable's imports.
+	supported, err := SupportsExecutable(exe)
+	if err != nil {
+		return false, err
+	}
+	if !supported {
+		return false, fmt.Errorf("native loader requires an x64 executable")
+	}
 	if err := EnsureForVersion(ctx, versionDir); err != nil {
 		return false, fmt.Errorf("deploy %s: %w", LoaderDLLName, err)
 	}
-	exe := filepath.Join(versionDir, minecraftExeName)
 	added, err := peeditor.EnsureImportedDLL(exe, LoaderDLLName, LoaderEntryName)
 	if err != nil {
 		return false, err
 	}
-	if err := removeLegacyProxy(versionDir); err != nil {
-		return added, err
+	// UWP packages can ship a genuine runtime with the legacy proxy's name.
+	// That file has never belonged to our GDK proxy migration.
+	if !isUWP {
+		if err := removeLegacyProxy(versionDir); err != nil {
+			return added, err
+		}
 	}
 	return added, nil
 }

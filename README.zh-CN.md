@@ -21,6 +21,8 @@ LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版�
 - GDK：系统中可用的 Microsoft Gaming Services 与 Microsoft GameInput
 - UWP：Windows 开发者模式，以及游戏包清单要求的 UWP 框架依赖
 
+UWP x64 实例支持在「实例设置 → 启动选项」中启用控制台，并通过模组管理导入与游戏版本兼容的 `preload-native` DLL 模组。安装时部署加载器，注册后启动时准备原生加载功能；游戏继续使用 Windows 应用激活，同一应用渠道共享原有的 `LocalState` 内容。原生加载器还需要桌面版 Visual C++ 运行库，启动器会检查并提示安装。x86/ARM64 包仍可普通启动，但当前原生加载器仅支持 x64。LeviLamina 自动安装仍以受支持的 GDK 版本为准。
+
 ## 社区
 
 - **Discord：** https://discord.gg/v5R5P4vRZk

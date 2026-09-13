@@ -31,6 +31,12 @@ state.call = async (name, ...args) => {
   }
  await new Promise(resolve => setTimeout(resolve, 80));
   if (isUWP) {
+    if(name==='IsVcRuntimeInstalled') return true;
+    if(name==='SaveVersionMeta') {
+      const target=state.uwpMetas.find(meta=>meta.name===args[0]);
+      if(target) Object.assign(target,{gameVersion:args[1],type:args[2],enableIsolation:args[3],enableConsole:args[4],enableEditorMode:args[5],launchArgs:args[6],envVars:args[7]});
+      return '';
+    }
     if(name==='RegisterVersionWithWdapp') {
       await new Promise(resolve=>setTimeout(resolve,900));
       if(scenario==='uwp-register-fail'&&!state.recovered)return 'ERR_UWP_QUERY: Fixture registration query failed';

@@ -8,6 +8,8 @@ namespace levi {
 struct VersionConfig {
   bool isolation = true;
   bool has_metadata = false;
+  bool uwp = false;
+  bool console = false;
   std::string game_version;
   std::string channel;
 };

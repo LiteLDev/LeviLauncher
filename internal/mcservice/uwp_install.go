@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versions"
@@ -45,6 +46,9 @@ func InstallExtractAppx(ctx context.Context, archivePath, folderName, channel st
 	var lastProgress time.Time
 	_, err = uwp.Install(ctx, archivePath, target, uwp.Options{
 		Prepare: func(stage string, manifest uwp.Manifest) error {
+			if err := leviloader.EnsureForVersion(ctx, stage); err != nil {
+				return &uwp.Error{Code: "ERR_UWP_PREPARE", Cause: err}
+			}
 			if manifest.IsPreview() {
 				channel = "preview"
 			} else if channel != "beta" {

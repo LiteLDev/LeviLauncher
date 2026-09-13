@@ -48,6 +48,17 @@ VersionConfig parse_version_config(std::istream &input) {
     throw std::invalid_argument("version.json must contain an object");
   VersionConfig config;
   config.has_metadata = true;
+  if (const auto it = json.find("packageType"); it != json.end() && it->is_string()) {
+    auto type = it->get<std::string>();
+    for (char &ch : type) {
+      if (ch >= 'A' && ch <= 'Z')
+        ch = static_cast<char>(ch + ('a' - 'A'));
+    }
+    config.uwp = type == "uwp";
+  }
+  if (const auto it = json.find("enableConsole"); it != json.end() && it->is_boolean()) {
+    config.console = it->get<bool>();
+  }
   if (const auto it = json.find("enableIsolation"); it != json.end()) {
     config.isolation = read_isolation(*it);
   }
@@ -57,6 +68,8 @@ VersionConfig parse_version_config(std::istream &input) {
   if (const auto it = json.find("type"); it != json.end() && it->is_string()) {
     config.channel = it->get<std::string>();
   }
+  if (config.uwp)
+    config.isolation = false;
   return config;
 }
 VersionConfig read_version_config(const std::filesystem::path &directory) {

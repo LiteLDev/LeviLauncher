@@ -8,8 +8,10 @@
 extern "C" __declspec(dllimport) void LeviLauncherEntry() noexcept;
 int wmain(int argc, wchar_t **argv) {
   LeviLauncherEntry();
-  if (argc != 3)
+  if (argc != 3 && argc != 5)
     return 1;
+  const bool uwp = argc == 5;
+  const bool console = uwp && std::wstring(argv[4]) == L"console";
   const bool isolation = std::wstring(argv[1]) == L"on";
   std::vector<wchar_t> path(32768);
   const auto length = GetModuleFileNameW(nullptr, path.data(), static_cast<DWORD>(path.size()));
@@ -19,7 +21,7 @@ int wmain(int argc, wchar_t **argv) {
     return 2;
   const bool empty_local = local && *local == L'\0';
   CoTaskMemFree(local);
-  if (!empty_local)
+  if (empty_local == uwp)
     return 3;
   PWSTR roaming = nullptr;
   if (FAILED(SHGetKnownFolderPath(FOLDERID_RoamingAppData, 0, nullptr, &roaming)))
@@ -54,8 +56,19 @@ int wmain(int argc, wchar_t **argv) {
   if (std::filesystem::exists(directory / L"TEMP"))
     return 8;
   for (int i = 0; i < 500; ++i) {
-    if (GetModuleHandleW(L"native_fixture.dll"))
+    if (GetModuleHandleW(L"native_fixture.dll")) {
+      if (uwp) {
+        DWORD mode = 0;
+        const bool has_console = GetConsoleWindow() != nullptr;
+        if (console && !has_console)
+          return 10;
+        if (!console && has_console)
+          return 11;
+        if (console && !GetConsoleMode(GetStdHandle(STD_OUTPUT_HANDLE), &mode))
+          return 12;
+      }
       return 0;
+    }
     Sleep(10);
   }
   return 9;

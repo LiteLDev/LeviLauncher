@@ -2,6 +2,7 @@ package versionlaunch
 
 import (
 	"context"
+	"fmt"
 	"log"
 	"os"
 	"os/exec"
@@ -14,6 +15,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/discord"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
+	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/uwp"
@@ -92,11 +94,24 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 		if !utils.FileExists(exe) {
 			return "ERR_NOT_FOUND_EXE"
 		}
-		if checkRunning && isProcessRunningAtPath(exe) {
+		// UWP re-registration and import editing require the process to exit,
+		// including when the caller asks to bypass the normal running check.
+		if isProcessRunningAtPath(exe) {
 			return "ERR_GAME_ALREADY_RUNNING"
 		}
 		application.Get().Event.Emit(launch.EventMcLaunchStart, struct{}{})
-		pid, err := uwp.Launch(ctx, dir)
+		prepare, err := uwpNativePreparation(dir, name, exe, meta.EnableConsole)
+		if err != nil {
+			return "ERR_UWP_PREPARE: " + err.Error()
+		}
+		var prepareLaunch func() error
+		if prepare {
+			prepareLaunch = func() error {
+				_, err := leviloader.PatchAndActivate(ctx, dir)
+				return err
+			}
+		}
+		pid, err := uwp.LaunchWithPreparation(ctx, dir, prepareLaunch)
 		if err != nil {
 			log.Printf("UWP launch failed for %s: %v", name, err)
 			return uwp.ErrorMessage(err)
@@ -200,6 +215,26 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 	}
 	go launch.MonitorGameProcess(ctx, dir, launchPID)
 	return ""
+}
+
+func uwpNativePreparation(dir, name, exe string, console bool) (bool, error) {
+	supported, err := leviloader.SupportsExecutable(exe)
+	if err != nil || supported {
+		return supported, err
+	}
+	// Keep vanilla x86/ARM64 UWP launches working. Desktop DLL features must
+	// report an architecture error instead of injecting an incompatible DLL.
+	needsLoader := console
+	for _, mod := range mods.GetMods(name) {
+		if mod.Type == "preload-native" && utils.FileExists(filepath.Join(dir, "mods", mod.Folder, "manifest.json")) {
+			needsLoader = true
+			break
+		}
+	}
+	if needsLoader {
+		return false, fmt.Errorf("console and native DLL mods require an x64 UWP game package")
+	}
+	return false, nil
 }
 
 func parseCommandLineArgs(input string) []string {

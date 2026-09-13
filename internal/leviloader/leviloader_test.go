@@ -27,28 +27,52 @@ func writeTestVersion(t *testing.T, dir string) {
 	}
 }
 
-func TestUWPCannotReceiveGDKLoader(t *testing.T) {
-	for _, metadata := range []bool{false, true} {
+func TestUWPActivatesNativeLoaderAndPreservesRuntime(t *testing.T) {
+	for _, executable := range []string{minecraftExeName, "Minecraft.Win10.DX11.exe"} {
 		dir := t.TempDir()
 		writeTestVersion(t, dir)
-		if metadata {
-			if err := versions.WriteMeta(dir, versions.VersionMeta{Name: "uwp", PackageType: "uwp"}); err != nil {
+		if executable != minecraftExeName {
+			if err := os.Rename(filepath.Join(dir, minecraftExeName), filepath.Join(dir, executable)); err != nil {
 				t.Fatal(err)
 			}
-		} else if err := os.WriteFile(filepath.Join(dir, "AppxManifest.xml"), []byte("legacy UWP manifest"), 0600); err != nil {
+		}
+		manifest := `<Package><Identity Name="Microsoft.MinecraftUWP" Publisher="CN=Microsoft Corporation, O=Microsoft Corporation, L=Redmond, S=Washington, C=US" Version="1.21.9301.0" ProcessorArchitecture="x64"/><Applications><Application Id="App" Executable="` + executable + `"/></Applications></Package>`
+		if err := os.WriteFile(filepath.Join(dir, "AppxManifest.xml"), []byte(manifest), 0600); err != nil {
 			t.Fatal(err)
 		}
-		if _, err := PatchAndActivate(context.Background(), dir); err == nil {
-			t.Fatal("UWP loader activation succeeded")
+		if added, err := PatchAndActivate(context.Background(), dir); err != nil || !added {
+			t.Fatalf("UWP loader activation: added=%v error=%v", added, err)
 		}
-		if fileExists(filepath.Join(dir, LoaderDLLName)) {
-			t.Fatal("UWP received GDK loader")
+		if !fileExists(filepath.Join(dir, LoaderDLLName)) {
+			t.Fatal("UWP native loader missing")
 		}
-		if data, err := os.ReadFile(filepath.Join(dir, minecraftExeName)); err != nil || !bytes.Equal(data, embeddedLoader) {
-			t.Fatal("UWP executable changed")
+		if data, err := os.ReadFile(filepath.Join(dir, executable+".orig")); err != nil || !bytes.Equal(data, embeddedLoader) {
+			t.Fatal("original UWP executable backup missing")
 		}
-		if !fileExists(filepath.Join(dir, legacyProxyName)) {
-			t.Fatal("UWP runtime DLL removed")
+		if data, err := os.ReadFile(filepath.Join(dir, legacyProxyName)); err != nil || string(data) != "legacy proxy" {
+			t.Fatal("UWP runtime DLL changed")
+		}
+		image, err := pe.Open(filepath.Join(dir, executable))
+		if err != nil {
+			t.Fatal(err)
+		}
+		section := image.Section(".levildr")
+		if section == nil {
+			image.Close()
+			t.Fatal("UWP loader import section missing")
+		}
+		importRVA := image.OptionalHeader.(*pe.OptionalHeader64).DataDirectory[pe.IMAGE_DIRECTORY_ENTRY_IMPORT].VirtualAddress
+		imports, err := section.Data()
+		image.Close()
+		if err != nil || importRVA != section.VirtualAddress || !bytes.Contains(imports, []byte(LoaderEntryName+"\x00")) || !bytes.Contains(imports, []byte(LoaderDLLName+"\x00")) {
+			t.Fatalf("UWP loader import missing: RVA=%x, error=%v", importRVA, err)
+		}
+		before, _ := os.ReadFile(filepath.Join(dir, executable))
+		if added, err := PatchAndActivate(context.Background(), dir); err != nil || added {
+			t.Fatalf("repeat UWP activation: added=%v error=%v", added, err)
+		}
+		if after, err := os.ReadFile(filepath.Join(dir, executable)); err != nil || !bytes.Equal(before, after) {
+			t.Fatal("repeat UWP activation changed executable")
 		}
 	}
 }

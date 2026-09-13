@@ -3,7 +3,7 @@ name: Sync GitCode Mirror
 on:
   push:
     branches:
-      - main
+      - test
   workflow_dispatch:
     inputs:
       release_tag:

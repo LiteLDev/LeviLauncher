@@ -136,7 +136,6 @@
       "launch_dependencies": "GameInput, Visual C++ 런타임 또는 Gaming Services가 없으면 LeviLauncher가 실행 전에 설치를 안내합니다.",
       "mods_card": "모드 카드는 현재 인스턴스에 활성화된 모드를 표시하며, 클릭 한 번으로 전체 모드 페이지를 엽니다.",
       "content_counts_card": "콘텐츠 카드는 월드, 리소스 팩, 행동 팩의 수를 표시하며, 각 행은 해당 페이지를 엽니다.",
-      "incompatible_resource_packs": "호환되지 않는 리소스 팩이 감지되면 경고 행을 클릭하여 직접 확인하세요.",
       "content_download_sources": "다운로드 카드를 사용하여 런처를 벗어나지 않고 CurseForge 또는 Bedrinth 콘텐츠 소스를 탐색하세요.",
       "settings_personalize": "설정에서 테마, 색상, 배경 및 기타 모양 옵션을 조정하여 설정에 맞게 맞춤화할 수 있습니다.",
       "settings_storage_path": "설정에서 저장 경로를 변경할 수 있습니다. 콘텐츠를 이동하기 전에 대상 디렉토리에 쓰기 권한이 있는지 확인하세요.",

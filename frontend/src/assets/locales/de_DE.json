@@ -136,7 +136,6 @@
       "launch_dependencies": "Fehlen GameInput, die Visual C++ Runtime oder Gaming Services, führt dich LeviLauncher vor dem Start durch die Installation.",
       "mods_card": "Die Mods-Karte zeigt aktivierte Mods für die aktuelle Instanz an und öffnet mit einem Klick die vollständige Mods-Seite.",
       "content_counts_card": "Die Inhaltskarte zeigt die Anzahl der Welten, Ressourcenpakete und Verhaltenspakete an. Jede Zeile öffnet die entsprechende Seite.",
-      "incompatible_resource_packs": "Wenn inkompatible Ressourcenpakete erkannt werden, klicken Sie auf die Warnzeile, um sie direkt zu überprüfen.",
       "content_download_sources": "Verwenden Sie die Download-Karte, um CurseForge- oder Bedrinth-Inhaltsquellen zu durchsuchen, ohne den Launcher zu verlassen.",
       "settings_personalize": "In den Einstellungen können Sie Design, Farbe, Hintergrund und andere Erscheinungsoptionen anpassen, um sie an Ihr Setup anzupassen.",
       "settings_storage_path": "Sie können Speicherpfade in den Einstellungen ändern. Stellen Sie sicher, dass das Zielverzeichnis beschreibbar ist, bevor Sie Inhalte verschieben.",

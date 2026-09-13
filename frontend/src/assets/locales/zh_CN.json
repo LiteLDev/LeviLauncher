@@ -136,7 +136,6 @@
       "launch_dependencies": "若缺少 GameInput、Visual C++ 运行库或 Gaming Services，LeviLauncher 会在启动前引导你完成安装。",
       "mods_card": "模组卡片会显示当前实例已启用的模组，点击即可进入完整的模组页面。",
       "content_counts_card": "内容管理卡片会显示世界、资源包和行为包数量，点击对应行可直接进入页面。",
-      "incompatible_resource_packs": "检测到不兼容资源包时，可点击警告行直接查看需要处理的项目。",
       "content_download_sources": "下载卡片可直接进入 CurseForge 和 Bedrinth，方便在启动器内获取内容。",
       "settings_personalize": "可在设置中调整主题、配色、背景等外观选项，让启动器更符合你的使用习惯。",
       "settings_storage_path": "你可以在设置中修改存储路径；迁移或保存内容前，请先确认目标目录可写。",

@@ -136,7 +136,6 @@
       "launch_dependencies": "GameInput、Visual C++ランタイム、Gaming Servicesが不足している場合は、起動前にLeviLauncherがインストールを案内します。",
       "mods_card": "Mods カードには現在のインスタンスで有効な Mod が表示され、ワンクリックで Mods ページを開けます。",
       "content_counts_card": "コンテンツ管理カードにはワールド、リソースパック、ビヘイビアパックの数が表示され、各行から対応ページを直接開けます。",
-      "incompatible_resource_packs": "互換性のないリソースパックが検出された場合は、警告行をクリックして対象をすぐ確認できます。",
       "content_download_sources": "ダウンロードカードから CurseForge と Bedrinth に直接移動でき、ランチャー内でコンテンツを探せます。",
       "settings_personalize": "設定ではテーマ、配色、背景などの外観オプションを調整でき、使い方に合わせてランチャーを整えられます。",
       "settings_storage_path": "保存先パスは設定から変更できます。移動や保存の前に、対象フォルダーが書き込み可能か確認してください。",

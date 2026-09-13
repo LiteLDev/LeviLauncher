@@ -61,7 +61,6 @@ const LAUNCH_TIP_KEYS = [
   "launch_dependencies",
   "mods_card",
   "content_counts_card",
-  "incompatible_resource_packs",
   "content_download_sources",
   "settings_personalize",
   "settings_storage_path",

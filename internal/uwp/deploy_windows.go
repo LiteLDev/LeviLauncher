@@ -103,44 +103,6 @@ func isManagedVersionDirectory(dir string) bool {
 	return err == nil && rel != "." && rel != ".." && !filepath.IsAbs(rel) && !strings.HasPrefix(rel, ".."+string(filepath.Separator))
 }
 
-// Store-origin signatures cannot be used for loose developer registration.
-// Keep the original signature alongside the instance, and leave the downloaded
-// archive intact. This also repairs instances extracted by earlier versions.
-func prepareLooseRegistration(dir string) error {
-	if !isManagedVersionDirectory(dir) {
-		return failure("ERR_UWP_PACKAGE_CONFLICT", fmt.Errorf("loose registration requires a managed version directory"))
-	}
-	signature := filepath.Join(dir, "AppxSignature.p7x")
-	info, err := os.Lstat(signature)
-	if os.IsNotExist(err) {
-		return nil
-	}
-	if err != nil {
-		return failure("ERR_UWP_PREPARE", err)
-	}
-	if !info.Mode().IsRegular() {
-		return failure("ERR_UWP_PREPARE", fmt.Errorf("package signature is not a regular file"))
-	}
-	backup := signature + ".levilauncher-backup"
-	if _, err := os.Lstat(backup); err == nil {
-		original, readErr := os.ReadFile(signature)
-		saved, backupErr := os.ReadFile(backup)
-		if readErr != nil || backupErr != nil || !bytes.Equal(original, saved) {
-			return failure("ERR_UWP_PREPARE", fmt.Errorf("existing signature backup differs from the package signature"))
-		}
-		if err := os.Remove(signature); err != nil {
-			return failure("ERR_UWP_PREPARE", err)
-		}
-		return nil
-	} else if !os.IsNotExist(err) {
-		return failure("ERR_UWP_PREPARE", err)
-	}
-	if err := os.Rename(signature, backup); err != nil {
-		return failure("ERR_UWP_PREPARE", err)
-	}
-	return nil
-}
-
 func deploymentError(defaultCode string, output []byte, err error) error {
 	message := strings.TrimSpace(string(output))
 	lower := strings.ToLower(message)
@@ -199,8 +161,8 @@ func registerLocked(ctx context.Context, dir string, manifest Manifest) (*regist
 	}
 	// Explicit registration also upgrades an already registered instance from
 	// AppContainer to full trust; its install location alone cannot prove that.
-	if err := prepareLooseRegistration(dir); err != nil {
-		return nil, err
+	if !isManagedVersionDirectory(dir) {
+		return nil, failure("ERR_UWP_PACKAGE_CONFLICT", fmt.Errorf("loose registration requires a managed version directory"))
 	}
 	if err = addPackage(ctx, dir); err != nil {
 		if !isManagedDevelopmentPackage(existing) {

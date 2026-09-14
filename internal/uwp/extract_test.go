@@ -62,6 +62,81 @@ func TestInstallAppxAndPreserveExistingTarget(t *testing.T) {
 	}
 }
 
+func TestInstallOmitsPackageSignature(t *testing.T) {
+	for _, signatureName := range []string{"AppxSignature.p7x", "APPXSIGNATURE.P7X"} {
+		for _, bundled := range []bool{false, true} {
+			name := "appx/" + signatureName
+			if bundled {
+				name = "bundle/" + signatureName
+			}
+			t.Run(name, func(t *testing.T) {
+				files := map[string]string{
+					"AppxManifest.xml":       testManifest("neutral"),
+					"Minecraft.Windows.exe":  "test-executable",
+					"data/AppxSignature.p7x": "ordinary nested content",
+					"data/other.p7x":         "ordinary p7x content",
+					signatureName:            "Store package signature",
+				}
+				var wantTotal int64
+				for file, data := range files {
+					if file != signatureName {
+						wantTotal += int64(len(data))
+					}
+				}
+				data := zipBytes(t, files)
+				if bundled {
+					data = zipBytes(t, map[string]string{
+						"AppxMetadata/AppxBundleManifest.xml": `<Bundle><Packages><Package Type="application" Architecture="neutral" FileName="game.appx"/></Packages></Bundle>`,
+						"game.appx":                           string(data),
+						"AppxSignature.p7x":                   "bundle signature",
+					})
+				}
+				archive := writeArchive(t, data)
+				target := filepath.Join(t.TempDir(), "instance")
+				checkLayout := func(dir string) {
+					t.Helper()
+					for _, filename := range []string{signatureName, signatureName + ".levilauncher-backup"} {
+						if _, err := os.Lstat(filepath.Join(dir, filename)); !os.IsNotExist(err) {
+							t.Fatalf("signature file was created: %s: %v", filename, err)
+						}
+					}
+					for filename, want := range files {
+						if filename == signatureName {
+							continue
+						}
+						if got, err := os.ReadFile(filepath.Join(dir, filename)); err != nil || string(got) != want {
+							t.Fatalf("package content changed: %s: %q, %v", filename, got, err)
+						}
+					}
+				}
+				var last Progress
+				_, err := Install(context.Background(), archive, target, Options{
+					Prepare: func(dir string, _ Manifest) error {
+						checkLayout(dir)
+						return nil
+					},
+					Progress: func(p Progress) {
+						if strings.EqualFold(p.File, signatureName) || p.Total != wantTotal || p.Current > p.Total {
+							t.Fatalf("invalid extraction progress: %+v, want total %d", p, wantTotal)
+						}
+						last = p
+					},
+				})
+				if err != nil {
+					t.Fatal(err)
+				}
+				checkLayout(target)
+				if last.Current != wantTotal || last.Total != wantTotal {
+					t.Fatalf("extraction progress did not complete: %+v", last)
+				}
+				if got, err := os.ReadFile(archive); err != nil || !bytes.Equal(got, data) {
+					t.Fatalf("source archive changed: %v", err)
+				}
+			})
+		}
+	}
+}
+
 func TestInstallRejectsUnsafeAndInvalidPackagesAtomically(t *testing.T) {
 	cases := []struct {
 		name  string

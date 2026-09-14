@@ -293,40 +293,78 @@ func TestPowerShellTerminatingErrorsAreReadable(t *testing.T) {
 	}
 }
 
-func TestPrepareLooseRegistrationPreservesOriginalSignature(t *testing.T) {
-	_, dir := setupDeployment(t)
-	signature := filepath.Join(dir, "AppxSignature.p7x")
-	original := []byte("original Store signature")
-	if err := os.WriteFile(signature, original, 0600); err != nil {
-		t.Fatal(err)
+func TestRegisterLeavesExistingSignatureFilesUntouched(t *testing.T) {
+	for _, backup := range []bool{false, true} {
+		name := "signature"
+		if backup {
+			name = "signature-with-legacy-backup"
+		}
+		t.Run(name, func(t *testing.T) {
+			_, dir := setupDeployment(t)
+			signature := filepath.Join(dir, "AppxSignature.p7x")
+			files := map[string]string{signature: "original Store signature"}
+			if backup {
+				files[signature+".levilauncher-backup"] = "different historical signature"
+			}
+			for path, contents := range files {
+				if err := os.WriteFile(path, []byte(contents), 0600); err != nil {
+					t.Fatal(err)
+				}
+			}
+			checkSignatures := func() {
+				t.Helper()
+				for path, want := range files {
+					if got, err := os.ReadFile(path); err != nil || string(got) != want {
+						t.Fatalf("registration changed signature file: %s: %q, %v", path, got, err)
+					}
+				}
+				if !backup {
+					if _, err := os.Lstat(signature + ".levilauncher-backup"); !os.IsNotExist(err) {
+						t.Fatalf("registration created a signature backup: %v", err)
+					}
+				}
+			}
+			addCalls := 0
+			runPowerShell = func(_ context.Context, script string) ([]byte, error) {
+				checkSignatures()
+				if strings.HasPrefix(script, "Get-AppxPackage") {
+					return packageJSON(t, dir, true), nil
+				}
+				if !strings.HasPrefix(script, "Add-AppxPackage") {
+					t.Fatalf("unexpected deployment: %s", script)
+				}
+				addCalls++
+				return nil, nil
+			}
+			if err := Register(context.Background(), dir); err != nil {
+				t.Fatal(err)
+			}
+			if addCalls != 1 {
+				t.Fatalf("registration calls: %d", addCalls)
+			}
+			checkSignatures()
+		})
 	}
-	if err := prepareLooseRegistration(dir); err != nil {
-		t.Fatal(err)
-	}
-	if _, err := os.Stat(signature); !os.IsNotExist(err) {
-		t.Fatalf("Store signature is still active: %v", err)
-	}
-	if saved, err := os.ReadFile(signature + ".levilauncher-backup"); err != nil || string(saved) != string(original) {
-		t.Fatalf("signature backup: %q %v", saved, err)
-	}
-	if err := prepareLooseRegistration(dir); err != nil {
-		t.Fatalf("prepare was not idempotent: %v", err)
-	}
-	if err := os.WriteFile(signature, []byte("different signature"), 0600); err != nil {
-		t.Fatal(err)
-	}
-	if err := prepareLooseRegistration(dir); ErrorCode(err) != "ERR_UWP_PREPARE" {
-		t.Fatalf("overwrote mismatched backup: %v", err)
-	}
+}
+
+func TestRegisterRejectsUnmanagedDirectory(t *testing.T) {
+	setupDeployment(t)
 	outside := t.TempDir()
-	if err := os.WriteFile(filepath.Join(outside, "AppxSignature.p7x"), original, 0600); err != nil {
+	manifest := testManifest("neutral")
+	if err := os.WriteFile(filepath.Join(outside, "AppxManifest.xml"), []byte(manifest), 0600); err != nil {
 		t.Fatal(err)
 	}
-	if err := prepareLooseRegistration(outside); ErrorCode(err) != "ERR_UWP_PACKAGE_CONFLICT" {
-		t.Fatalf("modified outside instance root: %v", err)
+	runPowerShell = func(_ context.Context, script string) ([]byte, error) {
+		if !strings.HasPrefix(script, "Get-AppxPackage") {
+			t.Fatalf("modified registration outside instance root: %s", script)
+		}
+		return nil, nil
 	}
-	if _, err := os.Stat(filepath.Join(outside, "AppxSignature.p7x")); err != nil {
-		t.Fatal("external signature modified")
+	if err := Register(context.Background(), outside); ErrorCode(err) != "ERR_UWP_PACKAGE_CONFLICT" {
+		t.Fatalf("registered outside instance root: %v", err)
+	}
+	if got, err := os.ReadFile(filepath.Join(outside, "AppxManifest.xml")); err != nil || string(got) != manifest {
+		t.Fatalf("external manifest modified: %q, %v", got, err)
 	}
 }
 

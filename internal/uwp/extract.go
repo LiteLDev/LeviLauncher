@@ -143,7 +143,8 @@ func selectBundlePackage(reader *zip.Reader, architecture string) (*zip.File, er
 }
 
 // Install extracts into a sibling staging directory and publishes only a fully
-// validated Minecraft package. It never overwrites an existing instance.
+// validated Minecraft package, omitting the package signature for loose
+// development registration. It never overwrites an existing instance.
 func Install(ctx context.Context, archivePath, targetDir string, opts Options) (Manifest, error) {
 	var manifest Manifest
 	if ctx == nil {
@@ -252,7 +253,7 @@ func extract(ctx context.Context, reader *zip.Reader, dir string, progress func(
 	if len(reader.File) > 100000 {
 		return failure("ERR_UWP_ARCHIVE", fmt.Errorf("too many archive entries"))
 	}
-	var total int64
+	var total, archiveBytes int64
 	seen := make(map[string]bool, len(reader.File))
 	for _, entry := range reader.File {
 		rel, err := safeRelativePath(entry.Name)
@@ -267,8 +268,12 @@ func extract(ctx context.Context, reader *zip.Reader, dir string, progress func(
 			return failure("ERR_UWP_UNSAFE_ARCHIVE", fmt.Errorf("duplicate archive path %q", entry.Name))
 		}
 		seen[key] = true
-		if entry.UncompressedSize64 > uint64(maxExtractBytes-total) {
+		if entry.UncompressedSize64 > uint64(maxExtractBytes-archiveBytes) {
 			return failure("ERR_UWP_ARCHIVE", fmt.Errorf("archive exceeds size limit"))
+		}
+		archiveBytes += int64(entry.UncompressedSize64)
+		if strings.EqualFold(rel, "AppxSignature.p7x") {
+			continue
 		}
 		total += int64(entry.UncompressedSize64)
 	}
@@ -279,6 +284,11 @@ func extract(ctx context.Context, reader *zip.Reader, dir string, progress func(
 			return failure("ERR_CANCELED", err)
 		}
 		rel, _ := safeRelativePath(entry.Name)
+		// Store signatures do not apply to the loose development layout. Skip
+		// them before creating a file, leaving the source archive untouched.
+		if strings.EqualFold(rel, "AppxSignature.p7x") {
+			continue
+		}
 		target := filepath.Join(dir, rel)
 		if entry.FileInfo().IsDir() {
 			if err := os.MkdirAll(target, 0755); err != nil {

@@ -22,12 +22,11 @@ type KnownFolder struct {
 func FetchHistoricalVersions(preferCN bool) map[string]interface{} {
 	const githubURL = "https://raw.githubusercontent.com/LiteLDev/minecraft-windows-gdk-version-db/refs/heads/main/historical_versions.json"
 	const proxyURL = "https://github.bibk.top/LiteLDev/minecraft-windows-gdk-version-db/raw/refs/heads/main/historical_versions.json"
-	const gitcodeURL = "https://raw.gitcode.com/dreamguxiang/minecraft-windows-gdk-version-db/raw/main/historical_versions.json"
 	const maxAttemptsPerURL = 2
 
-	urls := []string{githubURL, proxyURL, gitcodeURL}
+	urls := []string{githubURL, proxyURL}
 	if preferCN {
-		urls = []string{gitcodeURL, proxyURL, githubURL}
+		urls = []string{proxyURL, githubURL}
 	}
 
 	client := httpx.NewClient(5 * time.Second)

@@ -673,6 +673,9 @@ func main() {
 		_ = versionService.LaunchVersionByName(autoLaunchVersion)
 		return
 	}
+	if initialURL == "/" {
+		mc.RecordLauncherStart()
+	}
 
 	w := defaultWindowWidth
 	h := defaultWindowHeight

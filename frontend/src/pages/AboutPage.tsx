@@ -17,6 +17,7 @@ import { motion, Variants } from "framer-motion";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
+import { SPONSORSHIP_URLS } from "@/constants/sponsorship";
 
 export default function AboutPage() {
   const { t } = useTranslation();
@@ -107,7 +108,7 @@ export default function AboutPage() {
                 <Button
                   size="sm"
                   onPress={() =>
-                    Browser.OpenURL("https://afdian.com/a/DreamGuXiang")
+                    Browser.OpenURL(SPONSORSHIP_URLS.afdian)
                   }
                   variant={"secondary"}
                   className={
@@ -120,7 +121,7 @@ export default function AboutPage() {
                 <Button
                   size="sm"
                   onPress={() =>
-                    Browser.OpenURL("https://www.patreon.com/c/DreamGuXiang")
+                    Browser.OpenURL(SPONSORSHIP_URLS.patreon)
                   }
                   variant={"secondary"}
                   className={

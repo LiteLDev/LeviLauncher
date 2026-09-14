@@ -7,6 +7,7 @@ export default (env) => {
   name:'ui-audit-fixtures',enforce:'pre',
   transformIndexHtml(){return [{tag:'script',children:readFileSync(new URL('./ui-fixture.js',import.meta.url),'utf8'),injectTo:'head-prepend'}];},
   transform(code,id){
+   if(id.replaceAll('\\','/').endsWith('/components/SponsorModal.tsx')) return code.replace('Browser.OpenURL(url)', 'window.__audit.openSponsorURL(url)');
    if(id.replaceAll('\\','/').endsWith('/utils/content.ts')) return code.replace('const forceRefresh = options?.forceRefresh === true;', 'if (window.__audit.scenario.startsWith("catalog")) return { packages: window.__audit.catalogPackages, detailsByIdentifier: {}, selfVariantRelations: [] };\n  const forceRefresh = options?.forceRefresh === true;');
    if(id.replaceAll('\\','/').includes('/bindings/')) return code.replace(/export function (\w+)\([^)]*\) \{[\s\S]*?\n\}/g,(body,name)=>{
     if(name==='CheckGameLicenses'||name==='RefreshGameLicenses') return body.replace(/\$Call\.ByID\(\d+, xuid\)/, 'new $CancellablePromise((resolve, reject) => window.__audit.call('+JSON.stringify(name)+', xuid).then(resolve, reject))');

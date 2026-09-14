@@ -3,10 +3,22 @@ const scenario = new URLSearchParams(location.search).get('scenario') || 'normal
 const isUWP = scenario.startsWith('uwp');
 const isEditorMinimum = scenario === 'uwp-editor-minimum';
 const state = window.__audit = { recovered: false, baseRoot: 'C:\\Fixture', scenario, processes: [{pid: 4242, exePath: 'C:\\Fixture\\Minecraft.Windows.exe', isLauncher: true, versionName: 'UI test instance'}] };
+const sponsorParams = new URLSearchParams(location.search);
+state.openedSponsorURLs = [];
+state.openSponsorURL = async (url) => {
+  if (scenario === 'sponsor-link-error' && !state.recovered) throw new Error('Fixture: browser unavailable');
+  state.openedSponsorURLs.push(url);
+};
 localStorage.setItem('i18nextLng', 'zh_CN');
+if (scenario.startsWith('sponsor')) {
+  localStorage.setItem('i18nextLng', sponsorParams.get('locale') || 'zh_CN');
+  localStorage.setItem('app.themeMode', sponsorParams.get('theme') || 'light');
+}
 localStorage.setItem('ll.clarity.enabled', 'false');
 localStorage.setItem('ll.clarity.choiceMade', 'fixture');
 localStorage.setItem('ll.termsAccepted', 'fixture');
+if (scenario === 'sponsor-terms') localStorage.removeItem('ll.termsAccepted');
+if (scenario === 'sponsor-clarity') localStorage.removeItem('ll.clarity.choiceMade');
 localStorage.setItem('ll.currentVersionName', isUWP ? 'UWP release instance' : 'UI test instance');
 if(isUWP) localStorage.setItem('download.filters', JSON.stringify({packageType:'uwp',type:'all',status:'all',loader:'all'}));
 localStorage.setItem('app.backgroundImage', scenario === 'wallpaper' ? 'C:\\Fixture\\wallpapers' : '');
@@ -50,6 +62,15 @@ state.call = async (name, ...args) => {
     if(output) output.textContent = name + ': ' + JSON.stringify(args);
   }
  await new Promise(resolve => setTimeout(resolve, 80));
+  if (name === 'TakeSponsorPrompt') {
+    const count = Number(sponsorParams.get('count') || '100');
+    const milestone = scenario.startsWith('sponsor') && count > 0 && count % 100 === 0 && !state.sponsorTaken;
+    state.sponsorTaken = true;
+    return milestone ? count : 0;
+  }
+  if (scenario === 'sponsor-update' && name === 'CheckUpdate') return {isUpdate:true,version:'99.0.0',body:'Fixture update notes'};
+  if (scenario === 'sponsor-check-error' && (name === 'CheckUpdate' || name === 'GetLipStatus')) throw new Error('Fixture: update service unavailable');
+  if (scenario === 'sponsor-lip' && name === 'GetLipStatus') return {installed:true,upToDate:false,currentVersion:'1.0.0',latestVersion:'2.0.0'};
   if (isUWP) {
     if(name==='IsVcRuntimeInstalled') return true;
     if(name==='SaveVersionMeta') {

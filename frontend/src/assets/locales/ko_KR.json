@@ -588,6 +588,12 @@
     "description": "© 2024-2026 {{name}} All rights reserved",
     "font": "이 소프트웨어는 {{name}} 글꼴을 사용합니다"
   },
+  "sponsor_prompt": {
+    "title": "함께해 주셔서 감사합니다",
+    "body": "LeviLauncher를 {{count}}번 실행하셨네요! Minecraft를 더 편하게 즐기는 데 도움이 되었다면, 앞으로의 개발을 후원해 주시겠어요?",
+    "dismiss": "지금은 괜찮아요",
+    "open_error": "후원 링크를 열 수 없습니다. 다시 시도해 주세요."
+  },
   "about": {
     "description": "LeviLauncher - 현대적인 Minecraft Bedrock 런처",
     "authors": "작성자 및 유지 관리자",

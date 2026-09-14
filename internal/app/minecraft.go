@@ -197,6 +197,7 @@ type Minecraft struct {
 	launcher       launchService
 	contentManager contentService
 	localImages    *localImageRegistry
+	launcherStarts launcherStartState
 }
 
 type lipService interface {

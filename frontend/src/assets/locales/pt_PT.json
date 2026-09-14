@@ -588,6 +588,12 @@
     "description": "© 2024-2026 {{name}} Todos os direitos reservados",
     "font": "Este software usa o tipo de letra {{name}}"
   },
+  "sponsor_prompt": {
+    "title": "Obrigado por nos acompanhares",
+    "body": "Já iniciaste o LeviLauncher {{count}} vezes! Se torna as tuas sessões de Minecraft mais fáceis, gostarias de apoiar o seu desenvolvimento?",
+    "dismiss": "Agora não",
+    "open_error": "Não foi possível abrir a ligação de apoio. Tenta novamente."
+  },
   "about": {
     "description": "LeviLauncher - Um launcher moderno para Minecraft Bedrock",
     "authors": "Autores e mantenedores",

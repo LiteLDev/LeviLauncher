@@ -588,6 +588,12 @@
     "description": "© 2024-2026 {{name}} All rights reserved",
     "font": "このソフトウェアは {{name}} フォントを使用しています"
   },
+  "sponsor_prompt": {
+    "title": "いつもありがとうございます",
+    "body": "LeviLauncher の起動回数が {{count}} 回になりました！Minecraft をより快適に楽しめているなら、今後の開発を支援していただけませんか？",
+    "dismiss": "今はしない",
+    "open_error": "支援リンクを開けませんでした。もう一度お試しください。"
+  },
   "about": {
     "description": "LeviLauncher - モダンな Minecraft Bedrock ランチャー",
     "authors": "作者 & メンテナ",

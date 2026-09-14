@@ -86,6 +86,11 @@ const LipUpdateModal = lazy(() =>
     default: module.LipUpdateModal,
   })),
 );
+const SponsorModal = lazy(() =>
+  import("@/components/SponsorModal").then((module) => ({
+    default: module.SponsorModal,
+  })),
+);
 
 const ModalLoadingFallback = ({ label }: { label: string }) => (
   <div
@@ -203,6 +208,8 @@ function App() {
     setUpdateOpen,
     setUpdateLoading,
     setLipUpdateOpen,
+    sponsorLaunchCount,
+    dismissSponsor,
   } = useAppModals({
     hasBackend,
     isUpdatingMode,
@@ -458,6 +465,23 @@ function App() {
                           onEnable={acceptClarity}
                           onKeepDisabled={declineClarity}
                         />
+
+                        {sponsorLaunchCount > 0 &&
+                        !isOnboardingMode &&
+                        !isUpdatingMode ? (
+                          <Suspense
+                            fallback={
+                              <ModalLoadingFallback
+                                label={t("common.loading")}
+                              />
+                            }
+                          >
+                            <SponsorModal
+                              launchCount={sponsorLaunchCount}
+                              onDismiss={dismissSponsor}
+                            />
+                          </Suspense>
+                        ) : null}
 
                         {updateOpen && !isOnboardingMode && !isUpdatingMode ? (
                           <Suspense

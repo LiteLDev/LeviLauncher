@@ -588,6 +588,12 @@
     "description": "© 2024-2026 {{name}} 保留所有权利",
     "font": "本软件使用 {{name}} 字体"
   },
+  "sponsor_prompt": {
+    "title": "感谢一路相伴",
+    "body": "你已经启动 LeviLauncher {{count}} 次了！如果它让你的 Minecraft 时光更加轻松，愿意赞助一下，支持后续开发吗？",
+    "dismiss": "暂时不用",
+    "open_error": "无法打开赞助链接，请稍后重试"
+  },
   "about": {
     "description": "LeviLauncher - 一个现代化的 Minecraft 基岩版启动器",
     "authors": "作者与维护者",

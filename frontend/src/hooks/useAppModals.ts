@@ -38,6 +38,9 @@ export const useAppModals = ({
   const [lipUpdateOpen, setLipUpdateOpen] = useState<boolean>(false);
   const [lipCurrentVersion, setLipCurrentVersion] = useState<string>("");
   const [lipLatestVersion, setLipLatestVersion] = useState<string>("");
+  const [startupChecksComplete, setStartupChecksComplete] = useState(false);
+  const [sponsorLaunchCount, setSponsorLaunchCount] = useState(0);
+  const sponsorCheckedRef = useRef(false);
 
   const checkLipUpdate = useCallback(() => {
     try {
@@ -46,6 +49,7 @@ export const useAppModals = ({
       );
       const getter = (minecraft as any)?.GetLipStatus;
       if (typeof getter !== "function") {
+        setStartupChecksComplete(true);
         return;
       }
       getter()
@@ -67,9 +71,10 @@ export const useAppModals = ({
             return;
           }
         })
-        .catch(() => {});
+        .catch(() => {})
+        .finally(() => setStartupChecksComplete(true));
     } catch {
-      return;
+      setStartupChecksComplete(true);
     }
   }, []);
 
@@ -86,6 +91,7 @@ export const useAppModals = ({
             setUpdateVersion(ver);
             setUpdateBody(body);
             setUpdateOpen(true);
+            setStartupChecksComplete(true);
             return;
           }
           checkLipUpdate();
@@ -93,7 +99,9 @@ export const useAppModals = ({
         .catch(() => {
           checkLipUpdate();
         });
-    } catch {}
+    } catch {
+      checkLipUpdate();
+    }
   }, [checkLipUpdate]);
 
   const runPostTermsFlow = useCallback(() => {
@@ -184,15 +192,57 @@ export const useAppModals = ({
   ]);
 
   useEffect(() => {
+    if (
+      !hasBackend ||
+      !startupInteractive ||
+      !startupChecksComplete ||
+      isUpdatingMode ||
+      isOnboardingMode ||
+      termsOpen ||
+      clarityPromptOpen ||
+      updateOpen ||
+      lipUpdateOpen ||
+      sponsorCheckedRef.current
+    ) {
+      return;
+    }
+
+    sponsorCheckedRef.current = true;
+    minecraft.TakeSponsorPrompt()
+      .then((count) => {
+        if (Number.isSafeInteger(count) && count > 0) {
+          setSponsorLaunchCount(count);
+        }
+      })
+      .catch(() => {});
+  }, [
+    hasBackend,
+    startupInteractive,
+    startupChecksComplete,
+    isUpdatingMode,
+    isOnboardingMode,
+    termsOpen,
+    clarityPromptOpen,
+    updateOpen,
+    lipUpdateOpen,
+  ]);
+
+  const dismissSponsor = useCallback(() => setSponsorLaunchCount(0), []);
+
+  useEffect(() => {
     const modalLocked =
-      termsOpen || clarityPromptOpen || updateOpen || lipUpdateOpen;
+      termsOpen ||
+      clarityPromptOpen ||
+      updateOpen ||
+      lipUpdateOpen ||
+      sponsorLaunchCount > 0;
     setNavLockReason("app-modal", modalLocked);
     return () => {
       if (modalLocked) {
         setNavLockReason("app-modal", false);
       }
     };
-  }, [termsOpen, clarityPromptOpen, updateOpen, lipUpdateOpen]);
+  }, [termsOpen, clarityPromptOpen, updateOpen, lipUpdateOpen, sponsorLaunchCount]);
 
   useEffect(() => {
     if (!termsOpen) return;
@@ -244,5 +294,7 @@ export const useAppModals = ({
     setUpdateOpen,
     setUpdateLoading,
     setLipUpdateOpen,
+    sponsorLaunchCount,
+    dismissSponsor,
   };
 };

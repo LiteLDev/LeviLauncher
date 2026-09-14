@@ -18,15 +18,16 @@ var (
 )
 
 type AppConfig struct {
-	BaseRoot          string `json:"base_root"`
-	WindowWidth       int    `json:"window_width"`
-	WindowHeight      int    `json:"window_height"`
-	DisableDiscordRPC bool   `json:"disable_discord_rpc"`
-	EnableBetaUpdates bool   `json:"enable_beta_updates"`
-	LoaderMigratedV1  bool   `json:"loader_migrated_v1"`
-	OnGameLaunch      string `json:"on_game_launch,omitempty"`
-	OnGameExit        string `json:"on_game_exit,omitempty"`
-	MinimizeToTray    bool   `json:"minimize_to_tray,omitempty"`
+	BaseRoot            string `json:"base_root"`
+	WindowWidth         int    `json:"window_width"`
+	WindowHeight        int    `json:"window_height"`
+	DisableDiscordRPC   bool   `json:"disable_discord_rpc"`
+	EnableBetaUpdates   bool   `json:"enable_beta_updates"`
+	LoaderMigratedV1    bool   `json:"loader_migrated_v1"`
+	OnGameLaunch        string `json:"on_game_launch,omitempty"`
+	OnGameExit          string `json:"on_game_exit,omitempty"`
+	MinimizeToTray      bool   `json:"minimize_to_tray,omitempty"`
+	LauncherLaunchCount uint64 `json:"launcher_launch_count,omitempty"`
 }
 
 const (

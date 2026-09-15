@@ -2,6 +2,31 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.0.2] - 2026-09-15
+
+### Changed
+
+- Saved completed Xbox authentication key checks per UWP instance to avoid rescanning the game executable on subsequent launches.
+
+### Fixed
+
+- Fixed Xbox sign-in in older UWP versions by updating outdated authentication keys during installation and before launching existing instances.
+- Preserved game executables that already contain the current authentication key, including versions that contain both the old and new keys.
+
+### Chore
+
+- Bumped version to `1.0.2`.
+
+## [v1.0.1] - 2026-09-14
+
+### Fixed
+
+- Omitted package signatures when extracting UWP installations so they can be registered as development packages.
+
+### Chore
+
+- Bumped version to `1.0.1`.
+
 ## [v1.0.0] - 2026-09-13
 
 ### Added

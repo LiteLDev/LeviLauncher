@@ -27,6 +27,9 @@ func setupDeployment(t *testing.T) (string, string) {
 	if err := os.WriteFile(filepath.Join(dir, "AppxManifest.xml"), []byte(testManifest("neutral")), 0644); err != nil {
 		t.Fatal(err)
 	}
+	if err := os.WriteFile(filepath.Join(dir, "Minecraft.Windows.exe"), []byte(currentAuthPublicKey), 0644); err != nil {
+		t.Fatal(err)
+	}
 	oldDir := filepath.Join(root, "old")
 	if err := os.MkdirAll(oldDir, 0755); err != nil {
 		t.Fatal(err)

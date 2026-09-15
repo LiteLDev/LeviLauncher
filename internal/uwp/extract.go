@@ -232,6 +232,14 @@ func Install(ctx context.Context, archivePath, targetDir string, opts Options) (
 	if info, err := os.Stat(filepath.Join(stage, exeRel)); err != nil || !info.Mode().IsRegular() {
 		return manifest, failure("ERR_NOT_FOUND_EXE", err)
 	}
+	// Installation always checks the freshly extracted executable, even if a
+	// repackaged archive happens to contain a marker from another installation.
+	if err := os.Remove(filepath.Join(stage, authKeyMarkerName)); err != nil && !os.IsNotExist(err) {
+		return manifest, failure("ERR_UWP_PREPARE", err)
+	}
+	if err := ensureLegacyAuthKey(ctx, stage, manifest); err != nil {
+		return manifest, failure("ERR_UWP_PREPARE", err)
+	}
 	if opts.Prepare != nil {
 		if err := opts.Prepare(stage, manifest); err != nil {
 			return manifest, err

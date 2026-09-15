@@ -260,10 +260,13 @@ func LaunchWithPreparation(ctx context.Context, dir string, enableEditorMode boo
 	if pkg == nil || !samePath(pkg.InstallLocation, dir) || !strings.EqualFold(pkg.PackageFamilyName, manifest.FamilyName()) {
 		return 0, failure("ERR_UWP_NOT_REGISTERED", fmt.Errorf("register the selected UWP instance before launching it"))
 	}
+	if !isManagedDevelopmentPackage(pkg) {
+		return 0, failure("ERR_UWP_PACKAGE_CONFLICT", fmt.Errorf("authentication key preparation requires a managed development registration"))
+	}
+	if err := ensureLegacyAuthKey(ctx, dir, manifest); err != nil {
+		return 0, failure("ERR_UWP_PREPARE", err)
+	}
 	if prepare != nil {
-		if !isManagedDevelopmentPackage(pkg) {
-			return 0, failure("ERR_UWP_PACKAGE_CONFLICT", fmt.Errorf("native loading requires a managed development registration"))
-		}
 		// Re-apply registration so instances registered by older launchers do
 		// not attempt to load desktop DLLs inside an AppContainer.
 		if pkg, err = registerLocked(ctx, dir, manifest); err != nil {

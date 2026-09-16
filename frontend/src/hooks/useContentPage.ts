@@ -77,7 +77,7 @@ export const useContentPage = (t: TFunc) => {
   const playerSelectResolveRef = React.useRef<
     ((player: string) => void) | null
   >(null);
-  const pendingImportPathsRef = React.useRef<string[]>([]);
+  const importInProgressRef = React.useRef(false);
 
   // --- Disclosures ---
   const {
@@ -307,6 +307,10 @@ export const useContentPage = (t: TFunc) => {
   };
 
   const doImportFromPaths = async (paths: string[]) => {
+    // File-drop events can arrive again while a player/overwrite prompt is open.
+    // Keep the active batch and its pending prompt resolver intact.
+    if (importInProgressRef.current || importing) return;
+    importInProgressRef.current = true;
     try {
       const normalizedPaths = normalizeDroppedFiles(paths);
       if (!normalizedPaths.length) return;
@@ -339,28 +343,20 @@ export const useContentPage = (t: TFunc) => {
       const needsPlayer = roots.packageType !== "uwp" && (hasWorld || (hasSkin && !isSharedMode));
 
       if (needsPlayer) {
-        pendingImportPathsRef.current = normalizedPaths;
         playerSelectOnOpen();
         chosenPlayer = await new Promise<string>((resolve) => {
           playerSelectResolveRef.current = resolve;
         });
         if (!chosenPlayer) {
-          pendingImportPathsRef.current = [];
           return;
         }
         setSelectedPlayer(chosenPlayer);
-        await onChangePlayer(chosenPlayer);
       }
       let started = false;
       const succFiles: string[] = [];
       const errPairs: Array<{ name: string; err: string }> = [];
-      const pathsToImport =
-        pendingImportPathsRef.current.length > 0
-          ? pendingImportPathsRef.current
-          : normalizedPaths;
-      pendingImportPathsRef.current = [];
       const playerToUse = chosenPlayer || selectedPlayer || "";
-      for (const p of pathsToImport) {
+      for (const p of normalizedPaths) {
         const lower = p.toLowerCase();
         if (lower.endsWith(".mcpack")) {
           if (!started) {
@@ -552,8 +548,12 @@ export const useContentPage = (t: TFunc) => {
           succFiles.push(base);
         }
       }
-      if (succFiles.length > 0 || errPairs.length > 0) {
+      // Refresh once after importing, including a player change where every
+      // duplicate was skipped, so the displayed counts match the selected player.
+      if (succFiles.length > 0 || errPairs.length > 0 || chosenPlayer) {
         await refreshAll(playerToUse);
+      }
+      if (succFiles.length > 0 || errPairs.length > 0) {
         setResultSuccess(succFiles);
         setResultFailed(errPairs);
         errOnOpen();
@@ -561,6 +561,9 @@ export const useContentPage = (t: TFunc) => {
     } catch (e: any) {
       setErrorMsg(String(e?.message || e || "IMPORT_ERROR"));
     } finally {
+      importInProgressRef.current = false;
+      playerSelectResolveRef.current = null;
+      dupResolveRef.current = null;
       setImporting(false);
       setCurrentFile("");
     }

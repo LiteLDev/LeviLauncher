@@ -553,8 +553,9 @@ export default function ContentPage() {
         </Card>
       </motion.div>
 
+      {/* Sibling modal focus traps must not remain active behind import prompts. */}
       <UnifiedModal
-        isOpen={cp.importing}
+        isOpen={cp.importing && !cp.playerSelectOpen && !cp.dupOpen}
         type="primary"
         title={
           cp.transferring

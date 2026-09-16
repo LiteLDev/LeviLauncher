@@ -71,6 +71,19 @@ state.call = async (name, ...args) => {
   if (scenario === 'sponsor-update' && name === 'CheckUpdate') return {isUpdate:true,version:'99.0.0',body:'Fixture update notes'};
   if (scenario === 'sponsor-check-error' && (name === 'CheckUpdate' || name === 'GetLipStatus')) throw new Error('Fixture: update service unavailable');
   if (scenario === 'sponsor-lip' && name === 'GetLipStatus') return {installed:true,upToDate:false,currentVersion:'1.0.0',latestVersion:'2.0.0'};
+  if (scenario.includes('content-import')) {
+    if (name === 'OpenContentFiles') return state.importFiles || ['C:\\Fixture\\example.mcworld'];
+    if (name === 'ListDir' && String(args[0]).endsWith('users')) {
+      return ['player-one', 'player-two', 'Shared'].map(player => ({name:player,path:args[0]+'\\'+player,isDir:true}));
+    }
+    if (name === 'GetUserGamertagMap') return {'player-one':'Preview player', 'player-two':'Second player'};
+    if (name === 'IsMcpackSkinPackPath') return String(args[0]).endsWith('skin.mcpack');
+    if (name.startsWith('Import')) {
+      if (state.importError) return state.importError;
+      if (state.importDuplicate && !args.at(-1)) return 'ERR_DUPLICATE_FOLDER';
+      return '';
+    }
+  }
   if (isUWP) {
     if(name==='IsVcRuntimeInstalled') return true;
     if(name==='SaveVersionMeta') {

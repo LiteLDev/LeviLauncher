@@ -2,16 +2,25 @@
 
 All notable changes to this project will be documented in this file.
 
-## [v1.0.2] - 2026-09-15
+## [v1.0.2] - 2026-09-16
+
+### Added
+
+- Added discovery of the latest GDK Release and Preview versions directly from Xbox services when signed in, making new versions available before the historical catalog is updated.
 
 ### Changed
 
+- Kept newly discovered GDK versions available across refreshes and launcher restarts until they are included in the historical catalog.
 - Saved completed Xbox authentication key checks per UWP instance to avoid rescanning the game executable on subsequent launches.
+- Lightened dialog backdrops in the light theme to keep translucent dialogs from appearing overly gray.
 
 ### Fixed
 
 - Fixed Xbox sign-in in older UWP versions by updating outdated authentication keys during installation and before launching existing instances.
 - Preserved game executables that already contain the current authentication key, including versions that contain both the old and new keys.
+- Fixed unresponsive player selection and overwrite confirmation dialogs during content imports, and prevented repeated file drops from interrupting an active import.
+- Made dialog borders, inset panel borders, and icon backgrounds follow the configured material opacity when a wallpaper is active.
+- Fixed self-updates exiting prematurely during administrator elevation or the post-update restart by waiting for the previous launcher instance to close, and reporting a startup error if the wait times out.
 
 ### Chore
 

@@ -6,7 +6,7 @@ import { cn } from "@/utils/cn";
 export const MODAL_STYLES = {
   stack: "flex min-w-0 flex-col gap-4",
   description: "text-sm font-normal leading-6 text-foreground/80 dark:text-zinc-300 [overflow-wrap:anywhere]",
-  panel: "min-w-0 rounded-xl border border-border/70 bg-surface-secondary/50 p-4 text-sm leading-6",
+  panel: "launcher-modal-panel min-w-0 rounded-xl border border-border/70 bg-surface-secondary/50 p-4 text-sm leading-6",
   fieldGrid: "grid min-w-0 grid-cols-1 gap-4 sm:grid-cols-2",
   label: "text-xs font-medium leading-5 text-muted",
   value: "text-sm font-medium leading-6 text-foreground [overflow-wrap:anywhere]",
@@ -43,7 +43,7 @@ export function ModalNotice({ tone = "warning", children, className, ...props }:
       {...props}
       className={cn(
         "flex min-w-0 items-start gap-3 rounded-xl border p-4 text-sm font-normal leading-6 [overflow-wrap:anywhere]",
-        tone === "info" && "border-border/70 bg-surface-secondary/50 text-foreground/80 dark:text-zinc-300",
+        tone === "info" && "launcher-modal-panel border-border/70 bg-surface-secondary/50 text-foreground/80 dark:text-zinc-300",
         tone === "warning" && "border-amber-200/70 bg-amber-50/70 text-amber-800 dark:border-amber-500/20 dark:bg-amber-500/10 dark:text-amber-200",
         tone === "danger" && "border-rose-200/70 bg-rose-50/70 text-rose-800 dark:border-rose-500/20 dark:bg-rose-500/10 dark:text-rose-200",
         className,

@@ -210,8 +210,15 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
                 stiffness: 260,
                 damping: 20,
               }}
-              className={`size-10 rounded-xl flex items-center justify-center shrink-0 border ${iconBgClass || `${config.bgClass} ${config.borderClass}`}`}
+              className="relative isolate size-10 rounded-xl flex items-center justify-center shrink-0"
             >
+              <span
+                aria-hidden="true"
+                className={cn(
+                  "launcher-modal-icon-decoration pointer-events-none absolute inset-0 -z-10 rounded-[inherit] border",
+                  iconBgClass || `${config.bgClass} ${config.borderClass}`,
+                )}
+              />
               {resolvedIcon}
             </motion.div>
             <motion.div

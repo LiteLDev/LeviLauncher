@@ -1,6 +1,11 @@
 /* Material recipes live here. Components consume semantic tokens, never a
    private opacity floor. The document scope includes React Aria body portals;
    the preview establishes its own light/dark scope without changing the app. */
+[data-material-scope].light {
+  /* A lighter scrim keeps translucent dialogs from turning gray in daylight. */
+  --backdrop: rgb(0 0 0 / 0.32);
+}
+
 [data-material-scope][data-wallpaper-active="true"] {
   --material-opacity: var(--wallpaper-surface-opacity);
   --material-control-opacity: calc(var(--material-opacity) * 0.45);

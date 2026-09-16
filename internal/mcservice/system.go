@@ -1,17 +1,17 @@
 package mcservice
 
 import (
-	"fmt"
-	"log"
+	"context"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
 	"time"
 
-	json "github.com/goccy/go-json"
-
+	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/gdkversions"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
+	"github.com/liteldev/LeviLauncher/internal/xbox"
 )
 
 type KnownFolder struct {
@@ -19,59 +19,16 @@ type KnownFolder struct {
 	Path string `json:"path"`
 }
 
+var gdkVersionCatalog = gdkversions.NewClient(httpx.NewClient(5*time.Second), xbox.GetPackageUpdateAuthorization)
+
 func FetchHistoricalVersions(preferCN bool) map[string]interface{} {
-	const githubURL = "https://raw.githubusercontent.com/LiteLDev/minecraft-windows-gdk-version-db/refs/heads/main/historical_versions.json"
-	const proxyURL = "https://github.bibk.top/LiteLDev/minecraft-windows-gdk-version-db/raw/refs/heads/main/historical_versions.json"
-	const maxAttemptsPerURL = 2
-
-	urls := []string{githubURL, proxyURL}
-	if preferCN {
-		urls = []string{proxyURL, githubURL}
+	catalog := gdkVersionCatalog.Fetch(context.Background(), preferCN, filepath.Join(apppath.ConfigDir(), "gdk_pending_versions.json"))
+	return map[string]interface{}{
+		"file_version":    catalog.FileVersion,
+		"releaseVersions": catalog.ReleaseVersions,
+		"previewVersions": catalog.PreviewVersions,
+		"_source":         catalog.Source,
 	}
-
-	client := httpx.NewClient(5 * time.Second)
-	var lastErr error
-	for _, u := range urls {
-		for attempt := 1; attempt <= maxAttemptsPerURL; attempt++ {
-			req, err := http.NewRequest(http.MethodGet, u, nil)
-			if err != nil {
-				lastErr = fmt.Errorf("build request for %s failed: %w", u, err)
-				break
-			}
-			req.Header.Set("Accept", "application/json")
-			req.Header.Set("Cache-Control", "no-cache")
-			httpx.ApplyDefaultHeaders(req)
-
-			resp, err := client.Do(req)
-			if err != nil {
-				lastErr = fmt.Errorf("request %s attempt %d failed: %w", u, attempt, err)
-				continue
-			}
-
-			var obj map[string]interface{}
-			if resp.StatusCode != http.StatusOK {
-				lastErr = fmt.Errorf("request %s attempt %d returned status %d", u, attempt, resp.StatusCode)
-				_ = resp.Body.Close()
-				continue
-			}
-			if derr := json.NewDecoder(resp.Body).Decode(&obj); derr != nil {
-				lastErr = fmt.Errorf("decode %s attempt %d failed: %w", u, attempt, derr)
-				_ = resp.Body.Close()
-				continue
-			}
-			_ = resp.Body.Close()
-
-			if obj != nil {
-				obj["_source"] = u
-				return obj
-			}
-			lastErr = fmt.Errorf("request %s attempt %d returned empty payload", u, attempt)
-		}
-	}
-	if lastErr != nil {
-		log.Println("FetchHistoricalVersions error:", lastErr)
-	}
-	return map[string]interface{}{}
 }
 
 func ListKnownFolders() []KnownFolder {

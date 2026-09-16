@@ -36,6 +36,8 @@ type session struct {
 	gtg       string
 	exp       time.Time
 	accountID string
+	userToken string
+	update    *session
 }
 
 var (
@@ -207,12 +209,24 @@ func xblUserAuth(ctx context.Context, rpsTicket string) (string, error) {
 }
 
 func xblXSTS(ctx context.Context, userToken string) (*session, error) {
+	s, err := xblXSTSForParty(ctx, userToken, "", "http://xboxlive.com")
+	if err == nil {
+		s.userToken = userToken
+	}
+	return s, err
+}
+
+func xblXSTSForParty(ctx context.Context, userToken, deviceToken, relyingParty string) (*session, error) {
+	properties := map[string]any{
+		"SandboxId":  "RETAIL",
+		"UserTokens": []string{userToken},
+	}
+	if deviceToken != "" {
+		properties["DeviceToken"] = deviceToken
+	}
 	body := map[string]any{
-		"Properties": map[string]any{
-			"SandboxId":  "RETAIL",
-			"UserTokens": []string{userToken},
-		},
-		"RelyingParty": "http://xboxlive.com",
+		"Properties":   properties,
+		"RelyingParty": relyingParty,
 		"TokenType":    "JWT",
 	}
 	var out struct {
@@ -233,6 +247,9 @@ func xblXSTS(ctx context.Context, userToken string) (*session, error) {
 		return nil, fmt.Errorf("ERR_XBL_XSTS_EMPTY")
 	}
 	claim := out.DisplayClaims.Xui[0]
+	if claim.Uhs == "" {
+		return nil, fmt.Errorf("ERR_XBL_XSTS_EMPTY")
+	}
 	exp := time.Now().Add(time.Hour)
 	if t, err := time.Parse(time.RFC3339, out.NotAfter); err == nil {
 		exp = t.Add(-sessionSkew)

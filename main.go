@@ -69,17 +69,17 @@ const (
 )
 
 var (
-	kernel32                     = win.NewLazySystemDLL("kernel32.dll")
-	procAttachConsole            = kernel32.NewProc("AttachConsole")
-	procAllocConsole             = kernel32.NewProc("AllocConsole")
-	procSetConsoleOutputCP       = kernel32.NewProc("SetConsoleOutputCP")
-	procSetConsoleCP             = kernel32.NewProc("SetConsoleCP")
-	user32                       = win.NewLazySystemDLL("user32.dll")
-	procFindWindowW              = user32.NewProc("FindWindowW")
-	procMessageBoxW              = user32.NewProc("MessageBoxW")
-	procShowWindow               = user32.NewProc("ShowWindow")
-	procSetForegroundWindow      = user32.NewProc("SetForegroundWindow")
-	procIsIconic                 = user32.NewProc("IsIconic")
+	kernel32                = win.NewLazySystemDLL("kernel32.dll")
+	procAttachConsole       = kernel32.NewProc("AttachConsole")
+	procAllocConsole        = kernel32.NewProc("AllocConsole")
+	procSetConsoleOutputCP  = kernel32.NewProc("SetConsoleOutputCP")
+	procSetConsoleCP        = kernel32.NewProc("SetConsoleCP")
+	user32                  = win.NewLazySystemDLL("user32.dll")
+	procFindWindowW         = user32.NewProc("FindWindowW")
+	procMessageBoxW         = user32.NewProc("MessageBoxW")
+	procShowWindow          = user32.NewProc("ShowWindow")
+	procSetForegroundWindow = user32.NewProc("SetForegroundWindow")
+	procIsIconic            = user32.NewProc("IsIconic")
 )
 
 type startupLogger struct {
@@ -367,16 +367,19 @@ func enableDebugConsole() error {
 	return redirectStandardStreamsToConsole()
 }
 
-func parseArgs() (initialURL string, autoLaunchVersion string, postUpdateRestart bool, debugMode bool) {
+func parseArgs() (initialURL string, autoLaunchVersion string, waitForPreviousInstance bool, debugMode bool) {
 	initialURL = "/"
 	debugMode = isDebugModeRequested(os.Args[1:])
 	for _, arg := range os.Args[1:] {
 		if strings.HasPrefix(arg, "--self-update=") {
 			initialURL = "/#/updating"
-			break
+			// ShellExecute can start the elevated process before its caller exits.
+			// Treat this as a handoff, just like the restart after installation.
+			waitForPreviousInstance = true
+			continue
 		}
 		if arg == "--post-update-restart" {
-			postUpdateRestart = true
+			waitForPreviousInstance = true
 			continue
 		}
 		if strings.HasPrefix(arg, "--launch=") {
@@ -385,7 +388,7 @@ func parseArgs() (initialURL string, autoLaunchVersion string, postUpdateRestart
 			autoLaunchVersion = v
 		}
 	}
-	return initialURL, autoLaunchVersion, postUpdateRestart, debugMode
+	return initialURL, autoLaunchVersion, waitForPreviousInstance, debugMode
 }
 
 // sendToExistingInstance hands the command line over to the launcher that
@@ -456,48 +459,30 @@ func startSingleInstanceServer(versionService *app.VersionService) {
 	}()
 }
 
-func ensureSingleInstance(autoLaunchVersion string, postUpdateRestart bool) bool {
-	name, err := win.UTF16PtrFromString("Global\\LeviLauncher_SingleInstance")
-	if err != nil {
-		return true
+func ensureSingleInstance(autoLaunchVersion string, waitForPreviousInstance bool) (bool, error) {
+	var wait time.Duration
+	if waitForPreviousInstance {
+		wait = 30 * time.Second
+		log.Printf("[startup] update handoff: waiting up to %s for the previous instance to exit", wait)
 	}
-	tryAcquire := func() (win.Handle, error) {
-		return win.CreateMutex(nil, true, name)
-	}
-	h, err := tryAcquire()
+	h, err := acquireSingleInstanceMutex("Global\\LeviLauncher_SingleInstance", wait)
 	if err == win.ERROR_ALREADY_EXISTS {
-		if h != 0 {
-			_ = win.CloseHandle(h)
-		}
-		if postUpdateRestart {
-			for i := 0; i < 12; i++ {
-				time.Sleep(250 * time.Millisecond)
-				h, err = tryAcquire()
-				if err == nil {
-					singleInstanceGuard = h
-					return true
-				}
-				if err != win.ERROR_ALREADY_EXISTS {
-					if h != 0 {
-						_ = win.CloseHandle(h)
-					}
-					return true
-				}
-				if h != 0 {
-					_ = win.CloseHandle(h)
-				}
-			}
+		if waitForPreviousInstance {
+			return false, fmt.Errorf("update handoff timed out after %s: the previous launcher instance is still running", wait)
 		}
 		if !sendToExistingInstance(autoLaunchVersion) {
 			focusExistingWindow()
 		}
-		return false
+		return false, nil
 	}
 	if err != nil {
-		return true
+		return false, fmt.Errorf("acquire launcher single-instance mutex: %w", err)
 	}
 	singleInstanceGuard = h
-	return true
+	if waitForPreviousInstance {
+		log.Printf("[startup] update handoff: acquired the single-instance mutex")
+	}
+	return true, nil
 }
 
 func init() {
@@ -549,7 +534,7 @@ func init() {
 
 func main() {
 	processStart := time.Now()
-	initialURL, autoLaunchVersion, postUpdateRestart, debugMode := parseArgs()
+	initialURL, autoLaunchVersion, waitForPreviousInstance, debugMode := parseArgs()
 	var debugConsoleErr error
 	if debugMode {
 		debugConsoleErr = enableDebugConsole()
@@ -611,9 +596,15 @@ func main() {
 
 	_ = godotenv.Load()
 
-	if !ensureSingleInstance(autoLaunchVersion, postUpdateRestart) {
+	isFirstInstance, err := ensureSingleInstance(autoLaunchVersion, waitForPreviousInstance)
+	if err != nil {
+		diagnostics.HandleError("single-instance startup failed", err)
 		return
 	}
+	if !isFirstInstance {
+		return
+	}
+	defer win.CloseHandle(singleInstanceGuard)
 	c, err := config.Load()
 	if err != nil {
 		diagnostics.HandleError("config.Load failed", err)
@@ -839,11 +830,6 @@ func main() {
 	if err != nil {
 		diagnostics.HandleError("wailsApp.Run failed", err)
 		return
-	}
-
-	if singleInstanceGuard != 0 {
-		_ = win.ReleaseMutex(singleInstanceGuard)
-		_ = win.CloseHandle(singleInstanceGuard)
 	}
 
 }

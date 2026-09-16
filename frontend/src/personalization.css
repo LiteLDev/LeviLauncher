@@ -21,6 +21,16 @@
   --material-inset: rgb(
     var(--wallpaper-surface-rgb) / var(--material-control-opacity)
   );
+  --material-inset-border: color-mix(
+    in srgb,
+    var(--border) calc(var(--material-opacity) * 50%),
+    transparent
+  );
+  --material-overlay-border: color-mix(
+    in srgb,
+    var(--border) calc(var(--material-overlay-opacity) * 70%),
+    transparent
+  );
   --material-filter: blur(var(--wallpaper-surface-blur));
 
   /* HeroUI defaults and Tailwind semantic utilities share these values. */
@@ -73,6 +83,12 @@
 .launcher-material-blur {
   -webkit-backdrop-filter: var(--material-filter, blur(12px));
   backdrop-filter: var(--material-filter, blur(12px));
+}
+
+/* Fade the status tile's fill and border with the shared material recipe,
+   keeping its foreground icon crisp and its no-wallpaper appearance intact. */
+.launcher-modal-icon-decoration {
+  opacity: var(--material-opacity, 1);
 }
 
 /* Opacity (including will-change: opacity) on an ancestor creates a backdrop
@@ -247,6 +263,15 @@
   backdrop-filter: var(--material-filter);
 }
 
+/* Decorative inset boundaries stay quieter than the dialog outline. Keep
+   control, focus and status borders on their own semantic colors. */
+:where([data-wallpaper-active="true"]) .modal__dialog {
+  border-color: var(--material-overlay-border);
+}
+:where([data-wallpaper-active="true"]) .launcher-modal-panel {
+  border-color: var(--material-inset-border);
+}
+
 /* Previous page-level dark text utilities must not weaken protected captions. */
 :where([data-wallpaper-active="true"][data-readability="true"])
   :is(.text-muted, .dark\:text-zinc-400, .dark\:text-zinc-500) {
@@ -277,6 +302,8 @@
     --material-control-opacity: 1;
     --material-hover-opacity: 1;
     --material-selected-opacity: 1;
+    --material-inset-border: var(--border);
+    --material-overlay-border: var(--border);
     --material-filter: none;
   }
 }
@@ -288,6 +315,8 @@
     --material-control-opacity: 1;
     --material-hover-opacity: 1;
     --material-selected-opacity: 1;
+    --material-inset-border: var(--border);
+    --material-overlay-border: var(--border);
     --material-filter: none;
   }
 }
@@ -298,6 +327,8 @@
   [data-material-scope][data-wallpaper-active="true"] {
     --material-panel: Canvas;
     --material-inset: Canvas;
+    --material-inset-border: CanvasText;
+    --material-overlay-border: CanvasText;
     --surface-secondary: Canvas;
     --surface-tertiary: Canvas;
     --surface-quaternary: Canvas;

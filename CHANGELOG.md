@@ -2,6 +2,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [v1.0.3] - 2026-09-22
+
+### Added
+
+- Added Polish localization ([#131](https://github.com/LiteLDev/LeviLauncher/issues/131)).
+- Added an administrator indicator in the launcher interface and window title, with an explanation of administrator-mode sign-in behavior.
+
+### Fixed
+
+- Fixed Microsoft/Xbox sign-in when running as administrator by opening the window-scoped Windows authentication prompt directly, while retaining the account picker for normal launches.
+- Retried sign-in with an explicit authentication prompt when Windows requires user interaction without displaying the sign-in dialog, and improved sign-in error reporting.
+- Restored the launcher logo on the startup loading and failure screens ([#133](https://github.com/LiteLDev/LeviLauncher/issues/133)).
+
+### Chore
+
+- Bumped version to `1.0.3`.
+- Ignored the Visual Studio `.vs` workspace folder.
+
 ## [v1.0.2] - 2026-09-16
 
 ### Added

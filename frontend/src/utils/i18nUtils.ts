@@ -33,6 +33,8 @@ export const normalizeLanguage = (lng: string): string => {
     "pt-pt": "pt_PT",
     it: "it_IT",
     "it-it": "it_IT",
+    pl: "pl_PL",
+    "pl-pl": "pl_PL",
   };
 
   return aliases[normalized] || aliases[normalized.split("-")[0]] || "en_US";

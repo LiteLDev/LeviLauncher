@@ -13,10 +13,15 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/nativeinstall"
+	"github.com/liteldev/LeviLauncher/internal/processinfo"
 	"github.com/liteldev/LeviLauncher/internal/xbox"
 )
 
 type UserService struct{ window *application.WebviewWindow }
+
+func (s *UserService) IsElevated() bool {
+	return processinfo.IsElevated()
+}
 
 func NewUserService(_ *Minecraft) *UserService {
 	// Restore identity before any avatar or installation request can select a default account.
@@ -202,7 +207,7 @@ func (s *UserService) SignIn(ctx context.Context) string {
 	if s.window == nil {
 		return "ERR_AUTH_FAILED"
 	}
-	err := nativeinstall.SignInSharedAccount(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), uintptr(s.window.NativeWindow()))
+	err := nativeinstall.SignInSharedAccount(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), uintptr(s.window.NativeWindow()), application.InvokeSync)
 	if err == nil {
 		return ""
 	}

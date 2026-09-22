@@ -12,6 +12,7 @@ import (
 	"unsafe"
 
 	"github.com/go-ole/go-ole"
+	"github.com/liteldev/LeviLauncher/internal/processinfo"
 	"github.com/liteldev/LeviLauncher/internal/xbox/winrt/core"
 	"github.com/saltosystems/winrt-go/windows/foundation"
 )
@@ -49,14 +50,14 @@ const (
 )
 
 func requestWAMTicket(ctx context.Context, scope, expectedAccount string) (string, string, error) {
-	return requestWAMToken(ctx, scope, expectedAccount, 0)
+	return requestWAMToken(ctx, scope, expectedAccount, 0, nil)
 }
 
 // requestWAMToken obtains a token together with the identity it belongs to. A
-// non-zero hwnd requests the token through the desktop interop call, which owns
-// the sign-in UI of that window: it answers from an existing Windows session
-// without showing anything and only prompts when the account needs the user.
-func requestWAMToken(ctx context.Context, scope, expectedAccount string, hwnd uintptr) (string, string, error) {
+// non-zero hwnd uses the account picker for normal processes. Elevated processes
+// use the window-scoped WAM request directly because AccountsSettingsPane can
+// close immediately across the elevation boundary. Silent renewal is unchanged.
+func requestWAMToken(ctx context.Context, scope, expectedAccount string, hwnd uintptr, dispatch func(func())) (string, string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", "", err
 	}
@@ -71,10 +72,12 @@ func requestWAMToken(ctx context.Context, scope, expectedAccount string, hwnd ui
 		return "", "", err
 	}
 	defer manager.Release()
-	// AccountsSettingsPane does not resolve the account: the shell renders that
-	// pane in its own process and dismisses it before it can report a selection.
-	// The window-scoped request below provides the sign-in UI and the identity.
-	provider, err := findMSAProvider(ctx)
+	var provider *ole.IUnknown
+	if hwnd != 0 && !processinfo.IsElevated() {
+		provider, err = selectWAMProvider(ctx, hwnd, dispatch)
+	} else {
+		provider, err = findMSAProvider(ctx)
+	}
 	if err != nil {
 		return "", "", err
 	}
@@ -167,6 +170,9 @@ func requestWAMTokenWithPrompt(ctx context.Context, manager, factory *ole.IInspe
 	}
 	if hr != 0 {
 		return "", "", ole.NewError(hr)
+	}
+	if tokenOp == nil {
+		return "", "", fmt.Errorf("WAM token request returned no operation: %w", ErrAuthenticationFailed)
 	}
 	defer tokenOp.Release()
 	waitTimeout := asyncTimeout

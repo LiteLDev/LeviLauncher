@@ -14,6 +14,7 @@ import {
 } from "react-icons/fa";
 import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { useStartupInteractive } from "@/utils/startupState";
+import { useProcessElevation } from "@/hooks/useProcessElevation";
 
 type LicenseState = "checking" | "authorized" | "trial" | "not_entitled" | "error";
 type LicenseResult = { xuid: string; release: LicenseState; preview: LicenseState };
@@ -23,6 +24,7 @@ const licenseState = (value: string): LicenseState =>
 export const UserAvatar = () => {
   const { t } = useTranslation();
   const startupInteractive = useStartupInteractive();
+  const elevated = useProcessElevation();
   const [gamertag, setGamertag] = useState("");
   const [xuid, setXuid] = useState("");
   const [avatar, setAvatar] = useState("");
@@ -221,7 +223,7 @@ export const UserAvatar = () => {
           >
             <FaUser size={20} />
           </Button>
-          <Tooltip.Content>{t("useravatar.sign_in")}</Tooltip.Content>
+          <Tooltip.Content>{elevated ? t("app.administrator_description") : t("useravatar.sign_in")}</Tooltip.Content>
         </Tooltip>
       </div>
     );
@@ -341,6 +343,9 @@ export const UserAvatar = () => {
               </dl>
             </section>
 
+            {elevated && (
+              <p className="mt-3 text-xs text-muted">{t("app.administrator_description")}</p>
+            )}
             <div className="mt-3 flex justify-end">
               <Button size="sm" variant="secondary" isPending={signingIn} onPress={() => void signIn()}>
                 {t("useravatar.switch_account")}

@@ -6,6 +6,7 @@ import { useLocation } from "react-router-dom";
 
 import { ThemeSwitcher } from "@/components/ThemeSwitcher";
 import { UserAvatar } from "@/components/UserAvatar";
+import { AdministratorBadge } from "@/components/AdministratorBadge";
 import { LeviIcon } from "@/icons/LeviIcon";
 import { WindowControls } from "@/components/WindowControls";
 import {
@@ -134,11 +135,14 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
             <p className="font-bold text-[16px] tracking-tight text-brand-700 dark:text-brand-300">
               LeviLauncher
             </p>
-            {isBeta && (
-              <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">
-                Beta
-              </span>
-            )}
+            <div className="flex items-center gap-2">
+              {isBeta && (
+                <span className="text-[10px] font-bold text-amber-500 uppercase tracking-wider">
+                  Beta
+                </span>
+              )}
+              <AdministratorBadge />
+            </div>
           </div>
         </div>
 

@@ -9,6 +9,7 @@ import (
 	"unsafe"
 
 	"github.com/go-ole/go-ole"
+	"golang.org/x/sys/windows"
 )
 
 const (
@@ -35,11 +36,17 @@ func selectWAMProvider(ctx context.Context, hwnd uintptr, dispatch func(func()))
 	defer cancel()
 	provider, err := findMSAProvider(ctx)
 	if err != nil {
-		return nil, err
+		return nil, fmt.Errorf("find Microsoft account provider: %w", err)
 	}
 	defer provider.Release()
 	p := &wamAccountPane{}
-	dispatch(func() { p.err = p.open(hwnd, provider) })
+	dispatch(func() {
+		if err := ctx.Err(); err != nil {
+			p.err = err
+			return
+		}
+		p.err = p.open(hwnd, provider)
+	})
 	defer dispatch(p.close)
 	ticker := time.NewTicker(40 * time.Millisecond)
 	defer ticker.Stop()
@@ -56,6 +63,7 @@ func selectWAMProvider(ctx context.Context, hwnd uintptr, dispatch func(func()))
 					resultErr = p.err
 					if resultErr == nil {
 						selected = p.takeSelection()
+						resultErr = wamPickerCompletionError(p.populated, selected != nil)
 					}
 					p.close()
 				}
@@ -69,7 +77,11 @@ func selectWAMProvider(ctx context.Context, hwnd uintptr, dispatch func(func()))
 			done = p.err != nil || status != asyncStarted
 			if p.err == nil && done {
 				if status == 2 { // AsyncStatus.Canceled
-					p.err = context.Canceled
+					if !p.populated {
+						p.err = wamPickerCompletionError(false, false)
+					} else {
+						p.err = context.Canceled
+					}
 				} else {
 					p.err = wamCall(p.action, 8) // IAsyncAction.GetResults (no result pointer)
 				}
@@ -77,16 +89,13 @@ func selectWAMProvider(ctx context.Context, hwnd uintptr, dispatch func(func()))
 		})
 		if done {
 			if resultErr != nil {
-				return nil, resultErr
+				return nil, fmt.Errorf("WAM account picker (populated=%t): %w", p.populated, resultErr)
 			}
 			if err := ctx.Err(); err != nil {
 				if selected != nil {
 					selected.Release()
 				}
 				return nil, err
-			}
-			if selected == nil {
-				return nil, context.Canceled
 			}
 			return selected, nil
 		}
@@ -97,27 +106,45 @@ func selectWAMProvider(ctx context.Context, hwnd uintptr, dispatch func(func()))
 	}
 }
 
+func wamPickerCompletionError(populated, selected bool) error {
+	if selected {
+		return nil
+	}
+	if !populated {
+		// A pane that never asked for commands did not offer the user a choice.
+		// Reporting cancellation here hides shell/COM/component failures in the UI.
+		return fmt.Errorf("account panel closed before requesting account commands: %w", ErrInteractionRequired)
+	}
+	// Windows also completes the action normally when a populated pane is closed.
+	// Its API does not distinguish a shell crash from dismissal in this case.
+	return context.Canceled
+}
+
 type wamAccountPane struct {
 	pane, event, action, info *ole.IUnknown
 	cookie                    int64
 	subscribed, closed        bool
 	initialized               bool
+	populated                 bool
 	selected                  *ole.IUnknown
 	err                       error
 }
 
 func (p *wamAccountPane) open(hwnd uintptr, provider *ole.IUnknown) error {
-	if err := initializeWAM(0); err != nil { // RO_INIT_SINGLETHREADED on the HWND owner thread.
+	if err := validateWAMWindowThread(hwnd); err != nil {
 		return err
+	}
+	if err := initializeWAM(0); err != nil { // RO_INIT_SINGLETHREADED on the HWND owner thread.
+		return fmt.Errorf("account picker STA initialization: %w", err)
 	}
 	p.initialized = true
 	interop, err := ole.RoGetActivationFactory(wamPaneClass, ole.NewGUID(wamPaneInteropIID))
 	if err != nil {
-		return err
+		return fmt.Errorf("AccountsSettingsPane desktop interop unavailable: %w", err)
 	}
 	defer interop.Release()
 	if err := wamCall(&interop.IUnknown, 6, hwnd, uintptr(unsafe.Pointer(ole.NewGUID(wamPaneIID))), uintptr(unsafe.Pointer(&p.pane))); err != nil {
-		return err
+		return fmt.Errorf("AccountsSettingsPane.GetForWindow: %w", err)
 	}
 	p.event = newWAMDelegate(wamPaneEventIID, false, func(_, args unsafe.Pointer) uintptr {
 		if !p.closed && p.err == nil {
@@ -126,12 +153,15 @@ func (p *wamAccountPane) open(hwnd uintptr, provider *ole.IUnknown) error {
 		return ole.S_OK
 	})
 	if err := wamCall(p.pane, 6, uintptr(unsafe.Pointer(p.event)), uintptr(unsafe.Pointer(&p.cookie))); err != nil {
-		return err
+		return fmt.Errorf("AccountsSettingsPane.AccountCommandsRequested subscription: %w", err)
 	}
 	p.subscribed = true
+	// A flyout may immediately dismiss if its owner is not the active window.
+	// Best effort only: Windows foreground activation rules still apply.
+	wamUser32.NewProc("SetForegroundWindow").Call(hwnd)
 	// Desktop equivalent of AccountsSettingsPane.ShowAddAccountAsync.
 	if err := wamCall(&interop.IUnknown, 8, hwnd, uintptr(unsafe.Pointer(ole.NewGUID(wamAsyncActionIID))), uintptr(unsafe.Pointer(&p.action))); err != nil {
-		return err
+		return fmt.Errorf("AccountsSettingsPane.ShowAddAccountForWindowAsync: %w", err)
 	}
 	if p.action == nil {
 		return ErrAuthenticationFailed
@@ -188,7 +218,25 @@ func (p *wamAccountPane) populate(args, provider *ole.IUnknown) (err error) {
 		return ErrAuthenticationFailed
 	}
 	defer command.Release()
-	return wamCall(providers, 13, uintptr(unsafe.Pointer(command))) // IVector.Append
+	if err := wamCall(providers, 13, uintptr(unsafe.Pointer(command))); err != nil { // IVector.Append
+		return err
+	}
+	p.populated = true
+	return nil
+}
+
+var wamUser32 = windows.NewLazySystemDLL("user32.dll")
+
+func validateWAMWindowThread(hwnd uintptr) error {
+	var pid uint32
+	thread, _, _ := wamUser32.NewProc("GetWindowThreadProcessId").Call(hwnd, uintptr(unsafe.Pointer(&pid)))
+	if thread == 0 || pid != windows.GetCurrentProcessId() {
+		return fmt.Errorf("account picker requires a live window owned by this process: %w", ErrAuthenticationFailed)
+	}
+	if uint32(thread) != windows.GetCurrentThreadId() {
+		return fmt.Errorf("account picker must run on the owner window UI thread: %w", ErrAuthenticationFailed)
+	}
+	return nil
 }
 
 func (p *wamAccountPane) choose(provider *ole.IUnknown) {

@@ -1,5 +1,7 @@
 {
   "app": {
+    "administrator": "Administrator",
+    "administrator_description": "Running as administrator. Sign-in uses Windows authentication directly; to choose an account, restart without administrator privileges.",
     "settings": "Settings"
   },
   "nav": {

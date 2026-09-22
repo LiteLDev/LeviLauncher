@@ -268,14 +268,16 @@ func (s *session) authHeader() string {
 }
 
 // SignIn changes the shared account only after native authentication and
-// persistence succeed. hwnd owns the sign-in UI that WAM presents when the
-// account needs the user.
-func SignIn(ctx context.Context, hwnd uintptr, persist func(string) error) error {
-	if hwnd == 0 || persist == nil {
+// persistence succeed. Normal processes select an account first; elevated
+// processes request the window-scoped WAM token without AccountsSettingsPane.
+// dispatch runs synchronously on hwnd's UI thread; callers must not block that
+// thread while waiting for SignIn.
+func SignIn(ctx context.Context, hwnd uintptr, persist func(string) error, dispatch func(func())) error {
+	if hwnd == 0 || persist == nil || dispatch == nil {
 		return ErrAuthenticationFailed
 	}
 	return signInSession(ctx, func() (*session, error) {
-		ticket, id, err := requestWAMToken(ctx, xblScope, "", hwnd)
+		ticket, id, err := requestWAMToken(ctx, xblScope, "", hwnd, dispatch)
 		if err != nil {
 			return nil, err
 		}

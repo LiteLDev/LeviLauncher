@@ -1,5 +1,7 @@
 {
   "app": {
+    "administrator": "Amministratore",
+    "administrator_description": "L’applicazione è in esecuzione come amministratore. L’accesso utilizza direttamente l’autenticazione di Windows. Per scegliere un account, riavvia l’applicazione senza privilegi di amministratore.",
     "settings": "Impostazioni"
   },
   "nav": {

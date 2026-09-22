@@ -1,5 +1,7 @@
 {
   "app": {
+    "administrator": "Administrator",
+    "administrator_description": "Die Anwendung wird mit Administratorrechten ausgeführt. Die Anmeldung erfolgt direkt über die Windows-Authentifizierung. Starte die Anwendung ohne Administratorrechte neu, um ein Konto auszuwählen.",
     "settings": "Einstellungen"
   },
   "nav": {

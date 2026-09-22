@@ -34,6 +34,7 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/msixvc"
 	"github.com/liteldev/LeviLauncher/internal/oslang"
 	"github.com/liteldev/LeviLauncher/internal/peeditor"
+	"github.com/liteldev/LeviLauncher/internal/processinfo"
 	"github.com/liteldev/LeviLauncher/internal/tray"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
@@ -287,8 +288,14 @@ func showStartupFailureDialog(title string, message string) {
 // opened its pipe yet. SW_RESTORE is reserved for a minimised window: on a
 // maximised one it would drop the window back to its pre-maximised size.
 func focusExistingWindow() {
-	title, _ := win.UTF16PtrFromString("LeviLauncher")
-	hwnd, _, _ := procFindWindowW.Call(0, uintptr(unsafe.Pointer(title)))
+	var hwnd uintptr
+	for _, windowTitle := range []string{"LeviLauncher", "LeviLauncher [Administrator]"} {
+		title, _ := win.UTF16PtrFromString(windowTitle)
+		hwnd, _, _ = procFindWindowW.Call(0, uintptr(unsafe.Pointer(title)))
+		if hwnd != 0 {
+			break
+		}
+	}
 	if hwnd == 0 {
 		return
 	}
@@ -532,6 +539,13 @@ func init() {
 	application.RegisterEvent[types.FilesDroppedEvent]("files-dropped")
 }
 
+func launcherWindowTitle() string {
+	if processinfo.IsElevated() {
+		return "LeviLauncher [Administrator]"
+	}
+	return "LeviLauncher"
+}
+
 func main() {
 	processStart := time.Now()
 	initialURL, autoLaunchVersion, waitForPreviousInstance, debugMode := parseArgs()
@@ -692,7 +706,7 @@ func main() {
 	}
 	windows := wailsApp.Window.NewWithOptions(application.WebviewWindowOptions{
 		Name:      "main",
-		Title:     "LeviLauncher",
+		Title:     launcherWindowTitle(),
 		Width:     w,
 		Height:    h,
 		MinWidth:  minWindowWidth,

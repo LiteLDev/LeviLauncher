@@ -1,5 +1,7 @@
 {
   "app": {
+    "administrator": "Administrator",
+    "administrator_description": "Aplikacja działa z uprawnieniami administratora. Logowanie korzysta bezpośrednio z uwierzytelniania systemu Windows. Aby wybrać konto, uruchom aplikację ponownie bez uprawnień administratora.",
     "settings": "Ustawienia"
   },
   "nav": {

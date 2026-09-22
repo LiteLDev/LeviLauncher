@@ -13,9 +13,10 @@ import (
 
 const wamManagerClass = "Windows.Security.Authentication.Web.Core.WebAuthenticationCoreManager"
 
-// The caller initializes WinRT and owns the returned reference. The account of an
-// interactive sign-in is resolved by WAM while the token is requested, not by
-// FindAllAccountsAsync (which may reject enumeration by unpackaged apps).
+// The caller initializes WinRT and owns the returned reference. Normal interactive
+// sign-in uses this to populate AccountsSettingsPane and then uses its callback
+// provider for tokens. Elevated sign-in uses it directly, as does silent renewal.
+// FindAllAccountsAsync may reject MSA enumeration by unpackaged apps.
 func findMSAProvider(ctx context.Context) (*ole.IUnknown, error) {
 	manager, err := ole.RoGetActivationFactory(wamManagerClass, ole.NewGUID(core.GUIDiWebAuthenticationCoreManagerStatics))
 	if err != nil {

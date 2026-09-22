@@ -1,5 +1,7 @@
 {
   "app": {
+    "administrator": "Administrador",
+    "administrator_description": "La aplicación se está ejecutando como administrador. El inicio de sesión utiliza directamente la autenticación de Windows. Para elegir una cuenta, reinicia la aplicación sin privilegios de administrador.",
     "settings": "Configuración"
   },
   "nav": {

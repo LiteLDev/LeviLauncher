@@ -136,7 +136,7 @@ func TestCanceledSignInPreservesAccount(t *testing.T) {
 	defer ConfigureAccountSelection("", nil)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err := SignIn(ctx, 1, func(string) error { t.Fatal("canceled sign-in persisted an account"); return nil })
+	err := SignIn(ctx, 1, func(string) error { t.Fatal("canceled sign-in persisted an account"); return nil }, func(func()) { t.Fatal("canceled sign-in opened a picker") })
 	if !errors.Is(err, context.Canceled) || preferredAccountID != "chosen-account" {
 		t.Fatal("canceled sign-in changed identity")
 	}

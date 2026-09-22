@@ -1,5 +1,7 @@
 {
   "app": {
+    "administrator": "管理員",
+    "administrator_description": "目前以管理員權限執行，登入將直接使用 Windows 身分驗證；如需選擇帳戶，請以一般權限重新啟動。",
     "settings": "設定"
   },
   "nav": {

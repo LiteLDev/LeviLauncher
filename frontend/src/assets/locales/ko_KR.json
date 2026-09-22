@@ -1,5 +1,7 @@
 {
   "app": {
+    "administrator": "관리자",
+    "administrator_description": "관리자 권한으로 실행 중입니다. 로그인 시 Windows 인증을 직접 사용합니다. 계정을 선택하려면 관리자 권한 없이 앱을 다시 실행하세요.",
     "settings": "설정"
   },
   "nav": {

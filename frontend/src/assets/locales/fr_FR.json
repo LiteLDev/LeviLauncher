@@ -1,5 +1,7 @@
 {
   "app": {
+    "administrator": "Administrateur",
+    "administrator_description": "L’application est exécutée en tant qu’administrateur. La connexion utilise directement l’authentification Windows. Pour choisir un compte, redémarrez l’application sans les droits d’administrateur.",
     "settings": "Paramètres"
   },
   "nav": {

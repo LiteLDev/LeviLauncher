@@ -1,5 +1,7 @@
 {
   "app": {
+    "administrator": "管理员",
+    "administrator_description": "当前以管理员权限运行，登录将直接使用 Windows 身份验证；如需选择账户，请以普通权限重新启动。",
     "settings": "设置"
   },
   "nav": {

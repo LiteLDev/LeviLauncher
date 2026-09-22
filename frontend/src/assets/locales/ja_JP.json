@@ -1,5 +1,7 @@
 {
   "app": {
+    "administrator": "管理者",
+    "administrator_description": "管理者権限で実行中です。サインインには Windows 認証を直接使用します。アカウントを選択するには、管理者権限なしでアプリを再起動してください。",
     "settings": "設定"
   },
   "nav": {

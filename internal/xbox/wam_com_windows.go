@@ -119,8 +119,10 @@ func wamDelegateQueryInterface(d *wamDelegate, iid *ole.GUID, out *unsafe.Pointe
 		return ole.E_POINTER
 	}
 	*out = nil
-	if !ole.IsEqualGUID(iid, &d.iid) && !ole.IsEqualGUID(iid, ole.IID_IUnknown) &&
-		!ole.IsEqualGUID(iid, ole.NewGUID("94ea2b94-e9cc-49e0-c0ff-ee64ca8f5b90")) { // IAgileObject
+	// These callbacks access apartment-bound AccountsSettingsPane state. Do not
+	// advertise IAgileObject: that permits Windows to invoke them on arbitrary
+	// RPC threads, racing selection/cleanup and using STA objects off-thread.
+	if !ole.IsEqualGUID(iid, &d.iid) && !ole.IsEqualGUID(iid, ole.IID_IUnknown) {
 		return ole.E_NOINTERFACE
 	}
 	d.refs.Add(1)

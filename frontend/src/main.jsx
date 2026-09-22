@@ -1,6 +1,7 @@
 import "./style.css";
 import React, { startTransition } from "react";
 import { createRoot } from "react-dom/client";
+import { LeviIcon } from "./icons/LeviIcon";
 import { ROUTES } from "./constants/routes";
 import {
   markStartupDeferredWorkReady,
@@ -119,22 +120,7 @@ const StartupShell = ({
           textAlign: "center",
         }}
       >
-        <div
-          aria-hidden="true"
-          style={{
-            display: "grid",
-            width: "48px",
-            height: "48px",
-            placeItems: "center",
-            borderRadius: "16px",
-            background: "rgba(59, 130, 246, 0.12)",
-            color: "#2563eb",
-            fontSize: "24px",
-            fontWeight: 800,
-          }}
-        >
-          L
-        </div>
+        <LeviIcon width={48} height={48} />
         <strong style={{ fontSize: "18px", letterSpacing: "0.01em" }}>
           LeviLauncher
         </strong>

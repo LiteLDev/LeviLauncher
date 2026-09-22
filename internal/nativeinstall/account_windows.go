@@ -89,17 +89,25 @@ func acquireUserTicket(ctx context.Context, acquire func(context.Context) (strin
 	userTicket, userReference = token, reference
 }
 
-func accountAuthorizationFailed(err error) {
-	code := "ERR_AUTH_FAILED"
+// AuthErrorCode maps an authentication failure to the code reported to the UI.
+func AuthErrorCode(err error) string {
 	switch {
 	case errors.Is(err, context.Canceled):
-		code = "ERR_CANCELED"
+		return "ERR_CANCELED"
 	case errors.Is(err, context.DeadlineExceeded):
-		code = "ERR_AUTH_TIMEOUT"
+		return "ERR_AUTH_TIMEOUT"
 	case errors.Is(err, xbox.ErrInteractionRequired):
-		code = "ERR_AUTH_INTERACTION_REQUIRED"
+		return "ERR_AUTH_INTERACTION_REQUIRED"
 	case errors.Is(err, xbox.ErrAccountChanged):
-		code = "ERR_AUTH_ACCOUNT_CHANGED"
+		return "ERR_AUTH_ACCOUNT_CHANGED"
 	}
-	panic(&Error{Code: code, Reason: "launcher account authorization failed", cause: err})
+	var failure *Error
+	if errors.As(err, &failure) {
+		return failure.Code
+	}
+	return "ERR_AUTH_FAILED"
+}
+
+func accountAuthorizationFailed(err error) {
+	panic(&Error{Code: AuthErrorCode(err), Reason: "launcher account authorization failed", cause: err})
 }

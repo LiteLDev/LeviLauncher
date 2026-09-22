@@ -22,6 +22,11 @@ var (
 	ErrAuthenticationFailed = errors.New("ERR_AUTH_FAILED")
 )
 
+// errSignInUIRequired marks a window-scoped request that needs the user but was
+// answered without a sign-in UI. The forced prompt is what presents it, so such a
+// request is retried once with that prompt.
+var errSignInUIRequired = errors.New("WAM sign-in UI required")
+
 // ABI slot numbers include IUnknown (3) and IInspectable (3) methods.
 const (
 	wamSilent            = 6
@@ -30,14 +35,28 @@ const (
 	responseAccount      = 8
 	accountIDSlot        = 6
 	account2IID          = "7b56d6f8-990b-4eb5-94a7-5621f3a8b824"
+
+	// IWebTokenRequestFactory: Create and CreateWithPromptType.
+	wamRequest           = 6
+	wamRequestWithPrompt = 7
+	// IWebAuthenticationCoreManagerInterop: RequestTokenForWindowAsync.
+	wamRequestForWindow                    = 6
+	iidWebAuthenticationCoreManagerInterop = "f4b8e804-811e-4436-b69c-44cb67b72084"
+	iidTokenRequestResultOperation         = "0a815852-7c44-5674-b3d2-fa2e4c1e46c9"
+
+	// The user drives the sign-in UI, so it may stay open for a while.
+	interactiveTimeout = 10 * time.Minute
 )
 
 func requestWAMTicket(ctx context.Context, scope, expectedAccount string) (string, string, error) {
-	return requestWAMToken(ctx, scope, expectedAccount, 0, nil)
+	return requestWAMToken(ctx, scope, expectedAccount, 0)
 }
 
-func requestWAMToken(ctx context.Context, scope, expectedAccount string, hwnd uintptr, dispatch func(func())) (string, string, error) {
-
+// requestWAMToken obtains a token together with the identity it belongs to. A
+// non-zero hwnd requests the token through the desktop interop call, which owns
+// the sign-in UI of that window: it answers from an existing Windows session
+// without showing anything and only prompts when the account needs the user.
+func requestWAMToken(ctx context.Context, scope, expectedAccount string, hwnd uintptr) (string, string, error) {
 	if err := ctx.Err(); err != nil {
 		return "", "", err
 	}
@@ -52,12 +71,10 @@ func requestWAMToken(ctx context.Context, scope, expectedAccount string, hwnd ui
 		return "", "", err
 	}
 	defer manager.Release()
-	var provider *ole.IUnknown
-	if hwnd != 0 {
-		provider, err = selectWAMProvider(ctx, hwnd, dispatch)
-	} else {
-		provider, err = findMSAProvider(ctx)
-	}
+	// AccountsSettingsPane does not resolve the account: the shell renders that
+	// pane in its own process and dismisses it before it can report a selection.
+	// The window-scoped request below provides the sign-in UI and the identity.
+	provider, err := findMSAProvider(ctx)
 	if err != nil {
 		return "", "", err
 	}
@@ -95,34 +112,54 @@ func requestWAMToken(ctx context.Context, scope, expectedAccount string, hwnd ui
 		return "", "", err
 	}
 	defer factory.Release()
-	scopeString, err := ole.NewHString(scope)
+	// The default prompt reuses an existing Windows session and keeps single
+	// sign-on available.
+	token, reference, err := requestWAMTokenWithPrompt(ctx, manager, factory, provider, account, scope, hwnd, core.WebTokenRequestPromptTypeDefault)
+	if wamShouldForceSignInUI(hwnd, err) {
+		token, reference, err = requestWAMTokenWithPrompt(ctx, manager, factory, provider, account, scope, hwnd, core.WebTokenRequestPromptTypeForceAuthentication)
+	}
+	if errors.Is(err, errSignInUIRequired) {
+		err = ErrInteractionRequired
+	}
 	if err != nil {
 		return "", "", err
 	}
-	defer ole.DeleteHString(scopeString)
-	clientString, err := ole.NewHString(clientID)
-	if err != nil {
+	if err := validateWAMIdentity(expectedAccount, reference, token); err != nil {
 		return "", "", err
 	}
-	defer ole.DeleteHString(clientString)
-	var request *core.WebTokenRequest
-	// Default preserves the account picker selection and permits SSO. WAM
-	// requests credentials/consent itself when needed, including for a new account.
-	hr, _, _ := syscall.SyscallN(vtblFn(unsafe.Pointer(factory), 6), uintptr(unsafe.Pointer(factory)), uintptr(unsafe.Pointer(provider)), uintptr(scopeString), uintptr(clientString), uintptr(unsafe.Pointer(&request)))
-	if hr != 0 {
-		return "", "", ole.NewError(hr)
+	if err := ctx.Err(); err != nil {
+		return "", "", err
+	}
+	return token, reference, nil
+}
+
+// wamShouldForceSignInUI reports whether a failed request has to be repeated with
+// the forced prompt. Only a window-scoped request that asked for the user without
+// presenting the sign-in UI is repeated: a silent request (hwnd == 0) must never
+// open a dialog, dismissing the UI is final, and a provider failure is not worth
+// repeating.
+func wamShouldForceSignInUI(hwnd uintptr, err error) bool {
+	return hwnd != 0 && errors.Is(err, errSignInUIRequired)
+}
+
+func requestWAMTokenWithPrompt(ctx context.Context, manager, factory *ole.IInspectable, provider, account *ole.IUnknown, scope string, hwnd uintptr, prompt core.WebTokenRequestPromptType) (string, string, error) {
+	request, err := createWAMRequest(factory, provider, scope, prompt)
+	if err != nil {
+		return "", "", err
 	}
 	defer request.Release()
 	var tokenOp *foundation.IAsyncOperation
+	var hr uintptr
 	if hwnd != 0 {
-		interop, e := manager.QueryInterface(ole.NewGUID("f4b8e804-811e-4436-b69c-44cb67b72084"))
-		if e != nil {
-			return "", "", e
+		interop, err := manager.QueryInterface(ole.NewGUID(iidWebAuthenticationCoreManagerInterop))
+		if err != nil {
+			return "", "", err
 		}
 		defer interop.Release()
-		// SDK: IAsyncOperation<WebTokenRequestResult>, Windows SDK 10.0.26100.
-		iid := ole.NewGUID("0a815852-7c44-5674-b3d2-fa2e4c1e46c9")
-		hr, _, _ = syscall.SyscallN(vtblFn(unsafe.Pointer(interop), 6), uintptr(unsafe.Pointer(interop)), hwnd, uintptr(unsafe.Pointer(request)), uintptr(unsafe.Pointer(iid)), uintptr(unsafe.Pointer(&tokenOp)))
+		// SDK: RequestTokenForWindowAsync returns
+		// IAsyncOperation<WebTokenRequestResult>, Windows SDK 10.0.26100.
+		iid := ole.NewGUID(iidTokenRequestResultOperation)
+		hr, _, _ = syscall.SyscallN(vtblFn(unsafe.Pointer(interop), wamRequestForWindow), uintptr(unsafe.Pointer(interop)), hwnd, uintptr(unsafe.Pointer(request)), uintptr(unsafe.Pointer(iid)), uintptr(unsafe.Pointer(&tokenOp)))
 	} else if account == nil {
 		hr, _, _ = syscall.SyscallN(vtblFn(unsafe.Pointer(manager), wamSilent), uintptr(unsafe.Pointer(manager)), uintptr(unsafe.Pointer(request)), uintptr(unsafe.Pointer(&tokenOp)))
 	} else {
@@ -134,7 +171,7 @@ func requestWAMToken(ctx context.Context, scope, expectedAccount string, hwnd ui
 	defer tokenOp.Release()
 	waitTimeout := asyncTimeout
 	if hwnd != 0 {
-		waitTimeout = 10 * time.Minute
+		waitTimeout = interactiveTimeout
 	}
 	resultPtr, err := awaitWithTimeout(ctx, tokenOp, waitTimeout)
 	if err != nil {
@@ -149,11 +186,8 @@ func requestWAMToken(ctx context.Context, scope, expectedAccount string, hwnd ui
 	if err != nil {
 		return "", "", err
 	}
-	if hwnd != 0 && status == core.WebTokenRequestStatusUserCancel {
-		return "", "", context.Canceled
-	}
-	if err := wamStatusError(status); err != nil {
-		return "", "", err
+	if err := wamStatusError(status, hwnd != 0); err != nil {
+		return "", "", wamProviderFailure(result, err)
 	}
 	data, err := result.GetResponseData()
 	if err != nil {
@@ -198,13 +232,36 @@ func requestWAMToken(ctx context.Context, scope, expectedAccount string, hwnd ui
 	if err != nil {
 		return "", "", err
 	}
-	if err := validateWAMIdentity(expectedAccount, reference, token); err != nil {
-		return "", "", err
-	}
-	if err := ctx.Err(); err != nil {
-		return "", "", err
-	}
 	return token, reference, nil
+}
+
+// createWAMRequest builds a token request. The forced prompt is the one that
+// guarantees WAM presents its sign-in UI to the window.
+func createWAMRequest(factory *ole.IInspectable, provider *ole.IUnknown, scope string, prompt core.WebTokenRequestPromptType) (*core.WebTokenRequest, error) {
+	scopeString, err := ole.NewHString(scope)
+	if err != nil {
+		return nil, err
+	}
+	defer ole.DeleteHString(scopeString)
+	clientString, err := ole.NewHString(clientID)
+	if err != nil {
+		return nil, err
+	}
+	defer ole.DeleteHString(clientString)
+	var request *core.WebTokenRequest
+	var hr uintptr
+	if prompt == core.WebTokenRequestPromptTypeDefault {
+		hr, _, _ = syscall.SyscallN(vtblFn(unsafe.Pointer(factory), wamRequest), uintptr(unsafe.Pointer(factory)), uintptr(unsafe.Pointer(provider)), uintptr(scopeString), uintptr(clientString), uintptr(unsafe.Pointer(&request)))
+	} else {
+		hr, _, _ = syscall.SyscallN(vtblFn(unsafe.Pointer(factory), wamRequestWithPrompt), uintptr(unsafe.Pointer(factory)), uintptr(unsafe.Pointer(provider)), uintptr(scopeString), uintptr(clientString), uintptr(prompt), uintptr(unsafe.Pointer(&request)))
+	}
+	if hr != 0 {
+		return nil, ole.NewError(hr)
+	}
+	if request == nil {
+		return nil, ErrAuthenticationFailed
+	}
+	return request, nil
 }
 
 func validateWAMIdentity(expected, actual, token string) error {
@@ -217,17 +274,44 @@ func validateWAMIdentity(expected, actual, token string) error {
 	return nil
 }
 
-func wamStatusError(status core.WebTokenRequestStatus) error {
+func wamStatusError(status core.WebTokenRequestStatus, interactive bool) error {
 	switch status {
 	case core.WebTokenRequestStatusSuccess:
 		return nil
-	case core.WebTokenRequestStatusUserCancel, core.WebTokenRequestStatusUserInteractionRequired, core.WebTokenRequestStatusAccountProviderNotAvailable:
+	case core.WebTokenRequestStatusUserCancel:
+		if interactive {
+			// The user dismissed the sign-in UI that WAM presented for this window.
+			return context.Canceled
+		}
+		return ErrInteractionRequired
+	case core.WebTokenRequestStatusUserInteractionRequired:
+		return errSignInUIRequired
+	case core.WebTokenRequestStatusAccountProviderNotAvailable:
 		return ErrInteractionRequired
 	case core.WebTokenRequestStatusAccountSwitch:
 		return ErrAccountChanged
 	default:
 		return ErrAuthenticationFailed
 	}
+}
+
+// wamProviderFailure keeps the provider's own diagnosis of a failed response
+// together with the sentinel, so callers can still match it with errors.Is.
+func wamProviderFailure(result *core.WebTokenRequestResult, statusErr error) error {
+	providerError, err := result.GetResponseError()
+	if err != nil || providerError == nil {
+		return statusErr
+	}
+	defer providerError.Release()
+	code, err := providerError.GetErrorCode()
+	if err != nil {
+		return statusErr
+	}
+	message, err := providerError.GetErrorMessage()
+	if err != nil {
+		return statusErr
+	}
+	return fmt.Errorf("%w: WAM provider 0x%08x %s", statusErr, code, message)
 }
 
 func awaitContext(ctx context.Context, op *foundation.IAsyncOperation) (unsafe.Pointer, error) {

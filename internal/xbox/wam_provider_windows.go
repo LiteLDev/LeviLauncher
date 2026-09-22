@@ -13,8 +13,8 @@ import (
 
 const wamManagerClass = "Windows.Security.Authentication.Web.Core.WebAuthenticationCoreManager"
 
-// The caller initializes WinRT and owns the returned reference. Account
-// discovery for interactive sign-in is performed by AccountsSettingsPane, not
+// The caller initializes WinRT and owns the returned reference. The account of an
+// interactive sign-in is resolved by WAM while the token is requested, not by
 // FindAllAccountsAsync (which may reject enumeration by unpackaged apps).
 func findMSAProvider(ctx context.Context) (*ole.IUnknown, error) {
 	manager, err := ole.RoGetActivationFactory(wamManagerClass, ole.NewGUID(core.GUIDiWebAuthenticationCoreManagerStatics))

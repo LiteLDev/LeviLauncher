@@ -63,19 +63,41 @@ func TestWAMRejectsDifferentOrMissingIdentity(t *testing.T) {
 
 func TestWAMStatusErrors(t *testing.T) {
 	for _, tc := range []struct {
-		status core.WebTokenRequestStatus
-		err    error
+		status      core.WebTokenRequestStatus
+		interactive bool
+		err         error
 	}{
-		{core.WebTokenRequestStatusSuccess, nil},
-		{core.WebTokenRequestStatusUserCancel, ErrInteractionRequired},
-		{core.WebTokenRequestStatusUserInteractionRequired, ErrInteractionRequired},
-		{core.WebTokenRequestStatusAccountProviderNotAvailable, ErrInteractionRequired},
-		{core.WebTokenRequestStatusAccountSwitch, ErrAccountChanged},
-		{core.WebTokenRequestStatusProviderError, ErrAuthenticationFailed},
-		{core.WebTokenRequestStatus(99), ErrAuthenticationFailed},
+		{core.WebTokenRequestStatusSuccess, true, nil},
+		{core.WebTokenRequestStatusUserCancel, true, context.Canceled},
+		{core.WebTokenRequestStatusUserCancel, false, ErrInteractionRequired},
+		{core.WebTokenRequestStatusUserInteractionRequired, true, errSignInUIRequired},
+		{core.WebTokenRequestStatusUserInteractionRequired, false, errSignInUIRequired},
+		{core.WebTokenRequestStatusAccountProviderNotAvailable, true, ErrInteractionRequired},
+		{core.WebTokenRequestStatusAccountSwitch, true, ErrAccountChanged},
+		{core.WebTokenRequestStatusProviderError, true, ErrAuthenticationFailed},
+		{core.WebTokenRequestStatus(99), true, ErrAuthenticationFailed},
 	} {
-		if err := wamStatusError(tc.status); !errors.Is(err, tc.err) {
-			t.Fatalf("status %d: %v", tc.status, err)
+		if err := wamStatusError(tc.status, tc.interactive); !errors.Is(err, tc.err) {
+			t.Fatalf("status %d interactive=%t: %v", tc.status, tc.interactive, err)
+		}
+	}
+}
+
+func TestWAMPromptRetry(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		hwnd uintptr
+		err  error
+		want bool
+	}{
+		{"windowed request needs the user", 1, errSignInUIRequired, true},
+		{"silent request stays silent", 0, errSignInUIRequired, false},
+		{"dismissed sign-in UI is final", 1, context.Canceled, false},
+		{"provider failure is final", 1, ErrAuthenticationFailed, false},
+		{"successful request", 1, nil, false},
+	} {
+		if got := wamShouldForceSignInUI(tc.hwnd, tc.err); got != tc.want {
+			t.Fatalf("%s: forced prompt=%t", tc.name, got)
 		}
 	}
 }
@@ -114,7 +136,7 @@ func TestCanceledSignInPreservesAccount(t *testing.T) {
 	defer ConfigureAccountSelection("", nil)
 	ctx, cancel := context.WithCancel(context.Background())
 	cancel()
-	err := SignIn(ctx, 1, func(string) error { t.Fatal("canceled sign-in persisted an account"); return nil }, func(func()) { t.Fatal("canceled sign-in opened a picker") })
+	err := SignIn(ctx, 1, func(string) error { t.Fatal("canceled sign-in persisted an account"); return nil })
 	if !errors.Is(err, context.Canceled) || preferredAccountID != "chosen-account" {
 		t.Fatal("canceled sign-in changed identity")
 	}

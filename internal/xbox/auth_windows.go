@@ -267,13 +267,15 @@ func (s *session) authHeader() string {
 	return "XBL3.0 x=" + s.uhs + ";" + s.xsts
 }
 
-// SignIn changes the shared account only after native authentication and persistence succeed.
-func SignIn(ctx context.Context, hwnd uintptr, persist func(string) error, dispatch func(func())) error {
-	if hwnd == 0 || persist == nil || dispatch == nil {
+// SignIn changes the shared account only after native authentication and
+// persistence succeed. hwnd owns the sign-in UI that WAM presents when the
+// account needs the user.
+func SignIn(ctx context.Context, hwnd uintptr, persist func(string) error) error {
+	if hwnd == 0 || persist == nil {
 		return ErrAuthenticationFailed
 	}
 	return signInSession(ctx, func() (*session, error) {
-		ticket, id, err := requestWAMToken(ctx, xblScope, "", hwnd, dispatch)
+		ticket, id, err := requestWAMToken(ctx, xblScope, "", hwnd)
 		if err != nil {
 			return nil, err
 		}
@@ -290,8 +292,8 @@ func SignIn(ctx context.Context, hwnd uintptr, persist func(string) error, dispa
 	}, persist)
 }
 
-// A canceled picker, failed token exchange or failed persistence must preserve
-// both the displayed profile and the account used by Store authorization.
+// A dismissed sign-in UI, failed token exchange or failed persistence must
+// preserve both the displayed profile and the account used by Store authorization.
 func signInSession(ctx context.Context, acquire func() (*session, error), persist func(string) error) error {
 	if err := lockSession(ctx); err != nil {
 		return err

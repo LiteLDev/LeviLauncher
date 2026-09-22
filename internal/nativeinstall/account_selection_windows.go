@@ -44,10 +44,10 @@ func RestoreSharedAccount(ctx context.Context, dir string) error {
 	})
 }
 
-func SignInSharedAccount(ctx context.Context, dir string, hwnd uintptr, dispatch func(func())) error {
+func SignInSharedAccount(ctx context.Context, dir string, hwnd uintptr) error {
 	return xbox.SignIn(ctx, hwnd, func(id string) (err error) {
 		return saveSharedAccountSelection(dir, id)
-	}, dispatch)
+	})
 }
 
 func saveSharedAccountSelection(dir, id string) (err error) {

@@ -7,9 +7,6 @@ import (
 	"errors"
 	"testing"
 	"time"
-	"unsafe"
-
-	"github.com/go-ole/go-ole"
 )
 
 func TestFirstUseRequiresExplicitAccountSelection(t *testing.T) {
@@ -78,39 +75,4 @@ func TestSignInCommitsSelectedAccountAfterPersistence(t *testing.T) {
 	if err != nil || cached != chosen || preferredAccountID != "chosen" || accountSelectionError != nil {
 		t.Fatalf("successful sign-in did not publish selected identity: %v", err)
 	}
-}
-
-func TestNativePickerSelectionOwnership(t *testing.T) {
-	newProvider := func() *ole.IUnknown {
-		return newWAMDelegate(wamProviderCmdIID, true, func(unsafe.Pointer, unsafe.Pointer) uintptr { return ole.S_OK })
-	}
-	isRetained := func(provider *ole.IUnknown) bool {
-		wamDelegates.Lock()
-		defer wamDelegates.Unlock()
-		_, ok := wamDelegates.live[(*wamDelegate)(unsafe.Pointer(provider))]
-		return ok
-	}
-	t.Run("success transfers exact callback provider", func(t *testing.T) {
-		p := &wamAccountPane{}
-		provider := newProvider()
-		p.choose(provider)
-		selected := p.takeSelection()
-		p.close()
-		if selected != provider || !isRetained(selected) {
-			t.Fatal("picker lost the callback provider or its native selection context")
-		}
-		selected.Release()
-	})
-	t.Run("cancel and late callbacks release references", func(t *testing.T) {
-		p := &wamAccountPane{}
-		provider := newProvider()
-		p.choose(provider)
-		p.close()
-		p.close()
-		late := newProvider()
-		p.choose(late)
-		if isRetained(provider) || isRetained(late) {
-			t.Fatal("canceled picker retained provider references")
-		}
-	})
 }

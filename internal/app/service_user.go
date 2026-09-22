@@ -4,8 +4,8 @@ import (
 	"context"
 	"encoding/base64"
 	"encoding/json"
-	"errors"
 	"github.com/wailsapp/wails/v3/pkg/application"
+	"log"
 	"os"
 	"path/filepath"
 	"strconv"
@@ -202,19 +202,10 @@ func (s *UserService) SignIn(ctx context.Context) string {
 	if s.window == nil {
 		return "ERR_AUTH_FAILED"
 	}
-	err := nativeinstall.SignInSharedAccount(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), uintptr(s.window.NativeWindow()), application.InvokeSync)
+	err := nativeinstall.SignInSharedAccount(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), uintptr(s.window.NativeWindow()))
 	if err == nil {
 		return ""
 	}
-	if errors.Is(err, context.Canceled) {
-		return "ERR_CANCELED"
-	}
-	if errors.Is(err, context.DeadlineExceeded) {
-		return "ERR_AUTH_TIMEOUT"
-	}
-	var failure *nativeinstall.Error
-	if errors.As(err, &failure) {
-		return failure.Code
-	}
-	return "ERR_AUTH_FAILED"
+	log.Printf("UserService.SignIn: %v", err)
+	return nativeinstall.AuthErrorCode(err)
 }

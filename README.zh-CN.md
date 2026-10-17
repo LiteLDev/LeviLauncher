@@ -6,8 +6,8 @@ LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版�
 
 ## 文档
 
-- **用户文档：** https://liteldev.github.io/LeviLauncher/
-- **简体中文：** https://liteldev.github.io/LeviLauncher/zh-CN/
+- **用户文档：** https://docs.levimc.org/LeviLauncher/
+- **简体中文：** https://docs.levimc.org/LeviLauncher/zh-CN/
 
 ## 下载地址
 
@@ -38,8 +38,9 @@ UWP x64 实例支持在「实例设置 → 启动选项」中启用控制台，�
 用户文档现已迁移到 GitHub Pages。若你要在本地预览文档站：
 
 ```bash
-npm install
-npm run docs:dev
+cd docs
+npm ci
+npm run dev
 ```
 
 应用本体开发仍沿用仓库现有的 `frontend/`、`build/` 与 Wails 任务流。

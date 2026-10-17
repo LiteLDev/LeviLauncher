@@ -108,7 +108,7 @@ export function SiteHeader({ route, locale, lang, t, localeOptions, onLocaleSele
             </span>
           </button>
           <LocaleSwitcher options={localeOptions} current={locale} onSelect={onLocaleSelect} linkComponent={KitLink} className="kit-site-locale" />
-          <ThemeToggle locale={lang} />
+          <ThemeToggle locale={lang} strings={t} />
           {site.social.map((s) => (
             <a key={s.link} className="mc-icon-btn kit-site-social" href={s.link} target="_blank" rel="noopener" aria-label={s.label ?? s.icon} title={s.label ?? s.icon}>
               <BrandIcon name={(s.icon as BrandIconName) ?? 'github'} size={18} />

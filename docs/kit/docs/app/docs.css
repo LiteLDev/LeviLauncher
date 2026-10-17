@@ -285,6 +285,9 @@
   .kit-doc-layout:not([data-sidebar]) .kit-doc-footer {
     max-width: 50rem;
   }
+  .kit-doc-layout:not([data-sidebar]) .kit-toc-mobile {
+    max-width: calc(50rem - 4px);
+  }
   .kit-doc-toc {
     position: sticky;
     top: var(--spacing-header);
@@ -478,7 +481,10 @@
   }
   .kit-toc-mobile {
     --px-border: var(--color-line);
-    margin: 0 2px 1.75rem;
+    /* Same column as .kit-doc-article (the 2px frame is drawn outside the box). */
+    width: calc(100% - 4px);
+    max-width: calc(var(--spacing-measure) - 4px);
+    margin: 0 auto 1.75rem;
     background: var(--color-surface);
     box-shadow:
       0 -2px 0 0 var(--px-border),
@@ -651,11 +657,16 @@
     font-weight: 560;
     line-height: 1.15;
     letter-spacing: -0.02em;
+    text-wrap: balance;
+  }
+  .kit-notfound-title:lang(ja) {
+    word-break: auto-phrase; /* break between phrases (迷子 stays whole); ignored where unsupported */
   }
   .kit-notfound-text {
     margin: 1rem auto 0;
     max-width: 26rem;
     color: var(--color-muted);
+    text-wrap: pretty;
   }
   .kit-notfound-actions {
     display: flex;

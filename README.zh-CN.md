@@ -12,7 +12,7 @@ LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版�
 ## 下载地址
 
 - **GitHub Releases：** https://github.com/LiteLDev/LeviLauncher/releases
-- **蓝奏云：** https://levimc.lanzoue.com/b016ke39hc（密码：`levi`）
+- **蓝奏云：** <https://levimc.lanzoue.com/b016ke39hc>（密码：`levi`）
 
 ## 使用要求
 

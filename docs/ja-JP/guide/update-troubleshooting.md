@@ -58,4 +58,4 @@ LeviLauncher はアプリケーションの更新を確認、ダウンロード�
 - 具体的な操作手順
 - スクリーンショットまたはログ（ある場合）
 
-問題の報告先：[GitHub Issues](https://github.com/Levi-Launcher/LeviLauncher/issues)
+問題の報告先：[GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)

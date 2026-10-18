@@ -28,14 +28,14 @@
 
 ## コミュニティ
 
-- **公式 Discord：** <discord.gg/v5R5P4vRZk>
-- **個人 Discord チャンネル：** <discord.gg/VqQaC8vWz8>
-- **QQ グループ：** <458083875>
+- **公式 Discord：** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
+- **個人 Discord チャンネル：** [discord.gg/VqQaC8vWz8](https://discord.gg/VqQaC8vWz8)
+- **QQ グループ：** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## ダウンロード
 
-- **GitHub Releases（LeviLauncher ダウンロード）：** <LiteLDev/LeviLauncher Releases>
-- **LanZou Cloud ミラー：** <levimc.lanzoue.com/b016ke39hc> — パスワード：`levi`
+- **GitHub Releases（LeviLauncher ダウンロード）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
+- **LanZou Cloud ミラー：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — パスワード：`levi`
 
 ## 問題や機能要望の報告方法
 

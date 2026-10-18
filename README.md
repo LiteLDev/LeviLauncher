@@ -6,8 +6,8 @@ LeviLauncher helps you install, manage, isolate, mod, and launch Release or Prev
 
 ## Documentation
 
-- **User docs:** https://liteldev.github.io/LeviLauncher/
-- **中文文档：** https://liteldev.github.io/LeviLauncher/zh-CN/
+- **User docs:** https://docs.levimc.org/LeviLauncher/
+- **中文文档：** https://docs.levimc.org/LeviLauncher/zh-CN/
 
 ## Downloads
 
@@ -38,8 +38,9 @@ UWP x64 instances support the console toggle under **Instance settings → Launc
 This repository's end-user guide now lives on GitHub Pages. For local docs work:
 
 ```bash
-npm install
-npm run docs:dev
+cd docs
+npm ci
+npm run dev
 ```
 
 For app development, keep using the existing `frontend/`, `build/`, and Wails task flow.

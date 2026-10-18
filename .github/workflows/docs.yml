@@ -16,10 +16,14 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - uses: actions/setup-node@v6
         with:
           node-version: 24
+          cache: npm
+          cache-dependency-path: docs/package-lock.json
 
       - working-directory: docs
         run: |
@@ -27,11 +31,15 @@ jobs:
 
       - working-directory: docs
         run: |
-          npm run docs:build
+          npm run build
 
-      - uses: actions/upload-pages-artifact@v4
+      - working-directory: docs
+        run: |
+          npm run linkcheck
+
+      - uses: actions/upload-pages-artifact@v5
         with:
-          path: docs/.vitepress/dist/
+          path: docs/dist/
 
   deploy:
     if: github.ref == 'refs/heads/main' && github.event_name == 'push'
@@ -47,5 +55,5 @@ jobs:
       id-token: write
       pages: write
     steps:
-      - uses: actions/deploy-pages@v4
+      - uses: actions/deploy-pages@v5
         id: deployment

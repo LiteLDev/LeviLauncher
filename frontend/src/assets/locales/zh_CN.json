@@ -138,7 +138,7 @@
       "launch_dependencies": "若缺少 GameInput、Visual C++ 运行库或 Gaming Services，LeviLauncher 会在启动前引导你完成安装。",
       "mods_card": "模组卡片会显示当前实例已启用的模组，点击即可进入完整的模组页面。",
       "content_counts_card": "内容管理卡片会显示世界、资源包和行为包数量，点击对应行可直接进入页面。",
-      "content_download_sources": "下载卡片可直接进入 CurseForge 和 Bedrinth，方便在启动器内获取内容。",
+      "content_download_sources": "下载卡片可直接进入 CurseForge 和 LeviMC 模组，方便在启动器内获取内容。",
       "settings_personalize": "可在设置中调整主题、配色、背景等外观选项，让启动器更符合你的使用习惯。",
       "settings_storage_path": "你可以在设置中修改存储路径；迁移或保存内容前，请先确认目标目录可写。",
       "download_mirror": "如果下载速度较慢，可在设置中切换镜像源或检查相关网络选项。",
@@ -1326,8 +1326,8 @@
     },
     "guide": {
       "open_button": "开发者指南",
-      "title": "Bedrinth 开发者指南",
-      "description": "如果你希望自己的模组出现在 LeviLauncher 的 Bedrinth 页面中，请按照 LIP 的 package_manifest 规范发布。",
+      "title": "LeviMC 模组开发者指南",
+      "description": "如果你希望自己的模组出现在 LeviLauncher 的 LeviMC 模组页面中，请按照 LIP 的 package_manifest 规范发布。",
       "manifest_hint": "这个弹窗只提供面向开发者的快速说明。字段命名、必填项、示例与校验细则请以官方文档为准。",
       "variant_hint": "仅当 variant 的 label 包含 client 时，才会被启动器收录。默认情况下请使用 \"label\": \"client\"；子扩展请使用 \"label\": \"client_xxxx\" 或 \"label\": \"client\\xxxx\"。",
       "docs_button": "查看完整规范",
@@ -1337,7 +1337,7 @@
       "title": "未安装 lip",
       "description": "当前尚未安装 lip。要继续使用相关页面或安装 LeviLamina，请先前往“设置 > 第三方组件”完成安装。"
     },
-    "title": "Bedrinth",
+    "title": "LeviMC 模组",
     "sort_options": {
       "hotness": "热门",
       "updated": "最近更新",

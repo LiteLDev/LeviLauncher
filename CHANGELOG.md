@@ -2,6 +2,16 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Changed
+
+- Renamed the Bedrinth mod catalog to LeviMC Mods (Chinese: LeviMC 模组 / LeviMC 模組) in every language, matching pkg.levimc.org.
+
+### Removed
+
+- Removed the unused client for the retired `api.bedrinth.com` service; the mod catalog already loads from `lipr.levimc.org`.
+
 ## [v1.0.3] - 2026-09-22
 
 ### Added

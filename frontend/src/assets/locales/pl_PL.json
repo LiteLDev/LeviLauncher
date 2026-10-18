@@ -138,7 +138,7 @@
       "launch_dependencies": "Jeśli brakuje GameInput, środowiska Visual C++ Runtime lub Gaming Services, LeviLauncher przeprowadzi Cię przez ich instalację przed uruchomieniem.",
       "mods_card": "Karta Mody pokazuje włączone mody bieżącej instancji i jednym kliknięciem otwiera pełną stronę modów.",
       "content_counts_card": "Karta Zawartość pokazuje liczbę światów, pakietów zasobów i pakietów zachowań, a każdy wiersz otwiera odpowiednią stronę.",
-      "content_download_sources": "Użyj karty pobierania, aby przeglądać zasoby z CurseForge lub Bedrinth bez opuszczania launchera.",
+      "content_download_sources": "Użyj karty pobierania, aby przeglądać zasoby z CurseForge lub LeviMC Mods bez opuszczania launchera.",
       "settings_personalize": "W Ustawieniach dostosujesz motyw, kolor, tło i inne opcje wyglądu do swoich preferencji.",
       "settings_storage_path": "Ścieżki przechowywania możesz zmienić w Ustawieniach. Przed przeniesieniem zawartości upewnij się, że katalog docelowy jest zapisywalny.",
       "download_mirror": "Jeśli pobieranie jest wolne, spróbuj zmienić serwer lustrzany lub powiązane opcje sieciowe w Ustawieniach.",
@@ -1326,8 +1326,8 @@
     },
     "guide": {
       "open_button": "Przewodnik dewelopera",
-      "title": "Przewodnik dewelopera Bedrinth",
-      "description": "Jeśli chcesz, aby Twój mod pojawił się na stronie Bedrinth w LeviLauncher, opublikuj go zgodnie ze specyfikacją package_manifest LIP.",
+      "title": "Przewodnik dewelopera LeviMC Mods",
+      "description": "Jeśli chcesz, aby Twój mod pojawił się na stronie LeviMC Mods w LeviLauncher, opublikuj go zgodnie ze specyfikacją package_manifest LIP.",
       "manifest_hint": "To okno to tylko szybki przegląd dla deweloperów. Nazwy pól, wymagane wpisy, przykłady i reguły walidacji są zdefiniowane w oficjalnej dokumentacji.",
       "variant_hint": "Wariant jest indeksowany przez launcher tylko wtedy, gdy jego etykieta zawiera człon client. Domyślnie użyj \"label\": \"client\"; dla podrozszerzeń użyj \"label\": \"client_xxxx\" lub \"label\": \"client\\xxxx\".",
       "docs_button": "Zobacz pełną specyfikację",
@@ -1337,7 +1337,7 @@
       "title": "lip nie jest zainstalowany",
       "description": "lipd nie jest jeszcze zainstalowany. Aby dalej korzystać ze stron powiązanych z lip lub zainstalować LeviLamina, przejdź do Ustawienia > Składniki innych firm i najpierw go zainstaluj."
     },
-    "title": "Bedrinth",
+    "title": "LeviMC Mods",
     "sort_options": {
       "hotness": "Popularność",
       "updated": "Aktualizacja",

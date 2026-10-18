@@ -138,7 +138,7 @@
       "launch_dependencies": "Si GameInput, le runtime Visual C++ ou Gaming Services manquent, LeviLauncher t'accompagne pour les installer avant le lancement.",
       "mods_card": "La carte Mods affiche les mods activés pour l'instance actuelle et ouvre la page complète des mods en un clic.",
       "content_counts_card": "La carte Contenu affiche le nombre de mondes, packs de ressources et packs de comportement, et chaque ligne ouvre la page correspondante.",
-      "content_download_sources": "Utilisez la carte de téléchargement pour parcourir les sources de contenu CurseForge ou Bedrinth sans quitter le lanceur.",
+      "content_download_sources": "Utilisez la carte de téléchargement pour parcourir les sources de contenu CurseForge ou LeviMC Mods sans quitter le lanceur.",
       "settings_personalize": "Les Paramètres vous permettent d'ajuster le thème, la couleur, l'arrière-plan et d'autres options d'apparence pour les adapter à votre configuration.",
       "settings_storage_path": "Vous pouvez modifier les chemins de stockage dans les Paramètres. Assurez-vous que le répertoire cible est accessible en écriture avant de déplacer du contenu.",
       "download_mirror": "Si les téléchargements sont lents, essayez de changer de miroir ou les options réseau associées dans les Paramètres.",
@@ -1326,8 +1326,8 @@
     },
     "guide": {
       "open_button": "Guide du développeur",
-      "title": "Guide du développeur Bedrinth",
-      "description": "Si vous souhaitez que votre mod apparaisse sur la page Bedrinth de LeviLauncher, publiez-le conformément à la spécification package_manifest de LIP.",
+      "title": "Guide du développeur LeviMC Mods",
+      "description": "Si vous souhaitez que votre mod apparaisse sur la page LeviMC Mods de LeviLauncher, publiez-le conformément à la spécification package_manifest de LIP.",
       "manifest_hint": "Cette boîte de dialogue est seulement un aperçu rapide pour les développeurs. Les noms de champs, les entrées requises, les exemples et les règles de validation sont définis dans la documentation officielle.",
       "variant_hint": "Une variante est indexée par le lanceur uniquement lorsque son étiquette contient client. Par défaut, utilisez \\\"label\\\": \\\"client\\\"; pour les sous-extensions, utilisez \\\"label\\\": \\\"client_xxxx\\\" ou \\\"label\\\": \\\"client\\\\xxxx\\\".",
       "docs_button": "Voir la spécification complète",
@@ -1337,7 +1337,7 @@
       "title": "lip n'est pas installé",
       "description": "lipd n'est pas encore installé. Pour continuer à utiliser les pages liées à lip ou installer LeviLamina, allez dans Paramètres > Composants tiers et installez-le d'abord."
     },
-    "title": "Bedrinth",
+    "title": "LeviMC Mods",
     "sort_options": {
       "hotness": "Popularité",
       "updated": "Mis à jour",

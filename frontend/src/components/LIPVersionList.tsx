@@ -22,7 +22,7 @@ type Props = {
 
 const ALL = "all";
 
-export function BedrinthVersionList({
+export function LIPVersionList({
   files,
   packageName,
   mappingReady,

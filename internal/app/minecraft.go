@@ -22,8 +22,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/lip"
-	lipclient "github.com/liteldev/LeviLauncher/internal/lip/client"
-	liptypes "github.com/liteldev/LeviLauncher/internal/lip/client/types"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/packages"
 	"github.com/liteldev/LeviLauncher/internal/registry"
@@ -193,16 +191,10 @@ func (a *Minecraft) GetImageURL(path string) string {
 type Minecraft struct {
 	ctx            context.Context
 	curseClient    client.CurseClient
-	lipClient      lipService
 	launcher       launchService
 	contentManager contentService
 	localImages    *localImageRegistry
 	launcherStarts launcherStartState
-}
-
-type lipService interface {
-	SearchPackages(q string, perPage int, page int, sort string, order string) (*liptypes.SearchPackagesResponse, error)
-	GetPackage(identifier string) (*liptypes.GetPackageResponse, error)
 }
 
 type packLoader interface {
@@ -238,7 +230,6 @@ type contentService interface {
 
 type MinecraftDeps struct {
 	CurseClient    client.CurseClient
-	LIPClient      lipService
 	PackManager    packLoader
 	Launcher       launchService
 	ContentManager contentService
@@ -252,10 +243,6 @@ func NewMinecraftWithDeps(deps MinecraftDeps) *Minecraft {
 	curseClient := deps.CurseClient
 	if curseClient == nil {
 		curseClient = client.NewCurseClient(curseforge.APIKey())
-	}
-	lipClient := deps.LIPClient
-	if lipClient == nil {
-		lipClient = lipclient.NewClient()
 	}
 	packManager := deps.PackManager
 	if packManager == nil {
@@ -278,19 +265,10 @@ func NewMinecraftWithDeps(deps MinecraftDeps) *Minecraft {
 	}
 	return &Minecraft{
 		curseClient:    curseClient,
-		lipClient:      lipClient,
 		launcher:       launcher,
 		contentManager: contentManager,
 		localImages:    newLocalImageRegistry(),
 	}
-}
-
-func (a *Minecraft) SearchLIPPackages(q string, perPage int, page int, sort string, order string) (*liptypes.SearchPackagesResponse, error) {
-	return a.lipClient.SearchPackages(q, perPage, page, sort, order)
-}
-
-func (a *Minecraft) GetLIPPackage(identifier string) (*liptypes.GetPackageResponse, error) {
-	return a.lipClient.GetPackage(identifier)
 }
 
 func (a *Minecraft) GetLIPPackageReadme(projectURL string) (string, error) {

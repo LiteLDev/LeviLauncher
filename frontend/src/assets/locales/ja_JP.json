@@ -1276,7 +1276,7 @@
     }
   },
   "lip": {
-    "search_placeholder": "パッケージを検索…",
+    "search_placeholder": "Mod を検索…",
     "sort_by": "並び替え",
     "select_sort": "並び替えを選択",
     "order_by": "順序",

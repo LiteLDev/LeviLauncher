@@ -1276,7 +1276,7 @@
     }
   },
   "lip": {
-    "search_placeholder": "搜尋套件…",
+    "search_placeholder": "搜尋模組…",
     "sort_by": "排序",
     "select_sort": "選擇排序",
     "order_by": "順序",

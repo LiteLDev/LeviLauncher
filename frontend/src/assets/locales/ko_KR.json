@@ -1276,7 +1276,7 @@
     }
   },
   "lip": {
-    "search_placeholder": "패키지 검색…",
+    "search_placeholder": "모드 검색…",
     "sort_by": "정렬 기준",
     "select_sort": "정렬 선택",
     "order_by": "순서",

@@ -12,7 +12,8 @@
     -webkit-font-smoothing: antialiased;
     -moz-osx-font-smoothing: grayscale;
     text-rendering: optimizeLegibility;
-    scroll-padding-top: calc(var(--spacing-header) + 1rem);
+    /* sticky headers set --kit-sticky-offset (docs header, a sticky GlobalBar); other pages only keep 1rem */
+    scroll-padding-top: calc(var(--kit-sticky-offset, 0px) + 1rem);
     tab-size: 4;
   }
   html.dark {

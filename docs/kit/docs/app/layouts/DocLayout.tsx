@@ -34,6 +34,7 @@ export function DocLayout({ route, page, t }: { route: RouteMeta; page: PageData
   return (
     <div className="kit-doc-layout" data-sidebar={sidebar ? '' : undefined} data-toc={tocColumn ? '' : undefined}>
       {sidebar ? (
+        // plain wrappers: the labelled <nav> inside is the landmark (two unlabelled <aside>s failed axe landmark-unique)
         <div className="kit-doc-sidebar">
           <div className="kit-doc-sidebar-inner">
             <Sidebar data={sidebar} path={route.path} label={t.sidebarNav} />

@@ -4,7 +4,6 @@ import { defineDocsConfig, type NavEntry } from './kit/docs/node/config.ts';
 
 const repo = 'https://github.com/LiteLDev/LeviLauncher';
 const releases = `${repo}/releases`;
-const discord = 'https://discord.gg/v5R5P4vRZk';
 const lanzou = 'https://levimc.lanzoue.com/b016ke39hc';
 
 // --- Sidebars -------------------------------------------------------------------------------------
@@ -225,7 +224,6 @@ interface NavLabels {
   guide: string;
   downloads: string;
   mirror: string;
-  community: string;
 }
 
 function buildNav(prefix: string, t: NavLabels): NavEntry[] {
@@ -233,21 +231,21 @@ function buildNav(prefix: string, t: NavLabels): NavEntry[] {
     { text: t.guide, link: `${prefix}guide/quick-start` },
     { text: t.downloads, link: releases },
     { text: t.mirror, link: lanzou },
-    { text: t.community, link: discord },
-    // GitHub is the LeviMC bar's GitHub button (`repo`), not a docs tab: the docs row carries no duplicate controls.
+    // GitHub and Community (Discord) are not docs tabs: the LeviMC bar already has a GitHub button (`repo`) and a
+    // Community tab, and the footer links the same Discord invite, so the docs row carries no duplicates.
   ];
 }
 
 const NAV: Record<string, NavLabels> = {
-  'en-US': { guide: 'Guide', downloads: 'Downloads', mirror: 'Mirror', community: 'Community' },
-  'es-ES': { guide: 'Guía', downloads: 'Descargas', mirror: 'Espejo', community: 'Comunidad' },
-  'zh-CN': { guide: '文档', downloads: '下载', mirror: '蓝奏云', community: '社区' },
-  'zh-HK': { guide: '文檔', downloads: '下載', mirror: '藍奏雲', community: '社群' },
-  'ru-RU': { guide: 'Документация', downloads: 'Загрузки', mirror: 'Зеркало', community: 'Сообщество' },
-  'de-DE': { guide: 'Dokumentation', downloads: 'Downloads', mirror: 'Spiegel', community: 'Community' },
-  'ja-JP': { guide: 'ドキュメント', downloads: 'ダウンロード', mirror: 'ミラー', community: 'コミュニティ' },
-  'ko-KR': { guide: '가이드', downloads: '다운로드', mirror: '미러', community: '커뮤니티' },
-  'fr-FR': { guide: 'Guide', downloads: 'Téléchargements', mirror: 'Miroir', community: 'Communauté' },
+  'en-US': { guide: 'Guide', downloads: 'Downloads', mirror: 'Mirror' },
+  'es-ES': { guide: 'Guía', downloads: 'Descargas', mirror: 'Espejo' },
+  'zh-CN': { guide: '文档', downloads: '下载', mirror: '蓝奏云' },
+  'zh-HK': { guide: '文檔', downloads: '下載', mirror: '藍奏雲' },
+  'ru-RU': { guide: 'Документация', downloads: 'Загрузки', mirror: 'Зеркало' },
+  'de-DE': { guide: 'Dokumentation', downloads: 'Downloads', mirror: 'Spiegel' },
+  'ja-JP': { guide: 'ドキュメント', downloads: 'ダウンロード', mirror: 'ミラー' },
+  'ko-KR': { guide: '가이드', downloads: '다운로드', mirror: '미러' },
+  'fr-FR': { guide: 'Guide', downloads: 'Téléchargements', mirror: 'Miroir' },
 };
 
 // --- Locales & UI labels --------------------------------------------------------------------------

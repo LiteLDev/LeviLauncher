@@ -33,9 +33,9 @@ import rehypeRaw from "rehype-raw";
 import rehypeSanitize from "rehype-sanitize";
 import rehypeSlug from "rehype-slug";
 import {
-  BedrinthVersionList,
+  LIPVersionList,
   type FileGameVersionState,
-} from "@/components/BedrinthVersionList";
+} from "@/components/LIPVersionList";
 import { shouldDisableAnimations } from "@/hooks/useAnimations";
 import {
   LuClock,
@@ -1549,7 +1549,7 @@ const LIPPackagePage: React.FC = () => {
                           </Select>
                         </div>
                       ) : null}
-                      <BedrinthVersionList
+                      <LIPVersionList
                         key={activePackageIdentifier}
                         files={filesWithGameVersionState}
                         packageName={pkg.name}

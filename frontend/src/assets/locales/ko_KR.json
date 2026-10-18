@@ -138,7 +138,7 @@
       "launch_dependencies": "GameInput, Visual C++ 런타임 또는 Gaming Services가 없으면 LeviLauncher가 실행 전에 설치를 안내합니다.",
       "mods_card": "모드 카드는 현재 인스턴스에 활성화된 모드를 표시하며, 클릭 한 번으로 전체 모드 페이지를 엽니다.",
       "content_counts_card": "콘텐츠 카드는 월드, 리소스 팩, 행동 팩의 수를 표시하며, 각 행은 해당 페이지를 엽니다.",
-      "content_download_sources": "다운로드 카드를 사용하여 런처를 벗어나지 않고 CurseForge 또는 Bedrinth 콘텐츠 소스를 탐색하세요.",
+      "content_download_sources": "다운로드 카드를 사용하여 런처를 벗어나지 않고 CurseForge 또는 LeviMC Mods 콘텐츠 소스를 탐색하세요.",
       "settings_personalize": "설정에서 테마, 색상, 배경 및 기타 모양 옵션을 조정하여 설정에 맞게 맞춤화할 수 있습니다.",
       "settings_storage_path": "설정에서 저장 경로를 변경할 수 있습니다. 콘텐츠를 이동하기 전에 대상 디렉토리에 쓰기 권한이 있는지 확인하세요.",
       "download_mirror": "다운로드가 느린 경우, 설정에서 미러 서버 또는 관련 네트워크 옵션을 변경해 보세요.",
@@ -1276,7 +1276,7 @@
     }
   },
   "lip": {
-    "search_placeholder": "패키지 검색…",
+    "search_placeholder": "모드 검색…",
     "sort_by": "정렬 기준",
     "select_sort": "정렬 선택",
     "order_by": "순서",
@@ -1326,8 +1326,8 @@
     },
     "guide": {
       "open_button": "개발자 가이드",
-      "title": "Bedrinth 개발자 가이드",
-      "description": "모드가 LeviLauncher 의 Bedrinth 페이지에 나타나도록 하려면 LIP package_manifest 사양에 따라 게시하세요.",
+      "title": "LeviMC Mods 개발자 가이드",
+      "description": "모드가 LeviLauncher 의 LeviMC Mods 페이지에 나타나도록 하려면 LIP package_manifest 사양에 따라 게시하세요.",
       "manifest_hint": "이 대화 상자는 개발자를 위한 빠른 개요일 뿐입니다. 필드 이름, 필수 엔트리, 예제 및 유효성 검사 규칙은 공식 문서에 정의되어 있습니다.",
       "variant_hint": "변형은 레이블에 client 가 포함된 경우에만 런처에서 인덱싱됩니다. 기본적으로 \\\"label\\\": \\\"client\\\"를 사용하세요; 하위 확장용으로는 \\\"label\\\": \\\"client_xxxx\\\" 또는 \\\"label\\\": \\\"client\\\\xxxx\\\"를 사용하세요.",
       "docs_button": "전체 사양 보기",
@@ -1337,7 +1337,7 @@
       "title": "lip이 설치되어 있지 않습니다",
       "description": "lipd 가 아직 설치되어 있지 않습니다. lip 관련 페이지를 계속 사용하거나 LeviLamina 를 설치하려면 설정 > 타사 구성 요소로 이동하여 먼저 설치하세요."
     },
-    "title": "Bedrinth",
+    "title": "LeviMC Mods",
     "sort_options": {
       "hotness": "인기도",
       "updated": "업데이트됨",

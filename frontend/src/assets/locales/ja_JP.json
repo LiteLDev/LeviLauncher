@@ -138,7 +138,7 @@
       "launch_dependencies": "GameInput、Visual C++ランタイム、Gaming Servicesが不足している場合は、起動前にLeviLauncherがインストールを案内します。",
       "mods_card": "Mods カードには現在のインスタンスで有効な Mod が表示され、ワンクリックで Mods ページを開けます。",
       "content_counts_card": "コンテンツ管理カードにはワールド、リソースパック、ビヘイビアパックの数が表示され、各行から対応ページを直接開けます。",
-      "content_download_sources": "ダウンロードカードから CurseForge と Bedrinth に直接移動でき、ランチャー内でコンテンツを探せます。",
+      "content_download_sources": "ダウンロードカードから CurseForge と LeviMC Mods に直接移動でき、ランチャー内でコンテンツを探せます。",
       "settings_personalize": "設定ではテーマ、配色、背景などの外観オプションを調整でき、使い方に合わせてランチャーを整えられます。",
       "settings_storage_path": "保存先パスは設定から変更できます。移動や保存の前に、対象フォルダーが書き込み可能か確認してください。",
       "download_mirror": "ダウンロードが遅い場合は、設定でミラーや関連するネットワーク項目を見直してみてください。",
@@ -1276,7 +1276,7 @@
     }
   },
   "lip": {
-    "search_placeholder": "パッケージを検索…",
+    "search_placeholder": "Mod を検索…",
     "sort_by": "並び替え",
     "select_sort": "並び替えを選択",
     "order_by": "順序",
@@ -1326,8 +1326,8 @@
     },
     "guide": {
       "open_button": "開発者ガイド",
-      "title": "Bedrinth 開発者ガイド",
-      "description": "自分の Mod を LeviLauncher の Bedrinth ページに掲載したい場合は、LIP の package_manifest 仕様に従って公開してください。",
+      "title": "LeviMC Mods 開発者ガイド",
+      "description": "自分の Mod を LeviLauncher の LeviMC Mods ページに掲載したい場合は、LIP の package_manifest 仕様に従って公開してください。",
       "manifest_hint": "このダイアログは開発者向けの簡易案内です。フィールド名、必須項目、例、検証ルールの詳細は公式ドキュメントを参照してください。",
       "variant_hint": "variant の label に client を含む場合に限り、ランチャーに収録されます。デフォルトでは \"label\": \"client\" を使用し、サブ拡張は \"label\": \"client_xxxx\" または \"label\": \"client\\xxxx\" を使用してください。",
       "docs_button": "完全な仕様を見る",
@@ -1337,7 +1337,7 @@
       "title": "lipがインストールされていません",
       "description": "lipd がまだインストールされていません。lip 関連ページを引き続き利用する場合や LeviLamina をインストールする場合は、まず「設定 > サードパーティ製コンポーネント」でインストールしてください。"
     },
-    "title": "Bedrinth",
+    "title": "LeviMC Mods",
     "sort_options": {
       "hotness": "人気度",
       "updated": "更新順",

@@ -4,7 +4,6 @@ import { defineDocsConfig, type NavEntry } from './kit/docs/node/config.ts';
 
 const repo = 'https://github.com/LiteLDev/LeviLauncher';
 const releases = `${repo}/releases`;
-const discord = 'https://discord.gg/v5R5P4vRZk';
 const lanzou = 'https://levimc.lanzoue.com/b016ke39hc';
 
 // --- Sidebars -------------------------------------------------------------------------------------
@@ -225,7 +224,6 @@ interface NavLabels {
   guide: string;
   downloads: string;
   mirror: string;
-  community: string;
 }
 
 function buildNav(prefix: string, t: NavLabels): NavEntry[] {
@@ -233,21 +231,21 @@ function buildNav(prefix: string, t: NavLabels): NavEntry[] {
     { text: t.guide, link: `${prefix}guide/quick-start` },
     { text: t.downloads, link: releases },
     { text: t.mirror, link: lanzou },
-    { text: t.community, link: discord },
-    { text: 'GitHub', link: repo },
+    // GitHub and Community (Discord) are not docs tabs: the LeviMC bar already has a GitHub button (`repo`) and a
+    // Community tab, and the footer links the same Discord invite, so the docs row carries no duplicates.
   ];
 }
 
 const NAV: Record<string, NavLabels> = {
-  'en-US': { guide: 'Guide', downloads: 'Downloads', mirror: 'Mirror', community: 'Community' },
-  'es-ES': { guide: 'Guía', downloads: 'Descargas', mirror: 'Espejo', community: 'Comunidad' },
-  'zh-CN': { guide: '文档', downloads: '下载', mirror: '蓝奏云', community: '社区' },
-  'zh-HK': { guide: '文檔', downloads: '下載', mirror: '藍奏雲', community: '社群' },
-  'ru-RU': { guide: 'Документация', downloads: 'Загрузки', mirror: 'Зеркало', community: 'Сообщество' },
-  'de-DE': { guide: 'Dokumentation', downloads: 'Downloads', mirror: 'Spiegel', community: 'Community' },
-  'ja-JP': { guide: 'ドキュメント', downloads: 'ダウンロード', mirror: 'ミラー', community: 'コミュニティ' },
-  'ko-KR': { guide: '가이드', downloads: '다운로드', mirror: '미러', community: '커뮤니티' },
-  'fr-FR': { guide: 'Guide', downloads: 'Téléchargements', mirror: 'Miroir', community: 'Communauté' },
+  'en-US': { guide: 'Guide', downloads: 'Downloads', mirror: 'Mirror' },
+  'es-ES': { guide: 'Guía', downloads: 'Descargas', mirror: 'Espejo' },
+  'zh-CN': { guide: '文档', downloads: '下载', mirror: '蓝奏云' },
+  'zh-HK': { guide: '文檔', downloads: '下載', mirror: '藍奏雲' },
+  'ru-RU': { guide: 'Документация', downloads: 'Загрузки', mirror: 'Зеркало' },
+  'de-DE': { guide: 'Dokumentation', downloads: 'Downloads', mirror: 'Spiegel' },
+  'ja-JP': { guide: 'ドキュメント', downloads: 'ダウンロード', mirror: 'ミラー' },
+  'ko-KR': { guide: '가이드', downloads: '다운로드', mirror: '미러' },
+  'fr-FR': { guide: 'Guide', downloads: 'Téléchargements', mirror: 'Miroir' },
 };
 
 // --- Locales & UI labels --------------------------------------------------------------------------
@@ -265,11 +263,11 @@ const LOCALES = [
 ];
 
 // VitePress docFooter / editLink.text / returnToTopLabel / sidebarMenuLabel / darkModeSwitchLabel, as kit UI strings.
-// `theme` (darkModeSwitchLabel) names the theme toggle ("Appearance: Dark — Switch theme"). The kit's Russian
-// state names agree with «Тема» (feminine), so ru-RU also gets masculine forms that agree with «Внешний вид».
-// lightModeSwitchTitle / darkModeSwitchTitle have no kit equivalent: the kit's 3-state toggle uses its own
-// translated "Switch theme" text. `backToTop` (returnToTopLabel) is not rendered yet: kit 1.0.0 has no
-// back-to-top control; the key is kept so the translations apply once the kit adds one.
+// `theme` (darkModeSwitchLabel) names the LeviMC bar's theme menu ("Appearance: Auto"). The kit's Russian
+// state names agree with «Тема» (feminine), so ru-RU also gets masculine forms that agree with «Внешний вид»
+// (the Auto state, «Авто», is invariable). lightModeSwitchTitle / darkModeSwitchTitle have no kit equivalent.
+// `backToTop` (returnToTopLabel) is not rendered: the kit has no back-to-top control; the key is kept so the
+// translations apply once it adds one.
 interface UiLabels {
   previous: string;
   next: string;
@@ -279,7 +277,6 @@ interface UiLabels {
   theme: string;
   themeLight?: string;
   themeDark?: string;
-  themeSystem?: string;
 }
 
 const UI: Record<string, UiLabels> = {
@@ -287,7 +284,7 @@ const UI: Record<string, UiLabels> = {
   'es-ES': { previous: 'Página anterior', next: 'Siguiente página', editPage: 'Editar esta página en GitHub', backToTop: 'Volver arriba', menu: 'Menú', theme: 'Apariencia' },
   'zh-CN': { previous: '上一页', next: '下一页', editPage: '在 GitHub 上编辑此页', backToTop: '返回顶部', menu: '菜单', theme: '外观' },
   'zh-HK': { previous: '上一頁', next: '下一頁', editPage: '在 GitHub 上編輯此頁', backToTop: '返回頂部', menu: '選單', theme: '外觀' },
-  'ru-RU': { previous: 'Предыдущая страница', next: 'Следующая страница', editPage: 'Редактировать эту страницу на GitHub', backToTop: 'Вернуться наверх', menu: 'Меню', theme: 'Внешний вид', themeLight: 'Светлый', themeDark: 'Тёмный', themeSystem: 'Системный' },
+  'ru-RU': { previous: 'Предыдущая страница', next: 'Следующая страница', editPage: 'Редактировать эту страницу на GitHub', backToTop: 'Вернуться наверх', menu: 'Меню', theme: 'Внешний вид', themeLight: 'Светлый', themeDark: 'Тёмный' },
   'de-DE': { previous: 'Vorherige Seite', next: 'Nächste Seite', editPage: 'Diese Seite auf GitHub bearbeiten', backToTop: 'Zurück nach oben', menu: 'Menü', theme: 'Erscheinungsbild' },
   'ja-JP': { previous: '前のページ', next: '次のページ', editPage: 'GitHub でこのページを編集', backToTop: 'トップに戻る', menu: 'メニュー', theme: '外観' },
   'ko-KR': { previous: '이전 페이지', next: '다음 페이지', editPage: 'GitHub에서 이 페이지 편집', backToTop: '맨 위로 돌아가기', menu: '메뉴', theme: '외관' },

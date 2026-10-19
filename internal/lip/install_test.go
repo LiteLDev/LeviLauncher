@@ -72,7 +72,7 @@ func TestResolveLatestTarball(t *testing.T) {
 				TarballHost:       lipMirrorTarballHost,
 				TarballPathPrefix: lipMirrorTarballPathPrefix,
 			},
-			expectedTarball: "https://mirrors.cloud.tencent.com/npm/@futrime/lip/-/lip-0.34.4.tgz",
+			expectedTarball: "https://mirrors.cloud.tencent.com/npm/@levimc/lip/-/lip-0.34.4.tgz",
 		},
 		{
 			name: "official npm source",
@@ -81,7 +81,7 @@ func TestResolveLatestTarball(t *testing.T) {
 				TarballHost:       lipOfficialTarballHost,
 				TarballPathPrefix: lipOfficialTarballPathPrefix,
 			},
-			expectedTarball: "https://registry.npmjs.org/@futrime/lip/-/lip-0.34.4.tgz",
+			expectedTarball: "https://registry.npmjs.org/@levimc/lip/-/lip-0.34.4.tgz",
 		},
 	}
 
@@ -178,7 +178,7 @@ func TestResolveLatestTarballErrors(t *testing.T) {
 				Versions: map[string]lipPackageVersion{
 					"0.34.4": {
 						Dist: lipPackageDist{
-							Tarball: "https://registry.npmjs.org/@futrime/lip/-/lip-0.34.4.tgz",
+							Tarball: "https://registry.npmjs.org/@levimc/lip/-/lip-0.34.4.tgz",
 						},
 					},
 				},

@@ -22,6 +22,7 @@ import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import { ROUTES } from "@/constants/routes";
 import { normalizePackageType } from "@/utils/packageType";
+import { subscribeToLaunchEvents } from "@/utils/launchEvents";
 
 const IGNORE_GS_KEY = "ll.ignore.gs";
 const DEPENDENCY_CHECK_SESSION_KEYS = {
@@ -984,36 +985,12 @@ export const useLauncher = (args: any) => {
   }, [refreshContentCounts, hasBackend, currentVersion]);
 
   useEffect(() => {
-    const unlistenMcStart = Events.On("mc.launch.start", () => {
-      if (!launchRequestActiveRef.current) return;
-      mcLaunchLoadingDisclosure.open();
+    return subscribeToLaunchEvents(Events, {
+      launchRequestActiveRef,
+      loadingDisclosure: mcLaunchLoadingDisclosure,
+      failedDisclosure: launchFailedDisclosure,
+      setLaunchErrorCode,
     });
-
-    const unlistenMcDone = Events.On("mc.launch.done", () => {
-      launchRequestActiveRef.current = false;
-      mcLaunchLoadingDisclosure.close();
-    });
-    const unlistenMcFailed = Events.On("mc.launch.failed", (data) => {
-      launchRequestActiveRef.current = false;
-      mcLaunchLoadingDisclosure.close();
-      const payload: any = (data as any)?.data ?? data;
-      const first = Array.isArray(payload) ? payload[0] : payload;
-      const code = String(first || "");
-      setLaunchErrorCode(code || "ERR_LAUNCH_GAME");
-      launchFailedDisclosure.open();
-    });
-
-    return () => {
-      try {
-        unlistenMcStart && (unlistenMcStart as any)();
-      } catch {}
-      try {
-        unlistenMcDone && (unlistenMcDone as any)();
-      } catch {}
-      try {
-        unlistenMcFailed && (unlistenMcFailed as any)();
-      } catch {}
-    };
   }, []);
 
   useEffect(() => {

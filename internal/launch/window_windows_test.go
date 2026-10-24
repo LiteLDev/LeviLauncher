@@ -96,6 +96,9 @@ func TestGameWindowUsesProcessIdentityAndPresentation(t *testing.T) {
 		t.Fatal("unrelated instance matched a visible window")
 	}
 	testShowWindow.Call(uintptr(hwnd), 0) // SW_HIDE
+	if inspectGameWindows(pids).exists {
+		t.Fatal("hidden helper window triggered the launch prompt")
+	}
 	if isGameWindowVisible(pids) {
 		t.Fatal("hidden window counted as ready")
 	}
@@ -104,6 +107,9 @@ func TestGameWindowUsesProcessIdentityAndPresentation(t *testing.T) {
 	if isGameWindowVisible(pids) {
 		t.Fatal("minimized window counted as ready")
 	}
+	if !inspectGameWindows(pids).exists {
+		t.Fatal("minimized game window left the launch prompt waiting")
+	}
 	testShowWindow.Call(uintptr(hwnd), 4)
 	cloaked := uint32(1)
 	if err := windows.DwmSetWindowAttribute(hwnd, windows.DWMWA_CLOAK, unsafe.Pointer(&cloaked), 4); err != nil {
@@ -111,6 +117,9 @@ func TestGameWindowUsesProcessIdentityAndPresentation(t *testing.T) {
 	}
 	if isGameWindowVisible(pids) {
 		t.Fatal("DWM-cloaked window counted as ready")
+	}
+	if !inspectGameWindows(pids).exists {
+		t.Fatal("cloaked game window left the launch prompt waiting")
 	}
 	cloaked = 0
 	if err := windows.DwmSetWindowAttribute(hwnd, windows.DWMWA_CLOAK, unsafe.Pointer(&cloaked), 4); err != nil {
@@ -128,6 +137,22 @@ func TestConsoleWindowDoesNotSignalGameReady(t *testing.T) {
 	createTestWindow(t, "ConsoleWindowClass", 0, true)
 	if isGameWindowVisible(map[uint32]struct{}{uint32(os.Getpid()): {}}) {
 		t.Fatal("console window counted as the game window")
+	}
+	if inspectGameWindows(map[uint32]struct{}{uint32(os.Getpid()): {}}).exists {
+		t.Fatal("console window triggered the launch prompt")
+	}
+}
+
+func TestZeroAreaWindowDoesNotDismissLaunchPrompt(t *testing.T) {
+	runtime.LockOSThread()
+	t.Cleanup(runtime.UnlockOSThread)
+	hwnd := createTestWindow(t, "STATIC", 0, true)
+	// SWP_NOMOVE | SWP_NOZORDER | SWP_NOACTIVATE: resize our offscreen fixture only.
+	if ok, _, err := user32.NewProc("SetWindowPos").Call(uintptr(hwnd), 0, 0, 0, 0, 0, 0x16); ok == 0 {
+		t.Fatal(err)
+	}
+	if inspectGameWindows(map[uint32]struct{}{uint32(os.Getpid()): {}}).exists {
+		t.Fatal("zero-area helper window dismissed the launch prompt")
 	}
 }
 
@@ -220,5 +245,14 @@ func TestUWPFrameMatchesGameOwnedChild(t *testing.T) {
 	testShowWindow.Call(uintptr(frame), 0)
 	if isGameWindowVisible(pids) {
 		t.Fatal("hidden UWP host counted as ready")
+	}
+	if inspectGameWindows(pids).exists {
+		t.Fatal("hidden UWP host triggered the launch prompt")
+	}
+	testShowWindow.Call(uintptr(frame), 4)
+	testShowWindow.Call(uintptr(frame), 6)
+	state := inspectGameWindows(pids)
+	if !state.exists || state.presented {
+		t.Fatalf("minimized UWP frame status = %+v", state)
 	}
 }

@@ -661,7 +661,7 @@ func isWindowsLocaleZhCN() bool {
 
 func isChinaUser() bool {
 	if runtime.GOOS == "windows" {
-		return isWindowsTimeZoneChina() || isWindowsLocaleZhCN()
+		return isWindowsTimeZoneChina() && isWindowsLocaleZhCN()
 	}
 
 	isTz := false

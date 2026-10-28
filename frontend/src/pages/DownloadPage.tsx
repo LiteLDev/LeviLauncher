@@ -216,7 +216,7 @@ export const DownloadPage: React.FC = () => {
       const isTzCN = tz === "Asia/Shanghai" || tz === "Asia/Urumqi";
       const isLangCN =
         lang.startsWith("zh-cn") || langs.includes("zh-cn") || lang === "zh";
-      return isTzCN || isLangCN;
+      return isTzCN && isLangCN;
     } catch {
       return false;
     }
@@ -366,7 +366,7 @@ export const DownloadPage: React.FC = () => {
       (window as any).__llVersionItemsCache = newItems;
       localStorage.setItem("ll.version_items", JSON.stringify(newItems));
       localStorage.setItem(`ll.version_items.${packageFilter}`, JSON.stringify(newItems));
-    } catch {}
+    } catch { }
   };
 
   useEffect(() => {
@@ -378,7 +378,7 @@ export const DownloadPage: React.FC = () => {
     try {
       const cached = JSON.parse(localStorage.getItem(`ll.version_items.${packageFilter}`) || "[]");
       if (Array.isArray(cached)) setItems(cached);
-    } catch {}
+    } catch { }
     void fetchVersionItems().then((newItems) => {
       if (cancelled) return;
       setItems(newItems);
@@ -439,8 +439,8 @@ export const DownloadPage: React.FC = () => {
       .filter((it) =>
         q
           ? it.short.toLowerCase().includes(q) ||
-            it.version.toLowerCase().includes(q) ||
-            it.type.toLowerCase().includes(q)
+          it.version.toLowerCase().includes(q) ||
+          it.type.toLowerCase().includes(q)
           : true,
       )
       .sort((a, b) => {
@@ -488,7 +488,7 @@ export const DownloadPage: React.FC = () => {
           1,
           Math.floor(
             (area.clientHeight - header.getBoundingClientRect().height - 1) /
-              rowHeight,
+            rowHeight,
           ),
         ),
       );
@@ -854,10 +854,9 @@ export const DownloadPage: React.FC = () => {
                       variant={isDownloading ? "primary" : "secondary"}
                       className={cn(
                         "rounded-full",
-                        `transition-all ${
-                          isDownloading
-                            ? "bg-brand-500 brand-primary-foreground"
-                            : "bg-surface-secondary/50 text-foreground dark:text-zinc-200 hover:bg-surface-tertiary/50 "
+                        `transition-all ${isDownloading
+                          ? "bg-brand-500 brand-primary-foreground"
+                          : "bg-surface-secondary/50 text-foreground dark:text-zinc-200 hover:bg-surface-tertiary/50 "
                         }`,
                       )}
                     >
@@ -1160,7 +1159,7 @@ export const DownloadPage: React.FC = () => {
                                             if (
                                               hasBackend &&
                                               typeof minecraft?.ResolveDownloadedMsixvc ===
-                                                "function"
+                                              "function"
                                             ) {
                                               fname = item.packageType === "uwp"
                                                 ? await minecraft.ResolveDownloadedUWP(item.short, item.type.toLowerCase())
@@ -1171,7 +1170,7 @@ export const DownloadPage: React.FC = () => {
                                                   ).toLowerCase(),
                                                 );
                                             }
-                                          } catch {}
+                                          } catch { }
                                           setDeleteItem({
                                             short: item.short,
                                             type: item.type,
@@ -1238,11 +1237,11 @@ export const DownloadPage: React.FC = () => {
                                   )}
                                 >
                                   {<FaDownload size={14} />}
-                                   {resolvingUWP.has(versionStatusKey(item.short, item.type, item.packageType))
-                                     ? t("uwp.resolving_download")
-                                     : !hasStatus(item) && refreshing
-                                    ? t("downloadpage.status.checking")
-                                    : t("downloadmodal.download_button")}
+                                  {resolvingUWP.has(versionStatusKey(item.short, item.type, item.packageType))
+                                    ? t("uwp.resolving_download")
+                                    : !hasStatus(item) && refreshing
+                                      ? t("downloadpage.status.checking")
+                                      : t("downloadmodal.download_button")}
                                 </Button>
                               )}
                             </motion.div>
@@ -1316,9 +1315,8 @@ export const DownloadPage: React.FC = () => {
                     onClose();
                   } else {
                     if (hasBackend) {
-                      const desired = `${
-                        mirrorType || "Release"
-                      } ${mirrorVersion}.msixvc`;
+                      const desired = `${mirrorType || "Release"
+                        } ${mirrorVersion}.msixvc`;
                       const item = items.find(
                         (i) =>
                           i.short === mirrorVersion && i.type === mirrorType,
@@ -1437,20 +1435,18 @@ export const DownloadPage: React.FC = () => {
 
                   {bestMirror ? (
                     <div
-                      className={`group relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl border-2 p-4 transition-all cursor-pointer ${
-                        selectedUrl === bestMirror.url
+                      className={`group relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl border-2 p-4 transition-all cursor-pointer ${selectedUrl === bestMirror.url
                           ? "border-brand-500 bg-brand-500/5 shadow-xl shadow-brand-500/10"
                           : "border-transparent bg-surface dark:bg-surface-secondary/50 hover:bg-surface-secondary "
-                      }`}
+                        }`}
                       onClick={() => setSelectedUrl(bestMirror.url)}
                     >
                       <div className="flex items-center gap-4 min-w-0 z-10">
                         <div
-                          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${
-                            selectedUrl === bestMirror.url
+                          className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${selectedUrl === bestMirror.url
                               ? "bg-brand-500 brand-primary-foreground"
                               : "bg-surface-tertiary text-muted dark:text-zinc-400"
-                          }`}
+                            }`}
                         >
                           <FaDownload size={16} />
                         </div>
@@ -1516,11 +1512,10 @@ export const DownloadPage: React.FC = () => {
                     {mirrorResults.map((m, i) => (
                       <div
                         key={`mirror-${i}`}
-                        className={`relative flex items-center justify-between gap-3 rounded-xl border p-2.5 transition-all cursor-pointer ${
-                          selectedUrl === m.url
+                        className={`relative flex items-center justify-between gap-3 rounded-xl border p-2.5 transition-all cursor-pointer ${selectedUrl === m.url
                             ? "border-brand-500/50 bg-brand-500/5"
                             : "border-border/50 dark:border-zinc-600 bg-surface/50 dark:bg-surface-tertiary/30 hover:bg-surface-secondary dark:hover:bg-surface-tertiary hover:border-border"
-                        }`}
+                          }`}
                         onClick={() => setSelectedUrl(m.url)}
                       >
                         <div className="flex items-center gap-3 min-w-0 overflow-hidden">
@@ -1535,15 +1530,14 @@ export const DownloadPage: React.FC = () => {
                         </div>
                         <div className="flex items-center gap-2 shrink-0">
                           <span
-                            className={`text-xs font-bold ${
-                              typeof m.latencyMs === "number"
+                            className={`text-xs font-bold ${typeof m.latencyMs === "number"
                                 ? m.latencyMs < 100
                                   ? "text-brand-500"
                                   : m.latencyMs < 300
                                     ? "text-amber-500"
                                     : "text-rose-500"
                                 : "text-muted"
-                            }`}
+                              }`}
                           >
                             {typeof m.latencyMs === "number"
                               ? `${Math.round(m.latencyMs)}ms`
@@ -1601,9 +1595,9 @@ export const DownloadPage: React.FC = () => {
               const msg: string = deleteItem?.packageType === "uwp"
                 ? await minecraft.DeleteDownloadedUWP(deleteItem.short, deleteItem.type.toLowerCase())
                 : await minecraft.DeleteDownloadedMsixvc(
-                `${String(deleteItem?.type)} ${String(deleteItem?.short)}`,
-                String(deleteItem?.type).toLowerCase(),
-              );
+                  `${String(deleteItem?.type)} ${String(deleteItem?.short)}`,
+                  String(deleteItem?.type).toLowerCase(),
+                );
               if (msg) {
                 setDeleteError(msg);
                 setDeleteLoading(false);
@@ -1616,7 +1610,7 @@ export const DownloadPage: React.FC = () => {
                   String(deleteItem?.type || "release").toLowerCase(),
                   deleteItem?.packageType,
                 );
-              } catch {}
+              } catch { }
               try {
                 const disp = /\.(msixvc|appx|msix|appxbundle|msixbundle)$/i.test(deleteItem?.fileName || "")
                   ? deleteItem?.fileName
@@ -1628,8 +1622,8 @@ export const DownloadPage: React.FC = () => {
               } catch {
                 toast(
                   t("downloadpage.delete.success_body") +
-                    " " +
-                    String(deleteItem?.fileName || ""),
+                  " " +
+                  String(deleteItem?.fileName || ""),
                   { variant: "success", timeout: 2000 },
                 );
               }

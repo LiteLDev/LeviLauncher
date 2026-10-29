@@ -4,14 +4,22 @@ LeviLauncher treats each installed setup as a version you can manage independent
 
 ## What you can do
 
-- install Minecraft Release or Preview builds
-- give versions recognizable names
-- launch a selected version quickly
-- remove versions you no longer need
-- open version-specific settings
-- create a desktop shortcut for a version
+=== "Windows"
 
-## Minecraft Release vs Preview
+    - install Minecraft Release or Preview builds
+    - give versions recognizable names
+    - launch a selected version quickly
+    - remove versions you no longer need
+    - open version-specific settings
+    - create a desktop shortcut for a version
+
+=== "Android"
+
+    - import official Minecraft APKs and run them inside the launcher, without installing each version on the system
+    - keep multiple versions and their data separated
+    - choose the version the launch screen starts
+
+## Minecraft Release vs Preview <Badge platform="windows" />
 
 | Type | Best for | Notes |
 | --- | --- | --- |
@@ -20,15 +28,21 @@ LeviLauncher treats each installed setup as a version you can manage independent
 
 ## Isolation explained
 
-Isolation is available for GDK versions and for UWP x64 versions 1.19.70.2 or later. When isolation is enabled, LeviLauncher stores the managed game data inside that version's own workspace rather than letting everything share the same default data location.
+=== "Windows"
 
-Isolation is useful when you want:
+    Isolation is available for GDK versions and for UWP x64 versions 1.19.70.2 or later. When isolation is enabled, LeviLauncher stores the managed game data inside that version's own workspace rather than letting everything share the same default data location.
 
-- different content sets for different versions
-- safer testing for mods or Minecraft Preview builds
-- less risk of one setup affecting another
+    Isolation is useful when you want:
 
-## Common version tasks
+    - different content sets for different versions
+    - safer testing for mods or Minecraft Preview builds
+    - less risk of one setup affecting another
+
+=== "Android"
+
+    Enable version isolation for an imported version when its worlds, packs and settings should stay separate from the installed Google Play version. Imported versions often need isolation to launch.
+
+## Common version tasks <Badge platform="windows" />
 
 ### Install a new version
 
@@ -50,7 +64,7 @@ Deleting a version can remove the managed environment for that setup. Back up im
 
 Use **Create Desktop Shortcut** in the menu next to the **Launch** button to create a shortcut for a specific version so you can launch it directly.
 
-## Recommended version strategy
+## Recommended version strategy <Badge platform="windows" />
 
 - one isolated Minecraft Release version for normal play
 - one isolated Minecraft Preview version only when needed

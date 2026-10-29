@@ -4,14 +4,22 @@ LeviLauncher considère chaque environnement installé comme une version pouvant
 
 ## Ce que vous pouvez faire
 
-- Installer des versions Release ou Preview
-- Définir un nom facilement identifiable pour la version
-- Lancer rapidement une version spécifique
-- Supprimer les versions dont vous n'avez plus besoin
-- Ouvrir les paramètres dédiés à la version
-- Créer un raccourci bureau pour la version
+=== "Windows"
 
-## Différence entre Release (officielle) et Preview (Aperçu)
+    - Installer des versions Release ou Preview
+    - Définir un nom facilement identifiable pour la version
+    - Lancer rapidement une version spécifique
+    - Supprimer les versions dont vous n'avez plus besoin
+    - Ouvrir les paramètres dédiés à la version
+    - Créer un raccourci bureau pour la version
+
+=== "Android"
+
+    - importer des APK officiels de Minecraft et les lancer dans le lanceur, sans installer chaque version sur le système
+    - garder plusieurs versions et leurs données séparées
+    - choisir la version que lance l'écran de lancement
+
+## Différence entre Release (officielle) et Preview (Aperçu) <Badge platform="windows" />
 
 | Type | Pour qui ? | Description |
 | --- | --- | --- |
@@ -20,15 +28,21 @@ LeviLauncher considère chaque environnement installé comme une version pouvant
 
 ## Qu'est-ce que l'isolation ?
 
-L'isolation est disponible pour les versions GDK et pour les versions UWP x64 1.19.70.2 ou ultérieures. Une fois l'isolation activée, LeviLauncher enregistre les données de la version dans son propre espace de travail, au lieu de les partager avec l'emplacement des données par défaut.
+=== "Windows"
 
-L'isolation est adaptée à ces besoins :
+    L'isolation est disponible pour les versions GDK et pour les versions UWP x64 1.19.70.2 ou ultérieures. Une fois l'isolation activée, LeviLauncher enregistre les données de la version dans son propre espace de travail, au lieu de les partager avec l'emplacement des données par défaut.
 
-- Utiliser des combinaisons de contenu différentes pour chaque version
-- Tester les Mods ou les versions Minecraft Preview (Aperçu) de manière plus sûre
-- Réduire le risque qu'un environnement n'affecte un autre
+    L'isolation est adaptée à ces besoins :
 
-## Opérations courantes sur les versions
+    - Utiliser des combinaisons de contenu différentes pour chaque version
+    - Tester les Mods ou les versions Minecraft Preview (Aperçu) de manière plus sûre
+    - Réduire le risque qu'un environnement n'affecte un autre
+
+=== "Android"
+
+    Activez l'isolation pour une version importée lorsque ses mondes, packs et paramètres doivent rester séparés de la version installée depuis Google Play. Les versions importées ont souvent besoin de l'isolation pour démarrer.
+
+## Opérations courantes sur les versions <Badge platform="windows" />
 
 ### Installer une nouvelle version
 
@@ -50,7 +64,7 @@ La suppression d'une version peut entraîner la suppression du contenu associé 
 
 Utilisez **Créer un raccourci sur le bureau** dans le menu à côté du bouton **Lancer** pour créer un raccourci vers une version spécifique, vous permettant de la lancer directement.
 
-## Stratégie recommandée pour les versions
+## Stratégie recommandée pour les versions <Badge platform="windows" />
 
 - Une version Release (officielle) isolée pour le jeu quotidien
 - Une version Preview (Aperçu) isolée utilisée uniquement lorsque nécessaire

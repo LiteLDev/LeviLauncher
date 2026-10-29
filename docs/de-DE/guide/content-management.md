@@ -4,12 +4,20 @@ LeviLauncher kann inhaltsbezogene Daten verwalten, die mit einzelnen Minecraft-V
 
 ## Im Launcher verwaltbare Inhaltstypen
 
-- Welten  
-- Ressourcenpakete  
-- Verhaltenspakete  
-- Skin-Pakete  
-- Screenshots  
-- Serverlisten  
+=== "Windows"
+
+    - Welten  
+    - Ressourcenpakete  
+    - Verhaltenspakete  
+    - Skin-Pakete  
+    - Screenshots  
+    - Serverlisten  
+
+=== "Android"
+
+    - Welten
+    - Ressourcenpakete
+    - Launcher-Daten und Backups
 
 ## Warum das wichtig ist
 
@@ -21,7 +29,7 @@ Beispiele:
 - Eine Version speziell zum Testen von Ressourcenpaketen  
 - Eine separate Minecraft Preview-Version, um Screenshots und Serverlisten unabhängig zu speichern  
 
-## Häufige Aktionen
+## Häufige Aktionen <Badge platform="windows" />
 
 ### Inhaltsübersicht öffnen
 
@@ -39,13 +47,20 @@ Falls du Dateien manuell prüfen oder bereinigen möchtest, kannst du über den 
 
 Sobald eine Version isoliert ist, werden ihre Inhalte in einem separaten Arbeitsverzeichnis gespeichert – ideal für Tests und archivische Ordnung.
 
+## Importieren, exportieren und sichern <Badge platform="android" />
+
+Die Android-Version kann Welten und Ressourcenpakete importieren und exportieren und vor riskanten Änderungen Backups anlegen.
+
+- Backups liegen am vom Launcher verwalteten Backup-Ort.
+- Bewahre von wichtigen Welten zusätzlich eine Kopie außerhalb des App-Speichers auf.
+
 ## Empfohlene Ordnungsgrundsätze
 
 - Test-Ressourcenpakete nicht mit Hauptwelten mischen  
 - Wichtige Welten vor größeren Änderungen sichern  
 - Versionen klar benennen, um Zuordnungsfehler zu vermeiden  
 
-## Hinweis zu Screenshots und Servern
+## Hinweis zu Screenshots und Servern <Badge platform="windows" />
 
 Wenn verschiedene Versionen unterschiedliche Zwecke erfüllen, empfiehlt es sich, auch Screenshots und Serverlisten versionsweise zu trennen – das sorgt für bessere Übersichtlichkeit.
 

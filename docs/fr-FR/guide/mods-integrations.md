@@ -4,17 +4,26 @@ LeviLauncher prend en charge des workflows liés aux Mods qui vont au-delà des 
 
 ## Fonctionnalités actuellement disponibles
 
-- Importer des Mods `.zip`
-- Importer des Mods `.dll`
-- Activer ou désactiver les Mods installés
-- Supprimer les Mods dont vous n'avez plus besoin
-- Utiliser des flux de navigation et d'obtention liés à CurseForge
-- Installer des paquets avec [lip](https://github.com/LiteLDev/lip), l'installateur de paquets
-- Fonctionner avec des workflows de chargeurs comme LeviLamina
+=== "Windows"
 
-::: warning Zone avancée
-La compatibilité des Mods, des chargeurs et des intégrations de gestion de paquets évolue souvent rapidement, surtout sur les versions Minecraft Preview (Aperçu). Considérez ceci comme une fonctionnalité avancée et procédez par tests progressifs.
-:::
+    - Importer des Mods `.zip`
+    - Importer des Mods `.dll`
+    - Activer ou désactiver les Mods installés
+    - Supprimer les Mods dont vous n'avez plus besoin
+    - Utiliser des flux de navigation et d'obtention liés à CurseForge
+    - Installer des paquets avec [lip](https://github.com/LiteLDev/lip), l'installateur de paquets
+    - Fonctionner avec des workflows de chargeurs comme LeviLamina
+
+    ::: warning Zone avancée
+    La compatibilité des Mods, des chargeurs et des intégrations de gestion de paquets évolue souvent rapidement, surtout sur les versions Minecraft Preview (Aperçu). Considérez ceci comme une fonctionnalité avancée et procédez par tests progressifs.
+    :::
+
+=== "Android"
+
+    - charger des Mods natifs (bibliothèques `.so`) dans le jeu
+    - garder les configurations moddées dans des versions isolées
+
+    Vous créez des Mods natifs ? Consultez [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/) dans la documentation de LeviLamina (en anglais).
 
 ## Workflow recommandé pour les Mods
 
@@ -24,7 +33,7 @@ La compatibilité des Mods, des chargeurs et des intégrations de gestion de paq
 4. Testez le lancement après chaque modification.
 5. Conservez toujours un chemin de sauvegarde pour vos mondes importants.
 
-## CurseForge
+## CurseForge <Badge platform="windows" />
 
 Le lanceur propose des flux de navigation et de gestion de paquets liés à CurseForge, vous permettant de trouver plus facilement les ressources appropriées directement dans l'application.
 
@@ -34,7 +43,7 @@ C'est utile pour :
 - Voir rapidement les fichiers compatibles d'un projet
 - Éviter de faire toutes vos recherches en dehors du lanceur
 
-## lip et LeviLamina
+## lip et LeviLamina <Badge platform="windows" />
 
 Ce type d'intégration convient mieux aux utilisateurs avancés souhaitant utiliser des workflows basés sur les paquets ou les chargeurs.
 
@@ -43,6 +52,12 @@ Bonnes pratiques :
 - Commencez toujours par une version Release (officielle) stable
 - Ne modifiez pas plusieurs facteurs à haut risque en même temps
 - Notez la combinaison de versions qui « fonctionnait correctement la dernière fois »
+
+## Mods natifs <Badge platform="android" />
+
+Les Mods natifs exécutent du code natif dans le processus du jeu. N'installez que des Mods de sources fiables, et testez-les d'abord dans une version isolée.
+
+Pour créer les vôtres, suivez [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/) dans la documentation de LeviLamina (en anglais).
 
 ## Si une erreur survient après avoir ajouté des Mods
 

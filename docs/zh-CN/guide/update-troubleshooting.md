@@ -2,7 +2,7 @@
 
 当 LeviLauncher 的安装、更新或启动行为不符合预期时，请优先参考这一页。
 
-## 常见问题
+## 常见问题 <Badge platform="windows" />
 
 ### Gaming Services 缺失或损坏
 
@@ -38,6 +38,24 @@
 - 稍后重试
 - 如条件允许，改用本地包来源
 
+## Android 上的常见问题 <Badge platform="android" />
+
+### 找不到 Minecraft 或版本不受支持
+
+从 Google Play 安装或更新官方 Minecraft（1.21.80 或更高版本），然后重新打开 LeviLauncher。
+
+### 导入版本无法启动
+
+导入版本通常需要版本隔离。请在实例设置中启用后重试。
+
+### 启动失败
+
+从失败页面打开启动日志，先查看报告的原因，再调整设置。
+
+### 数据迁移
+
+启动器可能需要先迁移旧的数据目录。在迁移成功、并确认世界、资源包和设置都可用之前，不要删除旧目录。
+
 ## 更安全的恢复步骤
 
 1. 先备份重要世界。
@@ -45,12 +63,11 @@
 3. 用一个干净的隔离版本做对照测试。
 4. 必要时重新安装受影响版本。
 
-## 关于自更新
+## 关于自更新 <Badge platform="windows" />
 
 LeviLauncher 可以检查、下载并安装应用更新。若安装目录不可写，某些环境下可能需要管理员权限。
 
 ## 什么时候应该提 Issue
-
 当满足以下条件时，建议到 GitHub 提交问题：
 
 - 你能稳定复现问题
@@ -65,3 +82,5 @@ LeviLauncher 可以检查、下载并安装应用更新。若安装目录不可�
 - 截图或日志（如果有）
 
 问题反馈入口： [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
+
+Android 版的问题请附上 Android 版本、设备型号和启动日志，并提交到 [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues)。

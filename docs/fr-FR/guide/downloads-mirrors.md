@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # Téléchargements & Miroirs
 
 LeviLauncher offre des options de miroir, une progression des tâches et la possibilité d'importer des paquets locaux pour vous aider à effectuer des installations plus stables.

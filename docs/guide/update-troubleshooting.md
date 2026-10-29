@@ -2,7 +2,7 @@
 
 Use this page when LeviLauncher installs, updates, or launches do not behave as expected.
 
-## Common issues
+## Common issues <Badge platform="windows" />
 
 ### Gaming Services is missing or broken
 
@@ -38,6 +38,24 @@ Use this page when LeviLauncher installs, updates, or launches do not behave as 
 - retry later
 - use a local package source if available
 
+## Common issues on Android <Badge platform="android" />
+
+### Minecraft is missing or unsupported
+
+Install or update the official Minecraft app from Google Play (1.21.80 or later), then open LeviLauncher again.
+
+### An imported version fails to launch
+
+Imported versions often need version isolation. Enable it in the instance settings and try again.
+
+### A launch fails
+
+Open the launch log from the failure screen and check the reported reason before changing settings.
+
+### Data migration
+
+The launcher may migrate older data directories before continuing. Do not delete the old directory until the migration succeeds and your worlds, packs and settings are available.
+
 ## Safe recovery steps
 
 1. Back up important worlds.
@@ -45,12 +63,11 @@ Use this page when LeviLauncher installs, updates, or launches do not behave as 
 3. Test with a clean isolated version.
 4. Reinstall the affected version if necessary.
 
-## Self-update behavior
+## Self-update behavior <Badge platform="windows" />
 
 LeviLauncher can check, download, and install app updates. Some environments may require elevated permission if the installation directory is not writable.
 
 ## When to report a bug
-
 Open a GitHub issue when:
 
 - you can reproduce the problem consistently
@@ -65,3 +82,5 @@ When reporting, include:
 - screenshots or logs if available
 
 Open issues here: [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
+
+For the Android version, include the Android version, the device model and the launch log, and open the issue in [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues).

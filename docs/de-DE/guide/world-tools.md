@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # Welt-Tools
 
 LeviLauncher bietet einige Werkzeuge, die dir helfen, deine Weltdaten zu schützen und zu überprüfen.

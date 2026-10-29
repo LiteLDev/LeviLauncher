@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # 下載與鏡像
 
 LeviLauncher 提供鏡像選擇、任務進度與本地包匯入等功能，協助你更穩定地完成安裝。

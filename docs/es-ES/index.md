@@ -18,11 +18,8 @@ hero:
       link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
       platform: android
     - theme: alt
-      text: Guía de Windows
+      text: Leer la guía
       link: /es-ES/guide/quick-start
-    - theme: alt
-      text: Guía de Android
-      link: /es-ES/android/
 
 features:
   - title: Centrado en versiones
@@ -37,9 +34,9 @@ features:
     details: Exporta copias de seguridad, consulta los datos del mundo y edita ciertos campos de level.dat sin salir del lanzador.
   - title: Configuración de usuario
     details: Ajusta el idioma, la apariencia, el comportamiento de las descargas, las opciones de privacidad, los canales de actualización y el estado de los componentes.
-  - title: Versión para Android
-    details: "El mismo lanzador en Android: versiones aisladas, cuentas, mundos y paquetes, Quick Launch y Mods nativos."
-    link: /es-ES/android/
+  - title: Extras de Android
+    details: "Cambio de cuentas de Xbox y acciones URI de inicio rápido, en el mismo lanzador."
+    link: /es-ES/guide/accounts-quick-launch
 ---
 
 ::: info Windows y Android
@@ -59,7 +56,7 @@ Esta documentación está escrita para **usuarios finales**, no para mantenedore
 - Cómo funciona y cuándo utilizar el aislamiento de versiones
 - Cómo gestionar contenido, mundos y Mods
 - Cómo solucionar problemas de actualización, componentes faltantes y errores comunes al iniciar
-- Cómo instalar y usar la [versión para Android](/es-ES/android/)
+- Cómo instalar y usar LeviLauncher en Windows y en Android
 
 ## Canales de descarga
 

@@ -18,11 +18,8 @@ hero:
       link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
       platform: android
     - theme: alt
-      text: Windows guide
+      text: Read the guide
       link: /guide/quick-start
-    - theme: alt
-      text: Android guide
-      link: /android/
 
 features:
   - title: Version-first workflow
@@ -37,9 +34,9 @@ features:
     details: Export backups, inspect world data, and edit selected level.dat fields without leaving the launcher.
   - title: User-focused settings
     details: Tune language, appearance, download behavior, privacy choices, update channels, and component status.
-  - title: Android version
-    details: "The same launcher on Android: isolated versions, accounts, worlds and packs, Quick Launch and native mods."
-    link: /android/
+  - title: Android extras
+    details: "Xbox account switching and Quick Launch URI actions, in the same launcher."
+    link: /guide/accounts-quick-launch
 ---
 
 ::: info Windows and Android
@@ -59,7 +56,7 @@ This documentation is written for **players and end users**, not maintainers.
 - How isolation works and when to use it
 - How to manage content, worlds, and mods
 - How to troubleshoot updates, missing components, and common launch issues
-- How to install and use the [Android version](/android/)
+- How to install and use LeviLauncher on Windows and on Android
 
 ## Download channels
 

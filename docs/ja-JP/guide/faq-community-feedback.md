@@ -1,14 +1,13 @@
 # FAQ、コミュニティ、フィードバック
 
 ## よくある質問
-
 ### Minecraft Bedrock の正規版が必要ですか？
 
 はい。LeviLauncher は **Minecraft Bedrock Edition (GDK / UWP)** の**正規版**との連携を目的として設計されています。
 
 ### macOS や Linux でも使えますか？
 
-LeviLauncher には **Windows 版**と **Android 版**（[Android 版ガイド](/ja-JP/android/)）があります。macOS 版や Linux 版はありません。
+LeviLauncher には **Windows 版**と **Android 版**（[Android 版ガイド](/ja-JP/guide/quick-start?platform=android)）があります。macOS 版や Linux 版はありません。
 
 ### iOS 版はありますか？
 
@@ -30,6 +29,14 @@ LeviLauncher には **Windows 版**と **Android 版**（[Android 版ガイド](
 
 可能です。ただし、これは高度なワークフローに該当します。まずはクリーンな隔離バージョンから始め、段階的にテストすることを推奨します。
 
+### Android 版に必要なものは？
+
+ARM64 デバイス上の Android 9.0 以降と、Google Play からインストールした Minecraft 統合版 1.21.80 以降です。[システム要件とインストール](./requirements-installation)を参照してください。
+
+### Android で複数の Minecraft バージョンを使えますか？
+
+はい。公式の Minecraft APK をインポートすればランチャー内で別のバージョンを実行でき、バージョン分離でデータを分けられます。
+
 ## コミュニティ
 
 - **公式 Discord：** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
@@ -37,18 +44,20 @@ LeviLauncher には **Windows 版**と **Android 版**（[Android 版ガイド](
 - **QQ グループ：** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## ダウンロード
-
 - **GitHub Releases（LeviLauncher ダウンロード）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **LanZou Cloud ミラー：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — パスワード：`levi`
 
-## 問題や機能要望の報告方法
+- **Android 版（APK）:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
+## 問題や機能要望の報告方法
 [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) を使用して以下の内容を報告してください：
 
 - 再現可能なバグ
 - LeviLauncher に関連する明確なインストール問題
 - ドキュメントの分かりにくさに関する改善提案
 - 明確な使用シナリオがある機能リクエスト
+
+Android 版の問題は [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues) に報告してください。
 
 ## Issue を作成する前に確認すること
 

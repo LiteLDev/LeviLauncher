@@ -1,3 +1,7 @@
+---
+platforms: [android]
+---
+
 # Privacy Policy
 
 This privacy policy applies to the LeviLauncher app for Android devices (the Android version of LeviLauncher), together with any related services operated by LeviMC (collectively, the "Application"). LeviMC is hereby referred to as the "Service Provider".

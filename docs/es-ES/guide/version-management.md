@@ -4,14 +4,22 @@ LeviLauncher trata cada entorno instalado como una versión que se puede gestion
 
 ## Qué puedes hacer
 
-- Instalar versiones oficiales o de vista previa
-- Asignar a la versión un nombre fácil de identificar
-- Iniciar rápidamente una versión específica
-- Eliminar versiones que ya no necesites
-- Abrir la configuración específica de la versión
-- Crear un acceso directo en el escritorio para la versión
+=== "Windows"
 
-## Diferencias entre versión oficial (Release) y de vista previa (Preview)
+    - Instalar versiones oficiales o de vista previa
+    - Asignar a la versión un nombre fácil de identificar
+    - Iniciar rápidamente una versión específica
+    - Eliminar versiones que ya no necesites
+    - Abrir la configuración específica de la versión
+    - Crear un acceso directo en el escritorio para la versión
+
+=== "Android"
+
+    - importar APK oficiales de Minecraft y ejecutarlos dentro del lanzador, sin instalar cada versión en el sistema
+    - mantener varias versiones y sus datos separados
+    - elegir la versión que inicia la pantalla de inicio
+
+## Diferencias entre versión oficial (Release) y de vista previa (Preview) <Badge platform="windows" />
 
 | Tipo | Para quién | Descripción |
 | --- | --- | --- |
@@ -20,15 +28,21 @@ LeviLauncher trata cada entorno instalado como una versión que se puede gestion
 
 ## Qué es el aislamiento
 
-El aislamiento está disponible para las versiones GDK y para las versiones UWP x64 1.19.70.2 o posteriores. Al activar el aislamiento, LeviLauncher guarda los datos del juego de esa versión en su propia área de trabajo, en lugar de compartir la ubicación de datos predeterminada.
+=== "Windows"
 
-El aislamiento es adecuado para estas necesidades:
+    El aislamiento está disponible para las versiones GDK y para las versiones UWP x64 1.19.70.2 o posteriores. Al activar el aislamiento, LeviLauncher guarda los datos del juego de esa versión en su propia área de trabajo, en lugar de compartir la ubicación de datos predeterminada.
 
-- Usar combinaciones de contenido diferentes en distintas versiones
-- Probar Mods o la versión de vista previa (Preview) de Minecraft de forma más segura
-- Reducir el riesgo de que un entorno afecte a otro
+    El aislamiento es adecuado para estas necesidades:
 
-## Operaciones comunes con versiones
+    - Usar combinaciones de contenido diferentes en distintas versiones
+    - Probar Mods o la versión de vista previa (Preview) de Minecraft de forma más segura
+    - Reducir el riesgo de que un entorno afecte a otro
+
+=== "Android"
+
+    Activa el aislamiento para una versión importada cuando sus mundos, paquetes y ajustes deban mantenerse separados de la versión instalada desde Google Play. Las versiones importadas suelen necesitar aislamiento para iniciarse.
+
+## Operaciones comunes con versiones <Badge platform="windows" />
 
 ### Instalar una nueva versión
 
@@ -50,7 +64,7 @@ Eliminar una versión podría borrar el contenido asociado a ese entorno gestion
 
 Usa **Crear acceso directo en el escritorio** en el menú junto al botón **Iniciar** para crear un acceso directo a una versión específica, lo que facilita su inicio directo.
 
-## Estrategia recomendada para versiones
+## Estrategia recomendada para versiones <Badge platform="windows" />
 
 - Una versión oficial (Release) aislada para el juego diario
 - Una versión de vista previa (Preview) aislada para usar solo cuando sea necesario

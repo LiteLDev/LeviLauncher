@@ -2,7 +2,7 @@
 
 Lorsque le comportement d'installation, de mise à jour ou de lancement de LeviLauncher ne correspond pas à vos attentes, veuillez consulter cette page en priorité.
 
-## Problèmes courants
+## Problèmes courants <Badge platform="windows" />
 
 ### Gaming Services manquant ou endommagé
 
@@ -38,6 +38,24 @@ Lorsque le comportement d'installation, de mise à jour ou de lancement de LeviL
 - Réessayez plus tard
 - Si possible, utilisez une source de paquet local
 
+## Problèmes courants sous Android <Badge platform="android" />
+
+### Minecraft est absent ou non pris en charge
+
+Installez ou mettez à jour l'application officielle Minecraft depuis Google Play (1.21.80 ou version ultérieure), puis rouvrez LeviLauncher.
+
+### Une version importée ne démarre pas
+
+Les versions importées ont souvent besoin de l'isolation. Activez-la dans les paramètres de l'instance et réessayez.
+
+### Un lancement échoue
+
+Ouvrez le journal de lancement depuis l'écran d'erreur et vérifiez la cause avant de modifier les paramètres.
+
+### Migration des données
+
+Le lanceur peut migrer d'anciens répertoires de données avant de continuer. Ne supprimez pas l'ancien répertoire tant que la migration n'est pas terminée et que vos mondes, packs et paramètres ne sont pas disponibles.
+
 ## Étapes de récupération plus sûres
 
 1. Sauvegardez d'abord vos mondes importants.
@@ -45,12 +63,11 @@ Lorsque le comportement d'installation, de mise à jour ou de lancement de LeviL
 3. Effectuez un test de comparaison avec une version isolée propre.
 4. Si nécessaire, réinstallez la version concernée.
 
-## À propos de la mise à jour automatique
+## À propos de la mise à jour automatique <Badge platform="windows" />
 
 LeviLauncher peut vérifier, télécharger et installer ses propres mises à jour. Si le répertoire d'installation n'est pas accessible en écriture, certaines opérations pourraient nécessiter des privilèges d'administrateur.
 
 ## Quand créer une Issue
-
 Il est recommandé de soumettre un problème sur GitHub lorsque les conditions suivantes sont remplies :
 
 - Vous pouvez reproduire le problème de manière stable
@@ -65,3 +82,5 @@ Lors de la soumission, veuillez joindre autant que possible :
 - Des captures d'écran ou des journaux (logs) si disponibles
 
 Lien pour signaler un problème : [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
+
+Pour la version Android, indiquez la version d'Android, le modèle de l'appareil et le journal de lancement, et ouvrez le ticket dans [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues).

@@ -4,13 +4,12 @@ A desktop launcher for **Minecraft Bedrock Edition (GDK / UWP)** on **Windows**.
 
 LeviLauncher helps you install, manage, isolate, mod, and launch Release or Preview builds while keeping content and tooling easier to organize.
 
-This repository is the **Windows version** of LeviLauncher. The **Android version** is developed in [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid); both are documented at https://docs.levimc.org/LeviLauncher/. There is no iOS version, and none is planned.
+This repository is the **Windows version** of LeviLauncher. The **Android version** is developed in [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid); both are documented in one guide at https://docs.levimc.org/LeviLauncher/ (Windows / Android tabs). Developer docs for Android native mods are in the [LeviLamina docs](https://docs.levimc.org/LeviLamina/developer_guides/android/). There is no iOS version, and none is planned.
 
 ## Documentation
 
 - **User docs:** https://docs.levimc.org/LeviLauncher/
 - **中文文档：** https://docs.levimc.org/LeviLauncher/zh-CN/
-- **Android version docs:** https://docs.levimc.org/LeviLauncher/android/
 
 ## Downloads
 

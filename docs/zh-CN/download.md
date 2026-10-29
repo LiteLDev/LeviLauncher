@@ -9,7 +9,7 @@ LeviLauncher 提供 Windows 版和 Android 版，下方已自动选中适合你�
     - [从 GitHub Releases 下载安装程序](https://github.com/LiteLDev/LeviLauncher/releases/latest)
     - [蓝奏云镜像](https://levimc.lanzoue.com/b016ke39hc) — 密码 `levi`；GitHub 下载较慢时使用
 
-    下一步：[系统要求与安装](/zh-CN/guide/requirements-installation) · [5 分钟上手](/zh-CN/guide/quick-start)
+    下一步：[系统要求与安装](/zh-CN/guide/requirements-installation?platform=windows) · [5 分钟上手](/zh-CN/guide/quick-start?platform=windows)
 
 === "Android"
 
@@ -17,7 +17,7 @@ LeviLauncher 提供 Windows 版和 Android 版，下方已自动选中适合你�
 
     - [从 GitHub Releases 下载 APK](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
-    下一步：[快速开始](/zh-CN/android/guide/getting-started) · [兼容性与常见问题](/zh-CN/android/guide/compatibility)
+    下一步：[系统要求与安装](/zh-CN/guide/requirements-installation?platform=android) · [5 分钟上手](/zh-CN/guide/quick-start?platform=android)
 
 ::: info iOS
 LeviLauncher 没有 iOS 版，我们也没有开发 iOS 版的计划。

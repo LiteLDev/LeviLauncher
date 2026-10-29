@@ -1,26 +1,46 @@
 # Erster Start
 
-Beim ersten Öffnen von LeviLauncher prüft die Anwendung zunächst, ob die Windows- und Minecraft-Umgebung die Anforderungen für eine verwaltete Installation erfüllt.
+Beim ersten Öffnen prüft LeviLauncher, ob dein Gerät und Minecraft für verwaltete Versionen bereit sind.
 
 ## Was du möglicherweise siehst
 
-Beim ersten Start kann LeviLauncher Folgendes tun:
+=== "Windows"
 
-- Überprüfen, ob Gaming Services verfügbar ist (GDK)  
-- Überprüfen, ob GameInput verfügbar ist (GDK)  
-- Überprüfen, ob die vom nativen Mod-Loader benötigte Visual C++-Laufzeit installiert ist  
-- Validieren, ob die Minecraft Bedrock (GDK / UWP)-Umgebung bereit ist  
-- Bei fehlenden Schlüsselkomponenten entsprechende Hinweise oder Anleitungen anzeigen  
+    Beim ersten Start kann LeviLauncher Folgendes tun:
+
+    - Überprüfen, ob Gaming Services verfügbar ist (GDK)  
+    - Überprüfen, ob GameInput verfügbar ist (GDK)  
+    - Überprüfen, ob die vom nativen Mod-Loader benötigte Visual C++-Laufzeit installiert ist  
+    - Validieren, ob die Minecraft Bedrock (GDK / UWP)-Umgebung bereit ist  
+    - Bei fehlenden Schlüsselkomponenten entsprechende Hinweise oder Anleitungen anzeigen  
+
+=== "Android"
+
+    Beim ersten Start kann LeviLauncher:
+
+    - dich bitten, die Launcher-Vereinbarung zu akzeptieren
+    - die benötigten Berechtigungen anfragen
+    - prüfen, ob das offizielle Minecraft aus Google Play (1.21.80 oder neuer) installiert ist
+    - Datenverzeichnisse einer älteren Launcher-Version migrieren
 
 ## Typischer Ablauf beim ersten Start
 
-1. Öffne LeviLauncher.  
-2. Lies die angezeigten Hinweise des Launchers.  
-3. Installiere oder repariere fehlende Voraussetzungen.  
-4. Kehre zum Launcher zurück und überprüfe den Status erneut.  
-5. Sobald alle Bedingungen erfüllt sind, gelangst du zur Seite **Herunterladen**.
+=== "Windows"
 
-## Falls Komponenten als fehlend gemeldet werden
+    1. Öffne LeviLauncher.  
+    2. Lies die angezeigten Hinweise des Launchers.  
+    3. Installiere oder repariere fehlende Voraussetzungen.  
+    4. Kehre zum Launcher zurück und überprüfe den Status erneut.  
+    5. Sobald alle Bedingungen erfüllt sind, gelangst du zur Seite **Herunterladen**.
+
+=== "Android"
+
+    1. Öffne LeviLauncher.
+    2. Akzeptiere die Vereinbarung und erteile die angefragten Berechtigungen.
+    3. Migriert der Launcher alte Daten, warte, bis er fertig ist. Lösche das alte Verzeichnis erst, wenn deine Welten, Pakete und Einstellungen wieder verfügbar sind.
+    4. Weiter zur Versionsansicht.
+
+## Falls Komponenten als fehlend gemeldet werden <Badge platform="windows" />
 
 ### Gaming Services
 

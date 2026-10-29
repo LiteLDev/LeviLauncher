@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # 월드 도구
 
 LeviLauncher는 월드 데이터를 보호하고 확인하는 데 도움이 되는 몇 가지 도구를 제공합니다.

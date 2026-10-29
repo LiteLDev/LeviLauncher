@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # World Tools
 
 LeviLauncher includes utilities that help you protect and inspect your worlds.

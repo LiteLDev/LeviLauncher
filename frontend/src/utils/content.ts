@@ -99,7 +99,9 @@ export function resolvePlayerDisplayName(
 
 type UnknownRecord = Record<string, unknown>;
 
-const LIP_INDEX_URL = "https://lipr.levimc.org/levilauncher.json";
+const LIP_MODS_BASE_URL = "https://levimc.org/mods/";
+const LIP_INDEX_URL = `${LIP_MODS_BASE_URL}index.json`;
+const LIP_DETAIL_FETCH_CONCURRENCY = 8;
 const LL_DEPENDENCY_KEYS = new Set([
   "liteldev/levilamina",
   "liteldev/levilamina#client",
@@ -760,17 +762,128 @@ const parseLIPPackage = (
   return { basic, detail };
 };
 
-const parseLIPIndexResult = (json: unknown): ParsedLIPIndexResult => {
-  const empty: ParsedLIPIndexResult = {
-    packages: [],
-    detailsByIdentifier: {},
-    selfVariantRelations: [],
+const buildLIPModDetailUrl = (identifier: string): string => {
+  const path = String(identifier || "")
+    .trim()
+    .split("#")[0]
+    .replace(/^https?:\/\//, "")
+    .replace(/^\/+|\/+$/g, "");
+  if (!path) return "";
+  return `${LIP_MODS_BASE_URL}${path
+    .split("/")
+    .map((segment) => encodeURIComponent(segment))
+    .join("/")}/index.json`;
+};
+
+// Converts a levimc.org/mods/<tooth>/index.json document into the
+// identifier-keyed package shape consumed by parseLIPPackage.
+const convertLIPModDetail = (
+  value: unknown,
+): { identifier: string; item: UnknownRecord } | null => {
+  if (!isRecord(value)) return null;
+  const identifier = toSafeString(value["tooth"]).trim();
+  if (!identifier) return null;
+
+  const variants: Record<string, { versions: UnknownRecord }> = {};
+  const versionsValue = Array.isArray(value["versions"])
+    ? value["versions"]
+    : [];
+  for (const versionMeta of versionsValue) {
+    if (!isRecord(versionMeta)) continue;
+    const version = toSafeString(versionMeta["version"]).trim();
+    if (!version) continue;
+    const versionVariants = Array.isArray(versionMeta["variants"])
+      ? versionMeta["variants"]
+      : [];
+    for (const variantMeta of versionVariants) {
+      if (!isRecord(variantMeta)) continue;
+      const variantKey = toSafeString(variantMeta["label"]).trim();
+      const variant = (variants[variantKey] ||= { versions: {} });
+      variant.versions[version] = {
+        dependencies: isRecord(variantMeta["dependencies"])
+          ? variantMeta["dependencies"]
+          : {},
+      };
+    }
+  }
+
+  return {
+    identifier,
+    item: {
+      stargazer_count: value["stars"],
+      updated_at: value["updated"],
+      info: {
+        name: value["name"],
+        description: value["description"],
+        tags: value["tags"],
+        avatar_url: value["icon"],
+      },
+      variants,
+    },
   };
-  if (!isRecord(json)) return empty;
+};
 
-  const packagesValue = json["packages"];
-  if (!isRecord(packagesValue)) return empty;
+const fetchLIPJson = async (
+  url: string,
+  signal: AbortSignal,
+): Promise<unknown> => {
+  const response = await fetch(url, {
+    method: "GET",
+    cache: "no-cache",
+    signal,
+  });
+  if (!response.ok) {
+    throw new Error(`Failed to fetch ${url}: ${response.status}`);
+  }
+  return response.json();
+};
 
+const fetchLIPModDetails = async (
+  identifiers: string[],
+  signal: AbortSignal,
+): Promise<Record<string, UnknownRecord>> => {
+  const packages: Record<string, UnknownRecord> = {};
+  let nextIndex = 0;
+  const worker = async () => {
+    while (nextIndex < identifiers.length) {
+      const url = buildLIPModDetailUrl(identifiers[nextIndex++]);
+      if (!url) continue;
+      try {
+        const converted = convertLIPModDetail(await fetchLIPJson(url, signal));
+        if (converted) packages[converted.identifier] = converted.item;
+      } catch (error) {
+        if (signal.aborted) throw error;
+      }
+    }
+  };
+  await Promise.all(
+    Array.from(
+      { length: Math.min(LIP_DETAIL_FETCH_CONCURRENCY, identifiers.length) },
+      worker,
+    ),
+  );
+  return packages;
+};
+
+// Only mods targeting the client can carry the "client" variant the launcher
+// installs, so skip fetching details for server-only mods.
+const collectLIPClientModIdentifiers = (json: unknown): string[] => {
+  if (!isRecord(json) || !Array.isArray(json["mods"])) return [];
+  const identifiers: string[] = [];
+  for (const mod of json["mods"]) {
+    if (!isRecord(mod)) continue;
+    const identifier = toSafeString(mod["tooth"]).trim();
+    if (!identifier) continue;
+    const env = toStringArray(mod["env"]).map((item) => item.toLowerCase());
+    if (env.length > 0 && !env.includes("client")) continue;
+    identifiers.push(identifier);
+  }
+  return identifiers;
+};
+
+const parseLIPIndexResult = (
+  packagesValue: Record<string, UnknownRecord>,
+): ParsedLIPIndexResult => {
   const deduplicatedPackages = new Map<string, LIPPackageBasicInfo>();
   const detailsByIdentifier: Record<string, LIPPackageDetail> = {};
   const selfVariantRelationsByIdentifier = new Map<
@@ -831,7 +944,7 @@ const parseLIPIndexResult = (json: unknown): ParsedLIPIndexResult => {
 
 let cachedLIPIndexResult: ParsedLIPIndexResult | null = null;
 let cachedLIPIndexResultPromise: Promise<ParsedLIPIndexResult> | null = null;
-const LIP_INDEX_FETCH_TIMEOUT_MS = 8_000;
+const LIP_INDEX_FETCH_TIMEOUT_MS = 30_000;
 
 const fetchLIPIndexResult = async (options?: {
   forceRefresh?: boolean;
@@ -864,20 +977,14 @@ const fetchLIPIndexResult = async (options?: {
     }
 
     try {
-      const response = await fetch(LIP_INDEX_URL, {
-        method: "GET",
-        cache: "no-store",
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        throw new Error(
-          `Failed to fetch lip package index: ${response.status}`,
-        );
+      const identifiers = collectLIPClientModIdentifiers(
+        await fetchLIPJson(LIP_INDEX_URL, controller.signal),
+      );
+      const packages = await fetchLIPModDetails(identifiers, controller.signal);
+      if (identifiers.length > 0 && Object.keys(packages).length === 0) {
+        throw new Error("Failed to fetch lip package details");
       }
-
-      const json: unknown = await response.json();
-      cachedLIPIndexResult = parseLIPIndexResult(json);
+      cachedLIPIndexResult = parseLIPIndexResult(packages);
       return cachedLIPIndexResult;
     } catch (error) {
       if (timeoutTriggered) {
@@ -955,5 +1062,28 @@ export async function fetchLIPPackageDetail(
   },
 ): Promise<LIPPackageDetail | null> {
   const result = await fetchLIPIndexResult(options);
-  return findLIPPackageDetail(result.detailsByIdentifier, identifier);
+  const cached = findLIPPackageDetail(result.detailsByIdentifier, identifier);
+  if (cached) return cached;
+
+  const url = buildLIPModDetailUrl(identifier);
+  if (!url || options?.signal?.aborted) return null;
+  const controller = new AbortController();
+  const abort = () => controller.abort();
+  options?.signal?.addEventListener("abort", abort, { once: true });
+  const timeoutId = globalThis.setTimeout(abort, LIP_INDEX_FETCH_TIMEOUT_MS);
+  try {
+    const converted = convertLIPModDetail(
+      await fetchLIPJson(url, controller.signal),
+    );
+    if (!converted) return null;
+    const parsed = parseLIPPackage(converted.item, converted.identifier);
+    if (!parsed) return null;
+    result.detailsByIdentifier[parsed.detail.identifier] = parsed.detail;
+    return parsed.detail;
+  } catch {
+    return null;
+  } finally {
+    globalThis.clearTimeout(timeoutId);
+    options?.signal?.removeEventListener("abort", abort);
+  }
 }

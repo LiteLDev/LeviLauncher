@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Switched the LeviMC Mods package index from `lipr.levimc.org/levilauncher.json` to `levimc.org/mods/index.json` and per-mod `levimc.org/mods/<tooth>/index.json`
+
 ## [1.0.5] - 2026-10-28
 
 ### Added

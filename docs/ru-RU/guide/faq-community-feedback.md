@@ -1,6 +1,7 @@
 # ЧаВО, сообщество и обратная связь
 
 ## Часто задаваемые вопросы
+
 ### Нужно ли мне владеть Minecraft Bedrock?
 
 Да. LeviLauncher предназначен для работы с легальной лицензионной копией Minecraft Bedrock Edition (GDK / UWP).
@@ -44,12 +45,14 @@ Android 9.0 или новее на устройстве ARM64 и Minecraft Bedro
 - **Группа QQ:** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## Ссылки для загрузки
+
 - **Релизы GitHub (загрузки LeviLauncher):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Зеркало Lanzou:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — пароль: `levi`
 
 - **Версия для Android (APK):** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
 ## Сообщение об ошибках и запросы функций
+
 Используйте [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) для:
 
 - воспроизводимых ошибок

@@ -1,6 +1,7 @@
 # 常見問題、社群與回饋
 
 ## 常見問題
+
 ### 我必須擁有 Minecraft Bedrock 正版嗎？
 
 是的。LeviLauncher 的設計目標是配合**正版 Minecraft Bedrock Edition (GDK / UWP)** 使用。
@@ -44,12 +45,14 @@ ARM64 裝置上的 Android 9.0 或更高版本，以及從 Google Play 安裝的
 - **QQ 群組：** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## 下載入口
+
 - **GitHub Releases（LeviLauncher 下載）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **藍奏雲鏡像：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 密碼：`levi`
 
 - **Android 版（APK）：** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
 ## 如何回饋問題與功能建議
+
 請使用 [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) 進行回饋：
 
 - 可重現的錯誤 (Bug)

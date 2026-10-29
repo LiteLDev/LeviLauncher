@@ -68,6 +68,7 @@ Le lanceur peut migrer d'anciens répertoires de données avant de continuer. Ne
 LeviLauncher peut vérifier, télécharger et installer ses propres mises à jour. Si le répertoire d'installation n'est pas accessible en écriture, certaines opérations pourraient nécessiter des privilèges d'administrateur.
 
 ## Quand créer une Issue
+
 Il est recommandé de soumettre un problème sur GitHub lorsque les conditions suivantes sont remplies :
 
 - Vous pouvez reproduire le problème de manière stable

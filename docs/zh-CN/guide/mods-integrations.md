@@ -53,6 +53,8 @@ LeviLauncher 支持超出“基础启动器”范围的模组相关工作流。
 - 不要一次变更多个高风险因素
 - 记录下“最后一次成功工作”的版本组合
 
+要为客户端版本添加 LeviLamina，请参阅 LeviLamina 文档中的[在Windows上安装客户端](https://docs.levimc.org/LeviLamina/zh/user_guides/install_on_client/)。
+
 ## 原生模组 <Badge platform="android" />
 
 原生模组会在游戏进程中运行原生代码。只安装来自可信来源的模组，并先在隔离版本中测试。

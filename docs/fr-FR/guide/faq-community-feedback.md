@@ -1,6 +1,7 @@
 # FAQ, communauté & Retour
 
 ## Questions fréquentes
+
 ### Dois-je posséder une licence officielle de Minecraft Bedrock ?
 
 Oui. LeviLauncher est conçu pour être utilisé avec une **licence officielle de Minecraft Bedrock Edition (GDK / UWP)**.
@@ -44,12 +45,14 @@ Oui. Importez des APK officiels de Minecraft pour lancer d'autres versions dans 
 - **Groupe QQ :** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## Liens de téléchargement
+
 - **GitHub Releases (Téléchargements de LeviLauncher) :** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Miroir Lanzou Cloud :** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — Mot de passe : `levi`
 
 - **Version Android (APK) :** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
 ## Comment signaler un problème ou suggérer une fonctionnalité ?
+
 Veuillez utiliser [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) pour signaler :
 
 - Des bugs reproductibles

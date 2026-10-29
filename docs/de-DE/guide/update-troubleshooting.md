@@ -68,6 +68,7 @@ Der Launcher migriert eventuell alte Datenverzeichnisse, bevor er fortfährt. L�
 LeviLauncher kann auf Updates prüfen, diese herunterladen und installieren. Falls das Installationsverzeichnis nicht beschreibbar ist, werden unter Umständen Administratorrechte benötigt.
 
 ## Wann man ein Issue erstellen sollte
+
 Ein Problem sollte auf GitHub gemeldet werden, wenn folgende Bedingungen erfüllt sind:
 
 - Das Problem ist stabil reproduzierbar.

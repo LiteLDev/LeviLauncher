@@ -1,6 +1,7 @@
 # FAQ、コミュニティ、フィードバック
 
 ## よくある質問
+
 ### Minecraft Bedrock の正規版が必要ですか？
 
 はい。LeviLauncher は **Minecraft Bedrock Edition (GDK / UWP)** の**正規版**との連携を目的として設計されています。
@@ -44,12 +45,14 @@ ARM64 デバイス上の Android 9.0 以降と、Google Play からインスト�
 - **QQ グループ：** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## ダウンロード
+
 - **GitHub Releases（LeviLauncher ダウンロード）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **LanZou Cloud ミラー：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — パスワード：`levi`
 
 - **Android 版（APK）:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
 ## 問題や機能要望の報告方法
+
 [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) を使用して以下の内容を報告してください：
 
 - 再現可能なバグ

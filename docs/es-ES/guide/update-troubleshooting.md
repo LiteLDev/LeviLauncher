@@ -68,6 +68,7 @@ El lanzador puede migrar directorios de datos antiguos antes de continuar. No bo
 LeviLauncher puede comprobar, descargar e instalar actualizaciones de la aplicación. Si el directorio de instalación no es escribible, en algunos entornos podría requerir permisos de administrador.
 
 ## Cuándo deberías crear un Issue
+
 Se recomienda enviar un problema a GitHub cuando se cumplan las siguientes condiciones:
 
 - Puedes reproducir el problema de forma estable

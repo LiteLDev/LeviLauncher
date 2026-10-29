@@ -1,6 +1,7 @@
 # 자주 묻는 질문, 커뮤니티 및 피드백
 
 ## 자주 묻는 질문
+
 ### Minecraft Bedrock 정품을 반드시 소유해야 하나요?
 
 네. LeviLauncher는 **정품 Minecraft Bedrock Edition (GDK / UWP)** 와 함께 사용하도록 설계되었습니다.
@@ -44,12 +45,14 @@ ARM64 기기의 Android 9.0 이상과 Google Play에서 설치한 Minecraft Bedr
 - **QQ 그룹:** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## 다운로드 진입점
+
 - **GitHub 릴리스(LeviLauncher 다운로드):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **란조우(Lanzou) 클라우드 미러:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 비밀번호: `levi`
 
 - **Android 버전(APK):** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
 ## 문제 및 기능 요청을 피드백하는 방법
+
 다음을 위해 [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)를 사용하여 피드백해 주세요:
 
 - 재현 가능한 버그

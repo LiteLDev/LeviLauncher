@@ -1,6 +1,7 @@
 # 常见问题、社区与反馈
 
 ## 常见问题
+
 ### 我必须拥有 Minecraft 基岩版正版吗？
 
 是的。LeviLauncher 设计目标是配合**正版 Minecraft 基岩版（GDK / UWP）** 使用。
@@ -44,12 +45,14 @@ ARM64 设备上的 Android 9.0 或更高版本，以及从 Google Play 安装的
 - **QQ 群：** [458083875](https://qm.qq.com/q/1z791rJgJG)
 
 ## 下载入口
+
 - **GitHub Releases（LeviLauncher 下载）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **蓝奏云镜像：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 密码：`levi`
 
 - **Android 版（APK）：** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
 ## 如何反馈问题与功能建议
+
 请使用 [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) 反馈：
 
 - 可复现的 Bug

@@ -53,6 +53,8 @@ Best practices:
 - avoid changing too many moving parts at once
 - note the exact version you tested successfully
 
+To add LeviLamina to a client version, see [Install client on Windows](https://docs.levimc.org/LeviLamina/user_guides/install_on_client/) in the LeviLamina documentation.
+
 ## Native mods <Badge platform="android" />
 
 Native mods run native code in the game process. Install only mods from sources you trust, and test them in an isolated version first.

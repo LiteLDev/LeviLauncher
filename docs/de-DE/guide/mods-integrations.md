@@ -53,6 +53,8 @@ Best Practices:
 - Ändere nicht mehrere Hochrisikofaktoren gleichzeitig
 - Dokumentiere die „zuletzt funktionierende“ Versionskombination
 
+Um LeviLamina zu einer Client-Version hinzuzufügen, siehe [Install client on Windows](https://docs.levimc.org/LeviLamina/user_guides/install_on_client/) in der LeviLamina-Dokumentation (auf Englisch).
+
 ## Native Mods <Badge platform="android" />
 
 Native Mods führen nativen Code im Spielprozess aus. Installiere nur Mods aus vertrauenswürdigen Quellen und teste sie zuerst in einer isolierten Version.

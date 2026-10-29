@@ -68,6 +68,7 @@ The launcher may migrate older data directories before continuing. Do not delete
 LeviLauncher can check, download, and install app updates. Some environments may require elevated permission if the installation directory is not writable.
 
 ## When to report a bug
+
 Open a GitHub issue when:
 
 - you can reproduce the problem consistently

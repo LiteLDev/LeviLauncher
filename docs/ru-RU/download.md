@@ -9,7 +9,7 @@ LeviLauncher выпускается в версии для Windows и в вер�
     - [Скачать установщик с GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases/latest)
     - [Зеркало Lanzou](https://levimc.lanzoue.com/b016ke39hc) — пароль `levi`; используйте его, если GitHub в вашем регионе работает медленно
 
-    Далее: [Требования и установка](/ru-RU/guide/requirements-installation) · [Начало работы за 5 минут](/ru-RU/guide/quick-start)
+    Далее: [Требования и установка](/ru-RU/guide/requirements-installation?platform=windows) · [Начало работы за 5 минут](/ru-RU/guide/quick-start?platform=windows)
 
 === "Android"
 
@@ -17,7 +17,7 @@ LeviLauncher выпускается в версии для Windows и в вер�
 
     - [Скачать APK с GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
-    Далее: [Getting Started](/ru-RU/android/guide/getting-started) (на английском)
+    Далее: [Требования и установка](/ru-RU/guide/requirements-installation?platform=android) · [Начало работы за 5 минут](/ru-RU/guide/quick-start?platform=android)
 
 ::: info iOS
 Версии LeviLauncher для iOS нет, и мы не планируем её выпускать.

@@ -2,7 +2,7 @@
 
 當 LeviLauncher 的安裝、更新或啟動行為不符合預期時，請優先參考本頁。
 
-## 常見問題
+## 常見問題 <Badge platform="windows" />
 
 ### Gaming Services 缺失或損壞
 
@@ -38,6 +38,24 @@
 - 稍後重試
 - 如條件允許，改用本地包來源
 
+## Android 上的常見問題 <Badge platform="android" />
+
+### 找不到 Minecraft 或版本不受支援
+
+從 Google Play 安裝或更新官方 Minecraft（1.21.80 或更高版本），然後重新打開 LeviLauncher。
+
+### 匯入版本無法啟動
+
+匯入版本通常需要版本隔離。請在實例設定中啟用後重試。
+
+### 啟動失敗
+
+從失敗頁面打開啟動日誌，先查看報告的原因，再調整設定。
+
+### 資料遷移
+
+啟動器可能需要先遷移舊的資料目錄。在遷移成功、並確認世界、資源包和設定都可用之前，不要刪除舊目錄。
+
 ## 更安全的恢復步驟
 
 1. 先備份重要世界。
@@ -45,7 +63,7 @@
 3. 用一個乾淨的隔離版本作對照測試。
 4. 必要時重新安裝受影響的版本。
 
-## 關於自我更新
+## 關於自我更新 <Badge platform="windows" />
 
 LeviLauncher 可以檢查、下載並安裝應用程式更新。若安裝目錄不可寫入，在某些環境下可能需要管理員權限。
 
@@ -65,3 +83,5 @@ LeviLauncher 可以檢查、下載並安裝應用程式更新。若安裝目錄�
 - 截圖或日誌（如果有）
 
 問題反饋入口：[GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
+
+Android 版的問題請附上 Android 版本、裝置型號和啟動日誌，並提交到 [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues)。

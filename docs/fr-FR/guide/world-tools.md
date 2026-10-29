@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # Outils pour les mondes
 
 LeviLauncher fournit quelques outils pour vous aider à protéger et inspecter les données de vos mondes.

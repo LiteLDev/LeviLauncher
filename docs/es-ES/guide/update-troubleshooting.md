@@ -2,7 +2,7 @@
 
 Cuando el comportamiento de instalación, actualización o inicio de LeviLauncher no sea el esperado, consulta primero esta página.
 
-## Problemas comunes
+## Problemas comunes <Badge platform="windows" />
 
 ### Gaming Services ausente o dañado
 
@@ -38,6 +38,24 @@ Cuando el comportamiento de instalación, actualización o inicio de LeviLaunche
 - Reinténtalo más tarde
 - Si es posible, utiliza una fuente de paquetes locales
 
+## Problemas comunes en Android <Badge platform="android" />
+
+### Falta Minecraft o no es compatible
+
+Instala o actualiza la aplicación oficial de Minecraft desde Google Play (1.21.80 o posterior) y vuelve a abrir LeviLauncher.
+
+### Una versión importada no se inicia
+
+Las versiones importadas suelen necesitar aislamiento. Actívalo en los ajustes de la instancia y vuelve a intentarlo.
+
+### Un inicio falla
+
+Abre el registro de inicio desde la pantalla de error y revisa el motivo antes de cambiar ajustes.
+
+### Migración de datos
+
+El lanzador puede migrar directorios de datos antiguos antes de continuar. No borres el directorio antiguo hasta que la migración termine y tus mundos, paquetes y ajustes estén disponibles.
+
 ## Pasos de recuperación más seguros
 
 1. Haz primero una copia de seguridad de los mundos importantes.
@@ -45,7 +63,7 @@ Cuando el comportamiento de instalación, actualización o inicio de LeviLaunche
 3. Realiza una prueba de comparación con una versión aislada limpia.
 4. Si es necesario, reinstala la versión afectada.
 
-## Sobre la autoactualización
+## Sobre la autoactualización <Badge platform="windows" />
 
 LeviLauncher puede comprobar, descargar e instalar actualizaciones de la aplicación. Si el directorio de instalación no es escribible, en algunos entornos podría requerir permisos de administrador.
 
@@ -65,3 +83,5 @@ Al enviarlo, incluye siempre:
 - Capturas de pantalla o registros (si los tienes)
 
 Enlace para informar de problemas: [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)
+
+Para la versión para Android, incluye la versión de Android, el modelo del dispositivo y el registro de inicio, y abre la incidencia en [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid/issues).

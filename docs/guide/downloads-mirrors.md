@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # Downloads & Mirrors
 
 LeviLauncher includes tools to help you choose a usable download source, track progress, and use local installation files when needed.

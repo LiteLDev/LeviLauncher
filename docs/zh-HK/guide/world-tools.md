@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # 世界工具
 
 LeviLauncher 提供了一些協助你保護和檢查世界數據的工具。

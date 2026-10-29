@@ -8,7 +8,7 @@ Ja. LeviLauncher ist für die Verwendung mit einer rechtmäßig lizenzierten Kop
 
 ### Kann ich es unter macOS oder Linux verwenden?
 
-LeviLauncher gibt es als **Windows**- und als **Android**-Version ([Android-Anleitung](/de-DE/android/)). Eine Version für macOS oder Linux gibt es nicht.
+LeviLauncher gibt es als **Windows**- und als **Android**-Version ([Android-Anleitung](/de-DE/guide/quick-start?platform=android)). Eine Version für macOS oder Linux gibt es nicht.
 
 ### Gibt es eine iOS-Version?
 
@@ -30,6 +30,14 @@ Ja. LeviLauncher bietet Übersichten für Welten, Ressourcenpakete, Verhaltenspa
 
 Ja, dies gehört jedoch zu fortgeschrittenen Workflows. Wir empfehlen, zunächst mit einer sauberen, isolierten Version zu beginnen und schrittweise zu testen.
 
+### Was braucht die Android-Version?
+
+Android 9.0 oder neuer auf einem ARM64-Gerät und Minecraft Bedrock Edition 1.21.80 oder neuer aus Google Play. Siehe [Anforderungen & Installation](./requirements-installation).
+
+### Kann ich unter Android mehrere Minecraft-Versionen nutzen?
+
+Ja. Importiere offizielle Minecraft-APKs, um andere Versionen im Launcher zu starten, und aktiviere die Isolierung, um ihre Daten zu trennen.
+
 ## Community-Zugänge
 
 - **Offizieller Discord:** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)  
@@ -41,6 +49,8 @@ Ja, dies gehört jedoch zu fortgeschrittenen Workflows. Wir empfehlen, zunächst
 - **GitHub Releases (offizieller Download):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)  
 - **Lanzou Cloud Mirror:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — Passwort: `levi`
 
+- **Android-Version (APK):** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+
 ## So gibst du Probleme oder Feature-Ideen weiter
 
 Bitte verwende [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues), um Folgendes zu melden:
@@ -49,6 +59,8 @@ Bitte verwende [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues),
 - Installationsprobleme, die eindeutig mit LeviLauncher zusammenhängen  
 - Vorschläge zur Verbesserung unklarer Dokumentationsstellen  
 - Feature-Anfragen mit klar beschriebenem Anwendungsfall  
+
+Probleme mit der Android-Version gehören in [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues).
 
 ## Bevor du ein Issue erstellst, empfehlen wir Folgendes
 

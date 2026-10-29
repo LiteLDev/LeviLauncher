@@ -4,17 +4,26 @@ LeviLauncher supports mod-related workflows that go beyond a basic launcher.
 
 ## Available capabilities
 
-- import `.zip` mods
-- import `.dll` mods
-- enable or disable installed mods
-- remove mods you no longer need
-- browse or fetch content through CurseForge-related flows
-- install packages with [lip](https://github.com/LiteLDev/lip), the package installer
-- work with LeviLamina-related mod setups
+=== "Windows"
 
-::: warning Advanced area
-Mods, loaders, and package integrations can change compatibility quickly, especially on Minecraft Preview builds. Treat this area as advanced and test carefully.
-:::
+    - import `.zip` mods
+    - import `.dll` mods
+    - enable or disable installed mods
+    - remove mods you no longer need
+    - browse or fetch content through CurseForge-related flows
+    - install packages with [lip](https://github.com/LiteLDev/lip), the package installer
+    - work with LeviLamina-related mod setups
+
+    ::: warning Advanced area
+    Mods, loaders, and package integrations can change compatibility quickly, especially on Minecraft Preview builds. Treat this area as advanced and test carefully.
+    :::
+
+=== "Android"
+
+    - load native mods (`.so` libraries) into the game
+    - keep modded setups in isolated versions
+
+    Building native mods? See [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/) in the LeviLamina documentation.
 
 ## Recommended mod workflow
 
@@ -24,7 +33,7 @@ Mods, loaders, and package integrations can change compatibility quickly, especi
 4. Test launch after each change.
 5. Keep a backup path for important worlds.
 
-## CurseForge
+## CurseForge <Badge platform="windows" />
 
 The launcher provides CurseForge-oriented browsing and package flows so you can discover compatible mod content more easily from inside the app.
 
@@ -34,7 +43,7 @@ Use it when you want:
 - a clearer view of compatible files for a project
 - less manual searching outside the launcher
 
-## lip and LeviLamina
+## lip and LeviLamina <Badge platform="windows" />
 
 These integrations are aimed at more advanced users who want package-driven or loader-driven mod setups.
 
@@ -43,6 +52,14 @@ Best practices:
 - prefer stable Minecraft Release versions first
 - avoid changing too many moving parts at once
 - note the exact version you tested successfully
+
+To add LeviLamina to a client version, see [Install client on Windows](https://docs.levimc.org/LeviLamina/user_guides/install_on_client/) in the LeviLamina documentation.
+
+## Native mods <Badge platform="android" />
+
+Native mods run native code in the game process. Install only mods from sources you trust, and test them in an isolated version first.
+
+To make your own, follow [Android native mods](https://docs.levimc.org/LeviLamina/developer_guides/android/) in the LeviLamina documentation.
 
 ## If something breaks after adding mods
 

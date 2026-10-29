@@ -1,48 +1,83 @@
 # Get Started in 5 Minutes
 
-If you only want the shortest path from download to play, follow this page first.
+If you only want the shortest path from download to play, follow this page first. Pick **Windows** or **Android** in any tab: the whole guide follows your choice.
 
 ## 1. Install LeviLauncher
 
-- Download the LeviLauncher installer from [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) or the [Lanzou mirror](https://levimc.lanzoue.com/b016ke39hc) using password `levi`.
-- Run the installer on Windows.
-- If Windows or the installer asks for WebView2 or other required components, allow the process to continue.
+=== "Windows"
 
-## 2. Make sure your Microsoft Store setup is ready
+    - Download the LeviLauncher installer from [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) or the [Lanzou mirror](https://levimc.lanzoue.com/b016ke39hc) using password `levi`.
+    - Run the installer on Windows.
+    - If Windows or the installer asks for WebView2 or other required components, allow the process to continue.
 
-- Sign in to the Microsoft account that owns **Minecraft Bedrock Edition**.
-- Install the game from Microsoft Store at least once on this PC.
-- Keep **Gaming Services** available (needed for GDK versions).
+=== "Android"
 
-::: warning Legitimate copy required
-LeviLauncher helps you manage Minecraft Bedrock (GDK / UWP). It does not replace the game license.
-:::
+    - Download the latest APK from [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest).
+    - Allow installing apps from the browser or file manager you used, then install the APK.
+    - Open LeviLauncher and accept the launcher agreement and the permissions it asks for.
 
-## 3. Open the Download page
+## 2. Get Minecraft ready
 
-- Launch LeviLauncher.
-- Open **Download** from the sidebar.
-- Choose whether you want a **Release** build or a **Preview** build, and a **GDK** or **UWP** package.
-- Here, **Release** and **Preview** mean Minecraft's normal release build and Preview build.
-- Pick a version and start installation.
+=== "Windows"
+
+    - Sign in to the Microsoft account that owns **Minecraft Bedrock Edition**.
+    - Install the game from Microsoft Store at least once on this PC.
+    - Keep **Gaming Services** available (needed for GDK versions).
+
+    ::: warning Legitimate copy required
+    LeviLauncher helps you manage Minecraft Bedrock (GDK / UWP). It does not replace the game license.
+    :::
+
+=== "Android"
+
+    - Install **Minecraft Bedrock Edition** 1.21.80 or later from **Google Play** on this device.
+    - LeviLauncher uses this official copy as its trusted game source; it does not replace the game license.
+
+## 3. Choose a version
+
+=== "Windows"
+
+    - Launch LeviLauncher.
+    - Open **Download** from the sidebar.
+    - Choose whether you want a **Release** build or a **Preview** build, and a **GDK** or **UWP** package.
+    - Here, **Release** and **Preview** mean Minecraft's normal release build and Preview build.
+    - Pick a version and start installation.
+
+=== "Android"
+
+    - Go to the version (instance) screen.
+    - Select the Minecraft version you want to run, or import an official Minecraft APK to run another version inside the launcher.
 
 ## 4. Decide whether to use isolation
 
-Isolation keeps a version's game data in its own workspace instead of mixing everything into the default AppData location. It is available for GDK versions and for UWP x64 versions 1.19.70.2 or later.
+=== "Windows"
 
-Use isolation when you want to:
+    Isolation keeps a version's game data in its own workspace instead of mixing everything into the default AppData location. It is available for GDK versions and for UWP x64 versions 1.19.70.2 or later.
 
-- test mods without affecting another setup
-- keep Minecraft Release and Preview data separate
-- maintain different worlds or packs for different play styles
+    Use isolation when you want to:
+
+    - test mods without affecting another setup
+    - keep Minecraft Release and Preview data separate
+    - maintain different worlds or packs for different play styles
+
+=== "Android"
+
+    Enable version isolation when you launch an imported version whose worlds, packs and settings should stay separate from the installed Google Play version. Imported versions often need it to launch.
 
 ## 5. Launch the installed version
 
-- Go back to **Launch**.
-- Select the installed version.
-- Press **Launch**.
+=== "Windows"
 
-If LeviLauncher reports a missing dependency such as GameInput or Gaming Services, follow the prompt and complete the required installation first.
+    - Go back to **Launch**.
+    - Select the installed version.
+    - Press **Launch**.
+
+    If LeviLauncher reports a missing dependency such as GameInput or Gaming Services, follow the prompt and complete the required installation first.
+
+=== "Android"
+
+    - Return to the launch screen and press **Launch**.
+    - If the launch fails, open the launch log from the failure screen and check the reported reason before changing settings.
 
 ## 6. Continue with the right guide
 

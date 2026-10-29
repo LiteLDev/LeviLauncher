@@ -4,14 +4,22 @@ LeviLauncher behandelt jede installierte Umgebung als eine eigenständig verwalt
 
 ## Was du tun kannst
 
-- Installieren von Release- oder Preview-Versionen
-- Festlegen eines leicht erkennbaren Namens für die Version
-- Schnelles Starten einer bestimmten Version
-- Löschen nicht mehr benötigter Versionen
-- Öffnen versionsspezifischer Einstellungen
-- Erstellen einer Desktop-Verknüpfung für die Version
+=== "Windows"
 
-## Der Unterschied zwischen Release und Preview
+    - Installieren von Release- oder Preview-Versionen
+    - Festlegen eines leicht erkennbaren Namens für die Version
+    - Schnelles Starten einer bestimmten Version
+    - Löschen nicht mehr benötigter Versionen
+    - Öffnen versionsspezifischer Einstellungen
+    - Erstellen einer Desktop-Verknüpfung für die Version
+
+=== "Android"
+
+    - offizielle Minecraft-APKs importieren und im Launcher starten, ohne jede Version im System zu installieren
+    - mehrere Versionen und ihre Daten getrennt halten
+    - die Version wählen, die die Startansicht startet
+
+## Der Unterschied zwischen Release und Preview <Badge platform="windows" />
 
 | Typ | Geeignet für | Beschreibung |
 | --- | --- | --- |
@@ -20,15 +28,21 @@ LeviLauncher behandelt jede installierte Umgebung als eine eigenständig verwalt
 
 ## Was ist Isolierung?
 
-Isolierung ist für GDK-Versionen und für UWP-x64-Versionen ab 1.19.70.2 verfügbar. Wenn die Isolierung aktiviert ist, speichert LeviLauncher die Spieldaten dieser Version in einem eigenen Arbeitsbereich, anstatt sie mit dem Standardspeicherort zu teilen.
+=== "Windows"
 
-Isolierung ist für folgende Anforderungen geeignet:
+    Isolierung ist für GDK-Versionen und für UWP-x64-Versionen ab 1.19.70.2 verfügbar. Wenn die Isolierung aktiviert ist, speichert LeviLauncher die Spieldaten dieser Version in einem eigenen Arbeitsbereich, anstatt sie mit dem Standardspeicherort zu teilen.
 
-- Unterschiedliche Inhaltskombinationen für verschiedene Versionen
-- Sichereres Testen von Mods oder Minecraft Preview
-- Verringerung des Risikos, dass eine Umgebung eine andere beeinträchtigt
+    Isolierung ist für folgende Anforderungen geeignet:
 
-## Häufige Versionsoperationen
+    - Unterschiedliche Inhaltskombinationen für verschiedene Versionen
+    - Sichereres Testen von Mods oder Minecraft Preview
+    - Verringerung des Risikos, dass eine Umgebung eine andere beeinträchtigt
+
+=== "Android"
+
+    Aktiviere die Isolierung für eine importierte Version, wenn ihre Welten, Pakete und Einstellungen von der aus Google Play installierten Version getrennt bleiben sollen. Importierte Versionen brauchen die Isolierung oft zum Starten.
+
+## Häufige Versionsoperationen <Badge platform="windows" />
 
 ### Neue Version installieren
 
@@ -50,7 +64,7 @@ Das Löschen einer Version kann die zugehörigen Inhalte in dieser verwalteten U
 
 Verwende **Desktop-Verknüpfung erstellen** im Menü neben der Schaltfläche **Starten**, um für eine bestimmte Version eine Verknüpfung zu erstellen, mit der du sie direkt starten kannst.
 
-## Empfohlene Versionsstrategie
+## Empfohlene Versionsstrategie <Badge platform="windows" />
 
 - Eine isolierte Release-Version für das tägliche Spielen
 - Eine isolierte Preview-Version nur bei Bedarf

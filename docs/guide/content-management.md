@@ -4,12 +4,20 @@ LeviLauncher can manage the content that belongs to a version, especially when y
 
 ## Content areas available in the launcher
 
-- worlds
-- resource packs
-- behavior packs
-- skin packs
-- screenshots
-- servers
+=== "Windows"
+
+    - worlds
+    - resource packs
+    - behavior packs
+    - skin packs
+    - screenshots
+    - servers
+
+=== "Android"
+
+    - worlds
+    - resource packs
+    - launcher data and backups
 
 ## Why content management matters
 
@@ -21,7 +29,7 @@ Examples:
 - one version for testing resource packs
 - one Minecraft Preview version with separate screenshots and server entries
 
-## Common actions
+## Common actions <Badge platform="windows" />
 
 ### Open the content hub
 
@@ -39,13 +47,20 @@ Use folder-opening actions when you need manual inspection or file cleanup.
 
 When a version is isolated, its content stays inside that version's workspace, which is ideal for testing and organization.
 
+## Import, export and back up <Badge platform="android" />
+
+The Android version can import and export worlds and resource packs, and create backups before risky changes.
+
+- Backups are stored in the launcher-managed backup location.
+- For important worlds, keep another copy outside app storage too.
+
 ## Recommended organization habits
 
 - keep test packs away from your main survival setup
 - back up important worlds before major changes
 - use clear version names so you always know which content belongs where
 
-## Screenshots and servers
+## Screenshots and servers <Badge platform="windows" />
 
 Screenshots and server lists can also be easier to reason about when each version has a separate purpose.
 

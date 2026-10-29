@@ -18,11 +18,8 @@ hero:
       link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
       platform: android
     - theme: alt
-      text: Windows 版文檔
+      text: 閱讀文檔
       link: /zh-HK/guide/quick-start
-    - theme: alt
-      text: Android 版文檔
-      link: /zh-HK/android/
 
 features:
   - title: 以版本為核心
@@ -37,9 +34,9 @@ features:
     details: 匯出備份、檢視世界資料，並在不離開啟動器的情況下編輯部分 level.dat 欄位。
   - title: 使用者設定
     details: 調整語言、外觀、下載行為、私隱偏好、更新通道與元件狀態。
-  - title: Android 版
-    details: "同一個啟動器的 Android 版：版本隔離、帳號切換、世界與資源包管理、快速啟動和原生模組。"
-    link: /zh-HK/android/
+  - title: Android 專屬功能
+    details: "在同一個啟動器裏切換 Xbox 帳號，並用 URI 快速啟動。"
+    link: /zh-HK/guide/accounts-quick-launch
 ---
 
 ::: info Windows 版與 Android 版
@@ -59,7 +56,7 @@ LeviLauncher 提供面向 Minecraft Bedrock Edition (GDK / UWP) 的 **Windows �
 - 如何理解並使用版本隔離
 - 如何管理內容、世界與模組
 - 如何處理更新、缺失元件與常見啟動問題
-- 如何安裝和使用 [Android 版](/zh-HK/android/)
+- 如何在 Windows 與 Android 上安裝和使用 LeviLauncher
 
 ## 下載渠道
 

@@ -1,19 +1,32 @@
 # Configuration requise & Installation
 
-Cette page décrit les conditions nécessaires pour que LeviLauncher puisse installer et gérer normalement les versions de Minecraft Bedrock (GDK / UWP).
+Cette page explique ce dont LeviLauncher a besoin avant de pouvoir installer et lancer Minecraft Bedrock Edition, sous Windows et sous Android.
 
 Les versions UWP nécessitent le mode développeur de Windows ainsi que les dépendances du framework UWP déclarées par le paquet (comme Microsoft.VCLibs). Les exigences Gaming Services et GameInput ci-dessous s'appliquent à GDK. L'isolation des instances fonctionne pour GDK et pour les paquets UWP x64 de version 1.19.70.2 ou ultérieure ; les instances UWP non isolées partagent le contenu `LocalState` de l'application Windows. Les instances UWP x64 prennent aussi en charge la console et les Mods DLL `preload-native` compatibles, mais l'installation automatique de LeviLamina n'est disponible que pour les versions GDK prises en charge.
 
 ## Exigences système
 
-| Élément | Exigence |
-| --- | --- |
-| Système d'exploitation | Windows 10 ou Windows 11 |
-| Version du jeu | Minecraft Bedrock Edition (GDK / UWP) |
-| Licence | Licence officielle liée à un compte Microsoft |
-| Réseau | Nécessaire pour télécharger les versions, obtenir les métadonnées, tester la vitesse des miroirs et vérifier les mises à jour |
+=== "Windows"
 
-## Composants Windows nécessaires
+    | Élément | Exigence |
+    | --- | --- |
+    | Système d'exploitation | Windows 10 ou Windows 11 |
+    | Version du jeu | Minecraft Bedrock Edition (GDK / UWP) |
+    | Licence | Licence officielle liée à un compte Microsoft |
+    | Réseau | Nécessaire pour télécharger les versions, obtenir les métadonnées, tester la vitesse des miroirs et vérifier les mises à jour |
+
+=== "Android"
+
+    | Élément | Exigence |
+    | --- | --- |
+    | Système d'exploitation | Android 9.0 (API 28) ou version ultérieure |
+    | Architecture | ARM64 (arm64-v8a) |
+    | Mémoire | 1 Go de RAM disponible (3 Go ou plus recommandés) |
+    | Stockage | 2 Go libres pour Minecraft et les données du jeu (5 Go ou plus recommandés) |
+    | Jeu | Minecraft Bedrock Edition 1.21.80 ou version ultérieure, installé depuis Google Play |
+    | Licence | Une copie légitime de Minecraft achetée sur Google Play |
+
+## Composants Windows nécessaires <Badge platform="windows" />
 
 Avant le premier lancement ou l'installation, LeviLauncher pourrait vous guider pour installer les composants manquants.
 
@@ -46,39 +59,66 @@ Les chemins relatifs sont résolus à partir du répertoire contenant `webview2.
 
 ## Avant d'installer une version
 
-Veuillez compléter cette liste de vérification :
+=== "Windows"
 
-1. Avoir installé Minecraft Bedrock au moins une fois depuis le Microsoft Store.
-2. Si l'état du Store est anormal, lancez le jeu une fois pour confirmer que l'installation est complète.
-3. Fermez le jeu avant d'utiliser LeviLauncher pour installer ou gérer des versions.
+    Veuillez compléter cette liste de vérification :
+
+    1. Avoir installé Minecraft Bedrock au moins une fois depuis le Microsoft Store.
+    2. Si l'état du Store est anormal, lancez le jeu une fois pour confirmer que l'installation est complète.
+    3. Fermez le jeu avant d'utiliser LeviLauncher pour installer ou gérer des versions.
+
+=== "Android"
+
+    1. Installez Minecraft Bedrock Edition depuis Google Play sur l'appareil.
+    2. Mettez-le à jour vers 1.21.80 ou version ultérieure : le lanceur refuse les versions plus anciennes.
+    3. Vérifiez qu'il reste assez d'espace pour les versions et les mondes que vous voulez conserver.
 
 ## Installer LeviLauncher lui-même
 
-### Option A : Page GitHub Releases
+=== "Windows"
 
-Convient aux utilisateurs souhaitant télécharger directement depuis la page officielle de LeviLauncher et consulter l'historique des mises à jour.
+    ### Option A : Page GitHub Releases
 
-1. Ouvrez la page [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) de LeviLauncher.
-2. Téléchargez le programme d'installation.
-3. Exécutez-le et suivez l'assistant d'installation.
+    Convient aux utilisateurs souhaitant télécharger directement depuis la page officielle de LeviLauncher et consulter l'historique des mises à jour.
 
-### Option B : Miroir Lanzou Cloud
+    1. Ouvrez la page [GitHub Releases](https://github.com/LiteLDev/LeviLauncher/releases) de LeviLauncher.
+    2. Téléchargez le programme d'installation.
+    3. Exécutez-le et suivez l'assistant d'installation.
 
-Si vous avez une connexion lente à GitHub depuis votre région, ce lien est généralement plus pratique.
+    ### Option B : Miroir Lanzou Cloud
 
-1. Ouvrez [Lanzou Cloud](https://levimc.lanzoue.com/b016ke39hc).
-2. Saisissez le mot de passe `levi`.
-3. Téléchargez le fichier et exécutez le programme d'installation localement.
+    Si vous avez une connexion lente à GitHub depuis votre région, ce lien est généralement plus pratique.
+
+    1. Ouvrez [Lanzou Cloud](https://levimc.lanzoue.com/b016ke39hc).
+    2. Saisissez le mot de passe `levi`.
+    3. Téléchargez le fichier et exécutez le programme d'installation localement.
+
+=== "Android"
+
+    1. Ouvrez la page [GitHub Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest) de la version Android.
+    2. Téléchargez le dernier APK.
+    3. Autorisez l'installation depuis le navigateur ou le gestionnaire de fichiers utilisé pour le télécharger.
+    4. Installez l'APK et ouvrez-le (l'application s'appelle « LeviLauncher »).
+    5. Acceptez le contrat du lanceur et accordez les autorisations demandées par l'application.
 
 ## Installer une première version gérée
 
-1. Dans LeviLauncher, ouvrez **Télécharger**.
-2. Choisissez la build Minecraft **Version stable** (Release) ou **Aperçu** (Preview) que vous souhaitez installer, ainsi que le type de paquet **GDK** ou **UWP**.
-3. Sélectionnez l'entrée de la version cible.
-4. Décidez d'activer ou non l'isolation.
-5. Lancez l'installation et attendez sa fin.
+=== "Windows"
 
-## Stratégie d'installation recommandée
+    1. Dans LeviLauncher, ouvrez **Télécharger**.
+    2. Choisissez la build Minecraft **Version stable** (Release) ou **Aperçu** (Preview) que vous souhaitez installer, ainsi que le type de paquet **GDK** ou **UWP**.
+    3. Sélectionnez l'entrée de la version cible.
+    4. Décidez d'activer ou non l'isolation.
+    5. Lancez l'installation et attendez sa fin.
+
+=== "Android"
+
+    1. Ouvrez l'écran des versions (instances).
+    2. Sélectionnez la version installée depuis Google Play, ou importez un APK officiel de Minecraft.
+    3. Activez l'isolation pour une version importée dont les données doivent rester séparées.
+    4. Revenez à l'écran de lancement et appuyez sur **Lancer**.
+
+## Stratégie d'installation recommandée <Badge platform="windows" />
 
 ### Quand choisir la version Release (officielle)
 
@@ -98,10 +138,18 @@ Commencez par créer une **version Release (officielle) isolée**. N'ajoutez une
 
 ## Si l'installation ne peut pas se poursuivre
 
-Les problèmes suivants peuvent être résolus en consultant la page [Mise à jour et résolution de problèmes](./update-troubleshooting) :
+=== "Windows"
 
-- Manque de Gaming Services
-- Manque de GameInput
-- État incomplet de la licence ou de l'installation via le Store
-- Chemin de destination non accessible en écriture
-- Échec du téléchargement ou du miroir
+    Les problèmes suivants peuvent être résolus en consultant la page [Mise à jour et résolution de problèmes](./update-troubleshooting) :
+
+    - Manque de Gaming Services
+    - Manque de GameInput
+    - État incomplet de la licence ou de l'installation via le Store
+    - Chemin de destination non accessible en écriture
+    - Échec du téléchargement ou du miroir
+
+=== "Android"
+
+    - Si le lanceur indique que Minecraft est absent ou non pris en charge, installez ou mettez à jour d'abord la version Google Play.
+    - Les versions antérieures à 1.21.80 ne sont pas prises en charge.
+    - Pour les échecs de lancement, consultez [Mises à jour & Dépannage](./update-troubleshooting).

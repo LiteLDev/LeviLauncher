@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # Settings & Personalization
 
 LeviLauncher includes a large settings area so you can tune paths, appearance, component management, privacy choices, and update behavior.

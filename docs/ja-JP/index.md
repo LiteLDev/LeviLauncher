@@ -18,11 +18,8 @@ hero:
       link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
       platform: android
     - theme: alt
-      text: Windows 版ガイド
+      text: ドキュメントを読む
       link: /ja-JP/guide/quick-start
-    - theme: alt
-      text: Android 版ガイド
-      link: /ja-JP/android/
 
 features:
   - title: バージョン中心主義
@@ -37,9 +34,9 @@ features:
     details: ランチャーを離れずに、バックアップのエクスポート、ワールドデータの確認、level.datの一部フィールドの編集ができます。
   - title: ユーザー設定
     details: 言語、外観、ダウンロード動作、プライバシー設定、更新チャンネル、コンポーネントの状態を調整できます。
-  - title: Android 版
-    details: "同じランチャーの Android 版：バージョン分離、アカウント、ワールドとパック、Quick Launch、ネイティブ Mod。"
-    link: /ja-JP/android/
+  - title: Android 版の機能
+    details: "同じランチャーで Xbox アカウントの切り替えと URI によるクイック起動。"
+    link: /ja-JP/guide/accounts-quick-launch
 ---
 
 ::: info Windows 版と Android 版
@@ -59,7 +56,7 @@ LeviLauncher には Minecraft Bedrock Edition (GDK / UWP) 向けの **Windows �
 - バージョン分離の理解と使用方法
 - コンテンツ、ワールド、Modの管理方法
 - 更新処理、欠落コンポーネント、一般的な起動問題のトラブルシューティング
-- [Android 版](/ja-JP/android/)のインストールと使い方
+- Windows と Android で LeviLauncher をインストールして使う方法
 
 ## ダウンロードチャンネル
 

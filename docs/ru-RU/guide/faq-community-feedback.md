@@ -8,7 +8,7 @@
 
 ### Могу ли я использовать LeviLauncher на macOS или Linux?
 
-У LeviLauncher есть версия для **Windows** и версия для **Android** ([руководство для Android](/ru-RU/android/)). Версий для macOS и Linux нет.
+У LeviLauncher есть версия для **Windows** и версия для **Android** ([руководство для Android](/ru-RU/guide/quick-start?platform=android)). Версий для macOS и Linux нет.
 
 ### Есть ли версия для iOS?
 
@@ -30,6 +30,14 @@
 
 Да, но работа с модами — это продвинутая область. Начните с чистой изолированной версии и тестируйте постепенно.
 
+### Что нужно версии для Android?
+
+Android 9.0 или новее на устройстве ARM64 и Minecraft Bedrock Edition 1.21.80 или новее, установленная из Google Play. См. [Требования и установка](./requirements-installation).
+
+### Можно ли запускать несколько версий Minecraft на Android?
+
+Да. Импортируйте официальные APK Minecraft, чтобы запускать другие версии внутри лаунчера, и включите изоляцию, чтобы их данные хранились раздельно.
+
 ## Ссылки на сообщества
 
 - **Официальный Discord:** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
@@ -41,6 +49,8 @@
 - **Релизы GitHub (загрузки LeviLauncher):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Зеркало Lanzou:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — пароль: `levi`
 
+- **Версия для Android (APK):** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+
 ## Сообщение об ошибках и запросы функций
 
 Используйте [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) для:
@@ -49,6 +59,8 @@
 - проблем установки, специфичных для LeviLauncher
 - запросов на улучшение документации
 - предложений функций с конкретным вариантом использования
+
+Проблемы версии для Android сообщайте в [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues).
 
 ## Перед открытием темы (issue)
 

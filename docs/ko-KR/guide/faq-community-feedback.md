@@ -8,7 +8,7 @@
 
 ### macOS 또는 Linux에서 사용할 수 있나요?
 
-LeviLauncher에는 **Windows 버전**과 **Android 버전**([Android 가이드](/ko-KR/android/))이 있습니다. macOS 및 Linux 버전은 없습니다.
+LeviLauncher에는 **Windows 버전**과 **Android 버전**([Android 가이드](/ko-KR/guide/quick-start?platform=android))이 있습니다. macOS 및 Linux 버전은 없습니다.
 
 ### iOS 버전이 있나요?
 
@@ -30,6 +30,14 @@ LeviLauncher에는 **Windows 버전**과 **Android 버전**([Android 가이드](
 
 가능하지만, 이는 고급 작업 흐름에 해당합니다. 깨끗한 격리된 버전부터 시작하여 점진적으로 테스트하는 것을 권장합니다.
 
+### Android 버전에는 무엇이 필요한가요?
+
+ARM64 기기의 Android 9.0 이상과 Google Play에서 설치한 Minecraft Bedrock Edition 1.21.80 이상이 필요합니다. [시스템 요구사항 및 설치](./requirements-installation)를 참고하세요.
+
+### Android에서 여러 Minecraft 버전을 실행할 수 있나요?
+
+네. 공식 Minecraft APK를 가져오면 런처 안에서 다른 버전을 실행할 수 있고, 버전 격리로 데이터를 분리할 수 있습니다.
+
 ## 커뮤니티 진입점
 
 - **공식 디스코드(Discord):** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
@@ -41,6 +49,8 @@ LeviLauncher에는 **Windows 버전**과 **Android 버전**([Android 가이드](
 - **GitHub 릴리스(LeviLauncher 다운로드):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **란조우(Lanzou) 클라우드 미러:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 비밀번호: `levi`
 
+- **Android 버전(APK):** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+
 ## 문제 및 기능 요청을 피드백하는 방법
 
 다음을 위해 [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues)를 사용하여 피드백해 주세요:
@@ -49,6 +59,8 @@ LeviLauncher에는 **Windows 버전**과 **Android 버전**([Android 가이드](
 - LeviLauncher와 명확하게 관련된 설치 문제
 - 문서 표현이 불명확한 부분에 대한 개선 제안
 - 명확한 사용 시나리오가 있는 기능 요청
+
+Android 버전 문제는 [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues)에 등록하세요.
 
 ## Issue를 제출하기 전에 먼저 수행할 사항
 

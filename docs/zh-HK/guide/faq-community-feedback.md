@@ -8,7 +8,7 @@
 
 ### 能在 macOS 或 Linux 上使用嗎？
 
-LeviLauncher 提供 **Windows 版**和 **Android 版**（[Android 版文檔](/zh-HK/android/)），沒有 macOS 或 Linux 版本。
+LeviLauncher 提供 **Windows 版**和 **Android 版**（[Android 版文檔](/zh-HK/guide/quick-start?platform=android)），沒有 macOS 或 Linux 版本。
 
 ### 有 iOS 版嗎？
 
@@ -30,6 +30,14 @@ LeviLauncher 提供 **Windows 版**和 **Android 版**（[Android 版文檔](/zh
 
 可以，但這屬於進階工作流程。建議先從一個乾淨的隔離版本開始，逐步進行測試。
 
+### Android 版需要甚麼？
+
+ARM64 裝置上的 Android 9.0 或更高版本，以及從 Google Play 安裝的 Minecraft Bedrock Edition 1.21.80 或更高版本。參見[系統要求與安裝](./requirements-installation)。
+
+### Android 上能執行多個 Minecraft 版本嗎？
+
+可以。匯入官方 Minecraft APK 即可在啟動器內執行其他版本，啟用版本隔離可讓它們的資料相互獨立。
+
 ## 社群入口
 
 - **官方 Discord：** [discord.gg/v5R5P4vRZk](https://discord.gg/v5R5P4vRZk)
@@ -41,6 +49,8 @@ LeviLauncher 提供 **Windows 版**和 **Android 版**（[Android 版文檔](/zh
 - **GitHub Releases（LeviLauncher 下載）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **藍奏雲鏡像：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 密碼：`levi`
 
+- **Android 版（APK）：** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
+
 ## 如何回饋問題與功能建議
 
 請使用 [GitHub Issues](https://github.com/LiteLDev/LeviLauncher/issues) 進行回饋：
@@ -49,6 +59,8 @@ LeviLauncher 提供 **Windows 版**和 **Android 版**（[Android 版文檔](/zh
 - 與 LeviLauncher 明確相關的安裝問題
 - 針對文檔表達不清的改進建議
 - 帶有明確使用場景的功能請求
+
+Android 版的問題請提交到 [LiteLDev/LeviLaunchroid Issues](https://github.com/LiteLDev/LeviLaunchroid/issues)。
 
 ## 提交 Issue 之前建議先做
 

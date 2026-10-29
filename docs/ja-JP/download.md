@@ -9,7 +9,7 @@ LeviLauncher には Windows 版と Android 版があります。お使いのデ�
     - [GitHub Releases からインストーラーをダウンロード](https://github.com/LiteLDev/LeviLauncher/releases/latest)
     - [Lanzou ミラー](https://levimc.lanzoue.com/b016ke39hc) — パスワード `levi`。GitHub が遅い地域で使用してください
 
-    次へ：[システム要件とインストール](/ja-JP/guide/requirements-installation) · [5 分で始める](/ja-JP/guide/quick-start)
+    次へ：[システム要件とインストール](/ja-JP/guide/requirements-installation?platform=windows) · [5 分で始める](/ja-JP/guide/quick-start?platform=windows)
 
 === "Android"
 
@@ -17,7 +17,7 @@ LeviLauncher には Windows 版と Android 版があります。お使いのデ�
 
     - [GitHub Releases から APK をダウンロード](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
-    次へ：[Getting Started](/ja-JP/android/guide/getting-started)（英語）
+    次へ：[システム要件とインストール](/ja-JP/guide/requirements-installation?platform=android) · [5 分で始める](/ja-JP/guide/quick-start?platform=android)
 
 ::: info iOS
 iOS 版 LeviLauncher はなく、開発する予定もありません。

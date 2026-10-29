@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # Descargas y espejos
 
 LeviLauncher ofrece funciones como la selección de mirror, el progreso de tareas y la importación de paquetes locales para ayudarte a completar la instalación de forma más estable.

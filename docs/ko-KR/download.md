@@ -9,7 +9,7 @@ LeviLauncher는 Windows 버전과 Android 버전이 있습니다. 사용 중인 
     - [GitHub Releases에서 설치 프로그램 다운로드](https://github.com/LiteLDev/LeviLauncher/releases/latest)
     - [Lanzou 미러](https://levimc.lanzoue.com/b016ke39hc) — 비밀번호 `levi`. GitHub 속도가 느린 지역에서 사용하세요
 
-    다음: [시스템 요구사항 및 설치](/ko-KR/guide/requirements-installation) · [5분 만에 시작하기](/ko-KR/guide/quick-start)
+    다음: [시스템 요구사항 및 설치](/ko-KR/guide/requirements-installation?platform=windows) · [5분 만에 시작하기](/ko-KR/guide/quick-start?platform=windows)
 
 === "Android"
 
@@ -17,7 +17,7 @@ LeviLauncher는 Windows 버전과 Android 버전이 있습니다. 사용 중인 
 
     - [GitHub Releases에서 APK 다운로드](https://github.com/LiteLDev/LeviLaunchroid/releases/latest)
 
-    다음: [Getting Started](/ko-KR/android/guide/getting-started)(영어)
+    다음: [시스템 요구사항 및 설치](/ko-KR/guide/requirements-installation?platform=android) · [5분 만에 시작하기](/ko-KR/guide/quick-start?platform=android)
 
 ::: info iOS
 iOS 버전 LeviLauncher는 없으며, 만들 계획도 없습니다.

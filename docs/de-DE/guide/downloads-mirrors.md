@@ -1,3 +1,6 @@
+---
+platforms: [windows]
+---
 # Downloads & Spiegel
 
 LeviLauncher bietet Funktionen wie die Auswahl von Spiegelservern, Fortschrittsanzeige und den Import lokaler Installationspakete, um dir eine zuverlässigere Installation zu ermöglichen.

@@ -3,18 +3,26 @@ layout: home
 
 hero:
   name: LeviLauncher
-  text: Windows용 Minecraft Bedrock (GDK / UWP) 런처
-  tagline: 하나의 데스크톱 앱에서 Minecraft 정식판과 프리뷰 판의 설치, 격리, 콘텐츠 관리, 모드 작업 흐름 및 실행을 완료하세요.
+  text: Windows 및 Android용 Minecraft Bedrock 런처
+  tagline: Windows PC나 Android 기기에서 Minecraft Bedrock Edition을 설치, 관리, 격리, 모드 적용 및 실행하세요.
   image:
     src: /appicon.png
     alt: LeviLauncher
   actions:
     - theme: brand
-      text: 문서 읽기
+      text: Windows용 다운로드
+      link: https://github.com/LiteLDev/LeviLauncher/releases/latest
+      platform: windows
+    - theme: alt
+      text: Android용 다운로드
+      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      platform: android
+    - theme: alt
+      text: Windows 가이드
       link: /ko-KR/guide/quick-start
     - theme: alt
-      text: LeviLauncher 다운로드
-      link: https://github.com/LiteLDev/LeviLauncher/releases
+      text: Android 가이드
+      link: /ko-KR/android/
 
 features:
   - title: 버전 중심
@@ -29,10 +37,13 @@ features:
     details: 런처를 벗어나지 않고 백업을 내보내고, 월드 데이터를 확인하며, 일부 level.dat 필드를 편집할 수 있습니다.
   - title: 사용자 설정
     details: 언어, 외관, 다운로드 동작, 개인정보 보호 설정, 업데이트 채널 및 구성 요소 상태를 조정합니다.
+  - title: Android 버전
+    details: "Android에서도 같은 런처: 버전 격리, 계정, 월드와 팩, Quick Launch, 네이티브 모드."
+    link: /ko-KR/android/
 ---
 
-::: warning Windows 전용
-LeviLauncher는 **Windows의 Minecraft Bedrock Edition (GDK / UWP)** 용으로 설계되었으며, **정품 라이선스**가 필요합니다.
+::: info Windows 및 Android
+LeviLauncher에는 Minecraft Bedrock Edition(GDK / UWP)용 **Windows 버전**과 Google Play 공식 Minecraft용 **Android 버전**이 있습니다. 두 버전 모두 **정품 라이선스**가 필요합니다. iOS 버전은 없으며, 계획도 없습니다.
 :::
 
 ::: tip 새 사용자는 여기서 시작하세요
@@ -48,11 +59,13 @@ LeviLauncher는 **Windows의 Minecraft Bedrock Edition (GDK / UWP)** 용으로 �
 - 버전 격리의 원리와 사용 방법
 - 콘텐츠, 월드 및 모드 관리 방법
 - 업데이트, 누락된 구성 요소 및 일반적인 실행 문제 해결 방법
+- [Android 버전](/ko-KR/android/) 설치 및 사용 방법
 
 ## 다운로드 채널
 
 - **GitHub 릴리스(LeviLauncher 다운로드):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **란조우(Lanzou) 클라우드 미러:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 비밀번호: `levi`
+- **Android 버전:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
 
 ## 커뮤니티 및 피드백
 

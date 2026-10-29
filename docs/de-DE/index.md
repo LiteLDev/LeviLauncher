@@ -3,18 +3,26 @@ layout: home
 
 hero:
   name: LeviLauncher
-  text: Minecraft Bedrock (GDK / UWP)-Launcher für Windows
-  tagline: Installation, Isolierung, Inhaltsverwaltung, Mod-Workflows und Start von Minecraft – alles in einer Desktop-Anwendung.
+  text: Minecraft Bedrock-Launcher für Windows und Android
+  tagline: Minecraft Bedrock Edition auf deinem Windows-PC oder Android-Gerät installieren, verwalten, isolieren, modden und starten.
   image:
     src: /appicon.png
     alt: LeviLauncher
   actions:
     - theme: brand
-      text: Dokumentation lesen
+      text: Für Windows herunterladen
+      link: https://github.com/LiteLDev/LeviLauncher/releases/latest
+      platform: windows
+    - theme: alt
+      text: Für Android herunterladen
+      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      platform: android
+    - theme: alt
+      text: Windows-Anleitung
       link: /de-DE/guide/quick-start
     - theme: alt
-      text: LeviLauncher herunterladen
-      link: https://github.com/LiteLDev/LeviLauncher/releases
+      text: Android-Anleitung
+      link: /de-DE/android/
 
 features:
   - title: Versionszentriert
@@ -29,10 +37,13 @@ features:
     details: Exportiere Backups, sieh dir Weltdaten an und bearbeite ausgewählte level.dat-Felder, ohne den Launcher zu verlassen.
   - title: Benutzereinstellungen
     details: Passe Sprache, Erscheinungsbild, Download-Verhalten, Datenschutzoptionen, Update-Kanäle und Komponentenstatus an.
+  - title: Android-Version
+    details: "Derselbe Launcher auf Android: isolierte Versionen, Konten, Welten und Pakete, Quick Launch und native Mods."
+    link: /de-DE/android/
 ---
 
-::: warning Nur für Windows
-LeviLauncher ist für **Minecraft Bedrock Edition (GDK / UWP) unter Windows** gedacht. Du benötigst eine rechtmäßig lizenzierte Kopie des Spiels.
+::: info Windows und Android
+LeviLauncher gibt es als **Windows-Version** für Minecraft Bedrock Edition (GDK / UWP) und als **Android-Version** für das offizielle Minecraft aus Google Play. Für beide brauchst du eine rechtmäßig lizenzierte Kopie des Spiels. Eine iOS-Version gibt es nicht, und sie ist auch nicht geplant.
 :::
 
 ::: tip Empfehlung für neue Nutzer
@@ -48,11 +59,13 @@ Diese Dokumentation richtet sich an **Endnutzer**, nicht an Entwickler oder Mitw
 - Wie Versionsisolierung funktioniert und genutzt wird  
 - Wie Inhalte, Welten und Mods verwaltet werden  
 - Wie Updates, fehlende Komponenten und häufige Startprobleme behandelt werden  
+- Wie man die [Android-Version](/de-DE/android/) installiert und nutzt
 
 ## Downloadquellen
 
 - **GitHub Releases (offizieller LeviLauncher-Download):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)  
 - **Lanzou Cloud Mirror (chinesischer Mirror):** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — Passwort: `levi`
+- **Android-Version:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
 
 ## Community & Feedback
 

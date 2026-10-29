@@ -3,18 +3,26 @@ layout: home
 
 hero:
   name: LeviLauncher
-  text: 面向 Windows 的 Minecraft 基岩版（GDK / UWP）启动器
-  tagline: 在一个桌面应用中完成 Minecraft 正式版、预览版的安装、管理、隔离、模组配置与启动。
+  text: 面向 Windows 与 Android 的 Minecraft 基岩版启动器
+  tagline: 在 Windows 电脑或 Android 设备上完成 Minecraft 基岩版的安装、管理、隔离、模组配置与启动。
   image:
     src: /appicon.png
     alt: LeviLauncher
   actions:
     - theme: brand
-      text: 阅读文档
+      text: 下载 Windows 版
+      link: https://github.com/LiteLDev/LeviLauncher/releases/latest
+      platform: windows
+    - theme: alt
+      text: 下载 Android 版
+      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      platform: android
+    - theme: alt
+      text: Windows 版文档
       link: /zh-CN/guide/quick-start
     - theme: alt
-      text: 下载 LeviLauncher
-      link: https://github.com/LiteLDev/LeviLauncher/releases
+      text: Android 版文档
+      link: /zh-CN/android/
 
 features:
   - title: 以版本为中心
@@ -29,10 +37,13 @@ features:
     details: 备份为 .mcworld、查看世界信息，并对部分 level.dat 字段进行编辑。
   - title: 用户设置
     details: 调整语言、外观、下载行为、隐私偏好、更新通道和组件状态。
+  - title: Android 版
+    details: "同一个启动器的 Android 版：版本隔离、账号切换、世界与资源包管理、快速启动和原生模组。"
+    link: /zh-CN/android/
 ---
 
-::: warning 仅支持 Windows
-LeviLauncher 面向 **Windows 上的 Minecraft 基岩版（GDK / UWP）**，需要你拥有**正版授权**。
+::: info Windows 版与 Android 版
+LeviLauncher 提供面向 Minecraft 基岩版（GDK / UWP）的 **Windows 版**，以及面向 Google Play 官方 Minecraft 的 **Android 版**，两者都需要你拥有**正版授权**。我们没有开发 iOS 版的计划。
 :::
 
 ::: tip 新用户建议从这里开始
@@ -48,11 +59,13 @@ LeviLauncher 面向 **Windows 上的 Minecraft 基岩版（GDK / UWP）**，需�
 - 如何理解并使用版本隔离
 - 如何管理内容、世界与模组
 - 如何处理更新、缺失组件与常见启动问题
+- 如何安装和使用 [Android 版](/zh-CN/android/)
 
 ## 下载渠道
 
 - **GitHub Releases（LeviLauncher 下载）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **蓝奏云镜像：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 密码：`levi`
+- **Android 版：** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
 
 ## 社区与反馈
 

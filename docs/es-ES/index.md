@@ -3,18 +3,26 @@ layout: home
 
 hero:
   name: LeviLauncher
-  text: Lanzador de Minecraft Bedrock (GDK / UWP) para Windows
-  tagline: Instala, gestiona, aísla, administra contenido, utiliza flujos de trabajo con Mods e inicia versiones oficiales o de vista previa de Minecraft desde una única aplicación de escritorio.
+  text: Lanzador de Minecraft Bedrock para Windows y Android
+  tagline: Instala, gestiona, aísla, modifica e inicia Minecraft Bedrock Edition en tu PC con Windows o en tu dispositivo Android.
   image:
     src: /appicon.png
     alt: LeviLauncher
   actions:
     - theme: brand
-      text: Leer la documentación
+      text: Descargar para Windows
+      link: https://github.com/LiteLDev/LeviLauncher/releases/latest
+      platform: windows
+    - theme: alt
+      text: Descargar para Android
+      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      platform: android
+    - theme: alt
+      text: Guía de Windows
       link: /es-ES/guide/quick-start
     - theme: alt
-      text: Descargar LeviLauncher
-      link: https://github.com/LiteLDev/LeviLauncher/releases
+      text: Guía de Android
+      link: /es-ES/android/
 
 features:
   - title: Centrado en versiones
@@ -29,10 +37,13 @@ features:
     details: Exporta copias de seguridad, consulta los datos del mundo y edita ciertos campos de level.dat sin salir del lanzador.
   - title: Configuración de usuario
     details: Ajusta el idioma, la apariencia, el comportamiento de las descargas, las opciones de privacidad, los canales de actualización y el estado de los componentes.
+  - title: Versión para Android
+    details: "El mismo lanzador en Android: versiones aisladas, cuentas, mundos y paquetes, Quick Launch y Mods nativos."
+    link: /es-ES/android/
 ---
 
-::: warning Solo compatible con Windows
-LeviLauncher está diseñado para **Minecraft Bedrock Edition (GDK / UWP) en Windows** y requiere que poseas una **licencia original**.
+::: info Windows y Android
+LeviLauncher tiene una **versión para Windows** para Minecraft Bedrock Edition (GDK / UWP) y una **versión para Android** para el Minecraft oficial de Google Play. Ambas requieren una **licencia original** del juego. No existe una versión para iOS y no está prevista.
 :::
 
 ::: tip Recomendación para nuevos usuarios
@@ -48,11 +59,13 @@ Esta documentación está escrita para **usuarios finales**, no para mantenedore
 - Cómo funciona y cuándo utilizar el aislamiento de versiones
 - Cómo gestionar contenido, mundos y Mods
 - Cómo solucionar problemas de actualización, componentes faltantes y errores comunes al iniciar
+- Cómo instalar y usar la [versión para Android](/es-ES/android/)
 
 ## Canales de descarga
 
 - **GitHub Releases (Descargas de LeviLauncher):** [Versiones de LiteLDev/LeviLauncher](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Mirror en Lanzou:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — contraseña: `levi`
+- **Versión para Android:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
 
 ## Comunidad y comentarios
 

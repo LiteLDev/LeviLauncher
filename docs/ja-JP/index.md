@@ -3,18 +3,26 @@ layout: home
 
 hero:
   name: LeviLauncher
-  text: Windows 向け Minecraft Bedrock (GDK / UWP) ランチャー
-  tagline: Minecraftの正式版・プレビュー版のインストール、分離、コンテンツ管理、Modワークフロー、起動を、1つのデスクトップアプリケーションで完結します。
+  text: Windows・Android 向け Minecraft Bedrock ランチャー
+  tagline: Windows PC や Android デバイスで、Minecraft 統合版のインストール、管理、分離、Mod 導入、起動を行えます。
   image:
     src: /appicon.png
     alt: LeviLauncher
   actions:
     - theme: brand
-      text: ドキュメントを読む
+      text: Windows 版をダウンロード
+      link: https://github.com/LiteLDev/LeviLauncher/releases/latest
+      platform: windows
+    - theme: alt
+      text: Android 版をダウンロード
+      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      platform: android
+    - theme: alt
+      text: Windows 版ガイド
       link: /ja-JP/guide/quick-start
     - theme: alt
-      text: LeviLauncherをダウンロード
-      link: https://github.com/LiteLDev/LeviLauncher/releases
+      text: Android 版ガイド
+      link: /ja-JP/android/
 
 features:
   - title: バージョン中心主義
@@ -29,10 +37,13 @@ features:
     details: ランチャーを離れずに、バックアップのエクスポート、ワールドデータの確認、level.datの一部フィールドの編集ができます。
   - title: ユーザー設定
     details: 言語、外観、ダウンロード動作、プライバシー設定、更新チャンネル、コンポーネントの状態を調整できます。
+  - title: Android 版
+    details: "同じランチャーの Android 版：バージョン分離、アカウント、ワールドとパック、Quick Launch、ネイティブ Mod。"
+    link: /ja-JP/android/
 ---
 
-::: warning Windowsのみ対応
-LeviLauncherは**Windows上のMinecraft Bedrock Edition (GDK / UWP)** 向けであり、**正規版のライセンス**を保有している必要があります。
+::: info Windows 版と Android 版
+LeviLauncher には Minecraft Bedrock Edition (GDK / UWP) 向けの **Windows 版**と、Google Play の公式 Minecraft 向けの **Android 版**があります。どちらも**正規版のライセンス**が必要です。iOS 版はなく、開発する予定もありません。
 :::
 
 ::: tip 新規ユーザーはここから始めるのがおすすめ
@@ -48,11 +59,13 @@ LeviLauncherは**Windows上のMinecraft Bedrock Edition (GDK / UWP)** 向けで�
 - バージョン分離の理解と使用方法
 - コンテンツ、ワールド、Modの管理方法
 - 更新処理、欠落コンポーネント、一般的な起動問題のトラブルシューティング
+- [Android 版](/ja-JP/android/)のインストールと使い方
 
 ## ダウンロードチャンネル
 
 - **GitHub Releases (LeviLauncherダウンロード):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **LanZou Cloudミラーサイト:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — パスワード: `levi`
+- **Android 版:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
 
 ## コミュニティとフィードバック
 

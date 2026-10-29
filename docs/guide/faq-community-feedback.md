@@ -8,7 +8,11 @@ Yes. LeviLauncher is designed to work with a legitimate licensed copy of Minecra
 
 ### Can I use LeviLauncher on macOS or Linux?
 
-The supported user target in this documentation is **Windows**.
+LeviLauncher has a **Windows** version and an **Android** version ([Android guide](/android/)). There is no macOS or Linux version.
+
+### Is there an iOS version?
+
+No. There are no plans for an iOS version of LeviLauncher.
 
 ### Should I use Release or Preview?
 

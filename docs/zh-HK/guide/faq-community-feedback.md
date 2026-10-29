@@ -8,7 +8,11 @@
 
 ### 能在 macOS 或 Linux 上使用嗎？
 
-本套用戶文檔面向的支持目標是 **Windows**。
+LeviLauncher 提供 **Windows 版**和 **Android 版**（[Android 版文檔](/zh-HK/android/)），沒有 macOS 或 Linux 版本。
+
+### 有 iOS 版嗎？
+
+沒有。我們沒有開發 iOS 版 LeviLauncher 的計劃。
 
 ### 我應該選 Release 還是 Preview？
 

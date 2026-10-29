@@ -8,7 +8,11 @@ Sí. LeviLauncher está diseñado para usarse junto con **Minecraft Bedrock Edit
 
 ### ¿Se puede usar en macOS o Linux?
 
-La documentación de usuario está dirigida exclusivamente a **Windows**.
+LeviLauncher tiene una versión para **Windows** y otra para **Android** ([guía de Android](/es-ES/android/)). No hay versión para macOS ni Linux.
+
+### ¿Hay una versión para iOS?
+
+No. No tenemos planes de crear una versión de LeviLauncher para iOS.
 
 ### ¿Debería elegir Release o Preview?
 

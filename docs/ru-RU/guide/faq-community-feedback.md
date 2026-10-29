@@ -8,7 +8,11 @@
 
 ### Могу ли я использовать LeviLauncher на macOS или Linux?
 
-Целевой пользовательской платформой в этой документации является **Windows**.
+У LeviLauncher есть версия для **Windows** и версия для **Android** ([руководство для Android](/ru-RU/android/)). Версий для macOS и Linux нет.
+
+### Есть ли версия для iOS?
+
+Нет. Мы не планируем выпускать LeviLauncher для iOS.
 
 ### Что выбрать: Release или Preview?
 

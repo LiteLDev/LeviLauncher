@@ -3,18 +3,26 @@ layout: home
 
 hero:
   name: LeviLauncher
-  text: 面向 Windows 的 Minecraft Bedrock (GDK / UWP) 啟動器
-  tagline: 於單一桌面應用程式中，完成 Minecraft 正式版、預覽版的安裝、隔離、內容管理、模組配置與啟動。
+  text: 面向 Windows 與 Android 的 Minecraft Bedrock 啟動器
+  tagline: 在 Windows 電腦或 Android 裝置上完成 Minecraft Bedrock 的安裝、管理、隔離、模組配置與啟動。
   image:
     src: /appicon.png
     alt: LeviLauncher
   actions:
     - theme: brand
-      text: 閱讀文檔
+      text: 下載 Windows 版
+      link: https://github.com/LiteLDev/LeviLauncher/releases/latest
+      platform: windows
+    - theme: alt
+      text: 下載 Android 版
+      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      platform: android
+    - theme: alt
+      text: Windows 版文檔
       link: /zh-HK/guide/quick-start
     - theme: alt
-      text: 下載 LeviLauncher
-      link: https://github.com/LiteLDev/LeviLauncher/releases
+      text: Android 版文檔
+      link: /zh-HK/android/
 
 features:
   - title: 以版本為核心
@@ -29,10 +37,13 @@ features:
     details: 匯出備份、檢視世界資料，並在不離開啟動器的情況下編輯部分 level.dat 欄位。
   - title: 使用者設定
     details: 調整語言、外觀、下載行為、私隱偏好、更新通道與元件狀態。
+  - title: Android 版
+    details: "同一個啟動器的 Android 版：版本隔離、帳號切換、世界與資源包管理、快速啟動和原生模組。"
+    link: /zh-HK/android/
 ---
 
-::: warning 僅支援 Windows
-LeviLauncher 面向 **Windows 上的 Minecraft Bedrock Edition (GDK / UWP)**，需要您擁有**正版授權**。
+::: info Windows 版與 Android 版
+LeviLauncher 提供面向 Minecraft Bedrock Edition (GDK / UWP) 的 **Windows 版**，以及面向 Google Play 官方 Minecraft 的 **Android 版**，兩者都需要您擁有**正版授權**。我們沒有開發 iOS 版的計劃。
 :::
 
 ::: tip 新用戶建議從此開始
@@ -48,11 +59,13 @@ LeviLauncher 面向 **Windows 上的 Minecraft Bedrock Edition (GDK / UWP)**，�
 - 如何理解並使用版本隔離
 - 如何管理內容、世界與模組
 - 如何處理更新、缺失元件與常見啟動問題
+- 如何安裝和使用 [Android 版](/zh-HK/android/)
 
 ## 下載渠道
 
 - **GitHub Releases（LeviLauncher 下載）：** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **藍奏雲鏡像：** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — 密碼：`levi`
+- **Android 版：** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
 
 ## 社群與回饋
 

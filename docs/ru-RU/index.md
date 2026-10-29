@@ -3,18 +3,26 @@ layout: home
 
 hero:
   name: LeviLauncher
-  text: Лаунчер Minecraft Bedrock (GDK / UWP) для Windows
-  tagline: Устанавливайте, управляйте, изолируйте, модифицируйте и запускайте версии Minecraft Release или Preview в одном десктопном приложении.
+  text: Лаунчер Minecraft Bedrock для Windows и Android
+  tagline: Устанавливайте, управляйте, изолируйте, модифицируйте и запускайте Minecraft Bedrock Edition на ПК с Windows или устройстве Android.
   image:
     src: /appicon.png
     alt: LeviLauncher
   actions:
     - theme: brand
-      text: Читать руководство
+      text: Скачать для Windows
+      link: https://github.com/LiteLDev/LeviLauncher/releases/latest
+      platform: windows
+    - theme: alt
+      text: Скачать для Android
+      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      platform: android
+    - theme: alt
+      text: Руководство для Windows
       link: /ru-RU/guide/quick-start
     - theme: alt
-      text: Скачать LeviLauncher
-      link: https://github.com/LiteLDev/LeviLauncher/releases
+      text: Руководство для Android
+      link: /ru-RU/android/
 
 features:
   - title: Управление версиями
@@ -29,10 +37,13 @@ features:
     details: Экспортируйте резервные копии, анализируйте данные мира и редактируйте выбранные поля level.dat без выхода из лаунчера.
   - title: Настройки для пользователя
     details: Настраивайте язык, внешний вид, поведение загрузок, параметры конфиденциальности, каналы обновлений и статус компонентов.
+  - title: Версия для Android
+    details: "Тот же лаунчер на Android: изолированные версии, аккаунты, миры и наборы, Quick Launch и нативные моды."
+    link: /ru-RU/android/
 ---
 
-::: warning Только для Windows
-LeviLauncher создан для **Minecraft Bedrock Edition (GDK / UWP) на Windows**. Вам необходима легальная лицензионная копия игры.
+::: info Windows и Android
+У LeviLauncher есть **версия для Windows** для Minecraft Bedrock Edition (GDK / UWP) и **версия для Android** для официального Minecraft из Google Play. Для обеих нужна легальная лицензионная копия игры. Версии для iOS нет, и она не планируется.
 :::
 
 ::: tip Начните здесь, если вы новичок
@@ -48,11 +59,13 @@ LeviLauncher создан для **Minecraft Bedrock Edition (GDK / UWP) на Wi
 - Как работает изоляция и когда её использовать
 - Как управлять контентом, мирами и модами
 - Как устранять неполадки с обновлениями, отсутствующими компонентами и распространенными проблемами запуска
+- Как установить и использовать [версию для Android](/ru-RU/android/)
 
 ## Каналы загрузки
 
 - **Релизы GitHub (загрузка LeviLauncher):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Зеркало Lanzou:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — пароль: `levi`
+- **Версия для Android:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
 
 ## Сообщество и обратная связь
 

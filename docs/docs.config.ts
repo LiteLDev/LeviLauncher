@@ -1,10 +1,9 @@
 // LeviLauncher user documentation — levimc-kit site config (replaces .vitepress/config.mts).
-// Nav, sidebars and UI labels are ported 1:1 from the former VitePress config.
+// One site for both versions of LeviLauncher: the Windows guide under guide/, the Android version (formerly
+// docs.levimc.org/LeviLaunchroid/, its own repository LiteLDev/LeviLaunchroid) under android/.
 import { defineDocsConfig, type NavEntry } from './kit/docs/node/config.ts';
 
 const repo = 'https://github.com/LiteLDev/LeviLauncher';
-const releases = `${repo}/releases`;
-const lanzou = 'https://levimc.lanzoue.com/b016ke39hc';
 
 // --- Sidebars -------------------------------------------------------------------------------------
 
@@ -218,34 +217,110 @@ const SIDEBAR: Record<string, SidebarLabels> = {
   },
 };
 
+// --- Android sidebar ------------------------------------------------------------------------------
+
+// The Android pages exist in English and Simplified Chinese (zh-HK converts them, the other locales show English).
+// API names stay English in every locale, as in the pages.
+interface AndroidLabels {
+  guide: string;
+  overview: string;
+  gettingStarted: string;
+  features: string;
+  compatibility: string;
+  privacy: string;
+  developer: string;
+  nativeMod: string;
+  build: string;
+  memoryHook: string;
+  sdkHeaders: string;
+}
+
+function buildAndroidSidebar(prefix: string, t: AndroidLabels): NavEntry[] {
+  return [
+    {
+      text: t.guide,
+      items: [
+        { text: t.overview, link: prefix },
+        { text: t.gettingStarted, link: `${prefix}guide/getting-started` },
+        { text: t.features, link: `${prefix}guide/features` },
+        { text: t.compatibility, link: `${prefix}guide/compatibility` },
+        { text: t.privacy, link: `${prefix}privacy-policy` },
+      ],
+    },
+    {
+      text: t.developer,
+      items: [
+        { text: t.nativeMod, link: `${prefix}guide/developer` },
+        { text: t.build, link: `${prefix}guide/build` },
+        { text: 'Mod API', link: `${prefix}api/mod` },
+        { text: 'Mod Menu API', link: `${prefix}api/mod-menu` },
+        { text: 'Config API', link: `${prefix}api/config` },
+        { text: 'Input API', link: `${prefix}api/input` },
+        { text: 'Hook API', link: `${prefix}api/hook` },
+        { text: 'Signature API', link: `${prefix}api/signature` },
+        { text: 'Patch API', link: `${prefix}api/patch` },
+        { text: t.memoryHook, link: `${prefix}api/memory-hook-macros` },
+        { text: t.sdkHeaders, link: `${prefix}api/types-and-macros` },
+      ],
+    },
+  ];
+}
+
+const ANDROID_EN: AndroidLabels = {
+  guide: 'Android Version',
+  overview: 'Overview',
+  gettingStarted: 'Getting Started',
+  features: 'Features',
+  compatibility: 'Compatibility and FAQ',
+  privacy: 'Privacy Policy',
+  developer: 'Developer',
+  nativeMod: 'Native Mod Quick Start',
+  build: 'Build from Source',
+  memoryHook: 'Memory Hook Example',
+  sdkHeaders: 'SDK Headers and Macros',
+};
+
+const ANDROID: Record<string, AndroidLabels> = {
+  'en-US': ANDROID_EN,
+  'es-ES': { ...ANDROID_EN, guide: 'Versión para Android', overview: 'Introducción', gettingStarted: 'Primeros pasos', features: 'Funciones', compatibility: 'Compatibilidad y preguntas frecuentes', privacy: 'Política de privacidad', developer: 'Desarrolladores', nativeMod: 'Inicio rápido de Mods nativos', build: 'Compilar desde el código fuente' },
+  'zh-CN': { guide: 'Android 版', overview: '概览', gettingStarted: '快速开始', features: '功能概览', compatibility: '兼容性与常见问题', privacy: '隐私政策', developer: '开发者', nativeMod: '原生模组快速开始', build: '从源码构建', memoryHook: 'Memory Hook 示例', sdkHeaders: 'SDK 头文件与宏' },
+  'zh-HK': { guide: 'Android 版', overview: '概覽', gettingStarted: '快速開始', features: '功能概覽', compatibility: '兼容性與常見問題', privacy: '私隱政策', developer: '開發者', nativeMod: '原生模組快速開始', build: '從原始碼建置', memoryHook: 'Memory Hook 示例', sdkHeaders: 'SDK 標頭檔與巨集' },
+  'ru-RU': { ...ANDROID_EN, guide: 'Версия для Android', overview: 'Обзор', gettingStarted: 'Начало работы', features: 'Возможности', compatibility: 'Совместимость и ЧаВО', privacy: 'Политика конфиденциальности', developer: 'Разработчикам', nativeMod: 'Быстрый старт: нативные моды', build: 'Сборка из исходного кода' },
+  'de-DE': { ...ANDROID_EN, guide: 'Android-Version', overview: 'Überblick', gettingStarted: 'Erste Schritte', features: 'Funktionen', compatibility: 'Kompatibilität & FAQ', privacy: 'Datenschutzerklärung', developer: 'Entwickler', nativeMod: 'Schnellstart: native Mods', build: 'Aus dem Quellcode bauen' },
+  'ja-JP': { ...ANDROID_EN, guide: 'Android 版', overview: '概要', gettingStarted: 'はじめに', features: '機能', compatibility: '互換性と FAQ', privacy: 'プライバシーポリシー', developer: '開発者向け', nativeMod: 'ネイティブ Mod クイックスタート', build: 'ソースからビルド' },
+  'ko-KR': { ...ANDROID_EN, guide: 'Android 버전', overview: '개요', gettingStarted: '시작하기', features: '기능', compatibility: '호환성 및 FAQ', privacy: '개인정보 처리방침', developer: '개발자', nativeMod: '네이티브 모드 빠른 시작', build: '소스에서 빌드' },
+  'fr-FR': { ...ANDROID_EN, guide: 'Version Android', overview: 'Présentation', gettingStarted: 'Premiers pas', features: 'Fonctionnalités', compatibility: 'Compatibilité & FAQ', privacy: 'Politique de confidentialité', developer: 'Développeurs', nativeMod: 'Démarrage rapide : Mods natifs', build: 'Compiler depuis les sources' },
+};
+
 // --- Navbar ---------------------------------------------------------------------------------------
 
 interface NavLabels {
-  guide: string;
-  downloads: string;
-  mirror: string;
+  windows: string;
+  android: string;
+  download: string;
 }
 
 function buildNav(prefix: string, t: NavLabels): NavEntry[] {
   return [
-    { text: t.guide, link: `${prefix}guide/quick-start` },
-    { text: t.downloads, link: releases },
-    { text: t.mirror, link: lanzou },
+    { text: t.windows, link: `${prefix}guide/quick-start` },
+    { text: t.android, link: `${prefix}android/` },
+    // the Download page offers both versions and selects the visitor's (tabs named after the platforms)
+    { text: t.download, link: `${prefix}download` },
     // GitHub and Community (Discord) are not docs tabs: the LeviMC bar already has a GitHub button (`repo`) and a
     // Community tab, and the footer links the same Discord invite, so the docs row carries no duplicates.
   ];
 }
 
 const NAV: Record<string, NavLabels> = {
-  'en-US': { guide: 'Guide', downloads: 'Downloads', mirror: 'Mirror' },
-  'es-ES': { guide: 'Guía', downloads: 'Descargas', mirror: 'Espejo' },
-  'zh-CN': { guide: '文档', downloads: '下载', mirror: '蓝奏云' },
-  'zh-HK': { guide: '文檔', downloads: '下載', mirror: '藍奏雲' },
-  'ru-RU': { guide: 'Документация', downloads: 'Загрузки', mirror: 'Зеркало' },
-  'de-DE': { guide: 'Dokumentation', downloads: 'Downloads', mirror: 'Spiegel' },
-  'ja-JP': { guide: 'ドキュメント', downloads: 'ダウンロード', mirror: 'ミラー' },
-  'ko-KR': { guide: '가이드', downloads: '다운로드', mirror: '미러' },
-  'fr-FR': { guide: 'Guide', downloads: 'Téléchargements', mirror: 'Miroir' },
+  'en-US': { windows: 'Windows', android: 'Android', download: 'Download' },
+  'es-ES': { windows: 'Windows', android: 'Android', download: 'Descargas' },
+  'zh-CN': { windows: 'Windows 版', android: 'Android 版', download: '下载' },
+  'zh-HK': { windows: 'Windows 版', android: 'Android 版', download: '下載' },
+  'ru-RU': { windows: 'Windows', android: 'Android', download: 'Загрузки' },
+  'de-DE': { windows: 'Windows', android: 'Android', download: 'Downloads' },
+  'ja-JP': { windows: 'Windows 版', android: 'Android 版', download: 'ダウンロード' },
+  'ko-KR': { windows: 'Windows', android: 'Android', download: '다운로드' },
+  'fr-FR': { windows: 'Windows', android: 'Android', download: 'Téléchargements' },
 };
 
 // --- Locales & UI labels --------------------------------------------------------------------------
@@ -254,7 +329,8 @@ const LOCALES = [
   { code: 'en-US', label: 'English', lang: 'en-US', prefix: '' },
   { code: 'es-ES', label: 'Español', lang: 'es-ES', prefix: 'es-ES/' },
   { code: 'zh-CN', label: '简体中文', lang: 'zh-CN', prefix: 'zh-CN/' },
-  { code: 'zh-HK', label: '繁體中文', lang: 'zh-HK', prefix: 'zh-HK/' },
+  // the Android pages it has no translation of are converted from zh-CN (levimc-kit convertFrom)
+  { code: 'zh-HK', label: '繁體中文', lang: 'zh-HK', prefix: 'zh-HK/', convertFrom: 'zh-CN' },
   { code: 'ru-RU', label: 'Русский', lang: 'ru-RU', prefix: 'ru-RU/' },
   { code: 'de-DE', label: 'Deutsch', lang: 'de-DE', prefix: 'de-DE/' },
   { code: 'ja-JP', label: '日本語', lang: 'ja-JP', prefix: 'ja-JP/' },
@@ -292,24 +368,29 @@ const perLocale = <T>(fn: (code: string, prefix: string) => T): Record<string, T
 export default defineDocsConfig({
   base: '/LeviLauncher/',
   title: 'LeviLauncher',
-  description: 'User documentation for LeviLauncher, a desktop launcher for Minecraft Bedrock Edition (GDK / UWP) on Windows.',
+  description: 'User documentation for LeviLauncher, the Minecraft Bedrock Edition launcher for Windows (GDK / UWP) and Android.',
   project: 'LeviLauncher',
   logo: { src: '/appicon.png', alt: 'LeviLauncher' },
   favicon: '/appicon.png',
   contentDir: '.',
   repo,
   editLink: `${repo}/edit/main/docs/:path`,
-  i18n: { mode: 'folder', defaultLocale: 'en-US', locales: LOCALES },
+  // fallback: a locale without its own Android pages shows the English ones at its own URLs
+  i18n: { mode: 'folder', defaultLocale: 'en-US', locales: LOCALES, fallback: true },
   urlStyle: 'html',
   cleanUrls: true,
   slug: 'vitepress',
-  markdown: { compat: 'commonmark', lineNumbers: true },
+  // MkDocs containers too, for the `=== "Windows"` / `=== "Android"` tabs of the Download page
+  markdown: { compat: 'commonmark', lineNumbers: true, containers: { vitepress: true, mkdocs: true } },
   outline: [2, 3],
   lastUpdated: true,
   hostname: 'https://docs.levimc.org',
   sitemap: { hostname: 'https://docs.levimc.org' },
   nav: perLocale((code, prefix) => buildNav(prefix, NAV[code]!)),
-  sidebar: perLocale((code, prefix) => ({ [`${prefix}guide/`]: buildSidebar(`${prefix}guide/`, SIDEBAR[code]!) })),
+  sidebar: perLocale((code, prefix) => ({
+    [`${prefix}guide/`]: buildSidebar(`${prefix}guide/`, SIDEBAR[code]!),
+    [`${prefix}android/`]: buildAndroidSidebar(`${prefix}android/`, ANDROID[code]!),
+  })),
   social: [{ icon: 'github', link: repo, label: 'GitHub' }],
   ui: UI,
 });

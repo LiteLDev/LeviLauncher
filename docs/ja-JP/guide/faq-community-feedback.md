@@ -8,7 +8,11 @@
 
 ### macOS や Linux でも使えますか？
 
-本ドキュメントが対象とするサポート環境は **Windows** です。
+LeviLauncher には **Windows 版**と **Android 版**（[Android 版ガイド](/ja-JP/android/)）があります。macOS 版や Linux 版はありません。
+
+### iOS 版はありますか？
+
+ありません。iOS 版 LeviLauncher を開発する予定はありません。
 
 ### Release と Preview、どちらを選ぶべきですか？
 

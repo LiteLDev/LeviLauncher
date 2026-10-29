@@ -8,7 +8,11 @@ Oui. LeviLauncher est conçu pour être utilisé avec une **licence officielle d
 
 ### Puis-je l'utiliser sur macOS ou Linux ?
 
-Cette documentation utilisateur cible spécifiquement **Windows**.
+LeviLauncher existe en version **Windows** et en version **Android** ([guide Android](/fr-FR/android/)). Il n'existe pas de version macOS ni Linux.
+
+### Existe-t-il une version iOS ?
+
+Non. Nous ne prévoyons pas de version iOS de LeviLauncher.
 
 ### Dois-je choisir Release ou Preview ?
 

@@ -3,18 +3,26 @@ layout: home
 
 hero:
   name: LeviLauncher
-  text: Lanceur Minecraft Bedrock (GDK / UWP) pour Windows
-  tagline: Installez, isolez, gérez votre contenu, utilisez des Mods et lancez Minecraft Release ou Preview depuis une seule application de bureau.
+  text: Lanceur Minecraft Bedrock pour Windows et Android
+  tagline: Installez, gérez, isolez, moddez et lancez Minecraft Bedrock Edition sur votre PC Windows ou votre appareil Android.
   image:
     src: /appicon.png
     alt: LeviLauncher
   actions:
     - theme: brand
-      text: Lire la documentation
+      text: Télécharger pour Windows
+      link: https://github.com/LiteLDev/LeviLauncher/releases/latest
+      platform: windows
+    - theme: alt
+      text: Télécharger pour Android
+      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      platform: android
+    - theme: alt
+      text: Guide Windows
       link: /fr-FR/guide/quick-start
     - theme: alt
-      text: Télécharger LeviLauncher
-      link: https://github.com/LiteLDev/LeviLauncher/releases
+      text: Guide Android
+      link: /fr-FR/android/
 
 features:
   - title: Axé sur les versions
@@ -29,10 +37,13 @@ features:
     details: Exportez des sauvegardes, consultez les données du monde et modifiez certains champs de level.dat sans quitter le lanceur.
   - title: Paramètres utilisateur
     details: Ajustez la langue, l'apparence, le comportement des téléchargements, les choix de confidentialité, les canaux de mise à jour et l'état des composants.
+  - title: Version Android
+    details: "Le même lanceur sur Android : versions isolées, comptes, mondes et packs, Quick Launch et Mods natifs."
+    link: /fr-FR/android/
 ---
 
-::: warning Windows uniquement
-LeviLauncher est conçu pour **Minecraft Bedrock Edition (GDK / UWP) sur Windows** et nécessite que vous possédiez une **licence officielle**.
+::: info Windows et Android
+LeviLauncher existe en **version Windows** pour Minecraft Bedrock Edition (GDK / UWP) et en **version Android** pour le Minecraft officiel de Google Play. Les deux nécessitent une **licence officielle** du jeu. Il n'existe pas de version iOS, et aucune n'est prévue.
 :::
 
 ::: tip Conseil pour les nouveaux utilisateurs
@@ -48,11 +59,13 @@ Cette documentation s'adresse aux **utilisateurs finaux**, et non aux mainteneur
 - Comment comprendre et utiliser l'isolation des versions
 - Comment gérer le contenu, les mondes et les Mods
 - Comment résoudre les problèmes liés aux mises à jour, aux composants manquants et aux erreurs de lancement courantes
+- Comment installer et utiliser la [version Android](/fr-FR/android/)
 
 ## Sources de téléchargement
 
 - **GitHub Releases (Téléchargements de LeviLauncher) :** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Miroir Lanzou Cloud :** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — Mot de passe : `levi`
+- **Version Android :** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
 
 ## Communauté et retour
 

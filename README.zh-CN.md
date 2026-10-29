@@ -4,10 +4,13 @@
 
 LeviLauncher 用于帮助你安装、管理、隔离、扩展并启动正式版或预览版环境，同时让内容与工具链更容易整理。
 
+本仓库是 LeviLauncher 的 **Windows 版**。**Android 版**在 [LiteLDev/LeviLaunchroid](https://github.com/LiteLDev/LeviLaunchroid) 开发，两者的文档都在 https://docs.levimc.org/LeviLauncher/zh-CN/ 。我们没有开发 iOS 版的计划。
+
 ## 文档
 
 - **用户文档：** https://docs.levimc.org/LeviLauncher/
 - **中文文档：** https://docs.levimc.org/LeviLauncher/zh-CN/
+- **Android 版文档：** https://docs.levimc.org/LeviLauncher/zh-CN/android/
 
 ## 下载地址
 

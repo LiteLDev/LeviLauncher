@@ -3,18 +3,26 @@ layout: home
 
 hero:
   name: LeviLauncher
-  text: Minecraft Bedrock (GDK / UWP) launcher for Windows
-  tagline: Install, manage, isolate, mod, and launch Minecraft Release or Preview builds from one desktop app.
+  text: Minecraft Bedrock launcher for Windows and Android
+  tagline: Install, manage, isolate, mod, and launch Minecraft Bedrock Edition on your Windows PC or Android device.
   image:
     src: /appicon.png
     alt: LeviLauncher
   actions:
     - theme: brand
-      text: Read the guide
+      text: Download for Windows
+      link: https://github.com/LiteLDev/LeviLauncher/releases/latest
+      platform: windows
+    - theme: alt
+      text: Download for Android
+      link: https://github.com/LiteLDev/LeviLaunchroid/releases/latest
+      platform: android
+    - theme: alt
+      text: Windows guide
       link: /guide/quick-start
     - theme: alt
-      text: Download LeviLauncher
-      link: https://github.com/LiteLDev/LeviLauncher/releases
+      text: Android guide
+      link: /android/
 
 features:
   - title: Version-first workflow
@@ -29,10 +37,13 @@ features:
     details: Export backups, inspect world data, and edit selected level.dat fields without leaving the launcher.
   - title: User-focused settings
     details: Tune language, appearance, download behavior, privacy choices, update channels, and component status.
+  - title: Android version
+    details: "The same launcher on Android: isolated versions, accounts, worlds and packs, Quick Launch and native mods."
+    link: /android/
 ---
 
-::: warning Windows only
-LeviLauncher is built for **Minecraft Bedrock Edition (GDK / UWP) on Windows**. You need a legitimate licensed copy of the game.
+::: info Windows and Android
+LeviLauncher comes in a **Windows version** for Minecraft Bedrock Edition (GDK / UWP) and an **Android version** for the official Google Play Minecraft. Both need a legitimate licensed copy of the game. There is no iOS version, and none is planned.
 :::
 
 ::: tip Start here if you are new
@@ -48,11 +59,13 @@ This documentation is written for **players and end users**, not maintainers.
 - How isolation works and when to use it
 - How to manage content, worlds, and mods
 - How to troubleshoot updates, missing components, and common launch issues
+- How to install and use the [Android version](/android/)
 
 ## Download channels
 
 - **GitHub Releases (LeviLauncher downloads):** [LiteLDev/LeviLauncher Releases](https://github.com/LiteLDev/LeviLauncher/releases)
 - **Lanzou mirror:** [levimc.lanzoue.com/b016ke39hc](https://levimc.lanzoue.com/b016ke39hc) — password: `levi`
+- **Android version:** [LiteLDev/LeviLaunchroid Releases](https://github.com/LiteLDev/LeviLaunchroid/releases)
 
 ## Community and feedback
 

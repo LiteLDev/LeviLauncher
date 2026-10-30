@@ -4,6 +4,11 @@ Lorsque le comportement d'installation, de mise à jour ou de lancement de LeviL
 
 ## Problèmes courants <Badge platform="windows" />
 
+### Le lanceur indique que la version Release n'est pas autorisée
+
+Un compte Microsoft ne peut se connecter au Microsoft Store que sur 10 appareils, et le lanceur compte comme un appareil à part.  
+Vous devez donc supprimer les appareils inutiles dans la [gestion des appareils du Microsoft Store](https://account.microsoft.com/devices/content).
+
 ### Gaming Services manquant ou endommagé
 
 - Utilisez le guide fourni par le lanceur pour installer ou réparer.

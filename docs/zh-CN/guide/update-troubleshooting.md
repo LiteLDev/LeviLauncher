@@ -4,6 +4,11 @@
 
 ## 常见问题 <Badge platform="windows" />
 
+### 启动器显示 Release 版本未获授权
+
+一个微软账户只能在10台设备上登录微软商店，启动器会被算作一台单独的设备。  
+所以你需要在 [Microsoft Store 设备管理](https://account.microsoft.com/devices/content) 中将其它不需要的设备移除。
+
 ### Gaming Services 缺失或损坏
 
 - 使用启动器提供的引导进行安装或修复。

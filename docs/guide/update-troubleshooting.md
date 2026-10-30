@@ -4,6 +4,11 @@ Use this page when LeviLauncher installs, updates, or launches do not behave as 
 
 ## Common issues <Badge platform="windows" />
 
+### The launcher says the Release version is not authorized
+
+A Microsoft account can only sign in to the Microsoft Store on up to 10 devices, and the launcher counts as a separate device.
+Remove any devices you no longer need in [Microsoft Store device management](https://account.microsoft.com/devices/content).
+
 ### Gaming Services is missing or broken
 
 - Repair or install it through the guided flow.

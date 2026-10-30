@@ -4,6 +4,11 @@
 
 ## 常見問題 <Badge platform="windows" />
 
+### 啟動器顯示 Release 版本未獲授權
+
+一個 Microsoft 帳戶只能在 10 台裝置上登入 Microsoft Store，而啟動器會被視為一台獨立裝置。  
+因此你需要在 [Microsoft Store 裝置管理](https://account.microsoft.com/devices/content) 中移除其他不需要的裝置。
+
 ### Gaming Services 缺失或損壞
 
 - 使用啟動器提供的引導進行安裝或修復。

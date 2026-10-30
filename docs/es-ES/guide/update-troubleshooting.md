@@ -4,6 +4,11 @@ Cuando el comportamiento de instalación, actualización o inicio de LeviLaunche
 
 ## Problemas comunes <Badge platform="windows" />
 
+### El lanzador indica que la versión Release no está autorizada
+
+Una cuenta de Microsoft solo puede iniciar sesión en Microsoft Store en 10 dispositivos, y el lanzador cuenta como un dispositivo independiente.  
+Por ello, debes eliminar los dispositivos que no necesites en la [gestión de dispositivos de Microsoft Store](https://account.microsoft.com/devices/content).
+
 ### Gaming Services ausente o dañado
 
 - Utiliza la guía proporcionada por el lanzador para instalarlo o repararlo.

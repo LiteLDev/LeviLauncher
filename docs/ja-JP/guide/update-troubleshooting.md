@@ -4,6 +4,11 @@ LeviLauncher のインストール、更新、起動が予期せぬ動作をす�
 
 ## よくある問題 <Badge platform="windows" />
 
+### ランチャーで Release バージョンが承認されていないと表示される
+
+1 つの Microsoft アカウントで Microsoft Store にサインインできるのは 10 台までで、ランチャーも 1 台のデバイスとしてカウントされます。  
+[Microsoft Store のデバイス管理](https://account.microsoft.com/devices/content) で、不要なデバイスを削除してください。
+
 ### Gaming Services が不足または破損している
 
 - ランチャーが提供するガイドに従ってインストールまたは修復を行ってください。

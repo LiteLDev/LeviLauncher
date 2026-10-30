@@ -4,6 +4,11 @@ LeviLauncher의 설치, 업데이트 또는 실행 동작이 예상과 다를 �
 
 ## 일반적인 문제 <Badge platform="windows" />
 
+### 런처에서 Release 버전이 승인되지 않았다고 표시됨
+
+Microsoft 계정 하나로 Microsoft Store에 로그인할 수 있는 기기는 최대 10대이며, 런처도 별도의 기기로 계산됩니다.  
+따라서 [Microsoft Store 기기 관리](https://account.microsoft.com/devices/content)에서 필요 없는 기기를 제거해야 합니다.
+
 ### Gaming Services 누락 또는 손상
 
 - 런처에서 제공하는 안내를 사용하여 설치하거나 복구합니다.

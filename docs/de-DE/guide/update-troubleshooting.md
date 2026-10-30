@@ -4,6 +4,11 @@ Wenn die Installation, das Update oder der Start von LeviLauncher nicht wie erwa
 
 ## Häufige Probleme <Badge platform="windows" />
 
+### Der Launcher meldet, dass die Release-Version nicht autorisiert ist
+
+Ein Microsoft-Konto kann sich nur auf 10 Geräten beim Microsoft Store anmelden, wobei der Launcher als eigenes Gerät zählt.  
+Entferne daher nicht benötigte Geräte in der [Geräteverwaltung des Microsoft Store](https://account.microsoft.com/devices/content).
+
 ### Gaming Services fehlt oder ist beschädigt
 
 - Verwende die im Launcher bereitgestellte Anleitung zur Installation oder Reparatur.

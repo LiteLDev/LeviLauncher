@@ -4,6 +4,8 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.6] - 2026-11-02
+
 ### Changed
 
 - Switched the LeviMC Mods package index from `lipr.levimc.org/levilauncher.json` to `levimc.org/mods/index.json` and per-mod `levimc.org/mods/<tooth>/index.json`
@@ -286,7 +288,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.5...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.6...HEAD
+[1.0.6]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.3...v1.0.4
 [1.0.3]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.2...v1.0.3

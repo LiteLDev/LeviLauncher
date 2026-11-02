@@ -16,6 +16,8 @@ import (
 const (
 	githubURL   = "https://raw.githubusercontent.com/LiteLDev/minecraft-windows-gdk-version-db/refs/heads/main/historical_versions.json"
 	proxyURL    = "https://github.bibk.top/LiteLDev/minecraft-windows-gdk-version-db/raw/refs/heads/main/historical_versions.json"
+	ghProxyURL  = "https://gh-proxy.org/" + githubURL
+	jsdelivrURL = "https://cdn.jsdelivr.net/gh/LiteLDev/minecraft-windows-gdk-version-db@main/historical_versions.json"
 	packagesURL = "https://packagespc.xboxlive.com/GetBasePackage/"
 	releaseID   = "7792d9ce-355a-493c-afbd-768f4a77c3b0"
 	previewID   = "98bd2335-9b01-4e4c-bd05-ccc01614078b"
@@ -47,7 +49,7 @@ type Client struct {
 func NewClient(client *http.Client, authorize func(context.Context) (string, error)) *Client {
 	return &Client{
 		http: client, authorize: authorize,
-		historyURLs: []string{githubURL, proxyURL}, packagesURL: packagesURL,
+		historyURLs: []string{githubURL, proxyURL, ghProxyURL, jsdelivrURL}, packagesURL: packagesURL,
 		storeTimeout: 10 * time.Second,
 	}
 }
@@ -79,8 +81,9 @@ func (c *Client) Fetch(ctx context.Context, preferCN bool, cachePath string) Cat
 
 func (c *Client) fetchHistory(ctx context.Context, preferCN bool) Catalog {
 	urls := append([]string(nil), c.historyURLs...)
-	if preferCN && len(urls) == 2 {
-		urls[0], urls[1] = urls[1], urls[0]
+	// GitHub is usually unreachable from mainland China; try it last there.
+	if preferCN && len(urls) > 1 {
+		urls = append(urls[1:], urls[0])
 	}
 	var lastErr error
 	for _, url := range urls {

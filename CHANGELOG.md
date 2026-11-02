@@ -8,6 +8,12 @@ All notable changes to this project will be documented in this file.
 
 - Switched the LeviMC Mods package index from `lipr.levimc.org/levilauncher.json` to `levimc.org/mods/index.json` and per-mod `levimc.org/mods/<tooth>/index.json`
 
+### Fixed
+
+- Fixed installed LeviLamina and lip packages showing as not installed with lip v0.35.0 and later
+- Fixed the LeviLamina install state waiting for the LeviMC Mods index to load
+- Fixed the GDK version list failing to load without a proxy by adding more catalog mirrors and recognizing the `zh_CN` UI language
+
 ## [1.0.5] - 2026-10-28
 
 ### Added

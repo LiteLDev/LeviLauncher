@@ -366,15 +366,20 @@ export const ModIntelligenceProvider: React.FC<{
         snapshotsRef.current.get(normalizedName) || baseSnapshot;
 
       if (!lipSourceLoaded) {
-        setSnapshot(
+        // LeviLamina state only needs the local lipd, not the remote index.
+        const llState = await queryInstallState(
           normalizedName,
-          buildFallbackSnapshot({
-            base: currentBaseSnapshot,
+          LEVILAMINA_IDENTIFIER,
+        );
+        setSnapshot(normalizedName, {
+          ...buildFallbackSnapshot({
+            base: snapshotsRef.current.get(normalizedName) || baseSnapshot,
             modsInfo: currentBaseSnapshot.modsInfo,
             enabledByFolder: currentBaseSnapshot.enabledByFolder,
             lipSyncStatus: "loading",
           }),
-        );
+          llState,
+        });
         return;
       }
 

@@ -37,6 +37,44 @@ func TestParsePackageInstallStatesExplicitAndImplicit(t *testing.T) {
 	}
 }
 
+// lipd >= 0.35 List result.
+func TestParsePackageInstallStatesNestedStringGroups(t *testing.T) {
+	raw := json.RawMessage(`[
+		["github.com/LiteLDev/LeviLamina#client@26.51.9"],
+		["github.com/LiteLDev/CrashLogger#client@1.3.3","github.com/LiteLDev/PeEditor@3.9.2"]
+	]`)
+
+	stateByPackageRef, err := parsePackageInstallStates(raw)
+	if err != nil {
+		t.Fatalf("parsePackageInstallStates failed: %v", err)
+	}
+
+	ll := stateByPackageRef["github.com/liteldev/levilamina#client"]
+	if !ll.Installed || !ll.ExplicitInstalled || ll.InstalledVersion != "26.51.9" {
+		t.Fatalf("unexpected LeviLamina state: %+v", ll)
+	}
+	dep := stateByPackageRef["github.com/liteldev/crashlogger#client"]
+	if !dep.Installed || dep.ExplicitInstalled || dep.InstalledVersion != "1.3.3" {
+		t.Fatalf("unexpected dependency state: %+v", dep)
+	}
+	if _, ok := stateByPackageRef["github.com/liteldev/peeditor"]; !ok {
+		t.Fatal("expected variant-less dependency to be indexed")
+	}
+}
+
+func TestParsePackageInstallStatesNestedSpecGroups(t *testing.T) {
+	raw := json.RawMessage(`[[{"Id":{"Path":"github.com/LiteLDev/Foo","Variant":"client"},"Version":"1.0.0"}],[]]`)
+
+	stateByPackageRef, err := parsePackageInstallStates(raw)
+	if err != nil {
+		t.Fatalf("parsePackageInstallStates failed: %v", err)
+	}
+	foo := stateByPackageRef["github.com/liteldev/foo#client"]
+	if !foo.ExplicitInstalled || foo.InstalledVersion != "1.0.0" {
+		t.Fatalf("unexpected state: %+v", foo)
+	}
+}
+
 func TestParsePackageInstallStatesEmptyResult(t *testing.T) {
 	stateByPackageRef, err := parsePackageInstallStates(json.RawMessage(`[]`))
 	if err != nil {

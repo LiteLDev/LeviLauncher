@@ -797,8 +797,18 @@ func parsePackageSpecsFromRaw(value json.RawMessage) ([]daemonPackageSpec, bool)
 }
 
 func decodePackageSpecGroups(raw json.RawMessage) ([][]daemonPackageSpec, error) {
-	var grouped [][]daemonPackageSpec
-	if err := json.Unmarshal(raw, &grouped); err == nil {
+	// lipd >= 0.35 returns [[explicit...], [dependencies...]] with each entry
+	// as a "path#variant@version" string; older builds used spec objects.
+	var rawGroups []json.RawMessage
+	if err := json.Unmarshal(raw, &rawGroups); err == nil && isArrayOfArrays(rawGroups) {
+		grouped := make([][]daemonPackageSpec, 0, len(rawGroups))
+		for _, group := range rawGroups {
+			specs, ok := parsePackageSpecsFromRaw(group)
+			if !ok {
+				return nil, fmt.Errorf("unsupported list group format: %s", strings.TrimSpace(string(group)))
+			}
+			grouped = append(grouped, specs)
+		}
 		return grouped, nil
 	}
 
@@ -848,6 +858,16 @@ func decodePackageSpecGroups(raw json.RawMessage) ([][]daemonPackageSpec, error)
 		preview = preview[:256] + "..."
 	}
 	return nil, fmt.Errorf("unsupported list result format: %s", preview)
+}
+
+func isArrayOfArrays(items []json.RawMessage) bool {
+	for _, item := range items {
+		trimmed := bytes.TrimSpace(item)
+		if len(trimmed) == 0 || trimmed[0] != '[' {
+			return false
+		}
+	}
+	return true
 }
 
 func trimPackageVersion(spec string) string {

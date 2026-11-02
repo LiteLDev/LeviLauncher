@@ -207,12 +207,11 @@ export const DownloadPage: React.FC = () => {
   const isChinaUser = useMemo(() => {
     try {
       const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-      const lang = String(
-        i18n?.language || navigator.language || "",
-      ).toLowerCase();
-      const langs = (navigator.languages || []).map((l) =>
-        String(l).toLowerCase(),
-      );
+      // i18n uses "zh_CN"; browser locales use "zh-CN".
+      const normalize = (l: unknown) =>
+        String(l || "").toLowerCase().replace(/_/g, "-");
+      const lang = normalize(i18n?.language || navigator.language);
+      const langs = (navigator.languages || []).map(normalize);
       const isTzCN = tz === "Asia/Shanghai" || tz === "Asia/Urumqi";
       const isLangCN =
         lang.startsWith("zh-cn") || langs.includes("zh-cn") || lang === "zh";

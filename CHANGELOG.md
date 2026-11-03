@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [1.0.7] - 2026-11-04
+
+### Added
+
+- Added mirror source switch in settings
+
+### Changed
+
+- Switched npm mirror to taobao mirror
+
 ## [1.0.6] - 2026-11-02
 
 ### Changed
@@ -288,7 +298,8 @@ All notable changes to this project will be documented in this file.
 - Removed hover haze on option rows.
 - Unified content management page control styles.
 
-[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.6...HEAD
+[Unreleased]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.7...HEAD
+[1.0.7]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.6...v1.0.7
 [1.0.6]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.5...v1.0.6
 [1.0.5]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.4...v1.0.5
 [1.0.4]: https://github.com/LiteLDev/LeviLauncher/compare/v1.0.3...v1.0.4

@@ -20,20 +20,21 @@ type GameLaunchMonitor struct {
 }
 
 // BeginGameLaunch must be called after registration and native preparation,
-// immediately before activation. Only reversible window actions happen early;
-// success events and quitting the launcher wait for activation to succeed.
+// immediately before activation. Window detection dismisses the launch prompt
+// immediately; success and quitting still wait for activation to succeed.
 func BeginGameLaunch(ctx context.Context, versionDir string) *GameLaunchMonitor {
 	versionDir = utils.CanonicalWindowsPath(versionDir)
 	if _, running := activeMonitors.LoadOrStore(versionDir, struct{}{}); running {
 		return nil
 	}
 	started := time.Now()
+	notifyWindow := newLaunchWindowNotifier()
 	return observeGameLaunch(ctx, func(ctx context.Context) bool {
 		found, _, canceled := waitForGameProcess(ctx, versionDir, 0, 120*time.Second)
 		if !found || canceled {
 			return false
 		}
-		_, visible, canceled := waitForGameWindow(ctx, versionDir, 60*time.Second)
+		_, visible, canceled := waitForGameWindowObserved(ctx, versionDir, 60*time.Second, notifyWindow)
 		if visible && !canceled {
 			log.Printf("Game window detected during activation after %s", time.Since(started).Round(time.Millisecond))
 		}
@@ -49,7 +50,7 @@ func BeginGameLaunch(ctx context.Context, versionDir string) *GameLaunchMonitor 
 		}
 		// Transfer the same monitor reservation; do not apply the window action
 		// again if the user has restored the launcher during activation.
-		go monitorGameProcess(ctx, versionDir, pid, applied)
+		go monitorGameProcess(ctx, versionDir, pid, applied, notifyWindow)
 	})
 }
 

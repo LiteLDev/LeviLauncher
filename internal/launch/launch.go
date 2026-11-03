@@ -20,10 +20,11 @@ import (
 )
 
 const (
-	EventMcLaunchStart         = "mc.launch.start"
-	EventMcLaunchDone          = "mc.launch.done"
-	EventMcLaunchFailed        = "mc.launch.failed"
-	EventGamingServicesMissing = "gamingservices.missing"
+	EventMcLaunchStart          = "mc.launch.start"
+	EventMcLaunchWindowDetected = "mc.launch.window_detected"
+	EventMcLaunchDone           = "mc.launch.done"
+	EventMcLaunchFailed         = "mc.launch.failed"
+	EventGamingServicesMissing  = "gamingservices.missing"
 )
 
 var (
@@ -157,29 +158,59 @@ func waitForGameProcess(ctx context.Context, versionDir string, launchPID uint32
 }
 
 func waitForGameWindow(ctx context.Context, versionDir string, timeout time.Duration) (bool, bool, bool) {
+	return waitForGameWindowObserved(ctx, versionDir, timeout, nil)
+}
+
+func waitForGameWindowObserved(ctx context.Context, versionDir string, timeout time.Duration, notifyWindow func()) (bool, bool, bool) {
+	return waitForWindowState(ctx, timeout, func() (bool, gameWindowState) {
+		pids := gameProcessIDs(versionDir)
+		return len(pids) != 0, inspectGameWindows(pids)
+	}, notifyWindow)
+}
+
+func waitForWindowState(ctx context.Context, timeout time.Duration, probe func() (bool, gameWindowState), notifyWindow func()) (bool, bool, bool) {
 	ticker := time.NewTicker(250 * time.Millisecond)
 	defer ticker.Stop()
 	timer := time.NewTimer(timeout)
 	defer timer.Stop()
+	notified := false
+	observe := func() (bool, gameWindowState) {
+		running, window := probe()
+		if running && window.exists && !notified && ctx.Err() == nil {
+			notified = true
+			if notifyWindow != nil {
+				notifyWindow()
+			}
+		}
+		return running, window
+	}
 	for {
 		if ctx.Err() != nil {
 			return false, false, true
 		}
-		pids := gameProcessIDs(versionDir)
-		if len(pids) == 0 {
+		running, window := observe()
+		if !running {
 			return false, false, false
 		}
-		if isGameWindowVisible(pids) {
+		if window.presented {
 			return true, true, false
 		}
 		select {
 		case <-ctx.Done():
 			return false, false, true
 		case <-timer.C:
-			return isGameRunning(versionDir), false, false
+			running, window := observe()
+			return running, running && window.presented, false
 		case <-ticker.C:
 		}
 	}
+}
+
+func newLaunchWindowNotifier() func() {
+	// Share one notification across activation and its subsequent monitor.
+	return sync.OnceFunc(func() {
+		application.Get().Event.Emit(EventMcLaunchWindowDetected, struct{}{})
+	})
 }
 
 func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
@@ -188,11 +219,11 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 	if _, running := activeMonitors.LoadOrStore(versionDir, struct{}{}); running {
 		return
 	}
-	monitorGameProcess(ctx, versionDir, launchPID, false)
+	monitorGameProcess(ctx, versionDir, launchPID, false, newLaunchWindowNotifier())
 }
 
 // The caller owns the activeMonitors entry, including during UWP activation.
-func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, launchBehaviorApplied bool) {
+func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, launchBehaviorApplied bool, notifyWindow func()) {
 	defer activeMonitors.Delete(versionDir)
 
 	var pid uint32
@@ -222,7 +253,7 @@ func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, l
 	// have minimized the game since then; do not wait for it to reappear.
 	visible := launchBehaviorApplied
 	if !visible {
-		found, visible, canceled = waitForGameWindow(ctx, versionDir, 60*time.Second)
+		found, visible, canceled = waitForGameWindowObserved(ctx, versionDir, 60*time.Second, notifyWindow)
 	}
 	if canceled {
 		return

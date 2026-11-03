@@ -15,8 +15,16 @@ var (
 )
 
 type gameWindowSearch struct {
-	pids  map[uint32]struct{}
-	found bool
+	pids      map[uint32]struct{}
+	found     bool
+	presented bool
+}
+
+// A game window can already exist while minimized or DWM-cloaked. That is
+// enough to dismiss the launch prompt, but not to hide the launcher itself.
+type gameWindowState struct {
+	exists    bool
+	presented bool
 }
 
 func windowClass(hwnd windows.HWND) string {
@@ -41,9 +49,7 @@ func windowIsPresented(hwnd windows.HWND) bool {
 	if minimized != 0 {
 		return false
 	}
-	var rect struct{ left, top, right, bottom int32 }
-	ok, _, _ := procGetWindowRect.Call(uintptr(hwnd), uintptr(unsafe.Pointer(&rect)))
-	if ok == 0 || rect.right <= rect.left || rect.bottom <= rect.top {
+	if !windowHasArea(hwnd) {
 		return false
 	}
 	// UWP and windows on other virtual desktops can have WS_VISIBLE while
@@ -51,6 +57,12 @@ func windowIsPresented(hwnd windows.HWND) bool {
 	var cloaked uint32
 	err := windows.DwmGetWindowAttribute(hwnd, windows.DWMWA_CLOAKED, unsafe.Pointer(&cloaked), uint32(unsafe.Sizeof(cloaked)))
 	return err != nil || cloaked == 0
+}
+
+func windowHasArea(hwnd windows.HWND) bool {
+	var rect struct{ left, top, right, bottom int32 }
+	ok, _, _ := procGetWindowRect.Call(uintptr(hwnd), uintptr(unsafe.Pointer(&rect)))
+	return ok != 0 && rect.right > rect.left && rect.bottom > rect.top
 }
 
 func (s *gameWindowSearch) owns(hwnd windows.HWND) bool {
@@ -76,31 +88,41 @@ var gameChildWindowCallback = syscall.NewCallback(func(hwnd windows.HWND, param 
 
 var gameTopWindowCallback = syscall.NewCallback(func(hwnd windows.HWND, param unsafe.Pointer) uintptr {
 	s := (*gameWindowSearch)(param)
-	if !windowIsPresented(hwnd) {
+	if !windowIsVisible(hwnd) || !windowHasArea(hwnd) {
 		return 1
 	}
 	class := windowClass(hwnd)
 	if class == "ConsoleWindowClass" || class == "CASCADIA_HOSTING_WINDOW_CLASS" {
 		return 1
 	}
-	if s.owns(hwnd) {
-		s.found = true
-	} else if class == "ApplicationFrameWindow" {
+	owns := s.owns(hwnd)
+	if !owns && class == "ApplicationFrameWindow" {
 		// On Windows 10 the visible UWP frame can belong to
 		// ApplicationFrameHost.exe; its CoreWindow belongs to the game.
-		windows.EnumChildWindows(hwnd, gameChildWindowCallback, param)
+		child := gameWindowSearch{pids: s.pids}
+		windows.EnumChildWindows(hwnd, gameChildWindowCallback, unsafe.Pointer(&child))
+		owns = child.found
 	}
-	if s.found {
+	if !owns {
+		return 1
+	}
+	s.found = true
+	if windowIsPresented(hwnd) {
+		s.presented = true
 		return 0
 	}
 	return 1
 })
 
 func isGameWindowVisible(pids map[uint32]struct{}) bool {
+	return inspectGameWindows(pids).presented
+}
+
+func inspectGameWindows(pids map[uint32]struct{}) gameWindowState {
 	if len(pids) == 0 {
-		return false
+		return gameWindowState{}
 	}
 	s := gameWindowSearch{pids: pids}
 	_ = windows.EnumWindows(gameTopWindowCallback, unsafe.Pointer(&s))
-	return s.found
+	return gameWindowState{exists: s.found, presented: s.presented}
 }

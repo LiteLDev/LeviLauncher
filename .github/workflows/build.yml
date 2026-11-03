@@ -52,6 +52,10 @@ jobs:
         working-directory: frontend
         run: npm ci
 
+      - name: Test launch dialog lifecycle
+        working-directory: frontend
+        run: npm run test:launch-events
+
       - name: Generate Wails bindings
         shell: pwsh
         run: |

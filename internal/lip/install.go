@@ -37,9 +37,9 @@ const (
 	EventLipInstallDone     = "lip_install_done"
 	EventLipInstallError    = "lip_install_error"
 
-	lipMirrorMetadataAPI         = "https://mirrors.cloud.tencent.com/npm/@levimc/lip"
-	lipMirrorTarballHost         = "mirrors.cloud.tencent.com"
-	lipMirrorTarballPathPrefix   = "/npm/@levimc/lip/"
+	lipMirrorMetadataAPI         = "https://registry.npmmirror.com/@levimc/lip"
+	lipMirrorTarballHost         = "registry.npmmirror.com"
+	lipMirrorTarballPathPrefix   = "/@levimc/lip/"
 	lipOfficialMetadataAPI       = "https://registry.npmjs.org/@levimc/lip"
 	lipOfficialTarballHost       = "registry.npmjs.org"
 	lipOfficialTarballPathPrefix = "/@levimc/lip/-/"

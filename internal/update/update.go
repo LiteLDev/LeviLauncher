@@ -31,7 +31,6 @@ import (
 	"github.com/mouuff/go-rocket-update/pkg/provider"
 	"github.com/mouuff/go-rocket-update/pkg/updater"
 	"github.com/wailsapp/wails/v3/pkg/application"
-	winreg "golang.org/x/sys/windows/registry"
 )
 
 var (
@@ -180,7 +179,7 @@ func getReleaseAPIURLs() []string {
 
 func fetchReleases(ctx context.Context) ([]githubRelease, error) {
 	apis := getReleaseAPIURLs()
-	useReverse := isChinaUser()
+	useReverse := utils.IsChinaUser()
 	var lastErr error
 	for i := 0; i < len(apis); i++ {
 		idx := i
@@ -286,13 +285,13 @@ func buildAssetCandidateURLs(target string) []string {
 		"https://cdn.gh-proxy.org/",
 	}
 	out := make([]string, 0, len(proxies)+1)
-	if isChinaUser() {
+	if utils.IsChinaUser() {
 		for _, prefix := range proxies {
 			out = append(out, prefix+target)
 		}
 	}
 	out = append(out, target)
-	if !isChinaUser() {
+	if !utils.IsChinaUser() {
 		for _, prefix := range proxies[:1] {
 			out = append(out, prefix+target)
 		}
@@ -605,90 +604,4 @@ func restartProgram(exePath string) error {
 	}
 	os.Exit(0)
 	return nil
-}
-
-func isZhCnLocaleValue(v string) bool {
-	s := strings.ToLower(strings.TrimSpace(v))
-	if s == "" {
-		return false
-	}
-	s = strings.ReplaceAll(s, "_", "-")
-	s = strings.TrimPrefix(s, "0x")
-	if strings.HasPrefix(s, "zh-cn") || s == "zh" || s == "zh-hans" {
-		return true
-	}
-	if strings.Contains(s, "chinese (simplified") {
-		return true
-	}
-	return s == "804" || s == "0804" || s == "00000804"
-}
-
-func isWindowsTimeZoneChina() bool {
-	k, err := winreg.OpenKey(winreg.LOCAL_MACHINE, `SYSTEM\CurrentControlSet\Control\TimeZoneInformation`, winreg.QUERY_VALUE)
-	if err != nil {
-		return false
-	}
-	defer k.Close()
-
-	for _, field := range []string{"TimeZoneKeyName", "StandardName"} {
-		if val, _, err := k.GetStringValue(field); err == nil {
-			if strings.EqualFold(strings.TrimSpace(val), "China Standard Time") {
-				return true
-			}
-		}
-	}
-	return false
-}
-
-func isWindowsLocaleZhCN() bool {
-	k, err := winreg.OpenKey(winreg.CURRENT_USER, `Control Panel\International`, winreg.QUERY_VALUE)
-	if err == nil {
-		defer k.Close()
-		for _, field := range []string{"LocaleName", "Locale", "sLanguage"} {
-			if val, _, err := k.GetStringValue(field); err == nil && isZhCnLocaleValue(val) {
-				return true
-			}
-		}
-	}
-	envs := []string{"LANG", "LANGUAGE", "LC_ALL", "LC_MESSAGES"}
-	for _, key := range envs {
-		if isZhCnLocaleValue(os.Getenv(key)) {
-			return true
-		}
-	}
-	return false
-}
-
-func isChinaUser() bool {
-	if runtime.GOOS == "windows" {
-		return isWindowsTimeZoneChina() && isWindowsLocaleZhCN()
-	}
-
-	isTz := false
-	isLang := false
-	if b, err := os.ReadFile("/etc/timezone"); err == nil {
-		s := strings.ToLower(strings.TrimSpace(string(b)))
-		if s == "asia/shanghai" || s == "asia/urumqi" {
-			isTz = true
-		}
-	} else {
-		if p, e := os.Readlink("/etc/localtime"); e == nil {
-			low := strings.ToLower(p)
-			if strings.Contains(low, "asia/shanghai") || strings.Contains(low, "asia/urumqi") {
-				isTz = true
-			}
-		}
-	}
-	envs := []string{"LANG", "LANGUAGE", "LC_ALL", "LC_MESSAGES"}
-	for _, k := range envs {
-		v := strings.ToLower(strings.TrimSpace(os.Getenv(k)))
-		if v == "" {
-			continue
-		}
-		if strings.HasPrefix(v, "zh_cn") || strings.HasPrefix(v, "zh-cn") || v == "zh" {
-			isLang = true
-			break
-		}
-	}
-	return isTz || isLang
 }

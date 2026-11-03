@@ -64,7 +64,7 @@ type VersionItem = {
 };
 
 export const DownloadPage: React.FC = () => {
-  const { t, i18n } = useTranslation();
+  const { t } = useTranslation();
   const navigate = useNavigate();
   const { startDownload, isDownloading } = useDownloads();
   const [items, setItems] = useState<VersionItem[]>([]);
@@ -204,23 +204,6 @@ export const DownloadPage: React.FC = () => {
     }
   }, [testing, bestMirror, selectedUrl]);
 
-  const isChinaUser = useMemo(() => {
-    try {
-      const tz = Intl.DateTimeFormat().resolvedOptions().timeZone || "";
-      // i18n uses "zh_CN"; browser locales use "zh-CN".
-      const normalize = (l: unknown) =>
-        String(l || "").toLowerCase().replace(/_/g, "-");
-      const lang = normalize(i18n?.language || navigator.language);
-      const langs = (navigator.languages || []).map(normalize);
-      const isTzCN = tz === "Asia/Shanghai" || tz === "Asia/Urumqi";
-      const isLangCN =
-        lang.startsWith("zh-cn") || langs.includes("zh-cn") || lang === "zh";
-      return isTzCN && isLangCN;
-    } catch {
-      return false;
-    }
-  }, [i18n?.language]);
-
   const triggerAnimation = (e: any) => {
     try {
       const target = (e.currentTarget || e.target) as HTMLElement;
@@ -350,7 +333,11 @@ export const DownloadPage: React.FC = () => {
         type: normalizeVersionChannel(v.type), packageType: "uwp", uuid: v.uuid, urls: [],
       }));
     }
-    const data = await minecraft.FetchHistoricalVersions(Boolean(isChinaUser));
+    const preferCN =
+      hasBackend && typeof minecraft?.IsChinaUser === "function"
+        ? await minecraft.IsChinaUser()
+        : false;
+    const data = await minecraft.FetchHistoricalVersions(preferCN);
     return (["Preview", "Release"] as const).flatMap((type) =>
       ((type === "Preview" ? data.previewVersions : data.releaseVersions) || []).map((v: any) => ({
         version: v.version,

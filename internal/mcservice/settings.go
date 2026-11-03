@@ -67,6 +67,20 @@ func SetEnableBetaUpdates(enable bool) string {
 	return ""
 }
 
+// GetMirrorEnabled returns the effective mirror switch value.
+func GetMirrorEnabled() bool {
+	return utils.IsMirrorEnabled()
+}
+
+// SetMirrorEnabled persists an explicit mirror switch choice, overriding the
+// automatic China-user detection from then on.
+func SetMirrorEnabled(enabled bool) string {
+	if err := config.Update(func(c *config.AppConfig) { c.MirrorSourceEnabled = &enabled }); err != nil {
+		return "ERR_WRITE_FILE"
+	}
+	return ""
+}
+
 func GetGameLaunchBehavior() string {
 	return config.GetOnGameLaunch()
 }

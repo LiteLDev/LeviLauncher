@@ -179,7 +179,7 @@ func getReleaseAPIURLs() []string {
 
 func fetchReleases(ctx context.Context) ([]githubRelease, error) {
 	apis := getReleaseAPIURLs()
-	useReverse := utils.IsChinaUser()
+	useReverse := utils.IsMirrorEnabled()
 	var lastErr error
 	for i := 0; i < len(apis); i++ {
 		idx := i
@@ -285,13 +285,13 @@ func buildAssetCandidateURLs(target string) []string {
 		"https://cdn.gh-proxy.org/",
 	}
 	out := make([]string, 0, len(proxies)+1)
-	if utils.IsChinaUser() {
+	if utils.IsMirrorEnabled() {
 		for _, prefix := range proxies {
 			out = append(out, prefix+target)
 		}
 	}
 	out = append(out, target)
-	if !utils.IsChinaUser() {
+	if !utils.IsMirrorEnabled() {
 		for _, prefix := range proxies[:1] {
 			out = append(out, prefix+target)
 		}

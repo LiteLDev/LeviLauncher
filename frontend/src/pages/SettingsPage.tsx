@@ -56,6 +56,8 @@ import {
   InstallLip,
   GetLipGithubProxy,
   SetLipGithubProxy,
+  IsMirrorEnabled,
+  SetMirrorEnabled,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   GetInstallerDir,
@@ -258,11 +260,11 @@ export const SettingsPage: React.FC = () => {
     try {
       const saved = localStorage.getItem("app.appearanceSection") as AppearanceSection;
       if (APPEARANCE_SECTIONS.includes(saved)) return saved;
-    } catch {}
+    } catch { }
     return "theme";
   });
   React.useEffect(() => {
-    try { localStorage.setItem("app.appearanceSection", appearanceSection); } catch {}
+    try { localStorage.setItem("app.appearanceSection", appearanceSection); } catch { }
   }, [appearanceSection]);
   const searchEntries: { tab: string; section?: AppearanceSection; keys: string[] }[] = [
     { tab: "general", keys: ["settings.body.paths.title", "settings.body.paths.base_root", "settings.body.language.name", "settings.discord_rpc.title"] },
@@ -270,7 +272,7 @@ export const SettingsPage: React.FC = () => {
     { tab: "personalization", section: "layout", keys: ["audit.usability.appearance_layout", "settings.layout.title_navbar", "settings.appearance.disable_animations"] },
     { tab: "personalization", section: "wallpaper", keys: ["audit.usability.appearance_wallpaper", "settings.appearance.background_image", "settings.appearance.background_blur", "settings.appearance.background_brightness", "settings.appearance.background_opacity"] },
     { tab: "personalization", section: "material", keys: ["audit.usability.appearance_material"] },
-    { tab: "components", keys: ["settings.tabs.components", "settings.lip.title", "settings.lip.github_proxy.title"] },
+    { tab: "components", keys: ["settings.tabs.components", "settings.mirror_source.title", "settings.lip.title", "settings.lip.github_proxy.title"] },
     { tab: "others", keys: ["settings.process.title", "settings.experimental.title", "settings.experimental.instance_backup.title"] },
     { tab: "privacy", keys: ["settings.tabs.privacy", "settings.privacy.analytics.title"] },
     { tab: "updates", keys: ["settings.tabs.updates", "settings.beta_updates.title"] },
@@ -388,7 +390,7 @@ export const SettingsPage: React.FC = () => {
         if (cancelled) return;
         setLipGithubProxyDraft(String(value || ""));
       })
-      .catch(() => {});
+      .catch(() => { });
     return () => {
       cancelled = true;
     };
@@ -423,6 +425,57 @@ export const SettingsPage: React.FC = () => {
       );
     } finally {
       setSavingLipGithubProxy(false);
+    }
+  };
+
+  const [mirrorSourceEnabled, setMirrorSourceEnabled] =
+    React.useState<boolean | null>(null);
+  const [savingMirrorSource, setSavingMirrorSource] = React.useState(false);
+
+  React.useEffect(() => {
+    if (typeof IsMirrorEnabled !== "function") return;
+    let cancelled = false;
+    IsMirrorEnabled()
+      .then((value) => {
+        if (!cancelled) setMirrorSourceEnabled(Boolean(value));
+      })
+      .catch(() => { });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
+  const toggleMirrorSource = async (enabled: boolean) => {
+    if (
+      mirrorSourceEnabled === null ||
+      savingMirrorSource ||
+      typeof SetMirrorEnabled !== "function"
+    ) {
+      return;
+    }
+    const previous = mirrorSourceEnabled;
+    setMirrorSourceEnabled(enabled);
+    setSavingMirrorSource(true);
+    try {
+      const error = await SetMirrorEnabled(enabled);
+      if (error) {
+        setMirrorSourceEnabled(previous);
+        toast(t("common.error"), {
+          description: t(`errors.${error}`, { defaultValue: error }),
+          variant: "danger",
+          timeout: 2000,
+        });
+      }
+    } catch (error) {
+      setMirrorSourceEnabled(previous);
+      const message = error instanceof Error ? error.message : String(error);
+      toast(t("common.error"), {
+        description: t(`errors.${message}`, { defaultValue: message }),
+        variant: "danger",
+        timeout: 2000,
+      });
+    } finally {
+      setSavingMirrorSource(false);
     }
   };
 
@@ -647,8 +700,8 @@ export const SettingsPage: React.FC = () => {
                         </p>
                       )}
                       {newBaseRoot &&
-                      newBaseRoot !== baseRoot &&
-                      baseRootWritable ? (
+                        newBaseRoot !== baseRoot &&
+                        baseRootWritable ? (
                         <div
                           className="select-text text-xs text-amber-500 px-1"
                           title={newBaseRoot}
@@ -739,7 +792,7 @@ export const SettingsPage: React.FC = () => {
                                 () => {
                                   try {
                                     localStorage.setItem("i18nextLng", next);
-                                  } catch {}
+                                  } catch { }
                                   setLanguageChanged(true);
                                 },
                               );
@@ -984,916 +1037,913 @@ export const SettingsPage: React.FC = () => {
                   </nav>
                   <section aria-label={t(`audit.usability.appearance_${appearanceSection}`)} className="min-w-0 space-y-6">
                     {appearanceSection === "theme" && <><div className="py-4 flex flex-col gap-4 border-b border-border/50">
-                        <div className="flex flex-col gap-4">
-                          <div className="flex flex-col gap-1">
-                            <p className="font-medium text-foreground dark:text-zinc-200">
-                              {t("settings.appearance.theme_mode")}
-                            </p>
-                            <p className="text-xs text-muted dark:text-zinc-400">
-                              {t("settings.appearance.theme_mode_desc")}
-                            </p>
-                          </div>
-                          <div className="w-full overflow-x-auto scrollbar-hide">
-                            <Tabs
-                              selectedKey={themeMode}
-                              onSelectionChange={(key) => {
-                                const val = key as ThemeMode;
-                                setThemeMode(val);
-                              }}
-                              variant="primary"
-                            >
-                              <Tabs.ListContainer>
-                                <Tabs.List
-                                  className={COMPONENT_STYLES.tabs.tabList}
-                                >
-                                  <Tabs.Tab key="light" id={"light"}>
-                                    {
-                                      <div className="flex items-center gap-2">
-                                        <LuSun size={14} />
-                                        <span>
-                                          {t("settings.appearance.theme_light")}
-                                        </span>
-                                      </div>
-                                    }
-                                    <Tabs.Indicator />
-                                  </Tabs.Tab>
-                                  <Tabs.Tab key="dark" id={"dark"}>
-                                    {
-                                      <div className="flex items-center gap-2">
-                                        <LuMoon size={14} />
-                                        <span>
-                                          {t("settings.appearance.theme_dark")}
-                                        </span>
-                                      </div>
-                                    }
-                                    <Tabs.Indicator />
-                                  </Tabs.Tab>
-                                  <Tabs.Tab key="schedule" id={"schedule"}>
-                                    {
-                                      <div className="flex items-center gap-2">
-                                        <LuHardDrive size={14} />
-                                        <span>
-                                          {t(
-                                            "settings.appearance.theme_schedule",
-                                          )}
-                                        </span>
-                                      </div>
-                                    }
-                                    <Tabs.Indicator />
-                                  </Tabs.Tab>
-                                  <Tabs.Tab key="auto" id={"auto"}>
-                                    {
-                                      <div className="flex items-center gap-2">
-                                        <RxDesktop size={14} />
-                                        <span>
-                                          {t("settings.appearance.theme_auto")}
-                                        </span>
-                                      </div>
-                                    }
-                                    <Tabs.Indicator />
-                                  </Tabs.Tab>
-                                  <Tabs.Tab key="system" id={"system"}>
-                                    {
-                                      <div className="flex items-center gap-2">
-                                        <LuMonitor size={14} />
-                                        <span>
-                                          {t(
-                                            "settings.appearance.theme_system",
-                                          )}
-                                        </span>
-                                      </div>
-                                    }
-                                    <Tabs.Indicator />
-                                  </Tabs.Tab>
-                                </Tabs.List>
-                              </Tabs.ListContainer>
-                            </Tabs>
-                          </div>
+                      <div className="flex flex-col gap-4">
+                        <div className="flex flex-col gap-1">
+                          <p className="font-medium text-foreground dark:text-zinc-200">
+                            {t("settings.appearance.theme_mode")}
+                          </p>
+                          <p className="text-xs text-muted dark:text-zinc-400">
+                            {t("settings.appearance.theme_mode_desc")}
+                          </p>
                         </div>
-
-                        <AnimatePresence initial={false} mode="wait">
-                          {themeMode === "system" && (
-                            <motion.div
-                              key="system-panel"
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2, ease: "easeInOut" }}
-                              className="overflow-hidden"
-                            >
-                              <div className="flex flex-col gap-4 p-4 mt-2 rounded-2xl bg-surface-secondary/50 border border-border/50">
-                                <div className="flex flex-col gap-1">
-                                  <p className="text-xs font-bold text-foreground uppercase tracking-wider">
-                                    {t("settings.appearance.theme_system_desc")}
-                                  </p>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-                          {themeMode === "schedule" && (
-                            <motion.div
-                              key="schedule-panel"
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2, ease: "easeInOut" }}
-                              className="overflow-hidden"
-                            >
-                              <div className="flex flex-col gap-4 p-4 mt-2 rounded-2xl bg-surface-secondary/50 border border-border/50">
-                                <div className="flex flex-col gap-1">
-                                  <p className="text-xs font-bold text-foreground uppercase tracking-wider">
-                                    {t(
-                                      "settings.appearance.theme_schedule_desc",
-                                    )}
-                                  </p>
-                                </div>
-                                <div className="flex gap-4">
-                                  <TextField
-                                    className={cn(
-                                      "group",
-                                      COMPONENT_STYLES.input.mainWrapper,
-                                    )}
-                                  >
-                                    <Label
-                                      className={COMPONENT_STYLES.input.label}
-                                    >
-                                      {t(
-                                        "settings.appearance.theme_start_time",
-                                      )}
-                                    </Label>
-                                    <Input
-                                      type="time"
-                                      value={scheduleStart}
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        setScheduleStart(val);
-                                        localStorage.setItem(
-                                          "app.scheduleStart",
-                                          val,
-                                        );
-                                        window.dispatchEvent(
-                                          new CustomEvent(
-                                            "app-theme-mode-changed",
-                                          ),
-                                        );
-                                      }}
-                                      className={cn(
-                                        COMPONENT_STYLES.input.inputWrapper,
-                                        COMPONENT_STYLES.input.input,
-                                        "min-h-8 text-sm",
-                                      )}
-                                    />
-                                  </TextField>
-                                  <TextField
-                                    className={cn(
-                                      "group",
-                                      COMPONENT_STYLES.input.mainWrapper,
-                                    )}
-                                  >
-                                    <Label
-                                      className={COMPONENT_STYLES.input.label}
-                                    >
-                                      {t("settings.appearance.theme_end_time")}
-                                    </Label>
-                                    <Input
-                                      type="time"
-                                      value={scheduleEnd}
-                                      onChange={(e) => {
-                                        const val = e.target.value;
-                                        setScheduleEnd(val);
-                                        localStorage.setItem(
-                                          "app.scheduleEnd",
-                                          val,
-                                        );
-                                        window.dispatchEvent(
-                                          new CustomEvent(
-                                            "app-theme-mode-changed",
-                                          ),
-                                        );
-                                      }}
-                                      className={cn(
-                                        COMPONENT_STYLES.input.inputWrapper,
-                                        COMPONENT_STYLES.input.input,
-                                        "min-h-8 text-sm",
-                                      )}
-                                    />
-                                  </TextField>
-                                </div>
-                              </div>
-                            </motion.div>
-                          )}
-
-                          {themeMode === "auto" && (
-                            <motion.div
-                              key="auto-panel"
-                              initial={{ opacity: 0, height: 0 }}
-                              animate={{ opacity: 1, height: "auto" }}
-                              exit={{ opacity: 0, height: 0 }}
-                              transition={{ duration: 0.2, ease: "easeInOut" }}
-                              className="overflow-hidden"
-                            >
-                              <div className="flex flex-col gap-4 p-4 mt-2 rounded-2xl bg-surface-secondary/50 border border-border/50">
-                                <div className="flex flex-col gap-1">
-                                  <p className="text-xs font-bold text-foreground uppercase tracking-wider">
-                                    {t("settings.appearance.theme_auto_desc")}
-                                  </p>
-                                </div>
-
-                                {loadingSunTimes ? (
-                                  <div className="flex items-center gap-2 py-2">
-                                    <Spinner size="sm" color={"accent"} />
-                                    <p className="text-xs text-muted">
-                                      {t("settings.appearance.calculating")}
-                                    </p>
-                                  </div>
-                                ) : sunTimes ? (
-                                  <div className="flex flex-col gap-3">
-                                    <div className="flex items-center gap-6">
-                                      <div className="flex items-center gap-2">
-                                        <div className="p-1.5 rounded-lg bg-amber-100/50 text-amber-600">
-                                          <LuSun size={14} />
-                                        </div>
-                                        <div className="flex flex-col">
-                                          <p className="text-[10px] text-muted uppercase font-bold">
-                                            {t(
-                                              "settings.appearance.sunrise_time",
-                                            )}
-                                          </p>
-                                          <p className="text-sm font-mono font-bold text-foreground">
-                                            {sunTimes.sunrise}
-                                          </p>
-                                        </div>
-                                      </div>
-                                      <div className="flex items-center gap-2">
-                                        <div className="p-1.5 rounded-lg bg-brand-100/50 dark:bg-brand-500/10 text-amber-400">
-                                          <LuMoon size={14} />
-                                        </div>
-                                        <div className="flex flex-col">
-                                          <p className="text-[10px] text-muted uppercase font-bold">
-                                            {t(
-                                              "settings.appearance.sunset_time",
-                                            ) || "日落"}
-                                          </p>
-                                          <p className="text-sm font-mono font-bold text-foreground">
-                                            {sunTimes.sunset}
-                                          </p>
-                                        </div>
-                                      </div>
-                                    </div>
-
-                                    <Button
-                                      size="sm"
-                                      variant={"secondary"}
-                                      onPress={refreshSunTimes}
-                                      className={cn(
-                                        "rounded-full",
-                                        "h-7 text-xs self-start bg-surface-tertiary/50 hover:bg-surface-quaternary/50",
-                                      )}
-                                    >
-                                      {<RxUpdate size={12} />}
-                                      {t("common.refresh")}
-                                    </Button>
-                                  </div>
-                                ) : (
-                                  <div className="flex flex-col gap-2 py-2">
-                                    <p className="text-xs text-rose-500">
-                                      {t(
-                                        "settings.appearance.sun_fetch_failed",
-                                      )}
-                                    </p>
-                                    <Button
-                                      size="sm"
-                                      variant={"secondary"}
-                                      onPress={refreshSunTimes}
-                                      className={cn(
-                                        "rounded-full",
-                                        "h-7 text-xs self-start bg-surface-tertiary/50",
-                                      )}
-                                    >
-                                      {<RxUpdate size={12} />}
-                                      {t("common.retry")}
-                                    </Button>
-                                  </div>
-                                )}
-                              </div>
-                            </motion.div>
-                          )}
-                        </AnimatePresence>
-                      </div><div className="flex flex-col gap-4">
-                    <div className="flex items-center gap-2.5 mb-2">
-                      <div className="w-1.5 h-5 bg-brand-500 rounded-full" />
-                      <p className="text-base font-bold text-foreground uppercase tracking-wider">
-                        {t("settings.appearance.mode_config")}
-                      </p>
-                    </div>
-
-                    <Card className="border-none shadow-none bg-transparent overflow-visible">
-                      <Card.Content className="p-0 flex flex-col">
-                        {/* Mode Switcher Header */}
-                        <div className="py-4 border-b border-border/50 flex items-center justify-between rounded-t-2xl">
-                          <div className="flex flex-col gap-0.5">
-                            <p className="font-bold text-foreground dark:text-zinc-100 flex items-center gap-2">
-                              {themeSettingMode === "light" ? (
-                                <LuSun className="text-amber-500" size={18} />
-                              ) : (
-                                <LuMoon className="text-amber-400" size={18} />
-                              )}
-                              {themeSettingMode === "light"
-                                ? t("settings.appearance.theme_light")
-                                : t("settings.appearance.theme_dark")}
-                            </p>
-                            <p className="text-xs text-muted">
-                              {t("settings.appearance.edit_mode_desc")}
-                            </p>
-                          </div>
+                        <div className="w-full overflow-x-auto scrollbar-hide">
                           <Tabs
-                            selectedKey={themeSettingMode}
-                            onSelectionChange={(key) =>
-                              setThemeSettingMode(key as "light" | "dark")
-                            }
+                            selectedKey={themeMode}
+                            onSelectionChange={(key) => {
+                              const val = key as ThemeMode;
+                              setThemeMode(val);
+                            }}
                             variant="primary"
                           >
                             <Tabs.ListContainer>
                               <Tabs.List
                                 className={COMPONENT_STYLES.tabs.tabList}
                               >
-                                <Tabs.Tab
-                                  key="light"
-                                  id={"light"}
-                                  className={COMPONENT_STYLES.tabs.tabContent}
-                                >
-                                  {t("settings.appearance.theme_light")}
-                                  <Tabs.Indicator
-                                    className={COMPONENT_STYLES.tabs.cursor}
-                                  />
+                                <Tabs.Tab key="light" id={"light"}>
+                                  {
+                                    <div className="flex items-center gap-2">
+                                      <LuSun size={14} />
+                                      <span>
+                                        {t("settings.appearance.theme_light")}
+                                      </span>
+                                    </div>
+                                  }
+                                  <Tabs.Indicator />
                                 </Tabs.Tab>
-                                <Tabs.Tab
-                                  key="dark"
-                                  id={"dark"}
-                                  className={COMPONENT_STYLES.tabs.tabContent}
-                                >
-                                  {t("settings.appearance.theme_dark")}
-                                  <Tabs.Indicator
-                                    className={COMPONENT_STYLES.tabs.cursor}
-                                  />
+                                <Tabs.Tab key="dark" id={"dark"}>
+                                  {
+                                    <div className="flex items-center gap-2">
+                                      <LuMoon size={14} />
+                                      <span>
+                                        {t("settings.appearance.theme_dark")}
+                                      </span>
+                                    </div>
+                                  }
+                                  <Tabs.Indicator />
+                                </Tabs.Tab>
+                                <Tabs.Tab key="schedule" id={"schedule"}>
+                                  {
+                                    <div className="flex items-center gap-2">
+                                      <LuHardDrive size={14} />
+                                      <span>
+                                        {t(
+                                          "settings.appearance.theme_schedule",
+                                        )}
+                                      </span>
+                                    </div>
+                                  }
+                                  <Tabs.Indicator />
+                                </Tabs.Tab>
+                                <Tabs.Tab key="auto" id={"auto"}>
+                                  {
+                                    <div className="flex items-center gap-2">
+                                      <RxDesktop size={14} />
+                                      <span>
+                                        {t("settings.appearance.theme_auto")}
+                                      </span>
+                                    </div>
+                                  }
+                                  <Tabs.Indicator />
+                                </Tabs.Tab>
+                                <Tabs.Tab key="system" id={"system"}>
+                                  {
+                                    <div className="flex items-center gap-2">
+                                      <LuMonitor size={14} />
+                                      <span>
+                                        {t(
+                                          "settings.appearance.theme_system",
+                                        )}
+                                      </span>
+                                    </div>
+                                  }
+                                  <Tabs.Indicator />
                                 </Tabs.Tab>
                               </Tabs.List>
                             </Tabs.ListContainer>
                           </Tabs>
                         </div>
-                        {/* Content Area */}
-                        <div className="py-6 flex flex-col gap-8">
-                          {/* Theme Color Group */}
-                          <div className="flex flex-col gap-4 p-5 rounded-3xl bg-surface-tertiary/10 border border-border/50">
-                            {/* Theme Color Section */}
-                            <div className="flex flex-col gap-4">
-                              <div className="flex items-center gap-2">
-                                <LuPalette
-                                  className="text-brand-500"
-                                  size={18}
-                                />
-                                <div className="flex flex-col gap-0.5">
-                                  <p className="text-sm font-bold text-foreground">
-                                    {t("settings.appearance.theme_color")}
-                                  </p>
-                                  <p className="text-xs text-muted">
-                                    {t("settings.appearance.theme_color_desc")}
-                                  </p>
-                                </div>
+                      </div>
+
+                      <AnimatePresence initial={false} mode="wait">
+                        {themeMode === "system" && (
+                          <motion.div
+                            key="system-panel"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-4 p-4 mt-2 rounded-2xl bg-surface-secondary/50 border border-border/50">
+                              <div className="flex flex-col gap-1">
+                                <p className="text-xs font-bold text-foreground uppercase tracking-wider">
+                                  {t("settings.appearance.theme_system_desc")}
+                                </p>
                               </div>
-                              <div className="flex flex-col gap-6">
-                                {/* Preset Colors Group (Manual 50-950) */}
-                                <div className="flex flex-col gap-3">
-                                  <div className="flex items-center justify-between px-1">
-                                    <span className="text-xs font-bold text-muted uppercase tracking-wider">
-                                      {t("settings.appearance.theme_standard")}
-                                    </span>
-                                  </div>
-                                  <div className="flex gap-3 flex-wrap p-4 rounded-2xl bg-surface-tertiary/20 border border-border/50">
-                                    {THEME_GROUPS.preset.map((colorName) => {
-                                      const isSelected =
-                                        themeSettingMode === "light"
-                                          ? lightThemeColor === colorName
-                                          : darkThemeColor === colorName;
-                                      return (
-                                        <Tooltip key={colorName}>
-                                          <Button
-                                            isIconOnly
-                                            variant="ghost"
-                                            aria-pressed={isSelected}
-                                            aria-label={t("audit.mods.theme_color", {
-                                              name: t(`audit.mods.colors.${colorName}`),
-                                              hex: THEMES[colorName][500],
-                                            })}
-                                            className={`w-8 h-8 min-w-0 p-0 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus ${
-                                              isSelected
-                                                ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
-                                                : ""
-                                            }`}
-                                            style={{
-                                              backgroundColor:
-                                                THEMES[colorName][500],
-                                            }}
-                                            onPress={() => {
-                                              if (themeSettingMode === "light") {
-                                                setLightThemeColor(colorName);
-                                                localStorage.setItem(
-                                                  "app.lightThemeColor",
-                                                  colorName,
-                                                );
-                                              } else {
-                                                setDarkThemeColor(colorName);
-                                                localStorage.setItem(
-                                                  "app.darkThemeColor",
-                                                  colorName,
-                                                );
-                                              }
-                                              window.dispatchEvent(
-                                                new CustomEvent(
-                                                  "app-theme-changed",
-                                                ),
-                                              );
-                                            }}
-                                          >
-                                            {isSelected && (
-                                              <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
-                                            )}
-                                          </Button>
-                                          <Tooltip.Content>
-                                            {t(`audit.mods.colors.${colorName}`)}
-                                          </Tooltip.Content>
-                                        </Tooltip>
+                            </div>
+                          </motion.div>
+                        )}
+                        {themeMode === "schedule" && (
+                          <motion.div
+                            key="schedule-panel"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-4 p-4 mt-2 rounded-2xl bg-surface-secondary/50 border border-border/50">
+                              <div className="flex flex-col gap-1">
+                                <p className="text-xs font-bold text-foreground uppercase tracking-wider">
+                                  {t(
+                                    "settings.appearance.theme_schedule_desc",
+                                  )}
+                                </p>
+                              </div>
+                              <div className="flex gap-4">
+                                <TextField
+                                  className={cn(
+                                    "group",
+                                    COMPONENT_STYLES.input.mainWrapper,
+                                  )}
+                                >
+                                  <Label
+                                    className={COMPONENT_STYLES.input.label}
+                                  >
+                                    {t(
+                                      "settings.appearance.theme_start_time",
+                                    )}
+                                  </Label>
+                                  <Input
+                                    type="time"
+                                    value={scheduleStart}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setScheduleStart(val);
+                                      localStorage.setItem(
+                                        "app.scheduleStart",
+                                        val,
                                       );
-                                    })}
-                                  </div>
+                                      window.dispatchEvent(
+                                        new CustomEvent(
+                                          "app-theme-mode-changed",
+                                        ),
+                                      );
+                                    }}
+                                    className={cn(
+                                      COMPONENT_STYLES.input.inputWrapper,
+                                      COMPONENT_STYLES.input.input,
+                                      "min-h-8 text-sm",
+                                    )}
+                                  />
+                                </TextField>
+                                <TextField
+                                  className={cn(
+                                    "group",
+                                    COMPONENT_STYLES.input.mainWrapper,
+                                  )}
+                                >
+                                  <Label
+                                    className={COMPONENT_STYLES.input.label}
+                                  >
+                                    {t("settings.appearance.theme_end_time")}
+                                  </Label>
+                                  <Input
+                                    type="time"
+                                    value={scheduleEnd}
+                                    onChange={(e) => {
+                                      const val = e.target.value;
+                                      setScheduleEnd(val);
+                                      localStorage.setItem(
+                                        "app.scheduleEnd",
+                                        val,
+                                      );
+                                      window.dispatchEvent(
+                                        new CustomEvent(
+                                          "app-theme-mode-changed",
+                                        ),
+                                      );
+                                    }}
+                                    className={cn(
+                                      COMPONENT_STYLES.input.inputWrapper,
+                                      COMPONENT_STYLES.input.input,
+                                      "min-h-8 text-sm",
+                                    )}
+                                  />
+                                </TextField>
+                              </div>
+                            </div>
+                          </motion.div>
+                        )}
+
+                        {themeMode === "auto" && (
+                          <motion.div
+                            key="auto-panel"
+                            initial={{ opacity: 0, height: 0 }}
+                            animate={{ opacity: 1, height: "auto" }}
+                            exit={{ opacity: 0, height: 0 }}
+                            transition={{ duration: 0.2, ease: "easeInOut" }}
+                            className="overflow-hidden"
+                          >
+                            <div className="flex flex-col gap-4 p-4 mt-2 rounded-2xl bg-surface-secondary/50 border border-border/50">
+                              <div className="flex flex-col gap-1">
+                                <p className="text-xs font-bold text-foreground uppercase tracking-wider">
+                                  {t("settings.appearance.theme_auto_desc")}
+                                </p>
+                              </div>
+
+                              {loadingSunTimes ? (
+                                <div className="flex items-center gap-2 py-2">
+                                  <Spinner size="sm" color={"accent"} />
+                                  <p className="text-xs text-muted">
+                                    {t("settings.appearance.calculating")}
+                                  </p>
                                 </div>
-
-                                {/* Generated Colors Group (Automatic) */}
+                              ) : sunTimes ? (
                                 <div className="flex flex-col gap-3">
-                                  <div className="flex items-center justify-between px-1">
-                                    <span className="text-xs font-bold text-muted uppercase tracking-wider">
-                                      {t("settings.appearance.theme_generated")}
-                                    </span>
-                                  </div>
-                                  <div className="flex gap-3 flex-wrap p-4 rounded-2xl bg-surface-tertiary/20 border border-border/50">
-                                    {THEME_GROUPS.generated.map((colorName) => {
-                                      const isSelected =
-                                        themeSettingMode === "light"
-                                          ? lightThemeColor === colorName
-                                          : darkThemeColor === colorName;
-                                      return (
-                                        <Tooltip key={colorName}>
-                                          <Button
-                                            isIconOnly
-                                            variant="ghost"
-                                            aria-pressed={isSelected}
-                                            aria-label={t("audit.mods.theme_color", {
-                                              name: t(`audit.mods.colors.${colorName}`),
-                                              hex: THEMES[colorName][500],
-                                            })}
-                                            className={`w-8 h-8 min-w-0 p-0 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus ${
-                                              isSelected
-                                                ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
-                                                : ""
-                                            }`}
-                                            style={{
-                                              backgroundColor:
-                                                THEMES[colorName][500],
-                                            }}
-                                            onPress={() => {
-                                              if (themeSettingMode === "light") {
-                                                setLightThemeColor(colorName);
-                                                localStorage.setItem(
-                                                  "app.lightThemeColor",
-                                                  colorName,
-                                                );
-                                              } else {
-                                                setDarkThemeColor(colorName);
-                                                localStorage.setItem(
-                                                  "app.darkThemeColor",
-                                                  colorName,
-                                                );
-                                              }
-                                              window.dispatchEvent(
-                                                new CustomEvent(
-                                                  "app-theme-changed",
-                                                ),
-                                              );
-                                            }}
-                                          >
-                                            {isSelected && (
-                                              <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
-                                            )}
-                                          </Button>
-                                          <Tooltip.Content>
-                                            {t(`audit.mods.colors.${colorName}`)}
-                                          </Tooltip.Content>
-                                        </Tooltip>
-                                      );
-                                    })}
-                                    <Tooltip>
-                                      <Button
-                                        isIconOnly
-                                        variant="ghost"
-                                        aria-label={t("audit.mods.custom_color")}
-                                        aria-pressed={
-                                          themeSettingMode === "light"
-                                            ? lightThemeColor === "custom"
-                                            : darkThemeColor === "custom"
-                                        }
-                                        className={`w-8 h-8 min-w-0 p-0 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative overflow-hidden group focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus ${
-                                          (
-                                            themeSettingMode === "light"
-                                              ? lightThemeColor === "custom"
-                                              : darkThemeColor === "custom"
-                                          )
-                                            ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
-                                            : "hover:shadow-md"
-                                        }`}
-                                        onPress={() => {
-                                          if (themeSettingMode === "light") {
-                                            setLightThemeColor("custom");
-                                            localStorage.setItem(
-                                              "app.lightThemeColor",
-                                              "custom",
-                                            );
-                                          } else {
-                                            setDarkThemeColor("custom");
-                                            localStorage.setItem(
-                                              "app.darkThemeColor",
-                                              "custom",
-                                            );
-                                          }
-                                          window.dispatchEvent(
-                                            new CustomEvent("app-theme-changed"),
-                                          );
-                                        }}
-                                        style={{
-                                          backgroundColor: activeCustomThemeColor,
-                                        }}
-                                      >
-                                        <LuPalette
-                                          className="relative z-10 w-4 h-4 drop-shadow-sm"
-                                          style={{ color: customThemeIconColor }}
-                                        />
-
-                                        {(themeSettingMode === "light"
-                                          ? lightThemeColor === "custom"
-                                          : darkThemeColor === "custom") && (
-                                          <div className="absolute inset-0 bg-black/10 z-0 flex items-center justify-center">
-                                            <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm z-20" />
-                                          </div>
-                                        )}
-                                      </Button>
-                                      <Tooltip.Content>
-                                        {t("audit.mods.custom_color")}
-                                      </Tooltip.Content>
-                                    </Tooltip>
-                                  </div>
-
-                                  <Separator className="bg-surface-tertiary/50" />
-
-                                  {/* Base Mode Section */}
-                                  <div className="flex flex-col gap-4">
+                                  <div className="flex items-center gap-6">
                                     <div className="flex items-center gap-2">
-                                      <LuLayers
-                                        className="text-brand-500"
-                                        size={18}
-                                      />
-                                      <div className="flex flex-col gap-0.5">
-                                        <p className="text-sm font-bold text-foreground">
+                                      <div className="p-1.5 rounded-lg bg-amber-100/50 text-amber-600">
+                                        <LuSun size={14} />
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <p className="text-[10px] text-muted uppercase font-bold">
                                           {t(
-                                            "settings.appearance.background_base_mode",
+                                            "settings.appearance.sunrise_time",
                                           )}
                                         </p>
-                                        <p className="text-xs text-muted">
-                                          {t(
-                                            "settings.appearance.background_base_mode_desc",
-                                          )}
+                                        <p className="text-sm font-mono font-bold text-foreground">
+                                          {sunTimes.sunrise}
                                         </p>
                                       </div>
                                     </div>
+                                    <div className="flex items-center gap-2">
+                                      <div className="p-1.5 rounded-lg bg-brand-100/50 dark:bg-brand-500/10 text-amber-400">
+                                        <LuMoon size={14} />
+                                      </div>
+                                      <div className="flex flex-col">
+                                        <p className="text-[10px] text-muted uppercase font-bold">
+                                          {t(
+                                            "settings.appearance.sunset_time",
+                                          ) || "日落"}
+                                        </p>
+                                        <p className="text-sm font-mono font-bold text-foreground">
+                                          {sunTimes.sunset}
+                                        </p>
+                                      </div>
+                                    </div>
+                                  </div>
 
-                                    <div className="flex flex-col gap-6 mt-2">
-                                      <Tabs
-                                        selectedKey={
-                                          themeSettingMode === "light"
-                                            ? lightBackgroundBaseMode
-                                            : darkBackgroundBaseMode
-                                        }
-                                        onSelectionChange={(key) => {
-                                          const val = key as string;
-                                          if (themeSettingMode === "light") {
-                                            setLightBackgroundBaseMode(val);
-                                            localStorage.setItem(
-                                              "app.lightBackgroundBaseMode",
-                                              val,
-                                            );
-                                          } else {
-                                            setDarkBackgroundBaseMode(val);
-                                            localStorage.setItem(
-                                              "app.darkBackgroundBaseMode",
-                                              val,
-                                            );
-                                          }
-                                          window.dispatchEvent(
-                                            new CustomEvent(
-                                              "app-background-settings-changed",
-                                            ),
-                                          );
-                                        }}
-                                        variant="primary"
-                                      >
-                                        <Tabs.ListContainer>
-                                          <Tabs.List
-                                            className={
-                                              COMPONENT_STYLES.tabs.tabList
-                                            }
-                                          >
-                                            <Tabs.Tab
-                                              key="none"
-                                              id={"none"}
-                                              className={
-                                                COMPONENT_STYLES.tabs.tabContent
-                                              }
-                                            >
-                                              {t(
-                                                "settings.appearance.background_base_none",
-                                              )}
-                                              <Tabs.Indicator
-                                                className={
-                                                  COMPONENT_STYLES.tabs.cursor
-                                                }
-                                              />
-                                            </Tabs.Tab>
-                                            <Tabs.Tab
-                                              key="theme"
-                                              id={"theme"}
-                                              className={
-                                                COMPONENT_STYLES.tabs.tabContent
-                                              }
-                                            >
-                                              {t(
-                                                "settings.appearance.background_base_theme",
-                                              )}
-                                              <Tabs.Indicator
-                                                className={
-                                                  COMPONENT_STYLES.tabs.cursor
-                                                }
-                                              />
-                                            </Tabs.Tab>
-                                            <Tabs.Tab
-                                              key="color"
-                                              id={"color"}
-                                              className={
-                                                COMPONENT_STYLES.tabs.tabContent
-                                              }
-                                            >
-                                              {t(
-                                                "settings.appearance.background_base_color",
-                                              )}
-                                              <Tabs.Indicator
-                                                className={
-                                                  COMPONENT_STYLES.tabs.cursor
-                                                }
-                                              />
-                                            </Tabs.Tab>
-                                          </Tabs.List>
-                                        </Tabs.ListContainer>
-                                      </Tabs>
+                                  <Button
+                                    size="sm"
+                                    variant={"secondary"}
+                                    onPress={refreshSunTimes}
+                                    className={cn(
+                                      "rounded-full",
+                                      "h-7 text-xs self-start bg-surface-tertiary/50 hover:bg-surface-quaternary/50",
+                                    )}
+                                  >
+                                    {<RxUpdate size={12} />}
+                                    {t("common.refresh")}
+                                  </Button>
+                                </div>
+                              ) : (
+                                <div className="flex flex-col gap-2 py-2">
+                                  <p className="text-xs text-rose-500">
+                                    {t(
+                                      "settings.appearance.sun_fetch_failed",
+                                    )}
+                                  </p>
+                                  <Button
+                                    size="sm"
+                                    variant={"secondary"}
+                                    onPress={refreshSunTimes}
+                                    className={cn(
+                                      "rounded-full",
+                                      "h-7 text-xs self-start bg-surface-tertiary/50",
+                                    )}
+                                  >
+                                    {<RxUpdate size={12} />}
+                                    {t("common.retry")}
+                                  </Button>
+                                </div>
+                              )}
+                            </div>
+                          </motion.div>
+                        )}
+                      </AnimatePresence>
+                    </div><div className="flex flex-col gap-4">
+                        <div className="flex items-center gap-2.5 mb-2">
+                          <div className="w-1.5 h-5 bg-brand-500 rounded-full" />
+                          <p className="text-base font-bold text-foreground uppercase tracking-wider">
+                            {t("settings.appearance.mode_config")}
+                          </p>
+                        </div>
 
-                                      <AnimatePresence
-                                        initial={false}
-                                        mode="wait"
-                                      >
-                                        {(themeSettingMode === "light"
-                                          ? lightBackgroundBaseMode
-                                          : darkBackgroundBaseMode) !==
-                                          "none" && (
-                                          <motion.div
-                                            key="background-base-settings"
-                                            initial={{
-                                              opacity: 0,
-                                              height: 0,
-                                            }}
-                                            animate={{
-                                              opacity: 1,
-                                              height: "auto",
-                                            }}
-                                            exit={{
-                                              opacity: 0,
-                                              height: 0,
-                                            }}
-                                            className="flex flex-col gap-6 overflow-hidden"
-                                          >
-                                            {(themeSettingMode === "light"
-                                              ? lightBackgroundBaseMode
-                                              : darkBackgroundBaseMode) ===
-                                              "color" && (
-                                              <div className="flex flex-col gap-3">
-                                                <div className="flex items-center justify-between">
-                                                  <p className="text-xs font-medium text-foreground">
-                                                    {t(
-                                                      "settings.appearance.background_base_color_pick",
-                                                    )}
-                                                  </p>
-                                                  <div className="px-2 py-0.5 bg-surface-tertiary/50 rounded font-mono text-[10px] text-brand-500">
-                                                    {themeSettingMode ===
-                                                    "light"
-                                                      ? lightBackgroundBaseColor
-                                                      : darkBackgroundBaseColor}
-                                                  </div>
-                                                </div>
-                                                <CustomColorPicker
-                                                  color={
-                                                    themeSettingMode === "light"
-                                                      ? lightBackgroundBaseColor
-                                                      : darkBackgroundBaseColor
-                                                  }
-                                                  onChange={(hex) => {
-                                                    if (
-                                                      themeSettingMode ===
-                                                      "light"
-                                                    ) {
-                                                      setLightBackgroundBaseColor(
-                                                        hex,
-                                                      );
-                                                      localStorage.setItem(
-                                                        "app.lightBackgroundBaseColor",
-                                                        hex,
-                                                      );
-                                                    } else {
-                                                      setDarkBackgroundBaseColor(
-                                                        hex,
-                                                      );
-                                                      localStorage.setItem(
-                                                        "app.darkBackgroundBaseColor",
-                                                        hex,
-                                                      );
-                                                    }
-                                                    window.dispatchEvent(
-                                                      new CustomEvent(
-                                                        "app-background-settings-changed",
-                                                      ),
-                                                    );
-                                                  }}
-                                                />
-                                              </div>
-                                            )}
-
-                                            <div className="flex flex-col gap-2">
-                                              <div className="flex items-center justify-between">
-                                                <p className="text-xs font-medium text-foreground">
-                                                  {t(
-                                                    "settings.appearance.background_base_opacity",
-                                                  )}
-                                                </p>
-                                                <div className="flex items-center">
-                                                  <span className="text-xs font-mono text-brand-500">
-                                                    {themeSettingMode ===
-                                                    "light"
-                                                      ? lightBackgroundBaseOpacity
-                                                      : darkBackgroundBaseOpacity}
-                                                    %
-                                                  </span>
-                                                </div>
-                                              </div>
-                                              <Slider
-                                                step={1}
-                                                maxValue={100}
-                                                minValue={0}
-                                                aria-label={t(
-                                                  "settings.appearance.background_base_opacity",
-                                                )}
-                                                value={
-                                                  themeSettingMode === "light"
-                                                    ? lightBackgroundBaseOpacity
-                                                    : darkBackgroundBaseOpacity
-                                                }
-                                                onChange={(v) => {
-                                                  const val = Number(v);
-                                                  if (
-                                                    themeSettingMode === "light"
-                                                  ) {
-                                                    setLightBackgroundBaseOpacity(
-                                                      val,
-                                                    );
+                        <Card className="border-none shadow-none bg-transparent overflow-visible">
+                          <Card.Content className="p-0 flex flex-col">
+                            {/* Mode Switcher Header */}
+                            <div className="py-4 border-b border-border/50 flex items-center justify-between rounded-t-2xl">
+                              <div className="flex flex-col gap-0.5">
+                                <p className="font-bold text-foreground dark:text-zinc-100 flex items-center gap-2">
+                                  {themeSettingMode === "light" ? (
+                                    <LuSun className="text-amber-500" size={18} />
+                                  ) : (
+                                    <LuMoon className="text-amber-400" size={18} />
+                                  )}
+                                  {themeSettingMode === "light"
+                                    ? t("settings.appearance.theme_light")
+                                    : t("settings.appearance.theme_dark")}
+                                </p>
+                                <p className="text-xs text-muted">
+                                  {t("settings.appearance.edit_mode_desc")}
+                                </p>
+                              </div>
+                              <Tabs
+                                selectedKey={themeSettingMode}
+                                onSelectionChange={(key) =>
+                                  setThemeSettingMode(key as "light" | "dark")
+                                }
+                                variant="primary"
+                              >
+                                <Tabs.ListContainer>
+                                  <Tabs.List
+                                    className={COMPONENT_STYLES.tabs.tabList}
+                                  >
+                                    <Tabs.Tab
+                                      key="light"
+                                      id={"light"}
+                                      className={COMPONENT_STYLES.tabs.tabContent}
+                                    >
+                                      {t("settings.appearance.theme_light")}
+                                      <Tabs.Indicator
+                                        className={COMPONENT_STYLES.tabs.cursor}
+                                      />
+                                    </Tabs.Tab>
+                                    <Tabs.Tab
+                                      key="dark"
+                                      id={"dark"}
+                                      className={COMPONENT_STYLES.tabs.tabContent}
+                                    >
+                                      {t("settings.appearance.theme_dark")}
+                                      <Tabs.Indicator
+                                        className={COMPONENT_STYLES.tabs.cursor}
+                                      />
+                                    </Tabs.Tab>
+                                  </Tabs.List>
+                                </Tabs.ListContainer>
+                              </Tabs>
+                            </div>
+                            {/* Content Area */}
+                            <div className="py-6 flex flex-col gap-8">
+                              {/* Theme Color Group */}
+                              <div className="flex flex-col gap-4 p-5 rounded-3xl bg-surface-tertiary/10 border border-border/50">
+                                {/* Theme Color Section */}
+                                <div className="flex flex-col gap-4">
+                                  <div className="flex items-center gap-2">
+                                    <LuPalette
+                                      className="text-brand-500"
+                                      size={18}
+                                    />
+                                    <div className="flex flex-col gap-0.5">
+                                      <p className="text-sm font-bold text-foreground">
+                                        {t("settings.appearance.theme_color")}
+                                      </p>
+                                      <p className="text-xs text-muted">
+                                        {t("settings.appearance.theme_color_desc")}
+                                      </p>
+                                    </div>
+                                  </div>
+                                  <div className="flex flex-col gap-6">
+                                    {/* Preset Colors Group (Manual 50-950) */}
+                                    <div className="flex flex-col gap-3">
+                                      <div className="flex items-center justify-between px-1">
+                                        <span className="text-xs font-bold text-muted uppercase tracking-wider">
+                                          {t("settings.appearance.theme_standard")}
+                                        </span>
+                                      </div>
+                                      <div className="flex gap-3 flex-wrap p-4 rounded-2xl bg-surface-tertiary/20 border border-border/50">
+                                        {THEME_GROUPS.preset.map((colorName) => {
+                                          const isSelected =
+                                            themeSettingMode === "light"
+                                              ? lightThemeColor === colorName
+                                              : darkThemeColor === colorName;
+                                          return (
+                                            <Tooltip key={colorName}>
+                                              <Button
+                                                isIconOnly
+                                                variant="ghost"
+                                                aria-pressed={isSelected}
+                                                aria-label={t("audit.mods.theme_color", {
+                                                  name: t(`audit.mods.colors.${colorName}`),
+                                                  hex: THEMES[colorName][500],
+                                                })}
+                                                className={`w-8 h-8 min-w-0 p-0 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus ${isSelected
+                                                  ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
+                                                  : ""
+                                                  }`}
+                                                style={{
+                                                  backgroundColor:
+                                                    THEMES[colorName][500],
+                                                }}
+                                                onPress={() => {
+                                                  if (themeSettingMode === "light") {
+                                                    setLightThemeColor(colorName);
                                                     localStorage.setItem(
-                                                      "app.lightBackgroundBaseOpacity",
-                                                      String(val),
+                                                      "app.lightThemeColor",
+                                                      colorName,
                                                     );
                                                   } else {
-                                                    setDarkBackgroundBaseOpacity(
-                                                      val,
-                                                    );
+                                                    setDarkThemeColor(colorName);
                                                     localStorage.setItem(
-                                                      "app.darkBackgroundBaseOpacity",
-                                                      String(val),
+                                                      "app.darkThemeColor",
+                                                      colorName,
                                                     );
                                                   }
                                                   window.dispatchEvent(
                                                     new CustomEvent(
-                                                      "app-background-settings-changed",
+                                                      "app-theme-changed",
                                                     ),
                                                   );
                                                 }}
                                               >
-                                                <Slider.Track>
-                                                  <Slider.Fill
-                                                    className={"bg-brand-500"}
+                                                {isSelected && (
+                                                  <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
+                                                )}
+                                              </Button>
+                                              <Tooltip.Content>
+                                                {t(`audit.mods.colors.${colorName}`)}
+                                              </Tooltip.Content>
+                                            </Tooltip>
+                                          );
+                                        })}
+                                      </div>
+                                    </div>
+
+                                    {/* Generated Colors Group (Automatic) */}
+                                    <div className="flex flex-col gap-3">
+                                      <div className="flex items-center justify-between px-1">
+                                        <span className="text-xs font-bold text-muted uppercase tracking-wider">
+                                          {t("settings.appearance.theme_generated")}
+                                        </span>
+                                      </div>
+                                      <div className="flex gap-3 flex-wrap p-4 rounded-2xl bg-surface-tertiary/20 border border-border/50">
+                                        {THEME_GROUPS.generated.map((colorName) => {
+                                          const isSelected =
+                                            themeSettingMode === "light"
+                                              ? lightThemeColor === colorName
+                                              : darkThemeColor === colorName;
+                                          return (
+                                            <Tooltip key={colorName}>
+                                              <Button
+                                                isIconOnly
+                                                variant="ghost"
+                                                aria-pressed={isSelected}
+                                                aria-label={t("audit.mods.theme_color", {
+                                                  name: t(`audit.mods.colors.${colorName}`),
+                                                  hex: THEMES[colorName][500],
+                                                })}
+                                                className={`w-8 h-8 min-w-0 p-0 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus ${isSelected
+                                                  ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
+                                                  : ""
+                                                  }`}
+                                                style={{
+                                                  backgroundColor:
+                                                    THEMES[colorName][500],
+                                                }}
+                                                onPress={() => {
+                                                  if (themeSettingMode === "light") {
+                                                    setLightThemeColor(colorName);
+                                                    localStorage.setItem(
+                                                      "app.lightThemeColor",
+                                                      colorName,
+                                                    );
+                                                  } else {
+                                                    setDarkThemeColor(colorName);
+                                                    localStorage.setItem(
+                                                      "app.darkThemeColor",
+                                                      colorName,
+                                                    );
+                                                  }
+                                                  window.dispatchEvent(
+                                                    new CustomEvent(
+                                                      "app-theme-changed",
+                                                    ),
+                                                  );
+                                                }}
+                                              >
+                                                {isSelected && (
+                                                  <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm" />
+                                                )}
+                                              </Button>
+                                              <Tooltip.Content>
+                                                {t(`audit.mods.colors.${colorName}`)}
+                                              </Tooltip.Content>
+                                            </Tooltip>
+                                          );
+                                        })}
+                                        <Tooltip>
+                                          <Button
+                                            isIconOnly
+                                            variant="ghost"
+                                            aria-label={t("audit.mods.custom_color")}
+                                            aria-pressed={
+                                              themeSettingMode === "light"
+                                                ? lightThemeColor === "custom"
+                                                : darkThemeColor === "custom"
+                                            }
+                                            className={`w-8 h-8 min-w-0 p-0 rounded-full cursor-pointer flex items-center justify-center transition-all hover:scale-110 active:scale-95 relative overflow-hidden group focus-visible:outline-2 focus-visible:outline-offset-4 focus-visible:outline-focus ${(
+                                              themeSettingMode === "light"
+                                                ? lightThemeColor === "custom"
+                                                : darkThemeColor === "custom"
+                                            )
+                                              ? "ring-2 ring-offset-2 ring-brand-500 shadow-lg"
+                                              : "hover:shadow-md"
+                                              }`}
+                                            onPress={() => {
+                                              if (themeSettingMode === "light") {
+                                                setLightThemeColor("custom");
+                                                localStorage.setItem(
+                                                  "app.lightThemeColor",
+                                                  "custom",
+                                                );
+                                              } else {
+                                                setDarkThemeColor("custom");
+                                                localStorage.setItem(
+                                                  "app.darkThemeColor",
+                                                  "custom",
+                                                );
+                                              }
+                                              window.dispatchEvent(
+                                                new CustomEvent("app-theme-changed"),
+                                              );
+                                            }}
+                                            style={{
+                                              backgroundColor: activeCustomThemeColor,
+                                            }}
+                                          >
+                                            <LuPalette
+                                              className="relative z-10 w-4 h-4 drop-shadow-sm"
+                                              style={{ color: customThemeIconColor }}
+                                            />
+
+                                            {(themeSettingMode === "light"
+                                              ? lightThemeColor === "custom"
+                                              : darkThemeColor === "custom") && (
+                                                <div className="absolute inset-0 bg-black/10 z-0 flex items-center justify-center">
+                                                  <div className="w-2.5 h-2.5 bg-white rounded-full shadow-sm z-20" />
+                                                </div>
+                                              )}
+                                          </Button>
+                                          <Tooltip.Content>
+                                            {t("audit.mods.custom_color")}
+                                          </Tooltip.Content>
+                                        </Tooltip>
+                                      </div>
+
+                                      <Separator className="bg-surface-tertiary/50" />
+
+                                      {/* Base Mode Section */}
+                                      <div className="flex flex-col gap-4">
+                                        <div className="flex items-center gap-2">
+                                          <LuLayers
+                                            className="text-brand-500"
+                                            size={18}
+                                          />
+                                          <div className="flex flex-col gap-0.5">
+                                            <p className="text-sm font-bold text-foreground">
+                                              {t(
+                                                "settings.appearance.background_base_mode",
+                                              )}
+                                            </p>
+                                            <p className="text-xs text-muted">
+                                              {t(
+                                                "settings.appearance.background_base_mode_desc",
+                                              )}
+                                            </p>
+                                          </div>
+                                        </div>
+
+                                        <div className="flex flex-col gap-6 mt-2">
+                                          <Tabs
+                                            selectedKey={
+                                              themeSettingMode === "light"
+                                                ? lightBackgroundBaseMode
+                                                : darkBackgroundBaseMode
+                                            }
+                                            onSelectionChange={(key) => {
+                                              const val = key as string;
+                                              if (themeSettingMode === "light") {
+                                                setLightBackgroundBaseMode(val);
+                                                localStorage.setItem(
+                                                  "app.lightBackgroundBaseMode",
+                                                  val,
+                                                );
+                                              } else {
+                                                setDarkBackgroundBaseMode(val);
+                                                localStorage.setItem(
+                                                  "app.darkBackgroundBaseMode",
+                                                  val,
+                                                );
+                                              }
+                                              window.dispatchEvent(
+                                                new CustomEvent(
+                                                  "app-background-settings-changed",
+                                                ),
+                                              );
+                                            }}
+                                            variant="primary"
+                                          >
+                                            <Tabs.ListContainer>
+                                              <Tabs.List
+                                                className={
+                                                  COMPONENT_STYLES.tabs.tabList
+                                                }
+                                              >
+                                                <Tabs.Tab
+                                                  key="none"
+                                                  id={"none"}
+                                                  className={
+                                                    COMPONENT_STYLES.tabs.tabContent
+                                                  }
+                                                >
+                                                  {t(
+                                                    "settings.appearance.background_base_none",
+                                                  )}
+                                                  <Tabs.Indicator
+                                                    className={
+                                                      COMPONENT_STYLES.tabs.cursor
+                                                    }
                                                   />
-                                                  <Slider.Thumb
-                                                    className={"bg-brand-500"}
+                                                </Tabs.Tab>
+                                                <Tabs.Tab
+                                                  key="theme"
+                                                  id={"theme"}
+                                                  className={
+                                                    COMPONENT_STYLES.tabs.tabContent
+                                                  }
+                                                >
+                                                  {t(
+                                                    "settings.appearance.background_base_theme",
+                                                  )}
+                                                  <Tabs.Indicator
+                                                    className={
+                                                      COMPONENT_STYLES.tabs.cursor
+                                                    }
                                                   />
-                                                </Slider.Track>
-                                              </Slider>
-                                            </div>
-                                          </motion.div>
-                                        )}
-                                      </AnimatePresence>
+                                                </Tabs.Tab>
+                                                <Tabs.Tab
+                                                  key="color"
+                                                  id={"color"}
+                                                  className={
+                                                    COMPONENT_STYLES.tabs.tabContent
+                                                  }
+                                                >
+                                                  {t(
+                                                    "settings.appearance.background_base_color",
+                                                  )}
+                                                  <Tabs.Indicator
+                                                    className={
+                                                      COMPONENT_STYLES.tabs.cursor
+                                                    }
+                                                  />
+                                                </Tabs.Tab>
+                                              </Tabs.List>
+                                            </Tabs.ListContainer>
+                                          </Tabs>
+
+                                          <AnimatePresence
+                                            initial={false}
+                                            mode="wait"
+                                          >
+                                            {(themeSettingMode === "light"
+                                              ? lightBackgroundBaseMode
+                                              : darkBackgroundBaseMode) !==
+                                              "none" && (
+                                                <motion.div
+                                                  key="background-base-settings"
+                                                  initial={{
+                                                    opacity: 0,
+                                                    height: 0,
+                                                  }}
+                                                  animate={{
+                                                    opacity: 1,
+                                                    height: "auto",
+                                                  }}
+                                                  exit={{
+                                                    opacity: 0,
+                                                    height: 0,
+                                                  }}
+                                                  className="flex flex-col gap-6 overflow-hidden"
+                                                >
+                                                  {(themeSettingMode === "light"
+                                                    ? lightBackgroundBaseMode
+                                                    : darkBackgroundBaseMode) ===
+                                                    "color" && (
+                                                      <div className="flex flex-col gap-3">
+                                                        <div className="flex items-center justify-between">
+                                                          <p className="text-xs font-medium text-foreground">
+                                                            {t(
+                                                              "settings.appearance.background_base_color_pick",
+                                                            )}
+                                                          </p>
+                                                          <div className="px-2 py-0.5 bg-surface-tertiary/50 rounded font-mono text-[10px] text-brand-500">
+                                                            {themeSettingMode ===
+                                                              "light"
+                                                              ? lightBackgroundBaseColor
+                                                              : darkBackgroundBaseColor}
+                                                          </div>
+                                                        </div>
+                                                        <CustomColorPicker
+                                                          color={
+                                                            themeSettingMode === "light"
+                                                              ? lightBackgroundBaseColor
+                                                              : darkBackgroundBaseColor
+                                                          }
+                                                          onChange={(hex) => {
+                                                            if (
+                                                              themeSettingMode ===
+                                                              "light"
+                                                            ) {
+                                                              setLightBackgroundBaseColor(
+                                                                hex,
+                                                              );
+                                                              localStorage.setItem(
+                                                                "app.lightBackgroundBaseColor",
+                                                                hex,
+                                                              );
+                                                            } else {
+                                                              setDarkBackgroundBaseColor(
+                                                                hex,
+                                                              );
+                                                              localStorage.setItem(
+                                                                "app.darkBackgroundBaseColor",
+                                                                hex,
+                                                              );
+                                                            }
+                                                            window.dispatchEvent(
+                                                              new CustomEvent(
+                                                                "app-background-settings-changed",
+                                                              ),
+                                                            );
+                                                          }}
+                                                        />
+                                                      </div>
+                                                    )}
+
+                                                  <div className="flex flex-col gap-2">
+                                                    <div className="flex items-center justify-between">
+                                                      <p className="text-xs font-medium text-foreground">
+                                                        {t(
+                                                          "settings.appearance.background_base_opacity",
+                                                        )}
+                                                      </p>
+                                                      <div className="flex items-center">
+                                                        <span className="text-xs font-mono text-brand-500">
+                                                          {themeSettingMode ===
+                                                            "light"
+                                                            ? lightBackgroundBaseOpacity
+                                                            : darkBackgroundBaseOpacity}
+                                                          %
+                                                        </span>
+                                                      </div>
+                                                    </div>
+                                                    <Slider
+                                                      step={1}
+                                                      maxValue={100}
+                                                      minValue={0}
+                                                      aria-label={t(
+                                                        "settings.appearance.background_base_opacity",
+                                                      )}
+                                                      value={
+                                                        themeSettingMode === "light"
+                                                          ? lightBackgroundBaseOpacity
+                                                          : darkBackgroundBaseOpacity
+                                                      }
+                                                      onChange={(v) => {
+                                                        const val = Number(v);
+                                                        if (
+                                                          themeSettingMode === "light"
+                                                        ) {
+                                                          setLightBackgroundBaseOpacity(
+                                                            val,
+                                                          );
+                                                          localStorage.setItem(
+                                                            "app.lightBackgroundBaseOpacity",
+                                                            String(val),
+                                                          );
+                                                        } else {
+                                                          setDarkBackgroundBaseOpacity(
+                                                            val,
+                                                          );
+                                                          localStorage.setItem(
+                                                            "app.darkBackgroundBaseOpacity",
+                                                            String(val),
+                                                          );
+                                                        }
+                                                        window.dispatchEvent(
+                                                          new CustomEvent(
+                                                            "app-background-settings-changed",
+                                                          ),
+                                                        );
+                                                      }}
+                                                    >
+                                                      <Slider.Track>
+                                                        <Slider.Fill
+                                                          className={"bg-brand-500"}
+                                                        />
+                                                        <Slider.Thumb
+                                                          className={"bg-brand-500"}
+                                                        />
+                                                      </Slider.Track>
+                                                    </Slider>
+                                                  </div>
+                                                </motion.div>
+                                              )}
+                                          </AnimatePresence>
+                                        </div>
+                                      </div>
                                     </div>
                                   </div>
+
+                                  {(themeSettingMode === "light"
+                                    ? lightThemeColor === "custom"
+                                    : darkThemeColor === "custom") && (
+                                      <div className="flex flex-col gap-4 bg-surface-tertiary/20 p-6 rounded-2xl border border-border/50">
+                                        <div className="flex items-center justify-between">
+                                          <p className="text-sm font-bold text-foreground">
+                                            {t("settings.appearance.custom_color") ||
+                                              "Custom Color"}
+                                          </p>
+                                          <div className="px-3 py-1 bg-surface-tertiary/50 rounded-lg">
+                                            <span className="text-xs font-mono uppercase text-brand-500 font-bold">
+                                              {activeCustomThemeColor}
+                                            </span>
+                                          </div>
+                                        </div>
+
+                                        <CustomColorPicker
+                                          color={activeCustomThemeColor}
+                                          onChange={(hex) => {
+                                            if (themeSettingMode === "light") {
+                                              setLightCustomThemeColor(hex);
+                                              localStorage.setItem(
+                                                "app.lightCustomThemeColor",
+                                                hex,
+                                              );
+                                            } else {
+                                              setDarkCustomThemeColor(hex);
+                                              localStorage.setItem(
+                                                "app.darkCustomThemeColor",
+                                                hex,
+                                              );
+                                            }
+                                            window.dispatchEvent(
+                                              new CustomEvent("app-theme-changed"),
+                                            );
+                                          }}
+                                        />
+                                      </div>
+                                    )}
                                 </div>
                               </div>
-
-                              {(themeSettingMode === "light"
-                                ? lightThemeColor === "custom"
-                                : darkThemeColor === "custom") && (
-                                <div className="flex flex-col gap-4 bg-surface-tertiary/20 p-6 rounded-2xl border border-border/50">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-sm font-bold text-foreground">
-                                      {t("settings.appearance.custom_color") ||
-                                        "Custom Color"}
-                                    </p>
-                                    <div className="px-3 py-1 bg-surface-tertiary/50 rounded-lg">
-                                      <span className="text-xs font-mono uppercase text-brand-500 font-bold">
-                                        {activeCustomThemeColor}
-                                      </span>
-                                    </div>
-                                  </div>
-
-                                  <CustomColorPicker
-                                    color={activeCustomThemeColor}
-                                    onChange={(hex) => {
-                                      if (themeSettingMode === "light") {
-                                        setLightCustomThemeColor(hex);
-                                        localStorage.setItem(
-                                          "app.lightCustomThemeColor",
-                                          hex,
-                                        );
-                                      } else {
-                                        setDarkCustomThemeColor(hex);
-                                        localStorage.setItem(
-                                          "app.darkCustomThemeColor",
-                                          hex,
-                                        );
-                                      }
-                                      window.dispatchEvent(
-                                        new CustomEvent("app-theme-changed"),
-                                      );
-                                    }}
-                                  />
-                                </div>
-                              )}
                             </div>
-                          </div>
-                        </div>
-                      </Card.Content>
-                    </Card>
-                  </div></>}
+                          </Card.Content>
+                        </Card>
+                      </div></>}
                     {appearanceSection === "layout" && <><div className="py-4 flex items-center justify-between border-b border-border/50">
-                        <div className="flex flex-col gap-1">
-                          <p className="font-medium text-foreground dark:text-zinc-200">
-                            {t("settings.layout.title_navbar")}
-                          </p>
-                          <p className="text-xs text-muted dark:text-zinc-400">
-                            {t("settings.layout.desc_navbar")}
-                          </p>
-                        </div>
-                        <Switch
-                          aria-label={t("settings.layout.title_navbar")}
-                          size="sm"
-                          isSelected={layoutMode === "navbar"}
-                          onChange={(isSelected: boolean) => {
-                            const mode = isSelected ? "navbar" : "sidebar";
-                            setLayoutMode(mode);
-                            localStorage.setItem("app.layoutMode", mode);
-                            window.dispatchEvent(
-                              new CustomEvent("app-layout-changed"),
-                            );
-                          }}
-                          className={"group"}
-                        >
-                          <Switch.Content>
-                            <Switch.Control
-                              className={"group-data-[selected]:bg-brand-500"}
-                            >
-                              <Switch.Thumb></Switch.Thumb>
-                            </Switch.Control>
-                            <span></span>
-                          </Switch.Content>
-                        </Switch>
-                      </div><div className="py-4 border-b border-border/50 flex items-center justify-between">
+                      <div className="flex flex-col gap-1">
+                        <p className="font-medium text-foreground dark:text-zinc-200">
+                          {t("settings.layout.title_navbar")}
+                        </p>
+                        <p className="text-xs text-muted dark:text-zinc-400">
+                          {t("settings.layout.desc_navbar")}
+                        </p>
+                      </div>
+                      <Switch
+                        aria-label={t("settings.layout.title_navbar")}
+                        size="sm"
+                        isSelected={layoutMode === "navbar"}
+                        onChange={(isSelected: boolean) => {
+                          const mode = isSelected ? "navbar" : "sidebar";
+                          setLayoutMode(mode);
+                          localStorage.setItem("app.layoutMode", mode);
+                          window.dispatchEvent(
+                            new CustomEvent("app-layout-changed"),
+                          );
+                        }}
+                        className={"group"}
+                      >
+                        <Switch.Content>
+                          <Switch.Control
+                            className={"group-data-[selected]:bg-brand-500"}
+                          >
+                            <Switch.Thumb></Switch.Thumb>
+                          </Switch.Control>
+                          <span></span>
+                        </Switch.Content>
+                      </Switch>
+                    </div><div className="py-4 border-b border-border/50 flex items-center justify-between">
                         <div className="flex flex-col gap-1">
                           <p className="font-medium text-foreground dark:text-zinc-200">
                             {t("settings.appearance.disable_animations")}
@@ -1931,556 +1981,556 @@ export const SettingsPage: React.FC = () => {
                         </Switch>
                       </div></>}
                     {appearanceSection === "wallpaper" && <div className="flex flex-col gap-4 p-5 mt-6 rounded-3xl bg-surface-tertiary/10 border border-border/50">
-                        <div className="flex items-center gap-2">
-                          <LuImage className="text-brand-500" size={18} />
-                          <div className="flex flex-col gap-0.5">
-                            <div className="flex items-center gap-2">
-                              <p className="text-sm font-bold text-foreground">
-                                {t("settings.appearance.background_image")}
-                              </p>
-                              {backgroundImageCount > 0 && (
-                                <Chip
-                                  size="sm"
-                                  variant="soft"
-                                  color={"accent"}
-                                  className={"h-5 px-1.5 text-[10px] min-w-0"}
-                                >
-                                  <Chip.Label>
-                                    {backgroundImageCount}
-                                  </Chip.Label>
-                                </Chip>
-                              )}
-                            </div>
-                            <p className="text-xs text-muted">
-                              {t("settings.appearance.background_image_desc")}
+                      <div className="flex items-center gap-2">
+                        <LuImage className="text-brand-500" size={18} />
+                        <div className="flex flex-col gap-0.5">
+                          <div className="flex items-center gap-2">
+                            <p className="text-sm font-bold text-foreground">
+                              {t("settings.appearance.background_image")}
                             </p>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col gap-6">
-                          {/* Image Picker Row */}
-                          <div className="flex flex-wrap items-center justify-between gap-3">
-                            <div className="flex items-center gap-3 overflow-hidden">
-                              <div className="w-12 h-12 rounded-lg bg-surface-quaternary/30 flex items-center justify-center flex-shrink-0 border border-border/50 overflow-hidden">
-                                {previewBgData && !backgroundImageError ? (
-                                  <img
-                                    src={previewBgData}
-                                    alt=""
-                                    aria-hidden="true"
-                                    className="w-full h-full object-cover"
-                                    onError={() =>
-                                      setBackgroundImageError(true)
-                                    }
-                                  />
-                                ) : (
-                                  <LuImage className="text-muted" size={20} />
-                                )}
-                              </div>
-                              <div className="flex flex-col min-w-0">
-                                <p className="text-xs font-medium truncate text-foreground">
-                                  {backgroundImage ||
-                                    t("settings.appearance.no_image_selected")}
-                                </p>
-                              </div>
-                            </div>
-                            <div className="flex items-center gap-2">
-                              {backgroundImage && (
-                                <>
-                                  <Button size="sm" variant="secondary" isDisabled={backgroundImageCount < 2}
-                                    onPress={() => window.dispatchEvent(new Event("app-background-changed"))}>
-                                    {t("settings.appearance.material.next_image")}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onPress={async () => {
-                                      const path = backgroundImage;
-                                      if (path) {
-                                        await openDirectory(
-                                          path,
-                                        );
-                                      }
-                                    }}
-                                    variant={"secondary"}
-                                    className={"h-8"}
-                                  >
-                                    {t("common.open_folder")}
-                                  </Button>
-                                  <Button
-                                    size="sm"
-                                    onPress={() => {
-                                      setBackgroundImage("");
-                                      localStorage.setItem(
-                                        "app.backgroundImage",
-                                        "",
-                                      );
-                                      window.dispatchEvent(
-                                        new CustomEvent(
-                                          "app-background-changed",
-                                        ),
-                                      );
-                                    }}
-                                    variant={"danger-soft"}
-                                    className={"h-8"}
-                                  >
-                                    {t("settings.appearance.clear_image")}
-                                  </Button>
-                                </>
-                              )}
-                              <Button
+                            {backgroundImageCount > 0 && (
+                              <Chip
                                 size="sm"
-                                onPress={async () => {
-                                  try {
-                                    const result = await Dialogs.OpenFile({
-                                      Title: t(
-                                        "settings.appearance.select_image",
-                                      ),
-                                      CanChooseDirectories: true,
-                                      CanChooseFiles: false,
-                                    });
-                                    let path = "";
-                                    if (
-                                      Array.isArray(result) &&
-                                      result.length > 0
-                                    )
-                                      path = result[0];
-                                    else if (
-                                      typeof result === "string" &&
-                                      result
-                                    )
-                                      path = result;
+                                variant="soft"
+                                color={"accent"}
+                                className={"h-5 px-1.5 text-[10px] min-w-0"}
+                              >
+                                <Chip.Label>
+                                  {backgroundImageCount}
+                                </Chip.Label>
+                              </Chip>
+                            )}
+                          </div>
+                          <p className="text-xs text-muted">
+                            {t("settings.appearance.background_image_desc")}
+                          </p>
+                        </div>
+                      </div>
 
+                      <div className="flex flex-col gap-6">
+                        {/* Image Picker Row */}
+                        <div className="flex flex-wrap items-center justify-between gap-3">
+                          <div className="flex items-center gap-3 overflow-hidden">
+                            <div className="w-12 h-12 rounded-lg bg-surface-quaternary/30 flex items-center justify-center flex-shrink-0 border border-border/50 overflow-hidden">
+                              {previewBgData && !backgroundImageError ? (
+                                <img
+                                  src={previewBgData}
+                                  alt=""
+                                  aria-hidden="true"
+                                  className="w-full h-full object-cover"
+                                  onError={() =>
+                                    setBackgroundImageError(true)
+                                  }
+                                />
+                              ) : (
+                                <LuImage className="text-muted" size={20} />
+                              )}
+                            </div>
+                            <div className="flex flex-col min-w-0">
+                              <p className="text-xs font-medium truncate text-foreground">
+                                {backgroundImage ||
+                                  t("settings.appearance.no_image_selected")}
+                              </p>
+                            </div>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            {backgroundImage && (
+                              <>
+                                <Button size="sm" variant="secondary" isDisabled={backgroundImageCount < 2}
+                                  onPress={() => window.dispatchEvent(new Event("app-background-changed"))}>
+                                  {t("settings.appearance.material.next_image")}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onPress={async () => {
+                                    const path = backgroundImage;
                                     if (path) {
-                                      setBackgroundImage(path);
-                                      localStorage.setItem(
-                                        "app.backgroundImage",
+                                      await openDirectory(
                                         path,
                                       );
-                                      window.dispatchEvent(
-                                        new CustomEvent(
-                                          "app-background-changed",
-                                        ),
-                                      );
                                     }
-                                  } catch {}
-                                }}
-                                variant={"primary"}
-                                className={"h-8 shadow-sm"}
-                              >
-                                {t("settings.appearance.select_image")}
-                              </Button>
-                            </div>
+                                  }}
+                                  variant={"secondary"}
+                                  className={"h-8"}
+                                >
+                                  {t("common.open_folder")}
+                                </Button>
+                                <Button
+                                  size="sm"
+                                  onPress={() => {
+                                    setBackgroundImage("");
+                                    localStorage.setItem(
+                                      "app.backgroundImage",
+                                      "",
+                                    );
+                                    window.dispatchEvent(
+                                      new CustomEvent(
+                                        "app-background-changed",
+                                      ),
+                                    );
+                                  }}
+                                  variant={"danger-soft"}
+                                  className={"h-8"}
+                                >
+                                  {t("settings.appearance.clear_image")}
+                                </Button>
+                              </>
+                            )}
+                            <Button
+                              size="sm"
+                              onPress={async () => {
+                                try {
+                                  const result = await Dialogs.OpenFile({
+                                    Title: t(
+                                      "settings.appearance.select_image",
+                                    ),
+                                    CanChooseDirectories: true,
+                                    CanChooseFiles: false,
+                                  });
+                                  let path = "";
+                                  if (
+                                    Array.isArray(result) &&
+                                    result.length > 0
+                                  )
+                                    path = result[0];
+                                  else if (
+                                    typeof result === "string" &&
+                                    result
+                                  )
+                                    path = result;
+
+                                  if (path) {
+                                    setBackgroundImage(path);
+                                    localStorage.setItem(
+                                      "app.backgroundImage",
+                                      path,
+                                    );
+                                    window.dispatchEvent(
+                                      new CustomEvent(
+                                        "app-background-changed",
+                                      ),
+                                    );
+                                  }
+                                } catch { }
+                              }}
+                              variant={"primary"}
+                              className={"h-8 shadow-sm"}
+                            >
+                              {t("settings.appearance.select_image")}
+                            </Button>
                           </div>
+                        </div>
 
-                          {backgroundImage && (
-                            <>
-                              <Separator className="bg-surface-tertiary/50" />
+                        {backgroundImage && (
+                          <>
+                            <Separator className="bg-surface-tertiary/50" />
 
-                              {/* Fit Mode and Play Order */}
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                <div className="flex flex-col gap-2">
-                                  <p className="text-xs font-medium text-foreground">
-                                    {t(
-                                      "settings.appearance.background_fit_mode",
+                            {/* Fit Mode and Play Order */}
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                              <div className="flex flex-col gap-2">
+                                <p className="text-xs font-medium text-foreground">
+                                  {t(
+                                    "settings.appearance.background_fit_mode",
+                                  )}
+                                </p>
+                                <Select
+                                  aria-label={t(
+                                    "settings.appearance.background_fit_mode",
+                                  )}
+                                  value={
+                                    Array.from(
+                                      new Set([backgroundFitMode]),
+                                    )[0] ?? null
+                                  }
+                                  onChange={(keys) => {
+                                    const val = keys as string;
+                                    if (!val) return; // Prevent empty selection
+                                    setBackgroundFitMode(val);
+                                    localStorage.setItem(
+                                      "app.backgroundFitMode",
+                                      val,
+                                    );
+                                    window.dispatchEvent(
+                                      new CustomEvent(
+                                        "app-background-settings-changed",
+                                      ),
+                                    );
+                                  }}
+                                >
+                                  <Select.Trigger
+                                    className={cn(
+                                      COMPONENT_STYLES.select.trigger,
+                                      "min-h-8 text-sm",
                                     )}
-                                  </p>
-                                  <Select
-                                    aria-label={t(
-                                      "settings.appearance.background_fit_mode",
-                                    )}
-                                    value={
-                                      Array.from(
-                                        new Set([backgroundFitMode]),
-                                      )[0] ?? null
-                                    }
-                                    onChange={(keys) => {
-                                      const val = keys as string;
-                                      if (!val) return; // Prevent empty selection
-                                      setBackgroundFitMode(val);
-                                      localStorage.setItem(
-                                        "app.backgroundFitMode",
-                                        val,
-                                      );
-                                      window.dispatchEvent(
-                                        new CustomEvent(
-                                          "app-background-settings-changed",
-                                        ),
-                                      );
-                                    }}
                                   >
-                                    <Select.Trigger
-                                      className={cn(
-                                        COMPONENT_STYLES.select.trigger,
-                                        "min-h-8 text-sm",
-                                      )}
-                                    >
-                                      <Select.Value />
-                                      <Select.Indicator />
-                                    </Select.Trigger>
-                                    <Select.Popover
+                                    <Select.Value />
+                                    <Select.Indicator />
+                                  </Select.Trigger>
+                                  <Select.Popover
+                                    className={
+                                      COMPONENT_STYLES.select.popoverContent
+                                    }
+                                  >
+                                    <ListBox
                                       className={
-                                        COMPONENT_STYLES.select.popoverContent
+                                        COMPONENT_STYLES.select.listbox
                                       }
                                     >
-                                      <ListBox
-                                        className={
-                                          COMPONENT_STYLES.select.listbox
-                                        }
+                                      <ListBox.Item
+                                        key="smart"
+                                        id={"smart"}
+                                        textValue={t(
+                                          "settings.appearance.background_fit_smart",
+                                        )}
                                       >
-                                        <ListBox.Item
-                                          key="smart"
-                                          id={"smart"}
-                                          textValue={t(
+                                        <Label>
+                                          {t(
                                             "settings.appearance.background_fit_smart",
                                           )}
-                                        >
-                                          <Label>
-                                            {t(
-                                              "settings.appearance.background_fit_smart",
-                                            )}
-                                          </Label>
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                        <ListBox.Item
-                                          key="center"
-                                          id={"center"}
-                                          textValue={t(
+                                        </Label>
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                      <ListBox.Item
+                                        key="center"
+                                        id={"center"}
+                                        textValue={t(
+                                          "settings.appearance.background_fit_center",
+                                        )}
+                                      >
+                                        <Label>
+                                          {t(
                                             "settings.appearance.background_fit_center",
                                           )}
-                                        >
-                                          <Label>
-                                            {t(
-                                              "settings.appearance.background_fit_center",
-                                            )}
-                                          </Label>
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                        <ListBox.Item
-                                          key="fit"
-                                          id={"fit"}
-                                          textValue={t(
+                                        </Label>
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                      <ListBox.Item
+                                        key="fit"
+                                        id={"fit"}
+                                        textValue={t(
+                                          "settings.appearance.background_fit_fit",
+                                        )}
+                                      >
+                                        <Label>
+                                          {t(
                                             "settings.appearance.background_fit_fit",
                                           )}
-                                        >
-                                          <Label>
-                                            {t(
-                                              "settings.appearance.background_fit_fit",
-                                            )}
-                                          </Label>
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                        <ListBox.Item
-                                          key="stretch"
-                                          id={"stretch"}
-                                          textValue={t(
+                                        </Label>
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                      <ListBox.Item
+                                        key="stretch"
+                                        id={"stretch"}
+                                        textValue={t(
+                                          "settings.appearance.background_fit_stretch",
+                                        )}
+                                      >
+                                        <Label>
+                                          {t(
                                             "settings.appearance.background_fit_stretch",
                                           )}
-                                        >
-                                          <Label>
-                                            {t(
-                                              "settings.appearance.background_fit_stretch",
-                                            )}
-                                          </Label>
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                        <ListBox.Item
-                                          key="tile"
-                                          id={"tile"}
-                                          textValue={t(
+                                        </Label>
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                      <ListBox.Item
+                                        key="tile"
+                                        id={"tile"}
+                                        textValue={t(
+                                          "settings.appearance.background_fit_tile",
+                                        )}
+                                      >
+                                        <Label>
+                                          {t(
                                             "settings.appearance.background_fit_tile",
                                           )}
-                                        >
-                                          <Label>
-                                            {t(
-                                              "settings.appearance.background_fit_tile",
-                                            )}
-                                          </Label>
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                        <ListBox.Item
-                                          key="top_left"
-                                          id={"top_left"}
-                                          textValue={t(
+                                        </Label>
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                      <ListBox.Item
+                                        key="top_left"
+                                        id={"top_left"}
+                                        textValue={t(
+                                          "settings.appearance.background_fit_top_left",
+                                        )}
+                                      >
+                                        <Label>
+                                          {t(
                                             "settings.appearance.background_fit_top_left",
                                           )}
-                                        >
-                                          <Label>
-                                            {t(
-                                              "settings.appearance.background_fit_top_left",
-                                            )}
-                                          </Label>
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                        <ListBox.Item
-                                          key="top_right"
-                                          id={"top_right"}
-                                          textValue={t(
+                                        </Label>
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                      <ListBox.Item
+                                        key="top_right"
+                                        id={"top_right"}
+                                        textValue={t(
+                                          "settings.appearance.background_fit_top_right",
+                                        )}
+                                      >
+                                        <Label>
+                                          {t(
                                             "settings.appearance.background_fit_top_right",
                                           )}
-                                        >
-                                          <Label>
-                                            {t(
-                                              "settings.appearance.background_fit_top_right",
-                                            )}
-                                          </Label>
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                      </ListBox>
-                                    </Select.Popover>
-                                  </Select>
-                                </div>
+                                        </Label>
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                    </ListBox>
+                                  </Select.Popover>
+                                </Select>
+                              </div>
 
-                                <div className="flex flex-col gap-2">
-                                  <p className="text-xs font-medium text-foreground">
-                                    {t(
-                                      "settings.appearance.background_play_order",
+                              <div className="flex flex-col gap-2">
+                                <p className="text-xs font-medium text-foreground">
+                                  {t(
+                                    "settings.appearance.background_play_order",
+                                  )}
+                                </p>
+                                <Select
+                                  aria-label={t(
+                                    "settings.appearance.background_play_order",
+                                  )}
+                                  value={
+                                    Array.from(
+                                      new Set([backgroundPlayOrder]),
+                                    )[0] ?? null
+                                  }
+                                  onChange={(keys) => {
+                                    const val = keys as
+                                      | "random"
+                                      | "sequential";
+                                    if (!val) return; // Prevent empty selection
+                                    setBackgroundPlayOrder(val);
+                                    localStorage.setItem(
+                                      "app.backgroundPlayOrder",
+                                      val,
+                                    );
+                                    window.dispatchEvent(
+                                      new CustomEvent(
+                                        "app-background-settings-changed",
+                                      ),
+                                    );
+                                  }}
+                                >
+                                  <Select.Trigger
+                                    className={cn(
+                                      COMPONENT_STYLES.select.trigger,
+                                      "min-h-8 text-sm",
                                     )}
-                                  </p>
-                                  <Select
-                                    aria-label={t(
-                                      "settings.appearance.background_play_order",
-                                    )}
-                                    value={
-                                      Array.from(
-                                        new Set([backgroundPlayOrder]),
-                                      )[0] ?? null
-                                    }
-                                    onChange={(keys) => {
-                                      const val = keys as
-                                        | "random"
-                                        | "sequential";
-                                      if (!val) return; // Prevent empty selection
-                                      setBackgroundPlayOrder(val);
-                                      localStorage.setItem(
-                                        "app.backgroundPlayOrder",
-                                        val,
-                                      );
-                                      window.dispatchEvent(
-                                        new CustomEvent(
-                                          "app-background-settings-changed",
-                                        ),
-                                      );
-                                    }}
                                   >
-                                    <Select.Trigger
-                                      className={cn(
-                                        COMPONENT_STYLES.select.trigger,
-                                        "min-h-8 text-sm",
-                                      )}
-                                    >
-                                      <Select.Value />
-                                      <Select.Indicator />
-                                    </Select.Trigger>
-                                    <Select.Popover
+                                    <Select.Value />
+                                    <Select.Indicator />
+                                  </Select.Trigger>
+                                  <Select.Popover
+                                    className={
+                                      COMPONENT_STYLES.select.popoverContent
+                                    }
+                                  >
+                                    <ListBox
                                       className={
-                                        COMPONENT_STYLES.select.popoverContent
+                                        COMPONENT_STYLES.select.listbox
                                       }
                                     >
-                                      <ListBox
-                                        className={
-                                          COMPONENT_STYLES.select.listbox
-                                        }
+                                      <ListBox.Item
+                                        key="random"
+                                        id={"random"}
+                                        textValue={t(
+                                          "settings.appearance.background_play_random",
+                                        )}
                                       >
-                                        <ListBox.Item
-                                          key="random"
-                                          id={"random"}
-                                          textValue={t(
+                                        <Label>
+                                          {t(
                                             "settings.appearance.background_play_random",
                                           )}
-                                        >
-                                          <Label>
-                                            {t(
-                                              "settings.appearance.background_play_random",
-                                            )}
-                                          </Label>
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                        <ListBox.Item
-                                          key="sequential"
-                                          id={"sequential"}
-                                          textValue={t(
+                                        </Label>
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                      <ListBox.Item
+                                        key="sequential"
+                                        id={"sequential"}
+                                        textValue={t(
+                                          "settings.appearance.background_play_sequential",
+                                        )}
+                                      >
+                                        <Label>
+                                          {t(
                                             "settings.appearance.background_play_sequential",
                                           )}
-                                        >
-                                          <Label>
-                                            {t(
-                                              "settings.appearance.background_play_sequential",
-                                            )}
-                                          </Label>
-                                          <ListBox.ItemIndicator />
-                                        </ListBox.Item>
-                                      </ListBox>
-                                    </Select.Popover>
-                                  </Select>
+                                        </Label>
+                                        <ListBox.ItemIndicator />
+                                      </ListBox.Item>
+                                    </ListBox>
+                                  </Select.Popover>
+                                </Select>
+                              </div>
+                            </div>
+
+                            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+                              {/* Blur */}
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs font-medium text-foreground">
+                                    {t("settings.appearance.background_blur")}
+                                  </p>
+                                  <div className="flex items-center">
+                                    <AppearanceNumberField
+                                      label={t("settings.appearance.background_blur")}
+                                      value={backgroundBlur}
+                                      min={0}
+                                      max={50}
+                                      onChange={(val) => {
+                                        setBackgroundBlur(val);
+                                        localStorage.setItem("app.backgroundBlur", String(val));
+                                        window.dispatchEvent(new CustomEvent("app-blur-changed"));
+                                      }}
+                                    />
+                                    <span className="text-xs font-mono text-brand-500 ml-0.5">
+                                      px
+                                    </span>
+                                  </div>
                                 </div>
+                                <Slider
+                                  step={1}
+                                  maxValue={50}
+                                  minValue={0}
+                                  aria-label={t(
+                                    "settings.appearance.background_blur",
+                                  )}
+                                  value={backgroundBlur}
+                                  onChange={(v) => {
+                                    const val = Number(v);
+                                    setBackgroundBlur(val);
+                                    localStorage.setItem(
+                                      "app.backgroundBlur",
+                                      String(val),
+                                    );
+                                    window.dispatchEvent(
+                                      new CustomEvent("app-blur-changed"),
+                                    );
+                                  }}
+                                >
+                                  <Slider.Track>
+                                    <Slider.Fill className={"bg-brand-500"} />
+                                    <Slider.Thumb
+                                      className={"bg-brand-500"}
+                                    />
+                                  </Slider.Track>
+                                </Slider>
                               </div>
 
-                              <div className="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
-                                {/* Blur */}
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-xs font-medium text-foreground">
-                                      {t("settings.appearance.background_blur")}
-                                    </p>
-                                    <div className="flex items-center">
-                                      <AppearanceNumberField
-                                        label={t("settings.appearance.background_blur")}
-                                        value={backgroundBlur}
-                                        min={0}
-                                        max={50}
-                                        onChange={(val) => {
-                                          setBackgroundBlur(val);
-                                          localStorage.setItem("app.backgroundBlur", String(val));
-                                          window.dispatchEvent(new CustomEvent("app-blur-changed"));
-                                        }}
-                                      />
-                                      <span className="text-xs font-mono text-brand-500 ml-0.5">
-                                        px
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <Slider
-                                    step={1}
-                                    maxValue={50}
-                                    minValue={0}
-                                    aria-label={t(
-                                      "settings.appearance.background_blur",
-                                    )}
-                                    value={backgroundBlur}
-                                    onChange={(v) => {
-                                      const val = Number(v);
-                                      setBackgroundBlur(val);
-                                      localStorage.setItem(
-                                        "app.backgroundBlur",
-                                        String(val),
-                                      );
-                                      window.dispatchEvent(
-                                        new CustomEvent("app-blur-changed"),
-                                      );
-                                    }}
-                                  >
-                                    <Slider.Track>
-                                      <Slider.Fill className={"bg-brand-500"} />
-                                      <Slider.Thumb
-                                        className={"bg-brand-500"}
-                                      />
-                                    </Slider.Track>
-                                  </Slider>
-                                </div>
-
-                                {/* Brightness */}
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-xs font-medium text-foreground">
-                                      {t(
-                                        "settings.appearance.background_brightness",
-                                      )}
-                                    </p>
-                                    <div className="flex items-center">
-                                      <AppearanceNumberField
-                                        label={t("settings.appearance.background_brightness")}
-                                        value={backgroundBrightness}
-                                        min={20}
-                                        max={100}
-                                        onChange={(val) => {
-                                          setBackgroundBrightness(val);
-                                          localStorage.setItem("app.backgroundBrightness", String(val));
-                                          window.dispatchEvent(new CustomEvent("app-brightness-changed"));
-                                        }}
-                                      />
-                                      <span className="text-xs font-mono text-brand-500 ml-0.5">
-                                        %
-                                      </span>
-                                    </div>
-                                  </div>
-                                  <Slider
-                                    step={1}
-                                    maxValue={100}
-                                    minValue={20}
-                                    aria-label={t(
+                              {/* Brightness */}
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs font-medium text-foreground">
+                                    {t(
                                       "settings.appearance.background_brightness",
                                     )}
-                                    value={backgroundBrightness}
-                                    onChange={(v) => {
-                                      const val = Number(v);
-                                      setBackgroundBrightness(val);
-                                      localStorage.setItem(
-                                        "app.backgroundBrightness",
-                                        String(val),
-                                      );
-                                      window.dispatchEvent(
-                                        new CustomEvent(
-                                          "app-brightness-changed",
-                                        ),
-                                      );
-                                    }}
-                                  >
-                                    <Slider.Track>
-                                      <Slider.Fill className={"bg-brand-500"} />
-                                      <Slider.Thumb
-                                        className={"bg-brand-500"}
-                                      />
-                                    </Slider.Track>
-                                  </Slider>
-                                </div>
-
-                                {/* Opacity */}
-                                <div className="flex flex-col gap-2">
-                                  <div className="flex items-center justify-between">
-                                    <p className="text-xs font-medium text-foreground">
-                                      {t(
-                                        "settings.appearance.background_opacity",
-                                      )}
-                                    </p>
-                                    <div className="flex items-center">
-                                      <AppearanceNumberField
-                                        label={t("settings.appearance.background_opacity")}
-                                        value={backgroundOpacity}
-                                        min={0}
-                                        max={100}
-                                        onChange={(val) => {
-                                          setBackgroundOpacity(val);
-                                          localStorage.setItem("app.backgroundOpacity", String(val));
-                                          window.dispatchEvent(new CustomEvent("app-opacity-changed"));
-                                        }}
-                                      />
-                                      <span className="text-xs font-mono text-brand-500 ml-0.5">
-                                        %
-                                      </span>
-                                    </div>
+                                  </p>
+                                  <div className="flex items-center">
+                                    <AppearanceNumberField
+                                      label={t("settings.appearance.background_brightness")}
+                                      value={backgroundBrightness}
+                                      min={20}
+                                      max={100}
+                                      onChange={(val) => {
+                                        setBackgroundBrightness(val);
+                                        localStorage.setItem("app.backgroundBrightness", String(val));
+                                        window.dispatchEvent(new CustomEvent("app-brightness-changed"));
+                                      }}
+                                    />
+                                    <span className="text-xs font-mono text-brand-500 ml-0.5">
+                                      %
+                                    </span>
                                   </div>
-                                  <Slider
-                                    step={1}
-                                    maxValue={100}
-                                    minValue={0}
-                                    aria-label={t(
+                                </div>
+                                <Slider
+                                  step={1}
+                                  maxValue={100}
+                                  minValue={20}
+                                  aria-label={t(
+                                    "settings.appearance.background_brightness",
+                                  )}
+                                  value={backgroundBrightness}
+                                  onChange={(v) => {
+                                    const val = Number(v);
+                                    setBackgroundBrightness(val);
+                                    localStorage.setItem(
+                                      "app.backgroundBrightness",
+                                      String(val),
+                                    );
+                                    window.dispatchEvent(
+                                      new CustomEvent(
+                                        "app-brightness-changed",
+                                      ),
+                                    );
+                                  }}
+                                >
+                                  <Slider.Track>
+                                    <Slider.Fill className={"bg-brand-500"} />
+                                    <Slider.Thumb
+                                      className={"bg-brand-500"}
+                                    />
+                                  </Slider.Track>
+                                </Slider>
+                              </div>
+
+                              {/* Opacity */}
+                              <div className="flex flex-col gap-2">
+                                <div className="flex items-center justify-between">
+                                  <p className="text-xs font-medium text-foreground">
+                                    {t(
                                       "settings.appearance.background_opacity",
                                     )}
-                                    value={backgroundOpacity}
-                                    onChange={(v) => {
-                                      const val = Number(v);
-                                      setBackgroundOpacity(val);
-                                      localStorage.setItem(
-                                        "app.backgroundOpacity",
-                                        String(val),
-                                      );
-                                      window.dispatchEvent(
-                                        new CustomEvent("app-opacity-changed"),
-                                      );
-                                    }}
-                                  >
-                                    <Slider.Track>
-                                      <Slider.Fill className={"bg-brand-500"} />
-                                      <Slider.Thumb
-                                        className={"bg-brand-500"}
-                                      />
-                                    </Slider.Track>
-                                  </Slider>
+                                  </p>
+                                  <div className="flex items-center">
+                                    <AppearanceNumberField
+                                      label={t("settings.appearance.background_opacity")}
+                                      value={backgroundOpacity}
+                                      min={0}
+                                      max={100}
+                                      onChange={(val) => {
+                                        setBackgroundOpacity(val);
+                                        localStorage.setItem("app.backgroundOpacity", String(val));
+                                        window.dispatchEvent(new CustomEvent("app-opacity-changed"));
+                                      }}
+                                    />
+                                    <span className="text-xs font-mono text-brand-500 ml-0.5">
+                                      %
+                                    </span>
+                                  </div>
                                 </div>
+                                <Slider
+                                  step={1}
+                                  maxValue={100}
+                                  minValue={0}
+                                  aria-label={t(
+                                    "settings.appearance.background_opacity",
+                                  )}
+                                  value={backgroundOpacity}
+                                  onChange={(v) => {
+                                    const val = Number(v);
+                                    setBackgroundOpacity(val);
+                                    localStorage.setItem(
+                                      "app.backgroundOpacity",
+                                      String(val),
+                                    );
+                                    window.dispatchEvent(
+                                      new CustomEvent("app-opacity-changed"),
+                                    );
+                                  }}
+                                >
+                                  <Slider.Track>
+                                    <Slider.Fill className={"bg-brand-500"} />
+                                    <Slider.Thumb
+                                      className={"bg-brand-500"}
+                                    />
+                                  </Slider.Track>
+                                </Slider>
                               </div>
-                            </>
-                          )}
-                        </div>
-                      </div>}
+                            </div>
+                          </>
+                        )}
+                      </div>
+                    </div>}
                     {appearanceSection === "material" && <BackgroundAppearanceSettings mode={themeSettingMode} onModeChange={setThemeSettingMode} />}
                   </section>
                 </div>
@@ -2613,74 +2663,116 @@ export const SettingsPage: React.FC = () => {
 
                   <Separator className="bg-surface-tertiary/50" />
 
-                  {/* LIP GitHub proxy */}
-                  <div className="flex flex-col gap-3">
+                  {/* Global mirror source */}
+                  <div className="flex items-center justify-between gap-4">
                     <div className="flex flex-col gap-1 min-w-0">
                       <p className="font-medium">
-                        {t("settings.lip.github_proxy.title")}
+                        {t("settings.mirror_source.title")}
                       </p>
                       <p className="text-xs text-muted dark:text-zinc-400">
-                        {t("settings.lip.github_proxy.desc")}
+                        {t("settings.mirror_source.desc")}
                       </p>
                     </div>
-                    <div className="flex flex-col sm:flex-row sm:items-center gap-2">
-                      <TextField
-                        className={cn(
-                          "group flex-1 min-w-0",
-                          COMPONENT_STYLES.input.mainWrapper,
-                        )}
-                        value={lipGithubProxyDraft}
-                        isInvalid={Boolean(lipGithubProxyError)}
-                        isDisabled={savingLipGithubProxy}
-                        onChange={(value) => {
-                          setLipGithubProxyDraft(value);
-                          if (lipGithubProxyError) setLipGithubProxyError("");
-                        }}
-                        aria-label={t("settings.lip.github_proxy.title")}
-                      >
-                        <InputGroup
-                          className={cn(
-                            COMPONENT_STYLES.input.inputWrapper,
-                            COMPONENT_STYLES.input.innerWrapper,
-                            "rounded-lg",
-                          )}
+                    <Switch
+                      aria-label={t("settings.mirror_source.title")}
+                      size="sm"
+                      isSelected={mirrorSourceEnabled === true}
+                      isDisabled={
+                        mirrorSourceEnabled === null || savingMirrorSource
+                      }
+                      onChange={(isSelected: boolean) => {
+                        void toggleMirrorSource(isSelected);
+                      }}
+                      className={"group"}
+                    >
+                      <Switch.Content>
+                        <Switch.Control
+                          className={"group-data-[selected]:bg-brand-500"}
                         >
-                          <InputGroup.Input
-                            className={COMPONENT_STYLES.input.input}
-                            placeholder={t(
-                              "settings.lip.github_proxy.placeholder",
-                            )}
-                          />
-                        </InputGroup>
-                      </TextField>
-                      <Button
-                        isDisabled={savingLipGithubProxy}
-                        onPress={() => void saveLipGithubProxy()}
-                        variant={"primary"}
-                        isPending={savingLipGithubProxy}
-                        className={cn(
-                          "rounded-full shrink-0",
-                          "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20",
-                        )}
-                      >
-                        {({ isPending }) => (
-                          <>
-                            <Spinner
-                              size="sm"
-                              color="current"
-                              className={isPending ? "" : "hidden"}
-                            />
-                            {t("common.save")}
-                          </>
-                        )}
-                      </Button>
-                    </div>
-                    {lipGithubProxyError && (
-                      <p role="alert" className="text-sm text-danger px-1">
-                        {lipGithubProxyError}
-                      </p>
-                    )}
+                          <Switch.Thumb></Switch.Thumb>
+                        </Switch.Control>
+                        <span></span>
+                      </Switch.Content>
+                    </Switch>
                   </div>
+
+                  {mirrorSourceEnabled === true && (
+                    <>
+                      <Separator className="bg-surface-tertiary/50" />
+
+                      {/* LIP GitHub proxy */}
+                      <div className="flex flex-col gap-3">
+                        <div className="flex flex-col gap-1 min-w-0">
+                          <p className="font-medium">
+                            {t("settings.lip.github_proxy.title")}
+                          </p>
+                          <p className="text-xs text-muted dark:text-zinc-400">
+                            {t("settings.lip.github_proxy.desc")}
+                          </p>
+                        </div>
+                        <div className="flex flex-col sm:flex-row sm:items-center gap-2">
+                          <TextField
+                            className={cn(
+                              "group flex-1 min-w-0",
+                              COMPONENT_STYLES.input.mainWrapper,
+                            )}
+                            value={lipGithubProxyDraft}
+                            isInvalid={Boolean(lipGithubProxyError)}
+                            isDisabled={savingLipGithubProxy}
+                            onChange={(value) => {
+                              setLipGithubProxyDraft(value);
+                              if (lipGithubProxyError)
+                                setLipGithubProxyError("");
+                            }}
+                            aria-label={t(
+                              "settings.lip.github_proxy.title",
+                            )}
+                          >
+                            <InputGroup
+                              className={cn(
+                                COMPONENT_STYLES.input.inputWrapper,
+                                COMPONENT_STYLES.input.innerWrapper,
+                                "rounded-lg",
+                              )}
+                            >
+                              <InputGroup.Input
+                                className={COMPONENT_STYLES.input.input}
+                                placeholder={t(
+                                  "settings.lip.github_proxy.placeholder",
+                                )}
+                              />
+                            </InputGroup>
+                          </TextField>
+                          <Button
+                            isDisabled={savingLipGithubProxy}
+                            onPress={() => void saveLipGithubProxy()}
+                            variant={"primary"}
+                            isPending={savingLipGithubProxy}
+                            className={cn(
+                              "rounded-full shrink-0",
+                              "bg-brand-500 hover:bg-brand-500 brand-primary-foreground font-bold shadow-lg shadow-brand-900/20",
+                            )}
+                          >
+                            {({ isPending }) => (
+                              <>
+                                <Spinner
+                                  size="sm"
+                                  color="current"
+                                  className={isPending ? "" : "hidden"}
+                                />
+                                {t("common.save")}
+                              </>
+                            )}
+                          </Button>
+                        </div>
+                        {lipGithubProxyError && (
+                          <p role="alert" className="text-sm text-danger px-1">
+                            {lipGithubProxyError}
+                          </p>
+                        )}
+                      </div>
+                    </>
+                  )}
                 </div>
               )}
               {selectedTab === "others" && (
@@ -2939,10 +3031,10 @@ export const SettingsPage: React.FC = () => {
                                       >
                                         {Array.isArray(children)
                                           ? children.map((child) =>
-                                              typeof child === "string"
-                                                ? cleanUrl(child)
-                                                : child,
-                                            )
+                                            typeof child === "string"
+                                              ? cleanUrl(child)
+                                              : child,
+                                          )
                                           : typeof children === "string"
                                             ? cleanUrl(children)
                                             : children}

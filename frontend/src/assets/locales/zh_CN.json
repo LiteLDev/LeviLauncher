@@ -437,6 +437,10 @@
         "save_failed": "保存 GitHub 代理失败"
       }
     },
+    "mirror_source": {
+      "title": "使用镜像源",
+      "desc": "为启动器更新、lip 和版本列表优先使用中国大陆的镜像源。中国大陆用户默认开启。"
+    },
     "header": {
       "title": "设置",
       "content": "配置启动器常用选项"

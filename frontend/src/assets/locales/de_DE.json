@@ -437,6 +437,10 @@
         "save_failed": "GitHub-Proxy konnte nicht gespeichert werden"
       }
     },
+    "mirror_source": {
+      "title": "Mirror-Quellen verwenden",
+      "desc": "In Festlandchina gehostete Mirrors für Launcher-Updates, lip und Versionskataloge verwenden. Für Nutzer in Festlandchina standardmäßig aktiviert."
+    },
     "header": {
       "title": "Einstellungen",
       "content": "Allgemeine Launcher-Optionen konfigurieren"

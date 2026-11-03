@@ -437,6 +437,10 @@
         "save_failed": "儲存 GitHub 代理失敗"
       }
     },
+    "mirror_source": {
+      "title": "使用鏡像來源",
+      "desc": "為啟動器更新、lip 和版本清單優先使用中國大陸的鏡像來源。中國大陸使用者預設開啟。"
+    },
     "header": {
       "title": "設定",
       "content": "設定啟動器常用選項"

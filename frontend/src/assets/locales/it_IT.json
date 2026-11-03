@@ -437,6 +437,10 @@
         "save_failed": "Impossibile salvare il proxy GitHub"
       }
     },
+    "mirror_source": {
+      "title": "Usa mirror",
+      "desc": "Usa i mirror ospitati nella Cina continentale per aggiornamenti, lip e cataloghi delle versioni. Attivo per impostazione predefinita per gli utenti della Cina continentale."
+    },
     "header": {
       "title": "Impostazioni",
       "content": "Configura le opzioni comuni del launcher"

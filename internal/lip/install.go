@@ -176,7 +176,7 @@ func SetGithubProxy(raw string) string {
 func ensureLipRuntimeConfig() error {
 	// Outside China the proxy is only written when the user explicitly saved
 	// one, so launchers elsewhere keep lip's default behavior.
-	if strings.TrimSpace(config.GetLipGithubProxyOverride()) == "" && !utils.IsChinaUser() {
+	if strings.TrimSpace(config.GetLipGithubProxyOverride()) == "" && !utils.IsMirrorEnabled() {
 		return nil
 	}
 	return writeLipRuntimeConfig()
@@ -329,7 +329,7 @@ func isLipVersionCurrent(localVersion string, latestVersion string) bool {
 }
 
 func currentLipPackageSource() lipPackageSource {
-	if utils.IsChinaUser() {
+	if utils.IsMirrorEnabled() {
 		return lipPackageSource{
 			MetadataURL:       lipMirrorMetadataAPI,
 			TarballHost:       lipMirrorTarballHost,

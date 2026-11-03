@@ -27,7 +27,6 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/update"
-	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/liteldev/LeviLauncher/internal/vcruntime"
 	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -100,9 +99,13 @@ func (a *Minecraft) FetchHistoricalVersions(preferCN bool) map[string]interface{
 	return mcservice.FetchHistoricalVersions(preferCN)
 }
 
-// IsChinaUser reports whether the session looks like it is used from mainland
-// China, so the frontend uses the same detection as the Go-side mirrors.
-func (a *Minecraft) IsChinaUser() bool { return utils.IsChinaUser() }
+// IsMirrorEnabled reports whether mirrors should be used, honoring the user's
+// saved switch and falling back to the China-user detection.
+func (a *Minecraft) IsMirrorEnabled() bool { return mcservice.GetMirrorEnabled() }
+
+func (a *Minecraft) SetMirrorEnabled(enabled bool) string {
+	return mcservice.SetMirrorEnabled(enabled)
+}
 
 func (a *Minecraft) FetchLeviLaminaVersionDB() map[string][]string {
 	res, err := mcservice.FetchLeviLaminaVersionDB()

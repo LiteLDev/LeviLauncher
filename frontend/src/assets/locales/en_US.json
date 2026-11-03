@@ -437,6 +437,10 @@
         "save_failed": "Failed to save the GitHub proxy"
       }
     },
+    "mirror_source": {
+      "title": "Use mirror sources",
+      "desc": "Use mirrors hosted in mainland China for launcher updates, lip and version catalogs. Enabled by default for users in mainland China."
+    },
     "header": {
       "title": "Settings",
       "content": "Configure common launcher options"

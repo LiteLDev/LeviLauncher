@@ -437,6 +437,10 @@
         "save_failed": "Falha ao salvar o proxy do GitHub"
       }
     },
+    "mirror_source": {
+      "title": "Usar espelhos",
+      "desc": "Usar espelhos alojados na China continental para atualizações, lip e catálogos de versões. Ativado por predefinição para utilizadores da China continental."
+    },
     "header": {
       "title": "Definições",
       "content": "Configurar opções comuns do launcher"

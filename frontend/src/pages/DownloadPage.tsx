@@ -334,8 +334,8 @@ export const DownloadPage: React.FC = () => {
       }));
     }
     const preferCN =
-      hasBackend && typeof minecraft?.IsChinaUser === "function"
-        ? await minecraft.IsChinaUser()
+      hasBackend && typeof minecraft?.IsMirrorEnabled === "function"
+        ? await minecraft.IsMirrorEnabled()
         : false;
     const data = await minecraft.FetchHistoricalVersions(preferCN);
     return (["Preview", "Release"] as const).flatMap((type) =>
@@ -1422,16 +1422,16 @@ export const DownloadPage: React.FC = () => {
                   {bestMirror ? (
                     <div
                       className={`group relative overflow-hidden flex items-center justify-between gap-4 rounded-2xl border-2 p-4 transition-all cursor-pointer ${selectedUrl === bestMirror.url
-                          ? "border-brand-500 bg-brand-500/5 shadow-xl shadow-brand-500/10"
-                          : "border-transparent bg-surface dark:bg-surface-secondary/50 hover:bg-surface-secondary "
+                        ? "border-brand-500 bg-brand-500/5 shadow-xl shadow-brand-500/10"
+                        : "border-transparent bg-surface dark:bg-surface-secondary/50 hover:bg-surface-secondary "
                         }`}
                       onClick={() => setSelectedUrl(bestMirror.url)}
                     >
                       <div className="flex items-center gap-4 min-w-0 z-10">
                         <div
                           className={`w-10 h-10 rounded-full flex items-center justify-center shrink-0 ${selectedUrl === bestMirror.url
-                              ? "bg-brand-500 brand-primary-foreground"
-                              : "bg-surface-tertiary text-muted dark:text-zinc-400"
+                            ? "bg-brand-500 brand-primary-foreground"
+                            : "bg-surface-tertiary text-muted dark:text-zinc-400"
                             }`}
                         >
                           <FaDownload size={16} />
@@ -1499,8 +1499,8 @@ export const DownloadPage: React.FC = () => {
                       <div
                         key={`mirror-${i}`}
                         className={`relative flex items-center justify-between gap-3 rounded-xl border p-2.5 transition-all cursor-pointer ${selectedUrl === m.url
-                            ? "border-brand-500/50 bg-brand-500/5"
-                            : "border-border/50 dark:border-zinc-600 bg-surface/50 dark:bg-surface-tertiary/30 hover:bg-surface-secondary dark:hover:bg-surface-tertiary hover:border-border"
+                          ? "border-brand-500/50 bg-brand-500/5"
+                          : "border-border/50 dark:border-zinc-600 bg-surface/50 dark:bg-surface-tertiary/30 hover:bg-surface-secondary dark:hover:bg-surface-tertiary hover:border-border"
                           }`}
                         onClick={() => setSelectedUrl(m.url)}
                       >
@@ -1517,12 +1517,12 @@ export const DownloadPage: React.FC = () => {
                         <div className="flex items-center gap-2 shrink-0">
                           <span
                             className={`text-xs font-bold ${typeof m.latencyMs === "number"
-                                ? m.latencyMs < 100
-                                  ? "text-brand-500"
-                                  : m.latencyMs < 300
-                                    ? "text-amber-500"
-                                    : "text-rose-500"
-                                : "text-muted"
+                              ? m.latencyMs < 100
+                                ? "text-brand-500"
+                                : m.latencyMs < 300
+                                  ? "text-amber-500"
+                                  : "text-rose-500"
+                              : "text-muted"
                               }`}
                           >
                             {typeof m.latencyMs === "number"

@@ -437,6 +437,10 @@
         "save_failed": "Nie udało się zapisać serwera proxy GitHub"
       }
     },
+    "mirror_source": {
+      "title": "Używaj serwerów lustrzanych",
+      "desc": "Używaj serwerów lustrzanych hostowanych w Chinach kontynentalnych do aktualizacji, lip i katalogów wersji. Domyślnie włączone dla użytkowników w Chinach kontynentalnych."
+    },
     "header": {
       "title": "Ustawienia",
       "content": "Skonfiguruj typowe opcje launchera"

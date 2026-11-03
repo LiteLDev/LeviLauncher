@@ -437,6 +437,10 @@
         "save_failed": "Échec de l'enregistrement du proxy GitHub"
       }
     },
+    "mirror_source": {
+      "title": "Utiliser des miroirs",
+      "desc": "Utiliser les miroirs hébergés en Chine continentale pour les mises à jour, lip et les catalogues de versions. Activé par défaut pour les utilisateurs de Chine continentale."
+    },
     "header": {
       "title": "Paramètres",
       "content": "Configurer les options courantes du lanceur"

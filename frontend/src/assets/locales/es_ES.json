@@ -437,6 +437,10 @@
         "save_failed": "No se pudo guardar el proxy de GitHub"
       }
     },
+    "mirror_source": {
+      "title": "Usar servidores espejo",
+      "desc": "Usar servidores espejo alojados en China continental para actualizaciones, lip y catálogos de versiones. Activado por defecto para usuarios de China continental."
+    },
     "header": {
       "title": "Configuración",
       "content": "Configurar opciones comunes del lanzador"

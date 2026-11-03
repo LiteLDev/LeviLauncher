@@ -29,6 +29,9 @@ type AppConfig struct {
 	MinimizeToTray      bool   `json:"minimize_to_tray,omitempty"`
 	LipGithubProxy      string `json:"lip_github_proxy,omitempty"`
 	LauncherLaunchCount uint64 `json:"launcher_launch_count,omitempty"`
+	// MirrorSourceEnabled is nil until the user flips the global mirror
+	// switch; a nil value means "follow the China-user detection".
+	MirrorSourceEnabled *bool `json:"mirror_source_enabled,omitempty"`
 }
 
 const (
@@ -213,6 +216,29 @@ func GetMinimizeToTray() bool {
 
 	c, _ := Load()
 	return c.MinimizeToTray
+}
+
+// GetMirrorSourceOverride returns the user-saved global mirror switch value.
+// The second result reports whether the user has saved an explicit choice;
+// when false, callers should fall back to automatic detection.
+func GetMirrorSourceOverride() (bool, bool) {
+	configMutex.RLock()
+	if isLoaded {
+		if v := cachedConfig.MirrorSourceEnabled; v != nil {
+			enabled := *v
+			configMutex.RUnlock()
+			return enabled, true
+		}
+		configMutex.RUnlock()
+		return false, false
+	}
+	configMutex.RUnlock()
+
+	c, _ := Load()
+	if c.MirrorSourceEnabled == nil {
+		return false, false
+	}
+	return *c.MirrorSourceEnabled, true
 }
 
 // GetLipGithubProxyOverride returns the user-configured lip GitHub proxy.

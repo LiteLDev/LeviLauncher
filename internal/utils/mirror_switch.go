@@ -5,13 +5,23 @@ import (
 	"runtime"
 	"strings"
 
+	"github.com/liteldev/LeviLauncher/internal/config"
 	winreg "golang.org/x/sys/windows/registry"
 )
 
-// IsChinaUser reports whether the current session appears to be used from
-// mainland China, based on time zone and locale settings. Callers use it to
-// choose between domestic mirrors and upstream hosts.
-func IsChinaUser() bool {
+// IsMirrorEnabled reports whether mirrors should be used. A value saved from
+// the global mirror switch takes precedence; without one, it falls back to the
+// time zone and locale based China-user detection.
+func IsMirrorEnabled() bool {
+	if enabled, ok := config.GetMirrorSourceOverride(); ok {
+		return enabled
+	}
+	return detectsChinaUser()
+}
+
+// detectsChinaUser reports whether the current session appears to be used from
+// mainland China, based on time zone and locale settings.
+func detectsChinaUser() bool {
 	if runtime.GOOS == "windows" {
 		return isWindowsTimeZoneChina() && isWindowsLocaleZhCN()
 	}

@@ -14,21 +14,31 @@ import (
 //   - for "scheme://authority..." URLs the scheme and ASCII host are
 //     lowercased, the port is kept as written, '\' in the path becomes '/',
 //     and "." / ".." path segments are removed;
-//   - in the path, query and fragment, spaces, non-ASCII bytes, control
-//     characters, the backtick and "<>\^{|} are percent-encoded, a '%' not followed
-//     by two hex digits becomes "%25", escapes of unreserved characters
-//     (ALPHA DIGIT - . _ ~) are decoded, runs of escapes forming a valid
-//     UTF-8 multi-byte sequence whose code point .NET's IRI parsing
-//     decodes (see iriInRange) are uppercased and every other escape
-//     (reserved ASCII such as %2f, stray or invalid UTF-8 bytes such as
-//     %e9, code points outside the IRI range such as %c2%80) keeps the
-//     case it was written in.
+//   - in the userinfo, path, query and fragment, spaces, non-ASCII bytes,
+//     control characters, the backtick and "<>\^{|} are percent-encoded
+//     and a '%' not followed by two hex digits becomes "%25";
+//   - when the URL triggers .NET's IRI processing (see iriTriggered), the
+//     escapes in those components are normalized as
+//     IriHelper.EscapeUnescapeIri does (see escapeURLPart): escapes of
+//     unreserved characters (ALPHA DIGIT - . _ ~) are decoded; escapes of
+//     the other ASCII characters that are neither reserved nor unsafe
+//     (%3c %3e %5e %7b %7c %7d, and %20 %22 %60) and runs of escapes
+//     forming a valid UTF-8 multi-byte sequence whose code point is in the
+//     IRI range (see iriInRange) are uppercased; every other escape
+//     (reserved or unsafe ASCII such as %2f or %5c, stray or invalid UTF-8
+//     bytes such as %e9, code points outside the IRI range such as
+//     %c2%80) keeps the case it was written in. Without the trigger every
+//     escape is kept as written.
 //
 // Other inputs (opaque "scheme:..." URIs, file URLs, IPv6 or IDN hosts)
 // are only trimmed/escaped; Flurl may render some of them differently, but
-// they do not occur in tooth manifests.
+// they do not occur in tooth manifests. Neither does a userinfo whose
+// length changes (a decoded or added escape): .NET then drops the
+// character after the host (https://u%41@h.com/a renders as
+// https://uA@h.coma), which is not reproduced here.
 func NormalizeURL(s string) string {
 	s = strings.TrimSpace(s)
+	iri := iriTriggered(s)
 	scheme, rest, ok := cutScheme(s)
 	if ok && !strings.HasPrefix(rest, "//") {
 		// Opaque URI ("scheme:..."): keep the scheme, escape the rest.
@@ -36,8 +46,8 @@ func NormalizeURL(s string) string {
 		var b strings.Builder
 		b.WriteString(scheme)
 		b.WriteByte(':')
-		b.WriteString(escapeURLPart(path, false))
-		writeQueryFragment(&b, query, hasQuery, frag, hasFrag)
+		b.WriteString(escapeURLPart(path, false, iri))
+		writeQueryFragment(&b, query, hasQuery, frag, hasFrag, iri)
 		return b.String()
 	}
 	if ok {
@@ -48,31 +58,63 @@ func NormalizeURL(s string) string {
 		}
 		authority, tail := rest[:end], rest[end:]
 		path, query, hasQuery, frag, hasFrag := splitURLTail(tail)
-		path = removeDotSegments(escapeURLPart(strings.ReplaceAll(path, "\\", "/"), false))
+		path = removeDotSegments(escapeURLPart(strings.ReplaceAll(path, "\\", "/"), false, iri))
 		var b strings.Builder
 		b.WriteString(strings.ToLower(scheme))
 		b.WriteString("://")
-		b.WriteString(normalizeAuthority(authority))
+		b.WriteString(normalizeAuthority(authority, iri))
 		b.WriteString(path)
-		writeQueryFragment(&b, query, hasQuery, frag, hasFrag)
+		writeQueryFragment(&b, query, hasQuery, frag, hasFrag, iri)
 		return b.String()
 	}
 	path, query, hasQuery, frag, hasFrag := splitURLTail(s)
 	var b strings.Builder
-	b.WriteString(escapeURLPart(path, false))
-	writeQueryFragment(&b, query, hasQuery, frag, hasFrag)
+	b.WriteString(escapeURLPart(path, false, iri))
+	writeQueryFragment(&b, query, hasQuery, frag, hasFrag, iri)
 	return b.String()
 }
 
-func writeQueryFragment(b *strings.Builder, query string, hasQuery bool, frag string, hasFrag bool) {
+func writeQueryFragment(b *strings.Builder, query string, hasQuery bool, frag string, hasFrag, iri bool) {
 	if hasQuery {
 		b.WriteByte('?')
-		b.WriteString(escapeURLPart(query, true))
+		b.WriteString(escapeURLPart(query, true, iri))
 	}
 	if hasFrag {
 		b.WriteByte('#')
-		b.WriteString(escapeURLPart(frag, false))
+		b.WriteString(escapeURLPart(frag, false, iri))
 	}
+}
+
+// iriTriggered reports whether System.Uri runs IRI processing
+// (IriHelper.EscapeUnescapeIri) on the components of s. Port of
+// Uri.CheckForUnicodeOrEscapedUnreserved in dotnet/runtime
+// src/libraries/System.Private.Uri/src/System/UriExt.cs. It scans the
+// whole URL, so an escape in one component changes how the others render.
+// The trigger is any non-ASCII character, or any '%' followed by at least
+// two more characters whose decoded value (UriHelper.DecodeHexChars) is
+// non-ASCII, an unreserved character, or invalid hex (c_DummyChar, so
+// "%zz" counts). A '%' near the end of s is skipped, and the two
+// characters after an escape of any other ASCII value are not rescanned.
+func iriTriggered(s string) bool {
+	for i := 0; i < len(s); i++ {
+		c := s[i]
+		if c >= utf8.RuneSelf {
+			return true
+		}
+		if c != '%' || i+2 >= len(s) {
+			continue
+		}
+		hi, ok1 := unhex(s[i+1])
+		lo, ok2 := unhex(s[i+2])
+		if !ok1 || !ok2 {
+			return true
+		}
+		if v := hi<<4 | lo; v >= utf8.RuneSelf || isUnreserved(v) {
+			return true
+		}
+		i += 2
+	}
+	return false
 }
 
 // cutScheme splits "scheme:rest" (RFC 3986 scheme, at least 2 characters
@@ -104,10 +146,14 @@ func splitURLTail(s string) (path, query string, hasQuery bool, frag string, has
 	return s, query, hasQuery, frag, hasFrag
 }
 
-func normalizeAuthority(a string) string {
+// normalizeAuthority lowercases the ASCII host and escapes the userinfo
+// like the path: Uri.CheckAuthorityHelper (Uri.cs) runs
+// IriHelper.EscapeUnescapeIri on it with UriComponents.UserInfo, which
+// uses the non-query IRI range and the same reserved set.
+func normalizeAuthority(a string, iri bool) string {
 	userinfo := ""
 	if i := strings.LastIndexByte(a, '@'); i >= 0 {
-		userinfo, a = a[:i+1], a[i+1:]
+		userinfo, a = escapeURLPart(a[:i], false, iri)+"@", a[i+1:]
 	}
 	b := []byte(a)
 	for i, c := range b {
@@ -136,9 +182,25 @@ func isUnreserved(c byte) bool {
 	return isASCIILetter(c) || c >= '0' && c <= '9' || c == '-' || c == '.' || c == '_' || c == '~'
 }
 
+// iriKeepsEscaped reports whether IriHelper.EscapeUnescapeIri keeps the
+// escape of the ASCII byte v as written. That is the case for
+// UriHelper.IsNotSafeForUnescape: controls, DEL, '%', '\' and the RFC 3986
+// reserved set UriHelper.RFC3986ReservedMarks. IriHelper.CheckIsReserved
+// uses the same set for every component of an absolute URI.
+func iriKeepsEscaped(v byte) bool {
+	return v <= 0x1F || v == 0x7F || strings.IndexByte(";/?:@&=+$,#[]!'()*%\\", v) >= 0
+}
+
 // escapeURLPart escapes one URL component; isQuery is true only for the
-// query, which admits a wider IRI range than the path and fragment.
-func escapeURLPart(s string, isQuery bool) string {
+// query, which admits a wider IRI range than the path and fragment, and
+// iri is iriTriggered for the whole URL. With iri, escapes are normalized
+// as IriHelper.EscapeUnescapeIri (IriHelper.cs) does:
+//   - an ASCII escape that iriKeepsEscaped rejects is decoded, and System.Uri
+//     then re-escapes it in uppercase unless it is unreserved;
+//   - an escaped UTF-8 sequence in the IRI range is decoded and
+//     re-escaped in uppercase;
+//   - every other escape is copied as written.
+func escapeURLPart(s string, isQuery, iri bool) string {
 	var b strings.Builder
 	for i := 0; i < len(s); i++ {
 		c := s[i]
@@ -148,15 +210,26 @@ func escapeURLPart(s string, isQuery bool) string {
 				lo, ok2 := unhex(s[i+2])
 				if ok1 && ok2 {
 					v := hi<<4 | lo
-					if isUnreserved(v) {
-						b.WriteByte(v)
-						i += 2
-					} else if n := escapedUTF8Len(s[i:], isQuery); n > 0 {
-						b.WriteString(strings.ToUpper(s[i : i+n]))
-						i += n - 1
-					} else {
+					switch {
+					case !iri || v < utf8.RuneSelf && iriKeepsEscaped(v):
 						b.WriteString(s[i : i+3])
 						i += 2
+					case isUnreserved(v):
+						b.WriteByte(v)
+						i += 2
+					case v < utf8.RuneSelf:
+						b.WriteByte('%')
+						b.WriteByte(upperHex[v>>4])
+						b.WriteByte(upperHex[v&0xF])
+						i += 2
+					default:
+						if n := escapedUTF8Len(s[i:], isQuery); n > 0 {
+							b.WriteString(strings.ToUpper(s[i : i+n]))
+							i += n - 1
+						} else {
+							b.WriteString(s[i : i+3])
+							i += 2
+						}
 					}
 					continue
 				}

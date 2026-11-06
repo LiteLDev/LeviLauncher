@@ -109,8 +109,12 @@ func dirExists(p string) bool {
 // error, but a missing parent directory or a directory at p is. Like .NET
 // (EnsureExtendedPrefixIfNeeded) a long path gets the \\?\ prefix, so files
 // os.Create placed beyond MAX_PATH can be deleted when long paths are not
-// enabled system-wide.
+// enabled system-wide. Like .NET the path is made full first, which trims
+// trailing periods and spaces of its segments.
 func deleteFile(p string) error {
+	if full, err := syscall.FullPath(p); err == nil {
+		p = full
+	}
 	ptr, err := syscall.UTF16PtrFromString(extendedPath(p))
 	if err != nil {
 		return err

@@ -25,7 +25,7 @@ type processTree struct {
 // verbatim, so cmd.exe sees the same text as under lip (Go's own escaping
 // differs from CliWrap's). The process gets CREATE_NO_WINDOW like CliWrap
 // (.NET CreateNoWindow) and starts suspended, so it joins the job before it
-// can start children. Cancelling terminates the job.
+// can start children.
 func newProcessTree(cmd *exec.Cmd, cmdLine string) (*processTree, error) {
 	job, err := windows.CreateJobObject(nil, nil)
 	if err != nil {
@@ -39,12 +39,13 @@ func newProcessTree(cmd *exec.Cmd, cmdLine string) (*processTree, error) {
 		CmdLine:       cmdLine,
 		CreationFlags: windows.CREATE_NO_WINDOW | windows.CREATE_SUSPENDED,
 	}
-	cmd.Cancel = func() error {
-		// Kill the process too, in case it has not joined the job yet.
-		_ = windows.TerminateJobObject(job, 1)
-		return cmd.Process.Kill()
-	}
 	return &processTree{cmd: cmd, job: job}, nil
+}
+
+// kill terminates the job, and the process too in case it is not in it.
+func (t *processTree) kill() {
+	_ = windows.TerminateJobObject(t.job, 1)
+	_ = t.cmd.Process.Kill()
 }
 
 // started puts the started (suspended) process into the job and resumes it.

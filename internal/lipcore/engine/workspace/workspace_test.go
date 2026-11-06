@@ -513,6 +513,15 @@ func TestInstallPackageDirPlacementOnEmptyKeyFails(t *testing.T) {
 		t.Errorf("placed %q", files)
 	}
 
+	// Path.GetFullPath rejects a path of spaces on Windows, as src or key.
+	_, srcErr := w.MatchPlacements([]string{"a"}, []manifest.Placement{{Type: manifest.PlacementDir, Src: "  ", Dest: "d"}})
+	_, keyErr := w.MatchPlacements([]string{"  "}, []manifest.Placement{{Type: manifest.PlacementDir, Src: "", Dest: "d"}})
+	for _, err := range []error{srcErr, keyErr} {
+		if isWindows && (err == nil || err.Error() != "The path is empty. (Parameter 'path')") || !isWindows && err != nil {
+			t.Errorf("spaces: err = %v", err)
+		}
+	}
+
 	// A file placement on the empty key still matches exactly.
 	got, err := w.MatchPlacements([]string{""}, []manifest.Placement{{Type: manifest.PlacementFile, Src: "", Dest: "a.dll"}})
 	if err != nil || !reflect.DeepEqual(got, []Target{{"", "a.dll"}}) {

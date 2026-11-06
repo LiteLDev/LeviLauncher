@@ -4,12 +4,14 @@ package workspace
 
 import (
 	"context"
+	"errors"
 	"io"
 	"os"
 	"os/exec"
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"golang.org/x/sys/windows"
 )
@@ -53,8 +55,8 @@ func TestExtendedPath(t *testing.T) {
 }
 
 func TestDeleteFileTrailingPeriod(t *testing.T) {
-	// File.Delete removes a file whose name ends in a period (it uses the
-	// \\?\ prefix); without it Windows trims the period and finds no file.
+	// File.Delete makes the path full first, which trims the trailing
+	// period: deleting `f.` removes `f`, not a file named `f.`.
 	dir := t.TempDir()
 	p := filepath.Join(dir, "f.")
 	name, err := windows.UTF16PtrFromString(`\\?\` + p)
@@ -66,12 +68,71 @@ func TestDeleteFileTrailingPeriod(t *testing.T) {
 		t.Fatal(err)
 	}
 	windows.CloseHandle(h)
+	if err := os.WriteFile(filepath.Join(dir, "f"), nil, 0o644); err != nil {
+		t.Fatal(err)
+	}
 
 	if err := deleteFile(p); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := windows.GetFileAttributes(name); err == nil {
-		t.Error("file still exists")
+	if exists(filepath.Join(dir, "f")) {
+		t.Error("f still exists")
+	}
+	if _, err := windows.GetFileAttributes(name); err != nil {
+		t.Errorf("f. was deleted: %v", err)
+	}
+	// Now `f` is missing, which is not an error.
+	if err := deleteFile(p); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func writeScript(t *testing.T, dir, name, content string) {
+	t.Helper()
+	if err := os.WriteFile(filepath.Join(dir, name), []byte(content), 0o644); err != nil {
+		t.Fatal(err)
+	}
+}
+
+func TestDefaultCommandRunnerWaitsForBackgroundProcess(t *testing.T) {
+	// A process the script starts in the background holds the output pipes
+	// after the script exits; like CliWrap the runner waits for it and
+	// succeeds with its output.
+	dir := t.TempDir()
+	writeScript(t, dir, "bg.cmd", "@ping -n 4 127.0.0.1 >nul\r\n@echo background done\r\n")
+	var out strings.Builder
+	start := time.Now()
+	err := DefaultCommandRunner(context.Background(), dir, `start /b bg.cmd`, &out, io.Discard)
+	if err != nil {
+		t.Fatalf("err = %v", err)
+	}
+	if elapsed := time.Since(start); elapsed < 2500*time.Millisecond {
+		t.Errorf("returned after %v, before the background process ended", elapsed)
+	}
+	if !strings.Contains(out.String(), "background done") {
+		t.Errorf("output %q", out.String())
+	}
+}
+
+func TestDefaultCommandRunnerCancelAfterScriptExit(t *testing.T) {
+	// Cancelling while only a background process still holds the pipes
+	// kills it and returns promptly.
+	dir := t.TempDir()
+	writeScript(t, dir, "bg.cmd", "@ping -n 6 127.0.0.1 >nul\r\n@echo late> late.txt\r\n")
+	ctx, cancel := context.WithTimeout(context.Background(), 1500*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	err := DefaultCommandRunner(ctx, dir, `start /b bg.cmd`, io.Discard, io.Discard)
+	elapsed := time.Since(start)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("err = %v", err)
+	}
+	if elapsed > 4*time.Second {
+		t.Fatalf("returned after %v", elapsed)
+	}
+	time.Sleep(6*time.Second - elapsed)
+	if exists(filepath.Join(dir, "late.txt")) {
+		t.Error("background process survived cancellation")
 	}
 }
 

@@ -1,6 +1,7 @@
 package workspace
 
 import (
+	"errors"
 	"runtime"
 	"strings"
 	"unicode"
@@ -29,6 +30,16 @@ func dirSep() string {
 		return `\`
 	}
 	return "/"
+}
+
+// errPathEmpty is the ArgumentException Path.GetFullPath throws for an
+// effectively empty path.
+var errPathEmpty = errors.New("The path is empty. (Parameter 'path')")
+
+// isEffectivelyEmpty ports PathInternal.IsEffectivelyEmpty: on Windows a
+// path of only spaces counts as empty.
+func isEffectivelyEmpty(p string) bool {
+	return p == "" || isWindows && strings.Trim(p, " ") == ""
 }
 
 // isPathRooted ports Path.IsPathRooted.

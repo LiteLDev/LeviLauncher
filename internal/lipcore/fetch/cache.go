@@ -1,6 +1,7 @@
 package fetch
 
 import (
+	"context"
 	"crypto/rand"
 	"errors"
 	"fmt"
@@ -103,12 +104,26 @@ func (c *Cache) GetOrCreate(key string, write func(w io.Writer) error) (string, 
 }
 
 func (c *Cache) getOrCreate(key string, write func(f *os.File) error) (string, error) {
+	return c.getOrCreateHooks(key, nil, nil, write)
+}
+
+// getOrCreateHooks is getOrCreate calling waiting (if not nil) before it
+// blocks on another creation of key in this process, and hit (if not nil)
+// with the file's size on a cache hit.
+func (c *Cache) getOrCreateHooks(key string, waiting func(), hit func(size int64), write func(f *os.File) error) (string, error) {
 	// Concurrent creations of one key in this process wait for each other
 	// instead of downloading twice.
-	unlock := lockKey(c.Path(key))
+	unlock := lockKey(c.Path(key), waiting)
 	defer unlock()
 	if p, ok := c.Get(key); ok {
 		c.info(fmt.Sprintf("Cache hit for key '%s'.", key))
+		if hit != nil {
+			var size int64
+			if fi, err := os.Stat(p); err == nil {
+				size = fi.Size()
+			}
+			hit(size)
+		}
 		return p, nil
 	}
 	c.info(fmt.Sprintf("Caching file for key '%s'...", key))
@@ -126,7 +141,9 @@ type keyLock struct {
 	refs int // guarded by keyLocksMu
 }
 
-func lockKey(path string) (unlock func()) {
+// lockKey locks path, calling waiting (if not nil) first when the lock is
+// held by someone else.
+func lockKey(path string, waiting func()) (unlock func()) {
 	keyLocksMu.Lock()
 	l := keyLocks[path]
 	if l == nil {
@@ -135,7 +152,12 @@ func lockKey(path string) (unlock func()) {
 	}
 	l.refs++
 	keyLocksMu.Unlock()
-	l.mu.Lock()
+	if !l.mu.TryLock() {
+		if waiting != nil {
+			waiting()
+		}
+		l.mu.Lock()
+	}
 	return func() {
 		l.mu.Unlock()
 		keyLocksMu.Lock()
@@ -222,6 +244,28 @@ func newGUID() string {
 // A missing directory is not an error. The temp directory is left alone,
 // as in lip.
 func (c *Cache) Clean() error {
+	return c.CleanProgress(context.Background(), nil)
+}
+
+// CleanProgress is Clean reporting progress: it first walks the cache
+// directory (clearing read-only attributes, as Clean always did) to count
+// its entries, files and directories including the directory itself, then
+// deletes them one by one, children before their directory, calling
+// progress (if not nil) with the entries deleted out of that count: once
+// with 0 before deleting and after every entry. ctx is checked between
+// entries; a canceled clean leaves the remaining entries in place. If an
+// entry cannot be deleted on its own (e.g. a file appeared during the
+// clean), the rest is deleted with os.RemoveAll as Clean always did. A
+// missing directory reports nothing.
+func (c *Cache) CleanProgress(ctx context.Context, progress func(done, total int64)) error {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	report := func(done, total int64) {
+		if progress != nil {
+			progress(done, total)
+		}
+	}
 	fi, err := os.Lstat(c.Root)
 	if errors.Is(err, fs.ErrNotExist) {
 		return nil
@@ -229,41 +273,62 @@ func (c *Cache) Clean() error {
 	if err != nil {
 		return err
 	}
+	entries := []string{c.Root}
 	if fi.IsDir() {
-		if err := clearReadOnly(c.Root); err != nil {
+		entries, err = clearReadOnly(c.Root, nil)
+		if err != nil {
 			return err
 		}
 	}
-	return os.RemoveAll(c.Root)
+	total := int64(len(entries))
+	report(0, total)
+	for i, p := range entries {
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		if err := os.Remove(p); err != nil && !errors.Is(err, fs.ErrNotExist) {
+			if err := os.RemoveAll(c.Root); err != nil {
+				return err
+			}
+			report(total, total)
+			return nil
+		}
+		report(int64(i)+1, total)
+	}
+	return nil
 }
 
 // clearReadOnly makes dir and everything below it writable by the owner
-// (on Windows this clears FILE_ATTRIBUTE_READONLY). Symbolic links and
-// junctions are not followed.
-func clearReadOnly(dir string) error {
+// (on Windows this clears FILE_ATTRIBUTE_READONLY) and appends the paths
+// of dir and everything below it to list in deletion order (children
+// before their directory, dir last). Symbolic links and junctions are
+// listed but not followed.
+func clearReadOnly(dir string, list []string) ([]string, error) {
 	if err := makeWritable(dir, true); err != nil {
-		return err
+		return nil, err
 	}
 	entries, err := os.ReadDir(dir)
 	if err != nil {
-		return err
+		return nil, err
 	}
 	for _, e := range entries {
 		p := filepath.Join(dir, e.Name())
 		if e.Type()&fs.ModeSymlink != 0 || e.Type()&fs.ModeIrregular != 0 {
+			list = append(list, p)
 			continue
 		}
 		if e.IsDir() {
-			if err := clearReadOnly(p); err != nil {
-				return err
+			if list, err = clearReadOnly(p, list); err != nil {
+				return nil, err
 			}
 			continue
 		}
 		if err := makeWritable(p, false); err != nil {
-			return err
+			return nil, err
 		}
+		list = append(list, p)
 	}
-	return nil
+	return append(list, dir), nil
 }
 
 func makeWritable(p string, isDir bool) error {

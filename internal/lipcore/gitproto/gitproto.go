@@ -22,6 +22,7 @@ import (
 	xsemver "golang.org/x/mod/semver"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/gitpack"
 )
 
 // ErrNotImplemented is returned by skeleton stubs.
@@ -245,6 +246,34 @@ type FetchOptions struct {
 	// FetchBlobBatch. An attempt with nothing left to want succeeds without a
 	// request.
 	Want func(oid string) bool
+	// Progress, when set, receives measured progress of each pack received
+	// (see PackProgress). Every request posted (through the proxy or
+	// directly, and every retry) is its own attempt, numbered from 1: its
+	// first update is sent before the request is posted and its last one,
+	// sent exactly once whether the attempt succeeded or failed, is marked
+	// Done, before the pack handler runs. Calls are sequential and all happen
+	// before Fetch returns.
+	Progress func(PackProgress)
+}
+
+// PackProgress is measured progress of receiving one fetched pack.
+type PackProgress struct {
+	// Attempt numbers the requests of one Fetch call, from 1. Callers show
+	// each attempt as its own bar; no value decreases within an attempt.
+	Attempt int
+	// URL is the repository URL of the attempt (the proxied URL when the
+	// proxy is used).
+	URL string
+	// Objects is the number of pack entries received completely.
+	Objects int64
+	// Total is the object count of the pack header: 0 until the header has
+	// arrived, and 0 again (indeterminate, with Objects frozen) when the
+	// stream could not be scanned.
+	Total int64
+	// Bytes is the number of pack bytes received (side-band channel 1).
+	Bytes int64
+	// Done marks the attempt's last update.
+	Done bool
 }
 
 // PackHandler consumes a fetched pack. It runs inside the per-URL proxy
@@ -274,6 +303,7 @@ func (c *Client) Fetch(ctx context.Context, repoURL string, wants []string, opts
 		ids[i] = strings.ToLower(w)
 	}
 
+	attempt := 0
 	return c.withProxyFallback(ctx, repoURL, func(url string) error {
 		wanted := ids
 		if opts.Want != nil {
@@ -313,12 +343,23 @@ func (c *Client) Fetch(ctx context.Context, repoURL string, wants []string, opts
 			return err
 		}
 		bw := bufio.NewWriterSize(pack.f, 80<<10)
-		if err := c.postCommand(ctx, remote, w.Bytes(), func(r *PktLineReader) error {
-			if err := ReadPackfile(r, bw); err != nil {
+		var out io.Writer = bw
+		var tracker *packTracker
+		if opts.Progress != nil {
+			attempt++
+			tracker = newPackTracker(opts.Progress, attempt, url)
+			out = io.MultiWriter(bw, tracker)
+		}
+		err = c.postCommand(ctx, remote, w.Bytes(), func(r *PktLineReader) error {
+			if err := ReadPackfile(r, out); err != nil {
 				return err
 			}
 			return bw.Flush()
-		}); err != nil {
+		})
+		if tracker != nil {
+			tracker.finish(err)
+		}
+		if err != nil {
 			pack.Close()
 			return err
 		}
@@ -329,6 +370,90 @@ func (c *Client) Fetch(ctx context.Context, repoURL string, wants []string, opts
 		pack.Filtered = filtered
 		return handle(pack)
 	})
+}
+
+// packTracker turns the bytes of one fetch attempt into PackProgress: it
+// counts them and feeds them to a gitpack.StreamScanner, which counts the
+// entries received. Updates are serialized by mu (the scanner reports from
+// its own goroutine) and throttled: object counts at most once per 0.1% of
+// the total, byte counts (while no object total is known) once per 64 KiB.
+// When the scanner fails the fetch goes on; only the object total is
+// dropped.
+type packTracker struct {
+	fn      func(PackProgress)
+	scanner *gitpack.StreamScanner
+
+	mu        sync.Mutex
+	p         PackProgress
+	failed    bool  // the scanner failed: Total stays 0
+	done      bool  // the Done update was sent
+	lastBytes int64 // Bytes at the last update
+}
+
+// packProgressByteStep is the byte step of updates without an object total.
+const packProgressByteStep = 64 << 10
+
+func newPackTracker(fn func(PackProgress), attempt int, url string) *packTracker {
+	t := &packTracker{fn: fn, p: PackProgress{Attempt: attempt, URL: url}}
+	t.fn(t.p)
+	t.scanner = gitpack.NewStreamScanner(t.scanned)
+	return t
+}
+
+// scanned receives the scanner's counts.
+func (t *packTracker) scanned(sp gitpack.StreamProgress) {
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	if t.done || t.failed {
+		return
+	}
+	if sp.Err != nil {
+		t.failed = true
+		t.p.Total = 0
+		t.emitLocked()
+		return
+	}
+	prev := t.p
+	t.p.Objects, t.p.Total = sp.Objects, sp.Total
+	if prev.Total == 0 || sp.Objects == sp.Total || sp.Objects*1000/sp.Total > prev.Objects*1000/sp.Total {
+		t.emitLocked()
+	}
+}
+
+// Write counts p and passes it to the scanner. It never fails.
+func (t *packTracker) Write(p []byte) (int, error) {
+	t.mu.Lock()
+	t.p.Bytes += int64(len(p))
+	if t.p.Total == 0 && t.p.Bytes-t.lastBytes >= packProgressByteStep {
+		t.emitLocked()
+	}
+	t.mu.Unlock()
+	// Outside mu: the scanner's callback takes it.
+	return t.scanner.Write(p)
+}
+
+func (t *packTracker) emitLocked() {
+	t.lastBytes = t.p.Bytes
+	t.fn(t.p)
+}
+
+// finish stops the scanner (so no count arrives later) and sends the Done
+// update. A failed attempt keeps the counts it had: the scanner's error
+// about the cut stream is ignored.
+func (t *packTracker) finish(err error) {
+	if err != nil {
+		t.mu.Lock()
+		t.done = true
+		t.mu.Unlock()
+		t.scanner.Abort(err)
+	} else {
+		_ = t.scanner.Close()
+	}
+	t.mu.Lock()
+	defer t.mu.Unlock()
+	t.done = true
+	t.p.Done = true
+	t.emitLocked()
 }
 
 // createTemp creates the file a fetched pack is written to; removeOnClose

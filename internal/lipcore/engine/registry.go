@@ -88,9 +88,11 @@ type GitRegistry struct {
 	CompareVersions func(a, b string) int
 	// Blobs overrides Cache for blob storage.
 	Blobs BlobCache
-	// Download fetches an asset URL into the cache (Downloader.Fetch).
-	Download func(ctx context.Context, rawURL string, progress fetch.ProgressFunc) (string, error)
-	// OpenArchive opens a downloaded asset (fetch.OpenArchive).
+	// Download fetches an asset URL into the cache, reporting to hooks
+	// (Downloader.FetchWith).
+	Download func(ctx context.Context, rawURL string, hooks fetch.FetchHooks) (string, error)
+	// OpenArchive opens a downloaded asset (fetch.OpenArchiveProgress,
+	// which reports tgz decompression; the seam reports nothing).
 	OpenArchive func(assetType, path string) (fetch.AssetSource, error)
 	// NewProgressID returns a fresh progress id (a random GUID).
 	NewProgressID func() string
@@ -290,7 +292,7 @@ func (g *GitRegistry) Manifest(ctx context.Context, spec manifest.PackageSpec) (
 		return nil, err
 	}
 	return g.manifests.do(repoKey(repo)+"@"+commit, func() (*manifest.Manifest, error) {
-		tree, err := g.listTree(ctx, repo, commit)
+		tree, err := g.listTree(ctx, repo, commit, spec)
 		if err != nil {
 			return nil, err
 		}
@@ -307,7 +309,7 @@ func (g *GitRegistry) Manifest(ctx context.Context, spec manifest.PackageSpec) (
 		if !isRegularMode(entry.Mode) {
 			return nil, fmt.Errorf("tooth.json of package %s is not a regular file (mode %s).", spec, entry.Mode)
 		}
-		rc, err := g.openBlob(ctx, repo, entry.OID)
+		rc, err := g.openBlob(ctx, repo, entry.OID, spec)
 		if err != nil {
 			return nil, err
 		}
@@ -328,7 +330,7 @@ func (g *GitRegistry) OpenAsset(ctx context.Context, spec manifest.PackageSpec, 
 	case manifest.AssetSelf:
 		return g.openTree(ctx, spec)
 	case manifest.AssetUncompressed, manifest.AssetTar, manifest.AssetTgz, manifest.AssetZip:
-		return g.openURLs(ctx, asset)
+		return g.openURLs(ctx, spec, asset)
 	default:
 		return nil, fmt.Errorf("Unsupported asset type '%s'.", asset.Type)
 	}
@@ -345,11 +347,11 @@ func (g *GitRegistry) openTree(ctx context.Context, spec manifest.PackageSpec) (
 		short = short[:12]
 	}
 	g.rep().Info(fmt.Sprintf("Listing files of %s@%s (commit %s)...", spec.ID.Path, spec.Version, short))
-	tree, err := g.listTree(ctx, repo, commit)
+	tree, err := g.listTree(ctx, repo, commit, spec)
 	if err != nil {
 		return nil, err
 	}
-	src := &gitTreeSource{reg: g, ctx: ctx, repo: repo, oids: map[string]string{}, cached: map[string]bool{}}
+	src := &gitTreeSource{reg: g, ctx: ctx, repo: repo, spec: spec, oids: map[string]string{}, cached: map[string]bool{}}
 	for _, f := range tree {
 		if !isRegularMode(f.Mode) {
 			continue
@@ -363,10 +365,10 @@ func (g *GitRegistry) openTree(ctx context.Context, spec manifest.PackageSpec) (
 	return src, nil
 }
 
-func (g *GitRegistry) openURLs(ctx context.Context, asset manifest.Asset) (workspace.Source, error) {
+func (g *GitRegistry) openURLs(ctx context.Context, spec manifest.PackageSpec, asset manifest.Asset) (workspace.Source, error) {
 	var errs []error
 	for _, u := range asset.URLs {
-		src, err := g.openURL(ctx, string(asset.Type), u)
+		src, err := g.openURL(ctx, spec, string(asset.Type), u)
 		if err == nil {
 			return src, nil
 		}
@@ -375,32 +377,90 @@ func (g *GitRegistry) openURLs(ctx context.Context, asset manifest.Asset) (works
 	return nil, &aggregateError{msg: "Failed to get file source from all provided URLs", errs: errs}
 }
 
-func (g *GitRegistry) openURL(ctx context.Context, assetType, rawURL string) (workspace.Source, error) {
-	progressID := g.newProgressID()
-	message := "Downloading " + rawURL
-	if g.Downloader != nil && g.Downloader.Proxy != nil {
-		if proxied, ok := g.Downloader.Proxy.Rewrite(rawURL); ok {
-			message = "Downloading " + proxied
+// openURL downloads rawURL and opens it. Every download attempt is its own
+// bar, as in lip's SourceService: a fresh id and "Downloading <url>" naming
+// the URL actually requested (the proxied one, then the original), bytes
+// out of Content-Length. A cache hit is one Done bar of the cached file's
+// size; a wait for another download of the same URL is an indeterminate
+// bar, ended by that hit (or with Done before downloading). Decompressing
+// a gzipped tar is a bar of compressed bytes read.
+func (g *GitRegistry) openURL(ctx context.Context, spec manifest.PackageSpec, assetType, rawURL string) (workspace.Source, error) {
+	rep := g.rep()
+	pkg := spec.String()
+	bar := func(id, message string) report.Progress {
+		return report.Progress{ID: id, Stage: report.StageDownload, Package: pkg, Message: message, Unit: report.UnitBytes, Item: rawURL}
+	}
+	// waitID is the open bar of a wait for the per-URL cache lock.
+	var waitID string
+	endWait := func() {
+		if waitID != "" {
+			p := bar(waitID, "Waiting for another download of "+rawURL)
+			p.Done = true
+			report.Report(rep, p)
+			waitID = ""
 		}
 	}
-	progress := func(pct float64) { g.rep().Progress(progressID, message, pct) }
+	defer endWait()
+	hooks := fetch.FetchHooks{
+		Waiting: func() {
+			waitID = g.newProgressID()
+			report.Report(rep, bar(waitID, "Waiting for another download of "+rawURL))
+		},
+		CacheHit: func(size int64) {
+			id := waitID
+			if id == "" {
+				id = g.newProgressID()
+			}
+			waitID = ""
+			p := bar(id, fmt.Sprintf("Cache hit for key '%s'.", rawURL))
+			p.Current, p.Total, p.Done = size, size, true
+			report.Report(rep, p)
+		},
+		Attempt: func(u string) func(fetch.Transfer) {
+			endWait()
+			id := g.newProgressID()
+			message := "Downloading " + u
+			return func(t fetch.Transfer) {
+				p := bar(id, message)
+				p.Item = u
+				p.Current, p.Total, p.Done = t.Current, t.Total, t.Done
+				report.Report(rep, p)
+			}
+		},
+	}
 
 	download := g.Download
 	if download == nil {
 		if g.Downloader == nil {
 			return nil, fmt.Errorf("no downloader configured")
 		}
-		download = g.Downloader.Fetch
+		download = g.Downloader.FetchWith
 	}
-	path, err := download(ctx, rawURL, progress)
+	path, err := download(ctx, rawURL, hooks)
+	endWait()
 	if err != nil {
 		return nil, err
 	}
+
 	open := g.OpenArchive
+	var extract *report.Progress
 	if open == nil {
-		open = fetch.OpenArchive
+		open = func(assetType, path string) (fetch.AssetSource, error) {
+			return fetch.OpenArchiveProgress(assetType, path, func(done, total int64) {
+				if extract == nil {
+					extract = &report.Progress{ID: g.newProgressID(), Stage: report.StageExtract, Package: pkg,
+						Message: "Decompressing " + rawURL, Unit: report.UnitBytes, Item: path}
+				}
+				extract.Current, extract.Total = done, total
+				report.Report(rep, *extract)
+			})
+		}
 	}
 	src, err := open(assetType, path)
+	if extract != nil {
+		extract.Done = true
+		report.Report(rep, *extract)
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -434,13 +494,19 @@ func (archiveSource) Prefetch(context.Context, []string) error { return nil }
 // per-URL proxy fallback, so an incomplete pack from the proxy is retried
 // directly. Trees are memoized (at most 64). When the server does not
 // support the blob filter, the pack holds every blob and is retained to
-// serve them.
-func (g *GitRegistry) listTree(ctx context.Context, repo, commit string) ([]gitpack.File, error) {
+// serve them. Receiving the pack is a bar of objects received out of the
+// pack header's count (one bar per request, see packObjectsProgress).
+func (g *GitRegistry) listTree(ctx context.Context, repo, commit string, spec manifest.PackageSpec) ([]gitpack.File, error) {
 	commit = strings.ToLower(commit)
 	key := repoKey(repo) + "@" + commit
 	files, err := g.trees.do(key, func() ([]gitpack.File, error) {
 		var files []gitpack.File
-		err := g.Git.Fetch(ctx, repo, []string{commit}, gitproto.FetchOptions{Shallow: true, BlobNone: true}, func(pack *gitproto.PackFile) error {
+		opts := gitproto.FetchOptions{
+			Shallow:  true,
+			BlobNone: true,
+			Progress: g.packObjectsProgress(spec, fmt.Sprintf("Listing files of %s@%s", spec.ID.Path, spec.Version)),
+		}
+		err := g.Git.Fetch(ctx, repo, []string{commit}, opts, func(pack *gitproto.PackFile) error {
 			filtered := pack.Filtered
 			store, err := g.decodePack(pack)
 			if err != nil {
@@ -472,6 +538,61 @@ func (g *GitRegistry) listTree(ctx context.Context, repo, commit string) ([]gitp
 	}
 	g.mu.Unlock()
 	return files, nil
+}
+
+// packObjectsProgress returns a gitproto progress callback reporting each
+// request of a fetch (through the proxy, directly, or a retry) as its own
+// git_fetch bar with a fresh id, so a bar never goes backwards: objects
+// received out of the pack header's count, indeterminate until the header
+// arrives or when the pack cannot be scanned (the message then counts the
+// bytes received). gitproto ends every attempt with one Done update.
+func (g *GitRegistry) packObjectsProgress(spec manifest.PackageSpec, message string) func(gitproto.PackProgress) {
+	rep := g.rep()
+	attempt := 0
+	var id string
+	return func(p gitproto.PackProgress) {
+		if p.Attempt != attempt {
+			attempt, id = p.Attempt, g.newProgressID()
+		}
+		msg := message
+		if p.Total <= 0 && p.Bytes > 0 {
+			msg = fmt.Sprintf("%s (%d bytes received)", message, p.Bytes)
+		}
+		report.Report(rep, report.Progress{
+			ID: id, Stage: report.StageGitFetch, Package: spec.String(), Message: msg,
+			Current: p.Objects, Total: p.Total, Unit: report.UnitObjects, Item: p.URL, Done: p.Done,
+		})
+	}
+}
+
+// blobBar is the git_fetch bar of one fetchBlobs call: blobs stored, or
+// received in the pack being fetched, out of the blobs to fetch. Current
+// only grows.
+type blobBar struct {
+	rep     report.Reporter
+	id, pkg string
+	message string
+	cur     int64
+	total   int64
+}
+
+func (b *blobBar) emit(done bool) {
+	report.Report(b.rep, report.Progress{
+		ID: b.id, Stage: report.StageGitFetch, Package: b.pkg, Message: b.message,
+		Current: b.cur, Total: b.total, Unit: report.UnitBlobs, Done: done,
+	})
+}
+
+// set raises Current to n (at most Total).
+func (b *blobBar) set(n int64) {
+	if n > b.total {
+		n = b.total
+	}
+	if n <= b.cur {
+		return
+	}
+	b.cur = n
+	b.emit(false)
 }
 
 func containsString(list []string, s string) bool {
@@ -568,12 +689,12 @@ func (g *GitRegistry) readStoredBlob(oid string) (io.ReadCloser, bool) {
 }
 
 // openBlob returns blob oid, fetching and caching it when needed.
-func (g *GitRegistry) openBlob(ctx context.Context, repo, oid string) (io.ReadCloser, error) {
+func (g *GitRegistry) openBlob(ctx context.Context, repo, oid string, spec manifest.PackageSpec) (io.ReadCloser, error) {
 	oid = strings.ToLower(oid)
 	if rc, ok := g.readStoredBlob(oid); ok {
 		return rc, nil
 	}
-	if err := g.fetchBlobs(ctx, repo, []string{oid}); err != nil {
+	if err := g.fetchBlobs(ctx, repo, []string{oid}, spec); err != nil {
 		return nil, err
 	}
 	if rc, ok := g.readStoredBlob(oid); ok {
@@ -585,9 +706,11 @@ func (g *GitRegistry) openBlob(ctx context.Context, repo, oid string) (io.ReadCl
 // fetchBlobs ports GitRemoteClient.FetchBlobs + GitTreeSource's verified
 // caching: blobs come from a retained pack when possible, otherwise from
 // fetches of at most 256 wants each; every blob is verified and stored.
-func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string) error {
+// It reports one git_fetch bar of blobs out of the distinct blobs asked
+// for, across all batches, ended with Done on success and on error.
+func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string, spec manifest.PackageSpec) error {
 	key := repoKey(repo)
-	var remaining []string
+	var unique []string
 	seen := map[string]bool{}
 	for _, oid := range oids {
 		oid = strings.ToLower(oid)
@@ -595,10 +718,29 @@ func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string
 			continue
 		}
 		seen[oid] = true
+		unique = append(unique, oid)
+	}
+	if len(unique) == 0 {
+		return nil
+	}
+	bar := &blobBar{
+		rep: g.rep(), id: g.newProgressID(), pkg: spec.String(),
+		message: fmt.Sprintf("Fetching files of %s@%s", spec.ID.Path, spec.Version),
+		total:   int64(len(unique)),
+	}
+	bar.emit(false)
+	defer bar.emit(true)
+
+	// stored counts the blobs stored so far.
+	var stored int64
+	var remaining []string
+	for _, oid := range unique {
 		if data, ok := g.retainedBlob(key, oid); ok {
 			if err := g.storeBlob(oid, data); err != nil {
 				return err
 			}
+			stored++
+			bar.set(stored)
 			continue
 		}
 		remaining = append(remaining, oid)
@@ -610,7 +752,11 @@ func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string
 		if end > len(remaining) {
 			end = len(remaining)
 		}
-		if err := g.fetchBlobBatch(ctx, repo, remaining[start:end]); err != nil {
+		n, err := g.fetchBlobBatch(ctx, repo, remaining[start:end], func(received, storedInBatch int64) {
+			bar.set(stored + max(received, storedInBatch))
+		})
+		stored += n
+		if err != nil {
 			// lip throws a handler error out of FetchBlobs at once, leaving
 			// later batches unfetched.
 			if nf, ok := err.(*fetch.NoFallbackError); ok {
@@ -636,12 +782,22 @@ func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string
 // again). As in lip, only fetching and opening the pack falls back: errors
 // while reading its objects or storing blobs fail the batch as they are,
 // and are returned marked by fetch.NoFallback so fetchBlobs stops too.
-func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []string) error {
+// It returns the number of blobs stored, and reports to progress the
+// entries received completely in the pack being fetched (at most the blobs
+// still wanted, counted on top of those already stored) and the blobs
+// stored.
+func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []string, progress func(received, stored int64)) (int64, error) {
 	remaining := make(map[string]bool, len(batch))
 	for _, oid := range batch {
 		remaining[oid] = true
 	}
-	opts := gitproto.FetchOptions{Want: func(oid string) bool { return remaining[oid] }}
+	var stored int64
+	opts := gitproto.FetchOptions{
+		Want: func(oid string) bool { return remaining[oid] },
+		Progress: func(p gitproto.PackProgress) {
+			progress(stored+min(p.Objects, int64(len(remaining))), stored)
+		},
+	}
 	var handlerErr error
 	err := g.Git.Fetch(ctx, repo, batch, opts, func(pack *gitproto.PackFile) error {
 		store, err := g.decodePack(pack)
@@ -660,6 +816,8 @@ func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []s
 				return err
 			}
 			delete(remaining, oid)
+			stored++
+			progress(stored, stored)
 			return nil
 		}); err != nil {
 			handlerErr = err
@@ -678,9 +836,9 @@ func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []s
 	})
 	if handlerErr != nil {
 		// Fetch returned it at once, unchanged (no retry or fallback).
-		return fetch.NoFallback(handlerErr)
+		return stored, fetch.NoFallback(handlerErr)
 	}
-	return err
+	return stored, err
 }
 
 // verifyBlob checks that data hashes to oid as a git blob (SHA-1, or
@@ -717,6 +875,8 @@ type gitTreeSource struct {
 	// (which has no context parameter) uses it for on-demand fetches.
 	ctx  context.Context
 	repo string
+	// spec is the package the tree belongs to, for progress bars.
+	spec manifest.PackageSpec
 	keys []string
 	oids map[string]string
 
@@ -731,7 +891,7 @@ func (s *gitTreeSource) Open(key string) (io.ReadCloser, error) {
 	if !ok {
 		return nil, fmt.Errorf("Key not found: %s (Parameter 'key')", key)
 	}
-	rc, err := s.reg.openBlob(s.ctx, s.repo, oid)
+	rc, err := s.reg.openBlob(s.ctx, s.repo, oid, s.spec)
 	if err != nil {
 		return nil, err
 	}
@@ -767,7 +927,7 @@ func (s *gitTreeSource) Prefetch(ctx context.Context, keys []string) error {
 	if len(pending) == 0 {
 		return nil
 	}
-	if err := s.reg.fetchBlobs(ctx, s.repo, pending); err != nil {
+	if err := s.reg.fetchBlobs(ctx, s.repo, pending, s.spec); err != nil {
 		return err
 	}
 	s.mu.Lock()

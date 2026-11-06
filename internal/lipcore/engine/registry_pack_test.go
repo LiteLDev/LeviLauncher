@@ -147,7 +147,7 @@ func TestGitRegistryBlobHandlerErrorStopsBatches(t *testing.T) {
 		oids = append(oids, oid)
 	}
 	cache.dir = filepath.Join(cache.dir, "missing")
-	err := g.fetchBlobs(ctx, repoA, oids)
+	err := g.fetchBlobs(ctx, repoA, oids, specA("1.0.0"))
 	var pe *fs.PathError
 	if _, agg := err.(*aggregateError); !errors.As(err, &pe) || agg {
 		t.Fatalf("err = %v, want the cache's own error", err)
@@ -169,7 +169,7 @@ func (s treeStore) Objects(fn func(oid string, t gitpack.ObjectType, data []byte
 func TestGitRegistryRetainedPacksClosed(t *testing.T) {
 	g, git, repo, _, _ := newTestRegistry(t)
 	// Filtered tree packs are closed once listed.
-	if _, err := g.listTree(ctx, repoA, "c100000000000000000000000000000000000000"); err != nil {
+	if _, err := g.listTree(ctx, repoA, "c100000000000000000000000000000000000000", specA("1.0.0")); err != nil {
 		t.Fatal(err)
 	}
 	if git.closed != 1 || len(g.retained) != 0 {
@@ -182,7 +182,7 @@ func TestGitRegistryRetainedPacksClosed(t *testing.T) {
 	for i := range 10 {
 		commit := fmt.Sprintf("d%039d", i)
 		repo.trees[commit] = []gitpack.File{{Path: "f", OID: blobOID("x"), Mode: "100644"}}
-		if _, err := g.listTree(ctx, repoA, commit); err != nil {
+		if _, err := g.listTree(ctx, repoA, commit, specA("1.0.0")); err != nil {
 			t.Fatal(err)
 		}
 	}
@@ -291,7 +291,7 @@ func TestGitRegistryLargeUnfilteredPack(t *testing.T) {
 	runtime.ReadMemStats(&ms)
 	baseline := ms.HeapAlloc
 
-	files, err := g.listTree(ctx, "https://example.com/big.git", commitID)
+	files, err := g.listTree(ctx, "https://example.com/big.git", commitID, specA("1.0.0"))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -304,7 +304,7 @@ func TestGitRegistryLargeUnfilteredPack(t *testing.T) {
 		t.Errorf("%d MiB stay on the heap after listing the tree", retained>>20)
 	}
 
-	rc, err := g.openBlob(ctx, "https://example.com/big.git", files[2].OID)
+	rc, err := g.openBlob(ctx, "https://example.com/big.git", files[2].OID, specA("1.0.0"))
 	if err != nil {
 		t.Fatal(err)
 	}

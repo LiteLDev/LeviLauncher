@@ -79,6 +79,7 @@ func (g *fakeGit) Fetch(_ context.Context, repoURL string, wants []string, opts 
 	if len(wants) > maxWantsPerRequest {
 		return fmt.Errorf("too many wants: %d", len(wants))
 	}
+	attempts := 0
 	attempt := func(proxy bool) error {
 		var wanted []string
 		for _, w := range wants {
@@ -88,6 +89,20 @@ func (g *fakeGit) Fetch(_ context.Context, repoURL string, wants []string, opts 
 		}
 		if len(wanted) == 0 {
 			return nil
+		}
+		if opts.Progress != nil {
+			// Like gitproto: indeterminate until the header, one update per
+			// object of a pack holding one entry per want, then Done.
+			attempts++
+			p := gitproto.PackProgress{Attempt: attempts, URL: repoURL}
+			opts.Progress(p)
+			p.Total = int64(len(wanted))
+			for i := range len(wanted) + 1 {
+				p.Objects = int64(i)
+				opts.Progress(p)
+			}
+			p.Done = true
+			opts.Progress(p)
 		}
 		c := fetchCall{Repo: repoURL, Wants: wanted, Opts: gitproto.FetchOptions{Shallow: opts.Shallow, BlobNone: opts.BlobNone}, Proxy: proxy}
 		g.mu.Lock()
@@ -508,12 +523,12 @@ func TestGitRegistryURLAssets(t *testing.T) {
 	g, _, _, _, rep := newTestRegistry(t)
 	var tried []string
 	g.NewProgressID = func() string { return "id" }
-	g.Download = func(_ context.Context, u string, progress fetch.ProgressFunc) (string, error) {
+	g.Download = func(_ context.Context, u string, hooks fetch.FetchHooks) (string, error) {
 		tried = append(tried, u)
 		if strings.Contains(u, "bad") {
 			return "", errors.New("HTTP 404")
 		}
-		progress(50)
+		hooks.Attempt(u)(fetch.Transfer{Current: 50, Total: 100})
 		return "/cache/" + u[strings.LastIndex(u, "/")+1:], nil
 	}
 	closed := false

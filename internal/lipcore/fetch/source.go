@@ -83,11 +83,26 @@ func keyNotFound(key string) error {
 //     empty-stream/empty-file flags, and 7z anti-items are exposed as files
 //     by SharpCompress only.
 func OpenArchive(assetType string, path string) (AssetSource, error) {
+	return OpenArchiveProgress(assetType, path, nil)
+}
+
+// ExtractProgressFunc receives the progress of decompressing an archive
+// before it can be read: bytes of the compressed file consumed out of its
+// size.
+type ExtractProgressFunc func(done, total int64)
+
+// OpenArchiveProgress is OpenArchive reporting the one step that
+// decompresses a whole file up front, the gunzip of a gzipped tar, to
+// progress (if not nil): once with 0 before reading, then at most once per
+// 0.1% of the file (or per 64 KiB for a file under 64 MiB), and once with
+// the final count when decompression ends, successfully or not. Other
+// archives are indexed without decompressing and report nothing.
+func OpenArchiveProgress(assetType string, path string, progress ExtractProgressFunc) (AssetSource, error) {
 	switch assetType {
 	case "uncompressed":
 		return NewSingleFileSource(path), nil
 	case "zip", "tar", "tgz":
-		return openArchiveFile(path)
+		return openArchiveFile(path, progress)
 	default:
 		return nil, fmt.Errorf("unsupported asset type %q", assetType)
 	}
@@ -159,7 +174,7 @@ const (
 	kindRar5
 )
 
-func openArchiveFile(path string) (AssetSource, error) {
+func openArchiveFile(path string, progress ExtractProgressFunc) (AssetSource, error) {
 	f, err := os.Open(path)
 	if err != nil {
 		return nil, err
@@ -193,7 +208,7 @@ func openArchiveFile(path string) (AssetSource, error) {
 		return newGzipSource(path)
 	default:
 		f.Close()
-		return newTarSource(path, kind == kindTarGz)
+		return newTarSource(path, kind == kindTarGz, progress)
 	}
 }
 
@@ -617,10 +632,10 @@ type tarEntry struct {
 	sparse    bool // GNU sparse data must be expanded by archive/tar
 }
 
-func newTarSource(path string, gz bool) (_ *tarSource, err error) {
+func newTarSource(path string, gz bool, progress ExtractProgressFunc) (_ *tarSource, err error) {
 	s := &tarSource{path: path, entries: map[string]tarEntry{}}
 	if gz {
-		if s.path, err = gunzipToTemp(path); err != nil {
+		if s.path, err = gunzipToTemp(path, progress); err != nil {
 			return nil, err
 		}
 		s.tmp = true
@@ -660,13 +675,24 @@ func newTarSource(path string, gz bool) (_ *tarSource, err error) {
 	return s, nil
 }
 
-func gunzipToTemp(path string) (string, error) {
+func gunzipToTemp(path string, progress ExtractProgressFunc) (string, error) {
 	in, err := os.Open(path)
 	if err != nil {
 		return "", err
 	}
 	defer in.Close()
-	gz, err := gzip.NewReader(bufio.NewReader(in))
+	var r io.Reader = in
+	if progress != nil {
+		fi, err := in.Stat()
+		if err != nil {
+			return "", err
+		}
+		pr := &readProgress{r: in, total: fi.Size(), fn: progress}
+		pr.fn(0, pr.total)
+		defer pr.finish()
+		r = pr
+	}
+	gz, err := gzip.NewReader(bufio.NewReader(r))
 	if err != nil {
 		return "", fmt.Errorf("%s: %w", path, err)
 	}
@@ -684,6 +710,34 @@ func gunzipToTemp(path string) (string, error) {
 		return "", fmt.Errorf("%s: %w", path, err)
 	}
 	return out.Name(), nil
+}
+
+// readProgress counts the bytes read from r out of total, reporting at
+// most once per 0.1% of total (at least 64 KiB apart).
+type readProgress struct {
+	r     io.Reader
+	total int64
+	fn    ExtractProgressFunc
+	n     int64
+	last  int64 // n at the last report
+}
+
+func (p *readProgress) Read(b []byte) (int, error) {
+	n, err := p.r.Read(b)
+	p.n += int64(n)
+	if step := max(p.total/1000, 64<<10); p.n-p.last >= step {
+		p.last = p.n
+		p.fn(p.n, p.total)
+	}
+	return n, err
+}
+
+// finish reports the final count, unless it was the last one reported.
+func (p *readProgress) finish() {
+	if p.n != p.last {
+		p.last = p.n
+		p.fn(p.n, p.total)
+	}
 }
 
 type countingReader struct {

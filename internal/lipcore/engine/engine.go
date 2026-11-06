@@ -166,6 +166,10 @@ type Engine struct {
 	Hooks    Hooks
 	// CacheClean is called by CacheClean (fetch.Cache.Clean in production).
 	CleanCache func() error
+	// CleanCacheProgress, when set, is called by CacheClean instead of
+	// CleanCache, reporting entries deleted out of the entries to delete
+	// (fetch.Cache.CleanProgress in production).
+	CleanCacheProgress func(ctx context.Context, progress func(done, total int64)) error
 }
 
 // New returns an engine for dir wired with DefaultHooks(CurrentRID()) and
@@ -184,6 +188,7 @@ func New(dir, githubProxy string, r report.Reporter) (*Engine, error) {
 	}
 	if reg.Cache != nil {
 		e.CleanCache = reg.Cache.Clean
+		e.CleanCacheProgress = reg.Cache.CleanProgress
 	}
 	return e, nil
 }
@@ -379,12 +384,30 @@ func (e *Engine) List(ctx context.Context) (explicit, implicit []string, err err
 	return explicit, implicit, nil
 }
 
-// CacheClean clears the download cache.
+// CacheClean clears the download cache. With CleanCacheProgress it reports
+// one cache_clean bar: entries deleted out of the entries counted by a walk
+// done before deleting, ended with Done whether the clean succeeded or not.
 func (e *Engine) CacheClean(ctx context.Context) error {
-	if e.CleanCache == nil {
-		return nil
+	if e.CleanCacheProgress == nil {
+		if e.CleanCache == nil {
+			return nil
+		}
+		return e.CleanCache()
 	}
-	return e.CleanCache()
+	var bar *report.Progress
+	err := e.CleanCacheProgress(ctx, func(done, total int64) {
+		if bar == nil {
+			bar = &report.Progress{ID: "cache_clean", Stage: report.StageCacheClean,
+				Message: "Cleaning the download cache", Unit: report.UnitFiles}
+		}
+		bar.Current, bar.Total = done, total
+		report.Report(e.rep(), *bar)
+	})
+	if bar != nil {
+		bar.Done = true
+		report.Report(e.rep(), *bar)
+	}
+	return err
 }
 
 // applySolution uninstalls installed packages missing from the solution in

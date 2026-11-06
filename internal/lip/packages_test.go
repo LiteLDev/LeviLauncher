@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"path/filepath"
 	"regexp"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -69,7 +70,9 @@ type fakeEngineState struct {
 	implicit []string
 	// onCall runs inside every operation (after recording the call).
 	onCall func(ctx context.Context, r report.Reporter) error
-	closes int
+	// onCacheClean runs inside CacheClean.
+	onCacheClean func(ctx context.Context, r report.Reporter) error
+	closes       int
 }
 
 func (f *fakeEngine) record(ctx context.Context, c engineCall) error {
@@ -106,8 +109,17 @@ func (f *fakeEngine) List(ctx context.Context) ([]string, []string, error) {
 	return f.shared.explicit, f.shared.implicit, nil
 }
 
+// CacheClean records the call and runs onCacheClean (not onCall, so tests
+// can block package operations without blocking the clean).
 func (f *fakeEngine) CacheClean(ctx context.Context) error {
-	return f.record(ctx, engineCall{method: "CacheClean"})
+	f.shared.mu.Lock()
+	f.shared.calls = append(f.shared.calls, engineCall{method: "CacheClean", dir: f.dir})
+	clean := f.shared.onCacheClean
+	f.shared.mu.Unlock()
+	if clean != nil {
+		return clean(ctx, f.reporter)
+	}
+	return nil
 }
 
 func (f *fakeEngine) Close() error {
@@ -516,26 +528,102 @@ func TestNormalizeCtxAddsDefaultTimeout(t *testing.T) {
 }
 
 func TestCacheClean(t *testing.T) {
-	var calls int
+	recordEvents(t)
+	state := useFakeEngine(t)
 	var cleanErr error
-	old := cleanCache
-	cleanCache = func() error {
-		calls++
-		return cleanErr
-	}
-	t.Cleanup(func() { cleanCache = old })
+	state.onCacheClean = func(context.Context, report.Reporter) error { return cleanErr }
 
 	if err := CacheClean(context.Background()); err != nil {
 		t.Fatalf("cache clean failed: %v", err)
 	}
-	if calls != 1 {
-		t.Fatalf("expected 1 clean, got %d", calls)
+	if len(state.calls) != 1 || state.calls[0].method != "CacheClean" || state.calls[0].dir != "" {
+		t.Fatalf("expected 1 directory-independent clean, got %+v", state.calls)
 	}
 
 	cleanErr = errors.New("locked")
 	err := CacheClean(context.Background())
 	if code := ErrorCode(err); code != "ERR_LIP_CACHE_CLEAN_FAILED" {
 		t.Fatalf("unexpected code %q (%v)", code, err)
+	}
+	if !errors.Is(err, cleanErr) {
+		t.Fatalf("engine error must be wrapped: %v", err)
+	}
+
+	state.onCacheClean = func(context.Context, report.Reporter) error { panic("boom") }
+	if code := ErrorCode(CacheClean(context.Background())); code != "ERR_LIP_CACHE_CLEAN_FAILED" {
+		t.Fatalf("panic must become ERR_LIP_CACHE_CLEAN_FAILED, got %q", code)
+	}
+	if state.closes != 3 {
+		t.Fatalf("engine closed %d times, want 3", state.closes)
+	}
+}
+
+// CacheClean is a tracked task: started, the engine's cache_clean bar and
+// finished, all with Method "CacheClean", Target "" and no packages.
+func TestCacheCleanEmitsTaskEvents(t *testing.T) {
+	rec := recordEvents(t)
+	state := useFakeEngine(t)
+	state.onCacheClean = func(ctx context.Context, r report.Reporter) error {
+		for i := int64(0); i <= 3; i++ {
+			report.Report(r, report.Progress{ID: "cache_clean", Stage: report.StageCacheClean,
+				Message: "Cleaning cache", Current: i, Total: 3, Unit: report.UnitFiles, Done: i == 3})
+		}
+		return nil
+	}
+	if err := CacheClean(context.Background()); err != nil {
+		t.Fatal(err)
+	}
+	events := rec.snapshot()
+	if len(events) < 3 || events[0].name != EventLipTaskStarted || events[len(events)-1].name != EventLipTaskFinished {
+		t.Fatalf("unexpected events: %+v", events)
+	}
+	started := events[0].data.(LipTaskStartedEvent)
+	if started.Method != "CacheClean" || started.Target != "" || len(started.Packages) != 0 || !taskIDPattern.MatchString(started.TaskID) {
+		t.Fatalf("unexpected started event: %+v", started)
+	}
+	finished := events[len(events)-1].data.(LipTaskFinishedEvent)
+	if finished.TaskID != started.TaskID || finished.Method != "CacheClean" || !finished.Success {
+		t.Fatalf("unexpected finished event: %+v", finished)
+	}
+	var bar []LipTaskProgressEvent
+	for _, ev := range events[1 : len(events)-1] {
+		p, ok := ev.data.(LipTaskProgressEvent)
+		if !ok {
+			t.Fatalf("unexpected event %s", ev.name)
+		}
+		if p.TaskID != started.TaskID || p.Method != "CacheClean" || p.Stage != "cache_clean" || p.Unit != "files" || p.Total != 3 {
+			t.Fatalf("unexpected progress event: %+v", p)
+		}
+		bar = append(bar, p)
+	}
+	checkBar(t, bar)
+	if last := bar[len(bar)-1]; last.Current != 3 || last.Percentage != 100 {
+		t.Fatalf("bar ended at %+v", last)
+	}
+}
+
+// A failed clean still ends its task, with the error.
+func TestCacheCleanFailureFinishesTask(t *testing.T) {
+	rec := recordEvents(t)
+	state := useFakeEngine(t)
+	state.onCacheClean = func(ctx context.Context, r report.Reporter) error {
+		report.Report(r, report.Progress{ID: "cache_clean", Stage: report.StageCacheClean, Current: 1, Total: 3, Unit: report.UnitFiles})
+		report.Report(r, report.Progress{ID: "cache_clean", Stage: report.StageCacheClean, Current: 1, Total: 3, Unit: report.UnitFiles, Done: true})
+		return errors.New("access denied")
+	}
+	err := CacheClean(context.Background())
+	events := rec.snapshot()
+	names := make([]string, len(events))
+	for i, ev := range events {
+		names[i] = ev.name
+	}
+	want := []string{EventLipTaskStarted, EventLipTaskProgress, EventLipTaskProgress, EventLipTaskFinished}
+	if fmt.Sprint(names) != fmt.Sprint(want) {
+		t.Fatalf("events = %v, want %v", names, want)
+	}
+	finished := events[3].data.(LipTaskFinishedEvent)
+	if finished.Success || finished.Error != err.Error() || ErrorCode(err) != "ERR_LIP_CACHE_CLEAN_FAILED" {
+		t.Fatalf("unexpected finished event %+v (err %v)", finished, err)
 	}
 }
 
@@ -550,12 +638,10 @@ func TestCacheCleanWaitsForRunningTasks(t *testing.T) {
 		return nil
 	}
 	cleaned := make(chan struct{}, 1)
-	old := cleanCache
-	cleanCache = func() error {
+	state.onCacheClean = func(context.Context, report.Reporter) error {
 		cleaned <- struct{}{}
 		return nil
 	}
-	t.Cleanup(func() { cleanCache = old })
 
 	installDone := make(chan error, 1)
 	go func() { installDone <- InstallPackagesViaDaemon(context.Background(), t.TempDir(), []string{"x"}) }()
@@ -594,9 +680,6 @@ func blockInstallThenClean(t *testing.T, state *fakeEngineState, cleanCtx contex
 		}
 		return nil
 	}
-	old := cleanCache
-	cleanCache = func() error { return nil }
-
 	installDone := make(chan error, 1)
 	go func() { installDone <- InstallPackagesViaDaemon(context.Background(), t.TempDir(), []string{"x"}) }()
 	<-entered
@@ -623,7 +706,6 @@ func blockInstallThenClean(t *testing.T, state *fakeEngineState, cleanCtx contex
 			t.Errorf("install failed: %v", err)
 		}
 		<-cleanDone
-		cleanCache = old
 	})
 	return release, cleanDone
 }
@@ -676,7 +758,7 @@ func TestCacheWaitHonorsContext(t *testing.T) {
 // CacheClean gives up at its deadline while an install holds the cache, and
 // operations held back by it then proceed.
 func TestCacheCleanHonorsContext(t *testing.T) {
-	recordEvents(t)
+	rec := recordEvents(t)
 	state := useFakeEngine(t)
 	cleanCtx, cancelClean := context.WithTimeout(context.Background(), 50*time.Millisecond)
 	defer cancelClean()
@@ -690,6 +772,23 @@ func TestCacheCleanHonorsContext(t *testing.T) {
 		}
 	case <-time.After(2 * time.Second):
 		t.Fatal("CacheClean ignored its context")
+	}
+	// The clean task started before waiting and finished with the error.
+	var cleanEvents []string
+	for _, ev := range rec.snapshot() {
+		switch data := ev.data.(type) {
+		case LipTaskStartedEvent:
+			if data.Method == "CacheClean" {
+				cleanEvents = append(cleanEvents, ev.name)
+			}
+		case LipTaskFinishedEvent:
+			if data.Method == "CacheClean" && !data.Success && strings.Contains(data.Error, "ERR_LIP_CACHE_CLEAN_FAILED") {
+				cleanEvents = append(cleanEvents, ev.name)
+			}
+		}
+	}
+	if fmt.Sprint(cleanEvents) != fmt.Sprint([]string{EventLipTaskStarted, EventLipTaskFinished}) {
+		t.Fatalf("unexpected CacheClean task events: %v", cleanEvents)
 	}
 	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
 	defer cancel()

@@ -24,7 +24,6 @@ import {
   GetInstallerDir,
   GetVersionsDir,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
-import { Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { persistClarityChoice } from "@/utils/clarityConsent";
@@ -276,22 +275,7 @@ export const useSettings = (i18n: { language: string }) => {
   const previewBgData = currentBackground?.bgData || "";
 
   // Lip
-  const [lipInstalled, setLipInstalled] = useState<boolean>(false);
-  const [lipVersion, setLipVersion] = useState<string>("");
-  const [lipLatestVersion, setLipLatestVersion] = useState<string>("");
-  const [lipPath, setLipPath] = useState<string>("");
-  const [lipUpToDate, setLipUpToDate] = useState<boolean>(false);
-  const [lipStatusError, setLipStatusError] = useState<string>("");
-  const [installingLip, setInstallingLip] = useState<boolean>(false);
   const [cleaningLipCache, setCleaningLipCache] = useState<boolean>(false);
-  const [lipStatus, setLipStatus] = useState<string>("");
-  const [lipProgress, setLipProgress] = useState<{
-    percentage: number;
-    current: number;
-    total: number;
-  }>({ percentage: 0, current: 0, total: 0 });
-  const [lipError, setLipError] = useState<string>("");
-  const lipProgressDisclosure = useOverlayState();
 
   // Process management
   const [processModalOpen, setProcessModalOpen] = useState(false);
@@ -430,23 +414,6 @@ export const useSettings = (i18n: { language: string }) => {
     }
   };
 
-  const refreshLipStatus = async () => {
-    try {
-      const getter = (minecraft as any)?.GetLipStatus;
-      const s = typeof getter === "function" ? ((await getter()) as any) : null;
-      setLipPath(String(s?.path || ""));
-      setLipInstalled(Boolean(s?.installed));
-      setLipUpToDate(Boolean(s?.upToDate));
-      setLipVersion(String(s?.currentVersion || ""));
-      setLipLatestVersion(String(s?.latestVersion || ""));
-      setLipStatusError(String(s?.error || ""));
-    } catch (e: any) {
-      setLipStatusError(String(e?.message || e || "check failed"));
-      setLipUpToDate(false);
-      setLipLatestVersion("");
-    }
-  };
-
   const cleanLipCache = async (): Promise<string> => {
     setCleaningLipCache(true);
     try {
@@ -456,7 +423,6 @@ export const useSettings = (i18n: { language: string }) => {
       return String(e?.data || e?.message || e || "ERR_LIP_CACHE_CLEAN_FAILED");
     } finally {
       setCleaningLipCache(false);
-      void refreshLipStatus();
     }
   };
 
@@ -624,58 +590,6 @@ export const useSettings = (i18n: { language: string }) => {
     }
   }, [location.state]);
 
-  // Lip install events
-  useEffect(() => {
-    if (!hasBackend) return;
-    void refreshLipStatus();
-    const timer = setTimeout(() => {
-      void refreshLipStatus();
-    }, 1500);
-
-    const offs: (() => void)[] = [];
-    offs.push(
-      Events.On("lip_install_status", (e) =>
-        setLipStatus(String(e?.data || "")),
-      ),
-    );
-    offs.push(
-      Events.On("lip_install_progress", (e) => {
-        const data = e?.data as any;
-        setLipProgress({
-          percentage: Number(data?.percentage || 0),
-          current: Number(data?.current || 0),
-          total: Number(data?.total || 0),
-        });
-      }),
-    );
-    offs.push(
-      Events.On("lip_install_done", (e) => {
-        setInstallingLip(false);
-        setLipStatus("done");
-        setLipProgress({ percentage: 100, current: 0, total: 0 });
-        setLipVersion(String(e?.data || ""));
-        setLipError("");
-        void refreshLipStatus();
-      }),
-    );
-    offs.push(
-      Events.On("lip_install_error", (e) => {
-        setInstallingLip(false);
-        setLipStatus("");
-        setLipError(String(e?.data || ""));
-        void refreshLipStatus();
-      }),
-    );
-    return () => {
-      clearTimeout(timer);
-      offs.forEach((off) => off());
-    };
-  }, [hasBackend]);
-
-  useEffect(() => {
-    if (!hasBackend) return;
-  }, [hasBackend]);
-
   return {
     // Computed
     hasBackend,
@@ -802,21 +716,7 @@ export const useSettings = (i18n: { language: string }) => {
     refreshSunTimes,
 
     // Lip
-    lipInstalled,
-    lipVersion,
-    lipLatestVersion,
-    lipPath,
-    lipUpToDate,
-    lipStatusError,
-    installingLip,
-    setInstallingLip,
     cleaningLipCache,
-    lipStatus,
-    lipProgress,
-    lipError,
-    setLipError,
-    lipProgressDisclosure,
-    refreshLipStatus,
     cleanLipCache,
 
     // Resource rules

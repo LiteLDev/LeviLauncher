@@ -69,8 +69,7 @@ state.call = async (name, ...args) => {
     return milestone ? count : 0;
   }
   if (scenario === 'sponsor-update' && name === 'CheckUpdate') return {isUpdate:true,version:'99.0.0',body:'Fixture update notes'};
-  if (scenario === 'sponsor-check-error' && (name === 'CheckUpdate' || name === 'GetLipStatus')) throw new Error('Fixture: update service unavailable');
-  if (scenario === 'sponsor-lip' && name === 'GetLipStatus') return {installed:true,upToDate:false,currentVersion:'1.0.0',latestVersion:'2.0.0'};
+  if (scenario === 'sponsor-check-error' && name === 'CheckUpdate') throw new Error('Fixture: update service unavailable');
   if (scenario.includes('content-import')) {
     if (name === 'OpenContentFiles') return state.importFiles || ['C:\\Fixture\\example.mcworld'];
     if (name === 'ListDir' && String(args[0]).endsWith('users')) {
@@ -179,7 +178,6 @@ state.call = async (name, ...args) => {
  if (name==='ListMinecraftProcesses') return state.processes;
  if (name==='KillProcess'||name==='KillAllMinecraftProcesses') {if(scenario==='process-error'&&!state.recovered)return 'Fixture: Access is denied';state.processes=[];return '';}
  if (name==='CheckUpdate') return {isUpdate:false};
- if (name==='GetLipStatus') return {installed:scenario.startsWith('catalog'),upToDate:true,currentVersion:'1.0.0',latestVersion:'1.0.0'};
  if (name==='GetLipGithubProxy') return state.lipGithubProxy || 'https://github.bibk.top';
  if (name==='SetLipGithubProxy') {state.lipGithubProxy = args[0] || 'https://github.bibk.top';return '';}
  if (scenario.startsWith('catalog') && name==='FetchLeviLaminaVersionDB') return {'1.21.0':['0.1.0','0.2.0']};

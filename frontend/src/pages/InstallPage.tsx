@@ -385,16 +385,6 @@ export default function InstallPage() {
     setInstallError("");
     setResultMsg("");
 
-    if (!isUWP && installLeviLamina) {
-      try {
-        const lipInstalled = await minecraft.IsLipInstalled();
-        if (!lipInstalled) {
-          reportInstallFailure("ERR_LIP_NOT_INSTALLED");
-          return;
-        }
-      } catch {}
-    }
-
     const name = (installName || "").trim();
     let installationCreated = false;
     const rollback = async () => {

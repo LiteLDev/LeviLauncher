@@ -613,9 +613,7 @@ export const buildListItems = (args: {
     const queryError = String(installState?.error || "").trim();
     const treatedAsLip =
       installedByLIP ||
-      (group.hasSelfVariantMapping &&
-        Boolean(queryError) &&
-        queryError !== "ERR_LIP_NOT_INSTALLED");
+      (group.hasSelfVariantMapping && Boolean(queryError));
     if (!treatedAsLip) continue;
 
     const uniqueFolders = Array.from(new Set(group.folders));

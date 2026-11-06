@@ -366,7 +366,7 @@ export const ModIntelligenceProvider: React.FC<{
         snapshotsRef.current.get(normalizedName) || baseSnapshot;
 
       if (!lipSourceLoaded) {
-        // LeviLamina state only needs the local lipd, not the remote index.
+        // LeviLamina state only needs the local package state, not the remote index.
         const llState = await queryInstallState(
           normalizedName,
           LEVILAMINA_IDENTIFIER,
@@ -434,15 +434,11 @@ export const ModIntelligenceProvider: React.FC<{
         lipInstallStateByIdentifier.set(item.identifierKey, state);
       }
 
-      const llBlockingError =
-        Boolean(llState.error) &&
-        String(llState.error).trim() !== "ERR_LIP_NOT_INSTALLED";
+      const llBlockingError = Boolean(llState.error);
       const hasBlockingError =
         llBlockingError ||
-        Array.from(lipInstallStateByIdentifier.values()).some(
-          (state) =>
-            Boolean(state.error) &&
-            String(state.error).trim() !== "ERR_LIP_NOT_INSTALLED",
+        Array.from(lipInstallStateByIdentifier.values()).some((state) =>
+          Boolean(state.error),
         );
 
       if (hasBlockingError) {
@@ -450,9 +446,7 @@ export const ModIntelligenceProvider: React.FC<{
           (llBlockingError
             ? llState.error
             : Array.from(lipInstallStateByIdentifier.values()).find(
-                (state) =>
-                  Boolean(state.error) &&
-                  String(state.error).trim() !== "ERR_LIP_NOT_INSTALLED",
+                (state) => Boolean(state.error),
               )?.error) || "ERR_LIP_PACKAGE_QUERY_FAILED";
 
         setSnapshot(normalizedName, {

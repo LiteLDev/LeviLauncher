@@ -764,10 +764,7 @@ export const useModsPage = (
     currentSnapshot?.status === "ready" &&
     lipSyncStatus === "loading";
 
-  const lipInfoWarning =
-    lipSyncStatus === "error" && lipSyncError !== "ERR_LIP_NOT_INSTALLED"
-      ? lipSyncError
-      : "";
+  const lipInfoWarning = lipSyncStatus === "error" ? lipSyncError : "";
 
   const visibleItemMap = useMemo(() => {
     const map = new Map<string, VisibleItem>();

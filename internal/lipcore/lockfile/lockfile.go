@@ -4,12 +4,20 @@
 package lockfile
 
 import (
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io/fs"
+	"os"
+	"path/filepath"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/manifest"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/stjson"
 )
 
 // ErrNotImplemented is returned by skeleton stubs.
+//
+// Deprecated: kept for API compatibility; nothing returns it any more.
 var ErrNotImplemented = errors.New("lockfile: not implemented")
 
 // FileName is the state file name inside the workspace (instance) directory.
@@ -54,18 +62,143 @@ func New() *State {
 // a malformed file is reported via the returned error AND an empty state is
 // returned, so callers may print the error and continue.
 func Load(dir string) (*State, error) {
-	return New(), ErrNotImplemented
+	path := filepath.Join(dir, FileName)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		if errors.Is(err, fs.ErrNotExist) {
+			return New(), nil
+		}
+		return New(), fmt.Errorf("failed to load workspace state from '%s': %w", FileName, err)
+	}
+	s, err := Unmarshal(data)
+	if err != nil {
+		return New(), fmt.Errorf("failed to load workspace state from '%s': %w", FileName, err)
+	}
+	return s, nil
+}
+
+// Unmarshal decodes lock file bytes with System.Text.Json's rules for
+// lip's WorkspaceState: format_version/format_uuid are optional but must
+// match when present, "packages" and every package property are required,
+// and each manifest is decoded like manifest.Parse.
+func Unmarshal(data []byte) (*State, error) {
+	const what = "workspace state"
+	o, err := manifest.DecodeObject(manifest.TrimBOM(data), what)
+	if err != nil {
+		return nil, err
+	}
+	if fv, ok, err := o.Int("format_version", what); err != nil {
+		return nil, err
+	} else if ok && fv != manifest.FormatVersion {
+		return nil, fmt.Errorf("unsupported format version: %d", fv)
+	}
+	if _, ok := o["format_uuid"]; ok {
+		uuid, err := o.String("format_uuid", what, true)
+		if err != nil {
+			return nil, err
+		}
+		if uuid != manifest.FormatUUID {
+			return nil, fmt.Errorf("unsupported format UUID: %s", uuid)
+		}
+	}
+	if _, ok := o["packages"]; !ok {
+		return nil, fmt.Errorf("%s: missing required property 'packages'", what)
+	}
+	items, err := o.List("packages", what)
+	if err != nil {
+		return nil, err
+	}
+	s := New()
+	for i, raw := range items {
+		p, err := decodePackage(raw, fmt.Sprintf("packages[%d]", i))
+		if err != nil {
+			return nil, err
+		}
+		s.Packages = append(s.Packages, p)
+	}
+	return s, nil
+}
+
+func decodePackage(raw json.RawMessage, what string) (Package, error) {
+	var p Package
+	o, err := manifest.DecodeObject(raw, what)
+	if err != nil {
+		return p, err
+	}
+	if p.Files, err = o.StringList("files", what, true, false); err != nil {
+		return p, err
+	}
+	if p.Locked, err = o.Bool("locked", what); err != nil {
+		return p, err
+	}
+	m, ok := o["manifest"]
+	if !ok {
+		return p, fmt.Errorf("%s: missing required property 'manifest'", what)
+	}
+	mf, err := manifest.Parse(m)
+	if err != nil {
+		return p, fmt.Errorf("%s.manifest: %w", what, err)
+	}
+	p.Manifest = *mf
+	if p.Variant, err = o.String("variant", what, true); err != nil {
+		return p, err
+	}
+	if !manifest.IsValidVariant(p.Variant) {
+		return p, fmt.Errorf("invalid package variant: %s", p.Variant)
+	}
+	return p, nil
 }
 
 // Save writes s to <dir>/tooth_lock.json exactly as lip does
-// (System.Text.Json indented, see package stjson).
+// (System.Text.Json indented, see package stjson), creating dir if needed.
+// Unlike lip, the file is replaced atomically (temp file + rename) so an
+// interrupted write cannot leave a truncated lock file behind.
 func (s *State) Save(dir string) error {
-	return ErrNotImplemented
+	data, err := s.Marshal()
+	if err != nil {
+		return err
+	}
+	if err := os.MkdirAll(dir, 0o755); err != nil {
+		return err
+	}
+	tmp, err := os.CreateTemp(dir, FileName+".*.tmp")
+	if err != nil {
+		return err
+	}
+	tmpName := tmp.Name()
+	_, err = tmp.Write(data)
+	if cerr := tmp.Close(); err == nil {
+		err = cerr
+	}
+	if err == nil {
+		err = os.Rename(tmpName, filepath.Join(dir, FileName))
+	}
+	if err != nil {
+		_ = os.Remove(tmpName)
+		return err
+	}
+	return nil
 }
 
 // Marshal returns the bytes Save would write.
 func (s *State) Marshal() ([]byte, error) {
-	return nil, ErrNotImplemented
+	return stjson.Marshal(s)
+}
+
+// MarshalSTJSON writes s like lip: the format version/uuid are always the
+// current constants and a nil package list is written as [].
+func (s *State) MarshalSTJSON(w *stjson.Writer) error {
+	w.BeginObject()
+	w.Key("format_version")
+	w.Int(manifest.FormatVersion)
+	w.Key("format_uuid")
+	w.String(manifest.FormatUUID)
+	w.Key("packages")
+	if err := w.Value(s.Packages); err != nil {
+		return err
+	}
+	w.EndObject()
+	return nil
 }
 
 // Find returns the index of the package with the given id, or -1.

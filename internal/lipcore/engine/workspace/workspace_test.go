@@ -13,6 +13,7 @@ import (
 	"strings"
 	"sync"
 	"testing"
+	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/manifest"
 )
@@ -490,6 +491,69 @@ func TestUninstallMissingParentDirectoryFails(t *testing.T) {
 	}
 	if len(rep.lines) != 1 || !strings.HasPrefix(rep.lines[0], "warning: ") {
 		t.Errorf("reporter %q", rep.lines)
+	}
+}
+
+func TestInstallPackageDirPlacementOnEmptyKeyFails(t *testing.T) {
+	dir := t.TempDir()
+	// An uncompressed asset's only key is "" (SingleFileSource).
+	src := newMemSource("", "DLL")
+	variant := &manifest.Variant{Assets: []manifest.Asset{
+		{Type: manifest.AssetUncompressed, URLs: []string{"u"}, Placements: []manifest.Placement{
+			{Type: manifest.PlacementDir, Src: "", Dest: "plugins/x.dll"},
+		}},
+	}}
+	w := &Workspace{Dir: dir, Glob: fakeCompile}
+	open := func(context.Context, manifest.Asset) (Source, error) { return src, nil }
+	files, err := w.InstallPackage(context.Background(), variant, open)
+	if err == nil || err.Error() != "The value cannot be an empty string. (Parameter 'path')" {
+		t.Fatalf("err = %v", err)
+	}
+	if len(files) != 0 || exists(filepath.Join(dir, "plugins", "x.dll")) {
+		t.Errorf("placed %q", files)
+	}
+
+	// A file placement on the empty key still matches exactly.
+	got, err := w.MatchPlacements([]string{""}, []manifest.Placement{{Type: manifest.PlacementFile, Src: "", Dest: "a.dll"}})
+	if err != nil || !reflect.DeepEqual(got, []Target{{"", "a.dll"}}) {
+		t.Errorf("got %q, %v", got, err)
+	}
+}
+
+func TestDefaultCommandRunnerCancelKillsTree(t *testing.T) {
+	dir := t.TempDir()
+	// The nested shell is a grandchild holding the output pipes; it writes
+	// late.txt after about 5s unless it is killed with the tree.
+	var script string
+	if runtime.GOOS == "windows" {
+		if err := os.WriteFile(filepath.Join(dir, "outer.cmd"), []byte("@cmd /c .\\inner.cmd\r\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(dir, "inner.cmd"), []byte("@ping -n 6 127.0.0.1 >nul\r\n@echo late> late.txt\r\n"), 0o644); err != nil {
+			t.Fatal(err)
+		}
+		script = `.\outer.cmd`
+	} else {
+		if _, err := os.Stat("/bin/sh"); err != nil {
+			t.Skip("no sh")
+		}
+		script = `sh -c "sleep 5; echo late > late.txt"; true`
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 500*time.Millisecond)
+	defer cancel()
+	start := time.Now()
+	err := DefaultCommandRunner(ctx, dir, script, io.Discard, io.Discard)
+	elapsed := time.Since(start)
+	if !errors.Is(err, context.DeadlineExceeded) {
+		t.Errorf("err = %v", err)
+	}
+	if elapsed > 3*time.Second {
+		t.Fatalf("returned after %v", elapsed)
+	}
+	time.Sleep(6*time.Second - elapsed)
+	if exists(filepath.Join(dir, "late.txt")) {
+		t.Error("grandchild survived cancellation")
 	}
 }
 

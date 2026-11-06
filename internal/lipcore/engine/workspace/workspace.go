@@ -135,6 +135,12 @@ func matchPlacements(base string, keys []string, placements []manifest.Placement
 					}
 					srcFull[i] = getFullPath(base, src)
 				}
+				if key == "" {
+					// Path.GetRelativePath throws for an empty path in lip, so a
+					// dir placement fails on an uncompressed asset (whose only
+					// key is "").
+					return nil, errors.New("The value cannot be an empty string. (Parameter 'path')")
+				}
 				rel := relativePathBetween(srcFull[i], getFullPath(base, key))
 				if !strings.HasPrefix(rel, "..") {
 					matches = append(matches, Target{Key: key, Dest: pathCombine(placement.Dest, rel)})

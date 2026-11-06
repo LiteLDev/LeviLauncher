@@ -106,9 +106,12 @@ func dirExists(p string) bool {
 }
 
 // deleteFile ports File.Delete / FileInfo.Delete: a missing file is not an
-// error, but a missing parent directory or a directory at p is.
+// error, but a missing parent directory or a directory at p is. Like .NET
+// (EnsureExtendedPrefixIfNeeded) a long path gets the \\?\ prefix, so files
+// os.Create placed beyond MAX_PATH can be deleted when long paths are not
+// enabled system-wide.
 func deleteFile(p string) error {
-	ptr, err := syscall.UTF16PtrFromString(p)
+	ptr, err := syscall.UTF16PtrFromString(extendedPath(p))
 	if err != nil {
 		return err
 	}
@@ -124,4 +127,21 @@ func deleteFile(p string) error {
 		return &os.PathError{Op: "remove", Path: p, Err: fmt.Errorf("Access to the path '%s' is denied.: %w", p, err)}
 	}
 	return &os.PathError{Op: "remove", Path: p, Err: err}
+}
+
+// extendedPath ports PathInternal.EnsureExtendedPrefixIfNeeded for a full
+// path: a path of MAX_PATH (260) UTF-16 units or more, or one ending in a
+// period or space, gets the \\?\ prefix (\\?\UNC\ for a UNC path); device
+// paths are kept.
+func extendedPath(p string) string {
+	if len(utf16.Encode([]rune(p))) < syscall.MAX_PATH && !strings.HasSuffix(p, ".") && !strings.HasSuffix(p, " ") {
+		return p
+	}
+	if strings.HasPrefix(p, `\\?\`) || strings.HasPrefix(p, `\\.\`) || strings.HasPrefix(p, `\??\`) {
+		return p
+	}
+	if strings.HasPrefix(p, `\\`) {
+		return `\\?\UNC\` + p[2:]
+	}
+	return `\\?\` + p
 }

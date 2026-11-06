@@ -10,8 +10,17 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+	"time"
 	"unicode"
 )
+
+// commandWaitDelay bounds how long a cancelled script may keep its output
+// pipes open (through a process that escaped the kill) before Wait gives up
+// on them.
+const commandWaitDelay = 2 * time.Second
+
+// startCommand starts a prepared script process; tests replace it.
+var startCommand = (*exec.Cmd).Start
 
 // DefaultCommandRunner runs commands like lip's CommandRunner, which uses
 // CliWrap: Cli.Wrap("cmd.exe").WithArguments(["/c", command]) on Windows
@@ -19,6 +28,10 @@ import (
 // directory dir and the inherited environment. On Windows the process
 // command line is built exactly like .NET's Process does for CliWrap:
 // `"<resolved cmd.exe path>" /c <command escaped by CliWrap>`.
+//
+// Like CliWrap (CreateNoWindow) the process gets no console window. The
+// script runs as a process tree that is killed as a whole when ctx is
+// cancelled (lip had no cancellation; the launcher used to kill lipd).
 //
 // A non-zero exit code yields an error carrying CliWrap's
 // CommandExecutionException message.
@@ -38,10 +51,27 @@ func DefaultCommandRunner(ctx context.Context, dir, command string, stdout, stde
 	cmd.Stdin = nil // os.DevNull
 	cmd.Stdout = stdout
 	cmd.Stderr = stderr
+	cmd.WaitDelay = commandWaitDelay
 	arguments := flag + " " + escapeArgument(command)
-	setCommandLine(cmd, `"`+path+`" `+arguments)
+	tree, err := newProcessTree(cmd, `"`+path+`" `+arguments)
+	if err != nil {
+		return err
+	}
+	defer tree.release()
 
-	if err := cmd.Run(); err != nil {
+	if err := startCommand(cmd); err != nil {
+		return err
+	}
+	if err := tree.started(); err != nil {
+		_ = cmd.Process.Kill()
+		_ = cmd.Wait()
+		if ctxErr := ctx.Err(); ctxErr != nil {
+			return ctxErr
+		}
+		return err
+	}
+
+	if err := cmd.Wait(); err != nil {
 		if ctxErr := ctx.Err(); ctxErr != nil {
 			return ctxErr
 		}

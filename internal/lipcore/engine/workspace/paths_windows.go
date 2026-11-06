@@ -1,0 +1,127 @@
+//go:build windows
+
+package workspace
+
+import (
+	"errors"
+	"fmt"
+	"os"
+	"path/filepath"
+	"strings"
+	"syscall"
+	"unicode/utf16"
+)
+
+// getFullPath ports Path.GetFullPath with base as the working directory. It
+// uses GetFullPathNameW like .NET, so "/" becomes "\", "." and ".." are
+// collapsed and trailing dots and spaces of segments are removed; a
+// trailing separator is kept. Like .NET, 8.3 short names are expanded when
+// the result contains '~'.
+func getFullPath(base, p string) string {
+	var in string
+	switch {
+	case len(p) >= 2 && isDirSep(rune(p[0])) && isDirSep(rune(p[1])):
+		in = p // UNC or device path
+	case len(p) >= 1 && isDirSep(rune(p[0])):
+		in = filepath.VolumeName(base) + p
+	case len(p) >= 2 && isDriveLetter(p[0]) && p[1] == ':':
+		in = p
+	default:
+		in = strings.TrimRight(base, `\/`) + `\` + p
+	}
+	full, err := syscall.FullPath(in)
+	if err != nil {
+		return in
+	}
+	if strings.ContainsRune(full, '~') {
+		full = expandShortName(full)
+	}
+	return full
+}
+
+// expandShortName ports PathHelper.TryExpandShortFileName: expand the
+// longest existing prefix with GetLongPathNameW and re-append the rest.
+func expandShortName(p string) string {
+	existing := p
+	rest := ""
+	for {
+		if l, ok := longPathName(existing); ok {
+			return l + rest
+		}
+		dir := filepath.Dir(existing)
+		if dir == existing || len(dir) <= len(filepath.VolumeName(existing))+1 {
+			return p
+		}
+		rest = existing[len(dir):] + rest
+		if !strings.HasSuffix(dir, `\`) && !strings.HasPrefix(rest, `\`) {
+			rest = `\` + rest
+		}
+		existing = dir
+	}
+}
+
+func longPathName(p string) (string, bool) {
+	in, err := syscall.UTF16PtrFromString(p)
+	if err != nil {
+		return "", false
+	}
+	buf := make([]uint16, 260)
+	for {
+		n, err := syscall.GetLongPathName(in, &buf[0], uint32(len(buf)))
+		if err != nil || n == 0 {
+			return "", false
+		}
+		if int(n) <= len(buf) {
+			return string(utf16.Decode(buf[:n])), true
+		}
+		buf = make([]uint16, n)
+	}
+}
+
+func fileAttributes(p string) (uint32, bool) {
+	fi, err := os.Lstat(p)
+	if err != nil {
+		return 0, false
+	}
+	if d, ok := fi.Sys().(*syscall.Win32FileAttributeData); ok {
+		return d.FileAttributes, true
+	}
+	if fi.IsDir() {
+		return syscall.FILE_ATTRIBUTE_DIRECTORY, true
+	}
+	return 0, true
+}
+
+// fileExists ports File.Exists: the path exists and is not a directory
+// (attributes of the entry itself; reparse points are not followed).
+func fileExists(p string) bool {
+	a, ok := fileAttributes(p)
+	return ok && a&syscall.FILE_ATTRIBUTE_DIRECTORY == 0
+}
+
+// dirExists ports Directory.Exists.
+func dirExists(p string) bool {
+	a, ok := fileAttributes(p)
+	return ok && a&syscall.FILE_ATTRIBUTE_DIRECTORY != 0
+}
+
+// deleteFile ports File.Delete / FileInfo.Delete: a missing file is not an
+// error, but a missing parent directory or a directory at p is.
+func deleteFile(p string) error {
+	ptr, err := syscall.UTF16PtrFromString(p)
+	if err != nil {
+		return err
+	}
+	err = syscall.DeleteFile(ptr)
+	switch {
+	case err == nil:
+		return nil
+	case errors.Is(err, syscall.ERROR_FILE_NOT_FOUND):
+		return nil
+	case errors.Is(err, syscall.ERROR_PATH_NOT_FOUND):
+		return &os.PathError{Op: "remove", Path: p, Err: fmt.Errorf("Could not find a part of the path '%s'.: %w", p, err)}
+	case errors.Is(err, syscall.ERROR_ACCESS_DENIED):
+		return &os.PathError{Op: "remove", Path: p, Err: fmt.Errorf("Access to the path '%s' is denied.: %w", p, err)}
+	}
+	return &os.PathError{Op: "remove", Path: p, Err: err}
+}

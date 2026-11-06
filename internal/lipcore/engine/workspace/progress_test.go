@@ -57,7 +57,9 @@ func (r *progressRec) bars(t *testing.T) [][]report.Progress {
 				if p.Current < prev.Current {
 					t.Errorf("bar %s went back: %d -> %d", p.ID, prev.Current, p.Current)
 				}
-				if p.Total != prev.Total && prev.Total > 0 {
+				// A known total only changes when counted work outgrew it,
+				// and then to exactly the amount counted.
+				if p.Total != prev.Total && prev.Total > 0 && !(p.Total > prev.Total && p.Total == p.Current) {
 					t.Errorf("bar %s changed its total: %d -> %d", p.ID, prev.Total, p.Total)
 				}
 			}
@@ -172,6 +174,37 @@ func TestPlaceProgressCountsBytes(t *testing.T) {
 	// plus one before and one after each file, the first and the Done.
 	if n := len(bar); n > 16+2*3+2 {
 		t.Errorf("%d updates for %d bytes", n, total)
+	}
+}
+
+// understatedSource reports every entry one byte smaller than it is, like
+// an archive header that understates a stream.
+type understatedSource struct{ *memSource }
+
+func (s understatedSource) Size(key string) (int64, bool) {
+	return int64(len(s.data[key])) - 1, true
+}
+
+func TestPlaceProgressBytesNeverExceedTotal(t *testing.T) {
+	rec := &progressRec{}
+	w := &Workspace{Dir: t.TempDir(), Reporter: rec, Glob: fakeCompile}
+	big := strings.Repeat("x", 1<<20)
+	open := openerOf(map[manifest.AssetType]Source{
+		manifest.AssetSelf: understatedSource{newMemSource("a.txt", "AB", "big.bin", big)},
+	})
+	if _, err := w.InstallPackage(context.Background(), placeVariant(manifest.AssetSelf), open); err != nil {
+		t.Fatal(err)
+	}
+	bars := rec.bars(t) // checks Current <= Total on every update
+	if len(bars) != 1 {
+		t.Fatalf("bars = %d", len(bars))
+	}
+	written := int64(2 + len(big))
+	if p := last(bars[0]); p.Unit != report.UnitBytes || p.Current != written || p.Total != written {
+		t.Errorf("place bar ends with %+v, want %d of %d bytes", p, written, written)
+	}
+	if first := bars[0][0]; first.Total != written-2 {
+		t.Errorf("place bar starts with total %d, want the declared %d", first.Total, written-2)
 	}
 }
 

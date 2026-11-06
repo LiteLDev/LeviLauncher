@@ -70,7 +70,7 @@ func (b *progressBar) update(cur int64, item string) {
 	if b.closed {
 		return
 	}
-	b.p.Current = cur
+	b.setCurrent(cur)
 	if item != "" {
 		b.p.Item = item
 	}
@@ -100,9 +100,20 @@ func (b *progressBar) done() {
 // amount last reported), so a bar ended early still counts finished work.
 func (b *progressBar) doneAt(cur int64) {
 	if !b.closed && cur > b.p.Current {
-		b.p.Current = cur
+		b.setCurrent(cur)
 	}
 	b.done()
+}
+
+// setCurrent sets the amount done. A known Total is only a declaration (a
+// Sizer's size may understate the bytes a stream yields); when counted work
+// passes it, Total is raised to the counted amount so Current never exceeds
+// Total within a bar.
+func (b *progressBar) setCurrent(cur int64) {
+	b.p.Current = cur
+	if b.p.Total > 0 && cur > b.p.Total {
+		b.p.Total = cur
+	}
 }
 
 // byteCounter counts bytes written to a placed file into a bar, reporting

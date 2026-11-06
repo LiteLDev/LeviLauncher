@@ -5,6 +5,8 @@ import (
 	"sync"
 	"testing"
 
+	"github.com/liteldev/LeviLauncher/internal/lipcore/engine/workspace"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/report"
 )
 
@@ -249,5 +251,37 @@ func TestProgressFallsBackToPercentages(t *testing.T) {
 		if !h.rep.has(want) {
 			t.Errorf("missing %q in %q", want, h.rep.msgs)
 		}
+	}
+}
+
+// sizedAsset is a fetch.AssetSource that knows its entry sizes, as an
+// archive source implementing workspace.Sizer would.
+type sizedAsset struct {
+	fetch.AssetSource
+	sizes map[string]int64
+}
+
+func (s sizedAsset) Size(key string) (int64, bool) {
+	n, ok := s.sizes[key]
+	return n, ok
+}
+
+// TestArchiveSourceForwardsSize pins that archiveSource, which embeds the
+// fetch.AssetSource interface and so hides its dynamic type's methods,
+// still exposes a wrapped source's sizes to the workspace.
+func TestArchiveSourceForwardsSize(t *testing.T) {
+	var src workspace.Source = archiveSource{sizedAsset{sizes: map[string]int64{"a.dll": 42}}}
+	sz, ok := src.(workspace.Sizer)
+	if !ok {
+		t.Fatal("archiveSource does not implement workspace.Sizer")
+	}
+	if n, ok := sz.Size("a.dll"); !ok || n != 42 {
+		t.Errorf("Size(a.dll) = %d, %v; want 42, true", n, ok)
+	}
+	if _, ok := sz.Size("missing"); ok {
+		t.Error("Size(missing) is known")
+	}
+	if _, ok := (archiveSource{}).Size("a.dll"); ok {
+		t.Error("a source without sizes reports one")
 	}
 }

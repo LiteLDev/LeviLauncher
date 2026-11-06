@@ -918,6 +918,19 @@ func idIn(ids []manifest.PackageID, id manifest.PackageID) bool {
 	return false
 }
 
+// Size forwards workspace.Sizer to the wrapped archive source. The embedded
+// fetch.AssetSource is an interface, so its dynamic type's Size method is not
+// promoted; without this the placement bar could never count bytes for
+// archive assets.
+func (s archiveSource) Size(key string) (int64, bool) {
+	if sz, ok := s.AssetSource.(workspace.Sizer); ok {
+		return sz.Size(key)
+	}
+	return 0, false
+}
+
+var _ workspace.Sizer = archiveSource{}
+
 // Close releases the registry's resources (retained git packs) when it has
 // any. The engine must not be used afterwards.
 func (e *Engine) Close() error {

@@ -37,8 +37,10 @@
 //     the selection, the topological output order and the registry calls
 //     can differ from lip in that situation.
 //
-// A search that succeeds in lip never fails here: lip only selects valid
-// assignments and this search is complete.
+// A search that succeeds in lip never reports ErrNoSolution here: lip only
+// selects valid assignments and this search is complete. It may still fail
+// with a registry error (e.g. no variant for this platform) from a version
+// lip had wrongly pruned and so never queried.
 //
 // lip quirks kept as they are:
 //

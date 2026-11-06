@@ -126,6 +126,13 @@ func matchPlacements(base string, keys []string, placements []manifest.Placement
 				}
 
 			case manifest.PlacementDir:
+				// lip's Path.GetRelativePath throws for an empty path, so a dir
+				// placement fails on an uncompressed asset (whose only key is
+				// ""), and Path.GetFullPath then throws for a path of spaces on
+				// Windows.
+				if key == "" {
+					return nil, errors.New("The value cannot be an empty string. (Parameter 'path')")
+				}
 				// Keep compatibility with older versions of the manifest where src
 				// could be empty.
 				if srcFull[i] == "" {
@@ -133,7 +140,13 @@ func matchPlacements(base string, keys []string, placements []manifest.Placement
 					if src == "" {
 						src = "."
 					}
+					if isEffectivelyEmpty(src) {
+						return nil, errPathEmpty
+					}
 					srcFull[i] = getFullPath(base, src)
+				}
+				if isEffectivelyEmpty(key) {
+					return nil, errPathEmpty
 				}
 				rel := relativePathBetween(srcFull[i], getFullPath(base, key))
 				if !strings.HasPrefix(rel, "..") {

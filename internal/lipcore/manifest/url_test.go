@@ -118,6 +118,15 @@ func TestNormalizeURLIRITrigger(t *testing.T) {
 		{"https://h.com/x%3cy", "https://h.com/x%3cy"},
 		{"https://h.com/x%3cy?q=%c3%a9", "https://h.com/x%3Cy?q=%C3%A9"},
 		{"https://h.com/x%3c%c3%a9", "https://h.com/x%3C%C3%A9"},
+		// With IRI, System.Uri trims trailing spaces the IRI pass decoded in
+		// the fragment (Flurl 4.0.0 / .NET 10 results).
+		{"https://github.com/o/r/releases/download/v1.0.0/%e4%b8%ad.zip#sha%20", "https://github.com/o/r/releases/download/v1.0.0/%E4%B8%AD.zip#sha"},
+		{"https://h.com/%C3%A9#%7F%20", "https://h.com/%C3%A9#%7F"},
+		{"https://h.com/a%41#%20", "https://h.com/aA#"},
+		{"https://h.com/a%41#x%20%20", "https://h.com/aA#x"},
+		{"https://h.com/a%41#%20x", "https://h.com/aA#%20x"},
+		{"https://h.com/a#%20", "https://h.com/a#%20"},
+		{"https://h.com/a%41?q=%20#f", "https://h.com/aA?q=%20#f"},
 		{"https://h.com/x%5e%c2%80", "https://h.com/x%5E%c2%80"},
 		{"https://h.com/x%3cy#%c2%80", "https://h.com/x%3Cy#%c2%80"},
 		{"https://h.com/x%3cy?q=%41", "https://h.com/x%3Cy?q=A"},
@@ -279,6 +288,7 @@ func TestNormalizeURLInvalidHexSkipsIRI(t *testing.T) {
 		{"https://h.com/a%%3c%c3%a9", "https://h.com/a%25%3c%C3%A9"},
 		{"https://h.com/x?q=%%c3%a9", "https://h.com/x?q=%25%c3%a9"},
 		{"https://h.com/%c3%a9%%3c", "https://h.com/%C3%A9%25%3c"},
+		{"https://h.com/%c3%a9#%z%20", "https://h.com/%C3%A9#%25z%20"},
 	}
 	for _, tt := range tests {
 		if got := NormalizeURL(tt.in); got != tt.want {

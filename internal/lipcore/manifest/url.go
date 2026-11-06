@@ -81,7 +81,7 @@ func writeQueryFragment(b *strings.Builder, query string, hasQuery bool, frag st
 	}
 	if hasFrag {
 		b.WriteByte('#')
-		b.WriteString(escapeURLPart(frag, false, iri))
+		b.WriteString(escapeIRIPart(frag, false, iri, iri))
 	}
 }
 
@@ -201,7 +201,16 @@ func iriKeepsEscaped(v byte) bool {
 //     re-escaped in uppercase;
 //   - every other escape is copied as written.
 func escapeURLPart(s string, isQuery, iri bool) string {
+	return escapeIRIPart(s, isQuery, iri, false)
+}
+
+// escapeIRIPart is escapeURLPart; with trimSpaces it also drops the trailing
+// whitespace the IRI pass produced, as System.Uri does for the fragment
+// (GetLengthWithoutTrailingSpaces right after EscapeUnescapeIri, Uri.cs). An
+// escaped space copied verbatim (no IRI, or skipped after invalid hex) stays.
+func escapeIRIPart(s string, isQuery, iri, trimSpaces bool) string {
 	var b strings.Builder
+	keep := 0 // output length up to the last character that is not trimmed
 	// plain counts characters the IRI pass skips: EscapeUnescapeIri copies a
 	// '%' with invalid hex and the two characters after it as they are
 	// (IriHelper.cs, DecodeHexChars == c_DummyChar), so only the later
@@ -213,6 +222,8 @@ func escapeURLPart(s string, isQuery, iri bool) string {
 		if plain > 0 {
 			plain--
 		}
+		// A decoded or literal space (System.Uri.IsLWS) is trimmable.
+		trimmable := false
 		if c == '%' {
 			if i+2 < len(s) {
 				hi, ok1 := unhex(s[i+1])
@@ -228,6 +239,7 @@ func escapeURLPart(s string, isQuery, iri bool) string {
 						b.WriteByte(v)
 						i += 2
 					case v < utf8.RuneSelf:
+						trimmable = v == ' '
 						b.WriteByte('%')
 						b.WriteByte(upperHex[v>>4])
 						b.WriteByte(upperHex[v&0xF])
@@ -241,22 +253,30 @@ func escapeURLPart(s string, isQuery, iri bool) string {
 							i += 2
 						}
 					}
-					continue
+					goto next
 				}
 			}
 			if useIRI && i+2 < len(s) {
 				plain = 2
 			}
 			b.WriteString("%25")
-			continue
+			goto next
 		}
 		if c <= 0x20 || c >= 0x7F || strings.IndexByte("\"<>\\^`{|}", c) >= 0 {
+			trimmable = useIRI && (c == ' ' || c == '\t' || c == '\r' || c == '\n')
 			b.WriteByte('%')
 			b.WriteByte(upperHex[c>>4])
 			b.WriteByte(upperHex[c&0xF])
-			continue
+			goto next
 		}
 		b.WriteByte(c)
+	next:
+		if !trimmable {
+			keep = b.Len()
+		}
+	}
+	if trimSpaces {
+		return b.String()[:keep]
 	}
 	return b.String()
 }

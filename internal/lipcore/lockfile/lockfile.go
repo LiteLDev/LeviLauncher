@@ -183,7 +183,7 @@ func (s *State) Save(dir string) error {
 
 // Rename retry budget for replaceFile; rename is replaced in tests.
 var (
-	rename         = os.Rename
+	rename         = replaceRename
 	renameAttempts = 20
 	renameBackoff  = 25 * time.Millisecond
 )
@@ -215,7 +215,7 @@ func readFile(path string) ([]byte, error) {
 		if i > 0 {
 			time.Sleep(renameBackoff)
 		}
-		if data, err = os.ReadFile(path); err == nil || errors.Is(err, fs.ErrNotExist) {
+		if data, err = readAll(path); err == nil || errors.Is(err, fs.ErrNotExist) {
 			return data, err
 		}
 	}

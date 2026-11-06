@@ -460,9 +460,10 @@ func TestListDoesNotWaitForRunningInstall(t *testing.T) {
 	}
 }
 
-// The real engine reaches GitHub through the system-proxy-aware httpx
-// transport (lip used HttpClient.DefaultProxy), refusing https -> http
-// redirects like Flurl.
+// The real engine reaches GitHub through httpx's blocking system-proxy
+// transport, which waits for PAC/WPAD like lip's HttpClient.DefaultProxy
+// (the shared UI transport would go direct when the lookup is slow), and
+// refuses https -> http redirects like Flurl.
 func TestNewEngineUsesSystemProxyClient(t *testing.T) {
 	setProxyConfig(t, "", false)
 	e, ok := newEngine(t.TempDir(), nil).(*engine.Engine)
@@ -477,10 +478,13 @@ func TestNewEngineUsesSystemProxyClient(t *testing.T) {
 	if !ok {
 		t.Fatalf("Git = %T", reg.Git)
 	}
-	want := httpx.DefaultClient().Transport
+	if engineHTTPClient.Transport == nil || engineHTTPClient.Transport == httpx.DefaultClient().Transport {
+		t.Fatal("engine client must use httpx's blocking proxy transport, not the shared UI transport")
+	}
+	want := engineHTTPClient.Transport
 	for name, c := range map[string]*http.Client{"git": git.HTTP, "downloader": reg.Downloader.HTTP} {
 		if c == nil || c.Transport != want {
-			t.Errorf("%s client does not use the httpx transport", name)
+			t.Errorf("%s client does not use the engine transport", name)
 			continue
 		}
 		if c.Timeout != 0 {
@@ -570,6 +574,127 @@ func TestCacheCleanWaitsForRunningTasks(t *testing.T) {
 	}
 	if err := <-cleanDone; err != nil {
 		t.Fatalf("cache clean failed: %v", err)
+	}
+}
+
+// blockInstallThenClean starts an install that holds the cache until
+// release is closed, then a CacheClean that waits behind it. It returns once
+// the clean is pending; cleanup releases both.
+func blockInstallThenClean(t *testing.T, state *fakeEngineState, cleanCtx context.Context) (release chan struct{}, cleanDone chan error) {
+	t.Helper()
+	release = make(chan struct{})
+	entered := make(chan struct{})
+	var first sync.Once
+	state.onCall = func(ctx context.Context, r report.Reporter) error {
+		blocked := false
+		first.Do(func() { blocked = true })
+		if blocked {
+			close(entered)
+			<-release
+		}
+		return nil
+	}
+	old := cleanCache
+	cleanCache = func() error { return nil }
+
+	installDone := make(chan error, 1)
+	go func() { installDone <- InstallPackagesViaDaemon(context.Background(), t.TempDir(), []string{"x"}) }()
+	<-entered
+	cleanDone = make(chan error, 1)
+	go func() { cleanDone <- CacheClean(cleanCtx) }()
+	for deadline := time.Now().Add(2 * time.Second); ; time.Sleep(time.Millisecond) {
+		cacheLock.mu.Lock()
+		pending := cacheLock.writersWaiting > 0
+		cacheLock.mu.Unlock()
+		if pending || len(cleanDone) > 0 {
+			break
+		}
+		if time.Now().After(deadline) {
+			t.Fatal("CacheClean never started waiting")
+		}
+	}
+	t.Cleanup(func() {
+		select {
+		case <-release:
+		default:
+			close(release)
+		}
+		if err := <-installDone; err != nil {
+			t.Errorf("install failed: %v", err)
+		}
+		<-cleanDone
+		cleanCache = old
+	})
+	return release, cleanDone
+}
+
+// List never touches the download cache, so a CacheClean queued behind a
+// running install must not hold it back.
+func TestListDoesNotWaitForPendingCacheClean(t *testing.T) {
+	recordEvents(t)
+	state := useFakeEngine(t)
+	blockInstallThenClean(t, state, context.Background())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() {
+		_, err := ListPackageStatesViaDaemon(ctx, t.TempDir())
+		done <- err
+	}()
+	select {
+	case err := <-done:
+		if err != nil {
+			t.Fatalf("List: %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("List blocked behind a pending CacheClean")
+	}
+}
+
+// A writing operation queued behind a pending CacheClean gives up at its
+// deadline.
+func TestCacheWaitHonorsContext(t *testing.T) {
+	recordEvents(t)
+	state := useFakeEngine(t)
+	blockInstallThenClean(t, state, context.Background())
+
+	ctx, cancel := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancel()
+	done := make(chan error, 1)
+	go func() { done <- UpdatePackagesViaDaemon(ctx, t.TempDir(), []string{"x"}) }()
+	select {
+	case err := <-done:
+		if !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("expected deadline error, got %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("Update ignored its context while waiting for the cache")
+	}
+}
+
+// CacheClean gives up at its deadline while an install holds the cache, and
+// operations held back by it then proceed.
+func TestCacheCleanHonorsContext(t *testing.T) {
+	recordEvents(t)
+	state := useFakeEngine(t)
+	cleanCtx, cancelClean := context.WithTimeout(context.Background(), 50*time.Millisecond)
+	defer cancelClean()
+	_, cleanDone := blockInstallThenClean(t, state, cleanCtx)
+
+	select {
+	case err := <-cleanDone:
+		cleanDone <- err // for the cleanup
+		if code := ErrorCode(err); code != "ERR_LIP_CACHE_CLEAN_FAILED" || !errors.Is(err, context.DeadlineExceeded) {
+			t.Fatalf("unexpected error %v", err)
+		}
+	case <-time.After(2 * time.Second):
+		t.Fatal("CacheClean ignored its context")
+	}
+	ctx, cancel := context.WithTimeout(context.Background(), time.Second)
+	defer cancel()
+	if err := UpdatePackagesViaDaemon(ctx, t.TempDir(), []string{"x"}); err != nil {
+		t.Fatalf("Update after abandoned clean: %v", err)
 	}
 }
 

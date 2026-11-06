@@ -70,13 +70,69 @@ var (
 	autoProxyLookupDisabledTill time.Time
 )
 
+// Lookups behind the system proxy resolvers; replaced in tests.
+var (
+	envProxy           = http.ProxyFromEnvironment
+	loadIEProxyConfig  = getCurrentUserIEProxyConfig
+	lookupAutoProxyURL = proxyURLFromAutoConfig
+)
+
 func newBaseTransport() *http.Transport {
 	base := http.DefaultTransport.(*http.Transport).Clone()
 	base.Proxy = proxyFromWindowsSystem
 	return base
 }
 
+func newBlockingBaseTransport() *http.Transport {
+	base := http.DefaultTransport.(*http.Transport).Clone()
+	base.Proxy = proxyFromWindowsSystemBlocking
+	return base
+}
+
+// autoProxyResolver resolves the PAC/WPAD proxy for req. resolved=false
+// falls back to the manual proxy; an error fails the request.
+type autoProxyResolver func(req *http.Request, cfg ieProxyConfig) (proxyURL *url.URL, resolved bool, err error)
+
+// proxyFromWindowsSystem keeps UI requests responsive: PAC/WPAD lookups get
+// a soft time budget and are skipped while another one runs or after a
+// failure.
 func proxyFromWindowsSystem(req *http.Request) (*url.URL, error) {
+	return systemProxyForRequest(req, func(req *http.Request, cfg ieProxyConfig) (*url.URL, bool, error) {
+		proxyURL, resolved := proxyURLFromAutoConfigWithBudget(req.URL, cfg)
+		return proxyURL, resolved, nil
+	})
+}
+
+// proxyFromWindowsSystemBlocking waits for the PAC/WPAD result like .NET's
+// HttpClient.DefaultProxy, falling back to the manual proxy only when
+// WinHTTP reports a failure. It gives up when the request's context ends.
+func proxyFromWindowsSystemBlocking(req *http.Request) (*url.URL, error) {
+	return systemProxyForRequest(req, func(req *http.Request, cfg ieProxyConfig) (*url.URL, bool, error) {
+		type result struct {
+			proxyURL *url.URL
+			resolved bool
+			err      error
+		}
+		// WinHttpGetProxyForUrl cannot be cancelled; a lookup abandoned
+		// with its request finishes in the background.
+		resultCh := make(chan result, 1)
+		go func() {
+			proxyURL, resolved, err := lookupAutoProxyURL(req.URL, cfg)
+			resultCh <- result{proxyURL, resolved, err}
+		}()
+		select {
+		case r := <-resultCh:
+			if r.err != nil {
+				return nil, false, nil
+			}
+			return r.proxyURL, r.resolved, nil
+		case <-req.Context().Done():
+			return nil, false, req.Context().Err()
+		}
+	})
+}
+
+func systemProxyForRequest(req *http.Request, resolveAuto autoProxyResolver) (*url.URL, error) {
 	if req == nil || req.URL == nil {
 		return nil, nil
 	}
@@ -84,11 +140,11 @@ func proxyFromWindowsSystem(req *http.Request) (*url.URL, error) {
 		return nil, nil
 	}
 
-	if proxyURL, err := http.ProxyFromEnvironment(req); proxyURL != nil || err != nil {
+	if proxyURL, err := envProxy(req); proxyURL != nil || err != nil {
 		return proxyURL, err
 	}
 
-	cfg, err := getCurrentUserIEProxyConfig()
+	cfg, err := loadIEProxyConfig()
 	if err != nil {
 		return nil, nil
 	}
@@ -96,7 +152,10 @@ func proxyFromWindowsSystem(req *http.Request) (*url.URL, error) {
 	manual := newManualProxyConfig(cfg.proxy, cfg.proxyBypass)
 
 	if cfg.autoDetect || cfg.autoConfig != "" {
-		proxyURL, resolved := proxyURLFromAutoConfigWithBudget(req.URL, cfg)
+		proxyURL, resolved, err := resolveAuto(req, cfg)
+		if err != nil {
+			return nil, err
+		}
 		if resolved {
 			return proxyURL, nil
 		}
@@ -113,7 +172,7 @@ func proxyURLFromAutoConfigWithBudget(reqURL *url.URL, cfg ieProxyConfig) (*url.
 	proxyURL, resolved, err, timedOut := runWithSoftTimeout(
 		autoProxyLookupTimeout,
 		func() (*url.URL, bool, error) {
-			return proxyURLFromAutoConfig(reqURL, cfg)
+			return lookupAutoProxyURL(reqURL, cfg)
 		},
 		finishAutoProxyLookup,
 		markAutoProxyLookupTimeout,

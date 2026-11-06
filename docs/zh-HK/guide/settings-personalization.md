@@ -52,7 +52,7 @@ LeviLauncher 提供完善的設定頁面，可用於調整路徑、外觀、組�
 
 ### 第三方元件
 
-- [lip](https://github.com/LiteLDev/lip) 狀態：檢查、安裝或更新，以及清理快取
+- 內置套件管理器（相容 [lip](https://github.com/LiteLDev/lip)，毋須安裝或更新）：設定下載套件時使用的 **GitHub 代理**，或透過 **清理快取** 刪除已下載的套件檔案
 
 ### 私隱
 

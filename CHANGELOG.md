@@ -4,6 +4,10 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+### Changed
+
+- Replaced the external lip package manager with a built-in lip-compatible package manager, so lip and the .NET runtime no longer need to be installed or updated from Settings; existing `tooth_lock.json` installs keep working
+
 ## [1.0.7] - 2026-11-04
 
 ### Added

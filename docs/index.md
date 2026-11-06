@@ -29,7 +29,7 @@ features:
   - title: Content toolkit
     details: Manage worlds, resource packs, behavior packs, skin packs, screenshots, and server lists from one place.
   - title: Mod-ready
-    details: Import .zip or .dll mods, browse CurseForge, and use lip or LeviLamina workflows for advanced setups.
+    details: Import .zip or .dll mods, browse CurseForge, and install LeviLamina and LIP packages with the built-in package manager for advanced setups.
   - title: World utilities
     details: Export backups, inspect world data, and edit selected level.dat fields without leaving the launcher.
   - title: User-focused settings

@@ -52,7 +52,7 @@ LeviLauncher는 경로, 외관, 구성 요소 관리, 개인정보 보호 설정
 
 ### 타사 구성 요소
 
-- [lip](https://github.com/LiteLDev/lip) 상태: 확인, 설치 또는 업데이트, 캐시 정리
+- 내장 패키지 관리자([lip](https://github.com/LiteLDev/lip) 호환, 설치나 업데이트 불필요): 패키지 다운로드에 사용할 **GitHub 프록시** 설정, **캐시 지우기**로 다운로드한 패키지 파일 삭제
 
 ### 개인정보
 

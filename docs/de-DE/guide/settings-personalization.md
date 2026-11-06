@@ -52,7 +52,7 @@ Verwende **Nächstes Bild**, wenn der Ordner mehrere Bilder enthält. Die Reihen
 
 ### Drittanbieter-Komponenten
 
-- Status von [lip](https://github.com/LiteLDev/lip): prüfen, installieren oder aktualisieren sowie den Cache leeren
+- integrierter Paketmanager (kompatibel mit [lip](https://github.com/LiteLDev/lip); keine Installation oder Aktualisierung nötig): den für Paket-Downloads verwendeten **GitHub-Proxy** festlegen oder mit **Cache leeren** heruntergeladene Paketdateien entfernen
 
 ### Datenschutz
 

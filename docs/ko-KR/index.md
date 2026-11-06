@@ -29,7 +29,7 @@ features:
   - title: 콘텐츠 관리
     details: 한곳에서 월드, 리소스 팩, 행동 팩, 스킨 팩, 스크린샷 및 서버 목록을 관리합니다.
   - title: 모드 기능
-    details: .zip 또는 .dll 모드를 가져오고, CurseForge를 탐색하며, 고급 구성에는 lip 또는 LeviLamina 작업 흐름을 사용할 수 있습니다.
+    details: .zip 또는 .dll 모드를 가져오고, CurseForge를 탐색하며, 내장 패키지 관리자로 LeviLamina와 LIP 패키지를 설치할 수 있습니다.
   - title: 월드 도구
     details: 런처를 벗어나지 않고 백업을 내보내고, 월드 데이터를 확인하며, 일부 level.dat 필드를 편집할 수 있습니다.
   - title: 사용자 설정

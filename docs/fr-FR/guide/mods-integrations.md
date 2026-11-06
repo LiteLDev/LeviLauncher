@@ -11,7 +11,7 @@ LeviLauncher prend en charge des workflows liés aux Mods qui vont au-delà des 
     - Activer ou désactiver les Mods installés
     - Supprimer les Mods dont vous n'avez plus besoin
     - Utiliser des flux de navigation et d'obtention liés à CurseForge
-    - Installer des paquets avec [lip](https://github.com/LiteLDev/lip), l'installateur de paquets
+    - Installer des paquets LIP avec le gestionnaire de paquets intégré, compatible avec [lip](https://github.com/LiteLDev/lip)
     - Fonctionner avec des workflows de chargeurs comme LeviLamina
 
     ::: warning Zone avancée
@@ -44,6 +44,8 @@ C'est utile pour :
 - Éviter de faire toutes vos recherches en dehors du lanceur
 
 ## lip et LeviLamina <Badge platform="windows" />
+
+LeviLauncher intègre un gestionnaire de paquets compatible avec [lip](https://github.com/LiteLDev/lip) : vous n'avez donc pas besoin d'installer lip ni le runtime .NET séparément. Il utilise le même format `tooth_lock.json` que lip, si bien que les versions sur lesquelles LeviLamina ou des paquets LIP sont déjà installés continuent de fonctionner. Les téléchargements de paquets depuis GitHub passent par le **Proxy GitHub** défini dans les [Paramètres](./settings-personalization), et **Nettoyer le cache** supprime les fichiers de paquets téléchargés.
 
 Ce type d'intégration convient mieux aux utilisateurs avancés souhaitant utiliser des workflows basés sur les paquets ou les chargeurs.
 

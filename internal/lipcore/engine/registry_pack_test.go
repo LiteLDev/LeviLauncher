@@ -134,6 +134,29 @@ func TestGitRegistryProxyBlobErrorsNoFallback(t *testing.T) {
 	})
 }
 
+// A blob batch's handler error stops fetchBlobs at once and is returned as
+// it is: like lip's FetchBlobs, later batches are not fetched and nothing
+// is aggregated.
+func TestGitRegistryBlobHandlerErrorStopsBatches(t *testing.T) {
+	g, git, repo, cache, _ := newTestRegistry(t)
+	var oids []string
+	for i := range maxWantsPerRequest + 44 {
+		data := fmt.Sprintf("blob %d", i)
+		oid := blobOID(data)
+		repo.blobs[oid] = data
+		oids = append(oids, oid)
+	}
+	cache.dir = filepath.Join(cache.dir, "missing")
+	err := g.fetchBlobs(ctx, repoA, oids)
+	var pe *fs.PathError
+	if _, agg := err.(*aggregateError); !errors.As(err, &pe) || agg {
+		t.Fatalf("err = %v, want the cache's own error", err)
+	}
+	if len(git.fetches) != 1 || len(git.fetches[0].Wants) != maxWantsPerRequest {
+		t.Fatalf("%d fetches, want one of %d blobs", len(git.fetches), maxWantsPerRequest)
+	}
+}
+
 // treeStore reports every object of its pack as a tree.
 type treeStore struct{ PackStore }
 

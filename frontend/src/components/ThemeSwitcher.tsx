@@ -1,6 +1,6 @@
 import { cn } from "@/utils/cn";
 import { Button } from "@heroui/react";
-import React, { useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
 import { MoonIcon } from "@/icons/MoonIcon";
 import { SunIcon } from "@/icons/SunIcon";

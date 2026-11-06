@@ -23,11 +23,15 @@ import {
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import {
-  fetchLIPPackagesIndex,
-  fetchLIPSelfVariantRelations,
-  type LIPPackageBasicInfo,
-  type LIPSelfVariantRelation,
-} from "@/utils/content";
+  buildDefaultModLIPState,
+  isLeviLaminaMod,
+  normalizeIdentifierLookupKey,
+  resolveModFolder,
+  type LipGroupItem,
+  type LIPPackageInstallState,
+  type ModLIPState,
+  type ModListItem,
+} from "@/utils/modIntelligenceResolver";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
@@ -36,7 +40,6 @@ import { setNavLockReason } from "@/hooks/useAppNavigation";
 import { ROUTES, routeTo } from "@/constants/routes";
 import { getPathBaseName, normalizeDroppedFiles } from "@/utils/fs";
 
-const LEVILAMINA_NORMALIZED = "levilamina";
 const ERR_LL_MANAGED_IN_VERSION_SETTINGS = "ERR_LL_MANAGED_IN_VERSION_SETTINGS";
 const ERR_NO_UPDATE_SOURCE = "ERR_NO_UPDATE_SOURCE";
 const ERR_ALREADY_LATEST = "ERR_ALREADY_LATEST";
@@ -47,245 +50,10 @@ const ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY =
 
 type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 export type TabKey = "all" | "normal" | "lip";
-type MappingKind = "none" | "name" | "self_variant";
-
-export type ModLIPState = {
-  sourceType: "none" | "ambiguous" | "unique" | "levilamina";
-  identifier: string;
-  identifierKey: string;
-  targetVersion: string;
-  canUpdate: boolean;
-  packageName: string;
-  mappingKind: MappingKind;
-  matchedAlias: string;
-};
-
-export type ModListItem = {
-  kind: "mod";
-  key: string;
-  folder: string;
-  mod: types.ModInfo;
-  lipState: ModLIPState;
-};
-
-export type LipGroupItem = {
-  kind: "lip";
-  key: string;
-  identifier: string;
-  identifierKey: string;
-  displayIdentifier: string;
-  packageName: string;
-  installedVersion: string;
-  explicitInstalled: boolean;
-  folders: string[];
-  mods: types.ModInfo[];
-  childLabels: string[];
-  childPreview: string;
-  extraChildrenCount: number;
-  allEnabled: boolean;
-  anyEnabled: boolean;
-  lipState: ModLIPState;
-};
-
 export type VisibleItem = ModListItem | LipGroupItem;
 
 type TaskLogLevel = "info" | "success" | "warning" | "error";
 type TaskLogger = (level: TaskLogLevel, message: string) => void;
-
-type LIPPackageInstallState = {
-  installed: boolean;
-  explicitInstalled: boolean;
-  installedVersion: string;
-  error: string;
-};
-
-type LIPAliasCandidate = {
-  identifier: string;
-  identifierKey: string;
-  packageName: string;
-  alias: string;
-  matchTokens: string[];
-  packageHints: string[];
-};
-
-type CandidateLIPIdentifier = {
-  identifier: string;
-  identifierKey: string;
-};
-
-const normalizeName = (value: string): string =>
-  String(value || "")
-    .trim()
-    .toLowerCase();
-
-const normalizeIdentifier = (value: string): string =>
-  String(value || "")
-    .trim()
-    .toLowerCase();
-
-const normalizeVersionForCompare = (value: string): string =>
-  String(value || "")
-    .trim()
-    .replace(/^v/i, "")
-    .toLowerCase();
-
-const normalizeMatchValue = (value: string): string =>
-  String(value || "")
-    .trim()
-    .toLowerCase()
-    .replace(/\s+/g, "");
-
-const slugifyText = (value: string): string =>
-  String(value || "")
-    .replace(/([a-z0-9])([A-Z])/g, "$1-$2")
-    .toLowerCase()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
-
-const ALIAS_GENERIC_TOKENS = new Set([
-  "client",
-  "server",
-  "mod",
-  "mods",
-  "plugin",
-  "plugins",
-  "pack",
-  "package",
-]);
-
-const buildAliasMatchTokens = (alias: string): string[] => {
-  const normalized = normalizeMatchValue(alias);
-  if (!normalized) return [];
-
-  const set = new Set<string>();
-  const add = (value: string) => {
-    const token = normalizeMatchValue(value);
-    if (!token || token.length < 3) return;
-    if (ALIAS_GENERIC_TOKENS.has(token)) return;
-    set.add(token);
-  };
-
-  add(normalized);
-  add(normalized.replace(/_/g, "-"));
-  add(normalized.replace(/-/g, "_"));
-
-  const stripped = normalized.replace(
-    /^(client|server|mod|mods|plugin|plugins|pack|package)[_-]/,
-    "",
-  );
-  if (stripped && stripped !== normalized) {
-    add(stripped);
-    add(stripped.replace(/_/g, "-"));
-    add(stripped.replace(/-/g, "_"));
-  }
-
-  for (const part of normalized.split(/[_-]+/)) {
-    add(part);
-  }
-
-  const parts = normalized.split(/[_-]+/).filter(Boolean);
-  if (parts.length > 1) {
-    add(parts[parts.length - 1]);
-  }
-
-  return Array.from(set);
-};
-
-const buildPackageHints = (
-  packageName: string,
-  identifier: string,
-): string[] => {
-  const set = new Set<string>();
-  const add = (value: string) => {
-    const slug = slugifyText(value);
-    if (!slug || slug.length < 4) return;
-    set.add(slug);
-    set.add(slug.replace(/-/g, ""));
-  };
-
-  add(packageName);
-
-  const normalizedIdentifier = normalizeIdentifier(identifier).split("#")[0];
-  const parts = normalizedIdentifier.split("/").filter(Boolean);
-  if (parts.length > 0) {
-    add(parts[parts.length - 1]);
-  }
-  if (parts.length > 1) {
-    add(`${parts[parts.length - 2]}-${parts[parts.length - 1]}`);
-  }
-
-  return Array.from(set);
-};
-
-const isTokenMatchedInValue = (token: string, rawValue: string): boolean => {
-  const value = normalizeMatchValue(rawValue);
-  if (!token || !value) return false;
-
-  const tokenVariants = [
-    token,
-    token.replace(/_/g, "-"),
-    token.replace(/-/g, "_"),
-  ];
-  const valueVariants = [
-    value,
-    value.replace(/_/g, "-"),
-    value.replace(/-/g, "_"),
-  ];
-
-  for (const tokenVariant of tokenVariants) {
-    for (const valueVariant of valueVariants) {
-      if (valueVariant === tokenVariant) return true;
-      if (valueVariant.endsWith(`-${tokenVariant}`)) return true;
-      if (valueVariant.endsWith(`_${tokenVariant}`)) return true;
-      if (valueVariant.split(/[_-]+/).includes(tokenVariant)) return true;
-    }
-  }
-
-  return false;
-};
-
-const isPackageHintMatched = (hint: string, rawValue: string): boolean => {
-  const value = normalizeMatchValue(rawValue);
-  if (!hint || !value) return false;
-  if (value.includes(hint)) return true;
-  const normalizedHint = hint.replace(/-/g, "");
-  if (normalizedHint && value.includes(normalizedHint)) return true;
-  return false;
-};
-
-const isSelfVariantCandidateFuzzyMatched = (
-  candidate: LIPAliasCandidate,
-  values: string[],
-): boolean => {
-  const hasAliasTokenMatch = candidate.matchTokens.some((token) =>
-    values.some((value) => isTokenMatchedInValue(token, value)),
-  );
-  if (!hasAliasTokenMatch) return false;
-
-  if (candidate.packageHints.length === 0) return true;
-  return candidate.packageHints.some((hint) =>
-    values.some((value) => isPackageHintMatched(hint, value)),
-  );
-};
-
-const isStableVersion = (value: string): boolean =>
-  !String(value || "")
-    .trim()
-    .includes("-");
-
-export const resolveModFolder = (mod: types.ModInfo): string => {
-  const folder = String((mod as any)?.folder || "").trim();
-  if (folder) return folder;
-  return String(mod?.name || "").trim();
-};
-
-export const isLeviLaminaMod = (mod: types.ModInfo): boolean =>
-  normalizeName(mod?.name || "") === LEVILAMINA_NORMALIZED;
-
-const filterVisibleMods = (
-  mods: types.ModInfo[] | null | undefined,
-): types.ModInfo[] =>
-  Array.isArray(mods) ? mods.filter((mod) => !isLeviLaminaMod(mod)) : [];
 
 const parseErrorCode = (value: unknown): string => {
   const source =
@@ -315,43 +83,6 @@ const resolveErrorText = (t: TFunc, value: unknown): string => {
   }
 
   return code;
-};
-
-const pickTargetVersion = (versions: string[]): string => {
-  const list = Array.isArray(versions)
-    ? versions.map((item) => String(item || "").trim()).filter(Boolean)
-    : [];
-  if (list.length === 0) return "";
-  const stable = list.find((version) => isStableVersion(version));
-  return stable || list[0];
-};
-
-const buildDefaultModLIPState = (): ModLIPState => ({
-  sourceType: "none",
-  identifier: "",
-  identifierKey: "",
-  targetVersion: "",
-  canUpdate: false,
-  packageName: "",
-  mappingKind: "none",
-  matchedAlias: "",
-});
-
-const formatChildPreview = (
-  labels: string[],
-): { preview: string; extra: number; deduped: string[] } => {
-  const deduped = Array.from(
-    new Set(labels.map((item) => String(item || "").trim()).filter(Boolean)),
-  );
-  deduped.sort((a, b) =>
-    a.localeCompare(b, undefined, { sensitivity: "base" }),
-  );
-  const previewItems = deduped.slice(0, 2);
-  return {
-    preview: previewItems.join(", "),
-    extra: Math.max(0, deduped.length - previewItems.length),
-    deduped,
-  };
 };
 
 export const useModsPage = (
@@ -869,9 +600,9 @@ export const useModsPage = (
     setLipInstallStateByIdentifier((prev) => {
       const next = new Map(prev);
       let targetKey = normalizedKey;
-      const lookupKey = normalizeIdentifier(normalizedKey);
+      const lookupKey = normalizeIdentifierLookupKey(normalizedKey);
       for (const key of next.keys()) {
-        if (normalizeIdentifier(key) === lookupKey) {
+        if (normalizeIdentifierLookupKey(key) === lookupKey) {
           targetKey = key;
           break;
         }
@@ -899,14 +630,8 @@ export const useModsPage = (
         name,
         group.identifierKey || group.identifier,
       );
-      const normalizedState: LIPPackageInstallState = {
-        installed: Boolean(state.installed),
-        explicitInstalled: Boolean(state.explicitInstalled),
-        installedVersion: String(state.installedVersion || "").trim(),
-        error: String(state.error || "").trim(),
-      };
-      setLipInstallStateCache(group.identifierKey, normalizedState);
-      return normalizedState;
+      setLipInstallStateCache(group.identifierKey, state);
+      return state;
     } catch (error) {
       return {
         installed: false,

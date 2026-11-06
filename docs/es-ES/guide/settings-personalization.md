@@ -56,8 +56,8 @@ Usa **Siguiente imagen** cuando la carpeta contenga varias imágenes. El orden *
 
 ### Privacidad
 
-- Estadísticas de uso anónimas (Microsoft Clarity), que puedes desactivar en cualquier momento
-- Enlaces a los términos de Clarity y a la declaración de privacidad de Microsoft
+- Estadísticas de uso (Google Analytics), que puedes desactivar en cualquier momento
+- Enlaces a los términos de Google Analytics y a la política de privacidad de Google
 
 ### Actualizaciones
 

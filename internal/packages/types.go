@@ -1,9 +1,6 @@
 package packages
 
-import (
-	"fmt"
-	"sync"
-)
+import "fmt"
 
 type PackType int
 
@@ -59,16 +56,7 @@ type Pack struct {
 	Path     string       `json:"path"`
 }
 
-type PackManager struct {
-	mu    sync.RWMutex
-	packs map[string][]Pack
-}
-
-func NewPackManager() *PackManager {
-	return &PackManager{
-		packs: make(map[string][]Pack),
-	}
-}
+type PackManager struct{}
 
 type ResourceLocation string
 

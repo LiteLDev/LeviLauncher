@@ -1,5 +1,5 @@
 import { Button, Card, Chip } from "@heroui/react";
-import React, { useState } from "react";
+import { useState } from "react";
 import { useTranslation } from "react-i18next";
 
 import { PageHeader, SectionHeader } from "@/components/PageHeader";

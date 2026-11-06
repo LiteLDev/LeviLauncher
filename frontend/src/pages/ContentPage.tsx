@@ -30,7 +30,6 @@ import {
   FaExchangeAlt,
 } from "react-icons/fa";
 import { resolvePlayerDisplayName } from "@/utils/content";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { FiUploadCloud } from "react-icons/fi";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
@@ -198,7 +197,7 @@ export default function ContentPage() {
                   </Button>
                   <Button
                     onPress={() => cp.openResourceTransferModal()}
-                    isDisabled={!cp.hasBackend || cp.importing}
+                    isDisabled={cp.importing}
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
@@ -216,7 +215,7 @@ export default function ContentPage() {
                           openDirectory(path);
                         }
                       }}
-                      isDisabled={!cp.hasBackend || !(cp.roots.comMojangRoot || cp.roots.usersRoot)}
+                      isDisabled={!(cp.roots.comMojangRoot || cp.roots.usersRoot)}
                       variant={"secondary"}
                       className={cn(
                         "rounded-full",

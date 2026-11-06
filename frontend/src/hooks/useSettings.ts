@@ -27,7 +27,10 @@ import {
 import { Events } from "@wailsio/runtime";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
-import { persistClarityChoice } from "@/utils/clarityConsent";
+import {
+  persistAnalyticsChoice,
+  readAnalyticsEnabled,
+} from "@/utils/analyticsConsent";
 import {
   EXPERIMENTAL_FEATURES_EVENT_NAME,
   persistExperimentalInstanceBackupEnabled,
@@ -43,7 +46,6 @@ export type { ThemeMode };
 
 export const useSettings = (i18n: { language: string }) => {
   const currentBackground = useCurrentBackground();
-  const hasBackend = minecraft !== undefined;
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -72,13 +74,8 @@ export const useSettings = (i18n: { language: string }) => {
   const [discordRpcEnabled, setDiscordRpcEnabled] = useState<boolean>(true);
   const [enableBetaUpdates, setEnableBetaUpdatesState] =
     useState<boolean>(false);
-  const [clarityEnabled, setClarityEnabledState] = useState<boolean>(() => {
-    try {
-      return localStorage.getItem("ll.clarity.enabled") === "true";
-    } catch {
-      return false;
-    }
-  });
+  const [analyticsEnabled, setAnalyticsEnabledState] =
+    useState<boolean>(readAnalyticsEnabled);
   const [
     experimentalInstanceBackupEnabled,
     setExperimentalInstanceBackupEnabledState,
@@ -322,9 +319,9 @@ export const useSettings = (i18n: { language: string }) => {
   } = useOverlayState();
 
   // --- Handlers ---
-  const setClarityEnabled = (enabled: boolean) => {
-    setClarityEnabledState(enabled);
-    persistClarityChoice(enabled);
+  const setAnalyticsEnabled = (enabled: boolean) => {
+    setAnalyticsEnabledState(enabled);
+    persistAnalyticsChoice(enabled);
   };
 
   const setExperimentalInstanceBackupEnabled = (enabled: boolean) => {
@@ -520,32 +517,30 @@ export const useSettings = (i18n: { language: string }) => {
     Promise.resolve()
       .then(async () => {
         try {
-          if (hasBackend) {
-            const br = await GetBaseRoot();
-            setBaseRoot(String(br || ""));
-            setNewBaseRoot(String(br || ""));
-            const id = await GetInstallerDir();
-            setInstallerDir(String(id || ""));
-            const vd = await GetVersionsDir();
-            setVersionsDir(String(vd || ""));
-            try {
-              const disabled = await GetDisableDiscordRPC();
-              setDiscordRpcEnabled(!disabled);
-            } catch {}
-            try {
-              const enabled = await GetEnableBetaUpdates();
-              setEnableBetaUpdatesState(enabled);
-            } catch {}
-            const [launchBehavior, exitBehavior, trayEnabled] =
-              await Promise.all([
-                GetGameLaunchBehavior(),
-                GetGameExitBehavior(),
-                GetMinimizeToTray(),
-              ]);
-            setGameLaunchBehaviorState(launchBehavior);
-            setGameExitBehaviorState(exitBehavior);
-            setMinimizeToTrayState(trayEnabled);
-          }
+          const br = await GetBaseRoot();
+          setBaseRoot(String(br || ""));
+          setNewBaseRoot(String(br || ""));
+          const id = await GetInstallerDir();
+          setInstallerDir(String(id || ""));
+          const vd = await GetVersionsDir();
+          setVersionsDir(String(vd || ""));
+          try {
+            const disabled = await GetDisableDiscordRPC();
+            setDiscordRpcEnabled(!disabled);
+          } catch {}
+          try {
+            const enabled = await GetEnableBetaUpdates();
+            setEnableBetaUpdatesState(enabled);
+          } catch {}
+          const [launchBehavior, exitBehavior, trayEnabled] =
+            await Promise.all([
+              GetGameLaunchBehavior(),
+              GetGameExitBehavior(),
+              GetMinimizeToTray(),
+            ]);
+          setGameLaunchBehaviorState(launchBehavior);
+          setGameExitBehaviorState(exitBehavior);
+          setMinimizeToTrayState(trayEnabled);
         } catch {}
       })
       .catch(() => {});
@@ -626,7 +621,6 @@ export const useSettings = (i18n: { language: string }) => {
 
   // Lip install events
   useEffect(() => {
-    if (!hasBackend) return;
     void refreshLipStatus();
     const timer = setTimeout(() => {
       void refreshLipStatus();
@@ -670,15 +664,10 @@ export const useSettings = (i18n: { language: string }) => {
       clearTimeout(timer);
       offs.forEach((off) => off());
     };
-  }, [hasBackend]);
-
-  useEffect(() => {
-    if (!hasBackend) return;
-  }, [hasBackend]);
+  }, []);
 
   return {
     // Computed
-    hasBackend,
 
     // Navigation
     navigate,
@@ -720,8 +709,8 @@ export const useSettings = (i18n: { language: string }) => {
     setDiscordRpcEnabled,
     enableBetaUpdates,
     setEnableBetaUpdates: setEnableBetaUpdatesState,
-    clarityEnabled,
-    setClarityEnabled,
+    analyticsEnabled,
+    setAnalyticsEnabled,
     experimentalInstanceBackupEnabled,
     setExperimentalInstanceBackupEnabled,
 

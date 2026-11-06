@@ -33,7 +33,7 @@ async function run(viewport, { scenario = 'sponsor', count = 100, locale = 'zh_C
       'sponsor-update': [t.settings.body.version.hasnew + '99.0.0', t.common.cancel],
       'sponsor-lip': [t.settings.lip.startup_prompt.title, t.settings.lip.startup_prompt.later_button],
       'sponsor-terms': [t.terms.title, t.terms.agree],
-      'sponsor-clarity': [t.clarity.prompt.title, t.clarity.prompt.disable],
+      'sponsor-analytics': [t.analytics.prompt.title, t.analytics.prompt.disable],
     }[scenario];
     if (beforeSponsor) {
       const prior = page.getByRole('dialog', { name: beforeSponsor[0], exact: true });
@@ -107,7 +107,7 @@ async function run(viewport, { scenario = 'sponsor', count = 100, locale = 'zh_C
     await run(viewport, { action: 'backdrop' });
     for (const count of [0, 99, 101, 199, 201]) await run(viewport, { count });
   }
-  for (const scenario of ['sponsor-update', 'sponsor-lip', 'sponsor-terms', 'sponsor-clarity', 'sponsor-check-error', 'sponsor-link-error']) {
+  for (const scenario of ['sponsor-update', 'sponsor-lip', 'sponsor-terms', 'sponsor-analytics', 'sponsor-check-error', 'sponsor-link-error']) {
     await run({ width: 960, height: 600 }, { scenario, action: scenario === 'sponsor-link-error' ? 'afdian' : 'dismiss' });
   }
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {

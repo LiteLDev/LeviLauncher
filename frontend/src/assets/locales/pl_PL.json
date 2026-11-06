@@ -565,12 +565,12 @@
     },
     "privacy": {
       "analytics": {
-        "title": "Anonimowa analityka użycia (Microsoft Clarity)",
+        "title": "Statystyki użytkowania (Google Analytics)",
         "desc": "Po włączeniu pomaga nam ulepszać funkcje i interfejs. Możesz ją wyłączyć w dowolnej chwili."
       },
       "links": {
-        "clarity_terms": "Warunki usługi Clarity",
-        "microsoft_privacy": "Zasady zachowania poufności informacji firmy Microsoft"
+        "google_analytics_terms": "Warunki Google Analytics",
+        "google_privacy": "Polityka prywatności Google"
       }
     },
     "game_behavior": {
@@ -1414,14 +1414,14 @@
       "nh_err_extract_failed": "Nie udało się wypakować pliku instalatora. Pobierz go ponownie."
     }
   },
-  "clarity": {
+  "analytics": {
     "prompt": {
       "title": "Pomóc w ulepszaniu LeviLauncher?",
-      "body": "Za Twoją zgodą LeviLauncher korzysta z Microsoft Clarity, aby zbierać anonimowe dane o interakcjach i ulepszać funkcje oraz interfejs. Nie zbiera informacji o koncie, informacji o grze ani zawartości dysku i obejmuje wyłącznie strony interfejsu. Możesz to zmienić w dowolnej chwili w Ustawienia > Prywatność.",
+      "body": "Za Twoją zgodą LeviLauncher używa Google Analytics do pomiaru odwiedzin stron launchera i podstawowych informacji o urządzeniu w celu ulepszania funkcji i interfejsu. Google Analytics używa plików cookie do rozpoznawania odwiedzin. Nie wysyłamy danych konta, danych gry ani lokalnych ścieżek plików. Możesz to wyłączyć w dowolnym momencie w Ustawienia > Prywatność.",
       "enable": "Zezwól i włącz",
       "disable": "Nie teraz",
-      "clarity_terms": "Warunki usługi Clarity",
-      "microsoft_privacy": "Zasady zachowania poufności informacji firmy Microsoft"
+      "google_analytics_terms": "Warunki Google Analytics",
+      "google_privacy": "Polityka prywatności Google"
     }
   },
   "audit": {

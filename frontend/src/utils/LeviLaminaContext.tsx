@@ -111,7 +111,6 @@ const LeviLaminaContext = createContext<CtxValue | undefined>(undefined);
 export const LeviLaminaProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const hasBackend = minecraft !== undefined;
   const startupInteractive = useStartupInteractive();
   const [llMap, setLlMap] = useState<Map<string, string[]>>(new Map());
   const [loading, setLoading] = useState<boolean>(false);
@@ -119,7 +118,7 @@ export const LeviLaminaProvider: React.FC<{ children: React.ReactNode }> = ({
   const [mappingInitialized, setMappingInitialized] = useState<boolean>(false);
 
   const fetchLLDB = useCallback(async () => {
-    if (!hasBackend || !(minecraft as any).FetchLeviLaminaVersionDB) {
+    if (!(minecraft as any).FetchLeviLaminaVersionDB) {
       setLlMap(new Map());
       setMappingAvailable(false);
       setMappingInitialized(true);
@@ -151,7 +150,7 @@ export const LeviLaminaProvider: React.FC<{ children: React.ReactNode }> = ({
       setLoading(false);
       setMappingInitialized(true);
     }
-  }, [hasBackend]);
+  }, []);
 
   useEffect(() => {
     if (!startupInteractive) return;

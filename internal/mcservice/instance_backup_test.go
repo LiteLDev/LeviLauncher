@@ -4,6 +4,7 @@ import (
 	"archive/zip"
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"os"
 	"path/filepath"
@@ -801,6 +802,68 @@ func TestRestoreInstanceBackupGameDataUsesConflictChoiceBackup(t *testing.T) {
 	if string(content) != `{"from":"backup"}` {
 		t.Fatalf("expected backup version restored, got %s", content)
 	}
+}
+
+func TestRestoreGameDataDispatchesDirectoryAndFileConflicts(t *testing.T) {
+	source, target := t.TempDir(), t.TempDir()
+	const worlds = "games/com.mojang/minecraftWorlds"
+	const packs = "games/com.mojang/resource_packs"
+	const sharedWorld = worlds + "/same"
+	const plainFile = worlds + "/index.txt"
+	const legacyFile = packs + "/no-manifest/settings.json"
+	const sameFolder = packs + "/same-name"
+	const backupManifest = `{"header":{"uuid":"backup-id"}}`
+	const currentManifest = `{"header":{"uuid":"current-id"}}`
+	for _, item := range []struct{ path, backup, current string }{
+		{sharedWorld + "/levelname.txt", "backup", "current"},
+		{plainFile, "backup", "current"},
+		{legacyFile, "backup", "current"},
+		{sameFolder + "/manifest.json", backupManifest, currentManifest},
+	} {
+		for _, fixture := range []struct{ root, value string }{{source, item.backup}, {target, item.current}} {
+			file := filepath.Join(fixture.root, filepath.FromSlash(item.path))
+			if err := os.MkdirAll(filepath.Dir(file), 0755); err != nil {
+				t.Fatal(err)
+			}
+			if err := os.WriteFile(file, []byte(fixture.value), 0644); err != nil {
+				t.Fatal(err)
+			}
+		}
+	}
+	packID := buildInstanceBackupRestoreConflictEntityID(instanceBackupScopeGameData, "pack_uuid", packs+"/backup-id", sameFolder)
+	choices := map[string]string{
+		buildInstanceBackupRestoreConflictID(instanceBackupScopeGameData, sharedWorld): instanceBackupRestoreChoiceBackup,
+		buildInstanceBackupRestoreConflictID(instanceBackupScopeGameData, plainFile):   instanceBackupRestoreChoiceBackup,
+		buildInstanceBackupRestoreConflictID(instanceBackupScopeGameData, legacyFile):  instanceBackupRestoreChoiceBackup,
+		packID: instanceBackupRestoreChoiceCurrent,
+	}
+	if err := restoreInstanceBackupSafeGameDataWithResolutions(source, target, choices); !errors.Is(err, os.ErrInvalid) {
+		t.Fatalf("file choice must not resolve a world folder: %v", err)
+	}
+	worldID := buildInstanceBackupRestoreConflictEntityID(instanceBackupScopeGameData, "world_folder", sharedWorld, sharedWorld)
+	choices[worldID] = instanceBackupRestoreChoiceCurrent
+	if err := restoreInstanceBackupSafeGameDataWithResolutions(source, target, choices); err != nil {
+		t.Fatal(err)
+	}
+	check := func(rel, want string) {
+		t.Helper()
+		got, err := os.ReadFile(filepath.Join(target, filepath.FromSlash(rel)))
+		if err != nil || string(got) != want {
+			t.Fatalf("%s = %q, %v; want %q", rel, got, err, want)
+		}
+	}
+	check(sharedWorld+"/levelname.txt", "current")
+	check(plainFile, "backup")
+	check(legacyFile, "backup")
+	check(sameFolder+"/manifest.json", currentManifest)
+
+	choices[worldID] = instanceBackupRestoreChoiceBackup
+	choices[packID] = instanceBackupRestoreChoiceBackup
+	if err := restoreInstanceBackupSafeGameDataWithResolutions(source, target, choices); err != nil {
+		t.Fatal(err)
+	}
+	check(sharedWorld+"/levelname.txt", "backup")
+	check(sameFolder+"/manifest.json", backupManifest)
 }
 
 func TestRestoreInstanceBackupFullRejectsNonEmptyTarget(t *testing.T) {

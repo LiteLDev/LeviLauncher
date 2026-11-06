@@ -205,16 +205,13 @@ type Minecraft struct {
 	launcherStarts launcherStartState
 }
 
-type packLoader interface {
-	LoadPacksForVersion(versionName string, resourcePacksDir string, behaviorPacksDir string, skinPacksDirs ...string) ([]packages.Pack, error)
-}
-
 type launchService interface {
 	Launch(ctx context.Context, versionName string, checkRunning bool) string
 }
 
 type contentService interface {
 	ListPacksForVersion(versionName string, player string) []packages.Pack
+	ListPackDetailsForVersion(versionName, player string, kind packages.PackType) []types.PackListEntry
 	ImportMcpack(name string, data []byte, overwrite bool) string
 	ImportMcpackPath(name string, path string, overwrite bool) string
 	ImportMcaddon(name string, data []byte, overwrite bool) string
@@ -238,7 +235,7 @@ type contentService interface {
 
 type MinecraftDeps struct {
 	CurseClient    client.CurseClient
-	PackManager    packLoader
+	PackManager    contentmgr.PackLoader
 	Launcher       launchService
 	ContentManager contentService
 }
@@ -254,7 +251,7 @@ func NewMinecraftWithDeps(deps MinecraftDeps) *Minecraft {
 	}
 	packManager := deps.PackManager
 	if packManager == nil {
-		packManager = packages.NewPackManager()
+		packManager = packages.PackManager{}
 	}
 	launcher := deps.Launcher
 	if launcher == nil {

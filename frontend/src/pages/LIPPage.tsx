@@ -30,7 +30,9 @@ import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import { Browser } from "@wailsio/runtime";
 import {
+  compareSemverLike,
   fetchLIPPackagesIndex,
+  normalizeSemverInput,
   isLeviLaminaRangesCompatibleWithAnyVersion,
   isLeviLaminaVersionCompatible,
   type LIPPackageBasicInfo,
@@ -73,75 +75,6 @@ type LipRuntimeStatus = {
   installed?: boolean;
 };
 
-type ParsedSemver = {
-  major: number;
-  minor: number;
-  patch: number;
-  pre: string[];
-};
-
-const normalizeSemverInput = (value: string): string =>
-  String(value || "")
-    .trim()
-    .replace(/^v/i, "");
-
-const parseSemver = (input: string): ParsedSemver | null => {
-  const normalized = normalizeSemverInput(input);
-  if (!normalized) return null;
-  const match = normalized.match(
-    /^(\d+)\.(\d+)\.(\d+)(?:-([0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*))?$/,
-  );
-  if (!match) return null;
-  return {
-    major: Number(match[1]),
-    minor: Number(match[2]),
-    patch: Number(match[3]),
-    pre: match[4] ? match[4].split(".") : [],
-  };
-};
-
-const compareSemver = (a: ParsedSemver, b: ParsedSemver): number => {
-  if (a.major !== b.major) return a.major > b.major ? 1 : -1;
-  if (a.minor !== b.minor) return a.minor > b.minor ? 1 : -1;
-  if (a.patch !== b.patch) return a.patch > b.patch ? 1 : -1;
-
-  const aRelease = a.pre.length === 0;
-  const bRelease = b.pre.length === 0;
-  if (aRelease && bRelease) return 0;
-  if (aRelease) return 1;
-  if (bRelease) return -1;
-
-  const length = Math.max(a.pre.length, b.pre.length);
-  for (let i = 0; i < length; i += 1) {
-    const aPart = a.pre[i];
-    const bPart = b.pre[i];
-    if (aPart === undefined) return -1;
-    if (bPart === undefined) return 1;
-
-    const aNumeric = /^[0-9]+$/.test(aPart);
-    const bNumeric = /^[0-9]+$/.test(bPart);
-    if (aNumeric && bNumeric) {
-      const aNum = Number(aPart);
-      const bNum = Number(bPart);
-      if (aNum !== bNum) return aNum > bNum ? 1 : -1;
-      continue;
-    }
-    if (aNumeric && !bNumeric) return -1;
-    if (!aNumeric && bNumeric) return 1;
-    if (aPart !== bPart) return aPart > bPart ? 1 : -1;
-  }
-  return 0;
-};
-
-const compareSemverLike = (a: string, b: string): number => {
-  const parsedA = parseSemver(a);
-  const parsedB = parseSemver(b);
-  if (parsedA && parsedB) return compareSemver(parsedA, parsedB);
-  if (parsedA) return 1;
-  if (parsedB) return -1;
-  return normalizeSemverInput(a).localeCompare(normalizeSemverInput(b));
-};
-
 const sortLLVersionValuesDesc = (values: string[]): string[] => {
   const unique = Array.from(
     new Set(values.map((value) => String(value || "").trim()).filter(Boolean)),
@@ -158,15 +91,13 @@ const sortGameVersionValuesDesc = (values: string[]): string[] => {
   return unique;
 };
 
-const normalizeLLVersionForFilter = (value: string): string =>
-  (() => {
-    const normalized = normalizeSemverInput(String(value || "").trim());
-    if (!normalized) return "";
-    const match = normalized.match(
-      /(\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?)/,
-    );
-    return match ? match[1] : normalized;
-  })();
+const normalizeLLVersionForFilter = (value: string): string => {
+  const normalized = normalizeSemverInput(value);
+  const match = normalized.match(
+    /(\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?)/,
+  );
+  return match?.[1] ?? normalized;
+};
 
 const resolveCurrentInstanceName = async (
   preferredName?: string,

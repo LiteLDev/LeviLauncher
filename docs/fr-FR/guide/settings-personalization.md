@@ -56,8 +56,8 @@ Utilisez **Image suivante** lorsque le dossier contient plusieurs images. L'ordr
 
 ### Confidentialité
 
-- Statistiques d'utilisation anonymes (Microsoft Clarity), que vous pouvez désactiver à tout moment
-- Liens vers les conditions de Clarity et la déclaration de confidentialité de Microsoft
+- Statistiques d’utilisation (Google Analytics), que vous pouvez désactiver à tout moment
+- Liens vers les conditions de Google Analytics et les règles de confidentialité de Google
 
 ### Mises à jour
 

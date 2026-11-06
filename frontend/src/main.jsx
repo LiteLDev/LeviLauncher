@@ -238,14 +238,14 @@ const bootstrapApp = async () => {
       { I18nextProvider },
       { ThemeProvider: NextThemesProvider },
       { createHashRouter, RouterProvider, createRoutesFromElements, Route },
-      { CLARITY_ENABLED_KEY, CLARITY_EVENT_NAME },
+      { initializeAnalytics },
     ] = await Promise.all([
       import("./App"),
       import("./i18n"),
       import("react-i18next"),
       import("next-themes"),
       import("react-router-dom"),
-      import("./utils/clarityConsent"),
+      import("./utils/analytics"),
     ]);
 
     markStartupPhase("ll-startup-app-bundle-loaded");
@@ -261,61 +261,11 @@ const bootstrapApp = async () => {
       createRoutesFromElements(<Route path="/*" element={<App />} />),
     );
 
-    const CLARITY_PROJECT_ID = "voq9l7h41c";
-    let clarityInitialized = false;
-    let clarityConsentEnabled = false;
-    let clarityClient = null;
-    let clarityLoadPromise = null;
-
-    const getClarityClient = () => {
-      if (!clarityLoadPromise) {
-        clarityLoadPromise = import("@microsoft/clarity").then(
-          ({ default: Clarity }) => {
-            clarityClient = Clarity;
-            return Clarity;
-          },
-        );
-      }
-      return clarityLoadPromise;
-    };
-
-    const applyClarityConsent = async (enabled) => {
-      clarityConsentEnabled = enabled;
-      try {
-        if (enabled) {
-          const Clarity = await getClarityClient();
-          if (!clarityConsentEnabled) {
-            return;
-          }
-          if (!clarityInitialized) {
-            Clarity.init(CLARITY_PROJECT_ID);
-            clarityInitialized = true;
-          }
-          Clarity.consent(true);
-          return;
-        }
-
-        if (clarityInitialized && clarityClient) {
-          clarityClient.consent(false);
-        }
-      } catch (error) {
-        console.error("Failed to apply Clarity consent", error);
-      }
-    };
-
-    const clarityEnabledOnStart = (() => {
-      try {
-        return localStorage.getItem(CLARITY_ENABLED_KEY) === "true";
-      } catch {
-        return false;
-      }
-    })();
-
-    void applyClarityConsent(clarityEnabledOnStart);
-
-    window.addEventListener(CLARITY_EVENT_NAME, (event) => {
-      const enabled = Boolean(event?.detail?.enabled);
-      void applyClarityConsent(enabled);
+    const trackAnalyticsPageView = initializeAnalytics(
+      () => router.state.location.pathname,
+    );
+    router.subscribe(({ location }) => {
+      trackAnalyticsPageView(location.pathname);
     });
 
     startTransition(() => {

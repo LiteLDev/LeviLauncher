@@ -66,13 +66,13 @@ func TestResolveLatestTarball(t *testing.T) {
 		expectedTarball string
 	}{
 		{
-			name: "tencent mirror source",
+			name: "npmmirror source",
 			source: lipPackageSource{
 				MetadataURL:       lipMirrorMetadataAPI,
 				TarballHost:       lipMirrorTarballHost,
 				TarballPathPrefix: lipMirrorTarballPathPrefix,
 			},
-			expectedTarball: "https://mirrors.cloud.tencent.com/npm/@levimc/lip/-/lip-0.34.4.tgz",
+			expectedTarball: "https://registry.npmmirror.com/@levimc/lip/-/lip-0.34.4.tgz",
 		},
 		{
 			name: "official npm source",

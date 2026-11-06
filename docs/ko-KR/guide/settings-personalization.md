@@ -56,8 +56,8 @@ LeviLauncher는 경로, 외관, 구성 요소 관리, 개인정보 보호 설정
 
 ### 개인정보
 
-- 익명 사용 분석(Microsoft Clarity), 언제든지 끌 수 있음
-- Clarity 약관 및 Microsoft 개인정보처리방침 링크
+- 사용 통계(Google Analytics), 언제든지 끌 수 있음
+- Google Analytics 이용약관 및 Google 개인정보처리방침 링크
 
 ### 업데이트
 

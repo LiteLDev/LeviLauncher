@@ -44,11 +44,8 @@ import { LuDownload } from "react-icons/lu";
 import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
 import { FileDropOverlay } from "@/components/FileDropOverlay";
 import { useFileDrag } from "@/hooks/useFileDrag";
-import {
-  useModsPage,
-  type LipGroupItem,
-  type ModListItem,
-} from "@/hooks/useModsPage";
+import { useModsPage } from "@/hooks/useModsPage";
+import type { LipGroupItem, ModListItem } from "@/utils/modIntelligenceResolver";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";

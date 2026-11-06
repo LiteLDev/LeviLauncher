@@ -240,7 +240,7 @@ type ParsedSemver = {
   pre: string[];
 };
 
-const normalizeSemverInput = (value: string): string =>
+export const normalizeSemverInput = (value: string): string =>
   String(value || "")
     .trim()
     .replace(/^v/i, "");
@@ -300,7 +300,7 @@ const compareSemverCore = (a: ParsedSemver, b: ParsedSemver): number => {
   return 0;
 };
 
-const compareSemverLike = (a: string, b: string): number => {
+export const compareSemverLike = (a: string, b: string): number => {
   const parsedA = parseSemver(a);
   const parsedB = parseSemver(b);
   if (parsedA && parsedB) return compareSemver(parsedA, parsedB);

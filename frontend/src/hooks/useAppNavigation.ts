@@ -45,7 +45,6 @@ export const setAppNavLock = (locked: boolean) => {
 };
 
 export const useAppNavigation = () => {
-  const hasBackend = minecraft !== undefined;
   const location = useLocation();
   const navigate = useNavigate();
 
@@ -123,14 +122,13 @@ export const useAppNavigation = () => {
   }, [isOnboardingMode, isUpdatingMode, location.pathname, navigate]);
 
   useEffect(() => {
-    if (!hasBackend) return;
     try {
       minecraft
         ?.GetIsBeta?.()
         .then((v: boolean) => setIsBeta(!!v))
         .catch(() => {});
     } catch {}
-  }, [hasBackend]);
+  }, []);
 
   return {
     navLocked,

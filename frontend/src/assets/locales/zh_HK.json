@@ -565,12 +565,12 @@
     },
     "privacy": {
       "analytics": {
-        "title": "匿名使用分析（Microsoft Clarity）",
+        "title": "使用情況統計（Google Analytics）",
         "desc": "啟用後可幫助我們持續優化功能與介面。你可隨時在此關閉。"
       },
       "links": {
-        "clarity_terms": "Clarity 服務條款",
-        "microsoft_privacy": "Microsoft 私隱聲明"
+        "google_analytics_terms": "Google Analytics 服務條款",
+        "google_privacy": "Google 私隱政策"
       }
     },
     "game_behavior": {
@@ -1414,14 +1414,14 @@
       "nh_err_extract_failed": "安裝包解壓失敗，請重新下載。"
     }
   },
-  "clarity": {
+  "analytics": {
     "prompt": {
       "title": "願意幫助我們改進 LeviLauncher 嗎？",
-      "body": "若你同意，我們會透過 Microsoft Clarity 收集匿名操作資料，用於優化功能與介面體驗。不會收集帳號資料、遊戲資訊、磁碟內容，僅適用於前端頁面。你可隨時在「設定 > 私隱」中關閉。",
+      "body": "經你同意，LeviLauncher 會使用 Google Analytics 統計啟動器頁面瀏覽和基本裝置資訊，以改善功能與介面。Google Analytics 會使用 Cookie 識別瀏覽。我們不會傳送帳戶資訊、遊戲資料或本機檔案路徑。你可以隨時在「設定 > 私隱」中關閉。",
       "enable": "同意並啟用",
       "disable": "暫不啟用",
-      "clarity_terms": "Clarity 服務條款",
-      "microsoft_privacy": "Microsoft 私隱聲明"
+      "google_analytics_terms": "Google Analytics 服務條款",
+      "google_privacy": "Google 私隱政策"
     }
   },
   "audit": {

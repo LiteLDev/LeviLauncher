@@ -14,13 +14,13 @@
     "type-check": "tsc --noEmit",
     "test:explorer": "node --test scripts/explorer.test.mjs",
     "test:usability": "node --test scripts/usability.test.mjs",
+    "test:analytics": "node --test scripts/analytics.test.mjs",
     "test:uwp": "node --test scripts/uwp.test.mjs scripts/content-paths.test.mjs",
     "styles:check": "node ./scripts/check-materials.mjs"
   },
   "dependencies": {
     "@heroui/react": "3.2.4",
     "@heroui/styles": "3.2.4",
-    "@microsoft/clarity": "^1.0.2",
     "@tailwindcss/vite": "^4.3.3",
     "@wailsio/runtime": "3.0.0-beta.19",
     "framer-motion": "^13.2.0",

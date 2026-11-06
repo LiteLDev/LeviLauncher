@@ -528,7 +528,7 @@ export default function InstallPage() {
                 methods: ["Install", "Update"],
                 feedbackMode: "on_error",
               },
-              async ({ addLog }) => {
+              async () => {
                 const llErr: string = await installLL(
                   mirrorVersion || installName || "",
                   name,

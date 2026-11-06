@@ -565,12 +565,12 @@
     },
     "privacy": {
       "analytics": {
-        "title": "Anonymous Usage Analytics (Microsoft Clarity)",
+        "title": "Usage Analytics (Google Analytics)",
         "desc": "When enabled, this helps us improve features and UI. You can turn it off at any time."
       },
       "links": {
-        "clarity_terms": "Clarity Terms",
-        "microsoft_privacy": "Microsoft Privacy Statement"
+        "google_analytics_terms": "Google Analytics Terms",
+        "google_privacy": "Google Privacy Policy"
       }
     },
     "game_behavior": {
@@ -1414,14 +1414,14 @@
       "nh_err_extract_failed": "The installer file could not be extracted. Download it again."
     }
   },
-  "clarity": {
+  "analytics": {
     "prompt": {
       "title": "Help improve LeviLauncher?",
-      "body": "With your permission, LeviLauncher uses Microsoft Clarity to collect anonymous interaction data to improve features and UI. It does not collect account information, game information, or disk content, and only applies to frontend pages. You can change this anytime in Settings > Privacy.",
+      "body": "With your permission, LeviLauncher uses Google Analytics to measure launcher page visits and basic device information to improve features and UI. Google Analytics uses cookies to recognize visits. We do not send account details, game data, or local file paths. You can turn this off anytime in Settings > Privacy.",
       "enable": "Allow and Enable",
       "disable": "Not Now",
-      "clarity_terms": "Clarity Terms",
-      "microsoft_privacy": "Microsoft Privacy Statement"
+      "google_analytics_terms": "Google Analytics Terms",
+      "google_privacy": "Google Privacy Policy"
     }
   },
   "audit": {

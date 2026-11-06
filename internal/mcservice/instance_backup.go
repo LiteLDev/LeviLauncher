@@ -2256,42 +2256,7 @@ func restoreInstanceBackupGameDataWithResolutions(
 		normalizedPath = normalizeInstanceBackupRestoreConflictPath(relativePath, sourceInfo.Name())
 	}
 	if sourceInfo.IsDir() && targetInfo.IsDir() {
-		if rootName, ok := matchInstanceBackupGameDataPackRoot(normalizedPath); ok {
-			return restoreInstanceBackupPackRootWithResolutions(
-				sourcePath,
-				targetPath,
-				normalizedPath,
-				rootName,
-				resolutionByID,
-			)
-		}
-		if isInstanceBackupGameDataWorldRoot(normalizedPath) {
-			return restoreInstanceBackupWorldRootWithResolutions(
-				sourcePath,
-				targetPath,
-				normalizedPath,
-				resolutionByID,
-			)
-		}
-		entries, err := os.ReadDir(sourcePath)
-		if err != nil {
-			return wrapInstanceBackupWriteTargetError(err)
-		}
-		for _, entry := range entries {
-			name := strings.TrimSpace(entry.Name())
-			if name == "" {
-				continue
-			}
-			if err := restoreInstanceBackupGameDataWithResolutions(
-				filepath.Join(sourcePath, name),
-				filepath.Join(targetPath, name),
-				path.Join(normalizedPath, name),
-				resolutionByID,
-			); err != nil {
-				return err
-			}
-		}
-		return nil
+		return restoreInstanceBackupGameDataChildren(sourcePath, targetPath, normalizedPath, resolutionByID)
 	}
 
 	return restoreInstanceBackupPathChoice(
@@ -2303,13 +2268,13 @@ func restoreInstanceBackupGameDataWithResolutions(
 	)
 }
 
-func restoreInstanceBackupWorldRootWithResolutions(
-	sourceRoot string,
-	targetRoot string,
-	rootRelativePath string,
+func restoreInstanceBackupGameDataChildren(
+	sourceRoot, targetRoot, rootRelativePath string,
 	resolutionByID map[string]string,
 ) error {
-	if !utils.DirExists(targetRoot) {
+	packRootName, isPackRoot := matchInstanceBackupGameDataPackRoot(rootRelativePath)
+	isWorldRoot := isInstanceBackupGameDataWorldRoot(rootRelativePath)
+	if (isPackRoot || isWorldRoot) && !utils.DirExists(targetRoot) {
 		return copyEntryExact(sourceRoot, targetRoot)
 	}
 	entries, err := os.ReadDir(sourceRoot)
@@ -2324,107 +2289,52 @@ func restoreInstanceBackupWorldRootWithResolutions(
 		sourcePath := filepath.Join(sourceRoot, name)
 		targetPath := filepath.Join(targetRoot, name)
 		relativePath := path.Join(rootRelativePath, name)
-		if !entry.IsDir() {
-			if err := restoreInstanceBackupPathChoice(
-				instanceBackupScopeGameData,
-				sourcePath,
-				targetPath,
-				relativePath,
-				resolutionByID,
-			); err != nil {
-				return err
+		switch {
+		case !isWorldRoot && !isPackRoot:
+			err = restoreInstanceBackupGameDataWithResolutions(sourcePath, targetPath, relativePath, resolutionByID)
+		case !entry.IsDir():
+			err = restoreInstanceBackupPathChoice(instanceBackupScopeGameData, sourcePath, targetPath, relativePath, resolutionByID)
+		case isWorldRoot:
+			err = restoreInstanceBackupWorldFolderWithResolutions(sourcePath, targetPath, relativePath, resolutionByID)
+		default:
+			meta, ok := readInstanceBackupPackMetadata(sourcePath, packRootName, relativePath)
+			if ok {
+				err = restoreInstanceBackupPackEntityWithResolutions(meta, targetRoot, rootRelativePath, packRootName, resolutionByID)
+			} else {
+				err = restoreInstanceBackupGameDataWithResolutions(sourcePath, targetPath, relativePath, resolutionByID)
 			}
-			continue
 		}
-
-		if _, err := os.Stat(targetPath); err != nil {
-			if errors.Is(err, os.ErrNotExist) {
-				if err := copyEntryExact(sourcePath, targetPath); err != nil {
-					return err
-				}
-				continue
-			}
-			return wrapInstanceBackupWriteTargetError(err)
-		}
-
-		choice, ok := resolveInstanceBackupRestoreConflictChoiceByID(
-			buildInstanceBackupRestoreConflictEntityID(instanceBackupScopeGameData, "world_folder", relativePath, relativePath),
-			resolutionByID,
-		)
-		if !ok {
-			return wrapInstanceBackupWriteTargetError(os.ErrInvalid)
-		}
-		if choice == instanceBackupRestoreChoiceCurrent {
-			continue
-		}
-		if err := os.RemoveAll(targetPath); err != nil {
-			return wrapInstanceBackupWriteTargetError(err)
-		}
-		if err := copyEntryExact(sourcePath, targetPath); err != nil {
+		if err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func restoreInstanceBackupPackRootWithResolutions(
-	sourceRoot string,
-	targetRoot string,
-	rootRelativePath string,
-	rootName string,
+func restoreInstanceBackupWorldFolderWithResolutions(
+	sourcePath, targetPath, relativePath string,
 	resolutionByID map[string]string,
 ) error {
-	if !utils.DirExists(targetRoot) {
-		return copyEntryExact(sourceRoot, targetRoot)
-	}
-	entries, err := os.ReadDir(sourceRoot)
-	if err != nil {
+	if _, err := os.Stat(targetPath); err != nil {
+		if errors.Is(err, os.ErrNotExist) {
+			return copyEntryExact(sourcePath, targetPath)
+		}
 		return wrapInstanceBackupWriteTargetError(err)
 	}
-	for _, entry := range entries {
-		name := strings.TrimSpace(entry.Name())
-		if name == "" {
-			continue
-		}
-		sourcePath := filepath.Join(sourceRoot, name)
-		targetPath := filepath.Join(targetRoot, name)
-		relativePath := path.Join(rootRelativePath, name)
-		if !entry.IsDir() {
-			if err := restoreInstanceBackupPathChoice(
-				instanceBackupScopeGameData,
-				sourcePath,
-				targetPath,
-				relativePath,
-				resolutionByID,
-			); err != nil {
-				return err
-			}
-			continue
-		}
-
-		sourceMeta, ok := readInstanceBackupPackMetadata(sourcePath, rootName, relativePath)
-		if !ok {
-			if err := restoreInstanceBackupGameDataWithResolutions(
-				sourcePath,
-				targetPath,
-				relativePath,
-				resolutionByID,
-			); err != nil {
-				return err
-			}
-			continue
-		}
-		if err := restoreInstanceBackupPackEntityWithResolutions(
-			sourceMeta,
-			targetRoot,
-			rootRelativePath,
-			rootName,
-			resolutionByID,
-		); err != nil {
-			return err
-		}
+	choice, ok := resolveInstanceBackupRestoreConflictChoiceByID(
+		buildInstanceBackupRestoreConflictEntityID(instanceBackupScopeGameData, "world_folder", relativePath, relativePath),
+		resolutionByID,
+	)
+	if !ok {
+		return wrapInstanceBackupWriteTargetError(os.ErrInvalid)
 	}
-	return nil
+	if choice == instanceBackupRestoreChoiceCurrent {
+		return nil
+	}
+	if err := os.RemoveAll(targetPath); err != nil {
+		return wrapInstanceBackupWriteTargetError(err)
+	}
+	return copyEntryExact(sourcePath, targetPath)
 }
 
 func restoreInstanceBackupPackEntityWithResolutions(

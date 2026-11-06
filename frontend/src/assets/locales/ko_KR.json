@@ -565,12 +565,12 @@
     },
     "privacy": {
       "analytics": {
-        "title": "익명 사용 분석 (Microsoft Clarity)",
+        "title": "사용 통계 (Google Analytics)",
         "desc": "활성화되면 기능 및 UI 개선에 도움이 됩니다. 언제든지 비활성화할 수 있습니다."
       },
       "links": {
-        "clarity_terms": "Clarity 약관",
-        "microsoft_privacy": "Microsoft 개인정보 처리방침"
+        "google_analytics_terms": "Google Analytics 이용약관",
+        "google_privacy": "Google 개인정보처리방침"
       }
     },
     "game_behavior": {
@@ -1414,14 +1414,14 @@
       "nh_err_extract_failed": "설치 파일의 압축을 풀 수 없습니다. 다시 내려받으세요."
     }
   },
-  "clarity": {
+  "analytics": {
     "prompt": {
       "title": "LeviLauncher 개선에 도움을 주시겠습니까?",
-      "body": "허락하신다면, LeviLauncher 는 기능 및 UI 개선을 위해 Microsoft Clarity 를 사용하여 익명 상호작용 데이터를 수집합니다. 계정 정보, 게임 정보 또는 디스크 콘텐츠를 수집하지 않으며 프론트엔드 페이지에만 적용됩니다. 설정 > 개인정보에서 언제든지 변경할 수 있습니다.",
+      "body": "동의하시면 LeviLauncher는 Google Analytics를 사용하여 런처 페이지 방문과 기본 기기 정보를 집계하고 기능 및 UI를 개선합니다. Google Analytics는 쿠키를 사용하여 방문을 식별합니다. 계정 정보, 게임 데이터 또는 로컬 파일 경로는 전송하지 않습니다. 설정 > 개인정보에서 언제든지 끌 수 있습니다.",
       "enable": "허용하고 활성화",
       "disable": "지금 아니오",
-      "clarity_terms": "Clarity 약관",
-      "microsoft_privacy": "Microsoft 개인정보 처리방침"
+      "google_analytics_terms": "Google Analytics 이용약관",
+      "google_privacy": "Google 개인정보처리방침"
     }
   },
   "audit": {

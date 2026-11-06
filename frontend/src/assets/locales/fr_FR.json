@@ -565,12 +565,12 @@
     },
     "privacy": {
       "analytics": {
-        "title": "Analyse d'utilisation anonyme (Microsoft Clarity)",
+        "title": "Statistiques d’utilisation (Google Analytics)",
         "desc": "Lorsqu'activé, cela nous aide à améliorer les fonctionnalités et l'interface utilisateur. Vous pouvez le désactiver à tout moment."
       },
       "links": {
-        "clarity_terms": "Conditions de Clarity",
-        "microsoft_privacy": "Déclaration de confidentialité de Microsoft"
+        "google_analytics_terms": "Conditions de Google Analytics",
+        "google_privacy": "Règles de confidentialité de Google"
       }
     },
     "game_behavior": {
@@ -1414,14 +1414,14 @@
       "nh_err_extract_failed": "Impossible d'extraire le fichier d'installation. Télécharge-le à nouveau."
     }
   },
-  "clarity": {
+  "analytics": {
     "prompt": {
       "title": "Aider à améliorer LeviLauncher ?",
-      "body": "Avec votre permission, LeviLauncher utilise Microsoft Clarity pour collecter des données d'interaction anonymes afin d'améliorer les fonctionnalités et l'interface utilisateur. Il ne collecte aucune information de compte, information de jeu ni contenu du disque, et s'applique uniquement aux pages frontend. Vous pouvez modifier ceci à tout moment dans Paramètres > Confidentialité.",
+      "body": "Avec votre accord, LeviLauncher utilise Google Analytics pour mesurer les visites des pages du lanceur et les informations de base sur l’appareil afin d’améliorer les fonctionnalités et l’interface. Google Analytics utilise des cookies pour reconnaître les visites. Nous n’envoyons aucune donnée de compte, donnée de jeu ni chemin de fichier local. Vous pouvez désactiver cette option à tout moment dans Paramètres > Confidentialité.",
       "enable": "Autoriser et activer",
       "disable": "Pas maintenant",
-      "clarity_terms": "Conditions de Clarity",
-      "microsoft_privacy": "Déclaration de confidentialité de Microsoft"
+      "google_analytics_terms": "Conditions de Google Analytics",
+      "google_privacy": "Règles de confidentialité de Google"
     }
   },
   "audit": {

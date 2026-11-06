@@ -142,14 +142,12 @@ export default function WorldsListPage() {
   const {
     isOpen: delManyCfmOpen,
     open: delManyCfmOnOpen,
-    close: delManyCfmOnClose,
     setOpen: delManyCfmOnOpenChange,
   } = useOverlayState();
   const {
     isOpen: transferTargetOpen,
     open: transferTargetOnOpen,
     close: transferTargetOnClose,
-    setOpen: transferTargetOnOpenChange,
   } = useOverlayState();
   const {
     isOpen: transferResultOpen,
@@ -962,7 +960,7 @@ export default function WorldsListPage() {
                             size="sm"
                             variant={"secondary"}
                             onClick={(event) => event.stopPropagation()}
-                            onPress={(e) => {
+                            onPress={() => {
                               openDirectory(w.Path);
                             }}
                             className={cn(
@@ -982,7 +980,7 @@ export default function WorldsListPage() {
                             variant={"secondary"}
                             isPending={backingUp === w.Path}
                             onClick={(event) => event.stopPropagation()}
-                            onPress={(e) => {
+                            onPress={() => {
                               handleBackup(w);
                             }}
                             className={cn(
@@ -1012,7 +1010,7 @@ export default function WorldsListPage() {
                             size="sm"
                             variant={"secondary"}
                             onClick={(event) => event.stopPropagation()}
-                            onPress={(e) => {
+                            onPress={() => {
                               navigate(routeTo.contentWorldEditor(w.Path));
                             }}
                             className={cn(
@@ -1031,7 +1029,7 @@ export default function WorldsListPage() {
                             size="sm"
                             variant={"danger-soft"}
                             onClick={(event) => event.stopPropagation()}
-                            onPress={(e) => {
+                            onPress={() => {
                               setActiveWorld(w);
                               delOnOpen();
                             }}

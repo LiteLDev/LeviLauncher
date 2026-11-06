@@ -2,13 +2,12 @@ import { useState, useEffect, useCallback, useRef } from "react";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
 import {
-  hasClarityChoiceMade,
-  persistClarityChoice,
-} from "@/utils/clarityConsent";
+  hasAnalyticsChoiceMade,
+  persistAnalyticsChoice,
+} from "@/utils/analyticsConsent";
 import { useStartupInteractive } from "@/utils/startupState";
 
 interface UseAppModalsOptions {
-  hasBackend: boolean;
   isUpdatingMode: boolean;
   isOnboardingMode: boolean;
 }
@@ -21,7 +20,6 @@ const normalizeVersion = (value: unknown): string =>
     .replace(/^v/i, "");
 
 export const useAppModals = ({
-  hasBackend,
   isUpdatingMode,
   isOnboardingMode,
 }: UseAppModalsOptions) => {
@@ -30,7 +28,7 @@ export const useAppModals = ({
   const startupFlowArmedRef = useRef<boolean>(true);
   const [termsOpen, setTermsOpen] = useState<boolean>(false);
   const [termsCountdown, setTermsCountdown] = useState<number>(0);
-  const [clarityPromptOpen, setClarityPromptOpen] = useState<boolean>(false);
+  const [analyticsPromptOpen, setAnalyticsPromptOpen] = useState<boolean>(false);
   const [updateOpen, setUpdateOpen] = useState<boolean>(false);
   const [updateVersion, setUpdateVersion] = useState<string>("");
   const [updateBody, setUpdateBody] = useState<string>("");
@@ -110,8 +108,8 @@ export const useAppModals = ({
       if (!onboarded) {
         return;
       }
-      if (!hasClarityChoiceMade()) {
-        setClarityPromptOpen(true);
+      if (!hasAnalyticsChoiceMade()) {
+        setAnalyticsPromptOpen(true);
         return;
       }
       checkUpdate();
@@ -126,22 +124,22 @@ export const useAppModals = ({
     runPostTermsFlow();
   }, [runPostTermsFlow]);
 
-  const applyClarityChoice = useCallback(
+  const applyAnalyticsChoice = useCallback(
     (enabled: boolean) => {
-      persistClarityChoice(enabled);
-      setClarityPromptOpen(false);
+      persistAnalyticsChoice(enabled);
+      setAnalyticsPromptOpen(false);
       checkUpdate();
     },
     [checkUpdate],
   );
 
-  const acceptClarity = useCallback(() => {
-    applyClarityChoice(true);
-  }, [applyClarityChoice]);
+  const acceptAnalytics = useCallback(() => {
+    applyAnalyticsChoice(true);
+  }, [applyAnalyticsChoice]);
 
-  const declineClarity = useCallback(() => {
-    applyClarityChoice(false);
-  }, [applyClarityChoice]);
+  const declineAnalytics = useCallback(() => {
+    applyAnalyticsChoice(false);
+  }, [applyAnalyticsChoice]);
 
   const runStartupModalFlow = useCallback(() => {
     if (!startupFlowArmedRef.current) {
@@ -161,13 +159,11 @@ export const useAppModals = ({
   }, [runPostTermsFlow]);
 
   useEffect(() => {
-    if (!hasBackend) return;
     if (!startupInteractive) return;
     if (isUpdatingMode) return;
     if (isOnboardingMode) return;
     runStartupModalFlow();
   }, [
-    hasBackend,
     startupInteractive,
     isUpdatingMode,
     isOnboardingMode,
@@ -179,12 +175,10 @@ export const useAppModals = ({
     previousOnboardingModeRef.current = isOnboardingMode;
 
     if (!wasOnboardingMode || isOnboardingMode) return;
-    if (!hasBackend) return;
     if (!startupInteractive) return;
     if (isUpdatingMode) return;
     runStartupModalFlow();
   }, [
-    hasBackend,
     isOnboardingMode,
     isUpdatingMode,
     runStartupModalFlow,
@@ -193,13 +187,12 @@ export const useAppModals = ({
 
   useEffect(() => {
     if (
-      !hasBackend ||
       !startupInteractive ||
       !startupChecksComplete ||
       isUpdatingMode ||
       isOnboardingMode ||
       termsOpen ||
-      clarityPromptOpen ||
+      analyticsPromptOpen ||
       updateOpen ||
       lipUpdateOpen ||
       sponsorCheckedRef.current
@@ -216,13 +209,12 @@ export const useAppModals = ({
       })
       .catch(() => {});
   }, [
-    hasBackend,
     startupInteractive,
     startupChecksComplete,
     isUpdatingMode,
     isOnboardingMode,
     termsOpen,
-    clarityPromptOpen,
+    analyticsPromptOpen,
     updateOpen,
     lipUpdateOpen,
   ]);
@@ -232,7 +224,7 @@ export const useAppModals = ({
   useEffect(() => {
     const modalLocked =
       termsOpen ||
-      clarityPromptOpen ||
+      analyticsPromptOpen ||
       updateOpen ||
       lipUpdateOpen ||
       sponsorLaunchCount > 0;
@@ -242,7 +234,7 @@ export const useAppModals = ({
         setNavLockReason("app-modal", false);
       }
     };
-  }, [termsOpen, clarityPromptOpen, updateOpen, lipUpdateOpen, sponsorLaunchCount]);
+  }, [termsOpen, analyticsPromptOpen, updateOpen, lipUpdateOpen, sponsorLaunchCount]);
 
   useEffect(() => {
     if (!termsOpen) return;
@@ -281,9 +273,9 @@ export const useAppModals = ({
     termsOpen,
     termsCountdown,
     acceptTerms,
-    clarityPromptOpen,
-    acceptClarity,
-    declineClarity,
+    analyticsPromptOpen,
+    acceptAnalytics,
+    declineAnalytics,
     updateOpen,
     updateVersion,
     updateBody,

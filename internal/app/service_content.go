@@ -38,6 +38,13 @@ func (s *ContentService) ListPacksForVersion(versionName string, player string) 
 	return s.manager.ListPacksForVersion(versionName, player)
 }
 
+func (s *ContentService) ListPackDetailsForVersion(versionName, player string, kind packages.PackType) []types.PackListEntry {
+	if s.manager == nil {
+		return []types.PackListEntry{}
+	}
+	return s.manager.ListPackDetailsForVersion(versionName, player, kind)
+}
+
 func (s *ContentService) ImportMcpack(name string, data []byte, overwrite bool) string {
 	if s.manager == nil {
 		return "ERR_ACCESS_VERSIONS_DIR"

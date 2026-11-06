@@ -16,7 +16,6 @@ import {
 
 import React from "react";
 import { Button as AriaButton } from "react-aria-components";
-import { getPlayerGamertagMap } from "@/utils/content";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -32,7 +31,6 @@ import {
   readCurrentVersionName,
   saveCurrentVersionName,
 } from "@/utils/currentVersion";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import {
   GetVersionLogoDataUrl,
   ListVersionMetas,
@@ -44,12 +42,8 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
   const [localVersionMap, setLocalVersionMap] = React.useState<
     Map<string, any>
   >(new Map());
-  const [localVersionsMap, setLocalVersionsMap] = React.useState<
-    Map<string, string[]>
-  >(new Map());
   const [selectedVersionName, setSelectedVersionName] =
     React.useState<string>("");
-  const [persistedName, setPersistedName] = React.useState<string>("");
   const [activeTab, setActiveTab] = React.useState<
     "all" | "release" | "preview" | "beta"
   >("all");
@@ -63,92 +57,78 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
   const reduceMotion = useReducedMotion();
   const navigate = useNavigate();
   const { t } = useTranslation();
-  const hasBackend = minecraft !== undefined;
 
   React.useEffect(() => {
     let cancelled = false;
     setLoading(true);
     setLoadError(false);
-    if (hasBackend) {
-      const listFn = ListVersionMetas as any;
-      if (typeof listFn === "function") {
-        listFn().then((metas: any[]) => {
-          if (cancelled) return;
-          const newLocalVersionMap = new Map();
-          const newLocalVersionsMap = new Map();
-          metas?.forEach((m: any) => {
-            const name = String(m?.name || "");
-            const gameVersion = String(m?.gameVersion || "");
-            const type = String(m?.type || "release");
-            const isPreview = type.toLowerCase() === "preview";
-            const enableIsolation = !!m?.enableIsolation;
-            const enableConsole = !!m?.enableConsole;
-            const enableEditorMode = !!m?.enableEditorMode;
-            const lv: any = {
-              name,
-              version: gameVersion,
-              isPreview,
-              type: type.toLowerCase(),
-              packageType: normalizePackageType(m?.packageType),
-              enableIsolation,
-              enableConsole,
-              enableEditorMode,
-              isLaunched: false,
-              isPreLoader: false,
-            };
-            if (name) newLocalVersionMap.set(name, lv);
-            if (gameVersion) {
-              if (!newLocalVersionsMap.has(gameVersion))
-                newLocalVersionsMap.set(gameVersion, []);
-              if (!newLocalVersionsMap.get(gameVersion)?.includes(name))
-                newLocalVersionsMap.get(gameVersion)?.push(name);
-            }
-          });
-          setLocalVersionMap(newLocalVersionMap);
-          setLocalVersionsMap(newLocalVersionsMap);
-          const saved = readCurrentVersionName();
-          const useName =
-            saved && newLocalVersionMap.has(saved)
-              ? saved
-              : Array.from(newLocalVersionMap.keys())[0] || "";
-          setSelectedVersionName(useName);
-          setPersistedName(saved || "");
-          try {
-            const getter = GetVersionLogoDataUrl as any;
-            if (typeof getter === "function") {
-              const names = Array.from(newLocalVersionMap.keys());
-              Promise.all(
-                names.map((n) =>
-                  getter(n).then((u: string) => [n, String(u || "")] as const).catch(() => [n, ""] as const),
-                ),
-              ).then((entries) => {
-                const m = new Map<string, string>();
-                entries.forEach(([n, u]) => {
-                  if (u) m.set(n, u);
-                });
-                if (!cancelled) setLogoMap(m);
+    const listFn = ListVersionMetas as any;
+    if (typeof listFn === "function") {
+      listFn().then((metas: any[]) => {
+        if (cancelled) return;
+        const newLocalVersionMap = new Map();
+        metas?.forEach((m: any) => {
+          const name = String(m?.name || "");
+          const gameVersion = String(m?.gameVersion || "");
+          const type = String(m?.type || "release");
+          const isPreview = type.toLowerCase() === "preview";
+          const enableIsolation = !!m?.enableIsolation;
+          const enableConsole = !!m?.enableConsole;
+          const enableEditorMode = !!m?.enableEditorMode;
+          const lv: any = {
+            name,
+            version: gameVersion,
+            isPreview,
+            type: type.toLowerCase(),
+            packageType: normalizePackageType(m?.packageType),
+            enableIsolation,
+            enableConsole,
+            enableEditorMode,
+            isLaunched: false,
+            isPreLoader: false,
+          };
+          if (name) newLocalVersionMap.set(name, lv);
+        });
+        setLocalVersionMap(newLocalVersionMap);
+        const saved = readCurrentVersionName();
+        const useName =
+          saved && newLocalVersionMap.has(saved)
+            ? saved
+            : Array.from(newLocalVersionMap.keys())[0] || "";
+        setSelectedVersionName(useName);
+        try {
+          const getter = GetVersionLogoDataUrl as any;
+          if (typeof getter === "function") {
+            const names = Array.from(newLocalVersionMap.keys());
+            Promise.all(
+              names.map((n) =>
+                getter(n).then((u: string) => [n, String(u || "")] as const).catch(() => [n, ""] as const),
+              ),
+            ).then((entries) => {
+              const m = new Map<string, string>();
+              entries.forEach(([n, u]) => {
+                if (u) m.set(n, u);
               });
-            } else {
-              setLogoMap(new Map());
-            }
-          } catch {
+              if (!cancelled) setLogoMap(m);
+            });
+          } else {
             setLogoMap(new Map());
           }
-        }).catch((error: unknown) => {
-          console.error("Failed to load instances", error);
-          if (!cancelled) setLoadError(true);
-        }).finally(() => {
-          if (!cancelled) setLoading(false);
-        });
-      } else {
-        setLoading(false);
-        setLoadError(true);
-      }
+        } catch {
+          setLogoMap(new Map());
+        }
+      }).catch((error: unknown) => {
+        console.error("Failed to load instances", error);
+        if (!cancelled) setLoadError(true);
+      }).finally(() => {
+        if (!cancelled) setLoading(false);
+      });
     } else {
       setLoading(false);
+      setLoadError(true);
     }
     return () => { cancelled = true; };
-  }, [hasBackend, loadAttempt]);
+  }, [loadAttempt]);
 
   const flatItems = React.useMemo(() => {
     const list = (
@@ -191,7 +171,6 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
     if (name) {
       saveCurrentVersionName(name);
       setSelectedVersionName(name);
-      setPersistedName(name);
       toast(t("common.success"), {
         description: t("launcherpage.currentVersion") + ": " + name,
         variant: "accent",

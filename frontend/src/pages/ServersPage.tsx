@@ -10,7 +10,6 @@ import {
   Spinner,
   TextField,
   Tooltip,
-  toast,
 } from "@heroui/react";
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
@@ -31,11 +30,9 @@ import {
   FaSignal,
   FaGamepad,
   FaClock,
-  FaTrash,
-  FaPlus,
   FaTag,
 } from "react-icons/fa";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import { readCurrentVersionName } from "@/utils/currentVersion";
@@ -208,7 +205,6 @@ const ServerRow = React.memo(({ server }: { server: Server }) => {
 
 export default function ServersPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const location = useLocation();
   const [selectedPlayer, setSelectedPlayer] = useState<string>(
     location.state?.player || "",

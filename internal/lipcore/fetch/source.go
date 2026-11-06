@@ -5,17 +5,29 @@ import (
 	"archive/zip"
 	"bufio"
 	"bytes"
+	"compress/bzip2"
 	"compress/gzip"
 	"context"
+	"encoding/binary"
 	"errors"
 	"fmt"
+	"hash/crc32"
 	"io"
 	"io/fs"
+	"math"
 	"os"
 	"path/filepath"
+	"slices"
+	"strconv"
 	"strings"
 	"sync"
 	"unicode/utf8"
+
+	"github.com/bodgit/sevenzip"
+	"github.com/klauspost/compress/zstd"
+	"github.com/nwaples/rardecode/v2"
+	"github.com/ulikunitz/xz"
+	"github.com/ulikunitz/xz/lzma"
 )
 
 // AssetSource exposes the files of one asset by key (lip ISource). Keys are
@@ -45,12 +57,14 @@ func keyNotFound(key string) error {
 //
 // Like lip (SharpCompress ArchiveFactory.OpenArchive), the archive format of
 // zip/tar/tgz assets is detected from the content, not from assetType:
-// zip, tar, and gzip (a gzipped tar exposes the tar's entries; any other
-// gzip exposes one entry named by the gzip header's file name). Archive
-// entries that are directories are excluded (zip: name ends with "/"; tar:
-// type '5'); tar PAX global headers are skipped; symlinks, hard links and
-// other special tar entries are exposed with empty content, as
-// SharpCompress does.
+// zip, RAR, tar, gzip and 7z (a gzipped tar exposes the tar's entries; any
+// other gzip exposes one entry named by the gzip header's file name, or no
+// entry without one). Archive entries that are directories are excluded
+// (zip: name ends with "/", or with "\" for an empty entry; tar: type '5';
+// RAR and 7z: the directory flag/attribute); tar PAX global headers are
+// skipped; symlinks, hard links and other special tar entries are exposed
+// with empty content, as SharpCompress does. Zip entries may be stored or
+// compressed with Deflate, Deflate64, BZip2, LZMA, Zstandard or XZ.
 //
 // Known differences from lip 0.37.0 / SharpCompress 0.50.5:
 //   - SharpCompress 0.50.5 fails to open gzipped tars ("Cannot determine
@@ -59,6 +73,13 @@ func keyNotFound(key string) error {
 //   - pre-POSIX tar entries with type '\0' and a name ending in "/" are
 //     treated as directories here (Go archive/tar); SharpCompress exposes
 //     them as files.
+//   - sparse tar entries are expanded here; SharpCompress exposes their
+//     stored data under the raw header name.
+//   - zip entries using the legacy Shrink, Reduce and Implode methods or
+//     PPMd fail to open here (with an error naming the method).
+//   - 7z directories are recognised by their attributes rather than by the
+//     empty-stream/empty-file flags, and 7z anti-items are exposed as files
+//     by SharpCompress only.
 func OpenArchive(assetType string, path string) (AssetSource, error) {
 	switch assetType {
 	case "uncompressed":
@@ -70,8 +91,11 @@ func OpenArchive(assetType string, path string) (AssetSource, error) {
 	}
 }
 
-// netName converts an archive entry name the way .NET decoding it as UTF-8
-// would: each invalid byte becomes U+FFFD.
+// netName converts archive entry name bytes the way .NET's UTF-8 decoder
+// (Encoding.UTF8.GetString) does: each maximal subpart of an ill-formed
+// sequence becomes one U+FFFD (Unicode "U+FFFD substitution of maximal
+// subparts"), so "\xE5\xBC" (a truncated 3-byte sequence) is one
+// replacement, not two.
 func netName(name string) string {
 	if utf8.ValidString(name) {
 		return name
@@ -79,10 +103,46 @@ func netName(name string) string {
 	var b strings.Builder
 	for i := 0; i < len(name); {
 		r, size := utf8.DecodeRuneInString(name[i:])
-		b.WriteRune(r)
-		i += size
+		if r != utf8.RuneError || size > 1 {
+			b.WriteString(name[i : i+size])
+			i += size
+			continue
+		}
+		b.WriteRune(utf8.RuneError)
+		i += maximalSubpart(name[i:])
 	}
 	return b.String()
+}
+
+// maximalSubpart returns the length of the longest prefix of s (which starts
+// with an ill-formed sequence) that is a valid start of a UTF-8 sequence, or
+// 1 if the first byte cannot start one (Unicode Table 3-7).
+func maximalSubpart(s string) int {
+	need, lo, hi := 0, byte(0x80), byte(0xBF)
+	switch c := s[0]; {
+	case 0xC2 <= c && c <= 0xDF:
+		need = 1
+	case c == 0xE0:
+		need, lo = 2, 0xA0
+	case c == 0xED:
+		need, hi = 2, 0x9F
+	case 0xE1 <= c && c <= 0xEF:
+		need = 2
+	case c == 0xF0:
+		need, lo = 3, 0x90
+	case c == 0xF4:
+		need, hi = 3, 0x8F
+	case 0xF1 <= c && c <= 0xF3:
+		need = 3
+	default:
+		return 1
+	}
+	n := 1
+	for n <= need && n < len(s) && lo <= s[n] && s[n] <= hi {
+		n++
+		lo, hi = 0x80, 0xBF
+	}
+	return n
 }
 
 type archiveKind int
@@ -92,6 +152,9 @@ const (
 	kindTar
 	kindTarGz
 	kindGzip
+	kind7z
+	kindRar4
+	kindRar5
 )
 
 func openArchiveFile(path string) (AssetSource, error) {
@@ -104,19 +167,25 @@ func openArchiveFile(path string) (AssetSource, error) {
 		f.Close()
 		return nil, fmt.Errorf("%s: %w", path, err)
 	}
+	var src AssetSource
 	switch kind {
-	case kindZip:
+	case kindZip, kind7z, kindRar4, kindRar5:
 		fi, err := f.Stat()
-		if err != nil {
-			f.Close()
-			return nil, err
+		if err == nil {
+			switch kind {
+			case kindZip:
+				src, err = openZip(f, fi.Size())
+			case kind7z:
+				src, err = open7z(f, fi.Size())
+			default:
+				src, err = openRar(f, kind == kindRar5)
+			}
 		}
-		zr, err := zip.NewReader(f, fi.Size())
-		if err != nil && !errors.Is(err, zip.ErrInsecurePath) {
+		if err != nil {
 			f.Close()
 			return nil, fmt.Errorf("%s: %w", path, err)
 		}
-		return newZipSource(f, zr), nil
+		return src, nil
 	case kindGzip:
 		f.Close()
 		return newGzipSource(path)
@@ -140,6 +209,12 @@ func detect(f *os.File) (archiveKind, error) {
 		bytes.HasPrefix(head, []byte("PK\x05\x06")),
 		bytes.HasPrefix(head, []byte("PK\x07\x08")):
 		return kindZip, nil
+	case bytes.HasPrefix(head, []byte("Rar!\x1a\x07\x00")):
+		return kindRar4, nil
+	case bytes.HasPrefix(head, []byte("Rar!\x1a\x07\x01\x00")):
+		return kindRar5, nil
+	case bytes.HasPrefix(head, []byte("7z\xbc\xaf\x27\x1c")):
+		return kind7z, nil
 	case bytes.HasPrefix(head, []byte{0x1f, 0x8b}):
 		if _, err := f.Seek(0, io.SeekStart); err != nil {
 			return 0, err
@@ -157,7 +232,7 @@ func detect(f *os.File) (archiveKind, error) {
 	case isTarHeader(head):
 		return kindTar, nil
 	}
-	return 0, errors.New("cannot determine archive type (supported: zip, tar, gzip)")
+	return 0, errors.New("cannot determine archive type (supported: zip, rar, tar, gzip, 7z)")
 }
 
 // isTarHeader reports whether block is a tar header with a valid checksum.
@@ -195,11 +270,20 @@ type zipSource struct {
 	files map[string]*zip.File // first non-directory entry per key
 }
 
-func newZipSource(f *os.File, zr *zip.Reader) *zipSource {
+func openZip(f *os.File, size int64) (*zipSource, error) {
+	zr, err := zip.NewReader(f, size)
+	if err != nil && !errors.Is(err, zip.ErrInsecurePath) {
+		return nil, err
+	}
 	s := &zipSource{f: f, files: map[string]*zip.File{}}
 	for _, zf := range zr.File {
-		name := netName(zf.Name)
-		if strings.HasSuffix(name, "/") {
+		name, err := zipEntryName(zf)
+		if err != nil {
+			return nil, err
+		}
+		// SharpCompress ZipFileEntry.IsDirectory.
+		if strings.HasSuffix(name, "/") ||
+			(strings.HasSuffix(name, "\\") && zf.CompressedSize64 == 0 && zf.UncompressedSize64 == 0) {
 			continue
 		}
 		s.keys = append(s.keys, name)
@@ -207,20 +291,309 @@ func newZipSource(f *os.File, zr *zip.Reader) *zipSource {
 			s.files[name] = zf
 		}
 	}
-	return s
+	return s, nil
+}
+
+const zipUnicodePathExtra = 0x7075
+
+// zipEntryName returns an entry's name as SharpCompress reads it from the
+// central directory: the raw name decoded as UTF-8 (with or without the EFS
+// flag, as .NET's default encoding is UTF-8), replaced by the first Info-ZIP
+// Unicode Path extra field if there is one (its version and name CRC are
+// not checked).
+func zipEntryName(zf *zip.File) (string, error) {
+	extra := zf.Extra
+	for i := 0; i+4 <= len(extra); {
+		tag := binary.LittleEndian.Uint16(extra[i:])
+		size := int(binary.LittleEndian.Uint16(extra[i+2:]))
+		if i+4+size > len(extra) {
+			break
+		}
+		if tag == zipUnicodePathExtra {
+			if size < 5 {
+				// SharpCompress fails to open the archive.
+				return "", fmt.Errorf("zip entry %q: invalid Unicode Path extra field", netName(zf.Name))
+			}
+			return netName(string(extra[i+4+5 : i+4+size])), nil
+		}
+		i += 4 + size
+	}
+	return netName(zf.Name), nil
 }
 
 func (s *zipSource) Keys() []string { return append([]string(nil), s.keys...) }
 
 func (s *zipSource) Open(key string) (io.ReadCloser, error) {
 	if zf, ok := s.files[key]; ok {
+		return openZipEntry(zf)
+	}
+	return nil, keyNotFound(key)
+}
+
+// Zip compression methods SharpCompress decodes beyond Store and Deflate.
+const (
+	zipDeflate64 = 9
+	zipBZip2     = 12
+	zipLZMA      = 14
+	zipZstd      = 93
+	zipXZ        = 95
+	zipPPMd      = 98
+)
+
+// zipLegacyMethods are decoded by SharpCompress but not supported here.
+var zipLegacyMethods = map[uint16]string{
+	1: "Shrink", 2: "Reduce", 3: "Reduce", 4: "Reduce", 5: "Reduce", 6: "Implode", zipPPMd: "PPMd",
+}
+
+// openZipEntry opens an entry for reading. Store and Deflate are decoded by
+// archive/zip; the other methods SharpCompress supports are decoded here
+// from the raw data, checking the size and CRC-32 like archive/zip does.
+func openZipEntry(zf *zip.File) (io.ReadCloser, error) {
+	if zf.Method == zip.Store || zf.Method == zip.Deflate {
+		return zf.Open()
+	}
+	if name, ok := zipLegacyMethods[zf.Method]; ok {
+		return nil, fmt.Errorf("zip entry %q: compression method %d (%s) is not supported", zf.Name, zf.Method, name)
+	}
+	raw, err := zf.OpenRaw()
+	if err != nil {
+		return nil, err
+	}
+	var rc io.ReadCloser
+	switch zf.Method {
+	case zipDeflate64:
+		rc = io.NopCloser(newDeflate64Reader(raw))
+	case zipBZip2:
+		rc = io.NopCloser(bzip2.NewReader(raw))
+	case zipLZMA:
+		rc, err = newZipLZMAReader(raw, zf)
+	case zipZstd:
+		var d *zstd.Decoder
+		if d, err = zstd.NewReader(raw, zstd.WithDecoderConcurrency(1)); err == nil {
+			rc = d.IOReadCloser()
+		}
+	case zipXZ:
+		var xr *xz.Reader
+		if xr, err = xz.NewReader(raw); err == nil {
+			rc = io.NopCloser(xr)
+		}
+	default:
+		return nil, fmt.Errorf("zip entry %q: %w (method %d)", zf.Name, zip.ErrAlgorithm, zf.Method)
+	}
+	if err != nil {
+		return nil, fmt.Errorf("zip entry %q: %w", zf.Name, err)
+	}
+	return &zipChecksumReader{rc: rc, size: zf.UncompressedSize64, crc: zf.CRC32}, nil
+}
+
+// newZipLZMAReader decodes a zip LZMA entry (APPNOTE 5.8.8): a 2-byte
+// version, a 2-byte properties size and the properties, then the raw
+// stream, ending with an end marker if general purpose flag bit 1 is set
+// and after the entry's uncompressed size otherwise.
+func newZipLZMAReader(raw io.Reader, zf *zip.File) (io.ReadCloser, error) {
+	eos := zf.Flags&0x2 != 0
+	if !eos && zf.UncompressedSize64 == 0 {
+		return io.NopCloser(bytes.NewReader(nil)), nil
+	}
+	var hdr [4]byte
+	if _, err := io.ReadFull(raw, hdr[:]); err != nil {
+		return nil, err
+	}
+	props := make([]byte, binary.LittleEndian.Uint16(hdr[2:]))
+	if _, err := io.ReadFull(raw, props); err != nil {
+		return nil, err
+	}
+	if len(props) != 5 {
+		return nil, fmt.Errorf("unsupported LZMA properties size %d", len(props))
+	}
+	// Rebuild a .lzma header (properties, dictionary size, size). The
+	// dictionary never needs to exceed the data, so a hostile dictionary
+	// size cannot force a large allocation.
+	dict := uint64(binary.LittleEndian.Uint32(props[1:]))
+	dict = min(dict, max(zf.UncompressedSize64, lzma.MinDictCap))
+	alone := make([]byte, 13)
+	alone[0] = props[0]
+	binary.LittleEndian.PutUint32(alone[1:], uint32(dict))
+	size := zf.UncompressedSize64
+	if eos {
+		size = math.MaxUint64 // unknown: up to the end marker
+	}
+	binary.LittleEndian.PutUint64(alone[5:], size)
+	lr, err := lzma.NewReader(io.MultiReader(bytes.NewReader(alone), raw))
+	if err != nil {
+		return nil, err
+	}
+	return io.NopCloser(lr), nil
+}
+
+// zipChecksumReader verifies an entry's size and CRC-32 at EOF.
+type zipChecksumReader struct {
+	rc    io.ReadCloser
+	size  uint64
+	crc   uint32
+	n     uint64
+	hash  uint32
+	ended error
+}
+
+func (r *zipChecksumReader) Read(p []byte) (int, error) {
+	if r.ended != nil {
+		return 0, r.ended
+	}
+	n, err := r.rc.Read(p)
+	r.hash = crc32.Update(r.hash, crc32.IEEETable, p[:n])
+	r.n += uint64(n)
+	if r.n > r.size {
+		r.ended = zip.ErrFormat
+		return n, r.ended
+	}
+	if err == io.EOF {
+		switch {
+		case r.n != r.size:
+			err = io.ErrUnexpectedEOF
+		case r.crc != 0 && r.hash != r.crc:
+			err = zip.ErrChecksum
+		}
+		r.ended = err
+	} else if err != nil {
+		r.ended = err
+	}
+	return n, err
+}
+
+func (r *zipChecksumReader) Close() error { return r.rc.Close() }
+
+func (s *zipSource) Prefetch(context.Context, []string) error { return nil }
+func (s *zipSource) Close() error                             { return s.f.Close() }
+
+// --- 7z ---
+
+type sevenZipSource struct {
+	f     *os.File
+	keys  []string
+	files map[string]*sevenzip.File // first non-directory entry per key
+}
+
+// open7z indexes a 7z archive; keys are the stored names as-is.
+func open7z(f *os.File, size int64) (*sevenZipSource, error) {
+	zr, err := sevenzip.NewReader(f, size)
+	if err != nil {
+		return nil, err
+	}
+	s := &sevenZipSource{f: f, files: map[string]*sevenzip.File{}}
+	for _, zf := range zr.File {
+		if zf.FileInfo().IsDir() {
+			continue
+		}
+		s.keys = append(s.keys, zf.Name)
+		if _, dup := s.files[zf.Name]; !dup {
+			s.files[zf.Name] = zf
+		}
+	}
+	return s, nil
+}
+
+func (s *sevenZipSource) Keys() []string { return append([]string(nil), s.keys...) }
+
+func (s *sevenZipSource) Open(key string) (io.ReadCloser, error) {
+	if zf, ok := s.files[key]; ok {
 		return zf.Open()
 	}
 	return nil, keyNotFound(key)
 }
 
-func (s *zipSource) Prefetch(context.Context, []string) error { return nil }
-func (s *zipSource) Close() error                             { return s.f.Close() }
+func (s *sevenZipSource) Prefetch(context.Context, []string) error { return nil }
+func (s *sevenZipSource) Close() error                             { return s.f.Close() }
+
+// --- RAR ---
+
+// rarSource indexes a RAR archive once and rescans it to read an entry, as
+// entries of a solid archive can only be decoded in order.
+type rarSource struct {
+	f    *os.File
+	rar5 bool
+	keys []string
+}
+
+func openRar(f *os.File, rar5 bool) (*rarSource, error) {
+	s := &rarSource{f: f, rar5: rar5}
+	err := s.scan(func(key string, _ *rardecode.Reader) bool {
+		s.keys = append(s.keys, key)
+		return false
+	})
+	if err != nil {
+		return nil, err
+	}
+	return s, nil
+}
+
+// scan walks the non-directory entries in order, calling fn with each key
+// until it returns true.
+func (s *rarSource) scan(fn func(key string, r *rardecode.Reader) bool) error {
+	r, err := rardecode.NewReader(io.NewSectionReader(s.f, 0, 1<<62))
+	if err != nil {
+		return err
+	}
+	for {
+		hdr, err := r.Next()
+		if err == io.EOF {
+			return nil
+		}
+		if err != nil {
+			return err
+		}
+		name := hdr.Name
+		if !s.rar5 && hdr.Version > 0 {
+			// rardecode strips a RAR 4 file version (";N"); SharpCompress
+			// keeps it. (A ";0" suffix cannot be told apart and stays
+			// stripped.)
+			name += ";" + strconv.Itoa(hdr.Version)
+		}
+		if !hdr.IsDir && fn(s.key(name), r) {
+			return nil
+		}
+	}
+}
+
+// key converts a rardecode name ('/'-separated, raw bytes for RAR 5 and
+// non-Unicode RAR 4 names) to the SharpCompress key: decoded as UTF-8, then
+// FileHeader.ConvertPathV4/V5 for the current OS. On Windows that makes '\'
+// the separator, and a '\' inside a RAR 5 name becomes '-'.
+func (s *rarSource) key(name string) string {
+	name = netName(name)
+	if os.PathSeparator != '\\' {
+		return name // RAR 4 '\' separators are already '/'
+	}
+	if s.rar5 {
+		name = strings.ReplaceAll(name, "\\", "-")
+	}
+	return strings.ReplaceAll(name, "/", "\\")
+}
+
+func (s *rarSource) Keys() []string { return append([]string(nil), s.keys...) }
+
+func (s *rarSource) Open(key string) (io.ReadCloser, error) {
+	if !slices.Contains(s.keys, key) {
+		return nil, keyNotFound(key)
+	}
+	var found *rardecode.Reader
+	err := s.scan(func(k string, r *rardecode.Reader) bool {
+		if k == key {
+			found = r
+		}
+		return found != nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	if found == nil {
+		return nil, keyNotFound(key)
+	}
+	return io.NopCloser(found), nil
+}
+
+func (s *rarSource) Prefetch(context.Context, []string) error { return nil }
+func (s *rarSource) Close() error                             { return s.f.Close() }
 
 // --- tar / tgz ---
 
@@ -362,8 +735,9 @@ func (s *tarSource) Open(key string) (io.ReadCloser, error) {
 }
 
 // readSparse rescans the archive to let archive/tar expand a sparse entry.
+// The expanded data is streamed, as its size is only bounded by the header.
 func (s *tarSource) readSparse(key string) (io.ReadCloser, error) {
-	tr := tar.NewReader(io.NewSectionReader(s.f, 0, 1<<62))
+	tr := tar.NewReader(bufio.NewReader(io.NewSectionReader(s.f, 0, 1<<62)))
 	for {
 		hdr, err := tr.Next()
 		if err == io.EOF {
@@ -375,11 +749,7 @@ func (s *tarSource) readSparse(key string) (io.ReadCloser, error) {
 		if skipTarEntry(hdr) || netName(hdr.Name) != key {
 			continue
 		}
-		data, err := io.ReadAll(tr)
-		if err != nil {
-			return nil, err
-		}
-		return io.NopCloser(bytes.NewReader(data)), nil
+		return io.NopCloser(tr), nil
 	}
 }
 
@@ -413,9 +783,13 @@ func (m multiCloser) Close() error {
 
 // --- plain gzip ---
 
+// gzipSource exposes a plain gzip as one entry keyed by the header's file
+// name (FNAME), decoded as UTF-8 like SharpCompress does; without FNAME the
+// entry's key is null in SharpCompress, so lip exposes no keys.
 type gzipSource struct {
-	path string
-	name string
+	path    string
+	name    string
+	hasName bool
 }
 
 func newGzipSource(path string) (*gzipSource, error) {
@@ -424,17 +798,58 @@ func newGzipSource(path string) (*gzipSource, error) {
 		return nil, err
 	}
 	defer f.Close()
-	gz, err := gzip.NewReader(f)
-	if err != nil {
+	br := bufio.NewReader(f)
+	if _, err := gzip.NewReader(br); err != nil {
 		return nil, err
 	}
-	return &gzipSource{path: path, name: gz.Name}, nil
+	if _, err := f.Seek(0, io.SeekStart); err != nil {
+		return nil, err
+	}
+	br.Reset(f)
+	name, hasName, err := gzipFileName(br)
+	if err != nil {
+		return nil, fmt.Errorf("%s: %w", path, err)
+	}
+	return &gzipSource{path: path, name: name, hasName: hasName}, nil
 }
 
-func (s *gzipSource) Keys() []string { return []string{s.name} }
+// gzipFileName reads the raw FNAME field of a gzip header (RFC 1952), which
+// compress/gzip would decode as Latin-1 and cannot tell apart from an empty
+// name.
+func gzipFileName(r *bufio.Reader) (string, bool, error) {
+	var hdr [10]byte
+	if _, err := io.ReadFull(r, hdr[:]); err != nil {
+		return "", false, err
+	}
+	const fextra, fname = 1 << 2, 1 << 3
+	if hdr[3]&fextra != 0 {
+		var xlen [2]byte
+		if _, err := io.ReadFull(r, xlen[:]); err != nil {
+			return "", false, err
+		}
+		if _, err := r.Discard(int(binary.LittleEndian.Uint16(xlen[:]))); err != nil {
+			return "", false, err
+		}
+	}
+	if hdr[3]&fname == 0 {
+		return "", false, nil
+	}
+	raw, err := r.ReadBytes(0)
+	if err != nil {
+		return "", false, err
+	}
+	return netName(string(raw[:len(raw)-1])), true, nil
+}
+
+func (s *gzipSource) Keys() []string {
+	if !s.hasName {
+		return nil
+	}
+	return []string{s.name}
+}
 
 func (s *gzipSource) Open(key string) (io.ReadCloser, error) {
-	if key != s.name {
+	if !s.hasName || key != s.name {
 		return nil, keyNotFound(key)
 	}
 	f, err := os.Open(s.path)

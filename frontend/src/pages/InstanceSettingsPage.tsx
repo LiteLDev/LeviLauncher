@@ -1158,7 +1158,13 @@ export default function InstanceSettingsPage() {
         type="primary"
         title={t("versions.edit.backup.progress_title")}
       >
-        <ModalProgress label={t("versions.edit.backup.progress_title")} description={t("versions.edit.backup.progress_body")} />
+        <ModalProgress
+          label={t("versions.edit.backup.progress_title")}
+          description={vs.backupProgressText}
+          value={vs.backupProgressPercent}
+          detail={vs.backupProgressDetail || undefined}
+          currentItem={vs.backupProgress?.currentFile || undefined}
+        />
       </UnifiedModal>
 
       <UnifiedModal
@@ -1308,7 +1314,12 @@ export default function InstanceSettingsPage() {
             <div className="space-y-3">
               {vs.restoreConflictLoading ? (
                 <div className="rounded-2xl border border-border/70 dark:border-white/10 bg-surface/60 dark:bg-surface/5 px-4 py-3 text-sm text-foreground dark:text-zinc-300">
-                  {t("versions.edit.backup.restore.conflict_loading")}
+                  <ModalProgress
+                    label={t("versions.edit.backup.restore.conflict_loading")}
+                    description={t("versions.edit.backup.restore.conflict_loading")}
+                    value={vs.restorePreviewSubProgress?.percent}
+                    detail={vs.restorePreviewSubProgress?.detail}
+                  />
                 </div>
               ) : null}
               {!vs.restoreConflictLoading && vs.restoreConflicts.length > 0 ? (
@@ -1754,12 +1765,23 @@ export default function InstanceSettingsPage() {
         type="primary"
         title={t("versions.edit.backup.restore.progress_title")}
       >
-        <ModalProgress
-          label={t("versions.edit.backup.restore.progress_title")}
-          description={vs.restoreProgressText || t("versions.edit.backup.restore.progress_body")}
-          detail={vs.restoreProgressStepText}
-          value={vs.restoreProgress ? vs.restoreProgressPercent : undefined}
-        />
+        <div className="space-y-4">
+          <ModalProgress
+            label={t("versions.edit.backup.restore.progress_title")}
+            description={vs.restoreProgressText || t("versions.edit.backup.restore.progress_body")}
+            detail={vs.restoreProgressStepText}
+            value={vs.restoreProgress ? vs.restoreProgressPercent : undefined}
+          />
+          {vs.restoreSubProgress ? (
+            <ModalProgress
+              key={vs.restoreSubProgress.id}
+              label={vs.restoreProgressText || t("versions.edit.backup.restore.progress_title")}
+              value={vs.restoreSubProgress.percent}
+              detail={vs.restoreSubProgress.detail}
+              currentItem={vs.restoreSubProgress.label || undefined}
+            />
+          ) : null}
+        </div>
       </UnifiedModal>
 
       <UnifiedModal

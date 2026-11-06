@@ -30,6 +30,7 @@ import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { useTranslation } from "react-i18next";
 import { ROUTES } from "@/constants/routes";
+import { formatBytes } from "@/utils/formatting";
 import {
   EXPERIMENTAL_FEATURES_EVENT_NAME,
   readExperimentalInstanceBackupEnabled,
@@ -174,12 +175,30 @@ type InstanceBackupRestoreProgress = {
   scopeKey: string;
   scopeLabel: string;
   ts: number;
+  // Measured sub-progress inside the current step; a new subId is a new bar.
+  subId: string;
+  subCurrent: number;
+  subTotal: number;
+  subUnit: string;
+  subLabel: string;
+};
+
+type InstanceBackupCreateProgress = {
+  phase: string;
+  files: number;
+  totalFiles: number;
+  bytes: number;
+  totalBytes: number;
+  currentFile: string;
 };
 
 const LEVILAMINA_BACKUP_IDENTIFIER = "LiteLDev/LeviLamina";
 const LEVILAMINA_MOD_NAME = "levilamina";
 const EVENT_INSTANCE_BACKUP_RESTORE_PROGRESS =
   "instance_backup.restore.progress";
+const EVENT_INSTANCE_BACKUP_PREVIEW_PROGRESS =
+  "instance_backup.preview.progress";
+const EVENT_INSTANCE_BACKUP_CREATE_PROGRESS = "instance_backup.create.progress";
 
 const asRecord = (value: unknown): Record<string, unknown> =>
   value && typeof value === "object" && !Array.isArray(value)
@@ -379,6 +398,67 @@ const toInstanceBackupRestoreProgress = (
     scopeKey: String(record.scopeKey ?? "").trim(),
     scopeLabel: String(record.scopeLabel ?? "").trim(),
     ts: Number(record.ts ?? 0) || 0,
+    subId: String(record.subId ?? "").trim(),
+    subCurrent: Number(record.subCurrent ?? 0) || 0,
+    subTotal: Number(record.subTotal ?? 0) || 0,
+    subUnit: String(record.subUnit ?? "").trim(),
+    subLabel: String(record.subLabel ?? "").trim(),
+  };
+};
+
+const toInstanceBackupCreateProgress = (
+  value: unknown,
+): InstanceBackupCreateProgress => {
+  const record = asRecord(value);
+  return {
+    phase: String(record.phase ?? "").trim(),
+    files: Number(record.files ?? 0) || 0,
+    totalFiles: Number(record.totalFiles ?? 0) || 0,
+    bytes: Number(record.bytes ?? 0) || 0,
+    totalBytes: Number(record.totalBytes ?? 0) || 0,
+    currentFile: String(record.currentFile ?? "").trim(),
+  };
+};
+
+const clampPercent = (current: number, total: number): number =>
+  Math.max(0, Math.min(100, (current / total) * 100));
+
+// A measured sub-progress bar of a restore step or a restore preview.
+export type InstanceBackupSubProgressView = {
+  id: string;
+  percent: number;
+  detail: string;
+  label: string;
+};
+
+const toSubProgressView = (
+  progress: InstanceBackupRestoreProgress | null,
+  t: (key: string, options?: Record<string, unknown>) => string,
+): InstanceBackupSubProgressView | null => {
+  if (!progress || !progress.subId || progress.subTotal <= 0) return null;
+  const current = Math.min(progress.subCurrent, progress.subTotal);
+  let detail: string;
+  if (progress.subUnit === "bytes") {
+    detail = t("versions.edit.backup.progress_bytes", {
+      current: formatBytes(current),
+      total: formatBytes(progress.subTotal),
+    });
+  } else if (progress.subUnit === "packages") {
+    detail = t("versions.edit.backup.progress_packages", {
+      current,
+      total: progress.subTotal,
+    });
+  } else {
+    detail = t("versions.edit.backup.progress_files", {
+      current,
+      total: progress.subTotal,
+    });
+  }
+  return {
+    id: progress.subId,
+    percent: clampPercent(current, progress.subTotal),
+    detail,
+    label: progress.subLabel,
   };
 };
 
@@ -691,6 +771,10 @@ export const useInstanceSettings = () => {
     React.useState<boolean>(false);
   const [restoreProgress, setRestoreProgress] =
     React.useState<InstanceBackupRestoreProgress | null>(null);
+  const [restorePreviewProgress, setRestorePreviewProgress] =
+    React.useState<InstanceBackupRestoreProgress | null>(null);
+  const [backupProgress, setBackupProgress] =
+    React.useState<InstanceBackupCreateProgress | null>(null);
   const [restoreResultOpen, setRestoreResultOpen] =
     React.useState<boolean>(false);
   const [restoreResult, setRestoreResult] =
@@ -1290,6 +1374,51 @@ export const useInstanceSettings = () => {
     }) as string;
   }, [restoreProgress, t]);
 
+  const restoreSubProgress = React.useMemo(
+    () => toSubProgressView(restoreProgress, t as any),
+    [restoreProgress, t],
+  );
+
+  const restorePreviewSubProgress = React.useMemo(
+    () => toSubProgressView(restorePreviewProgress, t as any),
+    [restorePreviewProgress, t],
+  );
+
+  // Backup creation: bytes written of the pre-scanned total. While scanning
+  // there is no total yet, so the bar is indeterminate.
+  const backupProgressPercent = React.useMemo(() => {
+    if (!backupProgress || backupProgress.phase === "scanning") {
+      return undefined;
+    }
+    if (backupProgress.phase === "done") return 100;
+    if (backupProgress.totalBytes > 0) {
+      return clampPercent(backupProgress.bytes, backupProgress.totalBytes);
+    }
+    if (backupProgress.totalFiles > 0) {
+      return clampPercent(backupProgress.files, backupProgress.totalFiles);
+    }
+    return undefined;
+  }, [backupProgress]);
+
+  const backupProgressText = React.useMemo(() => {
+    if (!backupProgress || backupProgress.phase === "scanning") {
+      return t("versions.edit.backup.progress_scanning") as string;
+    }
+    return t("versions.edit.backup.progress_body") as string;
+  }, [backupProgress, t]);
+
+  const backupProgressDetail = React.useMemo(() => {
+    if (!backupProgress || backupProgress.phase === "scanning") return "";
+    return t("versions.edit.backup.progress_files_bytes", {
+      files: Math.min(backupProgress.files, backupProgress.totalFiles),
+      totalFiles: backupProgress.totalFiles,
+      bytes: formatBytes(
+        Math.min(backupProgress.bytes, backupProgress.totalBytes),
+      ),
+      totalBytes: formatBytes(backupProgress.totalBytes),
+    }) as string;
+  }, [backupProgress, t]);
+
   const selectedRestoreScopesKey = React.useMemo(
     () => selectedRestoreScopes.join("\n"),
     [selectedRestoreScopes],
@@ -1324,10 +1453,46 @@ export const useInstanceSettings = () => {
   }, []);
 
   React.useEffect(() => {
+    const off = Events.On(
+      EVENT_INSTANCE_BACKUP_PREVIEW_PROGRESS,
+      (event: any) => {
+        const payload = toInstanceBackupRestoreProgress(event?.data ?? event);
+        if (!payload.phase) return;
+        setRestorePreviewProgress(payload);
+      },
+    );
+    return () => off();
+  }, []);
+
+  React.useEffect(() => {
+    const off = Events.On(
+      EVENT_INSTANCE_BACKUP_CREATE_PROGRESS,
+      (event: any) => {
+        const payload = toInstanceBackupCreateProgress(event?.data ?? event);
+        if (!payload.phase) return;
+        setBackupProgress(payload);
+      },
+    );
+    return () => off();
+  }, []);
+
+  React.useEffect(() => {
     if (!restoringInstance) {
       setRestoreProgress(null);
     }
   }, [restoringInstance]);
+
+  React.useEffect(() => {
+    if (!backingUpInstance) {
+      setBackupProgress(null);
+    }
+  }, [backingUpInstance]);
+
+  React.useEffect(() => {
+    if (!restoreConflictLoading) {
+      setRestorePreviewProgress(null);
+    }
+  }, [restoreConflictLoading]);
 
   React.useEffect(() => {
     if (!restoreOpen || !targetName || !restoreArchiveInfo) {
@@ -1342,6 +1507,7 @@ export const useInstanceSettings = () => {
     }
 
     let cancelled = false;
+    setRestorePreviewProgress(null);
     setRestoreConflictLoading(true);
     void (async () => {
       try {
@@ -1585,6 +1751,7 @@ export const useInstanceSettings = () => {
     }
 
     setBackupOpen(false);
+    setBackupProgress(null);
     setBackingUpInstance(true);
     try {
       const request: InstanceBackupRequest = {
@@ -1790,6 +1957,11 @@ export const useInstanceSettings = () => {
       scopeKey: "",
       scopeLabel: "",
       ts: Date.now(),
+      subId: "",
+      subCurrent: 0,
+      subTotal: 0,
+      subUnit: "",
+      subLabel: "",
     });
     setRestoreOpen(false);
     setRestoringInstance(true);
@@ -2325,6 +2497,12 @@ export const useInstanceSettings = () => {
     restoreProgressPercent,
     restoreProgressText,
     restoreProgressStepText,
+    restoreSubProgress,
+    restorePreviewSubProgress,
+    backupProgress,
+    backupProgressPercent,
+    backupProgressText,
+    backupProgressDetail,
     restoreResultOpen,
     setRestoreResultOpen,
     restoreResult,

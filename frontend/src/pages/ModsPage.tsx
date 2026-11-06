@@ -108,6 +108,19 @@ export const ModsPage: React.FC = () => {
         <ModalProgress
           label={t("mods.importing_title")}
           description={<> {t("mods.importing_body")} </>}
+          value={
+            mp.importProgress.total > 0
+              ? (mp.importProgress.done / mp.importProgress.total) * 100
+              : undefined
+          }
+          detail={
+            mp.importProgress.total > 0
+              ? t("mods.importing_count", {
+                  done: mp.importProgress.done,
+                  total: mp.importProgress.total,
+                })
+              : undefined
+          }
           currentItem={mp.currentFile}
         />
       </UnifiedModal>
@@ -287,7 +300,14 @@ export const ModsPage: React.FC = () => {
                     try {
                       const result = await Dialogs.OpenFile({
                         Filters: [
-                          { DisplayName: "Mod Files", Pattern: "*.zip;*.dll" },
+                          {
+                            DisplayName: t("mods.file_filter_mcmod"),
+                            Pattern: "*.mcmod",
+                          },
+                          {
+                            DisplayName: t("mods.file_filter_all"),
+                            Pattern: "*.*",
+                          },
                         ],
                         AllowsMultipleSelection: true,
                         Title: t("mods.import_button"),

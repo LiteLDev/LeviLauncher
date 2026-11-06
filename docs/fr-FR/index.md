@@ -29,7 +29,7 @@ features:
   - title: Gestion du contenu
     details: Gérez les mondes, les packs de ressources, les packs de comportements, les packs de skins, les captures d'écran et les listes de serveurs depuis un seul endroit.
   - title: Capacités de Mods
-    details: Importez des Mods .zip ou .dll, parcourez CurseForge et installez LeviLamina et des paquets LIP avec le gestionnaire de paquets intégré pour les configurations avancées.
+    details: Importez des paquets de Mods .mcmod, parcourez CurseForge et installez LeviLamina et des paquets LIP avec le gestionnaire de paquets intégré pour les configurations avancées.
   - title: Outils pour les mondes
     details: Exportez des sauvegardes, consultez les données du monde et modifiez certains champs de level.dat sans quitter le lanceur.
   - title: Paramètres utilisateur

@@ -6,8 +6,8 @@ LeviLauncher unterstützt Mod-bezogene Arbeitsabläufe, die über den Umfang ein
 
 === "Windows"
 
-    - Importieren von `.zip`-Mods
-    - Importieren von `.dll`-Mods
+    - Importieren von Mod-Paketen (`.mcmod`)
+    - `.zip`-Pakete und einzelne `.dll`-Mods werden weiterhin akzeptiert: Wähle im Dateidialog **Alle Dateien (\*.\*)**
     - Aktivieren oder Deaktivieren installierter Mods
     - Löschen nicht mehr benötigter Mods
     - Nutzung von CurseForge-bezogenen Such- und Beschaffungsabläufen

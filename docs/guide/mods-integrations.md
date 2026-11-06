@@ -6,8 +6,8 @@ LeviLauncher supports mod-related workflows that go beyond a basic launcher.
 
 === "Windows"
 
-    - import `.zip` mods
-    - import `.dll` mods
+    - import mod packages (`.mcmod`)
+    - `.zip` packages and bare `.dll` mods are still accepted: choose **All files (\*.\*)** in the file picker
     - enable or disable installed mods
     - remove mods you no longer need
     - browse or fetch content through CurseForge-related flows

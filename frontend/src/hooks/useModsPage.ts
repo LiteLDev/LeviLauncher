@@ -47,6 +47,17 @@ const ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS =
   "ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS";
 const ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY =
   "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY";
+const ERR_UNSUPPORTED_MOD_FILE = "ERR_UNSUPPORTED_MOD_FILE";
+const ERR_OPEN_MOD_PACKAGE = "ERR_OPEN_MOD_PACKAGE";
+
+// .mcmod is the mod package format; .zip (same layout) and .dll stay
+// importable for files picked through "All files".
+const resolveModImportKind = (path: string): "package" | "dll" | "unsupported" => {
+  const lower = path.toLowerCase();
+  if (lower.endsWith(".mcmod") || lower.endsWith(".zip")) return "package";
+  if (lower.endsWith(".dll")) return "dll";
+  return "unsupported";
+};
 
 type TFunc = (key: string, opts?: Record<string, unknown>) => string;
 export type TabKey = "all" | "normal" | "lip";
@@ -111,6 +122,8 @@ export const useModsPage = (
     Array<{ name: string; err: string }>
   >([]);
   const [currentFile, setCurrentFile] = useState("");
+  const [importProgress, setImportProgress] = useState({ done: 0, total: 0 });
+  const importInProgressRef = useRef(false);
   const [activeMod, setActiveMod] = useState<types.ModInfo | null>(null);
   const [editMod, setEditMod] = useState<types.ModInfo | null>(null);
   const [editName, setEditName] = useState("");
@@ -823,6 +836,8 @@ export const useModsPage = (
   };
 
   const doImportFromPaths = async (paths: string[]) => {
+    if (importInProgressRef.current) return;
+    importInProgressRef.current = true;
     try {
       const normalizedPaths = normalizeDroppedFiles(paths);
       if (!normalizedPaths.length) return;
@@ -832,105 +847,105 @@ export const useModsPage = (
         return;
       }
       let started = false;
+      const startImporting = () => {
+        if (started) return;
+        setImporting(true);
+        started = true;
+      };
       const succFiles: string[] = [];
       const errPairs: Array<{ name: string; err: string }> = [];
-      for (const p of normalizedPaths) {
-        const lower = p.toLowerCase();
-        if (lower.endsWith(".zip")) {
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          const base = getPathBaseName(p);
-          setCurrentFile(base);
-          let err = await ImportModZipPath(name, p, false);
-          if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
-              dupNameRef.current = base;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                err = await ImportModZipPath(name, p, true);
-                if (!err) {
-                  succFiles.push(base);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: base, err });
-            continue;
-          }
-          succFiles.push(base);
-        } else if (lower.endsWith(".dll")) {
-          const base = getPathBaseName(p);
-          const baseNoExt = base.replace(/\.[^/.]+$/, "");
-          setDllName(baseNoExt);
-          setDllType("preload-native");
-          setDllVersion("0.0.0");
-          await new Promise<void>((resolve) => setTimeout(resolve, 0));
-          dllOnOpen();
-          const ok = await new Promise<boolean>((resolve) => {
-            dllResolveRef.current = resolve;
+      const total = normalizedPaths.length;
+      let done = 0;
+      setImportProgress({ done, total });
+
+      const askOverwrite = async (label: string) => {
+        dupNameRef.current = label;
+        await new Promise<void>((r) => setTimeout(r, 0));
+        dupOnOpen();
+        return new Promise<boolean>((resolve) => {
+          dupResolveRef.current = resolve;
+        });
+      };
+
+      const importPackage = async (p: string, base: string) => {
+        startImporting();
+        setCurrentFile(base);
+        let err = await ImportModZipPath(name, p, false);
+        if (err && String(err) === "ERR_DUPLICATE_FOLDER") {
+          if (!(await askOverwrite(base))) return;
+          err = await ImportModZipPath(name, p, true);
+        }
+        if (err) {
+          // ERR_OPEN_ZIP is shared with content imports; name the mod package.
+          errPairs.push({
+            name: base,
+            err: String(err) === "ERR_OPEN_ZIP" ? ERR_OPEN_MOD_PACKAGE : err,
           });
-          if (!ok) {
-            continue;
-          }
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          setCurrentFile(base || p);
-          const vals = dllConfirmRef.current || {
-            name: dllName,
-            type: dllType,
-            version: dllVersion,
-          };
-          dllConfirmRef.current = null;
-          let err = await ImportModDllPath(
+          return;
+        }
+        succFiles.push(base);
+      };
+
+      const importDll = async (p: string, base: string) => {
+        const baseNoExt = base.replace(/\.[^/.]+$/, "");
+        setDllName(baseNoExt);
+        setDllType("preload-native");
+        setDllVersion("0.0.0");
+        await new Promise<void>((resolve) => setTimeout(resolve, 0));
+        dllOnOpen();
+        const ok = await new Promise<boolean>((resolve) => {
+          dllResolveRef.current = resolve;
+        });
+        if (!ok) return;
+        startImporting();
+        setCurrentFile(base);
+        const vals = dllConfirmRef.current || {
+          name: dllName,
+          type: dllType,
+          version: dllVersion,
+        };
+        dllConfirmRef.current = null;
+        const importWith = (overwrite: boolean) =>
+          ImportModDllPath(
             name,
             p,
             vals.name,
             vals.type || "preload-native",
             vals.version || "0.0.0",
-            false,
+            overwrite,
           );
-          if (err) {
-            if (String(err) === "ERR_DUPLICATE_FOLDER") {
-              dupNameRef.current = base || p;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const overwrite = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (overwrite) {
-                err = await ImportModDllPath(
-                  name,
-                  p,
-                  vals.name,
-                  vals.type || "preload-native",
-                  vals.version || "0.0.0",
-                  true,
-                );
-                if (!err) {
-                  succFiles.push(base || p);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: base || p, err });
-            continue;
-          }
-          succFiles.push(base || p);
+        let err = await importWith(false);
+        if (err && String(err) === "ERR_DUPLICATE_FOLDER") {
+          if (!(await askOverwrite(base))) return;
+          err = await importWith(true);
         }
+        if (err) {
+          errPairs.push({ name: base, err });
+          return;
+        }
+        succFiles.push(base);
+      };
+
+      for (const p of normalizedPaths) {
+        const base = getPathBaseName(p) || p;
+        const kind = resolveModImportKind(p);
+        try {
+          if (kind === "package") {
+            await importPackage(p, base);
+          } else if (kind === "dll") {
+            await importDll(p, base);
+          } else {
+            errPairs.push({ name: base, err: ERR_UNSUPPORTED_MOD_FILE });
+          }
+        } catch (e) {
+          errPairs.push({ name: base, err: parseErrorCode(e) || "IMPORT_ERROR" });
+        }
+        done += 1;
+        setImportProgress({ done, total });
       }
-      await refreshInstance(name, "mods-import-complete");
+      if (started) {
+        await refreshInstance(name, "mods-import-complete");
+      }
       setResultSuccess(succFiles);
       setResultFailed(errPairs);
       if (succFiles.length > 0 || errPairs.length > 0) {
@@ -939,8 +954,12 @@ export const useModsPage = (
     } catch (e: any) {
       setErrorMsg(String(e?.message || e || "IMPORT_ERROR"));
     } finally {
+      importInProgressRef.current = false;
+      dllResolveRef.current = null;
+      dupResolveRef.current = null;
       setImporting(false);
       setCurrentFile("");
+      setImportProgress({ done: 0, total: 0 });
     }
   };
 
@@ -2036,6 +2055,7 @@ export const useModsPage = (
     resultFailed,
     setResultFailed,
     currentFile,
+    importProgress,
     activeMod,
     setActiveMod,
     editMod,

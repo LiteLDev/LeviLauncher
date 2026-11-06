@@ -45,7 +45,7 @@ LeviLauncher は、「基本ランチャー」の範囲を超えた Mod 関連�
 
 ## lip と LeviLamina <Badge platform="windows" />
 
-LeviLauncher には [lip](https://github.com/LiteLDev/lip) 互換のパッケージマネージャーが内蔵されているため、lip や .NET ランタイムを別途インストールする必要はありません。lip と同じ `tooth_lock.json` 形式を使用するので、LeviLamina や LIP パッケージをインストール済みのバージョンもそのまま使えます。GitHub からのパッケージのダウンロードには[設定](./settings-personalization)の **GitHub プロキシ** が使われ、**キャッシュを削除** でダウンロード済みのパッケージファイルを削除できます。
+LeviLauncher には [lip](https://github.com/LiteLDev/lip) 互換のパッケージマネージャーが内蔵されているため、lip や .NET ランタイムを別途インストールする必要はありません。lip と同じ `tooth_lock.json` 形式を使用するので、LeviLamina や LIP パッケージをインストール済みのバージョンもそのまま使えます。**ミラーソースを使用** がオンのときは、GitHub からのパッケージのダウンロードに[設定](./settings-personalization)の **GitHub プロキシ** が使われます。オフのときは GitHub に直接接続します（システムプロキシが設定されていればそれを経由します）。以前に保存した GitHub プロキシや、lip の `liprc.json` で設定した `github_proxy` はどちらの場合にも適用されます。**キャッシュを削除** でダウンロード済みのパッケージファイルを削除できます。
 
 これらの統合は、パッケージ駆動またはローダー駆動のワークフローを使用したい上級ユーザーに最適です。
 

@@ -45,7 +45,7 @@ Use it when you want:
 
 ## lip and LeviLamina <Badge platform="windows" />
 
-LeviLauncher includes a built-in package manager compatible with [lip](https://github.com/LiteLDev/lip), so you do not need to install lip or the .NET runtime separately. It uses the same `tooth_lock.json` format as lip, so versions that already have LeviLamina or LIP packages installed keep working. Package downloads from GitHub use the **GitHub proxy** set in [Settings](./settings-personalization), and **Clean Cache** removes downloaded package files.
+LeviLauncher includes a built-in package manager compatible with [lip](https://github.com/LiteLDev/lip), so you do not need to install lip or the .NET runtime separately. It uses the same `tooth_lock.json` format as lip, so versions that already have LeviLamina or LIP packages installed keep working. When **Use mirror sources** is on, package downloads from GitHub go through the **GitHub proxy** set in [Settings](./settings-personalization); otherwise they connect to GitHub directly, through your system proxy if one is set. A GitHub proxy you saved earlier, or a `github_proxy` set in lip's `liprc.json`, applies either way. **Clean Cache** removes downloaded package files.
 
 These integrations are aimed at more advanced users who want package-driven or loader-driven mod setups.
 

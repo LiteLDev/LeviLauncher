@@ -52,7 +52,7 @@ Utilisez **Image suivante** lorsque le dossier contient plusieurs images. L'ordr
 
 ### Composants tiers
 
-- Gestionnaire de paquets intégré (compatible avec [lip](https://github.com/LiteLDev/lip) ; rien à installer ni à mettre à jour) : définir le **Proxy GitHub** utilisé pour télécharger les paquets, ou utiliser **Nettoyer le cache** pour supprimer les fichiers de paquets téléchargés
+- Gestionnaire de paquets intégré (compatible avec [lip](https://github.com/LiteLDev/lip) ; rien à installer ni à mettre à jour) : définir le **Proxy GitHub** utilisé pour télécharger les paquets (affiché lorsque **Utiliser des miroirs** est activé), ou utiliser **Nettoyer le cache** pour supprimer les fichiers de paquets téléchargés
 
 ### Confidentialité
 

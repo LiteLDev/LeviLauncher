@@ -45,7 +45,7 @@ LeviLauncher는 "기본 런처" 범위를 넘어서는 모드 관련 작업 흐�
 
 ## lip 및 LeviLamina <Badge platform="windows" />
 
-LeviLauncher에는 [lip](https://github.com/LiteLDev/lip)와 호환되는 패키지 관리자가 내장되어 있으므로 lip이나 .NET 런타임을 따로 설치할 필요가 없습니다. lip과 같은 `tooth_lock.json` 형식을 사용하므로 LeviLamina나 LIP 패키지가 이미 설치된 버전도 그대로 사용할 수 있습니다. GitHub에서 패키지를 다운로드할 때는 [설정](./settings-personalization)의 **GitHub 프록시**가 사용되며, **캐시 지우기**로 다운로드한 패키지 파일을 삭제할 수 있습니다.
+LeviLauncher에는 [lip](https://github.com/LiteLDev/lip)와 호환되는 패키지 관리자가 내장되어 있으므로 lip이나 .NET 런타임을 따로 설치할 필요가 없습니다. lip과 같은 `tooth_lock.json` 형식을 사용하므로 LeviLamina나 LIP 패키지가 이미 설치된 버전도 그대로 사용할 수 있습니다. **미러 소스 사용**이 켜져 있으면 GitHub에서 패키지를 다운로드할 때 [설정](./settings-personalization)의 **GitHub 프록시**를 거칩니다. 꺼져 있으면 GitHub에 직접 연결합니다(시스템 프록시가 설정되어 있으면 이를 거칩니다). 이전에 저장한 GitHub 프록시나 lip의 `liprc.json`에 설정한 `github_proxy`는 두 경우 모두 적용됩니다. **캐시 지우기**로 다운로드한 패키지 파일을 삭제할 수 있습니다.
 
 이러한 통합은 패키지 기반 또는 로더 기반 작업 흐름을 사용하려는 고급 사용자에게 더 적합합니다.
 

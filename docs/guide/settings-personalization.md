@@ -52,7 +52,7 @@ Use **Next image** when the folder contains multiple pictures. **Sequential** or
 
 ### Third-party Components
 
-- built-in package manager (compatible with [lip](https://github.com/LiteLDev/lip); nothing to install or update): set the **GitHub proxy** used for package downloads, or use **Clean Cache** to remove downloaded package files
+- built-in package manager (compatible with [lip](https://github.com/LiteLDev/lip); nothing to install or update): set the **GitHub proxy** used for package downloads (shown while **Use mirror sources** is on), or use **Clean Cache** to remove downloaded package files
 
 ### Privacy
 

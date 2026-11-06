@@ -53,7 +53,7 @@ type Proxy interface {
 // "https://github.com/LiteLDev/LeviLamina.git". The zero value is usable and
 // safe for concurrent use.
 type Client struct {
-	// HTTP is the client to use; nil means http.DefaultClient.
+	// HTTP is the client to use; nil means defaultHTTPClient.
 	HTTP *http.Client
 	// Proxy is optional.
 	Proxy Proxy
@@ -452,7 +452,7 @@ func (c *Client) httpClient() *http.Client {
 	if c.HTTP != nil {
 		return c.HTTP
 	}
-	return http.DefaultClient
+	return defaultHTTPClient
 }
 
 // do sends req with a per-request timeout and returns the response whose

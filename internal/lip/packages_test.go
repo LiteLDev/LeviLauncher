@@ -4,12 +4,16 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"regexp"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/liteldev/LeviLauncher/internal/httpx"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/engine"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/gitproto"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/report"
 )
 
@@ -407,6 +411,78 @@ func TestLockWaitHonorsContext(t *testing.T) {
 	close(release)
 	if err := <-done; err != nil {
 		t.Fatalf("first install failed: %v", err)
+	}
+}
+
+// List only reads tooth_lock.json; as with lipd (one process per call) it
+// must not wait for an install running on the same instance.
+func TestListDoesNotWaitForRunningInstall(t *testing.T) {
+	recordEvents(t)
+	state := useFakeEngine(t)
+	state.explicit = []string{"github.com/LiteLDev/LeviLamina#client@1.2.3"}
+	release := make(chan struct{})
+	entered := make(chan struct{})
+	var first sync.Once
+	state.onCall = func(ctx context.Context, r report.Reporter) error {
+		blocked := false
+		first.Do(func() { blocked = true })
+		if blocked {
+			close(entered)
+			<-release
+		}
+		return nil
+	}
+	dir := t.TempDir()
+	done := make(chan error, 1)
+	go func() { done <- InstallPackagesViaDaemon(context.Background(), dir, []string{"x"}) }()
+	<-entered
+
+	ctx, cancel := context.WithTimeout(context.Background(), 300*time.Millisecond)
+	defer cancel()
+	states, err := ListPackageStatesViaDaemon(ctx, dir)
+	close(release)
+	if err != nil {
+		t.Fatalf("List during install: %v", err)
+	}
+	if !states["github.com/liteldev/levilamina#client"].Installed {
+		t.Fatalf("unexpected states: %+v", states)
+	}
+	if err := <-done; err != nil {
+		t.Fatalf("install failed: %v", err)
+	}
+}
+
+// The real engine reaches GitHub through the system-proxy-aware httpx
+// transport (lip used HttpClient.DefaultProxy), refusing https -> http
+// redirects like Flurl.
+func TestNewEngineUsesSystemProxyClient(t *testing.T) {
+	setProxyConfig(t, "", false)
+	e, ok := newEngine(t.TempDir(), nil).(*engine.Engine)
+	if !ok {
+		t.Fatal("newEngine did not return *engine.Engine")
+	}
+	reg, ok := e.Registry.(*engine.GitRegistry)
+	if !ok {
+		t.Fatalf("Registry = %T", e.Registry)
+	}
+	git, ok := reg.Git.(*gitproto.Client)
+	if !ok {
+		t.Fatalf("Git = %T", reg.Git)
+	}
+	want := httpx.DefaultClient().Transport
+	for name, c := range map[string]*http.Client{"git": git.HTTP, "downloader": reg.Downloader.HTTP} {
+		if c == nil || c.Transport != want {
+			t.Errorf("%s client does not use the httpx transport", name)
+			continue
+		}
+		if c.Timeout != 0 {
+			t.Errorf("%s client has a whole-request timeout %v", name, c.Timeout)
+		}
+		next, _ := http.NewRequest(http.MethodGet, "http://example.com/b", nil)
+		prev, _ := http.NewRequest(http.MethodGet, "https://example.com/a", nil)
+		if c.CheckRedirect == nil || c.CheckRedirect(next, []*http.Request{prev}) != http.ErrUseLastResponse {
+			t.Errorf("%s client follows https -> http redirects", name)
+		}
 	}
 }
 

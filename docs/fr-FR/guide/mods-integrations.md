@@ -45,7 +45,7 @@ C'est utile pour :
 
 ## lip et LeviLamina <Badge platform="windows" />
 
-LeviLauncher intègre un gestionnaire de paquets compatible avec [lip](https://github.com/LiteLDev/lip) : vous n'avez donc pas besoin d'installer lip ni le runtime .NET séparément. Il utilise le même format `tooth_lock.json` que lip, si bien que les versions sur lesquelles LeviLamina ou des paquets LIP sont déjà installés continuent de fonctionner. Les téléchargements de paquets depuis GitHub passent par le **Proxy GitHub** défini dans les [Paramètres](./settings-personalization), et **Nettoyer le cache** supprime les fichiers de paquets téléchargés.
+LeviLauncher intègre un gestionnaire de paquets compatible avec [lip](https://github.com/LiteLDev/lip) : vous n'avez donc pas besoin d'installer lip ni le runtime .NET séparément. Il utilise le même format `tooth_lock.json` que lip, si bien que les versions sur lesquelles LeviLamina ou des paquets LIP sont déjà installés continuent de fonctionner. Lorsque **Utiliser des miroirs** est activé, les téléchargements de paquets depuis GitHub passent par le **Proxy GitHub** défini dans les [Paramètres](./settings-personalization) ; sinon, ils se connectent directement à GitHub (via le proxy système, s'il y en a un). Un proxy GitHub enregistré auparavant, ou un `github_proxy` défini dans le `liprc.json` de lip, s'applique dans les deux cas. **Nettoyer le cache** supprime les fichiers de paquets téléchargés.
 
 Ce type d'intégration convient mieux aux utilisateurs avancés souhaitant utiliser des workflows basés sur les paquets ou les chargeurs.
 

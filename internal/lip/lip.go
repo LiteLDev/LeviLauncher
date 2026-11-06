@@ -5,10 +5,15 @@
 package lip
 
 import (
+	"bytes"
+	"encoding/json"
 	"fmt"
 	"net/url"
+	"os"
+	"path/filepath"
 	"strings"
 
+	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 	"github.com/wailsapp/wails/v3/pkg/application"
@@ -31,21 +36,66 @@ var (
 	mirrorEnabled       = utils.IsMirrorEnabled
 )
 
-// GithubProxy returns the GitHub proxy shown in the launcher settings: the
-// user's override, otherwise the built-in default.
-func GithubProxy() string {
+// lipRCPath is lip's runtime config (ConfigService: %APPDATA%\lip\liprc.json);
+// replaced in tests.
+var lipRCPath = func() string {
+	return filepath.Join(apppath.AppData(), "lip", "liprc.json")
+}
+
+// lipRCFormatUUID is RuntimeConfig's format_uuid (format_version 3).
+const lipRCFormatUUID = "289f771f-2c9a-4d73-9f3f-8492495a924d"
+
+// lipRCGithubProxy returns github_proxy from liprc.json, as set with
+// `lip config set github_proxy` or written by older launchers. Like lip's
+// ConfigService, a missing or invalid file (including a wrong
+// format_version/format_uuid) means no proxy.
+func lipRCGithubProxy() string {
+	data, err := os.ReadFile(lipRCPath())
+	if err != nil {
+		return ""
+	}
+	// A map keeps System.Text.Json's case-sensitive property names.
+	var rc map[string]json.RawMessage
+	if err := json.Unmarshal(bytes.TrimPrefix(data, []byte("\xef\xbb\xbf")), &rc); err != nil {
+		return ""
+	}
+	var version int
+	var uuid, proxy string
+	if json.Unmarshal(rc["format_version"], &version) != nil || version != 3 ||
+		json.Unmarshal(rc["format_uuid"], &uuid) != nil || uuid != lipRCFormatUUID {
+		return ""
+	}
+	if raw, ok := rc["github_proxy"]; !ok || json.Unmarshal(raw, &proxy) != nil {
+		return ""
+	}
+	return strings.TrimSpace(proxy)
+}
+
+// configuredGithubProxy is the proxy the user chose: the launcher override,
+// otherwise github_proxy from lip's liprc.json.
+func configuredGithubProxy() string {
 	if proxy := strings.TrimSpace(githubProxyOverride()); proxy != "" {
+		return proxy
+	}
+	return lipRCGithubProxy()
+}
+
+// GithubProxy returns the GitHub proxy shown in the launcher settings (only
+// while mirrors are enabled): the configured proxy, otherwise the built-in
+// default. It matches EffectiveGithubProxy whenever mirrors are enabled.
+func GithubProxy() string {
+	if proxy := configuredGithubProxy(); proxy != "" {
 		return proxy
 	}
 	return defaultLipGithubProxy
 }
 
-// EffectiveGithubProxy returns the proxy the engine uses for GitHub URLs.
-// An explicitly saved proxy always applies; otherwise the built-in default
-// is used only when mirrors are enabled, so users elsewhere reach GitHub
-// directly (lip's default behavior).
+// EffectiveGithubProxy returns the proxy the engine uses for GitHub URLs:
+// the launcher override, then github_proxy from liprc.json (what lip itself
+// reads), then the built-in default when mirrors are enabled. Otherwise
+// GitHub is reached directly (lip's default behavior).
 func EffectiveGithubProxy() string {
-	if proxy := strings.TrimSpace(githubProxyOverride()); proxy != "" {
+	if proxy := configuredGithubProxy(); proxy != "" {
 		return proxy
 	}
 	if mirrorEnabled() {

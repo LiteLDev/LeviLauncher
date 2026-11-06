@@ -24,9 +24,7 @@ import (
 	"unicode/utf8"
 
 	"github.com/bodgit/sevenzip"
-	"github.com/klauspost/compress/zstd"
 	"github.com/nwaples/rardecode/v2"
-	"github.com/ulikunitz/xz"
 	"github.com/ulikunitz/xz/lzma"
 )
 
@@ -64,7 +62,8 @@ func keyNotFound(key string) error {
 // RAR and 7z: the directory flag/attribute); tar PAX global headers are
 // skipped; symlinks, hard links and other special tar entries are exposed
 // with empty content, as SharpCompress does. Zip entries may be stored or
-// compressed with Deflate, Deflate64, BZip2, LZMA, Zstandard or XZ.
+// compressed with Deflate, Deflate64, BZip2, LZMA, Zstandard or XZ (with
+// the x86, PowerPC, IA-64, ARM, ARM-Thumb and SPARC filters, but not Delta).
 //
 // Known differences from lip 0.37.0 / SharpCompress 0.50.5:
 //   - SharpCompress 0.50.5 fails to open gzipped tars ("Cannot determine
@@ -77,6 +76,9 @@ func keyNotFound(key string) error {
 //     stored data under the raw header name.
 //   - zip entries using the legacy Shrink, Reduce and Implode methods or
 //     PPMd fail to open here (with an error naming the method).
+//   - LZMA, XZ and Zstandard zip entries are decoded with a dictionary or
+//     window of at most their declared size; entries larger than 256 MiB
+//     whose stream asks for more than that fail to read here.
 //   - 7z directories are recognised by their attributes rather than by the
 //     empty-stream/empty-file flags, and 7z anti-items are exposed as files
 //     by SharpCompress only.
@@ -368,15 +370,9 @@ func openZipEntry(zf *zip.File) (io.ReadCloser, error) {
 	case zipLZMA:
 		rc, err = newZipLZMAReader(raw, zf)
 	case zipZstd:
-		var d *zstd.Decoder
-		if d, err = zstd.NewReader(raw, zstd.WithDecoderConcurrency(1)); err == nil {
-			rc = d.IOReadCloser()
-		}
+		rc, err = newZipZstdReader(raw, zf.UncompressedSize64)
 	case zipXZ:
-		var xr *xz.Reader
-		if xr, err = xz.NewReader(raw); err == nil {
-			rc = io.NopCloser(xr)
-		}
+		rc, err = newZipXZReader(raw, zf.UncompressedSize64)
 	default:
 		return nil, fmt.Errorf("zip entry %q: %w (method %d)", zf.Name, zip.ErrAlgorithm, zf.Method)
 	}
@@ -408,9 +404,12 @@ func newZipLZMAReader(raw io.Reader, zf *zip.File) (io.ReadCloser, error) {
 	}
 	// Rebuild a .lzma header (properties, dictionary size, size). The
 	// dictionary never needs to exceed the data, so a hostile dictionary
-	// size cannot force a large allocation.
+	// size cannot force a large allocation (see maxDecoderWindow).
 	dict := uint64(binary.LittleEndian.Uint32(props[1:]))
 	dict = min(dict, max(zf.UncompressedSize64, lzma.MinDictCap))
+	if dict > maxDecoderWindow {
+		return nil, errDecoderWindow("LZMA dictionary", dict)
+	}
 	alone := make([]byte, 13)
 	alone[0] = props[0]
 	binary.LittleEndian.PutUint32(alone[1:], uint32(dict))

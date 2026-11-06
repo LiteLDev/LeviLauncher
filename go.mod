@@ -15,6 +15,7 @@ require (
 	github.com/nwaples/rardecode/v2 v2.4.6
 	github.com/russellhaering/goxmldsig v1.6.1
 	github.com/saltosystems/winrt-go v0.0.0-20260513072510-45f10383b2b8
+	github.com/therootcompany/xz v1.0.1
 	github.com/ulikunitz/xz v0.5.15
 	github.com/wailsapp/wails/v3 v3.0.0-beta.19
 	golang.org/x/crypto v0.53.0

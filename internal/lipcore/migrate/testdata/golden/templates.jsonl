@@ -1,0 +1,124 @@
+{"template":"a{{version}}b","model":"{\"version\":\"1.2.3\",\"tooth\":\"github.com/a/b\"}","want":"a1.2.3b","err":null}
+{"template":"{{ version }}","model":"{\"version\":\"1.2.3\"}","want":"1.2.3","err":null}
+{"template":"{{tooth}}","model":"{\"version\":\"1.2.3\",\"tooth\":\"github.com/a/b\"}","want":"github.com/a/b","err":null}
+{"template":"https://{{tooth}}/releases/download/v{{version}}/x-v{{version}}.zip","model":"{\"version\":\"1.2.3\",\"tooth\":\"github.com/a/b\"}","want":"https://github.com/a/b/releases/download/v1.2.3/x-v1.2.3.zip","err":null}
+{"template":"no template here","model":"{}","want":"no template here","err":null}
+{"template":"","model":"{}","want":"","err":null}
+{"template":"[{{info.name}}]","model":"{\"info\":{\"name\":\"N\"}}","want":"[N]","err":null}
+{"template":"[{{info}}]","model":"{\"info\":{\"name\":\"N\", \"x\": [1,2]}}","want":"[{name: \"N\", x: [1, 2]}]","err":null}
+{"template":"[{{tags}}]","model":"{\"tags\":[\"a\",\"b\"]}","want":"[[\"a\", \"b\"]]","err":null}
+{"template":"[{{tags[0]}}]","model":"{\"tags\":[\"a\",\"b\"]}","want":"[a]","err":null}
+{"template":"[{{format_version}}]","model":"{\"format_version\":3}","want":"[3]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":3.50}","want":"[3.50]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":true}","want":"[true]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":false}","want":"[false]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":null}","want":"[]","err":null}
+{"template":"[{{unknown}}]","model":"{}","want":"[]","err":null}
+{"template":"[{{path}}]","model":"{}","want":"[]","err":null}
+{"template":"[{{version}}","model":"{\"version\":\"1\"}","want":"[1","err":null}
+{"template":"[}}]","model":"{\"version\":\"1\"}","want":"[}}]","err":null}
+{"template":"{{- version -}}","model":"{\"version\":\"1\"}","want":"1","err":null}
+{"template":"a  {{- version -}}  b","model":"{\"version\":\"1\"}","want":"a1b","err":null}
+{"template":"a \n {{~ version ~}} \n b","model":"{\"version\":\"1\"}","want":"a \n1 b","err":null}
+{"template":"{{\"x\"}}","model":"{}","want":"x","err":null}
+{"template":"{{ }}","model":"{}","want":"","err":null}
+{"template":"{{}}","model":"{}","want":"","err":null}
+{"template":"{{ version }}{{ tooth }}","model":"{\"version\":\"v\",\"tooth\":\"t\"}","want":"vt","err":null}
+{"template":"{{Version}}","model":"{\"Version\":\"V\",\"version\":\"v\"}","want":"V","err":null}
+{"template":"{{empty}}","model":"{}","want":"","err":null}
+{"template":"{{ version.size }}","model":"{\"version\":\"abc\"}","want":"3","err":null}
+{"template":"{{info.name}}","model":"{\"info\":\"str\"}","want":"","err":null}
+{"template":"{{info.missing.deep}}","model":"{\"info\":{}}","want":null,"err":"ScriptRuntimeException"}
+{"template":"{{ info[\"name\"] }}","model":"{\"info\":{\"name\":\"N\"}}","want":"N","err":null}
+{"template":"{{# comment }}x","model":"{}","want":"x","err":null}
+{"template":"{%{ {{raw}} }%}","model":"{}","want":" {{raw}} ","err":null}
+{"template":"{ {version}}","model":"{\"version\":\"1\"}","want":"{ {version}}","err":null}
+{"template":"{{f}}","model":"{\"f\":1e3}","want":"1000","err":null}
+{"template":"{{f}}","model":"{\"f\":12345678901234567890}","want":"12345678901234567890","err":null}
+{"template":"{{f}}","model":"{\"f\":-0.0}","want":"0.0","err":null}
+{"template":"{{s}}","model":"{\"s\":\"<&é\\\"\"}","want":"<&é\"","err":null}
+{"template":"{{ver_sion}}","model":"{\"ver_sion\":\"x\"}","want":"x","err":null}
+{"template":"{{ version\n }}","model":"{\"version\":\"x\"}","want":"x","err":null}
+{"template":"{{ info.tags }}","model":"{\"info\":{\"tags\":[\"a\"]}}","want":"[\"a\"]","err":null}
+{"template":"{{ info.n }}","model":"{\"info\":{\"n\":5}}","want":"5","err":null}
+{"template":"[{{unknown.x}}]","model":"{}","want":null,"err":"ScriptRuntimeException"}
+{"template":"[{{info.missing}}]","model":"{\"info\":{}}","want":"[]","err":null}
+{"template":"[{{tags[5]}}]","model":"{\"tags\":[\"a\"]}","want":"[]","err":null}
+{"template":"[{{tags[-1]}}]","model":"{\"tags\":[\"a\",\"b\"]}","want":"[b]","err":null}
+{"template":"[{{VERSION}}]","model":"{\"version\":\"v\"}","want":"[]","err":null}
+{"template":"[{{info.Name}}]","model":"{\"info\":{\"name\":\"N\"}}","want":"[]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":1.5e1}","want":"[15]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":0.050}","want":"[0.050]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":1E+2}","want":"[100]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":-5}","want":"[-5]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":2147483648}","want":"[2147483648]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":1.0}","want":"[1.0]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":100e-2}","want":"[1.00]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":-0}","want":"[0]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":0.0}","want":"[0.0]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":-1.50}","want":"[-1.50]","err":null}
+{"template":"[{{f}}]","model":"{\"f\":9223372036854775808}","want":"[9223372036854775808]","err":null}
+{"template":"[{{o}}]","model":"{\"o\":{\"a\":1.50,\"b\":true,\"c\":null,\"d\":\"x\\\"y\\\\z\\n\\t\\u0001é\",\"e\":{},\"f\":[],\"g\":[{\"h\":1}],\"i\":false,\"j\":-0.0,\"k\":1e3}}","want":"[{a: 1.50, b: true, c: null, d: \"x\\\"y\\\\z\\n\\t\\x01é\", e: {}, f: [], g: [{h: 1}], i: false, j: 0.0, k: 1000}]","err":null}
+{"template":"[{{a}}]","model":"{\"a\":[null,1,\"s\",[2,[]],{\"x\":\"y\"}]}","want":"[[null, 1, \"s\", [2, []], {x: \"y\"}]]","err":null}
+{"template":"{{ o }}","model":"{\"o\":{\"_a\":1,\"a1\":1,\"1a\":1,\"é\":1,\"$a\":1,\"A\":1,\"if\":1,\"a.b\":1}}","want":"{_a: 1, a1: 1, \"1a\": 1, é: 1, \"$a\": 1, A: 1, if: 1, \"a.b\": 1}","err":null}
+{"template":"{{ o }}","model":"{\"o\":[\"\\r\\b\\f\\u000b\\u0000\\u0007\\u001f\\u007f'\"]}","want":"[\"\\r\\b\\f\\v\\x00\\a\\x1f\u007F'\"]","err":null}
+{"template":"{{ x }}","model":"{\"x\":{\"a b\":\"1\",\"\":2,\"c-d\":3}}","want":"{\"a b\": \"1\", \"\": 2, \"c-d\": 3}","err":null}
+{"template":"{{x}}","model":"{\"x\":[\"\\ud83d\\ude00\",\"\\u007f\\u0080\\u00a0\"]}","want":"[\"\uD83D\uDE00\", \"\u007F\u0080\u00A0\"]","err":null}
+{"template":"[{{ info  .  name }}]","model":"{\"info\":{\"name\":\"N\"}}","want":"[N]","err":null}
+{"template":"[{{\tversion\t}}]","model":"{\"version\":\"v\"}","want":"[v]","err":null}
+{"template":"[{{version;tooth}}]","model":"{\"version\":\"v\",\"tooth\":\"t\"}","want":"[vt]","err":null}
+{"template":"{{\nversion\n\ntooth\n}}","model":"{\"version\":\"v\",\"tooth\":\"t\"}","want":"vt","err":null}
+{"template":"[{{ 'a' }}]","model":"{}","want":"[a]","err":null}
+{"template":"[{{ \"a\\nb\" }}]","model":"{}","want":"[a\nb]","err":null}
+{"template":"[{{ \"a\\x41\\u0042\" }}]","model":"{}","want":"[aAB]","err":null}
+{"template":"[{{ `a\\nb` }}]","model":"{}","want":"[a\\nb]","err":null}
+{"template":"[{{ 42 }}]","model":"{}","want":"[42]","err":null}
+{"template":"[{{ tags.size }}]","model":"{\"tags\":[\"a\",\"b\"]}","want":"[2]","err":null}
+{"template":"[{{ info.size }}]","model":"{\"info\":{\"a\":1}}","want":"[]","err":null}
+{"template":"[{{ tags[0].x }}]","model":"{\"tags\":[\"a\"]}","want":"[]","err":null}
+{"template":"[{{ tags.x }}]","model":"{\"tags\":[\"a\"]}","want":"[]","err":null}
+{"template":"[{{ version.x }}]","model":"{\"version\":\"a\"}","want":"[]","err":null}
+{"template":"[{{ f.x }}]","model":"{\"f\":1}","want":"[]","err":null}
+{"template":"[{{ true.x }}]","model":"{}","want":"[]","err":null}
+{"template":"[{{ info['name'] }}]","model":"{\"info\":{\"name\":\"N\"}}","want":"[N]","err":null}
+{"template":"[{{ tags[\"0\"] }}]","model":"{\"tags\":[\"a\"]}","want":"[]","err":null}
+{"template":"[{{ info[0] }}]","model":"{\"info\":{\"name\":\"N\"}}","want":"[]","err":null}
+{"template":"[{{ version[0] }}]","model":"{\"version\":\"abc\"}","want":"[a]","err":null}
+{"template":"[{{ version[-1] }}]","model":"{\"version\":\"abc\"}","want":"[c]","err":null}
+{"template":"[{{ version[5] }}]","model":"{\"version\":\"abc\"}","want":null,"err":"ScriptRuntimeException"}
+{"template":"[{{ version.size }}]","model":"{\"version\":\"\\ud83d\\ude00\"}","want":"[2]","err":null}
+{"template":"[{{ x[0] }}]","model":"{}","want":null,"err":"ScriptRuntimeException"}
+{"template":"[{{ n.a.b }}]","model":"{\"n\":null}","want":null,"err":"ScriptRuntimeException"}
+{"template":"[{{ info.n.a }}]","model":"{\"info\":{\"n\":null}}","want":null,"err":"ScriptRuntimeException"}
+{"template":"x{{ version }}\n{{tooth}}y","model":"{\"version\":\"v\",\"tooth\":\"t\"}","want":"xv\nty","err":null}
+{"template":"a\n  {{~ version }}  \nb","model":"{\"version\":\"v\"}","want":"a\nv  \nb","err":null}
+{"template":"a\n  {{ version ~}}  \n  b","model":"{\"version\":\"v\"}","want":"a\n  v  b","err":null}
+{"template":"a\n  {{- version }}  \nb","model":"{\"version\":\"v\"}","want":"av  \nb","err":null}
+{"template":"a\n  {{ version -}}  \n  b","model":"{\"version\":\"v\"}","want":"a\n  vb","err":null}
+{"template":"a {{~ version ~}} b","model":"{\"version\":\"v\"}","want":"avb","err":null}
+{"template":"a \t{{~ version ~}}\t\r\n\r\n b","model":"{\"version\":\"v\"}","want":"av\r\n b","err":null}
+{"template":"a \r\n \t{{- version -}}\t\r\n\r\n b","model":"{\"version\":\"v\"}","want":"avb","err":null}
+{"template":"a {{~# x ~}} b","model":"{\"version\":\"v\"}","want":"ab","err":null}
+{"template":"a{{version}}{{# c\n}}b","model":"{\"version\":\"v\"}","want":"avb","err":null}
+{"template":"a{{ version # c }}b","model":"{\"version\":\"v\"}","want":"avb","err":null}
+{"template":"{{ version # }} }}y","model":"{\"version\":\"v\"}","want":"v }}y","err":null}
+{"template":"{{ \"}}\" }}","model":"{}","want":"}}","err":null}
+{"template":"{{ version }}{{- \"\" -}}  x","model":"{\"version\":\"v\"}","want":"vx","err":null}
+{"template":"a{%{x}%}b{%{","model":"{}","want":"axb","err":null}
+{"template":"{{ version}}{{","model":"{\"version\":\"v\"}","want":"v","err":null}
+{"template":"{{","model":"{}","want":"","err":null}
+{"template":"a{{","model":"{}","want":"a","err":null}
+{"template":"{{ version }} }}","model":"{\"version\":\"v\"}","want":"v }}","err":null}
+{"template":"{{ version }","model":"{\"version\":\"1\"}","want":null,"err":"InvalidOperationException"}
+{"template":"{{{version}}}","model":"{\"version\":\"1\"}","want":null,"err":"InvalidOperationException"}
+{"template":"{{ true }}","model":"{}","want":"true","err":null}
+{"template":"{{ false }}","model":"{}","want":"false","err":null}
+{"template":"{{ null }}","model":"{}","want":"","err":null}
+{"template":"{{ true }}","model":"{\"true\":\"T\"}","want":"true","err":null}
+{"template":"{{ empty }}","model":"{\"empty\":\"E\"}","want":"E","err":null}
+{"template":"{{ string }}","model":"{\"string\":\"x\"}","want":"x","err":null}
+{"template":"{{ info.tags[0] }}","model":"{\"info\":{\"tags\":[\"t\"]}}","want":"t","err":null}
+{"template":"{{ x.y }}","model":"{\"x\":{\"y\":\"1\",\"Y\":\"2\"}}","want":"1","err":null}
+{"template":"{{ x.Y }}","model":"{\"x\":{\"y\":\"1\"}}","want":"","err":null}
+{"template":"{{ $version }}","model":"{\"version\":\"x\"}","want":"","err":null}
+{"template":"{{ end }}","model":"{}","want":null,"err":"InvalidOperationException"}

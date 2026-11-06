@@ -1,0 +1,20 @@
+{
+    "format_version": 2,
+    "tooth": "github.com/dmblock/levibox",
+    "version": "2.0.1",
+    "info": {
+        "name": "levibox",
+        "description": "A script for running LeviLamina on Linux.",
+        "author": "dmblock",
+        "tags": []
+    },
+    "asset_url": "https://github.com/dmblock/levibox/releases/download/v$(version)/levibox-linux-x64.zip",
+    "files": {
+        "place": [
+            {
+                "src": "levibox",
+                "dest": "levibox"
+            }
+        ]
+    }
+}

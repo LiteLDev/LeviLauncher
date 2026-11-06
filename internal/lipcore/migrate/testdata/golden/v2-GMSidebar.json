@@ -1,0 +1,51 @@
+{
+  "format_version": 3,
+  "format_uuid": "289f771f-2c9a-4d73-9f3f-8492495a924d",
+  "tooth": "github.com/GroupMountain/GMSidebar",
+  "version": "26.51.0",
+  "info": {
+    "name": "GMSidebar",
+    "description": "High Performance Sidebar Mod",
+    "tags": [
+      "levilamina",
+      "sidebar",
+      "gmlib"
+    ],
+    "avatar_url": ""
+  },
+  "variants": [
+    {
+      "label": "",
+      "platform": "",
+      "dependencies": {
+        "github.com/LiteLDev/LeviLamina": ">=26.51.0",
+        "github.com/GroupMountain/GMLIB": ">=26.51.0"
+      },
+      "assets": [
+        {
+          "type": "zip",
+          "urls": [
+            "https://github.com/GroupMountain/GMSidebar/releases/download/v26.51.0/GMSidebar-windows-x64.zip"
+          ],
+          "placements": [
+            {
+              "type": "dir",
+              "src": "GMSidebar/",
+              "dest": "plugins/GMSidebar"
+            }
+          ]
+        }
+      ],
+      "preserve_files": [],
+      "remove_files": [],
+      "scripts": {
+        "pre_install": [],
+        "install": [],
+        "post_install": [],
+        "pre_uninstall": [],
+        "uninstall": [],
+        "post_uninstall": []
+      }
+    }
+  ]
+}

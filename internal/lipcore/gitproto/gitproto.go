@@ -20,6 +20,8 @@ import (
 	"time"
 
 	xsemver "golang.org/x/mod/semver"
+
+	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
 )
 
 // ErrNotImplemented is returned by skeleton stubs.
@@ -248,8 +250,9 @@ type FetchOptions struct {
 // PackHandler consumes a fetched pack. It runs inside the per-URL proxy
 // fallback, so an error it returns (e.g. an incomplete pack) marks the proxy
 // failed and retries the original URL, as lip validates packs inside
-// WithProxyFallback. The handler owns pack and must Close it, unless it
-// keeps it for later use.
+// WithProxyFallback. An error it marks with fetch.NoFallback is instead
+// returned as it is, without a retry or fallback. The handler owns pack and
+// must Close it, unless it keeps it for later use.
 type PackHandler func(pack *PackFile) error
 
 // Fetch runs the v2 "fetch" command (no-progress, ofs-delta, wants, done),
@@ -523,7 +526,7 @@ func (c *Client) withProxyFallback(ctx context.Context, repoURL string, op func(
 		return c.withRetry(ctx, func() error { return op(url) })
 	}
 	if c.Proxy == nil {
-		return attempt(repoURL)
+		return fetch.StripNoFallback(attempt(repoURL))
 	}
 	return c.Proxy.Try(ctx, repoURL, attempt)
 }

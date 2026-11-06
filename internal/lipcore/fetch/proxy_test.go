@@ -110,6 +110,47 @@ func TestProxyTryFallbackAndSkip(t *testing.T) {
 	}
 }
 
+// An error marked by NoFallback is returned as it is: the proxy is not
+// marked failed and the original URL is not tried.
+func TestProxyTryNoFallback(t *testing.T) {
+	p := NewProxyRewriter("https://proxy.example")
+	ctx := context.Background()
+	errX := errors.New("x")
+	var calls []string
+	err := p.Try(ctx, "https://github.com/a/b.git", func(u string) error {
+		calls = append(calls, u)
+		return NoFallback(errX)
+	})
+	if err != errX || !equal(calls, []string{"https://proxy.example/a/b.git"}) {
+		t.Fatalf("err = %v, calls = %q", err, calls)
+	}
+	calls = nil
+	p.Try(ctx, "https://github.com/a/b.git", func(u string) error { calls = append(calls, u); return nil })
+	if !equal(calls, []string{"https://proxy.example/a/b.git"}) {
+		t.Errorf("calls = %q, want the proxy still used", calls)
+	}
+
+	// Marked by the direct attempt after a proxy failure: that error alone.
+	n := 0
+	err = p.Try(ctx, "https://github.com/c/d.git", func(string) error {
+		n++
+		if n == 1 {
+			return errors.New("proxy down")
+		}
+		return NoFallback(errX)
+	})
+	if err != errX || n != 2 {
+		t.Errorf("err = %v, calls = %d", err, n)
+	}
+
+	// Direct-only attempts are unmarked too.
+	for _, u := range []string{"https://github.com/c/d.git", "https://gitee.com/a/b.git"} {
+		if err := p.Try(ctx, u, func(string) error { return NoFallback(errX) }); err != errX {
+			t.Errorf("%s: err = %v", u, err)
+		}
+	}
+}
+
 func TestProxyTryCanceled(t *testing.T) {
 	p := NewProxyRewriter("https://proxy.example")
 	ctx, cancel := context.WithCancel(context.Background())

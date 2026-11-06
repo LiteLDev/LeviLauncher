@@ -159,22 +159,53 @@ func repoKey(rawURL string) string {
 	return strings.TrimSuffix(key, ".git")
 }
 
+// NoFallbackError marks an error of an attempt that is not the remote's
+// fault, such as a failure to store what was fetched (lip raises these
+// outside FetchBlobBatch's try). Try returns Err unchanged, without marking
+// the proxy failed or trying the original URL.
+type NoFallbackError struct{ Err error }
+
+func (e *NoFallbackError) Error() string { return e.Err.Error() }
+
+func (e *NoFallbackError) Unwrap() error { return e.Err }
+
+// NoFallback marks err (nil stays nil) as a NoFallbackError.
+func NoFallback(err error) error {
+	if err == nil {
+		return nil
+	}
+	return &NoFallbackError{Err: err}
+}
+
+// StripNoFallback returns the error marked by NoFallback, or err when it is
+// not marked. Only err itself is checked, so a marked error wrapped or
+// joined with others keeps them.
+func StripNoFallback(err error) error {
+	if nf, ok := err.(*NoFallbackError); ok {
+		return nf.Err
+	}
+	return err
+}
+
 // Try calls fn with the proxied URL, falling back to rawURL. Once the
 // proxied attempt for a repository fails, later calls for that repository
-// go directly to rawURL. A failure caused by ctx being done is returned
-// without falling back.
+// go directly to rawURL. A failure caused by ctx being done, or marked by
+// NoFallback, is returned without falling back.
 func (p *ProxyRewriter) Try(ctx context.Context, rawURL string, fn func(url string) error) error {
 	proxied, ok := p.Rewrite(rawURL)
 	if !ok {
-		return fn(rawURL)
+		return StripNoFallback(fn(rawURL))
 	}
 	key := repoKey(rawURL)
 	if _, skip := p.failed.Load(key); skip {
-		return fn(rawURL)
+		return StripNoFallback(fn(rawURL))
 	}
 	perr := fn(proxied)
 	if perr == nil {
 		return nil
+	}
+	if nf, ok := perr.(*NoFallbackError); ok {
+		return nf.Err
 	}
 	if ctx != nil && ctx.Err() != nil {
 		return perr
@@ -183,6 +214,10 @@ func (p *ProxyRewriter) Try(ctx context.Context, rawURL string, fn func(url stri
 	derr := fn(rawURL)
 	if derr == nil {
 		return nil
+	}
+	if nf, ok := derr.(*NoFallbackError); ok {
+		// lip throws it out of the direct attempt, dropping the proxy's error.
+		return nf.Err
 	}
 	return fmt.Errorf("git request for %s failed both via the GitHub proxy and directly: %w",
 		rawURL, errors.Join(perr, derr))

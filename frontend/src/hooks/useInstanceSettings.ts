@@ -773,6 +773,14 @@ export const useInstanceSettings = () => {
     React.useState<InstanceBackupRestoreProgress | null>(null);
   const [restorePreviewProgress, setRestorePreviewProgress] =
     React.useState<InstanceBackupRestoreProgress | null>(null);
+  // Preview events carry no request id. Previews therefore run one at a time
+  // (a new one waits for the superseded backend call to return), and the
+  // listener only accepts events while the current preview's call is running,
+  // so a superseded extraction never drives the bar.
+  const restorePreviewChainRef = React.useRef<Promise<unknown>>(
+    Promise.resolve(),
+  );
+  const restorePreviewAcceptRef = React.useRef<boolean>(false);
   const [backupProgress, setBackupProgress] =
     React.useState<InstanceBackupCreateProgress | null>(null);
   const [restoreResultOpen, setRestoreResultOpen] =
@@ -1456,6 +1464,7 @@ export const useInstanceSettings = () => {
     const off = Events.On(
       EVENT_INSTANCE_BACKUP_PREVIEW_PROGRESS,
       (event: any) => {
+        if (!restorePreviewAcceptRef.current) return;
         const payload = toInstanceBackupRestoreProgress(event?.data ?? event);
         if (!payload.phase) return;
         setRestorePreviewProgress(payload);
@@ -1507,10 +1516,17 @@ export const useInstanceSettings = () => {
     }
 
     let cancelled = false;
+    restorePreviewAcceptRef.current = false;
     setRestorePreviewProgress(null);
     setRestoreConflictLoading(true);
-    void (async () => {
+    const previous = restorePreviewChainRef.current;
+    const run = (async () => {
+      // Wait for a superseded preview's backend call to return first, so its
+      // remaining progress events cannot mix into this preview's bar.
+      await previous.catch(() => undefined);
+      if (cancelled) return;
       try {
+        restorePreviewAcceptRef.current = true;
         const preview = toInstanceBackupRestoreConflictInfo(
           await PreviewInstanceBackupRestoreConflicts(
             targetName,
@@ -1549,13 +1565,16 @@ export const useInstanceSettings = () => {
         setError(String(e?.message || e || "ERR_INSTANCE_BACKUP_ARCHIVE_OPEN"));
       } finally {
         if (!cancelled) {
+          restorePreviewAcceptRef.current = false;
           setRestoreConflictLoading(false);
         }
       }
     })();
+    restorePreviewChainRef.current = run;
 
     return () => {
       cancelled = true;
+      restorePreviewAcceptRef.current = false;
     };
   }, [
     restoreArchiveInfo,

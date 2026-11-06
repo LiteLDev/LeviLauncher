@@ -114,6 +114,29 @@ async function run(label, check) {
     await closeResult(page, translations.mods.summary_title_done);
     assert.deepEqual(await importCalls(page), ['ImportModZipPath']);
   });
+
+  await run('escape-on-prompts-releases-import', async page => {
+    // Escape closes the prompt through onOpenChange only; the import must
+    // treat it as a cancel and finish, or later imports stay blocked.
+    await page.evaluate(() => { window.__audit.modFiles = ['C:\Fixture\\legacy.dll']; });
+    await importButton(page).click();
+    const dll = page.getByRole('dialog', { name: translations.mods.dll_modal_title, exact: true });
+    await dll.waitFor();
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.querySelectorAll('[role="dialog"]').length === 0);
+
+    await page.evaluate(() => Object.assign(window.__audit, { importDuplicate: true, modFiles: ['C:\Fixture\\a.mcmod'] }));
+    await importButton(page).click();
+    const dup = page.getByRole('dialog', { name: translations.mods.overwrite_modal_title, exact: true });
+    await dup.waitFor();
+    await page.keyboard.press('Escape');
+    await page.waitForFunction(() => document.querySelectorAll('[role="dialog"]').length === 0);
+
+    await page.evaluate(() => Object.assign(window.__audit, { importDuplicate: false, modFiles: ['C:\Fixture\\b.mcmod'] }));
+    await importButton(page).click();
+    await closeResult(page, translations.mods.summary_title_done);
+    assert.deepEqual(await importCalls(page), ['ImportModZipPath', 'ImportModZipPath']);
+  });
 })().catch(error => { console.error(error); process.exitCode = 1; }).finally(async () => {
   if (browser) await browser.close();
 });

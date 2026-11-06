@@ -184,15 +184,39 @@ export const useModsPage = (
   const {
     isOpen: dllOpen,
     open: dllOnOpen,
-    setOpen: dllOnOpenChange,
+    setOpen: setDllOpen,
     close: dllOnClose,
   } = useOverlayState();
   const {
     isOpen: dupOpen,
     open: dupOnOpen,
-    setOpen: dupOnOpenChange,
+    setOpen: setDupOpen,
     close: dupOnClose,
   } = useOverlayState();
+  // Escape or a backdrop click closes these prompts through onOpenChange
+  // without calling onCancel. Settle the pending import prompt as a cancel so
+  // doImportFromPaths can move on (and release importInProgressRef). After a
+  // confirm/cancel the promise is already settled, so this is a no-op.
+  const dllOnOpenChange = React.useCallback(
+    (open: boolean) => {
+      setDllOpen(open);
+      if (open) return;
+      const resolve = dllResolveRef.current;
+      dllResolveRef.current = null;
+      resolve?.(false);
+    },
+    [setDllOpen],
+  );
+  const dupOnOpenChange = React.useCallback(
+    (open: boolean) => {
+      setDupOpen(open);
+      if (open) return;
+      const resolve = dupResolveRef.current;
+      dupResolveRef.current = null;
+      resolve?.(false);
+    },
+    [setDupOpen],
+  );
   const {
     isOpen: delCfmOpen,
     open: delCfmOnOpen,

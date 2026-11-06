@@ -260,9 +260,9 @@ func runPackageTask(ctx context.Context, method string, workDir string, packages
 	return err
 }
 
-// finishTask sends the progress r still holds back, then lip_task_finished.
+// finishTask ends the bars r still has open, then sends lip_task_finished.
 func finishTask(meta lipTaskMeta, r *taskReporter, err error) {
-	r.flush()
+	r.close()
 	if err != nil {
 		emitTaskFinished(meta, false, err.Error())
 	} else {

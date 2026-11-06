@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"log"
 	"path/filepath"
+	"sort"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -203,18 +204,28 @@ func emitTaskFinished(meta lipTaskMeta, success bool, taskError string) {
 }
 
 // progressInterval is the minimum time between two forwarded updates of one
-// bar that only advance Current. It limits how often a bar is redrawn, never
-// what it shows: every forwarded value is a measured one.
+// bar that only advance Current or change Item. It limits how often a bar is
+// redrawn, never what it shows: every forwarded value is a measured one, and
+// an update held back goes out at most progressInterval after the last one
+// forwarded.
 const progressInterval = 100 * time.Millisecond
 
 // progressNow is the clock of the progress throttle; replaced in tests.
 var progressNow = time.Now
+
+// progressAfterFunc runs f after d unless the returned stop is called first;
+// it schedules the trailing update of a throttled bar. Replaced in tests.
+var progressAfterFunc = func(d time.Duration, f func()) (stop func() bool) {
+	return time.AfterFunc(d, f).Stop
+}
 
 // barState is what a taskReporter remembers of one open bar.
 type barState struct {
 	last    report.Progress  // last forwarded update
 	sentAt  time.Time        // when last was forwarded
 	pending *report.Progress // latest update held back since, if any
+	stop    func() bool      // cancels the scheduled send of pending, if any
+	seq     uint64           // numbers scheduled sends, so a stale one is ignored
 }
 
 // taskReporter forwards engine reports of one task as lip_task_* events.
@@ -223,8 +234,9 @@ type barState struct {
 type taskReporter struct {
 	meta lipTaskMeta
 
-	mu   sync.Mutex
-	bars map[string]*barState // open bars by ID
+	mu     sync.Mutex
+	bars   map[string]*barState // open bars by ID
+	closed bool                 // set by close; later structured updates are dropped
 }
 
 func newTaskReporter(meta lipTaskMeta) *taskReporter {
@@ -254,27 +266,38 @@ func (r *taskReporter) Progress(id string, message string, percentage float64) {
 
 // ReportProgress forwards structured progress. It always forwards the first
 // update of a bar, its Done update, an update that reaches a known total and
-// one that changes the bar's Stage, Total or Item; other updates of a bar go
-// out at most once per progressInterval. An update held back is replaced by
-// the next one of its bar, or sent by flush, so it never hides the final
-// state of a bar.
+// one that changes the bar's Stage or Total; other updates of a bar (a new
+// Current or Item, as per-file bars send for every file) go out at most once
+// per progressInterval. The latest update held back is sent when that
+// interval ends, unless a later update of its bar went out first, so a bar
+// never shows a value older than progressInterval.
 func (r *taskReporter) ReportProgress(p report.Progress) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
+	if r.closed {
+		return
+	}
 	now := progressNow()
 	bar, open := r.bars[p.ID]
 	send := !open || p.Done || (p.Total > 0 && p.Current >= p.Total) ||
-		p.Stage != bar.last.Stage || p.Total != bar.last.Total || p.Item != bar.last.Item ||
+		p.Stage != bar.last.Stage || p.Total != bar.last.Total ||
 		now.Sub(bar.sentAt) >= progressInterval
 	if !send {
 		held := p
 		bar.pending = &held
+		if bar.stop == nil {
+			bar.seq++
+			seq := bar.seq
+			bar.stop = progressAfterFunc(progressInterval-now.Sub(bar.sentAt), func() { r.sendPending(p.ID, bar, seq) })
+		}
 		return
 	}
 	switch {
 	case p.Done:
+		bar.cancel()
 		delete(r.bars, p.ID)
 	case open:
+		bar.cancel()
 		bar.last, bar.sentAt, bar.pending = p, now, nil
 	default:
 		r.bars[p.ID] = &barState{last: p, sentAt: now}
@@ -283,19 +306,60 @@ func (r *taskReporter) ReportProgress(p report.Progress) {
 	emitTaskStructuredProgress(r.meta, p)
 }
 
-// flush forwards the updates the throttle still holds back. runPackageTask
-// calls it before lip_task_finished.
-func (r *taskReporter) flush() {
+// cancel stops the scheduled send of bar's held-back update. A nil bar (one
+// not open yet) has nothing scheduled.
+func (bar *barState) cancel() {
+	if bar != nil && bar.stop != nil {
+		bar.stop()
+		bar.stop = nil
+	}
+}
+
+// sendPending is the scheduled send of bar's held-back update. It does
+// nothing if the reporter was closed, bar finished, or the send numbered seq
+// was cancelled because bar forwarded an update since.
+func (r *taskReporter) sendPending(id string, bar *barState, seq uint64) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
-	now := progressNow()
-	for _, bar := range r.bars {
-		if bar.pending != nil {
-			p := *bar.pending
-			bar.last, bar.sentAt, bar.pending = p, now, nil
-			emitTaskStructuredProgress(r.meta, p)
-		}
+	if r.closed || r.bars[id] != bar || bar.stop == nil || bar.seq != seq {
+		return
 	}
+	bar.stop = nil
+	if bar.pending == nil {
+		return
+	}
+	p := *bar.pending
+	bar.last, bar.sentAt, bar.pending = p, progressNow(), nil
+	emitTaskStructuredProgress(r.meta, p)
+}
+
+// close ends every bar still open with one Done update carrying its latest
+// measured values (the one held back, if any), so a bar the engine left open
+// still ends Done, and drops structured updates from then on. finishTask
+// calls it before lip_task_finished.
+func (r *taskReporter) close() {
+	r.mu.Lock()
+	defer r.mu.Unlock()
+	if r.closed {
+		return
+	}
+	r.closed = true
+	ids := make([]string, 0, len(r.bars))
+	for id := range r.bars {
+		ids = append(ids, id)
+	}
+	sort.Strings(ids)
+	for _, id := range ids {
+		bar := r.bars[id]
+		bar.cancel()
+		p := bar.last
+		if bar.pending != nil {
+			p = *bar.pending
+		}
+		p.Done = true
+		emitTaskStructuredProgress(r.meta, p)
+	}
+	r.bars = nil
 }
 
 // logReporter writes engine reports of untracked (quiet) calls to the log.

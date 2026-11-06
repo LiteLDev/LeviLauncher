@@ -10,10 +10,19 @@ import (
 	"github.com/liteldev/LeviLauncher/internal/lipcore/report"
 )
 
-// fakeProgressClock replaces the throttle's clock with one advanced by hand.
+// fakeProgressClock replaces the throttle's clock and timers with ones
+// advanced by hand: advance only moves the clock, fireDue runs the scheduled
+// sends that are due.
 type fakeProgressClock struct {
-	mu  sync.Mutex
-	now time.Time
+	mu     sync.Mutex
+	now    time.Time
+	timers []*fakeProgressTimer
+}
+
+type fakeProgressTimer struct {
+	due  time.Time
+	f    func()
+	done bool // stopped or fired
 }
 
 func (c *fakeProgressClock) advance(d time.Duration) {
@@ -22,16 +31,59 @@ func (c *fakeProgressClock) advance(d time.Duration) {
 	c.mu.Unlock()
 }
 
+// fireDue runs the scheduled sends due by now, outside c.mu (they read the
+// clock).
+func (c *fakeProgressClock) fireDue() {
+	c.mu.Lock()
+	var due []func()
+	for _, tm := range c.timers {
+		if !tm.done && !tm.due.After(c.now) {
+			tm.done = true
+			due = append(due, tm.f)
+		}
+	}
+	c.mu.Unlock()
+	for _, f := range due {
+		f()
+	}
+}
+
+// scheduled reports how many sends are scheduled and not yet stopped or run.
+func (c *fakeProgressClock) scheduled() int {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	n := 0
+	for _, tm := range c.timers {
+		if !tm.done {
+			n++
+		}
+	}
+	return n
+}
+
 func useFakeProgressClock(t *testing.T) *fakeProgressClock {
 	t.Helper()
 	c := &fakeProgressClock{now: time.Unix(1700000000, 0)}
-	old := progressNow
+	oldNow, oldAfter := progressNow, progressAfterFunc
 	progressNow = func() time.Time {
 		c.mu.Lock()
 		defer c.mu.Unlock()
 		return c.now
 	}
-	t.Cleanup(func() { progressNow = old })
+	progressAfterFunc = func(d time.Duration, f func()) func() bool {
+		c.mu.Lock()
+		defer c.mu.Unlock()
+		tm := &fakeProgressTimer{due: c.now.Add(d), f: f}
+		c.timers = append(c.timers, tm)
+		return func() bool {
+			c.mu.Lock()
+			defer c.mu.Unlock()
+			stopped := !tm.done
+			tm.done = true
+			return stopped
+		}
+	}
+	t.Cleanup(func() { progressNow, progressAfterFunc = oldNow, oldAfter })
 	return c
 }
 
@@ -125,8 +177,8 @@ func TestProgressThrottle(t *testing.T) {
 		{bar(20, 100, "x"), 50 * time.Millisecond, false},
 		{bar(30, 100, "x"), 40 * time.Millisecond, true}, // 100ms since the last sent
 		{bar(40, 100, "x"), 0, false},
-		{bar(40, 200, "x"), 0, true}, // Total changed
-		{bar(50, 200, "y"), 0, true}, // Item changed
+		{bar(40, 200, "x"), 0, true},  // Total changed
+		{bar(50, 200, "y"), 0, false}, // a new Item alone is throttled
 		{report.Progress{ID: "b", Stage: report.StageExtract, Current: 60, Total: 200, Unit: report.UnitBytes, Item: "y"}, 0, true}, // Stage changed
 		{report.Progress{ID: "b", Stage: report.StageExtract, Current: 70, Total: 200, Unit: report.UnitBytes, Item: "y"}, 0, false},
 		{report.Progress{ID: "b", Stage: report.StageExtract, Current: 200, Total: 200, Unit: report.UnitBytes, Item: "y"}, 0, true}, // reached Total
@@ -196,22 +248,119 @@ func TestProgressThrottleStream(t *testing.T) {
 	}
 }
 
-// flush sends what the throttle holds back, once.
-func TestProgressFlush(t *testing.T) {
-	r, rec, _ := testTaskReporter(t)
+// close ends every open bar with one Done update carrying its latest
+// values, once, and drops what comes after it.
+func TestProgressClose(t *testing.T) {
+	r, rec, clock := testTaskReporter(t)
 	r.ReportProgress(report.Progress{ID: "f", Stage: report.StageRemove, Current: 1, Total: 5})
 	r.ReportProgress(report.Progress{ID: "f", Stage: report.StageRemove, Current: 3, Total: 5})
-	r.ReportProgress(report.Progress{ID: "g", Stage: report.StageRemove, Current: 1, Total: 5})
-	r.flush()
-	r.flush()
+	r.ReportProgress(report.Progress{ID: "g", Stage: report.StageRemove, Current: 1})
+	r.close()
+	r.close()
+	r.ReportProgress(report.Progress{ID: "h", Stage: report.StageRemove, Current: 1, Total: 5})
+	clock.advance(time.Second)
+	clock.fireDue()
 	got := progressEvents(t, rec.snapshot())
-	if len(got) != 3 || got[2].ProgressID != "f" || got[2].Current != 3 {
-		t.Fatalf("unexpected updates after flush: %+v", got)
+	if len(got) != 4 {
+		t.Fatalf("unexpected updates after close: %+v", got)
+	}
+	if p := got[2]; p.ProgressID != "f" || p.Current != 3 || p.Total != 5 || !p.Done || p.Percentage != 60 {
+		t.Fatalf("held-back bar closed as %+v", p)
+	}
+	if p := got[3]; p.ProgressID != "g" || p.Current != 1 || !p.Done || p.Indeterminate {
+		t.Fatalf("open bar closed as %+v", p)
+	}
+	if clock.scheduled() != 0 {
+		t.Fatal("close left a send scheduled")
+	}
+	bars := map[string][]LipTaskProgressEvent{}
+	for _, p := range got {
+		bars[p.ProgressID] = append(bars[p.ProgressID], p)
+	}
+	for _, bar := range bars {
+		checkBar(t, bar)
 	}
 }
 
-// A task's held-back progress goes out before lip_task_finished, on success
-// and on error.
+// A per-file bar names a new Item in every update; that alone does not get
+// past the throttle.
+func TestProgressThrottlePerFileItems(t *testing.T) {
+	r, rec, clock := testTaskReporter(t)
+	const files = 20000
+	for i := int64(1); i <= files; i++ {
+		r.ReportProgress(report.Progress{ID: "c", Stage: report.StageCacheClean, Current: i, Total: files,
+			Unit: report.UnitFiles, Item: fmt.Sprintf("cache/%d", i), Done: i == files})
+		clock.advance(10 * time.Microsecond) // 0.2s for all files
+		clock.fireDue()
+	}
+	got := progressEvents(t, rec.snapshot())
+	checkBar(t, got)
+	if len(got) > 5 {
+		t.Fatalf("%d files sent %d updates", files, len(got))
+	}
+	if last := got[len(got)-1]; last.Current != files || last.Item != fmt.Sprintf("cache/%d", files) {
+		t.Fatalf("bar ended at %+v", last)
+	}
+}
+
+// A held-back update goes out when its interval ends, even if its bar stalls.
+func TestProgressTrailingSend(t *testing.T) {
+	r, rec, clock := testTaskReporter(t)
+	bar := func(cur int64) report.Progress {
+		return report.Progress{ID: "d", Stage: report.StageDownload, Current: cur, Total: 100 << 20, Unit: report.UnitBytes}
+	}
+	r.ReportProgress(bar(40 << 20))
+	clock.advance(50 * time.Millisecond)
+	r.ReportProgress(bar(45 << 20))
+	r.ReportProgress(bar(49 << 20)) // replaces 45MB, schedules no second send
+	if n := clock.scheduled(); n != 1 {
+		t.Fatalf("%d sends scheduled", n)
+	}
+	clock.advance(49 * time.Millisecond)
+	clock.fireDue()
+	if got := progressEvents(t, rec.snapshot()); len(got) != 1 {
+		t.Fatalf("sent early: %+v", got)
+	}
+	clock.advance(time.Millisecond)
+	clock.fireDue()
+	got := progressEvents(t, rec.snapshot())
+	if len(got) != 2 || got[1].Current != 49<<20 {
+		t.Fatalf("stalled bar shows %+v", got)
+	}
+
+	// An update forwarded in the meantime cancels the scheduled send, and a
+	// stale send that runs anyway changes nothing.
+	clock.advance(10 * time.Millisecond)
+	r.ReportProgress(bar(50 << 20))
+	r.mu.Lock()
+	staleSeq := r.bars["d"].seq
+	r.mu.Unlock()
+	clock.advance(100 * time.Millisecond)
+	r.ReportProgress(bar(60 << 20)) // interval over: sent, cancels the send
+	if n := clock.scheduled(); n != 0 {
+		t.Fatalf("%d sends left scheduled", n)
+	}
+	r.ReportProgress(bar(61 << 20)) // held, new send scheduled
+	r.mu.Lock()
+	b := r.bars["d"]
+	r.mu.Unlock()
+	r.sendPending("d", b, staleSeq)
+	got = progressEvents(t, rec.snapshot())
+	if len(got) != 3 || got[2].Current != 60<<20 {
+		t.Fatalf("unexpected updates: %+v", got)
+	}
+	r.ReportProgress(report.Progress{ID: "d", Stage: report.StageDownload, Current: 61 << 20, Total: 100 << 20, Done: true})
+	clock.advance(time.Second)
+	clock.fireDue()
+	got = progressEvents(t, rec.snapshot())
+	if len(got) != 4 {
+		t.Fatalf("send after Done: %+v", got)
+	}
+	checkBar(t, got)
+}
+
+// A bar the engine leaves open is closed with its held-back values before
+// lip_task_finished, on success and on error.
 func TestRunPackageTaskFlushesProgress(t *testing.T) {
 	for _, fail := range []bool{false, true} {
 		t.Run(fmt.Sprint("fail=", fail), func(t *testing.T) {
@@ -236,9 +385,10 @@ func TestRunPackageTaskFlushesProgress(t *testing.T) {
 				t.Fatalf("last event %s", events[len(events)-1].name)
 			}
 			got := progressEvents(t, events)
-			if len(got) != 2 || got[0].Current != 1 || got[1].Current != 3 {
+			if len(got) != 2 || got[0].Current != 1 || got[1].Current != 3 || !got[1].Done {
 				t.Fatalf("unexpected updates: %+v", got)
 			}
+			checkBar(t, got)
 		})
 	}
 }

@@ -200,6 +200,16 @@ func TestSaveRetriesFailedRename(t *testing.T) {
 	if entries, _ := os.ReadDir(dir); len(entries) != 1 {
 		t.Errorf("temp file left behind: %d entries", len(entries))
 	}
+
+	// Other errors are permanent and returned at once.
+	calls := 0
+	rename = func(from, to string) error {
+		calls++
+		return &os.LinkError{Op: "rename", Old: from, New: to, Err: os.ErrNotExist}
+	}
+	if err := New().Save(dir); err == nil || calls != 1 {
+		t.Fatalf("Save = %v after %d renames, want an error after 1", err, calls)
+	}
 }
 
 func TestSaveNewState(t *testing.T) {

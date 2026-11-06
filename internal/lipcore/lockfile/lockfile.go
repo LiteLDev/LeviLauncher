@@ -189,15 +189,16 @@ var (
 )
 
 // replaceFile renames tmp over dst. On Windows the rename fails while a
-// reader (e.g. a concurrent List) has dst open, so it is retried briefly.
+// reader (e.g. a concurrent List) has dst open, with "Access is denied", so
+// that error is retried briefly.
 func replaceFile(tmp, dst string) error {
 	var err error
 	for i := 0; i < renameAttempts; i++ {
 		if i > 0 {
 			time.Sleep(renameBackoff)
 		}
-		if err = rename(tmp, dst); err == nil {
-			return nil
+		if err = rename(tmp, dst); err == nil || !errors.Is(err, fs.ErrPermission) {
+			return err
 		}
 	}
 	return err

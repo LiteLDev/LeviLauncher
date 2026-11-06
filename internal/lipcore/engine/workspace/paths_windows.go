@@ -10,13 +10,20 @@ import (
 	"strings"
 	"syscall"
 	"unicode/utf16"
+
+	"golang.org/x/sys/windows"
 )
 
 // getFullPath ports Path.GetFullPath with base as the working directory. It
 // uses GetFullPathNameW like .NET, so "/" becomes "\", "." and ".." are
-// collapsed and trailing dots and spaces of segments are removed; a
-// trailing separator is kept. Like .NET, 8.3 short names are expanded when
-// the result contains '~'.
+// collapsed, trailing dots and spaces of the last segment are removed, and
+// so is a single trailing dot of other segments ("a./b" becomes "a", but
+// "a../b" and "a /b" are kept); a trailing separator is kept. Like .NET,
+// 8.3 short names are expanded when the result contains '~'.
+//
+// When GetFullPathNameW fails (p contains NUL, or the result would exceed
+// 32767 characters) the combined input is returned unnormalized: it may
+// still contain "/", "." and ".." (containment.check rejects such paths).
 func getFullPath(base, p string) string {
 	var in string
 	switch {
@@ -148,4 +155,61 @@ func extendedPath(p string) string {
 		return `\\?\UNC\` + p[2:]
 	}
 	return `\\?\` + p
+}
+
+// isLink reports whether p exists and whether it is a symbolic link or a
+// junction (mount point), without following it. Other reparse points
+// (OneDrive placeholders, deduplicated files, app execution aliases) are
+// not redirections Win32 follows to another path, so they are not links.
+func isLink(p string) (link, exists bool) {
+	a, ok := fileAttributes(p)
+	if !ok || a&syscall.FILE_ATTRIBUTE_REPARSE_POINT == 0 {
+		return false, ok
+	}
+	name, err := windows.UTF16PtrFromString(extendedPath(p))
+	if err != nil {
+		return true, true
+	}
+	var data windows.Win32finddata
+	h, err := windows.FindFirstFile(name, &data)
+	if err != nil {
+		// Cannot tell: treat it as a link, to be resolved.
+		return true, true
+	}
+	windows.FindClose(h)
+	// For a reparse point, dwReserved0 holds the reparse tag.
+	return data.Reserved0 == windows.IO_REPARSE_TAG_SYMLINK || data.Reserved0 == windows.IO_REPARSE_TAG_MOUNT_POINT, true
+}
+
+// realPath returns the final path of the existing p with every link and
+// junction resolved (GetFinalPathNameByHandleW), in DOS form without the
+// \\?\ prefix.
+func realPath(p string) (string, error) {
+	name, err := windows.UTF16PtrFromString(extendedPath(p))
+	if err != nil {
+		return "", err
+	}
+	h, err := windows.CreateFile(name, 0, windows.FILE_SHARE_READ|windows.FILE_SHARE_WRITE|windows.FILE_SHARE_DELETE,
+		nil, windows.OPEN_EXISTING, windows.FILE_FLAG_BACKUP_SEMANTICS, 0)
+	if err != nil {
+		return "", &os.PathError{Op: "open", Path: p, Err: err}
+	}
+	defer windows.CloseHandle(h)
+
+	buf := make([]uint16, syscall.MAX_PATH)
+	for {
+		// Flags 0: FILE_NAME_NORMALIZED | VOLUME_NAME_DOS.
+		n, err := windows.GetFinalPathNameByHandle(h, &buf[0], uint32(len(buf)), 0)
+		if err != nil {
+			return "", &os.PathError{Op: "GetFinalPathNameByHandle", Path: p, Err: err}
+		}
+		if int(n) < len(buf) {
+			s := windows.UTF16ToString(buf[:n])
+			if rest, ok := strings.CutPrefix(s, `\\?\UNC\`); ok {
+				return `\\` + rest, nil
+			}
+			return strings.TrimPrefix(s, `\\?\`), nil
+		}
+		buf = make([]uint16, n)
+	}
 }

@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -25,6 +26,9 @@ func getFullPath(base, p string) string {
 	}
 	return full
 }
+
+// expandShortName returns p: there are no 8.3 short names on Unix.
+func expandShortName(p string) string { return p }
 
 // fileExists ports File.Exists: the path exists (dangling symlinks
 // included) and is not a directory.
@@ -56,4 +60,19 @@ func deleteFile(p string) error {
 		return &os.PathError{Op: "remove", Path: p, Err: fmt.Errorf("Access to the path '%s' is denied.: %w", p, err)}
 	}
 	return &os.PathError{Op: "remove", Path: p, Err: err}
+}
+
+// isLink reports whether p exists and whether it is a symbolic link,
+// without following it.
+func isLink(p string) (link, exists bool) {
+	fi, err := os.Lstat(p)
+	if err != nil {
+		return false, false
+	}
+	return fi.Mode()&os.ModeSymlink != 0, true
+}
+
+// realPath returns the existing p with every symbolic link resolved.
+func realPath(p string) (string, error) {
+	return filepath.EvalSymlinks(p)
 }

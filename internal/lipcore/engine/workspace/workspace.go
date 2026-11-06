@@ -170,14 +170,32 @@ func (w *Workspace) FullPath(p string) string {
 	return getFullPath(w.Dir, p)
 }
 
-// InstallPackage runs pre_install, places every asset's matched files
-// (prefetching, creating directories, overwriting existing files), runs
-// install and post_install, and returns the absolute paths of placed files
-// in placement order (as recorded in tooth_lock.json "files"). Scripts are
-// skipped when IgnoreScripts. There is no rollback on failure; on an error
-// after placement started, files lists what was placed so far (lip records
+// InstallPackage opens every asset and matches its placements, runs
+// pre_install, places every asset's matched files (prefetching, creating
+// directories, overwriting existing files), runs install and post_install,
+// and returns the absolute paths of placed files in placement order (as
+// recorded in tooth_lock.json "files"). Scripts are skipped when
+// IgnoreScripts. There is no rollback on failure; on an error after
+// placement started, files lists what was placed so far (lip records
 // nothing in that case).
+//
+// Unlike lip, which writes wherever a target points, the whole package is
+// rejected before any script runs or file is written when a target is not
+// contained in Dir (see containment.check); the error wraps ErrUnsafePath.
+//
+// This changes the order of steps from lip's on purpose: lip runs
+// pre_install first and then opens (downloads) and matches each asset in
+// turn, while here every asset is opened and matched before pre_install.
+// So an asset that fails to open or match (or a match with an empty dest)
+// fails the install before pre_install runs, where lip would have run
+// pre_install and then failed, leaving its side effects.
 func (w *Workspace) InstallPackage(ctx context.Context, variant *manifest.Variant, open SourceOpener) (files []string, err error) {
+	// Step 0: Open the assets and check every target.
+	plan, err := w.planInstall(ctx, variant, open)
+	if err != nil {
+		return nil, err
+	}
+
 	// Step 1: Run pre-install scripts.
 	if err := w.runScripts(ctx, variant.Scripts.PreInstall); err != nil {
 		return nil, err
@@ -185,39 +203,19 @@ func (w *Workspace) InstallPackage(ctx context.Context, variant *manifest.Varian
 
 	// Step 2: Place files.
 	files = []string{}
-	for _, asset := range variant.Assets {
-		src, err := open(ctx, asset)
-		if err != nil {
+	for _, a := range plan {
+		if err := a.src.Prefetch(ctx, distinctKeys(a.matches)); err != nil {
 			return files, err
 		}
 
-		// Match placements first, so lazy sources only download the files that
-		// are placed.
-		matches, err := w.MatchPlacements(src.Keys(), asset.Placements)
-		if err != nil {
-			return files, err
-		}
-		if len(matches) == 0 {
-			continue
-		}
-
-		if err := src.Prefetch(ctx, distinctKeys(matches)); err != nil {
-			return files, err
-		}
-
-		for _, m := range matches {
+		for i, m := range a.matches {
 			if err := ctx.Err(); err != nil {
 				return files, err
 			}
-			if m.Dest == "" {
-				// new FileInfo("") throws in lip.
-				return files, errors.New("The value cannot be an empty string. (Parameter 'fileName')")
-			}
-			target := w.FullPath(m.Dest)
-			if err := copyToFile(src, m.Key, target); err != nil {
+			if err := copyToFile(a.src, m.Key, a.targets[i]); err != nil {
 				return files, err
 			}
-			files = append(files, target)
+			files = append(files, a.targets[i])
 		}
 	}
 
@@ -230,6 +228,52 @@ func (w *Workspace) InstallPackage(ctx context.Context, variant *manifest.Varian
 	}
 
 	return files, nil
+}
+
+// plannedAsset is an opened asset with at least one match and the full
+// path of each match's target.
+type plannedAsset struct {
+	src     Source
+	matches []Target
+	targets []string
+}
+
+// planInstall opens every asset, matches its placements (first, so lazy
+// sources only download the files that are placed) and checks that every
+// target is contained in Dir.
+func (w *Workspace) planInstall(ctx context.Context, variant *manifest.Variant, open SourceOpener) ([]plannedAsset, error) {
+	var plan []plannedAsset
+	contained := w.containment()
+	for _, asset := range variant.Assets {
+		if err := ctx.Err(); err != nil {
+			return nil, err
+		}
+		src, err := open(ctx, asset)
+		if err != nil {
+			return nil, err
+		}
+		matches, err := w.MatchPlacements(src.Keys(), asset.Placements)
+		if err != nil {
+			return nil, err
+		}
+		if len(matches) == 0 {
+			continue
+		}
+
+		targets := make([]string, len(matches))
+		for i, m := range matches {
+			if m.Dest == "" {
+				// new FileInfo("") throws in lip.
+				return nil, errors.New("The value cannot be an empty string. (Parameter 'fileName')")
+			}
+			targets[i] = w.FullPath(m.Dest)
+			if err := contained.check(targets[i], true); err != nil {
+				return nil, fmt.Errorf("Refusing to install the package: file '%s' would be placed at '%s' (destination '%s'), but %w", m.Key, targets[i], m.Dest, err)
+			}
+		}
+		plan = append(plan, plannedAsset{src: src, matches: matches, targets: targets})
+	}
+	return plan, nil
 }
 
 func distinctKeys(matches []Target) []string {
@@ -278,6 +322,13 @@ func copyToFile(src Source, key, target string) error {
 // entry under Dir whose relative path (or, for directories, path + "/")
 // matches, deepest first, directories recursively; then runs
 // post_uninstall.
+//
+// Unlike lip, a recorded file that is not contained in Dir (see
+// containment.checkRecorded; the file itself may be a link) is skipped
+// with a warning instead of deleted. remove_files cannot reach outside Dir:
+// the walk does not descend into links, a matched link is removed itself,
+// not its target, and every matched entry passes the same check (or is
+// skipped with a warning).
 func (w *Workspace) UninstallPackage(ctx context.Context, variant *manifest.Variant, files []string) error {
 	rep := report.OrNop(w.Reporter)
 
@@ -301,6 +352,7 @@ func (w *Workspace) UninstallPackage(ctx context.Context, variant *manifest.Vari
 	}
 
 	// Step 2: Remove placed files.
+	contained := w.containment()
 	for _, file := range files {
 		fullName := getFullPath(w.Dir, file)
 		relativePath := w.relativePath(fullName)
@@ -319,18 +371,25 @@ func (w *Workspace) UninstallPackage(ctx context.Context, variant *manifest.Vari
 			continue
 		}
 
-		if !fileExists(fullName) {
+		// Unlike lip, never delete outside Dir, whatever the lock says.
+		target, err := contained.checkRecorded(fullName)
+		if err != nil {
+			rep.Warning(fmt.Sprintf("File '%s' is not in the workspace (%v), skipping removal.", fullName, err))
+			continue
+		}
+
+		if !fileExists(target) {
 			rep.Warning(fmt.Sprintf("File '%s' does not exist, skipping removal.", fullName))
 		}
 
-		if err := deleteFile(fullName); err != nil {
+		if err := deleteFile(target); err != nil {
 			return err
 		}
 	}
 
 	// Step 3: Remove the files specified to be removed.
 	for _, g := range remove {
-		if err := w.removeMatching(g); err != nil {
+		if err := w.removeMatching(g, contained, rep); err != nil {
 			return err
 		}
 	}
@@ -357,8 +416,9 @@ func (w *Workspace) compileAll(patterns []string) ([]Matcher, error) {
 	return out, nil
 }
 
-// removeMatching deletes every entry under Dir matched by g.
-func (w *Workspace) removeMatching(g Matcher) error {
+// removeMatching deletes every entry under Dir matched by g that contained
+// accepts.
+func (w *Workspace) removeMatching(g Matcher, contained *containment, rep report.Reporter) error {
 	type entry struct {
 		path  string
 		depth int
@@ -378,7 +438,7 @@ func (w *Workspace) removeMatching(g Matcher) error {
 		if p == root {
 			return nil
 		}
-		relativePath, _ := cutPrefixFoldOrdinal(toSlash(p), rootPrefix)
+		relativePath, _ := strings.CutPrefix(toSlash(p), rootPrefix)
 		if relativePath == "" {
 			return nil
 		}
@@ -397,6 +457,10 @@ func (w *Workspace) removeMatching(g Matcher) error {
 	// not invalidate the other paths collected above.
 	sort.SliceStable(toRemove, func(i, j int) bool { return toRemove[i].depth > toRemove[j].depth })
 	for _, e := range toRemove {
+		if err := contained.check(e.path, false); err != nil {
+			rep.Warning(fmt.Sprintf("File '%s' is not in the workspace (%v), skipping removal.", e.path, err))
+			continue
+		}
 		if fileExists(e.path) {
 			if err := deleteFile(e.path); err != nil {
 				return err

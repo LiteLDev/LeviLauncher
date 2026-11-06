@@ -3,15 +3,36 @@
 //
 // It is written against small interfaces so it does not depend on the
 // concrete semver/manifest packages; package engine adapts them.
+//
+// The port is deliberately faithful, including lip's quirks:
+//
+//   - Candidate sets are shared between backtracking levels. lip copies the
+//     candidate dictionary shallowly (new Dictionary(candidates)), so the
+//     HashSet values are the same objects at every level, and narrowing a
+//     set during propagation (HashSet.RemoveWhere) is never undone when the
+//     solver backtracks. This package shares *candSet pointers the same way.
+//   - Ties in the fewest-candidates heuristic are broken by .NET Dictionary
+//     enumeration order, which is insertion order except that an id added
+//     after a removal reuses the removed slot. orderedCands emulates that.
+//   - The solver itself does not cache registry calls; like lip it relies on
+//     the Registry implementation to memoize (lip's GitRemotePackageRegistry
+//     caches tags per repository and manifests per spec).
 package solver
 
 import (
 	"context"
 	"errors"
+	"fmt"
+	"sort"
+	"strings"
 )
 
 // ErrNotImplemented is returned by skeleton stubs.
 var ErrNotImplemented = errors.New("solver: not implemented")
+
+// ErrNoSolution is returned by Solve when no assignment satisfies all
+// requirements. Its text is lip's InvalidOperationException message.
+var ErrNoSolution = errors.New("Cannot find a valid state to satisfy all dependencies.")
 
 // Version is an opaque comparable version.
 type Version interface {
@@ -26,15 +47,30 @@ type Constraint interface {
 	String() string
 }
 
+// CycleError is returned by TopologicalSort (and Solve) when the dependency
+// graph has a cycle. Its text is lip's InvalidOperationException message.
+type CycleError struct {
+	// ID is the package that was reached again while on the visit stack.
+	ID string
+}
+
+func (e *CycleError) Error() string {
+	return fmt.Sprintf("Circular dependency detected involving package '%s'", e.ID)
+}
+
 // Requirement is "package id must satisfy constraint" (lip PackageReqt).
 type Requirement struct {
 	// ID is a package id string ("path" or "path#variant"); ids are compared
-	// exactly ("x#client" and "x" are different packages).
-	ID         string
+	// exactly ("x#client" and "x" are different packages), so callers must
+	// pass the canonical form (lip PackageId.ToString: no trailing "#").
+	ID string
+	// Constraint must be non-nil.
 	Constraint Constraint
 }
 
-func (r Requirement) String() string { return r.ID + "@" + r.Constraint.String() }
+// String formats the requirement like lip's PackageReqt.ToString:
+// "<id>@[<range>]".
+func (r Requirement) String() string { return r.ID + "@[" + r.Constraint.String() + "]" }
 
 // Registry supplies candidates (lip IPackageRegistry + manifest variant deps).
 type Registry interface {
@@ -57,6 +93,184 @@ type Selected struct {
 // (e.g. "Resolving dependencies for: ...").
 type Logf func(format string, args ...any)
 
+// candSet is lip's HashSet<SemVersion> of candidate versions. Elements keep
+// insertion order (HashSet enumeration order when only RemoveWhere is used)
+// and are unique by String() (SemVersion.Equals compares every component,
+// including metadata, i.e. the canonical string).
+type candSet struct {
+	vs []Version
+}
+
+func newCandSet(available []Version, c Constraint) *candSet {
+	s := &candSet{}
+	seen := make(map[string]struct{}, len(available))
+	for _, v := range available {
+		if !c.Contains(v) {
+			continue
+		}
+		k := v.String()
+		if _, ok := seen[k]; ok {
+			continue
+		}
+		seen[k] = struct{}{}
+		s.vs = append(s.vs, v)
+	}
+	return s
+}
+
+// removeUnsatisfying is HashSet.RemoveWhere(v => !c.Contains(v)), in place.
+func (s *candSet) removeUnsatisfying(c Constraint) {
+	out := s.vs[:0]
+	for _, v := range s.vs {
+		if c.Contains(v) {
+			out = append(out, v)
+		}
+	}
+	for i := len(out); i < len(s.vs); i++ {
+		s.vs[i] = nil
+	}
+	s.vs = out
+}
+
+// newestFirst is versions.Order(PrecedenceComparer).Reverse(): a stable
+// ascending sort, reversed, so equal-precedence versions come out in reverse
+// insertion order.
+func (s *candSet) newestFirst() []Version {
+	sorted := append([]Version(nil), s.vs...)
+	sort.SliceStable(sorted, func(i, j int) bool { return sorted[i].Compare(sorted[j]) < 0 })
+	for i, j := 0, len(sorted)-1; i < j; i, j = i+1, j-1 {
+		sorted[i], sorted[j] = sorted[j], sorted[i]
+	}
+	return sorted
+}
+
+// orderedCands emulates Dictionary<PackageId, HashSet<SemVersion>> including
+// its enumeration order: entries are enumerated by slot index, Remove leaves
+// a hole that is pushed on a LIFO free list, and Add fills the most recently
+// freed hole before appending. Copying (new Dictionary(d)) compacts slots.
+type orderedCands struct {
+	slots []candSlot
+	free  []int
+	index map[string]int
+}
+
+type candSlot struct {
+	id   string
+	set  *candSet
+	used bool
+}
+
+func newOrderedCands() *orderedCands {
+	return &orderedCands{index: map[string]int{}}
+}
+
+func (d *orderedCands) count() int { return len(d.index) }
+
+func (d *orderedCands) get(id string) (*candSet, bool) {
+	i, ok := d.index[id]
+	if !ok {
+		return nil, false
+	}
+	return d.slots[i].set, true
+}
+
+// set is the indexer setter: replace in place when present, else add.
+func (d *orderedCands) set(id string, s *candSet) {
+	if i, ok := d.index[id]; ok {
+		d.slots[i].set = s
+		return
+	}
+	var i int
+	if n := len(d.free); n > 0 {
+		i = d.free[n-1]
+		d.free = d.free[:n-1]
+		d.slots[i] = candSlot{id: id, set: s, used: true}
+	} else {
+		i = len(d.slots)
+		d.slots = append(d.slots, candSlot{id: id, set: s, used: true})
+	}
+	d.index[id] = i
+}
+
+func (d *orderedCands) remove(id string) {
+	i, ok := d.index[id]
+	if !ok {
+		return
+	}
+	delete(d.index, id)
+	d.slots[i] = candSlot{}
+	d.free = append(d.free, i)
+}
+
+// clone is a shallow, compacting copy: the *candSet values are shared.
+func (d *orderedCands) clone() *orderedCands {
+	c := &orderedCands{
+		slots: make([]candSlot, 0, d.count()),
+		index: make(map[string]int, d.count()),
+	}
+	for _, s := range d.slots {
+		if !s.used {
+			continue
+		}
+		c.index[s.id] = len(c.slots)
+		c.slots = append(c.slots, s)
+	}
+	return c
+}
+
+// minByCount is Enumerable.MinBy(x => x.Value.Count): the first entry in
+// enumeration order with the smallest count. d must be non-empty.
+func (d *orderedCands) minByCount() (string, *candSet) {
+	var (
+		bestID  string
+		bestSet *candSet
+		found   bool
+	)
+	for _, s := range d.slots {
+		if !s.used {
+			continue
+		}
+		if !found || len(s.set.vs) < len(bestSet.vs) {
+			bestID, bestSet, found = s.id, s.set, true
+		}
+	}
+	return bestID, bestSet
+}
+
+// selection is Dictionary<PackageId, SemVersion> for selected versions.
+// Entries are never removed, so enumeration order is insertion order.
+type selection struct {
+	ids []string
+	vs  map[string]Version
+}
+
+func (s *selection) with(id string, v Version) *selection {
+	n := &selection{
+		ids: make([]string, len(s.ids), len(s.ids)+1),
+		vs:  make(map[string]Version, len(s.vs)+1),
+	}
+	copy(n.ids, s.ids)
+	for k, x := range s.vs {
+		n.vs[k] = x
+	}
+	if _, ok := n.vs[id]; !ok {
+		n.ids = append(n.ids, id)
+	}
+	n.vs[id] = v
+	return n
+}
+
+type solverState struct {
+	reg  Registry
+	logf Logf
+}
+
+func (st *solverState) printInfo(format string, args ...any) {
+	if st.logf != nil {
+		st.logf(format, args...)
+	}
+}
+
 // Solve finds one version per package satisfying all requirements, exactly
 // as lip does: candidate sets per id; backtracking picks the unresolved id
 // with the fewest candidates and tries the newest version first; selecting
@@ -66,12 +280,180 @@ type Logf func(format string, args ...any)
 // does not prefer installed versions. The result is topologically sorted
 // (dependencies first, stable with respect to discovery order); a cycle is
 // an error ("Circular dependency detected involving package '<id>'").
+//
+// When no solution exists the error is ErrNoSolution. Registry errors are
+// returned unchanged.
 func Solve(ctx context.Context, reg Registry, roots []Requirement, logf Logf) ([]Selected, error) {
-	return nil, ErrNotImplemented
+	st := &solverState{reg: reg, logf: logf}
+
+	reqStrs := make([]string, len(roots))
+	for i, r := range roots {
+		reqStrs[i] = r.String()
+	}
+	st.printInfo("Resolving dependencies for: %s", strings.Join(reqStrs, ", "))
+
+	candidates := newOrderedCands()
+	for _, req := range roots {
+		// lip fetches available versions even when the id is already present.
+		available, err := reg.Versions(ctx, req.ID)
+		if err != nil {
+			return nil, err
+		}
+		if existing, ok := candidates.get(req.ID); ok {
+			// Pick the intersection of existing candidates and new constraints.
+			existing.removeUnsatisfying(req.Constraint)
+		} else {
+			candidates.set(req.ID, newCandSet(available, req.Constraint))
+		}
+	}
+
+	solution, err := st.backtrack(ctx, candidates, &selection{vs: map[string]Version{}})
+	if err != nil {
+		return nil, err
+	}
+	if solution == nil {
+		return nil, ErrNoSolution
+	}
+
+	nodes := make([]Selected, 0, len(solution.ids))
+	for _, id := range solution.ids {
+		v := solution.vs[id]
+		deps, err := reg.Dependencies(ctx, id, v)
+		if err != nil {
+			return nil, err
+		}
+		nodes = append(nodes, Selected{ID: id, Version: v, Requirements: deps})
+	}
+
+	return TopologicalSort(nodes)
+}
+
+// backtrack ports DependencySolver.Backtrack. A nil selection with a nil
+// error means "no solution in this branch".
+func (st *solverState) backtrack(ctx context.Context, candidates *orderedCands, selected *selection) (*selection, error) {
+	if err := ctx.Err(); err != nil {
+		return nil, err
+	}
+	if candidates.count() == 0 {
+		return selected, nil
+	}
+
+	// Fail-first heuristic: Pick candidate with fewest version options.
+	nextID, versions := candidates.minByCount()
+
+	st.printInfo("Considering %s with %d candidate version(s)", nextID, len(versions.vs))
+
+	// Prefer newest versions. The ordering is materialized once, before the
+	// first iteration, as Reverse() buffers the sequence.
+	for _, version := range versions.newestFirst() {
+		nextSelected := selected.with(nextID, version)
+
+		nextCandidates := candidates.clone()
+		nextCandidates.remove(nextID)
+
+		ok, err := st.tryPropagate(ctx, nextID, version, nextSelected, nextCandidates)
+		if err != nil {
+			return nil, err
+		}
+		if ok {
+			result, err := st.backtrack(ctx, nextCandidates, nextSelected)
+			if err != nil {
+				return nil, err
+			}
+			if result != nil {
+				return result, nil
+			}
+		}
+	}
+
+	return nil, nil
+}
+
+// tryPropagate ports DependencySolver.TryPropagate.
+func (st *solverState) tryPropagate(ctx context.Context, id string, v Version, currentSelection *selection, currentCandidates *orderedCands) (bool, error) {
+	deps, err := st.reg.Dependencies(ctx, id, v)
+	if err != nil {
+		return false, err
+	}
+
+	for _, req := range deps {
+		// Conflict with already selected package?
+		if selectedVer, ok := currentSelection.vs[req.ID]; ok {
+			if !req.Constraint.Contains(selectedVer) {
+				return false, nil
+			}
+			continue // Constraint satisfied.
+		}
+
+		// Constrain remaining candidates.
+		if options, ok := currentCandidates.get(req.ID); ok {
+			// Mutates the set shared with every other level (lip quirk).
+			options.removeUnsatisfying(req.Constraint)
+			if len(options.vs) == 0 {
+				return false, nil
+			}
+		} else {
+			// Discovery of new dependency.
+			available, err := st.reg.Versions(ctx, req.ID)
+			if err != nil {
+				return false, err
+			}
+			compatible := newCandSet(available, req.Constraint)
+			if len(compatible.vs) == 0 {
+				return false, nil
+			}
+			currentCandidates.set(req.ID, compatible)
+		}
+	}
+
+	return true, nil
 }
 
 // TopologicalSort orders nodes so dependencies come first, visiting nodes
-// in the given order (IDependencySolver.TopologicalSort).
+// in the given order (IDependencySolver.TopologicalSort). Requirements whose
+// id is not among nodes are ignored. Duplicate ids are an error (lip's
+// ToDictionary throws).
 func TopologicalSort(nodes []Selected) ([]Selected, error) {
-	return nil, ErrNotImplemented
+	byID := make(map[string]int, len(nodes))
+	for i, n := range nodes {
+		if _, dup := byID[n.ID]; dup {
+			return nil, fmt.Errorf("An item with the same key has already been added. Key: %s", n.ID)
+		}
+		byID[n.ID] = i
+	}
+
+	visited := make(map[string]bool, len(nodes))
+	cycleStack := make(map[string]bool)
+	sorted := make([]Selected, 0, len(nodes))
+
+	var visit func(n Selected) error
+	visit = func(n Selected) error {
+		if visited[n.ID] {
+			return nil
+		}
+		if cycleStack[n.ID] {
+			return &CycleError{ID: n.ID}
+		}
+		cycleStack[n.ID] = true
+
+		for _, req := range n.Requirements {
+			if i, ok := byID[req.ID]; ok {
+				if err := visit(nodes[i]); err != nil {
+					return err
+				}
+			}
+		}
+
+		delete(cycleStack, n.ID)
+		visited[n.ID] = true
+		sorted = append(sorted, n)
+		return nil
+	}
+
+	for _, n := range nodes {
+		if err := visit(n); err != nil {
+			return nil, err
+		}
+	}
+	return sorted, nil
 }

@@ -1,17 +1,19 @@
 // Package gitproto is a minimal git smart-HTTP protocol v2 client, porting
 // lip 0.37.0 src/Lip.Core/Git/GitRemoteClient.cs and PktLine.cs.
 //
-// It lists version tags (ls-refs) and fetches packfiles (fetch). Packfile
-// decoding lives in package gitpack.
+// It lists version tags (ls-refs) and fetches packfiles (fetch) into
+// temporary files. Packfile decoding lives in package gitpack.
 package gitproto
 
 import (
+	"bufio"
 	"bytes"
 	"context"
 	"errors"
 	"fmt"
 	"io"
 	"net/http"
+	"os"
 	"sort"
 	"strings"
 	"sync"
@@ -235,33 +237,58 @@ type FetchOptions struct {
 	Shallow bool
 	// BlobNone adds "filter blob:none" when the server advertises "filter".
 	BlobNone bool
+	// Want, when set, is asked before each attempt (the GitHub proxy, then
+	// the original URL) which wants are still needed, so a fallback only
+	// requests what an earlier attempt's handler did not consume, like lip's
+	// FetchBlobBatch. An attempt with nothing left to want succeeds without a
+	// request.
+	Want func(oid string) bool
 }
 
-// Fetch runs the v2 "fetch" command (no-progress, ofs-delta, wants, done)
-// and returns the raw packfile bytes from side-band channel 1; channel 2 is
-// progress (ignored), channel 3 is a fatal error. At most 256 wants are sent
-// per request; callers batch larger sets.
-func (c *Client) Fetch(ctx context.Context, repoURL string, wants []string, opts FetchOptions) ([]byte, error) {
+// PackHandler consumes a fetched pack. It runs inside the per-URL proxy
+// fallback, so an error it returns (e.g. an incomplete pack) marks the proxy
+// failed and retries the original URL, as lip validates packs inside
+// WithProxyFallback. The handler owns pack and must Close it, unless it
+// keeps it for later use.
+type PackHandler func(pack *PackFile) error
+
+// Fetch runs the v2 "fetch" command (no-progress, ofs-delta, wants, done),
+// writes the packfile from side-band channel 1 to a temporary file (channel
+// 2 is progress and ignored, channel 3 a fatal error) and passes it to
+// handle. At most 256 wants are sent per request; callers batch larger sets.
+func (c *Client) Fetch(ctx context.Context, repoURL string, wants []string, opts FetchOptions, handle PackHandler) error {
 	if len(wants) == 0 {
-		return nil, errors.New("gitproto: no wants")
+		return errors.New("gitproto: no wants")
 	}
 	if len(wants) > MaxWantsPerRequest {
-		return nil, fmt.Errorf("gitproto: %d wants exceed the limit of %d per request", len(wants), MaxWantsPerRequest)
+		return fmt.Errorf("gitproto: %d wants exceed the limit of %d per request", len(wants), MaxWantsPerRequest)
 	}
 	ids := make([]string, len(wants))
 	for i, w := range wants {
 		if !isObjectID(w) {
-			return nil, fmt.Errorf("gitproto: '%s' is not a SHA-1 object id", w)
+			return fmt.Errorf("gitproto: '%s' is not a SHA-1 object id", w)
 		}
 		ids[i] = strings.ToLower(w)
 	}
 
-	var pack []byte
-	err := c.withProxyFallback(ctx, repoURL, func(url string) error {
+	return c.withProxyFallback(ctx, repoURL, func(url string) error {
+		wanted := ids
+		if opts.Want != nil {
+			wanted = nil
+			for _, id := range ids {
+				if opts.Want(id) {
+					wanted = append(wanted, id)
+				}
+			}
+			if len(wanted) == 0 {
+				return nil
+			}
+		}
 		remote, err := c.discover(ctx, url)
 		if err != nil {
 			return err
 		}
+		filtered := opts.BlobNone && remote.supportsFilter
 		w := new(PktLineWriter).
 			WriteLine("command=fetch").
 			WriteDelimiter().
@@ -270,27 +297,109 @@ func (c *Client) Fetch(ctx context.Context, repoURL string, wants []string, opts
 		if opts.Shallow && remote.supportsShallow {
 			w.WriteLine("deepen 1")
 		}
-		if opts.BlobNone && remote.supportsFilter {
+		if filtered {
 			w.WriteLine("filter blob:none")
 		}
-		for _, id := range ids {
+		for _, id := range wanted {
 			w.WriteLine("want " + id)
 		}
 		w.WriteLine("done").WriteFlush()
 
-		var buf bytes.Buffer
-		if err := c.postCommand(ctx, remote, w.Bytes(), func(r *PktLineReader) error {
-			return ReadPackfile(r, &buf)
-		}); err != nil {
+		pack, err := newPackFile()
+		if err != nil {
 			return err
 		}
-		pack = buf.Bytes()
-		return nil
+		bw := bufio.NewWriterSize(pack.f, 80<<10)
+		if err := c.postCommand(ctx, remote, w.Bytes(), func(r *PktLineReader) error {
+			if err := ReadPackfile(r, bw); err != nil {
+				return err
+			}
+			return bw.Flush()
+		}); err != nil {
+			pack.Close()
+			return err
+		}
+		if err := pack.finish(); err != nil {
+			pack.Close()
+			return err
+		}
+		pack.Filtered = filtered
+		return handle(pack)
 	})
+}
+
+// createTemp creates the file a fetched pack is written to; removeOnClose
+// is true when PackFile.Close must delete it (it is not already deleted by
+// the system). Tests replace it.
+var createTemp = func() (f *os.File, removeOnClose bool, err error) {
+	f, err = createDeleteOnCloseTemp()
+	return f, false, err
+}
+
+// PackFile is a fetched packfile in a temporary file that is deleted when
+// closed (lip opens it with FileOptions.DeleteOnClose).
+type PackFile struct {
+	// Filtered reports that "filter blob:none" was sent, so the pack holds
+	// no blobs. A pack fetched without it from a server that does not
+	// support filtering holds every blob of the tree.
+	Filtered bool
+
+	f      *os.File
+	remove bool
+	size   int64
+	once   sync.Once
+	err    error
+}
+
+func newPackFile() (*PackFile, error) {
+	f, remove, err := createTemp()
 	if err != nil {
 		return nil, err
 	}
-	return pack, nil
+	return &PackFile{f: f, remove: remove}, nil
+}
+
+// NewPackFile writes the pack read from r to a temporary file.
+func NewPackFile(r io.Reader) (*PackFile, error) {
+	p, err := newPackFile()
+	if err != nil {
+		return nil, err
+	}
+	if _, err := io.Copy(p.f, r); err != nil {
+		p.Close()
+		return nil, err
+	}
+	if err := p.finish(); err != nil {
+		p.Close()
+		return nil, err
+	}
+	return p, nil
+}
+
+func (p *PackFile) finish() error {
+	size, err := p.f.Seek(0, io.SeekEnd)
+	p.size = size
+	return err
+}
+
+// Size returns the pack's length in bytes.
+func (p *PackFile) Size() int64 { return p.size }
+
+// ReadAt implements io.ReaderAt.
+func (p *PackFile) ReadAt(b []byte, off int64) (int, error) { return p.f.ReadAt(b, off) }
+
+// Close closes and deletes the file. It may be called more than once.
+func (p *PackFile) Close() error {
+	p.once.Do(func() {
+		p.err = p.f.Close()
+		if !p.remove {
+			return
+		}
+		if err := os.Remove(p.f.Name()); err != nil && p.err == nil {
+			p.err = err
+		}
+	})
+	return p.err
 }
 
 // ReadPackfile reads a fetch response up to and including the packfile

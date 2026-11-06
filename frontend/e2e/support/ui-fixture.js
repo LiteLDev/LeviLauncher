@@ -19,6 +19,7 @@ localStorage.setItem('ll.clarity.choiceMade', 'fixture');
 localStorage.setItem('ll.termsAccepted', 'fixture');
 if (scenario === 'sponsor-terms') localStorage.removeItem('ll.termsAccepted');
 if (scenario === 'sponsor-analytics') localStorage.removeItem('ll.clarity.choiceMade');
+if (scenario === 'instance-backup') localStorage.setItem('app.experimental.instanceBackup', 'true');
 localStorage.setItem('ll.currentVersionName', isUWP ? 'UWP release instance' : 'UI test instance');
 if(isUWP) localStorage.setItem('download.filters', JSON.stringify({packageType:'uwp',type:'all',status:'all',loader:'all'}));
 localStorage.setItem('app.backgroundImage', scenario === 'wallpaper' ? 'C:\\Fixture\\wallpapers' : '');
@@ -81,6 +82,26 @@ state.call = async (name, ...args) => {
   }
   if (scenario === 'sponsor-update' && name === 'CheckUpdate') return {isUpdate:true,version:'99.0.0',body:'Fixture update notes'};
   if (scenario === 'sponsor-check-error' && name === 'CheckUpdate') throw new Error('Fixture: update service unavailable');
+  if (scenario==='mods-import') {
+    if (name==='OpenModFiles') return state.modFiles || ['C:\\Fixture\\example.mcmod'];
+    if (name==='ImportModZipPath'||name==='ImportModDllPath') {
+      if (state.holdImport) await new Promise(resolve=>{state.releaseImport=resolve;});
+      if (state.importDuplicate && !args.at(-1)) return 'ERR_DUPLICATE_FOLDER';
+      return state.importError || '';
+    }
+  }
+  if (scenario==='instance-backup') {
+    const gameData={key:'gameData',label:'Game data',path:'C:\\Fixture\\gameData',size:52428800,selectable:true,exists:true,shared:false,modes:[],defaultMode:'',warnings:[]};
+    if (name==='GetInstanceBackupInfo') return {name:'UI test instance',backupDir:'C:\\Fixture\\backups',scopes:[gameData]};
+    if (name==='OpenBackupArchive') return ['C:\\Fixture\\backups\\UI_test_instance.zip'];
+    if (name==='InspectInstanceBackupArchive') return {formatVersion:1,name:'UI test instance',archivePath:args[0],archiveName:'UI_test_instance.zip',gameVersion:'1.21.0',type:'Release',createdAt:'2026-11-01T10:00:00Z',includedScopes:['gameData'],scopes:[{key:'gameData',label:'Game data',mode:''}]};
+    if (/^(BackupInstance|PreviewInstanceBackupRestoreConflicts|RestoreInstanceBackup)$/.test(name)) {
+      await new Promise(resolve=>{state.release={...state.release,[name]:resolve};});
+      if (name==='BackupInstance') return {archivePath:'C:\\Fixture\\backups\\UI_test_instance.zip',backupDir:'C:\\Fixture\\backups',includedScopes:['gameData'],errorCode:state.backupResultError||''};
+      if (name==='PreviewInstanceBackupRestoreConflicts') return {archivePath:args[1].archivePath,includedScopes:['gameData'],conflicts:[]};
+      return {status:'success',includedScopes:['gameData'],scopeResults:[{key:'gameData',label:'Game data',status:'success'}]};
+    }
+  }
   if (scenario.includes('content-import')) {
     if (name === 'OpenContentFiles') return state.importFiles || ['C:\\Fixture\\example.mcworld'];
     if (name === 'ListDir' && String(args[0]).endsWith('users')) {

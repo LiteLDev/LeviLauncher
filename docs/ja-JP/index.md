@@ -29,7 +29,7 @@ features:
   - title: コンテンツ管理
     details: ワールド、リソースパック、ビヘイビアパック、スキンパック、スクリーンショット、サーバーリストを1か所で管理します。
   - title: Mod機能
-    details: .zipまたは.dllのModをインポートし、CurseForgeを閲覧し、内蔵パッケージマネージャーでLeviLaminaやLIPパッケージをインストールできます。
+    details: .mcmod形式のModパッケージをインポートし、CurseForgeを閲覧し、内蔵パッケージマネージャーでLeviLaminaやLIPパッケージをインストールできます。
   - title: ワールドツール
     details: ランチャーを離れずに、バックアップのエクスポート、ワールドデータの確認、level.datの一部フィールドの編集ができます。
   - title: ユーザー設定

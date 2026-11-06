@@ -6,8 +6,8 @@ LeviLauncher admite flujos de trabajo relacionados con Mods que van más allá d
 
 === "Windows"
 
-    - Importar Mods `.zip`
-    - Importar Mods `.dll`
+    - Importar paquetes de Mods (`.mcmod`)
+    - Los paquetes `.zip` y los Mods `.dll` sueltos se siguen aceptando: elige **Todos los archivos (\*.\*)** en el selector de archivos
     - Activar o desactivar Mods instalados
     - Eliminar Mods que ya no necesites
     - Utilizar flujos de navegación y obtención relacionados con CurseForge

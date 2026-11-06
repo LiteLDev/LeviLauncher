@@ -29,7 +29,7 @@ features:
   - title: Inhaltsverwaltung
     details: Verwalte Welten, Ressourcenpakete, Verhaltenspakete, Skin-Pakete, Screenshots und Serverlisten zentral an einer Stelle.
   - title: Mod-Unterstützung
-    details: Importiere .zip- oder .dll-Mods, durchsuche CurseForge und installiere LeviLamina und LIP-Pakete mit dem integrierten Paketmanager für fortgeschrittene Setups.
+    details: Importiere Mod-Pakete (.mcmod), durchsuche CurseForge und installiere LeviLamina und LIP-Pakete mit dem integrierten Paketmanager für fortgeschrittene Setups.
   - title: Welt-Tools
     details: Exportiere Backups, sieh dir Weltdaten an und bearbeite ausgewählte level.dat-Felder, ohne den Launcher zu verlassen.
   - title: Benutzereinstellungen

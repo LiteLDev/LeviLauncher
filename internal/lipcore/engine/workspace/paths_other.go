@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"os"
 	"path"
+	"path/filepath"
 	"strings"
 	"syscall"
 )
@@ -56,4 +57,19 @@ func deleteFile(p string) error {
 		return &os.PathError{Op: "remove", Path: p, Err: fmt.Errorf("Access to the path '%s' is denied.: %w", p, err)}
 	}
 	return &os.PathError{Op: "remove", Path: p, Err: err}
+}
+
+// isLink reports whether p exists and whether it is a symbolic link,
+// without following it.
+func isLink(p string) (link, exists bool) {
+	fi, err := os.Lstat(p)
+	if err != nil {
+		return false, false
+	}
+	return fi.Mode()&os.ModeSymlink != 0, true
+}
+
+// realPath returns the existing p with every symbolic link resolved.
+func realPath(p string) (string, error) {
+	return filepath.EvalSymlinks(p)
 }

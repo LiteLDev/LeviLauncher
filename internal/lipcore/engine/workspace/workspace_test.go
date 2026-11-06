@@ -350,16 +350,17 @@ func TestInstallPackageScriptFailure(t *testing.T) {
 		Assets:  []manifest.Asset{{Type: manifest.AssetSelf, Placements: []manifest.Placement{{Type: manifest.PlacementFile, Src: "a", Dest: "a"}}}},
 		Scripts: manifest.Scripts{PreInstall: []string{"pre"}, Install: []string{"inst"}},
 	}
-	opened := false
+	// Assets are opened before pre_install (to check their targets), but
+	// nothing is read or placed after it fails.
+	src := newMemSource("a", "A")
 	_, err := w.InstallPackage(context.Background(), variant, func(context.Context, manifest.Asset) (Source, error) {
-		opened = true
-		return newMemSource("a", "A"), nil
+		return src, nil
 	})
 	if err == nil || err.Error() != "boom" {
 		t.Fatalf("err = %v", err)
 	}
-	if opened || len(scripts.calls) != 1 {
-		t.Errorf("continued after failing script: opened=%v calls=%q", opened, scripts.calls)
+	if src.prefetched != nil || src.opened != nil || exists(filepath.Join(dir, "a")) || len(scripts.calls) != 1 {
+		t.Errorf("continued after failing script: prefetched=%q opened=%q calls=%q", src.prefetched, src.opened, scripts.calls)
 	}
 }
 

@@ -29,7 +29,7 @@ features:
   - title: 內容管理
     details: 從單一入口管理世界、資源包、行為包、皮膚包、截圖與伺服器列表。
   - title: 模組就緒
-    details: 匯入 .zip 或 .dll 模組、瀏覽 CurseForge，並透過 lip 或 LeviLamina 完成進階配置。
+    details: 匯入 .zip 或 .dll 模組、瀏覽 CurseForge，並透過內置套件管理器安裝 LeviLamina 與 LIP 套件。
   - title: 世界工具
     details: 匯出備份、檢視世界資料，並在不離開啟動器的情況下編輯部分 level.dat 欄位。
   - title: 使用者設定

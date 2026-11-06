@@ -11,7 +11,7 @@ LeviLauncher は、「基本ランチャー」の範囲を超えた Mod 関連�
     - インストール済み Mod の有効化または無効化
     - 不要になった Mod の削除
     - CurseForge 関連の閲覧および取得フローの使用
-    - パッケージインストーラーの [lip](https://github.com/LiteLDev/lip) でパッケージをインストール
+    - [lip](https://github.com/LiteLDev/lip) 互換の内蔵パッケージマネージャーで LIP パッケージをインストール
     - LeviLamina などのローダーワークフローとの連携
 
     ::: warning これは高度な領域です
@@ -44,6 +44,8 @@ LeviLauncher は、「基本ランチャー」の範囲を超えた Mod 関連�
 - 検索のすべてをランチャー外で行いたくない場合
 
 ## lip と LeviLamina <Badge platform="windows" />
+
+LeviLauncher には [lip](https://github.com/LiteLDev/lip) 互換のパッケージマネージャーが内蔵されているため、lip や .NET ランタイムを別途インストールする必要はありません。lip と同じ `tooth_lock.json` 形式を使用するので、LeviLamina や LIP パッケージをインストール済みのバージョンもそのまま使えます。GitHub からのパッケージのダウンロードには[設定](./settings-personalization)の **GitHub プロキシ** が使われ、**キャッシュを削除** でダウンロード済みのパッケージファイルを削除できます。
 
 これらの統合は、パッケージ駆動またはローダー駆動のワークフローを使用したい上級ユーザーに最適です。
 

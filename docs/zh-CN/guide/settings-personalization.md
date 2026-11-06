@@ -52,7 +52,7 @@ LeviLauncher 提供了较完整的设置页，可用于调整路径、外观、�
 
 ### 第三方组件
 
-- [lip](https://github.com/LiteLDev/lip) 状态：检查、安装或更新，以及清理缓存
+- 内置包管理器（兼容 [lip](https://github.com/LiteLDev/lip)，无需安装或更新）：设置下载软件包时使用的 **GitHub 代理**，或通过 **清理缓存** 删除已下载的软件包文件
 
 ### 隐私
 

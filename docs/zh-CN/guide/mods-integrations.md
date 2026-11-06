@@ -11,7 +11,7 @@ LeviLauncher 支持超出“基础启动器”范围的模组相关工作流。
     - 启用或禁用已安装模组
     - 删除不再需要的模组
     - 使用 CurseForge 相关浏览与获取流程
-    - 使用包安装器 [lip](https://github.com/LiteLDev/lip) 安装软件包
+    - 使用兼容 [lip](https://github.com/LiteLDev/lip) 的内置包管理器安装 LIP 软件包
     - 配合 LeviLamina 等加载器工作流
 
     ::: warning 这是高级区域
@@ -44,6 +44,8 @@ LeviLauncher 支持超出“基础启动器”范围的模组相关工作流。
 - 不想所有搜索都在启动器外完成
 
 ## lip 与 LeviLamina <Badge platform="windows" />
+
+LeviLauncher 内置了兼容 [lip](https://github.com/LiteLDev/lip) 的包管理器，无需另外安装 lip 或 .NET 运行时。它使用与 lip 相同的 `tooth_lock.json` 格式，已安装 LeviLamina 或 LIP 软件包的版本可以继续正常使用。从 GitHub 下载软件包时会使用[设置](./settings-personalization)中的 **GitHub 代理**，**清理缓存** 可删除已下载的软件包文件。
 
 这类集成更适合希望使用包驱动或加载器驱动工作流的高级用户。
 

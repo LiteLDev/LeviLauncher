@@ -11,7 +11,7 @@ LeviLauncher는 "기본 런처" 범위를 넘어서는 모드 관련 작업 흐�
     - 설치된 모드 활성화 또는 비활성화
     - 더 이상 필요 없는 모드 삭제
     - CurseForge 관련 탐색 및 가져오기 프로세스 사용
-    - 패키지 설치 프로그램인 [lip](https://github.com/LiteLDev/lip)으로 패키지 설치
+    - [lip](https://github.com/LiteLDev/lip)와 호환되는 내장 패키지 관리자로 LIP 패키지 설치
     - LeviLamina 등의 로더 작업 흐름과 함께 사용
 
     ::: warning 이는 고급 영역입니다
@@ -44,6 +44,8 @@ LeviLauncher는 "기본 런처" 범위를 넘어서는 모드 관련 작업 흐�
 - 모든 검색을 런처 외부에서 완료하고 싶지 않음
 
 ## lip 및 LeviLamina <Badge platform="windows" />
+
+LeviLauncher에는 [lip](https://github.com/LiteLDev/lip)와 호환되는 패키지 관리자가 내장되어 있으므로 lip이나 .NET 런타임을 따로 설치할 필요가 없습니다. lip과 같은 `tooth_lock.json` 형식을 사용하므로 LeviLamina나 LIP 패키지가 이미 설치된 버전도 그대로 사용할 수 있습니다. GitHub에서 패키지를 다운로드할 때는 [설정](./settings-personalization)의 **GitHub 프록시**가 사용되며, **캐시 지우기**로 다운로드한 패키지 파일을 삭제할 수 있습니다.
 
 이러한 통합은 패키지 기반 또는 로더 기반 작업 흐름을 사용하려는 고급 사용자에게 더 적합합니다.
 

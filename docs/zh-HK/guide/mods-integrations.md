@@ -11,7 +11,7 @@ LeviLauncher 支援超出「基礎啟動器」範圍的模組相關工作流程�
     - 啟用或停用已安裝的模組
     - 刪除不再需要的模組
     - 使用 CurseForge 相關瀏覽與獲取流程
-    - 使用套件安裝器 [lip](https://github.com/LiteLDev/lip) 安裝套件
+    - 使用相容 [lip](https://github.com/LiteLDev/lip) 的內置套件管理器安裝 LIP 套件
     - 配合 LeviLamina 等加載器的工作流程
 
     ::: warning 這是進階區域
@@ -44,6 +44,8 @@ LeviLauncher 支援超出「基礎啟動器」範圍的模組相關工作流程�
 - 不希望所有搜尋都在啟動器外完成
 
 ## lip 與 LeviLamina <Badge platform="windows" />
+
+LeviLauncher 內置了相容 [lip](https://github.com/LiteLDev/lip) 的套件管理器，毋須另外安裝 lip 或 .NET 執行階段。它使用與 lip 相同的 `tooth_lock.json` 格式，已安裝 LeviLamina 或 LIP 套件的版本可以繼續正常使用。從 GitHub 下載套件時會使用[設定](./settings-personalization)中的 **GitHub 代理**，**清理快取** 可刪除已下載的套件檔案。
 
 這類集成更適合希望使用包驅動或加載器驅動工作流程的進階用戶。
 

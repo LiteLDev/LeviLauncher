@@ -11,7 +11,7 @@ LeviLauncher supports mod-related workflows that go beyond a basic launcher.
     - enable or disable installed mods
     - remove mods you no longer need
     - browse or fetch content through CurseForge-related flows
-    - install packages with [lip](https://github.com/LiteLDev/lip), the package installer
+    - install LIP packages with the built-in package manager, compatible with [lip](https://github.com/LiteLDev/lip)
     - work with LeviLamina-related mod setups
 
     ::: warning Advanced area
@@ -44,6 +44,8 @@ Use it when you want:
 - less manual searching outside the launcher
 
 ## lip and LeviLamina <Badge platform="windows" />
+
+LeviLauncher includes a built-in package manager compatible with [lip](https://github.com/LiteLDev/lip), so you do not need to install lip or the .NET runtime separately. It uses the same `tooth_lock.json` format as lip, so versions that already have LeviLamina or LIP packages installed keep working. Package downloads from GitHub use the **GitHub proxy** set in [Settings](./settings-personalization), and **Clean Cache** removes downloaded package files.
 
 These integrations are aimed at more advanced users who want package-driven or loader-driven mod setups.
 

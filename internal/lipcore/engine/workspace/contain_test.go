@@ -23,8 +23,13 @@ type containFixture struct {
 
 func newContainFixture(t *testing.T) *containFixture {
 	t.Helper()
-	base := t.TempDir()
-	f := &containFixture{dir: filepath.Join(base, "inst"), out: filepath.Join(base, "out"), scripts: &scriptLog{}, rep: &recReporter{}}
+	return newContainFixtureIn(t, t.TempDir(), "inst")
+}
+
+// newContainFixtureIn is newContainFixture with the workspace base/name.
+func newContainFixtureIn(t *testing.T, base, name string) *containFixture {
+	t.Helper()
+	f := &containFixture{dir: filepath.Join(base, name), out: filepath.Join(base, "out"), scripts: &scriptLog{}, rep: &recReporter{}}
 	for _, d := range []string{f.dir, f.out} {
 		if err := os.Mkdir(d, 0o755); err != nil {
 			t.Fatal(err)
@@ -75,7 +80,7 @@ func (f *containFixture) assertRejected(t *testing.T, files []string, err error,
 		}
 		return out
 	}
-	if got := names(filepath.Dir(f.dir)); !reflect.DeepEqual(got, []string{"inst", "out"}) {
+	if got := names(filepath.Dir(f.dir)); !reflect.DeepEqual(got, []string{filepath.Base(f.dir), "out"}) {
 		t.Errorf("wrote next to the workspace: %q", got)
 	}
 	if got := names(f.out); got != nil {
@@ -157,16 +162,12 @@ func TestInstallPackageNestedPlacementStillWorks(t *testing.T) {
 	f := newContainFixture(t)
 	// A LeviLamina-style manifest: one dir placement into a nested
 	// directory, plus files through a link that stays inside the workspace
-	// and an absolute dest inside it (in different case where paths ignore
-	// it).
+	// and an absolute dest inside it.
 	if err := os.MkdirAll(filepath.Join(f.dir, "shared", "data"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	makeDirLink(t, filepath.Join(f.dir, "link"), filepath.Join(f.dir, "shared"))
 	abs := filepath.Join(f.dir, "abs.txt")
-	if pathIgnoreCase {
-		abs = strings.ToUpper(f.dir) + string(filepath.Separator) + "abs.txt"
-	}
 	zip := newMemSource(
 		"LeviLamina/LeviLamina.dll", "DLL",
 		"LeviLamina/lang/en_US.json", "EN",
@@ -282,5 +283,81 @@ func TestUninstallRemoveFilesStaysInside(t *testing.T) {
 		if exists(j(p)) {
 			t.Errorf("%s still exists", p)
 		}
+	}
+}
+
+// Unicode case folding (unicode.ToUpper) is not the file system's: NTFS
+// keeps "inſt" (U+017F) and "inst", "ınst" (U+0131) and "inst", "instµ"
+// (U+00B5) and "instΜ" (U+039C) apart, so a dest that leaves Dir and comes
+// back with such a letter must not count as inside Dir. Neither must a
+// dest that comes back in ASCII case, which may name another directory.
+func TestInstallPackageRejectsCaseVariantOfWorkspace(t *testing.T) {
+	cases := []struct{ name, dir, dest string }{
+		{name: "long s", dir: "inst", dest: "../inſt/evil.txt"},
+		{name: "dotless i", dir: "inst", dest: "../ınst/evil.txt"},
+		{name: "micro and mu", dir: "instµ", dest: "../instΜ/evil.txt"},
+		{name: "final sigma", dir: "instσ", dest: "../instς/evil.txt"},
+		{name: "epsilon symbol", dir: "instε", dest: "../instϵ/evil.txt"},
+		{name: "ascii case", dir: "inst", dest: "../INST/evil.txt"},
+		{name: "ascii case absolute", dir: "inst", dest: "ABS"},
+	}
+	for _, c := range cases {
+		t.Run(c.name, func(t *testing.T) {
+			f := newContainFixtureIn(t, t.TempDir(), c.dir)
+			dest := strings.ReplaceAll(c.dest, "ABS", filepath.Join(filepath.Dir(f.dir), "INST", "evil.txt"))
+			files, err := f.install(newMemSource("a", "EVIL"), manifest.Placement{Type: manifest.PlacementFile, Src: "a", Dest: dest})
+			f.assertRejected(t, files, err, "outside the workspace directory")
+		})
+	}
+}
+
+func TestUninstallPackageSkipsCaseVariantOfWorkspace(t *testing.T) {
+	f := newContainFixture(t)
+	base := filepath.Dir(f.dir)
+	var victims []string
+	for _, name := range []string{"inſt", "ınst"} {
+		v := filepath.Join(base, name, "victim.txt")
+		mustWrite(t, v, "victim")
+		victims = append(victims, v)
+	}
+	variant := &manifest.Variant{RemoveFiles: []string{"../*/victim.txt", "*"}}
+	if err := f.w.UninstallPackage(context.Background(), variant, victims); err != nil {
+		t.Fatal(err)
+	}
+	for _, v := range victims {
+		if got := readFile(t, v); got != "victim" {
+			t.Errorf("%s = %q", v, got)
+		}
+	}
+	if len(f.rep.lines) != len(victims) {
+		t.Fatalf("reporter %q", f.rep.lines)
+	}
+	for i, l := range f.rep.lines {
+		want := "warning: File '" + victims[i] + "' is not in the workspace (it is outside the workspace directory '" + f.dir + "'), skipping removal."
+		if l != want {
+			t.Errorf("line %d\n got  %q\n want %q", i, l, want)
+		}
+	}
+}
+
+// lip records full paths under its own working directory, whose case may
+// differ from Dir's; where the file system ignores case, such a file is
+// still the package's and is removed.
+func TestUninstallPackageRemovesFileRecordedInOtherCase(t *testing.T) {
+	f := newContainFixture(t)
+	upper := filepath.Join(filepath.Dir(f.dir), "INST")
+	if _, err := os.Stat(upper); err != nil {
+		t.Skipf("the file system distinguishes case here: %v", err)
+	}
+	a := filepath.Join(f.dir, "plugins", "a.dll")
+	mustWrite(t, a, "A")
+	if err := f.w.UninstallPackage(context.Background(), &manifest.Variant{}, []string{filepath.Join(upper, "plugins", "a.dll")}); err != nil {
+		t.Fatal(err)
+	}
+	if exists(a) {
+		t.Error("plugins/a.dll still exists")
+	}
+	if f.rep.lines != nil {
+		t.Errorf("reporter %q", f.rep.lines)
 	}
 }

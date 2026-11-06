@@ -179,12 +179,16 @@ func (w *Workspace) FullPath(p string) string {
 // placement started, files lists what was placed so far (lip records
 // nothing in that case).
 //
-// Unlike lip, which opens each asset after pre_install and writes wherever
-// a target points, the whole package is rejected before any script runs
-// or file is written when a target is not contained in Dir (see
-// containment.check); the error wraps ErrUnsafePath. Assets are therefore
-// opened (downloaded) before pre_install, and errors opening or matching
-// any asset surface before anything is written.
+// Unlike lip, which writes wherever a target points, the whole package is
+// rejected before any script runs or file is written when a target is not
+// contained in Dir (see containment.check); the error wraps ErrUnsafePath.
+//
+// This changes the order of steps from lip's on purpose: lip runs
+// pre_install first and then opens (downloads) and matches each asset in
+// turn, while here every asset is opened and matched before pre_install.
+// So an asset that fails to open or match (or a match with an empty dest)
+// fails the install before pre_install runs, where lip would have run
+// pre_install and then failed, leaving its side effects.
 func (w *Workspace) InstallPackage(ctx context.Context, variant *manifest.Variant, open SourceOpener) (files []string, err error) {
 	// Step 0: Open the assets and check every target.
 	plan, err := w.planInstall(ctx, variant, open)
@@ -320,10 +324,11 @@ func copyToFile(src Source, key, target string) error {
 // post_uninstall.
 //
 // Unlike lip, a recorded file that is not contained in Dir (see
-// containment.check; the file itself may be a link) is skipped with a
-// warning instead of deleted. remove_files cannot reach outside Dir: the
-// walk does not descend into links, and a matched link is removed itself,
-// not its target.
+// containment.checkRecorded; the file itself may be a link) is skipped
+// with a warning instead of deleted. remove_files cannot reach outside Dir:
+// the walk does not descend into links, a matched link is removed itself,
+// not its target, and every matched entry passes the same check (or is
+// skipped with a warning).
 func (w *Workspace) UninstallPackage(ctx context.Context, variant *manifest.Variant, files []string) error {
 	rep := report.OrNop(w.Reporter)
 
@@ -367,23 +372,24 @@ func (w *Workspace) UninstallPackage(ctx context.Context, variant *manifest.Vari
 		}
 
 		// Unlike lip, never delete outside Dir, whatever the lock says.
-		if err := contained.check(fullName, false); err != nil {
+		target, err := contained.checkRecorded(fullName)
+		if err != nil {
 			rep.Warning(fmt.Sprintf("File '%s' is not in the workspace (%v), skipping removal.", fullName, err))
 			continue
 		}
 
-		if !fileExists(fullName) {
+		if !fileExists(target) {
 			rep.Warning(fmt.Sprintf("File '%s' does not exist, skipping removal.", fullName))
 		}
 
-		if err := deleteFile(fullName); err != nil {
+		if err := deleteFile(target); err != nil {
 			return err
 		}
 	}
 
 	// Step 3: Remove the files specified to be removed.
 	for _, g := range remove {
-		if err := w.removeMatching(g); err != nil {
+		if err := w.removeMatching(g, contained, rep); err != nil {
 			return err
 		}
 	}
@@ -410,8 +416,9 @@ func (w *Workspace) compileAll(patterns []string) ([]Matcher, error) {
 	return out, nil
 }
 
-// removeMatching deletes every entry under Dir matched by g.
-func (w *Workspace) removeMatching(g Matcher) error {
+// removeMatching deletes every entry under Dir matched by g that contained
+// accepts.
+func (w *Workspace) removeMatching(g Matcher, contained *containment, rep report.Reporter) error {
 	type entry struct {
 		path  string
 		depth int
@@ -431,7 +438,7 @@ func (w *Workspace) removeMatching(g Matcher) error {
 		if p == root {
 			return nil
 		}
-		relativePath, _ := cutPrefixFoldOrdinal(toSlash(p), rootPrefix)
+		relativePath, _ := strings.CutPrefix(toSlash(p), rootPrefix)
 		if relativePath == "" {
 			return nil
 		}
@@ -450,6 +457,10 @@ func (w *Workspace) removeMatching(g Matcher) error {
 	// not invalidate the other paths collected above.
 	sort.SliceStable(toRemove, func(i, j int) bool { return toRemove[i].depth > toRemove[j].depth })
 	for _, e := range toRemove {
+		if err := contained.check(e.path, false); err != nil {
+			rep.Warning(fmt.Sprintf("File '%s' is not in the workspace (%v), skipping removal.", e.path, err))
+			continue
+		}
 		if fileExists(e.path) {
 			if err := deleteFile(e.path); err != nil {
 				return err

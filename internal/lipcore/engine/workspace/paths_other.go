@@ -27,6 +27,9 @@ func getFullPath(base, p string) string {
 	return full
 }
 
+// expandShortName returns p: there are no 8.3 short names on Unix.
+func expandShortName(p string) string { return p }
+
 // fileExists ports File.Exists: the path exists (dangling symlinks
 // included) and is not a directory.
 func fileExists(p string) bool {

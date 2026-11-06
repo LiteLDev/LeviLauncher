@@ -7,6 +7,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"reflect"
 	"strings"
 	"testing"
 
@@ -47,11 +48,6 @@ func TestInstallPackageRejectsWindowsForms(t *testing.T) {
 	}{
 		{name: "alternate data stream", dest: "plugins/evil.txt:stream", wantInErr: "alternate data stream"},
 		{name: "default data stream", dest: "evil.txt::$DATA", wantInErr: "alternate data stream"},
-		{name: "device NUL", dest: "plugins/NUL", wantInErr: "reserved device name"},
-		{name: "device with extension", dest: "plugins/con.txt", wantInErr: "reserved device name"},
-		{name: "device with spaces", dest: "COM1 .log", wantInErr: "reserved device name"},
-		{name: "device superscript", dest: "lpt¹", wantInErr: "reserved device name"},
-		{name: "device console", dest: "a/CONOUT$", wantInErr: "reserved device name"},
 		// GetFullPathName keeps names of only dots and spaces, which Win32
 		// cannot create.
 		{name: "dotdot with trailing space", dest: ".. /out/evil.txt", wantInErr: "ends in a dot or space"},
@@ -102,7 +98,7 @@ func TestUninstallPackageSkipsWindowsForms(t *testing.T) {
 	victim := filepath.Join(f.out, "victim.txt")
 	mustWrite(t, victim, "V")
 	files := []string{
-		j("a.txt") + ":stream", j("NUL"), `\\?\` + j("a.txt"),
+		j("a.txt") + ":stream", `\\?\` + j("a.txt"), `\\.\` + j("a.txt"),
 		// GetFullPathNameW cannot normalize these.
 		"d/../../out/victim.txt\x00",
 		"d/" + strings.Repeat("aaaaaaaaaa/", 3000) + strings.Repeat("../", 3002) + "out/victim.txt",
@@ -123,5 +119,100 @@ func TestUninstallPackageSkipsWindowsForms(t *testing.T) {
 		if !strings.HasPrefix(l, "warning: File '") || !strings.HasSuffix(l, "skipping removal.") || !strings.Contains(l, "is not in the workspace") {
 			t.Errorf("line %d = %q", i, l)
 		}
+	}
+}
+
+// caseSensitiveTempDir returns a new directory marked case-sensitive, as
+// WSL interop marks directories, or skips the test when that needs a
+// privilege or WSL support this machine does not have.
+func caseSensitiveTempDir(t *testing.T) string {
+	t.Helper()
+	base := t.TempDir()
+	if out, err := exec.Command("fsutil.exe", "file", "setCaseSensitiveInfo", base, "enable").CombinedOutput(); err != nil {
+		t.Skipf("cannot mark a directory case-sensitive: %v: %s", err, out)
+	}
+	mustWrite(t, filepath.Join(base, "probe"), "")
+	defer os.Remove(filepath.Join(base, "probe"))
+	if _, err := os.Stat(filepath.Join(base, "PROBE")); err == nil {
+		t.Skip("the directory still ignores case")
+	}
+	return base
+}
+
+// In a case-sensitive directory "INST" is another directory than "inst".
+func TestInstallPackageRejectsCaseVariantInCaseSensitiveDirectory(t *testing.T) {
+	f := newContainFixtureIn(t, caseSensitiveTempDir(t), "inst")
+	files, err := f.install(newMemSource("a", "EVIL"), manifest.Placement{Type: manifest.PlacementFile, Src: "a", Dest: "../INST/evil.txt"})
+	f.assertRejected(t, files, err, "outside the workspace directory")
+}
+
+func TestUninstallPackageSkipsCaseVariantInCaseSensitiveDirectory(t *testing.T) {
+	f := newContainFixtureIn(t, caseSensitiveTempDir(t), "inst")
+	mine := filepath.Join(f.dir, "victim.txt")
+	victim := filepath.Join(filepath.Dir(f.dir), "INST", "victim.txt")
+	mustWrite(t, mine, "mine")
+	mustWrite(t, victim, "victim")
+	if err := f.w.UninstallPackage(context.Background(), &manifest.Variant{}, []string{victim}); err != nil {
+		t.Fatal(err)
+	}
+	if got := readFile(t, victim); got != "victim" {
+		t.Errorf("victim = %q", got)
+	}
+	if got := readFile(t, mine); got != "mine" {
+		t.Errorf("workspace file = %q", got)
+	}
+	want := []string{"warning: File '" + victim + "' is not in the workspace (it is outside the workspace directory '" + f.dir + "'), skipping removal."}
+	if !reflect.DeepEqual(f.rep.lines, want) {
+		t.Errorf("reporter\n got  %q\n want %q", f.rep.lines, want)
+	}
+}
+
+// Windows 11 opens an ordinary file named like a device (aux.json, CON)
+// in a directory, and lip installs it; older Windows turns the name into
+// a device path (\\.\AUX), which is refused.
+func TestInstallPackageDeviceNames(t *testing.T) {
+	for _, dest := range []string{"aux.json", "config/aux.json", "CON", "NUL.log", "com1.cfg", "COM1 .log", "lpt¹", "CONIN$", "a/CONOUT$", "plugins/con.txt"} {
+		t.Run(dest, func(t *testing.T) {
+			f := newContainFixture(t)
+			full := f.w.FullPath(dest)
+			files, err := f.install(newMemSource("a", "DATA"), manifest.Placement{Type: manifest.PlacementFile, Src: "a", Dest: dest})
+			if strings.HasPrefix(full, `\\.\`) || strings.HasPrefix(full, `\\?\`) {
+				f.assertRejected(t, files, err, "device path")
+				return
+			}
+			if err != nil {
+				t.Fatal(err)
+			}
+			if want := []string{filepath.Join(f.dir, "plugins", "good.txt"), full}; !reflect.DeepEqual(files, want) {
+				t.Errorf("files\n got  %q\n want %q", files, want)
+			}
+			if fi, err := os.Lstat(full); err != nil || !fi.Mode().IsRegular() {
+				t.Fatalf("%s: %v %v", full, fi, err)
+			}
+			if got := readFile(t, full); got != "DATA" {
+				t.Errorf("%s = %q", full, got)
+			}
+		})
+	}
+}
+
+// FullPath expands a path containing '~' with GetLongPathNameW, which also
+// gives existing components their on-disk case: a file placed in a Dir
+// spelled in another case keeps being accepted.
+func TestInstallPackageLongNameWithDirInOtherCase(t *testing.T) {
+	f := newContainFixture(t)
+	f.w.Dir = filepath.Join(filepath.Dir(f.dir), "INST")
+	if _, err := os.Stat(f.w.Dir); err != nil {
+		t.Skipf("the file system distinguishes case here: %v", err)
+	}
+	files, err := f.install(newMemSource("a", "DATA"), manifest.Placement{Type: manifest.PlacementFile, Src: "a", Dest: "plugins/a~1.txt"})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(files) != 2 || !strings.HasSuffix(files[1], `\plugins\a~1.txt`) {
+		t.Errorf("files %q", files)
+	}
+	if got := readFile(t, filepath.Join(f.dir, "plugins", "a~1.txt")); got != "DATA" {
+		t.Errorf("a~1.txt = %q", got)
 	}
 }

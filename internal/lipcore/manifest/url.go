@@ -1,6 +1,9 @@
 package manifest
 
-import "strings"
+import (
+	"strings"
+	"unicode/utf8"
+)
 
 // NormalizeURL returns the text lip writes for an asset URL: lip stores
 // urls as Flurl 4.0 Url objects (Url.Parse on read) and writes
@@ -13,8 +16,11 @@ import "strings"
 //     and "." / ".." path segments are removed;
 //   - in the path, query and fragment, spaces, non-ASCII bytes, control
 //     characters, the backtick and "<>\^{|} are percent-encoded, a '%' not followed
-//     by two hex digits becomes "%25", existing escapes are uppercased and
-//     escapes of unreserved characters (ALPHA DIGIT - . _ ~) are decoded.
+//     by two hex digits becomes "%25", escapes of unreserved characters
+//     (ALPHA DIGIT - . _ ~) are decoded, runs of escapes forming a valid
+//     UTF-8 multi-byte sequence are uppercased and every other escape
+//     (reserved ASCII such as %2f, stray or invalid UTF-8 bytes such as
+//     %e9) keeps the case it was written in.
 //
 // Other inputs (opaque "scheme:..." URIs, file URLs, IPv6 or IDN hosts)
 // are only trimmed/escaped; Flurl may render some of them differently, but
@@ -140,12 +146,14 @@ func escapeURLPart(s string) string {
 					v := hi<<4 | lo
 					if isUnreserved(v) {
 						b.WriteByte(v)
+						i += 2
+					} else if n := escapedUTF8Len(s[i:]); n > 0 {
+						b.WriteString(strings.ToUpper(s[i : i+n]))
+						i += n - 1
 					} else {
-						b.WriteByte('%')
-						b.WriteByte(upperHex[hi])
-						b.WriteByte(upperHex[lo])
+						b.WriteString(s[i : i+3])
+						i += 2
 					}
-					i += 2
 					continue
 				}
 			}
@@ -161,6 +169,29 @@ func escapeURLPart(s string) string {
 		b.WriteByte(c)
 	}
 	return b.String()
+}
+
+// escapedUTF8Len returns the length of the run of %XX escapes at the start
+// of s when together they encode one valid non-ASCII UTF-8 character, and
+// 0 otherwise.
+func escapedUTF8Len(s string) (n int) {
+	var buf [utf8.UTFMax]byte
+	for k := 0; k < utf8.UTFMax && n+2 < len(s) && s[n] == '%'; k++ {
+		hi, ok1 := unhex(s[n+1])
+		lo, ok2 := unhex(s[n+2])
+		if !ok1 || !ok2 {
+			break
+		}
+		buf[k] = hi<<4 | lo
+		n += 3
+		if k == 0 && buf[0] < utf8.RuneSelf {
+			return 0
+		}
+		if _, size := utf8.DecodeRune(buf[:k+1]); size > 1 && size == k+1 {
+			return n
+		}
+	}
+	return 0
 }
 
 // removeDotSegments implements RFC 3986 section 5.2.4.

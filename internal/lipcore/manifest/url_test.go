@@ -69,6 +69,24 @@ func TestNormalizeURL(t *testing.T) {
 		{"https://x.com/a?b=c;d", "https://x.com/a?b=c;d"},
 		{"https://x.com/a?%41=1", "https://x.com/a?A=1"},
 		{"https://x.com/a?b=c/d?e", "https://x.com/a?b=c/d?e"},
+		{"https://x.com/a%2bb", "https://x.com/a%2bb"},
+		{"https://x.com/a%2fb", "https://x.com/a%2fb"},
+		{"https://x.com/a?b=%2f", "https://x.com/a?b=%2f"},
+		{"https://x.com/%e9t%e9", "https://x.com/%e9t%e9"},
+		{"https://x.com/%e4%b8%ad%2f", "https://x.com/%E4%B8%AD%2f"},
+		{"https://github.com/o/r/releases/download/v1.0.0%2bbuild/x.zip", "https://github.com/o/r/releases/download/v1.0.0%2bbuild/x.zip"},
+		// Not checked against Flurl: edge cases of the "uppercase only
+		// complete valid UTF-8 sequences" rule the cases above establish.
+		{"https://x.com/%c3%a9", "https://x.com/%C3%A9"},
+		{"https://x.com/%ef%bf%bd", "https://x.com/%EF%BF%BD"},
+		{"https://x.com/%f0%9f%98%80x", "https://x.com/%F0%9F%98%80x"},
+		{"https://x.com/%e4%b8x", "https://x.com/%e4%b8x"},
+		{"https://x.com/%c0%80", "https://x.com/%c0%80"},
+		{"https://x.com/%ed%a0%80", "https://x.com/%ed%a0%80"},
+		{"https://x.com/%a9%e9", "https://x.com/%a9%e9"},
+		{"https://x.com/%e9%c3%a9", "https://x.com/%e9%C3%A9"},
+		{"https://x.com/%c3", "https://x.com/%c3"},
+		{"https://x.com/%c3%", "https://x.com/%c3%25"},
 	}
 	for _, tt := range tests {
 		got := NormalizeURL(tt.in)

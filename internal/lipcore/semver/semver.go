@@ -1,12 +1,27 @@
 // Package semver implements SemVer 2.0 versions and version ranges with the
 // semantics lip 0.37.0 gets from WalkerCodeRanger Semver 3.0.0
 // (SemVersion / SemVersionRange, "standard" range syntax, strict parsing).
+//
+// Deviation from the C# library: version numbers are uint64 instead of
+// BigInteger, so numbers that do not fit (and range bounds that would need
+// to go past math.MaxUint64) are reported as parse errors.
 package semver
 
-import "errors"
+import (
+	"cmp"
+	"errors"
+	"slices"
+	"strconv"
+	"strings"
+
+	xsemver "golang.org/x/mod/semver"
+)
 
 // ErrNotImplemented is returned by skeleton stubs.
 var ErrNotImplemented = errors.New("semver: not implemented")
+
+// maxVersionLength is SemVersion.MaxVersionLength.
+const maxVersionLength = 1024
 
 // Version is a SemVer 2.0 version.
 type Version struct {
@@ -21,14 +36,16 @@ type Version struct {
 // SemVersionStyles.Strict): no "v" prefix, no leading zeros, all three
 // components required.
 func Parse(s string) (Version, error) {
-	return Version{}, ErrNotImplemented
+	v, _, err := parseVersion(s, styleStrict, &noWildcards, maxVersionLength)
+	return v, err
 }
 
 // ParseAny parses s like SemVersion.Parse with SemVersionStyles.Any (used by
 // lip for tooth.json "version"): allows leading "v"/"V", leading zeros,
 // missing minor/patch, surrounding whitespace.
 func ParseAny(s string) (Version, error) {
-	return Version{}, ErrNotImplemented
+	v, _, err := parseVersion(s, styleAny, &noWildcards, maxVersionLength)
+	return v, err
 }
 
 // ParseTag converts a git tag name (without "refs/tags/") to a version the
@@ -36,7 +53,15 @@ func ParseAny(s string) (Version, error) {
 // becomes "v1.2.0" and "+build" is dropped), strip the leading "v", then
 // Parse strictly. ok is false for tags that are not valid semver.
 func ParseTag(tag string) (v Version, ok bool) {
-	return Version{}, false
+	canonical := xsemver.Canonical(tag)
+	if canonical == "" {
+		return Version{}, false
+	}
+	v, err := Parse(canonical[1:])
+	if err != nil {
+		return Version{}, false
+	}
+	return v, true
 }
 
 // MustParse is Parse that panics on error.
@@ -51,7 +76,31 @@ func MustParse(s string) Version {
 // Compare compares precedence per SemVer 2.0 (metadata ignored); returns
 // -1, 0 or 1.
 func (v Version) Compare(o Version) int {
-	panic("semver: not implemented")
+	if c := cmp.Compare(v.Major, o.Major); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(v.Minor, o.Minor); c != 0 {
+		return c
+	}
+	if c := cmp.Compare(v.Patch, o.Patch); c != 0 {
+		return c
+	}
+	// A release has higher precedence than any prerelease.
+	switch {
+	case len(v.Prerelease) == 0 && len(o.Prerelease) == 0:
+		return 0
+	case len(v.Prerelease) == 0:
+		return 1
+	case len(o.Prerelease) == 0:
+		return -1
+	}
+	n := min(len(v.Prerelease), len(o.Prerelease))
+	for i := 0; i < n; i++ {
+		if c := compareIdentifier(v.Prerelease[i], o.Prerelease[i]); c != 0 {
+			return c
+		}
+	}
+	return cmp.Compare(len(v.Prerelease), len(o.Prerelease))
 }
 
 // IsPrerelease reports whether v has prerelease identifiers.
@@ -59,43 +108,173 @@ func (v Version) IsPrerelease() bool { return len(v.Prerelease) > 0 }
 
 // String formats v as SemVersion.ToString does ("1.2.3-a.1+b").
 func (v Version) String() string {
-	panic("semver: not implemented")
+	var b strings.Builder
+	b.WriteString(uitoa(v.Major))
+	b.WriteByte('.')
+	b.WriteString(uitoa(v.Minor))
+	b.WriteByte('.')
+	b.WriteString(uitoa(v.Patch))
+	if len(v.Prerelease) > 0 {
+		b.WriteByte('-')
+		b.WriteString(strings.Join(v.Prerelease, "."))
+	}
+	if len(v.Metadata) > 0 {
+		b.WriteByte('+')
+		b.WriteString(strings.Join(v.Metadata, "."))
+	}
+	return b.String()
 }
 
 // Range is a version range in WalkerCodeRanger Semver 3 standard syntax:
 // exact ("1.2.3"), wildcards ("*", "1.*", "1.3.*", "*-*"), caret, tilde,
-// comparison operators, hyphen ranges and "||" unions. Prerelease versions
+// comparison operators and "||" unions (standard syntax has no hyphen
+// ranges; those are npm syntax, see ParseNpmRange). Prerelease versions
 // only satisfy a range if the matching comparator mentions a prerelease of
 // the same major.minor.patch, unless the range includes all prereleases
 // ("*-*" style).
+//
+// The zero Range is the empty range: it contains nothing and prints as "".
 type Range struct {
 	raw string
-	// Implementation fields may be added.
+	// ranges are the normalized (sorted, merged, non-empty) unbroken ranges
+	// whose union is the range.
+	ranges []unbrokenRange
 }
 
 // ParseRange parses s as SemVersionRange.Parse(s) (strict, standard syntax).
 func ParseRange(s string) (Range, error) {
-	return Range{}, ErrNotImplemented
+	ranges, err := parseStandardRange(s, false, maxRangeLength)
+	if err != nil {
+		return Range{}, err
+	}
+	return newRange(ranges), nil
 }
 
 // ParseNpmRange parses s like SemVersionRange.ParseNpm (used only by the
 // tooth.json v1/v2 migration for platform-level dependencies).
 func ParseNpmRange(s string) (Range, error) {
-	return Range{}, ErrNotImplemented
+	ranges, err := parseNpmRange(s, false, maxRangeLength)
+	if err != nil {
+		return Range{}, err
+	}
+	return newRange(ranges), nil
 }
 
 // Exact returns the range matching exactly v (SemVersionRange.Equals(v));
-// its String() is v.String().
+// its String() is v.String() without metadata. Deviation: the C# library
+// throws for a version with metadata; Exact drops the metadata instead
+// (precedence, and therefore matching, ignores it anyway).
 func Exact(v Version) Range {
-	panic("semver: not implemented")
+	v = v.withoutMetadata()
+	v.Prerelease = slices.Clone(v.Prerelease) // don't alias the caller's slice
+	return newRange([]unbrokenRange{newUnbroken(
+		bound{v: &v, inclusive: true}, bound{v: &v, inclusive: true}, false)})
 }
 
 // Contains reports whether v satisfies r.
 func (r Range) Contains(v Version) bool {
-	panic("semver: not implemented")
+	for i := range r.ranges {
+		if r.ranges[i].contains(v) {
+			return true
+		}
+	}
+	return false
 }
 
 // String returns the range text as lip would write it back
 // (SemVersionRange.ToString()). Implementations should return the original
 // text when it is already in normalized form.
 func (r Range) String() string { return r.raw }
+
+// newRange is SemVersionRange.Create: drop empty ranges, sort, merge.
+func newRange(ranges []unbrokenRange) Range {
+	ranges = normalizeRanges(ranges)
+	parts := make([]string, len(ranges))
+	for i := range ranges {
+		parts[i] = ranges[i].String()
+	}
+	return Range{raw: strings.Join(parts, " || "), ranges: ranges}
+}
+
+// --- helpers ---
+
+func (v Version) withoutMetadata() Version {
+	v.Metadata = nil
+	return v
+}
+
+func (v Version) prereleaseIsZero() bool {
+	return len(v.Prerelease) == 1 && v.Prerelease[0] == "0"
+}
+
+func (v Version) majorMinorPatchEquals(o Version) bool {
+	return v.Major == o.Major && v.Minor == o.Minor && v.Patch == o.Patch
+}
+
+// equal is SemVersion.Equals (structural, including metadata).
+func (v Version) equal(o Version) bool {
+	return v.majorMinorPatchEquals(o) &&
+		slices.Equal(v.Prerelease, o.Prerelease) &&
+		slices.Equal(v.Metadata, o.Metadata)
+}
+
+// isNumericIdentifier reports whether a prerelease identifier is numeric.
+func isNumericIdentifier(s string) bool {
+	if s == "" {
+		return false
+	}
+	for i := 0; i < len(s); i++ {
+		if !isDigit(s[i]) {
+			return false
+		}
+	}
+	return true
+}
+
+// compareIdentifier is PrereleaseIdentifier.CompareTo: numeric identifiers
+// compare numerically and are lower than alphanumeric ones, which compare
+// ordinally.
+func compareIdentifier(a, b string) int {
+	an, bn := isNumericIdentifier(a), isNumericIdentifier(b)
+	switch {
+	case an && bn:
+		a, b = trimLeadingZeros(a), trimLeadingZeros(b)
+		if c := cmp.Compare(len(a), len(b)); c != 0 {
+			return c
+		}
+		return strings.Compare(a, b)
+	case an:
+		return -1
+	case bn:
+		return 1
+	}
+	return strings.Compare(a, b)
+}
+
+// nextIdentifier is PrereleaseIdentifier.NextIdentifier: the smallest
+// identifier greater than id (numeric+1, otherwise id+"-").
+func nextIdentifier(id string) string {
+	if !isNumericIdentifier(id) {
+		return id + "-"
+	}
+	d := []byte(trimLeadingZeros(id))
+	for i := len(d) - 1; i >= 0; i-- {
+		if d[i] != '9' {
+			d[i]++
+			return string(d)
+		}
+		d[i] = '0'
+	}
+	return "1" + string(d)
+}
+
+// trimLeadingZeros removes leading '0's but keeps at least one character.
+func trimLeadingZeros(s string) string {
+	i := 0
+	for i < len(s)-1 && s[i] == '0' {
+		i++
+	}
+	return s[i:]
+}
+
+func uitoa(n uint64) string { return strconv.FormatUint(n, 10) }

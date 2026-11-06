@@ -68,6 +68,11 @@ func TestInstallPackageRejectsWindowsForms(t *testing.T) {
 		{name: "dot device path inside", dest: `\\.\DIR\evil.txt`, wantInErr: "outside the workspace directory"},
 		{name: "absolute key", key: `DRIVE\evil.txt`, dir: true, dest: "d", wantInErr: "outside the workspace directory"},
 		{name: "backslash key basename dotdot", key: `x\..`, src: "x*", wantInErr: "outside the workspace directory"},
+		// Beyond 32767 characters GetFullPathNameW fails and the ".."
+		// segments stay; os.MkdirAll would then create "out\newdir".
+		{name: "overlong key slash dotdot", key: "d/" + strings.Repeat("aaaaaaaaaa/", 3000) + strings.Repeat("../", 3001) + "../out/newdir/evil.txt", dir: true, wantInErr: "cannot be normalized"},
+		{name: "overlong key backslash dotdot", key: `d\` + strings.Repeat(`aaaaaaaaaa\`, 3000) + strings.Repeat(`..\`, 3001) + `..\out\newdir\evil.txt`, dir: true, wantInErr: "outside the workspace directory"},
+		{name: "overlong dest slash dotdot", dest: "d/" + strings.Repeat("aaaaaaaaaa/", 3000) + strings.Repeat("../", 3001) + "../out/newdir/evil.txt", wantInErr: "cannot be normalized"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {
@@ -94,12 +99,22 @@ func TestUninstallPackageSkipsWindowsForms(t *testing.T) {
 	f := newContainFixture(t)
 	j := func(p string) string { return filepath.Join(f.dir, filepath.FromSlash(p)) }
 	mustWrite(t, j("a.txt"), "A")
-	files := []string{j("a.txt") + ":stream", j("NUL"), `\\?\` + j("a.txt")}
+	victim := filepath.Join(f.out, "victim.txt")
+	mustWrite(t, victim, "V")
+	files := []string{
+		j("a.txt") + ":stream", j("NUL"), `\\?\` + j("a.txt"),
+		// GetFullPathNameW cannot normalize these.
+		"d/../../out/victim.txt\x00",
+		"d/" + strings.Repeat("aaaaaaaaaa/", 3000) + strings.Repeat("../", 3002) + "out/victim.txt",
+	}
 	if err := f.w.UninstallPackage(context.Background(), &manifest.Variant{}, files); err != nil {
 		t.Fatal(err)
 	}
 	if got := readFile(t, j("a.txt")); got != "A" {
 		t.Errorf("a.txt = %q", got)
+	}
+	if got := readFile(t, victim); got != "V" {
+		t.Errorf("victim.txt = %q", got)
 	}
 	if len(f.rep.lines) != len(files) {
 		t.Fatalf("reporter %q", f.rep.lines)

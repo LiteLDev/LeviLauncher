@@ -91,6 +91,9 @@ func TestInstallPackageRejectsEscapingTargets(t *testing.T) {
 	file := func(src, dest string) manifest.Placement {
 		return manifest.Placement{Type: manifest.PlacementFile, Src: src, Dest: dest}
 	}
+	dir := func(src, dest string) manifest.Placement {
+		return manifest.Placement{Type: manifest.PlacementDir, Src: src, Dest: dest}
+	}
 	cases := []struct {
 		name      string
 		keys      []string
@@ -107,6 +110,10 @@ func TestInstallPackageRejectsEscapingTargets(t *testing.T) {
 		// places the key at the workspace's parent.
 		{name: "key basename dotdot", keys: []string{"x/.."}, placement: file("x/*", ""), wantInErr: "outside the workspace directory"},
 		{name: "key basename dotdot nested", keys: []string{"x/.."}, placement: file("x/*", "plugins"), wantInErr: "itself"},
+		// GetFullPathNameW fails on NUL and leaves the ".." segments in
+		// place; os.MkdirAll would then create "out/newdir".
+		{name: "key NUL then dotdot", keys: []string{"d/../../out/newdir/f\x00"}, placement: dir("", ""), wantInErr: "NUL"},
+		{name: "key NUL before dotdot", keys: []string{"x\x00/../../../out/newdir/f"}, placement: dir("", "d"), wantInErr: "NUL"},
 	}
 	for _, c := range cases {
 		t.Run(c.name, func(t *testing.T) {

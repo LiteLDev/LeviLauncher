@@ -65,16 +65,30 @@ func (w *Workspace) containment() *containment {
 //   - it is Dir itself or lexically outside Dir (UNC and \\?\ or \\.\
 //     device paths never match Dir's prefix); the prefix test ignores case
 //     where paths do;
+//   - it contains a NUL character or, on Windows, a "/": FullPath could
+//     not normalize it (GetFullPathNameW fails on NUL and beyond 32767
+//     characters and then returns its input unchanged), so its "." and
+//     ".." segments are not collapsed and os.MkdirAll would still resolve
+//     them lexically;
 //   - on Windows, a segment names an alternate data stream ("file:stream")
-//     or a reserved device (CON, NUL, COM1, ...), or still ends in a dot
-//     or space;
+//     or a reserved device (CON, NUL, COM1, ...), or ends in a dot or
+//     space;
 //   - an existing symbolic link or junction on the way (and, when
 //     followLast, full itself, since creating a file follows it) resolves
 //     outside Dir or cannot be resolved.
 //
-// Other trailing dots and spaces are fine: FullPath has already removed
-// them (as lip does), and the file is written at the checked path.
+// FullPath removes every trailing dot and space of the last segment, and a
+// single trailing dot of the others (as lip does), so most such names are
+// written at the checked path. What it keeps ("plugins /x.dll" or
+// "plugins../x.dll") Win32 could not create as a directory either, so
+// rejecting it loses no working package.
 func (c *containment) check(full string, followLast bool) error {
+	if strings.ContainsRune(full, 0) {
+		return unsafePath("it contains a NUL character")
+	}
+	if isWindows && strings.ContainsRune(full, '/') {
+		return unsafePath("it cannot be normalized (too long, or a device path)")
+	}
 	if samePath(full, c.root) {
 		return unsafePath("it is the workspace directory '%s' itself", c.root)
 	}
@@ -87,12 +101,9 @@ func (c *containment) check(full string, followLast bool) error {
 		return unsafePath("it is outside the workspace directory '%s'", c.root)
 	}
 	// rest is not empty: samePath caught Dir with trailing separators.
-	var segments []string
-	for _, s := range strings.Split(rest, dirSep()) {
-		if s != "" {
-			segments = append(segments, s)
-		}
-	}
+	// "/" was rejected above on Windows; splitting on it too is only
+	// defence in depth.
+	segments := strings.FieldsFunc(rest, isDirSep)
 	for _, s := range segments {
 		// FullPath collapses these; guard against a path it could not
 		// normalize.
@@ -106,9 +117,8 @@ func (c *containment) check(full string, followLast bool) error {
 			if isReservedDeviceName(s) {
 				return unsafePath("'%s' is a reserved device name", s)
 			}
-			// FullPath trims trailing dots and spaces except from names
-			// made of only dots and spaces (".. ", "... "), which Win32
-			// cannot create.
+			// What FullPath left: see above. This includes names made of
+			// only dots and spaces (".. ", "... ").
 			if strings.HasSuffix(s, ".") || strings.HasSuffix(s, " ") {
 				return unsafePath("'%s' ends in a dot or space", s)
 			}

@@ -16,9 +16,14 @@ import (
 
 // getFullPath ports Path.GetFullPath with base as the working directory. It
 // uses GetFullPathNameW like .NET, so "/" becomes "\", "." and ".." are
-// collapsed and trailing dots and spaces of segments are removed; a
-// trailing separator is kept. Like .NET, 8.3 short names are expanded when
-// the result contains '~'.
+// collapsed, trailing dots and spaces of the last segment are removed, and
+// so is a single trailing dot of other segments ("a./b" becomes "a", but
+// "a../b" and "a /b" are kept); a trailing separator is kept. Like .NET,
+// 8.3 short names are expanded when the result contains '~'.
+//
+// When GetFullPathNameW fails (p contains NUL, or the result would exceed
+// 32767 characters) the combined input is returned unnormalized: it may
+// still contain "/", "." and ".." (containment.check rejects such paths).
 func getFullPath(base, p string) string {
 	var in string
 	switch {

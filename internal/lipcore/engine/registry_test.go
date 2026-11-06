@@ -1,6 +1,7 @@
 package engine
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha1"
 	"encoding/hex"
@@ -35,12 +36,21 @@ type fakeRepo struct {
 	blobs    map[string]string         // oid -> content
 	withold  map[string]bool           // blobs the server "forgets" to send
 	noFilter bool                      // tree fetch includes blobs
+
+	// proxy makes Fetch try a GitHub proxy first, like gitproto.Client
+	// with fetch.ProxyRewriter; the proxy omits proxyWithold blobs and,
+	// with proxyNoTrees, every tree.
+	proxy        bool
+	proxyFailed  bool
+	proxyWithold map[string]bool
+	proxyNoTrees bool
 }
 
 type fetchCall struct {
 	Repo  string
 	Wants []string
 	Opts  gitproto.FetchOptions
+	Proxy bool
 }
 
 type fakeGit struct {
@@ -48,6 +58,7 @@ type fakeGit struct {
 	repos   map[string]*fakeRepo
 	fetches []fetchCall
 	lists   int
+	closed  int // fakePackStore.Close calls
 }
 
 func (g *fakeGit) ListTags(_ context.Context, repoURL string) ([]gitproto.TagRef, error) {
@@ -61,21 +72,79 @@ func (g *fakeGit) ListTags(_ context.Context, repoURL string) ([]gitproto.TagRef
 	return r.tags, nil
 }
 
-func (g *fakeGit) Fetch(_ context.Context, repoURL string, wants []string, opts gitproto.FetchOptions) ([]byte, error) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+// Fetch serves JSON "packs" describing the call; with repo.proxy it tries
+// the proxy first and falls back like gitproto.Client.Fetch.
+func (g *fakeGit) Fetch(_ context.Context, repoURL string, wants []string, opts gitproto.FetchOptions, handle gitproto.PackHandler) error {
 	if len(wants) > maxWantsPerRequest {
-		return nil, fmt.Errorf("too many wants: %d", len(wants))
+		return fmt.Errorf("too many wants: %d", len(wants))
 	}
-	c := fetchCall{Repo: repoURL, Wants: append([]string(nil), wants...), Opts: opts}
-	g.fetches = append(g.fetches, c)
-	return json.Marshal(c)
+	attempt := func(proxy bool) error {
+		var wanted []string
+		for _, w := range wants {
+			if opts.Want == nil || opts.Want(w) {
+				wanted = append(wanted, w)
+			}
+		}
+		if len(wanted) == 0 {
+			return nil
+		}
+		c := fetchCall{Repo: repoURL, Wants: wanted, Opts: gitproto.FetchOptions{Shallow: opts.Shallow, BlobNone: opts.BlobNone}, Proxy: proxy}
+		g.mu.Lock()
+		g.fetches = append(g.fetches, c)
+		r := g.repos[repoURL]
+		g.mu.Unlock()
+		b, err := json.Marshal(struct {
+			Repo  string
+			Wants []string
+			Proxy bool
+		}{c.Repo, c.Wants, c.Proxy})
+		if err != nil {
+			return err
+		}
+		pack, err := gitproto.NewPackFile(bytes.NewReader(b))
+		if err != nil {
+			return err
+		}
+		pack.Filtered = opts.BlobNone && !r.noFilter
+		return handle(pack)
+	}
+	g.mu.Lock()
+	r := g.repos[repoURL]
+	useProxy := r != nil && r.proxy && !r.proxyFailed
+	g.mu.Unlock()
+	if !useProxy {
+		return attempt(false)
+	}
+	if err := attempt(true); err == nil {
+		return nil
+	}
+	g.mu.Lock()
+	r.proxyFailed = true
+	g.mu.Unlock()
+	return attempt(false)
 }
 
 // fakePackStore decodes the "packs" produced by fakeGit.Fetch.
 type fakePackStore struct {
-	files map[string][]gitpack.File
-	blobs map[string][]byte
+	files  map[string][]gitpack.File
+	blobs  map[string][]byte
+	closed *int
+}
+
+func (s *fakePackStore) Objects(fn func(oid string, t gitpack.ObjectType, data []byte) error) error {
+	for oid, b := range s.blobs {
+		if err := fn(oid, gitpack.ObjBlob, b); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func (s *fakePackStore) Close() error {
+	if s.closed != nil {
+		*s.closed++
+	}
+	return nil
 }
 
 func (s *fakePackStore) Files(commit string) ([]gitpack.File, error) {
@@ -91,15 +160,25 @@ func (s *fakePackStore) Blob(oid string) ([]byte, bool, error) {
 	return b, ok, nil
 }
 
-func (g *fakeGit) decode(pack []byte) (PackStore, error) {
-	var c fetchCall
-	if err := json.Unmarshal(pack, &c); err != nil {
+func (g *fakeGit) decode(pack *gitproto.PackFile) (PackStore, error) {
+	defer pack.Close()
+	raw, err := io.ReadAll(io.NewSectionReader(pack, 0, pack.Size()))
+	if err != nil {
 		return nil, err
 	}
+	var c fetchCall
+	if err := json.Unmarshal(raw, &c); err != nil {
+		return nil, err
+	}
+	g.mu.Lock()
+	defer g.mu.Unlock()
 	r := g.repos[c.Repo]
-	st := &fakePackStore{files: map[string][]gitpack.File{}, blobs: map[string][]byte{}}
+	st := &fakePackStore{files: map[string][]gitpack.File{}, blobs: map[string][]byte{}, closed: &g.closed}
 	for _, w := range c.Wants {
 		if files, ok := r.trees[w]; ok {
+			if c.Proxy && r.proxyNoTrees {
+				continue
+			}
 			st.files[w] = files
 			if r.noFilter {
 				for _, f := range files {
@@ -108,7 +187,7 @@ func (g *fakeGit) decode(pack []byte) (PackStore, error) {
 			}
 			continue
 		}
-		if b, ok := r.blobs[w]; ok && !r.withold[w] {
+		if b, ok := r.blobs[w]; ok && !r.withold[w] && !(c.Proxy && r.proxyWithold[w]) {
 			st.blobs[w] = []byte(b)
 		}
 	}

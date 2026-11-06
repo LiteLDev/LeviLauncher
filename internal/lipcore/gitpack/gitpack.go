@@ -5,15 +5,12 @@ package gitpack
 
 import (
 	"bytes"
-	"compress/zlib"
 	"crypto/sha1"
 	"crypto/sha256"
-	"encoding/binary"
 	"encoding/hex"
 	"errors"
 	"fmt"
 	"hash"
-	"io"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -78,285 +75,24 @@ func corrupt(format string, args ...any) error {
 	return fmt.Errorf("%w: %s", ErrCorrupt, fmt.Sprintf(format, args...))
 }
 
-type packEntry struct {
-	typ      int
-	data     []byte // inflated object or delta data
-	baseIdx  int    // OFS_DELTA base entry index
-	baseOID  string // REF_DELTA base id
-	resolved bool
-	rtype    ObjectType
-	rdata    []byte
-}
-
-// Decode parses a version 2/3 packfile (header, entries, trailing SHA-1
-// checksum) into s, resolving OFS_DELTA and REF_DELTA entries (ref bases
-// may be objects already in s). Object ids are computed with HashObject.
-//
-// As in lip, the trailing checksum is verified before any entry is read,
-// every entry must inflate to exactly its declared size, OFS_DELTA bases
-// must start exactly at an earlier entry, and the last entry must end
-// exactly at the trailer. Unlike lip, which only looks inside the pack,
-// REF_DELTA bases may also come from objects already in s. On error s may
+// Decode reads every object of a version 2/3 packfile into s (see Open for
+// the checks made). Unlike lip, which only looks inside the pack, REF_DELTA
+// bases may also come from objects already in s (thin packs). On error s may
 // hold some of the pack's objects.
 func (s *Store) Decode(pack []byte) error {
-	if len(pack) < 32 {
-		return corrupt("too short")
-	}
-	if !bytes.Equal(pack[:4], []byte("PACK")) {
-		return corrupt("bad signature")
-	}
-	version := binary.BigEndian.Uint32(pack[4:8])
-	if version != 2 && version != 3 {
-		return corrupt("unsupported version %d", version)
-	}
-	count := binary.BigEndian.Uint32(pack[8:12])
-
-	end := len(pack) - 20
-	sum := sha1.Sum(pack[:end])
-	if !bytes.Equal(sum[:], pack[end:]) {
-		return corrupt("checksum mismatch")
-	}
-
-	entries := make([]*packEntry, 0, min(int(count), end/2))
-	indexByOffset := map[int]int{}
-	pos := 12
-	var z inflater
-	readByte := func() (int, error) {
-		if pos >= len(pack) {
-			return 0, corrupt("unexpected end")
-		}
-		b := pack[pos]
-		pos++
-		return int(b), nil
-	}
-
-	for i := uint32(0); i < count; i++ {
-		offset := pos
-		if offset >= end {
-			return corrupt("object count exceeds data")
-		}
-		c, err := readByte()
-		if err != nil {
-			return err
-		}
-		typ := (c >> 4) & 7
-		size := int64(c & 0x0f)
-		shift := 4
-		for c&0x80 != 0 {
-			if shift > 56 {
-				return corrupt("object size too large")
-			}
-			if c, err = readByte(); err != nil {
-				return err
-			}
-			size |= int64(c&0x7f) << shift
-			shift += 7
-		}
-
-		e := &packEntry{typ: typ, baseIdx: -1}
-		switch {
-		case typ == objOfsDelta:
-			if c, err = readByte(); err != nil {
-				return err
-			}
-			distance := int64(c & 0x7f)
-			for c&0x80 != 0 {
-				if distance > (1<<63-1)>>8 {
-					return corrupt("delta offset too large")
-				}
-				if c, err = readByte(); err != nil {
-					return err
-				}
-				distance = ((distance + 1) << 7) | int64(c&0x7f)
-			}
-			baseIdx, ok := -1, false
-			if distance != 0 && distance <= int64(offset) {
-				baseIdx, ok = indexByOffset[offset-int(distance)]
-			}
-			if !ok {
-				return corrupt("invalid delta base offset")
-			}
-			e.baseIdx = baseIdx
-		case typ == objRefDelta:
-			if pos+20 > len(pack) {
-				return corrupt("unexpected end")
-			}
-			e.baseOID = hex.EncodeToString(pack[pos : pos+20])
-			pos += 20
-		case typ < 1 || typ > 4:
-			return corrupt("invalid object type %d", typ)
-		}
-
-		if size > MaxObjectSize {
-			return corrupt("object of %d bytes exceeds the %d byte limit", size, MaxObjectSize)
-		}
-
-		data, n, err := z.inflate(pack[pos:end], size)
-		if err != nil {
-			return err
-		}
-		pos += n
-		e.data = data
-
-		indexByOffset[offset] = len(entries)
-		entries = append(entries, e)
-	}
-	if pos != end {
-		return corrupt("unexpected data after last object")
-	}
-
-	// canResolve reports whether every REF_DELTA base in the entry's delta
-	// chain is available.
-	canResolve := func(i int) (bool, error) {
-		for steps := 0; steps <= len(entries); steps++ {
-			e := entries[i]
-			if e.resolved {
-				return true, nil
-			}
-			switch e.typ {
-			case objOfsDelta:
-				i = e.baseIdx
-			case objRefDelta:
-				_, ok := s.objects[e.baseOID]
-				return ok, nil
-			default:
-				return true, nil
-			}
-		}
-		return false, corrupt("delta cycle")
-	}
-
-	// Resolve in pack order; REF_DELTA bases may appear after their deltas,
-	// so unresolvable entries are retried until no progress is made.
-	deferred := make([]int, len(entries))
-	for i := range deferred {
-		deferred[i] = i
-	}
-	for len(deferred) > 0 {
-		var still []int
-		for _, i := range deferred {
-			ok, err := canResolve(i)
-			if err != nil {
-				return err
-			}
-			if !ok {
-				still = append(still, i)
-				continue
-			}
-			if err := s.resolve(entries, i); err != nil {
-				return err
-			}
-		}
-		if len(still) == len(deferred) {
-			return corrupt("missing delta base")
-		}
-		deferred = still
-	}
-	return nil
-}
-
-// resolve undeltifies entry i (whose chain is resolvable) and puts it in s.
-func (s *Store) resolve(entries []*packEntry, i int) error {
-	var chain []int
-	cur := i
-	var t ObjectType
-	var data []byte
-	for {
-		e := entries[cur]
-		if e.resolved {
-			t, data = e.rtype, e.rdata
-			break
-		}
-		if e.typ != objOfsDelta && e.typ != objRefDelta {
-			t, data = ObjectType(e.typ), e.data
-			break
-		}
-		chain = append(chain, cur)
-		if len(chain) > len(entries) {
-			return corrupt("delta cycle")
-		}
-		if e.typ == objOfsDelta {
-			cur = e.baseIdx
-			continue
-		}
-		base, ok := s.objects[e.baseOID]
-		if !ok {
-			return corrupt("missing delta base %s", e.baseOID)
-		}
-		t, data = base.Type, base.Data
-		break
-	}
-	for k := len(chain) - 1; k >= 0; k-- {
-		e := entries[chain[k]]
-		out, err := ApplyDelta(data, e.data)
-		if err != nil {
-			return err
-		}
-		data = out
-		e.resolved, e.rtype, e.rdata, e.data = true, t, data, nil
-	}
-	e := entries[i]
-	if !e.resolved {
-		e.resolved, e.rtype, e.rdata, e.data = true, t, data, nil
-	}
-	s.Put(e.rtype, e.rdata)
-	return nil
-}
-
-type inflater struct {
-	r  bytes.Reader
-	zr io.ReadCloser
-}
-
-// inflate decompresses one zlib stream at the start of src that must expand
-// to exactly size bytes, returning the data and the number of compressed
-// bytes consumed (including the Adler-32 trailer).
-// The decompressor is reused across calls to avoid reallocating its window.
-func (z *inflater) inflate(src []byte, size int64) ([]byte, int, error) {
-	// bytes.Reader implements io.ByteReader, so compress/flate reads exactly
-	// the bytes of the stream and no more.
-	r := &z.r
-	r.Reset(src)
-	var err error
-	if z.zr == nil {
-		z.zr, err = zlib.NewReader(r)
-	} else {
-		err = z.zr.(zlib.Resetter).Reset(r, nil)
-	}
+	p, err := OpenBytes(pack)
 	if err != nil {
-		z.zr = nil
-		return nil, 0, corrupt("invalid zlib header: %v", err)
+		return err
 	}
-	zr := z.zr
-	// Large buffers grow as data arrives so a bogus header size cannot force
-	// a huge allocation up front.
-	var out []byte
-	if size <= 1<<20 {
-		out = make([]byte, size)
-		if _, err := io.ReadFull(zr, out); err != nil {
-			return nil, 0, corrupt("zlib stream: expected %d bytes: %v", size, err)
-		}
-	} else {
-		var err error
-		if out, err = io.ReadAll(io.LimitReader(zr, size)); err != nil {
-			return nil, 0, corrupt("zlib stream: %v", err)
-		}
-		if int64(len(out)) != size {
-			return nil, 0, corrupt("zlib stream: expected %d bytes but got %d", size, len(out))
-		}
+	defer p.Close()
+	p.external = func(oid string) (Object, bool) {
+		o, ok := s.objects[oid]
+		return o, ok
 	}
-	var one [1]byte
-	n, err := zr.Read(one[:])
-	for n == 0 && err == nil {
-		n, err = zr.Read(one[:])
-	}
-	if n > 0 {
-		return nil, 0, corrupt("zlib stream: output exceeds declared size %d", size)
-	}
-	if err != io.EOF {
-		return nil, 0, corrupt("zlib stream: %v", err)
-	}
-	return out, len(src) - r.Len(), nil
+	return p.ReadObjects(func(oid string, t ObjectType, data []byte) error {
+		s.Add(oid, Object{Type: t, Data: data})
+		return nil
+	})
 }
 
 // ApplyDelta applies a git delta to a base object.
@@ -464,6 +200,10 @@ func (s *Store) Put(t ObjectType, data []byte) string {
 	s.objects[oid] = Object{Type: t, Data: data}
 	return oid
 }
+
+// Add stores o under oid, which the caller has already computed (e.g. from
+// Pack.ReadObjects).
+func (s *Store) Add(oid string, o Object) { s.objects[oid] = o }
 
 // IsObjectID reports whether v is 40 ASCII hex digits (any case), like lip's
 // GitObject.IsObjectId.
@@ -719,8 +459,10 @@ func VerifyBlob(oid string, data []byte) error {
 	return nil
 }
 
-// decodeUTF8 decodes b like .NET Encoding.UTF8.GetString, replacing invalid
-// sequences with U+FFFD.
+// decodeUTF8 decodes b like .NET Encoding.UTF8.GetString: each maximal
+// subpart of an ill-formed sequence (a lead byte followed by the longest run
+// of continuation bytes still forming a valid prefix, per Unicode Table 3-7)
+// becomes a single U+FFFD.
 func decodeUTF8(b []byte) string {
 	if utf8.Valid(b) {
 		return string(b)
@@ -728,10 +470,44 @@ func decodeUTF8(b []byte) string {
 	var sb strings.Builder
 	for len(b) > 0 {
 		r, n := utf8.DecodeRune(b)
+		if r == utf8.RuneError && n == 1 {
+			n = maximalSubpart(b)
+		}
 		sb.WriteRune(r)
 		b = b[n:]
 	}
 	return sb.String()
+}
+
+// maximalSubpart returns the length (at least 1) of the ill-formed sequence
+// at the start of b.
+func maximalSubpart(b []byte) int {
+	lo, hi := byte(0x80), byte(0xbf)
+	var need int
+	switch c := b[0]; {
+	case c >= 0xc2 && c <= 0xdf:
+		need = 1
+	case c == 0xe0:
+		need, lo = 2, 0xa0
+	case c == 0xed:
+		need, hi = 2, 0x9f
+	case c >= 0xe1 && c <= 0xef:
+		need = 2
+	case c == 0xf0:
+		need, lo = 3, 0x90
+	case c == 0xf4:
+		need, hi = 3, 0x8f
+	case c >= 0xf1 && c <= 0xf3:
+		need = 3
+	default:
+		return 1
+	}
+	n := 1
+	for n <= need && n < len(b) && b[n] >= lo && b[n] <= hi {
+		n++
+		lo, hi = 0x80, 0xbf
+	}
+	return n
 }
 
 // isDotNetWhiteSpace matches char.IsWhiteSpace, used by string.Trim().

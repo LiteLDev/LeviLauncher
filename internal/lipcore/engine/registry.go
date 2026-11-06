@@ -7,6 +7,7 @@ import (
 	"crypto/sha1"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"hash"
 	"io"
@@ -29,10 +30,11 @@ import (
 // GitClient is the subset of gitproto.Client the registry uses.
 type GitClient interface {
 	ListTags(ctx context.Context, repoURL string) ([]gitproto.TagRef, error)
-	Fetch(ctx context.Context, repoURL string, wants []string, opts gitproto.FetchOptions) ([]byte, error)
+	Fetch(ctx context.Context, repoURL string, wants []string, opts gitproto.FetchOptions, handle gitproto.PackHandler) error
 }
 
-// PackStore is a decoded packfile (gitpack.Store in production).
+// PackStore is an opened packfile (a lazy, file-backed gitpack.Pack in
+// production).
 type PackStore interface {
 	// Files lists the regular files of commit's tree (paths with "/", in
 	// tree order). Root entries that are neither regular files, trees nor
@@ -42,6 +44,11 @@ type PackStore interface {
 	// Blob returns the content of blob oid; ok is false when the pack does
 	// not contain it; an error is returned when oid is not a blob.
 	Blob(oid string) (data []byte, ok bool, err error)
+	// Objects calls fn with every object of the pack in pack order; data
+	// must not be modified.
+	Objects(fn func(oid string, t gitpack.ObjectType, data []byte) error) error
+	// Close releases the pack (deleting its temporary file).
+	Close() error
 }
 
 // BlobCache stores verified blobs ("git-blob:<oid>"); *fetch.Cache
@@ -68,8 +75,9 @@ type GitRegistry struct {
 
 	// Seams; nil means the real implementation.
 
-	// DecodePack decodes a packfile (gitpack).
-	DecodePack func(pack []byte) (PackStore, error)
+	// DecodePack opens a fetched packfile (gitpack.Open), taking ownership
+	// of it: it is closed on error and by PackStore.Close.
+	DecodePack func(pack *gitproto.PackFile) (PackStore, error)
 	// ParseManifest migrates and parses raw tooth.json bytes
 	// (migrate.ToV3 + manifest.Parse).
 	ParseManifest func(raw []byte, rid string) (*manifest.Manifest, error)
@@ -93,8 +101,13 @@ type GitRegistry struct {
 
 	mu        sync.Mutex
 	treeOrder []string
-	retained  []retainedPack
 	memBlobs  map[string][]byte
+
+	// packMu guards retained and is held while a retained pack is read, so
+	// an evicted pack is never closed under a reader (lip's
+	// _retainedPackLock).
+	packMu   sync.Mutex
+	retained []retainedPack
 }
 
 type retainedPack struct {
@@ -154,15 +167,27 @@ func (g *GitRegistry) compareVersions(a, b string) int {
 	return va.Compare(vb)
 }
 
-func (g *GitRegistry) decodePack(pack []byte) (PackStore, error) {
+func (g *GitRegistry) decodePack(pack *gitproto.PackFile) (PackStore, error) {
 	if g.DecodePack != nil {
 		return g.DecodePack(pack)
 	}
-	s := gitpack.NewStore()
-	if err := s.Decode(pack); err != nil {
+	p, err := gitpack.Open(pack, pack.Size())
+	if err != nil {
 		return nil, err
 	}
-	return gitpackStore{s}, nil
+	return gitpackStore{p}, nil
+}
+
+// Close releases the retained packs (lip's GitRemoteClient.Dispose).
+func (g *GitRegistry) Close() error {
+	g.packMu.Lock()
+	defer g.packMu.Unlock()
+	var errs []error
+	for _, p := range g.retained {
+		errs = append(errs, p.store.Close())
+	}
+	g.retained = nil
+	return errors.Join(errs...)
 }
 
 func (g *GitRegistry) parseManifest(raw []byte) (*manifest.Manifest, error) {
@@ -403,35 +428,35 @@ type archiveSource struct{ fetch.AssetSource }
 
 func (archiveSource) Prefetch(context.Context, []string) error { return nil }
 
-// listTree ports GitRemoteClient.ListTree: a shallow, blob-less fetch of
-// commit, walked into its file list. Trees are memoized (at most 64). When
-// the server ignored the blob filter, the pack is retained to serve blobs.
+// listTree ports GitRemoteClient.ListTree/FetchTree: a shallow, blob-less
+// fetch of commit, walked into its file list. The walk runs inside the
+// per-URL proxy fallback, so an incomplete pack from the proxy is retried
+// directly. Trees are memoized (at most 64). When the server does not
+// support the blob filter, the pack holds every blob and is retained to
+// serve them.
 func (g *GitRegistry) listTree(ctx context.Context, repo, commit string) ([]gitpack.File, error) {
 	commit = strings.ToLower(commit)
 	key := repoKey(repo) + "@" + commit
 	files, err := g.trees.do(key, func() ([]gitpack.File, error) {
-		pack, err := g.Git.Fetch(ctx, repo, []string{commit}, gitproto.FetchOptions{Shallow: true, BlobNone: true})
-		if err != nil {
-			return nil, err
-		}
-		store, err := g.decodePack(pack)
-		if err != nil {
-			return nil, err
-		}
-		files, err := store.Files(commit)
-		if err != nil {
-			return nil, err
-		}
-		for _, f := range files {
-			if !isRegularMode(f.Mode) {
-				continue
+		var files []gitpack.File
+		err := g.Git.Fetch(ctx, repo, []string{commit}, gitproto.FetchOptions{Shallow: true, BlobNone: true}, func(pack *gitproto.PackFile) error {
+			filtered := pack.Filtered
+			store, err := g.decodePack(pack)
+			if err != nil {
+				return err
 			}
-			if _, ok, _ := store.Blob(f.OID); ok {
-				g.retain(repoKey(repo), store)
+			if files, err = store.Files(commit); err != nil {
+				store.Close()
+				return err
 			}
-			break
-		}
-		return files, nil
+			if filtered {
+				store.Close()
+				return nil
+			}
+			g.retain(repoKey(repo), store)
+			return nil
+		})
+		return files, err
 	})
 	if err != nil {
 		return nil, err
@@ -457,20 +482,22 @@ func containsString(list []string, s string) bool {
 	return false
 }
 
+// retain keeps store to serve blobs; the oldest of more than 8 retained
+// packs is closed (lip's RetainPack).
 func (g *GitRegistry) retain(key string, store PackStore) {
-	g.mu.Lock()
-	defer g.mu.Unlock()
+	g.packMu.Lock()
+	defer g.packMu.Unlock()
 	if len(g.retained) >= maxRetainedPacks {
+		g.retained[0].store.Close()
 		g.retained = append([]retainedPack(nil), g.retained[1:]...)
 	}
 	g.retained = append(g.retained, retainedPack{repoKey: key, store: store})
 }
 
 func (g *GitRegistry) retainedBlob(key, oid string) ([]byte, bool) {
-	g.mu.Lock()
-	packs := append([]retainedPack(nil), g.retained...)
-	g.mu.Unlock()
-	for _, p := range packs {
+	g.packMu.Lock()
+	defer g.packMu.Unlock()
+	for _, p := range g.retained {
 		if p.repoKey != key {
 			continue
 		}
@@ -596,33 +623,49 @@ func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string
 	}
 }
 
+// fetchBlobBatch ports GitRemoteClient.FetchBlobBatch: the blobs of each
+// pack are stored as they are read, and a pack missing some of them fails
+// that attempt, so after a proxy attempt the original URL is asked for only
+// the blobs still missing (and the proxy is not used for the repository
+// again).
 func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []string) error {
-	pack, err := g.Git.Fetch(ctx, repo, batch, gitproto.FetchOptions{})
-	if err != nil {
-		return err
-	}
-	store, err := g.decodePack(pack)
-	if err != nil {
-		return err
-	}
-	var missing []string
+	remaining := make(map[string]bool, len(batch))
 	for _, oid := range batch {
-		data, ok, err := store.Blob(oid)
+		remaining[oid] = true
+	}
+	opts := gitproto.FetchOptions{Want: func(oid string) bool { return remaining[oid] }}
+	return g.Git.Fetch(ctx, repo, batch, opts, func(pack *gitproto.PackFile) error {
+		store, err := g.decodePack(pack)
 		if err != nil {
 			return err
 		}
-		if !ok {
-			missing = append(missing, oid)
-			continue
-		}
-		if err := g.storeBlob(oid, data); err != nil {
+		defer store.Close()
+		if err := store.Objects(func(oid string, t gitpack.ObjectType, data []byte) error {
+			if !remaining[oid] {
+				return nil
+			}
+			if t != gitpack.ObjBlob {
+				return fmt.Errorf("Object %s is a %s, not a blob.", oid, t)
+			}
+			if err := g.storeBlob(oid, data); err != nil {
+				return err
+			}
+			delete(remaining, oid)
+			return nil
+		}); err != nil {
 			return err
 		}
-	}
-	if len(missing) > 0 {
-		return fmt.Errorf("Remote %s did not send %d requested blob(s), e.g. %s.", repo, len(missing), missing[0])
-	}
-	return nil
+		var missing []string
+		for _, oid := range batch {
+			if remaining[oid] {
+				missing = append(missing, oid)
+			}
+		}
+		if len(missing) > 0 {
+			return fmt.Errorf("Remote %s did not send %d requested blob(s), e.g. %s.", repo, len(missing), missing[0])
+		}
+		return nil
+	})
 }
 
 // verifyBlob checks that data hashes to oid as a git blob (SHA-1, or
@@ -720,19 +763,30 @@ func (s *gitTreeSource) Prefetch(ctx context.Context, keys []string) error {
 	return nil
 }
 
-// gitpackStore adapts gitpack.Store to PackStore.
-type gitpackStore struct{ s *gitpack.Store }
+// gitpackStore adapts gitpack.Pack to PackStore.
+type gitpackStore struct{ p *gitpack.Pack }
 
+// Files reads the pack keeping only its non-blob objects in memory, as
+// lip's FetchTree does, and walks commit's tree.
 func (p gitpackStore) Files(commit string) ([]gitpack.File, error) {
-	tree, err := p.s.CommitTree(commit)
+	s := gitpack.NewStore()
+	if err := p.p.ReadObjects(func(oid string, t gitpack.ObjectType, data []byte) error {
+		if t != gitpack.ObjBlob {
+			s.Add(oid, gitpack.Object{Type: t, Data: data})
+		}
+		return nil
+	}); err != nil {
+		return nil, err
+	}
+	tree, err := s.CommitTree(commit)
 	if err != nil {
 		return nil, err
 	}
-	files, err := p.s.WalkFiles(tree)
+	files, err := s.WalkFiles(tree)
 	if err != nil {
 		return nil, err
 	}
-	if root, ok := p.s.Get(tree); ok {
+	if root, ok := s.Get(tree); ok {
 		entries, err := gitpack.ParseTree(root.Data)
 		if err != nil {
 			return nil, err
@@ -749,15 +803,21 @@ func (p gitpackStore) Files(commit string) ([]gitpack.File, error) {
 }
 
 func (p gitpackStore) Blob(oid string) ([]byte, bool, error) {
-	o, ok := p.s.Get(oid)
-	if !ok {
-		return nil, false, nil
+	o, ok, err := p.p.FindObject(oid)
+	if err != nil || !ok {
+		return nil, false, err
 	}
 	if o.Type != gitpack.ObjBlob {
 		return nil, false, fmt.Errorf("Object %s is a %s, not a blob.", oid, o.Type)
 	}
 	return o.Data, true, nil
 }
+
+func (p gitpackStore) Objects(fn func(oid string, t gitpack.ObjectType, data []byte) error) error {
+	return p.p.ReadObjects(fn)
+}
+
+func (p gitpackStore) Close() error { return p.p.Close() }
 
 // memo memoizes successful results per key; concurrent callers share one
 // computation and failures are not kept (lip's Lazy<Task> caches).

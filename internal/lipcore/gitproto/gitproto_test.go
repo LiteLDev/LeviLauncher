@@ -394,6 +394,18 @@ func fakePack() []byte {
 	return b.Bytes()
 }
 
+// fetchBytes runs Fetch and returns the pack's content.
+func fetchBytes(c *Client, ctx context.Context, repoURL string, wants []string, opts FetchOptions) ([]byte, error) {
+	var pack []byte
+	err := c.Fetch(ctx, repoURL, wants, opts, func(p *PackFile) error {
+		defer p.Close()
+		b, err := io.ReadAll(io.NewSectionReader(p, 0, p.Size()))
+		pack = b
+		return err
+	})
+	return pack, err
+}
+
 func TestFetch(t *testing.T) {
 	f, srv := newFake(t)
 	pack := fakePack()
@@ -406,7 +418,7 @@ func TestFetch(t *testing.T) {
 		w.Write([]byte("0000"))
 	}
 	c := &Client{}
-	got, err := c.Fetch(context.Background(), srv.URL+"/repo.git", []string{idA}, FetchOptions{Shallow: true, BlobNone: true})
+	got, err := fetchBytes(c, context.Background(), srv.URL+"/repo.git", []string{idA}, FetchOptions{Shallow: true, BlobNone: true})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -419,7 +431,7 @@ func TestFetch(t *testing.T) {
 	}
 
 	// Without options nothing extra is sent.
-	if _, err := c.Fetch(context.Background(), srv.URL+"/repo.git", []string{id1, id2}, FetchOptions{}); err != nil {
+	if _, err := fetchBytes(c, context.Background(), srv.URL+"/repo.git", []string{id1, id2}, FetchOptions{}); err != nil {
 		t.Fatal(err)
 	}
 	wantBody = string(pkt("command=fetch", "0001", "no-progress", "ofs-delta", "want "+id1, "want "+id2, "done", "0000"))
@@ -436,7 +448,7 @@ func TestFetchUnsupportedOptions(t *testing.T) {
 		w.Write(band(1, fakePack()))
 		w.Write([]byte("0002"))
 	}
-	if _, err := (&Client{}).Fetch(context.Background(), srv.URL+"/repo.git", []string{id1}, FetchOptions{Shallow: true, BlobNone: true}); err != nil {
+	if _, err := fetchBytes(&Client{}, context.Background(), srv.URL+"/repo.git", []string{id1}, FetchOptions{Shallow: true, BlobNone: true}); err != nil {
 		t.Fatal(err)
 	}
 	wantBody := string(pkt("command=fetch", "0001", "no-progress", "ofs-delta", "want "+id1, "done", "0000"))
@@ -464,7 +476,7 @@ func TestFetchErrors(t *testing.T) {
 			f.fetch = func(w http.ResponseWriter, body []byte) { w.Write(tc.resp) }
 			c := &Client{}
 			sleeps := recordingSleep(c)
-			_, err := c.Fetch(context.Background(), srv.URL+"/repo.git", []string{id1}, FetchOptions{})
+			_, err := fetchBytes(c, context.Background(), srv.URL+"/repo.git", []string{id1}, FetchOptions{})
 			var pe *ProtocolError
 			if !errors.As(err, &pe) || err.Error() != tc.msg {
 				t.Fatalf("got %v want %q", err, tc.msg)
@@ -478,17 +490,17 @@ func TestFetchErrors(t *testing.T) {
 
 func TestFetchArgs(t *testing.T) {
 	c := &Client{}
-	if _, err := c.Fetch(context.Background(), "http://invalid", nil, FetchOptions{}); err == nil {
+	if _, err := fetchBytes(c, context.Background(), "http://invalid", nil, FetchOptions{}); err == nil {
 		t.Error("no wants accepted")
 	}
-	if _, err := c.Fetch(context.Background(), "http://invalid", []string{"HEAD"}, FetchOptions{}); err == nil {
+	if _, err := fetchBytes(c, context.Background(), "http://invalid", []string{"HEAD"}, FetchOptions{}); err == nil {
 		t.Error("non object id accepted")
 	}
 	wants := make([]string, MaxWantsPerRequest+1)
 	for i := range wants {
 		wants[i] = id1
 	}
-	if _, err := c.Fetch(context.Background(), "http://invalid", wants, FetchOptions{}); err == nil {
+	if _, err := fetchBytes(c, context.Background(), "http://invalid", wants, FetchOptions{}); err == nil {
 		t.Error("too many wants accepted")
 	}
 }
@@ -655,7 +667,7 @@ func TestNetworkE2E(t *testing.T) {
 	}
 
 	tag := byVersion["1.0.0"]
-	pack, err := c.Fetch(ctx, repo, []string{tag.Commit}, FetchOptions{Shallow: true, BlobNone: true})
+	pack, err := fetchBytes(c, ctx, repo, []string{tag.Commit}, FetchOptions{Shallow: true, BlobNone: true})
 	if err != nil {
 		t.Fatal(err)
 	}

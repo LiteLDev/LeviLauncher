@@ -44,12 +44,13 @@ var newEngine = func(workDir string, r report.Reporter) packageEngine {
 }
 
 // engineHTTPClient carries the engine's git requests and downloads. Its
-// transport follows the Windows system proxy, as lip's
-// HttpClient.DefaultProxy did. It has no overall timeout (downloads use an
-// idle timeout, git requests their own contexts) and, like Flurl, refuses
-// https -> http redirects.
+// transport follows the Windows system proxy and, like lip's
+// HttpClient.DefaultProxy, waits for PAC/WPAD resolution instead of
+// falling back to a direct connection. It has no overall timeout (downloads
+// use an idle timeout, git requests their own contexts) and, like Flurl,
+// refuses https -> http redirects.
 var engineHTTPClient = &http.Client{
-	Transport:     httpx.DefaultClient().Transport,
+	Transport:     httpx.NewBlockingProxyTransport(),
 	CheckRedirect: httpclient.CheckRedirect,
 }
 
@@ -59,9 +60,100 @@ var engineHTTPClient = &http.Client{
 // (lockfile.State.Save replaces the file atomically).
 var dirLocks sync.Map // lock key -> chan struct{} (capacity 1)
 
-// cacheMu lets package operations share the download cache while CacheClean
-// waits for them and removes it exclusively.
-var cacheMu sync.RWMutex
+// cacheLock lets package operations share the download cache while
+// CacheClean waits for them and removes it exclusively. List does not take
+// it: it never touches the cache.
+var cacheLock ctxRWLock
+
+// ctxRWLock is a writer-preferring read/write lock whose waits honour a
+// context. Like sync.RWMutex, a waiting writer holds back new readers so
+// CacheClean is not starved by back-to-back installs.
+type ctxRWLock struct {
+	mu             sync.Mutex
+	readers        int
+	writer         bool
+	writersWaiting int
+	changed        chan struct{} // closed and dropped on every state change
+}
+
+// waitCh returns the channel closed on the next state change; l.mu is held.
+func (l *ctxRWLock) waitCh() chan struct{} {
+	if l.changed == nil {
+		l.changed = make(chan struct{})
+	}
+	return l.changed
+}
+
+// notify wakes all waiters; l.mu is held.
+func (l *ctxRWLock) notify() {
+	if l.changed != nil {
+		close(l.changed)
+		l.changed = nil
+	}
+}
+
+func (l *ctxRWLock) RLock(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	l.mu.Lock()
+	for l.writer || l.writersWaiting > 0 {
+		ch := l.waitCh()
+		l.mu.Unlock()
+		select {
+		case <-ch:
+		case <-ctx.Done():
+			return ctx.Err()
+		}
+		l.mu.Lock()
+	}
+	l.readers++
+	l.mu.Unlock()
+	return nil
+}
+
+func (l *ctxRWLock) RUnlock() {
+	l.mu.Lock()
+	l.readers--
+	if l.readers == 0 {
+		l.notify()
+	}
+	l.mu.Unlock()
+}
+
+func (l *ctxRWLock) Lock(ctx context.Context) error {
+	if err := ctx.Err(); err != nil {
+		return err
+	}
+	l.mu.Lock()
+	l.writersWaiting++
+	for l.writer || l.readers > 0 {
+		ch := l.waitCh()
+		l.mu.Unlock()
+		select {
+		case <-ch:
+		case <-ctx.Done():
+			l.mu.Lock()
+			l.writersWaiting--
+			// Readers held back by this writer may proceed now.
+			l.notify()
+			l.mu.Unlock()
+			return ctx.Err()
+		}
+		l.mu.Lock()
+	}
+	l.writersWaiting--
+	l.writer = true
+	l.mu.Unlock()
+	return nil
+}
+
+func (l *ctxRWLock) Unlock() {
+	l.mu.Lock()
+	l.writer = false
+	l.notify()
+	l.mu.Unlock()
+}
 
 // cleanCache clears the download cache; replaced in tests.
 var cleanCache = func() error { return fetch.DefaultCache().Clean() }
@@ -110,10 +202,15 @@ func resolveWorkDir(workDir string) (string, error) {
 }
 
 // callEngine builds an engine and runs fn, turning panics raised on the
-// calling goroutine into errors.
-func callEngine(ctx context.Context, workDir string, r report.Reporter, fn func(context.Context, packageEngine) error) (err error) {
-	cacheMu.RLock()
-	defer cacheMu.RUnlock()
+// calling goroutine into errors. With usesCache, it holds cacheLock (shared)
+// for the call.
+func callEngine(ctx context.Context, workDir string, r report.Reporter, usesCache bool, fn func(context.Context, packageEngine) error) (err error) {
+	if usesCache {
+		if err := cacheLock.RLock(ctx); err != nil {
+			return err
+		}
+		defer cacheLock.RUnlock()
+	}
 	defer func() {
 		if p := recover(); p != nil {
 			err = fmt.Errorf("lip engine panic: %v", p)
@@ -128,8 +225,8 @@ func callEngine(ctx context.Context, workDir string, r report.Reporter, fn func(
 
 // runPackageTask runs one operation on workDir. With track, it emits
 // lip_task_started, forwards reports as lip_task_log/lip_task_progress and
-// ends with lip_task_finished. With exclusive, it holds workDir's lock for
-// the whole operation.
+// ends with lip_task_finished. With exclusive (a writing operation), it
+// holds workDir's lock and a shared cacheLock for the whole operation.
 func runPackageTask(ctx context.Context, method string, workDir string, packages []string, track, exclusive bool, fn func(context.Context, packageEngine) error) error {
 	dir, err := resolveWorkDir(workDir)
 	if err != nil {
@@ -148,14 +245,14 @@ func runPackageTask(ctx context.Context, method string, workDir string, packages
 
 	err = func() error {
 		if !exclusive {
-			return callEngine(ctx, dir, reporter, fn)
+			return callEngine(ctx, dir, reporter, false, fn)
 		}
 		unlock, err := lockDir(ctx, dir)
 		if err != nil {
 			return err
 		}
 		defer unlock()
-		return callEngine(ctx, dir, reporter, fn)
+		return callEngine(ctx, dir, reporter, true, fn)
 	}()
 
 	if track {
@@ -168,15 +265,16 @@ func runPackageTask(ctx context.Context, method string, workDir string, packages
 	return err
 }
 
-// CacheClean clears lip's download cache.
+// CacheClean clears lip's download cache once running package operations
+// have finished.
 func CacheClean(ctx context.Context) error {
-	if ctx != nil {
-		if err := ctx.Err(); err != nil {
-			return fmt.Errorf("ERR_LIP_CACHE_CLEAN_FAILED: %w", err)
-		}
+	if ctx == nil {
+		ctx = context.Background()
 	}
-	cacheMu.Lock()
-	defer cacheMu.Unlock()
+	if err := cacheLock.Lock(ctx); err != nil {
+		return fmt.Errorf("ERR_LIP_CACHE_CLEAN_FAILED: %w", err)
+	}
+	defer cacheLock.Unlock()
 	err := func() (err error) {
 		defer func() {
 			if p := recover(); p != nil {

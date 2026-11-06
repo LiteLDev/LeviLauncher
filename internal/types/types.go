@@ -235,6 +235,10 @@ type InstanceBackupRestoreProgress struct {
 	// omitted when the step has no measured sub-progress; an omitted
 	// SubCurrent next to a SubTotal means 0. SubUnit is "bytes", "files" or
 	// "packages". SubLabel names the item being worked on and may be empty.
+	// SubID identifies the bar: one step can run several bars in turn (the
+	// mods scope runs "mods:files", "mods:packages", then "mods:verify"), so
+	// a change of SubID starts a new bar rather than moving the old one back.
+	SubID      string `json:"subId,omitempty"`
 	SubCurrent int64  `json:"subCurrent,omitempty"`
 	SubTotal   int64  `json:"subTotal,omitempty"`
 	SubUnit    string `json:"subUnit,omitempty"`

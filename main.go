@@ -505,6 +505,7 @@ func init() {
 	application.RegisterEvent[types.ExtractProgress](mcservice.EventExtractProgress)
 	application.RegisterEvent[types.InstanceBackupRestoreProgress](mcservice.EventInstanceBackupRestoreProgress)
 	application.RegisterEvent[types.InstanceBackupCreateProgress](mcservice.EventInstanceBackupCreateProgress)
+	application.RegisterEvent[types.InstanceBackupRestoreProgress](mcservice.EventInstanceBackupPreviewProgress)
 	// launch
 	application.RegisterEvent[struct{}](launch.EventMcLaunchStart)
 	application.RegisterEvent[struct{}](launch.EventMcLaunchDone)

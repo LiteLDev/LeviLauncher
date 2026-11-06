@@ -66,6 +66,14 @@ var emitInstanceBackupRestoreProgressEvent = func(payload types.InstanceBackupRe
 	app.Event.Emit(EventInstanceBackupRestoreProgress, payload)
 }
 
+var emitInstanceBackupPreviewProgressEvent = func(payload types.InstanceBackupRestoreProgress) {
+	app := application.Get()
+	if app == nil || app.Event == nil {
+		return
+	}
+	app.Event.Emit(EventInstanceBackupPreviewProgress, payload)
+}
+
 var emitInstanceBackupCreateProgressEvent = func(payload types.InstanceBackupCreateProgress) {
 	app := application.Get()
 	if app == nil || app.Event == nil {
@@ -91,13 +99,16 @@ func emitInstanceBackupRestoreProgress(
 }
 
 // instanceBackupRestoreStep is the restore step in progress. Sub-progress
-// events repeat its fields so every event stands on its own.
+// events repeat its fields so every event stands on its own. preview sends
+// the events as EventInstanceBackupPreviewProgress instead of the restore
+// event, for the extraction behind a conflict preview.
 type instanceBackupRestoreStep struct {
 	phase       string
 	currentStep int
 	totalSteps  int
 	scopeKey    string
 	scopeLabel  string
+	preview     bool
 }
 
 func (s instanceBackupRestoreStep) payload() types.InstanceBackupRestoreProgress {
@@ -112,25 +123,42 @@ func (s instanceBackupRestoreStep) payload() types.InstanceBackupRestoreProgress
 }
 
 func (s instanceBackupRestoreStep) emit() {
-	emitInstanceBackupRestoreProgressEvent(s.payload())
+	s.send(s.payload())
 }
 
-// subProgress opens a measured sub-progress bar inside this step. It returns
-// nil (a no-op tracker) when total is not positive.
-func (s instanceBackupRestoreStep) subProgress(unit string, total int64, threshold int64) *instanceBackupMeasuredProgress {
+func (s instanceBackupRestoreStep) send(payload types.InstanceBackupRestoreProgress) {
+	if s.preview {
+		emitInstanceBackupPreviewProgressEvent(payload)
+		return
+	}
+	emitInstanceBackupRestoreProgressEvent(payload)
+}
+
+// subProgress opens a measured sub-progress bar inside this step. id names
+// the bar (SubID) so a step that runs several bars in turn keeps them apart.
+// It returns nil (a no-op tracker) when total is not positive.
+func (s instanceBackupRestoreStep) subProgress(id string, unit string, total int64, threshold int64) *instanceBackupMeasuredProgress {
 	return newInstanceBackupMeasuredProgress(total, threshold, func(current int64, total int64, label string) {
 		payload := s.payload()
+		payload.SubID = id
 		payload.SubCurrent = current
 		payload.SubTotal = total
 		payload.SubUnit = unit
 		payload.SubLabel = label
-		emitInstanceBackupRestoreProgressEvent(payload)
+		s.send(payload)
 	})
 }
 
-// filesProgress opens a "files" sub-progress bar and emits its first update.
+// extractProgress opens the "extract" bytes bar for
+// extractInstanceBackupArchive.
+func (s instanceBackupRestoreStep) extractProgress(total int64) *instanceBackupMeasuredProgress {
+	return s.subProgress("extract", instanceBackupProgressUnitBytes, total, instanceBackupByteProgressThreshold(total))
+}
+
+// filesProgress opens a "files" sub-progress bar with SubID "<scope>:files"
+// and emits its first update.
 func (s instanceBackupRestoreStep) filesProgress(total int64) *instanceBackupMeasuredProgress {
-	progress := s.subProgress(instanceBackupProgressUnitFiles, total, instanceBackupCountProgressThreshold(total))
+	progress := s.subProgress(strings.TrimSpace(s.scopeKey)+":files", instanceBackupProgressUnitFiles, total, instanceBackupCountProgressThreshold(total))
 	progress.announce("")
 	return progress
 }
@@ -690,7 +718,11 @@ func PreviewInstanceBackupRestoreConflicts(name string, request types.InstanceBa
 	}
 	defer os.RemoveAll(tempDir)
 
-	if err := extractInstanceBackupArchive(trimmedArchivePath, tempDir, nil); err != nil {
+	// The preview extracts the whole archive too; it reports the same
+	// measured byte bar as a restore, on its own event.
+	previewing := instanceBackupRestoreStep{phase: "extracting", currentStep: 1, totalSteps: 1, preview: true}
+	previewing.emit()
+	if err := extractInstanceBackupArchive(trimmedArchivePath, tempDir, previewing.extractProgress); err != nil {
 		info.ErrorCode = mapInstanceBackupRestoreErrorCode(err)
 		return info
 	}
@@ -759,9 +791,7 @@ func RestoreInstanceBackup(ctx context.Context, name string, request types.Insta
 
 	extracting := instanceBackupRestoreStep{phase: "extracting", currentStep: 2, totalSteps: totalSteps}
 	extracting.emit()
-	if err := extractInstanceBackupArchive(trimmedArchivePath, tempDir, func(total int64) *instanceBackupMeasuredProgress {
-		return extracting.subProgress(instanceBackupProgressUnitBytes, total, instanceBackupByteProgressThreshold(total))
-	}); err != nil {
+	if err := extractInstanceBackupArchive(trimmedArchivePath, tempDir, extracting.extractProgress); err != nil {
 		result.ErrorCode = mapInstanceBackupRestoreErrorCode(err)
 		return result
 	}
@@ -1587,7 +1617,7 @@ func writeFileToZip(zw *instanceBackupZipSink, archiveName string, srcPath strin
 	header.Method = zip.Deflate
 	if zw.zw == nil {
 		zw.files++
-		zw.bytes += info.Size()
+		zw.bytes += instanceBackupFileContentSize(srcPath, info)
 		return nil
 	}
 	writer, err := zw.zw.CreateHeader(header)
@@ -1612,6 +1642,18 @@ func writeFileToZip(zw *instanceBackupZipSink, archiveName string, srcPath strin
 	zw.bytes += written
 	zw.progress.finishFile()
 	return nil
+}
+
+// instanceBackupFileContentSize is the number of content bytes writeFileToZip
+// copies for srcPath. info may come from Lstat (filepath.Walk), but the copy
+// opens srcPath and so follows a symlink: its size is the target's.
+func instanceBackupFileContentSize(srcPath string, info os.FileInfo) int64 {
+	if info.Mode()&os.ModeSymlink != 0 {
+		if target, err := os.Stat(srcPath); err == nil && target.Mode().IsRegular() {
+			return target.Size()
+		}
+	}
+	return info.Size()
 }
 
 func writeZipDirEntry(zw *instanceBackupZipSink, archiveName string) error {
@@ -2991,7 +3033,7 @@ func restoreInstanceBackupMods(
 
 	// One "packages" bar over the explicit packages: before each install it
 	// names the package, after each install (successful or not) it counts it.
-	packageProgress := step.subProgress(instanceBackupProgressUnitPackages, int64(len(explicitPackages)), 1)
+	packageProgress := step.subProgress("mods:packages", instanceBackupProgressUnitPackages, int64(len(explicitPackages)), 1)
 	failedInstalls := make([]string, 0)
 	for _, item := range explicitPackages {
 		packageProgress.announce(item.Identifier)
@@ -3009,9 +3051,14 @@ func restoreInstanceBackupMods(
 		result.Details = append(result.Details, failedInstalls...)
 	}
 
+	// A "packages" bar over every recorded package whose install state is
+	// checked, counted as each check returns.
+	verifyProgress := step.subProgress("mods:verify", instanceBackupProgressUnitPackages, int64(len(lipPackages)), 1)
+	verifyProgress.announce("")
 	missingPackages := make([]string, 0)
 	for _, item := range lipPackages {
 		state := instanceBackupGetLIPPackageInstallState(ctx, targetName, item.Identifier)
+		verifyProgress.add(1, item.Identifier)
 		if !state.Installed {
 			missingPackages = append(missingPackages, fmt.Sprintf("%s@%s", item.Identifier, item.Version))
 			continue
@@ -3021,6 +3068,7 @@ func restoreInstanceBackupMods(
 			result.Details = append(result.Details, fmt.Sprintf("%s: expected %s, got %s", item.Identifier, item.Version, strings.TrimSpace(state.InstalledVersion)))
 		}
 	}
+	verifyProgress.finish(false)
 	if len(missingPackages) > 0 {
 		result.Warnings = append(result.Warnings, "ERR_INSTANCE_BACKUP_RESTORE_LIP_MISSING")
 		result.Details = append(result.Details, missingPackages...)

@@ -220,11 +220,12 @@ func filterInstanceBackupSubProgress(
 	events []types.InstanceBackupRestoreProgress,
 	phase string,
 	scopeKey string,
+	subID string,
 	unit string,
 ) []types.InstanceBackupRestoreProgress {
 	var out []types.InstanceBackupRestoreProgress
 	for _, event := range events {
-		if event.SubTotal > 0 && event.Phase == phase && event.ScopeKey == scopeKey && event.SubUnit == unit {
+		if event.SubTotal > 0 && event.Phase == phase && event.ScopeKey == scopeKey && event.SubID == subID && event.SubUnit == unit {
 			out = append(out, event)
 		}
 	}
@@ -336,7 +337,7 @@ func TestRestoreInstanceBackupEmitsMeasuredSubProgress(t *testing.T) {
 	}
 
 	_, archiveBytes := instanceBackupArchiveCounts(t, backup.ArchivePath, "", false)
-	extract := filterInstanceBackupSubProgress(*events, "extracting", "", instanceBackupProgressUnitBytes)
+	extract := filterInstanceBackupSubProgress(*events, "extracting", "", "extract", instanceBackupProgressUnitBytes)
 	assertInstanceBackupSubProgress(t, "extract", extract, archiveBytes)
 	if len(extract) < 3 || len(extract) > 100+3 {
 		t.Fatalf("extract progress should be throttled to ~1%% steps, got %d events", len(extract))
@@ -348,17 +349,17 @@ func TestRestoreInstanceBackupEmitsMeasuredSubProgress(t *testing.T) {
 	}
 
 	gameDataFiles, _ := instanceBackupArchiveCounts(t, backup.ArchivePath, "gameData/", false)
-	gameData := filterInstanceBackupSubProgress(*events, "restoring_scope", "gameData", instanceBackupProgressUnitFiles)
+	gameData := filterInstanceBackupSubProgress(*events, "restoring_scope", "gameData", "gameData:files", instanceBackupProgressUnitFiles)
 	assertInstanceBackupSubProgress(t, "gameData files", gameData, int64(gameDataFiles))
 
 	modFiles, _ := instanceBackupArchiveCounts(t, backup.ArchivePath, "mods/raw/", false)
 	if modFiles != 3 {
 		t.Fatalf("expected 3 raw mod files in archive, got %d", modFiles)
 	}
-	mods := filterInstanceBackupSubProgress(*events, "restoring_scope", "mods", instanceBackupProgressUnitFiles)
+	mods := filterInstanceBackupSubProgress(*events, "restoring_scope", "mods", "mods:files", instanceBackupProgressUnitFiles)
 	assertInstanceBackupSubProgress(t, "mods files", mods, int64(modFiles))
 
-	packages := filterInstanceBackupSubProgress(*events, "restoring_scope", "mods", instanceBackupProgressUnitPackages)
+	packages := filterInstanceBackupSubProgress(*events, "restoring_scope", "mods", "mods:packages", instanceBackupProgressUnitPackages)
 	assertInstanceBackupSubProgress(t, "lip packages", packages, 2)
 	var labels []string
 	for _, event := range packages {
@@ -376,7 +377,163 @@ func TestRestoreInstanceBackupEmitsMeasuredSubProgress(t *testing.T) {
 			t.Fatalf("package sub-progress must stay on the mods step: %+v", event)
 		}
 	}
+
+	// The install-state check runs over every recorded package (explicit and
+	// dependency) as its own bar, after the install bar has closed.
+	verify := filterInstanceBackupSubProgress(*events, "restoring_scope", "mods", "mods:verify", instanceBackupProgressUnitPackages)
+	assertInstanceBackupSubProgress(t, "lip verify", verify, 3)
+
+	// Every sub-progress event carries a bar id, and within the mods step the
+	// bars run one after another: files, packages, verify, never interleaved.
+	var modsBars []string
+	for _, event := range *events {
+		if event.SubTotal == 0 {
+			continue
+		}
+		if event.SubID == "" {
+			t.Fatalf("sub-progress event without SubID: %+v", event)
+		}
+		if event.ScopeKey != "mods" {
+			continue
+		}
+		if len(modsBars) == 0 || modsBars[len(modsBars)-1] != event.SubID {
+			modsBars = append(modsBars, event.SubID)
+		}
+	}
+	if got := strings.Join(modsBars, ","); got != "mods:files,mods:packages,mods:verify" {
+		t.Fatalf("mods bars = %s, want mods:files,mods:packages,mods:verify", got)
+	}
 }
+
+func TestPreviewInstanceBackupRestoreConflictsEmitsExtractProgress(t *testing.T) {
+	_, appDataDir, versionsDir := setupInstanceBackupEnv(t)
+	createProgressTestSource(t, versionsDir, appDataDir)
+	backup := BackupInstance("Source", types.InstanceBackupRequest{
+		Scopes:     []string{"gameData", "mods"},
+		ScopeModes: map[string]string{"gameData": instanceBackupModeSafe},
+	})
+	if backup.ErrorCode != "" {
+		t.Fatalf("backup failed: %q", backup.ErrorCode)
+	}
+	targetDir := createTestInstance(t, versionsDir, "Target", versions.VersionMeta{
+		GameVersion:     "1.21.80",
+		Type:            "release",
+		EnableIsolation: true,
+	})
+	_ = createTestGameDataDir(t, targetDir, appDataDir, false, true)
+
+	restoreEvents := recordInstanceBackupRestoreProgress(t)
+	var events []types.InstanceBackupRestoreProgress
+	previous := emitInstanceBackupPreviewProgressEvent
+	emitInstanceBackupPreviewProgressEvent = func(payload types.InstanceBackupRestoreProgress) {
+		events = append(events, payload)
+	}
+	t.Cleanup(func() { emitInstanceBackupPreviewProgressEvent = previous })
+
+	info := PreviewInstanceBackupRestoreConflicts("Target", types.InstanceBackupRestoreRequest{
+		ArchivePath: backup.ArchivePath,
+		Scopes:      []string{"gameData", "mods"},
+	})
+	if info.ErrorCode != "" {
+		t.Fatalf("preview failed: %q", info.ErrorCode)
+	}
+	if len(*restoreEvents) != 0 {
+		t.Fatalf("preview must not emit restore progress: %+v", *restoreEvents)
+	}
+	if len(events) == 0 || events[0].SubTotal != 0 || events[0].Phase != "extracting" || events[0].CurrentStep != 1 || events[0].TotalSteps != 1 {
+		t.Fatalf("expected an opening extracting step 1/1 event, got %+v", events)
+	}
+	_, archiveBytes := instanceBackupArchiveCounts(t, backup.ArchivePath, "", false)
+	extract := filterInstanceBackupSubProgress(events, "extracting", "", "extract", instanceBackupProgressUnitBytes)
+	assertInstanceBackupSubProgress(t, "preview extract", extract, archiveBytes)
+	if len(extract)+1 != len(events) {
+		t.Fatalf("preview should only emit the step and its byte bar, got %+v", events)
+	}
+}
+
+// A file reached through a symlink is copied from its target (os.Open follows
+// links), so the dry run must count the target size, not the size of the
+// link itself, or Bytes would overrun TotalBytes.
+func TestInstanceBackupDryRunCountsSymlinkTargetSize(t *testing.T) {
+	dir := t.TempDir()
+	targetPath := filepath.Join(dir, "target.bin")
+	writeProgressTestFile(t, targetPath, 4096)
+	targetInfo, err := os.Stat(targetPath)
+	if err != nil {
+		t.Fatalf("stat target: %v", err)
+	}
+	// Stand-in for the Lstat FileInfo filepath.Walk hands over for a link:
+	// symlink mode and size 0, as Windows reports for a file symlink.
+	linkInfo := progressTestFileInfo{FileInfo: targetInfo, mode: os.ModeSymlink | 0o777, size: 0}
+	if got := instanceBackupFileContentSize(targetPath, linkInfo); got != 4096 {
+		t.Fatalf("content size through link = %d, want 4096", got)
+	}
+	if got := instanceBackupFileContentSize(targetPath, targetInfo); got != 4096 {
+		t.Fatalf("content size of regular file = %d, want 4096", got)
+	}
+	dangling := filepath.Join(dir, "missing.bin")
+	if got := instanceBackupFileContentSize(dangling, linkInfo); got != 0 {
+		t.Fatalf("dangling link should fall back to the Lstat size, got %d", got)
+	}
+}
+
+// End to end through filepath.Walk with a real symlink, when the platform
+// allows the test to create one: the dry-run totals equal what is written.
+func TestInstanceBackupDryRunMatchesWriteThroughSymlink(t *testing.T) {
+	dir := t.TempDir()
+	external := filepath.Join(dir, "build", "MyMod.dll")
+	writeProgressTestFile(t, external, 3*1024*1024+7)
+	src := filepath.Join(dir, "mods", "MyMod")
+	writeProgressTestFile(t, filepath.Join(src, "manifest.json"), 120)
+	if err := os.Symlink(external, filepath.Join(src, "MyMod.dll")); err != nil {
+		t.Skipf("cannot create symlinks here: %v", err)
+	}
+
+	dry := &instanceBackupZipSink{}
+	if err := writeNamedDirToZip(dry, "mods/MyMod", src); err != nil {
+		t.Fatalf("dry run: %v", err)
+	}
+	if dry.files != 2 || dry.bytes != 3*1024*1024+7+120 {
+		t.Fatalf("dry run counted %d files / %d bytes", dry.files, dry.bytes)
+	}
+
+	events := recordInstanceBackupCreateProgress(t)
+	out, err := os.Create(filepath.Join(dir, "out.zip"))
+	if err != nil {
+		t.Fatalf("create zip: %v", err)
+	}
+	defer out.Close()
+	sink := &instanceBackupZipSink{zw: zip.NewWriter(out), progress: newInstanceBackupCreateProgress(dry.files, dry.bytes)}
+	if err := writeNamedDirToZip(sink, "mods/MyMod", src); err != nil {
+		t.Fatalf("write: %v", err)
+	}
+	if err := sink.zw.Close(); err != nil {
+		t.Fatalf("close zip: %v", err)
+	}
+	if sink.files != dry.files || sink.bytes != dry.bytes {
+		t.Fatalf("written %d/%d, dry run %d/%d", sink.files, sink.bytes, dry.files, dry.bytes)
+	}
+	if len(*events) == 0 {
+		t.Fatalf("expected writing events")
+	}
+	for i, event := range *events {
+		if event.TotalBytes != dry.bytes || event.TotalFiles != dry.files {
+			t.Fatalf("event %d totals moved off the scan: %+v", i, event)
+		}
+		if event.Bytes > event.TotalBytes {
+			t.Fatalf("event %d overran total: %+v", i, event)
+		}
+	}
+}
+
+type progressTestFileInfo struct {
+	os.FileInfo
+	mode os.FileMode
+	size int64
+}
+
+func (f progressTestFileInfo) Mode() os.FileMode { return f.mode }
+func (f progressTestFileInfo) Size() int64       { return f.size }
 
 func TestRestoreInstanceBackupFilesProgressCountsKeptConflicts(t *testing.T) {
 	_, appDataDir, versionsDir := setupInstanceBackupEnv(t)
@@ -414,7 +571,7 @@ func TestRestoreInstanceBackupFilesProgressCountsKeptConflicts(t *testing.T) {
 	if result.Status != "success" {
 		t.Fatalf("unexpected restore result: %+v", result)
 	}
-	mods := filterInstanceBackupSubProgress(*events, "restoring_scope", "mods", instanceBackupProgressUnitFiles)
+	mods := filterInstanceBackupSubProgress(*events, "restoring_scope", "mods", "mods:files", instanceBackupProgressUnitFiles)
 	assertInstanceBackupSubProgress(t, "mods files", mods, 3)
 	// The kept folder's two files are counted together when it is skipped.
 	sawSkip := false
@@ -454,7 +611,7 @@ func TestRestoreInstanceBackupFullGameDataFilesProgress(t *testing.T) {
 		t.Fatalf("unexpected restore result: %+v", result)
 	}
 	gameDataFiles, _ := instanceBackupArchiveCounts(t, backup.ArchivePath, "gameData/", false)
-	gameData := filterInstanceBackupSubProgress(*events, "restoring_scope", "gameData", instanceBackupProgressUnitFiles)
+	gameData := filterInstanceBackupSubProgress(*events, "restoring_scope", "gameData", "gameData:files", instanceBackupProgressUnitFiles)
 	assertInstanceBackupSubProgress(t, "full gameData files", gameData, int64(gameDataFiles))
 	// Files are counted as they are copied, not in one jump at the end.
 	if len(gameData) < 3 {

@@ -6,11 +6,15 @@ import (
 	"context"
 	"crypto/sha1"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
+	"io/fs"
+	"path/filepath"
 	"reflect"
 	"runtime"
 	"runtime/debug"
+	"strings"
 	"testing"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/gitpack"
@@ -79,6 +83,64 @@ func TestGitRegistryProxyIncompleteTreePack(t *testing.T) {
 	if !reflect.DeepEqual(git.fetches, want) || !repo.proxyFailed {
 		t.Fatalf("fetches = %+v\nwant %+v", git.fetches, want)
 	}
+}
+
+// Errors while reading a proxied blob pack or storing its blobs are not the
+// proxy's fault: like lip, they fail the fetch as they are, without marking
+// the proxy failed or fetching directly.
+func TestGitRegistryProxyBlobErrorsNoFallback(t *testing.T) {
+	commit := "c100000000000000000000000000000000000000"
+	treeFetch := fetchCall{Repo: repoA, Wants: []string{commit}, Opts: gitproto.FetchOptions{Shallow: true, BlobNone: true}, Proxy: true}
+
+	t.Run("store", func(t *testing.T) {
+		g, git, repo, cache, _ := newTestRegistry(t)
+		repo.proxy = true
+		tooth, dll := repo.trees[commit][0].OID, repo.trees[commit][1].OID
+		src, err := g.OpenAsset(ctx, specA("1.0.0"), manifest.Asset{Type: manifest.AssetSelf})
+		if err != nil {
+			t.Fatal(err)
+		}
+		cache.dir = filepath.Join(cache.dir, "missing")
+		err = src.Prefetch(ctx, src.Keys())
+		var pe *fs.PathError
+		if !errors.As(err, &pe) || strings.Contains(err.Error(), "directly") {
+			t.Fatalf("err = %v, want the cache's own error", err)
+		}
+		want := []fetchCall{treeFetch, {Repo: repoA, Wants: []string{tooth, dll}, Proxy: true}}
+		if !reflect.DeepEqual(git.fetches, want) || repo.proxyFailed {
+			t.Fatalf("fetches = %+v, proxy failed %v\nwant %+v", git.fetches, repo.proxyFailed, want)
+		}
+	})
+
+	t.Run("not a blob", func(t *testing.T) {
+		g, git, repo, _, _ := newTestRegistry(t)
+		repo.proxy = true
+		tooth := repo.trees[commit][0].OID
+		g.DecodePack = func(pack *gitproto.PackFile) (PackStore, error) {
+			st, err := git.decode(pack)
+			if err != nil {
+				return nil, err
+			}
+			return treeStore{st}, nil
+		}
+		_, err := g.Manifest(ctx, specA("1.0.0"))
+		if err == nil || err.Error() != "Object "+tooth+" is a tree, not a blob." {
+			t.Fatalf("err = %v", err)
+		}
+		want := []fetchCall{treeFetch, {Repo: repoA, Wants: []string{tooth}, Proxy: true}}
+		if !reflect.DeepEqual(git.fetches, want) || repo.proxyFailed {
+			t.Fatalf("fetches = %+v, proxy failed %v\nwant %+v", git.fetches, repo.proxyFailed, want)
+		}
+	})
+}
+
+// treeStore reports every object of its pack as a tree.
+type treeStore struct{ PackStore }
+
+func (s treeStore) Objects(fn func(oid string, t gitpack.ObjectType, data []byte) error) error {
+	return s.PackStore.Objects(func(oid string, _ gitpack.ObjectType, data []byte) error {
+		return fn(oid, gitpack.ObjTree, data)
+	})
 }
 
 func TestGitRegistryRetainedPacksClosed(t *testing.T) {

@@ -628,7 +628,8 @@ func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string
 // pack are stored as they are read, and a pack missing some of them fails
 // that attempt, so after a proxy attempt the original URL is asked for only
 // the blobs still missing (and the proxy is not used for the repository
-// again).
+// again). As in lip, only fetching and opening the pack falls back: errors
+// while reading its objects or storing blobs fail the batch as they are.
 func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []string) error {
 	remaining := make(map[string]bool, len(batch))
 	for _, oid := range batch {
@@ -654,7 +655,7 @@ func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []s
 			delete(remaining, oid)
 			return nil
 		}); err != nil {
-			return err
+			return fetch.NoFallback(err)
 		}
 		var missing []string
 		for _, oid := range batch {

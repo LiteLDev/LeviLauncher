@@ -73,7 +73,8 @@ func (g *fakeGit) ListTags(_ context.Context, repoURL string) ([]gitproto.TagRef
 }
 
 // Fetch serves JSON "packs" describing the call; with repo.proxy it tries
-// the proxy first and falls back like gitproto.Client.Fetch.
+// the proxy first and falls back like gitproto.Client.Fetch with
+// fetch.ProxyRewriter.
 func (g *fakeGit) Fetch(_ context.Context, repoURL string, wants []string, opts gitproto.FetchOptions, handle gitproto.PackHandler) error {
 	if len(wants) > maxWantsPerRequest {
 		return fmt.Errorf("too many wants: %d", len(wants))
@@ -113,15 +114,19 @@ func (g *fakeGit) Fetch(_ context.Context, repoURL string, wants []string, opts 
 	useProxy := r != nil && r.proxy && !r.proxyFailed
 	g.mu.Unlock()
 	if !useProxy {
-		return attempt(false)
+		return fetch.StripNoFallback(attempt(false))
 	}
-	if err := attempt(true); err == nil {
+	err := attempt(true)
+	if err == nil {
 		return nil
+	}
+	if nf, ok := err.(*fetch.NoFallbackError); ok {
+		return nf.Err
 	}
 	g.mu.Lock()
 	r.proxyFailed = true
 	g.mu.Unlock()
-	return attempt(false)
+	return fetch.StripNoFallback(attempt(false))
 }
 
 // fakePackStore decodes the "packs" produced by fakeGit.Fetch.

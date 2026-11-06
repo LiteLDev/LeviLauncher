@@ -4,6 +4,8 @@ import (
 	"context"
 	"errors"
 	"fmt"
+
+	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
 )
 
 // ProtocolError is returned when a remote misbehaves, reports an error or
@@ -50,6 +52,11 @@ func (e *timeoutError) Error() string { return "Git request to " + e.url + " tim
 // without a response, timeouts, IO errors, 5xx and 429.
 func isTransient(err error) bool {
 	if errors.Is(err, context.Canceled) {
+		return false
+	}
+	// A pack handler's own failure is not retried: lip's FetchBlobBatch
+	// retries only the download.
+	if _, ok := err.(*fetch.NoFallbackError); ok {
 		return false
 	}
 	var pe *ProtocolError

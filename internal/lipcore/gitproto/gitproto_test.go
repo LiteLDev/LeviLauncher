@@ -16,6 +16,8 @@ import (
 	"sync"
 	"testing"
 	"time"
+
+	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
 )
 
 func pkt(lines ...string) []byte {
@@ -437,6 +439,28 @@ func TestFetch(t *testing.T) {
 	wantBody = string(pkt("command=fetch", "0001", "no-progress", "ofs-delta", "want "+id1, "want "+id2, "done", "0000"))
 	if string(f.bodies[1]) != wantBody {
 		t.Fatalf("body %q\nwant %q", f.bodies[1], wantBody)
+	}
+}
+
+// A handler error marked by fetch.NoFallback is returned as it is and not
+// retried, even when it wraps a transient error.
+func TestFetchHandlerNoFallback(t *testing.T) {
+	f, srv := newFake(t)
+	pack := fakePack()
+	f.fetch = func(w http.ResponseWriter, body []byte) {
+		w.Write(pkt("packfile"))
+		w.Write(band(1, pack))
+		w.Write([]byte("0000"))
+	}
+	c := &Client{}
+	sleeps := recordingSleep(c)
+	errX := &transportError{err: errors.New("disk full")}
+	err := c.Fetch(context.Background(), srv.URL+"/repo.git", []string{idA}, FetchOptions{}, func(p *PackFile) error {
+		p.Close()
+		return fetch.NoFallback(errX)
+	})
+	if err != errX || len(f.bodies) != 1 || len(*sleeps) != 0 {
+		t.Fatalf("err = %v, %d requests, sleeps %v", err, len(f.bodies), *sleeps)
 	}
 }
 

@@ -18,9 +18,11 @@ import (
 //     characters, the backtick and "<>\^{|} are percent-encoded, a '%' not followed
 //     by two hex digits becomes "%25", escapes of unreserved characters
 //     (ALPHA DIGIT - . _ ~) are decoded, runs of escapes forming a valid
-//     UTF-8 multi-byte sequence are uppercased and every other escape
+//     UTF-8 multi-byte sequence whose code point .NET's IRI parsing
+//     decodes (see iriInRange) are uppercased and every other escape
 //     (reserved ASCII such as %2f, stray or invalid UTF-8 bytes such as
-//     %e9) keeps the case it was written in.
+//     %e9, code points outside the IRI range such as %c2%80) keeps the
+//     case it was written in.
 //
 // Other inputs (opaque "scheme:..." URIs, file URLs, IPv6 or IDN hosts)
 // are only trimmed/escaped; Flurl may render some of them differently, but
@@ -34,7 +36,7 @@ func NormalizeURL(s string) string {
 		var b strings.Builder
 		b.WriteString(scheme)
 		b.WriteByte(':')
-		b.WriteString(escapeURLPart(path))
+		b.WriteString(escapeURLPart(path, false))
 		writeQueryFragment(&b, query, hasQuery, frag, hasFrag)
 		return b.String()
 	}
@@ -46,7 +48,7 @@ func NormalizeURL(s string) string {
 		}
 		authority, tail := rest[:end], rest[end:]
 		path, query, hasQuery, frag, hasFrag := splitURLTail(tail)
-		path = removeDotSegments(escapeURLPart(strings.ReplaceAll(path, "\\", "/")))
+		path = removeDotSegments(escapeURLPart(strings.ReplaceAll(path, "\\", "/"), false))
 		var b strings.Builder
 		b.WriteString(strings.ToLower(scheme))
 		b.WriteString("://")
@@ -57,7 +59,7 @@ func NormalizeURL(s string) string {
 	}
 	path, query, hasQuery, frag, hasFrag := splitURLTail(s)
 	var b strings.Builder
-	b.WriteString(escapeURLPart(path))
+	b.WriteString(escapeURLPart(path, false))
 	writeQueryFragment(&b, query, hasQuery, frag, hasFrag)
 	return b.String()
 }
@@ -65,11 +67,11 @@ func NormalizeURL(s string) string {
 func writeQueryFragment(b *strings.Builder, query string, hasQuery bool, frag string, hasFrag bool) {
 	if hasQuery {
 		b.WriteByte('?')
-		b.WriteString(escapeURLPart(query))
+		b.WriteString(escapeURLPart(query, true))
 	}
 	if hasFrag {
 		b.WriteByte('#')
-		b.WriteString(escapeURLPart(frag))
+		b.WriteString(escapeURLPart(frag, false))
 	}
 }
 
@@ -134,7 +136,9 @@ func isUnreserved(c byte) bool {
 	return isASCIILetter(c) || c >= '0' && c <= '9' || c == '-' || c == '.' || c == '_' || c == '~'
 }
 
-func escapeURLPart(s string) string {
+// escapeURLPart escapes one URL component; isQuery is true only for the
+// query, which admits a wider IRI range than the path and fragment.
+func escapeURLPart(s string, isQuery bool) string {
 	var b strings.Builder
 	for i := 0; i < len(s); i++ {
 		c := s[i]
@@ -147,7 +151,7 @@ func escapeURLPart(s string) string {
 					if isUnreserved(v) {
 						b.WriteByte(v)
 						i += 2
-					} else if n := escapedUTF8Len(s[i:]); n > 0 {
+					} else if n := escapedUTF8Len(s[i:], isQuery); n > 0 {
 						b.WriteString(strings.ToUpper(s[i : i+n]))
 						i += n - 1
 					} else {
@@ -172,9 +176,9 @@ func escapeURLPart(s string) string {
 }
 
 // escapedUTF8Len returns the length of the run of %XX escapes at the start
-// of s when together they encode one valid non-ASCII UTF-8 character, and
-// 0 otherwise.
-func escapedUTF8Len(s string) (n int) {
+// of s when together they encode one valid non-ASCII UTF-8 character that
+// passes iriInRange, and 0 otherwise.
+func escapedUTF8Len(s string, isQuery bool) (n int) {
 	var buf [utf8.UTFMax]byte
 	for k := 0; k < utf8.UTFMax && n+2 < len(s) && s[n] == '%'; k++ {
 		hi, ok1 := unhex(s[n+1])
@@ -187,11 +191,38 @@ func escapedUTF8Len(s string) (n int) {
 		if k == 0 && buf[0] < utf8.RuneSelf {
 			return 0
 		}
-		if _, size := utf8.DecodeRune(buf[:k+1]); size > 1 && size == k+1 {
-			return n
+		if r, size := utf8.DecodeRune(buf[:k+1]); size > 1 && size == k+1 {
+			if iriInRange(r, isQuery) {
+				return n
+			}
+			return 0
 		}
 	}
 	return 0
+}
+
+// iriInRange reports whether System.Uri's IRI parsing decodes an escaped
+// r (and so re-escapes it in uppercase); escapes of other code points are
+// copied as written. Port of IriHelper.CheckIriUnicodeRange(uint, bool) in
+// dotnet/runtime src/libraries/System.Private.Uri/src/System/IriHelper.cs,
+// which Uri calls with isQuery true only for the query component:
+//
+//   - BMP: U+00A0-U+D7FF, U+F900-U+FDCF and U+FDF0-U+FFEF, plus the
+//     private-use U+E000-U+F8FF in the query only (so C1 controls, the
+//     noncharacters U+FDD0-U+FDEF and U+FFF0-U+FFFF are excluded);
+//   - supplementary planes: everything except U+xFFFE/U+xFFFF, the tag and
+//     variation-selector block U+E0000-U+E0FFF and, outside the query, the
+//     private-use planes 15-16 (U+F0000 and up).
+func iriInRange(r rune, isQuery bool) bool {
+	if r <= 0xFFFF {
+		return r >= 0x00A0 && r <= 0xD7FF ||
+			r >= 0xF900 && r <= 0xFDCF ||
+			r >= 0xFDF0 && r <= 0xFFEF ||
+			isQuery && r >= 0xE000 && r <= 0xF8FF
+	}
+	return r&0xFFFF < 0xFFFE &&
+		!(r >= 0xE0000 && r <= 0xE0FFF) &&
+		(isQuery || r < 0xF0000)
 }
 
 // removeDotSegments implements RFC 3986 section 5.2.4.

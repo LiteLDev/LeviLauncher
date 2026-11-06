@@ -147,12 +147,8 @@ func escapeURLPart(s string) string {
 					if isUnreserved(v) {
 						b.WriteByte(v)
 						i += 2
-					} else if seq, n := escapedUTF8(s[i:]); n > 0 {
-						for _, c := range seq {
-							b.WriteByte('%')
-							b.WriteByte(upperHex[c>>4])
-							b.WriteByte(upperHex[c&0xF])
-						}
+					} else if n := escapedUTF8Len(s[i:]); n > 0 {
+						b.WriteString(strings.ToUpper(s[i : i+n]))
 						i += n - 1
 					} else {
 						b.WriteString(s[i : i+3])
@@ -175,10 +171,10 @@ func escapeURLPart(s string) string {
 	return b.String()
 }
 
-// escapedUTF8 reports whether s starts with a run of %XX escapes that
-// together encode one valid non-ASCII UTF-8 character. It returns the
-// decoded bytes and the length of the escaped text, or n == 0 otherwise.
-func escapedUTF8(s string) (seq []byte, n int) {
+// escapedUTF8Len returns the length of the run of %XX escapes at the start
+// of s when together they encode one valid non-ASCII UTF-8 character, and
+// 0 otherwise.
+func escapedUTF8Len(s string) (n int) {
 	var buf [utf8.UTFMax]byte
 	for k := 0; k < utf8.UTFMax && n+2 < len(s) && s[n] == '%'; k++ {
 		hi, ok1 := unhex(s[n+1])
@@ -189,13 +185,13 @@ func escapedUTF8(s string) (seq []byte, n int) {
 		buf[k] = hi<<4 | lo
 		n += 3
 		if k == 0 && buf[0] < utf8.RuneSelf {
-			return nil, 0
+			return 0
 		}
 		if _, size := utf8.DecodeRune(buf[:k+1]); size > 1 && size == k+1 {
-			return buf[:k+1], n
+			return n
 		}
 	}
-	return nil, 0
+	return 0
 }
 
 // removeDotSegments implements RFC 3986 section 5.2.4.

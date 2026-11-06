@@ -163,6 +163,83 @@ async function run(label, check) {
       assert.equal(await page.evaluate(() => window.__audit.calls.filter(call => call.name === 'DeleteMod').length), 3);
     });
 
+    await run('mods-batch-uninstall-plain-delete', async page => {
+      // Only Fixture mod A runs a lip task; B and C are deleted directly.
+      await open(page, 'lip-progress-delete', ROUTES.mods);
+      await page.getByText('Fixture mod A', { exact: true }).first().waitFor();
+      await page.getByRole('checkbox', { name: translations.common.select_all }).first().click({ force: true });
+      await page.getByRole('button', { name: translations.mods.action_uninstall, exact: true }).click();
+      const confirm = page.getByRole('dialog', { name: translations.mods.batch_uninstall_title, exact: true });
+      await confirm.getByRole('button', { name: translations.common.confirm, exact: true }).click();
+
+      const title = `${translations.lip.task_console.title_uninstall} - UI test instance`;
+      const progressDialog = page.getByRole('dialog', { name: title, exact: true });
+      await paused(page, 1);
+      await progressDialog.getByText(progress.stage_task, { exact: true }).waitFor();
+      await page.evaluate(() => window.__audit.lipContinue());
+      await paused(page, 2);
+      await progressDialog.getByText(progress.outer.replace('{{current}}', '2').replace('{{total}}', '3'), { exact: true }).waitFor();
+      // The late final update of mod A's task (sent 30 ms after its call
+      // returned) must not show up under mod B.
+      await page.waitForTimeout(300);
+      assert.equal(await progressDialog.getByText(progress.stage_task, { exact: true }).count(), 0);
+      // No lip task runs for mod B: no "waiting for the package manager".
+      assert.equal(await progressDialog.getByText(translations.lip.task_console.waiting_start, { exact: true }).count(), 0);
+      await shot(page, 'mods-batch-uninstall-plain-delete');
+      await page.evaluate(() => window.__audit.lipContinue());
+      await paused(page, 3);
+      await page.evaluate(() => window.__audit.lipContinue());
+      await progressDialog.waitFor({ state: 'detached' });
+    });
+
+    await run('mods-single-uninstall-plain-delete', async page => {
+      await open(page, 'lip-progress-delete', ROUTES.mods);
+      await page.getByRole('button', { name: translations.audit.mods.more_actions.replace('{{name}}', 'Fixture mod B'), exact: true }).click();
+      await page.getByRole('menuitem', { name: translations.mods.action_uninstall }).click();
+      const confirm = page.getByRole('dialog', { name: translations.mods.action_uninstall, exact: true });
+      await confirm.getByRole('button', { name: translations.common.delete, exact: true }).click();
+      await paused(page, 1);
+      // A plain folder delete has nothing to measure: no progress dialog.
+      await page.waitForTimeout(300);
+      const title = `${translations.lip.task_console.title_uninstall} - UI test instance`;
+      assert.equal(await page.getByRole('dialog', { name: title, exact: true }).count(), 0);
+      await page.evaluate(() => window.__audit.lipContinue());
+      await confirm.waitFor({ state: 'detached' });
+      assert.equal(await page.getByText(translations.lip.task_console.waiting_start, { exact: true }).count(), 0);
+    });
+
+    await run('cache-clean-then-mods-uninstall', async page => {
+      // The cache clean does not lock navigation; a lip session started
+      // meanwhile must survive the cache clean finishing first.
+      await open(page, 'lip-progress', ROUTES.settings, { tab: 'components' });
+      await page.getByText(translations.settings.lip.title, { exact: true }).first().waitFor().catch(async () => {
+        await page.getByRole('tab', { name: translations.settings.tabs.components }).click();
+      });
+      await page.getByRole('button', { name: translations.settings.lip.cache_clean_button, exact: true }).click();
+      await paused(page, 1);
+      await page.evaluate(route => { location.hash = '#' + route; }, ROUTES.mods);
+      await page.getByText('Fixture mod A', { exact: true }).first().waitFor();
+      await page.getByRole('checkbox', { name: translations.common.select_all }).first().click({ force: true });
+      await page.getByRole('button', { name: translations.mods.action_uninstall, exact: true }).click();
+      const confirm = page.getByRole('dialog', { name: translations.mods.batch_uninstall_title, exact: true });
+      await confirm.getByRole('button', { name: translations.common.confirm, exact: true }).click();
+      const title = `${translations.lip.task_console.title_uninstall} - UI test instance`;
+      const progressDialog = page.getByRole('dialog', { name: title, exact: true });
+      await paused(page, 2);
+      const files = progress.amount.replace('{{unit}}', progress.unit_files).replace('{{current}}', '30').replace('{{total}}', '120');
+      await progressDialog.getByText(files).waitFor();
+      // Resumes the cache clean, which then finishes.
+      await page.evaluate(() => window.__audit.lipContinue());
+      await page.waitForTimeout(300);
+      await progressDialog.getByText(files).waitFor({ timeout: 1000 });
+      for (let index = 0; index < 3; index++) {
+        await page.evaluate(() => window.__audit.lipContinue());
+        if (index < 2) await paused(page, 3 + index);
+      }
+      await progressDialog.waitFor({ state: 'detached' });
+      assert.equal(await page.evaluate(() => window.__audit.calls.filter(call => call.name === 'DeleteMod').length), 3);
+    });
+
     await run('cache-clean-inline', async page => {
       await open(page, 'lip-progress', ROUTES.settings, { tab: 'components' });
       await page.getByText(translations.settings.lip.title, { exact: true }).first().waitFor().catch(async () => {

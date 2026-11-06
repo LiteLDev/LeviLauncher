@@ -420,7 +420,7 @@ export const useSettings = (i18n: { language: string }) => {
       // counts the cache entries deleted.
       return await runWithLipTask(
         {
-          action: "clean",
+          action: "generic",
           target: "",
           methods: ["CacheClean"],
           feedbackMode: "inline",

@@ -38,7 +38,6 @@ export type LipTaskAction =
   | "reinstall"
   | "update"
   | "uninstall"
-  | "clean"
   | "generic";
 type LipTaskStatus = "idle" | "running" | "success" | "failed";
 type LipTaskLogLevel = "info" | "success" | "warning" | "error";
@@ -137,6 +136,9 @@ type SessionMeta = {
   targetNorm: string;
   methodNormSet: Set<string>;
   trackedTaskIDs: Set<string>;
+  // Tasks of a batch item that has ended (setOuter moved on): their late
+  // progress updates must not be shown under the next item.
+  retiredTaskIDs: Set<string>;
   feedbackMode: LipTaskFeedbackMode;
   errorConsole: boolean;
 };
@@ -276,6 +278,12 @@ export const LipTaskConsoleProvider: React.FC<{
         0,
         Math.min(safeTotal, Math.floor(Number(completed) || 0)),
       );
+      const session = sessionRef.current;
+      if (session) {
+        // The previous item's tasks are over: ignore their late updates
+        // (Wails events can arrive after the call that ran them returned).
+        for (const id of session.trackedTaskIDs) session.retiredTaskIDs.add(id);
+      }
       if (safeCompleted < safeTotal) {
         // A new item starts: the bars of the previous item's tasks no longer
         // describe what is running.
@@ -417,12 +425,17 @@ export const LipTaskConsoleProvider: React.FC<{
       const feedbackMode = options.feedbackMode || DEFAULT_FEEDBACK_MODE;
       const errorConsole =
         feedbackMode !== "never" && options.errorConsole !== false;
+      const sessionId = ++sessionSeqRef.current;
+      // Another runWithLipTask call can start while this one runs (e.g. the
+      // non-blocking cache clean); only the latest session owns the state.
+      const isCurrentSession = () => sessionRef.current?.id === sessionId;
       sessionRef.current = {
-        id: ++sessionSeqRef.current,
+        id: sessionId,
         startedAt,
         targetNorm: normalizeTarget(targetName),
         methodNormSet,
         trackedTaskIDs: new Set(),
+        retiredTaskIDs: new Set(),
         feedbackMode,
         errorConsole,
       };
@@ -448,15 +461,22 @@ export const LipTaskConsoleProvider: React.FC<{
       resetProgressState();
 
       const tools: RunWithLipTaskTools = {
-        addLog: (level, message) => appendLog(level, message),
-        setProgress: (percentage, message) =>
-          setProgressValue(Number(percentage || 0), message),
-        setOuter: (completed, total, label) =>
-          setOuterValue(completed, total, label),
+        addLog: (level, message) => {
+          if (isCurrentSession()) appendLog(level, message);
+        },
+        setProgress: (percentage, message) => {
+          if (isCurrentSession()) {
+            setProgressValue(Number(percentage || 0), message);
+          }
+        },
+        setOuter: (completed, total, label) => {
+          if (isCurrentSession()) setOuterValue(completed, total, label);
+        },
       };
 
       try {
         const result = await runner(tools);
+        if (!isCurrentSession()) return result;
         if (feedbackMode === "always") {
           completeSuccess();
         } else {
@@ -465,6 +485,7 @@ export const LipTaskConsoleProvider: React.FC<{
         }
         return result;
       } catch (error) {
+        if (!isCurrentSession()) throw error;
         const pendingFailure =
           pendingFailureRef.current as PendingFailure | null;
         const pendingMessage = pendingFailure ? pendingFailure.message : "";
@@ -513,7 +534,7 @@ export const LipTaskConsoleProvider: React.FC<{
         }
 
         const session = sessionRef.current;
-        if (!session) return;
+        if (!session || session.retiredTaskIDs.has(taskID)) return;
         session.trackedTaskIDs.add(taskID);
         // A composite call runs its tasks one after another: show the bars
         // of the latest one.
@@ -561,6 +582,7 @@ export const LipTaskConsoleProvider: React.FC<{
         if (!isTrackedEvent(taskID, targetValue, method, timestampValue)) {
           return;
         }
+        if (taskID && sessionRef.current?.retiredTaskIDs.has(taskID)) return;
 
         if (isLegacyLipProgress(data)) {
           setProgressValue(
@@ -670,9 +692,7 @@ export const LipTaskConsoleProvider: React.FC<{
                 ? t("lip.task_console.title_update")
                 : action === "uninstall"
                   ? t("lip.task_console.title_uninstall")
-                  : action === "clean"
-                    ? t("lip.task_console.title_clean")
-                    : t("lip.task_console.title_generic");
+                  : t("lip.task_console.title_generic");
     if (!target) return base;
     return `${base} - ${target}`;
   }, [action, target, t]);

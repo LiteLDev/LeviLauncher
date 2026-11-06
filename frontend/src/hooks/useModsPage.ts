@@ -1073,6 +1073,16 @@ export const useModsPage = (
     );
   };
 
+  // Whether uninstallModWithFallback runs a lip task for this mod (the other
+  // mods are deleted directly, with nothing for a progress bar to measure).
+  const uninstallRunsLipTask = (mod: types.ModInfo): boolean => {
+    if (isLeviLaminaMod(mod)) return false;
+    const folder = resolveModFolder(mod);
+    if (!folder || !lipManagedFolderSet.has(folder)) return false;
+    const state = modLIPStateByFolder.get(folder);
+    return state?.sourceType === "unique" && !!state.identifier;
+  };
+
   const uninstallModWithFallback = async (
     mod: types.ModInfo,
     onLog?: TaskLogger,
@@ -1810,7 +1820,9 @@ export const useModsPage = (
           action: "uninstall",
           target: name,
           methods: ["Uninstall"],
-          feedbackMode: "progress",
+          feedbackMode: uninstallRunsLipTask(activeMod)
+            ? "progress"
+            : "on_error",
         },
         async ({ addLog }) => {
           addLog("info", `${t("mods.action_uninstall")}: ${activeMod.name}`);

@@ -188,6 +188,10 @@ export function LipTaskProgressView({
   } else if (secondary.length > 0 && status === "running") {
     // A task without a plan (e.g. the cache clean) only has step bars.
     primaryRow = null;
+  } else if (outer && outer.total > 0) {
+    // A batch item may run no lip task at all (e.g. a plain folder delete):
+    // the measured item counter is all there is to show.
+    primaryRow = null;
   } else {
     // Nothing measured yet: the task has not reported a bar.
     primaryRow = (

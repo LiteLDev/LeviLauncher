@@ -63,6 +63,13 @@ state.call = async (name, ...args) => {
   }
  await new Promise(resolve => setTimeout(resolve, 80));
   if (scenario.startsWith('lip-progress') && name==='GetMods') return (state.fixtureMods = state.fixtureMods || ['Fixture mod A','Fixture mod B','Fixture mod C']).map(mod=>({name:mod,entry:mod+'.dll',version:'1.0.0',type:'native',author:'Fixture',folder:mod}));
+  // lip-progress-delete: only Fixture mod A is lip-managed (with a late final
+  // update of its task, as Wails may deliver it); the others are deleted
+  // directly, running no lip task.
+  if (scenario==='lip-progress-delete' && name==='DeleteMod') {
+    if (args[1]==='Fixture mod A') {const result=await state.runLipTask('UninstallLIPPackage', args);const lateEmit=state.lipLastEmit;setTimeout(()=>lateEmit('lip_task_progress',{progressId:'task',stage:'task',current:1,total:1,unit:'packages',item:'Fixture mod A@1.0.0',package:'',message:'',percentage:100,done:true,indeterminate:false}),30);state.fixtureMods=state.fixtureMods.filter(mod=>mod!==args[1]);return result;}
+    state.lipPaused++;await new Promise(resolve=>state.lipReleases.push(resolve));state.fixtureMods=state.fixtureMods.filter(mod=>mod!==args[1]);return '';
+  }
   if (scenario.startsWith('lip-progress') && name==='DeleteMod') {const result=await state.runLipTask('UninstallLIPPackage', args);state.fixtureMods=state.fixtureMods.filter(mod=>mod!==args[1]);return result;}
   if (scenario.startsWith('lip-progress') && name==='GetLIPPackageInstallStates') return (args[1]||[]).map(identifierKey=>{const installed=!!state.llInstalled&&/levilamina/i.test(identifierKey);return {identifierKey,state:{installed,explicitInstalled:installed,installedVersion:installed?'0.2.0':'',error:''}};});
   if (scenario.startsWith('lip-progress') && ['InstallLeviLamina','UninstallLeviLamina','InstallLIPPackage','UninstallLIPPackage','CacheClean'].includes(name)) return state.runLipTask(name, args);
@@ -207,10 +214,12 @@ state.call = async (name, ...args) => {
  return '';
 };
 // lip-progress scenarios replay measured lip task events. Each task stops at
-// its pauses until the test calls window.__audit.lipContinue(); with
-// state.lipFail set, the task fails after its last pause.
+// its pauses until the test calls window.__audit.lipContinue(), which resumes
+// the oldest paused task; with state.lipFail set, the task fails after its
+// last pause.
 state.lipPaused = 0;
-state.lipContinue = () => { const release = state.lipRelease; state.lipRelease = null; if (release) release(); };
+state.lipReleases = [];
+state.lipContinue = () => { const release = state.lipReleases.shift(); if (release) release(); };
 state.runLipTask = async (name, args) => {
   const ll = 'github.com/LiteLDev/LeviLamina';
   const plans = {
@@ -247,13 +256,14 @@ state.runLipTask = async (name, args) => {
   const taskId = 'lip-fixture-' + (state.lipTaskSeq = (state.lipTaskSeq || 0) + 1);
   const base = () => ({taskId, method:plan.method, target:plan.target, packages:plan.packages, timestamp:Date.now()});
   const emit = (event, data) => window._wails.dispatchWailsEvent({name:event, data:{...base(), ...data}});
+  state.lipLastEmit = emit;
   emit('lip_task_started', {});
   emit('lip_task_log', {level:'info', message:'Fixture task '+plan.method, raw:''});
   for (const [index, phase] of plan.phases.entries()) {
     for (const update of phase) emit('lip_task_progress', {message:'', percentage:update.total>0?update.current*100/update.total:0, package:'', item:'', done:false, indeterminate:false, ...update});
     if (index < plan.phases.length - 1) {
       state.lipPaused++;
-      await new Promise(resolve => { state.lipRelease = resolve; });
+      await new Promise(resolve => { state.lipReleases.push(resolve); });
     }
   }
   if (state.lipFail) {

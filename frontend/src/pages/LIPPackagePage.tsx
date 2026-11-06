@@ -64,7 +64,10 @@ import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { formatDateStr } from "@/utils/formatting";
-import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
+import {
+  LipTaskProgress,
+  useLipTaskConsole,
+} from "@/utils/LipTaskConsoleContext";
 import { compareVersions } from "@/utils/version";
 import { ROUTES } from "@/constants/routes";
 import type { LIPPackageInstallState } from "@/utils/modIntelligenceResolver";
@@ -1048,7 +1051,7 @@ const LIPPackagePage: React.FC = () => {
           action: installDialogActionKind,
           target: installDialogSelectedInstance,
           methods: ["Install", "Update"],
-          feedbackMode: "on_error",
+          feedbackMode: "inline",
         },
         async ({ addLog }) => {
           addLog(
@@ -1643,6 +1646,7 @@ const LIPPackagePage: React.FC = () => {
               })}
             </div>
           ) : null}
+          {actionRunning ? <LipTaskProgress className="pt-1" /> : null}
         </div>
       </UnifiedModal>
 

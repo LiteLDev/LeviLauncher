@@ -2013,7 +2013,7 @@ export const useInstanceSettings = () => {
               action: llInstallActionKind,
               target: targetName,
               methods: ["Install", "Update"],
-              feedbackMode: "on_error",
+              feedbackMode: llInstallConfirmOpen ? "inline" : "progress",
             },
             async () => {
               const err: string = await installLL(
@@ -2057,6 +2057,7 @@ export const useInstanceSettings = () => {
       gameVersion,
       isLLInstalled,
       llInstallActionKind,
+      llInstallConfirmOpen,
       llInstallSuccessKey,
       resolveToastText,
       resolvedLLTargetVersion,
@@ -2175,7 +2176,7 @@ export const useInstanceSettings = () => {
           action: "uninstall",
           target: targetName,
           methods: ["Uninstall"],
-          feedbackMode: "on_error",
+          feedbackMode: "progress",
         },
         async ({ addLog }) => {
           addLog("info", t("mods.action_uninstall"));

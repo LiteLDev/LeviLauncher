@@ -25,7 +25,10 @@ import { FaChevronDown } from "react-icons/fa";
 import { ROUTES } from "@/constants/routes";
 import { useVersionStatus } from "@/utils/VersionStatusContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
-import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
+import {
+  LipTaskProgress,
+  useLipTaskConsole,
+} from "@/utils/LipTaskConsoleContext";
 import { resolveInstallError } from "@/utils/installError";
 import { saveCurrentVersionName } from "@/utils/currentVersion";
 import { setNavLockReason } from "@/hooks/useAppNavigation";
@@ -90,6 +93,9 @@ export default function InstallPage() {
   const [installError, setInstallError] = useState<string>("");
   const [failureDetails, setFailureDetails] = useState("");
   const [installing, setInstalling] = useState<boolean>(false);
+  // The LeviLamina step runs lip tasks; their progress replaces the
+  // extraction bar while it runs.
+  const [installingLL, setInstallingLL] = useState<boolean>(false);
   const [installingVersion, setInstallingVersion] = useState<string>("");
   const [installingTargetName, setInstallingTargetName] = useState<string>("");
   const [installedFolderName, setInstalledFolderName] = useState<string>("");
@@ -511,12 +517,13 @@ export default function InstallPage() {
           }
           const installLL = (minecraft as any)?.InstallLeviLamina;
           if (typeof installLL === "function") {
+            setInstallingLL(true);
             await runWithLipTask(
               {
                 action: "install",
                 target: name,
                 methods: ["Install", "Update"],
-                feedbackMode: "on_error",
+                feedbackMode: "inline",
               },
               async () => {
                 const llErr: string = await installLL(
@@ -535,6 +542,8 @@ export default function InstallPage() {
           await rollback();
           setInstalling(false);
           return;
+        } finally {
+          setInstallingLL(false);
         }
       }
 
@@ -749,83 +758,87 @@ export default function InstallPage() {
                         </div>
                       )}
 
-                      <div className="mt-1 flex flex-col gap-2">
-                        <div className="h-1.5 w-full rounded-full bg-surface-tertiary/50 overflow-hidden border border-border dark:border-white/5 relative">
-                          {extractInfo?.totalBytes ? (
-                            <motion.div
-                              className="h-full bg-brand-500 rounded-full"
-                              initial={{ width: 0 }}
-                              animate={{
-                                width: `${Math.min(
-                                  100,
-                                  Math.max(
-                                    0,
-                                    (extractInfo.bytes /
-                                      extractInfo.totalBytes) *
-                                      100,
-                                  ),
-                                )}%`,
-                              }}
-                              transition={{ duration: 0.3, ease: "easeOut" }}
-                            />
-                          ) : (
-                            <></>
-                          )}
-                        </div>
-
-                        {typeof extractInfo?.bytes === "number" &&
-                        extractInfo.bytes > 0 ? (
-                          <div className="flex justify-between text-xs text-muted dark:text-zinc-400 font-medium">
-                            <span>
-                              {extractInfo.totalBytes
-                                ? (() => {
-                                    const formatSize = (n: number) => {
-                                      const kb = 1024;
-                                      const mb = kb * 1024;
-                                      const gb = mb * 1024;
-                                      if (n >= gb)
-                                        return (n / gb).toFixed(2) + " GB";
-                                      if (n >= mb)
-                                        return (n / mb).toFixed(2) + " MB";
-                                      if (n >= kb)
-                                        return (n / kb).toFixed(2) + " KB";
-                                      return n + " B";
-                                    };
-                                    return `${formatSize(extractInfo.bytes)} / ${formatSize(extractInfo.totalBytes)}`;
-                                  })()
-                                : t("downloadpage.install.estimated_size")}
-                            </span>
-                            <span className="font-mono">
-                              {(() => {
-                                const formatSize = (n: number) => {
-                                  const kb = 1024;
-                                  const mb = kb * 1024;
-                                  const gb = mb * 1024;
-                                  if (n >= gb)
-                                    return (n / gb).toFixed(2) + " GB";
-                                  if (n >= mb)
-                                    return (n / mb).toFixed(2) + " MB";
-                                  if (n >= kb)
-                                    return (n / kb).toFixed(2) + " KB";
-                                  return n + " B";
-                                };
-                                const current = formatSize(
-                                  extractInfo?.bytes ?? 0,
-                                );
-                                if (extractInfo?.totalBytes) {
-                                  const percent = (
-                                    (extractInfo.bytes /
-                                      extractInfo.totalBytes) *
-                                    100
-                                  ).toFixed(1);
-                                  return `${percent}%`;
-                                }
-                                return current;
-                              })()}
-                            </span>
+                      {installingLL ? (
+                        <LipTaskProgress className="mt-1 px-1" />
+                      ) : (
+                        <div className="mt-1 flex flex-col gap-2">
+                          <div className="h-1.5 w-full rounded-full bg-surface-tertiary/50 overflow-hidden border border-border dark:border-white/5 relative">
+                            {extractInfo?.totalBytes ? (
+                              <motion.div
+                                className="h-full bg-brand-500 rounded-full"
+                                initial={{ width: 0 }}
+                                animate={{
+                                  width: `${Math.min(
+                                    100,
+                                    Math.max(
+                                      0,
+                                      (extractInfo.bytes /
+                                        extractInfo.totalBytes) *
+                                        100,
+                                    ),
+                                  )}%`,
+                                }}
+                                transition={{ duration: 0.3, ease: "easeOut" }}
+                              />
+                            ) : (
+                              <></>
+                            )}
                           </div>
-                        ) : null}
-                      </div>
+
+                          {typeof extractInfo?.bytes === "number" &&
+                          extractInfo.bytes > 0 ? (
+                            <div className="flex justify-between text-xs text-muted dark:text-zinc-400 font-medium">
+                              <span>
+                                {extractInfo.totalBytes
+                                  ? (() => {
+                                      const formatSize = (n: number) => {
+                                        const kb = 1024;
+                                        const mb = kb * 1024;
+                                        const gb = mb * 1024;
+                                        if (n >= gb)
+                                          return (n / gb).toFixed(2) + " GB";
+                                        if (n >= mb)
+                                          return (n / mb).toFixed(2) + " MB";
+                                        if (n >= kb)
+                                          return (n / kb).toFixed(2) + " KB";
+                                        return n + " B";
+                                      };
+                                      return `${formatSize(extractInfo.bytes)} / ${formatSize(extractInfo.totalBytes)}`;
+                                    })()
+                                  : t("downloadpage.install.estimated_size")}
+                              </span>
+                              <span className="font-mono">
+                                {(() => {
+                                  const formatSize = (n: number) => {
+                                    const kb = 1024;
+                                    const mb = kb * 1024;
+                                    const gb = mb * 1024;
+                                    if (n >= gb)
+                                      return (n / gb).toFixed(2) + " GB";
+                                    if (n >= mb)
+                                      return (n / mb).toFixed(2) + " MB";
+                                    if (n >= kb)
+                                      return (n / kb).toFixed(2) + " KB";
+                                    return n + " B";
+                                  };
+                                  const current = formatSize(
+                                    extractInfo?.bytes ?? 0,
+                                  );
+                                  if (extractInfo?.totalBytes) {
+                                    const percent = (
+                                      (extractInfo.bytes /
+                                        extractInfo.totalBytes) *
+                                      100
+                                    ).toFixed(1);
+                                    return `${percent}%`;
+                                  }
+                                  return current;
+                                })()}
+                              </span>
+                            </div>
+                          ) : null}
+                        </div>
+                      )}
                     </div>
                   </div>
                 </Card.Content>

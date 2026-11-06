@@ -62,6 +62,10 @@ state.call = async (name, ...args) => {
     if(output) output.textContent = name + ': ' + JSON.stringify(args);
   }
  await new Promise(resolve => setTimeout(resolve, 80));
+  if (scenario.startsWith('lip-progress') && name==='GetMods') return (state.fixtureMods = state.fixtureMods || ['Fixture mod A','Fixture mod B','Fixture mod C']).map(mod=>({name:mod,entry:mod+'.dll',version:'1.0.0',type:'native',author:'Fixture',folder:mod}));
+  if (scenario.startsWith('lip-progress') && name==='DeleteMod') {const result=await state.runLipTask('UninstallLIPPackage', args);state.fixtureMods=state.fixtureMods.filter(mod=>mod!==args[1]);return result;}
+  if (scenario.startsWith('lip-progress') && name==='GetLIPPackageInstallStates') return (args[1]||[]).map(identifierKey=>{const installed=!!state.llInstalled&&/levilamina/i.test(identifierKey);return {identifierKey,state:{installed,explicitInstalled:installed,installedVersion:installed?'0.2.0':'',error:''}};});
+  if (scenario.startsWith('lip-progress') && ['InstallLeviLamina','UninstallLeviLamina','InstallLIPPackage','UninstallLIPPackage','CacheClean'].includes(name)) return state.runLipTask(name, args);
   if (name === 'TakeSponsorPrompt') {
     const count = Number(sponsorParams.get('count') || '100');
     const milestone = scenario.startsWith('sponsor') && count > 0 && count % 100 === 0 && !state.sponsorTaken;
@@ -180,7 +184,7 @@ state.call = async (name, ...args) => {
  if (name==='CheckUpdate') return {isUpdate:false};
  if (name==='GetLipGithubProxy') return state.lipGithubProxy || 'https://github.bibk.top';
  if (name==='SetLipGithubProxy') {state.lipGithubProxy = args[0] || 'https://github.bibk.top';return '';}
- if (scenario.startsWith('catalog') && name==='FetchLeviLaminaVersionDB') return {'1.21.0':['0.1.0','0.2.0']};
+ if ((scenario.startsWith('catalog')||scenario.startsWith('lip-progress')) && name==='FetchLeviLaminaVersionDB') return {'1.21.0':['0.1.0','0.2.0']};
  if (scenario.startsWith('catalog') && name==='GetCurseForgeGameVersions') return [{id:1,name:'1.21.0'},{id:2,name:'1.20.0'}];
  if (scenario.startsWith('catalog') && name==='GetCurseForgeCategories') return [];
  if (scenario.startsWith('catalog') && name==='SearchCurseForgeMods') {
@@ -201,6 +205,67 @@ state.call = async (name, ...args) => {
  if (name.startsWith('List')||name.includes('Versions')||name.includes('VersionDB')) return [];
  if (name.startsWith('Is')||name.startsWith('Can')||name.startsWith('GetEnable')||name.startsWith('GetDisable')) return false;
  return '';
+};
+// lip-progress scenarios replay measured lip task events. Each task stops at
+// its pauses until the test calls window.__audit.lipContinue(); with
+// state.lipFail set, the task fails after its last pause.
+state.lipPaused = 0;
+state.lipContinue = () => { const release = state.lipRelease; state.lipRelease = null; if (release) release(); };
+state.runLipTask = async (name, args) => {
+  const ll = 'github.com/LiteLDev/LeviLamina';
+  const plans = {
+    InstallLeviLamina: {method:'Install', target:args[1], packages:[ll+'@'+args[2]], phases:[
+      [{progressId:'resolve-1',stage:'resolve',current:1,total:1,unit:'packages',done:true},
+       {progressId:'resolve-2',stage:'resolve',current:7,total:0,unit:'packages',item:'github.com/LiteLDev/bedrock-runtime-data@1.21.0',indeterminate:true},
+       {progressId:'dl-1',stage:'download',package:ll+'@'+args[2],current:1153434,total:0,unit:'bytes',item:'https://github.com/LiteLDev/LeviLamina/releases/download/v'+args[2]+'/LeviLamina-windows-x64.zip',indeterminate:true}],
+      [{progressId:'resolve-2',stage:'resolve',current:9,total:0,unit:'packages',done:true},
+       {progressId:'dl-1',stage:'download',package:ll+'@'+args[2],current:1153434,total:0,unit:'bytes',done:true},
+       {progressId:'task',stage:'task',current:1,total:3,unit:'packages',item:ll+'@'+args[2]},
+       {progressId:'git-1',stage:'git_fetch',package:'github.com/LiteLDev/bedrock-runtime-data@1.21.0',current:212,total:480,unit:'objects'},
+       {progressId:'dl-2',stage:'download',package:ll+'@'+args[2],current:3565158,total:9542041,unit:'bytes',item:'https://github.com/LiteLDev/LeviLamina/releases/download/v'+args[2]+'/LeviLamina-windows-x64.zip'}],
+      [{progressId:'git-1',stage:'git_fetch',current:480,total:480,unit:'objects',done:true},
+       {progressId:'dl-2',stage:'download',current:9542041,total:9542041,unit:'bytes',done:true},
+       {progressId:'place-1',stage:'place',package:ll+'@'+args[2],current:9542041,total:9542041,unit:'bytes',done:true},
+       {progressId:'task',stage:'task',current:3,total:3,unit:'packages',done:true}]]},
+    UninstallLeviLamina: {method:'Uninstall', target:args[0], packages:[ll], phases:[
+      [{progressId:'task',stage:'task',current:0,total:2,unit:'packages',item:ll+'@0.2.0'},
+       {progressId:'rm-1',stage:'remove',package:ll+'@0.2.0',current:152,total:0,unit:'files',item:'plugins/LeviLamina/LeviLamina.dll',indeterminate:true},
+       {progressId:'sc-1',stage:'scripts',package:ll+'@0.2.0',current:1,total:3,unit:'commands',item:'post-uninstall'}],
+      [{progressId:'rm-1',stage:'remove',current:240,total:240,unit:'files',done:true},
+       {progressId:'sc-1',stage:'scripts',current:3,total:3,unit:'commands',done:true},
+       {progressId:'task',stage:'task',current:2,total:2,unit:'packages',done:true}]]},
+    UninstallLIPPackage: {method:'Uninstall', target:args[0], packages:[String(args[1]||'')], phases:[
+      [{progressId:'task',stage:'task',current:0,total:1,unit:'packages',item:String(args[1]||'')+'@1.0.0'},
+       {progressId:'rm-1',stage:'remove',package:String(args[1]||'')+'@1.0.0',current:30,total:120,unit:'files',item:'mods/'+String(args[1]||'')+'/'+String(args[1]||'')+'.dll'}],
+      [{progressId:'rm-1',stage:'remove',current:120,total:120,unit:'files',done:true},
+       {progressId:'task',stage:'task',current:1,total:1,unit:'packages',done:true}]]},
+    CacheClean: {method:'CacheClean', target:'', packages:[], phases:[
+      [{progressId:'cache_clean',stage:'cache_clean',current:412,total:1380,unit:'files'}],
+      [{progressId:'cache_clean',stage:'cache_clean',current:1380,total:1380,unit:'files',done:true}]]},
+  };
+  const plan = plans[name] || {method:'Install', target:args[0], packages:[String(args[1]||'')], phases:[[{progressId:'task',stage:'task',current:1,total:1,unit:'packages',done:true}]]};
+  const taskId = 'lip-fixture-' + (state.lipTaskSeq = (state.lipTaskSeq || 0) + 1);
+  const base = () => ({taskId, method:plan.method, target:plan.target, packages:plan.packages, timestamp:Date.now()});
+  const emit = (event, data) => window._wails.dispatchWailsEvent({name:event, data:{...base(), ...data}});
+  emit('lip_task_started', {});
+  emit('lip_task_log', {level:'info', message:'Fixture task '+plan.method, raw:''});
+  for (const [index, phase] of plan.phases.entries()) {
+    for (const update of phase) emit('lip_task_progress', {message:'', percentage:update.total>0?update.current*100/update.total:0, package:'', item:'', done:false, indeterminate:false, ...update});
+    if (index < plan.phases.length - 1) {
+      state.lipPaused++;
+      await new Promise(resolve => { state.lipRelease = resolve; });
+    }
+  }
+  if (state.lipFail) {
+    const error = 'Fixture: failed to remove plugins/LeviLamina (file in use)';
+    emit('lip_task_log', {level:'error', message:error, raw:error});
+    emit('lip_task_finished', {success:false, error, stderr:'', durationMs:1});
+    return 'ERR_LIP_PACKAGE_UNINSTALL_FAILED';
+  }
+  if (name==='InstallLeviLamina') state.llInstalled = true;
+  if (name==='UninstallLeviLamina') state.llInstalled = false;
+  emit('lip_task_finished', {success:true, error:'', stderr:'', durationMs:1});
+  return '';
 };
 state.downloads = scenario==='uwp-downloads' ? {
   'C:\\Fixture\\installers\\Minecraft-UWP-Release-1.21.100.0.appx': {dest:'C:\\Fixture\\installers\\Minecraft-UWP-Release-1.21.100.0.appx',fileName:'Minecraft-UWP-Release-1.21.100.0.appx',status:'done',error:'',speed:0,progress:{downloaded:2048,total:2048},installer:{version:'1.21.100.0',type:'Release',packageType:'uwp',uuid:state.uwpVersions[0].uuid,isLeviLaminaSupported:false}},

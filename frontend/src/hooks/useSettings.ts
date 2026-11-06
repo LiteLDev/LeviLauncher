@@ -38,6 +38,7 @@ import {
 import { normalizeLanguage } from "@/utils/i18nUtils";
 import { useThemeManager, ThemeMode } from "@/utils/useThemeManager";
 import { ROUTES } from "@/constants/routes";
+import { useLipTaskConsole } from "@/utils/LipTaskConsoleContext";
 import { useCurrentBackground } from "@/utils/BackgroundContext";
 import { clampNumber } from "@/utils/backgroundAppearance";
 
@@ -46,6 +47,7 @@ export type { ThemeMode };
 export const useSettings = (i18n: { language: string }) => {
   const currentBackground = useCurrentBackground();
   const navigate = useNavigate();
+  const { runWithLipTask } = useLipTaskConsole();
   const location = useLocation();
 
   // App version / update
@@ -414,8 +416,18 @@ export const useSettings = (i18n: { language: string }) => {
   const cleanLipCache = async (): Promise<string> => {
     setCleaningLipCache(true);
     try {
-      const err = await CacheClean();
-      return String(err || "");
+      // CacheClean is a lip task with an empty target; its cache_clean bar
+      // counts the cache entries deleted.
+      return await runWithLipTask(
+        {
+          action: "clean",
+          target: "",
+          methods: ["CacheClean"],
+          feedbackMode: "inline",
+          errorConsole: false,
+        },
+        async () => String((await CacheClean()) || ""),
+      );
     } catch (e: any) {
       return String(e?.data || e?.message || e || "ERR_LIP_CACHE_CLEAN_FAILED");
     } finally {

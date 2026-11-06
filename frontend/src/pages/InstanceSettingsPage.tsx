@@ -40,6 +40,7 @@ import {
 import { PageHeader } from "@/components/PageHeader";
 import LeviLaminaIcon from "@/assets/images/LeviLamina.png";
 import { useInstanceSettings } from "@/hooks/useInstanceSettings";
+import { LipTaskProgress } from "@/utils/LipTaskConsoleContext";
 import { OpenModsExplorer } from "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice";
 
 type RestoreConflictDiffField = {
@@ -2185,6 +2186,7 @@ export default function InstanceSettingsPage() {
             instance: vs.targetName || "-",
           })}
         </ModalDescription>
+        {vs.installingLL ? <LipTaskProgress className="pt-4" /> : null}
       </UnifiedModal>
 
       <UnifiedModal

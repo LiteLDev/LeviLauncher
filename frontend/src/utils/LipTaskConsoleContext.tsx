@@ -1,5 +1,6 @@
 import { ModalAction, ModalDescription, ModalNotice } from "@/components/ModalPrimitives";
-import { Chip, ProgressBar, toast } from "@heroui/react";
+import { LipTaskProgressView } from "@/components/LipTaskProgressView";
+import { Button, Chip, toast } from "@heroui/react";
 
 import React, {
   createContext,
@@ -13,8 +14,22 @@ import React, {
 
 import { Clipboard, Events } from "@wailsio/runtime";
 import { useTranslation } from "react-i18next";
-import { LuTerminal } from "react-icons/lu";
+import { LuChevronDown, LuChevronRight, LuTerminal } from "react-icons/lu";
 import { UnifiedModal } from "@/components/UnifiedModal";
+import {
+  EMPTY_LIP_PROGRESS_BARS,
+  applyLipProgressEvent,
+  beginLipTaskBars,
+  clampPercentage,
+  isLegacyLipProgress,
+  selectLipPrimaryBar,
+  selectLipSecondaryBars,
+  type LipLegacyProgress,
+  type LipOuterProgress,
+  type LipProgressBarsState,
+  type LipProgressEventData,
+  type LipTaskProgressSnapshot,
+} from "@/utils/lipTaskProgress";
 
 export type LipTaskAction =
   | "install"
@@ -23,6 +38,7 @@ export type LipTaskAction =
   | "reinstall"
   | "update"
   | "uninstall"
+  | "clean"
   | "generic";
 type LipTaskStatus = "idle" | "running" | "success" | "failed";
 type LipTaskLogLevel = "info" | "success" | "warning" | "error";
@@ -34,16 +50,36 @@ type LipTaskLogItem = {
   message: string;
 };
 
+// How a session is shown while it runs:
+// - "progress" (default): a compact progress dialog, closed on success;
+// - "inline": nothing while running (the caller renders <LipTaskProgress/>);
+// - "always": the full console, closed shortly after success;
+// - "on_error": nothing while running;
+// - "never": nothing, not even on failure.
+// Except for "never", a failure opens the console unless errorConsole is false.
+export type LipTaskFeedbackMode =
+  | "progress"
+  | "inline"
+  | "always"
+  | "on_error"
+  | "never";
+
 type RunWithLipTaskOptions = {
   action?: LipTaskAction;
+  // Instance name the tasks run in; "" matches tasks of any target (e.g. the
+  // cache clean, whose target is empty).
   target: string;
   methods?: string[];
-  feedbackMode?: "always" | "on_error" | "never";
+  feedbackMode?: LipTaskFeedbackMode;
+  errorConsole?: boolean;
 };
 
 type RunWithLipTaskTools = {
   addLog: (level: LipTaskLogLevel, message: string) => void;
   setProgress: (percentage: number, message?: string) => void;
+  // Outer count of a caller running one task per item: completed items
+  // finished out of total; label names the item being worked on.
+  setOuter: (completed: number, total: number, label?: string) => void;
 };
 
 type LipTaskConsoleContextValue = {
@@ -76,15 +112,11 @@ type LipTaskLogEvent = {
   raw?: string;
 };
 
-type LipTaskProgressEvent = {
-  taskId?: string;
+type LipTaskProgressEvent = LipProgressEventData & {
   method?: string;
   target?: string;
   packages?: string[];
   timestamp?: number;
-  progressId?: string;
-  message?: string;
-  percentage?: number;
 };
 
 type LipTaskFinishedEvent = {
@@ -105,7 +137,8 @@ type SessionMeta = {
   targetNorm: string;
   methodNormSet: Set<string>;
   trackedTaskIDs: Set<string>;
-  feedbackMode: "always" | "on_error" | "never";
+  feedbackMode: LipTaskFeedbackMode;
+  errorConsole: boolean;
 };
 
 type PendingFailure = {
@@ -114,7 +147,7 @@ type PendingFailure = {
 
 const MAX_LOG_COUNT = 800;
 const SUCCESS_AUTO_CLOSE_MS = 700;
-const DEFAULT_FEEDBACK_MODE: "always" | "on_error" | "never" = "on_error";
+const DEFAULT_FEEDBACK_MODE: LipTaskFeedbackMode = "progress";
 
 const LipTaskConsoleContext = createContext<LipTaskConsoleContextValue>({
   runWithLipTask: async <T,>(
@@ -124,8 +157,22 @@ const LipTaskConsoleContext = createContext<LipTaskConsoleContextValue>({
     runner({
       addLog: () => {},
       setProgress: () => {},
+      setOuter: () => {},
     }),
 });
+
+const IDLE_PROGRESS_SNAPSHOT: LipTaskProgressSnapshot = {
+  status: "idle",
+  target: "",
+  primary: null,
+  secondary: [],
+  outer: null,
+  legacy: null,
+};
+
+const LipTaskProgressContext = createContext<LipTaskProgressSnapshot>(
+  IDLE_PROGRESS_SNAPSHOT,
+);
 
 const normalizeString = (value: unknown): string => String(value || "").trim();
 
@@ -167,10 +214,15 @@ export const LipTaskConsoleProvider: React.FC<{
   const [target, setTarget] = useState<string>("");
   const [logs, setLogs] = useState<LipTaskLogItem[]>([]);
   const [errorText, setErrorText] = useState<string>("");
-  const [progress, setProgress] = useState<{
-    percentage: number;
-    message: string;
-  } | null>(null);
+  const [feedbackMode, setFeedbackMode] =
+    useState<LipTaskFeedbackMode>(DEFAULT_FEEDBACK_MODE);
+  const [logExpanded, setLogExpanded] = useState<boolean>(false);
+  const [legacyProgress, setLegacyProgress] =
+    useState<LipLegacyProgress | null>(null);
+  const [bars, setBars] = useState<LipProgressBarsState>(
+    EMPTY_LIP_PROGRESS_BARS,
+  );
+  const [outer, setOuter] = useState<LipOuterProgress | null>(null);
 
   const sessionRef = useRef<SessionMeta | null>(null);
   const sessionSeqRef = useRef<number>(0);
@@ -205,16 +257,46 @@ export const LipTaskConsoleProvider: React.FC<{
 
   const setProgressValue = useCallback(
     (percentage: number, message?: string) => {
-      const safePercentage = Number.isFinite(percentage)
-        ? Math.max(0, Math.min(100, percentage))
-        : 0;
-      setProgress({
-        percentage: safePercentage,
+      setLegacyProgress({
+        percentage: clampPercentage(percentage),
         message: normalizeString(message),
       });
     },
     [],
   );
+
+  const setOuterValue = useCallback(
+    (completed: number, total: number, label?: string) => {
+      const safeTotal = Math.max(0, Math.floor(Number(total) || 0));
+      if (safeTotal <= 0) {
+        setOuter(null);
+        return;
+      }
+      const safeCompleted = Math.max(
+        0,
+        Math.min(safeTotal, Math.floor(Number(completed) || 0)),
+      );
+      if (safeCompleted < safeTotal) {
+        // A new item starts: the bars of the previous item's tasks no longer
+        // describe what is running.
+        setBars(EMPTY_LIP_PROGRESS_BARS);
+        setLegacyProgress(null);
+      }
+      setOuter({
+        completed: safeCompleted,
+        current: Math.min(safeTotal, safeCompleted + 1),
+        total: safeTotal,
+        label: normalizeString(label),
+      });
+    },
+    [],
+  );
+
+  const resetProgressState = useCallback(() => {
+    setLegacyProgress(null);
+    setBars(EMPTY_LIP_PROGRESS_BARS);
+    setOuter(null);
+  }, []);
 
   const resetSessionState = useCallback(() => {
     sessionRef.current = null;
@@ -226,8 +308,9 @@ export const LipTaskConsoleProvider: React.FC<{
     setTarget("");
     setLogs([]);
     setErrorText("");
-    setProgress(null);
-  }, []);
+    setLogExpanded(false);
+    resetProgressState();
+  }, [resetProgressState]);
 
   const closeConsole = useCallback(() => {
     if (running) return;
@@ -331,18 +414,23 @@ export const LipTaskConsoleProvider: React.FC<{
           .filter(Boolean),
       );
 
+      const feedbackMode = options.feedbackMode || DEFAULT_FEEDBACK_MODE;
+      const errorConsole =
+        feedbackMode !== "never" && options.errorConsole !== false;
       sessionRef.current = {
         id: ++sessionSeqRef.current,
         startedAt,
         targetNorm: normalizeTarget(targetName),
         methodNormSet,
         trackedTaskIDs: new Set(),
-        feedbackMode: options.feedbackMode || DEFAULT_FEEDBACK_MODE,
+        feedbackMode,
+        errorConsole,
       };
 
       pendingFailureRef.current = null;
-      const feedbackMode = options.feedbackMode || DEFAULT_FEEDBACK_MODE;
-      setOpen(feedbackMode === "always");
+      setFeedbackMode(feedbackMode);
+      setLogExpanded(false);
+      setOpen(feedbackMode === "always" || feedbackMode === "progress");
       runningRef.current = true;
       setRunning(true);
       setStatus("running");
@@ -357,12 +445,14 @@ export const LipTaskConsoleProvider: React.FC<{
         },
       ]);
       setErrorText("");
-      setProgress(null);
+      resetProgressState();
 
       const tools: RunWithLipTaskTools = {
         addLog: (level, message) => appendLog(level, message),
         setProgress: (percentage, message) =>
           setProgressValue(Number(percentage || 0), message),
+        setOuter: (completed, total, label) =>
+          setOuterValue(completed, total, label),
       };
 
       try {
@@ -383,7 +473,7 @@ export const LipTaskConsoleProvider: React.FC<{
           normalizeString(pendingMessage) ||
           t("common.error");
         appendLog("error", message);
-        if (feedbackMode === "on_error" || feedbackMode === "always") {
+        if (errorConsole) {
           setFailedState(message);
         } else {
           setOpen(false);
@@ -396,8 +486,10 @@ export const LipTaskConsoleProvider: React.FC<{
       appendLog,
       clearCloseTimer,
       completeSuccess,
+      resetProgressState,
       resetSessionState,
       setFailedState,
+      setOuterValue,
       setProgressValue,
       t,
     ],
@@ -423,6 +515,9 @@ export const LipTaskConsoleProvider: React.FC<{
         const session = sessionRef.current;
         if (!session) return;
         session.trackedTaskIDs.add(taskID);
+        // A composite call runs its tasks one after another: show the bars
+        // of the latest one.
+        setBars((prev) => beginLipTaskBars(prev, taskID));
 
         const packages = Array.isArray(data.packages)
           ? data.packages.map((item) => normalizeString(item)).filter(Boolean)
@@ -467,10 +562,14 @@ export const LipTaskConsoleProvider: React.FC<{
           return;
         }
 
-        setProgressValue(
-          Number(data.percentage || 0),
-          normalizeString(data.message),
-        );
+        if (isLegacyLipProgress(data)) {
+          setProgressValue(
+            Number(data.percentage || 0),
+            normalizeString(data.message),
+          );
+          return;
+        }
+        setBars((prev) => applyLipProgressEvent(prev, data));
       }),
     );
 
@@ -505,12 +604,8 @@ export const LipTaskConsoleProvider: React.FC<{
           message: failureMessage,
         };
 
-        if (!runningRef.current) {
-          const feedbackMode =
-            sessionRef.current?.feedbackMode || DEFAULT_FEEDBACK_MODE;
-          if (feedbackMode === "on_error" || feedbackMode === "always") {
-            setFailedState(failureMessage);
-          }
+        if (!runningRef.current && sessionRef.current?.errorConsole) {
+          setFailedState(failureMessage);
         }
       }),
     );
@@ -534,7 +629,7 @@ export const LipTaskConsoleProvider: React.FC<{
   useEffect(() => {
     if (!logContainerRef.current) return;
     logContainerRef.current.scrollTop = logContainerRef.current.scrollHeight;
-  }, [logs]);
+  }, [logs, logExpanded]);
 
   useEffect(
     () => () => {
@@ -575,7 +670,9 @@ export const LipTaskConsoleProvider: React.FC<{
                 ? t("lip.task_console.title_update")
                 : action === "uninstall"
                   ? t("lip.task_console.title_uninstall")
-                  : t("lip.task_console.title_generic");
+                  : action === "clean"
+                    ? t("lip.task_console.title_clean")
+                    : t("lip.task_console.title_generic");
     if (!target) return base;
     return `${base} - ${target}`;
   }, [action, target, t]);
@@ -616,133 +713,187 @@ export const LipTaskConsoleProvider: React.FC<{
     [runWithLipTask],
   );
 
+  const progressSnapshot = useMemo<LipTaskProgressSnapshot>(
+    () => ({
+      status,
+      target,
+      primary: selectLipPrimaryBar(bars),
+      secondary: selectLipSecondaryBars(bars),
+      outer,
+      legacy: legacyProgress,
+    }),
+    [bars, legacyProgress, outer, status, target],
+  );
+
+  // The compact view shows a running "progress" session; a failure, or a
+  // session in "always" mode, shows the full console.
+  const compact = feedbackMode === "progress" && status !== "failed";
+
+  const logPanel = (
+    <div
+      ref={logContainerRef}
+      className="min-h-0 flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-border dark:border-zinc-700 bg-surface-secondary/50 dark:bg-surface-secondary/60 px-3 py-2"
+    >
+      {logs.length === 0 ? (
+        <div className="text-xs text-muted dark:text-zinc-500">
+          {t("lip.task_console.no_output")}
+        </div>
+      ) : (
+        <div className="flex flex-col gap-1">
+          {logs.map((item) => (
+            <div
+              key={item.id}
+              className={`text-xs font-mono whitespace-pre-wrap break-all ${
+                item.level === "error"
+                  ? "text-rose-600 dark:text-rose-400"
+                  : item.level === "warning"
+                    ? "text-amber-600 dark:text-amber-400"
+                    : item.level === "success"
+                      ? "text-green-600 dark:text-green-400"
+                      : "text-foreground dark:text-zinc-200"
+              }`}
+            >
+              [{new Date(item.timestamp).toLocaleTimeString()}]{" "}
+              {item.message}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  );
+
+  const statusHeader = (
+    <div className="flex min-w-0 items-center gap-2 text-sm">
+      <span className="shrink-0 text-muted dark:text-zinc-400">
+        {t("lip.task_console.target_label")}:
+      </span>
+      <span className="min-w-0 truncate font-mono">{target || "-"}</span>
+      <Chip
+        size="sm"
+        variant="soft"
+        color={statusChipColor === "primary" ? "accent" : statusChipColor}
+      >
+        <Chip.Label>{statusText}</Chip.Label>
+      </Chip>
+    </div>
+  );
+
   return (
     <LipTaskConsoleContext.Provider value={contextValue}>
-      {children}
-      <UnifiedModal
-        size="wide"
-        isOpen={open}
-        onOpenChange={(nextOpen) => {
-          if (nextOpen) {
-            setOpen(true);
-            return;
+      <LipTaskProgressContext.Provider value={progressSnapshot}>
+        {children}
+        <UnifiedModal
+          size={compact ? "standard" : "wide"}
+          isOpen={open}
+          onOpenChange={(nextOpen) => {
+            if (nextOpen) {
+              setOpen(true);
+              return;
+            }
+            closeConsole();
+          }}
+          type={modalType}
+          scrollBehavior="inside"
+          icon={<LuTerminal size={24} />}
+          title={modalTitle}
+          isDismissable={!running}
+          footer={
+            compact ? null : (
+              <>
+                <ModalAction
+                  onPress={() => void handleCopyLogs()}
+                  variant={"secondary"}
+                >
+                  {t("lip.task_console.copy_logs")}
+                </ModalAction>
+                <ModalAction
+                  onPress={() => closeConsole()}
+                  isDisabled={running}
+                  variant="primary"
+                >
+                  {t("lip.task_console.close")}
+                </ModalAction>
+              </>
+            )
           }
-          closeConsole();
-        }}
-        type={modalType}
-        scrollBehavior="inside"
-        icon={<LuTerminal size={24} />}
-        title={modalTitle}
-        isDismissable={!running}
-        footer={
-          <>
-            <ModalAction onPress={() => void handleCopyLogs()} variant={"secondary"}>
-              {t("lip.task_console.copy_logs")}
-            </ModalAction>
-            <ModalAction
-              onPress={() => closeConsole()}
-              isDisabled={running}
-              variant="primary"
-            >
-              {t("lip.task_console.close")}
-            </ModalAction>
-          </>
-        }
-      >
-        <div className="flex h-[min(44vh,26rem)] min-h-[15rem] flex-col gap-3">
-          <div className="shrink-0 space-y-3">
-            <div className="flex items-center gap-2 text-sm">
-              <span className="text-muted dark:text-zinc-400">
-                {t("lip.task_console.target_label")}:
-              </span>
-              <span className="font-mono">{target || "-"}</span>
-              <Chip
-                size="sm"
-                variant="soft"
-                color={
-                  statusChipColor === "primary" ? "accent" : statusChipColor
-                }
-              >
-                <Chip.Label>{statusText}</Chip.Label>
-              </Chip>
-            </div>
-
-            <div className="space-y-1">
-              <div className="text-xs text-muted dark:text-zinc-400">
-                {t("lip.task_console.progress_label")}
-                {progress?.message ? ` - ${progress.message}` : ""}
+        >
+          {compact ? (
+            <div className="flex min-w-0 flex-col gap-4">
+              {statusHeader}
+              <LipTaskProgressView snapshot={progressSnapshot} />
+              <div className="flex min-w-0 flex-col gap-2">
+                <Button
+                  size="sm"
+                  variant="ghost"
+                  className="self-start"
+                  aria-expanded={logExpanded}
+                  onPress={() => setLogExpanded((prev) => !prev)}
+                >
+                  {logExpanded ? (
+                    <LuChevronDown size={14} />
+                  ) : (
+                    <LuChevronRight size={14} />
+                  )}
+                  {logExpanded
+                    ? t("lip.task_progress.hide_log")
+                    : t("lip.task_progress.show_log")}
+                </Button>
+                {logExpanded ? (
+                  <div className="flex h-[min(30vh,16rem)] min-h-[8rem] flex-col">
+                    {logPanel}
+                  </div>
+                ) : null}
               </div>
-              {running ? (
-                <ProgressBar
-                  aria-label={t("lip.task_console.progress_label") as string}
-                  value={progress ? progress.percentage : undefined}
-                  isIndeterminate={!progress}
-                  color={status === "failed" ? "danger" : "accent"}
-                >
-                  <ProgressBar.Track>
-                    <ProgressBar.Fill />
-                  </ProgressBar.Track>
-                </ProgressBar>
-              ) : progress ? (
-                <ProgressBar
-                  aria-label={t("lip.task_console.progress_label") as string}
-                  value={progress.percentage}
-                  color={status === "failed" ? "danger" : "success"}
-                >
-                  <ProgressBar.Track>
-                    <ProgressBar.Fill />
-                  </ProgressBar.Track>
-                </ProgressBar>
-              ) : null}
             </div>
-
-            {errorText ? (
-              <ModalNotice tone="danger" className="whitespace-pre-wrap break-all">
-                {errorText}
-              </ModalNotice>
-            ) : null}
-          </div>
-
-          <div className="min-h-0 flex flex-1 flex-col space-y-1">
-            <ModalDescription>
-              {t("lip.task_console.log_title")}
-            </ModalDescription>
-            <div
-              ref={logContainerRef}
-              className="min-h-0 flex-1 overflow-y-auto custom-scrollbar rounded-xl border border-border dark:border-zinc-700 bg-surface-secondary/50 dark:bg-surface-secondary/60 px-3 py-2"
-            >
-              {logs.length === 0 ? (
-                <div className="text-xs text-muted dark:text-zinc-500">
-                  {t("lip.task_console.no_output")}
+          ) : (
+            <div className="flex h-[min(52vh,32rem)] min-h-[15rem] flex-col gap-3">
+              <div className="shrink-0 space-y-3">
+                {statusHeader}
+                <div className="space-y-2">
+                  <div className="text-xs text-muted dark:text-zinc-400">
+                    {t("lip.task_console.progress_label")}
+                  </div>
+                  <LipTaskProgressView snapshot={progressSnapshot} />
                 </div>
-              ) : (
-                <div className="flex flex-col gap-1">
-                  {logs.map((item) => (
-                    <div
-                      key={item.id}
-                      className={`text-xs font-mono whitespace-pre-wrap break-all ${
-                        item.level === "error"
-                          ? "text-rose-600 dark:text-rose-400"
-                          : item.level === "warning"
-                            ? "text-amber-600 dark:text-amber-400"
-                            : item.level === "success"
-                              ? "text-green-600 dark:text-green-400"
-                              : "text-foreground dark:text-zinc-200"
-                      }`}
-                    >
-                      [{new Date(item.timestamp).toLocaleTimeString()}]{" "}
-                      {item.message}
-                    </div>
-                  ))}
-                </div>
-              )}
+
+                {errorText ? (
+                  <ModalNotice
+                    tone="danger"
+                    className="whitespace-pre-wrap break-all"
+                  >
+                    {errorText}
+                  </ModalNotice>
+                ) : null}
+              </div>
+
+              <div className="min-h-0 flex flex-1 flex-col space-y-1">
+                <ModalDescription>
+                  {t("lip.task_console.log_title")}
+                </ModalDescription>
+                {logPanel}
+              </div>
             </div>
-          </div>
-        </div>
-      </UnifiedModal>
+          )}
+        </UnifiedModal>
+      </LipTaskProgressContext.Provider>
     </LipTaskConsoleContext.Provider>
   );
 };
 
 export const useLipTaskConsole = (): LipTaskConsoleContextValue =>
   useContext(LipTaskConsoleContext);
+
+// Live progress of the running lip task session, for pages that show it
+// inline (feedbackMode "inline").
+export const useLipTaskProgress = (): LipTaskProgressSnapshot =>
+  useContext(LipTaskProgressContext);
+
+// Inline progress of the running lip task session; renders nothing unless a
+// session is running.
+export const LipTaskProgress: React.FC<{ className?: string }> = ({
+  className,
+}) => {
+  const snapshot = useLipTaskProgress();
+  if (snapshot.status !== "running") return null;
+  return <LipTaskProgressView snapshot={snapshot} className={className} />;
+};

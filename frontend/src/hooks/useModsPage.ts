@@ -1294,10 +1294,16 @@ export const useModsPage = (
             action: "update",
             target: name,
             methods: ["Install", "Update"],
-            feedbackMode: "never",
+            feedbackMode: "progress",
+            errorConsole: false,
           },
-          async ({ addLog }) => {
-            for (const item of updatableItems) {
+          async ({ addLog, setOuter }) => {
+            for (const [index, item] of updatableItems.entries()) {
+              setOuter(
+                index,
+                updatableItems.length,
+                item.kind === "mod" ? item.mod.name : item.packageName,
+              );
               if (item.kind === "mod") {
                 const identifierKey = item.lipState.identifierKey;
                 if (identifierKey && handledIdentifiers.has(identifierKey))
@@ -1336,6 +1342,7 @@ export const useModsPage = (
               success.push(item.packageName);
               addLog("success", `${item.packageName}: ok`);
             }
+            setOuter(updatableItems.length, updatableItems.length);
 
             if (failed.length > 0) {
               throw new Error(
@@ -1389,10 +1396,16 @@ export const useModsPage = (
             action: "uninstall",
             target: name,
             methods: ["Uninstall"],
-            feedbackMode: "never",
+            feedbackMode: "progress",
+            errorConsole: false,
           },
-          async ({ addLog }) => {
-            for (const item of selectedItems) {
+          async ({ addLog, setOuter }) => {
+            for (const [index, item] of selectedItems.entries()) {
+              setOuter(
+                index,
+                selectedItems.length,
+                item.kind === "mod" ? item.mod.name : item.packageName,
+              );
               if (item.kind === "mod") {
                 addLog(
                   "info",
@@ -1453,6 +1466,7 @@ export const useModsPage = (
               success.push(item.packageName);
               addLog("success", `${item.packageName}: ok`);
             }
+            setOuter(selectedItems.length, selectedItems.length);
 
             if (failed.length > 0) {
               throw new Error(
@@ -1531,7 +1545,7 @@ export const useModsPage = (
           action: "update",
           target: name,
           methods: ["Install", "Update"],
-          feedbackMode: "on_error",
+          feedbackMode: "progress",
         },
         async ({ addLog }) => {
           addLog("info", `${t("mods.action_update")}: ${mod.name}`);
@@ -1605,7 +1619,7 @@ export const useModsPage = (
           action: "update",
           target: name,
           methods: ["Install", "Update"],
-          feedbackMode: "on_error",
+          feedbackMode: "progress",
         },
         async ({ addLog }) => {
           addLog("info", `${t("mods.action_update")}: ${group.packageName}`);
@@ -1678,7 +1692,7 @@ export const useModsPage = (
           action: "install",
           target: name,
           methods: ["Install"],
-          feedbackMode: "on_error",
+          feedbackMode: "progress",
         },
         async ({ addLog }) => {
           addLog(
@@ -1796,7 +1810,7 @@ export const useModsPage = (
           action: "uninstall",
           target: name,
           methods: ["Uninstall"],
-          feedbackMode: "on_error",
+          feedbackMode: "progress",
         },
         async ({ addLog }) => {
           addLog("info", `${t("mods.action_uninstall")}: ${activeMod.name}`);
@@ -1873,7 +1887,7 @@ export const useModsPage = (
           action: "uninstall",
           target: name,
           methods: ["Uninstall"],
-          feedbackMode: "on_error",
+          feedbackMode: "progress",
         },
         async ({ addLog }) => {
           addLog(

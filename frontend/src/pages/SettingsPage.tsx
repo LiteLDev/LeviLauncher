@@ -71,6 +71,7 @@ import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { CustomColorPicker } from "@/components/CustomColorPicker";
 import { BackgroundAppearanceSettings } from "@/components/BackgroundAppearanceSettings";
 import { useSettings, ThemeMode } from "@/hooks/useSettings";
+import { LipTaskProgress } from "@/utils/LipTaskConsoleContext";
 
 const normalizeHexColor = (
   value: string | undefined,
@@ -2562,6 +2563,7 @@ export const SettingsPage: React.FC = () => {
                       </Button>
                     </div>
                   </div>
+                  {cleaningLipCache ? <LipTaskProgress className="-mt-2" /> : null}
 
                   <Separator className="bg-surface-tertiary/50" />
 

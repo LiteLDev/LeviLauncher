@@ -9,11 +9,16 @@ package engine
 //	LIP_E2E_FROM       version to install (default 26.51.8)
 //	LIP_E2E_TO         version to update to (default 26.51.9)
 //	LIP_E2E_REAL_ONLY  =1 runs only the lipd side (checks the RPC driver)
+//	LIP_E2E_GAME_EXE   path to a Minecraft.Windows.exe; when set it is copied
+//	                   into both workspaces before Install and every
+//	                   operation runs with scripts (ignoreScripts=false)
 //
 // Both sides run in fresh t.TempDir() workspaces; real instance
-// directories are never touched. Scripts are skipped on both sides
-// (ignoreScripts=true): LeviLamina's scripts patch Minecraft.Windows.exe,
-// which a scratch workspace does not have. The download cache
+// directories are never touched (LIP_E2E_GAME_EXE is only read). Without
+// LIP_E2E_GAME_EXE scripts are skipped on both sides (ignoreScripts=true):
+// LeviLamina's scripts patch Minecraft.Windows.exe, which a scratch
+// workspace does not have. With it, the comparison covers the patched exe,
+// its backup and whatever else the scripts create. The download cache
 // (%LOCALAPPDATA%\lip\cache) is shared with lip.
 
 import (
@@ -281,9 +286,19 @@ func TestE2EDifferentialAgainstLipd(t *testing.T) {
 	from := e2eEnv("LIP_E2E_FROM", "26.51.8")
 	to := e2eEnv("LIP_E2E_TO", "26.51.9")
 	realOnly := os.Getenv("LIP_E2E_REAL_ONLY") == "1"
+	gameExe := strings.TrimSpace(os.Getenv("LIP_E2E_GAME_EXE"))
+	ignoreScripts := gameExe == ""
 
 	realDir := t.TempDir()
 	nativeDir := t.TempDir()
+	exeName := filepath.Base(gameExe)
+	var exeSum string
+	if !ignoreScripts {
+		for _, dir := range []string{realDir, nativeDir} {
+			copyFile(t, gameExe, filepath.Join(dir, exeName))
+		}
+		exeSum = fileSum(t, filepath.Join(realDir, exeName))
+	}
 
 	var eng *Engine
 	if !realOnly {
@@ -302,13 +317,13 @@ func TestE2EDifferentialAgainstLipd(t *testing.T) {
 		native func() error
 	}
 	steps := []step{
-		{"install", "Install", []any{[]string{pkg + "@" + from}, false, true, false},
-			func() error { return eng.Install(ctx, []string{pkg + "@" + from}, false, true, false) }},
-		{"update", "Update", []any{[]string{pkg + "@" + to}, false, true},
-			func() error { return eng.Update(ctx, []string{pkg + "@" + to}, false, true) }},
+		{"install", "Install", []any{[]string{pkg + "@" + from}, false, ignoreScripts, false},
+			func() error { return eng.Install(ctx, []string{pkg + "@" + from}, false, ignoreScripts, false) }},
+		{"update", "Update", []any{[]string{pkg + "@" + to}, false, ignoreScripts},
+			func() error { return eng.Update(ctx, []string{pkg + "@" + to}, false, ignoreScripts) }},
 		{"list", "List", []any{}, nil},
-		{"uninstall", "Uninstall", []any{[]string{pkg}, false, true, false},
-			func() error { return eng.Uninstall(ctx, []string{pkg}, false, true, false) }},
+		{"uninstall", "Uninstall", []any{[]string{pkg}, false, ignoreScripts, false},
+			func() error { return eng.Uninstall(ctx, []string{pkg}, false, ignoreScripts, false) }},
 	}
 	for _, s := range steps {
 		res, err := lipdCall(t, realDir, s.method, s.params)
@@ -339,6 +354,45 @@ func TestE2EDifferentialAgainstLipd(t *testing.T) {
 		}
 		runNative(t, s.name, s.native)
 		compareWorkspaces(t, s.name, realDir, nativeDir)
+		if s.method == "Install" && !ignoreScripts {
+			// Guard against a vacuous pass: equal trees prove nothing if
+			// neither side ran the scripts that patch the game exe.
+			if fileSum(t, filepath.Join(realDir, exeName)) == exeSum {
+				t.Errorf("install: lipd left %s unchanged; did the install scripts run?", exeName)
+			}
+		}
+	}
+}
+
+// fileSum returns the hex SHA-256 of the file at p.
+func fileSum(t *testing.T, p string) string {
+	t.Helper()
+	b, err := os.ReadFile(p)
+	if err != nil {
+		t.Fatal(err)
+	}
+	sum := sha256.Sum256(b)
+	return hex.EncodeToString(sum[:])
+}
+
+// copyFile copies src to dst (read-only access to src).
+func copyFile(t *testing.T, src, dst string) {
+	t.Helper()
+	in, err := os.Open(src)
+	if err != nil {
+		t.Fatalf("LIP_E2E_GAME_EXE: %v", err)
+	}
+	defer in.Close()
+	out, err := os.Create(dst)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := io.Copy(out, in); err != nil {
+		_ = out.Close()
+		t.Fatal(err)
+	}
+	if err := out.Close(); err != nil {
+		t.Fatal(err)
 	}
 }
 

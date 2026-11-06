@@ -69,7 +69,7 @@ func checkBars(t *testing.T, r *progRec) {
 }
 
 // barsOf returns the bars of stage, in order.
-func barsOf(r *progRec, stage report.Stage) [][]report.Progress {
+func recBarsOf(r *progRec, stage report.Stage) [][]report.Progress {
 	ids, byID := r.bars()
 	var out [][]report.Progress
 	for _, id := range ids {
@@ -83,7 +83,7 @@ func barsOf(r *progRec, stage report.Stage) [][]report.Progress {
 // unitBars returns the bars of stage counting unit, in order.
 func unitBars(r *progRec, stage report.Stage, unit report.Unit) [][]report.Progress {
 	var out [][]report.Progress
-	for _, b := range barsOf(r, stage) {
+	for _, b := range recBarsOf(r, stage) {
 		if b[0].Unit == unit {
 			out = append(out, b)
 		}
@@ -91,7 +91,6 @@ func unitBars(r *progRec, stage report.Stage, unit report.Unit) [][]report.Progr
 	return out
 }
 
-func last(ups []report.Progress) report.Progress { return ups[len(ups)-1] }
 
 // newProgressRegistry is newTestRegistry reporting to a progRec, with
 // sequential progress ids.
@@ -121,7 +120,7 @@ func TestListTreeProgress(t *testing.T) {
 	}
 	checkBars(t, rec)
 	// The tree listing, then the tooth.json blob and its request.
-	if n := len(barsOf(rec, report.StageGitFetch)); n != 3 {
+	if n := len(recBarsOf(rec, report.StageGitFetch)); n != 3 {
 		t.Fatalf("%d git_fetch bars: %+v", n, rec.ps)
 	}
 	tree := unitBars(rec, report.StageGitFetch, report.UnitObjects)[0]
@@ -145,7 +144,7 @@ func TestListTreeProgressPerAttempt(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkBars(t, rec)
-	trees := barsOf(rec, report.StageGitFetch)
+	trees := recBarsOf(rec, report.StageGitFetch)
 	if len(trees) != 2 || trees[0][0].ID == trees[1][0].ID {
 		t.Fatalf("bars %+v", trees)
 	}
@@ -294,7 +293,7 @@ func TestOpenURLDownloadProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkBars(t, rec)
-	bars := barsOf(rec, report.StageDownload)
+	bars := recBarsOf(rec, report.StageDownload)
 	if len(bars) != 2 || bars[0][0].ID == bars[1][0].ID {
 		t.Fatalf("bars %+v", bars)
 	}
@@ -391,7 +390,7 @@ func TestOpenURLCacheProgress(t *testing.T) {
 			}
 			_, _ = g.openURL(ctx, specA("1.0.0"), "zip", raw)
 			checkBars(t, rec)
-			bars := barsOf(rec, report.StageDownload)
+			bars := recBarsOf(rec, report.StageDownload)
 			var got []string
 			for _, b := range bars {
 				l := last(b)
@@ -432,7 +431,7 @@ func TestOpenURLExtractProgress(t *testing.T) {
 	}
 	defer src.(interface{ Close() error }).Close()
 	checkBars(t, rec)
-	bars := barsOf(rec, report.StageExtract)
+	bars := recBarsOf(rec, report.StageExtract)
 	if len(bars) != 1 {
 		t.Fatalf("bars %+v", rec.ps)
 	}
@@ -449,7 +448,7 @@ func TestOpenURLExtractProgress(t *testing.T) {
 		t.Fatal("expected an error")
 	}
 	checkBars(t, rec2)
-	if bars := barsOf(rec2, report.StageExtract); len(bars) != 1 {
+	if bars := recBarsOf(rec2, report.StageExtract); len(bars) != 1 {
 		t.Fatalf("bars %+v", rec2.ps)
 	}
 }
@@ -467,7 +466,7 @@ func TestCacheCleanProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkBars(t, rec)
-	bars := barsOf(rec, report.StageCacheClean)
+	bars := recBarsOf(rec, report.StageCacheClean)
 	if len(bars) != 1 || len(bars[0]) != 5 || bars[0][0].ID != "cache_clean" || last(bars[0]).Current != 3 || last(bars[0]).Unit != report.UnitFiles {
 		t.Fatalf("bars %+v", bars)
 	}
@@ -483,7 +482,7 @@ func TestCacheCleanProgress(t *testing.T) {
 		t.Fatalf("err = %v", err)
 	}
 	checkBars(t, rec)
-	if bars := barsOf(rec, report.StageCacheClean); len(bars) != 1 || last(bars[0]).Current != 1 {
+	if bars := recBarsOf(rec, report.StageCacheClean); len(bars) != 1 || last(bars[0]).Current != 1 {
 		t.Fatalf("bars %+v", bars)
 	}
 
@@ -500,7 +499,7 @@ func TestCacheCleanProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkBars(t, rec)
-	if bars := barsOf(rec, report.StageCacheClean); len(bars) != 1 || last(bars[0]).Total != 3 || last(bars[0]).Current != 3 {
+	if bars := recBarsOf(rec, report.StageCacheClean); len(bars) != 1 || last(bars[0]).Total != 3 || last(bars[0]).Current != 3 {
 		t.Fatalf("bars %+v", bars)
 	}
 

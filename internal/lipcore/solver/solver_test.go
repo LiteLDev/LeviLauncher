@@ -410,14 +410,14 @@ func TestSolve(t *testing.T) {
 			},
 		},
 		{
-			// lip quirk: candidate HashSets are shared across backtracking
-			// levels (shallow Dictionary copy), so narrowing is never undone.
-			// A@2 narrows root B {1,2} to {2} and discovers C into A's freed
-			// slot; C (tie with B, earlier slot) is tried first and C@1's
-			// B <2 empties the shared set. Back at A@1, B's set is still
-			// empty, so A@1's B <2 fails too, even though A@1+B@1 is a
-			// valid assignment. lip reports no solution; so do we.
-			name: "shared candidate sets are not restored on backtrack",
+			// Deliberate difference from lip: narrowing is undone on
+			// backtrack. A@2 narrows root B {1,2} to {2} and discovers C
+			// into A's freed slot; C (tie with B, earlier slot) is tried
+			// first and C@1's B <2 empties B -> A@2 fails. lip narrowed the
+			// HashSet shared with the root level, so at A@1 B is still
+			// empty and lip reports no solution although A@1+B@1 is valid.
+			// Here A@1 sees B {1,2} again and narrows it to {1}.
+			name: "narrowing in a failed deeper level is undone",
 			reg: &fakeRegistry{
 				versions: map[string][]string{
 					"A": {"1.0.0", "2.0.0"},
@@ -430,12 +430,39 @@ func TestSolve(t *testing.T) {
 					"C@1.0.0": {req("B", "<2.0.0")},
 				},
 			},
-			roots:   []Requirement{req("A", "*"), req("B", "*")},
-			wantErr: "Cannot find a valid state to satisfy all dependencies.",
+			roots: []Requirement{req("A", "*"), req("B", "*")},
+			want:  []string{"B@1.0.0", "A@1.0.0"},
 			logs: []string{
 				"Resolving dependencies for: A@[*], B@[*]",
 				"Considering A with 2 candidate version(s)",
 				"Considering C with 1 candidate version(s)",
+				"Considering B with 1 candidate version(s)",
+			},
+		},
+		{
+			// Deliberate difference from lip: A@2 narrows root B {1,2} to
+			// {1} and then fails on the missing D 9.0.0 in the same
+			// propagation. lip leaves the shared set narrowed, so after
+			// backtracking to A@1 (no deps) it considers B with 1 candidate
+			// and selects B@1. Here B keeps both candidates and the newest,
+			// B@2, is selected.
+			name: "narrowing in a failed propagation is undone",
+			reg: &fakeRegistry{
+				versions: map[string][]string{
+					"A": {"1.0.0", "2.0.0"},
+					"B": {"1.0.0", "2.0.0"},
+					"D": {"1.0.0"},
+				},
+				deps: map[string][]Requirement{
+					"A@2.0.0": {req("B", "<2.0.0"), req("D", "9.0.0")},
+				},
+			},
+			roots: []Requirement{req("A", "*"), req("B", "*")},
+			want:  []string{"A@1.0.0", "B@2.0.0"},
+			logs: []string{
+				"Resolving dependencies for: A@[*], B@[*]",
+				"Considering A with 2 candidate version(s)",
+				"Considering B with 2 candidate version(s)",
 			},
 		},
 		{
@@ -658,5 +685,66 @@ func TestOrderedCandsSlotReuse(t *testing.T) {
 	cs, _ := c.get("x")
 	if xs != cs {
 		t.Error("clone must share candidate sets")
+	}
+}
+
+func TestCandSetNarrowed(t *testing.T) {
+	s := newCandSet([]Version{fv("1.0.0"), fv("2.0.0"), fv("1.5.0"), fv("3.0.0")}, fc("*"))
+	orig := append([]Version(nil), s.vs...)
+
+	if got := s.narrowed(fc(">=1.0.0")); got != s {
+		t.Error("narrowing that removes nothing must return the same set")
+	}
+
+	got := s.narrowed(fc("<2.0.0"))
+	if got == s {
+		t.Fatal("narrowing that removes elements must return a new set")
+	}
+	if want := []Version{fv("1.0.0"), fv("1.5.0")}; !reflect.DeepEqual(got.vs, want) {
+		t.Errorf("narrowed = %v, want %v", got.vs, want)
+	}
+	if !reflect.DeepEqual(s.vs, orig) {
+		t.Errorf("original set modified: %v, want %v", s.vs, orig)
+	}
+
+	if got := s.narrowed(fc("9.0.0")); len(got.vs) != 0 || len(s.vs) != 4 {
+		t.Errorf("narrowing to empty = %v (original %v)", got.vs, s.vs)
+	}
+}
+
+// BenchmarkSolveWide measures a wide graph where every selection narrows a
+// candidate set (each narrowing copies the touched set): p_i@v requires
+// p_{i+1} <v, so the newest-first search picks p0@50, p1@49, ... without
+// backtracking, while every clone carries all remaining sets.
+func BenchmarkSolveWide(b *testing.B) {
+	const pkgs, versions = 40, 50
+	reg := &fakeRegistry{versions: map[string][]string{}, deps: map[string][]Requirement{}}
+	var all []string
+	for v := 1; v <= versions; v++ {
+		all = append(all, fmt.Sprintf("%d.0.0", v))
+	}
+	var rootDeps []Requirement
+	for p := 0; p < pkgs; p++ {
+		id := fmt.Sprintf("p%d", p)
+		reg.versions[id] = all
+		rootDeps = append(rootDeps, req(id, "*"))
+		for v := 1; v <= versions; v++ {
+			if p+1 < pkgs {
+				reg.deps[fmt.Sprintf("%s@%d.0.0", id, v)] = []Requirement{req(fmt.Sprintf("p%d", p+1), fmt.Sprintf("<%d.0.0", v))}
+			}
+		}
+	}
+	reg.versions["root"] = []string{"1.0.0"}
+	reg.deps["root@1.0.0"] = rootDeps
+	b.ResetTimer()
+	for i := 0; i < b.N; i++ {
+		got, err := Solve(context.Background(), reg, []Requirement{req("root", "*")}, nil)
+		if err != nil {
+			b.Fatal(err)
+		}
+		// Dependencies first: the chain's end, p39@11, is emitted first.
+		if len(got) != pkgs+1 || got[0].Version.String() != fmt.Sprintf("%d.0.0", versions-pkgs+1) {
+			b.Fatalf("unexpected result %v", specs(got))
+		}
 	}
 }

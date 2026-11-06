@@ -4,13 +4,44 @@
 // It is written against small interfaces so it does not depend on the
 // concrete semver/manifest packages; package engine adapts them.
 //
-// The port is deliberately faithful, including lip's quirks:
+// The port is faithful (newest-first candidate order, fewest-candidates
+// heuristic and its tie-break, log messages, error texts, output order,
+// cycle detection, registry call pattern) with one deliberate difference:
 //
-//   - Candidate sets are shared between backtracking levels. lip copies the
-//     candidate dictionary shallowly (new Dictionary(candidates)), so the
-//     HashSet values are the same objects at every level, and narrowing a
-//     set during propagation (HashSet.RemoveWhere) is never undone when the
-//     solver backtracks. This package shares *candSet pointers the same way.
+// Narrowing is undone on backtrack. lip copies the candidate dictionary
+// shallowly (new Dictionary(candidates)), so the HashSet values are the same
+// objects at every level, and narrowing a set during propagation
+// (HashSet.RemoveWhere) leaks into the enclosing levels and is never undone.
+// That makes lip's search incomplete: it can report "Cannot find a valid
+// state to satisfy all dependencies." although a solution exists. This
+// package shares *candSet pointers between levels too, but never mutates a
+// set once the search has started: propagation replaces a set it narrows
+// with a narrowed copy in the current level's dictionary (copy-on-write), so
+// every level sees exactly the candidates its own selections allow.
+//
+// The difference shows only after lip's search failed somewhere (a
+// propagation conflict, or a version whose subtree has no solution) after
+// narrowing a set that an enclosing level or a later sibling still uses; in
+// lip that set then stays narrowed for the rest of the search. Every search
+// without such a failure, in particular every search that succeeds without
+// backtracking, gives the same selection, "Considering" log lines and
+// registry calls as lip. After such a failure the rest of the search sees
+// candidates lip had wrongly pruned, so:
+//
+//   - where lip reports no solution, a solution may now be found;
+//   - where lip succeeds, a version lip had pruned may now be selected
+//     instead of the one lip settled for: typically a newer one, as the
+//     newest is tried first (lip picks B@1 where B@2 is valid);
+//   - as candidate counts differ, the fewest-candidates heuristic may
+//     consider packages in another order, so the "Considering" lines,
+//     the selection, the topological output order and the registry calls
+//     can differ from lip in that situation.
+//
+// A search that succeeds in lip never fails here: lip only selects valid
+// assignments and this search is complete.
+//
+// lip quirks kept as they are:
+//
 //   - Ties in the fewest-candidates heuristic are broken by .NET Dictionary
 //     enumeration order, which is insertion order except that an id added
 //     after a removal reuses the removed slot. orderedCands emulates that.
@@ -118,18 +149,25 @@ func newCandSet(available []Version, c Constraint) *candSet {
 	return s
 }
 
-// removeUnsatisfying is HashSet.RemoveWhere(v => !c.Contains(v)), in place.
-func (s *candSet) removeUnsatisfying(c Constraint) {
-	out := s.vs[:0]
-	for _, v := range s.vs {
+// narrowed is HashSet.RemoveWhere(v => !c.Contains(v)) without mutating s,
+// since sets are shared between backtracking levels: it returns s itself
+// when every element satisfies c, else a new set holding the satisfying
+// elements in their original order.
+func (s *candSet) narrowed(c Constraint) *candSet {
+	for i, v := range s.vs {
 		if c.Contains(v) {
-			out = append(out, v)
+			continue
 		}
+		out := &candSet{vs: make([]Version, i, len(s.vs)-1)}
+		copy(out.vs, s.vs[:i])
+		for _, w := range s.vs[i+1:] {
+			if c.Contains(w) {
+				out.vs = append(out.vs, w)
+			}
+		}
+		return out
 	}
-	for i := len(out); i < len(s.vs); i++ {
-		s.vs[i] = nil
-	}
-	s.vs = out
+	return s
 }
 
 // newestFirst is versions.Order(PrecedenceComparer).Reverse(): a stable
@@ -202,7 +240,8 @@ func (d *orderedCands) remove(id string) {
 	d.free = append(d.free, i)
 }
 
-// clone is a shallow, compacting copy: the *candSet values are shared.
+// clone is a shallow, compacting copy: the *candSet values are shared, which
+// is safe because sets are never mutated during the search (see narrowed).
 func (d *orderedCands) clone() *orderedCands {
 	c := &orderedCands{
 		slots: make([]candSlot, 0, d.count()),
@@ -271,8 +310,9 @@ func (st *solverState) printInfo(format string, args ...any) {
 	}
 }
 
-// Solve finds one version per package satisfying all requirements, exactly
-// as lip does: candidate sets per id; backtracking picks the unresolved id
+// Solve finds one version per package satisfying all requirements as lip
+// does, except that narrowing is undone on backtrack (see the package doc):
+// candidate sets per id; backtracking picks the unresolved id
 // with the fewest candidates and tries the newest version first; selecting
 // a version propagates its dependencies (an already-selected dependency must
 // satisfy the range, otherwise the candidate set is intersected; a new
@@ -301,7 +341,8 @@ func Solve(ctx context.Context, reg Registry, roots []Requirement, logf Logf) ([
 		}
 		if existing, ok := candidates.get(req.ID); ok {
 			// Pick the intersection of existing candidates and new constraints.
-			existing.removeUnsatisfying(req.Constraint)
+			// set replaces the value in place, so the id keeps its slot.
+			candidates.set(req.ID, existing.narrowed(req.Constraint))
 		} else {
 			candidates.set(req.ID, newCandSet(available, req.Constraint))
 		}
@@ -329,7 +370,9 @@ func Solve(ctx context.Context, reg Registry, roots []Requirement, logf Logf) ([
 }
 
 // backtrack ports DependencySolver.Backtrack. A nil selection with a nil
-// error means "no solution in this branch".
+// error means "no solution in this branch". Each tried version works on its
+// own clone of candidates, and propagation never mutates a shared set, so
+// nothing narrowed while trying one version is seen when trying the next.
 func (st *solverState) backtrack(ctx context.Context, candidates *orderedCands, selected *selection) (*selection, error) {
 	if err := ctx.Err(); err != nil {
 		return nil, err
@@ -387,8 +430,11 @@ func (st *solverState) tryPropagate(ctx context.Context, id string, v Version, c
 
 		// Constrain remaining candidates.
 		if options, ok := currentCandidates.get(req.ID); ok {
-			// Mutates the set shared with every other level (lip quirk).
-			options.removeUnsatisfying(req.Constraint)
+			// lip narrows the set shared with the enclosing levels in place;
+			// replacing it in this level's dictionary instead keeps the
+			// narrowing from outliving a backtrack.
+			options = options.narrowed(req.Constraint)
+			currentCandidates.set(req.ID, options)
 			if len(options.vs) == 0 {
 				return false, nil
 			}

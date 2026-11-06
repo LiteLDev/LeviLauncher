@@ -37,7 +37,6 @@ func TestInstallLeviLaminaRejectsLegacyThreePartGameVersion(t *testing.T) {
 		t.Fatalf("mkdir target dir: %v", err)
 	}
 
-	leviLaminaLipIsInstalled = func() bool { return true }
 	fetchLeviLaminaVersionDB = func() (map[string][]string, error) {
 		return map[string][]string{
 			"1.21.80.03": {"0.13.0"},
@@ -60,7 +59,6 @@ func TestInstallLeviLaminaInstallsExactMatchedVersion(t *testing.T) {
 	var installedWorkDir string
 	var installedPackages []string
 
-	leviLaminaLipIsInstalled = func() bool { return true }
 	fetchLeviLaminaVersionDB = func() (map[string][]string, error) {
 		return map[string][]string{
 			"1.21.80.03": {"0.13.0", "0.13.1"},
@@ -130,13 +128,11 @@ func TestInstanceBackupSupportsLeviLaminaReturnsNonDefinitiveOnFetchFailure(t *t
 func restoreLeviLaminaTestDeps(t *testing.T) {
 	t.Helper()
 	originalFetch := fetchLeviLaminaVersionDB
-	originalLipInstalled := leviLaminaLipIsInstalled
 	originalExplicitState := leviLaminaIsPackageExplicitlyInstalledViaDaemon
 	originalUpdate := leviLaminaUpdatePackagesViaDaemon
 	originalInstall := leviLaminaInstallPackagesViaDaemon
 	t.Cleanup(func() {
 		fetchLeviLaminaVersionDB = originalFetch
-		leviLaminaLipIsInstalled = originalLipInstalled
 		leviLaminaIsPackageExplicitlyInstalledViaDaemon = originalExplicitState
 		leviLaminaUpdatePackagesViaDaemon = originalUpdate
 		leviLaminaInstallPackagesViaDaemon = originalInstall

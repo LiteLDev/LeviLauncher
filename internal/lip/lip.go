@@ -14,28 +14,7 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-const (
-	EventLipInstallStatus   = "lip_install_status"
-	EventLipInstallProgress = "lip_install_progress"
-	EventLipInstallDone     = "lip_install_done"
-	EventLipInstallError    = "lip_install_error"
-
-	// NativeVersion is reported as both the installed and the latest lip
-	// version: lip is built into the launcher, so it is always up to date.
-	NativeVersion = "0.37.0-native"
-
-	defaultLipGithubProxy = "https://github.bibk.top"
-)
-
-// Status mirrors the runtime status the frontend reads via GetLipStatus.
-type Status struct {
-	Path           string `json:"path"`
-	Installed      bool   `json:"installed"`
-	UpToDate       bool   `json:"upToDate"`
-	CurrentVersion string `json:"currentVersion"`
-	LatestVersion  string `json:"latestVersion"`
-	Error          string `json:"error"`
-}
+const defaultLipGithubProxy = "https://github.bibk.top"
 
 // emitEvent sends an application event; replaced in tests.
 var emitEvent = func(event string, data any) {
@@ -133,37 +112,3 @@ func ErrorCode(err error) string {
 	return extractErrCode(err)
 }
 
-// IsInstalled reports whether lip is available. It is built in, so always.
-func IsInstalled() bool { return true }
-
-// EnsureInstalledWithError is kept for compatibility; lip is built in.
-func EnsureInstalledWithError() error { return nil }
-
-// GetVersion returns the built-in lip version.
-func GetVersion() string { return NativeVersion }
-
-// GetLatestVersion returns the built-in lip version.
-func GetLatestVersion() (string, error) { return NativeVersion, nil }
-
-// CheckStatus reports the built-in lip as installed and up to date.
-func CheckStatus() Status {
-	return Status{
-		Installed:      true,
-		UpToDate:       true,
-		CurrentVersion: NativeVersion,
-		LatestVersion:  NativeVersion,
-	}
-}
-
-// Install is a no-op kept for the frontend's install flow: lip is built in,
-// so it reports success immediately.
-func Install() string {
-	emitEvent(EventLipInstallStatus, "done")
-	emitEvent(EventLipInstallProgress, map[string]interface{}{
-		"percentage": float64(100),
-		"current":    int64(0),
-		"total":      int64(0),
-	})
-	emitEvent(EventLipInstallDone, NativeVersion)
-	return ""
-}

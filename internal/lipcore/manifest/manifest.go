@@ -45,6 +45,16 @@ var (
 		_, err := glob.Compile(pattern)
 		return err
 	}
+	// NormalizeGlob parses a preserve/remove pattern and returns the text lip
+	// writes back (GlobListJsonConverter serialises Glob.ToString, which
+	// re-renders the tokens).
+	NormalizeGlob = func(pattern string) (string, error) {
+		g, err := glob.Compile(pattern)
+		if err != nil {
+			return "", err
+		}
+		return g.Format(), nil
+	}
 )
 
 // ErrNotImplemented is returned by skeleton stubs.

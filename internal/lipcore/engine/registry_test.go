@@ -417,7 +417,8 @@ func (a fakeAsset) Keys() []string { return a.keys }
 func (a fakeAsset) Open(string) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader("")), nil
 }
-func (a fakeAsset) Close() error { *a.closed = true; return nil }
+func (a fakeAsset) Prefetch(context.Context, []string) error { return nil }
+func (a fakeAsset) Close() error                                 { *a.closed = true; return nil }
 
 func TestGitRegistryURLAssets(t *testing.T) {
 	g, _, _, _, rep := newTestRegistry(t)

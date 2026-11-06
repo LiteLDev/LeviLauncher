@@ -283,12 +283,6 @@ func (a *Minecraft) GetLIPPackageReadme(projectURL string) (string, error) {
 	return lip.FetchPackageReadme(projectURL)
 }
 
-// InstallLip is kept for frontend compatibility. lip is built into the
-// launcher now, so there is nothing to download or install.
-func (a *Minecraft) InstallLip() string {
-	return lip.Install()
-}
-
 func (a *Minecraft) GetLipGithubProxy() string {
 	return lip.GithubProxy()
 }
@@ -303,32 +297,6 @@ func (a *Minecraft) CacheClean() string {
 		return lip.ErrorCode(err)
 	}
 	return ""
-}
-
-func (a *Minecraft) GetLipVersion() string {
-	return lip.GetVersion()
-}
-
-// IsLipInstalled is kept for frontend compatibility. lip is built into the
-// launcher now, so this always reports true.
-func (a *Minecraft) IsLipInstalled() bool {
-	return lip.IsInstalled()
-}
-
-func (a *Minecraft) GetLatestLipVersion() (string, error) {
-	return lip.GetLatestVersion()
-}
-
-func (a *Minecraft) GetLipStatus() map[string]interface{} {
-	st := lip.CheckStatus()
-	return map[string]interface{}{
-		"path":           st.Path,
-		"installed":      st.Installed,
-		"upToDate":       st.UpToDate,
-		"currentVersion": st.CurrentVersion,
-		"latestVersion":  st.LatestVersion,
-		"error":          st.Error,
-	}
 }
 
 // StartupEssential binds the Wails application context and anchors the working

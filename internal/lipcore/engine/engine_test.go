@@ -49,7 +49,7 @@ func TestInstall(t *testing.T) {
 			wantSaves: 2, // add + explicitness reconcile, like lip
 			wantMsgs: []string{
 				"info: Listing files is the registry's job",
-				"info: Resolving dependencies for: example.com/d@1.0.0",
+				"info: Resolving dependencies for: example.com/d@[1.0.0]",
 				"info: Installing package example.com/d version 1.0.0",
 				"info: Marking package 'example.com/d' version 1.0.0 as explicitly installed.",
 			},

@@ -295,10 +295,12 @@ func decodeVariant(raw json.RawMessage, what string) (Variant, error) {
 		return v, err
 	}
 	for _, list := range [][]string{v.PreserveFiles, v.RemoveFiles} {
-		for _, pattern := range list {
-			if err := ValidateGlob(pattern); err != nil {
+		for i, pattern := range list {
+			formatted, err := NormalizeGlob(pattern)
+			if err != nil {
 				return v, fmt.Errorf("invalid glob pattern %q: %w", pattern, err)
 			}
+			list[i] = formatted
 		}
 	}
 

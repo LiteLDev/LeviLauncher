@@ -99,38 +99,3 @@ func TestErrorCode(t *testing.T) {
 	}
 }
 
-func TestStatusShims(t *testing.T) {
-	if !IsInstalled() {
-		t.Fatal("IsInstalled must be true")
-	}
-	if err := EnsureInstalledWithError(); err != nil {
-		t.Fatalf("EnsureInstalledWithError = %v", err)
-	}
-	if GetVersion() != NativeVersion {
-		t.Fatalf("GetVersion = %q", GetVersion())
-	}
-	if v, err := GetLatestVersion(); err != nil || v != NativeVersion {
-		t.Fatalf("GetLatestVersion = %q, %v", v, err)
-	}
-	st := CheckStatus()
-	if !st.Installed || !st.UpToDate || st.CurrentVersion != NativeVersion || st.LatestVersion != NativeVersion || st.Error != "" {
-		t.Fatalf("unexpected status: %+v", st)
-	}
-}
-
-func TestInstallShimEmitsDone(t *testing.T) {
-	rec := recordEvents(t)
-	if code := Install(); code != "" {
-		t.Fatalf("Install() = %q", code)
-	}
-	events := rec.snapshot()
-	last := events[len(events)-1]
-	if last.name != EventLipInstallDone || last.data != NativeVersion {
-		t.Fatalf("unexpected events: %+v", events)
-	}
-	for _, ev := range events {
-		if ev.name == EventLipInstallError {
-			t.Fatalf("unexpected error event: %+v", ev)
-		}
-	}
-}

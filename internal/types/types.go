@@ -240,6 +240,11 @@ type PackInfo struct {
 	Path             string `json:"path"`
 }
 
+type PackListEntry struct {
+	PackInfo
+	ModTime int64 `json:"modTime"` // Pack directory modification time in Unix seconds.
+}
+
 type LevelDatField struct {
 	Name        string   `json:"name"`
 	Tag         string   `json:"tag"`

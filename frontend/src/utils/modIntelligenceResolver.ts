@@ -71,7 +71,7 @@ const normalizeName = (value: string): string =>
 const normalizeIdentifier = (value: string): string =>
   String(value || "").trim();
 
-const normalizeIdentifierLookupKey = (value: string): string =>
+export const normalizeIdentifierLookupKey = (value: string): string =>
   String(value || "")
     .trim()
     .toLowerCase();

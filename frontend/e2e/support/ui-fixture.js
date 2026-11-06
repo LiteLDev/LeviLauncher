@@ -18,7 +18,7 @@ localStorage.setItem('ll.clarity.enabled', 'false');
 localStorage.setItem('ll.clarity.choiceMade', 'fixture');
 localStorage.setItem('ll.termsAccepted', 'fixture');
 if (scenario === 'sponsor-terms') localStorage.removeItem('ll.termsAccepted');
-if (scenario === 'sponsor-clarity') localStorage.removeItem('ll.clarity.choiceMade');
+if (scenario === 'sponsor-analytics') localStorage.removeItem('ll.clarity.choiceMade');
 localStorage.setItem('ll.currentVersionName', isUWP ? 'UWP release instance' : 'UI test instance');
 if(isUWP) localStorage.setItem('download.filters', JSON.stringify({packageType:'uwp',type:'all',status:'all',loader:'all'}));
 localStorage.setItem('app.backgroundImage', scenario === 'wallpaper' ? 'C:\\Fixture\\wallpapers' : '');
@@ -190,7 +190,10 @@ state.call = async (name, ...args) => {
  }
  if (name==='ListVersionMetas') return scenario==='no-instances' ? [] : [{name:'UI test instance',gameVersion:'1.21.0',type:'Release',enableIsolation:true}];
  if (name==='ListPacksForVersion' && scenario==='resource-packs') return Array.from({length:24},(_,index)=>({name:'Resource pack '+String(index+1).padStart(2,'0'),path:'C:/Fixture/resource_packs/pack-'+(index+1),manifest:{pack_type:6,name:'Resource pack '+String(index+1).padStart(2,'0'),description:'A sample resource pack.',identity:{version:{major:1,minor:0,patch:0}}}}));
- if (name==='GetPackInfo' && scenario==='resource-packs') return {name:'Resource pack '+String(args[0]).split('-').pop().padStart(2,'0'),description:'A sample resource pack for checking search, sorting, and pagination.',version:'1.0.0',iconDataUrl:''};
+ if (name==='ListPackDetailsForVersion' && scenario==='resource-packs' && args[2]===6) return Array.from({length:24},(_,index)=>({
+   name:'Resource pack '+String(index+1).padStart(2,'0'),path:'C:/Fixture/resource_packs/pack-'+(index+1),
+   description:'A sample resource pack for checking search, sorting, and pagination.',version:'1.0.0',modTime:1700000000,
+ }));
  if (name==='GetVersionMeta') return {name:'UI test instance',gameVersion:'1.21.0',type:'Release',enableIsolation:true};
  if (name==='GetLocalVersionNames') return ['UI test instance'];
  if (name==='GetSunTimes') return {};

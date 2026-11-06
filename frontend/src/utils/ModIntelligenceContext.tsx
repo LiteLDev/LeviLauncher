@@ -32,6 +32,7 @@ import {
   type LipGroupItem,
   type ModLIPState,
   type ModListItem,
+  normalizeIdentifierLookupKey,
 } from "@/utils/modIntelligenceResolver";
 import { useStartupInteractive } from "@/utils/startupState";
 
@@ -73,11 +74,6 @@ const ModIntelligenceContext = createContext<
 const INSTANCE_CACHE_TTL_MS = 30_000;
 const PACKAGE_STATE_CACHE_TTL_MS = 30_000;
 const LEVILAMINA_IDENTIFIER = "LiteLDev/LeviLamina";
-
-const normalizeIdentifierLookupKey = (value: string): string =>
-  String(value || "")
-    .trim()
-    .toLowerCase();
 
 const emptyInstallState = (): LIPPackageInstallState => ({
   installed: false,
@@ -684,7 +680,7 @@ export const ModIntelligenceProvider: React.FC<{
       const normalizedName = String(instanceName || "").trim();
       const rawIdentifier = String(identifier || "").trim();
       const lookupKey = normalizeIdentifierLookupKey(rawIdentifier);
-      if (!normalizedName || !rawIdentifier || !lookupKey) {
+      if (!normalizedName || !lookupKey) {
         return emptyInstallState();
       }
 

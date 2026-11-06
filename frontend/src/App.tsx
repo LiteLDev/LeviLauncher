@@ -9,7 +9,7 @@ import { Sidebar } from "@/components/Sidebar";
 import { TopBar } from "@/components/TopBar";
 import { NavigationFrame } from "@/components/NavigationFrame";
 import { TermsModal } from "@/components/TermsModal";
-import { ClarityConsentModal } from "@/components/ClarityConsentModal";
+import { AnalyticsConsentModal } from "@/components/AnalyticsConsentModal";
 import { useTranslation } from "react-i18next";
 import { VersionStatusProvider } from "@/utils/VersionStatusContext";
 import { CurseForgeProvider } from "@/utils/CurseForgeContext";
@@ -155,15 +155,13 @@ const GlobalShortcuts = ({
 function App() {
   const { t } = useTranslation();
   const { resolvedTheme } = useTheme();
-  const hasBackend = minecraft !== undefined;
   const { themeMode } = useThemeManager();
 
   // The tray menu is built in Go, which has no access to the resolved
   // language, so the rendered labels are pushed down on every change.
   useEffect(() => {
-    if (!hasBackend) return;
     minecraft.SetTrayLabels(t("common.show_launcher"), t("common.quit_launcher"));
-  }, [hasBackend, t]);
+  }, [t]);
 
   // Extracted hooks
   const { layoutMode } = useLayoutMode();
@@ -190,9 +188,9 @@ function App() {
     termsOpen,
     termsCountdown,
     acceptTerms,
-    clarityPromptOpen,
-    acceptClarity,
-    declineClarity,
+    analyticsPromptOpen,
+    acceptAnalytics,
+    declineAnalytics,
     updateOpen,
     updateVersion,
     updateBody,
@@ -202,7 +200,6 @@ function App() {
     sponsorLaunchCount,
     dismissSponsor,
   } = useAppModals({
-    hasBackend,
     isUpdatingMode,
     isOnboardingMode,
   });
@@ -447,14 +444,14 @@ function App() {
                           onAccept={acceptTerms}
                         />
 
-                        <ClarityConsentModal
+                        <AnalyticsConsentModal
                           isOpen={
-                            clarityPromptOpen &&
+                            analyticsPromptOpen &&
                             !isOnboardingMode &&
                             !isUpdatingMode
                           }
-                          onEnable={acceptClarity}
-                          onKeepDisabled={declineClarity}
+                          onEnable={acceptAnalytics}
+                          onKeepDisabled={declineAnalytics}
                         />
 
                         {sponsorLaunchCount > 0 &&

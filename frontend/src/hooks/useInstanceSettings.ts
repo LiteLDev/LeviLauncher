@@ -459,7 +459,6 @@ export const useInstanceSettings = () => {
   const returnToPath: string = String(
     location?.state?.returnTo || ROUTES.instances,
   );
-  const hasBackend = minecraft !== undefined;
   const ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY =
     "ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY";
   const ERR_LIP_PACKAGE_REQUIRED_BY_DEPENDENTS =
@@ -805,21 +804,10 @@ export const useInstanceSettings = () => {
     [isLLInstalled, llExplicitInstalled],
   );
 
-  const isSemverLike = React.useCallback((version: string) => {
-    const v = String(version || "").trim();
-    return /^[vV]?\d+\.\d+\.\d+(?:-[0-9A-Za-z-]+(?:\.[0-9A-Za-z-]+)*)?$/.test(
-      v,
-    );
-  }, []);
-
   const canInstallSelectedLLVersion = React.useMemo(
     () => Boolean(String(selectedLLVersion || "").trim()),
     [selectedLLVersion],
   );
-
-  const llInstallBlockedReasonKey = React.useMemo(() => "", []);
-
-  const llOnlyLatestSelectable = React.useMemo(() => false, []);
 
   const llInstallActionKind = React.useMemo<
     "install" | "upgrade" | "downgrade" | "reinstall"
@@ -927,7 +915,7 @@ export const useInstanceSettings = () => {
 
   // Load version metadata
   React.useEffect(() => {
-    if (!hasBackend || !targetName) return;
+    if (!targetName) return;
     (async () => {
       try {
         const getMeta = GetVersionMeta as any;
@@ -966,7 +954,7 @@ export const useInstanceSettings = () => {
       }
       setLoading(false);
     })();
-  }, [hasBackend, targetName]);
+  }, [targetName]);
 
   React.useEffect(() => {
     setErrorOpen(!!error);
@@ -1880,7 +1868,7 @@ export const useInstanceSettings = () => {
   // Save handler
   const onSave = React.useCallback(
     async (destPath?: string | number) => {
-      if (!hasBackend || !targetName) {
+      if (!targetName) {
         navigate(-1);
         return false;
       }
@@ -1948,7 +1936,6 @@ export const useInstanceSettings = () => {
       return true;
     },
     [
-      hasBackend,
       targetName,
       newName,
       gameVersion,
@@ -1970,7 +1957,7 @@ export const useInstanceSettings = () => {
 
   // Delete handler
   const onDeleteConfirm = React.useCallback(async () => {
-    if (!hasBackend || !targetName) {
+    if (!targetName) {
       setDeleteOpen(false);
       return;
     }
@@ -2000,12 +1987,12 @@ export const useInstanceSettings = () => {
     } finally {
       setDeleting(false);
     }
-  }, [hasBackend, targetName]);
+  }, [targetName]);
 
   // LeviLamina install handlers
   const proceedInstallLeviLamina = React.useCallback(
     async (forcedVersion?: string) => {
-      if (!hasBackend || !targetName || !gameVersion) return false;
+      if (!targetName || !gameVersion) return false;
       const installVersion = String(
         forcedVersion || resolvedLLTargetVersion || "",
       ).trim();
@@ -2028,7 +2015,7 @@ export const useInstanceSettings = () => {
               methods: ["Install", "Update"],
               feedbackMode: "on_error",
             },
-            async ({ addLog }) => {
+            async () => {
               const err: string = await installLL(
                 gameVersion,
                 targetName,
@@ -2068,7 +2055,6 @@ export const useInstanceSettings = () => {
     },
     [
       gameVersion,
-      hasBackend,
       isLLInstalled,
       llInstallActionKind,
       llInstallSuccessKey,
@@ -2082,7 +2068,7 @@ export const useInstanceSettings = () => {
   );
 
   const handleInstallLeviLamina = React.useCallback(async () => {
-    if (!hasBackend || !targetName || !gameVersion) return false;
+    if (!targetName || !gameVersion) return false;
 
     const targetLLVersion = resolvedLLTargetVersion;
     if (!targetLLVersion) {
@@ -2105,7 +2091,6 @@ export const useInstanceSettings = () => {
 
     return await proceedInstallLeviLamina(targetLLVersion);
   }, [
-    hasBackend,
     targetName,
     gameVersion,
     isLLInstalled,
@@ -2289,7 +2274,6 @@ export const useInstanceSettings = () => {
     setError,
     logoDataUrl,
     setLogoDataUrl,
-    hasBackend,
 
     // Modal states
     unregisterOpen,
@@ -2363,8 +2347,6 @@ export const useInstanceSettings = () => {
     setSelectedLLVersion,
     currentLLVersion,
     canInstallSelectedLLVersion,
-    llInstallBlockedReasonKey,
-    llOnlyLatestSelectable,
     llInstallActionKind,
     llInstallActionLabelKey,
     llInstallSuccessKey,

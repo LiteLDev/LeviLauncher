@@ -10,7 +10,6 @@ import {
   GetAllVersionsStatus,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import * as main from "bindings/github.com/liteldev/LeviLauncher/internal/app/models";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import * as versionService from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { installerIdentityFromPath, normalizePackageType, versionStatusKey, type PackageType, type VersionChannel } from "@/utils/packageType";
 type ItemType = VersionChannel;
@@ -35,7 +34,6 @@ const VersionStatusContext = createContext<CtxValue | undefined>(undefined);
 export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
 }) => {
-  const hasBackend = minecraft !== undefined;
   const [map, setMap] = useState<Map<string, main.VersionStatus>>(() => {
     try {
       const raw = localStorage.getItem("levi_version_status_map.v2");
@@ -67,7 +65,6 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
   }, [map]);
 
   const refreshAll = async (items: VersionItemLite[]) => {
-    if (!hasBackend) return;
     if (!items || items.length === 0) return;
     try {
       setRefreshing(true);
@@ -96,7 +93,6 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   const refreshOne = async (short: string, type: string, packageType: PackageType = "gdk") => {
-    if (!hasBackend) return;
     try {
       const s = await versionService.GetVersionStatusForPackage(short, type.toLowerCase(), packageType);
       setMap((prev) => {
@@ -126,7 +122,6 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
   };
 
   useEffect(() => {
-    if (!hasBackend) return;
     const off = Events.On("msixvc_download_done", (event) => {
       const raw = event?.data;
       const d =
@@ -146,7 +141,7 @@ export const VersionStatusProvider: React.FC<{ children: React.ReactNode }> = ({
         off && off();
       } catch {}
     };
-  }, [hasBackend]);
+  }, []);
 
   const value = useMemo<CtxValue>(
     () => ({

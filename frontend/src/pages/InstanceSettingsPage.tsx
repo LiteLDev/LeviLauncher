@@ -2146,11 +2146,6 @@ export default function InstanceSettingsPage() {
               </ListBox>
             </Select.Popover>
           </Select>
-          {vs.llInstallBlockedReasonKey ? (
-            <p className="text-xs text-amber-600 dark:text-amber-500">
-              {t(vs.llInstallBlockedReasonKey)}
-            </p>
-          ) : null}
         </div>
       </UnifiedModal>
 

@@ -1,6 +1,6 @@
 import { openDirectory, showDirectoryOpenError } from "@/utils/explorer";
 import { useOverlayState } from "@heroui/react";
-import React, { useEffect, useRef } from "react";
+import React, { useEffect } from "react";
 
 import { Events } from "@wailsio/runtime";
 import { useNavigate } from "react-router-dom";
@@ -93,7 +93,6 @@ export const useLauncher = (args: any) => {
   const registerFailedDisclosure = useOverlayState();
   const loaderMigrationDisclosure = useOverlayState();
 
-  const hasBackend = minecraft !== undefined;
   const navigate = useNavigate();
   const [launchErrorCode, setLaunchErrorCode] = React.useState<string>("");
   const [contentCounts, setContentCounts] = React.useState<{
@@ -611,7 +610,6 @@ export const useLauncher = (args: any) => {
   }, [requiresUWPRegistration, doRegister, doLaunch]);
 
   useEffect(() => {
-    if (!hasBackend) return;
     let disposed = false;
     let vcRuntimeRetryTimer: number | null = null;
 
@@ -699,7 +697,6 @@ export const useLauncher = (args: any) => {
       }
     };
   }, [
-    hasBackend,
     currentPackageType,
     gameInputMissingDisclosure,
     gamingServicesMissingDisclosure,
@@ -707,7 +704,6 @@ export const useLauncher = (args: any) => {
   ]);
 
   useEffect(() => {
-    if (!hasBackend) return;
     let cancelled = false;
 
     const unlistenMigrateStart = Events.On("leviloader.migrate.start", () => {
@@ -748,7 +744,7 @@ export const useLauncher = (args: any) => {
       unlistenMigrateProgress();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [hasBackend]);
+  }, []);
 
   useEffect(() => {
     const unlistenGiStart = Events.On("gameinput.ensure.start", () => {
@@ -776,10 +772,6 @@ export const useLauncher = (args: any) => {
       gameInputInstallingDisclosure.close();
       installConfirmDisclosure.open();
     });
-    const unlistenGiDlError = Events.On(
-      "gameinput.download.error",
-      (data) => {},
-    );
     const unlistenGiDone = Events.On("gameinput.ensure.done", (event) => {
       const success = Boolean(event?.data);
       gameInputInstallingDisclosure.close();
@@ -817,10 +809,6 @@ export const useLauncher = (args: any) => {
       vcRuntimeInstallingDisclosure.close();
       installConfirmDisclosure.open();
     });
-    const unlistenVcDlError = Events.On(
-      "vcruntime.download.error",
-      (data) => {},
-    );
     const unlistenVcDone = Events.On("vcruntime.ensure.done", (event) => {
       const success = Boolean(event?.data);
       vcRuntimeInstallingDisclosure.close();
@@ -853,9 +841,6 @@ export const useLauncher = (args: any) => {
         unlistenGiDlDone && (unlistenGiDlDone as any)();
       } catch {}
       try {
-        unlistenGiDlError && (unlistenGiDlError as any)();
-      } catch {}
-      try {
         unlistenGiDone && (unlistenGiDone as any)();
       } catch {}
       try {
@@ -871,9 +856,6 @@ export const useLauncher = (args: any) => {
         unlistenVcDlDone && (unlistenVcDlDone as any)();
       } catch {}
       try {
-        unlistenVcDlError && (unlistenVcDlError as any)();
-      } catch {}
-      try {
         unlistenVcDone && (unlistenVcDone as any)();
       } catch {}
       try {
@@ -883,10 +865,6 @@ export const useLauncher = (args: any) => {
   }, []);
 
   const refreshContentCounts = React.useCallback(async () => {
-    if (!hasBackend) {
-      setContentCounts({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
-      return;
-    }
     const countDir = async (path: string): Promise<number> => {
       try {
         const entries = await ListDir(path);
@@ -977,11 +955,11 @@ export const useLauncher = (args: any) => {
     } catch {
       setContentCounts({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
     }
-  }, [hasBackend]);
+  }, []);
 
   useEffect(() => {
     refreshContentCounts();
-  }, [refreshContentCounts, hasBackend, currentVersion]);
+  }, [refreshContentCounts, currentVersion]);
 
   useEffect(() => {
     const unlistenMcStart = Events.On("mc.launch.start", () => {
@@ -1017,177 +995,172 @@ export const useLauncher = (args: any) => {
   }, []);
 
   useEffect(() => {
-    if (hasBackend) {
-      const registrationRevision = registrationRevisionRef.current;
-      setIsLoadingVersions(true);
+    const registrationRevision = registrationRevisionRef.current;
+    setIsLoadingVersions(true);
 
-      const processMetas = (metas: any[]) => {
-        const newLocalVersionMap = new Map();
-        const newLocalVersionsMap = new Map();
-        metas?.forEach((m: any) => {
-          const name = String(m?.name || "");
-          const gameVersion = String(m?.gameVersion || "");
-          const type = String(m?.type || "release");
-          const isPreview = type.toLowerCase() === "preview";
-          const lv: any = {
-            name,
-            version: gameVersion,
-            packageType: normalizePackageType(m?.packageType),
-            type: type.toLowerCase(),
-            isPreview,
-            isRegistered: Boolean(m?.registered),
-            isLaunched: false,
-            isPreLoader: false,
-            isLeviLaminaInstalled: undefined,
-          };
-          if (name) newLocalVersionMap.set(name, lv);
-          if (gameVersion) {
-            if (!newLocalVersionsMap.has(gameVersion))
-              newLocalVersionsMap.set(gameVersion, []);
-            if (!newLocalVersionsMap.get(gameVersion)?.includes(name))
-              newLocalVersionsMap.get(gameVersion)?.push(name);
-          }
-        });
-        setLocalVersionMap((prev) => {
-          const merged = new Map();
-          newLocalVersionMap.forEach((info: any, name: string) => {
-            const known = prev.get(name)?.isLeviLaminaInstalled;
-            merged.set(name, {
-              ...info,
-              isRegistered: registrationRevision === registrationRevisionRef.current
-                ? info.isRegistered
-                : Boolean(prev.get(name)?.isRegistered),
-              isLeviLaminaInstalled:
-                typeof known === "boolean" ? known : undefined,
-            });
-          });
-          return merged;
-        });
-
-        const saved = (() => {
-          return readCurrentVersionName();
-        })();
-        const useName =
-          saved && newLocalVersionMap.has(saved)
-            ? saved
-            : Array.from(newLocalVersionMap.keys())[0] || "";
-        setCurrentVersion(useName);
-        try {
-          saveCurrentVersionName(useName, "launcher.refresh-versions");
-        } catch {}
-        const ver = useName
-          ? newLocalVersionMap.get(useName)?.version || ""
-          : "";
-        setDisplayVersion(ver || "None");
-        setDisplayName(useName || "");
-        setLogoDataUrl("");
-      };
-
-      const fastFn = (versionService as any)?.ListVersionMetas;
-      const slowFn = (versionService as any)?.ListVersionMetasWithRegistered;
-      const detailsFn = (versionService as any)?.GetVersionMenuDetails;
-
-      const applyDetails = (details: any[]) => {
-        const detailList = Array.isArray(details) ? details : [];
-        const nextLogos = new Map<string, string>();
-        const detailByName = new Map<string, any>();
-
-        detailList.forEach((detail: any) => {
-          const name = String(detail?.name || "");
-          if (!name) return;
-          detailByName.set(name, detail);
-          const logo = String(detail?.logoDataUrl || "");
-          if (logo) {
-            nextLogos.set(name, logo);
-          }
-        });
-
-        setLogoByName(nextLogos);
-        setLocalVersionMap((prev) => {
-          const next = new Map(prev);
-          detailByName.forEach((detail, name) => {
-            const current = next.get(name);
-            if (!current) return;
-            next.set(name, {
-              ...current,
-              isRegistered: registrationRevision === registrationRevisionRef.current
-                ? Boolean(detail?.registered)
-                : Boolean(current?.isRegistered),
-              isLeviLaminaInstalled: Boolean(detail?.leviLaminaInstalled),
-            });
-          });
-          return next;
-        });
-
-        const selectedName = readCurrentVersionName();
-        setLogoDataUrl(nextLogos.get(selectedName) || "");
-      };
-
-      const loadLegacyDetails = async () => {
-        if (typeof slowFn !== "function") {
-          throw new Error("Version detail fallback is unavailable");
+    const processMetas = (metas: any[]) => {
+      const newLocalVersionMap = new Map();
+      const newLocalVersionsMap = new Map();
+      metas?.forEach((m: any) => {
+        const name = String(m?.name || "");
+        const gameVersion = String(m?.gameVersion || "");
+        const type = String(m?.type || "release");
+        const isPreview = type.toLowerCase() === "preview";
+        const lv: any = {
+          name,
+          version: gameVersion,
+          packageType: normalizePackageType(m?.packageType),
+          type: type.toLowerCase(),
+          isPreview,
+          isRegistered: Boolean(m?.registered),
+          isLaunched: false,
+          isPreLoader: false,
+          isLeviLaminaInstalled: undefined,
+        };
+        if (name) newLocalVersionMap.set(name, lv);
+        if (gameVersion) {
+          if (!newLocalVersionsMap.has(gameVersion))
+            newLocalVersionsMap.set(gameVersion, []);
+          if (!newLocalVersionsMap.get(gameVersion)?.includes(name))
+            newLocalVersionsMap.get(gameVersion)?.push(name);
         }
-
-        const fullMetas = await slowFn();
-        processMetas(fullMetas);
-        setIsLoadingVersions(false);
-        const details = await Promise.all(
-          (Array.isArray(fullMetas) ? fullMetas : []).map(async (meta: any) => {
-            const name = String(meta?.name || "");
-            const [logoDataUrl, installedMods] = await Promise.all([
-              Promise.resolve(
-                (versionService as any)?.GetVersionLogoDataUrl?.(name),
-              ).catch(() => ""),
-              Promise.resolve((modsService as any)?.GetMods?.(name)).catch(
-                () => [],
-              ),
-            ]);
-            return {
-              name,
-              registered: Boolean(meta?.registered),
-              logoDataUrl: String(logoDataUrl || ""),
-              leviLaminaInstalled: (Array.isArray(installedMods)
-                ? installedMods
-                : []
-              ).some(
-                (mod: any) =>
-                  String(mod?.name || "").toLowerCase() === "levilamina",
-              ),
-            };
-          }),
-        );
-        applyDetails(details);
-      };
-
-      if (typeof fastFn === "function") {
-        fastFn()
-          .then((metas: any[]) => {
-            processMetas(metas);
-            setIsLoadingVersions(false);
-
-            if (typeof detailsFn === "function") {
-              detailsFn()
-                .then(applyDetails)
-                .catch(() => void loadLegacyDetails().catch(() => {}));
-            } else if (typeof slowFn === "function") {
-              void loadLegacyDetails().catch(() => {});
-            }
-          })
-          .catch(() => {
-            if (typeof slowFn === "function") {
-              void loadLegacyDetails().catch(() => setIsLoadingVersions(false));
-            } else {
-              setIsLoadingVersions(false);
-            }
+      });
+      setLocalVersionMap((prev) => {
+        const merged = new Map();
+        newLocalVersionMap.forEach((info: any, name: string) => {
+          const known = prev.get(name)?.isLeviLaminaInstalled;
+          merged.set(name, {
+            ...info,
+            isRegistered: registrationRevision === registrationRevisionRef.current
+              ? info.isRegistered
+              : Boolean(prev.get(name)?.isRegistered),
+            isLeviLaminaInstalled:
+              typeof known === "boolean" ? known : undefined,
           });
-      } else if (typeof slowFn === "function") {
-        void loadLegacyDetails().catch(() => setIsLoadingVersions(false));
-      } else {
-        setIsLoadingVersions(false);
+        });
+        return merged;
+      });
+
+      const saved = (() => {
+        return readCurrentVersionName();
+      })();
+      const useName =
+        saved && newLocalVersionMap.has(saved)
+          ? saved
+          : Array.from(newLocalVersionMap.keys())[0] || "";
+      setCurrentVersion(useName);
+      try {
+        saveCurrentVersionName(useName, "launcher.refresh-versions");
+      } catch {}
+      const ver = useName
+        ? newLocalVersionMap.get(useName)?.version || ""
+        : "";
+      setDisplayVersion(ver || "None");
+      setDisplayName(useName || "");
+      setLogoDataUrl("");
+    };
+
+    const fastFn = (versionService as any)?.ListVersionMetas;
+    const slowFn = (versionService as any)?.ListVersionMetasWithRegistered;
+    const detailsFn = (versionService as any)?.GetVersionMenuDetails;
+
+    const applyDetails = (details: any[]) => {
+      const detailList = Array.isArray(details) ? details : [];
+      const nextLogos = new Map<string, string>();
+      const detailByName = new Map<string, any>();
+
+      detailList.forEach((detail: any) => {
+        const name = String(detail?.name || "");
+        if (!name) return;
+        detailByName.set(name, detail);
+        const logo = String(detail?.logoDataUrl || "");
+        if (logo) {
+          nextLogos.set(name, logo);
+        }
+      });
+
+      setLogoByName(nextLogos);
+      setLocalVersionMap((prev) => {
+        const next = new Map(prev);
+        detailByName.forEach((detail, name) => {
+          const current = next.get(name);
+          if (!current) return;
+          next.set(name, {
+            ...current,
+            isRegistered: registrationRevision === registrationRevisionRef.current
+              ? Boolean(detail?.registered)
+              : Boolean(current?.isRegistered),
+            isLeviLaminaInstalled: Boolean(detail?.leviLaminaInstalled),
+          });
+        });
+        return next;
+      });
+
+      const selectedName = readCurrentVersionName();
+      setLogoDataUrl(nextLogos.get(selectedName) || "");
+    };
+
+    const loadLegacyDetails = async () => {
+      if (typeof slowFn !== "function") {
+        throw new Error("Version detail fallback is unavailable");
       }
+
+      const fullMetas = await slowFn();
+      processMetas(fullMetas);
+      setIsLoadingVersions(false);
+      const details = await Promise.all(
+        (Array.isArray(fullMetas) ? fullMetas : []).map(async (meta: any) => {
+          const name = String(meta?.name || "");
+          const [logoDataUrl, installedMods] = await Promise.all([
+            Promise.resolve(
+              (versionService as any)?.GetVersionLogoDataUrl?.(name),
+            ).catch(() => ""),
+            Promise.resolve((modsService as any)?.GetMods?.(name)).catch(
+              () => [],
+            ),
+          ]);
+          return {
+            name,
+            registered: Boolean(meta?.registered),
+            logoDataUrl: String(logoDataUrl || ""),
+            leviLaminaInstalled: (Array.isArray(installedMods)
+              ? installedMods
+              : []
+            ).some(
+              (mod: any) =>
+                String(mod?.name || "").toLowerCase() === "levilamina",
+            ),
+          };
+        }),
+      );
+      applyDetails(details);
+    };
+
+    if (typeof fastFn === "function") {
+      fastFn()
+        .then((metas: any[]) => {
+          processMetas(metas);
+          setIsLoadingVersions(false);
+
+          if (typeof detailsFn === "function") {
+            detailsFn()
+              .then(applyDetails)
+              .catch(() => void loadLegacyDetails().catch(() => {}));
+          } else if (typeof slowFn === "function") {
+            void loadLegacyDetails().catch(() => {});
+          }
+        })
+        .catch(() => {
+          if (typeof slowFn === "function") {
+            void loadLegacyDetails().catch(() => setIsLoadingVersions(false));
+          } else {
+            setIsLoadingVersions(false);
+          }
+        });
+    } else if (typeof slowFn === "function") {
+      void loadLegacyDetails().catch(() => setIsLoadingVersions(false));
     } else {
-      setCurrentVersion("");
-      setLocalVersionMap(new Map());
+      setIsLoadingVersions(false);
     }
   }, [args.count]);
 
@@ -1350,7 +1323,6 @@ export const useLauncher = (args: any) => {
     launchPending,
     requiresUWPRegistration,
     tipIndex,
-    hasBackend,
 
     // Disclosures
     launchFailedDisclosure,

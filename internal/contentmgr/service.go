@@ -20,6 +20,7 @@ import (
 
 type PackLoader interface {
 	LoadPacksForVersion(versionName string, resourcePacksDir string, behaviorPacksDir string, skinPacksDirs ...string) ([]packages.Pack, error)
+	LoadPackDetails(kind packages.PackType, resourcePacksDir, behaviorPacksDir string, skinPacksDirs ...string) []types.PackListEntry
 }
 
 type Deps struct {
@@ -55,12 +56,32 @@ func New(deps Deps) *Manager {
 }
 
 func (m *Manager) ListPacksForVersion(versionName string, player string) []packages.Pack {
-	if m.packLoader == nil {
+	roots, skins, ok := m.packRoots(versionName, player)
+	if !ok {
 		return []packages.Pack{}
+	}
+	packs, err := m.packLoader.LoadPacksForVersion(versionName, roots.ResourcePacks, roots.BehaviorPacks, skins...)
+	if err != nil {
+		return []packages.Pack{}
+	}
+	return packs
+}
+
+func (m *Manager) ListPackDetailsForVersion(versionName, player string, kind packages.PackType) []types.PackListEntry {
+	roots, skins, ok := m.packRoots(versionName, player)
+	if !ok {
+		return []types.PackListEntry{}
+	}
+	return m.packLoader.LoadPackDetails(kind, roots.ResourcePacks, roots.BehaviorPacks, skins...)
+}
+
+func (m *Manager) packRoots(versionName, player string) (types.ContentRoots, []string, bool) {
+	if m.packLoader == nil {
+		return types.ContentRoots{}, nil, false
 	}
 	roots := m.getContentRoots(versionName)
 	if roots.ResourcePacks == "" && roots.BehaviorPacks == "" {
-		return []packages.Pack{}
+		return roots, nil, false
 	}
 	var skinPacksDirs []string
 
@@ -71,22 +92,18 @@ func (m *Manager) ListPacksForVersion(versionName string, player string) []packa
 		}
 	}
 
-	if player != "" && roots.UsersRoot != "" {
-		userSkins := filepath.Join(roots.UsersRoot, player, "games", "com.mojang", "skin_packs")
+	if playerRoot := gdkPlayerRoot(roots.UsersRoot, player); playerRoot != "" {
+		userSkins := filepath.Join(playerRoot, "games", "com.mojang", "skin_packs")
 		if utils.DirExists(userSkins) {
 			skinPacksDirs = append(skinPacksDirs, userSkins)
 		}
-		userSkinsSimple := filepath.Join(roots.UsersRoot, player, "skin_packs")
+		userSkinsSimple := filepath.Join(playerRoot, "skin_packs")
 		if utils.DirExists(userSkinsSimple) {
 			skinPacksDirs = append(skinPacksDirs, userSkinsSimple)
 		}
 	}
 
-	packs, err := m.packLoader.LoadPacksForVersion(versionName, roots.ResourcePacks, roots.BehaviorPacks, skinPacksDirs...)
-	if err != nil {
-		return []packages.Pack{}
-	}
-	return packs
+	return roots, skinPacksDirs, true
 }
 
 func compareVersions(v1, v2 string) int {
@@ -151,11 +168,18 @@ func playerContentDir(roots types.ContentRoots, player, kind string) string {
 		}
 		return ""
 	}
+	if root := gdkPlayerRoot(roots.UsersRoot, player); root != "" {
+		return filepath.Join(root, "games", "com.mojang", kind)
+	}
+	return ""
+}
+
+func gdkPlayerRoot(usersRoot, player string) string {
 	player = strings.TrimSpace(player)
-	if strings.TrimSpace(roots.UsersRoot) == "" || player == "" || player == "." || player == ".." || strings.ContainsAny(player, "/\\:") {
+	if strings.TrimSpace(usersRoot) == "" || player == "" || player == "." || player == ".." || strings.ContainsAny(player, "/\\:") {
 		return ""
 	}
-	return filepath.Join(roots.UsersRoot, player, "games", "com.mojang", kind)
+	return filepath.Join(usersRoot, player)
 }
 
 func zipDirToBytes(srcDir string) ([]byte, error) {
@@ -265,9 +289,8 @@ func (m *Manager) TransferPackToVersion(sourceVersionName string, sourcePackPath
 		return "ERR_OPEN_ZIP"
 	}
 	skinDir := m.versionSkinDir(dstVer, dstRoots)
-	return content.ImportMcpackToDirs2(
+	return content.ImportMcpackToDirs(
 		data,
-		filepath.Base(srcPackPath),
 		dstRoots.ResourcePacks,
 		dstRoots.BehaviorPacks,
 		skinDir,
@@ -278,7 +301,7 @@ func (m *Manager) TransferPackToVersion(sourceVersionName string, sourcePackPath
 func (m *Manager) ImportMcpack(name string, data []byte, overwrite bool) string {
 	roots := m.getContentRoots(name)
 	skinDir := m.versionSkinDir(name, roots)
-	return content.ImportMcpackToDirs2(data, "", roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	return content.ImportMcpackToDirs(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (m *Manager) ImportMcpackPath(name string, path string, overwrite bool) string {
@@ -289,15 +312,13 @@ func (m *Manager) ImportMcpackPath(name string, path string, overwrite bool) str
 	if err != nil {
 		return "ERR_OPEN_ZIP"
 	}
-	roots := m.getContentRoots(name)
-	skinDir := m.versionSkinDir(name, roots)
-	return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	return m.ImportMcpack(name, b, overwrite)
 }
 
 func (m *Manager) ImportMcaddon(name string, data []byte, overwrite bool) string {
 	roots := m.getContentRoots(name)
 	skinDir := m.versionSkinDir(name, roots)
-	return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	return content.ImportMcaddonToDirs(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (m *Manager) ImportMcaddonPath(name string, path string, overwrite bool) string {
@@ -308,15 +329,13 @@ func (m *Manager) ImportMcaddonPath(name string, path string, overwrite bool) st
 	if err != nil {
 		return "ERR_OPEN_ZIP"
 	}
-	roots := m.getContentRoots(name)
-	skinDir := m.versionSkinDir(name, roots)
-	return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	return m.ImportMcaddon(name, b, overwrite)
 }
 
 func (m *Manager) ImportMcaddonWithPlayer(name string, player string, data []byte, overwrite bool) string {
 	roots := m.getContentRoots(name)
 	skinDir := playerContentDir(roots, player, "skin_packs")
-	return content.ImportMcaddonToDirs2(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	return content.ImportMcaddonToDirs(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (m *Manager) ImportMcaddonPathWithPlayer(name string, player string, path string, overwrite bool) string {
@@ -327,15 +346,13 @@ func (m *Manager) ImportMcaddonPathWithPlayer(name string, player string, path s
 	if err != nil {
 		return "ERR_OPEN_ZIP"
 	}
-	roots := m.getContentRoots(name)
-	skinDir := playerContentDir(roots, player, "skin_packs")
-	return content.ImportMcaddonToDirs2(b, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	return m.ImportMcaddonWithPlayer(name, player, b, overwrite)
 }
 
 func (m *Manager) ImportMcpackWithPlayer(name string, player string, fileName string, data []byte, overwrite bool) string {
 	roots := m.getContentRoots(name)
 	skinDir := playerContentDir(roots, player, "skin_packs")
-	return content.ImportMcpackToDirs2(data, fileName, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	return content.ImportMcpackToDirs(data, roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
 }
 
 func (m *Manager) ImportMcpackPathWithPlayer(name string, player string, path string, overwrite bool) string {
@@ -346,9 +363,7 @@ func (m *Manager) ImportMcpackPathWithPlayer(name string, player string, path st
 	if err != nil {
 		return "ERR_OPEN_ZIP"
 	}
-	roots := m.getContentRoots(name)
-	skinDir := playerContentDir(roots, player, "skin_packs")
-	return content.ImportMcpackToDirs2(b, filepath.Base(path), roots.ResourcePacks, roots.BehaviorPacks, skinDir, overwrite)
+	return m.ImportMcpackWithPlayer(name, player, filepath.Base(path), b, overwrite)
 }
 
 func (m *Manager) IsMcpackSkinPackPath(path string) bool {
@@ -372,7 +387,7 @@ func (m *Manager) ImportMcworld(name string, player string, fileName string, dat
 	if wp == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
-	return content.ImportMcworldToDir(data, fileName, wp, overwrite)
+	return content.ImportMcworldToDir(data, wp)
 }
 
 func (m *Manager) ImportMcworldPath(name string, player string, path string, overwrite bool) string {
@@ -383,12 +398,7 @@ func (m *Manager) ImportMcworldPath(name string, player string, path string, ove
 	if err != nil {
 		return "ERR_OPEN_ZIP"
 	}
-	roots := m.getContentRoots(name)
-	wp := playerContentDir(roots, player, "minecraftWorlds")
-	if wp == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	return content.ImportMcworldToDir(b, filepath.Base(path), wp, overwrite)
+	return m.ImportMcworld(name, player, filepath.Base(path), b, overwrite)
 }
 
 func (m *Manager) GetPackInfo(dir string) types.PackInfo {

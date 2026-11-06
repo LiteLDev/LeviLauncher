@@ -56,8 +56,8 @@ LeviLauncher は、パス、外観、コンポーネント管理、プライバ�
 
 ### プライバシー
 
-- 匿名の利用状況分析（Microsoft Clarity）。いつでもオフにできます
-- Clarity の利用規約と Microsoft のプライバシーに関する声明へのリンク
+- 利用状況の分析（Google Analytics）。いつでもオフにできます
+- Google Analytics の利用規約と Google プライバシーポリシーへのリンク
 
 ### アップデート
 

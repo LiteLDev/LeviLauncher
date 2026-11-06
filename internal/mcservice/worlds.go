@@ -204,13 +204,3 @@ func WriteWorldLevelDatFieldsAt(worldDir string, args map[string]any) string {
 	}
 	return ""
 }
-
-func ImportMcworld(name string, player string, fileName string, data []byte, overwrite bool) string {
-	roots := GetContentRoots(name)
-	users := strings.TrimSpace(roots.UsersRoot)
-	if users == "" || strings.TrimSpace(player) == "" {
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	wp := filepath.Join(users, player, "games", "com.mojang", "minecraftWorlds")
-	return content.ImportMcworldToDir(data, fileName, wp, overwrite)
-}

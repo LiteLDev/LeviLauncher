@@ -28,7 +28,6 @@ import React from "react";
 import { useTranslation } from "react-i18next";
 import { motion, AnimatePresence } from "framer-motion";
 
-import { useTheme } from "next-themes";
 import { RxUpdate, RxDesktop } from "react-icons/rx";
 import {
   FaGithub,
@@ -63,7 +62,6 @@ import {
   GetVersionsDir,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { Browser, Dialogs } from "@wailsio/runtime";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
@@ -119,12 +117,9 @@ type AppearanceSection = typeof APPEARANCE_SECTIONS[number];
 
 export const SettingsPage: React.FC = () => {
   const { t, i18n } = useTranslation();
-  const { theme, setTheme } = useTheme();
   const settings = useSettings(i18n);
   const {
-    hasBackend,
     navigate,
-    location,
     appVersion,
     checkingUpdate,
     updating,
@@ -154,8 +149,8 @@ export const SettingsPage: React.FC = () => {
     setDiscordRpcEnabled,
     enableBetaUpdates,
     setEnableBetaUpdates,
-    clarityEnabled,
-    setClarityEnabled,
+    analyticsEnabled,
+    setAnalyticsEnabled,
     experimentalInstanceBackupEnabled,
     setExperimentalInstanceBackupEnabled,
     gameLaunchBehavior,
@@ -213,7 +208,6 @@ export const SettingsPage: React.FC = () => {
     scheduleEnd,
     setScheduleEnd,
     sunTimes,
-    resolvedTheme,
     themeSettingMode,
     setThemeSettingMode,
     loadingSunTimes,
@@ -2764,8 +2758,8 @@ export const SettingsPage: React.FC = () => {
                     <Switch
                       aria-label={t("settings.privacy.analytics.title")}
                       size="sm"
-                      isSelected={clarityEnabled}
-                      onChange={setClarityEnabled}
+                      isSelected={analyticsEnabled}
+                      onChange={setAnalyticsEnabled}
                       className={"group"}
                     >
                       <Switch.Content>
@@ -2784,23 +2778,23 @@ export const SettingsPage: React.FC = () => {
                   <div className="flex flex-wrap gap-2">
                     <Button
                       onPress={() =>
-                        Browser.OpenURL("https://clarity.microsoft.com/terms")
+                        Browser.OpenURL("https://marketingplatform.google.com/about/analytics/terms/us/")
                       }
                       variant={"outline"}
                       className={"rounded-full"}
                     >
-                      {t("settings.privacy.links.clarity_terms")}
+                      {t("settings.privacy.links.google_analytics_terms")}
                     </Button>
                     <Button
                       onPress={() =>
                         Browser.OpenURL(
-                          "https://privacy.microsoft.com/privacystatement",
+                          "https://policies.google.com/privacy",
                         )
                       }
                       variant={"ghost"}
                       className={"rounded-full"}
                     >
-                      {t("settings.privacy.links.microsoft_privacy")}
+                      {t("settings.privacy.links.google_privacy")}
                     </Button>
                   </div>
                 </div>

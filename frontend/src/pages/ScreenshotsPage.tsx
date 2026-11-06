@@ -39,7 +39,6 @@ import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/inter
 import * as contentService from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -69,7 +68,6 @@ export default function ScreenshotsPage() {
   const { t } = useTranslation();
   const location = useLocation();
   const navigate = useNavigate();
-  const hasBackend = minecraft !== undefined;
   const [loading, setLoading] = React.useState<boolean>(true);
   const [loadError, setLoadError] = React.useState("");
   const loadGeneration = React.useRef(0);
@@ -89,7 +87,6 @@ export default function ScreenshotsPage() {
     isOpen: previewOpen,
     open: previewOnOpen,
     setOpen: previewOnOpenChange,
-    close: previewOnClose,
   } = useOverlayState();
   const {
     isOpen: delManyCfmOpen,
@@ -126,7 +123,7 @@ export default function ScreenshotsPage() {
     const name = readCurrentVersionName();
     setCurrentVersionName(name);
     try {
-      if (!hasBackend || !name) {
+      if (!name) {
         setScreenshots([]);
         return;
       }
@@ -192,7 +189,7 @@ export default function ScreenshotsPage() {
     } finally {
       if (generation === loadGeneration.current) setLoading(false);
     }
-  }, [hasBackend, player, t]);
+  }, [player, t]);
 
   React.useEffect(() => {
     refreshAll();
@@ -359,7 +356,7 @@ export default function ScreenshotsPage() {
         <div className="flex flex-col gap-4">
           {screenshots.length ? (
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-              {screenshots.map((s, idx) => (
+              {screenshots.map((s) => (
                 <motion.div
                   key={s.path}
                   initial={{ opacity: 0 }}
@@ -461,7 +458,7 @@ export default function ScreenshotsPage() {
                           size="sm"
                           variant={"danger-soft"}
                           onClick={(event) => event.stopPropagation()}
-                          onPress={(e) => {
+                          onPress={() => {
                             setActiveShot(s);
                             delCfmOnOpen();
                           }}

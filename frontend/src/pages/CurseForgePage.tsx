@@ -37,7 +37,6 @@ import { useCurseForge } from "@/utils/CurseForgeContext";
 import {
   LuSearch,
   LuDownload,
-  LuEye,
   LuClock,
   LuCalendar,
   LuFileDigit,
@@ -655,7 +654,7 @@ export const CurseForgePage: React.FC = () => {
           <Card.Content className={LAYOUT.CATALOG.RESULTS_BODY}>
             <div
               ref={scrollContainerRef}
-              onScroll={(e) => {
+              onScroll={() => {
                 lastScrollTopRef.current = getScrollTop();
               }}
               data-testid="catalog-results"
@@ -688,7 +687,7 @@ export const CurseForgePage: React.FC = () => {
                 </div>
               ) : (
                 <div className="flex flex-col gap-3">
-                  {mods.map((mod, index) => (
+                  {mods.map((mod) => (
                     <motion.div
                       key={mod.id}
                       initial={{ opacity: 0 }}

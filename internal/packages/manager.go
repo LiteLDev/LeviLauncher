@@ -1,12 +1,14 @@
 package packages
 
 import (
+	"encoding/base64"
 	"os"
 	"path/filepath"
 	"strconv"
 	"strings"
 
 	json "github.com/goccy/go-json"
+	"github.com/liteldev/LeviLauncher/internal/types"
 	"github.com/liteldev/LeviLauncher/internal/utils"
 )
 
@@ -26,13 +28,31 @@ type RawManifest struct {
 	} `json:"modules"`
 }
 
-func (pm *PackManager) LoadPacksForVersion(versionName string, resourcePacksDir, behaviorPacksDir string, skinPacksDirs ...string) ([]Pack, error) {
+func (PackManager) LoadPacksForVersion(_ string, resourcePacksDir, behaviorPacksDir string, skinPacksDirs ...string) ([]Pack, error) {
 	var packs []Pack
+	scanPackManifests(resourcePacksDir, behaviorPacksDir, skinPacksDirs, func(dir string, kind PackType, raw *RawManifest) {
+		packs = append(packs, Pack{Path: dir, Manifest: raw.packManifest(dir, kind)})
+	})
+	return packs, nil
+}
 
-	scanDir := func(dir string, defaultType PackType) {
-		if !utils.DirExists(dir) {
+func (PackManager) LoadPackDetails(kind PackType, resourcePacksDir, behaviorPacksDir string, skinPacksDirs ...string) []types.PackListEntry {
+	entries := []types.PackListEntry{}
+	scanPackManifests(resourcePacksDir, behaviorPacksDir, skinPacksDirs, func(dir string, found PackType, raw *RawManifest) {
+		if found != kind {
 			return
 		}
+		entry := types.PackListEntry{PackInfo: raw.ReadPackInfo(dir)}
+		if stat, err := os.Stat(dir); err == nil {
+			entry.ModTime = stat.ModTime().Unix()
+		}
+		entries = append(entries, entry)
+	})
+	return entries
+}
+
+func scanPackManifests(resourcePacksDir, behaviorPacksDir string, skinPacksDirs []string, visit func(string, PackType, *RawManifest)) {
+	scanDir := func(dir string, defaultType PackType) {
 		entries, err := os.ReadDir(dir)
 		if err != nil {
 			return
@@ -44,45 +64,18 @@ func (pm *PackManager) LoadPacksForVersion(versionName string, resourcePacksDir,
 			}
 			startPath := filepath.Join(dir, e.Name())
 
-			var findPackRoot func(current string, depth int) string
-			findPackRoot = func(current string, depth int) string {
-				if depth > 3 {
-					return ""
-				}
-
-				mPath := filepath.Join(current, "manifest.json")
-				if utils.FileExists(mPath) {
-					return current
-				}
-
-				subs, err := os.ReadDir(current)
-				if err != nil {
-					return ""
-				}
-				for _, sub := range subs {
-					if sub.IsDir() {
-						found := findPackRoot(filepath.Join(current, sub.Name()), depth+1)
-						if found != "" {
-							return found
-						}
-					}
-				}
-				return ""
-			}
-
 			packPath := findPackRoot(startPath, 0)
 			if packPath == "" {
 				continue
 			}
 
-			manifestPath := filepath.Join(packPath, "manifest.json")
-
-			manifest, err := parseManifest(manifestPath, defaultType)
-			if err == nil {
-				packs = append(packs, Pack{
-					Manifest: manifest,
-					Path:     packPath,
-				})
+			b, err := os.ReadFile(filepath.Join(packPath, "manifest.json"))
+			if err != nil {
+				continue
+			}
+			var raw RawManifest
+			if json.Unmarshal(utils.JsonCompatBytes(b), &raw) == nil {
+				visit(packPath, raw.packType(defaultType), &raw)
 			}
 		}
 	}
@@ -92,26 +85,48 @@ func (pm *PackManager) LoadPacksForVersion(versionName string, resourcePacksDir,
 	for _, dir := range skinPacksDirs {
 		scanDir(dir, PackTypeSkins)
 	}
-
-	pm.mu.Lock()
-	pm.packs[versionName] = packs
-	pm.mu.Unlock()
-	return packs, nil
 }
 
-func parseManifest(path string, defaultType PackType) (PackManifest, error) {
-	b, err := os.ReadFile(path)
+func findPackRoot(current string, depth int) string {
+	if depth > 3 {
+		return ""
+	}
+
+	mPath := filepath.Join(current, "manifest.json")
+	if utils.FileExists(mPath) {
+		return current
+	}
+
+	subs, err := os.ReadDir(current)
 	if err != nil {
-		return PackManifest{}, err
+		return ""
 	}
-
-	b = utils.JsonCompatBytes(b)
-
-	var raw RawManifest
-	if err := json.Unmarshal(b, &raw); err != nil {
-		return PackManifest{}, err
+	for _, sub := range subs {
+		if sub.IsDir() {
+			found := findPackRoot(filepath.Join(current, sub.Name()), depth+1)
+			if found != "" {
+				return found
+			}
+		}
 	}
+	return ""
+}
 
+func (raw *RawManifest) packType(kind PackType) PackType {
+	for _, mod := range raw.Modules {
+		switch strings.ToLower(mod.Type) {
+		case "resources":
+			kind = PackTypeResources
+		case "data":
+			kind = PackTypeBehavior
+		case "skin_pack":
+			kind = PackTypeSkins
+		}
+	}
+	return kind
+}
+
+func (raw *RawManifest) packManifest(dir string, kind PackType) PackManifest {
 	pm := PackManifest{}
 
 	pm.Identity.UUID = raw.Header.UUID
@@ -125,20 +140,8 @@ func parseManifest(path string, defaultType PackType) (PackManifest, error) {
 		}
 	}
 
-	pm.PackType = defaultType
-	pm.Identity.PackType = defaultType
-
-	for _, mod := range raw.Modules {
-		switch strings.ToLower(mod.Type) {
-		case "resources":
-			pm.PackType = PackTypeResources
-		case "data":
-			pm.PackType = PackTypeBehavior
-		case "skin_pack":
-			pm.PackType = PackTypeSkins
-		}
-	}
-	pm.Identity.PackType = pm.PackType
+	pm.PackType = kind
+	pm.Identity.PackType = kind
 
 	minEngineVersion := ParseVersion(raw.Header.MinEngineVersion)
 	if len(minEngineVersion) >= 3 {
@@ -153,7 +156,7 @@ func parseManifest(path string, defaultType PackType) (PackManifest, error) {
 
 	pm.Name = raw.Header.Name
 	pm.Description = raw.Header.Description
-	pm.Location = filepath.Dir(path)
+	pm.Location = dir
 
 	texts := ReadPackTexts(pm.Location)
 	if texts != nil {
@@ -165,12 +168,45 @@ func parseManifest(path string, defaultType PackType) (PackManifest, error) {
 		}
 	}
 
-	iconPath := filepath.Join(filepath.Dir(path), "pack_icon.png")
+	iconPath := filepath.Join(dir, "pack_icon.png")
 	if utils.FileExists(iconPath) {
 		pm.PackIconLocation = iconPath
 	}
 
-	return pm, nil
+	return pm
+}
+
+func formatPackVersion(value any) string {
+	version := ParseVersion(value)
+	parts := make([]string, len(version))
+	for i, n := range version {
+		parts[i] = strconv.Itoa(n)
+	}
+	return strings.Join(parts, ".")
+}
+
+// ReadPackInfo enriches the parsed manifest with its display texts and icon.
+func (mf *RawManifest) ReadPackInfo(dir string) types.PackInfo {
+	info := types.PackInfo{
+		Path:             dir,
+		Name:             strings.TrimSpace(mf.Header.Name),
+		Description:      strings.TrimSpace(mf.Header.Description),
+		Version:          formatPackVersion(mf.Header.Version),
+		MinEngineVersion: formatPackVersion(mf.Header.MinEngineVersion),
+	}
+	if info.Name == "pack.name" || info.Description == "pack.description" {
+		texts := ReadPackTexts(dir)
+		if v, ok := texts[info.Name]; info.Name == "pack.name" && ok {
+			info.Name = strings.TrimSpace(v)
+		}
+		if v, ok := texts[info.Description]; info.Description == "pack.description" && ok {
+			info.Description = strings.TrimSpace(v)
+		}
+	}
+	if b, err := os.ReadFile(filepath.Join(dir, "pack_icon.png")); err == nil {
+		info.IconDataUrl = "data:image/png;base64," + base64.StdEncoding.EncodeToString(b)
+	}
+	return info
 }
 
 func ReadPackTexts(root string) map[string]string {

@@ -1,4 +1,4 @@
-import { ModalAction, ModalPanel, ModalDescription } from "@/components/ModalPrimitives";
+import { ModalAction, ModalPanel } from "@/components/ModalPrimitives";
 import {
   Button,
   ButtonGroup,
@@ -8,7 +8,6 @@ import {
   Dropdown,
   InputGroup,
   Label,
-  ProgressBar,
   Spinner,
   Table,
   TextField,
@@ -75,7 +74,6 @@ export const DownloadPage: React.FC = () => {
     map: versionStatusMap,
     refreshAll,
     refreshOne,
-    markDownloaded,
     refreshing,
   } = useVersionStatus();
 
@@ -101,14 +99,6 @@ export const DownloadPage: React.FC = () => {
     setOpen: onOpenChange,
   } = useOverlayState();
 
-  const [extractInfo, setExtractInfo] = useState<{
-    files: number;
-    bytes: number;
-    dir: string;
-    totalBytes?: number;
-    currentFile?: string;
-  } | null>(null);
-  const [extractError, setExtractError] = useState<string>("");
   const [mirrorUrls, setMirrorUrls] = useState<string[]>([]);
   const [mirrorVersion, setMirrorVersion] = useState<string>("");
   const [mirrorResults, setMirrorResults] = useState<
@@ -116,11 +106,7 @@ export const DownloadPage: React.FC = () => {
   >([]);
   const [testing, setTesting] = useState<boolean>(false);
   const [selectedUrl, setSelectedUrl] = useState<string | null>(null);
-  const [installMode, setInstallMode] = useState<boolean>(false);
   const [mirrorType, setMirrorType] = useState<ItemType | null>(null);
-
-  const mirrorVersionRef = useRef(mirrorVersion);
-  const mirrorTypeRef = useRef(mirrorType);
 
   const tasksButtonRef = useRef<HTMLButtonElement>(null);
   const [flyingItems, setFlyingItems] = useState<
@@ -133,18 +119,6 @@ export const DownloadPage: React.FC = () => {
     }[]
   >([]);
 
-  useEffect(() => {
-    mirrorVersionRef.current = mirrorVersion;
-  }, [mirrorVersion]);
-  useEffect(() => {
-    mirrorTypeRef.current = mirrorType;
-  }, [mirrorType]);
-
-  const [installError, setInstallError] = useState<string>("");
-  const installLoadingDisclosure = useOverlayState();
-  const installErrorDisclosure = useOverlayState();
-  const [installingVersion, setInstallingVersion] = useState<string>("");
-  const [installingTargetName, setInstallingTargetName] = useState<string>("");
   const deleteDisclosure = useOverlayState();
   const [deleteItem, setDeleteItem] = useState<{
     short: string;
@@ -156,7 +130,6 @@ export const DownloadPage: React.FC = () => {
   const [deleteLoading, setDeleteLoading] = useState<boolean>(false);
 
   const { isLLSupported, refreshLLDB } = useLeviLamina();
-  const hasBackend = minecraft !== undefined;
 
   const trErr = (msg: string, typeLabelOverride?: string): string => {
     const s = String(msg || "");
@@ -247,7 +220,7 @@ export const DownloadPage: React.FC = () => {
     );
     setTesting(true);
     try {
-      if (hasBackend && minecraft?.TestMirrorLatencies) {
+      if (minecraft?.TestMirrorLatencies) {
         const res = await minecraft.TestMirrorLatencies(urls, 7000);
         const byUrl = new Map<string, any>(
           (res || []).map((r: any) => [String(r.url), r]),
@@ -334,7 +307,7 @@ export const DownloadPage: React.FC = () => {
       }));
     }
     const preferCN =
-      hasBackend && typeof minecraft?.IsMirrorEnabled === "function"
+      typeof minecraft?.IsMirrorEnabled === "function"
         ? await minecraft.IsMirrorEnabled()
         : false;
     const data = await minecraft.FetchHistoricalVersions(preferCN);
@@ -504,7 +477,6 @@ export const DownloadPage: React.FC = () => {
   const hasStatus = (it: VersionItem) => versionStatusMap.has(versionStatusKey(it.short, it.type, it.packageType));
 
   const isDownloaded = (it: VersionItem) => getVersionStatus(it).isDownloaded;
-  const isInstalled = (it: VersionItem) => getVersionStatus(it).isInstalled;
 
   const cardVariants: Variants = {
     hidden: { opacity: 0, y: 20 },
@@ -1143,7 +1115,6 @@ export const DownloadPage: React.FC = () => {
                                           let fname = "";
                                           try {
                                             if (
-                                              hasBackend &&
                                               typeof minecraft?.ResolveDownloadedMsixvc ===
                                               "function"
                                             ) {
@@ -1212,7 +1183,6 @@ export const DownloadPage: React.FC = () => {
                                     setMirrorVersion(item.short);
                                     setMirrorType(item.type);
                                     setSelectedUrl(null);
-                                    setInstallMode(false);
                                     onOpen();
                                     startMirrorTests(urls);
                                   }}
@@ -1290,47 +1260,28 @@ export const DownloadPage: React.FC = () => {
                 isDisabled={!selectedUrl}
                 onPress={async (e) => {
                   if (!selectedUrl) return;
-                  if (installMode) {
-                    navigate(ROUTES.install, {
-                      state: {
-                        mirrorVersion,
-                        mirrorType,
-                        returnTo: ROUTES.download,
-                      },
-                    });
+                  const desired = `${mirrorType || "Release"
+                    } ${mirrorVersion}.msixvc`;
+                  const item = items.find(
+                    (i) =>
+                      i.short === mirrorVersion && i.type === mirrorType,
+                  );
+                  const md5sum = item?.md5;
+                  const success = await startDownload(
+                    selectedUrl,
+                    desired,
+                    md5sum,
+                    { version: mirrorVersion, type: mirrorType || "Release", isLeviLaminaSupported: isLLSupported(mirrorVersion) },
+                  );
+                  if (success) {
+                    triggerAnimation(e);
                     onClose();
-                  } else {
-                    if (hasBackend) {
-                      const desired = `${mirrorType || "Release"
-                        } ${mirrorVersion}.msixvc`;
-                      const item = items.find(
-                        (i) =>
-                          i.short === mirrorVersion && i.type === mirrorType,
-                      );
-                      const md5sum = item?.md5;
-                      const success = await startDownload(
-                        selectedUrl,
-                        desired,
-                        md5sum,
-                        { version: mirrorVersion, type: mirrorType || "Release", isLeviLaminaSupported: isLLSupported(mirrorVersion) },
-                      );
-                      if (success) {
-                        triggerAnimation(e);
-                        onClose();
-                      }
-                    } else {
-                      window.open(selectedUrl, "_blank");
-                      triggerAnimation(e);
-                      onClose();
-                    }
                   }
                 }}
                 variant={"secondary"}
               >
-                {installMode ? null : <FaDownload />}
-                {installMode
-                  ? t("downloadpage.mirror.install_selected")
-                  : t("downloadpage.mirror.download_selected")}
+                <FaDownload />
+                {t("downloadpage.mirror.download_selected")}
               </ModalAction>
             </div>
           }
@@ -1566,162 +1517,28 @@ export const DownloadPage: React.FC = () => {
           isPending={deleteLoading}
           error={deleteError ? trErr(deleteError) : null}
           onConfirm={async () => {
-            if (!hasBackend) {
-              setDeleteError("ERR_WRITE_TARGET");
-              throw new Error("No backend");
-            }
+            if (!deleteItem) return false;
+            const { fileName, short, type, packageType } = deleteItem;
             setDeleteError("");
             setDeleteLoading(true);
             try {
-              if (typeof minecraft?.DeleteDownloadedMsixvc !== "function") {
-                setDeleteError("ERR_WRITE_TARGET");
-                setDeleteLoading(false);
-                throw new Error("Function not found");
-              }
-              const msg: string = deleteItem?.packageType === "uwp"
-                ? await minecraft.DeleteDownloadedUWP(deleteItem.short, deleteItem.type.toLowerCase())
-                : await minecraft.DeleteDownloadedMsixvc(
-                  `${String(deleteItem?.type)} ${String(deleteItem?.short)}`,
-                  String(deleteItem?.type).toLowerCase(),
-                );
-              if (msg) {
-                setDeleteError(msg);
-                setDeleteLoading(false);
-                throw new Error(msg);
-              }
+              const msg = packageType === "uwp"
+                ? await minecraft.DeleteDownloadedUWP(short, type.toLowerCase())
+                : await minecraft.DeleteDownloadedMsixvc(`${type} ${short}`, type.toLowerCase());
+              if (msg) throw new Error(msg);
+              await refreshOne(short, type.toLowerCase(), packageType).catch(() => {});
+              const displayName = /\.(msixvc|appx|msix|appxbundle|msixbundle)$/i.test(fileName)
+                ? fileName
+                : `${fileName}.${packageType === "uwp" ? "appx" : "msixvc"}`;
+              toast(`${t("downloadpage.delete.success_body")} ${displayName}`, { variant: "success", timeout: 2000 });
+            } catch (error) {
+              setDeleteError(error instanceof Error ? error.message : String(error));
+              throw error;
+            } finally {
               setDeleteLoading(false);
-              try {
-                await refreshOne(
-                  String(deleteItem?.short || ""),
-                  String(deleteItem?.type || "release").toLowerCase(),
-                  deleteItem?.packageType,
-                );
-              } catch { }
-              try {
-                const disp = /\.(msixvc|appx|msix|appxbundle|msixbundle)$/i.test(deleteItem?.fileName || "")
-                  ? deleteItem?.fileName
-                  : `${deleteItem?.fileName}.${deleteItem?.packageType === "uwp" ? "appx" : "msixvc"}`;
-                toast(
-                  t("downloadpage.delete.success_body") + " " + (disp || ""),
-                  { variant: "success", timeout: 2000 },
-                );
-              } catch {
-                toast(
-                  t("downloadpage.delete.success_body") +
-                  " " +
-                  String(deleteItem?.fileName || ""),
-                  { variant: "success", timeout: 2000 },
-                );
-              }
-            } catch (e: any) {
-              setDeleteLoading(false);
-              if (
-                e.message !== "No backend" &&
-                e.message !== "Function not found" &&
-                e.message !== deleteError
-              ) {
-                if (!["No backend", "Function not found"].includes(e.message)) {
-                  setDeleteError(String(e.message || e));
-                }
-              }
-              throw e;
             }
           }}
         />
-
-        {/* Install error modal */}
-        <UnifiedModal
-          isOpen={installErrorDisclosure.isOpen}
-          onOpenChange={installErrorDisclosure.setOpen}
-          type="error"
-          title={t("downloadpage.progress.unknown_error")}
-          confirmText={t("common.close")}
-          onConfirm={installErrorDisclosure.close}
-          showCancelButton={false}
-        >
-          <ModalDescription>
-            {trErr(installError)}
-          </ModalDescription>
-        </UnifiedModal>
-
-        {/* Install progress modal */}
-        <UnifiedModal
-          isOpen={installLoadingDisclosure.isOpen}
-          onOpenChange={installLoadingDisclosure.setOpen}
-          type="primary"
-          title={t("downloadpage.install.title")}
-          icon={<Spinner size="lg" color={"accent"} />}
-          isDismissable={false}
-          showConfirmButton={false}
-          showCancelButton={false}
-        >
-          <div className="flex flex-col gap-6">
-            <ModalDescription>
-              {t("downloadpage.install.hint")}
-            </ModalDescription>
-            <div className="flex items-center gap-3">
-              <ProgressBar
-                aria-label="install-progress"
-                isIndeterminate={!extractInfo?.totalBytes}
-                value={
-                  extractInfo?.totalBytes
-                    ? (extractInfo.bytes / extractInfo.totalBytes) * 100
-                    : 0
-                }
-                size="md"
-                formatOptions={{ style: "percent" }}
-                className={"flex-1"}
-              >
-                {!!extractInfo?.totalBytes && <ProgressBar.Output />}
-                <ProgressBar.Track className={"bg-surface-secondary"}>
-                  <ProgressBar.Fill
-                    className={"bg-brand-500"}
-                  />
-                </ProgressBar.Track>
-              </ProgressBar>
-            </div>
-            {typeof extractInfo?.bytes === "number" && extractInfo.bytes > 0 ? (
-              <div className="flex justify-between text-sm text-foreground dark:text-zinc-400 font-medium">
-                <span>
-                  {extractInfo.totalBytes
-                    ? t("downloadpage.install.progress")
-                    : t("downloadpage.install.estimated_size")}
-                  :{" "}
-                </span>
-                <span className="font-mono">
-                  {(() => {
-                    const formatSize = (n: number) => {
-                      const kb = 1024;
-                      const mb = kb * 1024;
-                      const gb = mb * 1024;
-                      if (n >= gb) return (n / gb).toFixed(2) + " GB";
-                      if (n >= mb) return (n / mb).toFixed(2) + " MB";
-                      if (n >= kb) return (n / kb).toFixed(2) + " KB";
-                      return n + " B";
-                    };
-                    const current = formatSize(extractInfo.bytes);
-                    if (extractInfo.totalBytes) {
-                      const percent = (
-                        (extractInfo.bytes / extractInfo.totalBytes) *
-                        100
-                      ).toFixed(1);
-                      return `${current} / ${formatSize(extractInfo.totalBytes)} (${percent}%)`;
-                    }
-                    return current;
-                  })()}
-                </span>
-              </div>
-            ) : null}
-            {installingTargetName ? (
-              <ModalPanel className="font-medium">
-                {t("downloadpage.install.target")}:{" "}
-                <span className="font-mono text-foreground dark:text-zinc-200 font-bold">
-                  {installingTargetName}
-                </span>
-              </ModalPanel>
-            ) : null}
-          </div>
-        </UnifiedModal>
 
         {createPortal(
           flyingItems.map((item) => (

@@ -40,7 +40,7 @@ import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { motion } from "framer-motion";
-import { useNavigate, useLocation } from "react-router-dom";
+import { useLocation } from "react-router-dom";
 import {
   GetVersionMeta,
   GetVersionLogoDataUrl,
@@ -49,11 +49,11 @@ import {
 import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import {
   GetContentRoots,
-  ListPacksForVersion,
+  ListPackDetailsForVersion,
   DeletePack,
-  GetPackInfo,
   TransferPackToVersion,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
+import { PackType } from "bindings/github.com/liteldev/LeviLauncher/internal/packages/models";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
 import { readCurrentVersionName } from "@/utils/currentVersion";
 import { compareVersions } from "@/utils/version";
@@ -88,11 +88,8 @@ import { SelectionBar } from "@/components/SelectionBar";
 
 export default function SkinPacksPage() {
   const { t } = useTranslation();
-  const navigate = useNavigate();
   const location = useLocation();
-  const hasBackend = minecraft !== undefined;
   const [loading, setLoading] = React.useState<boolean>(true);
-  const [error, setError] = React.useState<string>("");
   const [currentVersionName, setCurrentVersionName] =
     React.useState<string>("");
   const [roots, setRoots] = React.useState<types.ContentRoots>(EMPTY_CONTENT_ROOTS);
@@ -110,11 +107,6 @@ export default function SkinPacksPage() {
   >([]);
   const [activePack, setActivePack] = React.useState<any | null>(null);
   const {
-    isOpen: delOpen,
-    open: delOnOpen,
-    setOpen: delOnOpenChange,
-  } = useOverlayState();
-  const {
     isOpen: delCfmOpen,
     open: delCfmOnOpen,
     setOpen: delCfmOnOpenChange,
@@ -129,7 +121,6 @@ export default function SkinPacksPage() {
     isOpen: transferTargetOpen,
     open: transferTargetOnOpen,
     close: transferTargetOnClose,
-    setOpen: transferTargetOnOpenChange,
   } = useOverlayState();
   const {
     isOpen: transferResultOpen,
@@ -140,7 +131,6 @@ export default function SkinPacksPage() {
     isOpen: dupOpen,
     open: dupOnOpen,
     close: dupOnClose,
-    setOpen: dupOnOpenChange,
   } = useOverlayState();
   const [deletingOne, setDeletingOne] = React.useState<boolean>(false);
   const [deletingMany, setDeletingMany] = React.useState<boolean>(false);
@@ -180,11 +170,10 @@ export default function SkinPacksPage() {
     async (silent?: boolean, forcePlayer?: string) => {
       const generation = ++packsLoadGeneration.current;
       if (!silent) setLoading(true);
-      setError("");
       const name = readCurrentVersionName();
       setCurrentVersionName(name);
       try {
-        if (!hasBackend || !name) {
+        if (!name) {
           setRoots(EMPTY_CONTENT_ROOTS);
           setPlayers([]);
           setSelectedPlayer("");
@@ -257,43 +246,7 @@ export default function SkinPacksPage() {
             })();
           }
 
-          const allPacks = await ListPacksForVersion(name, nextPlayer || "");
-          if (generation !== packsLoadGeneration.current) return;
-
-          const filtered = (allPacks || []).filter(
-            (p) => p.manifest.pack_type === 7,
-          );
-
-          const basic = await Promise.all(
-            filtered.map(async (p) => {
-              try {
-                const info = await GetPackInfo(p.path);
-                return { ...info, path: p.path };
-              } catch {
-                return {
-                  name: p.manifest.name,
-                  description: p.manifest.description,
-                  version: p.manifest.identity.version
-                    ? `${p.manifest.identity.version.major}.${p.manifest.identity.version.minor}.${p.manifest.identity.version.patch}`
-                    : "",
-                  minEngineVersion: "",
-                  iconDataUrl: "",
-                  path: p.path,
-                };
-              }
-            }),
-          );
-          const withTime = await Promise.all(
-            basic.map(async (p: any) => {
-              let modTime = 0;
-              try {
-                if (typeof (minecraft as any).GetPathModTime === "function") {
-                  modTime = await (minecraft as any).GetPathModTime(p.path);
-                }
-              } catch {}
-              return { ...p, modTime };
-            }),
-          );
+          const withTime = await ListPackDetailsForVersion(name, nextPlayer || "", PackType.PackTypeSkins);
           if (generation !== packsLoadGeneration.current) return;
           setPacks(withTime);
           Promise.resolve()
@@ -358,12 +311,12 @@ export default function SkinPacksPage() {
         }
       } catch (e: any) {
         if (generation !== packsLoadGeneration.current) return;
-        setError(e.toString());
+        toast(t("contentpage.error_resolve_paths"), { description: String(e), variant: "danger" });
       } finally {
         if (!silent && generation === packsLoadGeneration.current) setLoading(false);
       }
     },
-    [hasBackend, location?.state?.player, selectedPlayer],
+    [location?.state?.player, selectedPlayer, t],
   );
 
   React.useEffect(() => {
@@ -642,7 +595,7 @@ export default function SkinPacksPage() {
                   )}
                   <Button
                     onPress={async () => {
-                      if (!hasBackend || !roots.resourcePacks) return;
+                      if (!roots.resourcePacks) return;
                       const dir = roots.resourcePacks.replace(
                         /[\\/]resource_packs[\\/]?$/,
                         "",
@@ -656,7 +609,7 @@ export default function SkinPacksPage() {
                       }
                       await openDirectory(sp);
                     }}
-                    isDisabled={!roots.resourcePacks || !hasBackend}
+                    isDisabled={!roots.resourcePacks}
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
@@ -837,7 +790,6 @@ export default function SkinPacksPage() {
           isSelectMode={selection.isSelectMode}
           onTransfer={openTransferTargetModal}
           isTransferDisabled={
-            !hasBackend ||
             !isSharedMode ||
             selection.selectedCount === 0 ||
             transferring
@@ -963,7 +915,7 @@ export default function SkinPacksPage() {
                                 size="sm"
                                 variant={"secondary"}
                                 onClick={(event) => event.stopPropagation()}
-                                onPress={(e) => {
+                                onPress={() => {
                                   openDirectory(p.path);
                                 }}
                                 className={cn(
@@ -984,7 +936,7 @@ export default function SkinPacksPage() {
                                 size="sm"
                                 variant={"danger-soft"}
                                 onClick={(event) => event.stopPropagation()}
-                                onPress={(e) => {
+                                onPress={() => {
                                   setActivePack(p);
                                   delCfmOnOpen();
                                 }}

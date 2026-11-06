@@ -74,7 +74,6 @@ export default function WorldLevelDatEditorPage() {
     addOpen,
     setAddOpen,
     scrollRef,
-    hasBackend,
     orderedTopFields,
     compoundTargetKeys,
     beforeUpdate,
@@ -278,7 +277,7 @@ export default function WorldLevelDatEditorPage() {
                       isIconOnly
                       onPress={handleSave}
                       aria-label={t("common.save")}
-                      isDisabled={!hasBackend || loading || saving || !isDirty}
+                      isDisabled={loading || saving || !isDirty}
                       variant={"primary"}
                       isPending={saving}
                       className={cn(

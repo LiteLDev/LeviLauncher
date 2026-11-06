@@ -1,9 +1,11 @@
 {
 	"fixed": {
-		"file_version": "1.0.7"
+		"file_version": "1.0.7",
+		"product_version": "1.0.7"
 	},
 	"info": {
 		"0409": {
+			"FileVersion": "1.0.7",
 			"ProductVersion": "1.0.7",
 			"CompanyName": "LeviMC",
 			"FileDescription": "A Minecraft Launcher",

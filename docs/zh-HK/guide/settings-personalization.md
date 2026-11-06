@@ -56,8 +56,8 @@ LeviLauncher 提供完善的設定頁面，可用於調整路徑、外觀、組�
 
 ### 私隱
 
-- 匿名使用統計（Microsoft Clarity），可隨時關閉
-- Clarity 授權條款與 Microsoft 私隱聲明連結
+- 使用情況統計（Google Analytics），可隨時關閉
+- Google Analytics 服務條款與 Google 私隱政策連結
 
 ### 更新
 

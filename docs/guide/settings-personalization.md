@@ -56,8 +56,8 @@ Use **Next image** when the folder contains multiple pictures. **Sequential** or
 
 ### Privacy
 
-- anonymous usage analytics (Microsoft Clarity), which you can turn off at any time
-- links to the Clarity terms and the Microsoft privacy statement
+- usage analytics (Google Analytics), which you can turn off at any time
+- links to the Google Analytics terms and Google privacy policy
 
 ### Updates
 

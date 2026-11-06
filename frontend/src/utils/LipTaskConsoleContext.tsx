@@ -561,12 +561,6 @@ export const LipTaskConsoleProvider: React.FC<{
     return "primary" as const;
   }, [status]);
 
-  const closeButtonColor = useMemo(() => {
-    if (status === "failed") return "danger" as const;
-    if (status === "success") return "success" as const;
-    return "primary" as const;
-  }, [status]);
-
   const modalTitle = useMemo(() => {
     const base =
       action === "install"

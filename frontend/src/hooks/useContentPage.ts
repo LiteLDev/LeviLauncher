@@ -34,7 +34,6 @@ type TransferTargetVersion = {
 export const useContentPage = (t: TFunc) => {
   const navigate = useNavigate();
   const location = useLocation() as any;
-  const hasBackend = minecraft !== undefined && contentService !== undefined;
 
   // --- State ---
   const [loading, setLoading] = React.useState<boolean>(true);
@@ -112,7 +111,7 @@ export const useContentPage = (t: TFunc) => {
     const name = readCurrentVersionName();
     setCurrentVersionName(name);
     try {
-      if (!hasBackend || !name) {
+      if (!name) {
         setRoots(EMPTY_CONTENT_ROOTS);
         setPlayers([]);
         setSelectedPlayer("");
@@ -262,7 +261,7 @@ export const useContentPage = (t: TFunc) => {
     setLoading(true);
     setSelectedPlayer(player);
     try {
-      if (!hasBackend || !roots.usersRoot || !player) {
+      if (!roots.usersRoot || !player) {
         setWorldsCount(0);
         setSkinCount(0);
         setServersCount(0);
@@ -808,7 +807,6 @@ export const useContentPage = (t: TFunc) => {
     resultFailed,
     transferTargets,
     selectedTransferTargets,
-    hasBackend,
 
     // setters needed by JSX callbacks
     setErrorMsg,

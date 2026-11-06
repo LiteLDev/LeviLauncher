@@ -1,5 +1,12 @@
 import React from "react";
-import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
+import {
+  GetWorldLevelName,
+  ReadWorldLevelDatFields,
+  ReadWorldLevelDatFieldsAt,
+  SetWorldLevelName,
+  WriteWorldLevelDatFields,
+  WriteWorldLevelDatFieldsAt,
+} from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 
 export interface TypedField {
   name: string;
@@ -161,7 +168,15 @@ const nameCmp = (a: string, b: string) => {
   return 0;
 };
 
-const sanitizeJSON = (arr: Array<any>) =>
+function changedFields(fields: TypedField[], saved: TypedField[]): TypedField[] {
+  const previous = new Map(saved.map(field => [field.name, field]));
+  return fields.filter(field => {
+    const old = previous.get(field.name);
+    return !old || field.tag !== old.tag || field.valueString !== old.valueString || field.valueJSON !== old.valueJSON;
+  });
+}
+
+const sanitizeJSON = (arr: TypedField[]) =>
   arr.map((it) => {
     const tag = String(it?.tag || "").toLowerCase();
     if (tag === "list") {
@@ -175,7 +190,6 @@ const sanitizeJSON = (arr: Array<any>) =>
   });
 
 export const useLevelDatEditor = (worldPath: string) => {
-  const hasBackend = minecraft !== undefined;
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string>("");
   const [levelName, setLevelName] = React.useState<string>("");
@@ -221,11 +235,13 @@ export const useLevelDatEditor = (worldPath: string) => {
     }
     return { fields, compounds };
   }, [typedFields, compoundFields, typedDrafts]);
-  const isDirty = levelName !== saved.levelName ||
-    JSON.stringify(effectiveFields.fields) !== JSON.stringify(saved.fields) ||
-    Object.entries(effectiveFields.compounds).some(([key, fields]) =>
-      JSON.stringify(fields) !== JSON.stringify(saved.compounds[key] || []),
-    );
+  const changes = React.useMemo(() => ({
+    fields: changedFields(effectiveFields.fields, saved.fields),
+    compounds: Object.entries(effectiveFields.compounds)
+      .map(([path, fields]) => ({ path, fields: changedFields(fields, saved.compounds[path] || []) }))
+      .filter(group => group.fields.length > 0),
+  }), [effectiveFields, saved]);
+  const isDirty = levelName !== saved.levelName || changes.fields.length > 0 || changes.compounds.length > 0;
   const [filterText, setFilterText] = React.useState<string>("");
 
   // Add field state
@@ -346,7 +362,7 @@ export const useLevelDatEditor = (worldPath: string) => {
       try {
         const path = Array.isArray(nameOrPath) ? nameOrPath : [nameOrPath];
         const key = path.join("/");
-        const res = await (minecraft as any)?.ReadWorldLevelDatFieldsAt?.(
+        const res = await ReadWorldLevelDatFieldsAt(
           worldPath,
           path,
         );
@@ -425,16 +441,16 @@ export const useLevelDatEditor = (worldPath: string) => {
     setLoading(true);
     setError("");
     try {
-      if (!hasBackend || !worldPath) {
+      if (!worldPath) {
         setError("contentpage.error_resolve_paths");
         return;
       }
-      const res2 = await (minecraft as any)?.ReadWorldLevelDatFields?.(
+      const res2 = await ReadWorldLevelDatFields(
         worldPath,
       );
       const v2 = Number(res2?.version || 0);
       const fields2 = Array.isArray(res2?.fields) ? res2.fields : [];
-      const txt = await (minecraft as any)?.GetWorldLevelName?.(worldPath);
+      const txt = await GetWorldLevelName(worldPath);
       const name = String(txt || "");
       setTypedVersion(v2);
       setTypedFields(fields2);
@@ -451,7 +467,7 @@ export const useLevelDatEditor = (worldPath: string) => {
     } finally {
       setLoading(false);
     }
-  }, [hasBackend, worldPath]);
+  }, [worldPath]);
 
   React.useEffect(() => {
     load();
@@ -459,35 +475,28 @@ export const useLevelDatEditor = (worldPath: string) => {
 
   // Save all
   const saveAll = React.useCallback(async () => {
-    if (!hasBackend || !worldPath) return false;
+    if (!worldPath) return false;
     setSaving(true);
     setError("");
     try {
-      const typedFieldsSafe = sanitizeJSON(effectiveFields.fields);
-      const err2 = await (minecraft as any)?.SetWorldLevelName?.(
-        worldPath,
-        levelName,
-      );
-      const err3 = await (minecraft as any)?.WriteWorldLevelDatFields?.(
-        worldPath,
-        { version: typedVersion || 0, fields: typedFieldsSafe, levelName },
-      );
-      let err4 = "";
-      const entries = Object.entries(effectiveFields.compounds);
-      for (const [pathKey, list] of entries) {
-        const erx = await (minecraft as any)?.WriteWorldLevelDatFieldsAt?.(
-          worldPath,
-          {
-            version: typedVersion || 0,
-            path: pathKey.split("/"),
-            fields: sanitizeJSON(list),
-          },
-        );
-        if (erx) err4 = erx;
+      if (levelName !== saved.levelName) {
+        const error = await SetWorldLevelName(worldPath, levelName);
+        if (error) throw new Error(error);
       }
-      if (err2 || err3 || err4) {
-        setError("common.save_failed");
-        return false;
+      if (changes.fields.length) {
+        const error = await WriteWorldLevelDatFields(worldPath, {
+          version: typedVersion,
+          fields: sanitizeJSON(changes.fields),
+        });
+        if (error) throw new Error(error);
+      }
+      for (const { path, fields } of changes.compounds) {
+        const error = await WriteWorldLevelDatFieldsAt(worldPath, {
+          version: typedVersion,
+          path: path.split("/"),
+          fields: sanitizeJSON(fields),
+        });
+        if (error) throw new Error(error);
       }
       setTypedFields(effectiveFields.fields);
       setCompoundFields(effectiveFields.compounds);
@@ -500,17 +509,7 @@ export const useLevelDatEditor = (worldPath: string) => {
     } finally {
       setSaving(false);
     }
-  }, [
-    hasBackend,
-    worldPath,
-    effectiveFields,
-    typedDrafts,
-    typedFields,
-    levelName,
-    typedVersion,
-    compoundFields,
-    setTypedFieldValueByName,
-  ]);
+  }, [worldPath, levelName, saved.levelName, changes, typedVersion, effectiveFields]);
 
   const getOrderedCompoundChildren = React.useCallback(
     (pathKey: string) => {
@@ -563,7 +562,6 @@ export const useLevelDatEditor = (worldPath: string) => {
     addOpen,
     setAddOpen,
     scrollRef,
-    hasBackend,
 
     // Computed
     orderedTopFields,

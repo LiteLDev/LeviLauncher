@@ -56,8 +56,8 @@ Verwende **Nächstes Bild**, wenn der Ordner mehrere Bilder enthält. Die Reihen
 
 ### Datenschutz
 
-- Anonyme Nutzungsanalyse (Microsoft Clarity), die du jederzeit ausschalten kannst
-- Links zu den Clarity-Nutzungsbedingungen und der Microsoft-Datenschutzerklärung
+- Nutzungsanalyse (Google Analytics), die du jederzeit ausschalten kannst
+- Links zu den Google Analytics-Nutzungsbedingungen und der Google-Datenschutzerklärung
 
 ### Updates
 

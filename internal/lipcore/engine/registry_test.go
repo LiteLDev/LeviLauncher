@@ -44,6 +44,10 @@ type fakeRepo struct {
 	proxyFailed  bool
 	proxyWithold map[string]bool
 	proxyNoTrees bool
+
+	// cut, when set and returning n >= 0 for a request's wants, makes
+	// that request fail after n pack entries were received.
+	cut func(wanted []string) int
 }
 
 type fetchCall struct {
@@ -90,19 +94,38 @@ func (g *fakeGit) Fetch(_ context.Context, repoURL string, wants []string, opts 
 		if len(wanted) == 0 {
 			return nil
 		}
+		g.mu.Lock()
+		cutAt := -1
+		if r := g.repos[repoURL]; r != nil && r.cut != nil {
+			cutAt = r.cut(wanted)
+		}
+		g.mu.Unlock()
+		received := len(wanted)
+		if cutAt >= 0 {
+			received = min(cutAt, received)
+		}
 		if opts.Progress != nil {
 			// Like gitproto: indeterminate until the header, one update per
 			// object of a pack holding one entry per want, then Done.
 			attempts++
 			p := gitproto.PackProgress{Attempt: attempts, URL: repoURL}
 			opts.Progress(p)
-			p.Total = int64(len(wanted))
-			for i := range len(wanted) + 1 {
+			if cutAt != 0 {
+				// Cut at 0: the connection drops before the pack header.
+				p.Total = int64(len(wanted))
+			}
+			for i := range received + 1 {
 				p.Objects = int64(i)
 				opts.Progress(p)
 			}
 			p.Done = true
+			if cutAt >= 0 {
+				p.Err = errors.New("connection reset")
+			}
 			opts.Progress(p)
+		}
+		if cutAt >= 0 {
+			return fmt.Errorf("connection reset after %d objects", received)
 		}
 		c := fetchCall{Repo: repoURL, Wants: wanted, Opts: gitproto.FetchOptions{Shallow: opts.Shallow, BlobNone: opts.BlobNone}, Proxy: proxy}
 		g.mu.Lock()
@@ -517,7 +540,7 @@ func (a fakeAsset) Open(string) (io.ReadCloser, error) {
 	return io.NopCloser(strings.NewReader("")), nil
 }
 func (a fakeAsset) Prefetch(context.Context, []string) error { return nil }
-func (a fakeAsset) Close() error                                 { *a.closed = true; return nil }
+func (a fakeAsset) Close() error                             { *a.closed = true; return nil }
 
 func TestGitRegistryURLAssets(t *testing.T) {
 	g, _, _, _, rep := newTestRegistry(t)

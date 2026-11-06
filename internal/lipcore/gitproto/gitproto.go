@@ -272,8 +272,10 @@ type PackProgress struct {
 	Total int64
 	// Bytes is the number of pack bytes received (side-band channel 1).
 	Bytes int64
-	// Done marks the attempt's last update.
+	// Done marks the attempt's last update; Err is the attempt's error,
+	// if it failed (or was canceled).
 	Done bool
+	Err  error
 }
 
 // PackHandler consumes a fetched pack. It runs inside the per-URL proxy
@@ -386,6 +388,7 @@ type packTracker struct {
 	mu        sync.Mutex
 	p         PackProgress
 	failed    bool  // the scanner failed: Total stays 0
+	aborting  bool  // the attempt failed: the scanner's error is ignored
 	done      bool  // the Done update was sent
 	lastBytes int64 // Bytes at the last update
 }
@@ -405,6 +408,10 @@ func (t *packTracker) scanned(sp gitpack.StreamProgress) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	if t.done || t.failed {
+		return
+	}
+	if sp.Err != nil && t.aborting {
+		// The cut stream, not an unscannable pack.
 		return
 	}
 	if sp.Err != nil {
@@ -437,13 +444,15 @@ func (t *packTracker) emitLocked() {
 	t.fn(t.p)
 }
 
-// finish stops the scanner (so no count arrives later) and sends the Done
-// update. A failed attempt keeps the counts it had: the scanner's error
-// about the cut stream is ignored.
+// finish stops the scanner and sends the Done update. Both Close and Abort
+// wait until the scanner has parsed every byte already written (io.Pipe
+// hands each Write to the scanner before returning), so the last update
+// deterministically counts all bytes received. A failed attempt keeps the
+// counts it reached: the scanner's error about the cut stream is ignored.
 func (t *packTracker) finish(err error) {
 	if err != nil {
 		t.mu.Lock()
-		t.done = true
+		t.aborting = true
 		t.mu.Unlock()
 		t.scanner.Abort(err)
 	} else {
@@ -452,7 +461,7 @@ func (t *packTracker) finish(err error) {
 	t.mu.Lock()
 	defer t.mu.Unlock()
 	t.done = true
-	t.p.Done = true
+	t.p.Done, t.p.Err = true, err
 	t.emitLocked()
 }
 

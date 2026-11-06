@@ -10,6 +10,7 @@ import (
 	"errors"
 	"fmt"
 	"net/http"
+	"runtime"
 	"testing"
 )
 
@@ -195,5 +196,29 @@ func TestFetchProgressCanceled(t *testing.T) {
 	ups := checkAttempts(t, got)[1]
 	if len(ups) == 0 || !ups[len(ups)-1].Done {
 		t.Fatalf("updates %+v", got)
+	}
+}
+
+// A failed attempt's Done update counts every byte written before the
+// failure: finish waits for the scanner to parse them, so the header total
+// is never lost to a race with the scanner goroutine.
+func TestPackTrackerFinishAfterHeader(t *testing.T) {
+	defer runtime.GOMAXPROCS(runtime.GOMAXPROCS(1))
+	pack := blobPack(3, 100)
+	for i := range 200 {
+		var got []PackProgress
+		tr := newPackTracker(func(p PackProgress) { got = append(got, p) }, 1, "u")
+		tr.Write(pack[:40])
+		cut := errors.New("cut")
+		tr.finish(cut)
+		l := got[len(got)-1]
+		if !l.Done || l.Total != 3 || l.Bytes != 40 || l.Err != cut {
+			t.Fatalf("run %d: attempt ended %+v", i, l)
+		}
+		for j, p := range got {
+			if p.Done != (j == len(got)-1) {
+				t.Fatalf("run %d: update %d Done=%v", i, j, p.Done)
+			}
+		}
 	}
 }

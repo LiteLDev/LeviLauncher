@@ -396,7 +396,8 @@ func (g *GitRegistry) openURL(ctx context.Context, spec manifest.PackageSpec, as
 		if waitID != "" {
 			p := bar(waitID, "Waiting for another download of "+rawURL)
 			p.Done = true
-			report.Report(rep, p)
+			// Abandoned, not completed: no 100% for a legacy reporter.
+			reportBar(rep, p, true, false)
 			waitID = ""
 		}
 	}
@@ -424,7 +425,7 @@ func (g *GitRegistry) openURL(ctx context.Context, spec manifest.PackageSpec, as
 				p := bar(id, message)
 				p.Item = u
 				p.Current, p.Total, p.Done = t.Current, t.Total, t.Done
-				report.Report(rep, p)
+				reportBar(rep, p, t.Err != nil, true)
 			}
 		},
 	}
@@ -465,6 +466,28 @@ func (g *GitRegistry) openURL(ctx context.Context, spec manifest.PackageSpec, as
 		return nil, err
 	}
 	return archiveSource{src}, nil
+}
+
+// reportBar sends p with report.Report, keeping lip's percentages for a
+// legacy reporter (one without ReportProgress) where the fallback would
+// differ: the fallback turns the Done update of an indeterminate bar into
+// 100, so the Done update of a failed or abandoned bar is not sent to it
+// (lip never reported 100 for a failed attempt), and it drops
+// indeterminate updates, so with legacyOpen the bar's first update
+// (Current 0) is sent as 0, as lip opened every download at 0.
+func reportBar(r report.Reporter, p report.Progress, failed, legacyOpen bool) {
+	if _, ok := r.(report.ProgressReporter); !ok {
+		if p.Done && failed {
+			return
+		}
+		if p.Total <= 0 && !p.Done {
+			if legacyOpen && p.Current == 0 {
+				r.Progress(p.ID, p.Message, 0)
+			}
+			return
+		}
+	}
+	report.Report(r, p)
 }
 
 func (g *GitRegistry) newProgressID() string {
@@ -558,15 +581,17 @@ func (g *GitRegistry) packObjectsProgress(spec manifest.PackageSpec, message str
 		if p.Total <= 0 && p.Bytes > 0 {
 			msg = fmt.Sprintf("%s (%d bytes received)", message, p.Bytes)
 		}
-		report.Report(rep, report.Progress{
+		reportBar(rep, report.Progress{
 			ID: id, Stage: report.StageGitFetch, Package: spec.String(), Message: msg,
 			Current: p.Objects, Total: p.Total, Unit: report.UnitObjects, Item: p.URL, Done: p.Done,
-		})
+		}, p.Err != nil, false)
 	}
 }
 
-// blobBar is the git_fetch bar of one fetchBlobs call: blobs stored, or
-// received in the pack being fetched, out of the blobs to fetch. Current
+// blobBar is the git_fetch bar of one fetchBlobs call: blobs verified and
+// stored out of the blobs to fetch. Only stored blobs count, never entries
+// of a pack still arriving (an attempt that fails would leave them counted
+// though discarded); those are each request's own objects bar. Current
 // only grows.
 type blobBar struct {
 	rep     report.Reporter
@@ -706,8 +731,9 @@ func (g *GitRegistry) openBlob(ctx context.Context, repo, oid string, spec manif
 // fetchBlobs ports GitRemoteClient.FetchBlobs + GitTreeSource's verified
 // caching: blobs come from a retained pack when possible, otherwise from
 // fetches of at most 256 wants each; every blob is verified and stored.
-// It reports one git_fetch bar of blobs out of the distinct blobs asked
-// for, across all batches, ended with Done on success and on error.
+// It reports one git_fetch bar of blobs stored out of the distinct blobs
+// asked for, across all batches, ended with Done on success and on error;
+// each request's pack is also an objects bar (see packObjectsProgress).
 func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string, spec manifest.PackageSpec) error {
 	key := repoKey(repo)
 	var unique []string
@@ -752,8 +778,8 @@ func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string
 		if end > len(remaining) {
 			end = len(remaining)
 		}
-		n, err := g.fetchBlobBatch(ctx, repo, remaining[start:end], func(received, storedInBatch int64) {
-			bar.set(stored + max(received, storedInBatch))
+		n, err := g.fetchBlobBatch(ctx, repo, remaining[start:end], spec, bar.message, func(storedInBatch int64) {
+			bar.set(stored + storedInBatch)
 		})
 		stored += n
 		if err != nil {
@@ -782,21 +808,17 @@ func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string
 // again). As in lip, only fetching and opening the pack falls back: errors
 // while reading its objects or storing blobs fail the batch as they are,
 // and are returned marked by fetch.NoFallback so fetchBlobs stops too.
-// It returns the number of blobs stored, and reports to progress the
-// entries received completely in the pack being fetched (at most the blobs
-// still wanted, counted on top of those already stored) and the blobs
-// stored.
-func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []string, progress func(received, stored int64)) (int64, error) {
+// It returns the number of blobs stored and reports each one stored to
+// progress; every request's pack is its own objects bar titled message.
+func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []string, spec manifest.PackageSpec, message string, progress func(stored int64)) (int64, error) {
 	remaining := make(map[string]bool, len(batch))
 	for _, oid := range batch {
 		remaining[oid] = true
 	}
 	var stored int64
 	opts := gitproto.FetchOptions{
-		Want: func(oid string) bool { return remaining[oid] },
-		Progress: func(p gitproto.PackProgress) {
-			progress(stored+min(p.Objects, int64(len(remaining))), stored)
-		},
+		Want:     func(oid string) bool { return remaining[oid] },
+		Progress: g.packObjectsProgress(spec, message),
 	}
 	var handlerErr error
 	err := g.Git.Fetch(ctx, repo, batch, opts, func(pack *gitproto.PackFile) error {
@@ -817,7 +839,7 @@ func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []s
 			}
 			delete(remaining, oid)
 			stored++
-			progress(stored, stored)
+			progress(stored)
 			return nil
 		}); err != nil {
 			handlerErr = err

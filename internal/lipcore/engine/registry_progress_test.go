@@ -80,6 +80,17 @@ func barsOf(r *progRec, stage report.Stage) [][]report.Progress {
 	return out
 }
 
+// unitBars returns the bars of stage counting unit, in order.
+func unitBars(r *progRec, stage report.Stage, unit report.Unit) [][]report.Progress {
+	var out [][]report.Progress
+	for _, b := range barsOf(r, stage) {
+		if b[0].Unit == unit {
+			out = append(out, b)
+		}
+	}
+	return out
+}
+
 func last(ups []report.Progress) report.Progress { return ups[len(ups)-1] }
 
 // newProgressRegistry is newTestRegistry reporting to a progRec, with
@@ -109,12 +120,11 @@ func TestListTreeProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkBars(t, rec)
-	trees := barsOf(rec, report.StageGitFetch)
-	// The tree listing, then the tooth.json blob.
-	if len(trees) != 2 {
-		t.Fatalf("%d git_fetch bars: %+v", len(trees), rec.ps)
+	// The tree listing, then the tooth.json blob and its request.
+	if n := len(barsOf(rec, report.StageGitFetch)); n != 3 {
+		t.Fatalf("%d git_fetch bars: %+v", n, rec.ps)
 	}
-	tree := trees[0]
+	tree := unitBars(rec, report.StageGitFetch, report.UnitObjects)[0]
 	if tree[0].Total != 0 || tree[0].Current != 0 {
 		t.Errorf("first update %+v, want indeterminate", tree[0])
 	}
@@ -156,11 +166,11 @@ func TestFetchBlobsProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkBars(t, rec)
-	bars := barsOf(rec, report.StageGitFetch)
-	if len(bars) != 2 {
+	bars := unitBars(rec, report.StageGitFetch, report.UnitBlobs)
+	if len(bars) != 1 {
 		t.Fatalf("bars %+v", bars)
 	}
-	blobs := bars[1]
+	blobs := bars[0]
 	if f := blobs[0]; f.Unit != report.UnitBlobs || f.Total != 2 || f.Current != 0 || f.Message != "Fetching files of example.com/a@1.0.0" {
 		t.Errorf("first blob update %+v", f)
 	}
@@ -180,9 +190,59 @@ func TestFetchBlobsProgress(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkBars(t, rec)
-	bars = barsOf(rec, report.StageGitFetch)
+	bars = unitBars(rec, report.StageGitFetch, report.UnitBlobs)
 	if len(bars) != 1 || bars[0][0].Total != 300 || last(bars[0]).Current != 300 {
 		t.Fatalf("bars %+v", bars)
+	}
+	// Each request (256 wants, then 44) is its own objects bar.
+	reqs := unitBars(rec, report.StageGitFetch, report.UnitObjects)
+	if len(reqs) != 2 || last(reqs[0]).Total != 256 || last(reqs[1]).Total != 44 ||
+		reqs[0][0].Message != "Fetching files of example.com/a@1.0.0" {
+		t.Fatalf("request bars %+v", reqs)
+	}
+}
+
+// The blob bar counts stored blobs only: entries received by a request
+// that then fails are not counted, so a later batch moves the bar from
+// the blobs actually stored.
+func TestFetchBlobsProgressDiscardedPack(t *testing.T) {
+	g, _, repo, rec := newProgressRegistry(t)
+	var oids []string
+	for i := range 266 {
+		data := fmt.Sprintf("blob %d", i)
+		repo.blobs[blobOID(data)] = data
+		oids = append(oids, blobOID(data))
+	}
+	repo.cut = func(wanted []string) int {
+		if len(wanted) == maxWantsPerRequest {
+			return 250
+		}
+		return -1
+	}
+	if err := g.fetchBlobs(ctx, repoA, oids, specA("1.0.0")); err == nil {
+		t.Fatal("expected the first batch's error")
+	}
+	checkBars(t, rec)
+	bars := unitBars(rec, report.StageGitFetch, report.UnitBlobs)
+	if len(bars) != 1 {
+		t.Fatalf("bars %+v", bars)
+	}
+	b := bars[0]
+	if b[0].Total != 266 || len(b) != 12 {
+		t.Fatalf("blob bar %+v", b)
+	}
+	for i, p := range b[1:11] {
+		if p.Current != int64(i+1) {
+			t.Fatalf("update %d: Current %d, want %d", i+1, p.Current, i+1)
+		}
+	}
+	if l := last(b); !l.Done || l.Current != 10 {
+		t.Errorf("blob bar ended %+v", l)
+	}
+	// The failed request's own bar ended with the entries it received.
+	reqs := unitBars(rec, report.StageGitFetch, report.UnitObjects)
+	if len(reqs) != 2 || last(reqs[0]).Current != 250 || last(reqs[0]).Total != 256 || last(reqs[1]).Current != 10 {
+		t.Fatalf("request bars %+v", reqs)
 	}
 }
 
@@ -198,7 +258,7 @@ func TestFetchBlobsProgressErrors(t *testing.T) {
 		t.Fatal(err)
 	}
 	checkBars(t, rec)
-	if bars := barsOf(rec, report.StageGitFetch); len(bars) != 1 || last(bars[0]).Current != 2 {
+	if bars := unitBars(rec, report.StageGitFetch, report.UnitBlobs); len(bars) != 1 || last(bars[0]).Current != 2 {
 		t.Fatalf("bars %+v", bars)
 	}
 
@@ -210,7 +270,7 @@ func TestFetchBlobsProgressErrors(t *testing.T) {
 		t.Fatal("expected an error")
 	}
 	checkBars(t, rec)
-	if bars := barsOf(rec, report.StageGitFetch); len(bars) != 1 || !last(bars[0]).Done {
+	if bars := unitBars(rec, report.StageGitFetch, report.UnitBlobs); len(bars) != 1 || !last(bars[0]).Done || last(bars[0]).Current != 0 {
 		t.Fatalf("bars %+v", bars)
 	}
 }
@@ -243,6 +303,54 @@ func TestOpenURLDownloadProgress(t *testing.T) {
 	}
 	if l := last(bars[1]); l.Message != "Downloading "+raw || l.Total != 0 || l.Current != 2<<20 || l.Unit != report.UnitBytes || l.Package != "example.com/a@1.0.0" {
 		t.Errorf("direct attempt ended %+v", l)
+	}
+}
+
+// A legacy reporter (no ReportProgress) gets lip's percentages: every
+// download opens at 0, a failed or abandoned bar never reports 100, and a
+// successful download without Content-Length ends at 100.
+func TestOpenURLLegacyProgress(t *testing.T) {
+	g, _, _, _, rep := newTestRegistry(t)
+	g.NewProgressID = func() string { return "id" }
+	g.OpenArchive = func(string, string) (fetch.AssetSource, error) { return fakeAsset{closed: new(bool)}, nil }
+	const raw, proxied = "https://github.com/o/r/releases/download/v1/a.zip", "https://proxy.example/o/r/releases/download/v1/a.zip"
+	g.Download = func(_ context.Context, _ string, hooks fetch.FetchHooks) (string, error) {
+		hooks.Waiting()
+		p := hooks.Attempt(proxied)
+		p(fetch.Transfer{})
+		p(fetch.Transfer{Current: 1 << 20})
+		p(fetch.Transfer{Current: 1 << 20, Done: true, Err: errors.New("reset")})
+		d := hooks.Attempt(raw)
+		d(fetch.Transfer{})
+		d(fetch.Transfer{Current: 2 << 20})
+		d(fetch.Transfer{Current: 2 << 20, Done: true})
+		return "/cache/a.zip", nil
+	}
+	if _, err := g.openURL(ctx, specA("1.0.0"), "zip", raw); err != nil {
+		t.Fatal(err)
+	}
+	want := []string{
+		"progress: Downloading " + proxied + " 0",
+		"progress: Downloading " + raw + " 0",
+		"progress: Downloading " + raw + " 100",
+	}
+	if fmt.Sprint(rep.msgs) != fmt.Sprint(want) {
+		t.Errorf("lines: %q, want %q", rep.msgs, want)
+	}
+}
+
+// A git request failing before the pack header (an indeterminate bar)
+// does not report 100 to a legacy reporter.
+func TestListTreeLegacyProgress(t *testing.T) {
+	g, _, repo, _, rep := newTestRegistry(t)
+	repo.cut = func([]string) int { return 0 }
+	if _, err := g.OpenAsset(ctx, specA("1.0.0"), manifest.Asset{Type: manifest.AssetSelf}); err == nil {
+		t.Fatal("expected an error")
+	}
+	for _, m := range rep.msgs {
+		if strings.HasPrefix(m, "progress:") && strings.HasSuffix(m, " 100") {
+			t.Errorf("unexpected %q", m)
+		}
 	}
 }
 

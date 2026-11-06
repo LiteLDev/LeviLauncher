@@ -86,10 +86,11 @@ func DefaultCommandRunner(ctx context.Context, dir, command string, stdout, stde
 		return err
 	}
 
-	// stop reports false once the tree has been killed for ctx.
+	// stop reports false once the tree is being killed for ctx. kill may
+	// still be running then, or start late; the tree makes it a no-op once
+	// released, so it never reaches a closed job or a reaped group.
 	stop := context.AfterFunc(ctx, tree.kill)
-	waitErr := cmd.Wait()
-	copyErr := out.wait(ctx.Done())
+	waitErr, copyErr := tree.wait(func() error { return out.wait(ctx.Done()) })
 	if !stop() {
 		return ctx.Err()
 	}

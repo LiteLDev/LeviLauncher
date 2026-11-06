@@ -3,14 +3,17 @@ package lip
 import (
 	"context"
 	"fmt"
+	"net/http"
 	"path/filepath"
 	"runtime"
 	"strings"
 	"sync"
 	"time"
 
+	"github.com/liteldev/LeviLauncher/internal/httpx"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/engine"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/fetch"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/httpclient"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/report"
 )
 
@@ -32,15 +35,27 @@ var _ packageEngine = (*engine.Engine)(nil)
 var newEngine = func(workDir string, r report.Reporter) packageEngine {
 	return &engine.Engine{
 		Dir:        workDir,
-		Registry:   engine.NewGitRegistry(EffectiveGithubProxy(), r),
+		Registry:   engine.NewGitRegistry(EffectiveGithubProxy(), r, engine.WithHTTPClient(engineHTTPClient)),
 		Reporter:   r,
 		Hooks:      engine.DefaultHooks(engine.CurrentRID()),
 		CleanCache: fetch.DefaultCache().Clean,
 	}
 }
 
-// dirLocks serializes operations per workspace so tooth_lock.json has one
-// writer at a time (lip ran one process per call).
+// engineHTTPClient carries the engine's git requests and downloads. Its
+// transport follows the Windows system proxy, as lip's
+// HttpClient.DefaultProxy did. It has no overall timeout (downloads use an
+// idle timeout, git requests their own contexts) and, like Flurl, refuses
+// https -> http redirects.
+var engineHTTPClient = &http.Client{
+	Transport:     httpx.DefaultClient().Transport,
+	CheckRedirect: httpclient.CheckRedirect,
+}
+
+// dirLocks serializes writing operations per workspace so tooth_lock.json
+// has one writer at a time. List does not take it: lip ran one process per
+// call, so a List during an install read the last saved tooth_lock.json
+// (lockfile.State.Save replaces the file atomically).
 var dirLocks sync.Map // lock key -> chan struct{} (capacity 1)
 
 // cacheMu lets package operations share the download cache while CacheClean
@@ -108,8 +123,9 @@ func callEngine(ctx context.Context, workDir string, r report.Reporter, fn func(
 
 // runPackageTask runs one operation on workDir. With track, it emits
 // lip_task_started, forwards reports as lip_task_log/lip_task_progress and
-// ends with lip_task_finished.
-func runPackageTask(ctx context.Context, method string, workDir string, packages []string, track bool, fn func(context.Context, packageEngine) error) error {
+// ends with lip_task_finished. With exclusive, it holds workDir's lock for
+// the whole operation.
+func runPackageTask(ctx context.Context, method string, workDir string, packages []string, track, exclusive bool, fn func(context.Context, packageEngine) error) error {
 	dir, err := resolveWorkDir(workDir)
 	if err != nil {
 		return err
@@ -126,6 +142,9 @@ func runPackageTask(ctx context.Context, method string, workDir string, packages
 	}
 
 	err = func() error {
+		if !exclusive {
+			return callEngine(ctx, dir, reporter, fn)
+		}
 		unlock, err := lockDir(ctx, dir)
 		if err != nil {
 			return err
@@ -170,7 +189,7 @@ func CacheClean(ctx context.Context) error {
 // InstallPackages installs packages ("id" or "id@version") into workDir.
 func InstallPackages(ctx context.Context, workDir string, packages []string) error {
 	pkgs := normalizePackages(packages)
-	return runPackageTask(ctx, "Install", workDir, pkgs, true, func(ctx context.Context, e packageEngine) error {
+	return runPackageTask(ctx, "Install", workDir, pkgs, true, true, func(ctx context.Context, e packageEngine) error {
 		return e.Install(ctx, pkgs, false, false, false)
 	})
 }
@@ -178,7 +197,7 @@ func InstallPackages(ctx context.Context, workDir string, packages []string) err
 // UpdatePackages updates packages in workDir.
 func UpdatePackages(ctx context.Context, workDir string, packages []string) error {
 	pkgs := normalizePackages(packages)
-	return runPackageTask(ctx, "Update", workDir, pkgs, true, func(ctx context.Context, e packageEngine) error {
+	return runPackageTask(ctx, "Update", workDir, pkgs, true, true, func(ctx context.Context, e packageEngine) error {
 		return e.Update(ctx, pkgs, false, false)
 	})
 }
@@ -187,7 +206,7 @@ func UpdatePackages(ctx context.Context, workDir string, packages []string) erro
 // noDependencies, dependencies that become unused are kept.
 func UninstallPackages(ctx context.Context, workDir string, packages []string, noDependencies bool) error {
 	pkgs := normalizePackages(packages)
-	return runPackageTask(ctx, "Uninstall", workDir, pkgs, true, func(ctx context.Context, e packageEngine) error {
+	return runPackageTask(ctx, "Uninstall", workDir, pkgs, true, true, func(ctx context.Context, e packageEngine) error {
 		return e.Uninstall(ctx, pkgs, false, false, noDependencies)
 	})
 }
@@ -271,7 +290,7 @@ func buildPackageInstallStateIndex(explicit, implicit []string) map[string]Packa
 // lowercased "path#variant".
 func ListPackageStates(ctx context.Context, workDir string) (map[string]PackageInstallState, error) {
 	var explicit, implicit []string
-	err := runPackageTask(ctx, "List", workDir, nil, false, func(ctx context.Context, e packageEngine) error {
+	err := runPackageTask(ctx, "List", workDir, nil, false, false, func(ctx context.Context, e packageEngine) error {
 		var err error
 		explicit, implicit, err = e.List(ctx)
 		return err

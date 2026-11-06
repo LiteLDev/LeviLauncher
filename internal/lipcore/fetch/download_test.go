@@ -117,6 +117,31 @@ func TestDownloaderNon200(t *testing.T) {
 	}
 }
 
+// lip's Flurl status check does not follow an https -> http redirect
+// (AllowSecureToInsecure = false), so the download fails with the 3xx.
+func TestDownloaderRefusesHTTPSToHTTPRedirect(t *testing.T) {
+	var h hits
+	plain := serve([]byte("ATTACKER"), http.StatusOK, &h)
+	defer plain.Close()
+	secure := httptest.NewTLSServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		http.Redirect(w, r, plain.URL+"/x.zip", http.StatusMovedPermanently)
+	}))
+	defer secure.Close()
+
+	d := &Downloader{HTTP: secure.Client(), Cache: testCache(t)}
+	raw := secure.URL + "/x.zip"
+	_, err := d.Fetch(context.Background(), raw, nil)
+	if err == nil || !strings.Contains(err.Error(), "HTTP 301") {
+		t.Fatalf("err = %v, want HTTP 301", err)
+	}
+	if len(h.urls) != 0 {
+		t.Errorf("plaintext server was hit: %v", h.urls)
+	}
+	if _, ok := d.Cache.Get(raw); ok {
+		t.Error("downgraded download was cached")
+	}
+}
+
 func TestDownloaderProxyFallback(t *testing.T) {
 	body := []byte("release asset")
 	var proxyHits, githubHits hits

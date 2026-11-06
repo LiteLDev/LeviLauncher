@@ -123,13 +123,14 @@ const (
 
 // NewGitRegistry wires a registry with the real gitproto client, the shared
 // lip cache and the given GitHub proxy prefix (may be empty).
-func NewGitRegistry(githubProxy string, r report.Reporter) *GitRegistry {
+func NewGitRegistry(githubProxy string, r report.Reporter, opts ...RegistryOption) *GitRegistry {
+	hc := registryHTTPClient(opts)
 	rw := fetch.NewProxyRewriter(githubProxy)
 	cache := fetch.DefaultCache()
 	return &GitRegistry{
-		Git:        &gitproto.Client{Proxy: rw},
+		Git:        &gitproto.Client{Proxy: rw, HTTP: hc},
 		Cache:      cache,
-		Downloader: &fetch.Downloader{Proxy: rw, Cache: cache},
+		Downloader: &fetch.Downloader{Proxy: rw, Cache: cache, HTTP: hc},
 		Reporter:   r,
 		RID:        CurrentRID(),
 	}

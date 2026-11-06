@@ -3,6 +3,8 @@ package lip
 import (
 	"errors"
 	"fmt"
+	"os"
+	"path/filepath"
 	"testing"
 )
 
@@ -15,6 +17,80 @@ func setProxyConfig(t *testing.T, override string, mirror bool) {
 		githubProxyOverride = oldOverride
 		mirrorEnabled = oldMirror
 	})
+	setLipRC(t, "")
+}
+
+// setLipRC points liprc.json at a temp file holding content (none when
+// empty).
+func setLipRC(t *testing.T, content string) {
+	t.Helper()
+	path := filepath.Join(t.TempDir(), "liprc.json")
+	if content != "" {
+		if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
+			t.Fatal(err)
+		}
+	}
+	old := lipRCPath
+	lipRCPath = func() string { return path }
+	t.Cleanup(func() { lipRCPath = old })
+}
+
+const lipRCWithProxy = `{
+  "format_version": 3,
+  "format_uuid": "289f771f-2c9a-4d73-9f3f-8492495a924d",
+  "github_proxy": "https://myproxy.example"
+}`
+
+func TestProxyFromLipRC(t *testing.T) {
+	tests := []struct {
+		name          string
+		override      string
+		mirror        bool
+		wantEffective string
+		wantDisplayed string
+	}{
+		{name: "liprc applies without mirror", wantEffective: "https://myproxy.example", wantDisplayed: "https://myproxy.example"},
+		{name: "liprc beats mirror default", mirror: true, wantEffective: "https://myproxy.example", wantDisplayed: "https://myproxy.example"},
+		{name: "override beats liprc", override: "https://override.example", wantEffective: "https://override.example", wantDisplayed: "https://override.example"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setProxyConfig(t, tt.override, tt.mirror)
+			setLipRC(t, lipRCWithProxy)
+			if got := EffectiveGithubProxy(); got != tt.wantEffective {
+				t.Fatalf("EffectiveGithubProxy() = %q, want %q", got, tt.wantEffective)
+			}
+			if got := GithubProxy(); got != tt.wantDisplayed {
+				t.Fatalf("GithubProxy() = %q, want %q", got, tt.wantDisplayed)
+			}
+		})
+	}
+}
+
+func TestLipRCGithubProxyFollowsLipParsing(t *testing.T) {
+	tests := []struct {
+		name    string
+		content string
+		want    string
+	}{
+		{name: "valid", content: lipRCWithProxy, want: "https://myproxy.example"},
+		{name: "bom", content: string([]byte{0xef, 0xbb, 0xbf}) + lipRCWithProxy, want: "https://myproxy.example"},
+		{name: "null proxy", content: `{"format_version":3,"format_uuid":"289f771f-2c9a-4d73-9f3f-8492495a924d","github_proxy":null}`},
+		{name: "missing format", content: `{"github_proxy":"https://myproxy.example"}`},
+		{name: "wrong version", content: `{"format_version":2,"format_uuid":"289f771f-2c9a-4d73-9f3f-8492495a924d","github_proxy":"https://myproxy.example"}`},
+		{name: "wrong case key", content: `{"format_version":3,"format_uuid":"289f771f-2c9a-4d73-9f3f-8492495a924d","GitHub_Proxy":"https://myproxy.example"}`},
+		{name: "not a string", content: `{"format_version":3,"format_uuid":"289f771f-2c9a-4d73-9f3f-8492495a924d","github_proxy":1}`},
+		{name: "malformed", content: `{`},
+		{name: "missing file"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			setLipRC(t, tt.content)
+			if got := lipRCGithubProxy(); got != tt.want {
+				t.Fatalf("lipRCGithubProxy() = %q, want %q", got, tt.want)
+			}
+		})
+	}
 }
 
 func TestProxySelection(t *testing.T) {

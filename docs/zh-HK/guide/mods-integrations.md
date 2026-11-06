@@ -45,7 +45,7 @@ LeviLauncher 支援超出「基礎啟動器」範圍的模組相關工作流程�
 
 ## lip 與 LeviLamina <Badge platform="windows" />
 
-LeviLauncher 內置了相容 [lip](https://github.com/LiteLDev/lip) 的套件管理器，毋須另外安裝 lip 或 .NET 執行階段。它使用與 lip 相同的 `tooth_lock.json` 格式，已安裝 LeviLamina 或 LIP 套件的版本可以繼續正常使用。從 GitHub 下載套件時會使用[設定](./settings-personalization)中的 **GitHub 代理**，**清理快取** 可刪除已下載的套件檔案。
+LeviLauncher 內置了相容 [lip](https://github.com/LiteLDev/lip) 的套件管理器，毋須另外安裝 lip 或 .NET 執行階段。它使用與 lip 相同的 `tooth_lock.json` 格式，已安裝 LeviLamina 或 LIP 套件的版本可以繼續正常使用。開啟 **使用鏡像來源** 時，從 GitHub 下載套件會經過[設定](./settings-personalization)中的 **GitHub 代理**；否則直接連線 GitHub（如已設定系統代理，則經過系統代理）。之前儲存過的 GitHub 代理，或 lip 的 `liprc.json` 中設定的 `github_proxy`，在兩種情況下都會生效。**清理快取** 可刪除已下載的套件檔案。
 
 這類集成更適合希望使用包驅動或加載器驅動工作流程的進階用戶。
 

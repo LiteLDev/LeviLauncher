@@ -45,7 +45,7 @@ Geeignet für folgende Anforderungen:
 
 ## lip und LeviLamina <Badge platform="windows" />
 
-LeviLauncher enthält einen integrierten Paketmanager, der mit [lip](https://github.com/LiteLDev/lip) kompatibel ist. Du musst also weder lip noch die .NET-Runtime separat installieren. Er verwendet dasselbe `tooth_lock.json`-Format wie lip, sodass Versionen mit bereits installiertem LeviLamina oder installierten LIP-Paketen weiterhin funktionieren. Paket-Downloads von GitHub nutzen den **GitHub-Proxy** aus den [Einstellungen](./settings-personalization), und **Cache leeren** entfernt heruntergeladene Paketdateien.
+LeviLauncher enthält einen integrierten Paketmanager, der mit [lip](https://github.com/LiteLDev/lip) kompatibel ist. Du musst also weder lip noch die .NET-Runtime separat installieren. Er verwendet dasselbe `tooth_lock.json`-Format wie lip, sodass Versionen mit bereits installiertem LeviLamina oder installierten LIP-Paketen weiterhin funktionieren. Ist **Mirror-Quellen verwenden** aktiviert, laufen Paket-Downloads von GitHub über den **GitHub-Proxy** aus den [Einstellungen](./settings-personalization); andernfalls wird GitHub direkt erreicht (über den Systemproxy, falls einer eingerichtet ist). Ein früher gespeicherter GitHub-Proxy oder ein in lips `liprc.json` gesetzter `github_proxy` gilt in beiden Fällen. **Cache leeren** entfernt heruntergeladene Paketdateien.
 
 Diese Integrationen eignen sich eher für fortgeschrittene Benutzer, die paket- oder loader-gesteuerte Arbeitsabläufe verwenden möchten.
 

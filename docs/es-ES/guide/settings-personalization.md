@@ -52,7 +52,7 @@ Usa **Siguiente imagen** cuando la carpeta contenga varias imágenes. El orden *
 
 ### Componentes de terceros
 
-- Gestor de paquetes integrado (compatible con [lip](https://github.com/LiteLDev/lip); no hay nada que instalar ni actualizar): configurar el **Proxy de GitHub** usado para descargar paquetes o usar **Limpiar caché** para eliminar los archivos de paquetes descargados
+- Gestor de paquetes integrado (compatible con [lip](https://github.com/LiteLDev/lip); no hay nada que instalar ni actualizar): configurar el **Proxy de GitHub** usado para descargar paquetes (visible con **Usar servidores espejo** activado) o usar **Limpiar caché** para eliminar los archivos de paquetes descargados
 
 ### Privacidad
 

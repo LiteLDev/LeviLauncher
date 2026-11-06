@@ -8,6 +8,8 @@ import (
 	"net/http"
 	"os"
 	"time"
+
+	"github.com/liteldev/LeviLauncher/internal/lipcore/httpclient"
 )
 
 // ProgressFunc receives download progress in [0, 100].
@@ -16,6 +18,8 @@ type ProgressFunc func(percentage float64)
 // Downloader downloads asset URLs into the cache, keyed by the original
 // (unproxied) URL. The GET must return 200.
 type Downloader struct {
+	// HTTP is the client to use; nil means httpclient.Default. Its redirect
+	// policy defaults to httpclient.CheckRedirect.
 	HTTP  *http.Client
 	Proxy *ProxyRewriter
 	Cache *Cache
@@ -90,10 +94,8 @@ func (d *Downloader) download(parent context.Context, url string, w io.Writer, p
 		}
 	}()
 
-	client := d.HTTP
-	if client == nil {
-		client = http.DefaultClient
-	}
+	// Like lip's Flurl status check, never follow an https -> http redirect.
+	client := httpclient.WithLipRedirects(d.HTTP)
 	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	if err != nil {
 		return err

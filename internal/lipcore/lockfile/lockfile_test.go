@@ -7,6 +7,7 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/manifest"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/stjson"
@@ -145,6 +146,69 @@ func TestUnmarshalOptionalFormatAndBOM(t *testing.T) {
 	}
 	if s.Find(manifest.PackageID{Path: "example.com/x"}) != -1 || s.Find(manifest.PackageID{Path: "example.com/x", Variant: "client"}) != 0 {
 		t.Error("Find mismatch")
+	}
+}
+
+// A List running alongside an install may have tooth_lock.json open while
+// Save replaces it; on Windows that rename fails until the reader closes.
+func TestSaveWhileReaderHasFileOpen(t *testing.T) {
+	useFakes(t)
+	dir := t.TempDir()
+	if err := New().Save(dir); err != nil {
+		t.Fatal(err)
+	}
+	f, err := os.Open(filepath.Join(dir, FileName))
+	if err != nil {
+		t.Fatal(err)
+	}
+	go func() {
+		time.Sleep(60 * time.Millisecond)
+		f.Close()
+	}()
+	if err := New().Save(dir); err != nil {
+		t.Fatalf("Save with a concurrent reader: %v", err)
+	}
+}
+
+func TestSaveRetriesFailedRename(t *testing.T) {
+	useFakes(t)
+	oldRename, oldBackoff := rename, renameBackoff
+	t.Cleanup(func() { rename, renameBackoff = oldRename, oldBackoff })
+	renameBackoff = 0
+	failures := 3
+	rename = func(from, to string) error {
+		if failures > 0 {
+			failures--
+			return &os.LinkError{Op: "rename", Old: from, New: to, Err: os.ErrPermission}
+		}
+		return os.Rename(from, to)
+	}
+	dir := t.TempDir()
+	if err := New().Save(dir); err != nil {
+		t.Fatalf("Save: %v", err)
+	}
+	if entries, _ := os.ReadDir(dir); len(entries) != 1 {
+		t.Errorf("dir has %d entries, want 1", len(entries))
+	}
+
+	rename = func(from, to string) error {
+		return &os.LinkError{Op: "rename", Old: from, New: to, Err: os.ErrPermission}
+	}
+	if err := New().Save(dir); err == nil {
+		t.Fatal("Save succeeded although every rename failed")
+	}
+	if entries, _ := os.ReadDir(dir); len(entries) != 1 {
+		t.Errorf("temp file left behind: %d entries", len(entries))
+	}
+
+	// Other errors are permanent and returned at once.
+	calls := 0
+	rename = func(from, to string) error {
+		calls++
+		return &os.LinkError{Op: "rename", Old: from, New: to, Err: os.ErrNotExist}
+	}
+	if err := New().Save(dir); err == nil || calls != 1 {
+		t.Fatalf("Save = %v after %d renames, want an error after 1", err, calls)
 	}
 }
 

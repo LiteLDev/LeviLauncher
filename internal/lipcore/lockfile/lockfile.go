@@ -10,6 +10,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"time"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/manifest"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/stjson"
@@ -171,13 +172,36 @@ func (s *State) Save(dir string) error {
 		err = cerr
 	}
 	if err == nil {
-		err = os.Rename(tmpName, filepath.Join(dir, FileName))
+		err = replaceFile(tmpName, filepath.Join(dir, FileName))
 	}
 	if err != nil {
 		_ = os.Remove(tmpName)
 		return err
 	}
 	return nil
+}
+
+// Rename retry budget for replaceFile; rename is replaced in tests.
+var (
+	rename         = os.Rename
+	renameAttempts = 20
+	renameBackoff  = 25 * time.Millisecond
+)
+
+// replaceFile renames tmp over dst. On Windows the rename fails while a
+// reader (e.g. a concurrent List) has dst open, with "Access is denied", so
+// that error is retried briefly.
+func replaceFile(tmp, dst string) error {
+	var err error
+	for i := 0; i < renameAttempts; i++ {
+		if i > 0 {
+			time.Sleep(renameBackoff)
+		}
+		if err = rename(tmp, dst); err == nil || !errors.Is(err, fs.ErrPermission) {
+			return err
+		}
+	}
+	return err
 }
 
 // Marshal returns the bytes Save would write.

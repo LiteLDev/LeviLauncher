@@ -844,87 +844,13 @@ func TestRestoreInstanceBackupFullRejectsNonEmptyTarget(t *testing.T) {
 	}
 }
 
-func TestRestoreInstanceBackupModsPartialWhenLipRuntimeMissing(t *testing.T) {
-	restoreLipInstalled := lipIsInstalled
-	restoreFetchLLDB := instanceBackupFetchLeviLaminaVersionDB
-	lipIsInstalled = func() bool { return false }
-	instanceBackupFetchLeviLaminaVersionDB = func() (map[string][]string, error) {
-		return map[string][]string{
-			"1.21.80.03": {"0.13.0"},
-		}, nil
-	}
-	t.Cleanup(func() {
-		lipIsInstalled = restoreLipInstalled
-		instanceBackupFetchLeviLaminaVersionDB = restoreFetchLLDB
-	})
-
-	_, appDataDir, versionsDir := setupInstanceBackupEnv(t)
-	sourceDir := createTestInstance(t, versionsDir, "Source", versions.VersionMeta{
-		GameVersion:     "1.21.80.03",
-		Type:            "release",
-		EnableIsolation: true,
-	})
-	_ = createTestGameDataDir(t, sourceDir, appDataDir, false, true)
-	if err := os.MkdirAll(filepath.Join(sourceDir, "mods", "raw_mod"), 0o755); err != nil {
-		t.Fatalf("mkdir raw mod: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(sourceDir, "mods", "raw_mod", "manifest.json"), []byte(`{"name":"raw","version":"1.0.0"}`), 0o644); err != nil {
-		t.Fatalf("write raw manifest: %v", err)
-	}
-	if err := os.MkdirAll(filepath.Join(sourceDir, "mods", "lip_mod"), 0o755); err != nil {
-		t.Fatalf("mkdir lip mod: %v", err)
-	}
-	if err := os.WriteFile(filepath.Join(sourceDir, "mods", "lip_mod", "manifest.json"), []byte(`{"name":"lip","version":"2.0.0"}`), 0o644); err != nil {
-		t.Fatalf("write lip manifest: %v", err)
-	}
-	backup := BackupInstance("Source", types.InstanceBackupRequest{
-		Scopes: []string{"mods"},
-		ModsLIPPackages: []types.InstanceBackupModsLIPPackage{
-			{
-				Identifier:        "LiteLDev/Foo",
-				Version:           "2.0.0",
-				ExplicitInstalled: true,
-				Folders:           []string{"lip_mod"},
-			},
-		},
-	})
-	if backup.ErrorCode != "" {
-		t.Fatalf("backup failed: %q", backup.ErrorCode)
-	}
-
-	targetDir := createTestInstance(t, versionsDir, "Target", versions.VersionMeta{
-		GameVersion:     "1.21.80.03",
-		Type:            "release",
-		EnableIsolation: true,
-	})
-	_ = createTestGameDataDir(t, targetDir, appDataDir, false, true)
-
-	result := RestoreInstanceBackup(context.Background(), "Target", types.InstanceBackupRestoreRequest{
-		ArchivePath: backup.ArchivePath,
-		Scopes:      []string{"mods"},
-	})
-	if result.Status != "partial" {
-		t.Fatalf("expected partial result, got %+v", result)
-	}
-	scopeResult := result.ScopeResults[0]
-	if !containsString(scopeResult.Warnings, "ERR_LIP_NOT_INSTALLED") {
-		t.Fatalf("expected lip runtime warning, got %+v", scopeResult)
-	}
-	if !utils.DirExists(filepath.Join(targetDir, "mods", "raw_mod")) {
-		t.Fatalf("expected raw mod restored")
-	}
-	if utils.DirExists(filepath.Join(targetDir, "mods", "lip_mod")) {
-		t.Fatalf("lip managed folder should not be restored as raw")
-	}
-}
-
 func TestRestoreInstanceBackupModsSkipsLipWhenLLUnsupported(t *testing.T) {
-	restoreLipInstalled := lipIsInstalled
+	restoreLipResolveTargetDir := lipResolveTargetDir
 	restoreFetchLLDB := instanceBackupFetchLeviLaminaVersionDB
 	lipChecked := false
-	lipIsInstalled = func() bool {
+	lipResolveTargetDir = func(targetName string) (string, string) {
 		lipChecked = true
-		return true
+		return resolveLIPTargetDir(targetName)
 	}
 	instanceBackupFetchLeviLaminaVersionDB = func() (map[string][]string, error) {
 		return map[string][]string{
@@ -932,7 +858,7 @@ func TestRestoreInstanceBackupModsSkipsLipWhenLLUnsupported(t *testing.T) {
 		}, nil
 	}
 	t.Cleanup(func() {
-		lipIsInstalled = restoreLipInstalled
+		lipResolveTargetDir = restoreLipResolveTargetDir
 		instanceBackupFetchLeviLaminaVersionDB = restoreFetchLLDB
 	})
 
@@ -986,7 +912,7 @@ func TestRestoreInstanceBackupModsSkipsLipWhenLLUnsupported(t *testing.T) {
 		t.Fatalf("expected partial result, got %+v", result)
 	}
 	if lipChecked {
-		t.Fatalf("lip runtime should not be checked when LeviLamina is unsupported")
+		t.Fatalf("lip should not be queried when LeviLamina is unsupported")
 	}
 	scopeResult := result.ScopeResults[0]
 	if !containsString(scopeResult.Warnings, "ERR_LL_NOT_SUPPORTED") {
@@ -1001,12 +927,12 @@ func TestRestoreInstanceBackupModsSkipsLipWhenLLUnsupported(t *testing.T) {
 }
 
 func TestRestoreInstanceBackupModsTreatsLegacyThreePartVersionAsUnsupported(t *testing.T) {
-	restoreLipInstalled := lipIsInstalled
+	restoreLipResolveTargetDir := lipResolveTargetDir
 	restoreFetchLLDB := instanceBackupFetchLeviLaminaVersionDB
 	lipChecked := false
-	lipIsInstalled = func() bool {
+	lipResolveTargetDir = func(targetName string) (string, string) {
 		lipChecked = true
-		return true
+		return resolveLIPTargetDir(targetName)
 	}
 	instanceBackupFetchLeviLaminaVersionDB = func() (map[string][]string, error) {
 		return map[string][]string{
@@ -1014,7 +940,7 @@ func TestRestoreInstanceBackupModsTreatsLegacyThreePartVersionAsUnsupported(t *t
 		}, nil
 	}
 	t.Cleanup(func() {
-		lipIsInstalled = restoreLipInstalled
+		lipResolveTargetDir = restoreLipResolveTargetDir
 		instanceBackupFetchLeviLaminaVersionDB = restoreFetchLLDB
 	})
 
@@ -1068,7 +994,7 @@ func TestRestoreInstanceBackupModsTreatsLegacyThreePartVersionAsUnsupported(t *t
 		t.Fatalf("expected partial result, got %+v", result)
 	}
 	if lipChecked {
-		t.Fatalf("lip runtime should not be checked for legacy three-part versions")
+		t.Fatalf("lip should not be queried for legacy three-part versions")
 	}
 	scopeResult := result.ScopeResults[0]
 	if !containsString(scopeResult.Warnings, "ERR_LL_NOT_SUPPORTED") {

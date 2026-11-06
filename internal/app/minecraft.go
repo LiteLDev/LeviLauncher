@@ -283,6 +283,8 @@ func (a *Minecraft) GetLIPPackageReadme(projectURL string) (string, error) {
 	return lip.FetchPackageReadme(projectURL)
 }
 
+// InstallLip is kept for frontend compatibility. lip is built into the
+// launcher now, so there is nothing to download or install.
 func (a *Minecraft) InstallLip() string {
 	return lip.Install()
 }
@@ -307,6 +309,8 @@ func (a *Minecraft) GetLipVersion() string {
 	return lip.GetVersion()
 }
 
+// IsLipInstalled is kept for frontend compatibility. lip is built into the
+// launcher now, so this always reports true.
 func (a *Minecraft) IsLipInstalled() bool {
 	return lip.IsInstalled()
 }

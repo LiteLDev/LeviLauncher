@@ -2623,17 +2623,6 @@ func restoreInstanceBackupMods(
 		return result
 	}
 
-	if !lipIsInstalled() {
-		result.Warnings = []string{"ERR_LIP_NOT_INSTALLED"}
-		result.Details = formatInstanceBackupLIPPackageDetails(lipPackages)
-		if successUnits > 0 {
-			result.Status = "partial"
-			return result
-		}
-		result.ErrorCode = "ERR_LIP_NOT_INSTALLED"
-		return result
-	}
-
 	explicitPackages := make([]types.InstanceBackupModsLIPPackage, 0, len(lipPackages))
 	for _, item := range lipPackages {
 		if item.ExplicitInstalled {

@@ -153,13 +153,19 @@ const xzX86BCJ = "fd377a585a000004e6d6b44602010400210116000d86351fe00fff04e25d00
 // [FILTER_DELTA dist 1, FILTER_LZMA2], which SharpCompress does not decode.
 const xzDelta = "fd377a585a0000016922de3602010301002101167920c4ee01000464010708ed00000000d9fe439600011905bce8eccb9042990d010000000001595a"
 
+// xzX86Offset is "bcj offset" compressed by Python's lzma with filters
+// [FILTER_X86 start_offset 64, FILTER_LZMA2 preset 0], whose start offset
+// SharpCompress rejects ("X86 properties offset is not supported").
+const xzX86Offset = "fd377a585a0000016922de36030104044000000021010c00a415a60501000962636a206f6666736574000000c6ef28350001220a151ae1679042990d010000000001595a"
+
 func TestZipXZFilters(t *testing.T) {
 	content := bcjContent()
-	bcj, delta := mustHex(t, xzX86BCJ), mustHex(t, xzDelta)
+	bcj, delta, offset := mustHex(t, xzX86BCJ), mustHex(t, xzDelta), mustHex(t, xzX86Offset)
 	s, err := OpenArchive("zip", zipWith(t, []*zip.FileHeader{
 		rawHeader("a.dll", zipXZ, content, bcj),
 		rawHeader("delta", zipXZ, []byte("delta"), delta),
-	}, [][]byte{bcj, delta}))
+		rawHeader("offset", zipXZ, []byte("bcj offset"), offset),
+	}, [][]byte{bcj, delta, offset}))
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -169,6 +175,44 @@ func TestZipXZFilters(t *testing.T) {
 	}
 	if _, _, err := readEntryAlloc(t, s, "delta"); err == nil || !strings.Contains(err.Error(), "Delta filter is not supported") {
 		t.Errorf("delta: err = %v, want the Delta filter rejected", err)
+	}
+	if _, _, err := readEntryAlloc(t, s, "offset"); err == nil || !strings.Contains(err.Error(), "BCJ filter start offset is not supported") {
+		t.Errorf("offset: err = %v, want the start offset rejected", err)
+	}
+}
+
+// byteReader is an endless stream of one byte.
+type byteReader byte
+
+func (b byteReader) Read(p []byte) (int, error) {
+	for i := range p {
+		p[i] = byte(b)
+	}
+	return len(p), nil
+}
+
+func TestZipXZIndexStreamed(t *testing.T) {
+	// A stream header, then an index claiming 2^63-1 records followed by
+	// 200 MiB of one-byte varints: the limiter must pass the index on as
+	// it parses it rather than hold it until the last record.
+	header := []byte("\xFD7zXZ\x00\x00\x01")
+	header = binary.LittleEndian.AppendUint32(header, crc32.ChecksumIEEE(header[6:8]))
+	index := []byte{0, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x7F}
+	raw := io.MultiReader(bytes.NewReader(header), bytes.NewReader(index), io.LimitReader(byteReader(1), 200<<20))
+	var before, after runtime.MemStats
+	runtime.GC()
+	runtime.ReadMemStats(&before)
+	rc, err := newZipXZReader(raw, 1000)
+	if err == nil {
+		_, err = io.Copy(io.Discard, rc)
+		rc.Close()
+	}
+	runtime.ReadMemStats(&after)
+	if err == nil {
+		t.Error("err = nil, want the index rejected")
+	}
+	if grew := after.TotalAlloc - before.TotalAlloc; grew > 32<<20 {
+		t.Errorf("reading allocated %d MiB", grew>>20)
 	}
 }
 

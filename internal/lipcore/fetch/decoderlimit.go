@@ -139,13 +139,17 @@ type xzDictLimiter struct {
 	need      uint64 // dictionary needed for the declared size
 	state     int
 	checkSize int64
-	data      int64 // compressed bytes of the current block
+	data      int64  // compressed bytes of the current block
+	idxLeft   uint64 // index varints left after the record count
+	idxSize   int64  // index bytes so far
 }
 
 const (
 	xzStreamHeader = iota
 	xzBlockOrIndex
 	xzChunk
+	xzIndexCount
+	xzIndexRecord
 	xzStreamEnd
 )
 
@@ -185,12 +189,14 @@ func (l *xzDictLimiter) next() error {
 			return nil
 		}
 		if c == 0 {
-			l.readIndex()
+			l.state, l.idxSize = xzIndexCount, 1
 			return nil
 		}
 		return l.blockHeader(c)
 	case xzChunk:
 		l.chunk()
+	case xzIndexCount, xzIndexRecord:
+		l.indexVarint()
 	case xzStreamEnd:
 		// Stream padding (zero bytes), then EOF or another stream.
 		switch pk, err := l.br.Peek(1); {
@@ -241,7 +247,13 @@ func (l *xzDictLimiter) blockHeader(size byte) error {
 		case id == xzFilterDelta:
 			return errors.New("xz: the Delta filter is not supported")
 		case i < filters-1 && xzFilterX86 <= id && id <= xzFilterSPARC:
-			pos += props // start offset, checked by the decoder
+			// SharpCompress's BCJ filters take no start offset.
+			if props == 4 {
+				return errors.New("xz: BCJ filter start offset is not supported")
+			}
+			if props != 0 {
+				return errors.New("xz: BCJ filter properties have an unexpected length")
+			}
 		case i == filters-1 && id == xzFilterLZMA2 && props == 1 && pos < len(body):
 			p := body[pos]
 			if p > lzma2MaxDictProp {
@@ -295,35 +307,35 @@ func (l *xzDictLimiter) chunk() {
 	}
 }
 
-// readIndex copies the index after its indicator byte (xz format 4), then
-// the stream footer.
-func (l *xzDictLimiter) readIndex() {
-	size := int64(1)
-	uvarint := func() (uint64, bool) {
-		var v uint64
-		for i := 0; i < 9; i++ {
-			c, ok := l.readByte()
-			if !ok {
-				return 0, false
-			}
-			size++
-			v |= uint64(c&0x7F) << (7 * i)
-			if c&0x80 == 0 {
-				return v, true
-			}
+// indexVarint copies one variable-length integer of the index (xz format
+// 4) after its indicator byte: the record count, then two per record. One
+// step parses one integer, so the index is never buffered whole.
+func (l *xzDictLimiter) indexVarint() {
+	var v uint64
+	for i := 0; ; i++ {
+		if i == 9 {
+			l.pass = true
+			return
 		}
-		l.pass = true
-		return 0, false
+		c, ok := l.readByte()
+		if !ok {
+			return
+		}
+		l.idxSize++
+		v |= uint64(c&0x7F) << (7 * i)
+		if c&0x80 == 0 {
+			break
+		}
 	}
-	records, ok := uvarint()
-	for i := uint64(0); ok && i < 2*records; i++ {
-		_, ok = uvarint()
+	if l.state == xzIndexCount {
+		l.state, l.idxLeft = xzIndexRecord, 2*v // v < 2^63
+	} else {
+		l.idxLeft--
 	}
-	if !ok {
-		return
+	if l.idxLeft == 0 {
+		l.skip = (4-l.idxSize%4)%4 + 4 + 12 // padding, CRC32, stream footer
+		l.state = xzStreamEnd
 	}
-	l.skip = (4-size%4)%4 + 4 + 12 // padding, CRC32, stream footer
-	l.state = xzStreamEnd
 }
 
 // skipUvarint returns the position after the xz variable-length integer

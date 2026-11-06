@@ -190,6 +190,97 @@ func New(dir, githubProxy string, r report.Reporter) (*Engine, error) {
 
 func (e *Engine) rep() report.Reporter { return report.OrNop(e.Reporter) }
 
+// engineBar sends the updates of one engine-level bar (resolve, task).
+// Every value comes from counted work. Methods are no-ops on a nil bar (no
+// bar is shown) and after done, so a deferred done backs up an explicit one.
+type engineBar struct {
+	rep    report.Reporter
+	p      report.Progress
+	closed bool
+}
+
+// newBar opens a bar with a random GUID id (like download bars) and reports
+// its first update (Current 0).
+func (e *Engine) newBar(stage report.Stage, unit report.Unit, message string, total int64) *engineBar {
+	b := &engineBar{
+		rep: e.rep(),
+		p:   report.Progress{ID: newGUID(), Stage: stage, Message: message, Total: total, Unit: unit},
+	}
+	report.Report(b.rep, b.p)
+	return b
+}
+
+// update reports cur as the amount done, working on item when not empty.
+func (b *engineBar) update(cur int64, item string) {
+	if b == nil || b.closed {
+		return
+	}
+	b.p.Current = cur
+	if item != "" {
+		b.p.Item = item
+	}
+	report.Report(b.rep, b.p)
+}
+
+// step reports cur package steps done, now working on pkg.
+func (b *engineBar) step(cur int64, pkg, message string) {
+	if b == nil || b.closed {
+		return
+	}
+	b.p.Package = pkg
+	b.p.Message = message
+	b.update(cur, pkg)
+}
+
+// done reports the last update of the bar with the amount done so far.
+func (b *engineBar) done() {
+	if b == nil || b.closed {
+		return
+	}
+	b.closed = true
+	b.p.Done = true
+	report.Report(b.rep, b.p)
+}
+
+// doneAt is done with cur as the amount done (when it is more than the
+// amount last reported), so a bar ended early still counts finished work.
+func (b *engineBar) doneAt(cur int64) {
+	if b == nil || b.closed {
+		return
+	}
+	if cur > b.p.Current {
+		b.p.Current = cur
+	}
+	b.done()
+}
+
+// openTaskBar opens the StageTask bar over n package steps, or returns nil
+// (no bar) for a dry run, which applies nothing, or an empty plan.
+func (e *Engine) openTaskBar(n int, dryRun bool) *engineBar {
+	if dryRun || n == 0 {
+		return nil
+	}
+	return e.newBar(report.StageTask, report.UnitPackages, "Applying package changes", int64(n))
+}
+
+// manifestCounter wraps the registry the solver reads, counting the
+// distinct manifests read into the solve bar (whose total is unknown: the
+// dependency graph is discovered while solving).
+type manifestCounter struct {
+	pkgRegistry
+	bar  *engineBar
+	seen map[manifest.PackageSpec]bool
+}
+
+func (c *manifestCounter) manifest(ctx context.Context, spec manifest.PackageSpec) (*manifest.Manifest, error) {
+	m, err := c.pkgRegistry.manifest(ctx, spec)
+	if err == nil && !c.seen[spec] {
+		c.seen[spec] = true
+		c.bar.update(int64(len(c.seen)), spec.String())
+	}
+	return m, err
+}
+
 // artifact is lip's PackageArtifact: a resolved spec plus its package
 // source (the git tree of the tag).
 type artifact struct {
@@ -217,10 +308,15 @@ func (e *Engine) Install(ctx context.Context, packages []string, dryRun, ignoreS
 
 	if noDependencies {
 		e.rep().Warning("--no-dependencies is enabled. This operation may result in a broken workspace.")
-		for _, a := range arts {
+		bar := e.openTaskBar(len(arts), dryRun)
+		done := 0
+		defer func() { bar.doneAt(int64(done)) }()
+		for i, a := range arts {
+			bar.step(int64(i), a.spec.String(), "Installing "+a.spec.String())
 			if err := e.installPackage(ctx, ops, a, dryRun, true); err != nil {
 				return err
 			}
+			done = i + 1
 		}
 		return nil
 	}
@@ -304,14 +400,19 @@ func (e *Engine) Uninstall(ctx context.Context, packages []string, dryRun, ignor
 
 	if noDependencies {
 		e.rep().Warning("--no-dependencies is enabled. This operation may result in a broken workspace.")
-		for _, p := range packages {
+		bar := e.openTaskBar(len(packages), dryRun)
+		done := 0
+		defer func() { bar.doneAt(int64(done)) }()
+		for i, p := range packages {
 			id, err := e.parseID(p)
 			if err != nil {
 				return err
 			}
+			bar.step(int64(i), id.String(), "Uninstalling "+id.String())
 			if err := e.uninstallPackage(ctx, ops, id, dryRun); err != nil {
 				return err
 			}
+			done = i + 1
 		}
 		return nil
 	}
@@ -346,14 +447,38 @@ func (e *Engine) Uninstall(ctx context.Context, packages []string, dryRun, ignor
 	if err != nil {
 		return err
 	}
-	for i := len(installed) - 1; i >= 0; i-- {
-		if !containsSpec(newInstalled, installed[i]) {
-			if err := e.uninstallPackage(ctx, ops, installed[i].ID, dryRun); err != nil {
-				return err
-			}
-		}
+	removals := removedPackages(installed, newInstalled)
+	if err := e.uninstallAll(ctx, ops, removals, dryRun); err != nil {
+		return err
 	}
 	return e.reconcileExplicitness(newInstalled, newExplicit, explicit, dryRun)
+}
+
+// uninstallAll uninstalls packages in order under a StageTask bar.
+func (e *Engine) uninstallAll(ctx context.Context, ops PackageOps, packages []manifest.PackageSpec, dryRun bool) error {
+	bar := e.openTaskBar(len(packages), dryRun)
+	done := 0
+	defer func() { bar.doneAt(int64(done)) }()
+	for i, p := range packages {
+		bar.step(int64(i), p.String(), "Uninstalling "+p.String())
+		if err := e.uninstallPackage(ctx, ops, p.ID, dryRun); err != nil {
+			return err
+		}
+		done = i + 1
+	}
+	return nil
+}
+
+// removedPackages returns the installed packages missing from newInstalled
+// in reverse (topological) order, the order they are uninstalled in.
+func removedPackages(installed, newInstalled []manifest.PackageSpec) []manifest.PackageSpec {
+	var out []manifest.PackageSpec
+	for i := len(installed) - 1; i >= 0; i-- {
+		if !containsSpec(newInstalled, installed[i]) {
+			out = append(out, installed[i])
+		}
+	}
+	return out
 }
 
 // List returns installed packages as "path#variant@version" (variant part
@@ -394,18 +519,29 @@ func (e *Engine) CacheClean(ctx context.Context) error {
 // Like lip, a dry run does not remove anything from the lock, so a dry-run
 // version change fails at the install step with "Cannot install package ...
 // because it is already installed with version ...". This is kept for parity.
+//
+// The StageTask bar counts both steps: removals, then installs.
 func (e *Engine) applySolution(ctx context.Context, ops PackageOps, arts []artifact, installed, newInstalled, newExplicit []manifest.PackageSpec, dryRun bool) error {
-	for i := len(installed) - 1; i >= 0; i-- {
-		if !containsSpec(newInstalled, installed[i]) {
-			if err := e.uninstallPackage(ctx, ops, installed[i].ID, dryRun); err != nil {
-				return err
-			}
+	removals := removedPackages(installed, newInstalled)
+	var installs []manifest.PackageSpec
+	for _, np := range newInstalled {
+		if !containsSpec(installed, np) {
+			installs = append(installs, np)
 		}
 	}
-	for _, np := range newInstalled {
-		if containsSpec(installed, np) {
-			continue
+	bar := e.openTaskBar(len(removals)+len(installs), dryRun)
+	done := int64(0)
+	defer func() { bar.doneAt(done) }()
+
+	for _, p := range removals {
+		bar.step(done, p.String(), "Uninstalling "+p.String())
+		if err := e.uninstallPackage(ctx, ops, p.ID, dryRun); err != nil {
+			return err
 		}
+		done++
+	}
+	for _, np := range installs {
+		bar.step(done, np.String(), "Installing "+np.String())
 		a, ok := findArtifact(arts, np)
 		if !ok {
 			src, err := e.Registry.OpenAsset(ctx, np, selfAsset)
@@ -417,6 +553,7 @@ func (e *Engine) applySolution(ctx context.Context, ops PackageOps, arts []artif
 		if err := e.installPackage(ctx, ops, a, dryRun, containsSpec(newExplicit, np)); err != nil {
 			return err
 		}
+		done++
 	}
 	return nil
 }
@@ -500,7 +637,7 @@ func (e *Engine) installPackage(ctx context.Context, ops PackageOps, a artifact,
 		}
 		return src, nil
 	}
-	files, err := ops.InstallPackage(ctx, variant, open)
+	files, err := ops.InstallPackage(workspace.WithPackage(ctx, a.spec.String()), variant, open)
 	if err != nil {
 		return err
 	}
@@ -592,7 +729,7 @@ func (e *Engine) uninstallPackage(ctx context.Context, ops PackageOps, id manife
 	if err != nil {
 		return err
 	}
-	if err := ops.UninstallPackage(ctx, variant, files); err != nil {
+	if err := ops.UninstallPackage(workspace.WithPackage(ctx, existing.String()), variant, files); err != nil {
 		return err
 	}
 	return e.removeInstalledPackage(existing)
@@ -651,10 +788,17 @@ func (e *Engine) parseSpec(s string) (manifest.PackageSpec, error) {
 	return spec, nil
 }
 
-// resolveArtifacts ports InstallService.ResolvePackageArtifacts.
+// resolveArtifacts ports InstallService.ResolvePackageArtifacts. It reports
+// a StageResolve bar over the requested packages resolved.
 func (e *Engine) resolveArtifacts(ctx context.Context, specs []manifest.PackageSpec, flexible []manifest.PackageID) ([]artifact, error) {
+	var bar *engineBar
+	if n := len(specs) + len(flexible); n > 0 {
+		bar = e.newBar(report.StageResolve, report.UnitPackages, "Resolving packages", int64(n))
+		defer bar.done()
+	}
 	var arts []artifact
 	for _, spec := range specs {
+		bar.update(int64(len(arts)), spec.String())
 		src, err := e.Registry.OpenAsset(ctx, spec, selfAsset)
 		if err != nil {
 			return nil, err
@@ -662,6 +806,7 @@ func (e *Engine) resolveArtifacts(ctx context.Context, specs []manifest.PackageS
 		arts = append(arts, artifact{spec: spec, source: src})
 	}
 	for _, id := range flexible {
+		bar.update(int64(len(arts)), id.String())
 		e.rep().Info(fmt.Sprintf("Getting available versions for package '%s'...", id))
 		spec, err := e.latestVersion(ctx, id)
 		if err != nil {
@@ -673,6 +818,7 @@ func (e *Engine) resolveArtifacts(ctx context.Context, specs []manifest.PackageS
 		}
 		arts = append(arts, artifact{spec: spec, source: src})
 	}
+	bar.update(int64(len(arts)), "")
 	for i, a := range arts {
 		for _, b := range arts[i+1:] {
 			if a.spec.ID == b.spec.ID {
@@ -696,8 +842,14 @@ func (e *Engine) latestVersion(ctx context.Context, id manifest.PackageID) (mani
 	return manifest.PackageSpec{ID: id, Version: versions[len(versions)-1].String()}, nil
 }
 
-// solve runs the dependency solver with exact requirements on roots.
+// solve runs the dependency solver with exact requirements on roots. It
+// reports an indeterminate StageResolve bar counting the distinct manifests
+// read.
 func (e *Engine) solve(ctx context.Context, reg pkgRegistry, roots []manifest.PackageSpec) ([]manifest.PackageSpec, error) {
+	bar := e.newBar(report.StageResolve, report.UnitPackages, "Resolving dependencies", 0)
+	defer bar.done()
+	reg = &manifestCounter{pkgRegistry: reg, bar: bar, seen: map[manifest.PackageSpec]bool{}}
+
 	reqs := make([]solver.Requirement, 0, len(roots))
 	for _, r := range roots {
 		v, err := e.Hooks.ParseVersion(r.Version)

@@ -15,6 +15,7 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"sync/atomic"
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/manifest"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/report"
@@ -58,6 +59,9 @@ type Workspace struct {
 	IgnoreScripts bool
 	// RunCommand defaults to DefaultCommandRunner when nil.
 	RunCommand CommandRunner
+
+	// barSeq numbers the progress bars this Workspace opens.
+	barSeq atomic.Int64
 }
 
 // Target is one file to place: source key -> path relative to Dir.
@@ -197,12 +201,58 @@ func (w *Workspace) InstallPackage(ctx context.Context, variant *manifest.Varian
 	}
 
 	// Step 1: Run pre-install scripts.
-	if err := w.runScripts(ctx, variant.Scripts.PreInstall); err != nil {
+	if err := w.runScripts(ctx, "pre_install", variant.Scripts.PreInstall); err != nil {
 		return nil, err
 	}
 
 	// Step 2: Place files.
-	files = []string{}
+	files, err = w.place(ctx, plan)
+	if err != nil {
+		return files, err
+	}
+
+	// Step 3: Run post-install scripts.
+	if err := w.runScripts(ctx, "install", variant.Scripts.Install); err != nil {
+		return files, err
+	}
+	if err := w.runScripts(ctx, "post_install", variant.Scripts.PostInstall); err != nil {
+		return files, err
+	}
+
+	return files, nil
+}
+
+// place prefetches and copies every planned file and returns the full paths
+// placed, in order (those placed so far on an error). It reports a
+// StagePlace bar counting bytes when the size of every placed entry is known
+// (Sizer), files otherwise.
+func (w *Workspace) place(ctx context.Context, plan []plannedAsset) ([]string, error) {
+	files := []string{}
+	nFiles := 0
+	for _, a := range plan {
+		nFiles += len(a.matches)
+	}
+	if nFiles == 0 {
+		return files, nil
+	}
+
+	var bar *progressBar
+	var counter *byteCounter
+	if totalBytes, ok := planSize(plan); ok {
+		bar = w.newBar(ctx, report.StagePlace, report.UnitBytes, "Placing files", totalBytes)
+		counter = newByteCounter(bar, totalBytes)
+	} else {
+		bar = w.newBar(ctx, report.StagePlace, report.UnitFiles, "Placing files", int64(nFiles))
+	}
+	// The last update counts what was copied, also on an error.
+	defer func() {
+		if counter != nil {
+			bar.doneAt(counter.cur)
+		} else {
+			bar.doneAt(int64(len(files)))
+		}
+	}()
+
 	for _, a := range plan {
 		if err := a.src.Prefetch(ctx, distinctKeys(a.matches)); err != nil {
 			return files, err
@@ -212,22 +262,41 @@ func (w *Workspace) InstallPackage(ctx context.Context, variant *manifest.Varian
 			if err := ctx.Err(); err != nil {
 				return files, err
 			}
-			if err := copyToFile(a.src, m.Key, a.targets[i]); err != nil {
+			var count func(int64)
+			if counter != nil {
+				counter.startFile(m.Dest)
+				count = counter.add
+			} else {
+				bar.update(int64(len(files)), m.Dest)
+			}
+			if err := copyToFile(a.src, m.Key, a.targets[i], count); err != nil {
 				return files, err
 			}
 			files = append(files, a.targets[i])
 		}
 	}
-
-	// Step 3: Run post-install scripts.
-	if err := w.runScripts(ctx, variant.Scripts.Install); err != nil {
-		return files, err
-	}
-	if err := w.runScripts(ctx, variant.Scripts.PostInstall); err != nil {
-		return files, err
-	}
-
 	return files, nil
+}
+
+// planSize returns the total size of the planned matches (an entry matched
+// twice is copied twice) and whether every size is known and the total is
+// positive.
+func planSize(plan []plannedAsset) (int64, bool) {
+	var total int64
+	for _, a := range plan {
+		sizer, ok := a.src.(Sizer)
+		if !ok {
+			return 0, false
+		}
+		for _, m := range a.matches {
+			n, ok := sizer.Size(m.Key)
+			if !ok || n < 0 {
+				return 0, false
+			}
+			total += n
+		}
+	}
+	return total, total > 0
 }
 
 // plannedAsset is an opened asset with at least one match and the full
@@ -291,8 +360,9 @@ func distinctKeys(matches []Target) []string {
 
 // copyToFile ports the body of lip's placement loop: open the source entry,
 // then FileSystemExtensions.CreateFileWithDirectory (create the parent
-// directory, create or truncate the file) and copy.
-func copyToFile(src Source, key, target string) error {
+// directory, create or truncate the file) and copy. count, when not nil,
+// receives the number of bytes written as they are written.
+func copyToFile(src Source, key, target string, count func(int64)) error {
 	r, err := src.Open(key)
 	if err != nil {
 		return err
@@ -308,7 +378,11 @@ func copyToFile(src Source, key, target string) error {
 	if err != nil {
 		return err
 	}
-	if _, err := io.Copy(f, r); err != nil {
+	var dst io.Writer = f
+	if count != nil {
+		dst = &countingWriter{w: f, add: count}
+	}
+	if _, err := io.Copy(dst, r); err != nil {
 		f.Close()
 		return err
 	}
@@ -344,18 +418,49 @@ func (w *Workspace) UninstallPackage(ctx context.Context, variant *manifest.Vari
 	}
 
 	// Step 1: Run pre-uninstall scripts.
-	if err := w.runScripts(ctx, variant.Scripts.PreUninstall); err != nil {
+	if err := w.runScripts(ctx, "pre_uninstall", variant.Scripts.PreUninstall); err != nil {
 		return err
 	}
-	if err := w.runScripts(ctx, variant.Scripts.Uninstall); err != nil {
+	if err := w.runScripts(ctx, "uninstall", variant.Scripts.Uninstall); err != nil {
 		return err
 	}
 
 	// Step 2: Remove placed files.
 	contained := w.containment()
-	for _, file := range files {
+	if err := w.removeRecorded(ctx, files, preserve, contained, rep); err != nil {
+		return err
+	}
+
+	// Step 3: Remove the files specified to be removed.
+	for i, g := range remove {
+		if err := w.removeMatching(ctx, variant.RemoveFiles[i], g, contained, rep); err != nil {
+			return err
+		}
+	}
+
+	// Step 4: Run post-uninstall scripts.
+	return w.runScripts(ctx, "post_uninstall", variant.Scripts.PostUninstall)
+}
+
+// removeRecorded deletes the recorded files that no preserve glob matches,
+// reporting a StageRemove bar over the recorded files (preserved and
+// skipped files count as processed).
+func (w *Workspace) removeRecorded(ctx context.Context, files []string, preserve []Matcher, contained *containment, rep report.Reporter) error {
+	if len(files) == 0 {
+		return nil
+	}
+	bar := w.newBar(ctx, report.StageRemove, report.UnitFiles, "Removing files", int64(len(files)))
+	processed := 0
+	defer func() { bar.doneAt(int64(processed)) }()
+
+	for i, file := range files {
+		processed = i
+		if err := ctx.Err(); err != nil {
+			return err
+		}
 		fullName := getFullPath(w.Dir, file)
 		relativePath := w.relativePath(fullName)
+		bar.update(int64(i), relativePath)
 		name := pathGetFileName(file)
 
 		// Also match the bare file name so that older manifests relying on
@@ -386,16 +491,8 @@ func (w *Workspace) UninstallPackage(ctx context.Context, variant *manifest.Vari
 			return err
 		}
 	}
-
-	// Step 3: Remove the files specified to be removed.
-	for _, g := range remove {
-		if err := w.removeMatching(g, contained, rep); err != nil {
-			return err
-		}
-	}
-
-	// Step 4: Run post-uninstall scripts.
-	return w.runScripts(ctx, variant.Scripts.PostUninstall)
+	processed = len(files)
+	return nil
 }
 
 func (w *Workspace) compileAll(patterns []string) ([]Matcher, error) {
@@ -416,19 +513,27 @@ func (w *Workspace) compileAll(patterns []string) ([]Matcher, error) {
 	return out, nil
 }
 
-// removeMatching deletes every entry under Dir matched by g that contained
-// accepts.
-func (w *Workspace) removeMatching(g Matcher, contained *containment, rep report.Reporter) error {
+// removeMatching deletes every entry under Dir matched by g (compiled from
+// pattern) that contained accepts. It reports a StageRemove bar that is
+// indeterminate during the walk, then counts the matched entries processed.
+func (w *Workspace) removeMatching(ctx context.Context, pattern string, g Matcher, contained *containment, rep report.Reporter) error {
 	type entry struct {
 		path  string
 		depth int
 	}
 	var toRemove []entry
 
+	bar := w.newBar(ctx, report.StageRemove, report.UnitFiles, fmt.Sprintf("Removing files matching '%s'", pattern), 0)
+	processed := 0
+	defer func() { bar.doneAt(int64(processed)) }()
+
 	root := getFullPath(w.Dir, ".")
 	rootPrefix := strings.TrimRight(toSlash(root), "/") + "/"
 	err := filepath.WalkDir(root, func(p string, d fs.DirEntry, err error) error {
 		if err != nil {
+			return err
+		}
+		if err := ctx.Err(); err != nil {
 			return err
 		}
 		// Match the glob against the path relative to the working directory,
@@ -456,7 +561,13 @@ func (w *Workspace) removeMatching(g Matcher, contained *containment, rep report
 	// Delete deeper paths first so that removing a directory recursively does
 	// not invalidate the other paths collected above.
 	sort.SliceStable(toRemove, func(i, j int) bool { return toRemove[i].depth > toRemove[j].depth })
-	for _, e := range toRemove {
+	bar.setTotal(int64(len(toRemove)))
+	for i, e := range toRemove {
+		processed = i
+		if err := ctx.Err(); err != nil {
+			return err
+		}
+		bar.update(int64(i), w.relativePath(e.path))
 		if err := contained.check(e.path, false); err != nil {
 			rep.Warning(fmt.Sprintf("File '%s' is not in the workspace (%v), skipping removal.", e.path, err))
 			continue
@@ -471,6 +582,7 @@ func (w *Workspace) removeMatching(g Matcher, contained *containment, rep report
 			}
 		}
 	}
+	processed = len(toRemove)
 	return nil
 }
 
@@ -499,8 +611,10 @@ func toSlash(s string) string {
 	return s
 }
 
-func (w *Workspace) runScripts(ctx context.Context, scripts []string) error {
-	if w.IgnoreScripts {
+// runScripts runs the commands of one script hook (e.g. "pre_install"),
+// reporting a StageScripts bar over the commands finished.
+func (w *Workspace) runScripts(ctx context.Context, hook string, scripts []string) error {
+	if w.IgnoreScripts || len(scripts) == 0 {
 		return nil
 	}
 	run := w.RunCommand
@@ -508,7 +622,11 @@ func (w *Workspace) runScripts(ctx context.Context, scripts []string) error {
 		run = DefaultCommandRunner
 	}
 	rep := report.OrNop(w.Reporter)
-	for _, script := range scripts {
+	bar := w.newBar(ctx, report.StageScripts, report.UnitCommands, fmt.Sprintf("Running %s scripts", hook), int64(len(scripts)))
+	finished := 0
+	defer func() { bar.doneAt(int64(finished)) }()
+	for i, script := range scripts {
+		bar.update(int64(i), script)
 		stdout := &lineWriter{emit: rep.Info}
 		stderr := &lineWriter{emit: rep.Error}
 		err := run(ctx, w.Dir, script, stdout, stderr)
@@ -517,6 +635,7 @@ func (w *Workspace) runScripts(ctx context.Context, scripts []string) error {
 		if err != nil {
 			return err
 		}
+		finished = i + 1
 	}
 	return nil
 }

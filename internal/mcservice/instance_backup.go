@@ -49,6 +49,31 @@ var (
 
 var instanceBackupFetchLeviLaminaVersionDB = FetchLeviLaminaVersionDB
 
+// Restore reinstalls lip packages and checks their state through these, so
+// tests can observe the per-package progress without a lip daemon.
+var (
+	instanceBackupInstallLIPPackage         = InstallLIPPackage
+	instanceBackupGetLIPPackageInstallState = GetLIPPackageInstallState
+)
+
+// emitInstanceBackupRestoreProgressEvent and emitInstanceBackupCreateProgressEvent
+// deliver progress payloads to the frontend; tests replace them to record events.
+var emitInstanceBackupRestoreProgressEvent = func(payload types.InstanceBackupRestoreProgress) {
+	app := application.Get()
+	if app == nil || app.Event == nil {
+		return
+	}
+	app.Event.Emit(EventInstanceBackupRestoreProgress, payload)
+}
+
+var emitInstanceBackupCreateProgressEvent = func(payload types.InstanceBackupCreateProgress) {
+	app := application.Get()
+	if app == nil || app.Event == nil {
+		return
+	}
+	app.Event.Emit(EventInstanceBackupCreateProgress, payload)
+}
+
 func emitInstanceBackupRestoreProgress(
 	phase string,
 	currentStep int,
@@ -56,16 +81,301 @@ func emitInstanceBackupRestoreProgress(
 	scopeKey string,
 	scopeLabel string,
 ) {
-	app := application.Get()
-	if app == nil || app.Event == nil {
+	instanceBackupRestoreStep{
+		phase:       phase,
+		currentStep: currentStep,
+		totalSteps:  totalSteps,
+		scopeKey:    scopeKey,
+		scopeLabel:  scopeLabel,
+	}.emit()
+}
+
+// instanceBackupRestoreStep is the restore step in progress. Sub-progress
+// events repeat its fields so every event stands on its own.
+type instanceBackupRestoreStep struct {
+	phase       string
+	currentStep int
+	totalSteps  int
+	scopeKey    string
+	scopeLabel  string
+}
+
+func (s instanceBackupRestoreStep) payload() types.InstanceBackupRestoreProgress {
+	return types.InstanceBackupRestoreProgress{
+		Phase:       strings.TrimSpace(s.phase),
+		CurrentStep: s.currentStep,
+		TotalSteps:  s.totalSteps,
+		ScopeKey:    strings.TrimSpace(s.scopeKey),
+		ScopeLabel:  strings.TrimSpace(s.scopeLabel),
+		Ts:          time.Now().UnixMilli(),
+	}
+}
+
+func (s instanceBackupRestoreStep) emit() {
+	emitInstanceBackupRestoreProgressEvent(s.payload())
+}
+
+// subProgress opens a measured sub-progress bar inside this step. It returns
+// nil (a no-op tracker) when total is not positive.
+func (s instanceBackupRestoreStep) subProgress(unit string, total int64, threshold int64) *instanceBackupMeasuredProgress {
+	return newInstanceBackupMeasuredProgress(total, threshold, func(current int64, total int64, label string) {
+		payload := s.payload()
+		payload.SubCurrent = current
+		payload.SubTotal = total
+		payload.SubUnit = unit
+		payload.SubLabel = label
+		emitInstanceBackupRestoreProgressEvent(payload)
+	})
+}
+
+// filesProgress opens a "files" sub-progress bar and emits its first update.
+func (s instanceBackupRestoreStep) filesProgress(total int64) *instanceBackupMeasuredProgress {
+	progress := s.subProgress(instanceBackupProgressUnitFiles, total, instanceBackupCountProgressThreshold(total))
+	progress.announce("")
+	return progress
+}
+
+const (
+	instanceBackupProgressUnitBytes    = "bytes"
+	instanceBackupProgressUnitFiles    = "files"
+	instanceBackupProgressUnitPackages = "packages"
+
+	// instanceBackupProgressMaxByteStep caps the byte distance between two
+	// progress updates; see instanceBackupByteProgressThreshold.
+	instanceBackupProgressMaxByteStep = 1 << 20
+)
+
+// instanceBackupByteProgressThreshold is how many bytes must be processed
+// before another update goes out: 1% of total or 1 MiB, whichever is smaller.
+func instanceBackupByteProgressThreshold(total int64) int64 {
+	step := total / 100
+	if step > instanceBackupProgressMaxByteStep {
+		step = instanceBackupProgressMaxByteStep
+	}
+	if step < 1 {
+		step = 1
+	}
+	return step
+}
+
+// instanceBackupCountProgressThreshold is how many items (files) must finish
+// before another update goes out: 1% of total, at least one.
+func instanceBackupCountProgressThreshold(total int64) int64 {
+	step := total / 100
+	if step < 1 {
+		step = 1
+	}
+	return step
+}
+
+// instanceBackupMeasuredProgress counts finished work against a total known
+// before the work starts. Updates are throttled: one goes out when current has
+// advanced by at least threshold since the last one, on announce and on
+// finish. Values only come from counted work, never from elapsed time.
+// Every method is a no-op on a nil receiver, so callers without a bar pass nil.
+type instanceBackupMeasuredProgress struct {
+	current     int64
+	total       int64
+	threshold   int64
+	lastEmitted int64
+	emitted     bool
+	label       string
+	emit        func(current int64, total int64, label string)
+}
+
+func newInstanceBackupMeasuredProgress(
+	total int64,
+	threshold int64,
+	emit func(current int64, total int64, label string),
+) *instanceBackupMeasuredProgress {
+	if total <= 0 || emit == nil {
+		return nil
+	}
+	if threshold < 1 {
+		threshold = 1
+	}
+	return &instanceBackupMeasuredProgress{total: total, threshold: threshold, emit: emit}
+}
+
+// add records n more finished units; label names the item they belong to.
+func (p *instanceBackupMeasuredProgress) add(n int64, label string) {
+	if p == nil || n <= 0 {
 		return
 	}
-	app.Event.Emit(EventInstanceBackupRestoreProgress, types.InstanceBackupRestoreProgress{
-		Phase:       strings.TrimSpace(phase),
-		CurrentStep: currentStep,
-		TotalSteps:  totalSteps,
-		ScopeKey:    strings.TrimSpace(scopeKey),
-		ScopeLabel:  strings.TrimSpace(scopeLabel),
+	p.current += n
+	if p.current > p.total {
+		// The source grew after it was counted; keep the bar at or below 100%.
+		p.total = p.current
+	}
+	p.label = label
+	if p.current-p.lastEmitted >= p.threshold {
+		p.flush()
+	}
+}
+
+// skipEntry counts the regular files under path as handled without copying
+// them, for restore choices that keep the current copy.
+func (p *instanceBackupMeasuredProgress) skipEntry(path string) {
+	if p == nil {
+		return
+	}
+	p.add(countInstanceBackupRegularFiles(path), filepath.Base(path))
+}
+
+// announce emits the current value under a new label: the first update of a
+// bar, or the item about to be worked on.
+func (p *instanceBackupMeasuredProgress) announce(label string) {
+	if p == nil {
+		return
+	}
+	p.label = label
+	p.flush()
+}
+
+// finish emits the final value if it has not gone out yet. complete reports
+// that every counted unit has been dealt with, so units the work deliberately
+// left alone are counted as done.
+func (p *instanceBackupMeasuredProgress) finish(complete bool) {
+	if p == nil {
+		return
+	}
+	if complete && p.current < p.total {
+		p.current = p.total
+	}
+	if !p.emitted || p.lastEmitted != p.current {
+		p.flush()
+	}
+}
+
+func (p *instanceBackupMeasuredProgress) flush() {
+	p.emitted = true
+	p.lastEmitted = p.current
+	p.emit(p.current, p.total, p.label)
+}
+
+// instanceBackupCountingWriter reports every successful write to onWrite.
+type instanceBackupCountingWriter struct {
+	w       io.Writer
+	onWrite func(n int64)
+}
+
+func (c *instanceBackupCountingWriter) Write(b []byte) (int, error) {
+	n, err := c.w.Write(b)
+	if n > 0 {
+		c.onWrite(int64(n))
+	}
+	return n, err
+}
+
+// countInstanceBackupRegularFiles counts the regular files a restore copy of
+// root would write: root itself when it is a file, else the regular files
+// under it (as filepath.Walk sees them, like copyInstanceBackupDir).
+func countInstanceBackupRegularFiles(root string) int64 {
+	info, err := os.Stat(root)
+	if err != nil {
+		return 0
+	}
+	if !info.IsDir() {
+		if info.Mode().IsRegular() {
+			return 1
+		}
+		return 0
+	}
+	var count int64
+	_ = filepath.Walk(root, func(currentPath string, entry os.FileInfo, walkErr error) error {
+		if walkErr != nil || entry == nil {
+			return nil
+		}
+		if currentPath != root && entry.Mode().IsRegular() {
+			count++
+		}
+		return nil
+	})
+	return count
+}
+
+// instanceBackupCreateProgress tracks BackupInstance's "writing" phase. Totals
+// come from a dry run of the same writer (see instanceBackupZipSink); files
+// and bytes count what was actually written. Methods are no-ops on nil.
+type instanceBackupCreateProgress struct {
+	files       int
+	totalFiles  int
+	bytes       int64
+	totalBytes  int64
+	currentFile string
+	fileStep    int
+	byteStep    int64
+	lastFiles   int
+	lastBytes   int64
+}
+
+func newInstanceBackupCreateProgress(totalFiles int, totalBytes int64) *instanceBackupCreateProgress {
+	return &instanceBackupCreateProgress{
+		totalFiles: totalFiles,
+		totalBytes: totalBytes,
+		fileStep:   int(instanceBackupCountProgressThreshold(int64(totalFiles))),
+		byteStep:   instanceBackupByteProgressThreshold(totalBytes),
+	}
+}
+
+func (p *instanceBackupCreateProgress) startFile(name string) {
+	if p == nil {
+		return
+	}
+	p.currentFile = name
+}
+
+func (p *instanceBackupCreateProgress) addBytes(n int64) {
+	if p == nil || n <= 0 {
+		return
+	}
+	p.bytes += n
+	if p.bytes > p.totalBytes {
+		p.totalBytes = p.bytes
+	}
+	p.maybeEmit()
+}
+
+func (p *instanceBackupCreateProgress) finishFile() {
+	if p == nil {
+		return
+	}
+	p.files++
+	if p.files > p.totalFiles {
+		p.totalFiles = p.files
+	}
+	p.maybeEmit()
+}
+
+func (p *instanceBackupCreateProgress) maybeEmit() {
+	if p.files-p.lastFiles >= p.fileStep || p.bytes-p.lastBytes >= p.byteStep {
+		p.emit("writing")
+	}
+}
+
+// done emits the final event once the archive is closed. The totals become
+// the written values, which only differ from the scan when a source file
+// changed size in between.
+func (p *instanceBackupCreateProgress) done() {
+	if p == nil {
+		return
+	}
+	p.totalFiles = p.files
+	p.totalBytes = p.bytes
+	p.currentFile = ""
+	p.emit("done")
+}
+
+func (p *instanceBackupCreateProgress) emit(phase string) {
+	p.lastFiles = p.files
+	p.lastBytes = p.bytes
+	emitInstanceBackupCreateProgressEvent(types.InstanceBackupCreateProgress{
+		Phase:       phase,
+		Files:       p.files,
+		TotalFiles:  p.totalFiles,
+		Bytes:       p.bytes,
+		TotalBytes:  p.totalBytes,
+		CurrentFile: p.currentFile,
 		Ts:          time.Now().UnixMilli(),
 	})
 }
@@ -202,6 +512,33 @@ func BackupInstance(name string, request types.InstanceBackupRequest) types.Inst
 		rawModFolders = collectInstanceBackupRawModFolders(ctx.modsPath, lipPackages)
 	}
 
+	// Size the archive with a dry run of the writer below, so the progress
+	// totals cover exactly the files it will write.
+	emitInstanceBackupCreateProgressEvent(types.InstanceBackupCreateProgress{
+		Phase: "scanning",
+		Ts:    time.Now().UnixMilli(),
+	})
+	plan := instanceBackupWritePlan{
+		ctx:            ctx,
+		selectedScopes: selectedScopes,
+		scopeModes:     scopeModes,
+		rawModFolders:  rawModFolders,
+	}
+	if containsString(selectedScopes, instanceBackupScopeGameData) && scopeModes[instanceBackupScopeGameData] != instanceBackupModeFull {
+		entries, _, err := collectInstanceBackupSafeGameDataEntries(ctx.gameDataPath, ctx.packageType)
+		if err != nil {
+			result.ErrorCode = mapInstanceBackupErrorCode(err)
+			return result
+		}
+		plan.safeGameDataEntries = entries
+	}
+	scan := &instanceBackupZipSink{}
+	if err := writeInstanceBackupScopes(scan, plan); err != nil {
+		result.ErrorCode = mapInstanceBackupScopesErrorCode(err)
+		return result
+	}
+	progress := newInstanceBackupCreateProgress(scan.files, scan.bytes)
+
 	now := time.Now()
 	safeName := sanitizeInstanceBackupSegment(ctx.info.Name, "instance")
 	archivePath := filepath.Join(
@@ -251,71 +588,12 @@ func BackupInstance(name string, request types.InstanceBackupRequest) types.Inst
 		return result
 	}
 
-	for _, key := range selectedScopes {
-		switch key {
-		case instanceBackupScopeGameData:
-			mode := scopeModes[key]
-			if mode == instanceBackupModeFull {
-				if err := writeNamedDirToZip(zw, instanceBackupScopeGameData, ctx.gameDataPath); err != nil {
-					_ = zw.Close()
-					zipClosed = true
-					result.ErrorCode = mapInstanceBackupErrorCode(err)
-					return result
-				}
-				continue
-			}
-			if err := writeZipDirEntry(zw, instanceBackupScopeGameData); err != nil {
-				_ = zw.Close()
-				zipClosed = true
-				result.ErrorCode = mapInstanceBackupErrorCode(err)
-				return result
-			}
-			entries, _, err := collectInstanceBackupSafeGameDataEntries(ctx.gameDataPath, ctx.packageType)
-			if err != nil {
-				_ = zw.Close()
-				zipClosed = true
-				result.ErrorCode = mapInstanceBackupErrorCode(err)
-				return result
-			}
-			for _, entry := range entries {
-				if err := writeInstanceBackupSourceEntryToZip(zw, entry); err != nil {
-					_ = zw.Close()
-					zipClosed = true
-					result.ErrorCode = mapInstanceBackupErrorCode(err)
-					return result
-				}
-			}
-		case instanceBackupScopeMods:
-			if err := writeZipDirEntry(zw, "mods"); err != nil {
-				_ = zw.Close()
-				zipClosed = true
-				result.ErrorCode = mapInstanceBackupErrorCode(err)
-				return result
-			}
-			if err := writeZipDirEntry(zw, "mods/raw"); err != nil {
-				_ = zw.Close()
-				zipClosed = true
-				result.ErrorCode = mapInstanceBackupErrorCode(err)
-				return result
-			}
-			for _, folder := range rawModFolders {
-				srcDir := filepath.Join(ctx.modsPath, folder)
-				if !utils.DirExists(srcDir) {
-					continue
-				}
-				if err := writeNamedDirToZip(zw, path.Join("mods", "raw", folder), srcDir); err != nil {
-					_ = zw.Close()
-					zipClosed = true
-					result.ErrorCode = mapInstanceBackupErrorCode(err)
-					return result
-				}
-			}
-		default:
-			_ = zw.Close()
-			zipClosed = true
-			result.ErrorCode = "ERR_INSTANCE_BACKUP_INVALID_SCOPE"
-			return result
-		}
+	progress.emit("writing")
+	if err := writeInstanceBackupScopes(&instanceBackupZipSink{zw: zw, progress: progress}, plan); err != nil {
+		_ = zw.Close()
+		zipClosed = true
+		result.ErrorCode = mapInstanceBackupScopesErrorCode(err)
+		return result
 	}
 
 	if err := zw.Close(); err != nil {
@@ -331,6 +609,9 @@ func BackupInstance(name string, request types.InstanceBackupRequest) types.Inst
 	}
 	fileClosed = true
 
+	// Only a finished archive reports "done"; failures above emit nothing more
+	// and surface through the returned ErrorCode.
+	progress.done()
 	success = true
 	result.ArchivePath = archivePath
 	result.IncludedScopes = append([]string{}, selectedScopes...)
@@ -409,7 +690,7 @@ func PreviewInstanceBackupRestoreConflicts(name string, request types.InstanceBa
 	}
 	defer os.RemoveAll(tempDir)
 
-	if err := extractInstanceBackupArchive(trimmedArchivePath, tempDir); err != nil {
+	if err := extractInstanceBackupArchive(trimmedArchivePath, tempDir, nil); err != nil {
 		info.ErrorCode = mapInstanceBackupRestoreErrorCode(err)
 		return info
 	}
@@ -476,8 +757,11 @@ func RestoreInstanceBackup(ctx context.Context, name string, request types.Insta
 	}
 	defer os.RemoveAll(tempDir)
 
-	emitInstanceBackupRestoreProgress("extracting", 2, totalSteps, "", "")
-	if err := extractInstanceBackupArchive(trimmedArchivePath, tempDir); err != nil {
+	extracting := instanceBackupRestoreStep{phase: "extracting", currentStep: 2, totalSteps: totalSteps}
+	extracting.emit()
+	if err := extractInstanceBackupArchive(trimmedArchivePath, tempDir, func(total int64) *instanceBackupMeasuredProgress {
+		return extracting.subProgress(instanceBackupProgressUnitBytes, total, instanceBackupByteProgressThreshold(total))
+	}); err != nil {
 		result.ErrorCode = mapInstanceBackupRestoreErrorCode(err)
 		return result
 	}
@@ -519,19 +803,20 @@ func RestoreInstanceBackup(ctx context.Context, name string, request types.Insta
 	partialCount := 0
 	for index, key := range selectedScopes {
 		scopeLabel := instanceBackupScopeLabel(key, archive.info.Type)
-		emitInstanceBackupRestoreProgress(
-			"restoring_scope",
-			index+3,
-			totalSteps,
-			key,
-			scopeLabel,
-		)
+		step := instanceBackupRestoreStep{
+			phase:       "restoring_scope",
+			currentStep: index + 3,
+			totalSteps:  totalSteps,
+			scopeKey:    key,
+			scopeLabel:  scopeLabel,
+		}
+		step.emit()
 		var scopeResult types.InstanceBackupRestoreScopeResult
 		switch key {
 		case instanceBackupScopeGameData:
-			scopeResult = restoreInstanceBackupGameData(tempDir, archive, target, resolutionByID)
+			scopeResult = restoreInstanceBackupGameData(tempDir, archive, target, resolutionByID, step)
 		case instanceBackupScopeMods:
-			scopeResult = restoreInstanceBackupMods(ctx, name, tempDir, archive, target, resolutionByID)
+			scopeResult = restoreInstanceBackupMods(ctx, name, tempDir, archive, target, resolutionByID, step)
 		default:
 			scopeResult = types.InstanceBackupRestoreScopeResult{
 				Key:       key,
@@ -1045,6 +1330,78 @@ func collectInstanceBackupSafeGameDataEntries(gameDataPath string, packageTypes 
 	return collected, totalSize, nil
 }
 
+// errInstanceBackupUnknownScope marks a selected scope the writer does not know.
+var errInstanceBackupUnknownScope = errors.New("instance backup unknown scope")
+
+// instanceBackupWritePlan is everything writeInstanceBackupScopes needs, fixed
+// before the dry run so both passes see the same input.
+type instanceBackupWritePlan struct {
+	ctx                 instanceBackupContext
+	selectedScopes      []string
+	scopeModes          map[string]string
+	safeGameDataEntries []instanceBackupSourceEntry
+	rawModFolders       []string
+}
+
+// instanceBackupZipSink receives the scope entries of a backup archive. With
+// a nil zw it is a dry run that writes nothing and only counts the files and
+// content bytes the real pass would write; BackupInstance runs the same
+// traversal both ways so the progress totals match the archive.
+type instanceBackupZipSink struct {
+	zw       *zip.Writer
+	files    int
+	bytes    int64
+	progress *instanceBackupCreateProgress
+}
+
+func mapInstanceBackupScopesErrorCode(err error) string {
+	if errors.Is(err, errInstanceBackupUnknownScope) {
+		return "ERR_INSTANCE_BACKUP_INVALID_SCOPE"
+	}
+	return mapInstanceBackupErrorCode(err)
+}
+
+func writeInstanceBackupScopes(sink *instanceBackupZipSink, plan instanceBackupWritePlan) error {
+	for _, key := range plan.selectedScopes {
+		switch key {
+		case instanceBackupScopeGameData:
+			if plan.scopeModes[key] == instanceBackupModeFull {
+				if err := writeNamedDirToZip(sink, instanceBackupScopeGameData, plan.ctx.gameDataPath); err != nil {
+					return err
+				}
+				continue
+			}
+			if err := writeZipDirEntry(sink, instanceBackupScopeGameData); err != nil {
+				return err
+			}
+			for _, entry := range plan.safeGameDataEntries {
+				if err := writeInstanceBackupSourceEntryToZip(sink, entry); err != nil {
+					return err
+				}
+			}
+		case instanceBackupScopeMods:
+			if err := writeZipDirEntry(sink, "mods"); err != nil {
+				return err
+			}
+			if err := writeZipDirEntry(sink, "mods/raw"); err != nil {
+				return err
+			}
+			for _, folder := range plan.rawModFolders {
+				srcDir := filepath.Join(plan.ctx.modsPath, folder)
+				if !utils.DirExists(srcDir) {
+					continue
+				}
+				if err := writeNamedDirToZip(sink, path.Join("mods", "raw", folder), srcDir); err != nil {
+					return err
+				}
+			}
+		default:
+			return errInstanceBackupUnknownScope
+		}
+	}
+	return nil
+}
+
 func writeInstanceBackupManifestToZip(zw *zip.Writer, manifest instanceBackupManifest) error {
 	data, err := json.MarshalIndent(manifest, "", "  ")
 	if err != nil {
@@ -1065,7 +1422,7 @@ func writeInstanceBackupManifestToZip(zw *zip.Writer, manifest instanceBackupMan
 	return nil
 }
 
-func writeInstanceBackupSourceEntryToZip(zw *zip.Writer, entry instanceBackupSourceEntry) error {
+func writeInstanceBackupSourceEntryToZip(zw *instanceBackupZipSink, entry instanceBackupSourceEntry) error {
 	info, err := os.Stat(entry.SourcePath)
 	if err != nil {
 		return wrapInstanceBackupReadError(err)
@@ -1076,7 +1433,7 @@ func writeInstanceBackupSourceEntryToZip(zw *zip.Writer, entry instanceBackupSou
 	return writeFileToZip(zw, entry.ArchivePath, entry.SourcePath, info)
 }
 
-func writeNamedDirToZip(zw *zip.Writer, alias string, srcDir string) error {
+func writeNamedDirToZip(zw *instanceBackupZipSink, alias string, srcDir string) error {
 	cleanAlias := normalizeInstanceBackupArchiveName(alias)
 	cleanSource := filepath.Clean(strings.TrimSpace(srcDir))
 	if cleanAlias == "" || cleanSource == "" {
@@ -1112,7 +1469,7 @@ func writeNamedDirToZip(zw *zip.Writer, alias string, srcDir string) error {
 	})
 }
 
-func writeNamedDirToZipSkippingEmptyDirs(zw *zip.Writer, alias string, srcDir string) error {
+func writeNamedDirToZipSkippingEmptyDirs(zw *instanceBackupZipSink, alias string, srcDir string) error {
 	cleanAlias := normalizeInstanceBackupArchiveName(alias)
 	cleanSource := filepath.Clean(strings.TrimSpace(srcDir))
 	if cleanAlias == "" || cleanSource == "" {
@@ -1140,7 +1497,7 @@ func writeNamedDirToZipSkippingEmptyDirs(zw *zip.Writer, alias string, srcDir st
 	return writeNamedDirContentsToZipSkippingEmptyDirs(zw, cleanAlias, cleanSource)
 }
 
-func writeNamedDirContentsToZipSkippingEmptyDirs(zw *zip.Writer, alias string, srcDir string) error {
+func writeNamedDirContentsToZipSkippingEmptyDirs(zw *instanceBackupZipSink, alias string, srcDir string) error {
 	entries, err := os.ReadDir(srcDir)
 	if err != nil {
 		return wrapInstanceBackupReadError(err)
@@ -1221,14 +1578,19 @@ func instanceBackupDirContainsPayload(dir string) (bool, error) {
 	return false, nil
 }
 
-func writeFileToZip(zw *zip.Writer, archiveName string, srcPath string, info os.FileInfo) error {
+func writeFileToZip(zw *instanceBackupZipSink, archiveName string, srcPath string, info os.FileInfo) error {
 	header, err := zip.FileInfoHeader(info)
 	if err != nil {
 		return wrapInstanceBackupWriteError(err)
 	}
 	header.Name = normalizeInstanceBackupArchiveName(archiveName)
 	header.Method = zip.Deflate
-	writer, err := zw.CreateHeader(header)
+	if zw.zw == nil {
+		zw.files++
+		zw.bytes += info.Size()
+		return nil
+	}
+	writer, err := zw.zw.CreateHeader(header)
 	if err != nil {
 		return wrapInstanceBackupWriteError(err)
 	}
@@ -1237,23 +1599,35 @@ func writeFileToZip(zw *zip.Writer, archiveName string, srcPath string, info os.
 		return wrapInstanceBackupReadError(err)
 	}
 	defer file.Close()
-	if _, err := io.Copy(writer, file); err != nil {
+	zw.progress.startFile(header.Name)
+	var dst io.Writer = writer
+	if zw.progress != nil {
+		dst = &instanceBackupCountingWriter{w: writer, onWrite: zw.progress.addBytes}
+	}
+	written, err := io.Copy(dst, file)
+	if err != nil {
 		return wrapInstanceBackupWriteError(err)
 	}
+	zw.files++
+	zw.bytes += written
+	zw.progress.finishFile()
 	return nil
 }
 
-func writeZipDirEntry(zw *zip.Writer, archiveName string) error {
+func writeZipDirEntry(zw *instanceBackupZipSink, archiveName string) error {
 	cleanName := normalizeInstanceBackupArchiveName(archiveName)
 	if cleanName == "" {
 		return wrapInstanceBackupWriteError(os.ErrInvalid)
+	}
+	if zw.zw == nil {
+		return nil
 	}
 	header := &zip.FileHeader{
 		Name:   cleanName + "/",
 		Method: zip.Store,
 	}
 	header.SetMode(os.ModeDir | 0o755)
-	if _, err := zw.CreateHeader(header); err != nil {
+	if _, err := zw.zw.CreateHeader(header); err != nil {
 		return wrapInstanceBackupWriteError(err)
 	}
 	return nil
@@ -2093,6 +2467,7 @@ func restoreInstanceBackupPathChoice(
 	destPath string,
 	relativePath string,
 	resolutionByID map[string]string,
+	progress *instanceBackupMeasuredProgress,
 ) error {
 	sourceInfo, err := os.Stat(sourcePath)
 	if err != nil {
@@ -2101,7 +2476,7 @@ func restoreInstanceBackupPathChoice(
 	_, err = os.Stat(destPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return copyEntryExact(sourcePath, destPath)
+			return copyEntryExact(sourcePath, destPath, progress)
 		}
 		return wrapInstanceBackupWriteTargetError(err)
 	}
@@ -2114,12 +2489,13 @@ func restoreInstanceBackupPathChoice(
 		return wrapInstanceBackupWriteTargetError(os.ErrInvalid)
 	}
 	if choice == instanceBackupRestoreChoiceCurrent {
+		progress.skipEntry(sourcePath)
 		return nil
 	}
 	if err := os.RemoveAll(destPath); err != nil {
 		return wrapInstanceBackupWriteTargetError(err)
 	}
-	return copyEntryExact(sourcePath, destPath)
+	return copyEntryExact(sourcePath, destPath, progress)
 }
 
 func restoreInstanceBackupGameData(
@@ -2127,6 +2503,7 @@ func restoreInstanceBackupGameData(
 	archive instanceBackupArchive,
 	target instanceBackupContext,
 	resolutionByID map[string]string,
+	step instanceBackupRestoreStep,
 ) types.InstanceBackupRestoreScopeResult {
 	result := types.InstanceBackupRestoreScopeResult{
 		Key:    instanceBackupScopeGameData,
@@ -2155,25 +2532,32 @@ func restoreInstanceBackupGameData(
 			result.ErrorCode = "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET"
 			return result
 		}
+		// Every file under sourceRoot is either copied or deliberately kept.
+		progress := step.filesProgress(countInstanceBackupRegularFiles(sourceRoot))
 		var err error
 		if len(resolutionByID) > 0 {
-			err = restoreInstanceBackupGameDataWithResolutions(sourceRoot, targetRoot, "", resolutionByID)
+			err = restoreInstanceBackupGameDataWithResolutions(sourceRoot, targetRoot, "", resolutionByID, progress)
 		} else {
-			err = copyDirContents(sourceRoot, targetRoot)
+			err = copyDirContents(sourceRoot, targetRoot, progress)
 		}
 		if err != nil {
 			result.ErrorCode = "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET"
 			return result
 		}
+		progress.finish(true)
 		result.Status = "success"
 		return result
 	}
 
 	var err error
 	if len(resolutionByID) > 0 {
-		err = restoreInstanceBackupGameDataWithResolutions(sourceRoot, targetRoot, "", resolutionByID)
+		progress := step.filesProgress(countInstanceBackupRegularFiles(sourceRoot))
+		err = restoreInstanceBackupGameDataWithResolutions(sourceRoot, targetRoot, "", resolutionByID, progress)
+		if err == nil {
+			progress.finish(true)
+		}
 	} else {
-		err = restoreInstanceBackupSafeGameData(sourceRoot, targetRoot, target.packageType)
+		err = restoreInstanceBackupSafeGameDataWithProgress(sourceRoot, targetRoot, step.filesProgress, target.packageType)
 	}
 	if err != nil {
 		result.ErrorCode = "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET"
@@ -2183,7 +2567,18 @@ func restoreInstanceBackupGameData(
 	return result
 }
 
-func restoreInstanceBackupSafeGameData(sourceRoot string, targetRoot string, packageTypes ...string) error {
+// instanceBackupSafeRestoreRoot is one whitelisted root a safe gameData
+// restore copies from the extracted backup into the instance.
+type instanceBackupSafeRestoreRoot struct {
+	source   string
+	dest     string
+	rootName string
+}
+
+// collectInstanceBackupSafeRestoreRoots lists the roots a safe gameData
+// restore copies, in copy order. Restore and its progress total share it.
+func collectInstanceBackupSafeRestoreRoots(sourceRoot string, targetRoot string, packageTypes ...string) ([]instanceBackupSafeRestoreRoot, error) {
+	var roots []instanceBackupSafeRestoreRoot
 	if len(packageTypes) > 0 && packageTypes[0] == "uwp" {
 		mojangRoot := filepath.Join(sourceRoot, "games", "com.mojang")
 		for _, rootName := range instanceBackupSafeBedrockRoots {
@@ -2191,21 +2586,23 @@ func restoreInstanceBackupSafeGameData(sourceRoot string, targetRoot string, pac
 			if _, err := os.Stat(src); errors.Is(err, os.ErrNotExist) {
 				continue
 			} else if err != nil {
-				return wrapInstanceBackupWriteTargetError(err)
+				return nil, wrapInstanceBackupWriteTargetError(err)
 			}
-			if err := restoreInstanceBackupSafeRoot(src, filepath.Join(targetRoot, "games", "com.mojang", rootName), rootName); err != nil {
-				return err
-			}
+			roots = append(roots, instanceBackupSafeRestoreRoot{
+				source:   src,
+				dest:     filepath.Join(targetRoot, "games", "com.mojang", rootName),
+				rootName: rootName,
+			})
 		}
-		return nil
+		return roots, nil
 	}
 	usersRoot := filepath.Join(sourceRoot, "Users")
 	if !utils.DirExists(usersRoot) {
-		return nil
+		return nil, nil
 	}
 	userEntries, err := os.ReadDir(usersRoot)
 	if err != nil {
-		return wrapInstanceBackupWriteTargetError(err)
+		return nil, wrapInstanceBackupWriteTargetError(err)
 	}
 	for _, userEntry := range userEntries {
 		if !userEntry.IsDir() {
@@ -2220,17 +2617,51 @@ func restoreInstanceBackupSafeGameData(sourceRoot string, targetRoot string, pac
 			if !utils.FileExists(srcRoot) && !utils.DirExists(srcRoot) {
 				continue
 			}
-			destRoot := filepath.Join(targetRoot, "Users", userName, "games", "com.mojang", rootName)
-			if err := restoreInstanceBackupSafeRoot(srcRoot, destRoot, rootName); err != nil {
-				return err
-			}
+			roots = append(roots, instanceBackupSafeRestoreRoot{
+				source:   srcRoot,
+				dest:     filepath.Join(targetRoot, "Users", userName, "games", "com.mojang", rootName),
+				rootName: rootName,
+			})
 		}
 	}
+	return roots, nil
+}
+
+func restoreInstanceBackupSafeGameData(sourceRoot string, targetRoot string, packageTypes ...string) error {
+	return restoreInstanceBackupSafeGameDataWithProgress(sourceRoot, targetRoot, nil, packageTypes...)
+}
+
+// restoreInstanceBackupSafeGameDataWithProgress restores the whitelisted
+// roots. newProgress, when set, opens a files bar sized to those roots.
+func restoreInstanceBackupSafeGameDataWithProgress(
+	sourceRoot string,
+	targetRoot string,
+	newProgress func(total int64) *instanceBackupMeasuredProgress,
+	packageTypes ...string,
+) error {
+	roots, err := collectInstanceBackupSafeRestoreRoots(sourceRoot, targetRoot, packageTypes...)
+	if err != nil {
+		return err
+	}
+	var progress *instanceBackupMeasuredProgress
+	if newProgress != nil {
+		var total int64
+		for _, root := range roots {
+			total += countInstanceBackupRegularFiles(root.source)
+		}
+		progress = newProgress(total)
+	}
+	for _, root := range roots {
+		if err := restoreInstanceBackupSafeRoot(root.source, root.dest, root.rootName, progress); err != nil {
+			return err
+		}
+	}
+	progress.finish(true)
 	return nil
 }
 
 func restoreInstanceBackupSafeGameDataWithResolutions(sourceRoot string, targetRoot string, resolutionByID map[string]string) error {
-	return restoreInstanceBackupGameDataWithResolutions(sourceRoot, targetRoot, "", resolutionByID)
+	return restoreInstanceBackupGameDataWithResolutions(sourceRoot, targetRoot, "", resolutionByID, nil)
 }
 
 func restoreInstanceBackupGameDataWithResolutions(
@@ -2238,6 +2669,7 @@ func restoreInstanceBackupGameDataWithResolutions(
 	targetPath string,
 	relativePath string,
 	resolutionByID map[string]string,
+	progress *instanceBackupMeasuredProgress,
 ) error {
 	sourceInfo, err := os.Stat(sourcePath)
 	if err != nil {
@@ -2246,7 +2678,7 @@ func restoreInstanceBackupGameDataWithResolutions(
 	targetInfo, err := os.Stat(targetPath)
 	if err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return copyEntryExact(sourcePath, targetPath)
+			return copyEntryExact(sourcePath, targetPath, progress)
 		}
 		return wrapInstanceBackupWriteTargetError(err)
 	}
@@ -2256,7 +2688,7 @@ func restoreInstanceBackupGameDataWithResolutions(
 		normalizedPath = normalizeInstanceBackupRestoreConflictPath(relativePath, sourceInfo.Name())
 	}
 	if sourceInfo.IsDir() && targetInfo.IsDir() {
-		return restoreInstanceBackupGameDataChildren(sourcePath, targetPath, normalizedPath, resolutionByID)
+		return restoreInstanceBackupGameDataChildren(sourcePath, targetPath, normalizedPath, resolutionByID, progress)
 	}
 
 	return restoreInstanceBackupPathChoice(
@@ -2265,17 +2697,19 @@ func restoreInstanceBackupGameDataWithResolutions(
 		targetPath,
 		normalizedPath,
 		resolutionByID,
+		progress,
 	)
 }
 
 func restoreInstanceBackupGameDataChildren(
 	sourceRoot, targetRoot, rootRelativePath string,
 	resolutionByID map[string]string,
+	progress *instanceBackupMeasuredProgress,
 ) error {
 	packRootName, isPackRoot := matchInstanceBackupGameDataPackRoot(rootRelativePath)
 	isWorldRoot := isInstanceBackupGameDataWorldRoot(rootRelativePath)
 	if (isPackRoot || isWorldRoot) && !utils.DirExists(targetRoot) {
-		return copyEntryExact(sourceRoot, targetRoot)
+		return copyEntryExact(sourceRoot, targetRoot, progress)
 	}
 	entries, err := os.ReadDir(sourceRoot)
 	if err != nil {
@@ -2291,17 +2725,17 @@ func restoreInstanceBackupGameDataChildren(
 		relativePath := path.Join(rootRelativePath, name)
 		switch {
 		case !isWorldRoot && !isPackRoot:
-			err = restoreInstanceBackupGameDataWithResolutions(sourcePath, targetPath, relativePath, resolutionByID)
+			err = restoreInstanceBackupGameDataWithResolutions(sourcePath, targetPath, relativePath, resolutionByID, progress)
 		case !entry.IsDir():
-			err = restoreInstanceBackupPathChoice(instanceBackupScopeGameData, sourcePath, targetPath, relativePath, resolutionByID)
+			err = restoreInstanceBackupPathChoice(instanceBackupScopeGameData, sourcePath, targetPath, relativePath, resolutionByID, progress)
 		case isWorldRoot:
-			err = restoreInstanceBackupWorldFolderWithResolutions(sourcePath, targetPath, relativePath, resolutionByID)
+			err = restoreInstanceBackupWorldFolderWithResolutions(sourcePath, targetPath, relativePath, resolutionByID, progress)
 		default:
 			meta, ok := readInstanceBackupPackMetadata(sourcePath, packRootName, relativePath)
 			if ok {
-				err = restoreInstanceBackupPackEntityWithResolutions(meta, targetRoot, rootRelativePath, packRootName, resolutionByID)
+				err = restoreInstanceBackupPackEntityWithResolutions(meta, targetRoot, rootRelativePath, packRootName, resolutionByID, progress)
 			} else {
-				err = restoreInstanceBackupGameDataWithResolutions(sourcePath, targetPath, relativePath, resolutionByID)
+				err = restoreInstanceBackupGameDataWithResolutions(sourcePath, targetPath, relativePath, resolutionByID, progress)
 			}
 		}
 		if err != nil {
@@ -2314,10 +2748,11 @@ func restoreInstanceBackupGameDataChildren(
 func restoreInstanceBackupWorldFolderWithResolutions(
 	sourcePath, targetPath, relativePath string,
 	resolutionByID map[string]string,
+	progress *instanceBackupMeasuredProgress,
 ) error {
 	if _, err := os.Stat(targetPath); err != nil {
 		if errors.Is(err, os.ErrNotExist) {
-			return copyEntryExact(sourcePath, targetPath)
+			return copyEntryExact(sourcePath, targetPath, progress)
 		}
 		return wrapInstanceBackupWriteTargetError(err)
 	}
@@ -2329,12 +2764,13 @@ func restoreInstanceBackupWorldFolderWithResolutions(
 		return wrapInstanceBackupWriteTargetError(os.ErrInvalid)
 	}
 	if choice == instanceBackupRestoreChoiceCurrent {
+		progress.skipEntry(sourcePath)
 		return nil
 	}
 	if err := os.RemoveAll(targetPath); err != nil {
 		return wrapInstanceBackupWriteTargetError(err)
 	}
-	return copyEntryExact(sourcePath, targetPath)
+	return copyEntryExact(sourcePath, targetPath, progress)
 }
 
 func restoreInstanceBackupPackEntityWithResolutions(
@@ -2343,6 +2779,7 @@ func restoreInstanceBackupPackEntityWithResolutions(
 	rootRelativePath string,
 	rootName string,
 	resolutionByID map[string]string,
+	progress *instanceBackupMeasuredProgress,
 ) error {
 	targetByUUID, err := scanInstanceBackupPackRootByUUID(targetRoot, rootName, rootRelativePath)
 	if err != nil {
@@ -2362,7 +2799,7 @@ func restoreInstanceBackupPackEntityWithResolutions(
 		}
 	}
 	if currentPath == "" {
-		return copyEntryExact(sourceMeta.AbsolutePath, destPath)
+		return copyEntryExact(sourceMeta.AbsolutePath, destPath, progress)
 	}
 
 	conflictID := buildInstanceBackupRestoreConflictEntityID(
@@ -2376,6 +2813,7 @@ func restoreInstanceBackupPackEntityWithResolutions(
 		return wrapInstanceBackupWriteTargetError(os.ErrInvalid)
 	}
 	if choice == instanceBackupRestoreChoiceCurrent {
+		progress.skipEntry(sourceMeta.AbsolutePath)
 		return nil
 	}
 	if err := os.RemoveAll(currentPath); err != nil {
@@ -2386,10 +2824,10 @@ func restoreInstanceBackupPackEntityWithResolutions(
 			return wrapInstanceBackupWriteTargetError(err)
 		}
 	}
-	return copyEntryExact(sourceMeta.AbsolutePath, destPath)
+	return copyEntryExact(sourceMeta.AbsolutePath, destPath, progress)
 }
 
-func restoreInstanceBackupSafeRoot(sourceRoot string, destRoot string, rootName string) error {
+func restoreInstanceBackupSafeRoot(sourceRoot string, destRoot string, rootName string, progress *instanceBackupMeasuredProgress) error {
 	info, err := os.Stat(sourceRoot)
 	if err != nil {
 		return wrapInstanceBackupWriteTargetError(err)
@@ -2398,7 +2836,7 @@ func restoreInstanceBackupSafeRoot(sourceRoot string, destRoot string, rootName 
 		if err := utils.CreateDir(filepath.Dir(destRoot)); err != nil {
 			return wrapInstanceBackupWriteTargetError(err)
 		}
-		_, err := copyEntryWithRename(sourceRoot, filepath.Dir(destRoot))
+		_, err := copyEntryWithRename(sourceRoot, filepath.Dir(destRoot), progress)
 		return err
 	}
 
@@ -2412,19 +2850,19 @@ func restoreInstanceBackupSafeRoot(sourceRoot string, destRoot string, rootName 
 	for _, child := range children {
 		srcPath := filepath.Join(sourceRoot, child.Name())
 		if rootName == "minecraftWorlds" && child.IsDir() {
-			if _, err := restoreInstanceBackupWorldDir(srcPath, destRoot); err != nil {
+			if _, err := restoreInstanceBackupWorldDir(srcPath, destRoot, progress); err != nil {
 				return err
 			}
 			continue
 		}
-		if _, err := copyEntryWithRename(srcPath, destRoot); err != nil {
+		if _, err := copyEntryWithRename(srcPath, destRoot, progress); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func restoreInstanceBackupWorldDir(sourceWorldDir string, worldsRoot string) (string, error) {
+func restoreInstanceBackupWorldDir(sourceWorldDir string, worldsRoot string, progress *instanceBackupMeasuredProgress) (string, error) {
 	if err := utils.CreateDir(worldsRoot); err != nil {
 		return "", wrapInstanceBackupWriteTargetError(err)
 	}
@@ -2434,7 +2872,7 @@ func restoreInstanceBackupWorldDir(sourceWorldDir string, worldsRoot string) (st
 		targetFolderName = uniqueEntryName(worldsRoot, sourceFolderName, true)
 	}
 	targetWorldDir := filepath.Join(worldsRoot, targetFolderName)
-	if err := utils.CopyDir(sourceWorldDir, targetWorldDir); err != nil {
+	if err := copyInstanceBackupDir(sourceWorldDir, targetWorldDir, progress); err != nil {
 		return "", wrapInstanceBackupWriteTargetError(err)
 	}
 	return targetFolderName, nil
@@ -2447,6 +2885,7 @@ func restoreInstanceBackupMods(
 	archive instanceBackupArchive,
 	target instanceBackupContext,
 	resolutionByID map[string]string,
+	step instanceBackupRestoreStep,
 ) types.InstanceBackupRestoreScopeResult {
 	result := types.InstanceBackupRestoreScopeResult{
 		Key:    instanceBackupScopeMods,
@@ -2470,6 +2909,9 @@ func restoreInstanceBackupMods(
 			result.ErrorCode = "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET"
 			return result
 		}
+		// Every raw entry is visited below, so every file under the raw root
+		// is either copied or deliberately kept.
+		progress := step.filesProgress(countInstanceBackupRegularFiles(sourceRawRoot))
 		for _, entry := range rawEntries {
 			var restoreErr error
 			if len(resolutionByID) > 0 {
@@ -2478,7 +2920,7 @@ func restoreInstanceBackupMods(
 				if entry.IsDir() {
 					if _, err := os.Stat(targetPath); err != nil {
 						if errors.Is(err, os.ErrNotExist) {
-							restoreErr = copyEntryExact(sourcePath, targetPath)
+							restoreErr = copyEntryExact(sourcePath, targetPath, progress)
 						} else {
 							restoreErr = wrapInstanceBackupWriteTargetError(err)
 						}
@@ -2496,8 +2938,10 @@ func restoreInstanceBackupMods(
 							if err := os.RemoveAll(targetPath); err != nil {
 								restoreErr = wrapInstanceBackupWriteTargetError(err)
 							} else {
-								restoreErr = copyEntryExact(sourcePath, targetPath)
+								restoreErr = copyEntryExact(sourcePath, targetPath, progress)
 							}
+						} else {
+							progress.skipEntry(sourcePath)
 						}
 					}
 				} else {
@@ -2507,10 +2951,11 @@ func restoreInstanceBackupMods(
 						targetPath,
 						entry.Name(),
 						resolutionByID,
+						progress,
 					)
 				}
 			} else {
-				_, restoreErr = restoreInstanceBackupRawModEntry(filepath.Join(sourceRawRoot, entry.Name()), target.modsPath)
+				_, restoreErr = restoreInstanceBackupRawModEntry(filepath.Join(sourceRawRoot, entry.Name()), target.modsPath, progress)
 			}
 			if restoreErr != nil {
 				result.ErrorCode = "ERR_INSTANCE_BACKUP_RESTORE_WRITE_TARGET"
@@ -2518,6 +2963,7 @@ func restoreInstanceBackupMods(
 			}
 			successUnits++
 		}
+		progress.finish(true)
 	}
 
 	lipPackages := cloneInstanceBackupModsLIPPackages(archive.manifest.LIPPackages)
@@ -2543,14 +2989,21 @@ func restoreInstanceBackupMods(
 		return strings.ToLower(explicitPackages[i].Identifier) < strings.ToLower(explicitPackages[j].Identifier)
 	})
 
+	// One "packages" bar over the explicit packages: before each install it
+	// names the package, after each install (successful or not) it counts it.
+	packageProgress := step.subProgress(instanceBackupProgressUnitPackages, int64(len(explicitPackages)), 1)
 	failedInstalls := make([]string, 0)
 	for _, item := range explicitPackages {
-		if errCode := InstallLIPPackage(ctx, targetName, item.Identifier, item.Version); errCode != "" {
+		packageProgress.announce(item.Identifier)
+		errCode := instanceBackupInstallLIPPackage(ctx, targetName, item.Identifier, item.Version)
+		packageProgress.add(1, item.Identifier)
+		if errCode != "" {
 			failedInstalls = append(failedInstalls, fmt.Sprintf("%s@%s (%s)", item.Identifier, item.Version, errCode))
 			continue
 		}
 		successUnits++
 	}
+	packageProgress.finish(false)
 	if len(failedInstalls) > 0 {
 		result.Warnings = append(result.Warnings, "ERR_INSTANCE_BACKUP_RESTORE_LIP_INSTALL_FAILED")
 		result.Details = append(result.Details, failedInstalls...)
@@ -2558,7 +3011,7 @@ func restoreInstanceBackupMods(
 
 	missingPackages := make([]string, 0)
 	for _, item := range lipPackages {
-		state := GetLIPPackageInstallState(ctx, targetName, item.Identifier)
+		state := instanceBackupGetLIPPackageInstallState(ctx, targetName, item.Identifier)
 		if !state.Installed {
 			missingPackages = append(missingPackages, fmt.Sprintf("%s@%s", item.Identifier, item.Version))
 			continue
@@ -2623,7 +3076,15 @@ func readInstanceBackupZipFile(files []*zip.File, name string) ([]byte, error) {
 	return nil, os.ErrNotExist
 }
 
-func extractInstanceBackupArchive(archivePath string, destDir string) error {
+// extractInstanceBackupArchive extracts the backup into destDir. newProgress,
+// when set, is called once with the summed uncompressed size of the entries
+// to extract (from the zip central directory) and the bar it returns counts
+// the bytes written.
+func extractInstanceBackupArchive(
+	archivePath string,
+	destDir string,
+	newProgress func(total int64) *instanceBackupMeasuredProgress,
+) error {
 	reader, err := zip.OpenReader(strings.TrimSpace(archivePath))
 	if err != nil {
 		return wrapInstanceBackupExtractError(err)
@@ -2635,6 +3096,19 @@ func extractInstanceBackupArchive(archivePath string, destDir string) error {
 	}
 	safeRoot, _ := filepath.Abs(destDir)
 	safeRoot = strings.ToLower(strings.TrimRight(safeRoot, string(os.PathSeparator)))
+
+	var progress *instanceBackupMeasuredProgress
+	if newProgress != nil {
+		var total int64
+		for _, file := range reader.File {
+			if normalizeInstanceBackupZipEntryName(file.Name) == "" || file.FileInfo().IsDir() || strings.HasSuffix(file.Name, "/") {
+				continue
+			}
+			total += int64(file.UncompressedSize64)
+		}
+		progress = newProgress(total)
+		progress.announce("")
+	}
 
 	for _, file := range reader.File {
 		name := normalizeInstanceBackupZipEntryName(file.Name)
@@ -2669,7 +3143,11 @@ func extractInstanceBackupArchive(archivePath string, destDir string) error {
 			rc.Close()
 			return wrapInstanceBackupExtractError(err)
 		}
-		if _, err := io.Copy(out, rc); err != nil {
+		var dst io.Writer = out
+		if progress != nil {
+			dst = &instanceBackupCountingWriter{w: out, onWrite: func(n int64) { progress.add(n, name) }}
+		}
+		if _, err := io.Copy(dst, rc); err != nil {
 			out.Close()
 			rc.Close()
 			return wrapInstanceBackupExtractError(err)
@@ -2682,10 +3160,11 @@ func extractInstanceBackupArchive(archivePath string, destDir string) error {
 			return wrapInstanceBackupExtractError(err)
 		}
 	}
+	progress.finish(false)
 	return nil
 }
 
-func copyDirContents(src string, dst string) error {
+func copyDirContents(src string, dst string, progress *instanceBackupMeasuredProgress) error {
 	if err := utils.CreateDir(dst); err != nil {
 		return wrapInstanceBackupWriteTargetError(err)
 	}
@@ -2694,14 +3173,14 @@ func copyDirContents(src string, dst string) error {
 		return wrapInstanceBackupWriteTargetError(err)
 	}
 	for _, entry := range entries {
-		if err := copyEntryExact(filepath.Join(src, entry.Name()), filepath.Join(dst, entry.Name())); err != nil {
+		if err := copyEntryExact(filepath.Join(src, entry.Name()), filepath.Join(dst, entry.Name()), progress); err != nil {
 			return err
 		}
 	}
 	return nil
 }
 
-func restoreInstanceBackupRawModEntry(src string, destDir string) (string, error) {
+func restoreInstanceBackupRawModEntry(src string, destDir string, progress *instanceBackupMeasuredProgress) (string, error) {
 	if err := utils.CreateDir(destDir); err != nil {
 		return "", wrapInstanceBackupWriteTargetError(err)
 	}
@@ -2710,13 +3189,13 @@ func restoreInstanceBackupRawModEntry(src string, destDir string) (string, error
 		return "", wrapInstanceBackupWriteTargetError(err)
 	}
 	if !info.IsDir() {
-		return copyEntryWithRename(src, destDir)
+		return copyEntryWithRename(src, destDir, progress)
 	}
 
 	targetName := info.Name()
 	targetPath := filepath.Join(destDir, targetName)
 	if !utils.DirExists(targetPath) && !utils.FileExists(targetPath) {
-		if err := copyEntryExact(src, targetPath); err != nil {
+		if err := copyEntryExact(src, targetPath, progress); err != nil {
 			return "", err
 		}
 		return targetName, nil
@@ -2728,16 +3207,16 @@ func restoreInstanceBackupRawModEntry(src string, destDir string) (string, error
 		if err := os.RemoveAll(targetPath); err != nil {
 			return "", wrapInstanceBackupWriteTargetError(err)
 		}
-		if err := copyEntryExact(src, targetPath); err != nil {
+		if err := copyEntryExact(src, targetPath, progress); err != nil {
 			return "", err
 		}
 		return targetName, nil
 	}
 
-	return copyEntryWithRename(src, destDir)
+	return copyEntryWithRename(src, destDir, progress)
 }
 
-func copyEntryWithRename(src string, destDir string) (string, error) {
+func copyEntryWithRename(src string, destDir string, progress *instanceBackupMeasuredProgress) (string, error) {
 	if err := utils.CreateDir(destDir); err != nil {
 		return "", wrapInstanceBackupWriteTargetError(err)
 	}
@@ -2749,27 +3228,27 @@ func copyEntryWithRename(src string, destDir string) (string, error) {
 	if utils.FileExists(filepath.Join(destDir, targetName)) || utils.DirExists(filepath.Join(destDir, targetName)) {
 		targetName = uniqueEntryName(destDir, targetName, info.IsDir())
 	}
-	if err := copyEntryExact(src, filepath.Join(destDir, targetName)); err != nil {
+	if err := copyEntryExact(src, filepath.Join(destDir, targetName), progress); err != nil {
 		return "", err
 	}
 	return targetName, nil
 }
 
-func copyEntryExact(src string, dst string) error {
+func copyEntryExact(src string, dst string, progress *instanceBackupMeasuredProgress) error {
 	info, err := os.Stat(src)
 	if err != nil {
 		return wrapInstanceBackupWriteTargetError(err)
 	}
 	if info.IsDir() {
-		if err := utils.CopyDir(src, dst); err != nil {
+		if err := copyInstanceBackupDir(src, dst, progress); err != nil {
 			return wrapInstanceBackupWriteTargetError(err)
 		}
 		return nil
 	}
-	return copyFileToTarget(src, dst, info.Mode())
+	return copyFileToTarget(src, dst, info.Mode(), progress)
 }
 
-func copyFileToTarget(src string, dst string, mode os.FileMode) error {
+func copyFileToTarget(src string, dst string, mode os.FileMode, progress *instanceBackupMeasuredProgress) error {
 	if err := utils.CreateDir(filepath.Dir(dst)); err != nil {
 		return wrapInstanceBackupWriteTargetError(err)
 	}
@@ -2792,7 +3271,66 @@ func copyFileToTarget(src string, dst string, mode os.FileMode) error {
 	if err := out.Close(); err != nil {
 		return wrapInstanceBackupWriteTargetError(err)
 	}
+	progress.add(1, filepath.Base(src))
 	return nil
+}
+
+// copyInstanceBackupDir copies a directory tree exactly like utils.CopyDir
+// (regular files only, directories 0755, file modes kept) and counts each
+// copied file in progress.
+func copyInstanceBackupDir(src string, dst string, progress *instanceBackupMeasuredProgress) error {
+	src = filepath.Clean(strings.TrimSpace(src))
+	dst = filepath.Clean(strings.TrimSpace(dst))
+	if src == "" || dst == "" {
+		return os.ErrInvalid
+	}
+	info, err := os.Stat(src)
+	if err != nil {
+		return err
+	}
+	if !info.IsDir() {
+		return os.ErrInvalid
+	}
+	if err := os.MkdirAll(dst, 0755); err != nil {
+		return err
+	}
+	return filepath.Walk(src, func(currentPath string, info os.FileInfo, err error) error {
+		if err != nil {
+			return err
+		}
+		rel, err := filepath.Rel(src, currentPath)
+		if err != nil {
+			return err
+		}
+		if rel == "." {
+			return nil
+		}
+		target := filepath.Join(dst, rel)
+		if info.IsDir() {
+			return os.MkdirAll(target, 0755)
+		}
+		if !info.Mode().IsRegular() {
+			return nil
+		}
+		if err := os.MkdirAll(filepath.Dir(target), 0755); err != nil {
+			return err
+		}
+		in, err := os.Open(currentPath)
+		if err != nil {
+			return err
+		}
+		defer in.Close()
+		out, err := os.OpenFile(target, os.O_CREATE|os.O_TRUNC|os.O_WRONLY, info.Mode())
+		if err != nil {
+			return err
+		}
+		defer out.Close()
+		if _, err := io.Copy(out, in); err != nil {
+			return err
+		}
+		progress.add(1, info.Name())
+		return nil
+	})
 }
 
 func readInstanceBackupModManifest(dir string) (types.ModManifestJson, bool) {

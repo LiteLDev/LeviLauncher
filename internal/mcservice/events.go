@@ -5,4 +5,5 @@ const (
 	EventExtractDone                   = "extract.done"
 	EventExtractProgress               = "extract.progress"
 	EventInstanceBackupRestoreProgress = "instance_backup.restore.progress"
+	EventInstanceBackupCreateProgress  = "instance_backup.create.progress"
 )

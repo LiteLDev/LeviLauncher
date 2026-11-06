@@ -202,16 +202,26 @@ func iriKeepsEscaped(v byte) bool {
 //   - every other escape is copied as written.
 func escapeURLPart(s string, isQuery, iri bool) string {
 	var b strings.Builder
+	// plain counts characters the IRI pass skips: EscapeUnescapeIri copies a
+	// '%' with invalid hex and the two characters after it as they are
+	// (IriHelper.cs, DecodeHexChars == c_DummyChar), so only the later
+	// escaping applies to them.
+	plain := 0
 	for i := 0; i < len(s); i++ {
 		c := s[i]
+		useIRI := iri && plain == 0
+		if plain > 0 {
+			plain--
+		}
 		if c == '%' {
 			if i+2 < len(s) {
 				hi, ok1 := unhex(s[i+1])
 				lo, ok2 := unhex(s[i+2])
 				if ok1 && ok2 {
 					v := hi<<4 | lo
+					plain = 0
 					switch {
-					case !iri || v < utf8.RuneSelf && iriKeepsEscaped(v):
+					case !useIRI || v < utf8.RuneSelf && iriKeepsEscaped(v):
 						b.WriteString(s[i : i+3])
 						i += 2
 					case isUnreserved(v):
@@ -233,6 +243,9 @@ func escapeURLPart(s string, isQuery, iri bool) string {
 					}
 					continue
 				}
+			}
+			if useIRI && i+2 < len(s) {
+				plain = 2
 			}
 			b.WriteString("%25")
 			continue

@@ -267,3 +267,22 @@ func TestNormalizeURLIRIRange(t *testing.T) {
 		}
 	}
 }
+
+// The IRI pass copies a '%' with invalid hex and the two characters after it
+// as they are (IriHelper.EscapeUnescapeIri). Like Flurl, the result is not
+// idempotent: parsing it again IRI-processes the escapes that were skipped.
+// Expected values are Flurl 4.0.0 / .NET 10 output.
+func TestNormalizeURLInvalidHexSkipsIRI(t *testing.T) {
+	tests := []struct{ in, want string }{
+		{"https://h.com/%e%c3%a9", "https://h.com/%25e%c3%a9"},
+		{"https://h.com/a%%41", "https://h.com/a%25%41"},
+		{"https://h.com/a%%3c%c3%a9", "https://h.com/a%25%3c%C3%A9"},
+		{"https://h.com/x?q=%%c3%a9", "https://h.com/x?q=%25%c3%a9"},
+		{"https://h.com/%c3%a9%%3c", "https://h.com/%C3%A9%25%3c"},
+	}
+	for _, tt := range tests {
+		if got := NormalizeURL(tt.in); got != tt.want {
+			t.Errorf("NormalizeURL(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+	}
+}

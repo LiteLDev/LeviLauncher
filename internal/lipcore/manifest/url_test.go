@@ -106,6 +106,101 @@ func TestNormalizeURL(t *testing.T) {
 	}
 }
 
+// TestNormalizeURLIRITrigger covers when System.Uri runs IRI processing
+// (Uri.CheckForUnicodeOrEscapedUnreserved over the whole URL) and what it
+// then does to the escapes of each component, the userinfo included.
+// Expected values were produced with Flurl 4.0.0 on .NET 10:
+// Url.Parse(in).ToString().
+func TestNormalizeURLIRITrigger(t *testing.T) {
+	tests := []struct{ in, want string }{
+		// Escapes of < > ^ { | } are uppercased only when something
+		// anywhere in the URL triggers IRI processing.
+		{"https://h.com/x%3cy", "https://h.com/x%3cy"},
+		{"https://h.com/x%3cy?q=%c3%a9", "https://h.com/x%3Cy?q=%C3%A9"},
+		{"https://h.com/x%3c%c3%a9", "https://h.com/x%3C%C3%A9"},
+		{"https://h.com/x%5e%c2%80", "https://h.com/x%5E%c2%80"},
+		{"https://h.com/x%3cy#%c2%80", "https://h.com/x%3Cy#%c2%80"},
+		{"https://h.com/x%3cy?q=%41", "https://h.com/x%3Cy?q=A"},
+		{"https://h.com/x%3cy?q=%e9", "https://h.com/x%3Cy?q=%e9"},
+		{"https://h.com/x%3c?q=%7e", "https://h.com/x%3C?q=~"},
+		{"https://h.com/x%3cy?q=中", "https://h.com/x%3Cy?q=%E4%B8%AD"},
+		{"https://中.com/x%3c", "https://中.com/x%3C"},
+		{"https://h.com/x%3c%ee%80%80", "https://h.com/x%3C%ee%80%80"},
+		{"https://h.com/x%3c?q=%ee%80%80", "https://h.com/x%3C?q=%EE%80%80"},
+		{"https://h.com/x%3c?q=%3c#%3c%c3%a9", "https://h.com/x%3C?q=%3C#%3C%C3%A9"},
+		{"https://h.com/a?%3c=%c3%a9", "https://h.com/a?%3C=%C3%A9"},
+		{"https://H.com/%3c?%c3%a9", "https://h.com/%3C?%C3%A9"},
+		{"https://h.com:443/x%3c%c3%a9", "https://h.com:443/x%3C%C3%A9"},
+		{"https://h.com/x%3c\\y%c3%a9", "https://h.com/x%3C/y%C3%A9"},
+		{"https://h.com/%c3%a9/../%3c", "https://h.com/%3C"},
+		{"https://h.com/%5E%7b?a=%c3%a9", "https://h.com/%5E%7B?a=%C3%A9"},
+		{"https://h.com/x%60%20%22%c3%a9", "https://h.com/x%60%20%22%C3%A9"},
+		{"https://user:p@x.com/%e9%3c", "https://user:p@x.com/%e9%3C"},
+		// Reserved and unsafe escapes keep their case.
+		{"https://h.com/x%7b%7c%7d%3e%2f%3a%5b%5c?q=%e9", "https://h.com/x%7B%7C%7D%3E%2f%3a%5b%5c?q=%e9"},
+		{"https://h.com/%c3%a9%3c%2f%5b%40%3f%23%3d%26", "https://h.com/%C3%A9%3C%2f%5b%40%3f%23%3d%26"},
+		{"https://h.com/%3c%c3%a9%2f%21", "https://h.com/%3C%C3%A9%2f%21"},
+		{"https://h.com/x%3c?q=a%2Fb%3c%c3%a9", "https://h.com/x%3C?q=a%2Fb%3C%C3%A9"},
+		{"https://h.com/x%25%3c%c3%a9", "https://h.com/x%25%3C%C3%A9"},
+		{"https://h.com/x%7f%3c%c3%a9", "https://h.com/x%7f%3C%C3%A9"},
+		{"https://h.com/x%1a%3c%c3%a9", "https://h.com/x%1a%3C%C3%A9"},
+		// Invalid hex after a '%' triggers too, unless the '%' is one of
+		// the last two characters.
+		{"https://h.com/%zz%3c", "https://h.com/%25zz%3C"},
+		{"https://h.com/x%3c%zza", "https://h.com/x%3C%25zza"},
+		{"https://h.com/x%3c?q=%zz", "https://h.com/x%3C?q=%25zz"},
+		{"https://h.com/%3c%", "https://h.com/%3c%25"},
+		{"https://h.com/%3c%4", "https://h.com/%3c%254"},
+		{"https://h.com/x%3c%z", "https://h.com/x%3c%25z"},
+		{" https://h.com/x%3c%z", "https://h.com/x%3c%25z"},
+		// Relative URLs follow the same rules.
+		{"/a%3c", "/a%3c"},
+		{"/a%3c%c3%a9", "/a%3C%C3%A9"},
+		{"a%21%3c%41", "a%21%3CA"},
+		{"/a%2f%21%3c%c3%a9", "/a%2f%21%3C%C3%A9"},
+		{"/a%21%c3%a9?b=%21%3c#%21", "/a%21%C3%A9?b=%21%3C#%21"},
+		{"/a%3c%zz", "/a%3C%25zz"},
+		{"//h.com/a%3c%c3%a9", "//h.com/a%3C%C3%A9"},
+		// The userinfo is normalized like the path.
+		{"https://u%c3%a9@h.com/a", "https://u%C3%A9@h.com/a"},
+		{"https://u%c3%a9:p@h.com/a", "https://u%C3%A9:p@h.com/a"},
+		{"https://u%e2%82%ac%e2%82@h.com/x", "https://u%E2%82%AC%e2%82@h.com/x"},
+		{"https://u%3c%c3%a9@h.com/x", "https://u%3C%C3%A9@h.com/x"},
+		{"https://u:p%3c%c3%a9@h.com/x", "https://u:p%3C%C3%A9@h.com/x"},
+		{"https://u%c3%a9@h.com/a%3c?b=%3c#%3c", "https://u%C3%A9@h.com/a%3C?b=%3C#%3C"},
+		{"https://u%3c%c3%a9@h.com/x?q=%3c", "https://u%3C%C3%A9@h.com/x?q=%3C"},
+		{"https://u%3c@h.com/x", "https://u%3c@h.com/x"},
+		{"https://u%3c@h.com", "https://u%3c@h.com"},
+		{"https://u%3c@h.com/%c3%a9", "https://u%3C@h.com/%C3%A9"},
+		{"https://u%3C@h.com/%c3%a9", "https://u%3C@h.com/%C3%A9"},
+		{"https://u%3c@h.com/%41", "https://u%3C@h.com/A"},
+		{"https://u%2f%3a%40%c3%a9@h.com/x", "https://u%2f%3a%40%C3%A9@h.com/x"},
+		{"https://u%e9@h.com/x", "https://u%e9@h.com/x"},
+		{"https://u%c2%80@h.com/x", "https://u%c2%80@h.com/x"},
+		{"https://u%ee%80%80@h.com/x", "https://u%ee%80%80@h.com/x"},
+		{"https://u;=!$&'()*+,@h.com/x", "https://u;=!$&'()*+,@h.com/x"},
+		// Not Flurl's output: when the userinfo changes length .NET also
+		// drops the character after the host (https://uA@h.coma,
+		// https://u%20v@h.comx, ...); NormalizeURL keeps the path intact.
+		{"https://u%41@h.com/a", "https://uA@h.com/a"},
+		{"https://u%7e@h.com/x", "https://u~@h.com/x"},
+		{"https://u v@h.com/x", "https://u%20v@h.com/x"},
+		{"https://u\"^|{}`@h.com/x", "https://u%22%5E%7C%7B%7D%60@h.com/x"},
+		{"https://ü%3c@h.com/x", "https://%C3%BC%3C@h.com/x"},
+		{"https://u%zz%c3%a9@h.com/x", "https://u%25zz%C3%A9@h.com/x"},
+		{"https://u%3c v@h.com/%c3%a9", "https://u%3C%20v@h.com/%C3%A9"},
+	}
+	for _, tt := range tests {
+		got := NormalizeURL(tt.in)
+		if got != tt.want {
+			t.Errorf("NormalizeURL(%q) = %q, want %q", tt.in, got, tt.want)
+		}
+		if again := NormalizeURL(got); again != got {
+			t.Errorf("NormalizeURL not idempotent for %q: %q -> %q", tt.in, got, again)
+		}
+	}
+}
+
 // TestNormalizeURLIRIRange covers every boundary of .NET's
 // IriHelper.CheckIriUnicodeRange: an escaped UTF-8 character is
 // uppercased only when System.Uri decodes it, which for private-use code

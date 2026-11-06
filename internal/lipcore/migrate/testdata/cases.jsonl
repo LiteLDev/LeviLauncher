@@ -1,0 +1,113 @@
+{"format_version":2,"tooth":"github.com/a/b","version":"v1.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"https://e.com/a b/c?x=1&y=é#frag","files":{"place":[{"src":"a*","dest":"x"},{"src":"b**","dest":"y"}],"preserve":["a/**/b","[abc]*.txt","x\\y","","{a,b}","a?b","[!a]","[a-z]"]},"dependencies":{"github.com/x/y":"1.x","github.com/x/y#":"2.x","bad path":"1","github.com/x/z":"not a range","github.com/x/w":null,"github.com/x/v#Bad":"1","github.com/x/u#ok/v_1":"^1.2"}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":""}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"HTTPS://E.COM:443/A/../b/./c.ZIP"}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"relative/path.tar.gz","dependencies":{"github.com/x/y":"1.x","github.com/x/z":"2.x","github.com/x/y":"3.x"}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[]}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","tags":[]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":1,"tags":[]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":null,"description":"d","author":null,"tags":[]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"prerequisites":{"a":1}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"Tooth":"x","info":{"name":"n2","description":"d2","author":"a","tags":["t"]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"place":[{"src":"a","dest":null}],"remove":[null]},"commands":{"pre_install":[null,"$(path)"]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"x.zip","files":{"place":[{"src":"a","dest":"b"}],"preserve":["p"]},"commands":{"post_install":["root"]},"dependencies":{"github.com/x/y":"1.x"},"platforms":[{"goos":"windows"},{"goos":"linux","goarch":"arm64","asset_url":"y.tgz","files":{"remove":["r"]},"commands":{},"dependencies":{}},{"goos":"darwin","goarch":"loong64","files":{"place":[]}},{"goos":"ios","goarch":"386"},{"goos":"android","goarch":"arm"}]}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[{"goos":"freebsd"}]}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[{"goos":"windows","goarch":""}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":{"name":"n","tags":["x",null],"author":"q"},"dependencies":{"github.com/x/y":[[">=1.0.0","<2.0.0"],["3.x"]],"github.com/x/z":[]},"placement":[{"source":"a","destination":"b/*","GOOS":"linux"},{"source":"c/*","destination":"d"}],"possession":["x"],"commands":[{"type":"install","commands":["i1","$(version)"]},{"type":"Uninstall","commands":["u1"]},{"type":"other","commands":["o"]},{"type":"install","commands":["wi"],"GOOS":"windows","GOARCH":"amd64"},{"type":"other","commands":[],"GOOS":"linux"},{"type":"install","commands":["wi2"],"GOOS":"windows","GOARCH":"amd64"},{"type":"install","commands":["r2"],"GOOS":"","GOARCH":"amd64"}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0"}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":{"name":1}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":{"tags":"x","name":null}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","commands":[{"type":"other","commands":["x"]}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","commands":[{"type":"install","commands":null}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","commands":[{"type":"other","commands":null}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","commands":[{"type":"install","commands":["x"],"GOOS":"windows"}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","dependencies":{"github.com/x/y":[["1.0.0",null]]}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","dependencies":{"github.com/x/y":null}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","dependencies":{"github.com/x/y":[null]}}
+{"format_version":3.0}
+{"format_version":"2"}
+{"format_version":4}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"place":[{"src":"a","dest":"../x"}]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":["Bad"]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"$(version)","description":"{{version}}","author":"a","tags":[],"avatar_url":"$(path)/$(version)"}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"a.zip","files":{"place":[{"src":"$(version)*","dest":"$(version)"}]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"place":[]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"place":[{"src":"a"}]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[{"goos":"windows","goarch":"amd64"},{"goos":"windows","goarch":"amd64"}]}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"https://x/$(version.size)"}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"https://x/{{ version"}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"https://x/a.b."}
+{"format_version":2,"tooth":"github.com/a/b","version":"v1.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"https://e.com/a b/c?x=1&y=é#frag"}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"preserve":["a/**/b","[abc]*.txt","x\\y","{a,b}","a?b","[!a]","[a-z]","**","*","a/","/a","C:\\x"]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"preserve":[""]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"preserve":["["]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"dependencies":{"github.com/x/y":"1.*","github.com/x/y#":">=2.0.0","bad path":"1.0.0","github.com/x/z":"not a range","github.com/x/w":null,"github.com/x/v#Bad":"1.0.0","github.com/x/u#ok/v_1":"^1.2","github.com/x/t#a#b":"1.0.0","github.com/x/s#a\n":"1.0.0","github.com/x/r":"1.x","Github.com/x/q":"1.0.0","github.com/x/p":" 1.0.0 "}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"dependencies":{"github.com/x/y":"1.*","github.com/x/z":"2.*","github.com/x/y":"3.*"}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"dependencies":{"github.com/x/y":"1.*","github.com/x/z":"2.*","github.com/x/y#":"3.*"}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"place":[{"src":"a","dest":null}]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"place":[{"src":null,"dest":"x"}]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"commands":{"pre_install":[null,"$(path)"]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"remove":[null]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":null}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":null}
+{"format_version":2,"tooth":null,"version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]}}
+{"format_version":2,"tooth":"github.com/a/b","version":null,"info":{"name":"n","description":"d","author":"a","tags":[]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[null]}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[{"goos":null}]}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[{"goos":"windows","files":null,"commands":null}],"files":{"remove":["x"]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[{"goos":"windows","dependencies":{"github.com/x/y":"1.x","github.com/x/z":"^1.2.3","github.com/x/w":"~1.2","github.com/x/v":">=1.0.0 <2.0.0 || 3.x","github.com/x/u":"1.2.3 - 2.3.4","github.com/x/t":"*","github.com/x/s":"bad"}}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":{"name":"n","tags":["x"],"author":"q","description":"dd"},"dependencies":{"github.com/x/y":[[">=1.0.0","<2.0.0"],["3.x"]],"github.com/x/z":[]},"placement":[{"source":"a","destination":"b/*","GOOS":"linux"},{"source":"c/*","destination":"d**"}],"possession":["x"],"commands":[{"type":"install","commands":["i1","$(version)"]},{"type":"Uninstall","commands":["u1"]},{"type":"other","commands":["o"]},{"type":"install","commands":["wi"],"GOOS":"windows","GOARCH":"amd64"},{"type":"other","commands":[],"GOOS":"linux"},{"type":"install","commands":["wi2"],"GOOS":"windows","GOARCH":"amd64"},{"type":"install","commands":["r2"],"GOOS":"","GOARCH":"amd64"}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":{"name":"n"},"dependencies":{"github.com/x/y":[[">=1.0.0","<2.0.0"],["3.x"]],"github.com/x/z":[],"github.com/x/w":[[]],"github.com/x/v":[["1.2.x"]]},"placement":[{"source":"a","destination":"b/*","GOOS":"linux"},{"source":"c/*","destination":"d**"}],"commands":[{"type":"install","commands":["i1","$(version)"]},{"type":"uninstall","commands":["u1"]}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","dependencies":{"github.com/x/y":[[">=1.0.0"]]},"placement":[{"source":"a","destination":"b"}],"commands":[{"type":"install","commands":["x"],"GOOS":"linux","GOARCH":"amd64"}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":null,"placement":null,"commands":null,"dependencies":null}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":{}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":{"tags":null,"description":null}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":{"tags":[1]}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","placement":[{"source":"a","destination":null}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","commands":[{"type":null,"commands":[]}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","commands":[{"type":"install","commands":[null]}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","commands":[null]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","possession":[1]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":"x"}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","commands":[{"type":"install","commands":["x"],"GOOS":"windows","GOARCH":""}]}
+{"format_version":3,"x":1}
+{"format_version":2147483648}
+{"format_version":-0}
+{"format_version":1,"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]}}
+{"FORMAT_VERSION":2}
+{"format_version":3,"format_uuid":"289f771f-2c9a-4d73-9f3f-8492495a924d","tooth":"github.com/a/b","version":"1.2.3","info":{"name":"{{tooth}}","tags":["{{version}}"],"avatar_url":"{{info.name}}"},"variants":[{"platform":"win-x64","dependencies":{"github.com/{{x}}":"{{version}}"},"assets":[{"type":"zip","urls":["https://{{tooth}}/v{{ version }}.zip"]}],"extra":[1,true,null,"{{format_version}}",{"k":"{{unknown}}"}]}]}
+{"format_version":3,"version":"1","x":{"a":"{{version}}","a":"2"}}
+{"format_version":3,"version":"1","version":"2"}
+{"format_version":3,"s":"{{ s.x.y }}"}
+{"format_version":3,"s":"{{ end }}"}
+{"format_version":3}
+{"format_version":3,"n":1.50,"e":1e3,"s":"{{n}} {{e}}"}
+[1]
+"x"
+{}
+{"format_version":0}
+{"format_version":-1}
+{"format_version":1e0}
+{"format_version":null}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[],"avatar_url":"https://x/$(version)/$(tooth)/$(path)"},"asset_url":"https://x/$(version)/a.tar","files":{"place":[{"src":"*","dest":""}]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"https://x/a.tgz","platforms":[{"goos":"windows","goarch":"amd64","files":{"preserve":["$(version)/x"]}},{"goos":"linux","goarch":"amd64","asset_url":"https://x/l.gz","files":{"place":[{"src":"bin/*","dest":"bin"}]}}],"files":{"place":[{"src":"a","dest":"b"}],"preserve":["p"],"remove":["r"]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[{"goos":"windows","goarch":"mips"}]}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":{}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"files":{"place":{}}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"commands":{"pre_install":"x"}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":1}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"dependencies":{"github.com/x/y":1}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[{"goarch":"amd64"}]}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"platforms":[{"goos":"windows","prerequisites":{"a":"b"},"prerequisites":null}]}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"unknown":{"deep":[1,2,{"x":null}]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"https://x/{{ end }}"}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"asset_url":"https://x/$(version)$(version.x.y)"}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0"}
+{"format_version":2,"tooth":"github.com/a/b","info":{"name":"n","description":"d","author":"a","tags":[]}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","commands":[{"type":"INSTALL","commands":["a"],"GOOS":"windows","GOARCH":"arm64"},{"type":"install","commands":["b"],"GOOS":"windows"},{"type":"uninstall","commands":["c"],"GOOS":"windows","GOARCH":"arm64"}],"dependencies":{"github.com/x/y":[["1.x"]],"github.com/x/z":[[">=1.0.0","<2.0.0"]],"github.com/x/w":[["1.0.0"],["2.0.0"]]}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","commands":[{"type":"install"}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","placement":[{"source":"a"}]}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":{"name":"n","description":"d","author":"a","tags":["t1","t2"],"homepage":1,"license":{"x":1}}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","information":{"author":1}}
+{"format_version":1,"tooth":"github.com/a/b","version":"1.0.0","placement":[{"source":"a","destination":"b"},{"source":"c*","destination":"d/*"}],"dependencies":{"github.com/x/y":[[">=1.0.0"]]}}
+{"format_version":2,"tooth":"github.com/a/b","version":"1.0.0","info":{"name":"n","description":"d","author":"a","tags":[]},"commands":{"post_install":["$(version)"]},"platforms":[{"goos":"windows","goarch":"amd64","commands":{"pre_uninstall":["x"]}},{"goos":"linux"}]}

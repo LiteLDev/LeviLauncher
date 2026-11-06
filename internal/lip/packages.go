@@ -155,9 +155,6 @@ func (l *ctxRWLock) Unlock() {
 	l.mu.Unlock()
 }
 
-// cleanCache clears the download cache; replaced in tests.
-var cleanCache = func() error { return fetch.DefaultCache().Clean() }
-
 func dirLockKey(dir string) string {
 	// Resolve junctions/symlinks so aliases of one instance share a lock.
 	if resolved, err := filepath.EvalSymlinks(dir); err == nil {
@@ -236,10 +233,12 @@ func runPackageTask(ctx context.Context, method string, workDir string, packages
 	defer cancel()
 
 	var meta lipTaskMeta
+	var tracker *taskReporter
 	var reporter report.Reporter = logReporter{}
 	if track {
 		meta = newTaskMeta(method, dir, packages)
-		reporter = taskReporter{meta: meta}
+		tracker = newTaskReporter(meta)
+		reporter = tracker
 		emitTaskStarted(meta)
 	}
 
@@ -256,37 +255,46 @@ func runPackageTask(ctx context.Context, method string, workDir string, packages
 	}()
 
 	if track {
-		if err != nil {
-			emitTaskFinished(meta, false, err.Error())
-		} else {
-			emitTaskFinished(meta, true, "")
-		}
+		finishTask(meta, tracker, err)
 	}
 	return err
 }
 
+// finishTask ends the bars r still has open, then sends lip_task_finished.
+func finishTask(meta lipTaskMeta, r *taskReporter, err error) {
+	r.close()
+	if err != nil {
+		emitTaskFinished(meta, false, err.Error())
+	} else {
+		emitTaskFinished(meta, true, "")
+	}
+}
+
 // CacheClean clears lip's download cache once running package operations
-// have finished.
+// have finished. It is a tracked task with Method "CacheClean", an empty
+// Target (the cache is shared by all instances) and no packages; it starts
+// before waiting for those operations, so the wait shows as a running task.
 func CacheClean(ctx context.Context) error {
 	if ctx == nil {
 		ctx = context.Background()
 	}
-	if err := cacheLock.Lock(ctx); err != nil {
-		return fmt.Errorf("ERR_LIP_CACHE_CLEAN_FAILED: %w", err)
-	}
-	defer cacheLock.Unlock()
-	err := func() (err error) {
-		defer func() {
-			if p := recover(); p != nil {
-				err = fmt.Errorf("lip cache clean panic: %v", p)
-			}
-		}()
-		return cleanCache()
+	meta := newTaskMeta("CacheClean", "", nil)
+	tracker := newTaskReporter(meta)
+	emitTaskStarted(meta)
+	err := func() error {
+		if err := cacheLock.Lock(ctx); err != nil {
+			return err
+		}
+		defer cacheLock.Unlock()
+		return callEngine(ctx, "", tracker, false, func(ctx context.Context, e packageEngine) error {
+			return e.CacheClean(ctx)
+		})
 	}()
 	if err != nil {
-		return fmt.Errorf("ERR_LIP_CACHE_CLEAN_FAILED: %w", err)
+		err = fmt.Errorf("ERR_LIP_CACHE_CLEAN_FAILED: %w", err)
 	}
-	return nil
+	finishTask(meta, tracker, err)
+	return err
 }
 
 // InstallPackages installs packages ("id" or "id@version") into workDir.

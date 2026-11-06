@@ -51,7 +51,6 @@ import {
   ListVersionMetas,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import {
-  GetLipStatus,
   GetLIPPackageReadme,
   InstallLIPPackage,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
@@ -81,10 +80,6 @@ import {
 type GithubRepoRef = {
   owner: string;
   repo: string;
-};
-
-type LipRuntimeStatus = {
-  installed?: boolean;
 };
 
 type InstanceLLState = {
@@ -267,9 +262,6 @@ const LIPPackagePage: React.FC = () => {
   const [selectedVariantIdentifier, setSelectedVariantIdentifier] =
     useState<string>("");
   const [actionRunning, setActionRunning] = useState<boolean>(false);
-  const [lipGuardReady, setLipGuardReady] = useState(false);
-  const [lipAvailable, setLipAvailable] = useState(true);
-  const [lipMissingModalOpen, setLipMissingModalOpen] = useState(false);
 
   const tabsRef = useRef<HTMLDivElement>(null);
   const mappingUnavailable = mappingInitialized && !mappingAvailable;
@@ -290,39 +282,6 @@ const LIPPackagePage: React.FC = () => {
       ? pkg?.name
       : undefined,
   );
-
-  const openLipSettings = useCallback(() => {
-    setLipMissingModalOpen(false);
-    navigate(ROUTES.settings, { state: { tab: "components" } });
-  }, [navigate]);
-
-  useEffect(() => {
-    let cancelled = false;
-
-    const checkLipRuntime = async () => {
-      try {
-        const status = (await GetLipStatus()) as LipRuntimeStatus;
-        if (cancelled) return;
-
-        const installed = Boolean(status?.installed);
-        setLipAvailable(installed);
-        setLipMissingModalOpen(!installed);
-      } catch (guardError) {
-        console.warn("Failed to check lip runtime status", guardError);
-        if (cancelled) return;
-        setLipAvailable(true);
-      } finally {
-        if (!cancelled) {
-          setLipGuardReady(true);
-        }
-      }
-    };
-
-    void checkLipRuntime();
-    return () => {
-      cancelled = true;
-    };
-  }, []);
 
   const githubRepoRef = useMemo<GithubRepoRef | null>(() => {
     if (!pkg?.projectUrl) return null;
@@ -580,17 +539,6 @@ const LIPPackagePage: React.FC = () => {
     let cancelled = false;
 
     const loadInstances = async () => {
-      if (!lipGuardReady) return;
-      if (!lipAvailable) {
-        if (cancelled) return;
-        setInstanceOptions([]);
-        setInstanceGameVersions({});
-        setInstanceLogos({});
-        setInstanceLLStates({});
-        setSelectedInstance("");
-        return;
-      }
-
       try {
         const metas = await ListVersionMetas();
         const names: string[] = [];
@@ -681,7 +629,7 @@ const LIPPackagePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [currentVersionName, lipAvailable, lipGuardReady, queryInstanceLLState]);
+  }, [currentVersionName, queryInstanceLLState]);
 
   useEffect(() => {
     if (instanceOptions.length === 0) return;
@@ -917,7 +865,6 @@ const LIPPackagePage: React.FC = () => {
   ]);
 
   useEffect(() => {
-    if (!lipAvailable) return;
     const instanceName = String(installDialogSelectedInstance || "").trim();
     if (!instanceName) return;
     const existingState = instanceLLStates[instanceName];
@@ -945,7 +892,7 @@ const LIPPackagePage: React.FC = () => {
     return () => {
       cancelled = true;
     };
-  }, [installDialogSelectedInstance, lipAvailable, queryInstanceLLState]);
+  }, [installDialogSelectedInstance, queryInstanceLLState]);
 
   useEffect(() => {
     setSelectedVariantIdentifier("");
@@ -956,7 +903,6 @@ const LIPPackagePage: React.FC = () => {
   }, [activePackageIdentifier]);
 
   useEffect(() => {
-    if (!lipAvailable) return;
     const instanceName = String(installDialogSelectedInstance || "").trim();
     const packageIdentifier = activePackageIdentifier;
     if (!installDialogOpen || !instanceName || !packageIdentifier) return;
@@ -992,7 +938,6 @@ const LIPPackagePage: React.FC = () => {
     activePackageIdentifier,
     installDialogOpen,
     installDialogSelectedInstance,
-    lipAvailable,
     queryInstancePackageState,
   ]);
 
@@ -1701,20 +1646,6 @@ const LIPPackagePage: React.FC = () => {
         </div>
       </UnifiedModal>
 
-      <UnifiedModal
-        size="standard"
-        isOpen={lipMissingModalOpen}
-        onOpenChange={setLipMissingModalOpen}
-        type="warning"
-        title={t("lip.guard.title")}
-        isDismissable={false}
-        confirmText={t("settings.lip.startup_prompt.open_settings_button")}
-        onConfirm={openLipSettings}
-      >
-        <div className="flex flex-col gap-3 text-sm leading-6 text-foreground dark:text-zinc-300">
-          <p>{t("lip.guard.description")}</p>
-        </div>
-      </UnifiedModal>
     </PageContainer>
   );
 };

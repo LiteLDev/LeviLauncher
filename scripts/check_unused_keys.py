@@ -10,8 +10,6 @@ ALWAYS_KEEP_PREFIXES = (
     "errors.",
     "file.types.",
     "curseforge.sort.",
-    "settings.lip.status.",
-    "settings.lip.error.",
 )
 
 TRANSLATION_TEMPLATE_CALL_RE = re.compile(

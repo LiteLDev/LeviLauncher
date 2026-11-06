@@ -73,9 +73,6 @@ export const resolveInstallError = (
     case "ERR_MSIXVC_NOT_SPECIFIED":
       resolved = t("installpage.error.msixvc_not_specified");
       break;
-    case "ERR_LIP_NOT_INSTALLED":
-      resolved = t("installpage.error.lip_not_installed");
-      break;
     case "ERR_UNKNOWN":
       resolved = t("installpage.error.unknown");
       break;

@@ -21,10 +21,7 @@ import {
 import { cn } from "@/utils/cn";
 
 import { Dialogs } from "@wailsio/runtime";
-import {
-  UnifiedModal,
-  getUnifiedModalConfirmButtonProps,
-} from "@/components/UnifiedModal";
+import { UnifiedModal } from "@/components/UnifiedModal";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -205,8 +202,6 @@ const getScopeDisplayLabel = (
 export default function InstanceSettingsPage() {
   const { t } = useTranslation();
   const vs = useInstanceSettings();
-  const warningConfirmButtonProps =
-    getUnifiedModalConfirmButtonProps("warning");
   const currentLLVersionText =
     vs.currentLLVersion ||
     (t("versions.edit.loader.ll_not_installed") as unknown as string);
@@ -1964,29 +1959,6 @@ export default function InstanceSettingsPage() {
       >
         <ModalDescription>
           {t("versions.edit.unregister_success.body")}
-        </ModalDescription>
-      </UnifiedModal>
-
-      <UnifiedModal
-        isOpen={vs.lipMissingOpen}
-        onOpenChange={(open) => {
-          if (!open) vs.setLipMissingOpen(false);
-        }}
-        type="warning"
-        title={t("lip.guard.title")}
-        isDismissable={false}
-        footer={
-          <ModalAction
-            {...warningConfirmButtonProps}
-            onPress={vs.openLipComponentsSettings}
-            variant={"secondary"}
-          >
-            {t("settings.lip.startup_prompt.open_settings_button")}
-          </ModalAction>
-        }
-      >
-        <ModalDescription>
-          {t("lip.guard.description")}
         </ModalDescription>
       </UnifiedModal>
 

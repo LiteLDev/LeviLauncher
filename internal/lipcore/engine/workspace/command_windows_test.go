@@ -176,6 +176,9 @@ func TestDefaultCommandRunnerBreakawayChild(t *testing.T) {
 	if out, err := build.CombinedOutput(); err != nil {
 		t.Skipf("cannot build helper: %v\n%s", err, out)
 	}
+	// Breakaway needs every enclosing job to allow it, so this cannot run
+	// in a job that forbids it (common for CI and sandboxes);
+	// TestProcessTreeJobAllowsBreakaway still checks the job's limit there.
 	if out, err := exec.Command(exe).CombinedOutput(); err != nil {
 		t.Skipf("this test runs in a job that forbids breakaway: %v\n%s", err, out)
 	}

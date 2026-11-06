@@ -39,20 +39,28 @@ func (t *processTree) kill() {
 	killProcessGroup(t.cmd.Process.Pid)
 }
 
+// waitExited waits for a process to exit without reaping it, or returns
+// an error if it cannot; tests replace it.
+var waitExited = waitExitedUnreaped
+
 // wait waits for the script to exit, then for its output pipes. The pgid is
-// the leader's pid, which cannot be reused before the leader is reaped, so
-// the tree is released before reaping it. Where the leader can be waited
-// for without reaping it (waitExited), it is reaped only after the pipes,
-// so cancellation still kills background processes holding them;
-// elsewhere they are left to the pipe wait's commandWaitDelay.
+// the leader's pid, which cannot be reused before the leader is reaped.
+// Where the leader can be waited for without reaping it (waitExited), the
+// tree is released and the leader reaped only after the pipes, so
+// cancellation also kills background processes holding them. Elsewhere
+// the leader is reaped first, kill reaching the group until then, and the
+// tree released right after; a background process holding the pipes is
+// left to the pipe wait's commandWaitDelay, and a kill racing the reap may
+// signal the pgid of a just-reaped leader, which needs the pid space to
+// wrap within that window to reach another group.
 func (t *processTree) wait(pipes func() error) (waitErr, copyErr error) {
 	if waitExited(t.cmd.Process.Pid) == nil {
 		copyErr = pipes()
 		t.release()
 		return t.cmd.Wait(), copyErr
 	}
-	t.release()
 	waitErr = t.cmd.Wait()
+	t.release()
 	return waitErr, pipes()
 }
 

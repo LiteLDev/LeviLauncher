@@ -4,5 +4,6 @@ package workspace
 
 import "errors"
 
-// waitExited is unsupported here: Go exposes no waitid on these systems.
-func waitExited(int) error { return errors.ErrUnsupported }
+// waitExitedUnreaped is unsupported here: Go exposes no waitid on these
+// systems.
+func waitExitedUnreaped(int) error { return errors.ErrUnsupported }

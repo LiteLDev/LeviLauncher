@@ -611,6 +611,11 @@ func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string
 			end = len(remaining)
 		}
 		if err := g.fetchBlobBatch(ctx, repo, remaining[start:end]); err != nil {
+			// lip throws a handler error out of FetchBlobs at once, leaving
+			// later batches unfetched.
+			if nf, ok := err.(*fetch.NoFallbackError); ok {
+				return nf.Err
+			}
 			errs = append(errs, err)
 		}
 	}
@@ -629,14 +634,16 @@ func (g *GitRegistry) fetchBlobs(ctx context.Context, repo string, oids []string
 // that attempt, so after a proxy attempt the original URL is asked for only
 // the blobs still missing (and the proxy is not used for the repository
 // again). As in lip, only fetching and opening the pack falls back: errors
-// while reading its objects or storing blobs fail the batch as they are.
+// while reading its objects or storing blobs fail the batch as they are,
+// and are returned marked by fetch.NoFallback so fetchBlobs stops too.
 func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []string) error {
 	remaining := make(map[string]bool, len(batch))
 	for _, oid := range batch {
 		remaining[oid] = true
 	}
 	opts := gitproto.FetchOptions{Want: func(oid string) bool { return remaining[oid] }}
-	return g.Git.Fetch(ctx, repo, batch, opts, func(pack *gitproto.PackFile) error {
+	var handlerErr error
+	err := g.Git.Fetch(ctx, repo, batch, opts, func(pack *gitproto.PackFile) error {
 		store, err := g.decodePack(pack)
 		if err != nil {
 			return err
@@ -655,6 +662,7 @@ func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []s
 			delete(remaining, oid)
 			return nil
 		}); err != nil {
+			handlerErr = err
 			return fetch.NoFallback(err)
 		}
 		var missing []string
@@ -668,6 +676,11 @@ func (g *GitRegistry) fetchBlobBatch(ctx context.Context, repo string, batch []s
 		}
 		return nil
 	})
+	if handlerErr != nil {
+		// Fetch returned it at once, unchanged (no retry or fallback).
+		return fetch.NoFallback(handlerErr)
+	}
+	return err
 }
 
 // verifyBlob checks that data hashes to oid as a git blob (SHA-1, or

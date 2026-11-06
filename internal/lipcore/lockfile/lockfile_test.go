@@ -170,6 +170,43 @@ func TestSaveWhileReaderHasFileOpen(t *testing.T) {
 	}
 }
 
+// List does not take the per-instance lock, so Load can run while Save
+// renames over the file; on Windows opening it then fails briefly.
+func TestLoadDuringConcurrentSaves(t *testing.T) {
+	useFakes(t)
+	dir := t.TempDir()
+	if err := New().Save(dir); err != nil {
+		t.Fatal(err)
+	}
+	stop := make(chan struct{})
+	saveErr := make(chan error, 1)
+	go func() {
+		defer close(saveErr)
+		for {
+			select {
+			case <-stop:
+				return
+			default:
+			}
+			if err := New().Save(dir); err != nil {
+				saveErr <- err
+				return
+			}
+		}
+	}()
+	deadline := time.Now().Add(500 * time.Millisecond)
+	for time.Now().Before(deadline) {
+		if _, err := Load(dir); err != nil {
+			close(stop)
+			t.Fatalf("Load during Save: %v", err)
+		}
+	}
+	close(stop)
+	if err := <-saveErr; err != nil {
+		t.Fatalf("Save during Load: %v", err)
+	}
+}
+
 func TestSaveRetriesFailedRename(t *testing.T) {
 	useFakes(t)
 	oldRename, oldBackoff := rename, renameBackoff

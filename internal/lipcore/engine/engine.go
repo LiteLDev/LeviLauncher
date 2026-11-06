@@ -766,6 +766,15 @@ func idIn(ids []manifest.PackageID, id manifest.PackageID) bool {
 	return false
 }
 
+// Close releases the registry's resources (retained git packs) when it has
+// any. The engine must not be used afterwards.
+func (e *Engine) Close() error {
+	if c, ok := e.Registry.(io.Closer); ok {
+		return c.Close()
+	}
+	return nil
+}
+
 // CurrentRID returns the .NET runtime identifier for this process
 // (RuntimeInformation.RuntimeIdentifier), e.g. "win-x64", "win-arm64",
 // "linux-x64", "osx-arm64".

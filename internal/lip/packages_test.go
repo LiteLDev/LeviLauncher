@@ -69,6 +69,7 @@ type fakeEngineState struct {
 	implicit []string
 	// onCall runs inside every operation (after recording the call).
 	onCall func(ctx context.Context, r report.Reporter) error
+	closes int
 }
 
 func (f *fakeEngine) record(ctx context.Context, c engineCall) error {
@@ -107,6 +108,13 @@ func (f *fakeEngine) List(ctx context.Context) ([]string, []string, error) {
 
 func (f *fakeEngine) CacheClean(ctx context.Context) error {
 	return f.record(ctx, engineCall{method: "CacheClean"})
+}
+
+func (f *fakeEngine) Close() error {
+	f.shared.mu.Lock()
+	f.shared.closes++
+	f.shared.mu.Unlock()
+	return nil
 }
 
 func useFakeEngine(t *testing.T) *fakeEngineState {
@@ -572,5 +580,24 @@ func TestNormalizeTaskTarget(t *testing.T) {
 	}
 	if got := normalizeTaskTarget(""); got != "" {
 		t.Fatalf("got %q", got)
+	}
+}
+
+// Every operation closes its engine, releasing retained git packs.
+func TestOperationsCloseEngine(t *testing.T) {
+	recordEvents(t)
+	state := useFakeEngine(t)
+	dir := t.TempDir()
+	ctx := context.Background()
+	if err := InstallPackagesViaDaemon(ctx, dir, []string{"example.com/a"}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ListPackageStatesViaDaemon(ctx, dir); err != nil {
+		t.Fatal(err)
+	}
+	state.mu.Lock()
+	defer state.mu.Unlock()
+	if state.closes != 2 {
+		t.Fatalf("engine closed %d times, want 2", state.closes)
 	}
 }

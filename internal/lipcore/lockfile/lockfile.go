@@ -64,7 +64,7 @@ func New() *State {
 // returned, so callers may print the error and continue.
 func Load(dir string) (*State, error) {
 	path := filepath.Join(dir, FileName)
-	data, err := os.ReadFile(path)
+	data, err := readFile(path)
 	if err != nil {
 		if errors.Is(err, fs.ErrNotExist) {
 			return New(), nil
@@ -202,6 +202,24 @@ func replaceFile(tmp, dst string) error {
 		}
 	}
 	return err
+}
+
+// readFile reads path, briefly retrying errors other than "not found": on
+// Windows opening the file fails while a concurrent Save renames over it.
+func readFile(path string) ([]byte, error) {
+	var (
+		data []byte
+		err  error
+	)
+	for i := 0; i < renameAttempts; i++ {
+		if i > 0 {
+			time.Sleep(renameBackoff)
+		}
+		if data, err = os.ReadFile(path); err == nil || errors.Is(err, fs.ErrNotExist) {
+			return data, err
+		}
+	}
+	return data, err
 }
 
 // Marshal returns the bytes Save would write.

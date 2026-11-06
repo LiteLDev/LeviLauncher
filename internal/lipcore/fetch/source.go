@@ -497,7 +497,13 @@ func (s *sevenZipSource) Keys() []string { return append([]string(nil), s.keys..
 
 func (s *sevenZipSource) Open(key string) (io.ReadCloser, error) {
 	if zf, ok := s.files[key]; ok {
-		return zf.Open()
+		rc, err := zf.Open()
+		if err != nil {
+			return nil, err
+		}
+		// sevenzip yields no data (and no error) for encrypted entries
+		// without a password; SharpCompress throws, so check size and CRC.
+		return &zipChecksumReader{rc: rc, size: zf.UncompressedSize, crc: zf.CRC32}, nil
 	}
 	return nil, keyNotFound(key)
 }

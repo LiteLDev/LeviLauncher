@@ -3,6 +3,7 @@ package lip
 import (
 	"context"
 	"fmt"
+	"io"
 	"net/http"
 	"path/filepath"
 	"runtime"
@@ -118,7 +119,11 @@ func callEngine(ctx context.Context, workDir string, r report.Reporter, fn func(
 			err = fmt.Errorf("lip engine panic: %v", p)
 		}
 	}()
-	return fn(ctx, newEngine(workDir, r))
+	eng := newEngine(workDir, r)
+	if c, ok := eng.(io.Closer); ok {
+		defer c.Close()
+	}
+	return fn(ctx, eng)
 }
 
 // runPackageTask runs one operation on workDir. With track, it emits

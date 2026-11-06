@@ -19,4 +19,10 @@ func (*processTree) started() error { return nil }
 
 func (t *processTree) kill() { _ = t.cmd.Process.Kill() }
 
+// wait waits for the script to exit, then for its output pipes.
+func (t *processTree) wait(pipes func() error) (waitErr, copyErr error) {
+	waitErr = t.cmd.Wait()
+	return waitErr, pipes()
+}
+
 func (*processTree) release() {}

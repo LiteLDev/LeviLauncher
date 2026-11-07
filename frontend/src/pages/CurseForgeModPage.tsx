@@ -217,6 +217,9 @@ const CurseForgeModPage: React.FC = () => {
   }, [id, filesRetry]);
 
   const handleDescriptionClick = (e: React.MouseEvent<HTMLDivElement>) => {
+    // A middle click fires auxclick instead of click; left unhandled, WebView2
+    // opens the link in a new launcher window.
+    if (e.type === "auxclick" && e.button !== 1) return;
     const target = (e.target as HTMLElement).closest("a");
     const href = target?.getAttribute("href");
 
@@ -575,6 +578,7 @@ const CurseForgeModPage: React.FC = () => {
                       <div
                         dangerouslySetInnerHTML={{ __html: description }}
                         onClick={handleDescriptionClick}
+                        onAuxClick={handleDescriptionClick}
                       />
                     ) : (
                       <div

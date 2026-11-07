@@ -1,0 +1,30 @@
+{
+  "content_task": {
+    "import_title": "Inhalte importieren",
+    "transfer_title": "Inhalte übertragen",
+    "status_running": "Wird bearbeitet…",
+    "status_success": "Fertig",
+    "status_overwritten": "Überschrieben",
+    "status_skipped": "Übersprungen (existiert bereits)",
+    "summary": "{{ok}} erfolgreich, {{failed}} fehlgeschlagen, {{skipped}} übersprungen",
+    "skip": "Überspringen",
+    "overwrite_body": "Dieses Element existiert am Ziel bereits. Überschreiben?",
+    "apply_to_all": "Für alle weiteren Duplikate übernehmen",
+    "progress": "{{done}} von {{total}} erledigt",
+    "progress_label": "Fortschritt",
+    "log_label": "Elementprotokoll",
+    "nothing_done": "Es wurde nichts importiert.",
+    "transfer_done": "Übertragung abgeschlossen",
+    "transfer_partial": "Übertragung abgeschlossen (teilweise fehlgeschlagen)",
+    "transfer_failed": "Übertragung fehlgeschlagen",
+    "no_instance_title": "Zuerst eine Instanz wählen",
+    "no_instance_body": "Wähle die Instanz oben auf der Seite in der Instanzauswahl.",
+    "load_targets_failed": "Instanzen konnten nicht geladen werden",
+    "choose_instance_hint": "Wähle eine Instanz, um ihre Welten, Pakete und andere Inhalte zu verwalten.",
+    "back_to_hub": "Zurück zur Inhaltsverwaltung",
+    "clear_search": "Suche leeren",
+    "world_deleted": "Welt gelöscht",
+    "delete_failed": "Löschen fehlgeschlagen",
+    "world_saved": "level.dat gespeichert"
+  }
+}

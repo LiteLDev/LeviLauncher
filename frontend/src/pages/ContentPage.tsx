@@ -1,5 +1,5 @@
 import { openDirectory } from "@/utils/explorer";
-import { ModalDescription, ModalPanel, ModalProgress } from "@/components/ModalPrimitives";
+import { ModalDescription } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -8,7 +8,6 @@ import {
   ListBox, Select,
   Spinner,
   Tooltip,
-  toast,
 } from "@heroui/react";
 
 import React from "react";
@@ -16,7 +15,6 @@ import { useTranslation } from "react-i18next";
 
 import { Dialogs } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
-import { ImportResultModal } from "@/components/ImportResultModal";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   FaCogs,
@@ -34,11 +32,14 @@ import { FiUploadCloud } from "react-icons/fi";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
 import { FileDropOverlay } from "@/components/FileDropOverlay";
+import { InstancePicker } from "@/components/InstancePicker";
+import { ContentTaskDialog } from "@/components/ContentTaskDialog";
 import { useFileDrag } from "@/hooks/useFileDrag";
 import { useContentPage } from "@/hooks/useContentPage";
 import { LAYOUT } from "@/constants/layout";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/utils/cn";
+import { notify } from "@/utils/activity";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
 export default function ContentPage() {
@@ -46,6 +47,7 @@ export default function ContentPage() {
   const scrollRef = React.useRef<HTMLDivElement>(null);
   const isDragActive = useFileDrag(scrollRef as React.RefObject<HTMLElement>);
   const cp = useContentPage(t as any);
+  const hasInstance = !!cp.currentVersionName;
 
   const importContent = async () => {
     try {
@@ -59,9 +61,29 @@ export default function ContentPage() {
       }
     } catch (error) {
       console.error(error);
-      toast.danger(t("common.load_failed"));
+      notify({
+        variant: "danger",
+        title: t("common.load_failed"),
+        description: String((error as any)?.message || error || ""),
+        source: "content",
+      });
     }
   };
+
+  const playerOptions = cp.players.map((p) => ({
+    id: p,
+    label: resolvePlayerDisplayName(p, cp.playerGamertagMap),
+  }));
+
+  // Each category is one click away; player-scoped pages get the chosen player.
+  const categories = [
+    { key: "worlds", route: ROUTES.contentWorlds, label: t("contentpage.worlds"), count: cp.worldsCount, icon: FaGlobe, tone: "bg-blue-50 dark:bg-blue-900/20 text-blue-500", withPlayer: true },
+    { key: "resource", route: ROUTES.contentResourcePacks, label: t("contentpage.resource_packs"), count: cp.resCount, icon: FaImage, tone: "bg-purple-50 dark:bg-purple-900/20 text-purple-500", withPlayer: false },
+    { key: "behavior", route: ROUTES.contentBehaviorPacks, label: t("contentpage.behavior_packs"), count: cp.bpCount, icon: FaCogs, tone: "bg-orange-50 dark:bg-orange-900/20 text-orange-500", withPlayer: false },
+    { key: "skins", route: ROUTES.contentSkinPacks, label: t("contentpage.skin_packs"), count: cp.skinCount, icon: FaUserTag, tone: "bg-pink-50 dark:bg-pink-900/20 text-pink-500", withPlayer: true },
+    { key: "servers", route: ROUTES.contentServers, label: t("contentpage.servers"), count: cp.serversCount, icon: FaServer, tone: "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500", withPlayer: true },
+    { key: "screenshots", route: ROUTES.contentScreenshots, label: t("contentpage.screenshots"), count: cp.screenshotsCount, icon: FaCamera, tone: "bg-teal-50 dark:bg-teal-900/20 text-teal-500", withPlayer: true },
+  ];
 
   return (
     <PageContainer
@@ -85,107 +107,20 @@ export default function ContentPage() {
         transition={{ duration: 0.4 }}
       >
         <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <Card.Content className="p-6">
-            <div className="flex flex-col gap-6">
-              <div className="flex flex-col xl:flex-row items-start xl:items-center justify-between gap-4">
-                <div className="min-w-0 w-full xl:flex-1">
-                  <div className="flex items-center gap-3">
-                    <PageHeader
-                      title={t("launcherpage.content_manage")}
-                      titleClassName="pb-1"
-                    />
-                  </div>
-                  <div className="mt-3 rounded-2xl border border-border bg-surface-secondary px-4 py-3 text-sm flex flex-wrap items-center gap-x-3 gap-y-2">
-                    <span>{t("contentpage.current_version")}:</span>
-                    <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
-                      {cp.currentVersionName || t("contentpage.none")}
-                    </span>
-                    <span className="text-muted dark:text-zinc-600">|</span>
-                    <span>{t("contentpage.isolation")}:</span>
-                    <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
-                      {cp.roots.isIsolation ? t("common.yes") : t("common.no")}
-                    </span>
-                    <span className="text-muted dark:text-zinc-600">|</span>
-                    {cp.roots.packageType !== "uwp" && <>
-                    <span>{t("contentpage.select_player")}:</span>
-                    <Dropdown>
-                      <Button
-                        size="sm"
-                        variant={"secondary"}
-                        className={cn(
-                          COMPONENT_STYLES.dropdownTriggerButton,
-                          "h-6 min-w-0 px-2 text-sm font-medium text-foreground dark:text-zinc-200",
-                        )}
-                      >
-                        {cp.selectedPlayer
-                          ? resolvePlayerDisplayName(
-                              cp.selectedPlayer,
-                              cp.playerGamertagMap,
-                            )
-                          : t("contentpage.no_players")}
-                      </Button>
-                      <Dropdown.Popover
-                        className={COMPONENT_STYLES.dropdown.content}
-                      >
-                        <Dropdown.Menu
-                          aria-label="Players"
-                          selectionMode="single"
-                          selectedKeys={new Set([cp.selectedPlayer])}
-                          onSelectionChange={(keys) => {
-                            const arr = Array.from(
-                              keys as unknown as Set<string>,
-                            );
-                            const next = arr[0] || "";
-                            if (typeof next === "string")
-                              cp.onChangePlayer(next);
-                          }}
-                        >
-                          {cp.players.length ? (
-                            cp.players.map((p) => (
-                              <Dropdown.Item
-                                key={p}
-                                id={p}
-                                textValue={resolvePlayerDisplayName(
-                                  p,
-                                  cp.playerGamertagMap,
-                                )}
-                              >
-                                <Label>
-                                  {resolvePlayerDisplayName(
-                                    p,
-                                    cp.playerGamertagMap,
-                                  )}
-                                </Label>
-                                <Dropdown.ItemIndicator />
-                              </Dropdown.Item>
-                            ))
-                          ) : (
-                            <Dropdown.Item
-                              key="none"
-                              isDisabled
-                              id={"none"}
-                              textValue={t("contentpage.no_players")}
-                            >
-                              <Label>{t("contentpage.no_players")}</Label>
-                              <Dropdown.ItemIndicator />
-                            </Dropdown.Item>
-                          )}
-                        </Dropdown.Menu>
-                      </Dropdown.Popover>
-                    </Dropdown>
-                    {!cp.selectedPlayer && (
-                      <span className="text-rose-500 text-xs">
-                        ({t("contentpage.require_player_for_world_import")})
-                      </span>
-                    )}
-                    </>}
-                    {cp.roots.packageType === "uwp" && !cp.roots.isIsolation && <span>{t("uwp.shared_content")}</span>}
-                  </div>
+          <Card.Content className="p-4 min-[1200px]:p-6">
+            <div className="flex flex-col gap-4">
+              <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+                <div className="flex min-w-0 flex-wrap items-center gap-x-4 gap-y-2">
+                  <PageHeader
+                    title={t("launcherpage.content_manage")}
+                    titleClassName="pb-1"
+                  />
+                  <InstancePicker size="sm" />
                 </div>
                 <div className="flex flex-wrap items-center gap-2">
                   <Button
                     onPress={importContent}
-                    isDisabled={cp.importing}
+                    isDisabled={cp.importing || !hasInstance}
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
@@ -197,7 +132,7 @@ export default function ContentPage() {
                   </Button>
                   <Button
                     onPress={() => cp.openResourceTransferModal()}
-                    isDisabled={cp.importing}
+                    isDisabled={cp.importing || !hasInstance}
                     variant={"secondary"}
                     className={cn(
                       "rounded-full",
@@ -249,8 +184,88 @@ export default function ContentPage() {
                   </Tooltip>
                 </div>
               </div>
+              {hasInstance ? (
+                <div className="rounded-2xl border border-border bg-surface-secondary px-4 py-3 text-sm flex flex-wrap items-center gap-x-3 gap-y-2">
+                  <span>{t("contentpage.isolation")}:</span>
+                  <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
+                    {cp.roots.isIsolation ? t("common.yes") : t("common.no")}
+                  </span>
+                  {cp.roots.packageType !== "uwp" && <>
+                  <span className="text-muted dark:text-zinc-600">|</span>
+                  <span>{t("contentpage.select_player")}:</span>
+                  <Dropdown>
+                    <Button
+                      size="sm"
+                      variant={"secondary"}
+                      className={cn(
+                        COMPONENT_STYLES.dropdownTriggerButton,
+                        "h-6 min-w-0 max-w-full px-2 text-sm font-medium text-foreground dark:text-zinc-200",
+                      )}
+                    >
+                      <span className="truncate">
+                        {cp.selectedPlayer
+                          ? resolvePlayerDisplayName(
+                              cp.selectedPlayer,
+                              cp.playerGamertagMap,
+                            )
+                          : t("contentpage.no_players")}
+                      </span>
+                    </Button>
+                    <Dropdown.Popover
+                      className={COMPONENT_STYLES.dropdown.content}
+                    >
+                      <Dropdown.Menu
+                        aria-label="Players"
+                        selectionMode="single"
+                        selectedKeys={new Set([cp.selectedPlayer])}
+                        onSelectionChange={(keys) => {
+                          const arr = Array.from(
+                            keys as unknown as Set<string>,
+                          );
+                          const next = arr[0] || "";
+                          if (typeof next === "string")
+                            cp.onChangePlayer(next);
+                        }}
+                      >
+                        {cp.players.length ? (
+                          playerOptions.map((p) => (
+                            <Dropdown.Item key={p.id} id={p.id} textValue={p.label}>
+                              <Label>{p.label}</Label>
+                              <Dropdown.ItemIndicator />
+                            </Dropdown.Item>
+                          ))
+                        ) : (
+                          <Dropdown.Item
+                            key="none"
+                            isDisabled
+                            id={"none"}
+                            textValue={t("contentpage.no_players")}
+                          >
+                            <Label>{t("contentpage.no_players")}</Label>
+                            <Dropdown.ItemIndicator />
+                          </Dropdown.Item>
+                        )}
+                      </Dropdown.Menu>
+                    </Dropdown.Popover>
+                  </Dropdown>
+                  {!cp.selectedPlayer && (
+                    <span className="text-rose-500 text-xs">
+                      ({t("contentpage.require_player_for_world_import")})
+                    </span>
+                  )}
+                  </>}
+                  {cp.roots.packageType === "uwp" && !cp.roots.isIsolation && <>
+                    <span className="text-muted dark:text-zinc-600">|</span>
+                    <span>{t("uwp.shared_content")}</span>
+                  </>}
+                </div>
+              ) : (
+                <div role="status" className="rounded-2xl border border-border bg-surface-secondary px-4 py-3 text-sm text-muted">
+                  {t("content_task.choose_instance_hint")}
+                </div>
+              )}
               {!!cp.error && (
-                <div className="text-rose-500 text-sm">{cp.error}</div>
+                <div role="alert" className="text-rose-500 text-sm">{cp.error}</div>
               )}
             </div>
           </Card.Content>
@@ -258,322 +273,67 @@ export default function ContentPage() {
       </motion.div>
 
       {/* Content Grid */}
+      {/* Tailwind source for LAYOUT.GRID.AUTO(16): grid-cols-[repeat(auto-fill,minmax(min(100%,16rem),1fr))] */}
       <motion.div
         data-material-motion
-        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6"
+        className={LAYOUT.GRID.AUTO(16)}
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
-          <button
-            type="button"
-            className="w-full cursor-pointer text-left rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
-            onClick={() =>
-              cp.navigate(ROUTES.contentWorlds, {
-                state: { player: cp.selectedPlayer },
-              })
-            }
-          >
-            <Card.Content className="p-6">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-blue-50 dark:bg-blue-900/20 text-blue-500">
-                    <FaGlobe className="w-6 h-6" />
+        {categories.map((c) => (
+          <Card key={c.key} className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
+            <button
+              type="button"
+              className="w-full h-full cursor-pointer text-left rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
+              onClick={() =>
+                cp.navigate(
+                  c.route,
+                  c.withPlayer ? { state: { player: cp.selectedPlayer } } : undefined,
+                )
+              }
+            >
+              <Card.Content className="p-5">
+                <div className="flex items-center justify-between gap-3 w-full">
+                  <div className="flex min-w-0 items-center gap-3">
+                    <div className={cn("p-2 rounded-xl shrink-0", c.tone)}>
+                      <c.icon className="w-6 h-6" />
+                    </div>
+                    <span className="text-lg font-medium truncate">{c.label}</span>
                   </div>
-                  <span className="text-lg font-medium">
-                    {t("contentpage.worlds")}
-                  </span>
+                  <AnimatePresence mode="wait">
+                    {cp.loading ? (
+                      <motion.div
+                        key="spinner"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                      >
+                        <Spinner size="sm" />
+                      </motion.div>
+                    ) : (
+                      <motion.span
+                        key="count"
+                        initial={{ opacity: 0 }}
+                        animate={{ opacity: 1 }}
+                        exit={{ opacity: 0 }}
+                        transition={{ duration: 0.2 }}
+                        className="text-2xl font-bold tabular-nums"
+                      >
+                        {c.count}
+                      </motion.span>
+                    )}
+                  </AnimatePresence>
                 </div>
-                <AnimatePresence mode="wait">
-                  {cp.loading ? (
-                    <motion.div
-                      key="spinner"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Spinner size="sm" />
-                    </motion.div>
-                  ) : (
-                    <motion.span
-                      key="count"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold"
-                    >
-                      {cp.worldsCount}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
-            </Card.Content>
-          </button>
-        </Card>
-
-        <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
-          <button
-            type="button"
-            className="w-full cursor-pointer text-left rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
-            onClick={() => cp.navigate(ROUTES.contentResourcePacks)}
-          >
-            <Card.Content className="p-6">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-purple-50 dark:bg-purple-900/20 text-purple-500">
-                    <FaImage className="w-6 h-6" />
-                  </div>
-                  <span className="text-lg font-medium">
-                    {t("contentpage.resource_packs")}
-                  </span>
-                </div>
-                <AnimatePresence mode="wait">
-                  {cp.loading ? (
-                    <motion.div
-                      key="spinner"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Spinner size="sm" />
-                    </motion.div>
-                  ) : (
-                    <motion.span
-                      key="count"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold"
-                    >
-                      {cp.resCount}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
-            </Card.Content>
-          </button>
-        </Card>
-
-        <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
-          <button
-            type="button"
-            className="w-full cursor-pointer text-left rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
-            onClick={() => cp.navigate(ROUTES.contentBehaviorPacks)}
-          >
-            <Card.Content className="p-6">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-orange-50 dark:bg-orange-900/20 text-orange-500">
-                    <FaCogs className="w-6 h-6" />
-                  </div>
-                  <span className="text-lg font-medium">
-                    {t("contentpage.behavior_packs")}
-                  </span>
-                </div>
-                <AnimatePresence mode="wait">
-                  {cp.loading ? (
-                    <motion.div
-                      key="spinner"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Spinner size="sm" />
-                    </motion.div>
-                  ) : (
-                    <motion.span
-                      key="count"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold"
-                    >
-                      {cp.bpCount}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
-            </Card.Content>
-          </button>
-        </Card>
-
-        <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
-          <button
-            type="button"
-            className="w-full cursor-pointer text-left rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
-            onClick={() =>
-              cp.navigate(ROUTES.contentSkinPacks, {
-                state: { player: cp.selectedPlayer },
-              })
-            }
-          >
-            <Card.Content className="p-6">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-pink-50 dark:bg-pink-900/20 text-pink-500">
-                    <FaUserTag className="w-6 h-6" />
-                  </div>
-                  <span className="text-lg font-medium">
-                    {t("contentpage.skin_packs")}
-                  </span>
-                </div>
-                <AnimatePresence mode="wait">
-                  {cp.loading ? (
-                    <motion.div
-                      key="spinner"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Spinner size="sm" />
-                    </motion.div>
-                  ) : (
-                    <motion.span
-                      key="count"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold"
-                    >
-                      {cp.skinCount}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
-            </Card.Content>
-          </button>
-        </Card>
-
-        <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
-          <button
-            type="button"
-            className="w-full cursor-pointer text-left rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
-            onClick={() =>
-              cp.navigate(ROUTES.contentServers, {
-                state: { player: cp.selectedPlayer },
-              })
-            }
-          >
-            <Card.Content className="p-6">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500">
-                    <FaServer className="w-6 h-6" />
-                  </div>
-                  <span className="text-lg font-medium">
-                    {t("contentpage.servers")}
-                  </span>
-                </div>
-                <AnimatePresence mode="wait">
-                  {cp.loading ? (
-                    <motion.div
-                      key="spinner"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Spinner size="sm" />
-                    </motion.div>
-                  ) : (
-                    <motion.span
-                      key="count"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold"
-                    >
-                      {cp.serversCount}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
-            </Card.Content>
-          </button>
-        </Card>
-
-        <Card className={cn("h-full", LAYOUT.GLASS_CARD.BASE)}>
-          <button
-            type="button"
-            className="w-full cursor-pointer text-left rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
-            onClick={() =>
-              cp.navigate(ROUTES.contentScreenshots, {
-                state: { player: cp.selectedPlayer },
-              })
-            }
-          >
-            <Card.Content className="p-6">
-              <div className="flex items-center justify-between w-full">
-                <div className="flex items-center gap-3">
-                  <div className="p-2 rounded-xl bg-teal-50 dark:bg-teal-900/20 text-teal-500">
-                    <FaCamera className="w-6 h-6" />
-                  </div>
-                  <span className="text-lg font-medium">
-                    {t("contentpage.screenshots")}
-                  </span>
-                </div>
-                <AnimatePresence mode="wait">
-                  {cp.loading ? (
-                    <motion.div
-                      key="spinner"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      <Spinner size="sm" />
-                    </motion.div>
-                  ) : (
-                    <motion.span
-                      key="count"
-                      initial={{ opacity: 0 }}
-                      animate={{ opacity: 1 }}
-                      exit={{ opacity: 0 }}
-                      transition={{ duration: 0.2 }}
-                      className="text-2xl font-bold"
-                    >
-                      {cp.screenshotsCount}
-                    </motion.span>
-                  )}
-                </AnimatePresence>
-              </div>
-            </Card.Content>
-          </button>
-        </Card>
+              </Card.Content>
+            </button>
+          </Card>
+        ))}
       </motion.div>
 
-      {/* Sibling modal focus traps must not remain active behind import prompts. */}
-      <UnifiedModal
-        isOpen={cp.importing && !cp.playerSelectOpen && !cp.dupOpen}
-        type="primary"
-        title={
-          cp.transferring
-            ? t("contentpage.transfer_progress_title")
-            : t("mods.importing_title")
-        }
-        icon={<FiUploadCloud className="w-6 h-6" />}
-        isDismissable={false}
-        showConfirmButton={false}
-        showCancelButton={false}
-      >
-        <ModalProgress
-          label={t("contentpage.transfer_progress_title")}
-          description={<> {cp.transferring
-              ? t("contentpage.transfer_progress_body")
-              : t("mods.importing_body")} </>}
-          currentItem={cp.currentFile}
-        />
-      </UnifiedModal>
+      <ContentTaskDialog task={cp.importTask} players={playerOptions} />
+      <ContentTaskDialog task={cp.transferTask} />
       <UnifiedModal
         size="wide"
         isOpen={cp.transferTargetOpen}
@@ -660,89 +420,6 @@ export default function ContentPage() {
               <ModalDescription>{t("contentpage.transfer_no_targets")}</ModalDescription>
             </div>
           )}
-        </div>
-      </UnifiedModal>
-      <ImportResultModal
-        isOpen={cp.errOpen}
-        onOpenChange={cp.errOnOpenChange}
-        results={{ success: cp.resultSuccess, failed: cp.resultFailed }}
-        onConfirm={() => {
-          cp.setErrorMsg("");
-          cp.setResultSuccess([]);
-          cp.setResultFailed([]);
-        }}
-      />
-      <UnifiedModal
-        isOpen={cp.dupOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            cp.dupOnClose();
-            cp.dupResolveRef.current?.(false);
-          }
-        }}
-        type="warning"
-        title={t("mods.overwrite_modal_title")}
-        confirmText={t("mods.overwrite_and_import")}
-        cancelText={t("common.cancel")}
-        showCancelButton
-        onConfirm={() => {
-          cp.dupResolveRef.current?.(true);
-          cp.dupOnClose();
-        }}
-        onCancel={() => {
-          cp.dupResolveRef.current?.(false);
-          cp.dupOnClose();
-        }}
-      >
-        <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
-        {cp.dupNameRef.current ? <ModalPanel className="font-mono">{cp.dupNameRef.current}</ModalPanel> : null}
-      </UnifiedModal>
-      <UnifiedModal
-        size="wide"
-        isOpen={cp.playerSelectOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            cp.playerSelectOnClose();
-            cp.playerSelectResolveRef.current?.("");
-          }
-        }}
-        type="primary"
-        title={t("contentpage.select_player_title")}
-        cancelText={t("common.cancel")}
-        showCancelButton
-        showConfirmButton={false}
-        onCancel={() => {
-          cp.playerSelectResolveRef.current?.("");
-          cp.playerSelectOnClose();
-        }}
-      >
-        <div className="flex flex-col gap-4">
-          <ModalDescription>
-            {t("contentpage.select_player_for_import")}
-          </ModalDescription>
-          <div className="flex flex-col gap-2 max-h-[300px] overflow-y-auto custom-scrollbar p-1">
-            {cp.players.length ? (
-              cp.players.map((p) => (
-                <Button
-                  key={p}
-                  onPress={() => {
-                    cp.playerSelectResolveRef.current?.(p);
-                    cp.playerSelectOnClose();
-                  }}
-                  variant={"secondary"}
-                  className={
-                    "w-full justify-start bg-surface-secondary text-foreground dark:text-zinc-200"
-                  }
-                >
-                  {resolvePlayerDisplayName(p, cp.playerGamertagMap)}
-                </Button>
-              ))
-            ) : (
-              <div className="text-sm text-muted dark:text-zinc-400">
-                {t("contentpage.no_players")}
-              </div>
-            )}
-          </div>
         </div>
       </UnifiedModal>
     </PageContainer>

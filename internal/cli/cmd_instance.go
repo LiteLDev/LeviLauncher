@@ -303,6 +303,27 @@ func (s instRegState) displacedLabel() string {
 	return "store"
 }
 
+// instHolderPIDs returns the game processes running from the slot's
+// holder.
+func instHolderPIDs(st instRegState, all []Instance) []int {
+	if st.HolderName != "" {
+		for _, o := range all {
+			if o.Name == st.HolderName {
+				return instRunningPIDs(o)
+			}
+		}
+	}
+	prefix := strings.ToLower(st.Holder) + string(filepath.Separator)
+	var out []int
+	for _, p := range minecraftProcesses() {
+		if p.ExePath != "" && strings.HasPrefix(strings.ToLower(utils.CanonicalWindowsPath(p.ExePath)), prefix) {
+			out = append(out, p.Pid)
+		}
+	}
+	sort.Ints(out)
+	return out
+}
+
 func (s instRegState) describeHolder() string {
 	if s.HolderName != "" {
 		return "instance " + s.HolderName
@@ -341,6 +362,16 @@ func instRegisterFlow(c *Ctx, inst Instance) (instRegisterResult, error) {
 		return res, instRunningError(inst, pids)
 	}
 	if st.Holder != "" {
+		// Windows removes the holder's package to register this one, which
+		// closes its running game.
+		if pids := instHolderPIDs(st, all); len(pids) > 0 {
+			e := Errorf(ExitConflict, "ERR_GAME_ALREADY_RUNNING", "%s is running (pid %s); registering %s would close it",
+				st.describeHolder(), joinInts(pids), inst.Name)
+			if st.HolderName != "" {
+				return res, e.WithHint("%s stop %s", ProgramName, quoteArg(st.HolderName))
+			}
+			return res, e.WithHint("%s process stop %s", ProgramName, strings.Trim(fmt.Sprint(pids), "[]"))
+		}
 		d := st.displacedLabel()
 		res.Displaced = &d
 		q := fmt.Sprintf("Register %s as Minecraft (%s), replacing %s (its data is kept)?",
@@ -1200,6 +1231,13 @@ func runInstanceRename(c *Ctx) error {
 	if e := Backend(instRenameFolder(inst.Name, newName)); e != nil {
 		return e
 	}
+	// For a case-only change the backend only rewrites the name in the
+	// metadata; the folder, which names the instance, keeps its case.
+	if base := filepath.Base(inst.Dir); base != newName && strings.EqualFold(base, newName) {
+		if err := os.Rename(inst.Dir, filepath.Join(filepath.Dir(inst.Dir), newName)); err != nil {
+			return Backend("ERR_RENAME_FAILED").WithDetail(err.Error())
+		}
+	}
 	if strings.EqualFold(strings.TrimSpace(defaultInstanceCfg()), inst.Name) {
 		if err := instSetDefault(newName); err != nil {
 			c.Warn("the default instance still names %s: %v", inst.Name, err)
@@ -1268,7 +1306,16 @@ func runInstanceRemove(c *Ctx) error {
 	}
 	results := make([]instRemoveResult, 0, len(targets))
 	var failed []*Error
-	for _, inst := range targets {
+	var skipped []string
+	for i, inst := range targets {
+		// Ctrl-C stops the batch between instances: the one being deleted
+		// is finished, the rest are left alone.
+		if c.Context().Err() != nil {
+			for _, t := range targets[i:] {
+				skipped = append(skipped, t.Name)
+			}
+			break
+		}
 		r := instRemoveResult{Name: inst.Name}
 		if e := FromError(instRemoveOne(c, inst, all)); e != nil {
 			r.Error = &struct {
@@ -1302,6 +1349,14 @@ func runInstanceRemove(c *Ctx) error {
 		return nil
 	}); err != nil {
 		return err
+	}
+	if len(skipped) > 0 {
+		quoted := make([]string, len(skipped))
+		for i, n := range skipped {
+			quoted[i] = quoteArg(n)
+		}
+		return Errorf(ExitInterrupted, "ERR_INTERRUPTED", "interrupted; not removed: %s", strings.Join(skipped, ", ")).
+			WithHint("%s instance remove %s", ProgramName, strings.Join(quoted, " "))
 	}
 	return instBatchExit(c, len(targets), len(failed), "instances", "removed")
 }

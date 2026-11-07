@@ -60,3 +60,13 @@ func TestMonitorWithoutApplicationOnlyReports(t *testing.T) {
 	}
 	<-done
 }
+
+func TestMonitorTimeoutsFromContext(t *testing.T) {
+	if p, w := timeoutsFrom(context.Background()); p != defaultProcessTimeout || w != defaultWindowTimeout {
+		t.Fatalf("defaults = %v %v", p, w)
+	}
+	ctx := WithMonitorTimeouts(context.Background(), 8*time.Minute, 0)
+	if p, w := timeoutsFrom(ctx); p != 8*time.Minute || w != defaultWindowTimeout {
+		t.Fatalf("custom = %v %v", p, w)
+	}
+}

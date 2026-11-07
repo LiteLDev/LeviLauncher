@@ -155,7 +155,8 @@ func procTargets(c *Ctx, running []procItem) ([]procItem, error) {
 				continue
 			}
 			if _, lerr := LookupInstance(a); lerr != nil {
-				return nil, Backend("ERR_PROCESS_NOT_MINECRAFT").WithDetail(fmt.Sprintf("pid %d", pid))
+				return nil, Errorf(ExitNotFound, "ERR_PROCESS_NOT_MINECRAFT", "no Minecraft process has PID %d", pid).
+					WithHint("%s ps", ProgramName)
 			}
 		}
 		inst, err := LookupInstance(a)

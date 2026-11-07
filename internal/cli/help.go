@@ -228,6 +228,11 @@ func helpFor(w io.Writer, t *tree, words []string) error {
 	if err != nil {
 		return err
 	}
+	// help takes command words only: "help instance lst" names no command,
+	// even though "instance lst" alone would reach the default verb.
+	if r.viaDefault && len(r.rest) > 0 {
+		return mistypedVerb(r.cmd.noun, r.rest[0], true)
+	}
 	switch {
 	case r.cmd != nil:
 		writeCommandHelp(w, r.cmd)

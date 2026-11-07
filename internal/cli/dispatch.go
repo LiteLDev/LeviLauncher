@@ -119,6 +119,10 @@ type resolved struct {
 	noun  *Noun    // set when only a noun was given (noun help)
 	words []string // the words that named the command, as typed
 	rest  []string // arguments after the command words
+	// viaDefault: cmd is the noun's default verb, reached without naming it
+	// ("instance Beta" for "instance show Beta"); rest starts with the word
+	// that was not a verb.
+	viaDefault bool
 }
 
 // resolveCommand reads the command words from args (globals may precede
@@ -161,7 +165,7 @@ func resolveCommand(t *tree, args []string, vals *flagValues) (resolved, error) 
 	}
 	if n.Default != "" {
 		if c, ok := n.verbs[n.Default]; ok {
-			return resolved{cmd: c, words: rest[:1], rest: rest2}, nil
+			return resolved{cmd: c, words: rest[:1], rest: rest2, viaDefault: true}, nil
 		}
 	}
 	var verbs []string
@@ -169,6 +173,24 @@ func resolveCommand(t *tree, args []string, vals *flagValues) (resolved, error) 
 		verbs = append(verbs, c.name)
 	}
 	return resolved{}, unknownCommand(t, n.Name+" "+rest2[0], prefixAll(n.Name+" ", verbs))
+}
+
+// mistypedVerb returns an unknown-command error for word under noun n when
+// word is close to one of its verbs, or always when always is set; nil
+// otherwise (word is an argument of the default verb).
+func mistypedVerb(n *Noun, word string, always bool) error {
+	var verbs []string
+	for _, c := range n.visibleVerbs() {
+		verbs = append(verbs, c.name)
+	}
+	e := UsageError("unknown command %q", n.Name+" "+word)
+	if s := suggest(word, verbs); s != "" {
+		return e.WithHint("did you mean %q?", n.Name+" "+s)
+	}
+	if always {
+		return e.WithHint("run '%s help %s' for its commands", ProgramName, n.Name)
+	}
+	return nil
 }
 
 func tail(a []string) []string {

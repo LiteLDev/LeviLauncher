@@ -194,10 +194,42 @@ func MonitorGameProcess(ctx context.Context, versionDir string, launchPID int) {
 	monitorGameProcess(ctx, versionDir, launchPID, false)
 }
 
+// Default limits of the game monitor: how long it waits for the game
+// process, and then for its window.
+const (
+	defaultProcessTimeout = 120 * time.Second
+	defaultWindowTimeout  = 60 * time.Second
+)
+
+type monitorTimeoutsKey struct{}
+
+type monitorTimeouts struct{ process, window time.Duration }
+
+// WithMonitorTimeouts makes a monitor started under ctx wait up to process
+// for the game process and then up to window for its window, instead of the
+// defaults (120s and 60s). A value <= 0 keeps that default.
+func WithMonitorTimeouts(ctx context.Context, process, window time.Duration) context.Context {
+	return context.WithValue(ctx, monitorTimeoutsKey{}, monitorTimeouts{process, window})
+}
+
+func timeoutsFrom(ctx context.Context) (process, window time.Duration) {
+	process, window = defaultProcessTimeout, defaultWindowTimeout
+	if t, ok := ctx.Value(monitorTimeoutsKey{}).(monitorTimeouts); ok {
+		if t.process > 0 {
+			process = t.process
+		}
+		if t.window > 0 {
+			window = t.window
+		}
+	}
+	return process, window
+}
+
 // The caller owns the activeMonitors entry, including during UWP activation.
 func monitorGameProcess(ctx context.Context, versionDir string, launchPID int, launchBehaviorApplied bool) {
 	defer activeMonitors.Delete(versionDir)
-	monitorWithTimeouts(ctx, versionDir, launchPID, launchBehaviorApplied, 120*time.Second, 60*time.Second)
+	process, window := timeoutsFrom(ctx)
+	monitorWithTimeouts(ctx, versionDir, launchPID, launchBehaviorApplied, process, window)
 }
 
 // monitorWithTimeouts waits up to processTimeout for the game process and
@@ -255,10 +287,17 @@ func monitorWithTimeouts(ctx context.Context, versionDir string, launchPID int, 
 		return
 	}
 
-	sink.Emit(EventMcLaunchDone, struct{}{})
 	if !gui {
+		// Without a window to restore, a game that never showed one is a
+		// timeout for the caller (the command line), not a success.
+		if !visible {
+			sink.Emit(EventMcLaunchFailed, "ERR_LAUNCH_TIMEOUT")
+			return
+		}
+		sink.Emit(EventMcLaunchDone, struct{}{})
 		return
 	}
+	sink.Emit(EventMcLaunchDone, struct{}{})
 
 	// waitForGameWindow reports found without visible when it times out: the
 	// game process is alive but never put a window on screen. Getting the

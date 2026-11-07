@@ -208,6 +208,7 @@ func TestBackupRestore(t *testing.T) {
 	if code != ExitPartial || !strings.Contains(out, "could not be reinstalled") {
 		t.Fatalf("partial: %d %q", code, out)
 	}
+	f.status = "success"
 
 	// The game is running.
 	f.gameRunning = true
@@ -215,6 +216,18 @@ func TestBackupRestore(t *testing.T) {
 		t.Fatalf("game running: %d", code)
 	}
 	f.gameRunning = false
+	// Another game on the shared game data blocks a game-data restore, but
+	// not a mods-only one.
+	minecraftProcesses = func() []types.ProcessInfo {
+		return []types.ProcessInfo{{Pid: 77, IsLauncher: true, VersionName: "Other"}}
+	}
+	if code, _, errOut := h.run("backup", "restore", archive, "--prefer", "current", "--yes"); code != ExitConflict || !strings.Contains(errOut, "PID 77") {
+		t.Fatalf("shared data in use: %d %q", code, errOut)
+	}
+	if code, _, errOut := h.run("backup", "restore", archive, "--scope", "mods", "--prefer", "current", "--yes"); code != 0 || strings.Contains(errOut, "PID 77") {
+		t.Fatalf("mods only: %d %q", code, errOut)
+	}
+	minecraftProcesses = func() []types.ProcessInfo { return nil }
 	if code, _, _ := h.run("backup", "restore", filepath.Join(t.TempDir(), "missing.zip")); code != ExitNotFound {
 		t.Fatalf("missing archive: %d", code)
 	}

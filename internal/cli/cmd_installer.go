@@ -1089,7 +1089,15 @@ func runInstallerRemove(c *Ctx) error {
 			return err
 		}
 	}
-	for _, f := range targets {
+	var skipped []string
+	for i, f := range targets {
+		// Ctrl-C stops the batch between files.
+		if c.Context().Err() != nil {
+			for _, t := range targets[i:] {
+				skipped = append(skipped, filepath.Base(t.Path))
+			}
+			break
+		}
 		it := installerRemoveItem{installerFileItem: giFileItem(f)}
 		var err error
 		if f.State == catalog.StateDownloading {
@@ -1129,6 +1137,9 @@ func runInstallerRemove(c *Ctx) error {
 		return nil
 	}); err != nil {
 		return err
+	}
+	if len(skipped) > 0 {
+		return Errorf(ExitInterrupted, "ERR_INTERRUPTED", "interrupted; not removed: %s", strings.Join(skipped, ", "))
 	}
 	switch {
 	case failures == 0:

@@ -65,3 +65,73 @@ func TestUpdateKeepsChangesSavedByAnotherProcess(t *testing.T) {
 		t.Fatal("current instance not cleared")
 	}
 }
+
+func readConfigFile(t *testing.T, path string) AppConfig {
+	t.Helper()
+	b, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var c AppConfig
+	if err := json.Unmarshal(b, &c); err != nil {
+		t.Fatal(err)
+	}
+	return c
+}
+
+func TestUpdateKeepsTheRunningDataRoot(t *testing.T) {
+	path := useTempConfig(t)
+	started := filepath.Join(t.TempDir(), "started")
+	b, _ := json.Marshal(AppConfig{BaseRoot: started})
+	if err := os.WriteFile(path, b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := Load(); err != nil {
+		t.Fatal(err)
+	}
+	if apppath.BaseRoot() != started {
+		t.Fatalf("base root = %q, want %q", apppath.BaseRoot(), started)
+	}
+
+	// Another process (the command line) saves a new data root.
+	external := filepath.Join(t.TempDir(), "external")
+	b, _ = json.Marshal(AppConfig{BaseRoot: external})
+	if err := os.WriteFile(path, b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	// This process then changes an unrelated setting.
+	if err := Update(func(c *AppConfig) { c.MinimizeToTray = true }); err != nil {
+		t.Fatal(err)
+	}
+	if apppath.BaseRoot() != started || GetBaseRootOverride() != started {
+		t.Fatalf("running data root moved to %q / %q", apppath.BaseRoot(), GetBaseRootOverride())
+	}
+	if got := readConfigFile(t, path); got.BaseRoot != external || !got.MinimizeToTray {
+		t.Fatalf("config.json = %+v, want base_root %q kept", got, external)
+	}
+
+	// A mutation that sets the data root itself moves the process.
+	moved := filepath.Join(t.TempDir(), "moved")
+	if err := Update(func(c *AppConfig) { c.BaseRoot = moved }); err != nil {
+		t.Fatal(err)
+	}
+	if apppath.BaseRoot() != moved || GetBaseRootOverride() != moved {
+		t.Fatalf("base root = %q / %q, want %q", apppath.BaseRoot(), GetBaseRootOverride(), moved)
+	}
+	if got := readConfigFile(t, path); got.BaseRoot != moved {
+		t.Fatalf("config.json base_root = %q, want %q", got.BaseRoot, moved)
+	}
+
+	// Setting the root this process already runs on replaces a different
+	// one another process saved meanwhile.
+	b, _ = json.Marshal(AppConfig{BaseRoot: external, MinimizeToTray: true})
+	if err := os.WriteFile(path, b, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := SetBaseRoot(moved); err != nil {
+		t.Fatal(err)
+	}
+	if got := readConfigFile(t, path); got.BaseRoot != moved || !got.MinimizeToTray || apppath.BaseRoot() != moved {
+		t.Fatalf("config.json = %+v, base root %q; want %q", got, apppath.BaseRoot(), moved)
+	}
+}

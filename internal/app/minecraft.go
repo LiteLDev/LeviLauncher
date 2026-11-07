@@ -358,7 +358,7 @@ func (a *Minecraft) IsGamingServicesInstalled() bool {
 	return false
 }
 
-func (a *Minecraft) StartMsixvcDownload(url string, md5sum string) string {
+func (a *Minecraft) StartMsixvcDownload(url string, md5sum string) (string, error) {
 	return mcservice.StartMsixvcDownload(a.ctx, url, md5sum)
 }
 func (a *Minecraft) ResumeMsixvcDownload() { mcservice.ResumeMsixvcDownload() }

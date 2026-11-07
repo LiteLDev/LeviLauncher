@@ -99,7 +99,7 @@ func TestProcessStop(t *testing.T) {
 		t.Fatalf("confirmation: %d %s", code, errOut)
 	}
 	code, _, errOut = f.h.run("stop", "999", "-y")
-	if code != ExitNotFound || !strings.Contains(errOut, "[ERR_PROCESS_NOT_MINECRAFT]") {
+	if code != ExitNotFound || !strings.Contains(errOut, "no Minecraft process has PID 999") || !strings.Contains(errOut, "[ERR_PROCESS_NOT_MINECRAFT]") {
 		t.Fatalf("foreign pid: %d %s", code, errOut)
 	}
 	code, out, errOut := f.h.run("stop", "survival", "-y")

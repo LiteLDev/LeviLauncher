@@ -42,9 +42,70 @@ const (
 
 // Prepare decides the layout for this run, migrating the legacy layout when
 // it exists. An error with Outcome Current means a migration that an earlier
-// start left behind could not be undone; the launcher must not start, as it
-// would find its files in neither layout.
+// start left behind could not be undone, or the migration lock could not be
+// taken while such a migration is pending; the launcher must not start, as
+// it would find its files in neither layout. It runs under the migration
+// lock, waiting for a command-line invocation that holds it; the window
+// calls it once it holds the single-instance lock.
 func Prepare() (Outcome, error) {
+	unlock, ok := lockMigration(-1)
+	if !ok {
+		return lockFailed()
+	}
+	defer unlock()
+	return prepare()
+}
+
+// errMigrationBusy reports a migration skipped because another launcher
+// process is running or migrating.
+var errMigrationBusy = errors.New("another launcher process is running")
+
+// errMigrationLock reports a migration journal left behind that could not be
+// recovered because the migration lock could not be taken.
+var errMigrationLock = errors.New("could not take the storage migration lock to finish an interrupted migration")
+
+// sharedLockWait bounds how long PrepareShared waits for a migration that
+// another launcher process is running.
+var sharedLockWait = 30 * time.Second
+
+// PrepareShared is Prepare for a process that may run next to the window
+// (the command line). It waits (bounded) for a migration another process is
+// running, then migrates only when windowRunning reports false. Otherwise it
+// neither migrates nor recovers a journal, and runs on the legacy layout
+// when legacy data is pending (Outcome Legacy with errMigrationBusy).
+func PrepareShared(windowRunning func() bool) (Outcome, error) {
+	unlock, ok := lockMigration(sharedLockWait)
+	if !ok {
+		return lockFailed()
+	}
+	defer unlock()
+	if windowRunning != nil && windowRunning() {
+		return useLegacy(errMigrationBusy)
+	}
+	return prepare()
+}
+
+// lockFailed is the outcome when the migration lock cannot be taken: never
+// the current layout while a journal says a migration is half done.
+func lockFailed() (Outcome, error) {
+	if exists(apppath.MigrationJournalPath()) {
+		return Current, errMigrationLock
+	}
+	return useLegacy(errMigrationBusy)
+}
+
+// useLegacy selects the legacy layout without migrating when it holds
+// pending data.
+func useLegacy(reason error) (Outcome, error) {
+	legacy := findLegacyDir()
+	if legacy == "" {
+		return Current, nil
+	}
+	apppath.SetLegacyMode(legacy)
+	return Legacy, reason
+}
+
+func prepare() (Outcome, error) {
 	if err := recoverJournal(apppath.MigrationJournalPath()); err != nil {
 		return Current, err
 	}

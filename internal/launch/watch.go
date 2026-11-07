@@ -106,6 +106,15 @@ func GameProcessIDs(versionDir string) []uint32 {
 	return out
 }
 
+// GameWindowVisible reports whether one of pids shows a game window.
+func GameWindowVisible(pids []uint32) bool {
+	set := make(map[uint32]struct{}, len(pids))
+	for _, pid := range pids {
+		set[pid] = struct{}{}
+	}
+	return isGameWindowVisible(set)
+}
+
 // WaitGameExit blocks until no Minecraft process runs from versionDir, or
 // ctx ends. It works for every launch type, including protocol and UWP
 // activation where the launcher never owns the game process.

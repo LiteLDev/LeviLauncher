@@ -271,6 +271,19 @@ type modUpdatePlanItem struct {
 	id      string
 }
 
+// modUpdateWouldDowngrade reports whether updating from to to goes back
+// a version, e.g. from an installed pre-release newer than the latest
+// stable release. Versions that are not semantic versions never count.
+func modUpdateWouldDowngrade(from, to string) bool {
+	if _, ok := lipindex.ParseSemver(from); !ok {
+		return false
+	}
+	if _, ok := lipindex.ParseSemver(to); !ok {
+		return false
+	}
+	return lipindex.CompareSemverLike(to, from) < 0
+}
+
 func runModUpdate(c *Ctx) error {
 	if c.Bool("all") == (len(c.Args) > 0) {
 		return UsageError("name the mods to update, or use --all").WithHint("%s mod update --all", ProgramName)
@@ -340,6 +353,7 @@ func runModUpdate(c *Ctx) error {
 	}
 	// The catalogue may be cached; take the target versions fresh.
 	plan := []modUpdatePlanItem{}
+	held := 0
 	for _, cd := range cands {
 		to := ""
 		if d, err := modOps.fetchDetail(c.Context(), cd.id); err == nil {
@@ -355,13 +369,20 @@ func runModUpdate(c *Ctx) error {
 		if to == "" || lipindex.NormalizeSemverInput(strings.ToLower(to)) == lipindex.NormalizeSemverInput(strings.ToLower(cd.from)) {
 			continue
 		}
+		if modUpdateWouldDowngrade(cd.from, to) {
+			// A warning, so --json still says why the mod was not updated.
+			c.Warn("%s %s is newer than the catalogue's latest stable %s; to downgrade, run: %s mod install %s@%s",
+				cd.label, cd.from, to, ProgramName, lipShortID(cd.id), to)
+			held++
+			continue
+		}
 		plan = append(plan, modUpdatePlanItem{Mod: cd.label, Package: lipShortID(cd.id), From: cd.from, To: to, id: cd.id})
 	}
 	if len(plan) == 0 {
 		if c.G.JSON && c.Bool("dry-run") {
 			return c.JSON(plan)
 		}
-		if c.Bool("all") {
+		if c.Bool("all") && held == 0 {
 			c.Notice("Everything is up to date.")
 		}
 		if c.G.JSON {

@@ -181,3 +181,28 @@ func TestDecide(t *testing.T) {
 		t.Fatalf("missing version = %+v", p)
 	}
 }
+
+func TestDecidePrerelease(t *testing.T) {
+	v := Variant{Files: []File{{Version: "0.9.0"}, {Version: "1.0.0-rc.1"}, {Version: "1.0.0"}}}
+	// No version asked: the release, not its own pre-release.
+	if p := Decide(PlanInput{Variant: v}); p.Version != "1.0.0" || p.Action != ActionInstall {
+		t.Fatalf("default = %+v", p)
+	}
+	// Only pre-releases: the newest of them.
+	if p := Decide(PlanInput{Variant: Variant{Files: []File{{Version: "1.0.0-rc.1"}}}}); p.Version != "1.0.0-rc.1" {
+		t.Fatalf("pre-release only = %+v", p)
+	}
+	// The release over its pre-release is an upgrade, the other way a
+	// downgrade.
+	rc := InstallState{Installed: true, Explicit: true, InstalledVersion: "1.0.0-rc.1"}
+	if p := Decide(PlanInput{Variant: v, Version: "1.0.0", Pkg: rc}); p.Action != ActionUpgrade {
+		t.Fatalf("rc -> release = %s", p.Action)
+	}
+	rel := InstallState{Installed: true, Explicit: true, InstalledVersion: "1.0.0"}
+	if p := Decide(PlanInput{Variant: v, Version: "1.0.0-rc.1", Pkg: rel}); p.Action != ActionDowngrade {
+		t.Fatalf("release -> rc = %s", p.Action)
+	}
+	if d := comparePlanVersions("1.0", "0.9.5"); d <= 0 {
+		t.Fatalf("dotted fallback = %d", d)
+	}
+}

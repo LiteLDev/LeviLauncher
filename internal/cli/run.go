@@ -10,6 +10,7 @@ import (
 	"os"
 	"os/signal"
 	"runtime/debug"
+	"strconv"
 	"strings"
 	"sync"
 	"sync/atomic"
@@ -31,9 +32,11 @@ func Run(args []string) int {
 }
 
 // bootstrap prepares storage and settings like the window does, minus the
-// window, WebView2 and the single-instance lock. Replaced in tests.
+// window, WebView2 and the single-instance lock. It migrates the legacy
+// layout only when no window runs and no other launcher process is
+// migrating; otherwise it runs on the legacy layout. Replaced in tests.
 var bootstrap = func() error {
-	switch outcome, err := storage.Prepare(); {
+	switch outcome, err := storage.PrepareShared(GUIRunning); {
 	case err != nil && outcome == storage.Current:
 		return Errorf(ExitFailure, "ERR_STORAGE", "the launcher data migration could not be completed or undone: %v", err)
 	case outcome == storage.Legacy:
@@ -47,6 +50,10 @@ var bootstrap = func() error {
 	}
 	return nil
 }
+
+// interruptCancelled runs once the first Ctrl-C has cancelled the command's
+// context; tests replace it to wait for that.
+var interruptCancelled = func() {}
 
 // notifyInterrupt delivers Ctrl-C; replaced in tests.
 var notifyInterrupt = func(ch chan<- os.Signal) func() {
@@ -65,6 +72,11 @@ func run(args []string, s *Streams) (code int) {
 	// the globals.
 	fail := func(err error) int {
 		readGlobals(vals, &g)
+		// The parse stops at the bad word or flag: honour a --json given
+		// after it, so scripts can still parse the error.
+		if !g.JSON {
+			g.JSON = jsonRequested(args)
+		}
 		return printError(s.Stderr, errMu, g, FromError(err))
 	}
 
@@ -92,6 +104,12 @@ func run(args []string, s *Streams) (code int) {
 
 	switch {
 	case vals.vals["help"] == true:
+		// "instance lst -h": a verb typo, not help for the default verb.
+		if r.viaDefault && len(positional) > 0 {
+			if err := mistypedVerb(r.cmd.noun, positional[0], false); err != nil {
+				return fail(err)
+			}
+		}
 		switch {
 		case r.cmd != nil:
 			writeCommandHelp(s.Stdout, r.cmd)
@@ -119,6 +137,13 @@ func run(args []string, s *Streams) (code int) {
 
 	c := r.cmd
 	if len(positional) < c.MinArgs || (c.MaxArgs != Unlimited && len(positional) > c.MaxArgs) {
+		// "instance remov foo" reaches the default verb with too many
+		// arguments: report the mistyped verb, not the default's usage.
+		if r.viaDefault && len(positional) > 0 {
+			if err := mistypedVerb(c.noun, positional[0], false); err != nil {
+				return fail(err)
+			}
+		}
 		return fail(argCountError(c, len(positional)))
 	}
 	if err := vals.applyDefaults(c.Flags); err != nil {
@@ -150,6 +175,7 @@ func run(args []string, s *Streams) (code int) {
 				fmt.Fprintln(s.Stderr, "\nInterrupted; stopping (press Ctrl-C again to force)")
 				errMu.Unlock()
 				cancel()
+				interruptCancelled()
 				continue
 			}
 			exit(ExitInterrupted)
@@ -170,14 +196,21 @@ func run(args []string, s *Streams) (code int) {
 		if err := bootstrap(); err != nil {
 			return printError(s.Stderr, errMu, g, FromError(err))
 		}
+		// Ctrl-C during a slow bootstrap: do not start the command.
+		if ctx.Err() != nil {
+			return printError(s.Stderr, errMu, g, errInterrupted())
+		}
 	}
 
 	err = safeRun(c, cx)
 	prog.Done()
 	if interrupted.Load() {
+		// A command's own exit code (a batch's partial failure) is replaced
+		// by the interruption.
+		var ec ExitCode
 		e := FromError(err)
-		if e == nil || errors.Is(err, context.Canceled) {
-			e = &Error{Code: "ERR_INTERRUPTED", Message: "interrupted", Exit: ExitInterrupted}
+		if e == nil || errors.Is(err, context.Canceled) || errors.As(err, &ec) {
+			e = errInterrupted()
 		}
 		e.Exit = ExitInterrupted
 		return printError(s.Stderr, errMu, g, e)
@@ -190,6 +223,32 @@ func run(args []string, s *Streams) (code int) {
 		return int(ec)
 	}
 	return printError(s.Stderr, errMu, g, FromError(err))
+}
+
+// jsonRequested reports whether args, up to a bare "--", ask for --json
+// (the last of --json, --json=<bool> and --no-json wins).
+func jsonRequested(args []string) bool {
+	on := false
+	for _, a := range args {
+		if a == "--" {
+			break
+		}
+		name, val, hasVal := strings.Cut(a, "=")
+		switch name {
+		case "--json":
+			on = true
+			if hasVal {
+				on, _ = strconv.ParseBool(val)
+			}
+		case "--no-json":
+			on = false
+		}
+	}
+	return on
+}
+
+func errInterrupted() *Error {
+	return &Error{Code: "ERR_INTERRUPTED", Message: "interrupted", Exit: ExitInterrupted}
 }
 
 func readGlobals(v *flagValues, g *Globals) {

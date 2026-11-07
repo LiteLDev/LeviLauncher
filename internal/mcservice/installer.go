@@ -26,7 +26,7 @@ type VersionStatus struct {
 	PackageType  string `json:"packageType"`
 }
 
-func StartMsixvcDownload(ctx context.Context, url string, md5sum string) string {
+func StartMsixvcDownload(ctx context.Context, url string, md5sum string) (string, error) {
 	return msixvc.StartDownload(ctx, url, md5sum)
 }
 func ResumeMsixvcDownload()                { msixvc.Resume() }

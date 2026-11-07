@@ -13,7 +13,6 @@ import {
   Switch,
   TextField,
   Tooltip,
-  toast,
 } from "@heroui/react";
 
 import React from "react";
@@ -36,6 +35,9 @@ import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { cn } from "@/utils/cn";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { useRouteTitle } from "@/hooks/useRouteTitle";
+import { ROUTES } from "@/constants/routes";
+import { notify } from "@/utils/activity";
+import { useNavigationHistory } from "@/utils/NavigationHistoryContext";
 import {
   useLevelDatEditor,
   normTag,
@@ -48,6 +50,7 @@ import {
 export default function WorldLevelDatEditorPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
+  const { canGoBack } = useNavigationHistory();
   const loc = useLocation();
   const sp = new URLSearchParams(String(loc?.search || ""));
   const worldPath = sp.get("path") || "";
@@ -118,7 +121,14 @@ export default function WorldLevelDatEditorPage() {
 
   const handleSave = async () => {
     const ok = await saveAll();
-    if (ok) toast(t("common.success"), { variant: "success" });
+    if (ok) {
+      notify({
+        variant: "success",
+        title: t("content_task.world_saved"),
+        description: levelName,
+        source: "content",
+      });
+    }
   };
 
   const FieldBox = React.useMemo(() => {
@@ -185,127 +195,133 @@ export default function WorldLevelDatEditorPage() {
     <PageContainer>
       <Card className={cn("flex-1 min-h-0", LAYOUT.GLASS_CARD.BASE)}>
         <Card.Content className="p-0 flex flex-col h-full overflow-hidden">
-          <div className="shrink-0 p-6 flex flex-col gap-6 border-b border-border dark:border-white/10">
-            <PageHeader
-              title={t("contentpage.world_leveldat_editor")}
-              startContent={
-                <Button
-                  isIconOnly
-                  aria-label={t("common.back")}
-                  isDisabled={saving || loading}
-                  onPress={() => navigate(-1)}
-                  variant={"ghost"}
-                  className={"rounded-full"}
-                >
-                  <FaArrowLeft size={20} />
-                </Button>
-              }
-              endContent={
-                <>
-                  <TextField
-                    aria-label={t("common.search") as string}
+          <div className="shrink-0 p-4 min-[1200px]:p-6 flex flex-col gap-4 border-b border-border dark:border-white/10">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-2">
+              <Button
+                isIconOnly
+                aria-label={t("common.back")}
+                isDisabled={saving || loading}
+                onPress={() => {
+                  // Return to the list (restoring its page and scroll); a
+                  // directly opened editor falls back to the worlds list.
+                  if (canGoBack) navigate(-1);
+                  else navigate(ROUTES.contentWorlds);
+                }}
+                variant={"ghost"}
+                className={"rounded-full"}
+              >
+                <FaArrowLeft size={20} />
+              </Button>
+              <PageHeader
+                className="min-w-0 flex-1"
+                title={t("contentpage.world_leveldat_editor")}
+              />
+              <div className="flex shrink-0 items-center gap-2 ml-auto">
+                <Tooltip>
+                  <Button
+                    isIconOnly
+                    aria-label={t("common.refresh")}
+                    onPress={requestRefresh}
+                    isDisabled={saving}
+                    variant={"secondary"}
+                    isPending={loading}
                     className={cn(
-                      "group",
-                      COMPONENT_STYLES.input.mainWrapper,
-                      "w-48 sm:w-64",
+                      "rounded-full",
+                      "bg-surface-secondary dark:bg-surface/20 text-foreground dark:text-zinc-300",
                     )}
-                    value={filterText}
-                    onChange={(v) => {
-                      beforeUpdate();
-                      setFilterText(v);
-                    }}
                   >
-                    <InputGroup
-                      className={cn(
-                        COMPONENT_STYLES.input.inputWrapper,
-                        COMPONENT_STYLES.input.innerWrapper,
-                        "rounded-full",
-                        "min-h-8 text-sm",
-                      )}
-                    >
-                      <InputGroup.Prefix>
-                        {<FaSearch className="text-muted" />}
-                      </InputGroup.Prefix>
-                      <InputGroup.Input
-                        placeholder={t("common.search") as string}
-                        className={COMPONENT_STYLES.input.input}
-                      />
-                      <InputGroup.Suffix>
-                        {filterText && (
-                          <CloseButton
-                            aria-label="Clear"
-                            onPress={() =>
-                              ((v) => {
-                                beforeUpdate();
-                                setFilterText(v);
-                              })("")
-                            }
-                            className={COMPONENT_STYLES.input.clearButton}
-                          />
-                        )}
-                      </InputGroup.Suffix>
-                    </InputGroup>
-                  </TextField>
-                  <Tooltip>
-                    <Button
-                      isIconOnly
-                      aria-label={t("common.refresh")}
-                      onPress={requestRefresh}
-                      isDisabled={saving}
-                      variant={"secondary"}
-                      isPending={loading}
-                      className={cn(
-                        "rounded-full",
-                        "bg-surface-secondary dark:bg-surface/20 text-foreground dark:text-zinc-300",
-                      )}
-                    >
-                      {({ isPending }) => (
-                        <>
-                          <Spinner
-                            size="sm"
-                            color="current"
-                            className={isPending ? "" : "hidden"}
-                          />
-                          <FaSync className={loading ? "animate-spin" : ""} />
-                        </>
-                      )}
-                    </Button>
-                    <Tooltip.Content>{t("common.refresh")}</Tooltip.Content>
-                  </Tooltip>
-                  <Tooltip>
-                    <Button
-                      isIconOnly
-                      onPress={handleSave}
-                      aria-label={t("common.save")}
-                      isDisabled={loading || saving || !isDirty}
-                      variant={"primary"}
-                      isPending={saving}
-                      className={cn(
-                        "rounded-full",
-                        "bg-brand-500 brand-primary-foreground shadow-lg shadow-brand-900/20",
-                      )}
-                    >
-                      {({ isPending }) => (
-                        <>
-                          <Spinner
-                            size="sm"
-                            color="current"
-                            className={isPending ? "" : "hidden"}
-                          />
-                          <FaSave className="w-4 h-4" />
-                        </>
-                      )}
-                    </Button>
-                    <Tooltip.Content>{t("common.save")}</Tooltip.Content>
-                  </Tooltip>
-                </>
-              }
-            />
+                    {({ isPending }) => (
+                      <>
+                        <Spinner
+                          size="sm"
+                          color="current"
+                          className={isPending ? "" : "hidden"}
+                        />
+                        <FaSync className={loading ? "animate-spin" : ""} />
+                      </>
+                    )}
+                  </Button>
+                  <Tooltip.Content>{t("common.refresh")}</Tooltip.Content>
+                </Tooltip>
+                <Tooltip>
+                  <Button
+                    isIconOnly
+                    onPress={handleSave}
+                    aria-label={t("common.save")}
+                    isDisabled={loading || saving || !isDirty}
+                    variant={"primary"}
+                    isPending={saving}
+                    className={cn(
+                      "rounded-full",
+                      "bg-brand-500 brand-primary-foreground shadow-lg shadow-brand-900/20",
+                    )}
+                  >
+                    {({ isPending }) => (
+                      <>
+                        <Spinner
+                          size="sm"
+                          color="current"
+                          className={isPending ? "" : "hidden"}
+                        />
+                        <FaSave className="w-4 h-4" />
+                      </>
+                    )}
+                  </Button>
+                  <Tooltip.Content>{t("common.save")}</Tooltip.Content>
+                </Tooltip>
+              </div>
+            </div>
 
-            {isDirty && <p role="status" className="text-sm text-warning">{t("contentpage.editor_unsaved")}</p>}
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2">
+              <TextField
+                aria-label={t("common.search") as string}
+                className={cn(
+                  "group",
+                  COMPONENT_STYLES.input.mainWrapper,
+                  "min-w-0 flex-[1_1_16rem] max-w-md",
+                )}
+                value={filterText}
+                onChange={(v) => {
+                  beforeUpdate();
+                  setFilterText(v);
+                }}
+              >
+                <InputGroup
+                  className={cn(
+                    COMPONENT_STYLES.input.inputWrapper,
+                    COMPONENT_STYLES.input.innerWrapper,
+                    "rounded-full",
+                    "min-h-8 text-sm",
+                  )}
+                >
+                  <InputGroup.Prefix>
+                    {<FaSearch className="text-muted" />}
+                  </InputGroup.Prefix>
+                  <InputGroup.Input
+                    placeholder={t("common.search") as string}
+                    className={COMPONENT_STYLES.input.input}
+                  />
+                  <InputGroup.Suffix>
+                    {filterText && (
+                      <CloseButton
+                        aria-label={t("content_task.clear_search")}
+                        onPress={() =>
+                          ((v) => {
+                            beforeUpdate();
+                            setFilterText(v);
+                          })("")
+                        }
+                        className={COMPONENT_STYLES.input.clearButton}
+                      />
+                    )}
+                  </InputGroup.Suffix>
+                </InputGroup>
+              </TextField>
+              {isDirty && <p role="status" className="text-sm text-warning">{t("contentpage.editor_unsaved")}</p>}
+            </div>
 
             {error && (
-              <div className="w-full p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 text-danger flex items-center gap-2">
+              <div role="alert" className="w-full p-4 rounded-2xl bg-rose-50 dark:bg-rose-900/20 border border-rose-200 dark:border-rose-800/50 text-danger flex items-center gap-2">
                 <FaTimes className="w-4 h-4" />
                 <span>{t(error)}</span>
               </div>
@@ -317,7 +333,7 @@ export default function WorldLevelDatEditorPage() {
             inert={saving}
           >
             {loading ? (
-              <div className="flex flex-col items-center justify-center h-64 gap-4">
+              <div className="flex flex-col items-center justify-center py-16 gap-4">
                 <Spinner size="lg" color={"accent"} />
                 <div className="text-muted animate-pulse">
                   {t("common.loading")}
@@ -330,7 +346,7 @@ export default function WorldLevelDatEditorPage() {
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
                   transition={{ duration: 0.4, delay: 0.1 }}
-                  className="p-6 rounded-2xl bg-surface/50 border border-border dark:border-border/10 launcher-material-blur shadow-sm"
+                  className="p-4 min-[1200px]:p-6 rounded-2xl bg-surface/50 border border-border dark:border-border/10 launcher-material-blur shadow-sm"
                 >
                   <div className="flex items-center gap-4 mb-6">
                     <div className="w-1 h-6 rounded-full bg-brand-500 shadow-[0_0_10px_rgba(16,185,129,0.4)]" />
@@ -338,7 +354,7 @@ export default function WorldLevelDatEditorPage() {
                       {t("contentpage.basic_info")}
                     </h3>
                   </div>
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                  <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4">
                     <TextField
                       className={cn(
                         "group",
@@ -409,8 +425,8 @@ export default function WorldLevelDatEditorPage() {
                         transition={{ duration: 0.3 }}
                         className="overflow-hidden"
                       >
-                        <div className="p-6 rounded-2xl bg-surface/50 border border-border dark:border-border/10 launcher-material-blur shadow-sm transition-all">
-                          <div className="grid grid-cols-1 sm:grid-cols-[140px_1fr_100px_1fr_80px] gap-4 items-end">
+                        <div className="p-4 min-[1200px]:p-6 rounded-2xl bg-surface/50 border border-border dark:border-border/10 launcher-material-blur shadow-sm transition-all">
+                          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,11rem),1fr))] gap-4 items-end">
                             <Select
                               value={
                                 Array.from(new Set([addTargetKey]))[0] ?? null
@@ -765,7 +781,7 @@ export default function WorldLevelDatEditorPage() {
                       out.push(
                         <div
                           key={`grid-before-${k}`}
-                          className="grid grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] gap-4"
+                          className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4"
                         >
                           {acc.splice(0, acc.length)}
                         </div>,
@@ -818,7 +834,7 @@ export default function WorldLevelDatEditorPage() {
                           className="h-px bg-surface-tertiary my-2"
                         />
                         {compoundOpen[pathKey] ? (
-                          <div className="grid grid-cols-[repeat(auto-fit,minmax(16rem,1fr))] gap-4">
+                          <div className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,16rem),1fr))] gap-4">
                             {listShow.map((sf, si) => {
                               const stag = normTag(sf.tag);
                               if (stag === "string") {
@@ -1130,7 +1146,7 @@ export default function WorldLevelDatEditorPage() {
                     out.push(
                       <div
                         key={`grid-last`}
-                        className="grid grid-cols-[repeat(auto-fit,minmax(18rem,1fr))] gap-4"
+                        className="grid grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))] gap-4"
                       >
                         {acc}
                       </div>,

@@ -1,0 +1,30 @@
+{
+  "content_task": {
+    "import_title": "Импорт контента",
+    "transfer_title": "Перенос контента",
+    "status_running": "Выполняется…",
+    "status_success": "Готово",
+    "status_overwritten": "Перезаписано",
+    "status_skipped": "Пропущено (уже существует)",
+    "summary": "Успешно: {{ok}}, ошибок: {{failed}}, пропущено: {{skipped}}",
+    "skip": "Пропустить",
+    "overwrite_body": "Этот элемент уже есть в месте назначения. Перезаписать?",
+    "apply_to_all": "Применить ко всем оставшимся дубликатам",
+    "progress": "Выполнено {{done}} из {{total}}",
+    "progress_label": "Прогресс",
+    "log_label": "Журнал элементов",
+    "nothing_done": "Ничего не импортировано.",
+    "transfer_done": "Перенос завершён",
+    "transfer_partial": "Перенос завершён (частично с ошибками)",
+    "transfer_failed": "Ошибка переноса",
+    "no_instance_title": "Сначала выберите экземпляр",
+    "no_instance_body": "Выберите экземпляр в списке вверху страницы.",
+    "load_targets_failed": "Не удалось загрузить экземпляры",
+    "choose_instance_hint": "Выберите экземпляр, чтобы управлять его мирами, пакетами и другим контентом.",
+    "back_to_hub": "Назад к управлению контентом",
+    "clear_search": "Очистить поиск",
+    "world_deleted": "Мир удалён",
+    "delete_failed": "Не удалось удалить",
+    "world_saved": "level.dat сохранён"
+  }
+}

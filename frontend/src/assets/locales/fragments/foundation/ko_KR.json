@@ -1,0 +1,15 @@
+{
+  "activity": {
+    "title": "활동",
+    "empty": "활동 없음",
+    "copy_all": "모두 복사",
+    "clear": "기록 지우기",
+    "log_lines": "로그 {{count}}줄",
+    "open": "활동"
+  },
+  "instance_picker": {
+    "label": "인스턴스",
+    "placeholder": "인스턴스 선택",
+    "none_installed": "설치된 인스턴스 없음"
+  }
+}

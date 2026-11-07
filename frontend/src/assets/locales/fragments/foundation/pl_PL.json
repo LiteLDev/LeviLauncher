@@ -1,0 +1,15 @@
+{
+  "activity": {
+    "title": "Aktywność",
+    "empty": "Brak aktywności",
+    "copy_all": "Kopiuj wszystko",
+    "clear": "Wyczyść historię",
+    "log_lines": "{{count}} wierszy dziennika",
+    "open": "Aktywność"
+  },
+  "instance_picker": {
+    "label": "Instancja",
+    "placeholder": "Wybierz instancję",
+    "none_installed": "Brak zainstalowanych instancji"
+  }
+}

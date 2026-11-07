@@ -1,0 +1,97 @@
+name: LeviLauncher release
+
+# Pushing a tag like v1.2.3 releases it once LeviLauncher.exe and the installers are built, with the version
+# taken from the tag: the newest stable version becomes Latest on GitHub, and a prerelease like
+# v1.2.3-beta.1 is marked as a prerelease on GitHub.
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    uses: ./.github/workflows/build.yml
+
+  release:
+    runs-on: ubuntu-latest
+    needs: build
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/download-artifact@v8
+        with:
+          path: dist
+          # LeviLauncher.exe and the installers, not the installers built for the installer tests.
+          pattern: LeviLauncher*
+          merge-multiple: true
+
+      # The notes list the pull requests since the newest stable release below the tag's version, which
+      # need not be an ancestor of the tag.
+      - name: Create release
+        run: |
+          if [[ "$GITHUB_REF_NAME" == *-* ]]; then
+            flags=(--prerelease)
+          elif [[ "$(git tag --list 'v*' | grep -vF -- - | sort -V | tail -1)" == "$GITHUB_REF_NAME" ]]; then
+            flags=(--latest)
+          else
+            flags=(--latest=false)
+          fi
+          base="${GITHUB_REF_NAME%%-*}"
+          previous=$({ git tag --list 'v*' | grep -vF -- - | grep -vxF "$base"; echo "$base"; } \
+            | sort -V | grep -B1 -xF "$base" | grep -vxF "$base" || true)
+          gh release create "$GITHUB_REF_NAME" dist/* \
+            --verify-tag \
+            --title "$GITHUB_REF_NAME" \
+            --generate-notes \
+            ${previous:+--notes-start-tag "$previous"} \
+            "${flags[@]}"
+        env:
+          GH_TOKEN: ${{ github.token }}
+
+      - name: Notify Discord
+        env:
+          DISCORD_WEBHOOK: ${{ secrets.DISCORD_WEBHOOK }}
+          RELEASE_URL: "https://github.com/${{ github.repository }}/releases/download/${{ github.ref_name }}"
+        run: |
+          TAG_NAME="$GITHUB_REF_NAME"
+          INSTALLER_URL="$RELEASE_URL/LeviLauncher-${TAG_NAME#v}-win-x64-setup.exe"
+          STANDALONE_EXE_URL="$RELEASE_URL/LeviLauncher.exe"
+          EMBED_TITLE="🚀 LeviLauncher Update!"
+          EMBED_DESC="A new version of **LeviLauncher** is ready."
+          EMBED_COLOR=5814783
+          THUMB_URL="https://avatars.githubusercontent.com/u/78095377?s=200&v=4"
+
+          curl -H "Content-Type: application/json" \
+          -d "{
+            \"embeds\": [{
+              \"title\": \"$EMBED_TITLE\",
+              \"description\": \"$EMBED_DESC\",
+              \"color\": $EMBED_COLOR,
+              \"thumbnail\": { \"url\": \"$THUMB_URL\" },
+              \"fields\": [
+                {
+                  \"name\": \"📦 Version\",
+                  \"value\": \"\`$TAG_NAME\`\",
+                  \"inline\": true
+                },
+                {
+                  \"name\": \"📦 Installer\",
+                  \"value\": \"[**Click here to download installer**]($INSTALLER_URL)\",
+                  \"inline\": true
+                },
+                {
+                  \"name\": \"🧩 Standalone EXE\",
+                  \"value\": \"[**Click here to download EXE**]($STANDALONE_EXE_URL)\",
+                  \"inline\": true
+                }
+              ]
+            }]
+          }" \
+          "$DISCORD_WEBHOOK"

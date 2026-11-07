@@ -12,7 +12,6 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
-	"regexp"
 	"runtime"
 	"strings"
 	"syscall"
@@ -22,7 +21,6 @@ import (
 	json "github.com/goccy/go-json"
 
 	"github.com/Masterminds/semver/v3"
-	buildcfg "github.com/liteldev/LeviLauncher/build"
 	"github.com/liteldev/LeviLauncher/internal/apppath"
 	"github.com/liteldev/LeviLauncher/internal/config"
 	"github.com/liteldev/LeviLauncher/internal/httpx"
@@ -33,10 +31,17 @@ import (
 	"github.com/wailsapp/wails/v3/pkg/application"
 )
 
-var (
-	appVersion = "0.0.10"
-	isBeta     = true
+// devVersion is reported by builds that were not stamped with a version.
+const devVersion = "0.0.0-dev"
 
+// appVersion is stamped at build time from the release tag via
+// -ldflags "-X github.com/liteldev/LeviLauncher/internal/update.appVersion=<version>".
+var (
+	appVersion = devVersion
+	isBeta     bool
+)
+
+var (
 	shell32            = syscall.NewLazyDLL("shell32.dll")
 	procShellExecuteW  = shell32.NewProc("ShellExecuteW")
 	swShowNormal       = uintptr(1)
@@ -75,58 +80,31 @@ const (
 	updateDownloadTimeout = 20 * time.Minute
 )
 
-func Init() {
-	v, b := parseVersionAndBetaFromBuildConfig(buildcfg.ConfigYAML)
-	if v != "" {
-		appVersion = v
+func init() { setAppVersion(appVersion) }
+
+// Init is kept for callers; the version is resolved once at package init.
+func Init() {}
+
+// setAppVersion normalizes a stamped version (trimming whitespace and a
+// leading "v") and derives isBeta from its SemVer prerelease component.
+// Anything that is not strict SemVer falls back to devVersion so that update
+// checks always compare against a well-formed version.
+func setAppVersion(raw string) {
+	v := strings.TrimPrefix(strings.TrimSpace(raw), "v")
+	sv, err := semver.StrictNewVersion(v)
+	if err != nil {
+		if v != "" {
+			log.Printf("invalid build version %q, using %s: %v", raw, devVersion, err)
+		}
+		v = devVersion
+		sv = semver.MustParse(devVersion)
 	}
-	isBeta = b
+	appVersion = v
+	isBeta = sv.Prerelease() != ""
 }
 
-func parseVersionAndBetaFromBuildConfig(src string) (version string, beta bool) {
-	s := strings.ReplaceAll(src, "\r\n", "\n")
-	lines := strings.Split(s, "\n")
-	inInfo := false
-	for i := 0; i < len(lines); i++ {
-		line := strings.TrimSpace(lines[i])
-		if line == "info:" {
-			inInfo = true
-			continue
-		}
-		if inInfo {
-			if !strings.HasPrefix(lines[i], " ") && strings.Contains(line, ":") {
-				break
-			}
-			if strings.HasPrefix(line, "version:") {
-				if m := regexp.MustCompile(`version:\s*"([^"]+)"`).FindStringSubmatch(line); len(m) == 2 {
-					version = m[1]
-				} else {
-					parts := strings.SplitN(line, ":", 2)
-					if len(parts) == 2 {
-						version = strings.TrimSpace(parts[1])
-						version = strings.Trim(version, "\"")
-					}
-				}
-			}
-			if strings.HasPrefix(line, "beta:") {
-				var s string
-				if m := regexp.MustCompile(`beta:\s*"([^"]+)"`).FindStringSubmatch(line); len(m) == 2 {
-					s = m[1]
-				} else {
-					parts := strings.SplitN(line, ":", 2)
-					if len(parts) == 2 {
-						s = strings.TrimSpace(parts[1])
-						s = strings.Trim(s, "\"")
-					}
-				}
-				ls := strings.ToLower(strings.TrimSpace(s))
-				beta = ls == "true" || ls == "yes" || ls == "on" || ls == "1"
-			}
-		}
-	}
-	return version, beta
-}
-
+// IsBeta reports whether the running build is a prerelease (the stamped
+// version has a SemVer prerelease component, e.g. "1.2.3-beta.1").
 func IsBeta() bool { return isBeta }
 
 func GetAppVersion() string {

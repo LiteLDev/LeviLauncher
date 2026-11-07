@@ -52,23 +52,38 @@ export const ModCard = (args: {
         "rounded-3xl",
       )}
     >
-      <Card.Header className="px-5 py-3 border-b border-border dark:border-white/5 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
+      <Card.Header className="px-5 py-3 border-b border-border dark:border-white/5 flex justify-between items-center gap-2">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="shrink-0 p-1.5 rounded-lg bg-indigo-500/10 text-indigo-600 dark:text-indigo-400">
             <FaPuzzlePiece size={16} />
           </div>
-          <h3 className="text-base font-bold text-foreground dark:text-zinc-100">
+          <h3 className="truncate text-base font-bold text-foreground dark:text-zinc-100">
             {t("moddedcard.title")}
           </h3>
         </div>
-        {modsInfo.length > 0 && (
-          <Chip size="sm" variant="soft" color={"accent"} className={"h-6"}>
-            <Chip.Label>{modsInfo.length}</Chip.Label>
-          </Chip>
-        )}
+        <div className="flex shrink-0 items-center gap-1">
+          {modsInfo.length > 0 && (
+            <Chip size="sm" variant="soft" color={"accent"} className={"h-6"}>
+              <Chip.Label>{modsInfo.length}</Chip.Label>
+            </Chip>
+          )}
+          <Button
+            size="sm"
+            onPress={() => navigate(ROUTES.mods)}
+            isDisabled={!args.currentVersion}
+            variant={"ghost"}
+            className={
+              "text-xs text-foreground dark:text-zinc-300 data-[hovered]:text-foreground dark:data-[hovered]:text-zinc-200"
+            }
+          >
+            {t("moddedcard.manage")}
+            {<FaArrowRight size={10} />}
+          </Button>
+        </div>
       </Card.Header>
       <Card.Content className="p-0 overflow-hidden relative">
-        <ScrollShadow className="h-[140px] w-full p-4 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
+        {/* Height follows the window so short windows keep the launch area in view. */}
+        <ScrollShadow className="h-[clamp(7rem,22vh,18rem)] w-full p-4 overflow-y-auto [&::-webkit-scrollbar]:hidden [-ms-overflow-style:'none'] [scrollbar-width:'none']">
           {modsInfo.length > 0 ? (
             <div className="flex flex-col gap-2">
               <AnimatePresence>
@@ -96,18 +111,6 @@ export const ModCard = (args: {
             </div>
           )}
         </ScrollShadow>
-        <div className="absolute bottom-0 left-0 right-0 p-3 flex justify-end opacity-0 group-hover:opacity-100 transition-opacity duration-200">
-          <Button
-            size="sm"
-            onPress={() => navigate(ROUTES.mods)}
-            isDisabled={!args.currentVersion}
-            variant={"secondary"}
-            className={"font-semibold shadow-sm"}
-          >
-            {t("moddedcard.manage")}
-            {<FaArrowRight />}
-          </Button>
-        </div>
       </Card.Content>
     </Card>
   );

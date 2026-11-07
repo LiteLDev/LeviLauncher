@@ -1,0 +1,89 @@
+{
+  "home": {
+    "shortcut_failed": "Não foi possível criar o atalho",
+    "steps": {
+      "list_label": "Steps",
+      "later": "Mais tarde",
+      "open_store_again": "Open Store again",
+      "copy": "Copiar detalhes",
+      "copied": "Detalhes copiados",
+      "copy_failed": "Couldn't copy the details",
+      "step": {
+        "migration": "Atualizar o carregador",
+        "vcRuntime": "Visual C++ runtime",
+        "gameInput": "Microsoft GameInput",
+        "gamingServices": "Microsoft Gaming Services",
+        "register": "Registar no sistema",
+        "unregister": "Anular registo",
+        "launch": "Iniciar Minecraft"
+      },
+      "status": {
+        "checking": "A verificar…",
+        "ready": "Pronto",
+        "missing": "Em falta",
+        "waiting": "À sua espera",
+        "running": "Em curso",
+        "done": "Concluído",
+        "skipped": "Ignorado",
+        "failed": "Falhou"
+      },
+      "title": {
+        "check": "Pré-requisitos de arranque",
+        "ready": "Pré-requisitos prontos",
+        "incomplete": "Some prerequisites were skipped",
+        "check_failed": "A prerequisite failed",
+        "launched": "Minecraft iniciado",
+        "unregistered": "Unregistered",
+        "unregister_failed": "Unregister failed"
+      },
+      "summary": {
+        "ready": "Everything the game needs is installed.",
+        "incomplete": "Skipped items may stop the game from starting. They are checked again next time you open the launcher.",
+        "failed": "A step failed. Check the log above, then retry or copy the details.",
+        "launched": "The game window is open. This log is kept in Activity.",
+        "unregistered": "The instance is no longer registered to the system."
+      },
+      "phase": {
+        "success": "Completed",
+        "incomplete": "Completed with skipped steps",
+        "failed": "Failed",
+        "working": "In progress"
+      },
+      "task": {
+        "check": "Launch prerequisites",
+        "register": "Register {{name}}",
+        "unregister": "Unregister {{name}}",
+        "launch": "Launch {{name}}"
+      },
+      "log": {
+        "ready": "Already installed",
+        "missing": "Not installed",
+        "check_failed": "Couldn't check whether it is installed",
+        "install_requested": "Starting the installer…",
+        "install_started": "Installation started",
+        "preparing": "Preparing download…",
+        "downloading": "Downloading {{size}}",
+        "download_done": "Download finished, running the installer…",
+        "download_error": "Download failed: {{error}}",
+        "installed": "Installed",
+        "install_incomplete": "The installer finished, but the component was not detected",
+        "recheck_ok": "Detected, ready",
+        "recheck_missing": "Still not detected",
+        "skipped": "Skipped for now",
+        "ignored": "Ignored; you won't be reminded again",
+        "store_opened": "Opened Microsoft Store; finish the install there, then recheck",
+        "migration_started": "Updating installed instances…",
+        "migration_done": "Loader updated",
+        "register_started": "Registering {{name}}…",
+        "register_done": "Registered",
+        "unregister_started": "Unregistering {{name}}…",
+        "unregister_done": "Unregistered",
+        "launch_started": "Launching {{name}}…",
+        "force_launch": "Force launching {{name}}…",
+        "launch_waiting": "Waiting for the game window…",
+        "launched": "Game window detected",
+        "failed": "Failed: {{error}}"
+      }
+    }
+  }
+}

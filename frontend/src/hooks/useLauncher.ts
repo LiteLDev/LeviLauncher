@@ -1,9 +1,17 @@
 import { openDirectory, showDirectoryOpenError } from "@/utils/explorer";
-import { useOverlayState } from "@heroui/react";
 import React, { useEffect } from "react";
 
 import { Events } from "@wailsio/runtime";
 import { useNavigate } from "react-router-dom";
+import { useTranslation } from "react-i18next";
+import {
+  appendTaskLog,
+  finishActivityTask,
+  notify,
+  setTaskProgress,
+  startActivityTask,
+  type ActivityLogLevel,
+} from "@/utils/activity";
 import { compareVersions } from "@/utils/version";
 import {
   readCurrentVersionName,
@@ -22,6 +30,7 @@ import * as userService from "bindings/github.com/liteldev/LeviLauncher/internal
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
 import { ROUTES } from "@/constants/routes";
 import { normalizePackageType } from "@/utils/packageType";
+import { resolveInstallError } from "@/utils/installError";
 
 const IGNORE_GS_KEY = "ll.ignore.gs";
 const DEPENDENCY_CHECK_SESSION_KEYS = {
@@ -65,7 +74,148 @@ const getNextRandomTipIndex = (currentIndex: number, totalTips: number) => {
   return nextIndex;
 };
 
+// Launch steps: every prerequisite (loader migration, runtimes, Gaming
+// Services), registration and the launch itself is a step in one dialog. Steps
+// keep their log once finished so the dialog reads as a history, and the same
+// lines are mirrored into the activity store.
+export type LaunchStepId =
+  | "migration"
+  | "vcRuntime"
+  | "gameInput"
+  | "gamingServices"
+  | "register"
+  | "unregister"
+  | "launch";
+
+export type LaunchStepStatus =
+  | "checking"
+  | "ready"
+  | "missing"
+  | "waiting"
+  | "running"
+  | "done"
+  | "skipped"
+  | "failed";
+
+export type LaunchStepLogLine = {
+  at: number;
+  level: ActivityLogLevel;
+  message: string;
+};
+
+export type LaunchStep = {
+  id: LaunchStepId;
+  status: LaunchStepStatus;
+  progress?: number;
+  detail?: string;
+  /** Error code or message of the last failure. */
+  error?: string;
+  /** The user already tried to install this dependency once. */
+  attempted?: boolean;
+  log: LaunchStepLogLine[];
+};
+
+export type LaunchIntent = "check" | "register" | "unregister" | "launch";
+
+export type LaunchFlow = {
+  intent: LaunchIntent;
+  target: string;
+  open: boolean;
+  taskId: string | null;
+  taskDone: boolean;
+  /** Log lines per step already copied into the activity task. */
+  logged: Partial<Record<LaunchStepId, number>>;
+  steps: LaunchStep[];
+};
+
+export type LaunchFlowPhase = "working" | "success" | "incomplete" | "failed";
+
+export type DependencyStepId = "vcRuntime" | "gameInput" | "gamingServices";
+
+const STEP_ORDER: LaunchStepId[] = [
+  "migration",
+  "vcRuntime",
+  "gameInput",
+  "gamingServices",
+  "register",
+  "unregister",
+  "launch",
+];
+
+const TERMINAL_STEP_STATUSES = new Set<LaunchStepStatus>([
+  "ready",
+  "done",
+  "skipped",
+  "failed",
+]);
+
+export const isTerminalLaunchStep = (step: LaunchStep) =>
+  TERMINAL_STEP_STATUSES.has(step.status);
+
+export const getLaunchFlowPhase = (
+  flow: LaunchFlow | null,
+): LaunchFlowPhase | null => {
+  if (!flow) return null;
+  if (!flow.steps.every(isTerminalLaunchStep)) return "working";
+  // The step the user asked for decides the outcome; earlier skipped or
+  // failed prerequisites stay listed but don't overrule it.
+  const own =
+    flow.intent === "check"
+      ? undefined
+      : flow.steps.find((step) => step.id === flow.intent);
+  if (own?.status === "done") return "success";
+  if (own?.status === "failed") return "failed";
+  if (flow.steps.some((step) => step.status === "failed")) return "failed";
+  if (flow.steps.some((step) => step.status === "skipped")) return "incomplete";
+  return "success";
+};
+
+export const getCurrentLaunchStep = (flow: LaunchFlow | null) =>
+  flow?.steps.find((step) => !isTerminalLaunchStep(step));
+
+/** Readable text for an error code from launch, registration or shortcuts. */
+export const resolveLaunchErrorMessage = (
+  code: string,
+  t: (key: string) => unknown,
+  fallbackKey?: string,
+): string => {
+  if (!code) return "";
+  if (code.includes("ERR_UWP_")) return resolveInstallError(code, t as any);
+  const key = `errors.${code}`;
+  const translated = String(t(key));
+  if (translated && translated !== key) return translated;
+  return fallbackKey ? String(t(fallbackKey)) : code;
+};
+
+const createLaunchFlow = (intent: LaunchIntent, target: string): LaunchFlow => ({
+  intent,
+  target,
+  open: false,
+  taskId: null,
+  taskDone: false,
+  logged: {},
+  steps: [],
+});
+
+const formatMegabytes = (done: number, total: number) =>
+  `${(done / 1024 / 1024).toFixed(1)} / ${(total / 1024 / 1024).toFixed(1)} MB`;
+
+// A missing binding means the check can't run, so nothing is reported missing.
+const runCheck = (check: unknown): Promise<boolean> =>
+  typeof check === "function"
+    ? Promise.resolve(check()).then(Boolean)
+    : Promise.resolve(true);
+
+const DEPENDENCY_CHECKS: Record<DependencyStepId, () => Promise<boolean>> = {
+  vcRuntime: () => runCheck((minecraft as any)?.IsVcRuntimeInstalled),
+  gameInput: () => runCheck(minecraft?.IsGameInputInstalled),
+  gamingServices: () => runCheck(minecraft?.IsGamingServicesInstalled),
+};
+
 export const useLauncher = (args: any) => {
+  const { t } = useTranslation();
+  const tRef = React.useRef(t);
+  tRef.current = t;
   const [isAnimating, setIsAnimating] = React.useState(true);
   let [currentVersion, setCurrentVersion] = React.useState<string>("");
   const [displayVersion, setDisplayVersion] = React.useState<string>("");
@@ -78,38 +228,12 @@ export const useLauncher = (args: any) => {
     ? normalizePackageType(localVersionMap.get(currentVersion)?.packageType)
     : undefined;
 
-  const launchFailedDisclosure = useOverlayState();
-  const gameInputInstallingDisclosure = useOverlayState();
-  const gameInputMissingDisclosure = useOverlayState();
-  const vcRuntimeInstallingDisclosure = useOverlayState();
-  const vcRuntimeMissingDisclosure = useOverlayState();
-  const gamingServicesMissingDisclosure = useOverlayState();
-  const installConfirmDisclosure = useOverlayState();
-  const vcRuntimeCompletingDisclosure = useOverlayState();
-  const mcLaunchLoadingDisclosure = useOverlayState();
-  const shortcutSuccessDisclosure = useOverlayState();
-  const registerInstallingDisclosure = useOverlayState();
-  const registerSuccessDisclosure = useOverlayState();
-  const registerFailedDisclosure = useOverlayState();
-  const loaderMigrationDisclosure = useOverlayState();
-
   const navigate = useNavigate();
-  const [launchErrorCode, setLaunchErrorCode] = React.useState<string>("");
   const [contentCounts, setContentCounts] = React.useState<{
     worlds: number;
     resourcePacks: number;
     behaviorPacks: number;
   }>({ worlds: 0, resourcePacks: 0, behaviorPacks: 0 });
-  const [giTotal, setGiTotal] = React.useState<number>(0);
-  const [giDownloaded, setGiDownloaded] = React.useState<number>(0);
-  const [vcTotal, setVcTotal] = React.useState<number>(0);
-  const [vcDownloaded, setVcDownloaded] = React.useState<number>(0);
-  const [migrateTotal, setMigrateTotal] = React.useState<number>(0);
-  const [migrateDone, setMigrateDone] = React.useState<number>(0);
-  const [migrateError, setMigrateError] = React.useState("");
-  const [pendingInstallCheck, setPendingInstallCheck] = React.useState<
-    "gi" | "gs" | "vc" | null
-  >(null);
   const [logoDataUrl, setLogoDataUrl] = React.useState<string>("");
   const [versionQuery, setVersionQuery] = React.useState<string>("");
   const [logoByName, setLogoByName] = React.useState<Map<string, string>>(
@@ -117,9 +241,6 @@ export const useLauncher = (args: any) => {
   );
   const [isLoadingVersions, setIsLoadingVersions] =
     React.useState<boolean>(false);
-  const [registerAction, setRegisterAction] = React.useState<
-    "register" | "unregister"
-  >("register");
   const [tipIndex, setTipIndex] = React.useState<number>(0);
   const tipTimerRef = React.useRef<number | null>(null);
   const launchRequestActiveRef = React.useRef<boolean>(false);
@@ -127,6 +248,129 @@ export const useLauncher = (args: any) => {
   const [registrationPendingAction, setRegistrationPendingAction] = React.useState<"register" | "unregister" | null>(null);
   const registrationRequestActiveRef = React.useRef(false);
   const registrationRevisionRef = React.useRef(0);
+
+  const [launchFlow, setLaunchFlow] = React.useState<LaunchFlow | null>(null);
+  const launchFlowRef = React.useRef<LaunchFlow | null>(null);
+  const downloadTotalsRef = React.useRef<Partial<Record<LaunchStepId, number>>>({});
+  const taskProgressRef = React.useRef<number | undefined>(undefined);
+
+  const stepLabel = React.useCallback(
+    (id: LaunchStepId) => String(tRef.current(`home.steps.step.${id}`)),
+    [],
+  );
+
+  // Stores the next flow and mirrors new log lines, progress and the outcome
+  // into the activity store. The task starts when the dialog first opens, so
+  // silent checks that find nothing missing leave no history behind.
+  const commitLaunchFlow = React.useCallback(
+    (next: LaunchFlow | null) => {
+      let flow = next;
+      const phase = getLaunchFlowPhase(flow);
+      // Once a task exists it keeps mirroring even while the dialog is hidden
+      // (a launch that finishes in the background still records its outcome).
+      if (flow?.open && (!flow.taskId || (flow.taskDone && phase === "working"))) {
+        const title = String(
+          tRef.current(`home.steps.task.${flow.intent}`, {
+            name: flow.target,
+          }),
+        );
+        flow = {
+          ...flow,
+          taskId: startActivityTask({ title, source: "launcher" }),
+          taskDone: false,
+          logged: flow.taskId ? flow.logged : {},
+        };
+        taskProgressRef.current = undefined;
+      }
+      if (flow?.taskId) {
+        const taskId = flow.taskId;
+        const logged = { ...flow.logged };
+        flow.steps.forEach((step) => {
+          const from = logged[step.id] ?? 0;
+          step.log.slice(from).forEach((line) => {
+            appendTaskLog(taskId, `${stepLabel(step.id)}: ${line.message}`, line.level);
+          });
+          logged[step.id] = step.log.length;
+        });
+        flow = { ...flow, logged };
+        const progress = getCurrentLaunchStep(flow)?.progress;
+        if (typeof progress === "number") {
+          const rounded = Math.floor(progress);
+          if (rounded !== taskProgressRef.current) {
+            taskProgressRef.current = rounded;
+            setTaskProgress(taskId, rounded);
+          }
+        }
+        if (phase !== "working" && !flow.taskDone) {
+          finishActivityTask(
+            taskId,
+            phase === "failed" ? "error" : "success",
+            String(tRef.current(`home.steps.phase.${phase}`)),
+          );
+          flow = { ...flow, taskDone: true };
+        }
+      }
+      launchFlowRef.current = flow;
+      setLaunchFlow(flow);
+    },
+    [stepLabel],
+  );
+
+  /** Reuse the current flow while it is visible or still working. */
+  const activeLaunchFlow = React.useCallback(() => {
+    const flow = launchFlowRef.current;
+    if (!flow) return null;
+    return flow.open || getLaunchFlowPhase(flow) === "working" ? flow : null;
+  }, []);
+
+  const updateLaunchStep = React.useCallback(
+    (
+      id: LaunchStepId,
+      patch: Partial<Omit<LaunchStep, "id" | "log">>,
+      message?: string,
+      level: ActivityLogLevel = "info",
+      options: { insert?: boolean; open?: boolean; intent?: LaunchIntent; target?: string } = {},
+    ) => {
+      let flow = activeLaunchFlow();
+      if (!flow) {
+        if (!options.insert) return;
+        flow = createLaunchFlow(
+          options.intent ?? "check",
+          options.target ?? readCurrentVersionName(),
+        );
+      } else if (options.intent) {
+        flow = {
+          ...flow,
+          intent: options.intent,
+          target: options.target ?? flow.target,
+        };
+      }
+      const index = flow.steps.findIndex((step) => step.id === id);
+      if (index < 0 && !options.insert) return;
+      const base: LaunchStep =
+        index >= 0 ? flow.steps[index] : { id, status: "checking", log: [] };
+      const step: LaunchStep = {
+        ...base,
+        ...patch,
+        id,
+        log: message
+          ? [...base.log, { at: Date.now(), level, message }]
+          : base.log,
+      };
+      const steps = [...flow.steps];
+      if (index >= 0) steps[index] = step;
+      else {
+        steps.push(step);
+        steps.sort((a, b) => STEP_ORDER.indexOf(a.id) - STEP_ORDER.indexOf(b.id));
+      }
+      commitLaunchFlow({
+        ...flow,
+        steps,
+        open: flow.open || Boolean(options.open),
+      });
+    },
+    [activeLaunchFlow, commitLaunchFlow],
+  );
 
   useEffect(() => {
     const registrationRevision = registrationRevisionRef.current;
@@ -274,106 +518,116 @@ export const useLauncher = (args: any) => {
     [filteredVersionNames, localVersionMap, logoByName],
   );
 
+  const failLaunch = React.useCallback(
+    (code: string) => {
+      launchRequestActiveRef.current = false;
+      const existing = launchFlowRef.current?.steps.find(
+        (step) => step.id === "launch",
+      );
+      // The launch call and the process monitor can both report one failure.
+      if (existing?.status === "failed" && existing.error === code) return;
+      updateLaunchStep(
+        "launch",
+        { status: "failed", error: code, progress: undefined },
+        String(tRef.current("home.steps.log.failed", { error: code })),
+        "error",
+        { insert: true, open: true },
+      );
+    },
+    [updateLaunchStep],
+  );
+
+  const runLaunch = React.useCallback(
+    (name: string, force: boolean) => {
+      saveCurrentVersionName(name);
+      launchRequestActiveRef.current = true;
+      setLaunchPending(true);
+      updateLaunchStep(
+        "launch",
+        { status: "running", error: undefined, progress: undefined },
+        String(
+          tRef.current(force ? "home.steps.log.force_launch" : "home.steps.log.launch_started", {
+            name,
+          }),
+        ),
+        "info",
+        { insert: true, open: true, intent: "launch", target: name },
+      );
+      const launch = force
+        ? versionService?.LaunchVersionByNameForce
+        : versionService?.LaunchVersionByName;
+      if (typeof launch !== "function") {
+        launchRequestActiveRef.current = false;
+        setLaunchPending(false);
+        failLaunch("ERR_LAUNCH_GAME");
+        return;
+      }
+      launch(name)
+        .then((err: string) => {
+          const s = String(err || "");
+          if (!s) return;
+          if (s.startsWith("ERR_UWP_NOT_REGISTERED")) {
+            registrationRevisionRef.current += 1;
+            setLocalVersionMap((previous) => {
+              const next = new Map(previous);
+              const current = next.get(name);
+              if (current) next.set(name, { ...current, isRegistered: false });
+              return next;
+            });
+          }
+          failLaunch(s);
+        })
+        .catch(() => failLaunch("ERR_LAUNCH_GAME"))
+        .finally(() => {
+          setLaunchPending(false);
+        });
+    },
+    [failLaunch, updateLaunchStep],
+  );
+
   const doLaunch = React.useCallback(() => {
     if (launchRequestActiveRef.current || registrationRequestActiveRef.current) return;
     const name = currentVersion;
     if (name) {
-      saveCurrentVersionName(name);
-      launchRequestActiveRef.current = true;
-      setLaunchPending(true);
-      const launch = versionService?.LaunchVersionByName;
-      if (typeof launch === "function") {
-        launch(name)
-          .then((err: string) => {
-            const s = String(err || "");
-            if (s) {
-              if (s.startsWith("ERR_UWP_NOT_REGISTERED")) {
-                registrationRevisionRef.current += 1;
-                setLocalVersionMap((previous) => {
-                  const next = new Map(previous);
-                  const current = next.get(name);
-                  if (current) next.set(name, { ...current, isRegistered: false });
-                  return next;
-                });
-              }
-              launchRequestActiveRef.current = false;
-              mcLaunchLoadingDisclosure.close();
-              setLaunchErrorCode(s);
-              launchFailedDisclosure.open();
-            }
-          })
-          .catch(() => {
-            launchRequestActiveRef.current = false;
-            mcLaunchLoadingDisclosure.close();
-            setLaunchErrorCode("ERR_LAUNCH_GAME");
-            launchFailedDisclosure.open();
-          }).finally(() => {
-            setLaunchPending(false);
-          });
-      } else {
-        launchRequestActiveRef.current = false;
-        setLaunchPending(false);
-      }
+      runLaunch(name, false);
     } else {
       launchRequestActiveRef.current = false;
       navigate(ROUTES.download);
     }
-  }, [
-    currentVersion,
-    navigate,
-    launchFailedDisclosure,
-    mcLaunchLoadingDisclosure,
-  ]);
+  }, [currentVersion, navigate, runLaunch]);
 
   const doForceLaunch = React.useCallback(() => {
-    const name = currentVersion;
-    if (name) {
-      saveCurrentVersionName(name);
-      launchRequestActiveRef.current = true;
-      const launchForce = versionService?.LaunchVersionByNameForce;
-      if (typeof launchForce === "function") {
-        launchForce(name)
-          .then((err: string) => {
-            const s = String(err || "");
-            if (s) {
-              launchRequestActiveRef.current = false;
-              mcLaunchLoadingDisclosure.close();
-              setLaunchErrorCode(s);
-              launchFailedDisclosure.open();
-            }
-          })
-          .catch(() => {
-            launchRequestActiveRef.current = false;
-            mcLaunchLoadingDisclosure.close();
-            setLaunchErrorCode("ERR_LAUNCH_GAME");
-            launchFailedDisclosure.open();
-          });
-      } else {
-        launchRequestActiveRef.current = false;
-      }
-    }
-  }, [currentVersion, launchFailedDisclosure, mcLaunchLoadingDisclosure]);
+    if (launchRequestActiveRef.current || registrationRequestActiveRef.current) return;
+    if (currentVersion) runLaunch(currentVersion, true);
+  }, [currentVersion, runLaunch]);
 
   const doCreateShortcut = React.useCallback(() => {
     const name = currentVersion;
-    if (name) {
-      versionService
-        ?.CreateDesktopShortcut(name)
-        .then((err: string) => {
-          const s = String(err || "");
-          if (s) {
-            setLaunchErrorCode(s);
-            launchFailedDisclosure.open();
-          } else {
-            shortcutSuccessDisclosure.open();
-          }
-        })
-        .catch(() => {
-          setLaunchErrorCode("ERR_SHORTCUT_CREATE_FAILED");
-          launchFailedDisclosure.open();
-        });
-    }
-  }, [currentVersion, launchFailedDisclosure, shortcutSuccessDisclosure]);
+    if (!name) return;
+    const fail = (code: string) => {
+      const message = resolveLaunchErrorMessage(code, tRef.current);
+      notify({
+        variant: "danger",
+        source: "launcher",
+        title: tRef.current("home.shortcut_failed"),
+        description: message === code ? code : `${message} (${code})`,
+      });
+    };
+    versionService
+      ?.CreateDesktopShortcut(name)
+      .then((err: string) => {
+        const s = String(err || "");
+        if (s) fail(s);
+        else
+          notify({
+            variant: "success",
+            source: "launcher",
+            title: tRef.current("launcherpage.shortcut.success.title"),
+            description: tRef.current("launcherpage.shortcut.success.body"),
+          });
+      })
+      .catch(() => fail("ERR_SHORTCUT_CREATE_FAILED"));
+  }, [currentVersion]);
 
   const doOpenFolder = React.useCallback(async () => {
     if (!currentVersion) return;
@@ -476,18 +730,42 @@ export const useLauncher = (args: any) => {
     });
   }, []);
 
-  const doRegister = React.useCallback(async (registerOnly = false) => {
-    if (!currentVersion || registrationRequestActiveRef.current || launchRequestActiveRef.current) return;
+  /** Resolves true once the instance is confirmed registered (UWP). */
+  const doRegister = React.useCallback(async (registerOnly = false): Promise<boolean> => {
+    if (!currentVersion || registrationRequestActiveRef.current || launchRequestActiveRef.current) return false;
     const isCurrentlyRegistered = Boolean(
       localVersionMap.get(currentVersion)?.isRegistered,
     );
+    const startStep = (action: "register" | "unregister") =>
+      updateLaunchStep(
+        action,
+        { status: "running", error: undefined },
+        String(tRef.current(`home.steps.log.${action}_started`, { name: currentVersion })),
+        "info",
+        { insert: true, open: true, intent: action, target: currentVersion },
+      );
+    const finishStep = (action: "register" | "unregister") =>
+      updateLaunchStep(
+        action,
+        { status: "done" },
+        String(tRef.current(`home.steps.log.${action}_done`)),
+        "success",
+      );
+    const failStep = (action: "register" | "unregister", code: string) =>
+      updateLaunchStep(
+        action,
+        { status: "failed", error: code },
+        String(tRef.current("home.steps.log.failed", { error: code })),
+        "error",
+        { insert: true, open: true },
+      );
     if (currentPackageType === "uwp") {
       const action = isCurrentlyRegistered && !registerOnly ? "unregister" : "register";
       registrationRequestActiveRef.current = true;
       registrationRevisionRef.current += 1;
       setRegistrationPendingAction(action);
-      setRegisterAction(action);
-      registerInstallingDisclosure.open();
+      startStep(action);
+      let succeeded = false;
       try {
         const result = action === "register"
           ? await versionService.RegisterVersionWithWdapp(currentVersion, Boolean(localVersionMap.get(currentVersion)?.isPreview))
@@ -498,32 +776,27 @@ export const useLauncher = (args: any) => {
         const registered = Boolean(metas.find((meta) => meta.name === currentVersion)?.registered);
         if (action === "register" && !registered) throw new Error("ERR_UWP_NOT_REGISTERED");
         if (action === "unregister" && registered) throw new Error("ERR_UWP_UNREGISTER");
-        if (action === "register") registerSuccessDisclosure.open();
+        finishStep(action);
+        succeeded = action === "register";
       } catch (error) {
         // A failed registration must never enable the launch action optimistically.
         if (action === "register") applyOptimisticUnregisterState(currentVersion);
-        setLaunchErrorCode(String(error instanceof Error ? error.message : error));
-        registerFailedDisclosure.open();
+        failStep(action, String(error instanceof Error ? error.message : error));
       } finally {
-        registerInstallingDisclosure.close();
         registrationRequestActiveRef.current = false;
         setRegistrationPendingAction(null);
       }
-      return;
+      return succeeded;
     }
-    if (isCurrentlyRegistered) {
-      setRegisterAction("unregister");
-      registerInstallingDisclosure.open();
+    if (isCurrentlyRegistered && !registerOnly) {
+      startStep("unregister");
       try {
         const fn = (versionService as any)?.UnregisterVersionByName;
         if (typeof fn !== "function") {
-          registerInstallingDisclosure.close();
-          setLaunchErrorCode("ERR_UNREGISTER_FAILED");
-          registerFailedDisclosure.open();
-          return;
+          failStep("unregister", "ERR_UNREGISTER_FAILED");
+          return false;
         }
         const result = await fn(currentVersion);
-        registerInstallingDisclosure.close();
         if (result === "") {
           applyOptimisticUnregisterState(currentVersion);
           const synced = await syncRegisteredFlags();
@@ -533,20 +806,16 @@ export const useLauncher = (args: any) => {
           window.setTimeout(() => {
             void syncRegisteredFlags();
           }, 1200);
-          args.refresh();
-          return;
+          finishStep("unregister");
+          return false;
         }
-        setLaunchErrorCode(result);
-        registerFailedDisclosure.open();
+        failStep("unregister", result);
       } catch {
-        registerInstallingDisclosure.close();
-        setLaunchErrorCode("ERR_UNREGISTER_FAILED");
-        registerFailedDisclosure.open();
+        failStep("unregister", "ERR_UNREGISTER_FAILED");
       }
-      return;
+      return false;
     }
-    setRegisterAction("register");
-    registerInstallingDisclosure.open();
+    startStep("register");
     try {
       const isPreview = localVersionMap.get(currentVersion)?.isPreview || false;
       const result = await versionService.RegisterVersionWithWdapp(
@@ -554,8 +823,7 @@ export const useLauncher = (args: any) => {
         isPreview,
       );
       if (result === "success" || result === "") {
-        registerInstallingDisclosure.close();
-        registerSuccessDisclosure.open();
+        finishStep("register");
         applyOptimisticRegisterState(currentVersion);
         const synced = await syncRegisteredFlags();
         if (!synced) {
@@ -580,27 +848,20 @@ export const useLauncher = (args: any) => {
           void syncRegisteredFlags();
         }, 1200);
       } else {
-        registerInstallingDisclosure.close();
-        setLaunchErrorCode(result);
-        registerFailedDisclosure.open();
+        failStep("register", result);
       }
     } catch (e) {
-      registerInstallingDisclosure.close();
-      setLaunchErrorCode(String(e));
-      registerFailedDisclosure.open();
+      failStep("register", String(e));
     }
+    return false;
   }, [
-    args,
     currentVersion,
     currentPackageType,
     localVersionMap,
-    navigate,
     applyOptimisticRegisterState,
     applyOptimisticUnregisterState,
-    registerInstallingDisclosure,
-    registerSuccessDisclosure,
-    registerFailedDisclosure,
     syncRegisteredFlags,
+    updateLaunchStep,
   ]);
 
   const requiresUWPRegistration = currentPackageType === "uwp" && !Boolean(localVersionMap.get(currentVersion)?.isRegistered);
@@ -609,30 +870,66 @@ export const useLauncher = (args: any) => {
     else doLaunch();
   }, [requiresUWPRegistration, doRegister, doLaunch]);
 
+  const markDependency = React.useCallback(
+    (id: DependencyStepId, installed: boolean) => {
+      if (installed) {
+        updateLaunchStep(
+          id,
+          { status: "ready" },
+          String(tRef.current("home.steps.log.ready")),
+          "success",
+        );
+      } else {
+        updateLaunchStep(
+          id,
+          { status: "missing" },
+          String(tRef.current("home.steps.log.missing")),
+          "warning",
+          { insert: true, open: true },
+        );
+      }
+    },
+    [updateLaunchStep],
+  );
+
   useEffect(() => {
     let disposed = false;
     let vcRuntimeRetryTimer: number | null = null;
+
+    const beginCheck = (id: DependencyStepId) =>
+      updateLaunchStep(id, { status: "checking" }, undefined, "info", {
+        insert: true,
+      });
+
+    const giveUpCheck = (id: DependencyStepId) =>
+      updateLaunchStep(
+        id,
+        { status: "skipped" },
+        String(tRef.current("home.steps.log.check_failed")),
+        "warning",
+      );
 
     const runVcRuntimeDependencyCheck = (attempt: number) => {
       const checkVcRuntime = (minecraft as any)?.IsVcRuntimeInstalled;
       if (typeof checkVcRuntime !== "function") {
         return;
       }
+      if (attempt === 0) beginCheck("vcRuntime");
 
       Promise.resolve(checkVcRuntime())
+        // Results still apply after a re-run: they only update the step.
         .then((ok: boolean) => {
-          if (disposed) return;
           markSessionDependencyCheckRun(
             DEPENDENCY_CHECK_SESSION_KEYS.vcRuntime,
           );
-          if (!ok) {
-            vcRuntimeMissingDisclosure.open();
-          }
+          markDependency("vcRuntime", Boolean(ok));
         })
         .catch((error: unknown) => {
+          // A newer effect run owns the check now.
           if (disposed) return;
           console.warn("Failed to check VC runtime status", error);
           if (attempt > 0 || vcRuntimeRetryTimer !== null) {
+            giveUpCheck("vcRuntime");
             return;
           }
           vcRuntimeRetryTimer = window.setTimeout(() => {
@@ -641,6 +938,13 @@ export const useLauncher = (args: any) => {
             runVcRuntimeDependencyCheck(attempt + 1);
           }, VC_RUNTIME_CHECK_RETRY_DELAY_MS);
         });
+    };
+
+    const runDependencyCheck = (id: "gameInput" | "gamingServices") => {
+      beginCheck(id);
+      DEPENDENCY_CHECKS[id]()
+        .then((ok) => markDependency(id, ok))
+        .catch(() => giveUpCheck(id));
     };
 
     const timer = setTimeout(() => {
@@ -658,14 +962,7 @@ export const useLauncher = (args: any) => {
         !hasSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.gameInput)
       ) {
         markSessionDependencyCheckRun(DEPENDENCY_CHECK_SESSION_KEYS.gameInput);
-        try {
-          minecraft?.IsGameInputInstalled?.().then((ok: boolean) => {
-            if (disposed) return;
-            if (!ok) {
-              gameInputMissingDisclosure.open();
-            }
-          });
-        } catch {}
+        runDependencyCheck("gameInput");
       }
       if (
         !hasSessionDependencyCheckRun(
@@ -675,17 +972,11 @@ export const useLauncher = (args: any) => {
         markSessionDependencyCheckRun(
           DEPENDENCY_CHECK_SESSION_KEYS.gamingServices,
         );
+        let ignored = false;
         try {
-          const ig = String(localStorage.getItem(IGNORE_GS_KEY) || "") === "1";
-          if (!ig) {
-            minecraft?.IsGamingServicesInstalled?.().then((ok: boolean) => {
-              if (disposed) return;
-              if (!ok) {
-                gamingServicesMissingDisclosure.open();
-              }
-            });
-          }
+          ignored = String(localStorage.getItem(IGNORE_GS_KEY) || "") === "1";
         } catch {}
+        if (!ignored) runDependencyCheck("gamingServices");
       }
     }, 0);
 
@@ -696,173 +987,235 @@ export const useLauncher = (args: any) => {
         clearTimeout(vcRuntimeRetryTimer);
       }
     };
-  }, [
-    currentPackageType,
-    gameInputMissingDisclosure,
-    gamingServicesMissingDisclosure,
-    vcRuntimeMissingDisclosure,
-  ]);
+  }, [currentPackageType, markDependency, updateLaunchStep]);
+
+  const runLoaderMigration = React.useCallback(async () => {
+    updateLaunchStep(
+      "migration",
+      { status: "running", error: undefined, progress: undefined, detail: undefined },
+      String(tRef.current("home.steps.log.migration_started")),
+      "info",
+      { insert: true, open: true },
+    );
+    try {
+      const error = await minecraft.RunLoaderMigration();
+      // The done/error events may already have settled the step.
+      if (
+        !launchFlowRef.current?.steps.some(
+          (step) => step.id === "migration" && step.status === "running",
+        )
+      ) {
+        return;
+      }
+      if (error) {
+        updateLaunchStep(
+          "migration",
+          { status: "failed", error },
+          String(tRef.current("home.steps.log.failed", { error })),
+          "error",
+        );
+      } else {
+        updateLaunchStep(
+          "migration",
+          { status: "done", progress: 100 },
+          String(tRef.current("home.steps.log.migration_done")),
+          "success",
+        );
+      }
+    } catch (error) {
+      const message = String(error);
+      updateLaunchStep(
+        "migration",
+        { status: "failed", error: message },
+        String(tRef.current("home.steps.log.failed", { error: message })),
+        "error",
+        { insert: true, open: true },
+      );
+    }
+  }, [updateLaunchStep]);
 
   useEffect(() => {
     let cancelled = false;
 
     const unlistenMigrateStart = Events.On("leviloader.migrate.start", () => {
-      setMigrateDone(0);
-      setMigrateError("");
-      loaderMigrationDisclosure.open();
+      updateLaunchStep(
+        "migration",
+        { status: "running", error: undefined },
+        undefined,
+        "info",
+        { insert: true, open: true },
+      );
     });
     const unlistenMigrateProgress = Events.On(
       "leviloader.migrate.progress",
       (event) => {
         const progress = event.data as { done: number; total: number };
-        setMigrateTotal(progress.total);
-        setMigrateDone(progress.done);
+        if (!progress || !(progress.total > 0)) return;
+        updateLaunchStep("migration", {
+          progress: Math.min(100, (progress.done / progress.total) * 100),
+          detail: `${progress.done} / ${progress.total}`,
+        });
       },
     );
+    // The backend reports the outcome too; only a still-running step moves.
+    const migrationRunning = () =>
+      launchFlowRef.current?.steps.some(
+        (step) => step.id === "migration" && step.status === "running",
+      );
+    const unlistenMigrateDone = Events.On("leviloader.migrate.done", () => {
+      if (!migrationRunning()) return;
+      updateLaunchStep(
+        "migration",
+        { status: "done", progress: 100 },
+        String(tRef.current("home.steps.log.migration_done")),
+        "success",
+      );
+    });
+    const unlistenMigrateError = Events.On("leviloader.migrate.error", (event) => {
+      if (!migrationRunning()) return;
+      const error = String(event?.data || "") || "ERR_LOADER_MIGRATION";
+      updateLaunchStep(
+        "migration",
+        { status: "failed", error },
+        String(tRef.current("home.steps.log.failed", { error })),
+        "error",
+      );
+    });
     (async () => {
       try {
         const need = await minecraft.NeedsLoaderMigration();
         if (cancelled || !need) return;
-        loaderMigrationDisclosure.open();
-        const error = await minecraft.RunLoaderMigration();
-        if (cancelled) return;
-        if (error) {
-          setMigrateError(error);
-        } else {
-          loaderMigrationDisclosure.close();
-        }
-      } catch (error) {
-        if (cancelled) return;
-        setMigrateError(String(error));
-        loaderMigrationDisclosure.open();
-      }
+        await runLoaderMigration();
+      } catch {}
     })();
 
     return () => {
       cancelled = true;
       unlistenMigrateStart();
       unlistenMigrateProgress();
+      unlistenMigrateDone();
+      unlistenMigrateError();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
+  // Installer events arrive both for installs started here and for ones the
+  // backend starts on its own; either way they land in the same step.
   useEffect(() => {
-    const unlistenGiStart = Events.On("gameinput.ensure.start", () => {
-      if (pendingInstallCheck === "gi") return;
-      gameInputInstallingDisclosure.open();
-    });
-    const unlistenGiDlStart = Events.On("gameinput.download.start", (event) => {
-      if (pendingInstallCheck === "gi") return;
-      setGiTotal(Number(event?.data || 0));
-      setGiDownloaded(0);
-      gameInputInstallingDisclosure.open();
-    });
-    const unlistenGiDlProgress = Events.On(
-      "gameinput.download.progress",
-      (event) => {
-        if (pendingInstallCheck === "gi") return;
+    const unlisteners: Array<() => void> = [];
+    const listen = (name: string, handler: (event: any) => void) => {
+      const off = Events.On(name, handler);
+      if (typeof off === "function") unlisteners.push(off as () => void);
+    };
+    const tr = (key: string, options?: Record<string, unknown>) =>
+      String(tRef.current(key, options));
+
+    (
+      [
+        ["gameinput", "gameInput"],
+        ["vcruntime", "vcRuntime"],
+      ] as const
+    ).forEach(([prefix, id]) => {
+      listen(`${prefix}.ensure.start`, () => {
+        updateLaunchStep(
+          id,
+          { status: "running", attempted: true, error: undefined },
+          tr("home.steps.log.install_started"),
+          "info",
+          { insert: true, open: true },
+        );
+      });
+      listen(`${prefix}.download.start`, (event) => {
+        const total = Number(event?.data || 0);
+        downloadTotalsRef.current[id] = total;
+        updateLaunchStep(
+          id,
+          {
+            status: "running",
+            progress: total > 0 ? 0 : undefined,
+            detail: total > 0 ? formatMegabytes(0, total) : undefined,
+          },
+          total > 0
+            ? tr("home.steps.log.downloading", {
+                size: `${(total / 1024 / 1024).toFixed(1)} MB`,
+              })
+            : tr("home.steps.log.preparing"),
+          "info",
+          { insert: true, open: true },
+        );
+      });
+      listen(`${prefix}.download.progress`, (event) => {
         const d = event?.data || {};
-        if (typeof d?.Total === "number") setGiTotal(d.Total);
-        if (typeof d?.Downloaded === "number") setGiDownloaded(d.Downloaded);
-      },
-    );
-    const unlistenGiDlDone = Events.On("gameinput.download.done", () => {
-      setGiDownloaded(giTotal);
-      setPendingInstallCheck((prev) => prev ?? "gi");
-      gameInputInstallingDisclosure.close();
-      installConfirmDisclosure.open();
-    });
-    const unlistenGiDone = Events.On("gameinput.ensure.done", (event) => {
-      const success = Boolean(event?.data);
-      gameInputInstallingDisclosure.close();
-      if (success) {
-        setPendingInstallCheck(null);
-        installConfirmDisclosure.close();
-      } else {
-        setPendingInstallCheck((prev) => prev ?? "gi");
-        installConfirmDisclosure.open();
-      }
+        const total =
+          typeof d?.Total === "number" && d.Total > 0
+            ? d.Total
+            : downloadTotalsRef.current[id] || 0;
+        const downloaded = typeof d?.Downloaded === "number" ? d.Downloaded : 0;
+        if (!(total > 0)) return;
+        downloadTotalsRef.current[id] = total;
+        updateLaunchStep(id, {
+          progress: Math.min(100, (downloaded / total) * 100),
+          detail: formatMegabytes(downloaded, total),
+        });
+      });
+      listen(`${prefix}.download.done`, () => {
+        updateLaunchStep(
+          id,
+          { progress: undefined, detail: undefined },
+          tr("home.steps.log.download_done"),
+        );
+      });
+      listen(`${prefix}.download.error`, (event) => {
+        const error = String(event?.data || "");
+        updateLaunchStep(
+          id,
+          { error },
+          tr("home.steps.log.download_error", { error }),
+          "error",
+        );
+      });
+      listen(`${prefix}.ensure.done`, (event) => {
+        if (event?.data) {
+          updateLaunchStep(
+            id,
+            { status: "done", progress: 100, detail: undefined, error: undefined },
+            tr("home.steps.log.installed"),
+            "success",
+            { insert: true },
+          );
+        } else {
+          updateLaunchStep(
+            id,
+            { status: "missing", progress: undefined, detail: undefined },
+            tr("home.steps.log.install_incomplete"),
+            "warning",
+            { insert: true, open: true },
+          );
+        }
+      });
     });
 
-    const unlistenVcStart = Events.On("vcruntime.ensure.start", () => {
-      if (pendingInstallCheck === "vc") return;
-      vcRuntimeInstallingDisclosure.open();
-    });
-    const unlistenVcDlStart = Events.On("vcruntime.download.start", (event) => {
-      if (pendingInstallCheck === "vc") return;
-      setVcTotal(Number(event?.data || 0));
-      setVcDownloaded(0);
-      vcRuntimeInstallingDisclosure.open();
-    });
-    const unlistenVcDlProgress = Events.On(
-      "vcruntime.download.progress",
-      (event) => {
-        if (pendingInstallCheck === "vc") return;
-        const d = event?.data || {};
-        if (typeof d?.Total === "number") setVcTotal(d.Total);
-        if (typeof d?.Downloaded === "number") setVcDownloaded(d.Downloaded);
-      },
-    );
-    const unlistenVcDlDone = Events.On("vcruntime.download.done", () => {
-      setVcDownloaded(vcTotal);
-      setPendingInstallCheck((prev) => prev ?? "vc");
-      vcRuntimeInstallingDisclosure.close();
-      installConfirmDisclosure.open();
-    });
-    const unlistenVcDone = Events.On("vcruntime.ensure.done", (event) => {
-      const success = Boolean(event?.data);
-      vcRuntimeInstallingDisclosure.close();
-      if (success) {
-        setPendingInstallCheck(null);
-        installConfirmDisclosure.close();
-      } else {
-        setPendingInstallCheck((prev) => prev ?? "vc");
-        installConfirmDisclosure.open();
-      }
-    });
-
-    const unlistenGsMissing = Events.On("gamingservices.missing", () => {
-      const ig = String(localStorage.getItem(IGNORE_GS_KEY) || "") === "1";
-      if (ig) return;
-      gamingServicesMissingDisclosure.open();
+    listen("gamingservices.missing", () => {
+      try {
+        if (String(localStorage.getItem(IGNORE_GS_KEY) || "") === "1") return;
+      } catch {}
+      updateLaunchStep(
+        "gamingServices",
+        { status: "missing" },
+        tr("home.steps.log.missing"),
+        "warning",
+        { insert: true, open: true },
+      );
     });
 
     return () => {
-      try {
-        unlistenGiStart && (unlistenGiStart as any)();
-      } catch {}
-      try {
-        unlistenGiDlStart && (unlistenGiDlStart as any)();
-      } catch {}
-      try {
-        unlistenGiDlProgress && (unlistenGiDlProgress as any)();
-      } catch {}
-      try {
-        unlistenGiDlDone && (unlistenGiDlDone as any)();
-      } catch {}
-      try {
-        unlistenGiDone && (unlistenGiDone as any)();
-      } catch {}
-      try {
-        unlistenVcStart && (unlistenVcStart as any)();
-      } catch {}
-      try {
-        unlistenVcDlStart && (unlistenVcDlStart as any)();
-      } catch {}
-      try {
-        unlistenVcDlProgress && (unlistenVcDlProgress as any)();
-      } catch {}
-      try {
-        unlistenVcDlDone && (unlistenVcDlDone as any)();
-      } catch {}
-      try {
-        unlistenVcDone && (unlistenVcDone as any)();
-      } catch {}
-      try {
-        unlistenGsMissing && (unlistenGsMissing as any)();
-      } catch {}
+      unlisteners.forEach((off) => {
+        try {
+          off();
+        } catch {}
+      });
     };
-  }, []);
+  }, [updateLaunchStep]);
 
   const refreshContentCounts = React.useCallback(async () => {
     const countDir = async (path: string): Promise<number> => {
@@ -964,21 +1317,28 @@ export const useLauncher = (args: any) => {
   useEffect(() => {
     const unlistenMcStart = Events.On("mc.launch.start", () => {
       if (!launchRequestActiveRef.current) return;
-      mcLaunchLoadingDisclosure.open();
+      updateLaunchStep(
+        "launch",
+        {},
+        String(tRef.current("home.steps.log.launch_waiting")),
+      );
     });
 
+    // A finished launch keeps its step (and the dialog, if visible) so the
+    // result never flashes away; a hidden dialog only reopens on failure.
     const unlistenMcDone = Events.On("mc.launch.done", () => {
       launchRequestActiveRef.current = false;
-      mcLaunchLoadingDisclosure.close();
+      updateLaunchStep(
+        "launch",
+        { status: "done", error: undefined },
+        String(tRef.current("home.steps.log.launched")),
+        "success",
+      );
     });
     const unlistenMcFailed = Events.On("mc.launch.failed", (data) => {
-      launchRequestActiveRef.current = false;
-      mcLaunchLoadingDisclosure.close();
       const payload: any = (data as any)?.data ?? data;
       const first = Array.isArray(payload) ? payload[0] : payload;
-      const code = String(first || "");
-      setLaunchErrorCode(code || "ERR_LAUNCH_GAME");
-      launchFailedDisclosure.open();
+      failLaunch(String(first || "") || "ERR_LAUNCH_GAME");
     });
 
     return () => {
@@ -992,7 +1352,7 @@ export const useLauncher = (args: any) => {
         unlistenMcFailed && (unlistenMcFailed as any)();
       } catch {}
     };
-  }, []);
+  }, [failLaunch, updateLaunchStep]);
 
   useEffect(() => {
     const registrationRevision = registrationRevisionRef.current;
@@ -1181,119 +1541,124 @@ export const useLauncher = (args: any) => {
     [localVersionMap, logoByName],
   );
 
-  const handleGameInputInstall = React.useCallback(() => {
-    setPendingInstallCheck("gi");
-    EnsureGameInputInteractive();
-    gameInputMissingDisclosure.close();
-    installConfirmDisclosure.open();
-  }, [gameInputMissingDisclosure, installConfirmDisclosure]);
-
-  const handleVcRuntimeInstall = React.useCallback(() => {
-    setPendingInstallCheck("vc");
-    EnsureVcRuntimeInteractive();
-    vcRuntimeMissingDisclosure.close();
-    installConfirmDisclosure.open();
-  }, [vcRuntimeMissingDisclosure, installConfirmDisclosure]);
-
-  const handleGamingServicesInstall = React.useCallback(
-    (openUrl: (url: string) => void) => {
-      setPendingInstallCheck("gs");
-      openUrl("ms-windows-store://pdp/?ProductId=9MWPM2CQNLHN");
-      gamingServicesMissingDisclosure.close();
-      installConfirmDisclosure.open();
+  const installDependency = React.useCallback(
+    (id: "vcRuntime" | "gameInput") => {
+      updateLaunchStep(
+        id,
+        { status: "running", attempted: true, error: undefined },
+        String(tRef.current("home.steps.log.install_requested")),
+      );
+      try {
+        if (id === "vcRuntime") EnsureVcRuntimeInteractive();
+        else EnsureGameInputInteractive();
+      } catch {}
     },
-    [gamingServicesMissingDisclosure, installConfirmDisclosure],
+    [updateLaunchStep],
   );
 
-  const handleIgnoreGamingServices = React.useCallback(() => {
-    localStorage.setItem(IGNORE_GS_KEY, "1");
-    gamingServicesMissingDisclosure.close();
-  }, [gamingServicesMissingDisclosure]);
+  const recheckDependency = React.useCallback(
+    (id: DependencyStepId) => {
+      DEPENDENCY_CHECKS[id]()
+        .catch(() => false)
+        .then((ok) => {
+          if (ok) {
+            updateLaunchStep(
+              id,
+              { status: "done", progress: 100, detail: undefined, error: undefined },
+              String(tRef.current("home.steps.log.recheck_ok")),
+              "success",
+            );
+          } else {
+            updateLaunchStep(
+              id,
+              {
+                status: id === "gamingServices" ? "waiting" : "missing",
+                progress: undefined,
+                detail: undefined,
+              },
+              String(tRef.current("home.steps.log.recheck_missing")),
+              "warning",
+            );
+          }
+        });
+    },
+    [updateLaunchStep],
+  );
 
-  const handleInstallConfirmContinue = React.useCallback(() => {
-    if (pendingInstallCheck === "gi") gameInputMissingDisclosure.open();
-    else if (pendingInstallCheck === "gs")
-      gamingServicesMissingDisclosure.open();
-    else if (pendingInstallCheck === "vc") vcRuntimeMissingDisclosure.open();
-    installConfirmDisclosure.close();
-  }, [
-    pendingInstallCheck,
-    gameInputMissingDisclosure,
-    gamingServicesMissingDisclosure,
-    vcRuntimeMissingDisclosure,
-    installConfirmDisclosure,
-  ]);
+  const skipDependency = React.useCallback(
+    (id: DependencyStepId) => {
+      updateLaunchStep(
+        id,
+        { status: "skipped" },
+        String(tRef.current("home.steps.log.skipped")),
+        "warning",
+      );
+    },
+    [updateLaunchStep],
+  );
 
-  const handleInstallConfirmCheck = React.useCallback(() => {
+  const ignoreGamingServices = React.useCallback(() => {
     try {
-      if (pendingInstallCheck === "gi") {
-        minecraft?.IsGameInputInstalled?.().then((ok: boolean) => {
-          if (ok) {
-            setPendingInstallCheck(null);
-            installConfirmDisclosure.close();
-          } else {
-            installConfirmDisclosure.close();
-            gameInputMissingDisclosure.open();
-          }
-        });
-      } else if (pendingInstallCheck === "gs") {
-        minecraft?.IsGamingServicesInstalled?.().then((ok: boolean) => {
-          if (ok) {
-            setPendingInstallCheck(null);
-            installConfirmDisclosure.close();
-          } else {
-            installConfirmDisclosure.close();
-            gamingServicesMissingDisclosure.open();
-          }
-        });
-      } else if (pendingInstallCheck === "vc") {
-        (minecraft as any)?.IsVcRuntimeInstalled?.().then((ok: boolean) => {
-          if (ok) {
-            setPendingInstallCheck(null);
-            installConfirmDisclosure.close();
-          } else {
-            installConfirmDisclosure.close();
-            vcRuntimeMissingDisclosure.open();
-          }
-        });
-      }
+      localStorage.setItem(IGNORE_GS_KEY, "1");
     } catch {}
-  }, [
-    pendingInstallCheck,
-    installConfirmDisclosure,
-    gameInputMissingDisclosure,
-    gamingServicesMissingDisclosure,
-    vcRuntimeMissingDisclosure,
-  ]);
+    updateLaunchStep(
+      "gamingServices",
+      { status: "skipped" },
+      String(tRef.current("home.steps.log.ignored")),
+      "warning",
+    );
+  }, [updateLaunchStep]);
 
-  const handleInstallConfirmOpenChange = React.useCallback(
-    (open: boolean) => {
-      if (open) {
-        installConfirmDisclosure.open();
-      } else {
-        installConfirmDisclosure.close();
-        args.refresh();
-      }
+  const openGamingServicesStore = React.useCallback(
+    (openUrl: (url: string) => void) => {
+      try {
+        openUrl("ms-windows-store://pdp/?ProductId=9MWPM2CQNLHN");
+      } catch {}
+      updateLaunchStep(
+        "gamingServices",
+        { status: "waiting", attempted: true },
+        String(tRef.current("home.steps.log.store_opened")),
+      );
     },
-    [installConfirmDisclosure, args],
+    [updateLaunchStep],
   );
 
-  const handleRegisterSuccessOpenChange = React.useCallback(
-    (open: boolean) => {
-      if (open) registerSuccessDisclosure.open();
-      else registerSuccessDisclosure.close();
-      if (!open) {
-        void syncRegisteredFlags();
-        args.refresh();
+  /** Retries the failed step in place; a lost UWP registration registers first. */
+  const retryLaunchStep = React.useCallback(
+    (id: LaunchStepId) => {
+      if (id === "migration") void runLoaderMigration();
+      else if (id === "register") void doRegister(true);
+      else if (id === "unregister") void doRegister();
+      else if (id === "launch") {
+        // A lost UWP registration is fixed in place, then the launch continues.
+        if (requiresUWPRegistration) {
+          void doRegister(true).then((registered) => {
+            if (registered) doLaunch();
+          });
+        } else doLaunch();
       }
     },
-    [registerSuccessDisclosure, args, syncRegisteredFlags],
+    [doLaunch, doRegister, requiresUWPRegistration, runLoaderMigration],
   );
 
-  const handleLaunchFailedForceRun = React.useCallback(() => {
-    launchFailedDisclosure.close();
-    doForceLaunch();
-  }, [launchFailedDisclosure, doForceLaunch]);
+  const closeLaunchFlow = React.useCallback(() => {
+    const flow = launchFlowRef.current;
+    if (!flow?.open) return;
+    const finished = getLaunchFlowPhase(flow) !== "working";
+    commitLaunchFlow({ ...flow, open: false });
+    if (!finished) return;
+    const changedRegistration = flow.steps.some(
+      (step) => step.id === "register" || step.id === "unregister",
+    );
+    if (changedRegistration) void syncRegisteredFlags();
+    if (changedRegistration || flow.intent === "check") args.refresh();
+  }, [args, commitLaunchFlow, syncRegisteredFlags]);
+
+  const launchStepRunning =
+    launchFlow?.open === true &&
+    launchFlow.steps.some(
+      (step) => step.id === "launch" && step.status === "running",
+    );
 
   return {
     // State
@@ -1303,42 +1668,18 @@ export const useLauncher = (args: any) => {
     displayVersion,
     displayName,
     localVersionMap,
-    launchErrorCode,
     contentCounts,
-    giTotal,
-    giDownloaded,
-    vcTotal,
-    vcDownloaded,
-    migrateTotal,
-    migrateDone,
-    migrateError,
-    pendingInstallCheck,
     logoDataUrl,
     versionQuery,
     setVersionQuery,
     logoByName,
     isLoadingVersions,
-    registerAction,
     registrationPendingAction,
     launchPending,
+    launchStepRunning,
     requiresUWPRegistration,
     tipIndex,
-
-    // Disclosures
-    launchFailedDisclosure,
-    gameInputInstallingDisclosure,
-    gameInputMissingDisclosure,
-    vcRuntimeInstallingDisclosure,
-    vcRuntimeMissingDisclosure,
-    gamingServicesMissingDisclosure,
-    installConfirmDisclosure,
-    vcRuntimeCompletingDisclosure,
-    mcLaunchLoadingDisclosure,
-    shortcutSuccessDisclosure,
-    registerInstallingDisclosure,
-    registerSuccessDisclosure,
-    registerFailedDisclosure,
-    loaderMigrationDisclosure,
+    launchFlow,
 
     // Navigation
     navigate,
@@ -1358,14 +1699,12 @@ export const useLauncher = (args: any) => {
     doOpenFolder,
     doRegister,
     handleVersionSelect,
-    handleGameInputInstall,
-    handleVcRuntimeInstall,
-    handleGamingServicesInstall,
-    handleIgnoreGamingServices,
-    handleInstallConfirmContinue,
-    handleInstallConfirmCheck,
-    handleInstallConfirmOpenChange,
-    handleRegisterSuccessOpenChange,
-    handleLaunchFailedForceRun,
+    installDependency,
+    recheckDependency,
+    skipDependency,
+    ignoreGamingServices,
+    openGamingServicesStore,
+    retryLaunchStep,
+    closeLaunchFlow,
   };
 };

@@ -1,0 +1,89 @@
+{
+  "home": {
+    "shortcut_failed": "無法創建桌面快捷方式",
+    "steps": {
+      "list_label": "步驟",
+      "later": "稍後",
+      "open_store_again": "再次打開商店",
+      "copy": "複製詳情",
+      "copied": "已複製詳情",
+      "copy_failed": "複製詳情失敗",
+      "step": {
+        "migration": "更新加載器",
+        "vcRuntime": "Visual C++ 運行庫",
+        "gameInput": "Microsoft GameInput",
+        "gamingServices": "Microsoft Gaming Services",
+        "register": "註冊到系統",
+        "unregister": "取消系統註冊",
+        "launch": "啟動 Minecraft"
+      },
+      "status": {
+        "checking": "正在檢測…",
+        "ready": "已就緒",
+        "missing": "缺失",
+        "waiting": "等待你操作",
+        "running": "進行中",
+        "done": "已完成",
+        "skipped": "已跳過",
+        "failed": "失敗"
+      },
+      "title": {
+        "check": "啟動前置組件",
+        "ready": "前置組件已就緒",
+        "incomplete": "部分前置組件已跳過",
+        "check_failed": "前置組件處理失敗",
+        "launched": "Minecraft 已啟動",
+        "unregistered": "已取消註冊",
+        "unregister_failed": "取消註冊失敗"
+      },
+      "summary": {
+        "ready": "遊戲所需的組件均已安裝。",
+        "incomplete": "跳過的組件可能導致遊戲無法啟動。下次打開啟動器時會再次檢測。",
+        "failed": "有步驟失敗。請查看上方日誌，然後重試或複製詳情。",
+        "launched": "遊戲視窗已開啟。本次日誌已保存在活動記錄中。",
+        "unregistered": "該實例已不再註冊到系統。"
+      },
+      "phase": {
+        "success": "已完成",
+        "incomplete": "已完成（有跳過的步驟）",
+        "failed": "失敗",
+        "working": "進行中"
+      },
+      "task": {
+        "check": "啟動前置組件",
+        "register": "註冊 {{name}}",
+        "unregister": "取消註冊 {{name}}",
+        "launch": "啟動 {{name}}"
+      },
+      "log": {
+        "ready": "已安裝",
+        "missing": "未安裝",
+        "check_failed": "無法檢測是否已安裝",
+        "install_requested": "正在啟動安裝程式…",
+        "install_started": "已開始安裝",
+        "preparing": "正在准備下載…",
+        "downloading": "正在下載 {{size}}",
+        "download_done": "下載完成，正在執行安裝程式…",
+        "download_error": "下載失敗：{{error}}",
+        "installed": "安裝完成",
+        "install_incomplete": "安裝程式已結束，但未偵測到該組件",
+        "recheck_ok": "已檢測到，已就緒",
+        "recheck_missing": "仍未檢測到",
+        "skipped": "已暫時跳過",
+        "ignored": "已忽略，不再提醒",
+        "store_opened": "已開啟 Microsoft Store，請在商店中完成安裝後重新檢測",
+        "migration_started": "正在更新已安裝的實例…",
+        "migration_done": "加載器已更新",
+        "register_started": "正在註冊 {{name}}…",
+        "register_done": "註冊成功",
+        "unregister_started": "正在取消註冊 {{name}}…",
+        "unregister_done": "已取消註冊",
+        "launch_started": "正在啟動 {{name}}…",
+        "force_launch": "正在強製啟動 {{name}}…",
+        "launch_waiting": "正在等待遊戲視窗…",
+        "launched": "已偵測到遊戲視窗",
+        "failed": "失敗：{{error}}"
+      }
+    }
+  }
+}

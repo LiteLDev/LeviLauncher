@@ -117,6 +117,7 @@ func (l layout) cleanup(opts Options) {
 
 	// The legacy layout.
 	_ = os.Remove(filepath.Join(l.legacyDir, apppath.ConfigFileName))
+	_ = os.Remove(filepath.Join(l.legacyDir, apppath.LegacyMigratedConfigFileName))
 	_ = os.Remove(filepath.Join(l.legacyDir, apppath.LegacyGamertagsFileName))
 	_ = os.RemoveAll(filepath.Join(l.legacyDir, apppath.LegacyWebViewDirName))
 	_ = os.RemoveAll(filepath.Join(l.legacyDir, "bin"))

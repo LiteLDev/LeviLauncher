@@ -134,6 +134,20 @@ jobs:
             -BinDir bin `
             -OutDir dist
 
+      # test.ps1 upgrades 0.0.1 to 0.0.2, so it needs both versions of the installers.
+      - name: Build installers for the installer tests
+        shell: pwsh
+        run: |
+          foreach ($version in '0.0.1', '0.0.2') {
+            ./packaging/wix/build.ps1 -Version $version -Arch x64 -BinDir bin -OutDir installer-test
+          }
+
+      - uses: actions/upload-artifact@v7
+        with:
+          name: installer-test
+          path: installer-test/
+          if-no-files-found: error
+
       - uses: actions/upload-artifact@v7
         with:
           path: bin/LeviLauncher.exe
@@ -151,3 +165,33 @@ jobs:
           path: dist/LeviLauncher-${{ env.VERSION }}-win-x64-setup.exe
           archive: false
           if-no-files-found: error
+
+  # Installs, upgrades and uninstalls the installers for real, on a disposable elevated runner.
+  installer-test:
+    name: Installer tests
+    needs: build
+    runs-on: windows-2022
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/download-artifact@v8
+        with:
+          name: installer-test
+          path: installer-test
+
+      # The last release built with Inno Setup, to test the upgrade from it.
+      - name: Download the Inno Setup installer of v1.0.7
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: gh release download v1.0.7 --repo "${{ github.repository }}" --pattern LeviLauncher-amd64-installer.exe --dir inno
+
+      # Windows PowerShell 5.1, the oldest shell test.ps1 supports.
+      - name: Run installer tests
+        shell: powershell
+        run: ./packaging/wix/test.ps1 -ArtifactsDir installer-test -Arch x64 -InnoSetup inno/LeviLauncher-amd64-installer.exe
+
+      - if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: installer-test-logs
+          path: installer-test/logs/

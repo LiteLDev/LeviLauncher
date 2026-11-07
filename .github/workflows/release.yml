@@ -28,6 +28,8 @@ jobs:
       - uses: actions/download-artifact@v8
         with:
           path: dist
+          # LeviLauncher.exe and the installers, not the installers built for the installer tests.
+          pattern: LeviLauncher*
           merge-multiple: true
 
       # The notes list the pull requests since the newest stable release below the tag's version, which

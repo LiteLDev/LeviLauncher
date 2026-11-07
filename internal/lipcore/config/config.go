@@ -20,8 +20,6 @@
 package config
 
 import (
-	"crypto/rand"
-	"encoding/hex"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -31,6 +29,7 @@ import (
 
 	"github.com/liteldev/LeviLauncher/internal/lipcore/doc"
 	"github.com/liteldev/LeviLauncher/internal/lipcore/lipdirs"
+	"github.com/liteldev/LeviLauncher/internal/lipcore/txn"
 )
 
 const (
@@ -299,7 +298,7 @@ func saveConfig(dir string, value *string) error {
 		o.Set(GithubProxyKey, *value)
 	}
 	configPath := filepath.Join(dir, FileName)
-	tempPath := filepath.Join(dir, newGUID()+".tmp")
+	tempPath := filepath.Join(dir, txn.NewGUID()+".tmp")
 	err := writeAndMove(dir, tempPath, configPath, doc.MarshalYAML(o))
 	if fileExists(tempPath) {
 		_ = os.Remove(tempPath)
@@ -332,14 +331,4 @@ func writeAndMove(dir, tempPath, configPath string, data []byte) error {
 		return err
 	}
 	return os.Rename(tempPath, configPath)
-}
-
-// newGUID is Guid.NewGuid().ToString("N"): 32 lowercase hexadecimal digits
-// of a version 4 UUID.
-func newGUID() string {
-	var b [16]byte
-	_, _ = rand.Read(b[:])
-	b[6] = b[6]&0x0f | 0x40
-	b[8] = b[8]&0x3f | 0x80
-	return hex.EncodeToString(b[:])
 }

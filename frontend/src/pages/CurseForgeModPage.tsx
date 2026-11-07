@@ -1,4 +1,3 @@
-import { ModalAction, ModalDescription, ModalPanel, ModalNotice, ModalProgress } from "@/components/ModalPrimitives";
 import {
   Button,
   Card,
@@ -6,7 +5,6 @@ import {
   Label,
   Link,
   ListBox,
-  ProgressBar,
   Select,
   Skeleton,
   Spinner,
@@ -17,7 +15,7 @@ import {
 
 import { cn } from "@/utils/cn";
 
-import React, { useEffect, useState, useRef } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { useRouteTitle } from "@/hooks/useRouteTitle";
@@ -26,40 +24,17 @@ import {
   GetCurseForgeModsByIDs,
   GetCurseForgeModDescription,
   GetCurseForgeModFiles,
-  StartFileDownload,
-  CancelFileDownload,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
-import {
-  GetContentRoots,
-  ImportMcpackPath,
-  ImportMcpackPathWithPlayer,
-  ImportMcaddonPath,
-  ImportMcaddonPathWithPlayer,
-  ImportMcworldPath,
-  IsMcpackSkinPackPath,
-} from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
-import {
-  ListVersionMetasWithRegistered,
-  GetVersionLogoDataUrl,
-} from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
-import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
-import { Events, Browser } from "@wailsio/runtime";
-import { VersionMeta } from "bindings/github.com/liteldev/LeviLauncher/internal/versions/models";
+import { Browser } from "@wailsio/runtime";
 import { File as ModFile } from "bindings/github.com/liteldev/LeviLauncher/internal/curseforge/client/types";
 import {
-  getPlayerGamertagMap,
-  listPlayers,
-  resolvePlayerDisplayName,
-} from "@/utils/content";
-import { readCurrentVersionName } from "@/utils/currentVersion";
-import { compareVersions } from "@/utils/version";
-import { shouldDisableAnimations } from "@/hooks/useAnimations";
-import { UnifiedModal } from "@/components/UnifiedModal";
+  CurseForgeInstallDialog,
+  type CurseForgeInstallTarget,
+} from "@/components/CurseForgeInstallDialog";
 import { motion } from "framer-motion";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 
-import { FiCheckCircle } from "react-icons/fi";
 import {
   LuDownload,
   LuCalendar,
@@ -68,7 +43,6 @@ import {
   LuGithub,
   LuBug,
   LuGamepad2,
-  LuUser,
 } from "react-icons/lu";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import {
@@ -77,6 +51,11 @@ import {
   formatFileSize,
   sortGameVersions,
 } from "@/utils/formatting";
+
+const releaseColor = (type: number) =>
+  type === 1 ? "success" : type === 2 ? "accent" : "warning";
+const releaseLetter = (type: number) =>
+  type === 1 ? "R" : type === 2 ? "B" : "A";
 
 const CurseForgeModPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -99,46 +78,15 @@ const CurseForgeModPage: React.FC = () => {
   const [selectedGameVersion, setSelectedGameVersion] = useState<string>("all");
   const [selectedTab, setSelectedTab] = useState<string>("description");
   const [isEntering, setIsEntering] = useState(true);
-  const tabsRef = useRef<HTMLDivElement>(null);
 
-  const [installModalOpen, setInstallModalOpen] = useState(false);
-  const [installStep, setInstallStep] = useState<
-    | "downloading"
-    | "version_select"
-    | "player_select"
-    | "importing"
-    | "success"
-    | "error"
-  >("downloading");
-  const [installFile, setInstallFile] = useState<{
-    name: string;
-    path: string;
-    type: string;
-  } | null>(null);
-  const [downloadProgress, setDownloadProgress] = useState<{
-    downloaded: number;
-    total: number;
-  } | null>(null);
-  const [availableVersions, setAvailableVersions] = useState<VersionMeta[]>([]);
-  const [versionLogos, setVersionLogos] = useState<Record<string, string>>({});
-  const [availablePlayers, setAvailablePlayers] = useState<string[]>([]);
-  const [playerGamertagMap, setPlayerGamertagMap] = useState<
-    Record<string, string>
-  >({});
-  const [selectedVersion, setSelectedVersion] = useState<string>("");
-  const [selectedPlayer, setSelectedPlayer] = useState<string>("");
-  const [installError, setInstallError] = useState<string>("");
-  const [dupOpen, setDupOpen] = useState(false);
-  const [dupName, setDupName] = useState<string>("");
-  const dupResolveRef = useRef<((overwrite: boolean) => void) | null>(null);
-  const isCancelling = useRef(false);
-  const cleanupRef = useRef<() => void>(() => {});
-  const downloadAttemptRef = useRef(0);
-
-  useEffect(() => () => {
-    downloadAttemptRef.current++;
-    cleanupRef.current();
-  }, []);
+  const [installTarget, setInstallTarget] =
+    useState<CurseForgeInstallTarget | null>(null);
+  const [installOpen, setInstallOpen] = useState(false);
+  const openInstall = (file?: ModFile) => {
+    if (!mod) return;
+    setInstallTarget({ modId: mod.id, modName: mod.name, file: file ?? null });
+    setInstallOpen(true);
+  };
 
   React.useLayoutEffect(() => {
     setIsEntering(true);
@@ -174,298 +122,6 @@ const CurseForgeModPage: React.FC = () => {
     };
   }, [id]);
 
-  const handleCancelDownload = async () => {
-    isCancelling.current = true;
-    downloadAttemptRef.current++;
-    cleanupRef.current();
-    try {
-      await CancelFileDownload();
-    } catch (e) {
-      console.warn("Cancel failed", e);
-    }
-    setInstallModalOpen(false);
-  };
-
-  const handleInstall = async (file: ModFile) => {
-    if (!file.downloadUrl) {
-      alert(t("curseforge.no_download_url"));
-      return;
-    }
-
-    setInstallModalOpen(true);
-    setInstallStep("downloading");
-    setInstallError("");
-    setInstallFile(null);
-    setDownloadProgress(null);
-    isCancelling.current = false;
-
-    cleanupRef.current();
-    const attempt = ++downloadAttemptRef.current;
-    const isCurrentAttempt = () => downloadAttemptRef.current === attempt;
-    const subscriptions: (() => void)[] = [];
-    const cleanup = () => {
-      subscriptions.splice(0).forEach((off) => off());
-    };
-    cleanupRef.current = cleanup;
-
-    try {
-      subscriptions.push(Events.On("file.download.progress", (event) => {
-        if (!isCurrentAttempt()) return;
-        const data = event.data || {};
-        setDownloadProgress({
-          downloaded: Number(data.Downloaded || 0),
-          total: Number(data.Total || 0),
-        });
-      }));
-
-      subscriptions.push(Events.On("file.download.done", async (event) => {
-        if (!isCurrentAttempt()) return;
-        cleanup();
-        const dest = event.data;
-        try {
-          let type = "unknown";
-          const lowerName = file.fileName.toLowerCase();
-          if (lowerName.endsWith(".mcworld")) type = "mcworld";
-          else if (lowerName.endsWith(".mcaddon")) type = "mcaddon";
-          else if (lowerName.endsWith(".mcpack")) {
-            type = (await IsMcpackSkinPackPath(dest)) ? "skin_pack" : "mcpack";
-          }
-
-          if (!isCurrentAttempt()) return;
-          setInstallFile({ name: file.fileName, path: dest, type });
-
-          const metas = await ListVersionMetasWithRegistered();
-          if (!isCurrentAttempt()) return;
-          if (metas) {
-            metas.sort((a, b) => {
-              const cmp = compareVersions(
-                a.gameVersion || "0",
-                b.gameVersion || "0",
-              );
-              return -cmp;
-            });
-            setAvailableVersions(metas);
-
-            const currentName = readCurrentVersionName();
-            let defaultSelect = "";
-            if (currentName && metas.some((m) => m.name === currentName)) {
-              defaultSelect = currentName;
-            } else if (metas.length > 0) {
-              defaultSelect = metas[0].name;
-            }
-            setSelectedVersion(defaultSelect);
-
-            const logoMap: Record<string, string> = {};
-            await Promise.all(
-              metas.map(async (m) => {
-                try {
-                  const url = await GetVersionLogoDataUrl(m.name);
-                  if (url) logoMap[m.name] = url;
-                } catch (e) {
-                  console.warn("Failed to fetch logo for", m.name, e);
-                }
-              }),
-            );
-            if (!isCurrentAttempt()) return;
-            setVersionLogos(logoMap);
-          }
-
-          setInstallStep("version_select");
-        } catch (e: any) {
-          if (!isCurrentAttempt()) return;
-          setInstallError(e.message || "Detection failed");
-          setInstallStep("error");
-        }
-      }));
-
-      subscriptions.push(Events.On("file.download.error", (event) => {
-        if (!isCurrentAttempt()) return;
-        cleanup();
-        if (isCancelling.current) return;
-        const err = event.data;
-        setInstallError(err || "Download failed");
-        setInstallStep("error");
-      }));
-
-      // Register first: small downloads may finish before the binding resolves.
-      await StartFileDownload(file.downloadUrl, file.fileName);
-    } catch (e: any) {
-      cleanup();
-      if (!isCurrentAttempt()) return;
-      if (isCancelling.current) return;
-      setInstallError(e.message || "Download start failed");
-      setInstallStep("error");
-    }
-  };
-
-  const handleVersionSelectNext = async () => {
-    if (!installFile) return;
-
-    if (installStep === "player_select") {
-      await executeImport();
-      return;
-    }
-
-    try {
-      const contentRoots = await GetContentRoots(selectedVersion);
-      if (contentRoots.packageType === "uwp") {
-        setSelectedPlayer("");
-        await executeImport("");
-        return;
-      }
-    } catch (error) {
-      setInstallError(error instanceof Error ? error.message : String(error));
-      setInstallStep("error");
-      return;
-    }
-
-    let skipPlayerSelect = false;
-    if (installFile.type === "skin_pack") {
-      const targetMeta = availableVersions.find(
-        (v) => v.name === selectedVersion,
-      );
-      if (
-        targetMeta &&
-        compareVersions(targetMeta.gameVersion || "0", "1.26.0") > 0
-      ) {
-        skipPlayerSelect = true;
-      }
-    }
-
-    if (
-      installFile.type === "mcworld" ||
-      (installFile.type === "skin_pack" && !skipPlayerSelect)
-    ) {
-      setInstallStep("player_select");
-      try {
-        const roots = await GetContentRoots(selectedVersion);
-        if (roots && roots.usersRoot) {
-          const players = await listPlayers(roots.usersRoot);
-          setAvailablePlayers(players);
-          let defaultP = "";
-          if (players.length > 0) {
-            defaultP = players[0];
-            setSelectedPlayer(defaultP);
-          }
-
-          (async () => {
-            try {
-              const map = await getPlayerGamertagMap(roots.usersRoot);
-              setPlayerGamertagMap(map);
-
-              const tag = await GetLocalUserGamertag();
-              if (tag) {
-                for (const p of players) {
-                  if (map[p] === tag) {
-                    if (p !== defaultP) setSelectedPlayer(p);
-                    break;
-                  }
-                }
-              }
-            } catch {}
-          })();
-        } else {
-          setPlayerGamertagMap({});
-        }
-      } catch (e) {
-        console.error(e);
-        setAvailablePlayers([]);
-        setPlayerGamertagMap({});
-      }
-    } else {
-      await executeImport();
-    }
-  };
-
-  const executeImport = async (playerOverride?: string) => {
-    if (!installFile || !selectedVersion) return;
-
-    setInstallStep("importing");
-    setInstallError("");
-
-    try {
-      const { name, path, type } = installFile;
-      const targetRoots = await GetContentRoots(selectedVersion);
-      const player = targetRoots.packageType === "uwp" ? "" : playerOverride ?? selectedPlayer;
-      const runImport = async (overwrite: boolean): Promise<string> => {
-        if (type === "mcworld") {
-          if (!player && targetRoots.packageType !== "uwp") throw new Error("No player selected");
-          return String(
-            await ImportMcworldPath(
-              selectedVersion,
-              player,
-              path,
-              overwrite,
-            ),
-          );
-        }
-        if (type === "mcaddon") {
-          if (player) {
-            return String(
-              await ImportMcaddonPathWithPlayer(
-                selectedVersion,
-                player,
-                path,
-                overwrite,
-              ),
-            );
-          }
-          return String(
-            await ImportMcaddonPath(selectedVersion, path, overwrite),
-          );
-        }
-        if (player) {
-          if (type === "skin_pack") {
-            return String(
-              await ImportMcpackPathWithPlayer(
-                selectedVersion,
-                player,
-                path,
-                overwrite,
-              ),
-            );
-          }
-          return String(
-            await ImportMcpackPath(selectedVersion, path, overwrite),
-          );
-        }
-        return String(await ImportMcpackPath(selectedVersion, path, overwrite));
-      };
-
-      let err = await runImport(false);
-      if (err) {
-        if (
-          String(err) === "ERR_DUPLICATE_FOLDER" ||
-          String(err) === "ERR_DUPLICATE_UUID"
-        ) {
-          setDupName(name);
-          await new Promise<void>((resolve) => {
-            dupResolveRef.current = (overwrite) => {
-              resolve();
-              if (!overwrite) {
-                err = "";
-              }
-            };
-            setDupOpen(true);
-          });
-          if (!err) {
-            setInstallModalOpen(false);
-            return;
-          }
-          err = await runImport(true);
-        }
-      }
-
-      if (err) {
-        throw new Error(err);
-      }
-
-      setInstallStep("success");
-    } catch (e: any) {
-      setInstallError(e.message || "Import failed");
-      setInstallStep("error");
-    }
-  };
 
   const gameVersions = React.useMemo(() => {
     if (!files || files.length === 0) return [];
@@ -629,7 +285,7 @@ const CurseForgeModPage: React.FC = () => {
                   </div>
                 </div>
               </div>
-              <div className="flex flex-col gap-3 min-w-[200px] justify-center">
+              <div className="flex flex-col gap-3 md:w-52 justify-center">
                 <Skeleton className="h-12 w-full rounded-xl" />
                 <div className="flex gap-2 justify-center">
                   <Skeleton className="h-10 w-10 rounded-lg" />
@@ -698,6 +354,8 @@ const CurseForgeModPage: React.FC = () => {
       animate={false}
       className={isEntering ? "overflow-y-hidden" : undefined}
     >
+      {/* Capped so very wide windows don't stretch the page into empty slabs. */}
+      <div className="mx-auto flex w-full max-w-[90rem] flex-col gap-4">
       {/* Header Card */}
       <motion.div
         data-material-motion
@@ -706,20 +364,21 @@ const CurseForgeModPage: React.FC = () => {
         transition={{ duration: 0.4 }}
       >
         <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <Card.Content className="p-6">
-            <div className="flex flex-col md:flex-row gap-6">
+          <Card.Content className="@container p-4 @[40rem]:p-6">
+            <div className="flex flex-col gap-4 @[56rem]:flex-row @[56rem]:gap-6">
+              <div className="flex min-w-0 grow gap-4 @[40rem]:gap-6">
               <div className="shrink-0">
                 <img
                   src={mod.logo?.url}
                   alt={mod.name}
                   className={
-                    "w-32 h-32 object-cover rounded-2xl shadow-lg bg-surface-secondary"
+                    "size-16 @[40rem]:size-32 object-cover rounded-2xl shadow-lg bg-surface-secondary"
                   }
                 />
               </div>
 
-              <div className="flex flex-col grow gap-3">
-                <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-foreground dark:text-zinc-100 pb-1">
+              <div className="flex min-w-0 flex-col grow gap-3">
+                <h1 className="text-2xl @[40rem]:text-4xl font-black tracking-tight text-foreground dark:text-zinc-100 pb-1 [overflow-wrap:anywhere]">
                   {mod.name}
                 </h1>
 
@@ -781,23 +440,17 @@ const CurseForgeModPage: React.FC = () => {
                   {mod.summary}
                 </p>
               </div>
+              </div>
 
-              {/* Actions */}
-              <div className="flex flex-col gap-3 min-w-[240px] md:border-l md:border-border md:pl-8 justify-center">
+              {/* Actions: a row under the details when narrow, a side column when wide. */}
+              <div className="flex flex-wrap items-center gap-3 @[56rem]:w-60 @[56rem]:shrink-0 @[56rem]:flex-col @[56rem]:flex-nowrap @[56rem]:items-stretch @[56rem]:justify-center @[56rem]:border-l @[56rem]:border-border @[56rem]:pl-8">
                 <Button
                   size="lg"
-                  onPress={() => {
-                    setSelectedTab("files");
-                    setTimeout(() => {
-                      tabsRef.current?.scrollIntoView({
-                        behavior: shouldDisableAnimations() ? "auto" : "smooth",
-                        block: "start",
-                      });
-                    }, 100);
-                  }}
+                  onPress={() => openInstall()}
                   variant={"secondary"}
+                  data-testid="curseforge-mod-install"
                   className={
-                    "w-full font-semibold shadow-md shadow-brand-900/20 brand-primary-foreground bg-brand-500 hover:bg-brand-500"
+                    "flex-[1_1_12rem] @[56rem]:flex-none @[56rem]:w-full font-semibold shadow-md shadow-brand-900/20 brand-primary-foreground bg-brand-500 hover:bg-brand-500"
                   }
                 >
                   {<LuDownload size={20} />}
@@ -849,9 +502,9 @@ const CurseForgeModPage: React.FC = () => {
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4, delay: 0.1 }}
       >
-        <Card className={`${LAYOUT.GLASS_CARD.BASE} min-h-[500px]`}>
-          <Card.Content className="p-6">
-            <div ref={tabsRef} className="flex w-full flex-col scroll-mt-24">
+        <Card className={LAYOUT.GLASS_CARD.BASE}>
+          <Card.Content className="@container p-4 @[40rem]:p-6">
+            <div className="flex w-full min-w-0 flex-col">
               <Tabs
                 selectedKey={selectedTab}
                 onSelectionChange={(key) => setSelectedTab(key as string)}
@@ -896,7 +549,7 @@ const CurseForgeModPage: React.FC = () => {
                 </Tabs.ListContainer>
 
                 <Tabs.Panel id="description">
-                  <div className="prose dark:prose-invert max-w-none prose-img:rounded-xl prose-img:mx-auto prose-a:text-brand-600 dark:prose-a:text-brand-500">
+                  <div className="prose dark:prose-invert max-w-4xl mx-auto min-w-0 [overflow-wrap:anywhere] prose-img:rounded-xl prose-img:mx-auto prose-a:text-brand-600 dark:prose-a:text-brand-500">
                     {descriptionLoading ? (
                       <div
                         role="status"
@@ -936,11 +589,11 @@ const CurseForgeModPage: React.FC = () => {
 
                 <Tabs.Panel id="files">
                   <div className="flex flex-col gap-4">
-                    <div className="flex justify-between items-center mb-2">
+                    <div className="flex flex-wrap justify-between items-end gap-3 mb-2">
                       <h3 className="text-lg font-semibold">
                         {t("curseforge.mod_files.title")}
                       </h3>
-                      <div className="w-48">
+                      <div className="w-48 max-w-full">
                         <Select
                           value={Array.from([selectedGameVersion])[0] ?? null}
                           onChange={(e) =>
@@ -1011,6 +664,8 @@ const CurseForgeModPage: React.FC = () => {
                         </Button>
                       </div>
                     ) : filteredFiles.length > 0 ? (
+                      <>
+                      <div className="hidden @[48rem]:block">
                       <Table variant="secondary">
                         <Table.ScrollContainer className="h-full">
                           <Table.Content
@@ -1079,21 +734,11 @@ const CurseForgeModPage: React.FC = () => {
                                       <Chip
                                         size="sm"
                                         variant="soft"
-                                        color={
-                                          file.releaseType === 1
-                                            ? "success"
-                                            : file.releaseType === 2
-                                              ? "accent"
-                                              : "warning"
-                                        }
+                                        color={releaseColor(file.releaseType)}
                                         className={"capitalize"}
                                       >
                                         <Chip.Label>
-                                          {file.releaseType === 1
-                                            ? "R"
-                                            : file.releaseType === 2
-                                              ? "B"
-                                              : "A"}
+                                          {releaseLetter(file.releaseType)}
                                         </Chip.Label>
                                       </Chip>
                                     </Table.Cell>
@@ -1185,7 +830,7 @@ const CurseForgeModPage: React.FC = () => {
                                             name: file.displayName || file.fileName,
                                           })}
                                           size="sm"
-                                          onPress={() => handleInstall(file)}
+                                          onPress={() => openInstall(file)}
                                           variant={"ghost"}
                                           className={
                                             "text-muted dark:text-zinc-400 hover:text-accent"
@@ -1207,6 +852,69 @@ const CurseForgeModPage: React.FC = () => {
                           </Table.Content>
                         </Table.ScrollContainer>
                       </Table>
+                      </div>
+                      <ul
+                        className="flex flex-col gap-2 @[48rem]:hidden"
+                        aria-label={t("curseforge.mod_files.table_aria_label")}
+                      >
+                        {filteredFiles.map((file) => {
+                          const sortedVersions = sortGameVersions(
+                            file.gameVersions,
+                          );
+                          const name = file.displayName || file.fileName;
+                          return (
+                            <li
+                              key={file.id}
+                              className="flex min-w-0 items-center gap-3 rounded-2xl border border-border/60 dark:border-white/5 bg-surface/40 p-3"
+                            >
+                              <Chip
+                                size="sm"
+                                variant="soft"
+                                color={releaseColor(file.releaseType)}
+                                className="shrink-0"
+                              >
+                                <Chip.Label>
+                                  {releaseLetter(file.releaseType)}
+                                </Chip.Label>
+                              </Chip>
+                              <div className="flex min-w-0 flex-1 flex-col gap-0.5">
+                                <span className="font-medium [overflow-wrap:anywhere]">
+                                  {name}
+                                </span>
+                                <span className="text-xs text-muted dark:text-zinc-400 [overflow-wrap:anywhere]">
+                                  {[
+                                    sortedVersions.length > 0
+                                      ? sortedVersions.length > 1
+                                        ? `${sortedVersions[0]} +${sortedVersions.length - 1}`
+                                        : sortedVersions[0]
+                                      : "",
+                                    formatDateStr(file.fileDate),
+                                    formatFileSize(file.fileLength),
+                                    t("curseforge.download_count", {
+                                      count: formatNumber(file.downloadCount),
+                                    }),
+                                  ]
+                                    .filter(Boolean)
+                                    .join(" · ")}
+                                </span>
+                              </div>
+                              <Button
+                                isIconOnly
+                                size="sm"
+                                variant="secondary"
+                                aria-label={t("audit.mods.install_file", {
+                                  name,
+                                })}
+                                onPress={() => openInstall(file)}
+                                className="shrink-0"
+                              >
+                                <LuDownload size={18} />
+                              </Button>
+                            </li>
+                          );
+                        })}
+                      </ul>
+                      </>
                     ) : (
                       <div className="flex flex-col items-center justify-center py-12 text-muted border border-dashed border-border rounded-xl">
                         <LuFileDigit size={48} className="mb-4 opacity-50" />
@@ -1223,302 +931,16 @@ const CurseForgeModPage: React.FC = () => {
         </Card>
       </motion.div>
 
-      <UnifiedModal
-        size="wide"
-        isOpen={installModalOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            if (installStep === "downloading") {
-              handleCancelDownload();
-            } else {
-              setInstallModalOpen(false);
-            }
-          }
-        }}
-        isDismissable={false}
-        contentKey={installStep}
-        type={installStep === "error" ? "error" : installStep === "success" ? "success" : "primary"}
-        icon={
-          installStep === "downloading" ? (
-            <LuDownload size={24} />
-          ) : installStep === "version_select" ? (
-            <LuGamepad2 size={24} />
-          ) : installStep === "player_select" ? (
-            <LuUser size={24} />
-          ) : installStep === "importing" ? (
-            <LuFileDigit size={24} />
-          ) : installStep === "success" ? (
-            <FiCheckCircle size={24} />
-          ) : undefined
-        }
-        title={
-          <>
-            {installStep === "downloading" &&
-              t("curseforge.install.downloading_title")}
-            {installStep === "version_select" &&
-              t("curseforge.install.select_version_title")}
-            {installStep === "player_select" &&
-              t("curseforge.install.select_player_title")}
-            {installStep === "importing" &&
-              t("curseforge.install.importing_title")}
-            {installStep === "success" && t("curseforge.install.success_title")}
-            {installStep === "error" && t("curseforge.install.error_title")}
-          </>
-        }
-        footer={
-          <>
-            {installStep === "downloading" && (
-              <ModalAction onPress={handleCancelDownload} variant="secondary">
-                {t("common.cancel")}
-              </ModalAction>
-            )}
-            {(installStep === "version_select" ||
-              installStep === "player_select") && (
-              <>
-                <ModalAction
-                  onPress={() => setInstallModalOpen(false)}
-                  variant="secondary"
-                >
-                  {t("common.cancel")}
-                </ModalAction>
-                <ModalAction
-                  onPress={handleVersionSelectNext}
-                  variant={"primary"}
-                >
-                  {t("curseforge.install.next")}
-                </ModalAction>
-              </>
-            )}
-            {(installStep === "success" || installStep === "error") && (
-              <ModalAction
-                onPress={() => setInstallModalOpen(false)}
-                variant="primary"
-              >
-                {t("curseforge.install.close")}
-              </ModalAction>
-            )}
-          </>
-        }
-      >
-        {installStep === "downloading" && (
-          <div className="flex flex-col gap-4 w-full">
-            <ModalDescription>
-              {t("curseforge.install.downloading_body")}
-            </ModalDescription>
-            {downloadProgress ? (
-              <ProgressBar
-                aria-label="Downloading..."
-                value={
-                  (downloadProgress.downloaded / downloadProgress.total) * 100
-                }
-                color={"accent"}
-                className={"w-full"}
-              >
-                {true && <ProgressBar.Output />}
-                <ProgressBar.Track>
-                  <ProgressBar.Fill
-                    className={"bg-brand-500 dark:bg-brand-500"}
-                  />
-                </ProgressBar.Track>
-              </ProgressBar>
-            ) : (
-              <Spinner size="lg" color={"accent"} />
-            )}
-            {downloadProgress && (
-              <ModalDescription>
-                {formatFileSize(downloadProgress.downloaded)} /{" "}
-                {formatFileSize(downloadProgress.total)}
-              </ModalDescription>
-            )}
-          </div>
-        )}
+      </div>
 
-        {installStep === "version_select" && (
-          <div className="flex flex-col gap-4">
-            <ModalDescription>
-              {t("curseforge.install.select_version_body")}
-            </ModalDescription>
-            <Select
-              placeholder={t("curseforge.install.select_version_placeholder")}
-              value={
-                Array.from(selectedVersion ? [selectedVersion] : [])[0] ?? null
-              }
-              onChange={(e) => setSelectedVersion(String(e ?? ""))}
-            >
-              <Label>{t("curseforge.install.local_installation")}</Label>
-              <Select.Trigger className={COMPONENT_STYLES.select.trigger}>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover
-                className={COMPONENT_STYLES.select.popoverContent}
-              >
-                <ListBox
-                  items={availableVersions}
-                  className={COMPONENT_STYLES.select.listbox}
-                >
-                  {(ver) => (
-                    <ListBox.Item
-                      key={ver.name}
-                      id={ver.name}
-                      textValue={ver.name}
-                    >
-                      <Label>
-                        <div className="flex gap-2 items-center">
-                          <div className="w-8 h-8 rounded bg-surface-tertiary flex items-center justify-center overflow-hidden">
-                            <img
-                              src={
-                                versionLogos[ver.name] ||
-                                "https://raw.githubusercontent.com/LiteLDev/LeviLauncher/main/build/appicon.png"
-                              }
-                              alt="icon"
-                              className="w-full h-full object-cover"
-                              onError={(e) =>
-                                (e.currentTarget.style.display = "none")
-                              }
-                            />
-                          </div>
-                          <div className="flex flex-col">
-                            <span className="text-sm">{ver.name}</span>
-                            <span className="text-xs text-muted">
-                              {ver.gameVersion}
-                            </span>
-                          </div>
-                          {ver.registered && (
-                            <Chip
-                              size="sm"
-                              variant="soft"
-                              color={"success"}
-                              className={"ml-auto"}
-                            >
-                              <Chip.Label>
-                                {t("curseforge.install.registered")}
-                              </Chip.Label>
-                            </Chip>
-                          )}
-                        </div>
-                      </Label>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  )}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          </div>
-        )}
-
-        {installStep === "player_select" && (
-          <div className="flex flex-col gap-4">
-            <ModalDescription>
-              {t("curseforge.install.select_player_body")}
-            </ModalDescription>
-            <Select
-              placeholder={t("curseforge.install.select_player_placeholder")}
-              value={
-                Array.from(selectedPlayer ? [selectedPlayer] : [])[0] ?? null
-              }
-              onChange={(e) => setSelectedPlayer(String(e ?? ""))}
-            >
-              <Label>{t("curseforge.install.player_label")}</Label>
-              <Select.Trigger className={COMPONENT_STYLES.select.trigger}>
-                <Select.Value />
-                <Select.Indicator />
-              </Select.Trigger>
-              <Select.Popover
-                className={COMPONENT_STYLES.select.popoverContent}
-              >
-                <ListBox className={COMPONENT_STYLES.select.listbox}>
-                  {availablePlayers.map((player) => (
-                    <ListBox.Item
-                      key={player}
-                      id={player}
-                      textValue={resolvePlayerDisplayName(
-                        player,
-                        playerGamertagMap,
-                      )}
-                    >
-                      <Label>
-                        {resolvePlayerDisplayName(player, playerGamertagMap)}
-                      </Label>
-                      <ListBox.ItemIndicator />
-                    </ListBox.Item>
-                  ))}
-                </ListBox>
-              </Select.Popover>
-            </Select>
-          </div>
-        )}
-
-        {installStep === "importing" && (
-          <ModalProgress label={t("curseforge.install.importing_title")} description={t("curseforge.install.importing_body")} />
-        )}
-
-        {installStep === "success" && (
-          <div className="flex flex-col gap-4">
-            <div className="space-y-2">
-              <ModalDescription>
-                {t("curseforge.install.success_msg")}
-              </ModalDescription>
-              <ModalDescription className="mt-1">
-                {t("curseforge.install.success_desc")}
-              </ModalDescription>
-            </div>
-          </div>
-        )}
-
-        {installStep === "error" && (
-          <div className="flex flex-col gap-4">
-            <ModalDescription>
-                {t("curseforge.install.failed_msg")}
-            </ModalDescription>
-              <ModalNotice role="alert" tone="danger" className="font-mono">
-                {installError}
-              </ModalNotice>
-          </div>
-        )}
-      </UnifiedModal>
-      <UnifiedModal
-        size="standard"
-        isOpen={dupOpen}
-        onOpenChange={(open) => {
-          if (!open) {
-            setDupOpen(false);
-          }
-        }}
-        type="warning"
-        title={t("mods.overwrite_modal_title")}
-        footer={
-          <>
-            <ModalAction
-              onPress={() => {
-                try {
-                  if (dupResolveRef.current) dupResolveRef.current(false);
-                } finally {
-                  setDupOpen(false);
-                }
-              }}
-              variant="secondary"
-            >
-              {t("common.cancel")}
-            </ModalAction>
-            <ModalAction
-              onPress={() => {
-                try {
-                  if (dupResolveRef.current) dupResolveRef.current(true);
-                } finally {
-                  setDupOpen(false);
-                }
-              }}
-              variant={"primary"}
-            >
-              {t("common.confirm")}
-            </ModalAction>
-          </>
-        }
-      >
-        <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
-        {dupName ? <ModalPanel className="font-mono">{dupName}</ModalPanel> : null}
-      </UnifiedModal>
+      {installTarget && (
+        <CurseForgeInstallDialog
+          target={installTarget}
+          isOpen={installOpen}
+          onClose={() => setInstallOpen(false)}
+          files={files.length > 0 ? files : undefined}
+        />
+      )}
     </PageContainer>
   );
 };

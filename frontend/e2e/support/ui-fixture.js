@@ -220,6 +220,37 @@ state.call = async (name, ...args) => {
   const index = Number(args[8] || 0), pageSize = Number(args[7] || 20);
   return {data:matches.slice(index,index+pageSize).map(pkg=>({id:Number(pkg.identifier.split('-').pop()),name:pkg.name,summary:pkg.description,authors:[{name:pkg.author}],logo:{thumbnailUrl:'/src/assets/images/LeviLamina.png',url:'/src/assets/images/LeviLamina.png'},downloadCount:pkg.hotness,dateModified:pkg.updated,dateCreated:pkg.updated,categories:[],latestFiles:[],latestFilesIndexes:[]})),pagination:{index,pageSize,totalCount:matches.length}};
  }
+ // catalog: CurseForge mod detail and install. state.cfHoldDownload pauses the
+ // download until state.cfFinishDownload(); state.cfDuplicate makes the first
+ // import report a duplicate; state.cfImportError fails the import.
+ if (scenario.startsWith('catalog') && name==='GetCurseForgeModsByIDs') return {data:(args[0]||[]).map(id=>{const pkg=state.catalogPackages[(id-1)%state.catalogPackages.length];return {id,name:pkg.name,summary:pkg.description,authors:[{id:1,name:pkg.author,url:'https://example.com'}],logo:{thumbnailUrl:'/src/assets/images/LeviLamina.png',url:'/src/assets/images/LeviLamina.png'},downloadCount:pkg.hotness*1000,dateModified:pkg.updated,dateCreated:pkg.updated,categories:[],links:{websiteUrl:'https://example.com/mod',sourceUrl:'https://example.com/src'}};})};
+ if (scenario.startsWith('catalog') && name==='GetCurseForgeModDescription') return {data:'<p>'+'A long fixture description for checking readable widths. '.repeat(20)+'</p>'};
+ if (scenario.startsWith('catalog') && name==='GetCurseForgeModFiles') return {data:[
+  {id:11,displayName:'Fixture World 1.2.0',fileName:'fixture-world.mcworld',fileDate:'2026-10-01',fileLength:5242880,releaseType:1,downloadCount:1200,gameVersions:['1.21.0','1.20.0'],downloadUrl:'https://example.com/fixture-world.mcworld'},
+  {id:12,displayName:'Fixture Pack 1.1.0 beta',fileName:'fixture-pack.mcpack',fileDate:'2026-09-01',fileLength:1048576,releaseType:2,downloadCount:300,gameVersions:['1.21.0'],downloadUrl:'https://example.com/fixture-pack.mcpack'},
+  {id:13,displayName:'Fixture Addon 1.0.0',fileName:'fixture.mcaddon',fileDate:'2026-08-01',fileLength:2097152,releaseType:1,downloadCount:800,gameVersions:['1.20.0'],downloadUrl:'https://example.com/fixture.mcaddon'},
+ ]};
+ if (scenario.startsWith('catalog') && name==='StartFileDownload') {
+  const emit=(event,data)=>window._wails.dispatchWailsEvent({name:event,data});
+  const total=5242880, fileName=String(args[1]);
+  state.cfDownloads=(state.cfDownloads||0)+1;
+  (async()=>{
+   for (const part of [0.25,0.5]) {await new Promise(r=>setTimeout(r,150));emit('file.download.progress',{Downloaded:total*part,Total:total});}
+   if (state.cfHoldDownload) await new Promise(r=>{state.cfFinishDownload=r;});
+   if (state.cfDownloadError) {emit('file.download.error',state.cfDownloadError);return;}
+   emit('file.download.progress',{Downloaded:total,Total:total});
+   await new Promise(r=>setTimeout(r,100));
+   emit('file.download.done','C:\\Fixture\\downloads\\'+fileName);
+  })();
+  return '';
+ }
+ if (scenario.startsWith('catalog') && name==='CancelFileDownload') {state.cfCancelled=(state.cfCancelled||0)+1;return '';}
+ if (scenario.startsWith('catalog') && name.startsWith('Import')) {
+  state.cfImports=[...(state.cfImports||[]),{name,args}];
+  if (state.cfImportError) return state.cfImportError;
+  if (state.cfDuplicate && !args.at(-1)) return 'ERR_DUPLICATE_FOLDER';
+  return '';
+ }
  if (name==='ListVersionMetas') return scenario==='no-instances' ? [] : [{name:'UI test instance',gameVersion:'1.21.0',type:'Release',enableIsolation:true}];
  if (name==='ListPacksForVersion' && scenario==='resource-packs') return Array.from({length:24},(_,index)=>({name:'Resource pack '+String(index+1).padStart(2,'0'),path:'C:/Fixture/resource_packs/pack-'+(index+1),manifest:{pack_type:6,name:'Resource pack '+String(index+1).padStart(2,'0'),description:'A sample resource pack.',identity:{version:{major:1,minor:0,patch:0}}}}));
  if (name==='ListPackDetailsForVersion' && scenario==='resource-packs' && args[2]===6) return Array.from({length:24},(_,index)=>({

@@ -1,0 +1,43 @@
+{
+  "curseforge": {
+    "install": {
+      "type": {
+        "mcworld": "Welt",
+        "mcaddon": "Add-on",
+        "mcpack": "Ressourcen- oder Verhaltenspaket",
+        "skin_pack": "Skinpaket",
+        "unknown": "Unbekanntes Paket"
+      },
+      "dialog_title": "{{name}} installieren",
+      "setup_body": "Wähle aus, was wohin installiert wird. Download und Import laufen danach in einem Schritt.",
+      "file_label": "Datei",
+      "file_placeholder": "Datei auswählen",
+      "files_loading": "Dateien werden geladen…",
+      "no_files": "Dieses Projekt hat keine herunterladbaren Dateien.",
+      "no_instances": "Noch keine Instanz installiert. Füge zuerst auf der Download-Seite eine hinzu.",
+      "no_players": "Diese Instanz hat noch keine Spielerprofile. Starte das Spiel einmal damit und versuche es erneut.",
+      "player_hint_skin": "Wird nur verwendet, wenn dieses Paket ein Skinpaket ist.",
+      "player_required": "Wähle einen Spieler, um eine Welt zu installieren.",
+      "install": "Installieren",
+      "quick_install_aria": "{{name}} installieren",
+      "task_title": "{{name}} installieren",
+      "task_desc": "{{file}} → {{instance}}",
+      "step_download": "{{name}} herunterladen",
+      "step_download_done": "{{size}} heruntergeladen",
+      "step_detect": "Pakettyp erkennen",
+      "step_import": "In {{instance}} importieren",
+      "step_import_done": "Importiert",
+      "duplicate_found": "In dieser Instanz bereits installiert",
+      "duplicate_body": "Vorhandene Kopie durch diese Datei ersetzen?",
+      "keep_existing": "Vorhandene behalten",
+      "overwrite": "Überschreiben",
+      "duplicate_kept": "Vorhandene Kopie behalten; nichts geändert.",
+      "duplicate_overwriting": "Vorhandene Kopie wird ersetzt…",
+      "done_success": "{{name}} wurde in {{instance}} installiert.",
+      "done_kept": "Nichts geändert. Die vorhandene Kopie wurde behalten.",
+      "cancelled": "Download abgebrochen",
+      "success_title_named": "{{name}} installiert",
+      "error_title_named": "{{name}} konnte nicht installiert werden"
+    }
+  }
+}

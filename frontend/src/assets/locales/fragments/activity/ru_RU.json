@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "Фильтр событий",
+    "filter_all": "Все",
+    "filter_errors": "Проблемы",
+    "filter_tasks": "Задачи",
+    "running": "Выполняется",
+    "today": "Сегодня",
+    "yesterday": "Вчера",
+    "copy_entry": "Копировать запись",
+    "copied": "Скопировано",
+    "copy_failed": "Не удалось скопировать",
+    "remove_entry": "Удалить запись",
+    "clear_confirm": "Очистить завершённые записи ({{count}})? Выполняющиеся задачи останутся.",
+    "empty_filtered": "Нет записей для этого фильтра",
+    "view_in_activity": "Показать в событиях",
+    "delete_failed_title": "Не удалось удалить некоторые элементы"
+  }
+}

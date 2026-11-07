@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "활동 필터",
+    "filter_all": "전체",
+    "filter_errors": "문제",
+    "filter_tasks": "작업",
+    "running": "진행 중",
+    "today": "오늘",
+    "yesterday": "어제",
+    "copy_entry": "항목 복사",
+    "copied": "복사됨",
+    "copy_failed": "복사 실패",
+    "remove_entry": "항목 제거",
+    "clear_confirm": "완료된 항목 {{count}}개를 지울까요? 진행 중인 작업은 유지됩니다.",
+    "empty_filtered": "이 필터와 일치하는 항목이 없습니다",
+    "view_in_activity": "활동에서 보기",
+    "delete_failed_title": "일부 항목을 삭제하지 못했습니다"
+  }
+}

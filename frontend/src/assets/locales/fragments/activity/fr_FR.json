@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "Filtrer l’activité",
+    "filter_all": "Tout",
+    "filter_errors": "Problèmes",
+    "filter_tasks": "Tâches",
+    "running": "En cours",
+    "today": "Aujourd’hui",
+    "yesterday": "Hier",
+    "copy_entry": "Copier l’entrée",
+    "copied": "Copié",
+    "copy_failed": "Échec de la copie",
+    "remove_entry": "Retirer l’entrée",
+    "clear_confirm": "Effacer {{count}} entrées terminées ? Les tâches en cours sont conservées.",
+    "empty_filtered": "Aucun élément ne correspond à ce filtre",
+    "view_in_activity": "Voir dans l’activité",
+    "delete_failed_title": "Certains éléments n’ont pas pu être supprimés"
+  }
+}

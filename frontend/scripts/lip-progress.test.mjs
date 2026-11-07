@@ -68,3 +68,29 @@ test("legacy updates have an empty stage and values are clamped", () => {
   assert.equal(lip.clampPercentage(140), 100);
   assert.equal(lip.clampPercentage(Number.NaN), 0);
 });
+
+test("each package applied is its own step; open bars are the active steps", () => {
+  let state = apply(lip.EMPTY_LIP_PROGRESS_BARS,
+    { taskId: "t1", progressId: "task", stage: "task", current: 0, total: 2, unit: "packages", item: "a@1" },
+    { taskId: "t1", progressId: "dl", stage: "download", current: 1, total: 2, unit: "bytes" });
+  const first = lip.lipStepKey(lip.selectLipPrimaryBar(state));
+  assert.deepEqual([...lip.activeLipStepKeys(state, null, null).sort()], [first, "bar:t1::dl"].sort());
+  state = apply(state,
+    { taskId: "t1", progressId: "task", stage: "task", current: 1, total: 2, unit: "packages", item: "b@2" },
+    { taskId: "t1", progressId: "dl", stage: "download", current: 2, total: 2, unit: "bytes", done: true });
+  const second = lip.lipStepKey(lip.selectLipPrimaryBar(state));
+  assert.notEqual(first, second);
+  assert.deepEqual([...lip.activeLipStepKeys(state, null, null)], [second]);
+  assert.deepEqual(Array.from(lip.activeLipStepKeys(lip.EMPTY_LIP_PROGRESS_BARS, { percentage: 5, message: "x" },
+    { completed: 1, current: 2, total: 3, label: "m" })), ["legacy:x", "outer:2:m"]);
+});
+
+test("overall percentage counts finished batch items plus the running one", () => {
+  const primary = { percentage: 50 };
+  assert.equal(lip.overallLipPercentage(primary, null, null), 50);
+  assert.equal(lip.overallLipPercentage(null, null, null), undefined);
+  assert.equal(lip.overallLipPercentage({ percentage: undefined }, null, null), undefined);
+  assert.equal(lip.overallLipPercentage(null, { percentage: 30, message: "" }, null), 30);
+  assert.equal(lip.overallLipPercentage(primary, null, { completed: 1, current: 2, total: 4, label: "" }), 37.5);
+  assert.equal(lip.overallLipPercentage(primary, null, { completed: 4, current: 4, total: 4, label: "" }), 100);
+});

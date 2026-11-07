@@ -1,8 +1,7 @@
 // Package instancereg registers instance folders with Windows as the
 // installed Minecraft of their channel, and releases them, without a
-// launcher window. It is the context-aware counterpart of the window's
-// VersionService.RegisterVersionWithWdapp / UnregisterVersionByName and
-// returns the same "" or ERR_* results.
+// launcher window. The window's VersionService.RegisterVersionWithWdapp and
+// UnregisterVersionByName call it too; results are "" or ERR_* codes.
 package instancereg
 
 import (

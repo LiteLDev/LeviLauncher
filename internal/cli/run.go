@@ -164,6 +164,7 @@ func run(args []string, s *Streams) (code int) {
 	prog := cx.Progress()
 	eventsink.SetDefault(prog.Sink())
 	defer eventsink.SetDefault(nil)
+	defer setBackendScope(c.Path)()
 
 	if !c.NoBootstrap {
 		if err := bootstrap(); err != nil {

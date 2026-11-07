@@ -443,12 +443,13 @@ func runDoctor(c *Ctx) error {
 		}
 	}
 
-	failed := 0
+	var failedNames []string
 	for _, ch := range checks {
 		if ch.Required && ch.failed() {
-			failed++
+			failedNames = append(failedNames, ch.Name)
 		}
 	}
+	failed := len(failedNames)
 	ids := make([]string, 0, len(checks))
 	for _, ch := range checks {
 		if ch.failed() {
@@ -462,7 +463,7 @@ func runDoctor(c *Ctx) error {
 		if c.G.JSON || c.G.Quiet {
 			return ExitCode(ExitFailure)
 		}
-		e := Errorf(ExitFailure, "ERR_DOCTOR_FAILED", "%d required check(s) failed", failed)
+		e := Errorf(ExitFailure, "ERR_DOCTOR_FAILED", "%d required check(s) failed: %s", failed, strings.Join(failedNames, ", "))
 		for _, ch := range checks {
 			if ch.Required && ch.failed() && ch.Fix != "" {
 				return e.WithHint("%s doctor --fix", ProgramName)
@@ -492,7 +493,11 @@ func writeDoctor(w io.Writer, checks []doctorCheck) error {
 		if len(notes) > 0 {
 			line += " (" + strings.Join(notes, "; ") + ")"
 		}
-		if _, err := fmt.Fprintf(w, "%-10s%s\n", "["+ch.Status+"]", line); err != nil {
+		status := ch.Status
+		if ch.Required && status == doctorWarn {
+			status = "fail" // an instance needs it, so it is not just a warning
+		}
+		if _, err := fmt.Fprintf(w, "%-10s%s\n", "["+status+"]", line); err != nil {
 			return err
 		}
 	}

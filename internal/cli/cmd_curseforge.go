@@ -72,7 +72,7 @@ repeated. --game keeps files for a game version ("latest" or a prefix like
 		Examples: []string{"curseforge search castle", "cf search --class worlds --sort downloads", "curseforge search shaders --class \"texture packs\" --page 2 --json"},
 		Flags: []*Flag{
 			StringFlag("class", "", "<name|id>", "only this class (worlds, addons, ...)"),
-			StringsFlag("category", "", "<name|id>", "only this category (repeatable)"),
+			StringsFlag("category", "", "<name|id>", "only this category"),
 			StringFlag("game", "", "<version>", "only content for this game version"),
 			EnumFlag("sort", "", []string{"featured", "popularity", "updated", "created", "downloads"}, "sort order (default featured)"),
 			IntFlag("limit", "", "<n>", "results per page (at most 50)").WithDefault("20"),

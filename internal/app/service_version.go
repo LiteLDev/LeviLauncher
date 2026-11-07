@@ -9,13 +9,12 @@ import (
 	"sync"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
-	"github.com/liteldev/LeviLauncher/internal/gdk"
+	"github.com/liteldev/LeviLauncher/internal/instancereg"
 	"github.com/liteldev/LeviLauncher/internal/mcservice"
 	"github.com/liteldev/LeviLauncher/internal/mods"
 	"github.com/liteldev/LeviLauncher/internal/registry"
 	"github.com/liteldev/LeviLauncher/internal/storage"
 	"github.com/liteldev/LeviLauncher/internal/types"
-	"github.com/liteldev/LeviLauncher/internal/uwp"
 	"github.com/liteldev/LeviLauncher/internal/versionlaunch"
 	"github.com/liteldev/LeviLauncher/internal/versions"
 )
@@ -250,100 +249,18 @@ func (s *VersionService) RestoreInstanceBackup(name string, request types.Instan
 	return mcservice.RestoreInstanceBackup(s.launchContext(), name, request)
 }
 
+// RegisterVersionWithWdapp makes the instance the registered Minecraft of
+// its channel. The command line uses the same code (instancereg).
 func (s *VersionService) RegisterVersionWithWdapp(name string, isPreview bool) string {
-	trimmedName := strings.TrimSpace(name)
-	if trimmedName == "" {
-		log.Printf("VersionService.RegisterVersionWithWdapp: version name is empty")
-		return "ERR_TARGET_DIR_NOT_SPECIFIED"
-	}
-	vdir, err := apppath.InstancesDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		log.Printf("VersionService.RegisterVersionWithWdapp: failed to access versions dir for name=%s: %v", trimmedName, err)
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	folder := filepath.Join(vdir, trimmedName)
-	defer mcservice.ReconcileRegisteredFlags()
-	meta, _ := versions.ReadMeta(folder)
-	if versions.DetectPackageType(folder, meta) == versions.PackageTypeUWP {
-		if code := versionlaunch.ValidateLaunchName(trimmedName); code != "" {
-			return code
-		}
-		if err := uwp.Register(s.launchContext(), folder); err != nil {
-			log.Printf("UWP registration failed for %s: %v", trimmedName, err)
-			return uwp.ErrorMessage(err)
-		}
-		return ""
-	}
-	log.Printf("VersionService.RegisterVersionWithWdapp: start name=%s isPreview=%t folder=%s", trimmedName, isPreview, folder)
-	if unregisterMsg := gdk.UnregisterIfExists(isPreview); unregisterMsg != "" {
-		log.Printf("VersionService.RegisterVersionWithWdapp: pre-unregister returned %s for name=%s isPreview=%t", unregisterMsg, trimmedName, isPreview)
-		return unregisterMsg
-	}
-	msg := gdk.RegisterVersionFolder(folder)
-	if msg != "" {
-		log.Printf("VersionService.RegisterVersionWithWdapp: register failed name=%s folder=%s code=%s", trimmedName, folder, msg)
-		return msg
-	}
-	pkg := "MICROSOFT.MINECRAFTUWP"
-	if isPreview {
-		pkg = "Microsoft.MinecraftWindowsBeta"
-	}
-	if info, e := registry.GetAppxInfo(pkg); e == nil && info != nil {
-		expected := normalizePath(folder)
-		loc := normalizePath(info.InstallLocation)
-		flag := loc != "" && loc == expected
-		log.Printf("VersionService.RegisterVersionWithWdapp: appx package=%s installLocation=%s expected=%s registered=%t", pkg, loc, expected, flag)
-		if m, er := versions.ReadMeta(folder); er == nil {
-			m.Registered = flag
-			_ = versions.WriteMeta(folder, m)
-		} else {
-			log.Printf("VersionService.RegisterVersionWithWdapp: read meta failed folder=%s: %v", folder, er)
-		}
-	} else if e != nil {
-		log.Printf("VersionService.RegisterVersionWithWdapp: GetAppxInfo failed for package=%s: %v", pkg, e)
-	}
-	log.Printf("VersionService.RegisterVersionWithWdapp: completed name=%s isPreview=%t folder=%s", trimmedName, isPreview, folder)
-	return msg
+	log.Printf("VersionService.RegisterVersionWithWdapp: name=%s isPreview=%t", strings.TrimSpace(name), isPreview)
+	return instancereg.Register(s.launchContext(), name, isPreview)
 }
 
+// UnregisterVersionByName releases the instance's registration, keeping its
+// game data.
 func (s *VersionService) UnregisterVersionByName(name string) string {
-	trimmedName := strings.TrimSpace(name)
-	if trimmedName == "" {
-		log.Printf("VersionService.UnregisterVersionByName: version name is empty")
-		return "ERR_TARGET_DIR_NOT_SPECIFIED"
-	}
-	vdir, err := apppath.InstancesDir()
-	if err != nil || strings.TrimSpace(vdir) == "" {
-		log.Printf("VersionService.UnregisterVersionByName: failed to access versions dir for name=%s: %v", trimmedName, err)
-		return "ERR_ACCESS_VERSIONS_DIR"
-	}
-	folder := filepath.Join(vdir, trimmedName)
-	defer mcservice.ReconcileRegisteredFlags()
-	meta, _ := versions.ReadMeta(folder)
-	if versions.DetectPackageType(folder, meta) == versions.PackageTypeUWP {
-		if code := versionlaunch.ValidateLaunchName(trimmedName); code != "" {
-			return code
-		}
-		if err := uwp.Unregister(s.launchContext(), folder); err != nil {
-			log.Printf("UWP unregistration failed for %s: %v", trimmedName, err)
-			return uwp.ErrorMessage(err)
-		}
-		return ""
-	}
-	log.Printf("VersionService.UnregisterVersionByName: start name=%s folder=%s", trimmedName, folder)
-	msg := gdk.UnregisterVersionFolder(folder)
-	if msg != "" {
-		log.Printf("VersionService.UnregisterVersionByName: unregister failed name=%s folder=%s code=%s", trimmedName, folder, msg)
-		return msg
-	}
-	if m, er := versions.ReadMeta(folder); er == nil {
-		m.Registered = false
-		_ = versions.WriteMeta(folder, m)
-	} else {
-		log.Printf("VersionService.UnregisterVersionByName: read meta failed folder=%s: %v", folder, er)
-	}
-	log.Printf("VersionService.UnregisterVersionByName: completed name=%s folder=%s", trimmedName, folder)
-	return ""
+	log.Printf("VersionService.UnregisterVersionByName: name=%s", strings.TrimSpace(name))
+	return instancereg.Unregister(s.launchContext(), name)
 }
 
 type VersionStatus struct {

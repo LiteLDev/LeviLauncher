@@ -88,7 +88,10 @@
 //     NotFoundError, ConflictError, or Backend(resultString) for backend
 //     "ERR_*" strings, or FromError(err) for Go errors. Register the
 //     messages, hints and exit codes of your backend codes with
-//     RegisterBackendErrors from your own file. ExitCode(n) ends with n and
+//     RegisterBackendErrors from your own file; a code other command groups
+//     also get with another meaning (ERR_WRITE_FILE, ERR_INVALID_PATH,
+//     ERR_NAME_*, ...) goes in RegisterBackendErrorsFor with your nouns or
+//     command paths, and errors.go holds its neutral wording. ExitCode(n) ends with n and
 //     prints nothing (batch summaries: ExitPartial when some items failed,
 //     ExitFailure when all failed).
 //   - Destructive or displacing actions call c.Confirm("Remove X?") (or

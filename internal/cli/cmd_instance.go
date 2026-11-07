@@ -50,7 +50,7 @@ var (
 )
 
 func init() {
-	RegisterBackendErrors(map[string]BackendError{
+	RegisterBackendErrorsFor([]string{"instance", "launch", "use"}, map[string]BackendError{
 		"ERR_NAME_REQUIRED":            {Exit: ExitUsage, Message: "the name must not be empty"},
 		"ERR_NAME_TOO_LONG":            {Exit: ExitUsage, Message: "the name is longer than 64 characters"},
 		"ERR_NAME_TRAILING_DOT_SPACE":  {Exit: ExitUsage, Message: "the name must not end with a dot or a space"},
@@ -232,11 +232,17 @@ where it comes from.`,
 // Shared helpers.
 
 // instRunningPIDs returns the PIDs of the Minecraft processes started from
-// the instance's folder.
+// the instance: by the launcher for it, or from an executable inside its
+// folder. Every instance command (and loader, instance create) uses it.
 func instRunningPIDs(inst Instance) []int {
 	var out []int
+	dir := ""
+	if inst.Dir != "" {
+		dir = strings.ToLower(filepath.Clean(inst.Dir)) + string(filepath.Separator)
+	}
 	for _, p := range minecraftProcesses() {
-		if p.IsLauncher && strings.EqualFold(p.VersionName, inst.Name) {
+		if (p.IsLauncher && p.VersionName != "" && strings.EqualFold(p.VersionName, inst.Name)) ||
+			(dir != "" && p.ExePath != "" && strings.HasPrefix(strings.ToLower(filepath.Clean(p.ExePath)), dir)) {
 			out = append(out, p.Pid)
 		}
 	}

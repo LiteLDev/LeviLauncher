@@ -388,7 +388,7 @@ func init() {
 		MinArgs:  1, MaxArgs: 1,
 		Run: runConfigUnset,
 	})
-	RegisterBackendErrors(map[string]BackendError{
+	RegisterBackendErrorsFor([]string{"config"}, map[string]BackendError{
 		"ERR_INVALID_PATH":      {Exit: ExitUsage, Message: "invalid folder"},
 		"ERR_CREATE_TARGET_DIR": {Exit: ExitFailure, Message: "cannot create the folder"},
 		"ERR_WRITE_FILE":        {Exit: ExitFailure, Message: "cannot save the launcher settings"},

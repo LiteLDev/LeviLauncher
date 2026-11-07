@@ -47,7 +47,12 @@ export const isRouteActive = (pathname: string, route: string): boolean => {
   );
 };
 
-export type PrimaryNavKey = "home" | "instances" | "download" | "settings";
+export type PrimaryNavKey =
+  | "home"
+  | "download"
+  | "instances"
+  | "about"
+  | "settings";
 
 /** Home owns the current instance: its content and the catalogs that install
  * into it are Home's children, so they highlight Home in the navigation. */
@@ -60,31 +65,48 @@ const HOME_CHILD_ROUTES = [
   ROUTES.curseForge,
 ] as const;
 
-/** Primary destinations shared by the sidebar and the navbar layout. Each
- * `match` prefix makes nested routes highlight their parent destination. */
+const ABOUT_PATH = `${ROUTES.settings}?tab=about`;
+
+/** Primary destinations shared by the sidebar and the navbar layout, in the
+ * order released versions used. Each `match` prefix makes nested routes
+ * highlight their parent destination. */
 export const PRIMARY_NAV: ReadonlyArray<{
   key: PrimaryNavKey;
   path: string;
   match: readonly string[];
 }> = [
   { key: "home", path: ROUTES.home, match: HOME_CHILD_ROUTES },
-  { key: "instances", path: ROUTES.instances, match: [ROUTES.instances] },
   {
     key: "download",
     path: ROUTES.download,
     match: [ROUTES.download, ROUTES.install],
   },
+  { key: "instances", path: ROUTES.instances, match: [ROUTES.instances] },
+  // About is a Settings tab; it keeps its own entry as in released versions.
+  { key: "about", path: ABOUT_PATH, match: [ROUTES.about] },
   {
     key: "settings",
-    path: ROUTES.settings,
-    match: [ROUTES.settings, ROUTES.about],
+    path: `${ROUTES.settings}?tab=general`,
+    match: [ROUTES.settings],
   },
 ];
 
-export const getActiveNavKey = (pathname: string): PrimaryNavKey | null =>
-  PRIMARY_NAV.find((item) =>
-    item.match.some((route) => isRouteActive(pathname, route)),
-  )?.key ?? null;
+export const getActiveNavKey = (
+  pathname: string,
+  search = "",
+): PrimaryNavKey | null => {
+  if (
+    isRouteActive(pathname, ROUTES.settings) &&
+    new URLSearchParams(search).get("tab") === "about"
+  ) {
+    return "about";
+  }
+  return (
+    PRIMARY_NAV.find((item) =>
+      item.match.some((route) => isRouteActive(pathname, route)),
+    )?.key ?? null
+  );
+};
 
 /** Pages that act on the current instance. Only these show the top bar's
  * instance picker; instance list, downloads and settings have no current

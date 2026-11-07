@@ -3,7 +3,6 @@
     "nav": {
       "content": "Conteúdo",
       "discover": "Descobrir",
-      "market": "Mercado de conteúdos",
       "expand_sidebar": "Expandir barra lateral",
       "collapse_sidebar": "Recolher barra lateral",
       "toggle_group": "Mostrar ou ocultar {{name}}"

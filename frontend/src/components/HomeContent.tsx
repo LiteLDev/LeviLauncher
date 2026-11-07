@@ -13,14 +13,12 @@ import {
 
 import React from "react";
 import { useTranslation } from "react-i18next";
-import { useNavigate } from "react-router-dom";
 
 import { Dialogs } from "@wailsio/runtime";
 import { UnifiedModal } from "@/components/UnifiedModal";
 import { AnimatePresence, motion } from "framer-motion";
 import {
   FaChevronRight,
-  FaCloudDownloadAlt,
   FaCube,
   FaExchangeAlt,
   FaFolderOpen,
@@ -30,18 +28,11 @@ import { FiUploadCloud } from "react-icons/fi";
 import { resolvePlayerDisplayName } from "@/utils/content";
 import { FileDropOverlay } from "@/components/FileDropOverlay";
 import { ContentTaskDialog } from "@/components/ContentTaskDialog";
-import {
-  CATALOG_META,
-  CONTENT_SECTION_META,
-} from "@/components/ShellControls";
+import { CONTENT_SECTION_META } from "@/components/ShellControls";
 import { useFileDrag } from "@/hooks/useFileDrag";
 import { useContentPage } from "@/hooks/useContentPage";
 import { LAYOUT } from "@/constants/layout";
-import {
-  CONTENT_SECTIONS,
-  DISCOVER_CATALOGS,
-  type ContentSectionKey,
-} from "@/constants/routes";
+import { CONTENT_SECTIONS, type ContentSectionKey } from "@/constants/routes";
 import { cn } from "@/utils/cn";
 import { notify } from "@/utils/activity";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -55,28 +46,37 @@ const PLAYER_SCOPED: ReadonlySet<ContentSectionKey> = new Set([
   "screenshots",
 ]);
 
-const tileClass =
-  "group/tile flex w-full min-w-0 items-center justify-between gap-3 rounded-2xl border border-border/60 bg-surface-secondary/40 p-3 text-left transition-colors hover:bg-surface-secondary dark:border-white/5 cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-60";
-
-const SectionTitle: React.FC<{
-  icon: React.ReactNode;
-  tone: string;
+/** Icon button in the card header; the label doubles as its tooltip. */
+const HeaderAction: React.FC<{
+  label: string;
+  tooltip?: string;
+  onPress: () => void;
+  isDisabled?: boolean;
   children: React.ReactNode;
-}> = ({ icon, tone, children }) => (
-  <div className="flex min-w-0 items-center gap-2">
-    <div className={cn("shrink-0 p-1.5 rounded-lg", tone)}>{icon}</div>
-    <h2 className="truncate text-lg font-bold text-foreground dark:text-zinc-100">
+}> = ({ label, tooltip, onPress, isDisabled, children }) => (
+  <Tooltip delay={300} closeDelay={0}>
+    <Button
+      isIconOnly
+      size="sm"
+      variant="ghost"
+      aria-label={label}
+      onPress={onPress}
+      isDisabled={isDisabled}
+      className="rounded-full text-foreground dark:text-zinc-300"
+    >
       {children}
-    </h2>
-  </div>
+    </Button>
+    <Tooltip.Content>{tooltip || label}</Tooltip.Content>
+  </Tooltip>
 );
 
 /**
- * The current instance's content, on Home: every kind of content is one
- * click away, with import, transfer and the player choice alongside. The
+ * The current instance's content on Home. It keeps the card released
+ * versions showed under the launch card, now listing every kind of content
+ * (mods second) with import, transfer and the player choice in place. The
  * instance itself is chosen in the top bar.
  */
-export const HomeContentSection: React.FC<{
+export const HomeContentCard: React.FC<{
   dropZoneRef: React.RefObject<HTMLElement | null>;
 }> = ({ dropZoneRef }) => {
   const { t } = useTranslation();
@@ -142,80 +142,73 @@ export const HomeContentSection: React.FC<{
         text={t("contentpage.drop_hint")}
       />
 
-      <Card className={LAYOUT.GLASS_CARD.BASE}>
-        <Card.Content className="@container flex flex-col gap-4 p-4 sm:p-6">
-          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
-            <SectionTitle
-              icon={<FaCube size={16} />}
-              tone="bg-pink-500/10 text-pink-600 dark:text-pink-400"
-            >
-              {t("launcherpage.content_manage")}
-            </SectionTitle>
-            <div className="flex flex-wrap items-center gap-2">
-              <Button
-                size="sm"
-                onPress={importContent}
-                isDisabled={cp.importing || !hasInstance}
-                variant={"secondary"}
-                className="rounded-full bg-brand-500 brand-primary-foreground font-medium shadow-sm"
-              >
-                <FiUploadCloud />
-                {t("contentpage.import_button")}
-              </Button>
-              <Button
-                size="sm"
-                onPress={() => cp.openResourceTransferModal()}
-                isDisabled={cp.importing || !hasInstance}
-                variant={"secondary"}
-                className="rounded-full bg-surface-secondary text-foreground dark:text-zinc-200 font-medium"
-              >
-                <FaExchangeAlt />
-                {t("contentpage.transfer_resources_button")}
-              </Button>
-              <Tooltip>
-                <Button
-                  size="sm"
-                  onPress={() => {
-                    const path = cp.roots.comMojangRoot || cp.roots.usersRoot;
-                    if (path) openDirectory(path);
-                  }}
-                  isDisabled={!(cp.roots.comMojangRoot || cp.roots.usersRoot)}
-                  variant={"secondary"}
-                  className="rounded-full bg-surface-secondary text-foreground dark:text-zinc-200 font-medium"
-                >
-                  <FaFolderOpen />
-                  {t("common.open")}
-                </Button>
-                <Tooltip.Content>
-                  {t(cp.roots.packageType === "uwp" ? "uwp.open_content_dir" : "contentpage.open_users_dir") as unknown as string}
-                </Tooltip.Content>
-              </Tooltip>
-              <Tooltip>
-                <Button
-                  isIconOnly
-                  size="sm"
-                  aria-label={t("common.refresh")}
-                  onPress={() => cp.refreshAll()}
-                  isDisabled={cp.loading || !hasInstance}
-                  variant={"ghost"}
-                  className={"rounded-full"}
-                >
-                  <FaSync className={cp.loading ? "animate-spin" : ""} size={16} />
-                </Button>
-                <Tooltip.Content>{t("common.refresh") as unknown as string}</Tooltip.Content>
-              </Tooltip>
+      <Card
+        className={cn(
+          "h-full transition-all group",
+          LAYOUT.GLASS_CARD.BASE,
+          "rounded-3xl",
+        )}
+      >
+        <Card.Header className="min-h-14 px-5 py-2 border-b border-border dark:border-white/5 flex flex-wrap justify-between items-center gap-2">
+          <div className="flex min-w-0 items-center gap-2">
+            <div className="shrink-0 p-1.5 rounded-lg bg-pink-500/10 text-pink-600 dark:text-pink-400">
+              <FaCube size={16} />
             </div>
+            <h3 className="truncate text-base font-bold text-foreground dark:text-zinc-100">
+              {t("launcherpage.content_manage")}
+            </h3>
           </div>
-
+          <div className="flex shrink-0 items-center gap-0.5">
+            <HeaderAction
+              label={t("contentpage.import_button")}
+              onPress={importContent}
+              isDisabled={cp.importing || !hasInstance}
+            >
+              <FiUploadCloud size={16} />
+            </HeaderAction>
+            <HeaderAction
+              label={t("contentpage.transfer_resources_button")}
+              onPress={() => cp.openResourceTransferModal()}
+              isDisabled={cp.importing || !hasInstance}
+            >
+              <FaExchangeAlt size={14} />
+            </HeaderAction>
+            <HeaderAction
+              label={t("common.open")}
+              tooltip={t(
+                cp.roots.packageType === "uwp"
+                  ? "uwp.open_content_dir"
+                  : "contentpage.open_users_dir",
+              )}
+              onPress={() => {
+                const path = cp.roots.comMojangRoot || cp.roots.usersRoot;
+                if (path) openDirectory(path);
+              }}
+              isDisabled={!(cp.roots.comMojangRoot || cp.roots.usersRoot)}
+            >
+              <FaFolderOpen size={15} />
+            </HeaderAction>
+            <HeaderAction
+              label={t("common.refresh")}
+              onPress={() => cp.refreshAll()}
+              isDisabled={cp.loading || !hasInstance}
+            >
+              <FaSync className={cp.loading ? "animate-spin" : ""} size={13} />
+            </HeaderAction>
+          </div>
+        </Card.Header>
+        <Card.Content className="@container p-3 gap-2 relative">
           {hasInstance ? (
-            <div className="rounded-2xl border border-border bg-surface-secondary px-4 py-2.5 text-sm flex flex-wrap items-center gap-x-3 gap-y-2">
-              <span>{t("contentpage.isolation")}:</span>
-              <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
-                {cp.roots.isIsolation ? t("common.yes") : t("common.no")}
+            <div className="flex flex-wrap items-center gap-x-2 gap-y-1 px-2 text-xs text-muted">
+              <span>
+                {t("contentpage.isolation")}:{" "}
+                <span className="font-medium text-foreground dark:text-zinc-200">
+                  {cp.roots.isIsolation ? t("common.yes") : t("common.no")}
+                </span>
               </span>
               {cp.roots.packageType !== "uwp" && (
                 <>
-                  <span className="text-muted dark:text-zinc-600">|</span>
+                  <span aria-hidden="true">|</span>
                   <span>{t("contentpage.select_player")}:</span>
                   <Dropdown>
                     <Button
@@ -223,7 +216,7 @@ export const HomeContentSection: React.FC<{
                       variant={"secondary"}
                       className={cn(
                         COMPONENT_STYLES.dropdownTriggerButton,
-                        "h-6 min-w-0 max-w-full px-2 text-sm font-medium text-foreground dark:text-zinc-200",
+                        "h-6 min-w-0 max-w-full px-2 text-xs font-medium text-foreground dark:text-zinc-200",
                       )}
                     >
                       <span className="truncate">
@@ -264,7 +257,7 @@ export const HomeContentSection: React.FC<{
                     </Dropdown.Popover>
                   </Dropdown>
                   {!cp.selectedPlayer && (
-                    <span className="text-rose-500 text-xs">
+                    <span className="text-rose-500">
                       ({t("contentpage.require_player_for_world_import")})
                     </span>
                   )}
@@ -272,22 +265,26 @@ export const HomeContentSection: React.FC<{
               )}
               {cp.roots.packageType === "uwp" && !cp.roots.isIsolation && (
                 <>
-                  <span className="text-muted dark:text-zinc-600">|</span>
+                  <span aria-hidden="true">|</span>
                   <span>{t("uwp.shared_content")}</span>
                 </>
               )}
             </div>
           ) : (
-            <div role="status" className="rounded-2xl border border-border bg-surface-secondary px-4 py-2.5 text-sm text-muted">
+            <p role="status" className="px-2 text-xs text-muted">
               {t("content_sub.no_instance_body")}
-            </div>
+            </p>
           )}
           {!!cp.error && (
-            <div role="alert" className="text-rose-500 text-sm">{cp.error}</div>
+            <p role="alert" className="px-2 text-xs text-rose-500">
+              {cp.error}
+            </p>
           )}
 
-          {/* Tailwind source for LAYOUT.GRID.AUTO(14): grid-cols-[repeat(auto-fill,minmax(min(100%,14rem),1fr))] */}
-          <ul aria-label={t("launcherpage.content_manage")} className={LAYOUT.GRID.AUTO(14)}>
+          <ul
+            aria-label={t("launcherpage.content_manage")}
+            className="grid grid-cols-1 gap-x-2 gap-y-1 @lg:grid-cols-2"
+          >
             {CONTENT_SECTIONS.map((section) => {
               const meta = CONTENT_SECTION_META[section.key];
               return (
@@ -295,7 +292,7 @@ export const HomeContentSection: React.FC<{
                   <button
                     type="button"
                     disabled={!hasInstance}
-                    className={tileClass}
+                    className="group/item flex w-full min-w-0 items-center justify-between gap-2 p-2 text-left rounded-xl hover:bg-surface-tertiary/50 cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500 disabled:cursor-not-allowed disabled:opacity-60"
                     onClick={() =>
                       cp.navigate(
                         section.path,
@@ -306,10 +303,17 @@ export const HomeContentSection: React.FC<{
                     }
                   >
                     <div className="flex min-w-0 items-center gap-3">
-                      <div className={cn("p-2 rounded-xl shrink-0", meta.tone)}>
-                        <meta.Icon className="w-5 h-5" />
+                      <div
+                        className={cn(
+                          "shrink-0 p-1.5 rounded-lg bg-surface-secondary dark:bg-surface/20",
+                          meta.iconClassName,
+                        )}
+                      >
+                        <meta.Icon size={16} />
                       </div>
-                      <span className="truncate font-medium">{t(meta.labelKey)}</span>
+                      <span className="min-w-0 truncate font-medium text-sm">
+                        {t(meta.labelKey)}
+                      </span>
                     </div>
                     <div className="flex shrink-0 items-center gap-2">
                       <AnimatePresence mode="wait" initial={false}>
@@ -330,17 +334,13 @@ export const HomeContentSection: React.FC<{
                             animate={{ opacity: 1 }}
                             exit={{ opacity: 0 }}
                             transition={{ duration: 0.2 }}
-                            className="text-xl font-bold tabular-nums"
+                            className="text-base font-bold tabular-nums"
                           >
                             {hasInstance ? counts[section.key] : "–"}
                           </motion.span>
                         )}
                       </AnimatePresence>
-                      <FaChevronRight
-                        aria-hidden="true"
-                        size={10}
-                        className="text-muted transition-transform group-hover/tile:translate-x-0.5"
-                      />
+                      <FaChevronRight aria-hidden="true" size={10} />
                     </div>
                   </button>
                 </li>
@@ -425,50 +425,5 @@ export const HomeContentSection: React.FC<{
         </div>
       </UnifiedModal>
     </>
-  );
-};
-
-/** Catalogs that install into the current instance. */
-export const ContentMarketSection: React.FC = () => {
-  const { t } = useTranslation();
-  const navigate = useNavigate();
-
-  return (
-    <Card className={LAYOUT.GLASS_CARD.BASE}>
-      <Card.Content className="flex flex-col gap-4 p-4 sm:p-6">
-        <SectionTitle
-          icon={<FaCloudDownloadAlt size={16} />}
-          tone="bg-orange-500/10 text-orange-600 dark:text-orange-400"
-        >
-          {t("shell.nav.market")}
-        </SectionTitle>
-        <ul aria-label={t("shell.nav.market")} className={LAYOUT.GRID.AUTO(14)}>
-          {DISCOVER_CATALOGS.map((catalog) => {
-            const meta = CATALOG_META[catalog.key];
-            return (
-              <li key={catalog.key} className="min-w-0">
-                <button
-                  type="button"
-                  className={tileClass}
-                  onClick={() => navigate(catalog.path)}
-                >
-                  <div className="flex min-w-0 items-center gap-3">
-                    <div className="p-2 rounded-xl shrink-0 bg-surface-secondary">
-                      <meta.Icon className={cn("w-5 h-5", meta.iconClassName)} />
-                    </div>
-                    <span className="truncate font-medium">{t(meta.labelKey)}</span>
-                  </div>
-                  <FaChevronRight
-                    aria-hidden="true"
-                    size={10}
-                    className="shrink-0 text-muted transition-transform group-hover/tile:translate-x-0.5"
-                  />
-                </button>
-              </li>
-            );
-          })}
-        </ul>
-      </Card.Content>
-    </Card>
   );
 };

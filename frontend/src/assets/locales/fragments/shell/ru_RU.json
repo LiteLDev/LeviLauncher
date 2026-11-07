@@ -3,7 +3,6 @@
     "nav": {
       "content": "Контент",
       "discover": "Обзор",
-      "market": "Магазин контента",
       "expand_sidebar": "Развернуть боковую панель",
       "collapse_sidebar": "Свернуть боковую панель",
       "toggle_group": "Показать или скрыть {{name}}"

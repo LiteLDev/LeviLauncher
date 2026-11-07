@@ -21,10 +21,8 @@ import {
   FaDesktop,
   FaRegLightbulb,
 } from "react-icons/fa";
-import {
-  ContentMarketSection,
-  HomeContentSection,
-} from "@/components/HomeContent";
+import { HomeContentCard } from "@/components/HomeContent";
+import { ContentDownloadCard } from "@/components/ContentDownloadCard";
 import { LaunchStepsDialog } from "@/components/LaunchStepsDialog";
 import { Browser } from "@wailsio/runtime";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
@@ -512,17 +510,29 @@ export const LauncherPage = (args: any) => {
           </Card>
         </motion.div>
 
-        <motion.div
-          data-material-motion
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.3 }}
-          className="flex min-w-0 flex-col gap-[var(--page-gap)]"
-          onAnimationComplete={() => setIsAnimating(false)}
-        >
-          <HomeContentSection dropZoneRef={scrollRef} />
-          <ContentMarketSection />
-        </motion.div>
+        {/* The row of cards released versions had under the launch card; the
+            content card now also holds mods, so it takes two columns. */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-[var(--page-gap)] items-stretch">
+          <motion.div
+            data-material-motion
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.3 }}
+            className="min-w-0 md:col-span-2"
+          >
+            <HomeContentCard dropZoneRef={scrollRef} />
+          </motion.div>
+          <motion.div
+            data-material-motion
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.4 }}
+            className="min-w-0"
+            onAnimationComplete={() => setIsAnimating(false)}
+          >
+            <ContentDownloadCard />
+          </motion.div>
+        </div>
         </div>
 
         <LaunchStepsDialog

@@ -113,9 +113,12 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                 </Button>
                 <Tooltip.Content>{item.label}</Tooltip.Content>
               </Tooltip>
-              {/* Home's pages stay one click away while a Home page is open. */}
-              {item.key === "home" && item.isActive &&
-                homeGroups.map((group) => (
+              {/* On one of Home's pages, its sibling pages stay one click away;
+                  Home itself keeps the bar as released versions had it. */}
+              {item.key === "home" &&
+                homeGroups
+                  .filter((group) => group.items.some((child) => child.isActive))
+                  .map((group) => (
                   <div
                     key={group.key}
                     role="group"

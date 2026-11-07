@@ -35,11 +35,6 @@ export const SHELL_SIZE = {
   RAIL_EXPANDED_REM: 13,
 } as const;
 
-/** Viewport width from which the sidebar shows labels by default, until the
- * user picks a state with the toggle. Media queries ignore the root font
- * size, so this stays at 1280 CSS px. */
-export const RAIL_EXPANDED_QUERY = "(min-width: 1280px)";
-
 const RAIL_EXPANDED_KEY = "ll.sidebar.expanded";
 
 const readRailPreference = (): boolean | null => {
@@ -78,12 +73,11 @@ export const useMediaQuery = (query: string) => {
   return value;
 };
 
-/** Whether the sidebar shows labels. Follows the window width until the user
- * toggles it, then keeps their choice. */
+/** Whether the sidebar shows labels. It starts as the icon rail released
+ * versions had, and keeps the user's choice once they toggle it. */
 export const useRailExpanded = () => {
-  const wide = useMediaQuery(RAIL_EXPANDED_QUERY);
   const [preference, setPreference] = useState(readRailPreference);
-  const expanded = preference ?? wide;
+  const expanded = preference ?? false;
 
   const toggle = useCallback(() => {
     const next = !expanded;

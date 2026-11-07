@@ -55,8 +55,8 @@ const ActivePill: React.FC<{ expanded: boolean }> = ({ expanded }) => (
   <motion.div
     layoutId="active-pill"
     className={cn(
-      "absolute top-1/2 -translate-y-1/2 w-1 h-5 bg-brand-500 rounded-r-full",
-      expanded ? "-left-3" : "-left-1.5",
+      "absolute top-1/2 -translate-y-1/2 w-1 bg-brand-500 rounded-r-full",
+      expanded ? "-left-3 h-5" : "-left-1 h-8",
     )}
     transition={{ type: "spring", stiffness: 300, damping: 30 }}
   />
@@ -99,15 +99,15 @@ const RailItem: React.FC<{
           isChild
             ? expanded
               ? "w-full h-8 justify-start gap-2.5 rounded-lg pl-9 pr-3 text-sm"
-              : "size-9 min-w-9 rounded-lg"
+              : "size-8 min-w-8 rounded-lg"
             : expanded
               ? "w-full h-10 justify-start gap-3 rounded-xl px-3 font-medium"
-              : "size-11 min-w-11 rounded-xl",
+              : "size-12 min-w-12 rounded-xl",
           itemClass(isActive),
         )}
       >
         <Icon
-          size={isChild ? (expanded ? 14 : 16) : 18}
+          size={isChild ? (expanded ? 14 : 15) : expanded ? 18 : 20}
           className={cn("shrink-0", isChild && !isActive && iconClassName)}
         />
         {expanded && <span className="truncate">{label}</span>}
@@ -167,16 +167,21 @@ export const Sidebar: React.FC<SidebarProps> = ({
       <nav
         aria-label={t("audit.usability.main_nav")}
         className={cn(
-          "flex-1 flex flex-col gap-1 w-full overflow-y-auto overflow-x-hidden scrollbar-hide py-3",
-          expanded ? "px-3" : "items-center px-1.5",
+          "flex-1 flex flex-col w-full overflow-y-auto overflow-x-hidden scrollbar-hide",
+          // The icon rail keeps the spacing released versions had.
+          // It tightens while Home's pages are listed so every destination
+          // still fits.
+          expanded
+            ? "gap-1 px-3 py-3"
+            : cn("items-center px-1", activeChild ? "gap-2 py-2" : "gap-4 py-4"),
         )}
       >
         {items.map((item) => {
           const isHome = item.key === "home";
-          // The labeled rail lets the user fold Home's pages away; the icon
-          // rail lists them while a Home page is open, so they stay one
-          // click away without crowding the other destinations.
-          const showChildren = isHome && (expanded ? homeOpen : item.isActive);
+          // The labeled rail lets the user fold Home's pages away. The icon
+          // rail stays as released versions had it, and lists Home's pages
+          // only while one of them is open, so the way back stays visible.
+          const showChildren = isHome && (expanded ? homeOpen : Boolean(activeChild));
           const homeLabel = homeGroups.map((group) => group.label).join(", ");
           return (
             <React.Fragment key={item.key}>
@@ -226,7 +231,13 @@ export const Sidebar: React.FC<SidebarProps> = ({
                       expanded ? "w-full" : "items-center",
                     )}
                   >
-                    {homeGroups.map((group) => (
+                    {/* The icon rail lists only the open page's group. */}
+                    {homeGroups
+                      .filter(
+                        (group) =>
+                          expanded || group.items.some((child) => child.isActive),
+                      )
+                      .map((group) => (
                       <div
                         key={group.key}
                         className={cn(
@@ -244,7 +255,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
                         ) : (
                           <div
                             aria-hidden="true"
-                            className="my-1 h-px w-6 bg-border"
+                            className="mb-1 h-px w-6 bg-border"
                           />
                         )}
                         <ul
@@ -257,11 +268,11 @@ export const Sidebar: React.FC<SidebarProps> = ({
                           {group.items.map(renderChild)}
                         </ul>
                       </div>
-                    ))}
+                      ))}
                     {!expanded && (
                       <div
                         aria-hidden="true"
-                        className="my-1 h-px w-6 bg-border"
+                        className="mt-1 h-px w-6 bg-border"
                       />
                     )}
                   </motion.div>
@@ -274,8 +285,10 @@ export const Sidebar: React.FC<SidebarProps> = ({
 
       <div
         className={cn(
-          "flex gap-1 pb-3 pt-2 w-full",
-          expanded ? "px-3 flex-row items-center" : "flex-col items-center px-1.5",
+          "flex w-full",
+          expanded
+            ? "gap-1 px-3 pb-3 pt-2 flex-row items-center"
+            : "gap-4 flex-col items-center px-1 pb-6 pt-2",
         )}
       >
         <RailTooltip label={toggleLabel} expanded={false}>
@@ -289,13 +302,14 @@ export const Sidebar: React.FC<SidebarProps> = ({
               "transition-colors duration-200 text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary",
               expanded
                 ? "flex-1 min-w-0 h-10 justify-start gap-3 rounded-xl px-3 text-sm font-normal"
-                : "size-11 min-w-11 rounded-xl",
+                : // Below the theme switch, which keeps its released spot.
+                  "order-last size-12 min-w-12 rounded-xl",
             )}
           >
             {expanded ? (
               <LuPanelLeftClose size={18} className="shrink-0" />
             ) : (
-              <LuPanelLeftOpen size={18} />
+              <LuPanelLeftOpen size={20} />
             )}
             {expanded && <span className="truncate">{toggleLabel}</span>}
           </Button>
@@ -305,8 +319,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             <div className="shrink-0">
               <ThemeSwitcher
                 isDisabled={navLocked}
-                className="size-10 min-w-10 rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary transition-colors duration-200"
-                iconSize={18}
+                className={cn(expanded ? "size-10 min-w-10" : "size-12 min-w-12", "rounded-xl text-zinc-500 hover:text-zinc-900 dark:text-zinc-400 dark:hover:text-zinc-100 hover:bg-surface-secondary transition-colors duration-200")}
+                iconSize={expanded ? 18 : 20}
               />
             </div>
           </RailTooltip>

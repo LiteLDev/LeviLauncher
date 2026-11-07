@@ -10,10 +10,12 @@ import {
   FaCube,
   FaDownload,
   FaGlobe,
-  FaHome,
   FaImage,
+  FaInfoCircle,
   FaLayerGroup,
+  FaList,
   FaPuzzlePiece,
+  FaRocket,
   FaServer,
   FaUserTag,
 } from "react-icons/fa";
@@ -63,17 +65,20 @@ export type IconComponent = React.ComponentType<{
   className?: string;
 }>;
 
+// Icons match released versions so existing users find their way.
 const NAV_ICONS: Record<PrimaryNavKey, IconComponent> = {
-  home: FaHome,
-  instances: FaLayerGroup,
+  home: FaRocket,
   download: FaDownload,
+  instances: FaList,
+  about: FaInfoCircle,
   settings: FaCog,
 };
 
 const NAV_LABEL_KEYS: Record<PrimaryNavKey, string> = {
   home: "nav.home",
-  instances: "nav.versions",
   download: "downloadmodal.download_button",
+  instances: "nav.versions",
+  about: "nav.about",
   settings: "app.settings",
 };
 
@@ -159,7 +164,7 @@ export type ChildNavItem = {
 /** A labeled group of Home's children: the instance's content, and the
  * catalogs that install into it. */
 export type ChildNavGroup = {
-  key: "content" | "market";
+  key: "content" | "download";
   label: string;
   items: ChildNavItem[];
 };
@@ -169,8 +174,8 @@ export type ChildNavGroup = {
  * navbar layout. */
 export const usePrimaryNav = () => {
   const { t } = useTranslation();
-  const { pathname } = useLocation();
-  const activeKey = getActiveNavKey(pathname);
+  const { pathname, search } = useLocation();
+  const activeKey = getActiveNavKey(pathname, search);
   const activeCatalog = getActiveCatalog(pathname);
   const activeSection = getActiveContentSection(pathname);
 
@@ -206,8 +211,8 @@ export const usePrimaryNav = () => {
       }),
     },
     {
-      key: "market",
-      label: t("shell.nav.market"),
+      key: "download",
+      label: t("contentdownload.title"),
       items: DISCOVER_CATALOGS.map((catalog) => {
         const meta = CATALOG_META[catalog.key];
         return {

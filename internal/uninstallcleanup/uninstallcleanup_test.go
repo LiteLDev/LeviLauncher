@@ -42,67 +42,74 @@ func TestParseArgs(t *testing.T) {
 	}
 }
 
-type fixture struct {
-	appData     string
-	storageRoot string
-	baseRoot    string
+// env fakes %APPDATA% and %LOCALAPPDATA%, which apppath reads first.
+type env struct {
+	configDir string // %APPDATA%\LeviLauncher
+	localDir  string // %LOCALAPPDATA%\LeviLauncher, the default data root
+	legacyDir string // %APPDATA%\levilauncher.exe
 }
 
-func writeFile(t *testing.T, path string) {
+func newEnv(t *testing.T) env {
+	t.Helper()
+	appData, localAppData := t.TempDir(), t.TempDir()
+	t.Setenv("APPDATA", appData)
+	t.Setenv("LOCALAPPDATA", localAppData)
+	return env{
+		configDir: filepath.Join(appData, "LeviLauncher"),
+		localDir:  filepath.Join(localAppData, "LeviLauncher"),
+		legacyDir: filepath.Join(appData, "levilauncher.exe"),
+	}
+}
+
+func j(parts ...string) string { return filepath.Join(parts...) }
+
+func writeFile(t *testing.T, path string, content string) {
 	t.Helper()
 	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.WriteFile(path, []byte("x"), 0o644); err != nil {
+	if err := os.WriteFile(path, []byte(content), 0o644); err != nil {
 		t.Fatal(err)
 	}
 }
 
-func writeConfig(t *testing.T, storageRoot string, baseRoot string) {
+// writeConfig writes config.json in dir, with base_root unless it is "".
+func writeConfig(t *testing.T, dir, baseRoot string) {
 	t.Helper()
-	b, err := json.Marshal(map[string]any{"base_root": baseRoot, "window_width": 1024})
+	c := map[string]any{"window_width": 1024}
+	if baseRoot != "" {
+		c["base_root"] = baseRoot
+	}
+	b, err := json.Marshal(c)
 	if err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(storageRoot, 0o755); err != nil {
-		t.Fatal(err)
+	writeFile(t, j(dir, "config.json"), string(b))
+}
+
+// seedCurrent fakes a launcher on the current layout with its data in baseRoot.
+func seedCurrent(t *testing.T, e env, baseRoot string) {
+	t.Helper()
+	for _, p := range []string{
+		`Instances\a\level.dat`, `Backups\Worlds\w.mcworld`, `Cache\Installers\x.msixvc`,
+		`Cache\gamertags.json`, `Keep\x`,
+	} {
+		writeFile(t, j(baseRoot, p), "x")
 	}
-	if err := os.WriteFile(filepath.Join(storageRoot, "config.json"), b, 0o644); err != nil {
-		t.Fatal(err)
+	for _, p := range []string{`Logs\startup.log`, `Accounts\a`, `WebView2\EBWebView\x`, `storage-migration.json`} {
+		writeFile(t, j(e.localDir, p), "x")
 	}
 }
 
-func seedBaseRoot(t *testing.T, baseRoot string) {
+// seedLegacy fakes a launcher on the legacy layout with its data in baseRoot.
+func seedLegacy(t *testing.T, e env, baseRoot string) {
 	t.Helper()
-	for _, dir := range []string{"installers", "backups", "versions", "keep"} {
-		writeFile(t, filepath.Join(baseRoot, dir, "nested", "file.bin"))
+	for _, p := range []string{`versions\a\level.dat`, `backups\w.mcworld`, `installers\x.msixvc`, `keep\x`} {
+		writeFile(t, j(baseRoot, p), "x")
 	}
-}
-
-func seedStorage(t *testing.T, storageRoot string, withLogs bool) {
-	t.Helper()
-	writeFile(t, filepath.Join(storageRoot, "user_gamertag_map.json"))
-	writeFile(t, filepath.Join(storageRoot, "EBWebView", "Default", "x"))
-	writeFile(t, filepath.Join(storageRoot, "bin", "x"))
-	if withLogs {
-		writeFile(t, filepath.Join(storageRoot, "logs", "x"))
+	for _, p := range []string{`user_gamertag_map.json`, `EBWebView\x`, `bin\x`, `logs\x`} {
+		writeFile(t, j(e.legacyDir, p), "x")
 	}
-}
-
-// newFixture fakes %APPDATA% and a separate base_root with launcher data.
-func newFixture(t *testing.T) fixture {
-	t.Helper()
-	appData := t.TempDir()
-	t.Setenv("APPDATA", appData)
-	f := fixture{
-		appData:     appData,
-		storageRoot: filepath.Join(appData, "levilauncher.exe"),
-		baseRoot:    filepath.Join(t.TempDir(), "LeviLauncherData"),
-	}
-	writeConfig(t, f.storageRoot, f.baseRoot)
-	seedStorage(t, f.storageRoot, true)
-	seedBaseRoot(t, f.baseRoot)
-	return f
 }
 
 func exists(t *testing.T, path string) bool {
@@ -117,136 +124,164 @@ func exists(t *testing.T, path string) bool {
 	return false
 }
 
-func assertExists(t *testing.T, path string, want bool) {
+func assertExists(t *testing.T, want bool, paths ...string) {
 	t.Helper()
-	if got := exists(t, path); got != want {
-		t.Fatalf("exists(%s) = %v, want %v", path, got, want)
+	for _, path := range paths {
+		if got := exists(t, path); got != want {
+			t.Errorf("exists(%s) = %v, want %v", path, got, want)
+		}
 	}
 }
 
-func assertUserFilesRemoved(t *testing.T, storageRoot string) {
-	t.Helper()
-	for _, name := range []string{"config.json", "user_gamertag_map.json", "EBWebView", "bin"} {
-		assertExists(t, filepath.Join(storageRoot, name), false)
-	}
-}
-
-func TestCleanupSelectedBaseRootFolders(t *testing.T) {
+func TestRunCurrentLayoutDefaultDataRoot(t *testing.T) {
 	for _, tc := range []struct {
 		name string
 		opts Options
 	}{
-		{"none", Options{}},
+		{"nothing selected", Options{}},
 		{"installers", Options{DeleteInstallers: true}},
 		{"backups", Options{DeleteBackups: true}},
 		{"versions", Options{DeleteVersions: true}},
 		{"all", Options{DeleteInstallers: true, DeleteBackups: true, DeleteVersions: true}},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			f := newFixture(t)
-			Cleanup(f.storageRoot, tc.opts)
+			e := newEnv(t)
+			writeConfig(t, e.configDir, "")
+			seedCurrent(t, e, e.localDir)
 
-			assertExists(t, filepath.Join(f.baseRoot, "installers"), !tc.opts.DeleteInstallers)
-			assertExists(t, filepath.Join(f.baseRoot, "backups"), !tc.opts.DeleteBackups)
-			assertExists(t, filepath.Join(f.baseRoot, "versions"), !tc.opts.DeleteVersions)
-			assertExists(t, filepath.Join(f.baseRoot, "keep", "nested", "file.bin"), true)
-			assertExists(t, f.baseRoot, true)
+			Run(tc.opts)
 
-			assertUserFilesRemoved(t, f.storageRoot)
-			// logs keeps the storage folder, matching the Inno uninstaller.
-			assertExists(t, filepath.Join(f.storageRoot, "logs", "x"), true)
+			assertExists(t, false, e.configDir, j(e.localDir, "WebView2"), j(e.localDir, "storage-migration.json"),
+				j(e.localDir, "Cache", "gamertags.json"))
+			assertExists(t, true, j(e.localDir, "Logs", "startup.log"), j(e.localDir, "Accounts", "a"), j(e.localDir, "Keep", "x"))
+			assertExists(t, !tc.opts.DeleteInstallers, j(e.localDir, "Cache", "Installers", "x.msixvc"))
+			assertExists(t, !tc.opts.DeleteBackups, j(e.localDir, "Backups", "Worlds", "w.mcworld"))
+			assertExists(t, !tc.opts.DeleteVersions, j(e.localDir, "Instances", "a", "level.dat"))
 		})
 	}
 }
 
-func TestCleanupRemovesEmptyStorageRoot(t *testing.T) {
-	appData := t.TempDir()
-	storageRoot := filepath.Join(appData, "levilauncher.exe")
-	baseRoot := filepath.Join(t.TempDir(), "data")
-	writeConfig(t, storageRoot, baseRoot)
-	seedStorage(t, storageRoot, false)
-	seedBaseRoot(t, baseRoot)
+func TestRunCurrentLayoutCustomDataRoot(t *testing.T) {
+	e := newEnv(t)
+	baseRoot := j(t.TempDir(), "Games", "LeviLauncher")
+	writeConfig(t, e.configDir, baseRoot)
+	seedCurrent(t, e, baseRoot)
+	// Folders of the same name in the default data root are not the user's data.
+	writeFile(t, j(e.localDir, "Instances", "other", "level.dat"), "x")
 
-	Cleanup(storageRoot, Options{DeleteVersions: true})
+	Run(Options{DeleteInstallers: true, DeleteBackups: true, DeleteVersions: true})
 
-	assertExists(t, storageRoot, false)
-	assertExists(t, filepath.Join(baseRoot, "versions"), false)
-	assertExists(t, filepath.Join(baseRoot, "installers"), true)
+	assertExists(t, false, j(baseRoot, "Instances"), j(baseRoot, "Backups"), j(baseRoot, "Cache"), e.configDir)
+	assertExists(t, true, j(baseRoot, "Keep", "x"), j(e.localDir, "Instances", "other", "level.dat"))
 }
 
-func TestCleanupDefaultBaseRootIsStorageRoot(t *testing.T) {
+func TestRunLegacyLayout(t *testing.T) {
 	for _, tc := range []struct {
 		name   string
-		config func(t *testing.T, storageRoot string)
+		custom bool
 	}{
-		{"no config", func(t *testing.T, storageRoot string) {}},
-		{"empty base_root", func(t *testing.T, storageRoot string) { writeConfig(t, storageRoot, "") }},
-		{"blank base_root", func(t *testing.T, storageRoot string) { writeConfig(t, storageRoot, "   ") }},
+		{"default data root", false},
+		{"custom data root", true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			storageRoot := filepath.Join(t.TempDir(), "levilauncher.exe")
-			tc.config(t, storageRoot)
-			seedStorage(t, storageRoot, false)
-			seedBaseRoot(t, storageRoot)
-
-			Cleanup(storageRoot, Options{DeleteInstallers: true, DeleteBackups: true, DeleteVersions: true})
-
-			for _, dir := range []string{"installers", "backups", "versions"} {
-				assertExists(t, filepath.Join(storageRoot, dir), false)
+			e := newEnv(t)
+			baseRoot := e.legacyDir
+			if tc.custom {
+				baseRoot = j(t.TempDir(), "Data")
+				writeConfig(t, e.legacyDir, baseRoot)
+			} else {
+				writeConfig(t, e.legacyDir, "")
 			}
-			assertExists(t, filepath.Join(storageRoot, "keep", "nested", "file.bin"), true)
-			assertUserFilesRemoved(t, storageRoot)
+			seedLegacy(t, e, baseRoot)
+
+			Run(Options{DeleteInstallers: true, DeleteVersions: true})
+
+			assertExists(t, false, j(baseRoot, "installers"), j(baseRoot, "versions"),
+				j(e.legacyDir, "config.json"), j(e.legacyDir, "user_gamertag_map.json"),
+				j(e.legacyDir, "EBWebView"), j(e.legacyDir, "bin"))
+			assertExists(t, true, j(baseRoot, "backups", "w.mcworld"), j(baseRoot, "keep", "x"), j(e.legacyDir, "logs", "x"))
 		})
 	}
 }
 
-func TestCleanupCorruptConfigKeepsBaseRootData(t *testing.T) {
-	storageRoot := filepath.Join(t.TempDir(), "levilauncher.exe")
-	seedStorage(t, storageRoot, false)
-	seedBaseRoot(t, storageRoot)
-	if err := os.WriteFile(filepath.Join(storageRoot, "config.json"), []byte("{not json"), 0o644); err != nil {
+// After the migration both config.json files exist; the current one decides
+// the data root, and the copy the lossless migration kept in the legacy
+// folder is left alone.
+func TestRunPrefersCurrentConfig(t *testing.T) {
+	e := newEnv(t)
+	writeConfig(t, e.configDir, "")
+	writeConfig(t, e.legacyDir, "")
+	seedCurrent(t, e, e.localDir)
+	seedLegacy(t, e, e.legacyDir)
+
+	Run(Options{DeleteVersions: true})
+
+	assertExists(t, false, j(e.localDir, "Instances"), e.configDir, j(e.legacyDir, "config.json"))
+	assertExists(t, true, j(e.legacyDir, "versions", "a", "level.dat"))
+}
+
+func TestRunRemovesEmptyDirectories(t *testing.T) {
+	e := newEnv(t)
+	writeConfig(t, e.configDir, "")
+	writeFile(t, j(e.localDir, "WebView2", "EBWebView", "x"), "x")
+	writeFile(t, j(e.localDir, "Cache", "gamertags.json"), "x")
+	writeConfig(t, e.legacyDir, "")
+	writeFile(t, j(e.legacyDir, "EBWebView", "x"), "x")
+
+	Run(Options{})
+
+	assertExists(t, false, e.configDir, e.localDir, e.legacyDir)
+}
+
+func TestRunWithoutConfigUsesDefaultDataRoot(t *testing.T) {
+	e := newEnv(t)
+	seedCurrent(t, e, e.localDir)
+
+	Run(Options{DeleteBackups: true})
+
+	assertExists(t, false, j(e.localDir, "Backups"))
+	assertExists(t, true, j(e.localDir, "Instances", "a", "level.dat"))
+}
+
+func TestRunUnreadableConfigKeepsData(t *testing.T) {
+	e := newEnv(t)
+	seedCurrent(t, e, e.localDir)
+	writeFile(t, j(e.configDir, "config.json"), "{not json")
+
+	Run(Options{DeleteInstallers: true, DeleteBackups: true, DeleteVersions: true})
+
+	assertExists(t, true, j(e.localDir, "Instances", "a", "level.dat"), j(e.localDir, "Backups", "Worlds", "w.mcworld"),
+		j(e.localDir, "Cache", "Installers", "x.msixvc"))
+	assertExists(t, false, j(e.configDir, "config.json"))
+}
+
+func TestRunIgnoresUnrelatedMalformedConfigFields(t *testing.T) {
+	e := newEnv(t)
+	baseRoot := j(t.TempDir(), "Data")
+	seedCurrent(t, e, baseRoot)
+	quoted, err := json.Marshal(baseRoot)
+	if err != nil {
 		t.Fatal(err)
 	}
+	writeFile(t, j(e.configDir, "config.json"), `{"base_root": `+string(quoted)+`, "window_width": "wide"}`)
 
-	Cleanup(storageRoot, Options{DeleteInstallers: true, DeleteBackups: true, DeleteVersions: true})
+	Run(Options{DeleteBackups: true})
 
-	for _, dir := range []string{"installers", "backups", "versions"} {
-		assertExists(t, filepath.Join(storageRoot, dir), true)
-	}
-	assertUserFilesRemoved(t, storageRoot)
+	assertExists(t, false, j(baseRoot, "Backups"))
 }
 
-func TestCleanupRefusesUnsafeBaseRoot(t *testing.T) {
+func TestRunRefusesUnsafeDataRoot(t *testing.T) {
+	e := newEnv(t)
 	profile := t.TempDir()
 	t.Setenv("USERPROFILE", profile)
-	seedBaseRoot(t, profile)
+	writeConfig(t, e.configDir, profile)
+	seedCurrent(t, e, profile)
 
-	for _, tc := range []struct {
-		name     string
-		baseRoot string
-	}{
-		{"user profile", profile},
-		{"user profile with trailing separator", profile + string(filepath.Separator)},
-		{"user profile different case", strings.ToUpper(profile)},
-		{"relative", "relative" + string(filepath.Separator) + "data"},
-	} {
-		t.Run(tc.name, func(t *testing.T) {
-			storageRoot := filepath.Join(t.TempDir(), "levilauncher.exe")
-			writeConfig(t, storageRoot, tc.baseRoot)
+	Run(Options{DeleteInstallers: true, DeleteBackups: true, DeleteVersions: true})
 
-			Cleanup(storageRoot, Options{DeleteInstallers: true, DeleteBackups: true, DeleteVersions: true})
-
-			for _, dir := range []string{"installers", "backups", "versions"} {
-				assertExists(t, filepath.Join(profile, dir, "nested", "file.bin"), true)
-			}
-			assertExists(t, filepath.Join(storageRoot, "config.json"), false)
-		})
-	}
-}
-
-func TestCleanupEmptyStorageRootIsNoop(t *testing.T) {
-	Cleanup("", Options{DeleteInstallers: true, DeleteBackups: true, DeleteVersions: true})
-	Cleanup("   ", Options{DeleteInstallers: true, DeleteBackups: true, DeleteVersions: true})
+	assertExists(t, true, j(profile, "Instances", "a", "level.dat"), j(profile, "Backups", "Worlds", "w.mcworld"),
+		j(profile, "Cache", "Installers", "x.msixvc"), j(profile, "Cache", "gamertags.json"))
+	assertExists(t, false, e.configDir)
 }
 
 func TestIsSafeBaseRoot(t *testing.T) {
@@ -279,6 +314,7 @@ func TestIsSafeBaseRoot(t *testing.T) {
 		{programFiles, false},
 		{strings.ToLower(programFiles), false},
 		{filepath.Join(appData, "levilauncher.exe"), true},
+		{filepath.Join(profile, "AppData", "Local", "LeviLauncher"), true},
 		{filepath.Join(profile, "Games", "LeviLauncher"), true},
 		{`D:\LeviLauncher`, true},
 		{`\\server\share\LeviLauncher`, true},
@@ -302,40 +338,4 @@ func TestIsSafeBaseRootRejectsShellFolders(t *testing.T) {
 			t.Errorf("IsSafeBaseRoot(%q) = true, want false", docs)
 		}
 	}
-}
-
-func TestCleanupIgnoresUnrelatedMalformedConfigFields(t *testing.T) {
-	storageRoot := filepath.Join(t.TempDir(), "levilauncher.exe")
-	baseRoot := filepath.Join(t.TempDir(), "data")
-	seedStorage(t, storageRoot, false)
-	seedBaseRoot(t, baseRoot)
-	quoted, err := json.Marshal(baseRoot)
-	if err != nil {
-		t.Fatal(err)
-	}
-	cfg := `{"base_root": ` + string(quoted) + `, "window_width": "wide", "launcher_launch_count": -1}`
-	if err := os.WriteFile(filepath.Join(storageRoot, "config.json"), []byte(cfg), 0o644); err != nil {
-		t.Fatal(err)
-	}
-
-	Cleanup(storageRoot, Options{DeleteBackups: true})
-
-	assertExists(t, filepath.Join(baseRoot, "backups"), false)
-	assertExists(t, filepath.Join(baseRoot, "versions"), true)
-}
-
-func TestRunUsesAppDataStorageFolder(t *testing.T) {
-	f := newFixture(t)
-	// A sibling folder named after another executable must be left alone.
-	other := filepath.Join(f.appData, "other.exe")
-	writeFile(t, filepath.Join(other, "config.json"))
-
-	Run(Options{DeleteInstallers: true, DeleteBackups: true, DeleteVersions: true})
-
-	for _, dir := range []string{"installers", "backups", "versions"} {
-		assertExists(t, filepath.Join(f.baseRoot, dir), false)
-	}
-	assertUserFilesRemoved(t, f.storageRoot)
-	assertExists(t, filepath.Join(f.storageRoot, "logs", "x"), true)
-	assertExists(t, filepath.Join(other, "config.json"), true)
 }

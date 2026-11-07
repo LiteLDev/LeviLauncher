@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+
+	"github.com/liteldev/LeviLauncher/internal/lipcore/gitpack"
 )
 
 // PktLineType is the kind of a pkt-line read by PktLineReader.
@@ -48,11 +50,10 @@ const MaxPktPayloadLength = MaxPktLineLength - 4
 // PktLineReader reads git pkt-lines. The payload of the last data line is
 // valid until the next Read.
 type PktLineReader struct {
-	r         io.Reader
-	header    [4]byte
-	buf       []byte
-	Payload   []byte
-	BytesRead int64
+	r       io.Reader
+	header  [4]byte
+	buf     []byte
+	Payload []byte
 }
 
 // NewPktLineReader returns a reader over r.
@@ -60,9 +61,10 @@ func NewPktLineReader(r io.Reader) *PktLineReader {
 	return &PktLineReader{r: r, buf: make([]byte, MaxPktLineLength)}
 }
 
-// PayloadText is the last data payload as text without a trailing LF.
+// PayloadText is the last data payload decoded as UTF-8, without the
+// trailing LF.
 func (p *PktLineReader) PayloadText() string {
-	return string(bytes.TrimSuffix(p.Payload, []byte{'\n'}))
+	return gitpack.DecodeUTF8(bytes.TrimSuffix(p.Payload, []byte{'\n'}))
 }
 
 // Read reads the next pkt-line. A clean end of stream before a header
@@ -79,15 +81,14 @@ func (p *PktLineReader) Read() (PktLineType, error) {
 			return PktEndOfStream, nil
 		}
 		if err == io.ErrUnexpectedEOF {
-			return 0, protocolErrorf("Unexpected end of stream in pkt-line header.")
+			return 0, protocolErrorf("The response ended in the middle of a pkt-line header.")
 		}
 		return 0, err
 	}
-	p.BytesRead += 4
 
 	length, ok := parseHex4(p.header[:])
 	if !ok {
-		return 0, protocolErrorf("Invalid pkt-line length '%s'.", string(p.header[:]))
+		return 0, protocolErrorf("Invalid pkt-line length '%s'; the response is not in git pkt-line format.", gitpack.ASCIIString(p.header[:]))
 	}
 	switch {
 	case length == 0:
@@ -97,17 +98,16 @@ func (p *PktLineReader) Read() (PktLineType, error) {
 	case length == 2:
 		return PktResponseEnd, nil
 	case length == 3 || length > MaxPktLineLength:
-		return 0, protocolErrorf("Invalid pkt-line length %d.", length)
+		return 0, protocolErrorf("Invalid pkt-line length %d; lengths must be 0 to 2 or 4 to %d.", length, MaxPktLineLength)
 	}
 
 	payload := p.buf[:length-4]
 	if _, err := io.ReadFull(p.r, payload); err != nil {
 		if err == io.EOF || err == io.ErrUnexpectedEOF {
-			return 0, &ProtocolError{Message: "Unexpected end of stream in pkt-line payload.", Err: err}
+			return 0, &ProtocolError{Message: "The response ended in the middle of a pkt-line payload.", Err: err}
 		}
 		return 0, err
 	}
-	p.BytesRead += int64(length - 4)
 	p.Payload = payload
 	return PktData, nil
 }
@@ -147,7 +147,7 @@ func (w *PktLineWriter) WriteLine(text string) *PktLineWriter {
 // MaxPktPayloadLength, mirroring lip's ArgumentException.
 func (w *PktLineWriter) WriteData(data []byte) *PktLineWriter {
 	if len(data) > MaxPktPayloadLength {
-		panic(fmt.Sprintf("gitproto: pkt-line payload exceeds %d bytes", MaxPktPayloadLength))
+		panic(fmt.Sprintf("A git request line of %d bytes is longer than the %d bytes git allows.", len(data), MaxPktPayloadLength))
 	}
 	fmt.Fprintf(&w.buf, "%04x", len(data)+4)
 	w.buf.Write(data)
@@ -163,12 +163,6 @@ func (w *PktLineWriter) WriteFlush() *PktLineWriter {
 // WriteDelimiter writes "0001".
 func (w *PktLineWriter) WriteDelimiter() *PktLineWriter {
 	w.buf.WriteString("0001")
-	return w
-}
-
-// WriteResponseEnd writes "0002".
-func (w *PktLineWriter) WriteResponseEnd() *PktLineWriter {
-	w.buf.WriteString("0002")
 	return w
 }
 

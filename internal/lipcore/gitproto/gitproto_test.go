@@ -29,7 +29,7 @@ func pkt(lines ...string) []byte {
 		case "0001":
 			w.WriteDelimiter()
 		case "0002":
-			w.WriteResponseEnd()
+			w.buf.WriteString("0002")
 		default:
 			w.WriteLine(l)
 		}
@@ -147,9 +147,6 @@ func TestPktLineRoundTrip(t *testing.T) {
 	want := []string{"hello", "Delimiter", "world", "Flush", "ResponseEnd"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("got %v want %v", got, want)
-	}
-	if r.BytesRead != int64(len(data)) {
-		t.Fatalf("BytesRead %d want %d", r.BytesRead, len(data))
 	}
 }
 
@@ -486,13 +483,13 @@ func TestFetchErrors(t *testing.T) {
 		resp []byte
 		msg  string
 	}{
-		"sideband error": {append(append(pkt("packfile"), band(1, []byte("PA"))...), band(3, []byte("upload-pack: not our ref\n"))...), "Remote error: upload-pack: not our ref"},
-		"ERR line":       {pkt("ERR not our ref"), "Remote error: not our ref"},
-		"ERR in section": {pkt("acknowledgments", "ERR boom"), "Remote error: boom"},
-		"no packfile":    {pkt("acknowledgments", "NAK", "0000"), "Fetch response ended without a packfile (section acknowledgments)."},
-		"bad channel":    {append(pkt("packfile"), band(4, []byte("x"))...), "Invalid side-band channel 4."},
-		"empty band":     {append(pkt("packfile"), []byte("0004")...), "Empty side-band packet."},
-		"eof":            {pkt("packfile"), "Unexpected EndOfStream in packfile section."},
+		"sideband error": {append(append(pkt("packfile"), band(1, []byte("PA"))...), band(3, []byte("upload-pack: not our ref\n"))...), "The git server reported: upload-pack: not our ref"},
+		"ERR line":       {pkt("ERR not our ref"), "The git server reported: not our ref"},
+		"ERR in section": {pkt("acknowledgments", "ERR boom"), "The git server reported: boom"},
+		"no packfile":    {pkt("acknowledgments", "NAK", "0000"), "The fetch response ended after section 'acknowledgments' without a packfile section."},
+		"bad channel":    {append(pkt("packfile"), band(4, []byte("x"))...), "Invalid side-band channel 4 in the packfile section."},
+		"empty band":     {append(pkt("packfile"), []byte("0004")...), "Empty side-band packet in the packfile section."},
+		"eof":            {pkt("packfile"), "Unexpected EndOfStream packet in the packfile section."},
 	}
 	for name, tc := range cases {
 		t.Run(name, func(t *testing.T) {
@@ -502,7 +499,8 @@ func TestFetchErrors(t *testing.T) {
 			sleeps := recordingSleep(c)
 			_, err := fetchBytes(c, context.Background(), srv.URL+"/repo.git", []string{id1}, FetchOptions{})
 			var pe *ProtocolError
-			if !errors.As(err, &pe) || err.Error() != tc.msg {
+			var se *ServerError
+			if !errors.As(err, &pe) && !errors.As(err, &se) || err.Error() != tc.msg {
 				t.Fatalf("got %v want %q", err, tc.msg)
 			}
 			if len(*sleeps) != 0 {
@@ -540,7 +538,8 @@ func TestLsRefsErrors(t *testing.T) {
 			f.refs = refs
 			_, err := (&Client{}).ListTags(context.Background(), srv.URL+"/repo.git")
 			var pe *ProtocolError
-			if !errors.As(err, &pe) {
+			var se *ServerError
+			if !errors.As(err, &pe) && !errors.As(err, &se) {
 				t.Fatalf("got %v", err)
 			}
 		})

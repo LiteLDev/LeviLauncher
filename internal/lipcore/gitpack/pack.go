@@ -192,7 +192,7 @@ func (p *Pack) scan() error {
 		}
 
 		if objSize > MaxObjectSize {
-			return corrupt("object of %d bytes exceeds the %d byte limit", objSize, MaxObjectSize)
+			return tooLarge(objSize)
 		}
 
 		e.dataOffset = r.pos()

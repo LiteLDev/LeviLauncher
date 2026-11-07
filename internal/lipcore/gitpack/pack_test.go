@@ -71,10 +71,13 @@ func TestHeaderOverlappingTrailerIsCorrupt(t *testing.T) {
 					t.Fatalf("panic: %v", p)
 				}
 			}()
-			if err := NewStore().Decode(pack); !errors.Is(err, ErrCorrupt) {
+			// Like lip, the size varint is read on into the trailer, so the
+			// size it ends up with may exceed MaxObjectSize.
+			var tooLarge *UnusableRepositoryError
+			if err := NewStore().Decode(pack); !errors.Is(err, ErrCorrupt) && !errors.As(err, &tooLarge) {
 				t.Fatalf("Decode: %v", err)
 			}
-			if _, err := OpenBytes(pack); !errors.Is(err, ErrCorrupt) {
+			if _, err := OpenBytes(pack); !errors.Is(err, ErrCorrupt) && !errors.As(err, &tooLarge) {
 				t.Fatalf("Open: %v", err)
 			}
 		})

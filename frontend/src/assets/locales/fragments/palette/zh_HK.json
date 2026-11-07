@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "命令面板",
+    "placeholder": "搜尋頁面、設定和操作…",
+    "results": "命令",
+    "empty": "沒有與「{{query}}」相符的命令",
+    "nav_locked": "目前無法切換頁面，僅列出可用操作。",
+    "hint_move": "移動",
+    "hint_run": "執行",
+    "hint_close": "關閉",
+    "open_activity": "開啟活動記錄",
+    "theme_light": "切換到淺色主題",
+    "theme_dark": "切換到深色主題",
+    "show_shortcuts": "鍵盤快速鍵",
+    "instance_settings": "實例設定：{{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "切換實例到 {{name}}",
+    "current": "目前",
+    "group": {
+      "recent": "最近使用",
+      "actions": "操作",
+      "navigate": "前往",
+      "settings": "設定",
+      "instances": "實例"
+    },
+    "shortcuts_title": "鍵盤快速鍵",
+    "shortcut_open": "開啟命令面板",
+    "shortcut_settings": "開啟設定"
+  }
+}

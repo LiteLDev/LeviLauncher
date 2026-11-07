@@ -20,7 +20,6 @@ import {
   FaUser,
 } from "react-icons/fa";
 import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
-import { InstancePicker } from "@/components/InstancePicker";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 import { LAYOUT } from "@/constants/layout";
 import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
@@ -308,8 +307,6 @@ export const ContentSubpageHeader: React.FC<ContentSubpageHeaderProps> = ({
           </div>
         </div>
         <div className="flex min-w-0 flex-wrap items-center gap-2 text-sm text-muted dark:text-zinc-400">
-          {/* The compact trigger only has room for the name, not the version line. */}
-          <InstancePicker size="sm" className="[&_button_.text-xs]:hidden" />
           {player && <PlayerSelect {...player} />}
           {typeof isIsolation === "boolean" && (
             <span className="rounded-md bg-surface-secondary px-2 py-1 text-xs">

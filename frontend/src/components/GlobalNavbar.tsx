@@ -40,7 +40,7 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
   tryNavigate,
 }) => {
   const { t } = useTranslation();
-  const { items, catalogs } = usePrimaryNav();
+  const { items, homeGroups } = usePrimaryNav();
 
   const go = useNavPress(tryNavigate);
 
@@ -113,35 +113,37 @@ export const GlobalNavbar: React.FC<GlobalNavbarProps> = ({
                 </Button>
                 <Tooltip.Content>{item.label}</Tooltip.Content>
               </Tooltip>
-              {/* Both catalogs stay one click away while Discover is open. */}
-              {item.key === "discover" && item.isActive && (
-                <div
-                  role="group"
-                  aria-label={item.label}
-                  className="flex items-center gap-0.5 rounded-xl bg-surface-secondary/60 p-0.5"
-                >
-                  {catalogs.map((catalog) => (
-                    <Tooltip key={catalog.key} delay={300} closeDelay={0}>
-                      <Button
-                        size="sm"
-                        isIconOnly
-                        aria-label={catalog.label}
-                        aria-current={catalog.isActive ? "page" : undefined}
-                        isDisabled={navLocked}
-                        onPress={go(catalog.path)}
-                        variant="ghost"
-                        className={cn(
-                          "size-8 min-w-8 rounded-lg",
-                          catalog.isActive && "bg-surface shadow-sm",
-                        )}
-                      >
-                        <catalog.Icon size={15} className={catalog.iconClassName} />
-                      </Button>
-                      <Tooltip.Content>{catalog.label}</Tooltip.Content>
-                    </Tooltip>
-                  ))}
-                </div>
-              )}
+              {/* Home's pages stay one click away while a Home page is open. */}
+              {item.key === "home" && item.isActive &&
+                homeGroups.map((group) => (
+                  <div
+                    key={group.key}
+                    role="group"
+                    aria-label={group.label}
+                    className="flex items-center gap-0.5 rounded-xl bg-surface-secondary/60 p-0.5"
+                  >
+                    {group.items.map((child) => (
+                      <Tooltip key={child.key} delay={300} closeDelay={0}>
+                        <Button
+                          size="sm"
+                          isIconOnly
+                          aria-label={child.label}
+                          aria-current={child.isActive ? "page" : undefined}
+                          isDisabled={navLocked}
+                          onPress={go(child.path)}
+                          variant="ghost"
+                          className={cn(
+                            "size-8 min-w-8 rounded-lg",
+                            child.isActive && "bg-surface shadow-sm",
+                          )}
+                        >
+                          <child.Icon size={15} className={child.iconClassName} />
+                        </Button>
+                        <Tooltip.Content>{child.label}</Tooltip.Content>
+                      </Tooltip>
+                    ))}
+                  </div>
+                ))}
             </React.Fragment>
           ))}
         </nav>

@@ -7,7 +7,7 @@ export default (env) => {
   name:'ui-audit-fixtures',enforce:'pre',
   transformIndexHtml(){return [{tag:'script',children:readFileSync(new URL('./ui-fixture.js',import.meta.url),'utf8'),injectTo:'head-prepend'}];},
   transform(code,id){
-   if(id.replaceAll('\\','/').endsWith('/pages/ContentPage.tsx')) return code.replace('Dialogs.OpenFile(', 'window.__audit.call("OpenContentFiles", ');
+   if(id.replaceAll('\\','/').endsWith('/components/HomeContent.tsx')) return code.replace('Dialogs.OpenFile(', 'window.__audit.call("OpenContentFiles", ');
    if(id.replaceAll('\\','/').endsWith('/pages/ModsPage.tsx')) return code.replace('Dialogs.OpenFile(', 'window.__audit.call("OpenModFiles", ');
    if(id.replaceAll('\\','/').endsWith('/hooks/useInstanceSettings.ts')) return code.replace(/Dialogs\.OpenFile\((\{\s*Title: t\("versions\.edit\.backup\.restore\.file_picker_title"\))/, 'window.__audit.call("OpenBackupArchive", $1');
    if(id.replaceAll('\\','/').endsWith('/components/SponsorModal.tsx')) return code.replace('Browser.OpenURL(url)', 'window.__audit.openSponsorURL(url)');

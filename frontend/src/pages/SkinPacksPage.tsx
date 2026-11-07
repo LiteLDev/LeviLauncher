@@ -42,7 +42,6 @@ import {
   useContentPlayers,
   useContentRoots,
 } from "@/components/ContentSubpage";
-import { InstancePicker } from "@/components/InstancePicker";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -307,9 +306,7 @@ export default function SkinPacksPage() {
           icon={<FaTshirt />}
           title={t("content_sub.no_instance_title")}
           body={t("content_sub.no_instance_body")}
-        >
-          <InstancePicker />
-        </ContentPrerequisite>
+        />
       ) : rootsState.error ? (
         <ContentPrerequisite
           icon={<FaTshirt />}

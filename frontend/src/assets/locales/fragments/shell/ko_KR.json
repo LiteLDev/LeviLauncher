@@ -2,7 +2,11 @@
   "shell": {
     "nav": {
       "content": "콘텐츠",
-      "discover": "둘러보기"
+      "discover": "둘러보기",
+      "market": "콘텐츠 마켓",
+      "expand_sidebar": "사이드바 펼치기",
+      "collapse_sidebar": "사이드바 접기",
+      "toggle_group": "{{name}} 표시 전환"
     },
     "search": "명령 검색",
     "search_placeholder": "검색…",

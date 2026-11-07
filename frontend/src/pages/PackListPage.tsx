@@ -36,7 +36,6 @@ import {
   ContentSortMenu,
   ContentSubpageHeader,
 } from "@/components/ContentSubpage";
-import { InstancePicker } from "@/components/InstancePicker";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -211,9 +210,7 @@ export default function PackListPage({ kind }: { kind: "resource" | "behavior" }
           icon={<MissingIcon />}
           title={t("content_sub.no_instance_title")}
           body={t("content_sub.no_instance_body")}
-        >
-          <InstancePicker />
-        </ContentPrerequisite>
+        />
       ) : loading ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />

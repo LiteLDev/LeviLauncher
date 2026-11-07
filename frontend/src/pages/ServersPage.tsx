@@ -28,7 +28,6 @@ import {
   useContentPlayers,
   useContentRoots,
 } from "@/components/ContentSubpage";
-import { InstancePicker } from "@/components/InstancePicker";
 import { McText } from "@/utils/mcformat";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
@@ -343,9 +342,7 @@ export default function ServersPage() {
           icon={<FaServer />}
           title={t("content_sub.no_instance_title")}
           body={t("content_sub.no_instance_body")}
-        >
-          <InstancePicker />
-        </ContentPrerequisite>
+        />
       ) : busy ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />

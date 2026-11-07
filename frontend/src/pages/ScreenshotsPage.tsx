@@ -40,7 +40,6 @@ import {
   useContentPlayers,
   useContentRoots,
 } from "@/components/ContentSubpage";
-import { InstancePicker } from "@/components/InstancePicker";
 import { notify } from "@/utils/activity";
 import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { LAYOUT } from "@/constants/layout";
@@ -315,9 +314,7 @@ export default function ScreenshotsPage() {
           icon={<FaCamera />}
           title={t("content_sub.no_instance_title")}
           body={t("contentpage.screenshot_no_instance")}
-        >
-          <InstancePicker />
-        </ContentPrerequisite>
+        />
       ) : ready && !player && !isUWP && !loadError ? (
         <ContentPrerequisite
           icon={<FaUser />}

@@ -2,7 +2,11 @@
   "shell": {
     "nav": {
       "content": "Content",
-      "discover": "Discover"
+      "discover": "Discover",
+      "market": "Content Market",
+      "expand_sidebar": "Expand sidebar",
+      "collapse_sidebar": "Collapse sidebar",
+      "toggle_group": "Show or hide {{name}}"
     },
     "search": "Search commands",
     "search_placeholder": "Search…",

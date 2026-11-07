@@ -2,7 +2,11 @@
   "shell": {
     "nav": {
       "content": "コンテンツ",
-      "discover": "見つける"
+      "discover": "見つける",
+      "market": "コンテンツマーケット",
+      "expand_sidebar": "サイドバーを展開",
+      "collapse_sidebar": "サイドバーを折りたたむ",
+      "toggle_group": "{{name}}の表示を切り替え"
     },
     "search": "コマンドを検索",
     "search_placeholder": "検索…",

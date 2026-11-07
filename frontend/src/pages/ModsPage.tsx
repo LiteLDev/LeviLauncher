@@ -61,7 +61,7 @@ import {
 import type { LipGroupItem, ModListItem } from "@/utils/modIntelligenceResolver";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
-import { InstancePicker, useInstanceList } from "@/components/InstancePicker";
+import { useInstanceList } from "@/components/InstancePicker";
 import { LAYOUT } from "@/constants/layout";
 import { ROUTES } from "@/constants/routes";
 import { cn } from "@/utils/cn";
@@ -436,8 +436,8 @@ const batchResultHeading = (
   return { title: t("mods.action_result_title_failed"), type: "error" };
 };
 
-// Shown in place of the list when no instance is selected, so the user can
-// pick one here instead of being sent to the instance list.
+// Shown in place of the list when no instance is selected; the instance is
+// picked in the top bar, like on every page that acts on one.
 const NoInstanceState: React.FC<{ t: TFunc; onDownload: () => void }> = ({
   t,
   onDownload,
@@ -455,7 +455,7 @@ const NoInstanceState: React.FC<{ t: TFunc; onDownload: () => void }> = ({
             {t(noneInstalled ? "mods.no_instance.none_title" : "mods.no_instance.title")}
           </h2>
           <p className="text-sm text-muted">
-            {t(noneInstalled ? "mods.no_instance.none_body" : "mods.no_instance.body")}
+            {t(noneInstalled ? "mods.no_instance.none_body" : "content_sub.no_instance_body")}
           </p>
         </div>
         {noneInstalled ? (
@@ -467,9 +467,7 @@ const NoInstanceState: React.FC<{ t: TFunc; onDownload: () => void }> = ({
             <LuDownload />
             {t("mods.no_instance.download")}
           </Button>
-        ) : (
-          <InstancePicker label={t("instance_picker.label")} className="w-72" />
-        )}
+        ) : null}
       </Card.Content>
     </Card>
   );
@@ -542,7 +540,6 @@ export const ModsPage: React.FC = () => {
             description={
               hasInstance ? (
                 <div className="flex min-w-0 flex-wrap items-center gap-2">
-                  <InstancePicker size="sm" />
                   {mp.modsInfo.length > 0 && (
                     <Chip
                       size="sm"

@@ -4,24 +4,32 @@ import React, { useEffect } from "react";
 import { Navigate, useLocation } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import {
+  FaCamera,
   FaCog,
-  FaCompass,
+  FaCogs,
   FaCube,
   FaDownload,
-  FaFolderOpen,
+  FaGlobe,
   FaHome,
+  FaImage,
   FaLayerGroup,
   FaPuzzlePiece,
+  FaServer,
+  FaUserTag,
 } from "react-icons/fa";
 import { SiCurseforge } from "react-icons/si";
 import { IoNotificationsOutline, IoSearch } from "react-icons/io5";
 import { InstancePicker } from "@/components/InstancePicker";
 import {
+  CONTENT_SECTIONS,
   DISCOVER_CATALOGS,
   PRIMARY_NAV,
   ROUTES,
   getActiveCatalog,
+  getActiveContentSection,
   getActiveNavKey,
+  isInstanceScopedRoute,
+  type ContentSectionKey,
   type DiscoverCatalog,
   type PrimaryNavKey,
 } from "@/constants/routes";
@@ -50,14 +58,14 @@ export const DiscoverRedirect = () => (
   <Navigate to={catalogPath(readLastCatalog())} replace />
 );
 
-type IconComponent = React.ComponentType<{ size?: number; className?: string }>;
+export type IconComponent = React.ComponentType<{
+  size?: number;
+  className?: string;
+}>;
 
 const NAV_ICONS: Record<PrimaryNavKey, IconComponent> = {
   home: FaHome,
   instances: FaLayerGroup,
-  mods: FaPuzzlePiece,
-  content: FaFolderOpen,
-  discover: FaCompass,
   download: FaDownload,
   settings: FaCog,
 };
@@ -65,11 +73,70 @@ const NAV_ICONS: Record<PrimaryNavKey, IconComponent> = {
 const NAV_LABEL_KEYS: Record<PrimaryNavKey, string> = {
   home: "nav.home",
   instances: "nav.versions",
-  mods: "nav.mods",
-  content: "shell.nav.content",
-  discover: "shell.nav.discover",
   download: "downloadmodal.download_button",
   settings: "app.settings",
+};
+
+/** Icon, label and accent of each content kind, shared by the sidebar and
+ * Home's content tiles so both read the same. */
+export const CONTENT_SECTION_META: Record<
+  ContentSectionKey,
+  { labelKey: string; Icon: IconComponent; tone: string; iconClassName: string }
+> = {
+  worlds: {
+    labelKey: "contentpage.worlds",
+    Icon: FaGlobe,
+    tone: "bg-blue-50 dark:bg-blue-900/20 text-blue-500",
+    iconClassName: "text-blue-500",
+  },
+  mods: {
+    labelKey: "nav.mods",
+    Icon: FaPuzzlePiece,
+    tone: "bg-indigo-50 dark:bg-indigo-900/20 text-indigo-500",
+    iconClassName: "text-indigo-500",
+  },
+  resourcePacks: {
+    labelKey: "contentpage.resource_packs",
+    Icon: FaImage,
+    tone: "bg-purple-50 dark:bg-purple-900/20 text-purple-500",
+    iconClassName: "text-purple-500",
+  },
+  behaviorPacks: {
+    labelKey: "contentpage.behavior_packs",
+    Icon: FaCogs,
+    tone: "bg-orange-50 dark:bg-orange-900/20 text-orange-500",
+    iconClassName: "text-orange-500",
+  },
+  skinPacks: {
+    labelKey: "contentpage.skin_packs",
+    Icon: FaUserTag,
+    tone: "bg-pink-50 dark:bg-pink-900/20 text-pink-500",
+    iconClassName: "text-pink-500",
+  },
+  servers: {
+    labelKey: "contentpage.servers",
+    Icon: FaServer,
+    tone: "bg-sky-50 dark:bg-sky-900/20 text-sky-500",
+    iconClassName: "text-sky-500",
+  },
+  screenshots: {
+    labelKey: "contentpage.screenshots",
+    Icon: FaCamera,
+    tone: "bg-teal-50 dark:bg-teal-900/20 text-teal-500",
+    iconClassName: "text-teal-500",
+  },
+};
+
+export const CATALOG_META: Record<
+  DiscoverCatalog,
+  { labelKey: string; Icon: IconComponent; iconClassName: string }
+> = {
+  lip: { labelKey: "lip.title", Icon: FaCube, iconClassName: "text-green-500" },
+  curseforge: {
+    labelKey: "curseforge.title",
+    Icon: SiCurseforge,
+    iconClassName: "text-[#f16436]",
+  },
 };
 
 export type PrimaryNavItem = {
@@ -80,8 +147,8 @@ export type PrimaryNavItem = {
   isActive: boolean;
 };
 
-export type CatalogNavItem = {
-  key: DiscoverCatalog;
+export type ChildNavItem = {
+  key: string;
   label: string;
   path: string;
   Icon: IconComponent;
@@ -89,13 +156,23 @@ export type CatalogNavItem = {
   isActive: boolean;
 };
 
+/** A labeled group of Home's children: the instance's content, and the
+ * catalogs that install into it. */
+export type ChildNavGroup = {
+  key: "content" | "market";
+  label: string;
+  items: ChildNavItem[];
+};
+
 /** Primary destinations with labels, icons and the active state for the
- * current route, shared by the sidebar and the navbar layout. */
+ * current route, plus Home's child pages, shared by the sidebar and the
+ * navbar layout. */
 export const usePrimaryNav = () => {
   const { t } = useTranslation();
   const { pathname } = useLocation();
   const activeKey = getActiveNavKey(pathname);
   const activeCatalog = getActiveCatalog(pathname);
+  const activeSection = getActiveContentSection(pathname);
 
   useEffect(() => {
     if (!activeCatalog) return;
@@ -107,25 +184,45 @@ export const usePrimaryNav = () => {
   const items: PrimaryNavItem[] = PRIMARY_NAV.map((item) => ({
     key: item.key,
     label: t(NAV_LABEL_KEYS[item.key]),
-    // Resume the catalog browsed last instead of a chooser page.
-    path:
-      item.key === "discover"
-        ? catalogPath(activeCatalog ?? readLastCatalog())
-        : item.path,
+    path: item.path,
     Icon: NAV_ICONS[item.key],
     isActive: item.key === activeKey,
   }));
 
-  const catalogs: CatalogNavItem[] = DISCOVER_CATALOGS.map((item) => ({
-    key: item.key,
-    label: item.key === "lip" ? t("lip.title") : t("curseforge.title"),
-    path: item.path,
-    Icon: item.key === "lip" ? FaCube : SiCurseforge,
-    iconClassName: item.key === "lip" ? "text-green-500" : "text-[#f16436]",
-    isActive: item.key === activeCatalog,
-  }));
+  const homeGroups: ChildNavGroup[] = [
+    {
+      key: "content",
+      label: t("launcherpage.content_manage"),
+      items: CONTENT_SECTIONS.map((section) => {
+        const meta = CONTENT_SECTION_META[section.key];
+        return {
+          key: section.key,
+          label: t(meta.labelKey),
+          path: section.path,
+          Icon: meta.Icon,
+          iconClassName: meta.iconClassName,
+          isActive: section.key === activeSection,
+        };
+      }),
+    },
+    {
+      key: "market",
+      label: t("shell.nav.market"),
+      items: DISCOVER_CATALOGS.map((catalog) => {
+        const meta = CATALOG_META[catalog.key];
+        return {
+          key: catalog.key,
+          label: t(meta.labelKey),
+          path: catalog.path,
+          Icon: meta.Icon,
+          iconClassName: meta.iconClassName,
+          isActive: catalog.key === activeCatalog,
+        };
+      }),
+    },
+  ];
 
-  return { items, catalogs, activeKey };
+  return { items, homeGroups, activeKey };
 };
 
 /** Where a control switches from its compact to its full form. The navbar
@@ -247,19 +344,24 @@ export const ActivityButton: React.FC = () => {
   );
 };
 
-/** Current-instance switcher: inline on wide windows, and behind a compact
- * button on narrow ones so the bar never clips. */
+/** The app-wide current-instance switcher, the only one in the app: inline
+ * on wide windows, behind a compact button on narrow ones so the bar never
+ * clips, and hidden on pages that have no current instance. */
 export const ShellInstancePicker: React.FC<{
   isDisabled?: boolean;
   density?: ShellDensity;
 }> = ({ isDisabled, density = "topbar" }) => {
   const { t } = useTranslation();
   const { currentVersionName } = useCurrentVersion();
+  const { pathname } = useLocation();
   const [open, setOpen] = React.useState(false);
   const inline = useMediaQuery(PICKER_INLINE_QUERY[density]);
   const label = currentVersionName
     ? `${t("instance_picker.label")}: ${currentVersionName}`
     : t("instance_picker.label");
+
+  // The instance list, downloads and settings have no current instance.
+  if (!isInstanceScopedRoute(pathname)) return null;
 
   if (inline) {
     return (

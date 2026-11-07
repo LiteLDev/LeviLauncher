@@ -47,14 +47,18 @@ export const isRouteActive = (pathname: string, route: string): boolean => {
   );
 };
 
-export type PrimaryNavKey =
-  | "home"
-  | "instances"
-  | "mods"
-  | "content"
-  | "discover"
-  | "download"
-  | "settings";
+export type PrimaryNavKey = "home" | "instances" | "download" | "settings";
+
+/** Home owns the current instance: its content and the catalogs that install
+ * into it are Home's children, so they highlight Home in the navigation. */
+const HOME_CHILD_ROUTES = [
+  ROUTES.home,
+  ROUTES.content,
+  ROUTES.mods,
+  ROUTES.discover,
+  ROUTES.lip,
+  ROUTES.curseForge,
+] as const;
 
 /** Primary destinations shared by the sidebar and the navbar layout. Each
  * `match` prefix makes nested routes highlight their parent destination. */
@@ -63,15 +67,8 @@ export const PRIMARY_NAV: ReadonlyArray<{
   path: string;
   match: readonly string[];
 }> = [
-  { key: "home", path: ROUTES.home, match: [ROUTES.home] },
+  { key: "home", path: ROUTES.home, match: HOME_CHILD_ROUTES },
   { key: "instances", path: ROUTES.instances, match: [ROUTES.instances] },
-  { key: "mods", path: ROUTES.mods, match: [ROUTES.mods] },
-  { key: "content", path: ROUTES.content, match: [ROUTES.content] },
-  {
-    key: "discover",
-    path: ROUTES.discover,
-    match: [ROUTES.discover, ROUTES.lip, ROUTES.curseForge],
-  },
   {
     key: "download",
     path: ROUTES.download,
@@ -88,6 +85,41 @@ export const getActiveNavKey = (pathname: string): PrimaryNavKey | null =>
   PRIMARY_NAV.find((item) =>
     item.match.some((route) => isRouteActive(pathname, route)),
   )?.key ?? null;
+
+/** Pages that act on the current instance. Only these show the top bar's
+ * instance picker; instance list, downloads and settings have no current
+ * instance. */
+export const isInstanceScopedRoute = (pathname: string): boolean =>
+  HOME_CHILD_ROUTES.some((route) => isRouteActive(pathname, route));
+
+export type ContentSectionKey =
+  | "worlds"
+  | "mods"
+  | "resourcePacks"
+  | "behaviorPacks"
+  | "skinPacks"
+  | "servers"
+  | "screenshots";
+
+/** The current instance's content, in the order Home and the sidebar list it. */
+export const CONTENT_SECTIONS: ReadonlyArray<{
+  key: ContentSectionKey;
+  path: string;
+}> = [
+  { key: "worlds", path: ROUTES.contentWorlds },
+  { key: "mods", path: ROUTES.mods },
+  { key: "resourcePacks", path: ROUTES.contentResourcePacks },
+  { key: "behaviorPacks", path: ROUTES.contentBehaviorPacks },
+  { key: "skinPacks", path: ROUTES.contentSkinPacks },
+  { key: "servers", path: ROUTES.contentServers },
+  { key: "screenshots", path: ROUTES.contentScreenshots },
+];
+
+export const getActiveContentSection = (
+  pathname: string,
+): ContentSectionKey | null =>
+  CONTENT_SECTIONS.find((item) => isRouteActive(pathname, item.path))?.key ??
+  null;
 
 export type DiscoverCatalog = "lip" | "curseforge";
 

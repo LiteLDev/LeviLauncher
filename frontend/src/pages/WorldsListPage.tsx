@@ -18,7 +18,7 @@ import {
 
 import React, { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { ROUTES, routeTo } from "@/constants/routes";
+import { routeTo } from "@/constants/routes";
 
 import {
   FaSortAmountDown,
@@ -36,7 +36,6 @@ import {
   FaTimes,
   FaHdd,
   FaExchangeAlt,
-  FaArrowLeft,
 } from "react-icons/fa";
 import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import {
@@ -60,7 +59,6 @@ import {
 import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { notify } from "@/utils/activity";
-import { InstancePicker } from "@/components/InstancePicker";
 import { ContentTaskDialog, useContentTask } from "@/components/ContentTaskDialog";
 import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
@@ -648,20 +646,7 @@ export default function WorldsListPage() {
         <Card.Content className="p-4 min-[1200px]:p-6 flex flex-col gap-4">
           <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
             <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
-              <Tooltip>
-                <Button
-                  isIconOnly
-                  aria-label={t("content_task.back_to_hub")}
-                  onPress={() => navigate(ROUTES.content)}
-                  variant={"ghost"}
-                  className={"rounded-full"}
-                >
-                  <FaArrowLeft size={18} />
-                </Button>
-                <Tooltip.Content>{t("content_task.back_to_hub")}</Tooltip.Content>
-              </Tooltip>
               <PageHeader title={t("contentpage.worlds_list")} />
-              <InstancePicker size="sm" />
               {roots.packageType !== "uwp" && !!currentVersionName && playerPicker()}
             </div>
             <div className="flex flex-wrap items-center gap-2">
@@ -874,8 +859,7 @@ export default function WorldsListPage() {
       {!currentVersionName ? (
         // Resolve the missing instance in place instead of redirecting.
         <div role="status" className="flex flex-col items-center gap-3 py-12 text-center text-muted">
-          <p>{t("content_task.choose_instance_hint")}</p>
-          <InstancePicker />
+          <p>{t("content_sub.no_instance_body")}</p>
         </div>
       ) : loading || playersLoading ? (
         <div className="flex flex-col items-center justify-center py-16 gap-4">

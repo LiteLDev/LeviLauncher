@@ -2,7 +2,11 @@
   "shell": {
     "nav": {
       "content": "Inhalte",
-      "discover": "Entdecken"
+      "discover": "Entdecken",
+      "market": "Inhaltsmarkt",
+      "expand_sidebar": "Seitenleiste ausklappen",
+      "collapse_sidebar": "Seitenleiste einklappen",
+      "toggle_group": "{{name}} ein- oder ausblenden"
     },
     "search": "Befehle durchsuchen",
     "search_placeholder": "Suchen…",

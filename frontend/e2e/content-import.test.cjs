@@ -54,7 +54,7 @@ async function run(viewport, label, check, scenario = 'content-import') {
   const errors = [];
   page.on('pageerror', error => errors.push(error.message));
   try {
-    await page.goto(`${baseURL}?scenario=${scenario}#${ROUTES.content}`);
+    await page.goto(`${baseURL}?scenario=${scenario}#${ROUTES.home}`);
     await importButton(page).waitFor();
     if (!scenario.startsWith('uwp')) await page.getByText('Preview player', { exact: true }).waitFor();
     await check(page);

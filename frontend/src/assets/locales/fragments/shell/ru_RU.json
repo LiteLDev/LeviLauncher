@@ -2,7 +2,11 @@
   "shell": {
     "nav": {
       "content": "Контент",
-      "discover": "Обзор"
+      "discover": "Обзор",
+      "market": "Магазин контента",
+      "expand_sidebar": "Развернуть боковую панель",
+      "collapse_sidebar": "Свернуть боковую панель",
+      "toggle_group": "Показать или скрыть {{name}}"
     },
     "search": "Поиск команд",
     "search_placeholder": "Поиск…",

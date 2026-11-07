@@ -72,7 +72,6 @@ const InstanceSelectPage = lazy(() =>
 const InstanceSettingsPage = lazy(() => import("@/pages/InstanceSettingsPage"));
 const ModsPage = lazy(() => import("@/pages/ModsPage"));
 const UpdatingPage = lazy(() => import("@/pages/UpdatingPage"));
-const ContentPage = lazy(() => import("@/pages/ContentPage"));
 const WorldsListPage = lazy(() => import("@/pages/WorldsListPage"));
 const WorldLevelDatEditorPage = lazy(
   () => import("@/pages/WorldLevelDatEditorPage"),
@@ -215,7 +214,7 @@ function App() {
 
   // Extracted hooks
   const { layoutMode } = useLayoutMode();
-  const railExpanded = useRailExpanded();
+  const { expanded: railExpanded, toggle: toggleRail } = useRailExpanded();
   const railRem = railExpanded ? SHELL_SIZE.RAIL_EXPANDED_REM : SHELL_SIZE.RAIL_REM;
   useAnimations();
   const { themeColorsReady } = useThemeColors(resolvedTheme);
@@ -371,6 +370,7 @@ function App() {
                               themeMode={themeMode}
                               tryNavigate={tryNavigate}
                               expanded={railExpanded}
+                              onToggleExpanded={toggleRail}
                             />
                             <TopBar
                               navLocked={effectiveNavLocked}
@@ -458,7 +458,10 @@ function App() {
                               />
                               <Route
                                 path={ROUTES.content}
-                                element={<ContentPage />}
+                                element={
+                                  // Content management lives on Home.
+                                  <Navigate to={ROUTES.home} replace />
+                                }
                               />
                               <Route
                                 path={ROUTES.contentWorlds}

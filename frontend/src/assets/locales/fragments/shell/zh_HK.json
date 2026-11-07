@@ -2,7 +2,11 @@
   "shell": {
     "nav": {
       "content": "內容",
-      "discover": "探索"
+      "discover": "探索",
+      "market": "內容市場",
+      "expand_sidebar": "展開側欄",
+      "collapse_sidebar": "收起側欄",
+      "toggle_group": "展開或收起{{name}}"
     },
     "search": "搜尋命令",
     "search_placeholder": "搜尋…",

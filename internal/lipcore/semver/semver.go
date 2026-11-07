@@ -4,16 +4,14 @@
 // the lip 0.38 surface (ParseStrict, VersionRange, ExactVersionConstraint,
 // ParseVersionTag).
 //
-// Deviation from the C# library: version numbers are uint64 instead of
-// BigInteger, so numbers that do not fit (and range bounds that would need
-// to go past math.MaxUint64) are reported as parse errors.
+// Version numbers have arbitrary size (BigInteger in the C# library, Number
+// here), and parse errors carry the C# library's FormatException messages.
 package semver
 
 import (
 	"cmp"
 	"errors"
 	"slices"
-	"strconv"
 	"strings"
 
 	xsemver "golang.org/x/mod/semver"
@@ -27,7 +25,7 @@ const maxVersionLength = 1024
 
 // Version is a SemVer 2.0 version.
 type Version struct {
-	Major, Minor, Patch uint64
+	Major, Minor, Patch Number
 	// Prerelease identifiers, e.g. ["client", "11"] for "-client.11".
 	Prerelease []string
 	// Metadata (build) identifiers; ignored for precedence.
@@ -81,13 +79,13 @@ func MustParse(s string) Version {
 // Compare compares precedence per SemVer 2.0 (metadata ignored); returns
 // -1, 0 or 1.
 func (v Version) Compare(o Version) int {
-	if c := cmp.Compare(v.Major, o.Major); c != 0 {
+	if c := v.Major.Compare(o.Major); c != 0 {
 		return c
 	}
-	if c := cmp.Compare(v.Minor, o.Minor); c != 0 {
+	if c := v.Minor.Compare(o.Minor); c != 0 {
 		return c
 	}
-	if c := cmp.Compare(v.Patch, o.Patch); c != 0 {
+	if c := v.Patch.Compare(o.Patch); c != 0 {
 		return c
 	}
 	// A release has higher precedence than any prerelease.
@@ -114,11 +112,11 @@ func (v Version) IsPrerelease() bool { return len(v.Prerelease) > 0 }
 // String formats v as SemVersion.ToString does ("1.2.3-a.1+b").
 func (v Version) String() string {
 	var b strings.Builder
-	b.WriteString(uitoa(v.Major))
+	b.WriteString(v.Major.String())
 	b.WriteByte('.')
-	b.WriteString(uitoa(v.Minor))
+	b.WriteString(v.Minor.String())
 	b.WriteByte('.')
-	b.WriteString(uitoa(v.Patch))
+	b.WriteString(v.Patch.String())
 	if len(v.Prerelease) > 0 {
 		b.WriteByte('-')
 		b.WriteString(strings.Join(v.Prerelease, "."))
@@ -284,5 +282,3 @@ func trimLeadingZeros(s string) string {
 	}
 	return s[i:]
 }
-
-func uitoa(n uint64) string { return strconv.FormatUint(n, 10) }

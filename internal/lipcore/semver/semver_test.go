@@ -55,7 +55,7 @@ func TestParseStrict(t *testing.T) {
 		"1.1.01", "1.2.3.DEV", "1.2-SNAPSHOT", "1.2.31.2.3----RC-SNAPSHOT.12.09.1--..12+788",
 		"9.8.7+meta+meta", "9.8.7-whatever+meta+meta", "1@.2.3", "1.0.0@-alpha",
 		"1.2.3-😞+b", "1.2.3-a+😞", "1.0.0-á", "v1.2.3", "V1.2.3", " 1.2.3", "1.2.3 ",
-		"1.2.3-", "1.2.3+", "1.2.3-*", "*", "18446744073709551616.0.0",
+		"1.2.3-", "1.2.3+", "1.2.3-*", "*",
 	}
 	for _, s := range invalid {
 		if v, err := Parse(s); err == nil {
@@ -285,7 +285,6 @@ func TestParseRangeStandardInvalid(t *testing.T) {
 		"<1.*", "<=1.2.*", ">*", ">=1.2.3-*", "=1.2.*", "^1.2.*", "~1.2.*",
 		// Strict: no "v", no partial versions, no metadata, no hyphen ranges.
 		"v1.2.3", "1.2", "1", "1.2.3+build", "1.0.0 - 2.0.0", "1.x", ">=",
-		"^18446744073709551615.0.0",
 		strings.Repeat("1", maxRangeLength+1),
 	}
 	for _, s := range invalid {

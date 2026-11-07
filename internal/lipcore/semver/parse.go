@@ -67,33 +67,80 @@ func utf16Len(s string) int {
 	return n
 }
 
-// charAt returns the (possibly multi-byte) character starting at s[i] for
-// error messages.
+// displayLimit is Semver.Utility.Display.Limit.
+const displayLimit = 100
+
+// limitLength is StringExtensions.LimitLength / ToStringLimitLength: text
+// longer than 100 UTF-16 code units is cut to its first 97 and "..." is
+// appended. A surrogate pair cut in half leaves a lone surrogate in .NET,
+// which encodes as U+FFFD.
+func limitLength(s string) string {
+	if utf16Len(s) <= displayLimit {
+		return s
+	}
+	var b strings.Builder
+	n := 0
+	for _, r := range s {
+		w := 1
+		if r > 0xFFFF {
+			w = 2
+		}
+		if n+w > displayLimit-3 {
+			if n < displayLimit-3 {
+				b.WriteRune(utf8.RuneError)
+			}
+			break
+		}
+		b.WriteRune(r)
+		n += w
+	}
+	b.WriteString("...")
+	return b.String()
+}
+
+// charAt returns the character starting at s[i] as .NET formats the UTF-16
+// char there: for a character outside the BMP that is a lone high
+// surrogate, which encodes as U+FFFD.
 func charAt(s string, i int) string {
 	r, _ := utf8.DecodeRuneInString(s[i:])
+	if r > 0xFFFF {
+		r = utf8.RuneError
+	}
 	return string(r)
+}
+
+// FormatError is a version or range parse failure. Its message is the one
+// of the FormatException Semver 3.0.0 throws for the same input (lip shows
+// it as the cause of its own message).
+type FormatError struct{ Message string }
+
+func (e *FormatError) Error() string { return e.Message }
+
+func formatError(format string, args ...any) error {
+	return &FormatError{Message: fmt.Sprintf(format, args...)}
 }
 
 // parseVersion ports SemVersionParser.Parse.
 func parseVersion(version string, style styles, opts *parsingOptions, maxLength int) (Version, wildcardVersion, error) {
 	wildcard := wildcardNone
-	fail := func(format string, args ...any) (Version, wildcardVersion, error) {
-		return Version{}, wildcardNone, fmt.Errorf("semver: "+format, args...)
+	// fail formats a message whose only argument is the version.
+	fail := func(format string) (Version, wildcardVersion, error) {
+		return Version{}, wildcardNone, formatError(format, limitLength(version))
 	}
 
 	if len(version) == 0 {
-		return fail("empty string is not a valid version")
+		return Version{}, wildcardNone, &FormatError{Message: "Empty string is not a valid version."}
 	}
 	if utf16Len(version) > maxLength {
-		return fail("exceeded maximum length of %d for %q", maxLength, version)
+		return Version{}, wildcardNone, formatError("Exceeded maximum length of %d for '%s'.", maxLength, limitLength(version))
 	}
 
 	main := strings.TrimLeftFunc(version, unicode.IsSpace)
 	if main == "" {
-		return fail("whitespace is not a valid version")
+		return Version{}, wildcardNone, &FormatError{Message: "Whitespace is not a valid version."}
 	}
 	if len(main) < len(version) && !style.has(styleAllowLeadingWS) {
-		return fail("version %q has leading whitespace", version)
+		return fail("Version '%s' has leading whitespace.")
 	}
 	withTrailing := len(main)
 	main = strings.TrimRightFunc(main, unicode.IsSpace)
@@ -106,12 +153,12 @@ func parseVersion(version string, style styles, opts *parsingOptions, maxLength 
 		switch mmp[0] {
 		case 'v':
 			if !style.has(styleAllowLowerV) {
-				return fail("leading 'v' in %q", version)
+				return fail("Leading 'v' in '%s'.")
 			}
 			mmp = mmp[1:]
 		case 'V':
 			if !style.has(styleAllowUpperV) {
-				return fail("leading 'V' in %q", version)
+				return fail("Leading 'V' in '%s'.")
 			}
 			mmp = mmp[1:]
 		}
@@ -121,12 +168,12 @@ func parseVersion(version string, style styles, opts *parsingOptions, maxLength 
 	numbers := strings.Split(mmp, ".")
 	var v Version
 
-	parseNumber := func(kind string, idx int, optional, wildcardRequired bool) (uint64, bool, error) {
+	parseNumber := func(kind string, idx int, optional, wildcardRequired bool) (Number, bool, error) {
 		if idx >= len(numbers) {
 			if !optional {
-				return 0, false, fmt.Errorf("semver: %s version missing in %q", kind, version)
+				return Number{}, false, formatError("%s version missing in '%s'.", kind, limitLength(version))
 			}
-			return 0, opts.missingVersionsAreWildcards, nil
+			return Number{}, opts.missingVersionsAreWildcards, nil
 		}
 		return parseVersionNumber(kind, version, numbers[idx], allowLeadingZeros, wildcardRequired, opts)
 	}
@@ -156,9 +203,10 @@ func parseVersion(version string, style styles, opts *parsingOptions, maxLength 
 	if len(numbers) > 3 {
 		fourth := numbers[3]
 		if len(fourth) > 0 && isDigit(fourth[0]) {
-			return fail("fourth version number in %q", version)
+			return fail("Fourth version number in '%s'.")
 		}
-		return fail("the prerelease identifiers should be prefixed by '-' instead of '.' in %q", version)
+		// "identfiers" is the library's spelling.
+		return fail("The prerelease identfiers should be prefixed by '-' instead of '.' in '%s'.")
 	}
 
 	if hasPrerelease {
@@ -175,11 +223,12 @@ func parseVersion(version string, style styles, opts *parsingOptions, maxLength 
 	if hasMetadata {
 		for _, id := range strings.Split(metadataSeg, ".") {
 			if id == "" {
-				return fail("missing metadata identifier in %q", version)
+				return fail("Missing metadata identifier in '%s'.")
 			}
 			for i := 0; i < len(id); i++ {
 				if c := id[i]; !isAlphaOrHyphen(c) && !isDigit(c) {
-					return fail("invalid character '%s' in metadata identifier in %q", charAt(id, i), version)
+					return Version{}, wildcardNone, formatError("Invalid character '%s' in metadata identifier in '%s'.",
+						charAt(id, i), limitLength(version))
 				}
 			}
 			v.Metadata = append(v.Metadata, id)
@@ -187,51 +236,38 @@ func parseVersion(version string, style styles, opts *parsingOptions, maxLength 
 	}
 
 	if hasTrailingWS && !style.has(styleAllowTrailingWS) {
-		return fail("version %q has trailing whitespace", version)
+		return fail("Version '%s' has trailing whitespace.")
 	}
 	return v, wildcard, nil
 }
 
-func parseVersionNumber(kind, version, segment string, allowLeadingZeros, wildcardRequired bool, opts *parsingOptions) (uint64, bool, error) {
+func parseVersionNumber(kind, version, segment string, allowLeadingZeros, wildcardRequired bool, opts *parsingOptions) (Number, bool, error) {
 	if segment == "" {
-		return 0, false, fmt.Errorf("semver: %s version missing in %q", kind, version)
+		return Number{}, false, formatError("%s version missing in '%s'.", kind, limitLength(version))
 	}
 	if opts.allowWildcardMajorMinorPatch && opts.isWildcard(segment[0]) {
 		if len(segment) > 1 {
-			return 0, true, fmt.Errorf("semver: %s version is a wildcard and should contain only 1 character in %q", kind, version)
+			return Number{}, true, formatError("%s version is a wildcard and should contain only 1 character in '%s'.",
+				kind, limitLength(version))
 		}
-		return 0, true, nil
+		return Number{}, true, nil
 	}
 	if wildcardRequired {
-		return 0, false, fmt.Errorf("semver: %s version should be a wildcard because the preceding version is a wildcard in %q", kind, version)
+		return Number{}, false, formatError("%s version should be a wildcard because the preceding version is a wildcard in '%s'.",
+			kind, limitLength(version))
 	}
 	withZeros := len(segment)
 	segment = trimLeadingZeros(segment)
 	for i := 0; i < len(segment); i++ {
 		if !isDigit(segment[i]) {
-			return 0, false, fmt.Errorf("semver: %s version contains invalid character '%s' in %q", kind, charAt(segment, i), version)
+			return Number{}, false, formatError("%s version contains invalid character '%s' in '%s'.",
+				kind, charAt(segment, i), limitLength(version))
 		}
 	}
 	if !allowLeadingZeros && withZeros > len(segment) {
-		return 0, false, fmt.Errorf("semver: %s version has leading zero in %q", kind, version)
+		return Number{}, false, formatError("%s version has leading zero in '%s'.", kind, limitLength(version))
 	}
-	n, ok := parseUint(segment)
-	if !ok {
-		return 0, false, fmt.Errorf("semver: %s version %q is too large in %q", kind, segment, version)
-	}
-	return n, false, nil
-}
-
-func parseUint(digits string) (uint64, bool) {
-	var n uint64
-	for i := 0; i < len(digits); i++ {
-		d := uint64(digits[i] - '0')
-		if n > (math.MaxUint64-d)/10 {
-			return 0, false
-		}
-		n = n*10 + d
-	}
-	return n, true
+	return numberFromDigits(segment), false, nil
 }
 
 func parsePrerelease(version, segment string, allowLeadingZeros bool, opts *parsingOptions) ([]string, bool, error) {
@@ -239,10 +275,10 @@ func parsePrerelease(version, segment string, allowLeadingZeros bool, opts *pars
 	isWildcard := false
 	for _, id := range strings.Split(segment, ".") {
 		if isWildcard {
-			return nil, false, fmt.Errorf("semver: prerelease identifier follows wildcard prerelease identifier in %q", version)
+			return nil, false, formatError("Prerelease identifier follows wildcard prerelease identifier in '%s'.", limitLength(version))
 		}
 		if id == "" {
-			return nil, false, fmt.Errorf("semver: missing prerelease identifier in %q", version)
+			return nil, false, formatError("Missing prerelease identifier in '%s'.", limitLength(version))
 		}
 		isNumeric := true
 		for i := 0; i < len(id); i++ {
@@ -253,18 +289,20 @@ func parsePrerelease(version, segment string, allowLeadingZeros bool, opts *pars
 			case opts.allowWildcardPrerelease && opts.isWildcard(c):
 				isWildcard = true
 			case !isDigit(c):
-				return nil, false, fmt.Errorf("semver: invalid character '%s' in prerelease identifier in %q", charAt(id, i), version)
+				return nil, false, formatError("Invalid character '%s' in prerelease identifier in '%s'.",
+					charAt(id, i), limitLength(version))
 			}
 		}
 		if isWildcard {
 			if len(id) > 1 {
-				return nil, false, fmt.Errorf("semver: prerelease version is a wildcard and should contain only 1 character in %q", version)
+				return nil, false, formatError("Prerelease version is a wildcard and should contain only 1 character in '%s'.",
+					limitLength(version))
 			}
 			continue
 		}
 		if isNumeric && id[0] == '0' && len(id) > 1 {
 			if !allowLeadingZeros {
-				return nil, false, fmt.Errorf("semver: leading zero in prerelease identifier in version %q", version)
+				return nil, false, formatError("Leading zero in prerelease identifier in version '%s'.", limitLength(version))
 			}
 			id = trimLeadingZeros(id)
 		}

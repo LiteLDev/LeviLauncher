@@ -1,0 +1,30 @@
+{
+  "content_task": {
+    "import_title": "导入内容",
+    "transfer_title": "转移内容",
+    "status_running": "处理中…",
+    "status_success": "完成",
+    "status_overwritten": "已覆盖",
+    "status_skipped": "已跳过（已存在）",
+    "summary": "成功 {{ok}} 项，失败 {{failed}} 项，跳过 {{skipped}} 项",
+    "skip": "跳过",
+    "overwrite_body": "目标位置已存在该项，是否覆盖？",
+    "apply_to_all": "对剩余的重复项执行相同操作",
+    "progress": "已完成 {{done}} / {{total}}",
+    "progress_label": "进度",
+    "log_label": "项目日志",
+    "nothing_done": "没有导入任何内容。",
+    "transfer_done": "转移完成",
+    "transfer_partial": "转移完成（部分失败）",
+    "transfer_failed": "转移失败",
+    "no_instance_title": "请先选择实例",
+    "no_instance_body": "请在页面顶部的实例选择器中选择要操作的实例。",
+    "load_targets_failed": "无法加载实例列表",
+    "choose_instance_hint": "选择一个实例来管理它的世界、资源包和其他内容。",
+    "back_to_hub": "返回内容管理",
+    "clear_search": "清除搜索",
+    "world_deleted": "世界已删除",
+    "delete_failed": "删除失败",
+    "world_saved": "level.dat 已保存"
+  }
+}

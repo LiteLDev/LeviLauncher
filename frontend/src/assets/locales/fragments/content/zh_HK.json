@@ -1,0 +1,30 @@
+{
+  "content_task": {
+    "import_title": "匯入內容",
+    "transfer_title": "轉移內容",
+    "status_running": "處理中…",
+    "status_success": "完成",
+    "status_overwritten": "已覆蓋",
+    "status_skipped": "已略過（已存在）",
+    "summary": "成功 {{ok}} 項，失敗 {{failed}} 項，略過 {{skipped}} 項",
+    "skip": "略過",
+    "overwrite_body": "目標位置已存在該項目，是否覆蓋？",
+    "apply_to_all": "對其餘重複項目執行相同操作",
+    "progress": "已完成 {{done}} / {{total}}",
+    "progress_label": "進度",
+    "log_label": "項目記錄",
+    "nothing_done": "沒有匯入任何內容。",
+    "transfer_done": "轉移完成",
+    "transfer_partial": "轉移完成（部分失敗）",
+    "transfer_failed": "轉移失敗",
+    "no_instance_title": "請先選擇實例",
+    "no_instance_body": "請在頁面頂部的實例選擇器中選擇要操作的實例。",
+    "load_targets_failed": "無法載入實例列表",
+    "choose_instance_hint": "選擇一個實例來管理它的世界、資源包和其他內容。",
+    "back_to_hub": "返回內容管理",
+    "clear_search": "清除搜尋",
+    "world_deleted": "世界已刪除",
+    "delete_failed": "刪除失敗",
+    "world_saved": "level.dat 已儲存"
+  }
+}

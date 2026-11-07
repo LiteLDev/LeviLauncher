@@ -12,7 +12,7 @@ import {
 import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
 import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import { readCurrentVersionName } from "@/utils/currentVersion";
+import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { compareVersions } from "@/utils/version";
 import {
   countDirectories,
@@ -20,6 +20,8 @@ import {
   normalizeDroppedFiles,
 } from "@/utils/fs";
 import { getPlayerGamertagMap, listPlayers } from "@/utils/content";
+import { notify } from "@/utils/activity";
+import { useContentTask, type ContentTask } from "@/components/ContentTaskDialog";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import * as contentService from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 
@@ -31,15 +33,19 @@ type TransferTargetVersion = {
   icon?: string;
 };
 
+const isDuplicateError = (err: string) =>
+  err === "ERR_DUPLICATE_FOLDER" || err === "ERR_DUPLICATE_UUID";
+
 export const useContentPage = (t: TFunc) => {
   const navigate = useNavigate();
   const location = useLocation() as any;
+  const { currentVersionName } = useCurrentVersion();
+  const versionRef = React.useRef(currentVersionName);
+  versionRef.current = currentVersionName;
 
   // --- State ---
   const [loading, setLoading] = React.useState<boolean>(true);
   const [error, setError] = React.useState<string>("");
-  const [currentVersionName, setCurrentVersionName] =
-    React.useState<string>("");
   const [roots, setRoots] = React.useState<types.ContentRoots>(EMPTY_CONTENT_ROOTS);
   const [players, setPlayers] = React.useState<string[]>([]);
   const [selectedPlayer, setSelectedPlayer] = React.useState<string>("");
@@ -53,14 +59,6 @@ export const useContentPage = (t: TFunc) => {
   const [skinCount, setSkinCount] = React.useState<number>(0);
   const [serversCount, setServersCount] = React.useState<number>(0);
   const [screenshotsCount, setScreenshotsCount] = React.useState<number>(0);
-  const [importing, setImporting] = React.useState(false);
-  const [errorMsg, setErrorMsg] = React.useState("");
-  const [currentFile, setCurrentFile] = React.useState("");
-  const [resultSuccess, setResultSuccess] = React.useState<string[]>([]);
-  const [resultFailed, setResultFailed] = React.useState<
-    Array<{ name: string; err: string }>
-  >([]);
-  const [transferring, setTransferring] = React.useState(false);
   const [transferTargets, setTransferTargets] = React.useState<
     TransferTargetVersion[]
   >([]);
@@ -68,35 +66,14 @@ export const useContentPage = (t: TFunc) => {
     string[]
   >([]);
 
-  // --- Refs ---
-  const dupResolveRef = React.useRef<((overwrite: boolean) => void) | null>(
-    null,
-  );
-  const dupNameRef = React.useRef<string>("");
-  const playerSelectResolveRef = React.useRef<
-    ((player: string) => void) | null
-  >(null);
-  const importInProgressRef = React.useRef(false);
+  // --- Tasks ---
+  // Import and transfer each run in one dialog with a growing per-item log.
+  const importTask = useContentTask("import");
+  const transferTask = useContentTask("transfer");
+  const busyRef = React.useRef(false);
+  const refreshGeneration = React.useRef(0);
 
   // --- Disclosures ---
-  const {
-    isOpen: errOpen,
-    open: errOnOpen,
-    close: errOnClose,
-    setOpen: errOnOpenChange,
-  } = useOverlayState();
-  const {
-    isOpen: dupOpen,
-    open: dupOnOpen,
-    close: dupOnClose,
-    setOpen: dupOnOpenChange,
-  } = useOverlayState();
-  const {
-    isOpen: playerSelectOpen,
-    open: playerSelectOnOpen,
-    close: playerSelectOnClose,
-    setOpen: playerSelectOnOpenChange,
-  } = useOverlayState();
   const {
     isOpen: transferTargetOpen,
     open: transferTargetOnOpen,
@@ -106,10 +83,12 @@ export const useContentPage = (t: TFunc) => {
 
   // --- Handlers ---
   const refreshAll = async (playerToRefresh?: string) => {
+    // A newer refresh (e.g. after switching instance) wins over this one.
+    const generation = ++refreshGeneration.current;
+    const stale = () => generation !== refreshGeneration.current;
     setLoading(true);
     setError("");
-    const name = readCurrentVersionName();
-    setCurrentVersionName(name);
+    const name = versionRef.current;
     try {
       if (!name) {
         setRoots(EMPTY_CONTENT_ROOTS);
@@ -119,9 +98,12 @@ export const useContentPage = (t: TFunc) => {
         setWorldsCount(0);
         setResCount(0);
         setBpCount(0);
+        setSkinCount(0);
+        setServersCount(0);
         setScreenshotsCount(0);
       } else {
         const r = await GetContentRoots(name);
+        if (stale()) return;
         const safe = r || EMPTY_CONTENT_ROOTS;
         setRoots(safe);
 
@@ -131,6 +113,7 @@ export const useContentPage = (t: TFunc) => {
           isShared =
             meta.gameVersion && compareVersions(meta.gameVersion, "1.26.0") > 0;
         } catch {}
+        if (stale()) return;
         isShared = isShared || safe.packageType === "uwp";
         setIsSharedMode(isShared);
 
@@ -144,12 +127,14 @@ export const useContentPage = (t: TFunc) => {
             minecraft.ListServers(name, ""),
             contentService.ListScreenshots(name, ""),
           ]);
+          if (stale()) return;
           setWorldsCount(worlds);
           setSkinCount(skins);
           setServersCount(servers?.length || 0);
           setScreenshotsCount(screenshots?.length || 0);
         } else if (safe.usersRoot) {
           const names = await listPlayers(safe.usersRoot);
+          if (stale()) return;
           setPlayers(names);
 
           let nextPlayer = names[0] || "";
@@ -167,45 +152,41 @@ export const useContentPage = (t: TFunc) => {
           }
 
           const loadCounts = async (player: string) => {
-            if (player) {
-              const wp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
-              setWorldsCount(await countDirectories(wp));
-              if (isShared) {
-                if (safe.resourcePacks) {
-                  const dir = safe.resourcePacks.replace(
-                    /[\\/]resource_packs[\\/]?$/,
-                    "",
-                  );
-                  const sep = safe.resourcePacks.includes("/") ? "/" : "\\";
-                  const sp = `${dir}${sep}skin_packs`;
-                  setSkinCount(await countDirectories(sp));
-                } else {
-                  setSkinCount(0);
-                }
-              } else {
-                const sp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
-                setSkinCount(await countDirectories(sp));
-              }
-              const srvs = await (minecraft as any)?.ListServers?.(
-                name,
-                player,
-              );
-              setServersCount(srvs?.length || 0);
-              try {
-                const shots = await (contentService as any)?.ListScreenshots?.(
-                  name,
-                  player,
-                );
-                setScreenshotsCount(Array.isArray(shots) ? shots.length : 0);
-              } catch {
-                setScreenshotsCount(0);
-              }
-            } else {
+            if (stale()) return;
+            if (!player) {
               setWorldsCount(0);
               setSkinCount(0);
               setServersCount(0);
               setScreenshotsCount(0);
+              return;
             }
+            const wp = `${safe.usersRoot}\\${player}\\games\\com.mojang\\minecraftWorlds`;
+            let skinsPath = `${safe.usersRoot}\\${player}\\games\\com.mojang\\skin_packs`;
+            if (isShared) {
+              skinsPath = "";
+              if (safe.resourcePacks) {
+                const dir = safe.resourcePacks.replace(
+                  /[\\/]resource_packs[\\/]?$/,
+                  "",
+                );
+                const sep = safe.resourcePacks.includes("/") ? "/" : "\\";
+                skinsPath = `${dir}${sep}skin_packs`;
+              }
+            }
+            const [worlds, skins, srvs, shots] = await Promise.all([
+              countDirectories(wp),
+              skinsPath ? countDirectories(skinsPath) : Promise.resolve(0),
+              (minecraft as any)?.ListServers?.(name, player),
+              Promise.resolve(
+                (contentService as any)?.ListScreenshots?.(name, player),
+              ).catch(() => []),
+            ]);
+            // Drop results that arrive after a newer refresh started.
+            if (stale()) return;
+            setWorldsCount(worlds);
+            setSkinCount(skins);
+            setServersCount(srvs?.length || 0);
+            setScreenshotsCount(Array.isArray(shots) ? shots.length : 0);
           };
 
           await loadCounts(
@@ -215,6 +196,7 @@ export const useContentPage = (t: TFunc) => {
           (async () => {
             try {
               const map = await getPlayerGamertagMap(safe.usersRoot);
+              if (stale()) return;
               setPlayerGamertagMap(map);
 
               if (
@@ -222,7 +204,7 @@ export const useContentPage = (t: TFunc) => {
                 !names.includes(currentPlayer)
               ) {
                 const tag = await GetLocalUserGamertag();
-                if (tag) {
+                if (tag && !stale()) {
                   let matched = "";
                   for (const p of names) {
                     if (map[p] === tag) {
@@ -247,13 +229,18 @@ export const useContentPage = (t: TFunc) => {
           setServersCount(0);
           setScreenshotsCount(0);
         }
-        setResCount(await countDirectories(safe.resourcePacks));
-        setBpCount(await countDirectories(safe.behaviorPacks));
+        const [res, bp] = await Promise.all([
+          countDirectories(safe.resourcePacks),
+          countDirectories(safe.behaviorPacks),
+        ]);
+        if (stale()) return;
+        setResCount(res);
+        setBpCount(bp);
       }
     } catch (e) {
-      setError(t("contentpage.error_resolve_paths") as string);
+      if (!stale()) setError(t("contentpage.error_resolve_paths") as string);
     } finally {
-      setLoading(false);
+      if (!stale()) setLoading(false);
     }
   };
 
@@ -287,13 +274,13 @@ export const useContentPage = (t: TFunc) => {
         setSkinCount(await countDirectories(sp));
       }
       const srvs = await (minecraft as any)?.ListServers?.(
-        currentVersionName || readCurrentVersionName(),
+        currentVersionName,
         player,
       );
       setServersCount(srvs?.length || 0);
       try {
         const shots = await (contentService as any)?.ListScreenshots?.(
-          currentVersionName || readCurrentVersionName(),
+          currentVersionName,
           player,
         );
         setScreenshotsCount(Array.isArray(shots) ? shots.length : 0);
@@ -305,274 +292,151 @@ export const useContentPage = (t: TFunc) => {
     }
   };
 
+  const importOne = async (
+    name: string,
+    path: string,
+    player: string,
+    overwrite: boolean,
+  ): Promise<string> => {
+    const lower = path.toLowerCase();
+    const svc = contentService as any;
+    if (lower.endsWith(".mcworld")) {
+      return await svc?.ImportMcworldPath?.(name, player, path, overwrite);
+    }
+    const isAddon = lower.endsWith(".mcaddon");
+    const withPlayer = isAddon
+      ? svc?.ImportMcaddonPathWithPlayer
+      : svc?.ImportMcpackPathWithPlayer;
+    if (player && typeof withPlayer === "function") {
+      return await withPlayer(name, player, path, overwrite);
+    }
+    const plain = isAddon ? svc?.ImportMcaddonPath : svc?.ImportMcpackPath;
+    return await plain?.(name, path, overwrite);
+  };
+
+  // Runs one item, asking about duplicates inline, and logs its outcome.
+  const runItem = async (
+    task: ContentTask,
+    label: string,
+    attempt: (overwrite: boolean) => Promise<string>,
+  ) => {
+    const id = task.begin(label);
+    const run = async (overwrite: boolean) => {
+      try {
+        return String((await attempt(overwrite)) || "");
+      } catch (e: any) {
+        return String(e?.message || e || "ERROR");
+      }
+    };
+    let err = await run(false);
+    if (isDuplicateError(err)) {
+      if (!(await task.askOverwrite(label))) {
+        task.end(id, "skipped");
+        return;
+      }
+      err = await run(true);
+      if (!err) {
+        task.end(id, "success", undefined, true);
+        return;
+      }
+    }
+    if (err) task.end(id, "failed", err);
+    else task.end(id, "success");
+  };
+
+  const notifyNoInstance = () =>
+    notify({
+      variant: "warning",
+      title: t("content_task.no_instance_title"),
+      description: t("content_task.no_instance_body"),
+      source: "content",
+    });
+
   const doImportFromPaths = async (paths: string[]) => {
     // File-drop events can arrive again while a player/overwrite prompt is open.
     // Keep the active batch and its pending prompt resolver intact.
-    if (importInProgressRef.current || importing) return;
-    importInProgressRef.current = true;
+    if (busyRef.current) return;
+    busyRef.current = true;
     try {
-      const normalizedPaths = normalizeDroppedFiles(paths);
+      const normalizedPaths = normalizeDroppedFiles(paths).filter((p) =>
+        /\.(mcpack|mcaddon|mcworld)$/i.test(p),
+      );
       if (!normalizedPaths.length) return;
-      const name = currentVersionName || readCurrentVersionName();
+      const name = currentVersionName;
       if (!name) {
-        setErrorMsg(t("launcherpage.currentVersion_none") as string);
+        notifyNoInstance();
         return;
       }
-      const hasWorld = normalizedPaths.some((p) =>
-        p.toLowerCase().endsWith(".mcworld"),
-      );
-      let hasSkin = false;
-      if (normalizedPaths.length > 0) {
-        setImporting(true);
-        setCurrentFile(getPathBaseName(normalizedPaths[0]));
-      }
-      for (const p of normalizedPaths) {
-        if (p.toLowerCase().endsWith(".mcpack")) {
-          const isSkin = await (contentService as any)?.IsMcpackSkinPackPath?.(
-            p,
-          );
-          if (isSkin) {
-            hasSkin = true;
-            break;
+      importTask.open(normalizedPaths.length);
+      try {
+        const hasWorld = normalizedPaths.some((p) =>
+          p.toLowerCase().endsWith(".mcworld"),
+        );
+        let hasSkin = false;
+        for (const p of normalizedPaths) {
+          if (p.toLowerCase().endsWith(".mcpack")) {
+            const isSkin = await (
+              contentService as any
+            )?.IsMcpackSkinPackPath?.(p);
+            if (isSkin) {
+              hasSkin = true;
+              break;
+            }
           }
         }
-      }
-      let chosenPlayer = "";
-
-      const needsPlayer = roots.packageType !== "uwp" && (hasWorld || (hasSkin && !isSharedMode));
-
-      if (needsPlayer) {
-        playerSelectOnOpen();
-        chosenPlayer = await new Promise<string>((resolve) => {
-          playerSelectResolveRef.current = resolve;
-        });
-        if (!chosenPlayer) {
-          return;
+        let chosenPlayer = "";
+        const needsPlayer =
+          roots.packageType !== "uwp" &&
+          (hasWorld || (hasSkin && !isSharedMode));
+        if (needsPlayer) {
+          chosenPlayer = await importTask.askPlayer();
+          if (!chosenPlayer) return;
+          setSelectedPlayer(chosenPlayer);
         }
-        setSelectedPlayer(chosenPlayer);
-      }
-      let started = false;
-      const succFiles: string[] = [];
-      const errPairs: Array<{ name: string; err: string }> = [];
-      const playerToUse = chosenPlayer || selectedPlayer || "";
-      for (const p of normalizedPaths) {
-        const lower = p.toLowerCase();
-        if (lower.endsWith(".mcpack")) {
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
+        const playerToUse = chosenPlayer || selectedPlayer || "";
+        let started = false;
+        for (const p of normalizedPaths) {
+          const lower = p.toLowerCase();
           const base = getPathBaseName(p);
-          setCurrentFile(base);
-
-          let err = "";
-          const isSkin = await (contentService as any)?.IsMcpackSkinPackPath?.(
-            p,
-          );
-          const effectivePlayer = isSkin && isSharedMode ? "" : playerToUse;
-
           if (
-            effectivePlayer &&
-            typeof (contentService as any)?.ImportMcpackPathWithPlayer ===
-              "function"
+            lower.endsWith(".mcworld") &&
+            !playerToUse &&
+            roots.packageType !== "uwp"
           ) {
-            err = await (contentService as any)?.ImportMcpackPathWithPlayer?.(
-              name,
-              effectivePlayer,
-              p,
-              false,
-            );
-          } else {
-            err = await (contentService as any)?.ImportMcpackPath?.(
-              name,
-              p,
-              false,
-            );
-          }
-          if (err) {
-            if (
-              String(err) === "ERR_DUPLICATE_FOLDER" ||
-              String(err) === "ERR_DUPLICATE_UUID"
-            ) {
-              dupNameRef.current = base;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                if (
-                  effectivePlayer &&
-                  typeof (contentService as any)?.ImportMcpackPathWithPlayer ===
-                    "function"
-                ) {
-                  err = await (
-                    contentService as any
-                  )?.ImportMcpackPathWithPlayer?.(
-                    name,
-                    effectivePlayer,
-                    p,
-                    true,
-                  );
-                } else {
-                  err = await (contentService as any)?.ImportMcpackPath?.(
-                    name,
-                    p,
-                    true,
-                  );
-                }
-                if (!err) {
-                  succFiles.push(base);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: base, err });
+            importTask.end(importTask.begin(base), "failed", "ERR_NO_PLAYER");
             continue;
           }
-          succFiles.push(base);
-        } else if (lower.endsWith(".mcaddon")) {
-          if (!started) {
-            setImporting(true);
-            started = true;
+          let effectivePlayer = playerToUse;
+          if (lower.endsWith(".mcpack") && isSharedMode) {
+            const isSkin = await (
+              contentService as any
+            )?.IsMcpackSkinPackPath?.(p);
+            if (isSkin) effectivePlayer = "";
           }
-          const base = getPathBaseName(p);
-          setCurrentFile(base);
-          let err = "";
-          if (
-            playerToUse &&
-            typeof (contentService as any)?.ImportMcaddonPathWithPlayer ===
-              "function"
-          ) {
-            err = await (contentService as any)?.ImportMcaddonPathWithPlayer?.(
-              name,
-              playerToUse,
-              p,
-              false,
-            );
-          } else {
-            err = await (contentService as any)?.ImportMcaddonPath?.(
-              name,
-              p,
-              false,
-            );
-          }
-          if (err) {
-            if (
-              String(err) === "ERR_DUPLICATE_FOLDER" ||
-              String(err) === "ERR_DUPLICATE_UUID"
-            ) {
-              dupNameRef.current = base;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                if (
-                  playerToUse &&
-                  typeof (contentService as any)
-                    ?.ImportMcaddonPathWithPlayer === "function"
-                ) {
-                  err = await (
-                    contentService as any
-                  )?.ImportMcaddonPathWithPlayer?.(name, playerToUse, p, true);
-                } else {
-                  err = await (contentService as any)?.ImportMcaddonPath?.(
-                    name,
-                    p,
-                    true,
-                  );
-                }
-                if (!err) {
-                  succFiles.push(base);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: base, err });
-            continue;
-          }
-          succFiles.push(base);
-        } else if (lower.endsWith(".mcworld")) {
-          const base = getPathBaseName(p);
-          if (!playerToUse && roots.packageType !== "uwp") {
-            errPairs.push({ name: base, err: "ERR_NO_PLAYER" });
-            continue;
-          }
-          if (!started) {
-            setImporting(true);
-            started = true;
-          }
-          setCurrentFile(base);
-          let err = await (contentService as any)?.ImportMcworldPath?.(
-            name,
-            playerToUse,
-            p,
-            false,
+          started = true;
+          await runItem(importTask, base, (overwrite) =>
+            importOne(name, p, effectivePlayer, overwrite),
           );
-          if (err) {
-            if (
-              String(err) === "ERR_DUPLICATE_FOLDER" ||
-              String(err) === "ERR_DUPLICATE_UUID"
-            ) {
-              dupNameRef.current = base;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                err = await (contentService as any)?.ImportMcworldPath?.(
-                  name,
-                  playerToUse,
-                  p,
-                  true,
-                );
-                if (!err) {
-                  succFiles.push(base);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: base, err });
-            continue;
-          }
-          succFiles.push(base);
         }
+        // Refresh once after importing, including a player change where every
+        // duplicate was skipped, so the displayed counts match the selected player.
+        if (started || chosenPlayer) {
+          await refreshAll(playerToUse);
+        }
+        importTask.finish();
+      } catch (e) {
+        importTask.fail(e);
       }
-      // Refresh once after importing, including a player change where every
-      // duplicate was skipped, so the displayed counts match the selected player.
-      if (succFiles.length > 0 || errPairs.length > 0 || chosenPlayer) {
-        await refreshAll(playerToUse);
-      }
-      if (succFiles.length > 0 || errPairs.length > 0) {
-        setResultSuccess(succFiles);
-        setResultFailed(errPairs);
-        errOnOpen();
-      }
-    } catch (e: any) {
-      setErrorMsg(String(e?.message || e || "IMPORT_ERROR"));
     } finally {
-      importInProgressRef.current = false;
-      playerSelectResolveRef.current = null;
-      dupResolveRef.current = null;
-      setImporting(false);
-      setCurrentFile("");
+      busyRef.current = false;
     }
   };
 
   const openResourceTransferModal = async () => {
-    if (importing) return;
-    const name = currentVersionName || readCurrentVersionName();
+    if (busyRef.current) return;
+    const name = currentVersionName;
     if (!name) {
-      setErrorMsg(t("launcherpage.currentVersion_none") as string);
+      notifyNoInstance();
       return;
     }
     try {
@@ -622,38 +486,36 @@ export const useContentPage = (t: TFunc) => {
       setSelectedTransferTargets(targets.length > 0 ? [targets[0].name] : []);
       transferTargetOnOpen();
     } catch (e: any) {
-      setErrorMsg(String(e?.message || e || "LOAD_TARGETS_FAILED"));
+      notify({
+        variant: "danger",
+        title: t("content_task.load_targets_failed"),
+        description: String(e?.message || e || ""),
+        source: "content",
+      });
     }
   };
 
   const transferResourcesToTargets = async () => {
-    const sourceVersionName = currentVersionName || readCurrentVersionName();
+    const sourceVersionName = currentVersionName;
     if (!sourceVersionName) {
-      setErrorMsg(t("launcherpage.currentVersion_none") as string);
+      notifyNoInstance();
       return;
     }
     const targetNames = selectedTransferTargets.filter(Boolean);
-    if (targetNames.length === 0) return;
+    if (targetNames.length === 0 || busyRef.current) return;
+    busyRef.current = true;
 
     transferTargetOnClose();
-
-    const transferFn = (contentService as any)?.TransferPackToVersion;
-    if (typeof transferFn !== "function") {
-      setResultSuccess([]);
-      setResultFailed([
-        {
-          name: t("contentpage.resource_packs"),
-          err: t("common.feature_unavailable"),
-        },
-      ]);
-      errOnOpen();
-      return;
-    }
+    transferTask.open();
 
     try {
-      setTransferring(true);
-      setImporting(true);
-      setCurrentFile("");
+      const transferFn = (contentService as any)?.TransferPackToVersion;
+      if (typeof transferFn !== "function") {
+        const id = transferTask.begin(t("contentpage.resource_packs"));
+        transferTask.end(id, "failed", t("common.feature_unavailable"));
+        transferTask.finish();
+        return;
+      }
 
       const allPacks = await (contentService as any)?.ListPacksForVersion?.(
         sourceVersionName,
@@ -668,79 +530,33 @@ export const useContentPage = (t: TFunc) => {
       );
 
       if (packs.length === 0) {
-        setResultSuccess([]);
-        setResultFailed([
-          {
-            name: sourceVersionName,
-            err: t("contentpage.no_resource_packs"),
-          },
-        ]);
-        errOnOpen();
+        const id = transferTask.begin(sourceVersionName);
+        transferTask.end(id, "failed", t("contentpage.no_resource_packs"));
+        transferTask.finish();
         return;
       }
 
-      const succFiles: string[] = [];
-      const errPairs: Array<{ name: string; err: string }> = [];
-
+      transferTask.setTotal(targetNames.length * packs.length);
       for (const targetName of targetNames) {
         for (const pack of packs) {
           const packPath = String(pack?.path || "").trim();
           if (!packPath) continue;
-          const fallbackName = getPathBaseName(packPath);
-          const packName = String(pack?.manifest?.name || fallbackName);
-          const itemLabel = `${packName} -> ${targetName}`;
-          setCurrentFile(itemLabel);
-
-          let err = await transferFn(
-            sourceVersionName,
-            packPath,
-            targetName,
-            false,
+          const packName = String(
+            pack?.manifest?.name || getPathBaseName(packPath),
           );
-          if (err) {
-            if (
-              String(err) === "ERR_DUPLICATE_FOLDER" ||
-              String(err) === "ERR_DUPLICATE_UUID"
-            ) {
-              dupNameRef.current = itemLabel;
-              await new Promise<void>((r) => setTimeout(r, 0));
-              dupOnOpen();
-              const ok = await new Promise<boolean>((resolve) => {
-                dupResolveRef.current = resolve;
-              });
-              if (ok) {
-                err = await transferFn(
-                  sourceVersionName,
-                  packPath,
-                  targetName,
-                  true,
-                );
-                if (!err) {
-                  succFiles.push(itemLabel);
-                  continue;
-                }
-              } else {
-                continue;
-              }
-            }
-            errPairs.push({ name: itemLabel, err: String(err) });
-            continue;
-          }
-          succFiles.push(itemLabel);
+          await runItem(
+            transferTask,
+            `${packName} -> ${targetName}`,
+            (overwrite) =>
+              transferFn(sourceVersionName, packPath, targetName, overwrite),
+          );
         }
       }
-
-      if (succFiles.length > 0 || errPairs.length > 0) {
-        setResultSuccess(succFiles);
-        setResultFailed(errPairs);
-        errOnOpen();
-      }
-    } catch (e: any) {
-      setErrorMsg(String(e?.message || e || "TRANSFER_ERROR"));
+      transferTask.finish();
+    } catch (e) {
+      transferTask.fail(e);
     } finally {
-      setTransferring(false);
-      setImporting(false);
-      setCurrentFile("");
+      busyRef.current = false;
     }
   };
 
@@ -748,24 +564,35 @@ export const useContentPage = (t: TFunc) => {
   const doImportRef = React.useRef(doImportFromPaths);
   doImportRef.current = doImportFromPaths;
 
+  // The player handed over on entry applies to the instance shown on entry;
+  // switching the instance in place (header picker) reloads with its players.
+  const initialRef = React.useRef<{ version: string; player: string } | null>(
+    null,
+  );
+  if (!initialRef.current) {
+    initialRef.current = {
+      version: currentVersionName,
+      player:
+        location?.state?.player ||
+        localStorage.getItem("content.selectedPlayer") ||
+        "",
+    };
+  }
   React.useEffect(() => {
-    let passedPlayer = location?.state?.player;
-    if (!passedPlayer) {
-      passedPlayer = localStorage.getItem("content.selectedPlayer") || "";
-    }
-
-    if (passedPlayer) {
-      refreshAll(passedPlayer);
-      if (location?.state?.player) {
-        navigate(location.pathname, {
-          replace: true,
-          state: { ...(location.state || {}), player: undefined },
-        });
-      }
+    const initial = initialRef.current!;
+    if (currentVersionName !== initial.version) initial.player = "";
+    if (initial.player) {
+      refreshAll(initial.player);
     } else {
       refreshAll();
     }
-  }, []);
+    if (location?.state?.player) {
+      navigate(location.pathname, {
+        replace: true,
+        state: { ...(location.state || {}), player: undefined },
+      });
+    }
+  }, [currentVersionName]);
 
   React.useEffect(() => {
     if (selectedPlayer) {
@@ -799,39 +626,18 @@ export const useContentPage = (t: TFunc) => {
     skinCount,
     serversCount,
     screenshotsCount,
-    importing,
-    transferring,
-    errorMsg,
-    currentFile,
-    resultSuccess,
-    resultFailed,
+    importing: importTask.isBusy || transferTask.isBusy,
     transferTargets,
     selectedTransferTargets,
 
     // setters needed by JSX callbacks
-    setErrorMsg,
-    setResultSuccess,
-    setResultFailed,
     setSelectedTransferTargets,
 
-    // refs (for modal JSX)
-    dupResolveRef,
-    dupNameRef,
-    playerSelectResolveRef,
+    // tasks (rendered by ContentTaskDialog)
+    importTask,
+    transferTask,
 
     // disclosures
-    errOpen,
-    errOnOpen,
-    errOnClose,
-    errOnOpenChange,
-    dupOpen,
-    dupOnOpen,
-    dupOnClose,
-    dupOnOpenChange,
-    playerSelectOpen,
-    playerSelectOnOpen,
-    playerSelectOnClose,
-    playerSelectOnOpenChange,
     transferTargetOpen,
     transferTargetOnOpen,
     transferTargetOnClose,

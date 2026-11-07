@@ -1,0 +1,30 @@
+{
+  "content_task": {
+    "import_title": "Importa contenuti",
+    "transfer_title": "Trasferisci contenuti",
+    "status_running": "In corso…",
+    "status_success": "Fatto",
+    "status_overwritten": "Sovrascritto",
+    "status_skipped": "Saltato (esiste già)",
+    "summary": "{{ok}} riusciti, {{failed}} non riusciti, {{skipped}} saltati",
+    "skip": "Salta",
+    "overwrite_body": "Questo elemento esiste già nella destinazione. Sovrascriverlo?",
+    "apply_to_all": "Applica ai duplicati rimanenti",
+    "progress": "{{done}} di {{total}} completati",
+    "progress_label": "Avanzamento",
+    "log_label": "Registro elementi",
+    "nothing_done": "Non è stato importato nulla.",
+    "transfer_done": "Trasferimento completato",
+    "transfer_partial": "Trasferimento completato (errori parziali)",
+    "transfer_failed": "Trasferimento non riuscito",
+    "no_instance_title": "Scegli prima un'istanza",
+    "no_instance_body": "Scegli l'istanza dal selettore in cima alla pagina.",
+    "load_targets_failed": "Impossibile caricare le istanze",
+    "choose_instance_hint": "Scegli un'istanza per gestirne mondi, pacchetti e altri contenuti.",
+    "back_to_hub": "Torna a Gestione contenuti",
+    "clear_search": "Cancella ricerca",
+    "world_deleted": "Mondo eliminato",
+    "delete_failed": "Eliminazione non riuscita",
+    "world_saved": "level.dat salvato"
+  }
+}

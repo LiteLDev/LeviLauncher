@@ -1,0 +1,30 @@
+{
+  "content_task": {
+    "import_title": "コンテンツをインポート",
+    "transfer_title": "コンテンツを転送",
+    "status_running": "処理中…",
+    "status_success": "完了",
+    "status_overwritten": "上書きしました",
+    "status_skipped": "スキップ（既に存在）",
+    "summary": "成功 {{ok}} 件、失敗 {{failed}} 件、スキップ {{skipped}} 件",
+    "skip": "スキップ",
+    "overwrite_body": "この項目は転送先に既に存在します。上書きしますか？",
+    "apply_to_all": "残りの重複にも同じ操作を適用",
+    "progress": "{{done}} / {{total}} 完了",
+    "progress_label": "進行状況",
+    "log_label": "項目ログ",
+    "nothing_done": "何もインポートされませんでした。",
+    "transfer_done": "転送完了",
+    "transfer_partial": "転送完了（一部失敗）",
+    "transfer_failed": "転送失敗",
+    "no_instance_title": "先にインスタンスを選択してください",
+    "no_instance_body": "ページ上部のインスタンス選択から対象のインスタンスを選んでください。",
+    "load_targets_failed": "インスタンスを読み込めません",
+    "choose_instance_hint": "ワールドやパックなどを管理するインスタンスを選択してください。",
+    "back_to_hub": "コンテンツ管理に戻る",
+    "clear_search": "検索をクリア",
+    "world_deleted": "ワールドを削除しました",
+    "delete_failed": "削除に失敗しました",
+    "world_saved": "level.dat を保存しました"
+  }
+}

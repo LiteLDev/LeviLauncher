@@ -1,0 +1,43 @@
+{
+  "curseforge": {
+    "install": {
+      "type": {
+        "mcworld": "Mundo",
+        "mcaddon": "Complemento",
+        "mcpack": "Paquete de recursos o comportamiento",
+        "skin_pack": "Paquete de aspectos",
+        "unknown": "Paquete desconocido"
+      },
+      "dialog_title": "Instalar {{name}}",
+      "setup_body": "Elige qué instalar y dónde. La descarga y la importación se hacen de una vez.",
+      "file_label": "Archivo",
+      "file_placeholder": "Elige un archivo",
+      "files_loading": "Cargando archivos…",
+      "no_files": "Este proyecto no tiene archivos descargables.",
+      "no_instances": "Aún no hay instancias instaladas. Añade una desde la página de descargas.",
+      "no_players": "Esta instancia aún no tiene perfiles de jugador. Inicia el juego con ella una vez e inténtalo de nuevo.",
+      "player_hint_skin": "Solo se usa si este paquete resulta ser un paquete de aspectos.",
+      "player_required": "Elige un jugador para instalar un mundo.",
+      "install": "Instalar",
+      "quick_install_aria": "Instalar {{name}}",
+      "task_title": "Instalar {{name}}",
+      "task_desc": "{{file}} → {{instance}}",
+      "step_download": "Descargar {{name}}",
+      "step_download_done": "Descargado {{size}}",
+      "step_detect": "Identificar paquete",
+      "step_import": "Importar en {{instance}}",
+      "step_import_done": "Importado",
+      "duplicate_found": "Ya está instalado en esta instancia",
+      "duplicate_body": "¿Reemplazar la copia existente por este archivo?",
+      "keep_existing": "Conservar existente",
+      "overwrite": "Sobrescribir",
+      "duplicate_kept": "Se conservó la copia existente; no hubo cambios.",
+      "duplicate_overwriting": "Reemplazando la copia existente…",
+      "done_success": "{{name}} se instaló en {{instance}}.",
+      "done_kept": "Sin cambios. Se conservó la copia existente.",
+      "cancelled": "Descarga cancelada",
+      "success_title_named": "{{name}} instalado",
+      "error_title_named": "No se pudo instalar {{name}}"
+    }
+  }
+}

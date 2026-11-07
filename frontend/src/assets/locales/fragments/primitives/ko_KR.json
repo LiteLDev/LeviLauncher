@@ -1,0 +1,9 @@
+{
+  "primitives": {
+    "log_title": "로그",
+    "log_empty": "아직 출력이 없습니다",
+    "copy": "복사",
+    "copied": "복사됨",
+    "page_of": "{{page}} / {{total}} 페이지"
+  }
+}

@@ -34,7 +34,7 @@ tasks:
   package:
     summary: Packages a production build of the application
     cmds:
-      - task: create:inno:installer
+      - task: create:installer
 
   generate:syso:
     summary: Generates Windows `.syso` file
@@ -44,25 +44,16 @@ tasks:
     vars:
       ARCH: "{{.ARCH | default ARCH}}"
 
-  create:inno:installer:
-    summary: Creates an Inno Setup installer
-    dir: build/windows/inno
+  create:installer:
+    summary: Creates the MSI and setup.exe installers with WiX
     deps:
       - task: build
         vars:
           PRODUCTION: "true"
     cmds:
-      - wails3 generate webview2bootstrapper -dir "{{.ROOT_DIR}}/build/windows/inno"
-      - node "{{.ROOT_DIR}}/build/windows/download-vcredist.mjs" "{{.ARCH}}" "{{.ROOT_DIR}}/build/windows/inno"
-      - |
-        {{if eq OS "windows"}}
-        iscc /DAppName="{{.APP_NAME}}" /DAppPublisher="{{.APP_COMPANY}}" /DAppArch="{{.ARCH}}" /DAppBinaryPath="{{.ROOT_DIR}}\{{.BIN_DIR}}\{{.APP_NAME}}.exe" project.iss
-        {{else}}
-        iscc /DAppName="{{.APP_NAME}}" /DAppPublisher="{{.APP_COMPANY}}" /DAppArch="{{.ARCH}}" /DAppBinaryPath="{{.ROOT_DIR}}/{{.BIN_DIR}}/{{.APP_NAME}}.exe" project.iss
-        {{end}}
+      - pwsh -NoProfile -File "{{.ROOT_DIR}}/packaging/wix/build.ps1" -Version "{{.VERSION}}" -Arch x64 -BinDir "{{.ROOT_DIR}}/{{.BIN_DIR}}" -OutDir "{{.ROOT_DIR}}/{{.BIN_DIR}}"
     vars:
-      ARCH: "{{.ARCH | default ARCH}}"
-      APP_COMPANY: '{{.APP_COMPANY | default "LeviMC"}}'
+      VERSION: '{{.VERSION | default "0.0.0-dev"}}'
 
   create:msix:package:
     summary: Creates an MSIX package

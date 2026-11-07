@@ -11,7 +11,8 @@ import (
 	"strconv"
 	"strings"
 
-	"github.com/liteldev/LeviLauncher/internal/config"
+	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 	"github.com/liteldev/LeviLauncher/internal/nativeinstall"
 	"github.com/liteldev/LeviLauncher/internal/processinfo"
 	"github.com/liteldev/LeviLauncher/internal/xbox"
@@ -25,7 +26,7 @@ func (s *UserService) IsElevated() bool {
 
 func NewUserService(_ *Minecraft) *UserService {
 	// Restore identity before any avatar or installation request can select a default account.
-	_ = nativeinstall.RestoreSharedAccount(context.Background(), filepath.Join(config.ConfigDir(), "microsoft-account"))
+	_ = nativeinstall.RestoreSharedAccount(context.Background(), apppath.AccountsDir())
 	return &UserService{}
 }
 
@@ -71,7 +72,7 @@ func (s *UserService) GetUserGamertagMap(usersRoot string) map[string]string {
 		return map[string]string{}
 	}
 
-	cachePath := filepath.Join(config.ConfigDir(), "user_gamertag_map.json")
+	cachePath := apppath.GamertagsPath()
 	out := map[string]string{}
 	loadMap := func(p string) {
 		b, err := os.ReadFile(p)
@@ -168,7 +169,7 @@ func (s *UserService) GetUserGamertagMap(usersRoot string) map[string]string {
 
 	if changed {
 		if b, err := json.Marshal(out); err == nil {
-			_ = os.WriteFile(cachePath, b, 0644)
+			_ = fsx.WriteFileAtomic(cachePath, b, 0o644)
 		}
 	}
 
@@ -191,11 +192,11 @@ func (s *UserService) XUserGetState() int {
 }
 
 func (s *UserService) CheckGameLicenses(ctx context.Context, xuid string) nativeinstall.GameLicenses {
-	return nativeinstall.CheckGameLicenses(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), xuid)
+	return nativeinstall.CheckGameLicenses(ctx, apppath.AccountsDir(), xuid)
 }
 
 func (s *UserService) RefreshGameLicenses(ctx context.Context, xuid string) nativeinstall.GameLicenses {
-	return nativeinstall.RefreshGameLicenses(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), xuid)
+	return nativeinstall.RefreshGameLicenses(ctx, apppath.AccountsDir(), xuid)
 }
 
 // Attach connects native authentication dialogs to the main window.
@@ -207,7 +208,7 @@ func (s *UserService) SignIn(ctx context.Context) string {
 	if s.window == nil {
 		return "ERR_AUTH_FAILED"
 	}
-	err := nativeinstall.SignInSharedAccount(ctx, filepath.Join(config.ConfigDir(), "microsoft-account"), uintptr(s.window.NativeWindow()), application.InvokeSync)
+	err := nativeinstall.SignInSharedAccount(ctx, apppath.AccountsDir(), uintptr(s.window.NativeWindow()), application.InvokeSync)
 	if err == nil {
 		return ""
 	}

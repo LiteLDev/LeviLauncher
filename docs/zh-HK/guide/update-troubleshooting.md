@@ -27,7 +27,7 @@
 ### LeviLauncher 一閃即退或從不顯示視窗
 
 - 在 Windows 上，LeviLauncher 現在會以更保守的 WebView2 軟件渲染模式啟動，以減少部分顯示卡與驅動程式組合下的啟動崩潰。
-- 如果介面出現前啟動器仍然退出，請先檢查 `%APPDATA%\levilauncher.exe\logs\startup.log`。
+- 如果介面出現前啟動器仍然退出，請先檢查 `%LOCALAPPDATA%\LeviLauncher\Logs\startup.log`。
 - 啟動失敗後可先重試一次；如果仍然出現，提交 GitHub Issue 時請附上 `startup.log`。
 
 ### 某個版本無法啟動

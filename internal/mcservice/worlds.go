@@ -72,8 +72,7 @@ func BackupWorld(worldDir string) string {
 	}
 	safe := utils.SanitizeFilename(level)
 	ts := time.Now().Format("20060102-150405")
-	base := apppath.BaseRoot()
-	backupDir := filepath.Join(base, "backups", "worlds", safe)
+	backupDir := filepath.Join(apppath.WorldBackupsDir(), safe)
 	if err := utils.CreateDir(backupDir); err != nil {
 		return ""
 	}
@@ -100,8 +99,7 @@ func BackupWorldWithVersion(worldDir string, versionName string) string {
 		safeVersion = "default"
 	}
 	ts := time.Now().Format("20060102-150405")
-	base := apppath.BaseRoot()
-	backupDir := filepath.Join(base, "backups", "worlds", safeVersion, safeFolder+"_"+safeWorld)
+	backupDir := filepath.Join(apppath.WorldBackupsDir(), safeVersion, safeFolder+"_"+safeWorld)
 	if err := utils.CreateDir(backupDir); err != nil {
 		return ""
 	}

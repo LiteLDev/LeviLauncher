@@ -27,7 +27,7 @@ LeviLauncher のインストール、更新、起動が予期せぬ動作をす�
 ### LeviLauncher がすぐに終了する、またはウィンドウが表示されない
 
 - Windows では、一部の GPU とドライバーの組み合わせで起動時のクラッシュを減らすため、LeviLauncher は WebView2 をより安全なソフトウェアレンダリングモードで起動するようになりました。
-- それでも UI が表示される前にランチャーが失敗する場合は、`%APPDATA%\levilauncher.exe\logs\startup.log` を確認してください。
+- それでも UI が表示される前にランチャーが失敗する場合は、`%LOCALAPPDATA%\LeviLauncher\Logs\startup.log` を確認してください。
 - 起動に失敗したら一度だけ再試行してください。それでも発生する場合は、GitHub で Issue を作成する際に `startup.log` を添付してください。
 
 ### 特定のバージョンが起動できない

@@ -148,7 +148,7 @@ func TestBackupInstanceWritesSafeArchiveAndLIPMetadata(t *testing.T) {
 	if result.ErrorCode != "" {
 		t.Fatalf("unexpected error code: %q", result.ErrorCode)
 	}
-	if !strings.HasPrefix(result.ArchivePath, filepath.Join(baseRoot, "backups", "instances", "Source")) {
+	if !strings.HasPrefix(result.ArchivePath, filepath.Join(baseRoot, apppath.BackupsDirName, apppath.InstanceBackupsDirName, "Source")) {
 		t.Fatalf("unexpected archive path: %q", result.ArchivePath)
 	}
 
@@ -1078,11 +1078,12 @@ func setupInstanceBackupEnv(t *testing.T) (string, string, string) {
 	appDataDir := filepath.Join(root, "appdata")
 	apppath.SetBaseRootOverride(baseRoot)
 	t.Setenv("APPDATA", appDataDir)
+	t.Setenv("LOCALAPPDATA", t.TempDir())
 	t.Cleanup(func() {
 		apppath.SetBaseRootOverride("")
 	})
 
-	versionsDir, err := apppath.VersionsDir()
+	versionsDir, err := apppath.InstancesDir()
 	if err != nil {
 		t.Fatalf("resolve versions dir: %v", err)
 	}

@@ -12,6 +12,7 @@ import (
 	"unsafe"
 
 	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/gdk"
 	"github.com/liteldev/LeviLauncher/internal/launch"
 	"github.com/liteldev/LeviLauncher/internal/leviloader"
 	"github.com/liteldev/LeviLauncher/internal/mods"
@@ -45,7 +46,7 @@ func isPathInside(root string, target string) bool {
 }
 
 func resolveVersionDir(name string) (string, string) {
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "", "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -157,6 +158,9 @@ func (l *Launcher) Launch(ctx context.Context, name string, checkRunning bool) s
 			log.Printf("Failed to prepare executable: %v", err)
 		} else if strings.TrimSpace(preparedExe) != "" {
 			toRun = preparedExe
+		}
+		if m.Registered && gdk.IsMovedRegistration(dir, strings.EqualFold(strings.TrimSpace(m.Type), "preview")) {
+			m.Registered = reregisterMovedGDK(dir, m)
 		}
 		if m.Registered {
 			isPreview := strings.EqualFold(strings.TrimSpace(m.Type), "preview")
@@ -297,4 +301,22 @@ func isProcessRunningAtPath(exePath string) bool {
 		}
 	}
 	return false
+}
+
+// reregisterMovedGDK registers a GDK instance that the storage migration
+// moved where it is now, as it was registered before. When that fails, the
+// instance launches from its executable and stays unregistered.
+func reregisterMovedGDK(dir string, m versions.VersionMeta) bool {
+	isPreview := strings.EqualFold(strings.TrimSpace(m.Type), "preview")
+	msg := gdk.UnregisterIfExists(isPreview)
+	if msg == "" {
+		msg = gdk.RegisterVersionFolder(dir)
+	}
+	if msg != "" {
+		log.Printf("Re-registering moved instance %s failed: %s", dir, msg)
+		m.Registered = false
+		_ = versions.WriteMeta(dir, m)
+		return false
+	}
+	return true
 }

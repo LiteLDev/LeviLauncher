@@ -22,7 +22,7 @@ type KnownFolder struct {
 var gdkVersionCatalog = gdkversions.NewClient(httpx.NewClient(5*time.Second), xbox.GetPackageUpdateAuthorization)
 
 func FetchHistoricalVersions(preferCN bool) map[string]interface{} {
-	catalog := gdkVersionCatalog.Fetch(context.Background(), preferCN, filepath.Join(apppath.ConfigDir(), "gdk_pending_versions.json"))
+	catalog := gdkVersionCatalog.Fetch(context.Background(), preferCN, apppath.GDKPendingVersionsPath())
 	return map[string]interface{}{
 		"file_version":    catalog.FileVersion,
 		"releaseVersions": catalog.ReleaseVersions,

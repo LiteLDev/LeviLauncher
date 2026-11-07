@@ -11,6 +11,9 @@ import (
 	"path/filepath"
 	"runtime"
 	"strings"
+
+	"github.com/liteldev/LeviLauncher/internal/apppath"
+	"github.com/liteldev/LeviLauncher/internal/fsx"
 )
 
 const maxExtractBytes int64 = 20 << 30
@@ -160,7 +163,7 @@ func Install(ctx context.Context, archivePath, targetDir string, opts Options) (
 	if err := os.MkdirAll(parent, 0755); err != nil {
 		return manifest, err
 	}
-	stage, err := os.MkdirTemp(parent, ".uwp-install-")
+	stage, err := fsx.MkdirTemp(parent, filepath.Base(targetDir))
 	if err != nil {
 		return manifest, err
 	}
@@ -186,7 +189,7 @@ func Install(ctx context.Context, archivePath, targetDir string, opts Options) (
 		if selected.UncompressedSize64 > uint64(maxExtractBytes) {
 			return manifest, failure("ERR_UWP_ARCHIVE", fmt.Errorf("package exceeds size limit"))
 		}
-		nested, err := os.CreateTemp(parent, ".uwp-package-*.appx")
+		nested, err := fsx.CreateTemp(parent, filepath.Base(targetDir)+".appx")
 		if err != nil {
 			return manifest, err
 		}
@@ -234,8 +237,10 @@ func Install(ctx context.Context, archivePath, targetDir string, opts Options) (
 	}
 	// Installation always checks the freshly extracted executable, even if a
 	// repackaged archive happens to contain a marker from another installation.
-	if err := os.Remove(filepath.Join(stage, authKeyMarkerName)); err != nil && !os.IsNotExist(err) {
-		return manifest, failure("ERR_UWP_PREPARE", err)
+	for _, marker := range []string{authKeyMarkerPath(stage), filepath.Join(stage, apppath.LegacyInstanceAuthKeyMarker)} {
+		if err := os.Remove(marker); err != nil && !os.IsNotExist(err) {
+			return manifest, failure("ERR_UWP_PREPARE", err)
+		}
 	}
 	if err := ensureLegacyAuthKey(ctx, stage, manifest); err != nil {
 		return manifest, failure("ERR_UWP_PREPARE", err)

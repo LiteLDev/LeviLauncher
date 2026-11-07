@@ -48,7 +48,7 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 	if !utils.FileExists(inPath) {
 		return "ERR_MSIXVC_NOT_FOUND"
 	}
-	vdir, err := apppath.VersionsDir()
+	vdir, err := apppath.InstancesDir()
 	if err != nil || strings.TrimSpace(vdir) == "" {
 		return "ERR_ACCESS_VERSIONS_DIR"
 	}
@@ -58,7 +58,7 @@ func InstallExtractMsixvc(ctx context.Context, name string, folderName string, i
 	}
 	outDir := filepath.Join(vdir, folder)
 	_, err = nativeinstall.Install(ctx, inPath, outDir, nativeinstall.Options{
-		CacheDir:           filepath.Join(apppath.ConfigDir(), "microsoft-account"),
+		CacheDir:           apppath.AccountsDir(),
 		RequireFullLicense: true,
 		Prepare:            func(staging string) error { return leviloader.EnsureForVersion(ctx, staging) },
 		Progress: func(p nativeinstall.Progress) {
@@ -154,7 +154,7 @@ func GetInstallerDir() string {
 }
 
 func GetVersionsDir() string {
-	dir, err := apppath.VersionsDir()
+	dir, err := apppath.InstancesDir()
 	if err != nil {
 		return ""
 	}

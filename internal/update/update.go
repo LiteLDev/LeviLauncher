@@ -35,6 +35,11 @@ import (
 // devVersion is reported by builds that were not stamped with a version.
 const devVersion = "0.0.0-dev"
 
+// invalidStampVersion replaces a stamped version that is not strict SemVer.
+// Unlike devVersion it is still offered updates, so a mis-stamped release
+// build does not silently lose self-update.
+const invalidStampVersion = "0.0.0"
+
 // appVersion is stamped at build time from the release tag via
 // -ldflags "-X github.com/liteldev/LeviLauncher/internal/update.appVersion=<version>".
 var (
@@ -88,20 +93,22 @@ func Init() {}
 
 // setAppVersion normalizes a stamped version (trimming whitespace and a
 // leading "v") and derives isBeta from its SemVer prerelease component.
-// Anything that is not strict SemVer falls back to devVersion so that update
-// checks always compare against a well-formed version.
+// An empty stamp means a local build (devVersion); any other stamp that is
+// not strict SemVer falls back to invalidStampVersion so that update checks
+// always compare against a well-formed version. devVersion is not a beta.
 func setAppVersion(raw string) {
 	v := strings.TrimPrefix(strings.TrimSpace(raw), "v")
+	if v == "" {
+		v = devVersion
+	}
 	sv, err := semver.StrictNewVersion(v)
 	if err != nil {
-		if v != "" {
-			log.Printf("invalid build version %q, using %s: %v", raw, devVersion, err)
-		}
-		v = devVersion
-		sv = semver.MustParse(devVersion)
+		log.Printf("invalid build version %q, using %s: %v", raw, invalidStampVersion, err)
+		v = invalidStampVersion
+		sv = semver.MustParse(invalidStampVersion)
 	}
 	appVersion = v
-	isBeta = sv.Prerelease() != ""
+	isBeta = sv.Prerelease() != "" && v != devVersion
 }
 
 // IsBeta reports whether the running build is a prerelease (the stamped
@@ -211,6 +218,9 @@ func getAcceptBeta() bool {
 }
 
 func selectUpdateRelease(releases []githubRelease, version string) (githubRelease, bool) {
+	if isDevVersion(version) {
+		return githubRelease{}, false
+	}
 	acceptBeta := getAcceptBeta()
 	cur := strings.TrimPrefix(strings.TrimSpace(version), "v")
 	vCur, err1 := semver.NewVersion(cur)

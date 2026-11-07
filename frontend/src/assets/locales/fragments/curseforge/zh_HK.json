@@ -1,0 +1,43 @@
+{
+  "curseforge": {
+    "install": {
+      "type": {
+        "mcworld": "世界",
+        "mcaddon": "附加包",
+        "mcpack": "資源包或行為包",
+        "skin_pack": "皮膚包",
+        "unknown": "未知包"
+      },
+      "dialog_title": "安裝 {{name}}",
+      "setup_body": "選擇要安裝的檔案和目標位置，隨後會一次完成下載和匯入。",
+      "file_label": "檔案",
+      "file_placeholder": "選擇檔案",
+      "files_loading": "正在載入檔案…",
+      "no_files": "此項目沒有可下載的檔案。",
+      "no_instances": "尚未安裝任何實例。請先在下載頁新增一個實例。",
+      "no_players": "此實例尚未有玩家檔案。請先用它啟動一次遊戲，然後重試。",
+      "player_hint_skin": "僅當此包是皮膚包時才會使用。",
+      "player_required": "安裝世界需要選擇玩家。",
+      "install": "安裝",
+      "quick_install_aria": "安裝 {{name}}",
+      "task_title": "安裝 {{name}}",
+      "task_desc": "{{file}} → {{instance}}",
+      "step_download": "下載 {{name}}",
+      "step_download_done": "已下載 {{size}}",
+      "step_detect": "識別包類型",
+      "step_import": "匯入到 {{instance}}",
+      "step_import_done": "已匯入",
+      "duplicate_found": "此實例中已安裝",
+      "duplicate_body": "要用此檔案取代現有內容嗎？",
+      "keep_existing": "保留現有",
+      "overwrite": "覆寫",
+      "duplicate_kept": "已保留現有內容，未作更改。",
+      "duplicate_overwriting": "正在取代現有內容…",
+      "done_success": "已將 {{name}} 安裝到 {{instance}}。",
+      "done_kept": "未作更改，已保留現有內容。",
+      "cancelled": "已取消下載",
+      "success_title_named": "{{name}} 已安裝",
+      "error_title_named": "無法安裝 {{name}}"
+    }
+  }
+}

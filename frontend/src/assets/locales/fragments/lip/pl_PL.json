@@ -1,0 +1,27 @@
+{
+  "lip_install": {
+    "title": "Zainstaluj {{name}}",
+    "target_label": "Instancja docelowa",
+    "version_label": "Wersja pakietu",
+    "ll_version_label": "Wersja LeviLamina",
+    "ll_will_install": "LeviLamina nie jest zainstalowana w tej instancji. Najpierw zostanie zainstalowana LeviLamina {{version}}, potem ten pakiet.",
+    "ll_will_replace": "Zainstalowana LeviLamina {{installedVersion}} nie obsługuje tego pakietu. Najpierw zostanie zainstalowana LeviLamina {{version}}, potem ten pakiet.",
+    "ll_no_compatible": "Żadna wersja LeviLamina nie obsługuje tego pakietu i wersji gry {{gameVersion}}. Wybierz inną wersję lub instancję.",
+    "confirm_with_ll": "{{action}} z LeviLamina",
+    "step_ll": "Zainstaluj LeviLamina {{version}}",
+    "step_package": "{{action}}: {{name}} {{version}}",
+    "steps_label": "Kroki instalacji",
+    "status_pending": "Oczekuje",
+    "status_running": "W toku",
+    "status_success": "Gotowe",
+    "status_error": "Niepowodzenie",
+    "status_skipped": "Pominięto",
+    "success_summary": "{{name}} {{version}} zainstalowano w {{instance}}.",
+    "failed_title": "Nie udało się zainstalować {{name}}",
+    "activity_title": "Zainstaluj {{name}} w {{instance}}",
+    "quick_install_aria": "Zainstaluj {{name}}",
+    "ll_check_failed": "Nie udało się sprawdzić LeviLamina w tej instancji: {{error}}",
+    "ll_replace_warning": "Inne mody w tej instancji wymagające LeviLamina {{installedVersion}} mogą przestać działać.",
+    "ll_downgrade_note": "To jest obniżenie wersji."
+  }
+}

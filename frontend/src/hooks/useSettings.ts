@@ -44,6 +44,30 @@ import { clampNumber } from "@/utils/backgroundAppearance";
 
 export type { ThemeMode };
 
+export const SETTINGS_TABS = [
+  "general",
+  "personalization",
+  "components",
+  "others",
+  "privacy",
+  "updates",
+  "about",
+] as const;
+export type SettingsTab = (typeof SETTINGS_TABS)[number];
+
+const isSettingsTab = (value: unknown): value is SettingsTab =>
+  typeof value === "string" && (SETTINGS_TABS as readonly string[]).includes(value);
+
+const requestedSettingsTab = (location: {
+  search: string;
+  state: unknown;
+}): SettingsTab | null => {
+  const fromQuery = new URLSearchParams(location.search).get("tab");
+  if (isSettingsTab(fromQuery)) return fromQuery;
+  const fromState = (location.state as { tab?: unknown } | null)?.tab;
+  return isSettingsTab(fromState) ? fromState : null;
+};
+
 export const useSettings = (i18n: { language: string }) => {
   const currentBackground = useCurrentBackground();
   const navigate = useNavigate();
@@ -90,11 +114,13 @@ export const useSettings = (i18n: { language: string }) => {
   const [minimizeToTray, setMinimizeToTrayState] =
     useState<boolean>(false);
 
-  // Tabs
+  // Tabs: `?tab=<id>` wins, then `location.state.tab`, then the last tab used.
   const [selectedTab, setSelectedTab] = useState<string>(() => {
+    const requested = requestedSettingsTab(location);
+    if (requested) return requested;
     try {
       const saved = localStorage.getItem("app.settingsTab") || "";
-      if (["general", "personalization", "components", "others", "privacy", "updates", "about"].includes(saved)) return saved;
+      if (isSettingsTab(saved)) return saved;
     } catch {}
     return "general";
   });
@@ -590,12 +616,39 @@ export const useSettings = (i18n: { language: string }) => {
     return () => { cancelled = true; };
   }, [backgroundImage]);
 
-  // Tab from location state
+  // Follow deep links that arrive while the page is already mounted
+  // (command palette, `/about` redirect, back/forward).
   useEffect(() => {
-    if (location.state && (location.state as any).tab) {
-      setSelectedTab((location.state as any).tab);
+    const requested = requestedSettingsTab(location);
+    if (requested) setSelectedTab(requested);
+  }, [location.search, location.state]);
+
+  // Mirror the tab into the URL so back/forward and reloads restore it. Replace,
+  // so switching tabs does not grow the history stack, and drop `state.tab` so a
+  // stale state value cannot override the query later.
+  const syncedTabRef = useRef(selectedTab);
+  useEffect(() => {
+    const tabChanged = syncedTabRef.current !== selectedTab;
+    syncedTabRef.current = selectedTab;
+    if (location.pathname !== ROUTES.settings) return;
+    // When only the URL changed to another tab, the effect above is applying
+    // that deep link; this effect runs again once `selectedTab` follows.
+    if (!tabChanged) {
+      const requested = requestedSettingsTab(location);
+      if (requested && requested !== selectedTab) return;
     }
-  }, [location.state]);
+    const params = new URLSearchParams(location.search);
+    if (params.get("tab") === selectedTab) return;
+    params.set("tab", selectedTab);
+    const state = location.state && typeof location.state === "object"
+      ? { ...(location.state as Record<string, unknown>) }
+      : location.state;
+    if (state && typeof state === "object") delete (state as Record<string, unknown>).tab;
+    navigate(
+      { pathname: location.pathname, search: `?${params.toString()}` },
+      { replace: true, state },
+    );
+  }, [selectedTab, location.search, location.state]);
 
   return {
     // Computed

@@ -1,0 +1,30 @@
+{
+  "content_task": {
+    "import_title": "Importar conteúdo",
+    "transfer_title": "Transferir conteúdo",
+    "status_running": "A processar…",
+    "status_success": "Concluído",
+    "status_overwritten": "Substituído",
+    "status_skipped": "Ignorado (já existe)",
+    "summary": "{{ok}} com êxito, {{failed}} com falha, {{skipped}} ignorados",
+    "skip": "Ignorar",
+    "overwrite_body": "Este item já existe no destino. Substituir?",
+    "apply_to_all": "Aplicar aos duplicados restantes",
+    "progress": "{{done}} de {{total}} concluídos",
+    "progress_label": "Progresso",
+    "log_label": "Registo de itens",
+    "nothing_done": "Nada foi importado.",
+    "transfer_done": "Transferência concluída",
+    "transfer_partial": "Transferência concluída (falhas parciais)",
+    "transfer_failed": "Falha na transferência",
+    "no_instance_title": "Escolha primeiro uma instância",
+    "no_instance_body": "Escolha a instância no seletor no topo da página.",
+    "load_targets_failed": "Não foi possível carregar as instâncias",
+    "choose_instance_hint": "Escolha uma instância para gerir os seus mundos, pacotes e outros conteúdos.",
+    "back_to_hub": "Voltar à Gestão de conteúdo",
+    "clear_search": "Limpar pesquisa",
+    "world_deleted": "Mundo eliminado",
+    "delete_failed": "Falha ao eliminar",
+    "world_saved": "level.dat guardado"
+  }
+}

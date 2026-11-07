@@ -1,0 +1,43 @@
+{
+  "curseforge": {
+    "install": {
+      "type": {
+        "mcworld": "World",
+        "mcaddon": "Add-on",
+        "mcpack": "Resource or behavior pack",
+        "skin_pack": "Skin pack",
+        "unknown": "Unknown package"
+      },
+      "dialog_title": "Install {{name}}",
+      "setup_body": "Choose what to install and where. Downloading and importing then run in one go.",
+      "file_label": "File",
+      "file_placeholder": "Choose a file",
+      "files_loading": "Loading files…",
+      "no_files": "This project has no downloadable files.",
+      "no_instances": "No instances are installed yet. Add one from the Download page first.",
+      "no_players": "This instance has no player profiles yet. Start the game with it once, then try again.",
+      "player_hint_skin": "Only used if this pack turns out to be a skin pack.",
+      "player_required": "Choose a player to install a world.",
+      "install": "Install",
+      "quick_install_aria": "Install {{name}}",
+      "task_title": "Install {{name}}",
+      "task_desc": "{{file}} → {{instance}}",
+      "step_download": "Download {{name}}",
+      "step_download_done": "Downloaded {{size}}",
+      "step_detect": "Identify package",
+      "step_import": "Import into {{instance}}",
+      "step_import_done": "Imported",
+      "duplicate_found": "Already installed in this instance",
+      "duplicate_body": "Replace the existing copy with this file?",
+      "keep_existing": "Keep existing",
+      "overwrite": "Overwrite",
+      "duplicate_kept": "Kept the existing copy; nothing changed.",
+      "duplicate_overwriting": "Replacing the existing copy…",
+      "done_success": "Installed {{name}} into {{instance}}.",
+      "done_kept": "Nothing changed. The existing copy was kept.",
+      "cancelled": "Download cancelled",
+      "success_title_named": "{{name}} installed",
+      "error_title_named": "Couldn't install {{name}}"
+    }
+  }
+}

@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "無法切換鏡像源",
+    "cache_clean_failed": "無法清理 LIP 快取",
+    "updating": {
+      "log_title": "步驟",
+      "error_code": "錯誤代碼",
+      "details": "詳細資料",
+      "download_line": "已下載 {{percent}}%（{{downloaded}} / {{total}} MB）",
+      "retry_line": "正在重試更新（第 {{count}} 次）"
+    },
+    "onboarding": {
+      "footer_hint": "之後可以隨時在設定中修改這些選項。"
+    }
+  }
+}

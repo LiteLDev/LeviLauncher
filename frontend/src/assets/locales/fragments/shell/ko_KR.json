@@ -1,0 +1,11 @@
+{
+  "shell": {
+    "nav": {
+      "content": "콘텐츠",
+      "discover": "둘러보기"
+    },
+    "search": "명령 검색",
+    "search_placeholder": "검색…",
+    "activity_unread": "활동, 읽지 않음 {{count}}개"
+  }
+}

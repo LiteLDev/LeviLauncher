@@ -1,0 +1,39 @@
+{
+  "instances": {
+    "list": {
+      "current": "現在",
+      "settings": "設定",
+      "mods": "Mod",
+      "now_current": "{{name}} を現在のインスタンスにしました",
+      "select_hint": "カードをクリックすると現在のインスタンスになります。"
+    },
+    "settings": {
+      "sections": "インスタンス設定のセクション"
+    },
+    "ll": {
+      "dialog_title": "LeviLamina を{{action}}",
+      "installed_version": "インストール済み",
+      "target_version": "インストールするバージョン",
+      "instance": "インスタンス"
+    },
+    "run": {
+      "activity_hint": "これらの手順はアクティビティにも保存されます。",
+      "backup_failed_title": "バックアップに失敗しました"
+    },
+    "notify": {
+      "ll_install_failed": "LeviLamina のインストールに失敗しました",
+      "ll_remove_failed": "LeviLamina を削除できませんでした",
+      "ll_removed": "LeviLamina を削除しました",
+      "backup_open_failed": "バックアップを準備できませんでした",
+      "restore_open_failed": "バックアップファイルを開けませんでした"
+    },
+    "steps": {
+      "backup_scan": "バックアップするファイルを計測",
+      "backup_write": "バックアップを書き込み",
+      "restore_prepare": "復元を準備",
+      "restore_extract": "バックアップを展開",
+      "restore_scope": "{{scope}} を復元",
+      "restore_finalize": "復元を完了"
+    }
+  }
+}

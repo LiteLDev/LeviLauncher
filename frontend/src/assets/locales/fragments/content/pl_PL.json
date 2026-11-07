@@ -1,0 +1,30 @@
+{
+  "content_task": {
+    "import_title": "Importuj zawartość",
+    "transfer_title": "Przenieś zawartość",
+    "status_running": "Przetwarzanie…",
+    "status_success": "Gotowe",
+    "status_overwritten": "Nadpisano",
+    "status_skipped": "Pominięto (już istnieje)",
+    "summary": "Udane: {{ok}}, nieudane: {{failed}}, pominięte: {{skipped}}",
+    "skip": "Pomiń",
+    "overwrite_body": "Ten element już istnieje w miejscu docelowym. Nadpisać?",
+    "apply_to_all": "Zastosuj do pozostałych duplikatów",
+    "progress": "Ukończono {{done}} z {{total}}",
+    "progress_label": "Postęp",
+    "log_label": "Dziennik elementów",
+    "nothing_done": "Nic nie zaimportowano.",
+    "transfer_done": "Przenoszenie zakończone",
+    "transfer_partial": "Przenoszenie zakończone (częściowe błędy)",
+    "transfer_failed": "Przenoszenie nie powiodło się",
+    "no_instance_title": "Najpierw wybierz instancję",
+    "no_instance_body": "Wybierz instancję w selektorze u góry strony.",
+    "load_targets_failed": "Nie można wczytać instancji",
+    "choose_instance_hint": "Wybierz instancję, aby zarządzać jej światami, paczkami i inną zawartością.",
+    "back_to_hub": "Wróć do zarządzania zawartością",
+    "clear_search": "Wyczyść wyszukiwanie",
+    "world_deleted": "Świat usunięty",
+    "delete_failed": "Usuwanie nie powiodło się",
+    "world_saved": "Zapisano level.dat"
+  }
+}

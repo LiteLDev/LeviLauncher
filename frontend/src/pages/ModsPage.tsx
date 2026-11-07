@@ -15,11 +15,10 @@ import {
   Tooltip
 } from "@heroui/react";
 
-import React, { useMemo, useRef } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
-import { ImportResultModal } from "@/components/ImportResultModal";
-import { UnifiedModal } from "@/components/UnifiedModal";
+import { UnifiedModal, type ModalType } from "@/components/UnifiedModal";
 import { useTranslation } from "react-i18next";
 import { Dialogs } from "@wailsio/runtime";
 import {
@@ -41,19 +40,39 @@ import {
   FaBoxOpen,
 } from "react-icons/fa";
 import { LuDownload } from "react-icons/lu";
-import { FiUploadCloud, FiAlertTriangle } from "react-icons/fi";
+import {
+  FiUploadCloud,
+  FiAlertTriangle,
+  FiCheckCircle,
+  FiClock,
+  FiLayers,
+  FiMinusCircle,
+  FiRefreshCw,
+  FiXCircle,
+} from "react-icons/fi";
 import { FileDropOverlay } from "@/components/FileDropOverlay";
 import { useFileDrag } from "@/hooks/useFileDrag";
-import { useModsPage } from "@/hooks/useModsPage";
+import {
+  useModsPage,
+  type BatchResult,
+  type ImportLogEntry,
+  type ImportLogStatus,
+} from "@/hooks/useModsPage";
 import type { LipGroupItem, ModListItem } from "@/utils/modIntelligenceResolver";
 import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
+import { InstancePicker, useInstanceList } from "@/components/InstancePicker";
 import { LAYOUT } from "@/constants/layout";
+import { ROUTES } from "@/constants/routes";
 import { cn } from "@/utils/cn";
+import { openActivityCenter } from "@/utils/activity";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
 
+type TFunc = (key: string, opts?: Record<string, unknown>) => string;
+type ModsPageModel = ReturnType<typeof useModsPage>;
+
 const resolveLipChildrenSummary = (
-  t: (key: string, opts?: Record<string, unknown>) => string,
+  t: TFunc,
   item: LipGroupItem,
 ): string => {
   if (!item.childPreview) {
@@ -68,11 +87,400 @@ const resolveLipChildrenSummary = (
   });
 };
 
+const IMPORT_STATUS_STYLE: Record<
+  ImportLogStatus,
+  { icon: React.ElementType | null; className: string }
+> = {
+  waiting: { icon: FiClock, className: "text-amber-600 dark:text-amber-400" },
+  importing: { icon: null, className: "text-brand-600 dark:text-brand-400" },
+  imported: {
+    icon: FiCheckCircle,
+    className: "text-brand-600 dark:text-brand-400",
+  },
+  overwritten: {
+    icon: FiRefreshCw,
+    className: "text-brand-600 dark:text-brand-400",
+  },
+  skipped: { icon: FiMinusCircle, className: "text-muted" },
+  failed: { icon: FiXCircle, className: "text-rose-600 dark:text-rose-400" },
+};
+
+const ImportLogRow: React.FC<{ entry: ImportLogEntry; t: TFunc }> = ({
+  entry,
+  t,
+}) => {
+  const style = IMPORT_STATUS_STYLE[entry.status];
+  const Icon = style.icon;
+  return (
+    <li className="flex min-w-0 items-start gap-3 py-2">
+      <span className={cn("mt-1 flex size-4 shrink-0 items-center", style.className)}>
+        {Icon ? (
+          <Icon aria-hidden="true" className="size-4" />
+        ) : (
+          <Spinner size="sm" color="current" />
+        )}
+      </span>
+      <div className="min-w-0 flex-1">
+        <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-x-3">
+          <span className="min-w-0 font-mono text-sm text-foreground [overflow-wrap:anywhere]">
+            {entry.name}
+          </span>
+          <span className={cn("shrink-0 text-xs font-medium", style.className)}>
+            {t(`mods.import_log.${entry.status}`)}
+          </span>
+        </div>
+        {entry.reason && (
+          <div className="text-xs leading-5 text-muted [overflow-wrap:anywhere]">
+            {entry.reason}
+          </div>
+        )}
+      </div>
+    </li>
+  );
+};
+
+const fieldInputClass = cn(
+  COMPONENT_STYLES.input.inputWrapper,
+  COMPONENT_STYLES.input.input,
+  "min-h-8 text-sm",
+);
+
+// Progress, inline questions (DLL details, overwrite) and the per-file
+// result log share one dialog that stays open until the user closes it.
+const ModsImportDialog: React.FC<{ mp: ModsPageModel; t: TFunc }> = ({
+  mp,
+  t,
+}) => {
+  const logRef = useRef<HTMLOListElement | null>(null);
+  const finished = !mp.importing;
+  const counts = useMemo(() => {
+    const result = { succeeded: 0, skipped: 0, failed: 0 };
+    for (const entry of mp.importLog) {
+      if (entry.status === "imported" || entry.status === "overwritten") {
+        result.succeeded += 1;
+      } else if (entry.status === "skipped") {
+        result.skipped += 1;
+      } else if (entry.status === "failed") {
+        result.failed += 1;
+      }
+    }
+    return result;
+  }, [mp.importLog]);
+
+  // Keep the newest line in view while the log grows.
+  useEffect(() => {
+    const el = logRef.current;
+    if (el) el.scrollTop = el.scrollHeight;
+  }, [mp.importLog.length, mp.importPrompt]);
+
+  let title = t("mods.importing_title");
+  let type: ModalType = "primary";
+  if (finished) {
+    if (mp.importError) {
+      title = t("mods.notify.import_failed");
+      type = "error";
+    } else if (counts.failed === 0 && counts.succeeded === 0) {
+      title = t("mods.import_dialog.nothing_imported");
+      type = "info";
+    } else if (counts.failed === 0) {
+      title = t("mods.summary_title_done");
+      type = "success";
+    } else if (counts.succeeded > 0) {
+      title = t("mods.summary_title_partial");
+      type = "warning";
+    } else {
+      title = t("mods.summary_failed");
+      type = "error";
+    }
+  }
+
+  const prompt = mp.importPrompt;
+  const { done, total } = mp.importProgress;
+
+  return (
+    <UnifiedModal
+      size="wide"
+      isOpen={mp.importOpen}
+      onOpenChange={mp.importOnOpenChange}
+      title={title}
+      type={type}
+      icon={finished ? undefined : <FiUploadCloud className="w-6 h-6" />}
+      isDismissable={finished}
+      contentKey="mods-import"
+      showConfirmButton={false}
+      footer={
+        finished ? (
+          <>
+            <ModalAction variant="secondary" onPress={openActivityCenter}>
+              {t("mods.import_dialog.open_activity")}
+            </ModalAction>
+            <ModalAction variant="primary" onPress={mp.closeImportDialog}>
+              {t("common.close")}
+            </ModalAction>
+          </>
+        ) : null
+      }
+    >
+      <ModalProgress
+        label={t("mods.importing_title")}
+        description={finished ? undefined : t("mods.importing_body")}
+        value={total > 0 ? (done / total) * 100 : undefined}
+        detail={
+          total > 0 ? (
+            <span className="flex flex-wrap gap-x-3">
+              <span>{t("mods.importing_count", { done, total })}</span>
+              {finished && (
+                <span>
+                  {t("mods.import_summary", {
+                    imported: counts.succeeded,
+                    skipped: counts.skipped,
+                    failed: counts.failed,
+                  })}
+                </span>
+              )}
+            </span>
+          ) : undefined
+        }
+      />
+
+      {prompt?.kind === "dll" && (
+        <section
+          aria-label={t("mods.dll_modal_title")}
+          className="flex min-w-0 flex-col gap-4 rounded-xl border border-brand-500/30 bg-brand-500/5 p-4"
+        >
+          <div className="flex min-w-0 items-center gap-2 text-sm font-semibold text-foreground">
+            <FaPuzzlePiece aria-hidden="true" className="shrink-0 text-brand-600 dark:text-brand-400" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">
+              {t("mods.dll_modal_title")}: <span className="font-mono">{prompt.file}</span>
+            </span>
+          </div>
+          <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+            <TextField
+              isRequired
+              isInvalid={!mp.dllName.trim()}
+              className={cn("group sm:col-span-2", COMPONENT_STYLES.input.mainWrapper)}
+              value={mp.dllName}
+              onChange={mp.setDllName}
+            >
+              <Label className={COMPONENT_STYLES.input.label}>
+                {t("mods.dll_name") as string}
+              </Label>
+              <Input autoFocus className={fieldInputClass} />
+              <FieldError>{t("audit.mods.name_required")}</FieldError>
+            </TextField>
+            <TextField
+              className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
+              value={mp.dllType}
+              onChange={mp.setDllType}
+            >
+              <Label className={COMPONENT_STYLES.input.label}>
+                {t("mods.dll_type") as string}
+              </Label>
+              <Input className={fieldInputClass} />
+            </TextField>
+            <TextField
+              className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
+              value={mp.dllVersion}
+              onChange={mp.setDllVersion}
+            >
+              <Label className={COMPONENT_STYLES.input.label}>
+                {t("mods.dll_version") as string}
+              </Label>
+              <Input className={fieldInputClass} />
+            </TextField>
+          </div>
+          <div className="flex flex-wrap justify-end gap-2">
+            <ModalAction variant="secondary" onPress={() => mp.answerImportPrompt(false)}>
+              {t("mods.import_prompt.skip")}
+            </ModalAction>
+            <ModalAction
+              variant="primary"
+              isDisabled={!mp.dllName.trim()}
+              onPress={() => mp.answerImportPrompt(true)}
+            >
+              {t("mods.import_prompt.import")}
+            </ModalAction>
+          </div>
+        </section>
+      )}
+
+      {prompt?.kind === "duplicate" && (
+        <section
+          aria-label={t("mods.overwrite_modal_title")}
+          className="flex min-w-0 flex-col gap-3 rounded-xl border border-amber-300/60 bg-amber-50/70 p-4 dark:border-amber-500/20 dark:bg-amber-500/10"
+        >
+          <div className="flex min-w-0 items-start gap-2 text-sm font-semibold text-amber-800 dark:text-amber-200">
+            <FiAlertTriangle aria-hidden="true" className="mt-1 shrink-0" />
+            <span className="min-w-0 [overflow-wrap:anywhere]">
+              {t("mods.overwrite_modal_title")}: <span className="font-mono">{prompt.file}</span>
+            </span>
+          </div>
+          <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
+          <div className="flex flex-wrap items-center justify-between gap-3">
+            <Checkbox
+              isSelected={mp.dupApplyAll}
+              onChange={mp.setDupApplyAll}
+              className="group m-0"
+            >
+              <Checkbox.Content>
+                <Checkbox.Control>
+                  <Checkbox.Indicator />
+                </Checkbox.Control>
+                <span className="text-sm text-foreground/80 dark:text-zinc-300">
+                  {t("mods.import_prompt.apply_all")}
+                </span>
+              </Checkbox.Content>
+            </Checkbox>
+            <div className="flex flex-wrap gap-2">
+              <ModalAction variant="secondary" onPress={() => mp.answerImportPrompt(false)}>
+                {t("mods.import_prompt.skip")}
+              </ModalAction>
+              <ModalAction variant="primary" onPress={() => mp.answerImportPrompt(true)}>
+                {t("mods.import_prompt.overwrite")}
+              </ModalAction>
+            </div>
+          </div>
+        </section>
+      )}
+
+      {finished && mp.importError && (
+        <ModalNotice tone="danger" role="alert">
+          {mp.importError}
+        </ModalNotice>
+      )}
+
+      {mp.importLog.length > 0 && (
+        <ol
+          ref={logRef}
+          role="log"
+          aria-label={t("mods.import_dialog.log_label")}
+          className={cn(
+            ModalPanelClass,
+            "max-h-[min(18rem,40vh)] overflow-y-auto custom-scrollbar divide-y divide-border/60 py-1",
+          )}
+        >
+          {mp.importLog.map((entry) => (
+            <ImportLogRow key={entry.id} entry={entry} t={t} />
+          ))}
+        </ol>
+      )}
+    </UnifiedModal>
+  );
+};
+
+const ModalPanelClass =
+  "launcher-modal-panel min-w-0 rounded-xl border border-border/70 bg-surface-secondary/50 px-4 text-sm leading-6";
+
+const BatchResultView: React.FC<{ result: BatchResult; t: TFunc }> = ({
+  result,
+  t,
+}) => (
+  <div className="flex min-w-0 flex-col gap-4">
+    {result.success.length > 0 && (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <FiCheckCircle aria-hidden="true" className="size-4 text-brand-600 dark:text-brand-400" />
+          {t("mods.summary_success")} ({result.success.length})
+        </div>
+        <ModalPanel className="max-h-40 overflow-y-auto custom-scrollbar font-mono whitespace-pre-wrap [overflow-wrap:anywhere]">
+          {result.success.join("\n")}
+        </ModalPanel>
+      </div>
+    )}
+    {result.demoted.length > 0 && (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <FiLayers aria-hidden="true" className="size-4 text-amber-600 dark:text-amber-400" />
+          {t("mods.batch_result.demoted")} ({result.demoted.length})
+        </div>
+        <ModalNotice tone="warning">
+          <div className="font-mono [overflow-wrap:anywhere]">{result.demoted.join("\n")}</div>
+          <div className="mt-2">{t("errors.ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY")}</div>
+        </ModalNotice>
+      </div>
+    )}
+    {result.failed.length > 0 && (
+      <div className="flex flex-col gap-2">
+        <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
+          <FiAlertTriangle aria-hidden="true" className="size-4 text-rose-600 dark:text-rose-300" />
+          {t("mods.summary_failed")} ({result.failed.length})
+        </div>
+        <ModalNotice tone="danger" className="max-h-60 overflow-y-auto">
+          <div className="flex flex-col gap-3 [overflow-wrap:anywhere]">
+            {result.failed.map((item, idx) => (
+              <div key={idx} className="flex min-w-0 flex-col gap-1">
+                <span className="font-mono font-medium">{item.name}</span>
+                <span>{item.err}</span>
+              </div>
+            ))}
+          </div>
+        </ModalNotice>
+      </div>
+    )}
+  </div>
+);
+
+const batchResultHeading = (
+  t: TFunc,
+  result: BatchResult,
+): { title: string; type: ModalType } => {
+  if (result.failed.length === 0) {
+    return {
+      title: t("mods.action_result_title_done"),
+      type: result.demoted.length > 0 ? "warning" : "success",
+    };
+  }
+  if (result.success.length > 0 || result.demoted.length > 0) {
+    return { title: t("mods.action_result_title_partial"), type: "warning" };
+  }
+  return { title: t("mods.action_result_title_failed"), type: "error" };
+};
+
+// Shown in place of the list when no instance is selected, so the user can
+// pick one here instead of being sent to the instance list.
+const NoInstanceState: React.FC<{ t: TFunc; onDownload: () => void }> = ({
+  t,
+  onDownload,
+}) => {
+  const { instances, loading } = useInstanceList();
+  const noneInstalled = !loading && instances.length === 0;
+  return (
+    <Card className={cn("flex-1 min-h-[16rem]", LAYOUT.GLASS_CARD.BASE)}>
+      <Card.Content className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
+        <div className="flex size-14 items-center justify-center rounded-2xl bg-brand-500/10 text-brand-600 dark:text-brand-400">
+          <FaPuzzlePiece aria-hidden="true" className="size-6" />
+        </div>
+        <div className="flex max-w-[32rem] flex-col gap-1">
+          <h2 className="text-lg font-semibold text-foreground">
+            {t(noneInstalled ? "mods.no_instance.none_title" : "mods.no_instance.title")}
+          </h2>
+          <p className="text-sm text-muted">
+            {t(noneInstalled ? "mods.no_instance.none_body" : "mods.no_instance.body")}
+          </p>
+        </div>
+        {noneInstalled ? (
+          <Button
+            variant="primary"
+            onPress={onDownload}
+            className="bg-brand-500 hover:bg-brand-500 brand-primary-foreground"
+          >
+            <LuDownload />
+            {t("mods.no_instance.download")}
+          </Button>
+        ) : (
+          <InstancePicker label={t("instance_picker.label")} className="w-72" />
+        )}
+      </Card.Content>
+    </Card>
+  );
+};
+
 export const ModsPage: React.FC = () => {
   const { t } = useTranslation();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const isDragActive = useFileDrag(scrollRef as React.RefObject<HTMLElement>);
   const mp = useModsPage(t as any, scrollRef);
+  const hasInstance = Boolean(mp.currentVersionName);
 
   const visibleCount = mp.visibleItems.length;
   const allSelected = visibleCount > 0 && mp.selectedKeys.size === visibleCount;
@@ -87,6 +495,35 @@ export const ModsPage: React.FC = () => {
   const listGridColumns =
     "grid-cols-[2rem_minmax(0,1fr)_auto] md:grid-cols-[2rem_minmax(0,1fr)_minmax(10rem,12rem)_minmax(7rem,auto)]";
 
+  const pickAndImport = async () => {
+    try {
+      const result = await Dialogs.OpenFile({
+        Filters: [
+          {
+            DisplayName: t("mods.file_filter_mcmod"),
+            Pattern: "*.mcmod",
+          },
+          {
+            DisplayName: t("mods.file_filter_all"),
+            Pattern: "*.*",
+          },
+        ],
+        AllowsMultipleSelection: true,
+        Title: t("mods.import_button"),
+      });
+      if (result && result.length > 0) {
+        void mp.doImportFromPaths(result);
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  };
+
+  // Only one batch dialog is open at a time, so they share the result.
+  const batchHeading = mp.batchResult
+    ? batchResultHeading(t as any, mp.batchResult)
+    : null;
+
   return (
     <PageContainer
       ref={scrollRef}
@@ -96,230 +533,35 @@ export const ModsPage: React.FC = () => {
     >
       <FileDropOverlay isDragActive={isDragActive} text={t("mods.drop_hint")} />
 
-      <UnifiedModal
-        size="wide"
-        isOpen={mp.importing && !mp.dllOpen}
-        title={t("mods.importing_title")}
-        type="primary"
-        icon={<FiUploadCloud className="w-6 h-6" />}
-        isDismissable={false}
-        showConfirmButton={false}
-      >
-        <ModalProgress
-          label={t("mods.importing_title")}
-          description={<> {t("mods.importing_body")} </>}
-          value={
-            mp.importProgress.total > 0
-              ? (mp.importProgress.done / mp.importProgress.total) * 100
-              : undefined
-          }
-          detail={
-            mp.importProgress.total > 0
-              ? t("mods.importing_count", {
-                  done: mp.importProgress.done,
-                  total: mp.importProgress.total,
-                })
-              : undefined
-          }
-          currentItem={mp.currentFile}
-        />
-      </UnifiedModal>
-
-      <ImportResultModal
-        isOpen={mp.errOpen}
-        onOpenChange={mp.errOnOpenChange}
-        results={{ success: mp.resultSuccess, failed: mp.resultFailed }}
-        onConfirm={() => {
-          mp.setErrorMsg("");
-          mp.setErrorFile("");
-          mp.setResultSuccess([]);
-          mp.setResultFailed([]);
-          mp.errOnClose();
-        }}
-      />
-
-      <ImportResultModal
-        isOpen={mp.delOpen}
-        onOpenChange={mp.delOnOpenChange}
-        results={{ success: mp.resultSuccess, failed: mp.resultFailed }}
-        titleDone={t("mods.action_result_title_done")}
-        titlePartial={t("mods.action_result_title_partial")}
-        titleFailed={t("mods.action_result_title_failed")}
-        onConfirm={() => {
-          mp.setErrorMsg("");
-          mp.setErrorFile("");
-          mp.setResultSuccess([]);
-          mp.setResultFailed([]);
-          mp.delOnClose();
-        }}
-      />
-
-      <UnifiedModal
-        size="wide"
-        isOpen={mp.dllOpen}
-        onOpenChange={mp.dllOnOpenChange}
-        title={t("mods.dll_modal_title")}
-        type="primary"
-        icon={<FaPuzzlePiece className="w-6 h-6" />}
-        onConfirm={() => {
-          const nm = mp.dllName.trim();
-          if (!nm) return;
-          const tp = (mp.dllType || "").trim() || "preload-native";
-          const ver = (mp.dllVersion || "").trim() || "0.0.0";
-          mp.dllConfirmRef.current = {
-            name: nm,
-            type: tp,
-            version: ver,
-          };
-          try {
-            mp.dllResolveRef.current && mp.dllResolveRef.current(true);
-          } finally {
-            mp.dllOnClose();
-          }
-        }}
-        onCancel={() => {
-          try {
-            mp.dllConfirmRef.current = null;
-            mp.dllResolveRef.current && mp.dllResolveRef.current(false);
-          } finally {
-            mp.dllOnClose();
-          }
-        }}
-        showCancelButton
-        confirmText={t("common.confirm")}
-        cancelText={t("common.cancel")}
-        confirmButtonProps={{ isDisabled: !mp.dllName.trim() }}
-      >
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
-          <TextField
-            isRequired
-            isInvalid={!mp.dllName.trim()}
-            className={cn("group sm:col-span-2", COMPONENT_STYLES.input.mainWrapper)}
-            value={mp.dllName}
-            onChange={mp.setDllName}
-          >
-            <Label className={COMPONENT_STYLES.input.label}>
-              {t("mods.dll_name") as string}
-            </Label>
-            <Input
-              autoFocus
-              className={cn(
-                COMPONENT_STYLES.input.inputWrapper,
-                COMPONENT_STYLES.input.input,
-                "min-h-8 text-sm",
-              )}
-            />
-            <FieldError>{t("audit.mods.name_required")}</FieldError>
-          </TextField>
-          <TextField
-            className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
-            value={mp.dllType}
-            onChange={mp.setDllType}
-          >
-            <Label className={COMPONENT_STYLES.input.label}>
-              {t("mods.dll_type") as string}
-            </Label>
-            <Input
-              className={cn(
-                COMPONENT_STYLES.input.inputWrapper,
-                COMPONENT_STYLES.input.input,
-                "min-h-8 text-sm",
-              )}
-            />
-          </TextField>
-          <TextField
-            className={cn("group", COMPONENT_STYLES.input.mainWrapper)}
-            value={mp.dllVersion}
-            onChange={mp.setDllVersion}
-          >
-            <Label className={COMPONENT_STYLES.input.label}>
-              {t("mods.dll_version") as string}
-            </Label>
-            <Input
-              className={cn(
-                COMPONENT_STYLES.input.inputWrapper,
-                COMPONENT_STYLES.input.input,
-                "min-h-8 text-sm",
-              )}
-            />
-          </TextField>
-        </div>
-      </UnifiedModal>
-
-      <UnifiedModal
-        isOpen={mp.dupOpen}
-        onOpenChange={mp.dupOnOpenChange}
-        title={t("mods.overwrite_modal_title")}
-        type="warning"
-        onConfirm={() => {
-          try {
-            mp.dupResolveRef.current && mp.dupResolveRef.current(true);
-          } finally {
-            mp.dupOnClose();
-          }
-        }}
-        onCancel={() => {
-          try {
-            mp.dupResolveRef.current && mp.dupResolveRef.current(false);
-          } finally {
-            mp.dupOnClose();
-          }
-        }}
-        showCancelButton
-        confirmText={t("common.confirm")}
-        cancelText={t("common.cancel")}
-      >
-        <ModalDescription>{t("mods.overwrite_modal_body")}</ModalDescription>
-        {mp.dupNameRef.current ? <ModalPanel className="font-mono">{mp.dupNameRef.current}</ModalPanel> : null}
-      </UnifiedModal>
+      <ModsImportDialog mp={mp} t={t as any} />
 
       <Card className={cn("shrink-0", LAYOUT.GLASS_CARD.BASE)}>
-        <Card.Content className="p-6 flex flex-col gap-6">
+        <Card.Content className="p-4 sm:p-6 flex flex-col gap-6">
           <PageHeader
             title={t("moddedcard.title")}
             description={
-              <div className="flex items-center gap-2">
-                <span>{mp.currentVersionName || "No Version Selected"}</span>
-                {mp.modsInfo.length > 0 && (
-                  <Chip
-                    size="sm"
-                    variant="soft"
-                    className={
-                      "h-5 text-xs bg-surface-secondary "
-                    }
-                  >
-                    <Chip.Label>{mp.modsInfo.length}</Chip.Label>
-                  </Chip>
-                )}
-              </div>
+              hasInstance ? (
+                <div className="flex min-w-0 flex-wrap items-center gap-2">
+                  <InstancePicker size="sm" />
+                  {mp.modsInfo.length > 0 && (
+                    <Chip
+                      size="sm"
+                      variant="soft"
+                      className={
+                        "h-5 text-xs bg-surface-secondary "
+                      }
+                    >
+                      <Chip.Label>{mp.modsInfo.length}</Chip.Label>
+                    </Chip>
+                  )}
+                </div>
+              ) : undefined
             }
             endContent={
-              <>
+              <div className="flex flex-wrap items-center gap-2">
                 <Button
-                  onPress={async () => {
-                    try {
-                      const result = await Dialogs.OpenFile({
-                        Filters: [
-                          {
-                            DisplayName: t("mods.file_filter_mcmod"),
-                            Pattern: "*.mcmod",
-                          },
-                          {
-                            DisplayName: t("mods.file_filter_all"),
-                            Pattern: "*.*",
-                          },
-                        ],
-                        AllowsMultipleSelection: true,
-                        Title: t("mods.import_button"),
-                      });
-                      if (result && result.length > 0) {
-                        void mp.doImportFromPaths(result);
-                      }
-                    } catch (e) {
-                      console.error(e);
-                    }
-                  }}
-                  isDisabled={mp.importing}
+                  onPress={() => void pickAndImport()}
+                  isDisabled={mp.importing || !hasInstance}
                   variant={"primary"}
                   className={cn(
                     "shadow-md",
@@ -331,19 +573,24 @@ export const ModsPage: React.FC = () => {
                 </Button>
                 <Button
                   onPress={mp.openFolder}
+                  isDisabled={!hasInstance}
                   variant={"secondary"}
                   className={"bg-surface-secondary "}
                 >
                   {t("downloadmodal.open_folder")}
                 </Button>
-              </>
+              </div>
             }
           />
         </Card.Content>
       </Card>
 
+      {!hasInstance ? (
+        <NoInstanceState t={t as any} onDownload={() => mp.navigate(ROUTES.download)} />
+      ) : (
+      <>
       <div className="flex flex-col gap-3 px-2">
-        <div className="flex flex-col sm:flex-row items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center gap-3">
           <TextField
             aria-label={t("common.search_placeholder")}
             className={cn(
@@ -476,10 +723,12 @@ export const ModsPage: React.FC = () => {
         )}
       </div>
 
-      <div className="flex-1 overflow-hidden flex flex-col">
+      {/* Container queries: the selection bar collapses by the list's own
+          width, and very wide lists split into two columns of rows. */}
+      <div className="@container flex-1 min-h-[16rem] overflow-hidden flex flex-col">
         <div className="px-4 py-2 text-sm text-muted dark:text-zinc-400 font-semibold">
           {selectedCount > 0 ? (
-            <div className="flex items-center gap-3 animate-in fade-in slide-in-from-left-2 duration-200">
+            <div className="flex flex-wrap items-center gap-2 @min-[36rem]:gap-3 animate-in fade-in slide-in-from-left-2 duration-200">
               <div className="w-8 flex justify-center">
                 <Checkbox
                   aria-label={t("common.select_all")}
@@ -503,19 +752,20 @@ export const ModsPage: React.FC = () => {
                 size="sm"
                 onPress={mp.openBatchUpdateConfirm}
                 variant={"secondary"}
+                aria-label={t("mods.action_update")}
                 className={
                   "bg-brand-500/10 text-brand-600 dark:text-brand-400 h-8 min-w-0 px-3"
                 }
               >
                 {<FaSync />}
-                {t("mods.action_update")}
+                <span className="hidden @min-[28rem]:inline">{t("mods.action_update")}</span>
               </Button>
               <Button
                 size="sm"
                 onPress={mp.handleBatchEnable}
                 variant={"secondary"}
                 className={
-                  "bg-surface-secondary h-8 min-w-0 px-3"
+                  "hidden @min-[36rem]:inline-flex bg-surface-secondary h-8 min-w-0 px-3"
                 }
               >
                 {<FaCheck />}
@@ -526,7 +776,7 @@ export const ModsPage: React.FC = () => {
                 onPress={mp.handleBatchDisable}
                 variant={"secondary"}
                 className={
-                  "bg-surface-secondary h-8 min-w-0 px-3"
+                  "hidden @min-[36rem]:inline-flex bg-surface-secondary h-8 min-w-0 px-3"
                 }
               >
                 {<FaBan />}
@@ -536,11 +786,45 @@ export const ModsPage: React.FC = () => {
                 size="sm"
                 onPress={mp.openBatchUninstallConfirm}
                 variant={"danger-soft"}
+                aria-label={t("mods.action_uninstall")}
                 className={"bg-rose-500/10 text-danger h-8 min-w-0 px-3"}
               >
                 {<FaTrash />}
-                {t("mods.action_uninstall")}
+                <span className="hidden @min-[28rem]:inline">{t("mods.action_uninstall")}</span>
               </Button>
+              <div className="@min-[36rem]:hidden">
+                <Dropdown>
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant={"ghost"}
+                    className={"text-muted"}
+                    aria-label={t("mods.batch_more_actions")}
+                  >
+                    <FaEllipsisVertical />
+                  </Button>
+                  <Dropdown.Popover className={COMPONENT_STYLES.dropdown.content}>
+                    <Dropdown.Menu aria-label={t("mods.batch_more_actions")}>
+                      <Dropdown.Item
+                        id="enable"
+                        textValue={t("common.enable")}
+                        onAction={() => void mp.handleBatchEnable()}
+                      >
+                        <FaCheck />
+                        <Label>{t("common.enable")}</Label>
+                      </Dropdown.Item>
+                      <Dropdown.Item
+                        id="disable"
+                        textValue={t("common.disable")}
+                        onAction={() => void mp.handleBatchDisable()}
+                      >
+                        <FaBan />
+                        <Label>{t("common.disable")}</Label>
+                      </Dropdown.Item>
+                    </Dropdown.Menu>
+                  </Dropdown.Popover>
+                </Dropdown>
+              </div>
             </div>
           ) : (
             <div className={cn("grid items-center gap-x-3", listGridColumns)}>
@@ -573,7 +857,7 @@ export const ModsPage: React.FC = () => {
                     <FaChevronDown className="text-xs" />
                   ))}
               </button>
-              <div className="hidden md:block">{t("common.version")}</div>
+              <div className="hidden md:@max-[100rem]:block">{t("common.version")}</div>
               <div className="col-start-3 md:col-start-4 justify-self-end">
                 <button
                   className="flex items-center gap-1.5 text-xs hover:text-foreground dark:hover:text-zinc-300 transition-colors"
@@ -588,19 +872,14 @@ export const ModsPage: React.FC = () => {
           )}
         </div>
 
-        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar flex flex-col gap-2">
-          {!mp.currentVersionName ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted gap-2">
-              <FiAlertTriangle className="w-8 h-8 opacity-50" />
-              <p>{t("launcherpage.currentVersion_none")}</p>
-            </div>
-          ) : mp.listHydrating ? (
-            <div className="flex flex-col items-center justify-center h-full text-muted gap-3">
+        <div className="flex-1 overflow-y-auto p-2 custom-scrollbar grid content-start gap-2 @min-[100rem]:grid-cols-2">
+          {mp.listHydrating ? (
+            <div className="col-span-full flex flex-col items-center justify-center py-12 text-muted gap-3">
               <Spinner size="lg" color={"accent"} />
               <p>{t("common.loading")}</p>
             </div>
           ) : mp.visibleItems.length === 0 ? (
-            <div role="status" className="flex flex-col items-center justify-center h-full text-muted gap-2">
+            <div role="status" className="col-span-full flex flex-col items-center justify-center py-12 text-muted gap-2">
               <FaPuzzlePiece className="w-8 h-8 opacity-50" />
               <p>
                 {t(
@@ -609,7 +888,7 @@ export const ModsPage: React.FC = () => {
                     : "moddedcard.content.none",
                 )}
               </p>
-              {mp.hasInstalledItems && (
+              {mp.hasInstalledItems ? (
                 <Button
                   variant="secondary"
                   onPress={() => {
@@ -619,6 +898,11 @@ export const ModsPage: React.FC = () => {
                   }}
                 >
                   {t("audit.mods.clear_filters")}
+                </Button>
+              ) : (
+                <Button variant="secondary" onPress={() => void pickAndImport()}>
+                  <FiUploadCloud />
+                  {t("mods.import_button")}
                 </Button>
               )}
             </div>
@@ -1019,6 +1303,8 @@ export const ModsPage: React.FC = () => {
           )}
         </div>
       </div>
+      </>
+      )}
 
       <UnifiedModal
         size="wide"
@@ -1249,33 +1535,24 @@ export const ModsPage: React.FC = () => {
         onOpenChange={mp.delCfmOnOpenChange}
         onConfirm={mp.handleDeleteCurrentTarget}
         title={t("mods.action_uninstall")}
-        description={t("mods.confirm_delete_body", {
-          type: t("mods.action_uninstall"),
-        })}
+        description={
+          <>
+            {t("mods.confirm_delete_body", {
+              type: t("mods.action_uninstall"),
+            })}
+            {/* Says up front what used to arrive as a follow-up warning. */}
+            {mp.activeDeleteMayDemote && !mp.activeDeleteWarning && (
+              <ModalNotice tone="info" className="mt-3">
+                {t("mods.uninstall.dependency_note")}
+              </ModalNotice>
+            )}
+          </>
+        }
         itemName={mp.activeDeleteName}
         isPending={mp.deleting}
         confirmDisabled={mp.activeDeleteBlocked}
         warning={mp.activeDeleteWarning}
       />
-
-      <UnifiedModal
-        isOpen={mp.demotedWarningOpen}
-        onOpenChange={mp.demotedWarningOnOpenChange}
-        title={t("common.tip")}
-        type="warning"
-        confirmText={t("common.confirm")}
-        showCancelButton={false}
-        onConfirm={mp.closeDemotedWarning}
-      >
-        <ModalDescription className="whitespace-pre-wrap">
-          {t("errors.ERR_LIP_PACKAGE_DEMOTED_TO_DEPENDENCY")}
-        </ModalDescription>
-        {mp.demotedWarningNames.length > 0 ? (
-          <ModalNotice tone="warning" className="whitespace-pre-wrap break-all font-mono">
-            {mp.demotedWarningNames.join("\n")}
-          </ModalNotice>
-        ) : null}
-      </UnifiedModal>
 
       <UnifiedModal
         isOpen={mp.actionConfirmOpen}
@@ -1298,42 +1575,86 @@ export const ModsPage: React.FC = () => {
       <UnifiedModal
         isOpen={mp.batchUpdateOpen}
         onOpenChange={mp.batchUpdateOnOpenChange}
-        title={t("mods.batch_update_title")}
-        type="primary"
-        showCancelButton
+        title={batchHeading?.title ?? t("mods.batch_update_title")}
+        type={batchHeading?.type ?? "primary"}
+        isDismissable={!!mp.batchResult}
+        contentKey={mp.batchResult ? "result" : "confirm"}
+        showCancelButton={!mp.batchResult}
+        showConfirmButton={!mp.batchResult}
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}
         onCancel={mp.batchUpdateOnClose}
         onConfirm={() => void mp.handleBatchUpdate()}
         confirmButtonProps={{ isPending: mp.batchUpdating }}
         cancelButtonProps={{ isDisabled: mp.batchUpdating }}
+        footer={
+          mp.batchResult ? (
+            <ModalAction variant="primary" onPress={mp.batchUpdateOnClose}>
+              {t("common.close")}
+            </ModalAction>
+          ) : undefined
+        }
       >
-        <ModalDescription className="whitespace-pre-wrap">
-          {t("mods.batch_update_body", {
-            selected: mp.selectedItems.length,
-            updatable: mp.selectedUpdatableCount,
-          })}
-        </ModalDescription>
+        {mp.batchResult ? (
+          <BatchResultView result={mp.batchResult} t={t as any} />
+        ) : (
+          <ModalDescription className="whitespace-pre-wrap">
+            {t("mods.batch_update_body", {
+              selected: mp.selectedItems.length,
+              updatable: mp.selectedUpdatableCount,
+            })}
+          </ModalDescription>
+        )}
       </UnifiedModal>
 
       <UnifiedModal
         isOpen={mp.batchUninstallOpen}
         onOpenChange={mp.batchUninstallOnOpenChange}
-        title={t("mods.batch_uninstall_title")}
-        type="error"
-        showCancelButton
+        title={batchHeading?.title ?? t("mods.batch_uninstall_title")}
+        type={batchHeading?.type ?? "error"}
+        isDismissable={!!mp.batchResult}
+        contentKey={mp.batchResult ? "result" : "confirm"}
+        showCancelButton={!mp.batchResult}
+        showConfirmButton={!mp.batchResult}
         confirmText={t("common.confirm")}
         cancelText={t("common.cancel")}
         onCancel={mp.batchUninstallOnClose}
         onConfirm={() => void mp.handleBatchUninstall()}
         confirmButtonProps={{ isPending: mp.batchUninstalling, variant: "danger" }}
         cancelButtonProps={{ isDisabled: mp.batchUninstalling }}
+        footer={
+          mp.batchResult ? (
+            <ModalAction variant="primary" onPress={mp.batchUninstallOnClose}>
+              {t("common.close")}
+            </ModalAction>
+          ) : undefined
+        }
       >
-        <ModalDescription className="whitespace-pre-wrap">
-          {t("mods.batch_uninstall_body", {
-            count: mp.selectedItems.length,
-          })}
-        </ModalDescription>
+        {mp.batchResult ? (
+          <BatchResultView result={mp.batchResult} t={t as any} />
+        ) : (
+          <>
+            <ModalDescription className="whitespace-pre-wrap">
+              {t("mods.batch_uninstall_body", {
+                count: mp.selectedItems.length,
+              })}
+            </ModalDescription>
+            {mp.selectedItems.length > 0 && (
+              <ul className="max-h-40 overflow-y-auto rounded-xl border border-border/70 bg-surface-secondary/50 p-4 text-sm font-mono leading-6 [overflow-wrap:anywhere]">
+                {mp.selectedItems.map((item) => (
+                  <li key={item.key}>
+                    {item.kind === "mod" ? item.mod.name : item.packageName}
+                  </li>
+                ))}
+              </ul>
+            )}
+            {mp.selectedLipManagedCount > 0 && (
+              <ModalNotice tone="info">
+                {t("mods.uninstall.dependency_note")}
+              </ModalNotice>
+            )}
+          </>
+        )}
       </UnifiedModal>
     </PageContainer>
   );

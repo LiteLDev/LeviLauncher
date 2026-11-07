@@ -1,0 +1,26 @@
+{
+  "content_sub": {
+    "player": "玩家",
+    "clear_search": "清除搜索",
+    "no_instance_title": "未选择实例",
+    "no_instance_body": "选择一个实例以管理其内容。",
+    "delete_failed": "删除失败",
+    "targets_load_failed": "无法读取实例列表",
+    "transfer_start": "转移",
+    "transfer_running": "正在转移 {{done}}/{{total}} 到 {{target}}",
+    "transfer_summary": "成功 {{success}}，失败 {{failed}}，跳过 {{skipped}}",
+    "transfer_done_title": "转移完成",
+    "transfer_partial_title": "转移完成（部分失败）",
+    "transfer_failed_title": "转移失败",
+    "transfer_log": "转移日志",
+    "duplicate_prompt": "目标实例中已存在 {{name}}，是否覆盖？",
+    "overwrite": "覆盖",
+    "skip": "跳过",
+    "apply_to_rest": "对剩余的重复项执行相同操作",
+    "item_running": "正在转移…",
+    "item_ok": "已转移",
+    "item_overwritten": "已覆盖",
+    "item_skipped": "已跳过",
+    "item_failed": "失败"
+  }
+}

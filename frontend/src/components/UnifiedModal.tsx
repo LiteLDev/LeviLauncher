@@ -33,6 +33,12 @@ export interface UnifiedModalProps
   title: React.ReactNode;
   children?: React.ReactNode;
   footer?: React.ReactNode;
+  /**
+   * Optional append-only steps/log region shown under the content, e.g.
+   * `<ModalLog lines={task.lines} />`. It scrolls with the body; header and
+   * footer stay pinned.
+   */
+  log?: React.ReactNode;
   icon?: React.ReactNode;
   onConfirm?: () => void;
   confirmText?: string;
@@ -137,6 +143,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
   title,
   children,
   footer,
+  log,
   isDismissable = false,
   size,
   scrollBehavior = "inside",
@@ -210,7 +217,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
                 stiffness: 260,
                 damping: 20,
               }}
-              className="relative isolate size-10 rounded-xl flex items-center justify-center shrink-0"
+              className="relative isolate size-[clamp(2rem,6vh,2.5rem)] rounded-xl flex items-center justify-center shrink-0"
             >
               <span
                 aria-hidden="true"
@@ -228,7 +235,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
               className="flex min-w-0 flex-col [overflow-wrap:anywhere]"
             >
               <Modal.Heading
-                className={`text-xl font-semibold leading-7 ${
+                className={`text-[clamp(1.0625rem,1rem+0.4vw,1.25rem)] font-semibold leading-tight ${
                   titleClass || "text-foreground dark:text-zinc-100"
                 }`}
               >
@@ -245,6 +252,7 @@ export const UnifiedModal: React.FC<UnifiedModalProps> = ({
               className={cn("w-full", MODAL_STYLES.stack)}
             >
               {children}
+              {log}
             </motion.div>
           </BaseModalBody>
           {(footer != null ||

@@ -1,0 +1,11 @@
+{
+  "shell": {
+    "nav": {
+      "content": "コンテンツ",
+      "discover": "見つける"
+    },
+    "search": "コマンドを検索",
+    "search_placeholder": "検索…",
+    "activity_unread": "アクティビティ、未読 {{count}} 件"
+  }
+}

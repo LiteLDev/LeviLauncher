@@ -1,6 +1,6 @@
 import { resolveContentPath, isContentTransferTarget } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
-import { ModalDescription, ModalProgress, ModalNotice } from "@/components/ModalPrimitives";
+import { ModalDescription, ModalNotice } from "@/components/ModalPrimitives";
 import { PagePagination } from "@/components/PagePagination";
 import {
   Button,
@@ -13,13 +13,12 @@ import {
   Spinner,
   TextField,
   Tooltip,
-  toast,
   useOverlayState
 } from "@heroui/react";
 
 import React, { useState, useEffect, useCallback } from "react";
 import { PageHeader } from "@/components/PageHeader";
-import { routeTo } from "@/constants/routes";
+import { ROUTES, routeTo } from "@/constants/routes";
 
 import {
   FaSortAmountDown,
@@ -37,8 +36,9 @@ import {
   FaTimes,
   FaHdd,
   FaExchangeAlt,
+  FaArrowLeft,
 } from "react-icons/fa";
-import { useLocation, useNavigate } from "react-router-dom";
+import { useLocation, useNavigate, useNavigationType } from "react-router-dom";
 import {
   ListDir,
   GetWorldLevelName,
@@ -58,11 +58,13 @@ import {
   ListVersionMetas,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
 import { GetLocalUserGamertag } from "bindings/github.com/liteldev/LeviLauncher/internal/app/userservice";
-import { readCurrentVersionName } from "@/utils/currentVersion";
+import { useCurrentVersion } from "@/utils/CurrentVersionContext";
+import { notify } from "@/utils/activity";
+import { InstancePicker } from "@/components/InstancePicker";
+import { ContentTaskDialog, useContentTask } from "@/components/ContentTaskDialog";
 import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { UnifiedModal } from "@/components/UnifiedModal";
-import { ImportResultModal } from "@/components/ImportResultModal";
 import { useTranslation } from "react-i18next";
 import { motion } from "framer-motion";
 import DefaultWorldPreview from "@/assets/images/world-preview-default.jpg";
@@ -99,12 +101,15 @@ type TransferTargetVersion = {
 
 import { SelectionBar } from "@/components/SelectionBar";
 
+// Page and scroll position kept while the user visits a world's editor.
+const VIEW_KEY = "content.worlds.view";
+
 export default function WorldsListPage() {
   const { t } = useTranslation();
   const navigate = useNavigate();
   const location = useLocation();
-  const currentVersionName =
-    location.state?.versionName || readCurrentVersionName();
+  const navigationType = useNavigationType();
+  const { currentVersionName } = useCurrentVersion();
 
   const [selectedPlayer, setSelectedPlayer] = useState<string>(
     location.state?.player || "",
@@ -149,26 +154,15 @@ export default function WorldsListPage() {
     open: transferTargetOnOpen,
     close: transferTargetOnClose,
   } = useOverlayState();
-  const {
-    isOpen: transferResultOpen,
-    open: transferResultOnOpen,
-    setOpen: transferResultOnOpenChange,
-  } = useOverlayState();
+  const transferTask = useContentTask("transfer");
+  const transferring = transferTask.isBusy;
 
   const [currentWorldsPath, setCurrentWorldsPath] = useState("");
-  const [transferring, setTransferring] = useState<boolean>(false);
-  const [currentTransferItem, setCurrentTransferItem] = useState<string>("");
   const [transferTargets, setTransferTargets] = useState<
     TransferTargetVersion[]
   >([]);
   const [selectedTransferTargets, setSelectedTransferTargets] = useState<
     string[]
-  >([]);
-  const [transferResultSuccess, setTransferResultSuccess] = useState<string[]>(
-    [],
-  );
-  const [transferResultFailed, setTransferResultFailed] = useState<
-    Array<{ name: string; err: string }>
   >([]);
 
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
@@ -189,12 +183,30 @@ export default function WorldsListPage() {
     setActiveWorld(null);
   }, [currentVersionName, selectedPlayer]);
 
+  // Switching the instance in place starts over with that instance's players.
+  const shownVersion = React.useRef(currentVersionName);
+  useEffect(() => {
+    if (shownVersion.current === currentVersionName) return;
+    shownVersion.current = currentVersionName;
+    playerWasChosen.current = false;
+    selectedPlayerRef.current = "";
+    setSelectedPlayer("");
+  }, [currentVersionName]);
+
 
   useEffect(() => {
     let cancelled = false;
     const fetchPlayers = async () => {
       setPlayersLoading(true);
       setPlayerLoadError("");
+      if (!currentVersionName) {
+        // The page offers the instance picker inline instead.
+        setRoots({});
+        setPlayers([]);
+        setPlayerGamertagMap({});
+        setPlayersLoading(false);
+        return;
+      }
       try {
         const r = await GetContentRoots(currentVersionName || "");
         if (cancelled) return;
@@ -261,6 +273,12 @@ export default function WorldsListPage() {
     setFailedWorlds([]);
 
     const fetchWorlds = async () => {
+      if (!currentVersionName) {
+        setCurrentWorldsPath("");
+        setWorlds([]);
+        setLoading(false);
+        return;
+      }
       try {
         const r = await GetContentRoots(currentVersionName || "");
         if (generation !== worldsLoadGeneration.current) return;
@@ -337,14 +355,20 @@ export default function WorldsListPage() {
     try {
       const result = await DeleteWorld(currentVersionName || "", activeWorld.Path);
       if (result) throw new Error(result);
-      toast(t("common.success"), { variant: "success", timeout: 2000 });
+      notify({
+        variant: "success",
+        title: t("content_task.world_deleted"),
+        description: activeWorld.FolderName,
+        source: "content",
+      });
       if (contentScopeRef.current === contentScope) refreshAll();
       delOnClose();
     } catch (e) {
-      toast(undefined, {
-        description: String(e),
+      notify({
         variant: "danger",
-        timeout: 2000,
+        title: t("content_task.delete_failed"),
+        description: `${activeWorld.FolderName}: ${String(e)}`,
+        source: "content",
       });
       throw e;
     } finally {
@@ -374,44 +398,79 @@ export default function WorldsListPage() {
       }
 
       if (dest) {
-        toast(t("contentpage.backup_success"), {
+        notify({
           variant: "success",
-          timeout: 2000,
+          title: t("contentpage.backup_success"),
+          description: dest,
+          source: "content",
         });
       } else {
-        toast(undefined, {
-          description: t("contentpage.backup_failed"),
+        notify({
           variant: "danger",
-          timeout: 2000,
+          title: t("contentpage.backup_failed"),
+          description: w.FolderName,
+          source: "content",
         });
       }
     } catch (e) {
-      toast(undefined, {
-        description: t("contentpage.backup_failed") + ": " + String(e),
+      notify({
         variant: "danger",
-        timeout: 2000,
+        title: t("contentpage.backup_failed"),
+        description: `${w.FolderName}: ${String(e)}`,
+        source: "content",
       });
     } finally {
       setBackingUp("");
     }
   };
 
+  const openWorldEditor = (w: WorldInfo) => {
+    try {
+      sessionStorage.setItem(
+        VIEW_KEY,
+        JSON.stringify({
+          scope: contentScope,
+          query: sort.query,
+          page: sort.currentPage,
+          scrollTop: scrollRef.current?.scrollTop || 0,
+        }),
+      );
+    } catch {}
+    navigate(routeTo.contentWorldEditor(w.Path));
+  };
+
+  // Coming back from the editor restores the page and scroll position once.
+  const viewRestored = React.useRef(false);
+  useEffect(() => {
+    if (viewRestored.current || loading || playersLoading || worlds.length === 0) return;
+    viewRestored.current = true;
+    let saved: { scope?: string; query?: string; page?: number; scrollTop?: number } | null = null;
+    try {
+      saved = JSON.parse(sessionStorage.getItem(VIEW_KEY) || "null");
+      sessionStorage.removeItem(VIEW_KEY);
+    } catch {}
+    // Only a back/forward step returns to where the user was.
+    if (!saved || navigationType !== "POP" || saved.scope !== contentScope) return;
+    if (saved.query) sort.setQuery(saved.query);
+    const page = Number(saved.page || 1);
+    const top = Number(saved.scrollTop || 0);
+    // Apply the page after the query's page reset, then the scroll after
+    // useScrollManager's page-change reset.
+    window.setTimeout(() => {
+      if (page > 1) sort.setCurrentPage(page);
+      window.setTimeout(() => {
+        if (scrollRef.current) scrollRef.current.scrollTop = top;
+      }, 250);
+    }, 0);
+  }, [loading, playersLoading, worlds.length, contentScope]);
+
   const openTransferTargetModal = useCallback(async () => {
     if (transferring || selection.selectedCount === 0) return;
 
-    const sourceVersionName = currentVersionName || readCurrentVersionName();
-    if (!sourceVersionName) {
-      toast(t("launcherpage.currentVersion_none") as string, {
-        variant: "danger",
-        timeout: 2000,
-      });
-      return;
-    }
-    if (!selectedPlayer && roots.packageType !== "uwp") {
-      toast(t("contentpage.require_player_for_world_import") as string, {
-        variant: "danger",
-        timeout: 2000,
-      });
+    const sourceVersionName = currentVersionName;
+    // The page shows the instance and player pickers inline, so these only
+    // guard against a stale button press.
+    if (!sourceVersionName || (!selectedPlayer && roots.packageType !== "uwp")) {
       return;
     }
 
@@ -454,10 +513,11 @@ export default function WorldsListPage() {
       setSelectedTransferTargets(targets.length > 0 ? [targets[0].name] : []);
       transferTargetOnOpen();
     } catch (e) {
-      toast("Error", {
-        description: String(e),
+      notify({
         variant: "danger",
-        timeout: 2000,
+        title: t("content_task.load_targets_failed"),
+        description: String(e),
+        source: "content",
       });
     }
   }, [
@@ -475,12 +535,8 @@ export default function WorldsListPage() {
   const transferSelectedWorldsToTargets = useCallback(async () => {
     if (transferring) return;
 
-    const sourceVersionName = currentVersionName || readCurrentVersionName();
+    const sourceVersionName = currentVersionName;
     if (!sourceVersionName || (!selectedPlayer && roots.packageType !== "uwp")) {
-      toast(t("contentpage.require_player_for_world_import") as string, {
-        variant: "danger",
-        timeout: 2000,
-      });
       return;
     }
 
@@ -497,13 +553,9 @@ export default function WorldsListPage() {
       ]),
     );
 
-    const succFiles: string[] = [];
-    const errPairs: Array<{ name: string; err: string }> = [];
-
+    transferTask.open(selectedWorldPaths.length * targetNames.length);
+    let anySuccess = false;
     try {
-      setTransferring(true);
-      setCurrentTransferItem("");
-
       for (const targetName of targetNames) {
         const targetRoots = await GetContentRoots(targetName);
         let targetPlayer = "";
@@ -517,189 +569,164 @@ export default function WorldsListPage() {
             worldNameMap.get(worldPath) ||
             getPathBaseName(worldPath) ||
             worldPath;
-          const itemLabel = `${worldName} -> ${targetName}`;
-          setCurrentTransferItem(itemLabel);
-
-          const err = await TransferWorldToVersion(
-            sourceVersionName,
-            selectedPlayer,
-            worldPath,
-            targetName,
-            targetPlayer,
-          );
-          if (err) {
-            errPairs.push({ name: itemLabel, err: String(err) });
+          const id = transferTask.begin(`${worldName} -> ${targetName}`);
+          try {
+            const err = await TransferWorldToVersion(
+              sourceVersionName,
+              selectedPlayer,
+              worldPath,
+              targetName,
+              targetPlayer,
+            );
+            if (err) {
+              transferTask.end(id, "failed", String(err));
+              continue;
+            }
+          } catch (e) {
+            transferTask.end(id, "failed", String(e));
             continue;
           }
-          succFiles.push(itemLabel);
+          anySuccess = true;
+          transferTask.end(id, "success");
         }
       }
-
-      if (succFiles.length > 0 || errPairs.length > 0) {
-        setTransferResultSuccess(succFiles);
-        setTransferResultFailed(errPairs);
-        transferResultOnOpen();
-      }
-      if (succFiles.length > 0) {
-        selection.clearSelection();
-      }
+      transferTask.finish();
     } catch (e) {
-      toast("Error", {
-        description: String(e),
-        variant: "danger",
-        timeout: 2000,
-      });
+      transferTask.fail(e);
     } finally {
-      setTransferring(false);
-      setCurrentTransferItem("");
+      if (anySuccess) selection.clearSelection();
     }
   }, [
     transferring,
     currentVersionName,
     selectedPlayer,
     roots.packageType,
-    t,
     selection,
     selectedTransferTargets,
     transferTargetOnClose,
     worlds,
-    transferResultOnOpen,
+    transferTask,
   ]);
+
+  const playerLabel = (p: string) => resolvePlayerDisplayName(p, playerGamertagMap);
+  const needsPlayer = !selectedPlayer && roots.packageType !== "uwp";
+  const playerPicker = (className?: string) => (
+    <Select
+      aria-label={t("contentpage.select_player")}
+      className={cn("min-w-0 w-48 max-w-full", className)}
+      placeholder={players.length ? t("contentpage.select_player") : t("contentpage.no_players")}
+      isDisabled={!players.length}
+      value={selectedPlayer || null}
+      onChange={(key) => {
+        const next = String(key ?? "");
+        if (!next) return;
+        playerWasChosen.current = true;
+        setSelectedPlayer(next);
+      }}
+    >
+      <Select.Trigger className={cn(COMPONENT_STYLES.select.trigger, "min-h-8 h-8 gap-2 text-sm")}>
+        <FaUser className="shrink-0 text-muted" aria-hidden="true" />
+        <Select.Value />
+        <Select.Indicator />
+      </Select.Trigger>
+      <Select.Popover className={COMPONENT_STYLES.select.popoverContent}>
+        <ListBox items={players.map((p) => ({ id: p }))} className={COMPONENT_STYLES.select.listbox}>
+          {(item) => (
+            <ListBox.Item key={item.id} id={item.id} textValue={playerLabel(item.id)}>
+              <span className="truncate text-sm">{playerLabel(item.id)}</span>
+              <ListBox.ItemIndicator />
+            </ListBox.Item>
+          )}
+        </ListBox>
+      </Select.Popover>
+    </Select>
+  );
 
   return (
     <PageContainer ref={scrollRef}>
       <Card className={LAYOUT.GLASS_CARD.BASE}>
-        <Card.Content className="p-6 flex flex-col gap-6">
-          <PageHeader
-            title={t("contentpage.worlds_list")}
-            endContent={
-              <div className="flex items-center gap-2">
-                {roots.packageType !== "uwp" && <Dropdown>
-                  <Button
-                    isDisabled={!players.length}
-                    variant={"secondary"}
-                    className={cn(
-                      "rounded-full",
-                      "w-full sm:w-auto sm:min-w-[200px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
-                    )}
-                  >
-                    {<FaUser />}
-                    {selectedPlayer
-                      ? resolvePlayerDisplayName(
-                          selectedPlayer,
-                          playerGamertagMap,
-                        )
-                      : t("contentpage.select_player")}
-                  </Button>
-                  <Dropdown.Popover
-                    className={COMPONENT_STYLES.dropdown.content}
-                  >
-                    <Dropdown.Menu
-                      aria-label={
-                        t("contentpage.players_aria") as unknown as string
-                      }
-                      selectionMode="single"
-                      selectedKeys={
-                        selectedPlayer ? new Set([selectedPlayer]) : new Set()
-                      }
-                      onSelectionChange={(keys) => {
-                        const arr = Array.from(keys as unknown as Set<string>);
-                        const next = arr[0] || "";
-                        if (typeof next === "string" && next)
-                          playerWasChosen.current = true;
-                          setSelectedPlayer(next);
-                      }}
-                    >
-                      {players.length ? (
-                        players.map((p) => (
-                          <Dropdown.Item
-                            key={p}
-                            id={p}
-                            textValue={resolvePlayerDisplayName(
-                              p,
-                              playerGamertagMap,
-                            )}
-                          >
-                            <Label>
-                              {resolvePlayerDisplayName(p, playerGamertagMap)}
-                            </Label>
-                            <Dropdown.ItemIndicator />
-                          </Dropdown.Item>
-                        ))
-                      ) : (
-                        <Dropdown.Item
-                          key="none"
-                          isDisabled
-                          id={"none"}
-                          textValue={t("contentpage.no_players")}
-                        >
-                          <Label>{t("contentpage.no_players")}</Label>
-                          <Dropdown.ItemIndicator />
-                        </Dropdown.Item>
-                      )}
-                    </Dropdown.Menu>
-                  </Dropdown.Popover>
-                </Dropdown>}
+        <Card.Content className="p-4 min-[1200px]:p-6 flex flex-col gap-4">
+          <div className="flex flex-wrap items-center justify-between gap-x-4 gap-y-3">
+            <div className="flex min-w-0 flex-wrap items-center gap-x-3 gap-y-2">
+              <Tooltip>
                 <Button
-                  onPress={() => {
-                    if (currentWorldsPath) openDirectory(currentWorldsPath);
-                  }}
-                  isDisabled={!currentWorldsPath}
+                  isIconOnly
+                  aria-label={t("content_task.back_to_hub")}
+                  onPress={() => navigate(ROUTES.content)}
+                  variant={"ghost"}
+                  className={"rounded-full"}
+                >
+                  <FaArrowLeft size={18} />
+                </Button>
+                <Tooltip.Content>{t("content_task.back_to_hub")}</Tooltip.Content>
+              </Tooltip>
+              <PageHeader title={t("contentpage.worlds_list")} />
+              <InstancePicker size="sm" />
+              {roots.packageType !== "uwp" && !!currentVersionName && playerPicker()}
+            </div>
+            <div className="flex flex-wrap items-center gap-2">
+              <Button
+                onPress={() => {
+                  if (currentWorldsPath) openDirectory(currentWorldsPath);
+                }}
+                isDisabled={!currentWorldsPath}
+                variant={"secondary"}
+                className={cn(
+                  "rounded-full",
+                  "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
+                )}
+              >
+                {<FaFolderOpen />}
+                {t("common.open")}
+              </Button>
+              <Tooltip>
+                <Button
+                  isIconOnly
+                  aria-label={t("common.select_mode")}
+                  aria-pressed={selection.isSelectMode}
+                  onPress={selection.toggleSelectMode}
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
-                    "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
+                    selection.isSelectMode
+                      ? "bg-accent/15 text-accent"
+                      : "bg-surface-secondary text-foreground dark:text-zinc-200",
                   )}
                 >
-                  {<FaFolderOpen />}
-                  {t("common.open")}
+                  <FaCheckSquare />
                 </Button>
-                <Tooltip>
-                  <Button
-                    isIconOnly
-                    aria-label={t("common.select_mode")}
-                    onPress={selection.toggleSelectMode}
-                    variant={"secondary"}
-                    className={cn(
-                      "rounded-full",
-                      "bg-surface-secondary text-foreground dark:text-zinc-200",
-                    )}
-                  >
-                    <FaCheckSquare />
-                  </Button>
-                  <Tooltip.Content>{t("common.select_mode")}</Tooltip.Content>
-                </Tooltip>
-                <Tooltip>
-                  <Button
-                    isIconOnly
-                    aria-label={t("common.refresh")}
-                    onPress={() => refreshAll()}
-                    isDisabled={loading}
-                    variant={"secondary"}
-                    className={cn(
-                      "rounded-full",
-                      "bg-surface-secondary text-foreground dark:text-zinc-200",
-                    )}
-                  >
-                    <FaSync
-                      className={loading ? "animate-spin" : ""}
-                      size={18}
-                    />
-                  </Button>
-                  <Tooltip.Content>
-                    {t("common.refresh") as unknown as string}
-                  </Tooltip.Content>
-                </Tooltip>
-              </div>
-            }
-          />
-          <div className="flex flex-col md:flex-row gap-4 items-end md:items-center justify-between">
+                <Tooltip.Content>{t("common.select_mode")}</Tooltip.Content>
+              </Tooltip>
+              <Tooltip>
+                <Button
+                  isIconOnly
+                  aria-label={t("common.refresh")}
+                  onPress={() => refreshAll()}
+                  isDisabled={loading}
+                  variant={"secondary"}
+                  className={cn(
+                    "rounded-full",
+                    "bg-surface-secondary text-foreground dark:text-zinc-200",
+                  )}
+                >
+                  <FaSync
+                    className={loading ? "animate-spin" : ""}
+                    size={18}
+                  />
+                </Button>
+                <Tooltip.Content>
+                  {t("common.refresh") as unknown as string}
+                </Tooltip.Content>
+              </Tooltip>
+            </div>
+          </div>
+          <div className="flex flex-wrap gap-3 items-center justify-between">
             <TextField
               aria-label={t("common.search_placeholder") as string}
               className={cn(
                 "group",
                 COMPONENT_STYLES.input.mainWrapper,
-                "w-full md:max-w-xs",
+                "min-w-0 flex-[1_1_16rem] max-w-md",
               )}
               value={sort.query}
               onChange={sort.setQuery}
@@ -720,7 +747,11 @@ export default function WorldsListPage() {
                 />
                 <InputGroup.Suffix>
                   {sort.query && (
-                    <button onClick={() => sort.setQuery("")}>
+                    <button
+                      type="button"
+                      aria-label={t("content_task.clear_search")}
+                      onClick={() => sort.setQuery("")}
+                    >
                       <FaTimes />
                     </button>
                   )}
@@ -728,13 +759,19 @@ export default function WorldsListPage() {
               </InputGroup>
             </TextField>
 
-            <div className="flex items-center gap-3">
+            <div className="flex flex-wrap items-center gap-3">
+              <span className="text-sm text-muted dark:text-zinc-400">
+                {t("contentpage.isolation")}:{" "}
+                <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
+                  {roots.isIsolation ? t("common.yes") : t("common.no")}
+                </span>
+              </span>
               <Dropdown>
                 <Button
                   variant={"secondary"}
                   className={cn(
                     "rounded-full",
-                    "min-w-[120px] bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
+                    "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
                   )}
                 >
                   {sort.sortAsc ? <FaSortAmountDown /> : <FaSortAmountUp />}
@@ -803,17 +840,6 @@ export default function WorldsListPage() {
               </Dropdown>
             </div>
           </div>
-          <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
-            <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
-              {currentVersionName || t("contentpage.none")}
-            </span>
-            <span className="text-muted dark:text-zinc-600">|</span>
-            <span>{t("contentpage.isolation")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
-              {roots.isIsolation ? t("common.yes") : t("common.no")}
-            </span>
-          </div>
         </Card.Content>
       </Card>
 
@@ -825,9 +851,7 @@ export default function WorldsListPage() {
         onDelete={delManyCfmOnOpen}
         isSelectMode={selection.isSelectMode}
         onTransfer={openTransferTargetModal}
-        isTransferDisabled={
-          (!selectedPlayer && roots.packageType !== "uwp") || selection.selectedCount === 0 || transferring
-        }
+        isTransferDisabled={needsPlayer || selection.selectedCount === 0 || transferring}
       />
 
       {(loadError || playerLoadError) && (
@@ -847,17 +871,26 @@ export default function WorldsListPage() {
           <Button className="mt-3" variant="secondary" size="sm" isDisabled={loading} onPress={() => void refreshAll()}>{t("common.retry")}</Button>
         </ModalNotice>
       )}
-      {loading || playersLoading ? (
-        <div className="flex flex-col items-center justify-center py-20 gap-4">
+      {!currentVersionName ? (
+        // Resolve the missing instance in place instead of redirecting.
+        <div role="status" className="flex flex-col items-center gap-3 py-12 text-center text-muted">
+          <p>{t("content_task.choose_instance_hint")}</p>
+          <InstancePicker />
+        </div>
+      ) : loading || playersLoading ? (
+        <div className="flex flex-col items-center justify-center py-16 gap-4">
           <Spinner size="lg" />
           <span className="text-muted dark:text-zinc-400">
             {t("common.loading")}
           </span>
         </div>
-      ) : loadError || playerLoadError ? null : !selectedPlayer && roots.packageType !== "uwp" ? (
-        <div role="status" className="py-16 text-center text-muted">{t("audit.usability.choose_player")}</div>
+      ) : loadError || playerLoadError ? null : needsPlayer ? (
+        <div role="status" className="flex flex-col items-center gap-3 py-12 text-center text-muted">
+          <p className="max-w-prose">{t("audit.usability.choose_player")}</p>
+          {players.length > 0 && playerPicker("w-64")}
+        </div>
       ) : sort.filtered.length === 0 && failedWorlds.length === 0 ? (
-        <div className="flex flex-col items-center justify-center py-20 text-muted">
+        <div className="flex flex-col items-center justify-center py-16 text-muted">
           <FaBox className="text-6xl mb-4 opacity-20" />
           <p>
             {sort.query ? t("common.no_results") : t("contentpage.no_items")}
@@ -865,10 +898,13 @@ export default function WorldsListPage() {
         </div>
       ) : (
         <div className="flex flex-col gap-4">
-          <div className="flex flex-col gap-3">
+          {/* Auto-fill columns keep rows readable on wide screens. */}
+          {/* Tailwind source for LAYOUT.GRID.AUTO(30): grid-cols-[repeat(auto-fill,minmax(min(100%,30rem),1fr))] */}
+          <div className={LAYOUT.GRID.AUTO(30)}>
             {sort.paginatedItems.map((w, idx) => (
               <motion.div
                 key={`${w.Path}-${idx}`}
+                className="@container min-w-0"
                 initial={{ opacity: 0 }}
                 animate={{ opacity: 1 }}
                 transition={{ duration: 0.2 }}
@@ -876,26 +912,22 @@ export default function WorldsListPage() {
                 <div
                   className={cn(
                     COMPONENT_STYLES.contentListItem,
-                    "w-full p-5 flex gap-5 group relative overflow-hidden",
-                    selection.isSelectMode ? "cursor-pointer" : "cursor-default",
+                    "h-full w-full p-3 @md:p-4 flex flex-col @xs:flex-row gap-3 @md:gap-4 group relative overflow-hidden cursor-pointer",
                     selection.isSelectMode && selection.selected[w.Path]
                       ? "ring-2 ring-accent bg-accent/5"
                       : "",
                   )}
                   onClick={() => {
                     if (selection.isSelectMode) selection.toggleSelect(w.Path);
+                    else openWorldEditor(w);
                   }}
                 >
                   <div className="relative shrink-0">
-                    <div className="h-24 sm:h-28 aspect-video rounded-2xl bg-surface-secondary/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
+                    <div className="w-full @xs:w-auto @xs:h-20 @md:h-24 aspect-video rounded-2xl bg-surface-secondary/50 flex items-center justify-center overflow-hidden shadow-sm group-hover:shadow-md transition-shadow">
                       <img
                         src={w.IconBase64 || DefaultWorldPreview}
-                        alt={w.FolderName}
-                        className={cn(
-                          "rounded-none",
-                          "w-full h-full",
-                          "w-full h-full object-cover object-center",
-                        )}
+                        alt=""
+                        className="w-full h-full object-cover object-center"
                         onError={(event) => {
                           if (event.currentTarget.dataset.fallbackApplied)
                             return;
@@ -928,18 +960,16 @@ export default function WorldsListPage() {
                     )}
                   </div>
 
-                  <div className="flex flex-col flex-1 min-w-0">
-                    <div className="flex justify-between items-start gap-2 mb-1">
-                      <h3
-                        className="text-lg font-bold text-foreground dark:text-white truncate"
-                        title={w.FolderName}
-                      >
-                        {w.FolderName}
-                      </h3>
-                    </div>
+                  <div className="flex flex-col flex-1 min-w-0 gap-2">
+                    <h3
+                      className="text-base @md:text-lg font-bold text-foreground dark:text-white truncate"
+                      title={w.FolderName}
+                    >
+                      {w.FolderName}
+                    </h3>
 
-                    <div className="flex items-end justify-between mt-auto">
-                      <div className="flex flex-wrap items-center gap-4 text-xs text-muted dark:text-zinc-500">
+                    <div className="flex flex-wrap items-end justify-between gap-2 mt-auto">
+                      <div className="flex min-w-0 flex-wrap items-center gap-2 text-xs text-muted dark:text-zinc-500">
                         <div className="flex items-center gap-1.5 bg-surface-secondary/50 px-2 py-1 rounded-lg">
                           <FaHdd className="text-muted" />
                           <span>{formatBytes(w.Size)}</span>
@@ -952,11 +982,28 @@ export default function WorldsListPage() {
                         </div>
                       </div>
 
-                      <div className="flex gap-2 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity ml-4">
+                      <div className="flex shrink-0 gap-1.5 ml-auto">
                         <Tooltip>
                           <Button
                             isIconOnly
-                    aria-label={t("common.open")}
+                            aria-label={t("common.edit")}
+                            size="sm"
+                            variant={"secondary"}
+                            onClick={(event) => event.stopPropagation()}
+                            onPress={() => openWorldEditor(w)}
+                            className={cn(
+                              "rounded-full",
+                              "bg-surface-secondary hover:bg-surface-tertiary text-foreground dark:text-zinc-200",
+                            )}
+                          >
+                            <FaEdit size={14} />
+                          </Button>
+                          <Tooltip.Content>{t("common.edit")}</Tooltip.Content>
+                        </Tooltip>
+                        <Tooltip>
+                          <Button
+                            isIconOnly
+                            aria-label={t("common.open")}
                             size="sm"
                             variant={"secondary"}
                             onClick={(event) => event.stopPropagation()}
@@ -975,7 +1022,7 @@ export default function WorldsListPage() {
                         <Tooltip>
                           <Button
                             isIconOnly
-                    aria-label={t("common.backup")}
+                            aria-label={t("common.backup")}
                             size="sm"
                             variant={"secondary"}
                             isPending={backingUp === w.Path}
@@ -1006,26 +1053,7 @@ export default function WorldsListPage() {
                         <Tooltip>
                           <Button
                             isIconOnly
-                    aria-label={t("common.edit")}
-                            size="sm"
-                            variant={"secondary"}
-                            onClick={(event) => event.stopPropagation()}
-                            onPress={() => {
-                              navigate(routeTo.contentWorldEditor(w.Path));
-                            }}
-                            className={cn(
-                              "rounded-full",
-                              "bg-surface-secondary hover:bg-surface-tertiary text-foreground dark:text-zinc-200",
-                            )}
-                          >
-                            <FaEdit size={14} />
-                          </Button>
-                          <Tooltip.Content>{t("common.edit")}</Tooltip.Content>
-                        </Tooltip>
-                        <Tooltip>
-                          <Button
-                            isIconOnly
-                    aria-label={t("common.delete")}
+                            aria-label={t("common.delete")}
                             size="sm"
                             variant={"danger-soft"}
                             onClick={(event) => event.stopPropagation()}
@@ -1065,21 +1093,7 @@ export default function WorldsListPage() {
         </div>
       )}
 
-      <UnifiedModal
-        isOpen={transferring}
-        type="primary"
-        title={t("contentpage.transfer_progress_title")}
-        icon={<FaExchangeAlt className="w-6 h-6" />}
-        isDismissable={false}
-        showConfirmButton={false}
-        showCancelButton={false}
-      >
-        <ModalProgress
-          label={t("contentpage.transfer_progress_title")}
-          description={<> {t("contentpage.transfer_progress_body")} </>}
-          currentItem={currentTransferItem}
-        />
-      </UnifiedModal>
+      <ContentTaskDialog task={transferTask} />
 
       <UnifiedModal
         size="wide"
@@ -1170,19 +1184,6 @@ export default function WorldsListPage() {
           )}
         </div>
       </UnifiedModal>
-
-      <ImportResultModal
-        isOpen={transferResultOpen}
-        onOpenChange={transferResultOnOpenChange}
-        results={{
-          success: transferResultSuccess,
-          failed: transferResultFailed,
-        }}
-        onConfirm={() => {
-          setTransferResultSuccess([]);
-          setTransferResultFailed([]);
-        }}
-      />
 
       <DeleteConfirmModal
         isOpen={delOpen}

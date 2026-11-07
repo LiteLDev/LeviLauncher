@@ -1,0 +1,16 @@
+{
+  "settings_ux": {
+    "mirror_save_failed": "Could not change the mirror source",
+    "cache_clean_failed": "Could not clean the LIP cache",
+    "updating": {
+      "log_title": "Steps",
+      "error_code": "Error code",
+      "details": "Details",
+      "download_line": "Downloaded {{percent}}% ({{downloaded}} / {{total}} MB)",
+      "retry_line": "Retrying the update (attempt {{count}})"
+    },
+    "onboarding": {
+      "footer_hint": "You can change these later in Settings."
+    }
+  }
+}

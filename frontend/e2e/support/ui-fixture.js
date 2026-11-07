@@ -32,6 +32,10 @@ state.catalogPackages = Array.from({ length: 45 }, (_, index) => ({
   updated: '2026-09-08', tags: ['platform:levilamina', 'type:mod'],
   versions: ['1.0.0'], llDependencyRanges: ['>=0.1.0'], variants: [], preferredVariantKey: '',
 }));
+// Package details for the catalog: two releases needing LeviLamina, which the
+// fixture instance lacks until a test installs it.
+state.catalogDetails = Object.fromEntries(state.catalogPackages.map(pkg => [pkg.identifier, {...pkg, versions:['1.0.0','0.9.0'], variantDetails: [],
+  files: ['1.0.0','0.9.0'].map(version => ({version, dependencies:{'github.com/LiteLDev/LeviLamina':'>=0.1.0'}, llDependencyRanges:['>=0.1.0'], otherDependencies:{}}))}]));
 state.uwpVersions = Array.from({length: 24}, (_, index) => ({version: `1.21.${100-index}.0`, uuid:`00000000-0000-4000-8000-${String(index).padStart(12,'0')}`,type: ['release','beta','preview'][index%3], packageType:'uwp'}));
 if(scenario.startsWith('uwp-isolation-min')) state.uwpVersions[0].version=new URLSearchParams(location.search).get('version') || '';
 state.uwpMetas = ['release','beta','preview'].map((type,index)=>({name:`UWP ${type} instance`,gameVersion:state.uwpVersions[index].version,type,packageType:'uwp',enableIsolation:false,registered:index===0}));
@@ -73,6 +77,8 @@ state.call = async (name, ...args) => {
   }
   if (scenario.startsWith('lip-progress') && name==='DeleteMod') {const result=await state.runLipTask('UninstallLIPPackage', args);state.fixtureMods=state.fixtureMods.filter(mod=>mod!==args[1]);return result;}
   if (scenario.startsWith('lip-progress') && name==='GetLIPPackageInstallStates') return (args[1]||[]).map(identifierKey=>{const installed=!!state.llInstalled&&/levilamina/i.test(identifierKey);return {identifierKey,state:{installed,explicitInstalled:installed,installedVersion:installed?'0.2.0':'',error:''}};});
+  if (scenario.startsWith('catalog') && name==='GetLIPPackageInstallStates') return (args[1]||[]).map(identifierKey=>{const key=String(identifierKey).toLowerCase();const version=/levilamina/i.test(key)?(state.llInstalled||''):((state.lipInstalled||{})[key]||'');return {identifierKey,state:{installed:!!version,explicitInstalled:!!version,installedVersion:version,error:''}};});
+  if (scenario.startsWith('catalog') && ['InstallLeviLamina','InstallLIPPackage'].includes(name)) return state.runLipTask(name, args);
   if (scenario.startsWith('lip-progress') && ['InstallLeviLamina','UninstallLeviLamina','InstallLIPPackage','UninstallLIPPackage','CacheClean'].includes(name)) return state.runLipTask(name, args);
   if (name === 'TakeSponsorPrompt') {
     const count = Number(sponsorParams.get('count') || '100');
@@ -176,6 +182,42 @@ state.call = async (name, ...args) => {
     }
     if(name==='ValidateVersionFolderName') return '';
   }
+ if(scenario.startsWith('download-flow')) {
+   // Many GDK versions plus a download that reports progress and then finishes (or fails).
+   if(name==='FetchHistoricalVersions') return {
+     releaseVersions:Array.from({length:40},(_,i)=>({version:`Release 1.21.${140-i}.0`,urls:['https://mirror-a.example.com/game.msixvc','https://mirror-b.example.com/game.msixvc'],timestamp:1760000000-i*86400,md5:'fixture'})),
+     previewVersions:Array.from({length:20},(_,i)=>({version:`Preview 1.22.${40-i}.20`,urls:['https://mirror-a.example.com/preview.msixvc'],timestamp:1760000000-i*86400-3600,md5:''})),
+   };
+   if(name==='TestMirrorLatencies') return args[0].map((url,i)=>({url,latencyMs:40+i*30,ok:true}));
+   if(name==='GetAllVersionsStatus') return args[0].map(item=>({version:item.short,type:item.type,packageType:item.packageType,isDownloaded:item.short==='1.21.139.0',isInstalled:false}));
+   if(name==='StartMsixvcDownload') {
+     const dest='C:\\Fixture\\installers\\'+(new URL(args[0]).searchParams.get('filename')||'game.msixvc');
+     const send=(event,data)=>window._wails.dispatchWailsEvent({name:event,data});
+     const fail=scenario==='download-flow-error'&&!state.recovered;
+     (async()=>{
+       send('msixvc_download_status',{Status:'started',Dest:dest});
+       for(let i=1;i<=6;i++){
+         await new Promise(resolve=>setTimeout(resolve,400));
+         if(fail&&i===3){send('msixvc_download_error',{Error:'Fixture: connection reset by mirror',Dest:dest});return;}
+         send('msixvc_download_progress',{Downloaded:i*1048576*100,Total:6*1048576*100,Dest:dest});
+       }
+       send('msixvc_download_status',{Status:'verifying',Dest:dest});
+       await new Promise(resolve=>setTimeout(resolve,300));
+       send('msixvc_download_done',{Dest:dest});
+     })();
+     return dest;
+   }
+   if(name==='ResolveDownloadedMsixvc') return '';
+   if(name==='ValidateVersionFolderName'||name==='SaveVersionMeta') return '';
+   if(name==='InstallExtractMsixvc') {
+     for(let i=1;i<=4;i++){
+       await new Promise(resolve=>setTimeout(resolve,200));
+       window._wails.dispatchWailsEvent({name:'extract.progress',data:{files:i*100,bytes:i*256*1048576,global_total:1024*1048576,global_current:i*256*1048576}});
+     }
+     return '';
+   }
+   if(name==='LaunchVersionByName') return '';
+ }
  if(scenario==='no-instances' && /^(IsGameInputInstalled|IsGamingServicesInstalled|IsVcRuntimeInstalled)$/.test(name)) return true;
  if(scenario==='gdk-launch') {
    if(name==='IsGameInputInstalled'||name==='IsGamingServicesInstalled'||name==='IsVcRuntimeInstalled') return true;
@@ -219,6 +261,37 @@ state.call = async (name, ...args) => {
   const matches = state.catalogPackages.filter(pkg => pkg.name.toLowerCase().includes(String(args[4] || '').toLowerCase()));
   const index = Number(args[8] || 0), pageSize = Number(args[7] || 20);
   return {data:matches.slice(index,index+pageSize).map(pkg=>({id:Number(pkg.identifier.split('-').pop()),name:pkg.name,summary:pkg.description,authors:[{name:pkg.author}],logo:{thumbnailUrl:'/src/assets/images/LeviLamina.png',url:'/src/assets/images/LeviLamina.png'},downloadCount:pkg.hotness,dateModified:pkg.updated,dateCreated:pkg.updated,categories:[],latestFiles:[],latestFilesIndexes:[]})),pagination:{index,pageSize,totalCount:matches.length}};
+ }
+ // catalog: CurseForge mod detail and install. state.cfHoldDownload pauses the
+ // download until state.cfFinishDownload(); state.cfDuplicate makes the first
+ // import report a duplicate; state.cfImportError fails the import.
+ if (scenario.startsWith('catalog') && name==='GetCurseForgeModsByIDs') return {data:(args[0]||[]).map(id=>{const pkg=state.catalogPackages[(id-1)%state.catalogPackages.length];return {id,name:pkg.name,summary:pkg.description,authors:[{id:1,name:pkg.author,url:'https://example.com'}],logo:{thumbnailUrl:'/src/assets/images/LeviLamina.png',url:'/src/assets/images/LeviLamina.png'},downloadCount:pkg.hotness*1000,dateModified:pkg.updated,dateCreated:pkg.updated,categories:[],links:{websiteUrl:'https://example.com/mod',sourceUrl:'https://example.com/src'}};})};
+ if (scenario.startsWith('catalog') && name==='GetCurseForgeModDescription') return {data:'<p>'+'A long fixture description for checking readable widths. '.repeat(20)+'</p>'};
+ if (scenario.startsWith('catalog') && name==='GetCurseForgeModFiles') return {data:[
+  {id:11,displayName:'Fixture World 1.2.0',fileName:'fixture-world.mcworld',fileDate:'2026-10-01',fileLength:5242880,releaseType:1,downloadCount:1200,gameVersions:['1.21.0','1.20.0'],downloadUrl:'https://example.com/fixture-world.mcworld'},
+  {id:12,displayName:'Fixture Pack 1.1.0 beta',fileName:'fixture-pack.mcpack',fileDate:'2026-09-01',fileLength:1048576,releaseType:2,downloadCount:300,gameVersions:['1.21.0'],downloadUrl:'https://example.com/fixture-pack.mcpack'},
+  {id:13,displayName:'Fixture Addon 1.0.0',fileName:'fixture.mcaddon',fileDate:'2026-08-01',fileLength:2097152,releaseType:1,downloadCount:800,gameVersions:['1.20.0'],downloadUrl:'https://example.com/fixture.mcaddon'},
+ ]};
+ if (scenario.startsWith('catalog') && name==='StartFileDownload') {
+  const emit=(event,data)=>window._wails.dispatchWailsEvent({name:event,data});
+  const total=5242880, fileName=String(args[1]);
+  state.cfDownloads=(state.cfDownloads||0)+1;
+  (async()=>{
+   for (const part of [0.25,0.5]) {await new Promise(r=>setTimeout(r,150));emit('file.download.progress',{Downloaded:total*part,Total:total});}
+   if (state.cfHoldDownload) await new Promise(r=>{state.cfFinishDownload=r;});
+   if (state.cfDownloadError) {emit('file.download.error',state.cfDownloadError);return;}
+   emit('file.download.progress',{Downloaded:total,Total:total});
+   await new Promise(r=>setTimeout(r,100));
+   emit('file.download.done','C:\\Fixture\\downloads\\'+fileName);
+  })();
+  return '';
+ }
+ if (scenario.startsWith('catalog') && name==='CancelFileDownload') {state.cfCancelled=(state.cfCancelled||0)+1;return '';}
+ if (scenario.startsWith('catalog') && name.startsWith('Import')) {
+  state.cfImports=[...(state.cfImports||[]),{name,args}];
+  if (state.cfImportError) return state.cfImportError;
+  if (state.cfDuplicate && !args.at(-1)) return 'ERR_DUPLICATE_FOLDER';
+  return '';
  }
  if (name==='ListVersionMetas') return scenario==='no-instances' ? [] : [{name:'UI test instance',gameVersion:'1.21.0',type:'Release',enableIsolation:true}];
  if (name==='ListPacksForVersion' && scenario==='resource-packs') return Array.from({length:24},(_,index)=>({name:'Resource pack '+String(index+1).padStart(2,'0'),path:'C:/Fixture/resource_packs/pack-'+(index+1),manifest:{pack_type:6,name:'Resource pack '+String(index+1).padStart(2,'0'),description:'A sample resource pack.',identity:{version:{major:1,minor:0,patch:0}}}}));
@@ -282,7 +355,8 @@ state.runLipTask = async (name, args) => {
   emit('lip_task_log', {level:'info', message:'Fixture task '+plan.method, raw:''});
   for (const [index, phase] of plan.phases.entries()) {
     for (const update of phase) emit('lip_task_progress', {message:'', percentage:update.total>0?update.current*100/update.total:0, package:'', item:'', done:false, indeterminate:false, ...update});
-    if (index < plan.phases.length - 1) {
+    // Catalog scenarios run lip tasks straight through.
+    if (index < plan.phases.length - 1 && !scenario.startsWith('catalog')) {
       state.lipPaused++;
       await new Promise(resolve => { state.lipReleases.push(resolve); });
     }
@@ -293,7 +367,8 @@ state.runLipTask = async (name, args) => {
     emit('lip_task_finished', {success:false, error, stderr:'', durationMs:1});
     return 'ERR_LIP_PACKAGE_UNINSTALL_FAILED';
   }
-  if (name==='InstallLeviLamina') state.llInstalled = true;
+  if (name==='InstallLeviLamina') state.llInstalled = scenario.startsWith('catalog') ? String(args[2]) : true;
+  if (name==='InstallLIPPackage') (state.lipInstalled = state.lipInstalled || {})[String(args[1]).toLowerCase()] = String(args[2]);
   if (name==='UninstallLeviLamina') state.llInstalled = false;
   emit('lip_task_finished', {success:true, error:'', stderr:'', durationMs:1});
   return '';

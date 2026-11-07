@@ -20,12 +20,12 @@ export const ContentDownloadCard = () => {
         "rounded-3xl",
       )}
     >
-      <Card.Header className="px-5 py-3 border-b border-border dark:border-white/5 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          <div className="p-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
+      <Card.Header className="min-h-14 px-5 py-3 border-b border-border dark:border-white/5 flex justify-between items-center">
+        <div className="flex min-w-0 items-center gap-2">
+          <div className="shrink-0 p-1.5 rounded-lg bg-orange-500/10 text-orange-600 dark:text-orange-400">
             <FaCloudDownloadAlt size={16} />
           </div>
-          <h3 className="text-base font-bold text-foreground dark:text-zinc-100">
+          <h3 className="truncate text-base font-bold text-foreground dark:text-zinc-100">
             {t("contentdownload.title")}
           </h3>
         </div>
@@ -36,12 +36,12 @@ export const ContentDownloadCard = () => {
           className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-surface-tertiary/50 cursor-pointer transition-all border border-transparent hover:border-border/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           onClick={() => navigate(ROUTES.curseForge)}
         >
-          <div className="flex items-center gap-3">
+          <div className="flex min-w-0 items-center gap-3">
             <SiCurseforge
               aria-hidden="true"
-              className="text-[#f16436] text-xl"
+              className="shrink-0 text-[#f16436] text-xl"
             />
-            <span className="font-medium">
+            <span className="min-w-0 truncate font-medium">
               {t("curseforge.title")}
             </span>
           </div>
@@ -51,9 +51,9 @@ export const ContentDownloadCard = () => {
           className="flex w-full items-center justify-between p-3 text-left rounded-xl hover:bg-surface-tertiary/50 cursor-pointer transition-all border border-transparent hover:border-border/50 dark:hover:border-white/10 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
           onClick={() => navigate(ROUTES.lip)}
         >
-          <div className="flex items-center gap-3">
-            <FaCube className="text-green-500 text-xl" />
-            <span className="font-medium">
+          <div className="flex min-w-0 items-center gap-3">
+            <FaCube aria-hidden="true" className="shrink-0 text-green-500 text-xl" />
+            <span className="min-w-0 truncate font-medium">
               {t("lip.title")}
             </span>
           </div>

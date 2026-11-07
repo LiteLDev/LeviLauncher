@@ -1,15 +1,12 @@
-import { EMPTY_CONTENT_ROOTS } from "@/utils/content";
 import { resolveContentPath } from "@/utils/content";
 import { openDirectory } from "@/utils/explorer";
 import { ModalDescription, ModalAction } from "@/components/ModalPrimitives";
 import {
   Button,
-  Card,
   Checkbox,
   Modal,
   Spinner,
   Tooltip,
-  toast,
   useOverlayState,
 } from "@heroui/react";
 
@@ -19,8 +16,6 @@ import { useTranslation } from "react-i18next";
 import { deleteContentItems } from "@/utils/contentDeletion";
 import { DeleteConfirmModal } from "@/components/DeleteConfirmModal";
 import { motion, AnimatePresence } from "framer-motion";
-import { useLocation, useNavigate } from "react-router-dom";
-import { ROUTES } from "@/constants/routes";
 import {
   FaSync,
   FaFolderOpen,
@@ -31,16 +26,23 @@ import {
   FaExpand,
   FaChevronLeft,
   FaChevronRight,
+  FaUser,
 } from "react-icons/fa";
 import {
   GetImageURL,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
-import { GetContentRoots } from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as contentService from "bindings/github.com/liteldev/LeviLauncher/internal/app/contentservice";
 import * as types from "bindings/github.com/liteldev/LeviLauncher/internal/types/models";
-import { readCurrentVersionName } from "@/utils/currentVersion";
-import { PageHeader } from "@/components/PageHeader";
 import { PageContainer } from "@/components/PageContainer";
+import {
+  ContentPrerequisite,
+  ContentSubpageHeader,
+  useContentPlayers,
+  useContentRoots,
+} from "@/components/ContentSubpage";
+import { InstancePicker } from "@/components/InstancePicker";
+import { notify } from "@/utils/activity";
+import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
 import { COMPONENT_STYLES } from "@/constants/componentStyles";
@@ -66,15 +68,17 @@ import { SelectionBar } from "@/components/SelectionBar";
 
 export default function ScreenshotsPage() {
   const { t } = useTranslation();
-  const location = useLocation();
-  const navigate = useNavigate();
+  const { currentVersionName } = useCurrentVersion();
   const [loading, setLoading] = React.useState<boolean>(true);
   const [loadError, setLoadError] = React.useState("");
   const loadGeneration = React.useRef(0);
   const [screenshots, setScreenshots] = React.useState<ScreenshotItem[]>([]);
-  const [currentVersionName, setCurrentVersionName] =
-    React.useState<string>("");
-  const [roots, setRoots] = React.useState<types.ContentRoots>(EMPTY_CONTENT_ROOTS);
+  const rootsState = useContentRoots(currentVersionName);
+  const { roots } = rootsState;
+  const isUWP = roots.packageType === "uwp";
+  const playerState = useContentPlayers(
+    rootsState.ready && !isUWP ? roots.usersRoot || "" : "",
+  );
   const [activeShot, setActiveShot] = React.useState<ScreenshotItem | null>(
     null,
   );
@@ -97,7 +101,9 @@ export default function ScreenshotsPage() {
   const [deletingMany, setDeletingMany] = React.useState(false);
   const scrollRef = React.useRef<HTMLDivElement | null>(null);
 
-  const player = (location.state as any)?.player || "";
+  const player = isUWP ? "" : playerState.selectedPlayer;
+  const ready =
+    rootsState.ready && !playerState.loading;
 
   const contentScope = JSON.stringify([currentVersionName, player]);
   const contentScopeRef = React.useRef(contentScope);
@@ -116,22 +122,27 @@ export default function ScreenshotsPage() {
     return resolveContentPath(roots, "Screenshots", player);
   }, [roots, player]);
 
+  // Roots follow the current instance, so the picker reloads in place.
+  React.useEffect(() => {
+    setScreenshots([]);
+    setLoadError("");
+    setLoading(!!currentVersionName);
+  }, [currentVersionName]);
+  React.useEffect(() => {
+    if (rootsState.error) {
+      setLoading(false);
+      setLoadError(rootsState.error);
+    }
+  }, [rootsState.error]);
+
   const refreshAll = React.useCallback(async () => {
+    if (!ready) return;
     const generation = ++loadGeneration.current;
     setLoading(true);
     setLoadError("");
-    const name = readCurrentVersionName();
-    setCurrentVersionName(name);
+    const name = currentVersionName;
     try {
-      if (!name) {
-        setScreenshots([]);
-        return;
-      }
-      const r = await GetContentRoots(name);
-      if (generation !== loadGeneration.current) return;
-      const safe = r || EMPTY_CONTENT_ROOTS;
-      setRoots(safe);
-      if (!player && safe.packageType !== "uwp") {
+      if (!player && !isUWP) {
         setScreenshots([]);
         return;
       }
@@ -189,12 +200,13 @@ export default function ScreenshotsPage() {
     } finally {
       if (generation === loadGeneration.current) setLoading(false);
     }
-  }, [player, t]);
+  }, [currentVersionName, isUWP, player, ready, t]);
 
   React.useEffect(() => {
-    refreshAll();
+    if (!ready) return;
+    void refreshAll();
     return () => { loadGeneration.current++; };
-  }, [refreshAll]);
+  }, [ready, refreshAll]);
 
   const retryImage = React.useCallback(async (shot: ScreenshotItem) => {
     const generation = loadGeneration.current;
@@ -249,78 +261,45 @@ export default function ScreenshotsPage() {
 
   return (
     <PageContainer ref={scrollRef}>
-      <Card className={LAYOUT.GLASS_CARD.BASE}>
-        <Card.Content className="p-6 flex flex-col gap-6">
-          <PageHeader
-            title={t("contentpage.screenshots")}
-            endContent={
-              <div className="flex items-center gap-2">
-                <Button
-                  onPress={() => {
-                    if (screenshotsRoot) openDirectory(screenshotsRoot);
-                  }}
-                  isDisabled={!screenshotsRoot}
-                  variant={"secondary"}
-                  className={cn(
-                    "rounded-full",
-                    "bg-surface-secondary text-foreground dark:text-zinc-200 font-medium",
-                  )}
-                >
-                  {<FaFolderOpen />}
-                  {t("common.open")}
-                </Button>
-                <Tooltip>
-                  <Button
-                    isIconOnly
-                    aria-label={t("common.select_mode")}
-                    onPress={selection.toggleSelectMode}
-                    variant={"secondary"}
-                    className={cn(
-                      "rounded-full",
-                      "bg-surface-secondary text-foreground dark:text-zinc-200",
-                    )}
-                  >
-                    <FaCheckSquare />
-                  </Button>
-                  <Tooltip.Content>{t("common.select_mode")}</Tooltip.Content>
-                </Tooltip>
-                <Tooltip>
-                  <Button
-                    isIconOnly
-                    aria-label={t("common.refresh")}
-                    onPress={() => refreshAll()}
-                    isDisabled={loading}
-                    variant={"secondary"}
-                    className={cn(
-                      "rounded-full",
-                      "bg-surface-secondary text-foreground dark:text-zinc-200",
-                    )}
-                  >
-                    <FaSync
-                      className={loading ? "animate-spin" : ""}
-                      size={18}
-                    />
-                  </Button>
-                  <Tooltip.Content>
-                    {t("common.refresh") as unknown as string}
-                  </Tooltip.Content>
-                </Tooltip>
-              </div>
-            }
-          />
-          <div className="mt-2 text-muted dark:text-zinc-400 text-sm flex flex-wrap items-center gap-2">
-            <span>{t("contentpage.current_version")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
-              {currentVersionName || t("contentpage.none")}
-            </span>
-            <span className="text-muted dark:text-zinc-700">|</span>
-            <span>{t("contentpage.isolation")}:</span>
-            <span className="font-medium text-foreground dark:text-zinc-200 bg-surface-secondary px-2 py-0.5 rounded-md">
-              {roots.isIsolation ? t("common.yes") : t("common.no")}
-            </span>
-          </div>
-        </Card.Content>
-      </Card>
+      <ContentSubpageHeader
+        title={t("contentpage.screenshots")}
+        isIsolation={currentVersionName ? roots.isIsolation : undefined}
+        player={
+          currentVersionName && !isUWP
+            ? {
+                players: playerState.players,
+                value: player,
+                gamertagMap: playerState.gamertagMap,
+                onChange: playerState.setSelectedPlayer,
+              }
+            : null
+        }
+        actions={[
+          {
+            key: "open",
+            label: t("common.open_folder"),
+            icon: <FaFolderOpen />,
+            onPress: () => {
+              if (screenshotsRoot) openDirectory(screenshotsRoot);
+            },
+            isDisabled: !screenshotsRoot,
+          },
+          {
+            key: "select",
+            label: t("common.select_mode"),
+            icon: <FaCheckSquare />,
+            onPress: selection.toggleSelectMode,
+            isDisabled: !screenshots.length,
+          },
+          {
+            key: "refresh",
+            label: t("common.refresh"),
+            icon: <FaSync className={loading ? "animate-spin" : ""} />,
+            onPress: () => void refreshAll(),
+            isDisabled: loading || !ready,
+          },
+        ]}
+      />
 
       <SelectionBar
         hiddenSelectedCount={selection.hiddenSelectedCount}
@@ -331,12 +310,21 @@ export default function ScreenshotsPage() {
         isSelectMode={selection.isSelectMode}
       />
 
-      {(!player && roots.packageType !== "uwp") || (!loading && !currentVersionName) ? (
-        <div role="status" className="flex flex-col items-center gap-4 py-16 text-muted">
-          <p>{t(!player ? "contentpage.screenshot_select_player" : "contentpage.screenshot_no_instance")}</p>
-          <Button variant="secondary" onPress={() => navigate(ROUTES.content)}>{t("common.back")}</Button>
-        </div>
-      ) : loading ? (
+      {!currentVersionName ? (
+        <ContentPrerequisite
+          icon={<FaCamera />}
+          title={t("content_sub.no_instance_title")}
+          body={t("contentpage.screenshot_no_instance")}
+        >
+          <InstancePicker />
+        </ContentPrerequisite>
+      ) : ready && !player && !isUWP && !loadError ? (
+        <ContentPrerequisite
+          icon={<FaUser />}
+          title={t("contentpage.no_players")}
+          body={t("audit.usability.choose_player")}
+        />
+      ) : loading || (!ready && !loadError) ? (
         <div className="flex flex-col items-center justify-center py-20 gap-4">
           <Spinner size="lg" />
           <span className="text-muted dark:text-zinc-400">
@@ -348,14 +336,14 @@ export default function ScreenshotsPage() {
           <p className="font-medium">{t("contentpage.screenshot_load_failed")}</p>
           <p className="text-sm text-muted select-text break-all">{loadError}</p>
           <div className="flex gap-2">
-            <Button variant="primary" onPress={() => void refreshAll()}>{t("common.retry")}</Button>
+            <Button variant="primary" onPress={() => (ready ? void refreshAll() : rootsState.retry())}>{t("common.retry")}</Button>
             <Button variant="secondary" isDisabled={!screenshotsRoot} onPress={() => { if (screenshotsRoot) void openDirectory(screenshotsRoot); }}>{t("common.open")}</Button>
           </div>
         </div>
       ) : (
         <div className="flex flex-col gap-4">
           {screenshots.length ? (
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
+            <div className={LAYOUT.GRID.AUTO(15)}>
               {screenshots.map((s) => (
                 <motion.div
                   key={s.path}
@@ -506,19 +494,19 @@ export default function ScreenshotsPage() {
                 activeShot.path,
               );
               if (result) throw new Error(String(result));
-              toast(
-                t("contentpage.deleted_name", {
-                  name: activeShot.name,
-                }),
-                { variant: "success", timeout: 2000 },
-              );
+              notify({
+                title: t("contentpage.deleted_name", { name: activeShot.name }),
+                variant: "success",
+                source: "content",
+              });
               setActiveShot(null);
               if (contentScopeRef.current === contentScope) refreshAll();
             } catch (e) {
-              toast("Error", {
+              notify({
+                title: t("content_sub.delete_failed"),
                 description: String(e),
                 variant: "danger",
-                timeout: 2000,
+                source: "content",
               });
               throw e;
             } finally {
@@ -586,7 +574,7 @@ export default function ScreenshotsPage() {
                     )}
                   </div>
                 </div>
-                <div className="shrink-0 rounded-full bg-brand-50/80 px-3 py-1 text-xs font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
+                <div className="hidden shrink-0 rounded-full bg-brand-50/80 px-3 py-1 sm:block text-xs font-medium text-brand-600 dark:bg-brand-500/10 dark:text-brand-400">
                   {t("contentpage.screenshot_viewer_hint")}
                 </div>
               </div>
@@ -633,7 +621,7 @@ export default function ScreenshotsPage() {
                     animate={{ opacity: 1, scale: 1 }}
                     exit={{ opacity: 0, scale: 0.985 }}
                     transition={{ duration: 0.2, ease: "easeOut" }}
-                    className="flex h-[clamp(260px,52vh,560px)] items-center justify-center p-3 sm:p-4 md:p-5"
+                    className="flex h-[max(8rem,min(70vh,calc(100dvh-16rem)))] items-center justify-center p-2 sm:p-4 md:p-5"
                   >
                     {previewShot?.dataUrl ? (
                       <img
@@ -688,7 +676,7 @@ export default function ScreenshotsPage() {
             </BaseModalBody>
 
             <BaseModalFooter className="flex flex-col items-stretch justify-between gap-3 overflow-hidden pt-2 sm:flex-row sm:items-center">
-              <div className="text-sm text-muted dark:text-zinc-400">
+              <div className="hidden text-sm text-muted dark:text-zinc-400 md:block">
                 {t("contentpage.screenshot_viewer_nav_hint")}
               </div>
               <div className="flex items-center justify-end gap-2">

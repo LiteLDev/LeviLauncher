@@ -1,0 +1,72 @@
+{
+  "download_flow": {
+    "activity": {
+      "title": "Download {{name}}"
+    },
+    "status": {
+      "starting": "Starting download",
+      "started": "Downloading",
+      "resumed": "Download resumed",
+      "verifying": "Verifying file",
+      "done": "Download complete",
+      "cancelled": "Download cancelled"
+    },
+    "failed": "Download failed",
+    "failed_title": "Couldn't download {{name}}",
+    "start_failed_title": "Couldn't start downloading {{name}}",
+    "already_title": "Already downloading",
+    "done_title": "Download complete",
+    "view_tasks": "Open tasks",
+    "show_log": "Show log",
+    "install_when_done": "Install when done",
+    "download_install": "Download & install",
+    "download_only": "Download only",
+    "more_options": "More download options",
+    "show_more": "Show {{count}} more",
+    "latency": "Latency",
+    "row": {
+      "downloading": "Downloading {{percent}}%"
+    },
+    "back_to": "Back to {{place}}",
+    "origin": {
+      "download": "versions",
+      "tasks": "download tasks",
+      "home": "home",
+      "instances": "instances"
+    },
+    "go_to_instance": "Go to instance",
+    "launch": {
+      "now": "Launch now",
+      "started": "Launching {{name}}",
+      "failed": "Couldn't launch the game",
+      "open_home": "Open home"
+    },
+    "install": {
+      "steps": "Install steps",
+      "activity_title": "Install {{name}}",
+      "started": "Installing {{version}} as “{{name}}”",
+      "extracting": "Extracting {{file}}",
+      "extracted": "Extracted {{percent}}% ({{done}} / {{total}})",
+      "extracted_files": "Extracted {{count}} files",
+      "extract_done": "Game files extracted",
+      "saving_settings": "Saving instance settings",
+      "copying_data": "Copying game data from {{source}}",
+      "installing_ll": "Installing LeviLamina {{version}}",
+      "ll_done": "LeviLamina {{version}} installed",
+      "rolled_back": "Removed the incomplete instance “{{name}}”",
+      "set_current": "“{{name}}” is now the current instance",
+      "done": "“{{name}}” is installed",
+      "when_downloaded": "Install when downloaded",
+      "queued": "Installs after download",
+      "downloading": "Downloading the game files",
+      "download_ready": "Download complete — ready to install",
+      "background_hint": "The download continues in the background. Set the options below, then choose Install when downloaded.",
+      "queued_hint": "Installation starts automatically when the download finishes. Click the button again to cancel.",
+      "instance": "Instance:",
+      "is_current": "Current instance",
+      "set_current_action": "Set as current instance",
+      "set_current_label": "Set as current instance",
+      "set_current_desc": "Select the new instance on the home page after it is installed."
+    }
+  }
+}

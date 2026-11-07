@@ -4,7 +4,7 @@ import test from "node:test";
 import { runInNewContext } from "node:vm";
 import ts from "typescript";
 
-// Execute the real utility with native bindings and toast delivery replaced.
+// Execute the real utility with native bindings and notice delivery replaced.
 // This tests error handling without opening folders or mounting the application.
 const source = readFileSync(new URL("../src/utils/explorer.ts", import.meta.url), "utf8");
 const { outputText } = ts.transpileModule(source, {
@@ -19,7 +19,7 @@ function setup(invoke) {
     return invoke(value);
   };
   const dependencies = {
-    "@heroui/react": { toast: { danger: (...args) => notifications.push(args) } },
+    "@/utils/activity": { notify: (options) => notifications.push(options) },
     "@/i18n": { __esModule: true, default: { t: (key) => key } },
     "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft": { OpenPathDir: bind("directory") },
     "bindings/github.com/liteldev/LeviLauncher/internal/app/modsservice": { OpenModsExplorer: bind("mods") },
@@ -61,8 +61,9 @@ for (const [method, operation, value] of [
     const api = setup(() => Promise.reject(new Error("Access is denied")));
     assert.equal(await api[operation](value), false);
     assert.equal(api.notifications.length, 1);
-    assert.equal(api.notifications[0][0], "common.open_folder_failed");
-    assert.equal(api.notifications[0][1].description, "Access is denied");
+    assert.equal(api.notifications[0].title, "common.open_folder_failed");
+    assert.equal(api.notifications[0].variant, "danger");
+    assert.equal(api.notifications[0].description, "Access is denied");
   });
 }
 
@@ -80,6 +81,6 @@ test("a synchronous binding failure is handled and a later retry can succeed", a
 test("path resolution errors retain their text in the shared notification", () => {
   const api = setup(() => Promise.resolve());
   api.showDirectoryOpenError("Versions directory is unavailable");
-  assert.equal(api.notifications[0][1].description, "Versions directory is unavailable");
+  assert.equal(api.notifications[0].description, "Versions directory is unavailable");
   assert.equal(api.calls.length, 0);
 });

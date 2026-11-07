@@ -11,7 +11,6 @@ import {
   TextField,
   Spinner,
   Tooltip,
-  toast,
 } from "@heroui/react";
 
 import React from "react";
@@ -26,15 +25,25 @@ import { useNavigate } from "react-router-dom";
 import { useTranslation } from "react-i18next";
 import { compareVersions } from "@/utils/version";
 import { FaSearch, FaSortAmountDown, FaSortAmountUp } from "react-icons/fa";
+import { FiCheck, FiPackage, FiSettings } from "react-icons/fi";
 import { ROUTES } from "@/constants/routes";
-import {
-  readCurrentVersionName,
-  saveCurrentVersionName,
-} from "@/utils/currentVersion";
+import { useCurrentVersion } from "@/utils/CurrentVersionContext";
 import {
   GetVersionLogoDataUrl,
   ListVersionMetas,
 } from "bindings/github.com/liteldev/LeviLauncher/internal/app/versionservice";
+
+type InstanceFilterTab = "all" | "release" | "preview" | "beta";
+
+// Filters, sort and scroll survive leaving the page (e.g. opening an
+// instance's settings and coming back).
+const savedView: {
+  tab: InstanceFilterTab;
+  query: string;
+  sortBy: "version" | "name";
+  sortAsc: boolean;
+  scrollTop: number;
+} = { tab: "all", query: "", sortBy: "version", sortAsc: false, scrollTop: 0 };
 
 export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
   props,
@@ -42,17 +51,27 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
   const [localVersionMap, setLocalVersionMap] = React.useState<
     Map<string, any>
   >(new Map());
-  const [selectedVersionName, setSelectedVersionName] =
-    React.useState<string>("");
-  const [activeTab, setActiveTab] = React.useState<
-    "all" | "release" | "preview" | "beta"
-  >("all");
-  const [query, setQuery] = React.useState("");
+  const { currentVersionName, setCurrentVersionName } = useCurrentVersion();
+  const selectedVersionName = currentVersionName;
+  const [announcement, setAnnouncement] = React.useState("");
+  const [activeTab, setActiveTab] = React.useState<InstanceFilterTab>(
+    savedView.tab,
+  );
+  const [query, setQuery] = React.useState(savedView.query);
   const [loading, setLoading] = React.useState(true);
   const [loadError, setLoadError] = React.useState(false);
   const [loadAttempt, setLoadAttempt] = React.useState(0);
-  const [sortBy, setSortBy] = React.useState<"version" | "name">("version");
-  const [sortAsc, setSortAsc] = React.useState<boolean>(false);
+  const [sortBy, setSortBy] = React.useState<"version" | "name">(
+    savedView.sortBy,
+  );
+  const [sortAsc, setSortAsc] = React.useState<boolean>(savedView.sortAsc);
+  const scrollRef = React.useRef<HTMLDivElement>(null);
+  React.useEffect(() => {
+    savedView.tab = activeTab;
+    savedView.query = query;
+    savedView.sortBy = sortBy;
+    savedView.sortAsc = sortAsc;
+  }, [activeTab, query, sortBy, sortAsc]);
   const [logoMap, setLogoMap] = React.useState<Map<string, string>>(new Map());
   const reduceMotion = useReducedMotion();
   const navigate = useNavigate();
@@ -90,12 +109,6 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
           if (name) newLocalVersionMap.set(name, lv);
         });
         setLocalVersionMap(newLocalVersionMap);
-        const saved = readCurrentVersionName();
-        const useName =
-          saved && newLocalVersionMap.has(saved)
-            ? saved
-            : Array.from(newLocalVersionMap.keys())[0] || "";
-        setSelectedVersionName(useName);
         try {
           const getter = GetVersionLogoDataUrl as any;
           if (typeof getter === "function") {
@@ -167,20 +180,41 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
     return list;
   }, [localVersionMap, activeTab, query, sortBy, sortAsc, compareVersions]);
 
+  // Remember the list's scroll position when leaving the page.
+  React.useLayoutEffect(() => {
+    const element = scrollRef.current;
+    return () => {
+      if (element) savedView.scrollTop = element.scrollTop;
+    };
+  }, []);
+
+  // Restore the list's scroll position once the cards are back.
+  React.useLayoutEffect(() => {
+    if (loading || !scrollRef.current) return;
+    scrollRef.current.scrollTop = savedView.scrollTop;
+  }, [loading]);
+
+  // The highlighted card is the feedback; the live region announces it.
   const handleSelectVersion = (name: string) => {
-    if (name) {
-      saveCurrentVersionName(name);
-      setSelectedVersionName(name);
-      toast(t("common.success"), {
-        description: t("launcherpage.currentVersion") + ": " + name,
-        variant: "accent",
-        timeout: 2000,
-      });
+    if (!name) return;
+    if (name !== selectedVersionName) {
+      setCurrentVersionName(name, "instances.select");
+      setAnnouncement(t("instances.list.now_current", { name }) as string);
     }
     try {
       props.refresh && props.refresh();
     } catch {}
   };
+
+  const openModsFor = React.useCallback(
+    (name: string) => {
+      if (name !== selectedVersionName) {
+        setCurrentVersionName(name, "instances.mods");
+      }
+      navigate(ROUTES.mods);
+    },
+    [navigate, selectedVersionName, setCurrentVersionName],
+  );
 
   const openEditFor = React.useCallback(
     (name: string) => {
@@ -367,12 +401,16 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
         </motion.div>
 
         {/* Keep the scroll viewport stable while cards move inside it. */}
+        <p className="sr-only" role="status" aria-live="polite">
+          {announcement}
+        </p>
         <motion.div
+          ref={scrollRef}
           layoutScroll
           className="-m-1 min-h-0 flex-1 overflow-x-hidden overflow-y-auto overscroll-contain no-scrollbar"
         >
           {/* Clip outgoing positions to the new grid bounds during filtering. */}
-          <div className="grid grid-cols-[repeat(auto-fill,minmax(min(100%,20rem),1fr))] gap-3 overflow-hidden p-1">
+          <div className={cn(LAYOUT.GRID.AUTO(20), "overflow-hidden p-1")}>
             {(loading || loadError || flatItems.length === 0) && (
               <Card className={cn(LAYOUT.GLASS_CARD.BASE, "col-span-full")}>
                 <Card.Content className="flex flex-col items-center gap-3 px-6 py-12 text-center">
@@ -418,11 +456,11 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                     LAYOUT.GLASS_CARD.BASE,
                     "border-2 border-solid",
                     selectedVersionName === it.name
-                      ? "border-accent"
+                      ? "border-accent bg-accent/10 dark:bg-accent/15"
                       : "border-transparent hover:border-border dark:hover:border-zinc-700",
                   )}
                 >
-                  <Card.Content className="p-4 flex flex-col gap-1">
+                  <Card.Content className="flex h-full flex-col gap-3 p-4">
                     <Tooltip>
                     <AriaButton
                       type="button"
@@ -431,70 +469,66 @@ export const InstanceSelectPage: React.FC<{ refresh?: () => void }> = (
                       className="absolute inset-0 z-10 cursor-pointer rounded-[inherit] focus-visible:outline-2 focus-visible:outline-focus"
                       onPress={() => handleSelectVersion(it.name)}
                     />
-                    <Tooltip.Content className="pointer-events-none">{it.name}</Tooltip.Content>
+                    <Tooltip.Content className="pointer-events-none">
+                      {selectedVersionName === it.name
+                        ? it.name
+                        : t("instances.list.select_hint")}
+                    </Tooltip.Content>
                     </Tooltip>
-                    <div className="flex items-center justify-between gap-2 w-full min-w-0">
-                      <div className="font-bold text-lg truncate min-w-0 flex-1">{it.name}</div>
-                      <div className="flex shrink-0 items-center gap-2">
-                        <Chip size="sm" variant="soft"><Chip.Label>{it.packageType.toUpperCase()}</Chip.Label></Chip>
-                        {activeTab === "all" && (it.isPreview ? (
-                          <Chip
-                            size="sm"
-                            variant="soft"
-                            color={"warning"}
-                            className={"shrink-0"}
-                          >
-                            <Chip.Label>{t("versions.tab.preview")}</Chip.Label>
-                          </Chip>
-                        ) : (
-                          <Chip
-                            size="sm"
-                            variant="soft"
-                            color={"success"}
-                            className={"shrink-0"}
-                          >
-                            <Chip.Label>{it.type === "beta" ? t("uwp.beta") : t("versions.tab.release")}</Chip.Label>
-                          </Chip>
-                        ))}
-                        <Button
-                          isIconOnly
-                          size="sm"
-                          onPress={() => {
-                            openEditFor(it.name);
-                          }}
-                          aria-label={t("audit.primary.instances.settings", { name: it.name })}
-                          variant={"ghost"}
-                          className={"relative z-20 shrink-0"}
-                        >
-                          <svg
-                            width="18"
-                            height="18"
-                            viewBox="0 0 24 24"
-                            fill="none"
-                            stroke="currentColor"
-                            strokeWidth="2"
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                          >
-                            <path d="M12 15.5a3.5 3.5 0 1 0 0-7 3.5 3.5 0 0 0 0 7z" />
-                            <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 1 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 1 1-4 0v-.09a1.65 1.65 0 0 0-1-1.51 1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 1 1-2.83-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 1 1 0-4h.09a1.65 1.65 0 0 0 1.51-1 1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 1 1 2.83-2.83l.06.06a1.65 1.65 0 0 0 1.82.33h0a1.65 1.65 0 0 0 1-1.51V3a2 2 0 1 1 4 0v.09a1.65 1.65 0 0 0 1 1.51h0a1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 1 1 2.83 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82v0a1.65 1.65 0 0 0 1.51 1H21a2 2 0 1 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
-                          </svg>
-                        </Button>
-                      </div>
-                    </div>
-                    <div className="flex min-w-0 items-center gap-2 text-muted dark:text-zinc-400 text-sm">
+                    <div className="flex w-full min-w-0 items-start gap-3">
                       {(() => {
                         const u = logoMap.get(it.name);
                         return u ? (
-                          <img src={u} alt="" className="h-4 w-4 shrink-0 rounded" />
+                          <img src={u} alt="" className="size-10 shrink-0 rounded-xl object-cover" />
                         ) : (
-                          <div className="h-4 w-4 shrink-0 rounded bg-surface-tertiary" />
+                          <div className="size-10 shrink-0 rounded-xl bg-surface-tertiary" />
                         );
                       })()}
-                      <span className="truncate" title={it.version}>
-                        Vanilla{" "}
-                        {it.version || t("launcherpage.version_select.unknown")}
-                      </span>
+                      <div className="min-w-0 flex-1">
+                        <div className="truncate text-lg font-bold leading-6">{it.name}</div>
+                        <div className="truncate text-sm text-muted dark:text-zinc-400" title={it.version}>
+                          Vanilla{" "}
+                          {it.version || t("launcherpage.version_select.unknown")}
+                        </div>
+                      </div>
+                      {selectedVersionName === it.name ? (
+                        <Chip size="sm" color="accent" variant="primary" className="shrink-0">
+                          <FiCheck aria-hidden="true" />
+                          <Chip.Label>{t("instances.list.current")}</Chip.Label>
+                        </Chip>
+                      ) : null}
+                    </div>
+                    <div className="mt-auto flex min-w-0 flex-wrap items-center gap-2">
+                      <Chip size="sm" variant="soft"><Chip.Label>{it.packageType.toUpperCase()}</Chip.Label></Chip>
+                      {activeTab === "all" && (it.isPreview ? (
+                        <Chip size="sm" variant="soft" color={"warning"} className={"shrink-0"}>
+                          <Chip.Label>{t("versions.tab.preview")}</Chip.Label>
+                        </Chip>
+                      ) : (
+                        <Chip size="sm" variant="soft" color={"success"} className={"shrink-0"}>
+                          <Chip.Label>{it.type === "beta" ? t("uwp.beta") : t("versions.tab.release")}</Chip.Label>
+                        </Chip>
+                      ))}
+                      <div className="relative z-20 ml-auto flex shrink-0 gap-1">
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => openModsFor(it.name)}
+                          aria-label={`${t("instances.list.mods")} · ${it.name}`}
+                        >
+                          <FiPackage aria-hidden="true" />
+                          {t("instances.list.mods")}
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onPress={() => openEditFor(it.name)}
+                          aria-label={t("audit.primary.instances.settings", { name: it.name })}
+                        >
+                          <FiSettings aria-hidden="true" />
+                          {t("instances.list.settings")}
+                        </Button>
+                      </div>
                     </div>
                   </Card.Content>
                 </Card>

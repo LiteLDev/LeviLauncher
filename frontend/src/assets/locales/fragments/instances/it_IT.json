@@ -1,0 +1,39 @@
+{
+  "instances": {
+    "list": {
+      "current": "Attuale",
+      "settings": "Impostazioni",
+      "mods": "Mod",
+      "now_current": "{{name}} è ora l’istanza attuale",
+      "select_hint": "Fai clic su una scheda per renderla l’istanza attuale."
+    },
+    "settings": {
+      "sections": "Sezioni delle impostazioni dell’istanza"
+    },
+    "ll": {
+      "dialog_title": "LeviLamina: {{action}}",
+      "installed_version": "Installata",
+      "target_version": "Versione da installare",
+      "instance": "Istanza"
+    },
+    "run": {
+      "activity_hint": "Questi passaggi restano anche in Attività.",
+      "backup_failed_title": "Backup non riuscito"
+    },
+    "notify": {
+      "ll_install_failed": "Installazione di LeviLamina non riuscita",
+      "ll_remove_failed": "Impossibile rimuovere LeviLamina",
+      "ll_removed": "LeviLamina rimosso",
+      "backup_open_failed": "Impossibile preparare il backup",
+      "restore_open_failed": "Impossibile aprire il file di backup"
+    },
+    "steps": {
+      "backup_scan": "Misura i file da salvare",
+      "backup_write": "Scrivi l’archivio di backup",
+      "restore_prepare": "Prepara il ripristino",
+      "restore_extract": "Estrai il contenuto del backup",
+      "restore_scope": "Ripristina {{scope}}",
+      "restore_finalize": "Completa il ripristino"
+    }
+  }
+}

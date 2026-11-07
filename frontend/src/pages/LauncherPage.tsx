@@ -1,4 +1,3 @@
-import { ModalAction, ModalDescription, ModalNotice, ModalProgress } from "@/components/ModalPrimitives";
 import {
   Button,
   Tooltip,
@@ -8,7 +7,6 @@ import {
   Dropdown,
   InputGroup,
   Label,
-  ProgressBar,
   Spinner,
   TextField,
 } from "@heroui/react";
@@ -30,19 +28,13 @@ import {
   FaDesktop,
   FaCube,
   FaArrowRight,
-  FaDownload,
-  FaExclamationTriangle,
   FaRegLightbulb,
 } from "react-icons/fa";
 import { ModCard } from "@/components/ModdedCard";
 import { ContentDownloadCard } from "@/components/ContentDownloadCard";
+import { LaunchStepsDialog } from "@/components/LaunchStepsDialog";
 import { Browser } from "@wailsio/runtime";
-import { QuitLauncher } from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { motion, AnimatePresence, useReducedMotion } from "framer-motion";
-import {
-  UnifiedModal,
-  getUnifiedModalConfirmButtonProps,
-} from "@/components/UnifiedModal";
 import { PageContainer } from "@/components/PageContainer";
 import { LAYOUT } from "@/constants/layout";
 import { cn } from "@/utils/cn";
@@ -51,7 +43,6 @@ import { ROUTES } from "@/constants/routes";
 import { useLauncher } from "@/hooks/useLauncher";
 import { useModIntelligence } from "@/utils/ModIntelligenceContext";
 import { useLeviLamina } from "@/utils/LeviLaminaContext";
-import { resolveInstallError } from "@/utils/installError";
 
 const LAUNCH_TIP_KEYS = [
   "version_selector",
@@ -72,8 +63,6 @@ const LAUNCH_TIP_KEYS = [
 export const LauncherPage = (args: any) => {
   const { t } = useTranslation();
   const prefersReducedMotion = useReducedMotion();
-  const warningConfirmButtonProps =
-    getUnifiedModalConfirmButtonProps("warning");
   const { ensureInstanceHydrated, getInstanceSnapshot, snapshotRevision } =
     useModIntelligence();
   const { getLatestLLVersion, compareLLVersions } = useLeviLamina();
@@ -85,41 +74,18 @@ export const LauncherPage = (args: any) => {
     currentVersion,
     displayName,
     localVersionMap,
-    launchErrorCode,
     contentCounts,
-    giTotal,
-    giDownloaded,
-    vcTotal,
-    vcDownloaded,
-    migrateTotal,
-    migrateDone,
-    migrateError,
     logoDataUrl,
     versionQuery,
     setVersionQuery,
     logoByName,
     isLoadingVersions,
-    registerAction,
     registrationPendingAction,
     launchPending,
+    launchStepRunning,
     requiresUWPRegistration,
     tipIndex,
-
-    // Disclosures
-    launchFailedDisclosure,
-    gameInputInstallingDisclosure,
-    gameInputMissingDisclosure,
-    vcRuntimeInstallingDisclosure,
-    vcRuntimeMissingDisclosure,
-    gamingServicesMissingDisclosure,
-    installConfirmDisclosure,
-    vcRuntimeCompletingDisclosure,
-    mcLaunchLoadingDisclosure,
-    shortcutSuccessDisclosure,
-    registerInstallingDisclosure,
-    registerSuccessDisclosure,
-    registerFailedDisclosure,
-    loaderMigrationDisclosure,
+    launchFlow,
 
     // Navigation
     navigate,
@@ -133,19 +99,18 @@ export const LauncherPage = (args: any) => {
 
     // Handlers
     doPrimaryAction,
+    doForceLaunch,
     doCreateShortcut,
     doOpenFolder,
     doRegister,
     handleVersionSelect,
-    handleGameInputInstall,
-    handleVcRuntimeInstall,
-    handleGamingServicesInstall,
-    handleIgnoreGamingServices,
-    handleInstallConfirmContinue,
-    handleInstallConfirmCheck,
-    handleInstallConfirmOpenChange,
-    handleRegisterSuccessOpenChange,
-    handleLaunchFailedForceRun,
+    installDependency,
+    recheckDependency,
+    skipDependency,
+    ignoreGamingServices,
+    openGamingServicesStore,
+    retryLaunchStep,
+    closeLaunchFlow,
   } = useLauncher(args);
   const currentVersionName = String(currentVersion || "").trim();
   const currentVersionInfo = currentVersionName
@@ -183,18 +148,6 @@ export const LauncherPage = (args: any) => {
   const worldsLabel = t("content.count.worlds") as string;
   const resourceLabel = t("content.count.resource_packs") as string;
   const behaviorLabel = t("content.count.behavior_packs") as string;
-  const launchErrorMessage = useMemo(() => {
-    if (launchErrorCode.includes("ERR_UWP_")) return resolveInstallError(launchErrorCode, t);
-    const key = `errors.${launchErrorCode}`;
-    const translated = t(key) as unknown as string;
-    if (launchErrorCode && translated && translated !== key) return translated;
-
-    const fallback = t("errors.ERR_LAUNCH_GAME") as unknown as string;
-    if (fallback && fallback !== "errors.ERR_LAUNCH_GAME") return fallback;
-
-    return "Launch failed";
-  }, [launchErrorCode, t]);
-
   const versionMenuItems = useMemo(
     () => buildVersionMenuItems(t("common.empty") as string),
     [buildVersionMenuItems, t],
@@ -244,6 +197,8 @@ export const LauncherPage = (args: any) => {
         className={cn("relative", isAnimating ? "overflow-hidden" : "")}
         animate={false}
       >
+        {/* Cap the dashboard so cards never stretch into empty slabs on wide screens. */}
+        <div className="mx-auto flex w-full max-w-[100rem] flex-col gap-[var(--page-gap)]">
         {/* Hero Launch Card */}
         <motion.div
           data-material-motion
@@ -254,14 +209,14 @@ export const LauncherPage = (args: any) => {
           <Card
             className={cn("relative overflow-hidden", LAYOUT.GLASS_CARD.BASE)}
           >
-            <Card.Content className="p-6 pb-4 relative flex flex-col gap-4">
+            <Card.Content className="@container relative flex flex-col gap-3 p-4 sm:p-6 sm:pb-4 @7xl:gap-5">
               {/* Main Layout */}
-              <div className="flex flex-col md:flex-row md:items-center justify-between gap-6">
+              <div className="flex flex-col gap-3 @3xl:flex-row @3xl:items-center @3xl:justify-between @3xl:gap-6">
                 {/* Left: Title & Info */}
                 <div className="flex flex-col gap-1 min-w-0">
-                  <div className="flex items-center gap-3">
+                  <div className="flex min-w-0 items-center gap-3">
                     <motion.h1
-                      className="text-4xl sm:text-5xl font-black tracking-tight text-brand-heading truncate pb-2"
+                      className="min-w-0 text-4xl @xl:text-5xl @7xl:text-6xl font-black tracking-tight text-brand-heading truncate pb-1 @xl:pb-2"
                       initial={{ opacity: 0, x: -20 }}
                       animate={{ opacity: 1, x: 0 }}
                       transition={{ delay: 0.2 }}
@@ -355,26 +310,26 @@ export const LauncherPage = (args: any) => {
                     )}
                   </div>
                   <div className="flex items-center gap-2">
-                    <span className="text-lg sm:text-xl font-medium text-foreground dark:text-zinc-300">
+                    <span className="text-base @xl:text-lg @7xl:text-xl font-medium text-foreground dark:text-zinc-300">
                       {t("launcherpage.edition")}
                     </span>
                   </div>
                 </div>
 
                 {/* Right: Actions */}
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3 shrink-0">
+                <div className="flex min-w-0 flex-wrap items-center gap-2 @3xl:shrink-0 @3xl:flex-nowrap @3xl:gap-3">
                   {/* Version Selector */}
-                  <div className="flex items-center gap-3 p-1.5 rounded-2xl">
+                  <div className="flex min-w-0 flex-1 items-center gap-1 @3xl:flex-none">
                     <Dropdown>
                       <Tooltip>
                       <Button
                         variant={"ghost"}
                         className={
-                          "h-12 px-3 rounded-xl data-[hovered]:bg-surface-tertiary/50 dark:data-[hovered]:bg-surface/5"
+                          "h-12 min-w-0 max-w-full @3xl:max-w-[min(22rem,40cqi)] justify-start px-3 rounded-xl data-[hovered]:bg-surface-tertiary/50 dark:data-[hovered]:bg-surface/5"
                         }
                       >
-                        <div className="flex items-center gap-3 text-left">
-                          <div className="w-8 h-8 rounded-lg bg-surface-tertiary/50 dark:bg-surface/10 flex items-center justify-center overflow-hidden shadow-sm">
+                        <div className="flex min-w-0 flex-1 items-center gap-3 text-left">
+                          <div className="w-8 h-8 shrink-0 rounded-lg bg-surface-tertiary/50 dark:bg-surface/10 flex items-center justify-center overflow-hidden shadow-sm">
                             {logoDataUrl ? (
                               <img
                                 src={logoDataUrl}
@@ -387,21 +342,18 @@ export const LauncherPage = (args: any) => {
                               </span>
                             )}
                           </div>
-                          <div className="flex flex-col hidden lg:flex">
-                            <span className="text-xs font-medium">
+                          <div className="flex min-w-0 flex-1 flex-col">
+                            <span className="text-xs font-medium text-muted">
                               {t("launcherpage.currentVersion")}
                             </span>
-                            <span className="text-sm font-bold leading-tight max-w-[120px] truncate">
+                            <span className="truncate text-sm font-bold leading-tight">
                               {displayName ||
                                 t("launcherpage.currentVersion_none")}
                             </span>
                           </div>
-                          <span className="text-sm font-bold leading-tight max-w-[120px] truncate lg:hidden">
-                            {displayName ||
-                              t("launcherpage.currentVersion_none")}
-                          </span>
                           <FaChevronDown
-                            className="ml-1"
+                            aria-hidden="true"
+                            className="ml-1 shrink-0"
                             size={12}
                           />
                         </div>
@@ -653,16 +605,17 @@ export const LauncherPage = (args: any) => {
                   <motion.div
                     whileHover={{ scale: 1.02 }}
                     whileTap={{ scale: 0.98 }}
+                    className="w-full @md:w-auto"
                   >
                     <Button
                       data-testid="primary-launch-button"
                       size="lg"
                       onPress={doPrimaryAction}
                       variant={"secondary"}
-                      isPending={registrationPendingAction !== null || launchPending || mcLaunchLoadingDisclosure.isOpen}
+                      isPending={registrationPendingAction !== null || launchPending || launchStepRunning}
                       isDisabled={registrationPendingAction !== null || launchPending || (Boolean(currentVersion) && !currentVersionInfo)}
                       className={
-                        "h-14 px-8 text-lg font-bold brand-primary-foreground shadow-brand-900/20 shadow-lg bg-brand-500 hover:bg-brand-500 rounded-2xl w-full sm:w-auto"
+                        "h-12 @xl:h-14 @7xl:h-16 px-8 @7xl:px-10 text-lg @7xl:text-xl font-bold brand-primary-foreground shadow-brand-900/20 shadow-lg bg-brand-500 hover:bg-brand-500 rounded-2xl w-full @md:w-auto"
                       }
                     >
                       {({ isPending }) => (
@@ -684,7 +637,7 @@ export const LauncherPage = (args: any) => {
                               ? "uwp.registering"
                               : registrationPendingAction === "unregister"
                                 ? "uwp.unregistering"
-                                : launchPending || mcLaunchLoadingDisclosure.isOpen
+                                : launchPending || launchStepRunning
                                   ? "uwp.launching"
                                     : requiresUWPRegistration
                                       ? "uwp.register_button"
@@ -735,14 +688,15 @@ export const LauncherPage = (args: any) => {
           </Card>
         </motion.div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 lg:gap-4 items-stretch">
+        {/* auto-fit (not auto-fill) so the three summaries share the row instead of leaving empty tracks. */}
+        <div className="grid items-stretch gap-[var(--page-gap)] grid-cols-[repeat(auto-fit,minmax(min(100%,18rem),1fr))]">
           {/* Mod Card */}
           <motion.div
             data-material-motion
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.3 }}
-            className="md:col-span-1"
+            className="min-w-0"
           >
             <ModCard
               localVersionMap={localVersionMap}
@@ -756,7 +710,7 @@ export const LauncherPage = (args: any) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.4 }}
-            className="md:col-span-1"
+            className="min-w-0"
           >
             <Card
               className={cn(
@@ -816,18 +770,18 @@ export const LauncherPage = (args: any) => {
                     className="group/item flex w-full items-center justify-between p-2 text-left rounded-xl hover:bg-surface-tertiary/50 cursor-pointer transition-all duration-200 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500"
                     onClick={() => navigate(item.path)}
                   >
-                    <div className="flex items-center gap-3">
+                    <div className="flex min-w-0 items-center gap-3">
                       <div
-                        className={`p-1.5 rounded-lg bg-surface-secondary dark:bg-surface/20 ${item.color} bg-opacity-20`}
+                        className={`shrink-0 p-1.5 rounded-lg bg-surface-secondary dark:bg-surface/20 ${item.color} bg-opacity-20`}
                       >
                         <item.icon size={16} />
                       </div>
-                      <span className="font-medium text-sm truncate max-w-[100px] lg:max-w-none">
+                      <span className="min-w-0 truncate font-medium text-sm">
                         {item.label}
                       </span>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-base font-bold">
+                    <div className="flex shrink-0 items-center gap-2">
+                      <span className="text-base font-bold tabular-nums">
                         {item.count}
                       </span>
                       <FaChevronDown
@@ -847,408 +801,31 @@ export const LauncherPage = (args: any) => {
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ delay: 0.5 }}
-            className="md:col-span-1"
+            className="min-w-0"
             onAnimationComplete={() => setIsAnimating(false)}
           >
             <ContentDownloadCard />
           </motion.div>
         </div>
+        </div>
 
-        {/* --- Modals --- */}
-
-        {/* Launch Failed */}
-        <UnifiedModal
-          isOpen={launchFailedDisclosure.isOpen}
-          onOpenChange={launchFailedDisclosure.setOpen}
-          type="error"
-          title={t("launcherpage.launch.failed.title")}
-          footer={
-            <>
-              {launchErrorCode === "ERR_GAME_ALREADY_RUNNING" && (
-                <ModalAction
-                  isDisabled={currentVersionInfo?.packageType === "uwp"}
-                  onPress={handleLaunchFailedForceRun}
-                  variant={"primary"}
-                >
-                  {t("launcherpage.launch.force_run_button")}
-                </ModalAction>
-              )}
-              <ModalAction
-                onPress={launchFailedDisclosure.close}
-                variant="primary"
-              >
-                {t("launcherpage.launch.failed.close_button")}
-              </ModalAction>
-            </>
-          }
-        >
-          <div className="flex flex-col gap-4">
-            <ModalDescription>
-              {launchErrorMessage}
-            </ModalDescription>
-            <ModalDescription>
-              {t("launcherpage.launch.failed.content") as unknown as string}
-            </ModalDescription>
-            {launchErrorCode && (
-              <Chip
-                size="sm"
-                variant="soft"
-                color={"default"}
-                className={"font-mono tracking-wide"}
-              >
-                <Chip.Label>{launchErrorCode}</Chip.Label>
-              </Chip>
-            )}
-          </div>
-        </UnifiedModal>
-
-        {/* GameInput Installing */}
-        <UnifiedModal
-          isOpen={gameInputInstallingDisclosure.isOpen}
-          onOpenChange={gameInputInstallingDisclosure.setOpen}
-          type="success"
-          title={t("launcherpage.gameinput.installing.title")}
-          icon={<FaDownload className="w-6 h-6" />}
-        >
-          <ModalProgress label={t("launcherpage.gameinput.installing.title")} description={t("launcherpage.gameinput.installing.body")} value={giTotal > 0 ? Math.min(100, (giDownloaded / giTotal) * 100) : undefined} detail={giTotal > 0 ? `${(giDownloaded / 1024 / 1024).toFixed(1)} / ${(giTotal / 1024 / 1024).toFixed(1)} MB` : t("launcherpage.gameinput.installing.preparing")} />
-        </UnifiedModal>
-
-        {/* GameInput Missing */}
-        <UnifiedModal
-          isOpen={gameInputMissingDisclosure.isOpen}
-          onOpenChange={gameInputMissingDisclosure.setOpen}
-          type="warning"
-          title={t("launcherpage.gameinput.missing.title")}
-          footer={
-            <>
-              <ModalAction
-                onPress={() => QuitLauncher()}
-                variant="secondary"
-              >
-                {t("common.quit_launcher")}
-              </ModalAction>
-              <ModalAction
-                onPress={handleGameInputInstall}
-                variant={"primary"}
-              >
-                {t("launcherpage.gameinput.missing.install_now")}
-              </ModalAction>
-            </>
-          }
-        >
-          <ModalDescription>
-            {t("launcherpage.gameinput.missing.body")}
-          </ModalDescription>
-        </UnifiedModal>
-
-        {/* VCRuntime Installing */}
-        <UnifiedModal
-          isOpen={vcRuntimeInstallingDisclosure.isOpen}
-          onOpenChange={vcRuntimeInstallingDisclosure.setOpen}
-          type="success"
-          title={t("launcherpage.vcruntime.installing.title")}
-          icon={<FaDownload className="w-6 h-6" />}
-        >
-          <ModalProgress label={t("launcherpage.vcruntime.installing.title")} description={t("launcherpage.vcruntime.installing.body")} value={vcTotal > 0 ? Math.min(100, (vcDownloaded / vcTotal) * 100) : undefined} detail={vcTotal > 0 ? `${(vcDownloaded / 1024 / 1024).toFixed(1)} / ${(vcTotal / 1024 / 1024).toFixed(1)} MB` : t("launcherpage.vcruntime.installing.preparing")} />
-        </UnifiedModal>
-
-        {/* VCRuntime Missing */}
-        <UnifiedModal
-          isOpen={vcRuntimeMissingDisclosure.isOpen}
-          onOpenChange={vcRuntimeMissingDisclosure.setOpen}
-          type="warning"
-          title={t("launcherpage.vcruntime.missing.title")}
-          footer={
-            <>
-              <ModalAction
-                onPress={() => QuitLauncher()}
-                variant="secondary"
-              >
-                {t("common.quit_launcher")}
-              </ModalAction>
-              <ModalAction
-                onPress={handleVcRuntimeInstall}
-                variant={"primary"}
-              >
-                {t("launcherpage.vcruntime.missing.install_now")}
-              </ModalAction>
-            </>
-          }
-        >
-          <ModalDescription>
-            {t("launcherpage.vcruntime.missing.body")}
-          </ModalDescription>
-        </UnifiedModal>
-
-        {/* Gaming Services Missing */}
-        <UnifiedModal
-          isOpen={gamingServicesMissingDisclosure.isOpen}
-          onOpenChange={gamingServicesMissingDisclosure.setOpen}
-          type="warning"
-          title={t("launcherpage.gs.missing.title")}
-          icon={<FaWindows className="w-6 h-6" />}
-          footer={
-            <>
-              <ModalAction
-                onPress={() => QuitLauncher()}
-                variant="secondary"
-              >
-                {t("common.quit_launcher")}
-              </ModalAction>
-              <ModalAction
-                onPress={handleIgnoreGamingServices}
-                variant={"secondary"}
-              >
-                {t("launcherpage.gs.missing.ignore_forever")}
-              </ModalAction>
-              <ModalAction
-                {...warningConfirmButtonProps}
-                onPress={() => handleGamingServicesInstall(Browser.OpenURL)}
-                variant={"secondary"}
-              >
-                {t("launcherpage.gs.missing.open_store")}
-              </ModalAction>
-            </>
-          }
-        >
-          <ModalDescription>
-            {t("launcherpage.gs.missing.body")}
-          </ModalDescription>
-        </UnifiedModal>
-
-        {/* Install Confirm (GameInput / GamingServices) */}
-        <UnifiedModal
-          isOpen={installConfirmDisclosure.isOpen}
-          onOpenChange={handleInstallConfirmOpenChange}
-          type="success"
-          title={t("launcherpage.install_confirm.title")}
-          icon={<FaDownload className="w-6 h-6" />}
-          footer={
-            <>
-              <ModalAction
-                onPress={handleInstallConfirmContinue}
-                variant="secondary"
-              >
-                {t("launcherpage.install_confirm.continue")}
-              </ModalAction>
-              <ModalAction
-                onPress={handleInstallConfirmCheck}
-                variant={"primary"}
-              >
-                {t("launcherpage.install_confirm.done_and_check")}
-              </ModalAction>
-            </>
-          }
-        >
-          <ModalDescription>
-            {t("launcherpage.install_confirm.body")}
-          </ModalDescription>
-        </UnifiedModal>
-
-        {/* VCRuntime Completing */}
-        <UnifiedModal
-          isOpen={vcRuntimeCompletingDisclosure.isOpen}
-          onOpenChange={vcRuntimeCompletingDisclosure.setOpen}
-          type="success"
-          title={t("launcherpage.vcruntime.completing.title")}
-          icon={<FaCogs className="w-6 h-6" />}
-        >
-          <ModalDescription>
-            {t("launcherpage.vcruntime.completing.body")}
-          </ModalDescription>
-        </UnifiedModal>
-
-        {/* Loader Migration */}
-        <UnifiedModal
-          isOpen={loaderMigrationDisclosure.isOpen}
-          onOpenChange={loaderMigrationDisclosure.setOpen}
-          type={migrateError ? "error" : "success"}
-          title={t(
-            migrateError ? "common.error" : "launcherpage.loader_migration.title",
+        <LaunchStepsDialog
+          flow={launchFlow}
+          canLaunch={Boolean(currentVersion)}
+          launchLabel={String(
+            t(requiresUWPRegistration ? "uwp.register_button" : "launcherpage.launch_button"),
           )}
-          isPending={!migrateError}
-          onConfirm={migrateError ? loaderMigrationDisclosure.close : undefined}
-          confirmText={t("common.close")}
-          icon={<FaCogs className="w-6 h-6" />}
-        >
-          {migrateError ? (
-            <ModalDescription>{migrateError}</ModalDescription>
-          ) : (
-            <ModalProgress
-              label={t("launcherpage.loader_migration.title")}
-              description={t("launcherpage.loader_migration.body")}
-              value={
-                migrateTotal > 0
-                  ? Math.min(100, (migrateDone / migrateTotal) * 100)
-                  : undefined
-              }
-              detail={
-                migrateTotal > 0
-                  ? `${migrateDone} / ${migrateTotal}`
-                  : t("launcherpage.loader_migration.preparing")
-              }
-            />
-          )}
-        </UnifiedModal>
-
-        {/* MC Launch Loading */}
-        <UnifiedModal
-          isOpen={mcLaunchLoadingDisclosure.isOpen}
-          onOpenChange={mcLaunchLoadingDisclosure.setOpen}
-          type="success"
-          title={t("launcherpage.mclaunch.loading.title")}
-          footer={
-            <ModalAction
-              onPress={mcLaunchLoadingDisclosure.close}
-              variant={"primary"}
-            >
-              {t("common.close")}
-            </ModalAction>
-          }
-        >
-          <div className="flex flex-col gap-6">
-            <div className="flex items-center gap-4">
-              <Spinner size="lg" color={"accent"} />
-              <div className="flex flex-col gap-1">
-                <motion.p
-                  className="text-foreground dark:text-zinc-300 font-medium"
-                  initial={{ opacity: 0 }}
-                  animate={{ opacity: 1 }}
-                  transition={{ duration: 0.25, delay: 0.1 }}
-                >
-                  {t("launcherpage.mclaunch.loading.body")}
-                </motion.p>
-                <div className="min-h-[24px] text-sm text-muted">
-                  <AnimatePresence mode="wait">
-                    <motion.span
-                      key={`tip-${tipIndex}`}
-                      initial={{ opacity: 0, y: 4 }}
-                      animate={{ opacity: 1, y: 0 }}
-                      exit={{ opacity: 0, y: -4 }}
-                      transition={{ duration: 0.2 }}
-                    >
-                      {currentLaunchTip}
-                    </motion.span>
-                  </AnimatePresence>
-                </div>
-              </div>
-            </div>
-            <ProgressBar size="sm" isIndeterminate aria-label="Loading">
-              <ProgressBar.Track>
-                <ProgressBar.Fill
-                  className={"bg-brand-500 hover:bg-brand-500"}
-                />
-              </ProgressBar.Track>
-            </ProgressBar>
-          </div>
-        </UnifiedModal>
-
-        {/* Shortcut Success */}
-        <UnifiedModal
-          isOpen={shortcutSuccessDisclosure.isOpen}
-          onOpenChange={shortcutSuccessDisclosure.setOpen}
-          type="success"
-          title={t("launcherpage.shortcut.success.title")}
-          onConfirm={shortcutSuccessDisclosure.close}
-          confirmText={t("common.close")}
-        >
-          <ModalDescription>
-            {t("launcherpage.shortcut.success.body")}
-          </ModalDescription>
-        </UnifiedModal>
-
-        {/* Register Installing */}
-        <UnifiedModal
-          isOpen={registerInstallingDisclosure.isOpen}
-          onOpenChange={registerInstallingDisclosure.setOpen}
-          isDismissable={registrationPendingAction === null}
-          showConfirmButton={false}
-          type={registerAction === "unregister" ? "warning" : "success"}
-          title={
-            registerAction === "unregister"
-              ? t("versions.edit.unregister_progress.title")
-              : t("launcherpage.register.installing.title")
-          }
-          icon={
-            registerAction === "unregister" ? (
-              <FaExclamationTriangle className="w-6 h-6" />
-            ) : (
-              <FaDownload className="w-6 h-6" />
-            )
-          }
-        >
-          <>
-            <ModalDescription className="mb-4">
-              {registerAction === "unregister"
-                ? t("versions.edit.unregister_progress.body")
-                : t("launcherpage.register.installing.body")}
-            </ModalDescription>
-            <ProgressBar
-              size="sm"
-              isIndeterminate
-              aria-label={
-                registerAction === "unregister"
-                  ? "Unregistering"
-                  : "Registering"
-              }
-            >
-              <ProgressBar.Track>
-                <ProgressBar.Fill
-                  className={
-                    registerAction === "unregister"
-                      ? "bg-amber-500 hover:bg-amber-500"
-                      : "bg-brand-500 hover:bg-brand-500"
-                  }
-                />
-              </ProgressBar.Track>
-            </ProgressBar>
-          </>
-        </UnifiedModal>
-
-        {/* Register Success */}
-        <UnifiedModal
-          isOpen={registerSuccessDisclosure.isOpen}
-          onOpenChange={handleRegisterSuccessOpenChange}
-          type="success"
-          title={t("launcherpage.register.success.title")}
-          footer={
-            <ModalAction
-              onPress={registerSuccessDisclosure.close}
-              variant={"primary"}
-            >
-              {t("common.close")}
-            </ModalAction>
-          }
-        >
-          <ModalDescription>
-            {t("launcherpage.register.success.body")}
-          </ModalDescription>
-        </UnifiedModal>
-
-        {/* Register Failed */}
-        <UnifiedModal
-          isOpen={registerFailedDisclosure.isOpen}
-          onOpenChange={registerFailedDisclosure.setOpen}
-          type="error"
-          title={t("launcherpage.register.failed.title")}
-          confirmText={t("common.close")}
-          onConfirm={registerFailedDisclosure.close}
-        >
-          <ModalNotice tone="danger">
-            <ModalDescription>
-              {(() => {
-                if (launchErrorCode.includes("ERR_UWP_")) return resolveInstallError(launchErrorCode, t);
-                const key = `errors.${launchErrorCode}`;
-                const translated = t(key) as unknown as string;
-                if (launchErrorCode && translated && translated !== key)
-                  return translated;
-                return t(
-                  "launcherpage.register.failed.body",
-                ) as unknown as string;
-              })()}
-            </ModalDescription>
-          </ModalNotice>
-        </UnifiedModal>
+          isUWP={currentVersionInfo?.packageType === "uwp"}
+          onClose={closeLaunchFlow}
+          onLaunch={doPrimaryAction}
+          onForceLaunch={doForceLaunch}
+          onRetry={retryLaunchStep}
+          onInstall={installDependency}
+          onRecheck={recheckDependency}
+          onSkip={skipDependency}
+          onIgnoreGamingServices={ignoreGamingServices}
+          onOpenStore={() => openGamingServicesStore(Browser.OpenURL)}
+        />
       </PageContainer>
     </>
   );

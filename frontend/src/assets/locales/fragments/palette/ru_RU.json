@@ -1,0 +1,30 @@
+{
+  "palette": {
+    "title": "Палитра команд",
+    "placeholder": "Поиск страниц, настроек и действий…",
+    "results": "Команды",
+    "empty": "Нет команд, соответствующих «{{query}}»",
+    "nav_locked": "Сейчас переход между страницами недоступен, показаны только действия.",
+    "hint_move": "перемещение",
+    "hint_run": "выполнить",
+    "hint_close": "закрыть",
+    "open_activity": "Открыть журнал активности",
+    "theme_light": "Переключить на светлую тему",
+    "theme_dark": "Переключить на тёмную тему",
+    "show_shortcuts": "Сочетания клавиш",
+    "instance_settings": "Настройки экземпляра: {{name}}",
+    "launch_subtitle": "{{label}} {{name}}",
+    "switch_instance": "Переключить экземпляр на {{name}}",
+    "current": "текущий",
+    "group": {
+      "recent": "Недавние",
+      "actions": "Действия",
+      "navigate": "Перейти",
+      "settings": "Настройки",
+      "instances": "Экземпляры"
+    },
+    "shortcuts_title": "Сочетания клавиш",
+    "shortcut_open": "Открыть палитру команд",
+    "shortcut_settings": "Открыть настройки"
+  }
+}

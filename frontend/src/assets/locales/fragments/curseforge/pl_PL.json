@@ -1,0 +1,43 @@
+{
+  "curseforge": {
+    "install": {
+      "type": {
+        "mcworld": "Świat",
+        "mcaddon": "Dodatek",
+        "mcpack": "Paczka zasobów lub zachowań",
+        "skin_pack": "Paczka skórek",
+        "unknown": "Nieznana paczka"
+      },
+      "dialog_title": "Zainstaluj {{name}}",
+      "setup_body": "Wybierz, co i gdzie zainstalować. Pobieranie i import wykonają się za jednym razem.",
+      "file_label": "Plik",
+      "file_placeholder": "Wybierz plik",
+      "files_loading": "Wczytywanie plików…",
+      "no_files": "Ten projekt nie ma plików do pobrania.",
+      "no_instances": "Brak zainstalowanych instancji. Najpierw dodaj jedną na stronie Pobieranie.",
+      "no_players": "Ta instancja nie ma jeszcze profili graczy. Uruchom z nią grę raz i spróbuj ponownie.",
+      "player_hint_skin": "Używane tylko wtedy, gdy ta paczka okaże się paczką skórek.",
+      "player_required": "Wybierz gracza, aby zainstalować świat.",
+      "install": "Zainstaluj",
+      "quick_install_aria": "Zainstaluj {{name}}",
+      "task_title": "Zainstaluj {{name}}",
+      "task_desc": "{{file}} → {{instance}}",
+      "step_download": "Pobierz {{name}}",
+      "step_download_done": "Pobrano {{size}}",
+      "step_detect": "Rozpoznaj paczkę",
+      "step_import": "Importuj do {{instance}}",
+      "step_import_done": "Zaimportowano",
+      "duplicate_found": "Już zainstalowane w tej instancji",
+      "duplicate_body": "Zastąpić istniejącą kopię tym plikiem?",
+      "keep_existing": "Zachowaj istniejącą",
+      "overwrite": "Nadpisz",
+      "duplicate_kept": "Zachowano istniejącą kopię; nic nie zmieniono.",
+      "duplicate_overwriting": "Zastępowanie istniejącej kopii…",
+      "done_success": "Zainstalowano {{name}} w {{instance}}.",
+      "done_kept": "Nic nie zmieniono. Zachowano istniejącą kopię.",
+      "cancelled": "Pobieranie anulowane",
+      "success_title_named": "Zainstalowano {{name}}",
+      "error_title_named": "Nie udało się zainstalować {{name}}"
+    }
+  }
+}

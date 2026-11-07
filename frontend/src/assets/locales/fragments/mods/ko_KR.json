@@ -1,0 +1,48 @@
+{
+  "mods": {
+    "notify": {
+      "action_done": "{{action}} 완료",
+      "action_failed": "{{action}} 실패",
+      "import_failed": "모드 가져오기 실패",
+      "import_busy_title": "이미 가져오는 중입니다",
+      "import_busy_body": "현재 가져오기가 끝난 뒤 파일을 다시 끌어다 놓으세요."
+    },
+    "no_instance": {
+      "title": "인스턴스 선택",
+      "body": "모드는 인스턴스별로 설치됩니다. 여기서 선택하면 이 페이지에 해당 모드가 바로 표시됩니다.",
+      "none_title": "인스턴스가 없습니다",
+      "none_body": "먼저 게임 버전을 다운로드하세요. 모드는 여기에 표시됩니다.",
+      "download": "게임 버전 다운로드"
+    },
+    "import_log": {
+      "waiting": "입력 대기 중",
+      "importing": "가져오는 중…",
+      "imported": "가져옴",
+      "overwritten": "덮어씀",
+      "skipped": "건너뜀",
+      "failed": "실패",
+      "reason_exists": "같은 폴더의 모드가 이미 있습니다",
+      "reason_cancelled": "취소됨"
+    },
+    "import_summary": "가져옴 {{imported}} · 건너뜀 {{skipped}} · 실패 {{failed}}",
+    "import_dialog": {
+      "open_activity": "활동 열기",
+      "log_label": "가져오기 로그",
+      "nothing_imported": "가져온 항목 없음"
+    },
+    "import_prompt": {
+      "skip": "건너뛰기",
+      "import": "가져오기",
+      "overwrite": "덮어쓰기",
+      "apply_all": "나머지 중복 항목에도 동일하게 적용"
+    },
+    "batch_result": {
+      "demoted": "종속성으로 유지됨"
+    },
+    "batch_more_actions": "선택한 모드의 추가 작업",
+    "uninstall": {
+      "dependency_note": "설치된 다른 모드가 이 패키지에 의존하는 경우, 제거되지 않고 종속성으로 유지됩니다.",
+      "demoted_title": "종속성으로 유지됨"
+    }
+  }
+}

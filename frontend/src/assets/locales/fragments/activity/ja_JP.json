@@ -1,0 +1,19 @@
+{
+  "activity": {
+    "filter_label": "アクティビティを絞り込む",
+    "filter_all": "すべて",
+    "filter_errors": "問題",
+    "filter_tasks": "タスク",
+    "running": "実行中",
+    "today": "今日",
+    "yesterday": "昨日",
+    "copy_entry": "この項目をコピー",
+    "copied": "コピーしました",
+    "copy_failed": "コピーに失敗しました",
+    "remove_entry": "この項目を削除",
+    "clear_confirm": "終了した {{count}} 件を消去しますか？実行中のタスクは残ります。",
+    "empty_filtered": "この条件に一致する項目はありません",
+    "view_in_activity": "アクティビティで表示",
+    "delete_failed_title": "一部の項目を削除できませんでした"
+  }
+}

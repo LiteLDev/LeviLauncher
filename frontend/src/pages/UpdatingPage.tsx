@@ -1,17 +1,25 @@
-import { ModalDescription } from "@/components/ModalPrimitives";
-import { Card, ProgressBar } from "@heroui/react";
+import { ModalNotice } from "@/components/ModalPrimitives";
+import { Button, Card, ProgressBar, Spinner } from "@heroui/react";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { useTranslation } from "react-i18next";
 import { FaRocket } from "react-icons/fa";
+import { FiCopy, FiRefreshCw } from "react-icons/fi";
 import { motion } from "framer-motion";
 import * as minecraft from "bindings/github.com/liteldev/LeviLauncher/internal/app/minecraft";
 import { Events } from "@wailsio/runtime";
-import { UnifiedModal } from "@/components/UnifiedModal";
 import { PageContainer } from "@/components/PageContainer";
 import { PageHeader } from "@/components/PageHeader";
 import { LAYOUT } from "@/constants/layout";
+import { cn } from "@/utils/cn";
+import {
+  appendTaskLog,
+  finishActivityTask,
+  notify,
+  setTaskProgress,
+  startActivityTask,
+} from "@/utils/activity";
 
 const UPDATE_ERROR_SEPARATOR = "::";
 
@@ -79,45 +87,116 @@ const getStatusText = (
   }
 };
 
+type UpdateLogLine = {
+  at: number;
+  level: "info" | "success" | "error";
+  text: string;
+};
+
+type UpdateFailure = ParsedUpdateError & { at: number };
+
+const DOWNLOAD_LOG_STEPS = [25, 50, 75, 100];
+
+const formatMb = (bytes: number) => (bytes / 1024 / 1024).toFixed(1);
+
+const formatTime = (at: number) =>
+  new Date(at).toLocaleTimeString(undefined, {
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+  });
+
 export default function UpdatingPage() {
   const { t } = useTranslation();
+  // Event handlers outlive renders; read the latest `t` through a ref so a
+  // language change does not resubscribe (and cancel) the running task.
+  const tRef = useRef(t);
+  tRef.current = t;
   const mountedRef = useRef(false);
+  const taskIdRef = useRef<string | null>(null);
+  const loggedDownloadStepRef = useRef(0);
+  const lastStatusRef = useRef("");
+  const startedAttemptRef = useRef(-1);
   const [running, setRunning] = useState<boolean>(true);
-  const [errorCode, setErrorCode] = useState<string>("");
+  const [failure, setFailure] = useState<UpdateFailure | null>(null);
   const [status, setStatus] = useState<string>("checking");
   const [downloaded, setDownloaded] = useState<number>(0);
   const [total, setTotal] = useState<number>(0);
+  // Every step stays listed, so a status that flashed by can still be read.
+  const [log, setLog] = useState<UpdateLogLine[]>([]);
+  const [attempt, setAttempt] = useState(0);
+  const [copyState, setCopyState] = useState<"idle" | "copied" | "failed">("idle");
 
   const currentStatus = status || (running ? "checking" : "");
   const statusText = useMemo(
     () => getStatusText(currentStatus, t),
     [currentStatus, t],
   );
-  const errorText = useMemo(
-    () => t(getUpdateErrorKey(errorCode)),
-    [errorCode, t],
+
+  const appendLog = useCallback(
+    (text: string, level: UpdateLogLine["level"] = "info") => {
+      if (!mountedRef.current) return;
+      setLog((prev) => [...prev, { at: Date.now(), level, text }]);
+      if (taskIdRef.current) {
+        appendTaskLog(
+          taskIdRef.current,
+          text,
+          level === "error" ? "error" : level,
+        );
+      }
+    },
+    [],
+  );
+
+  const fail = useCallback(
+    (parsed: ParsedUpdateError) => {
+      if (!mountedRef.current) return;
+      const t = tRef.current;
+      const errorText = t(getUpdateErrorKey(parsed.code));
+      // The first error event carries the detail; a later generic failure from
+      // the same attempt must not overwrite it.
+      setFailure((prev) => prev ?? { ...parsed, at: Date.now() });
+      setCopyState("idle");
+      if (taskIdRef.current) {
+        appendLog(
+          parsed.detail ? `${errorText} (${parsed.detail})` : errorText,
+          "error",
+        );
+        finishActivityTask(taskIdRef.current, "error", errorText);
+        notify({
+          title: t("updating.failed_title"),
+          description: errorText,
+          variant: "danger",
+          source: "updates",
+          silent: true,
+        });
+        taskIdRef.current = null;
+      }
+    },
+    [appendLog],
   );
 
   useEffect(() => {
-    let cancelled = false;
     mountedRef.current = true;
-
-    const safeSet = (updater: () => void) => {
-      if (cancelled || !mountedRef.current) return;
-      updater();
-    };
+    const t = (key: string, options?: Record<string, unknown>) =>
+      tRef.current(key, options);
 
     const offStatus = Events.On("app_update_status", (event) => {
       const nextStatus = String(event?.data || "").trim();
-      if (!nextStatus) return;
-      safeSet(() => {
-        setStatus(nextStatus);
-      });
+      if (!nextStatus || !mountedRef.current) return;
+      setStatus(nextStatus);
+      if (nextStatus === lastStatusRef.current) return;
+      lastStatusRef.current = nextStatus;
+      const text = getStatusText(nextStatus, t);
+      appendLog(text, nextStatus === "installed" ? "success" : "info");
+      if (nextStatus === "installed" && taskIdRef.current) {
+        setTaskProgress(taskIdRef.current, 100);
+      }
     });
 
     const offProgress = Events.On("app_update_progress", (event) => {
       const data = event?.data;
-      if (!data || typeof data !== "object") return;
+      if (!data || typeof data !== "object" || !mountedRef.current) return;
       const payload = data as unknown as {
         phase?: unknown;
         downloaded?: unknown;
@@ -125,14 +204,25 @@ export default function UpdatingPage() {
       };
       const phase = String(payload.phase || "").trim();
       if (phase !== "download") return;
-      const nextDownloaded = Number(payload.downloaded || 0);
-      const nextTotal = Number(payload.total || 0);
-      safeSet(() => {
-        setDownloaded(
-          Number.isFinite(nextDownloaded) ? Math.max(0, nextDownloaded) : 0,
+      const nextDownloaded = Math.max(0, Number(payload.downloaded || 0) || 0);
+      const nextTotal = Math.max(0, Number(payload.total || 0) || 0);
+      setDownloaded(nextDownloaded);
+      setTotal(nextTotal);
+      if (nextTotal <= 0) return;
+      const percent = Math.min(100, Math.floor((nextDownloaded / nextTotal) * 100));
+      if (taskIdRef.current) setTaskProgress(taskIdRef.current, percent);
+      // Log quarter milestones instead of every byte so the list stays short.
+      const step = DOWNLOAD_LOG_STEPS.filter((value) => percent >= value).pop() ?? 0;
+      if (step > loggedDownloadStepRef.current) {
+        loggedDownloadStepRef.current = step;
+        appendLog(
+          t("settings_ux.updating.download_line", {
+            percent: step,
+            downloaded: formatMb(nextDownloaded),
+            total: formatMb(nextTotal),
+          }),
         );
-        setTotal(Number.isFinite(nextTotal) ? Math.max(0, nextTotal) : 0);
-      });
+      }
     });
 
     const offError = Events.On("app_update_error", (event) => {
@@ -140,46 +230,85 @@ export default function UpdatingPage() {
       if (parsed.detail) {
         console.error("Update failed detail:", parsed.detail);
       }
-      safeSet(() => {
-        setErrorCode(parsed.code);
-      });
+      fail(parsed);
     });
 
-    const runUpdate = async () => {
-      try {
-        safeSet(() => {
-          setRunning(true);
-          setErrorCode("");
-          setStatus("checking");
-        });
-        const ok = await minecraft?.Update?.();
-        if (!ok) {
-          safeSet(() => {
-            setErrorCode((prev) => prev || "ERR_UPDATE_GENERIC");
-          });
-        }
-      } catch (error) {
-        console.error("Update request failed:", error);
-        safeSet(() => {
-          setErrorCode("ERR_UPDATE_GENERIC");
-        });
-      } finally {
-        safeSet(() => {
-          setRunning(false);
-        });
-      }
-    };
-
-    void runUpdate();
-
     return () => {
-      cancelled = true;
       mountedRef.current = false;
       offStatus();
       offProgress();
       offError();
+      // The update keeps running in the backend after an unmount, so its
+      // activity task is left open rather than marked cancelled.
     };
-  }, []);
+  }, [appendLog, fail]);
+
+  useEffect(() => {
+    // Start each attempt once, even if the effect is replayed (StrictMode).
+    if (!mountedRef.current || startedAttemptRef.current === attempt) return;
+    startedAttemptRef.current = attempt;
+    const runUpdate = async () => {
+      setRunning(true);
+      setFailure(null);
+      setStatus("checking");
+      setDownloaded(0);
+      setTotal(0);
+      loggedDownloadStepRef.current = 0;
+      lastStatusRef.current = "checking";
+      taskIdRef.current = startActivityTask({
+        title: t("updating.title"),
+        source: "updates",
+      });
+      appendLog(
+        attempt > 0
+          ? t("settings_ux.updating.retry_line", { count: attempt + 1 })
+          : t("updating.status.checking"),
+      );
+      try {
+        const ok = await minecraft?.Update?.();
+        if (!ok) {
+          fail({ code: "ERR_UPDATE_GENERIC", detail: "" });
+        } else if (taskIdRef.current) {
+          appendLog(t("common.done"), "success");
+          finishActivityTask(taskIdRef.current, "success");
+          taskIdRef.current = null;
+        }
+      } catch (error) {
+        console.error("Update request failed:", error);
+        fail({
+          code: "ERR_UPDATE_GENERIC",
+          detail: error instanceof Error ? error.message : String(error ?? ""),
+        });
+      } finally {
+        if (mountedRef.current) setRunning(false);
+      }
+    };
+    void runUpdate();
+    // `attempt` is the only trigger: each retry starts a new run.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [attempt]);
+
+  const failureText = failure ? t(getUpdateErrorKey(failure.code)) : "";
+  const failureReport = failure
+    ? [
+        `${t("updating.failed_title")}: ${failureText}`,
+        `${t("settings_ux.updating.error_code")}: ${failure.code}`,
+        ...(failure.detail
+          ? [`${t("settings_ux.updating.details")}: ${failure.detail}`]
+          : []),
+        "",
+        ...log.map((line) => `[${formatTime(line.at)}] ${line.text}`),
+      ].join("\n")
+    : "";
+
+  const copyFailure = async () => {
+    try {
+      await navigator.clipboard.writeText(failureReport);
+      setCopyState("copied");
+    } catch {
+      setCopyState("failed");
+    }
+  };
 
   const installBusy = [
     "installing",
@@ -195,9 +324,10 @@ export default function UpdatingPage() {
         initial={{ opacity: 0, y: -20 }}
         animate={{ opacity: 1, y: 0 }}
         transition={{ duration: 0.4 }}
+        className={LAYOUT.PAGE.READABLE}
       >
         <Card className={LAYOUT.GLASS_CARD.BASE}>
-          <Card.Content className="p-6">
+          <Card.Content className="p-4 min-[1200px]:p-6">
             <PageHeader
               title={t("updating.title")}
               description={t("updating.body")}
@@ -209,71 +339,88 @@ export default function UpdatingPage() {
                 </div>
               }
             />
-            <div className="mt-6 rounded-3xl border border-black/5 dark:border-white/10 bg-surface/50 launcher-material-blur px-4 py-3">
-              <div className="text-xs font-semibold uppercase tracking-wide text-muted">
-                {t("common.updating")}
-              </div>
-              <div className="mt-1 text-sm font-medium text-foreground dark:text-zinc-200">
-                {statusText}
-              </div>
-            </div>
-            <div className="mt-8 space-y-6 w-full pb-4">
+
+            {failure && (
+              <ModalNotice role="alert" tone="danger" className="mt-6">
+                <p className="font-semibold">{t("updating.failed_title")}</p>
+                <p className="select-text">{failureText}</p>
+                <dl className="mt-2 grid grid-cols-[auto_minmax(0,1fr)] gap-x-3 gap-y-1 text-xs">
+                  <dt className="opacity-80">{t("settings_ux.updating.error_code")}</dt>
+                  <dd className="select-text font-mono">{failure.code}</dd>
+                  {failure.detail && (
+                    <>
+                      <dt className="opacity-80">{t("settings_ux.updating.details")}</dt>
+                      <dd className="select-text font-mono [overflow-wrap:anywhere]">{failure.detail}</dd>
+                    </>
+                  )}
+                </dl>
+                <p className="mt-2 text-xs opacity-90">{t("audit.mods.update_recovery")}</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {/* After a failed restart the new binary is already installed,
+                      so running the update again would only reinstall it. */}
+                  {failure.code !== "ERR_UPDATE_RESTART_FAILED" && (
+                    <Button
+                      size="sm"
+                      variant="primary"
+                      isDisabled={running}
+                      onPress={() => setAttempt((value) => value + 1)}
+                    >
+                      <FiRefreshCw aria-hidden />
+                      {t("common.retry")}
+                    </Button>
+                  )}
+                  <Button size="sm" variant="secondary" onPress={() => void copyFailure()}>
+                    <FiCopy aria-hidden />
+                    {t("audit.primary.install.copy_details")}
+                  </Button>
+                  <Button size="sm" variant="ghost" onPress={() => minecraft.QuitLauncher()}>
+                    {t("audit.mods.close_update_window")}
+                  </Button>
+                </div>
+                {copyState !== "idle" && (
+                  <p role="status" className="mt-2 text-xs">
+                    {copyState === "copied"
+                      ? t("audit.primary.install.copied")
+                      : t("audit.primary.install.copy_failed")}
+                  </p>
+                )}
+              </ModalNotice>
+            )}
+
+            <div className="mt-6 space-y-6 w-full">
               <div className="space-y-2">
-                <div className="flex justify-between items-end gap-4">
+                <div className="flex flex-wrap justify-between items-end gap-x-4 gap-y-1">
                   <div className="text-sm font-medium text-foreground">
                     {t("updating.phase.download")}
                   </div>
-                  <div className="text-xs text-muted font-mono text-right">
+                  <div className="text-xs text-muted font-mono text-right tabular-nums">
                     {total > 0
-                      ? `${(downloaded / 1024 / 1024).toFixed(1)} / ${(
-                          total /
-                          1024 /
-                          1024
-                        ).toFixed(1)} MB`
-                      : `${(downloaded / 1024 / 1024).toFixed(1)} MB`}
+                      ? `${formatMb(downloaded)} / ${formatMb(total)} MB`
+                      : `${formatMb(downloaded)} MB`}
                   </div>
                 </div>
-                {total > 0 ? (
-                  <ProgressBar
-                    aria-label={t("updating.phase.download")}
-                    size="md"
-                    value={Math.max(
-                      0,
-                      Math.min(100, Math.round((downloaded / total) * 100)),
-                    )}
-                    color={"success"}
-                    className={"w-full"}
-                  >
-                    <ProgressBar.Track className={"rounded-md"}>
-                      <ProgressBar.Fill
-                        className={
-                          "bg-accent"
-                        }
-                      />
-                    </ProgressBar.Track>
-                  </ProgressBar>
-                ) : (
-                  <ProgressBar
-                    isIndeterminate={currentStatus !== "downloaded"}
-                    aria-label={t("updating.phase.download")}
-                    size="md"
-                    value={currentStatus === "downloaded" ? 100 : undefined}
-                    color={"success"}
-                    className={"w-full"}
-                  >
-                    <ProgressBar.Track className={"rounded-md"}>
-                      <ProgressBar.Fill
-                        className={
-                          "bg-accent"
-                        }
-                      />
-                    </ProgressBar.Track>
-                  </ProgressBar>
-                )}
+                <ProgressBar
+                  aria-label={t("updating.phase.download")}
+                  size="md"
+                  isIndeterminate={total <= 0 && running && !failure && currentStatus !== "downloaded"}
+                  value={
+                    total > 0
+                      ? Math.max(0, Math.min(100, Math.round((downloaded / total) * 100)))
+                      : currentStatus === "downloaded" || currentStatus === "installed" || installBusy
+                        ? 100
+                        : 0
+                  }
+                  color={"success"}
+                  className={"w-full"}
+                >
+                  <ProgressBar.Track className={"rounded-md"}>
+                    <ProgressBar.Fill className={"bg-accent"} />
+                  </ProgressBar.Track>
+                </ProgressBar>
               </div>
 
               <div className="space-y-2">
-                <div className="flex justify-between items-end gap-4">
+                <div className="flex flex-wrap justify-between items-end gap-x-4 gap-y-1">
                   <div className="text-sm font-medium text-foreground">
                     {t("updating.phase.install")}
                   </div>
@@ -281,62 +428,56 @@ export default function UpdatingPage() {
                     {statusText}
                   </div>
                 </div>
-                {installBusy ? (
-                  <ProgressBar
-                    isIndeterminate
-                    aria-label={t("updating.phase.install")}
-                    size="md"
-                    color={"success"}
-                    className={"w-full"}
-                  >
-                    <ProgressBar.Track className={"rounded-md"}>
-                      <ProgressBar.Fill
-                        className={
-                          "bg-accent"
-                        }
-                      />
-                    </ProgressBar.Track>
-                  </ProgressBar>
-                ) : (
-                  <ProgressBar
-                    aria-label={t("updating.phase.install")}
-                    size="md"
-                    value={currentStatus === "installed" ? 100 : 0}
-                    color={"success"}
-                    className={"w-full"}
-                  >
-                    <ProgressBar.Track className={"rounded-md"}>
-                      <ProgressBar.Fill
-                        className={
-                          "bg-accent"
-                        }
-                      />
-                    </ProgressBar.Track>
-                  </ProgressBar>
-                )}
+                <ProgressBar
+                  isIndeterminate={installBusy && !failure}
+                  aria-label={t("updating.phase.install")}
+                  size="md"
+                  value={currentStatus === "installed" ? 100 : 0}
+                  color={"success"}
+                  className={"w-full"}
+                >
+                  <ProgressBar.Track className={"rounded-md"}>
+                    <ProgressBar.Fill className={"bg-accent"} />
+                  </ProgressBar.Track>
+                </ProgressBar>
               </div>
+
+              <section aria-labelledby="update-log-title" className="space-y-2">
+                <h2 id="update-log-title" className="text-xs font-semibold uppercase tracking-wide text-muted">
+                  {t("settings_ux.updating.log_title")}
+                </h2>
+                <ol
+                  aria-live="polite"
+                  className="max-h-[min(18rem,40vh)] overflow-y-auto rounded-2xl border border-black/5 dark:border-white/10 bg-surface/50 launcher-material-blur px-4 py-3 space-y-1 text-sm"
+                >
+                  {log.map((line, index) => (
+                    <li key={index} className="flex min-w-0 gap-3">
+                      <time className="shrink-0 font-mono text-xs leading-5 text-muted tabular-nums">
+                        {formatTime(line.at)}
+                      </time>
+                      <span
+                        className={cn(
+                          "min-w-0 select-text [overflow-wrap:anywhere]",
+                          line.level === "error" && "text-danger",
+                          line.level === "success" && "text-success",
+                        )}
+                      >
+                        {line.text}
+                      </span>
+                    </li>
+                  ))}
+                  {running && !failure && (
+                    <li className="flex items-center gap-2 text-muted">
+                      <Spinner size="sm" />
+                      {statusText}
+                    </li>
+                  )}
+                </ol>
+              </section>
             </div>
           </Card.Content>
         </Card>
       </motion.div>
-
-      <UnifiedModal
-        size="standard"
-        isOpen={!!errorCode}
-        type="error"
-        title={t("updating.failed_title")}
-        confirmText={t("audit.mods.close_update_window")}
-        onConfirm={() => minecraft.QuitLauncher()}
-        showCancelButton={false}
-        isDismissable={false}
-      >
-        <div role="alert" className="select-text text-foreground text-sm wrap-break-word whitespace-pre-wrap">
-          {errorText}
-        </div>
-        <ModalDescription className="mt-3">
-          {t("audit.mods.update_recovery")}
-        </ModalDescription>
-      </UnifiedModal>
     </PageContainer>
   );
 }

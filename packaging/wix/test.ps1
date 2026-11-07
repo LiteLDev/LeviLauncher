@@ -38,7 +38,8 @@ $uninstallKey = 'HKLM:\SOFTWARE\Microsoft\Windows\CurrentVersion\Uninstall'
 $innoUninstallKey = "$uninstallKey\org.levimc.launcher_is1"
 $startMenuShortcut = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\LeviLauncher.lnk'
 $innoStartMenuFolder = Join-Path $env:ProgramData 'Microsoft\Windows\Start Menu\Programs\LeviLauncher'
-$desktopShortcut = Join-Path $env:PUBLIC 'Desktop\LeviLauncher.lnk'
+# Not $desktopShortcut: PowerShell names are case-insensitive, and Assert-Installed has a $DesktopShortcut parameter.
+$desktopShortcutPath = Join-Path $env:PUBLIC 'Desktop\LeviLauncher.lnk'
 # The storage layout of the launcher (internal/apppath/README.md), and the legacy one that the
 # launchers installed by Inno Setup used.
 $configDir = Join-Path $env:APPDATA 'LeviLauncher'
@@ -129,7 +130,7 @@ function Assert-Installed([string] $Version, [bool] $DesktopShortcut) {
     Assert (-not (Test-Path (Join-Path $installDir 'unins000.exe'))) 'the Inno Setup uninstaller is not left behind'
     Assert (Test-Path $startMenuShortcut) 'the Start Menu shortcut exists'
     Assert (-not (Test-Path $innoStartMenuFolder)) 'the Start Menu folder of Inno Setup does not exist'
-    Assert ((Test-Path $desktopShortcut) -eq $DesktopShortcut) "the desktop shortcut exists: $DesktopShortcut"
+    Assert ((Test-Path $desktopShortcutPath) -eq $DesktopShortcut) "the desktop shortcut exists: $DesktopShortcut"
 
     $visible = @(Get-LauncherEntries | Where-Object { -not $_.SystemComponent })
     Assert ($visible.Count -eq 1) "Installed Apps lists LeviLauncher once (got $($visible.Count))"
@@ -140,7 +141,7 @@ function Assert-NotInstalled {
     $leftovers = @(Get-ChildItem $installDir -Recurse -Force -Name -ErrorAction SilentlyContinue)
     Assert (-not (Test-Path $installDir)) "the install directory does not exist (contains: $($leftovers -join ', '))"
     Assert (-not (Test-Path $startMenuShortcut)) 'the Start Menu shortcut does not exist'
-    Assert (-not (Test-Path $desktopShortcut)) 'the desktop shortcut does not exist'
+    Assert (-not (Test-Path $desktopShortcutPath)) 'the desktop shortcut does not exist'
     $entries = Get-LauncherEntries
     Assert ($entries.Count -eq 0) "Installed Apps does not list LeviLauncher (got $($entries.DisplayName -join ', '))"
 }
